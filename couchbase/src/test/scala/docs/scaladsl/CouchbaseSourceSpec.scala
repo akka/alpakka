@@ -36,6 +36,7 @@ class CouchbaseSourceSpec
         CouchbaseSource
           .fromStatement(sessionSettings, select("*").from(i(queryBucketName)).limit(10), bucketName)
           .runWith(Sink.seq)
+      // #statement
 
       resultAsFuture.futureValue.length shouldEqual 4
     }

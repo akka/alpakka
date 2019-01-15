@@ -10,7 +10,7 @@ Couchbase provides client protocol compatibility with memcached, but adds disk p
 
 @@@
 
-Alpakka Couchbase allows you to read and write to Couchbase. You can query a bucket from CouchbaseSource using N1QL queries or reading by document ID. Couchbase connector uses [Couchbase Java SDK verison ${couchbase.version}](https://developer.couchbase.com/documentation/server/current/sdk/java/start-using-sdk.html) behind the scene. 
+Alpakka Couchbase allows you to read and write to Couchbase. You can query a bucket from CouchbaseSource using N1QL queries or reading by document ID. Couchbase connector uses @extref[Couchbase Java SDK](couchbase:start-using-sdk.html) version @var[couchbase.version] behind the scenes.
 
 The Couchbase connector supports all document formats which are supported by the SDK. All those formats use the @java[`Document<T>`]@scala[`Document[T]`] interface and this is the level of abstraction that this connector is using.
 
@@ -22,8 +22,8 @@ The Couchbase connector supports all document formats which are supported by the
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-couchbase_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-couchbase_$scala.binary.version$
+  version=$project.version$
 }
 
 The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
@@ -34,15 +34,98 @@ The table below shows direct dependencies of this module and the second tab show
 
 Alpakka Couchbase offers both Akka Streams APIs and a more direct API to access Couchbase:
 
-* `CouchbaseSession` offers a direct API for one-off operations
-* `CouchbaseSessionRegistry` is a Akka extension to keep track and share `CouchbaseSession`s within an `ActorSystem`
-* `CouchbaseSource`, `CouchbaseFlow`, and `CouchbaseSink` offer factory methods to create Akka Streams
+* `CouchbaseSession` (@scala[@scaladoc[API](akka.stream.alpakka.couchbase.scaladsl.CouchbaseSession)]@java[@scaladoc[API](akka.stream.alpakka.couchbase.javadsl.CouchbaseSession)]) offers a direct API for one-off operations
+* `CouchbaseSessionRegistry` (@scaladoc[API](akka.stream.alpakka.couchbase.CouchbaseSessionRegistry$)) is an Akka extension to keep track and share `CouchbaseSession`s within an `ActorSystem`
+* `CouchbaseSource` (@scala[@scaladoc[API](akka.stream.alpakka.couchbase.scaladsl.CouchbaseSource$)]@java[@scaladoc[API](akka.stream.alpakka.couchbase.javadsl.CouchbaseSource$)]), `CouchbaseFlow` (@scala[@scaladoc[API](akka.stream.alpakka.couchbase.scaladsl.CouchbaseFlow$)]@java[@scaladoc[API](akka.stream.alpakka.couchbase.javadsl.CouchbaseFlow$)]), and `CouchbaseSink` (@scala[@scaladoc[API](akka.stream.alpakka.couchbase.scaladsl.CouchbaseSink$)]@java[@scaladoc[API](akka.stream.alpakka.couchbase.javadsl.CouchbaseSink$)]) offer factory methods to create Akka Stream operators
 
-All operations use the `CouchbaseSession` internally. A session is configured with `CouchbaseSessionSettings` and a Couchbase bucket name. The Akka Stream factory methods create and access the corresponding session instance behind the scenes.
+All operations use the `CouchbaseSession` internally. A session is configured with `CouchbaseSessionSettings` (@scaladoc[API](akka.stream.alpakka.couchbase..CouchbaseSettings$)) and a Couchbase bucket name. The Akka Stream factory methods create and access the corresponding session instance behind the scenes.
 
-## Using `CouchbaseSession` directly
+# Reading from Couchbase in Akka Streams
 
-Use `CouchbaseSessionSettings` to get an instance of `CouchbaseSession`. These settings may be specified in `application.conf` and complemented in code. Furthermore a session requires the bucket name and needs an `ExecutionContext` as the creation is asynchronous. 
+## Using statements
+
+To query Couchbase using the statement DSL use `CouchbaseSource.fromStatement`. 
+
+Scala
+: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseSourceSpec.scala) { #statement }
+
+Java
+: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #statement }
+
+
+## Using N1QL queries
+
+To query Couchbase using the @extref["N1QL" queries](couchbase:n1ql-query.html) use `CouchbaseSource.fromN1qlQuery`. 
+
+Scala
+: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseSourceSpec.scala) { #n1ql }
+
+Java
+: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #n1ql }
+
+
+## Get by ID
+
+`CouchbaseFlow.fromId` methods allow to read documents specified by the document ID in the Akka Stream.
+
+Scala
+: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #fromId }
+
+Java
+: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #fromId }
+
+
+# Writing to Couchbase in Akka Streams
+
+For each mutation operation we need to create `CouchbaseWriteSettings` instance which consists of the following parameters
+
+- Parallelism in access to Couchbase (default 1)
+- Couchbase Replication Factor (default `ReplicateTo.NONE`) 
+- Couchbase Persistence Level for Write Operation (default `PersistTo.NONE`)
+- 2 seconds operation timeout 
+
+These default values are not recommended for production use, as they do not persist to disk for any node. 
+
+Scala
+: @@snip (/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #write-settings }
+
+Java
+: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #write-settings }
+
+
+Read more about durability settings in the @extref[Couchbase documentation](couchbase:durability.html#configuring-durability). 
+
+## Upsert
+
+The `CouchbaseFlow` and `CouchbaseSink` offer factories for upserting documents (insert or update) in Couchbase. `upsert` is used for the most commonly used `JsonDocument`, and `upsertDoc` has as type parameter to support any variants of @scala[`Document[T]`]@java[`Document<T>`] which may be `RawJsonDocument`, `StringDocument` or `BinaryDocument`.
+
+Scala
+: @@snip (/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #upsert }
+
+Java
+: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #upsert }
+
+
+@@@ note
+
+For single document modifications you may consider using the `CouchbaseSession` methods directly, they offer a @scala[future-based]@java[CompletionStage-based] API which in many cases might be simpler than using Akka Streams with just one element (see [below](#using-couchbasesession-directly))
+
+@@@
+
+## Delete
+
+The `CouchbaseFlow` and `CouchbaseSink` offer factories to delete documents in Couchbase by ID.
+
+Scala
+: @@snip (/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #delete }
+
+Java
+: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #delete }
+
+
+# Using `CouchbaseSession` directly
+
+Use `CouchbaseSessionSettings` to get an instance of `CouchbaseSession`. These settings may be specified in `application.conf` and complemented in code. Furthermore a session requires the bucket name and needs an `ExecutionContext` as the creation is asynchronous.
 
 Scala
 : @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseSessionExamplesSpec.scala) { #create }
@@ -60,87 +143,3 @@ Java
 : @@snip (/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #sessionFromBucket }
 
 To learn about the full range of operations on `CouchbaseSession`, read the @scala[@scaladoc[API docs](akka.stream.alpakka.couchbase.scaladsl.CouchbaseSession)]@java[@scaladoc[API docs](akka.stream.alpakka.couchbase.javadsl.CouchbaseSession)].
-
-
-## Reading from Couchbase in Akka Streams
-
-### Using statements
-
-To query Couchbase using the statement DSL use `CouchbaseSource.fromStatement`. 
-
-Scala
-: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseSourceSpec.scala) { #statement }
-
-Java
-: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #statement }
-
-
-### Using N1QL queries
-
-To query Couchbase using the ["N1QL" queries](https://docs.couchbase.com/java-sdk/2.7/n1ql-query.html) use `CouchbaseSource.fromN1qlQuery`. 
-
-Scala
-: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseSourceSpec.scala) { #n1ql }
-
-Java
-: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #n1ql }
-
-
-### Get by ID
-
-`CouchbaseFlow.fromId` methods allow to read documents specified by the document ID in the Akka Stream.
-
-Scala
-: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #fromId }
-
-Java
-: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #fromId }
-
-
-## Writing to Couchbase in Akka Streams
-
-For each mutation operation we need to create `CouchbaseWriteSettings` instance which consists of the following parameters
-
-- Parallelism in access to Couchbase (default 1)
-- Couchbase Replication Factor (default `ReplicateTo.NONE`) 
-- Couchbase Persistence Level for Write Operation (default `PersistTo.NONE`)
-- 2 seconds operation timeout 
-
-These default values are not recommended for real use, as they do not observe persistence on disk for any node. 
-
-Scala
-: @@snip (/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #write-settings }
-
-Java
-: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #write-settings }
-
-
-Read more about durability settings in the [Couchbase documentation](https://docs.couchbase.com/java-sdk/2.6/durability.html#configuring-durability). 
-
-### Upsert
-
-The `CouchbaseFlow` and `CouchbaseSink` offer factories for upserting documents (insert or update) in Couchbase. `upsert` is used for the most commonly used `JsonDocument`, and `upsertDoc` has as type parameter to support any variants of @scala[`Document[T]`]@java[`Document<T>`] which may be `RawJsonDocument`, `StringDocument` or `BinaryDocument`.
-
-Scala
-: @@snip (/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #upsert }
-
-Java
-: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #upsert }
-
-
-@@@ note
-
-For single document modifications you may consider using the `CouchbaseSession` methods directly, they offer a @scala[future-based]@java[CompletionStage-based] API which in many cases might be simpler than using Akka Streams with just one element. See [above](#using-couchbasesession-directly)
-
-@@@
-
-### Delete
-
-The `CouchbaseFlow` and `CouchbaseSink` offer factories to delete documents in Couchbase by ID.
-
-Scala
-: @@snip (/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #delete }
-
-Java
-: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #delete }
-

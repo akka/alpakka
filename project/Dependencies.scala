@@ -14,6 +14,7 @@ object Dependencies {
   val AkkaHttpVersion = "10.1.7"
   
   val CouchbaseVersion = "2.7.2"
+  val CouchbaseVersionForDocs = "2.7"
 
   val Common = Seq(
     // These libraries are added to all modules via the `Common` AutoPlugin
