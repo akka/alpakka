@@ -280,17 +280,18 @@ public class JmsConnectorsTest {
 
           // #jms-source
 
+          int expectedMessages = 2;
+
           // #create-jms-sink
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(
+              JmsProducer.sink(
                   JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
+
+          CompletionStage<Done> finished =
+              Source.from(Arrays.asList("Message A", "Message B"))
+                  .map(JmsTextMessage::create)
+                  .runWith(jmsSink, materializer);
           // #create-jms-sink
-
-          List<JmsTextMessage> msgsIn = createTestMessageList();
-
-          // #run-jms-sink
-          CompletionStage<Done> finished = Source.from(msgsIn).runWith(jmsSink, materializer);
-          // #run-jms-sink
 
           // #jms-source
           Source<javax.jms.Message, JmsConsumerControl> jmsSource =
@@ -299,7 +300,7 @@ public class JmsConnectorsTest {
 
           Pair<JmsConsumerControl, CompletionStage<List<String>>> controlAndResult =
               jmsSource
-                  .take(msgsIn.size())
+                  .take(expectedMessages)
                   .map(
                       msg -> {
                         if (msg instanceof TextMessage) {
@@ -315,7 +316,7 @@ public class JmsConnectorsTest {
 
           CompletionStage<List<String>> result = controlAndResult.second();
           List<String> outMessages = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
-          assertEquals("unexpected number of elements", 10, outMessages.size());
+          assertEquals("unexpected number of elements", expectedMessages, outMessages.size());
           // #jms-source
           JmsConsumerControl control = controlAndResult.first();
           control.shutdown();
@@ -330,7 +331,7 @@ public class JmsConnectorsTest {
           ConnectionFactory connectionFactory = server.createConnectionFactory();
 
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(
+              JmsProducer.sink(
                   JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
 
           // #create-messages-with-headers
@@ -401,7 +402,7 @@ public class JmsConnectorsTest {
         server -> {
           ConnectionFactory connectionFactory = server.createConnectionFactory();
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(
+              JmsProducer.sink(
                   JmsProducerSettings.create(producerConfig, connectionFactory)
                       .withDestination(new CustomDestination("custom", createQueue("custom"))));
 
@@ -430,7 +431,7 @@ public class JmsConnectorsTest {
           ConnectionFactory connectionFactory = server.createConnectionFactory();
 
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(
+              JmsProducer.sink(
                   JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
 
           List<JmsTextMessage> msgsIn = createTestMessageList();
@@ -532,7 +533,7 @@ public class JmsConnectorsTest {
           ConnectionFactory connectionFactory = server.createConnectionFactory();
 
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(
+              JmsProducer.sink(
                   JmsProducerSettings.create(producerConfig, connectionFactory)
                       .withQueue("test")
                       .withConnectionRetrySettings(
@@ -554,7 +555,7 @@ public class JmsConnectorsTest {
           ConnectionFactory connectionFactory = server.createConnectionFactory();
 
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(
+              JmsProducer.sink(
                   JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
 
           CompletionStage<Done> completionFuture =
@@ -578,7 +579,7 @@ public class JmsConnectorsTest {
           ConnectionFactory connectionFactory = server.createConnectionFactory();
 
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(
+              JmsProducer.sink(
                   JmsProducerSettings.create(producerConfig, connectionFactory)
                       .withQueue("test")
                       .withConnectionRetrySettings(

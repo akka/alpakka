@@ -45,11 +45,11 @@ object JmsProducer {
    * Create a sink to send [[akka.stream.alpakka.jms.JmsMessage JmsMessage]] sub-classes to
    * a JMS broker.
    */
-  def create[R <: JmsMessage](
+  def sink[R <: JmsMessage](
       settings: JmsProducerSettings
   ): akka.stream.javadsl.Sink[R, CompletionStage[Done]] =
     akka.stream.alpakka.jms.scaladsl.JmsProducer
-      .apply(settings)
+      .sink(settings)
       .mapMaterializedValue(FutureConverters.toJava)
       .asJava
 

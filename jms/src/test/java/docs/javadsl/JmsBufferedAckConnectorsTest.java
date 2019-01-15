@@ -115,7 +115,7 @@ public class JmsBufferedAckConnectorsTest {
 
           // #source
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(
+              JmsProducer.sink(
                   JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
 
           List<JmsTextMessage> msgsIn = createTestMessageList();
@@ -174,7 +174,7 @@ public class JmsBufferedAckConnectorsTest {
           ConnectionFactory connectionFactory = server.createConnectionFactory();
 
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(
+              JmsProducer.sink(
                   JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
 
           List<JmsTextMessage> msgsIn =
@@ -241,7 +241,7 @@ public class JmsBufferedAckConnectorsTest {
           ConnectionFactory connectionFactory = server.createConnectionFactory();
 
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(
+              JmsProducer.sink(
                   JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
 
           List<JmsTextMessage> msgsIn = createTestMessageList();

@@ -48,7 +48,7 @@ object JmsProducer {
    * Create a sink to send [[akka.stream.alpakka.jms.JmsMessage JmsMessage]] sub-classes to
    * a JMS broker.
    */
-  def apply(settings: JmsProducerSettings): Sink[JmsMessage, Future[Done]] =
+  def sink(settings: JmsProducerSettings): Sink[JmsMessage, Future[Done]] =
     flow(settings).toMat(Sink.ignore)(Keep.right)
 
   /**
@@ -90,7 +90,7 @@ object JmsProducer {
   }
 
   private def noProducerDestination(settings: JmsProducerSettings) =
-    s"""Unable to create JmsProducer: it  needs a default destination to send messages to, but none was provided in
+    s"""Unable to create JmsProducer: it needs a default destination to send messages to, but none was provided in
       |$settings
       |Please use withQueue, withTopic or withDestination to specify a destination.""".stripMargin
 }

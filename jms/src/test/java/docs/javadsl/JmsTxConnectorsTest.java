@@ -116,7 +116,7 @@ public class JmsTxConnectorsTest {
 
           // #source
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(
+              JmsProducer.sink(
                   JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
 
           List<JmsTextMessage> msgsIn = createTestMessageList();
@@ -175,7 +175,7 @@ public class JmsTxConnectorsTest {
           ConnectionFactory connectionFactory = server.createConnectionFactory();
 
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(
+              JmsProducer.sink(
                   JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
 
           List<JmsTextMessage> msgsIn =
@@ -242,7 +242,7 @@ public class JmsTxConnectorsTest {
           ConnectionFactory connectionFactory = server.createConnectionFactory();
 
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(
+              JmsProducer.sink(
                   JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
 
           List<JmsTextMessage> msgsIn = createTestMessageList();
