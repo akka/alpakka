@@ -19,19 +19,19 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Usage
 
-Simply define an `EventSource` by giving a URI, a function for sending HTTP requests and an optional initial value for Last-Evend-ID header:  
+Define an `EventSource` by giving a URI, a function for sending HTTP requests, and an optional initial value for Last-Evend-ID header:  
 
 Scala
-: @@snip [snip](/sse/src/test/scala/akka/stream/alpakka/sse/scaladsl/EventSourceSpec.scala) { #event-source }
+: @@snip [snip](/sse/src/test/scala/docs/scaladsl/EventSourceSpec.scala) { #event-source }
 
 Java
-: @@snip [snip](/sse/src/test/java/akka/stream/alpakka/sse/javadsl/EventSourceTest.java) { #event-source }
+: @@snip [snip](/sse/src/test/java/docs/javadsl/EventSourceTest.java) { #event-source }
 
 
 Then happily consume `ServerSentEvent`s:
 
 Scala
-: @@snip [snip](/sse/src/test/scala/akka/stream/alpakka/sse/scaladsl/EventSourceSpec.scala) { #consume-events }
+: @@snip [snip](/sse/src/test/scala/docs/scaladsl/EventSourceSpec.scala) { #consume-events }
 
 Java
-: @@snip [snip](/sse/src/test/java/akka/stream/alpakka/sse/javadsl/EventSourceTest.java) { #consume-events }
+: @@snip [snip](/sse/src/test/java/docs/javadsl/EventSourceTest.java) { #consume-events }

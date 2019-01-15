@@ -2,28 +2,35 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.sse
-package scaladsl
+package docs.scaladsl
 
-import akka.Done
+import java.net.InetSocketAddress
+import java.nio.charset.StandardCharsets.UTF_8
+
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props, Status}
-import akka.http.scaladsl.Http
+import akka.http.scaladsl.coding.Gzip
 import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.StatusCodes.BadRequest
 import akka.http.scaladsl.model.headers.`Last-Event-ID`
-import akka.http.scaladsl.model.sse.ServerSentEvent
-import akka.http.scaladsl.model.{HttpEntity, HttpRequest, HttpResponse, Uri}
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.pattern.pipe
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, ThrottleMode}
 import akka.testkit.SocketUtil
-import java.net.InetSocketAddress
-import java.nio.charset.StandardCharsets.UTF_8
+import akka.{Done, NotUsed}
 import org.scalatest.{AsyncWordSpec, BeforeAndAfterAll, Matchers}
-import scala.concurrent.Await
+
+import scala.collection.immutable
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, Future}
+//#event-source
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.sse.ServerSentEvent
+import akka.http.scaladsl.model.{HttpEntity, HttpRequest, HttpResponse, Uri}
+import akka.stream.alpakka.sse.scaladsl.EventSource
+
+//#event-source
 
 object EventSourceSpec {
 
@@ -35,7 +42,7 @@ object EventSourceSpec {
     private def route(size: Int, setEventId: Boolean): Route = {
       import Directives._
       import EventStreamMarshalling._
-      get {
+      val sseRoute = get {
         optionalHeaderValueByName(`Last-Event-ID`.name) { lastEventId =>
           try {
             val fromSeqNo = lastEventId.map(_.trim.toInt).getOrElse(0) + 1
@@ -58,6 +65,14 @@ object EventSourceSpec {
           }
         }
       }
+
+      path("gzipped") {
+        encodeResponseWith(Gzip) {
+          sseRoute
+        }
+      } ~
+      sseRoute
+
     }
   }
 
@@ -134,12 +149,23 @@ final class EventSourceSpec extends AsyncWordSpec with Matchers with BeforeAndAf
       val server = system.actorOf(Props(new Server(host, port, 2, true)))
 
       //#event-source
-      val eventSource = EventSource(Uri(s"http://$host:$port"), send, Some("2"), 1.second)
+      val send: HttpRequest => Future[HttpResponse] = Http().singleRequest(_)
+
+      val eventSource: Source[ServerSentEvent, NotUsed] =
+        EventSource(
+          uri = Uri(s"http://$host:$port"),
+          send,
+          initialLastEventId = Some("2"),
+          retryDelay = 1.second
+        )
       //#event-source
 
       //#consume-events
-      val events =
-        eventSource.throttle(1, 500.milliseconds, 1, ThrottleMode.Shaping).take(nrOfSamples).runWith(Sink.seq)
+      val events: Future[immutable.Seq[ServerSentEvent]] =
+        eventSource
+          .throttle(elements = 1, per = 500.milliseconds, maximumBurst = 1, ThrottleMode.Shaping)
+          .take(nrOfSamples)
+          .runWith(Sink.seq)
       //#consume-events
 
       val expected = Seq.tabulate(nrOfSamples)(_ + 3).map(toServerSentEvent(true))
@@ -153,6 +179,23 @@ final class EventSourceSpec extends AsyncWordSpec with Matchers with BeforeAndAf
       val eventSource = EventSource(Uri(s"http://$host:$port"), send, Some("2"), 1.second)
       val events = eventSource.take(nrOfSamples).runWith(Sink.seq)
       val expected = Seq.tabulate(nrOfSamples)(_ % 2 + 3).map(toServerSentEvent(false))
+      events.map(_ shouldBe expected).andThen { case _ => system.stop(server) }
+    }
+
+    "read gzipped replies" in {
+      val nrOfSamples = 20
+      val (host, port) = hostAndPort()
+      val server = system.actorOf(Props(new Server(host, port, 2, shouldSetEventId = true)))
+      val send: HttpRequest => Future[HttpResponse] = Http()
+        .singleRequest(_)
+        .map { possiblyGzipped =>
+          val response = akka.http.scaladsl.coding.Gzip.decodeMessage(possiblyGzipped)
+          response
+        }
+
+      val eventSource = EventSource(Uri(s"http://$host:$port/gzipped"), send, None, 1.second)
+      val events = eventSource.take(nrOfSamples).runWith(Sink.seq)
+      val expected = Seq.tabulate(nrOfSamples)(_ + 1).map(toServerSentEvent(true))
       events.map(_ shouldBe expected).andThen { case _ => system.stop(server) }
     }
   }
