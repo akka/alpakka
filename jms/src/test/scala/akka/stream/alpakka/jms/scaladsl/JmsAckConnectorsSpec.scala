@@ -47,9 +47,10 @@ class JmsAckConnectorsSpec extends JmsSpec {
 
     "publish and consume JMS text messages with properties through a queue" in withConnectionFactory() {
       connectionFactory =>
-        val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
-          JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
-        )
+        val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer
+          .sink(
+            JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
+          )
 
         val msgsIn = 1 to 100 map { n =>
           JmsTextMessage(n.toString)
@@ -86,7 +87,7 @@ class JmsAckConnectorsSpec extends JmsSpec {
       server =>
         val connectionFactory = server.createConnectionFactory
 
-        val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
+        val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer.sink(
           JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
         )
 
@@ -211,7 +212,7 @@ class JmsAckConnectorsSpec extends JmsSpec {
     "ensure no message loss when stopping a stream" in withServer() { server =>
       val connectionFactory = server.createConnectionFactory
 
-      val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
+      val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer.sink(
         JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
       )
 
@@ -285,7 +286,7 @@ class JmsAckConnectorsSpec extends JmsSpec {
     "ensure no message loss when aborting a stream" in withServer() { server =>
       val connectionFactory = server.createConnectionFactory
 
-      val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
+      val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer.sink(
         JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
       )
 

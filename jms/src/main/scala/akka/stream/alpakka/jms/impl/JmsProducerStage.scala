@@ -49,7 +49,6 @@ private[jms] final class JmsProducerStage[E <: JmsEnvelope[PassThrough], PassThr
     extends GraphStageWithMaterializedValue[FlowShape[E, E], JmsProducerMatValue] { stage =>
   import JmsProducerStage._
 
-//  private type E = Envelope[A, PassThrough]
   private val in = Inlet[E]("JmsProducer.in")
   private val out = Outlet[E]("JmsProducer.out")
 

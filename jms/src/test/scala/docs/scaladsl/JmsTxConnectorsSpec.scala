@@ -48,7 +48,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
 
     "publish and consume JMS text messages with properties through a queue" in withConnectionFactory() {
       connectionFactory =>
-        val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
+        val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer.sink(
           JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
         )
 
@@ -91,7 +91,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
 
     "ensure re-delivery when rollback JMS text messages through a queue" in withConnectionFactory() {
       connectionFactory =>
-        val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
+        val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer.sink(
           JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
         )
         val msgsIn = 1 to 100 map { n =>
@@ -127,7 +127,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
 
     "publish JMS text messages with properties through a queue and consume them with a selector" in withConnectionFactory() {
       connectionFactory =>
-        val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
+        val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer.sink(
           JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
         )
 
@@ -250,7 +250,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
     }
 
     "ensure no message loss when stopping a stream" in withConnectionFactory() { connectionFactory =>
-      val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
+      val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer.sink(
         JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
       )
 
@@ -323,7 +323,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
     }
 
     "ensure no message loss when aborting a stream" in withConnectionFactory() { connectionFactory =>
-      val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
+      val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer.sink(
         JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
       )
 
@@ -400,7 +400,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
 
     "ensure no message loss or starvation when exceptions occur in a stream missing commits" in withConnectionFactory() {
       connectionFactory =>
-        val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
+        val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer.sink(
           JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
         )
 
@@ -490,7 +490,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
 
     "ensure no message loss or starvation when timeouts occur in a stream processing" in withConnectionFactory() {
       connectionFactory =>
-        val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer(
+        val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer.sink(
           JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
         )
 
