@@ -5,7 +5,7 @@ import scala.sys.process._
 trait PublishRsyncKeys {
   val publishRsyncArtifact = taskKey[(File, String)]("File or directory and a path to publish to")
   val publishRsyncHost = settingKey[String]("hostname to publish to")
-  val publishRsync = taskKey[Int]("Deploy using rsync")
+  val publishRsync = taskKey[Unit]("Deploy using rsync")
 }
 
 object PublishRsyncPlugin extends AutoPlugin {
@@ -23,7 +23,10 @@ object PublishRsyncPlugin extends AutoPlugin {
       val (from, to) = publishRsyncArtifact.value
       Process(Seq("rsync", "-azP", s"$from/", s"${publishRsyncHost.value}:$to"),
               None,
-              "RSYNC_RSH" -> "ssh -o StrictHostKeyChecking=no").!
+              "RSYNC_RSH" -> "ssh -o StrictHostKeyChecking=no -i .travis/id_rsa").! match {
+        case 0 => () // success
+        case error => throw new IllegalStateException(s"rsync command exited with an error code $error")
+      }
     }
   )
 }
