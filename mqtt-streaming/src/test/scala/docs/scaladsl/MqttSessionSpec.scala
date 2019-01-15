@@ -186,11 +186,7 @@ class MqttSessionSpec
           .toMat(Sink.ignore)(Keep.both)
           .run()
 
-      val connectBytes = connect.encode(ByteString.newBuilder).result()
-
       client.offer(Command(connect))
-
-      server.expectMsg(connectBytes)
 
       result.failed.futureValue shouldBe an[ActorMqttClientSession.ConnectFailed.type]
     }
@@ -219,16 +215,12 @@ class MqttSessionSpec
       val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
       val connAckBytes = connAck.encode(ByteString.newBuilder).result()
 
-      val subscribeBytes = subscribe.encode(ByteString.newBuilder, PacketId(1)).result()
-
       client.offer(Command(connect))
 
       server.expectMsg(connectBytes)
       server.reply(connAckBytes)
 
       client.offer(Command(subscribe))
-
-      server.expectMsg(subscribeBytes)
 
       result.failed.futureValue shouldBe an[ActorMqttClientSession.SubscribeFailed.type]
     }

@@ -313,7 +313,7 @@ import scala.util.{Failure, Success}
                   PendingSubscribe(
                     data.connectFlags,
                     data.keepAlive,
-                    data.pendingPingResp,
+                    pendingPingResp = false,
                     data.activeConsumers,
                     data.activeProducers,
                     data.pendingLocalPublications,
