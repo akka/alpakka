@@ -8,6 +8,7 @@ import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ConnectionPoolSettings
+import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.{HttpExt, HttpsConnectionContext}
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.google.firebase.fcm.FcmFlowModels.{FcmErrorResponse, FcmSend, FcmSuccessResponse}
@@ -29,7 +30,8 @@ class FcmSenderSpec
     with Matchers
     with ScalaFutures
     with MockitoSugar
-    with BeforeAndAfterAll {
+    with BeforeAndAfterAll
+    with FcmJsonSupport {
 
   override def afterAll: Unit =
     TestKit.shutdownActorSystem(system)
@@ -64,7 +66,7 @@ class FcmSenderSpec
                                  any[ConnectionPoolSettings](),
                                  any[LoggingAdapter]())
       val request: HttpRequest = captor.getValue
-      request.entity shouldBe HttpEntity(ContentTypes.`application/json`, """{"validate_only":false,"message":{}}""")
+      Unmarshal(request.entity).to[FcmSend].futureValue shouldBe FcmSend(false, FcmNotification.empty)
       request.uri.toString shouldBe "https://fcm.googleapis.com/v1/projects/projectId/messages:send"
       request.headers.size shouldBe 1
       request.headers.head should matchPattern { case HttpHeader("authorization", "Bearer token") => }
