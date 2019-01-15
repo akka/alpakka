@@ -12,15 +12,16 @@ import akka.testkit.TestKit
 import org.scalatest._
 
 import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext
 
 class ItemSpec extends TestKit(ActorSystem("ItemSpec")) with AsyncWordSpecLike with Matchers with BeforeAndAfterAll {
 
-  implicit val materializer = ActorMaterializer()
-  implicit val ec = system.dispatcher
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
+  implicit val ec: ExecutionContext = system.dispatcher
 
   val settings = DynamoSettings(system)
 
-  override def beforeAll() = {
+  override def beforeAll(): Unit = {
     System.setProperty("aws.accessKeyId", "someKeyId")
     System.setProperty("aws.secretKey", "someSecretKey")
   }
@@ -30,7 +31,7 @@ class ItemSpec extends TestKit(ActorSystem("ItemSpec")) with AsyncWordSpecLike w
     import DynamoImplicits._
     import ItemSpecOps._
 
-    implicit val client = DynamoClient(settings)
+    implicit val client: DynamoClient = DynamoClient(settings)
 
     "1) list zero tables" in {
       DynamoDbExternal.single(listTablesRequest).map(_.getTableNames.asScala.count(_ == tableName) shouldBe 0)
@@ -75,10 +76,30 @@ class ItemSpec extends TestKit(ActorSystem("ItemSpec")) with AsyncWordSpecLike w
       DynamoDbExternal
         .single(deleteItemRequest)
         .flatMap(_ => DynamoDbExternal.single(getItemRequest))
-        .map(_.getItem() shouldEqual null)
+        .map(_.getItem shouldEqual null)
     }
 
-    "8) delete table" in {
+    // The next 3 tests are ignored as DynamoDB Local does not support transactions; they
+    // succeed against a cloud instance so can be enabled once local support is available.
+
+    "8) put two items in a transaction" ignore {
+      DynamoDbExternal.single(transactPutItemsRequest).map(_ => succeed)
+    }
+
+    "9) get two items in a transaction" ignore {
+      DynamoDbExternal.single(transactGetItemsRequest).map { results =>
+        results.getResponses.size shouldBe 2
+        val Seq(a, b) = results.getResponses.asScala
+        a.getItem.get(sortCol) shouldEqual N(0)
+        b.getItem.get(sortCol) shouldEqual N(1)
+      }
+    }
+
+    "10) delete two items in a transaction" ignore {
+      DynamoDbExternal.single(transactDeleteItemsRequest).map(_ => succeed)
+    }
+
+    "11) delete table" in {
       DynamoDbExternal
         .single(deleteTableRequest)
         .flatMap(_ => DynamoDbExternal.single(listTablesRequest))

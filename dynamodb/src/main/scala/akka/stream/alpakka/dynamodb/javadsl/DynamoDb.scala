@@ -77,6 +77,13 @@ object DynamoDb {
   def listTables(request: ListTablesRequest, sys: ActorSystem): CompletionStage[ListTablesResult] =
     DynamoDbExternal.listTables(request, DynamoClientExt(sys).dynamoClient)
 
+  def transactGetItems(request: TransactGetItemsRequest, sys: ActorSystem): CompletionStage[TransactGetItemsResult] =
+    DynamoDbExternal.transactGetItems(request, DynamoClientExt(sys).dynamoClient)
+
+  def transactWriteItems(request: TransactWriteItemsRequest,
+                         sys: ActorSystem): CompletionStage[TransactWriteItemsResult] =
+    DynamoDbExternal.transactWriteItems(request, DynamoClientExt(sys).dynamoClient)
+
   def updateTimeToLive(request: UpdateTimeToLiveRequest, sys: ActorSystem): CompletionStage[UpdateTimeToLiveResult] =
     DynamoDbExternal.updateTimeToLive(request, DynamoClientExt(sys).dynamoClient)
 }

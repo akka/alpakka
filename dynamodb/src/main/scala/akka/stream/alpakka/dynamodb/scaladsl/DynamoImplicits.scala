@@ -136,6 +136,22 @@ object DynamoImplicits extends DynamoProtocol {
     def toOp: DescribeTimeToLive = this
   }
 
+  implicit class TransactGetItems(val request: TransactGetItemsRequest) extends AwsOp {
+    override type A = TransactGetItemsRequest
+    override type B = TransactGetItemsResult
+    override val handler = transactGetItemsU
+    override val marshaller = transactGetItemsM
+    def toOp: TransactGetItems = this
+  }
+
+  implicit class TransactWriteItems(val request: TransactWriteItemsRequest) extends AwsOp {
+    override type A = TransactWriteItemsRequest
+    override type B = TransactWriteItemsResult
+    override val handler = transactWriteItemsU
+    override val marshaller = transactWriteItemsM
+    def toOp: TransactWriteItems = this
+  }
+
   implicit class UpdateTimeToLive(val request: UpdateTimeToLiveRequest) extends AwsOp {
     override type A = UpdateTimeToLiveRequest
     override type B = UpdateTimeToLiveResult
