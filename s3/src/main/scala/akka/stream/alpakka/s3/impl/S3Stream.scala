@@ -7,6 +7,7 @@ package akka.stream.alpakka.s3.impl
 import java.time.{Instant, LocalDate}
 
 import akka.actor.ActorSystem
+import akka.annotation.InternalApi
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
@@ -24,41 +25,61 @@ import akka.stream.alpakka.s3.headers.ServerSideEncryption
 import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source}
 import akka.util.ByteString
 
-final case class S3Location(bucket: String, key: String)
+/** Internal Api */
+@InternalApi private[s3] final case class S3Location(bucket: String, key: String)
 
-final case class MultipartUpload(s3Location: S3Location, uploadId: String)
+/** Internal Api */
+@InternalApi private[impl] final case class MultipartUpload(s3Location: S3Location, uploadId: String)
 
-sealed trait UploadPartResponse {
+/** Internal Api */
+@InternalApi private[impl] sealed trait UploadPartResponse {
   def multipartUpload: MultipartUpload
 
   def index: Int
 }
 
-final case class SuccessfulUploadPart(multipartUpload: MultipartUpload, index: Int, etag: String)
+/** Internal Api */
+@InternalApi private[impl] final case class SuccessfulUploadPart(multipartUpload: MultipartUpload,
+                                                                 index: Int,
+                                                                 etag: String)
     extends UploadPartResponse
 
-final case class FailedUploadPart(multipartUpload: MultipartUpload, index: Int, exception: Throwable)
+/** Internal Api */
+@InternalApi private[impl] final case class FailedUploadPart(multipartUpload: MultipartUpload,
+                                                             index: Int,
+                                                             exception: Throwable)
     extends UploadPartResponse
 
-final case class FailedUpload(reasons: Seq[Throwable]) extends Exception(reasons.map(_.getMessage).mkString(", "))
+/** Internal Api */
+@InternalApi private[impl] final case class FailedUpload(reasons: Seq[Throwable])
+    extends Exception(reasons.map(_.getMessage).mkString(", "))
 
-final case class CompleteMultipartUploadResult(location: Uri,
-                                               bucket: String,
-                                               key: String,
-                                               etag: String,
-                                               versionId: Option[String] = None)
+/** Internal Api */
+@InternalApi private[impl] final case class CompleteMultipartUploadResult(location: Uri,
+                                                                          bucket: String,
+                                                                          key: String,
+                                                                          etag: String,
+                                                                          versionId: Option[String] = None)
 
-final case class ListBucketResult(isTruncated: Boolean,
-                                  continuationToken: Option[String],
-                                  contents: Seq[ListBucketResultContents])
+/** Internal Api */
+@InternalApi private[impl] final case class ListBucketResult(isTruncated: Boolean,
+                                                             continuationToken: Option[String],
+                                                             contents: Seq[ListBucketResultContents])
 
-final case class CopyPartResult(lastModified: Instant, eTag: String)
+/** Internal Api */
+@InternalApi private[impl] final case class CopyPartResult(lastModified: Instant, eTag: String)
 
-final case class CopyPartition(partNumber: Int, sourceLocation: S3Location, range: Option[ByteRange.Slice] = None)
+/** Internal Api */
+@InternalApi private[impl] final case class CopyPartition(partNumber: Int,
+                                                          sourceLocation: S3Location,
+                                                          range: Option[ByteRange.Slice] = None)
 
-final case class MultipartCopy(multipartUpload: MultipartUpload, copyPartition: CopyPartition)
+/** Internal Api */
+@InternalApi private[impl] final case class MultipartCopy(multipartUpload: MultipartUpload,
+                                                          copyPartition: CopyPartition)
 
-private[alpakka] object S3Stream {
+/** Internal Api */
+@InternalApi private[s3] object S3Stream {
 
   import HttpRequests._
   import Marshalling._
