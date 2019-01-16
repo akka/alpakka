@@ -7,15 +7,19 @@ package akka.stream.alpakka.s3.impl
 import java.net.URLEncoder
 import java.time.Instant
 
+import akka.annotation.InternalApi
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.model.{ContentTypes, HttpCharsets, MediaTypes, Uri}
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
-import akka.stream.alpakka.s3.scaladsl.ListBucketResultContents
+import akka.stream.alpakka.s3.ListBucketResultContents
 
 import scala.util.Try
 import scala.xml.NodeSeq
 
-private[alpakka] object Marshalling {
+/**
+ * Internal Api
+ */
+@InternalApi private[impl] object Marshalling {
   import ScalaXmlSupport._
 
   implicit val multipartUploadUnmarshaller: FromEntityUnmarshaller[MultipartUpload] = {

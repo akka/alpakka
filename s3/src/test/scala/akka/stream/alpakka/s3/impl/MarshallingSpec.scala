@@ -9,7 +9,7 @@ import java.time.Instant
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{MediaTypes, _}
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
-import akka.stream.alpakka.s3.scaladsl.ListBucketResultContents
+import akka.stream.alpakka.s3.ListBucketResultContents
 import akka.testkit.TestKit
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FlatSpecLike, Matchers}
