@@ -19,7 +19,7 @@ The table below shows direct dependencies of this module and the second tab show
 @@dependencies { projectId="hbase" }
 
 
-# Usage
+## Converters
 
 Build a converter and a tableSetting.
 
@@ -80,7 +80,7 @@ scala
 java
 :   @@snip [snip](/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #create-settings }
 
-### Flow usage 
+## Flow
 
 scala
 : @@snip [snip](/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #flow }
@@ -89,7 +89,7 @@ java
 : @@snip [snip](/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #flow }
 
 
-### Sink usage
+## Sink
 
 scala
 : @@snip [snip](/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #sink }
@@ -97,7 +97,7 @@ scala
 java
 : @@snip [snip](/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #sink }
 
-## HBase basic command:
+## HBase basic commands
 
 ```
 $HBASE_HOME/bin/start-hbase.sh

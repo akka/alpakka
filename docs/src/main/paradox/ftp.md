@@ -20,9 +20,7 @@ The table below shows direct dependencies of this module and the second tab show
 @@dependencies { projectId="ftp" }
 
 
-## Usage
-
-### Configuring the connection settings
+## Configuring the connection settings
 
 In order to establish a connection with the remote server, you need to provide a specialized version of a @scaladoc[RemoteFileSettings](akka.stream.alpakka.ftp.RemoteFileSettings) instance. It's specialized as it depends on the kind of server you're connecting to: FTP, FTPs or SFTP.
 
@@ -49,7 +47,7 @@ Scala
 Java
 : @@snip [snip](/ftp/src/test/java/docs/javadsl/ConfigureCustomSSHClient.java) { #configure-custom-ssh-client }
 
-### Traversing a remote FTP folder recursively
+## Traversing a remote FTP folder recursively
 
 In order to traverse a remote folder recursively, you need to use the `ls` method in the FTP API:
 
@@ -63,7 +61,7 @@ This source will emit @scaladoc[FtpFile](akka.stream.alpakka.ftp.FtpFile) elemen
 
 For both FTPs and SFTP servers, you will need to use the `FTPs` and `SFTP` API respectively.
 
-### Retrieving files
+## Retrieving files
 
 In order to retrieve a remote file as a stream of bytes, you need to use the `fromPath` method in the FTP API:
 
@@ -77,7 +75,7 @@ This source will emit @scaladoc[ByteString](akka.util.ByteString) elements and m
 
 For both FTPs and SFTP servers, you will need to use the `FTPs` and `SFTP` API respectively.
 
-### Writing files
+## Writing files
 
 In order to store a remote file from a stream of bytes, you need to use the `toPath` method in the FTP API:
 
@@ -91,7 +89,7 @@ This sink will consume @scaladoc[ByteString](akka.util.ByteString) elements and 
 
 For both FTPs and SFTP servers, you will need to use the `FTPs` and `SFTP` API respectively.
 
-### Removing files
+## Removing files
 
 In order to remove a remote file, you need to use the `remove` method in the FTP API:
 
@@ -103,7 +101,7 @@ Java
 
 This sink will consume @scaladoc[FtpFile](akka.stream.alpakka.ftp.FtpFile) elements and materializes to @scaladoc[Future](scala.concurrent.Future) in Scala API and @javadoc[CompletionStage](java/util/concurrent/CompletionStage) in Java API of @scaladoc[IOResult](akka.stream.IOResult) when the stream finishes.
 
-### Moving files
+## Moving files
 
 In order to move a remote file, you need to use the `move` method in the FTP API. The `move` method takes a function to calculate the path to which the file should be moved based on the consumed @scaladoc[FtpFile](akka.stream.alpakka.ftp.FtpFile).   
 
