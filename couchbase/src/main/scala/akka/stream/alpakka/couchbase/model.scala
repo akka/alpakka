@@ -7,6 +7,7 @@ package akka.stream.alpakka.couchbase
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
+import com.couchbase.client.java.document.Document
 import com.couchbase.client.java.env.CouchbaseEnvironment
 import com.couchbase.client.java.{PersistTo, ReplicateTo}
 import com.typesafe.config.Config
@@ -199,4 +200,30 @@ final class CouchbaseSessionSettings private (val username: String,
     s"nodes=${nodes.mkString("[", ", ", "]")}," +
     s"environment=$environment" +
     ")"
+}
+
+/**
+ * Wrapper to for handling Couchbase write failures in-stream instead of failing the stream.
+ */
+sealed trait CouchbaseWriteResult[T <: Document[_]] {
+  def isSuccess: Boolean
+  def isFailure: Boolean
+  def doc: T
+}
+
+/**
+ * Emitted for a successful Couchbase write operation.
+ */
+final case class CouchbaseWriteSuccess[T <: Document[_]] private (override val doc: T) extends CouchbaseWriteResult[T] {
+  val isSuccess: Boolean = true
+  val isFailure: Boolean = false
+}
+
+/**
+ * Emitted for a failed Couchbase write operation.
+ */
+final case class CouchbaseWriteFailure[T <: Document[_]] private (override val doc: T, failure: Throwable)
+    extends CouchbaseWriteResult[T] {
+  val isSuccess: Boolean = false
+  val isFailure: Boolean = true
 }

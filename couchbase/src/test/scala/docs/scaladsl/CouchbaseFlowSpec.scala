@@ -9,7 +9,7 @@ import akka.stream.alpakka.couchbase.scaladsl.CouchbaseFlow
 import akka.stream.alpakka.couchbase.testing.{CouchbaseSupport, TestObject}
 import akka.stream.scaladsl.{Sink, Source}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatest._
 
 //#write-settings
 import akka.stream.alpakka.couchbase.CouchbaseWriteSettings
@@ -35,14 +35,15 @@ class CouchbaseFlowSpec
     with BeforeAndAfterEach
     with CouchbaseSupport
     with Matchers
-    with ScalaFutures {
+    with ScalaFutures
+    with Inspectors {
 
   override implicit def patienceConfig: PatienceConfig = PatienceConfig(3.seconds)
 
   override def beforeAll(): Unit = super.beforeAll()
   override def afterAll(): Unit = super.afterAll()
 
-  "Couchbase Flow" should {
+  "Couchbase settings" should {
 
     "create default writeSettings object" in assertAllStagesStopped {
 
@@ -64,6 +65,9 @@ class CouchbaseFlowSpec
       val expectedwriteSettings = CouchbaseWriteSettings(3, ReplicateTo.THREE, PersistTo.FOUR, 5.seconds)
       writeSettings shouldEqual expectedwriteSettings
     }
+  }
+
+  "Couchbase upsert" should {
 
     "insert RawJsonDocument" in assertAllStagesStopped {
       val result: Future[Done] =
@@ -383,6 +387,57 @@ class CouchbaseFlowSpec
         .runWith(Sink.seq)
       result.futureValue.map(_.id) shouldBe Seq("First", "Second", "Third", "Fourth")
     }
+  }
+
+  "Couchbase upsert with result" should {
+    "write documents" in assertAllStagesStopped {
+      // #upsertDocWithResult
+      import akka.stream.alpakka.couchbase.{CouchbaseWriteFailure, CouchbaseWriteResult}
+
+      val result: Future[immutable.Seq[CouchbaseWriteResult[RawJsonDocument]]] =
+        Source(sampleSequence)
+          .map(toRawJsonDocument)
+          .via(
+            CouchbaseFlow.upsertDocWithResult(
+              sessionSettings,
+              writeSettings,
+              bucketName
+            )
+          )
+          .runWith(Sink.seq)
+
+      val failedDocs: immutable.Seq[CouchbaseWriteFailure[RawJsonDocument]] = result.futureValue.collect {
+        case res: CouchbaseWriteFailure[RawJsonDocument] => res
+      }
+      // #upsertDocWithResult
+
+      result.futureValue should have size sampleSequence.size
+      failedDocs shouldBe 'empty
+      forAll(result.futureValue)(_ shouldBe 'success)
+    }
+
+    "expose failures in-stream" in assertAllStagesStopped {
+      import akka.stream.alpakka.couchbase.{CouchbaseWriteFailure, CouchbaseWriteResult}
+
+      val result: Future[immutable.Seq[CouchbaseWriteResult[JsonDocument]]] = Source(sampleSequence)
+        .map(toJsonDocument)
+        .via(
+          CouchbaseFlow.upsertDocWithResult(sessionSettings,
+                                            writeSettings
+                                              .withParallelism(2)
+                                              .withPersistTo(PersistTo.THREE)
+                                              .withTimeout(1.seconds),
+                                            bucketName)
+        )
+        .runWith(Sink.seq)
+
+      result.futureValue should have size sampleSequence.size
+      val failedDocs: immutable.Seq[CouchbaseWriteFailure[JsonDocument]] = result.futureValue.collect {
+        case res: CouchbaseWriteFailure[JsonDocument] => res
+      }
+      failedDocs.head.failure shouldBe a[com.couchbase.client.java.error.DurabilityException]
+    }
+
   }
 
   override protected def afterEach(): Unit = cleanAllInBucket(sampleSequence.map(_.id), bucketName)

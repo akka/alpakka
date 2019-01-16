@@ -87,7 +87,7 @@ For each mutation operation we need to create `CouchbaseWriteSettings` instance 
 These default values are not recommended for production use, as they do not persist to disk for any node. 
 
 Scala
-: @@snip (/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #write-settings }
+: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #write-settings }
 
 Java
 : @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #write-settings }
@@ -99,8 +99,10 @@ Read more about durability settings in the @extref[Couchbase documentation](couc
 
 The `CouchbaseFlow` and `CouchbaseSink` offer factories for upserting documents (insert or update) in Couchbase. `upsert` is used for the most commonly used `JsonDocument`, and `upsertDoc` has as type parameter to support any variants of @scala[`Document[T]`]@java[`Document<T>`] which may be `RawJsonDocument`, `StringDocument` or `BinaryDocument`.
 
+The `upsert` and `upsertDoc` operators fail the stream on any error when writing to Couchbase. To handle failures in-stream use `upsertDocWithResult` shown below. 
+
 Scala
-: @@snip (/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #upsert }
+: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #upsert }
 
 Java
 : @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #upsert }
@@ -112,12 +114,21 @@ For single document modifications you may consider using the `CouchbaseSession` 
 
 @@@
 
+Couchbase writes may fail temporarily for a particular node. If you want to handle such failures without restarting the whole stream, the `upsertDocWithResult` operator captures failures from Couchbase and emits `CouchbaseWriteResult` sub-classes `CouchbaseWriteSuccess` and `CouchbaseWriteFailure` downstream.
+
+Scala
+: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #upsertDocWithResult }
+
+Java
+: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #upsertDocWithResult }
+
+
 ## Delete
 
 The `CouchbaseFlow` and `CouchbaseSink` offer factories to delete documents in Couchbase by ID.
 
 Scala
-: @@snip (/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #delete }
+: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #delete }
 
 Java
 : @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #delete }
@@ -131,7 +142,7 @@ Scala
 : @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseSessionExamplesSpec.scala) { #create }
 
 Java
-: @@snip (/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #session }
+: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #session }
 
 
 Alternatively a `CouchbaseSession` may be created from a Couchbase `Bucket`:
@@ -140,6 +151,6 @@ Scala
 : @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseSessionExamplesSpec.scala) { #fromBucket }
 
 Java
-: @@snip (/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #sessionFromBucket }
+: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #sessionFromBucket }
 
 To learn about the full range of operations on `CouchbaseSession`, read the @scala[@scaladoc[API docs](akka.stream.alpakka.couchbase.scaladsl.CouchbaseSession)]@java[@scaladoc[API docs](akka.stream.alpakka.couchbase.javadsl.CouchbaseSession)].
