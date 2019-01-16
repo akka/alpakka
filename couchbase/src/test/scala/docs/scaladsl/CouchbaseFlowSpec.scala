@@ -4,445 +4,386 @@
 
 package docs.scaladsl
 
-import java.util.concurrent.TimeUnit
-
 import akka.Done
-import akka.stream.alpakka.couchbase.{BulkOperationResult, FailedOperation, SingleOperationResult}
-import akka.stream.alpakka.couchbase.scaladsl.{CouchbaseFlow, CouchbaseSource}
+import akka.stream.alpakka.couchbase.scaladsl.CouchbaseFlow
+import akka.stream.alpakka.couchbase.testing.{CouchbaseSupport, TestObject}
 import akka.stream.scaladsl.{Sink, Source}
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers, WordSpec}
 
 //#write-settings
 import akka.stream.alpakka.couchbase.CouchbaseWriteSettings
 import com.couchbase.client.java.{PersistTo, ReplicateTo}
 //#write-settings
 
-import com.couchbase.client.java.document.{BinaryDocument, RawJsonDocument, StringDocument}
-import org.specs2.matcher.Matchers
-import org.specs2.mutable.Specification
-import org.specs2.specification.{AfterEach, BeforeAfterAll}
-import scala.collection.immutable.Seq
-import scala.collection.immutable
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
 import akka.stream.testkit.scaladsl.StreamTestKit._
+import com.couchbase.client.java.document.{BinaryDocument, RawJsonDocument, StringDocument}
+
+import scala.collection.immutable
+import scala.collection.immutable.Seq
+import scala.concurrent.duration._
+import scala.concurrent.Future
 
 //#init-sourceBulk
 import com.couchbase.client.java.document.JsonDocument
 
 //#init-sourceBulk
 
-class CouchbaseFlowSpec extends Specification with BeforeAfterAll with AfterEach with CouchbaseSupport with Matchers {
+class CouchbaseFlowSpec
+    extends WordSpec
+    with BeforeAndAfterAll
+    with BeforeAndAfterEach
+    with CouchbaseSupport
+    with Matchers
+    with ScalaFutures {
 
-  sequential
+  override implicit def patienceConfig: PatienceConfig = PatienceConfig(3.seconds)
+
+  override def beforeAll(): Unit = super.beforeAll()
+  override def afterAll(): Unit = super.afterAll()
 
   "Couchbase Flow" should {
 
-    "create default CouchbaseWriteSettings object" in assertAllStagesStopped {
+    "create default writeSettings object" in assertAllStagesStopped {
 
-      val couchbaseWriteSettings = CouchbaseWriteSettings()
-      val expectedCouchbaseWriteSettings = CouchbaseWriteSettings(1, ReplicateTo.ONE, PersistTo.NONE)
-      couchbaseWriteSettings shouldEqual expectedCouchbaseWriteSettings
+      val writeSettings = CouchbaseWriteSettings()
+      val expectedwriteSettings = CouchbaseWriteSettings(1, ReplicateTo.NONE, PersistTo.NONE, 2.seconds)
+      writeSettings shouldEqual expectedwriteSettings
     }
 
-    "create custom CouchbaseWriteSettings object" in {
+    "create custom writeSettings object" in {
 
       //#write-settings
-      val couchbaseWriteSettings = CouchbaseWriteSettings()
+      val writeSettings = CouchbaseWriteSettings()
         .withParallelism(3)
         .withPersistTo(PersistTo.FOUR)
         .withReplicateTo(ReplicateTo.THREE)
-        .withTimeOut(2L, TimeUnit.SECONDS)
+        .withTimeout(5.seconds)
       //#write-settings
 
-      val expectedCouchbaseWriteSettings = CouchbaseWriteSettings(3, ReplicateTo.THREE, PersistTo.FOUR)
-      couchbaseWriteSettings shouldEqual expectedCouchbaseWriteSettings
+      val expectedwriteSettings = CouchbaseWriteSettings(3, ReplicateTo.THREE, PersistTo.FOUR, 5.seconds)
+      writeSettings shouldEqual expectedwriteSettings
     }
 
-    "insert single object as RawJsonDocument" in assertAllStagesStopped {
+    "insert RawJsonDocument" in assertAllStagesStopped {
       val result: Future[Done] =
         Source
-          .single(head)
-          .map(createCBRawJson)
-          .via(CouchbaseFlow.upsertSingle(couchbaseWriteSettings, akkaBucket))
+          .single(sampleData)
+          .map(toRawJsonDocument)
+          .via(
+            CouchbaseFlow.upsertDoc(
+              sessionSettings,
+              writeSettings,
+              bucketName
+            )
+          )
           .runWith(Sink.ignore)
-      Await.result(result, Duration(5, TimeUnit.SECONDS))
+      result.futureValue
 
-      val msgFuture: Future[RawJsonDocument] =
-        CouchbaseSource
-          .fromSingleId[RawJsonDocument](head.id, akkaBucket, classOf[RawJsonDocument])
-          .runWith(Sink.head[RawJsonDocument])
-      Await.result(msgFuture, Duration(5, TimeUnit.SECONDS)).id() shouldEqual head.id
+      val msgFuture: Future[Option[RawJsonDocument]] = session.get(sampleData.id, classOf[RawJsonDocument])
+      msgFuture.futureValue.get.id() shouldEqual sampleData.id
 
     }
 
-    "insert single object as JsonDocument" in assertAllStagesStopped {
+    "insert JsonDocument" in assertAllStagesStopped {
 
-      // #by-single-id-flow
-      import akka.stream.alpakka.couchbase.CouchbaseWriteSettings
-      import akka.Done
-      import akka.stream.alpakka.couchbase.scaladsl.CouchbaseSource
+      // #upsert
+      val obj = TestObject(id = "First", "First")
 
-      val obj = TestObject("First", "First")
+      val writeSettings = CouchbaseWriteSettings()
 
-      val result: Future[Done] =
+      val jsonDocumentUpsert: Future[Done] =
         Source
           .single(obj)
-          .map(createCBJson)
-          .via(CouchbaseFlow.upsertSingle(couchbaseWriteSettings, akkaBucket))
+          .map(toJsonDocument)
+          .via(
+            CouchbaseFlow.upsert(
+              sessionSettings,
+              writeSettings,
+              bucketName
+            )
+          )
           .runWith(Sink.ignore)
+      // #upsert
+      jsonDocumentUpsert.futureValue
 
-      // #by-single-id-flow
-      Await.result(result, Duration(5, TimeUnit.SECONDS))
-
-      //#init-sourceSingle
-      import akka.stream.alpakka.couchbase.scaladsl.CouchbaseSource
-      import com.couchbase.client.java.document.JsonDocument
-
-      val id: String = "First"
-
-      //#init-sourceSingle
-      val msgFuture: Future[JsonDocument] =
-        //#init-sourceSingle
-        CouchbaseSource
-          .fromSingleId[JsonDocument](id, akkaBucket, classOf[JsonDocument])
-          .runWith(Sink.head[JsonDocument])
-      //#init-sourceSingle
-      Await.result(msgFuture, Duration(5, TimeUnit.SECONDS)).id() shouldEqual head.id
+      val msgFuture: Future[Option[JsonDocument]] = session.get(obj.id)
+      msgFuture.futureValue.get.content().get("value") shouldEqual obj.value
     }
 
-    "insert single object as StringDocument" in assertAllStagesStopped {
+    "insert StringDocument" in assertAllStagesStopped {
+      // #upsert
+
+      val stringDocumentUpsert: Future[Done] =
+        Source
+          .single(sampleData)
+          .map(toStringDocument)
+          .via(
+            CouchbaseFlow.upsertDoc(
+              sessionSettings,
+              writeSettings,
+              bucketName
+            )
+          )
+          .runWith(Sink.ignore)
+      // #upsert
+      stringDocumentUpsert.futureValue
+
+      val msgFuture: Future[Option[StringDocument]] = session.get(sampleData.id, classOf[StringDocument])
+      msgFuture.futureValue.get.id() shouldEqual sampleData.id
+    }
+
+    "insert BinaryDocument" in assertAllStagesStopped {
       val result: Future[Done] =
         Source
-          .single(head)
-          .map(createCBString)
-          .via(CouchbaseFlow.upsertSingle(couchbaseWriteSettings, akkaBucket))
+          .single(sampleData)
+          .map(toBinaryDocument)
+          .via(CouchbaseFlow.upsertDoc(sessionSettings, writeSettings, bucketName))
           .runWith(Sink.ignore)
-      Await.result(result, Duration(5, TimeUnit.SECONDS))
+      result.futureValue
 
-      val msgFuture: Future[StringDocument] =
-        CouchbaseSource
-          .fromSingleId[StringDocument](head.id, akkaBucket, classOf[StringDocument])
-          .runWith(Sink.head[StringDocument])
-      Await.result(msgFuture, Duration(5, TimeUnit.SECONDS)).id() shouldEqual head.id
+      val msgFuture: Future[Option[BinaryDocument]] = session.get(sampleData.id, classOf[BinaryDocument])
+      msgFuture.futureValue.get.id() shouldEqual sampleData.id
     }
 
-    "insert single object as BinaryDocument" in assertAllStagesStopped {
-      val result: Future[Done] =
-        Source
-          .single(head)
-          .map(createCBBinary)
-          .via(CouchbaseFlow.upsertSingle(couchbaseWriteSettings, akkaBucket))
-          .runWith(Sink.ignore)
-      Await.result(result, Duration(5, TimeUnit.SECONDS))
-
-      val msgFuture: Future[BinaryDocument] =
-        CouchbaseSource
-          .fromSingleId[BinaryDocument](head.id, akkaBucket, classOf[BinaryDocument])
-          .runWith(Sink.head[BinaryDocument])
-      Await.result(msgFuture, Duration(5, TimeUnit.SECONDS)).id() shouldEqual head.id
-    }
-
-    "insert multipleObjects as RawJsonDocument" in assertAllStagesStopped {
-      val bulkUpsertResult: Future[Done] = Source
-        .fromIterator(() => bulk.iterator)
-        .map(createCBRawJson)
-        .grouped(2)
+    "insert multiple RawJsonDocuments" in assertAllStagesStopped {
+      val bulkUpsertResult: Future[Done] = Source(sampleSequence)
+        .map(toRawJsonDocument)
         .via(
-          CouchbaseFlow.upsertBulk(CouchbaseWriteSettings().withParallelism(2).withPersistTo(PersistTo.NONE),
-                                   akkaBucket)
+          CouchbaseFlow.upsertDoc(
+            sessionSettings,
+            writeSettings.withParallelism(2),
+            bucketName
+          )
         )
         .runWith(Sink.ignore)
-      Await.result(bulkUpsertResult, Duration(5, TimeUnit.SECONDS))
+
+      bulkUpsertResult.futureValue
 
       val resultsAsFuture: Future[immutable.Seq[RawJsonDocument]] =
-        CouchbaseSource
-          .fromBulkIds[RawJsonDocument](bulk.map(_.id), akkaBucket, classOf[RawJsonDocument])
+        Source(sampleSequence.map(_.id))
+          .via(CouchbaseFlow.fromId(sessionSettings, bucketName, classOf[RawJsonDocument]))
           .runWith(Sink.seq)
-      val result = Await.result(resultsAsFuture, Duration(5, TimeUnit.SECONDS))
 
-      result.map(_.id()) must contain(exactly("First", "Second", "Third", "Fourth"))
+      resultsAsFuture.futureValue.map(_.id()) should contain inOrderOnly ("First", "Second", "Third", "Fourth")
     }
 
-    "insert multipleObjects as JsonDocument" in assertAllStagesStopped {
-      val bulkUpsertResult: Future[Done] = Source
-        .fromIterator(() => bulk.iterator)
-        .map(createCBJson)
-        .grouped(2)
+    "insert multiple JsonDocuments" in assertAllStagesStopped {
+      val bulkUpsertResult: Future[Done] = Source(sampleSequence)
+        .map(toJsonDocument)
         .via(
-          CouchbaseFlow.upsertBulk(CouchbaseWriteSettings()
-                                     .withParallelism(2)
-                                     .withPersistTo(PersistTo.NONE)
-                                     .withPersistTo(PersistTo.NONE),
-                                   akkaBucket)
+          CouchbaseFlow.upsert(sessionSettings, writeSettings.withParallelism(2), bucketName)
         )
         .runWith(Sink.ignore)
-      Await.result(bulkUpsertResult, Duration(5, TimeUnit.SECONDS))
 
-      //#init-sourceBulk
-      val ids: Seq[String] = Seq("First", "Second", "Third", "Fourth")
+      bulkUpsertResult.futureValue
+
+      // #fromId
+      val ids = immutable.Seq("First", "Second", "Third", "Fourth")
 
       val futureResult: Future[immutable.Seq[JsonDocument]] =
-        CouchbaseSource.fromBulkIds[JsonDocument](ids, akkaBucket, classOf[JsonDocument]).runWith(Sink.seq)
-      //#init-sourceBulk
+        Source(ids)
+          .via(
+            CouchbaseFlow.fromId(
+              sessionSettings,
+              bucketName
+            )
+          )
+          .runWith(Sink.seq)
+      // #fromId
 
-      val result = Await.result(futureResult, Duration(5, TimeUnit.SECONDS))
-
-      result.map(_.id()) must contain(exactly("First", "Second", "Third", "Fourth"))
+      futureResult.futureValue.map(_.id()) should contain inOrderOnly ("First", "Second", "Third", "Fourth")
     }
 
-    "insert multipleObjects as StringDocument" in assertAllStagesStopped {
-      val bulkUpsertResult: Future[Done] = Source
-        .fromIterator(() => bulk.iterator)
-        .map(createCBString)
-        .grouped(2)
+    "insert multiple StringDocuments" in assertAllStagesStopped {
+      val bulkUpsertResult: Future[Done] = Source(sampleSequence)
+        .map(toStringDocument)
         .via(
-          CouchbaseFlow.upsertBulk(CouchbaseWriteSettings().withParallelism(2).withPersistTo(PersistTo.NONE),
-                                   akkaBucket)
+          CouchbaseFlow.upsertDoc(
+            sessionSettings,
+            writeSettings.withParallelism(2),
+            bucketName
+          )
         )
         .runWith(Sink.ignore)
-      Await.result(bulkUpsertResult, Duration(5, TimeUnit.SECONDS))
+      bulkUpsertResult.futureValue
 
       val resultsAsFuture: Future[immutable.Seq[StringDocument]] =
-        CouchbaseSource
-          .fromBulkIds[StringDocument](bulk.map(_.id), akkaBucket, classOf[StringDocument])
+        Source(sampleSequence.map(_.id))
+          .via(
+            CouchbaseFlow.fromId(
+              sessionSettings,
+              bucketName,
+              classOf[StringDocument]
+            )
+          )
           .runWith(Sink.seq)
-      val result = Await.result(resultsAsFuture, Duration(5, TimeUnit.SECONDS))
 
-      result.map(_.id()) must contain(exactly("First", "Second", "Third", "Fourth"))
+      resultsAsFuture.futureValue.map(_.id()) should contain inOrder ("First", "Second", "Third", "Fourth")
     }
 
-    "insert multipleObjects as BinaryDocument" in assertAllStagesStopped {
-      val bulkUpsertResult: Future[Done] = Source
-        .fromIterator(() => bulk.iterator)
-        .map(createCBBinary)
-        .grouped(2)
+    "insert multiple BinaryDocuments" in assertAllStagesStopped {
+      val bulkUpsertResult: Future[Done] = Source(sampleSequence)
+        .map(toBinaryDocument)
         .via(
-          CouchbaseFlow.upsertBulk(CouchbaseWriteSettings().withParallelism(2).withPersistTo(PersistTo.NONE),
-                                   akkaBucket)
+          CouchbaseFlow.upsertDoc(
+            sessionSettings,
+            writeSettings.withParallelism(2),
+            bucketName
+          )
         )
         .runWith(Sink.ignore)
-      Await.result(bulkUpsertResult, Duration(5, TimeUnit.SECONDS))
+      bulkUpsertResult.futureValue
 
       val resultsAsFuture: Future[immutable.Seq[BinaryDocument]] =
-        CouchbaseSource
-          .fromBulkIds[BinaryDocument](bulk.map(_.id), akkaBucket, classOf[BinaryDocument])
+        Source(sampleSequence.map(_.id))
+          .via(
+            CouchbaseFlow.fromId(
+              sessionSettings,
+              bucketName,
+              classOf[BinaryDocument]
+            )
+          )
           .runWith(Sink.seq)
-      val result = Await.result(resultsAsFuture, Duration(5, TimeUnit.SECONDS))
-
-      result.map(_.id()) must contain(exactly("First", "Second", "Third", "Fourth"))
+      resultsAsFuture.futureValue.map(_.id()) shouldBe Seq("First", "Second", "Third", "Fourth")
     }
 
     "delete single element" in assertAllStagesStopped {
       val upsertFuture: Future[Done] =
         Source
-          .single(head)
-          .map(createCBRawJson)
+          .single(sampleData)
+          .map(toRawJsonDocument)
           .via(
-            CouchbaseFlow.upsertSingle(CouchbaseWriteSettings().withParallelism(2).withPersistTo(PersistTo.NONE),
-                                       akkaBucket)
+            CouchbaseFlow.upsertDoc(
+              sessionSettings,
+              writeSettings,
+              bucketName
+            )
           )
           .runWith(Sink.ignore)
       //wait til operation completed
-      Await.result(upsertFuture, Duration(5, TimeUnit.SECONDS))
+      upsertFuture.futureValue
 
+      // #delete
       val deleteFuture: Future[Done] =
         Source
-          .single(head.id)
+          .single(sampleData.id)
           .via(
-            CouchbaseFlow.deleteOne(CouchbaseWriteSettings().withParallelism(2).withPersistTo(PersistTo.NONE),
-                                    akkaBucket)
+            CouchbaseFlow.delete(
+              sessionSettings,
+              writeSettings,
+              bucketName
+            )
           )
           .runWith(Sink.ignore)
-      Await.result(deleteFuture, Duration(5, TimeUnit.SECONDS))
+      // #delete
+      deleteFuture.futureValue
+
+      Thread.sleep(1000)
+
+      val msgFuture: Future[Option[RawJsonDocument]] = session.get(sampleData.id, classOf[RawJsonDocument])
+      msgFuture.futureValue shouldBe 'empty
 
       val getFuture: Future[RawJsonDocument] =
-        CouchbaseSource
-          .fromSingleId[RawJsonDocument](head.id, akkaBucket, classOf[RawJsonDocument])
-          .runWith(Sink.head[RawJsonDocument])
-      Await.result(getFuture, Duration(5, TimeUnit.SECONDS)) must throwA[NoSuchElementException]
+        Source
+          .single(sampleData.id)
+          .via(
+            CouchbaseFlow
+              .fromId(
+                sessionSettings,
+                bucketName,
+                classOf[RawJsonDocument]
+              )
+          )
+          .runWith(Sink.head)
+      getFuture.failed.futureValue shouldBe a[NoSuchElementException]
     }
 
-    "delete bulk of elements" in assertAllStagesStopped {
-      val bulkUpsertResult: Future[Done] = Source
-        .fromIterator(() => bulk.iterator)
-        .map(createCBRawJson)
-        .grouped(2)
+    "delete elements and some do not exist" in assertAllStagesStopped {
+      val bulkUpsertResult: Future[Done] = Source(sampleSequence)
+        .map(toRawJsonDocument)
         .via(
-          CouchbaseFlow.upsertBulk(CouchbaseWriteSettings().withParallelism(2).withPersistTo(PersistTo.NONE),
-                                   akkaBucket)
+          CouchbaseFlow.upsertDoc(sessionSettings, writeSettings.withParallelism(2), bucketName)
         )
         .runWith(Sink.ignore)
-      Await.result(bulkUpsertResult, Duration(5, TimeUnit.SECONDS))
+      bulkUpsertResult.futureValue
 
-      val deleteFuture: Future[Done] = Source
-        .fromIterator(() => bulk.map(_.id).iterator)
-        .grouped(2)
-        .via(CouchbaseFlow.deleteBulk(CouchbaseWriteSettings().withParallelism(2), akkaBucket))
+      val deleteFuture: Future[Done] = Source("NoneExisting" +: sampleSequence.map(_.id))
+        .via(
+          CouchbaseFlow.delete(sessionSettings, writeSettings.withParallelism(2), bucketName)
+        )
         .runWith(Sink.ignore)
-
-      Await.result(deleteFuture, Duration(5, TimeUnit.SECONDS))
+      deleteFuture.futureValue
 
       val getFuture: Future[Seq[RawJsonDocument]] =
-        CouchbaseSource
-          .fromBulkIds[RawJsonDocument](bulk.map(_.id), akkaBucket, classOf[RawJsonDocument])
-          .runWith(Sink.seq[RawJsonDocument])
-      val getResult: Seq[RawJsonDocument] = Await.result(getFuture, Duration(5, TimeUnit.SECONDS))
-      getResult.length shouldEqual 0
+        Source(sampleSequence.map(_.id))
+          .via(
+            CouchbaseFlow.fromId(sessionSettings, bucketName, classOf[RawJsonDocument])
+          )
+          .runWith(Sink.seq)
+      getFuture.futureValue shouldBe 'empty
     }
 
-    "delete bulk of elements and not all exists" in assertAllStagesStopped {
-      val bulkUpsertResult: Future[Done] = Source
-        .fromIterator(() => bulk.iterator)
-        .map(createCBRawJson)
-        .grouped(2)
-        .via(
-          CouchbaseFlow.upsertBulk(CouchbaseWriteSettings().withParallelism(2).withPersistTo(PersistTo.NONE),
-                                   akkaBucket)
-        )
-        .runWith(Sink.ignore)
-      Await.result(bulkUpsertResult, Duration(5, TimeUnit.SECONDS))
-
-      val deleteFuture: Future[Done] = Source
-        .fromIterator(() => ("NoneExisting" +: bulk.map(_.id)).iterator)
-        .grouped(2)
-        .via(CouchbaseFlow.deleteBulk(CouchbaseWriteSettings().withParallelism(2), akkaBucket))
-        .runWith(Sink.ignore)
-      Await.result(deleteFuture, Duration(5, TimeUnit.SECONDS))
-
-      val getFuture: Future[Seq[RawJsonDocument]] =
-        CouchbaseSource
-          .fromBulkIds[RawJsonDocument](bulk.map(_.id), akkaBucket, classOf[RawJsonDocument])
-          .runWith(Sink.seq[RawJsonDocument])
-      val getResult: Seq[RawJsonDocument] = Await.result(getFuture, Duration(5, TimeUnit.SECONDS))
-
-      getResult.length shouldEqual 0
-    }
-
-    "get single document as part of the flow" in assertAllStagesStopped {
-      val bulkUpsertResult: Future[Done] = Source
-        .fromIterator(() => bulk.iterator)
-        .map(createCBJson)
-        .grouped(2)
-        .via(
-          CouchbaseFlow.upsertBulk(CouchbaseWriteSettings().withParallelism(2).withPersistTo(PersistTo.NONE),
-                                   akkaBucket)
-        )
-        .runWith(Sink.ignore)
-      Await.result(bulkUpsertResult, Duration(5, TimeUnit.SECONDS))
+    "get document in flow" in assertAllStagesStopped {
+      upsertSampleData()
 
       val id = "First"
 
       val result: Future[JsonDocument] = Source
         .single(id)
-        .via(CouchbaseFlow.fromSingleId(akkaBucket, classOf[JsonDocument]))
-        .runWith(Sink.head[JsonDocument])
-      Await.result(result, Duration(5, TimeUnit.SECONDS)).id() shouldEqual id
+        .via(
+          CouchbaseFlow.fromId(sessionSettings, queryBucketName)
+        )
+        .runWith(Sink.head)
+      result.futureValue.id() shouldEqual id
     }
 
-    "get single document as part of the flow for not existing id" in assertAllStagesStopped {
-      val bulkUpsertResult: Future[Done] = Source
-        .fromIterator(() => bulk.iterator)
-        .map(createCBJson)
-        .grouped(2)
-        .via(
-          CouchbaseFlow.upsertBulk(CouchbaseWriteSettings().withParallelism(2).withPersistTo(PersistTo.NONE),
-                                   akkaBucket)
-        )
-        .runWith(Sink.ignore)
-      Await.result(bulkUpsertResult, Duration(5, TimeUnit.SECONDS))
-
+    "get document in flow that does not exist" in assertAllStagesStopped {
       val id = "not exists"
 
       val result: Future[JsonDocument] = Source
         .single(id)
-        .via(CouchbaseFlow.fromSingleId(akkaBucket, classOf[JsonDocument]))
-        .runWith(Sink.head[JsonDocument])
-      Await.result(result, Duration(5, TimeUnit.SECONDS)) must throwA[NoSuchElementException]
+        .via(CouchbaseFlow.fromId(sessionSettings, bucketName))
+        .runWith(Sink.head)
+      result.failed.futureValue shouldBe a[NoSuchElementException]
     }
 
     "get bulk of documents as part of the flow" in assertAllStagesStopped {
-      val bulkUpsertResult: Future[Done] = Source
-        .fromIterator(() => bulk.iterator)
-        .map(createCBJson)
-        .grouped(2)
+      upsertSampleData()
+
+      val result: Future[Seq[JsonDocument]] = Source(sampleSequence.map(_.id))
+        .via(CouchbaseFlow.fromId(sessionSettings, queryBucketName))
+        .runWith(Sink.seq)
+      result.futureValue.map(_.id) shouldBe Seq("First", "Second", "Third", "Fourth")
+
+    }
+
+    "fails stream when ReplicateTo higher then #of nodes" in assertAllStagesStopped {
+      val bulkUpsertResult: Future[immutable.Seq[JsonDocument]] = Source(sampleSequence)
+        .map(toJsonDocument)
         .via(
-          CouchbaseFlow.upsertBulk(CouchbaseWriteSettings().withParallelism(2).withPersistTo(PersistTo.NONE),
-                                   akkaBucket)
+          CouchbaseFlow.upsert(sessionSettings,
+                               writeSettings
+                                 .withParallelism(2)
+                                 .withPersistTo(PersistTo.THREE)
+                                 .withTimeout(1.seconds),
+                               bucketName)
         )
-        .runWith(Sink.ignore)
-      Await.result(bulkUpsertResult, Duration(5, TimeUnit.SECONDS))
+        .runWith(Sink.seq)
+
+      bulkUpsertResult.failed.futureValue shouldBe a[com.couchbase.client.java.error.DurabilityException]
+    }
+
+    "get bulk of documents as part of the flow where not all ids exist" in assertAllStagesStopped {
+      upsertSampleData()
 
       val result: Future[Seq[JsonDocument]] = Source
-        .single(bulk.map(_.id))
-        .via(CouchbaseFlow.fromBulkIds(akkaBucket, classOf[JsonDocument]))
-        .runWith(Sink.head)
-      Await.result(result, Duration(5, TimeUnit.SECONDS)).map(_.id) must contain(
-        exactly("First", "Second", "Third", "Fourth")
-      )
-    }
-
-    "produce exception in single operation with ReplicateTo higher then # of nodes" in assertAllStagesStopped {
-
-      val resultAsFuture: Future[SingleOperationResult[JsonDocument]] = Source
-        .single(bulk.head)
-        .map(createCBJson)
-        .via(
-          CouchbaseFlow.upsertSingle(CouchbaseWriteSettings()
-                                       .withParallelism(2)
-                                       .withPersistTo(PersistTo.THREE)
-                                       .withTimeOut(1L, TimeUnit.SECONDS),
-                                     akkaBucket)
-        )
-        .runWith(Sink.head)
-
-      val response: SingleOperationResult[JsonDocument] = Await.result(resultAsFuture, Duration(5, TimeUnit.SECONDS))
-
-      response.result.isFailure shouldEqual true
-
-    }
-    "produce exceptions in operation with ReplicateTo higher then #of nodes" in assertAllStagesStopped {
-      val bulkUpsertResult: Future[Seq[BulkOperationResult[JsonDocument]]] = Source
-        .fromIterator(() => bulk.iterator)
-        .map(createCBJson)
-        .grouped(2)
-        .via(
-          CouchbaseFlow.upsertBulk(CouchbaseWriteSettings()
-                                     .withParallelism(2)
-                                     .withPersistTo(PersistTo.THREE)
-                                     .withTimeOut(1L, TimeUnit.SECONDS),
-                                   akkaBucket)
-        )
-        .runWith(Sink.seq[BulkOperationResult[JsonDocument]])
-
-      val entities: Seq[BulkOperationResult[JsonDocument]] =
-        Await.result(bulkUpsertResult, Duration(5, TimeUnit.SECONDS))
-      val failures: Seq[FailedOperation] = entities.flatMap { f =>
-        f.failures
-      }
-      failures.length shouldEqual 4
-    }
-
-    "get bulk of documents as part of the flownot all ids exists" in assertAllStagesStopped {
-      val bulkUpsertResult: Future[Done] = Source
-        .fromIterator(() => bulk.iterator)
-        .map(createCBJson)
-        .grouped(2)
-        .via(
-          CouchbaseFlow.upsertBulk(CouchbaseWriteSettings().withParallelism(2).withPersistTo(PersistTo.NONE),
-                                   akkaBucket)
-        )
-        .runWith(Sink.ignore)
-      Await.result(bulkUpsertResult, Duration(5, TimeUnit.SECONDS))
-
-      val result: Future[Seq[JsonDocument]] = Source
-        .single(bulk.map(_.id) :+ "Not Existing Id")
-        .via(CouchbaseFlow.fromBulkIds(akkaBucket, classOf[JsonDocument]))
-        .runWith(Sink.head)
-      Await.result(result, Duration(5, TimeUnit.SECONDS)).map(_.id) must contain(
-        exactly("First", "Second", "Third", "Fourth")
-      )
+        .apply(sampleSequence.map(_.id) :+ "Not Existing Id")
+        .via(CouchbaseFlow.fromId(sessionSettings, queryBucketName))
+        .runWith(Sink.seq)
+      result.futureValue.map(_.id) shouldBe Seq("First", "Second", "Third", "Fourth")
     }
   }
 
-  override protected def after: Any = cleanAllInBucket(bulk.map(_.id), akkaBucket)
+  override protected def afterEach(): Unit = cleanAllInBucket(sampleSequence.map(_.id), bucketName)
 }

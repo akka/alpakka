@@ -4,65 +4,51 @@
 
 package akka.stream.alpakka.couchbase.javadsl
 
-import java.util
 import akka.NotUsed
+import akka.stream.alpakka.couchbase.{scaladsl, CouchbaseSessionSettings, CouchbaseWriteSettings}
 import akka.stream.javadsl.Flow
-import com.couchbase.client.java.Bucket
-import com.couchbase.client.java.document.Document
-import akka.stream.alpakka.couchbase.{BulkOperationResult, CouchbaseWriteSettings, SingleOperationResult}
-import scala.collection.JavaConverters._
-import scala.collection.immutable.Seq
+import com.couchbase.client.java.document.{Document, JsonDocument}
+
+/**
+ * Java API: Factory methods for Couchbase flows.
+ */
 object CouchbaseFlow {
 
-  def deleteOne(couchbaseWriteSettings: CouchbaseWriteSettings,
-                couchbaseBucket: Bucket): Flow[String, SingleOperationResult[String], NotUsed] =
-    Flow.fromGraph(
-      akka.stream.alpakka.couchbase.scaladsl.CouchbaseFlow
-        .deleteOne(couchbaseWriteSettings, couchbaseBucket)
-    )
+  /**
+   * Create a flow to query Couchbase for by `id` and emit [[com.couchbase.client.java.document.JsonDocument JsonDocument]]s.
+   */
+  def fromId(sessionSettings: CouchbaseSessionSettings, bucketName: String): Flow[String, JsonDocument, NotUsed] =
+    scaladsl.CouchbaseFlow.fromId(sessionSettings, bucketName).asJava
 
-  def upsertSingle[T <: Document[_]](couchbaseWriteSettings: CouchbaseWriteSettings,
-                                     couchbaseBucket: Bucket): Flow[T, SingleOperationResult[T], NotUsed] =
-    Flow.fromGraph(
-      akka.stream.alpakka.couchbase.scaladsl.CouchbaseFlow
-        .upsertSingle[T](couchbaseWriteSettings, couchbaseBucket)
-    )
+  /**
+   * Create a flow to query Couchbase for by `id` and emit documents of the given class.
+   */
+  def fromId[T <: Document[_]](sessionSettings: CouchbaseSessionSettings,
+                               bucketName: String,
+                               target: Class[T]): Flow[String, T, NotUsed] =
+    scaladsl.CouchbaseFlow.fromId(sessionSettings, bucketName, target).asJava
 
-  def deleteBulk(couchbaseWriteSettings: CouchbaseWriteSettings,
-                 couchbaseBucket: Bucket): Flow[util.List[String], BulkOperationResult[String], NotUsed] =
-    Flow.fromGraph(
-      akka.stream.scaladsl
-        .Flow[util.List[String]]
-        .map(_.asScala.to[Seq])
-        .via(
-          akka.stream.alpakka.couchbase.scaladsl.CouchbaseFlow
-            .deleteBulk(couchbaseWriteSettings, couchbaseBucket)
-        )
-    )
+  /**
+   * Create a flow to update or insert a Couchbase [[com.couchbase.client.java.document.JsonDocument JsonDocument]].
+   */
+  def upsert(sessionSettings: CouchbaseSessionSettings,
+             writeSettings: CouchbaseWriteSettings,
+             bucketName: String): Flow[JsonDocument, JsonDocument, NotUsed] =
+    scaladsl.CouchbaseFlow.upsert(sessionSettings, writeSettings, bucketName).asJava
 
-  def fromSingleId[T <: Document[_]](couchbaseBucket: Bucket, target: Class[T]): Flow[String, T, NotUsed] =
-    Flow.fromGraph(akka.stream.alpakka.couchbase.scaladsl.CouchbaseFlow.fromSingleId(couchbaseBucket, target))
+  /**
+   * Create a flow to update or insert a Couchbase document of the given class.
+   */
+  def upsertDoc[T <: Document[_]](sessionSettings: CouchbaseSessionSettings,
+                                  writeSettings: CouchbaseWriteSettings,
+                                  bucketName: String): Flow[T, T, NotUsed] =
+    scaladsl.CouchbaseFlow.upsertDoc(sessionSettings, writeSettings, bucketName).asJava
 
-  def fromBulkId[T <: Document[_]](couchbaseBucket: Bucket,
-                                   target: Class[T]): Flow[util.List[String], util.List[T], NotUsed] =
-    Flow.fromGraph(
-      akka.stream.scaladsl
-        .Flow[util.List[String]]
-        .map(_.asScala.to[Seq])
-        .via(akka.stream.alpakka.couchbase.scaladsl.CouchbaseFlow.fromBulkIds(couchbaseBucket, target))
-        .map(f => f.asJava)
-    )
-
-  def upsertBulk[T <: Document[_]](couchbaseWriteSettings: CouchbaseWriteSettings,
-                                   couchbaseBucket: Bucket): Flow[util.List[T], BulkOperationResult[T], NotUsed] =
-    Flow.fromGraph(
-      akka.stream.scaladsl
-        .Flow[util.List[T]]
-        .map(_.asScala.to[Seq])
-        .via(
-          akka.stream.alpakka.couchbase.scaladsl.CouchbaseFlow
-            .upsertBulk[T](couchbaseWriteSettings, couchbaseBucket)
-        )
-    )
-
+  /**
+   * Create a flow to delete documents from Couchbase by `id`. Emits the same `id`.
+   */
+  def delete(sessionSettings: CouchbaseSessionSettings,
+             writeSettings: CouchbaseWriteSettings,
+             bucketName: String): Flow[String, String, NotUsed] =
+    scaladsl.CouchbaseFlow.delete(sessionSettings, writeSettings, bucketName).asJava
 }

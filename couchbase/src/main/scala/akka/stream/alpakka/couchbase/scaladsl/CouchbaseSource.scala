@@ -5,40 +5,45 @@
 package akka.stream.alpakka.couchbase.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.couchbase.impl.CouchbaseSourceImpl
+import akka.stream.alpakka.couchbase.impl.Setup
+import akka.stream.alpakka.couchbase.{CouchbaseSessionRegistry, CouchbaseSessionSettings}
 import akka.stream.scaladsl.Source
-import com.couchbase.client.java.Bucket
-import com.couchbase.client.java.document.Document
-import com.couchbase.client.java.query.{AsyncN1qlQueryResult, AsyncN1qlQueryRow, N1qlQuery, Statement}
-import rx.lang.scala.JavaConversions.{toJavaObservable, toScalaObservable}
-import rx.{Observable, RxReactiveStreams}
-import scala.collection.immutable.Seq
-import rx.lang.scala
+import com.couchbase.client.java.document.json.JsonObject
+import com.couchbase.client.java.query.{N1qlQuery, Statement}
 
+/**
+ * Scala API: Factory methods for Couchbase sources.
+ */
 object CouchbaseSource {
 
-  def fromSingleId[T <: Document[_]](id: String, couchbaseBucket: Bucket, target: Class[T]): Source[T, NotUsed] = {
-    val observable: Observable[T] =
-      CouchbaseSourceImpl.fromSingleId(id, couchbaseBucket, target)
-    Source.fromPublisher(RxReactiveStreams.toPublisher(observable))
-  }
+  /**
+   * Create a source query Couchbase by statement, emitted as [[com.couchbase.client.java.document.JsonDocument JsonDocument]]s.
+   */
+  def fromStatement(sessionSettings: CouchbaseSessionSettings,
+                    statement: Statement,
+                    bucketName: String): Source[JsonObject, NotUsed] =
+    Setup
+      .source { materializer => _ =>
+        val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
+        Source
+          .fromFuture(session.map(_.streamedQuery(statement))(materializer.system.dispatcher))
+          .flatMapConcat(identity)
+      }
+      .mapMaterializedValue(_ => NotUsed)
 
-  def fromBulkIds[T <: Document[_]](ids: Seq[String], couchbaseBucket: Bucket, target: Class[T]): Source[T, NotUsed] = {
-    val observable: scala.Observable[T] = CouchbaseSourceImpl.fromBulkIds(ids, couchbaseBucket, target)
-    Source.fromPublisher(RxReactiveStreams.toPublisher(toJavaObservable(observable)))
-  }
+  /**
+   * Create a source query Couchbase by statement, emitted as [[com.couchbase.client.java.document.JsonDocument JsonDocument]]s.
+   */
+  def fromN1qlQuery(sessionSettings: CouchbaseSessionSettings,
+                    query: N1qlQuery,
+                    bucketName: String): Source[JsonObject, NotUsed] =
+    Setup
+      .source { materializer => _ =>
+        val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
+        Source
+          .fromFuture(session.map(_.streamedQuery(query))(materializer.system.dispatcher))
+          .flatMapConcat(identity)
+      }
+      .mapMaterializedValue(_ => NotUsed)
 
-  def fromStatement(statement: Statement, couchbaseBucket: Bucket): Source[AsyncN1qlQueryRow, NotUsed] = {
-    val observable: rx.lang.scala.Observable[AsyncN1qlQueryResult] = toScalaObservable(
-      couchbaseBucket.async().query(statement)
-    )
-    Source.fromPublisher(RxReactiveStreams.toPublisher(toJavaObservable(observable.flatMap(f => f.rows()))))
-  }
-
-  def fromN1qlQuery(query: N1qlQuery, couchbaseBucket: Bucket): Source[AsyncN1qlQueryRow, NotUsed] = {
-    val observable: rx.lang.scala.Observable[AsyncN1qlQueryResult] = toScalaObservable(
-      couchbaseBucket.async().query(query)
-    )
-    Source.fromPublisher(RxReactiveStreams.toPublisher(toJavaObservable(observable.flatMap(f => f.rows()))))
-  }
 }
