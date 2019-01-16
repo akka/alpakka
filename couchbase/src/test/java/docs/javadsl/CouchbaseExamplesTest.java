@@ -79,7 +79,7 @@ public class CouchbaseExamplesTest {
     actorSystem = support.actorSystem();
     materializer = support.mat();
     sampleData = support.sampleData();
-    sampleSequence = JavaConverters$.MODULE$.seqAsJavaList(support.sampleSequence());
+    sampleSequence = support.sampleJavaList();
   }
 
   @AfterClass

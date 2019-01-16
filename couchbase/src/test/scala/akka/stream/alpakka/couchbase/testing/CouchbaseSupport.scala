@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory
 import play.api.libs.json.Json
 
 import scala.collection.immutable.Seq
+import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
@@ -42,6 +43,8 @@ trait CouchbaseSupport {
   val sampleSequence: Seq[TestObject] = sampleData +: Seq[TestObject](TestObject("Second", "Second"),
                                                                       TestObject("Third", "Third"),
                                                                       TestObject("Fourth", "Fourth"))
+
+  val sampleJavaList: java.util.List[TestObject] = sampleSequence.asJava
 
   val cluster: CouchbaseCluster = CouchbaseCluster.create("localhost")
 
