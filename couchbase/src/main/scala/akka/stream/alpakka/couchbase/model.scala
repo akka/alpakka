@@ -227,3 +227,29 @@ final case class CouchbaseWriteFailure[T <: Document[_]] private (override val d
   val isSuccess: Boolean = false
   val isFailure: Boolean = true
 }
+
+/**
+ * Wrapper to for handling Couchbase write failures in-stream instead of failing the stream.
+ */
+sealed trait CouchbaseDeleteResult {
+  def isSuccess: Boolean
+  def isFailure: Boolean
+  def id: String
+}
+
+/**
+ * Emitted for a successful Couchbase write operation.
+ */
+final case class CouchbaseDeleteSuccess private (override val id: String) extends CouchbaseDeleteResult {
+  val isSuccess: Boolean = true
+  val isFailure: Boolean = false
+}
+
+/**
+ * Emitted for a failed Couchbase write operation.
+ */
+final case class CouchbaseDeleteFailure private (override val id: String, failure: Throwable)
+    extends CouchbaseDeleteResult {
+  val isSuccess: Boolean = false
+  val isFailure: Boolean = true
+}

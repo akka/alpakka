@@ -7,6 +7,9 @@ package docs.javadsl;
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.stream.Materializer;
+// #deleteWithResult
+import akka.stream.alpakka.couchbase.CouchbaseDeleteResult;
+// #deleteWithResult
 // #upsertDocWithResult
 import akka.stream.alpakka.couchbase.CouchbaseWriteFailure;
 import akka.stream.alpakka.couchbase.CouchbaseWriteResult;
@@ -57,7 +60,6 @@ import static com.couchbase.client.java.query.dsl.Expression.*;
 // #statement
 
 import scala.concurrent.duration.FiniteDuration;
-import scala.collection.JavaConverters$;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
@@ -263,6 +265,18 @@ public class CouchbaseExamplesTest {
             .via(CouchbaseFlow.delete(sessionSettings, writeSettings, bucketName))
             .runWith(Sink.ignore(), materializer);
     // #delete
+  }
 
+  @Test
+  public void deleteWithResult() throws Exception {
+    CouchbaseWriteSettings writeSettings = CouchbaseWriteSettings.create();
+    // #deleteWithResult
+    CompletionStage<CouchbaseDeleteResult> result =
+        Source.single("non-existent")
+            .via(CouchbaseFlow.deleteWithResult(sessionSettings, writeSettings, bucketName))
+            .runWith(Sink.head(), materializer);
+    // #deleteWithResult
+    CouchbaseDeleteResult deleteResult = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    assertTrue(deleteResult.isFailure());
   }
 }

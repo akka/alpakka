@@ -5,9 +5,11 @@
 package docs.scaladsl
 
 import akka.Done
+import akka.stream.alpakka.couchbase.{CouchbaseDeleteFailure, CouchbaseDeleteResult}
 import akka.stream.alpakka.couchbase.scaladsl.CouchbaseFlow
 import akka.stream.alpakka.couchbase.testing.{CouchbaseSupport, TestObject}
 import akka.stream.scaladsl.{Sink, Source}
+import com.couchbase.client.java.error.DocumentDoesNotExistException
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest._
 
@@ -312,12 +314,12 @@ class CouchbaseFlowSpec
         .runWith(Sink.ignore)
       bulkUpsertResult.futureValue
 
-      val deleteFuture: Future[Done] = Source("NoneExisting" +: sampleSequence.map(_.id))
+      val deleteFuture: Future[Done] = Source(sampleSequence.map(_.id) :+ "NoneExisting")
         .via(
           CouchbaseFlow.delete(sessionSettings, writeSettings.withParallelism(2), bucketName)
         )
         .runWith(Sink.ignore)
-      deleteFuture.futureValue
+      deleteFuture.failed.futureValue shouldBe a[DocumentDoesNotExistException]
 
       val getFuture: Future[Seq[RawJsonDocument]] =
         Source(sampleSequence.map(_.id))
@@ -440,5 +442,41 @@ class CouchbaseFlowSpec
 
   }
 
-  override protected def afterEach(): Unit = cleanAllInBucket(sampleSequence.map(_.id), bucketName)
+  "delete with result" should {
+    "propagate an error in-stream" in assertAllStagesStopped {
+      val deleteFuture: Future[String] =
+        Source
+          .single("non-existent")
+          .via(
+            CouchbaseFlow.delete(
+              sessionSettings,
+              writeSettings
+                .withParallelism(2)
+                .withReplicateTo(ReplicateTo.THREE)
+                .withTimeout(1.seconds),
+              bucketName
+            )
+          )
+          .runWith(Sink.head)
+
+      // #deleteWithResult
+      val deleteResult: Future[CouchbaseDeleteResult] =
+        Source
+          .single("non-existent")
+          .via(
+            CouchbaseFlow.deleteWithResult(
+              sessionSettings,
+              writeSettings,
+              bucketName
+            )
+          )
+          .runWith(Sink.head)
+      // #deleteWithResult
+      deleteFuture.failed.futureValue shouldBe a[DocumentDoesNotExistException]
+
+      deleteResult.futureValue shouldBe a[CouchbaseDeleteFailure]
+      deleteResult.futureValue.id shouldBe "non-existent"
+      deleteResult.mapTo[CouchbaseDeleteFailure].futureValue.failure shouldBe a[DocumentDoesNotExistException]
+    }
+  }
 }
