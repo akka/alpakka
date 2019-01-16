@@ -57,12 +57,11 @@ public class JmsAckConnectorsTest {
     List<Integer> intsIn = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
     List<JmsTextMessage> msgsIn = new ArrayList<>();
     for (Integer n : intsIn) {
-      Map<String, Object> properties = new HashMap<>();
-      properties.put("Number", n);
-      properties.put("IsOdd", n % 2 == 1);
-      properties.put("IsEven", n % 2 == 0);
-
-      msgsIn.add(JmsTextMessage.create(n.toString(), properties));
+      msgsIn.add(
+          JmsTextMessage.create(n.toString())
+              .withProperty("Number", n)
+              .withProperty("IsOdd", n % 2 == 1)
+              .withProperty("IsEven", n % 2 == 0));
     }
 
     return msgsIn;
@@ -111,7 +110,7 @@ public class JmsAckConnectorsTest {
           ConnectionFactory connectionFactory = server.createConnectionFactory();
 
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(
+              JmsProducer.sink(
                   JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
 
           List<JmsTextMessage> msgsIn = createTestMessageList();
@@ -169,7 +168,7 @@ public class JmsAckConnectorsTest {
           ConnectionFactory connectionFactory = server.createConnectionFactory();
 
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(
+              JmsProducer.sink(
                   JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
 
           List<JmsTextMessage> msgsIn =
@@ -237,7 +236,7 @@ public class JmsAckConnectorsTest {
           ConnectionFactory connectionFactory = server.createConnectionFactory();
 
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(
+              JmsProducer.sink(
                   JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
 
           List<JmsTextMessage> msgsIn = createTestMessageList();

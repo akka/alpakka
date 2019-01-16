@@ -4,7 +4,6 @@
 
 package akka.stream.alpakka.jms.scaladsl
 
-import akka.stream.alpakka.jms.JmsProducerMessage.Envelope
 import akka.stream.alpakka.jms._
 import akka.stream.alpakka.jms.impl.{JmsProducerMatValue, JmsProducerStage}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
@@ -22,29 +21,26 @@ object JmsProducer {
    * Create a flow to send [[akka.stream.alpakka.jms.JmsMessage JmsMessage]] sub-classes to
    * a JMS broker.
    */
-  def flow[T <: JmsMessage](settings: JmsProducerSettings): Flow[T, T, JmsProducerStatus] = settings.destination match {
-    case None => throw new IllegalArgumentException(noProducerDestination(settings))
-    case Some(destination) =>
-      Flow[T]
-        .map(m => JmsProducerMessage.Message(m, NotUsed))
-        .viaMat(Flow.fromGraph(new JmsProducerStage[T, NotUsed](settings, destination)))(Keep.right)
-        .mapMaterializedValue(toProducerStatus)
-        .collectType[JmsProducerMessage.Message[T, NotUsed]]
-        .map(_.message)
-
-  }
+  def flow[T <: JmsMessage](settings: JmsProducerSettings): Flow[T, T, JmsProducerStatus] =
+    settings.destination match {
+      case None => throw new IllegalArgumentException(noProducerDestination(settings))
+      case Some(destination) =>
+        Flow[T]
+          .viaMat(Flow.fromGraph(new JmsProducerStage[T, NotUsed](settings, destination)))(Keep.right)
+          .mapMaterializedValue(toProducerStatus)
+    }
 
   /**
-   * Create a flow to send [[akka.stream.alpakka.jms.JmsProducerMessage.Envelope JmsProducerMessage.Envelope]] sub-classes to
+   * Create a flow to send [[akka.stream.alpakka.jms.JmsEnvelope JmsEnvelope]] sub-classes to
    * a JMS broker to support pass-through of data.
    */
-  def flexiFlow[T <: JmsMessage, PassThrough](
+  def flexiFlow[PassThrough](
       settings: JmsProducerSettings
-  ): Flow[Envelope[T, PassThrough], Envelope[T, PassThrough], JmsProducerStatus] = settings.destination match {
+  ): Flow[JmsEnvelope[PassThrough], JmsEnvelope[PassThrough], JmsProducerStatus] = settings.destination match {
     case None => throw new IllegalArgumentException(noProducerDestination(settings))
     case Some(destination) =>
       Flow
-        .fromGraph(new JmsProducerStage[T, PassThrough](settings, destination))
+        .fromGraph(new JmsProducerStage[JmsEnvelope[PassThrough], PassThrough](settings, destination))
         .mapMaterializedValue(toProducerStatus)
   }
 
@@ -52,7 +48,7 @@ object JmsProducer {
    * Create a sink to send [[akka.stream.alpakka.jms.JmsMessage JmsMessage]] sub-classes to
    * a JMS broker.
    */
-  def apply(settings: JmsProducerSettings): Sink[JmsMessage, Future[Done]] =
+  def sink(settings: JmsProducerSettings): Sink[JmsMessage, Future[Done]] =
     flow(settings).toMat(Sink.ignore)(Keep.right)
 
   /**
@@ -94,7 +90,7 @@ object JmsProducer {
   }
 
   private def noProducerDestination(settings: JmsProducerSettings) =
-    s"""Unable to create JmsProducer: it  needs a default destination to send messages to, but none was provided in
+    s"""Unable to create JmsProducer: it needs a default destination to send messages to, but none was provided in
       |$settings
       |Please use withQueue, withTopic or withDestination to specify a destination.""".stripMargin
 }

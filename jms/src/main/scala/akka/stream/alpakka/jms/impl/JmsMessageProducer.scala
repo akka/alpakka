@@ -18,7 +18,7 @@ private class JmsMessageProducer(jmsProducer: jms.MessageProducer, jmsSession: J
 
   private val destinationCache = new SoftReferenceCache[Destination, jms.Destination]()
 
-  def send(elem: JmsMessage): Unit = {
+  def send(elem: JmsEnvelope[_]): Unit = {
     val message: jms.Message = createMessage(elem)
     populateMessageProperties(message, elem)
 
@@ -46,31 +46,34 @@ private class JmsMessageProducer(jmsProducer: jms.MessageProducer, jmsSession: J
 
   private def lookup(dest: Destination) = destinationCache.lookup(dest, dest.create(jmsSession.session))
 
-  private[jms] def createMessage(element: JmsMessage): jms.Message =
+  private[jms] def createMessage(element: JmsEnvelope[_]): jms.Message =
     element match {
 
-      case textMessage: JmsTextMessage => jmsSession.session.createTextMessage(textMessage.body)
+      case textMessage: JmsTextMessagePassThrough[_] => jmsSession.session.createTextMessage(textMessage.body)
 
-      case byteMessage: JmsByteMessage =>
+      case byteMessage: JmsByteMessagePassThrough[_] =>
         val newMessage = jmsSession.session.createBytesMessage()
         newMessage.writeBytes(byteMessage.bytes)
         newMessage
 
-      case byteStringMessage: JmsByteStringMessage =>
+      case byteStringMessage: JmsByteStringMessagePassThrough[_] =>
         val newMessage = jmsSession.session.createBytesMessage()
         newMessage.writeBytes(byteStringMessage.bytes.toArray)
         newMessage
 
-      case mapMessage: JmsMapMessage =>
+      case mapMessage: JmsMapMessagePassThrough[_] =>
         val newMessage = jmsSession.session.createMapMessage()
         populateMapMessage(newMessage, mapMessage)
         newMessage
 
-      case objectMessage: JmsObjectMessage => jmsSession.session.createObjectMessage(objectMessage.serializable)
+      case objectMessage: JmsObjectMessagePassThrough[_] =>
+        jmsSession.session.createObjectMessage(objectMessage.serializable)
+
+      case pt: JmsPassThrough[_] => throw new IllegalArgumentException("can't create message for JmsPassThrough")
 
     }
 
-  private[jms] def populateMessageProperties(message: javax.jms.Message, jmsMessage: JmsMessage): Unit =
+  private[jms] def populateMessageProperties(message: javax.jms.Message, jmsMessage: JmsEnvelope[_]): Unit =
     jmsMessage.properties.foreach {
       case (key, v) =>
         v match {
@@ -86,7 +89,7 @@ private class JmsMessageProducer(jmsProducer: jms.MessageProducer, jmsSession: J
         }
     }
 
-  private def populateMapMessage(message: javax.jms.MapMessage, jmsMessage: JmsMapMessage): Unit =
+  private def populateMapMessage(message: javax.jms.MapMessage, jmsMessage: JmsMapMessagePassThrough[_]): Unit =
     jmsMessage.body.foreach {
       case (key, v) =>
         v match {

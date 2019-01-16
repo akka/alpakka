@@ -6,8 +6,7 @@ package akka.stream.alpakka.jms.javadsl
 
 import java.util.concurrent.CompletionStage
 
-import akka.stream.alpakka.jms.{scaladsl, JmsMessage, JmsProducerSettings}
-import akka.stream.alpakka.jms.JmsProducerMessage._
+import akka.stream.alpakka.jms.{scaladsl, JmsEnvelope, JmsMessage, JmsProducerSettings}
 import akka.stream.javadsl.Source
 import akka.stream.scaladsl.{Flow, Keep}
 import akka.util.ByteString
@@ -31,14 +30,14 @@ object JmsProducer {
     akka.stream.alpakka.jms.scaladsl.JmsProducer.flow(settings).mapMaterializedValue(toProducerStatus).asJava
 
   /**
-   * Create a flow to send [[akka.stream.alpakka.jms.JmsProducerMessage.Envelope JmsProducerMessage.Envelope]] sub-classes to
+   * Create a flow to send [[akka.stream.alpakka.jms.JmsEnvelope JmsEnvelope]] sub-classes to
    * a JMS broker to support pass-through of data.
    */
-  def flexiFlow[R <: JmsMessage, PassThrough](
+  def flexiFlow[PassThrough](
       settings: JmsProducerSettings
-  ): akka.stream.javadsl.Flow[Envelope[R, PassThrough], Envelope[R, PassThrough], JmsProducerStatus] =
+  ): akka.stream.javadsl.Flow[JmsEnvelope[PassThrough], JmsEnvelope[PassThrough], JmsProducerStatus] =
     akka.stream.alpakka.jms.scaladsl.JmsProducer
-      .flexiFlow[R, PassThrough](settings)
+      .flexiFlow[PassThrough](settings)
       .mapMaterializedValue(toProducerStatus)
       .asJava
 
@@ -46,11 +45,11 @@ object JmsProducer {
    * Create a sink to send [[akka.stream.alpakka.jms.JmsMessage JmsMessage]] sub-classes to
    * a JMS broker.
    */
-  def create[R <: JmsMessage](
+  def sink[R <: JmsMessage](
       settings: JmsProducerSettings
   ): akka.stream.javadsl.Sink[R, CompletionStage[Done]] =
     akka.stream.alpakka.jms.scaladsl.JmsProducer
-      .apply(settings)
+      .sink(settings)
       .mapMaterializedValue(FutureConverters.toJava)
       .asJava
 

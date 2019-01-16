@@ -8,7 +8,6 @@ import akka.{Done, NotUsed}
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream._
 import akka.annotation.InternalApi
-import akka.stream.alpakka.jms.JmsProducerMessage._
 import akka.stream.alpakka.jms._
 import akka.stream.impl.Buffer
 import akka.stream.scaladsl.Source
@@ -45,13 +44,11 @@ private trait JmsProducerConnector extends JmsConnector[JmsProducerSession] {
  * Internal API.
  */
 @InternalApi
-private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings: JmsProducerSettings,
-                                                                        destination: Destination)
-    extends GraphStageWithMaterializedValue[FlowShape[Envelope[A, PassThrough], Envelope[A, PassThrough]],
-                                            JmsProducerMatValue] { stage =>
+private[jms] final class JmsProducerStage[E <: JmsEnvelope[PassThrough], PassThrough](settings: JmsProducerSettings,
+                                                                                      destination: Destination)
+    extends GraphStageWithMaterializedValue[FlowShape[E, E], JmsProducerMatValue] { stage =>
   import JmsProducerStage._
 
-  private type E = Envelope[A, PassThrough]
   private val in = Inlet[E]("JmsProducer.in")
   private val out = Outlet[E]("JmsProducer.out")
 
@@ -132,16 +129,16 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
           override def onPush(): Unit = {
             val elem: E = grab(in)
             elem match {
-              case m: Message[_, _] =>
-                // create a holder object to capture the in-flight message, and enqueue it to preserve message order
-                val holder = new Holder[E](NotYetThere)
-                inFlightMessages.enqueue(holder)
-                sendWithRetries(SendAttempt[E](m, holder))
-              case _: PassThroughMessage[_, _] =>
+              case _: JmsPassThrough[_] =>
                 val holder = new Holder[E](NotYetThere)
                 inFlightMessages.enqueue(holder)
                 holder(Success(elem))
                 pushNextIfPossible()
+              case m: JmsEnvelope[_] =>
+                // create a holder object to capture the in-flight message, and enqueue it to preserve message order
+                val holder = new Holder[E](NotYetThere)
+                inFlightMessages.enqueue(holder)
+                sendWithRetries(SendAttempt(m.asInstanceOf[E], holder))
             }
 
             // immediately ask for the next element if producers are available.
@@ -166,7 +163,7 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
         import send._
         if (jmsProducers.nonEmpty) {
           val jmsProducer: JmsMessageProducer = jmsProducers.dequeue()
-          Future(jmsProducer.send(envelope.message)).andThen {
+          Future(jmsProducer.send(envelope)).andThen {
             case tried => sendCompletedCB.invoke((send, tried, jmsProducer))
           }
         } else {
@@ -197,7 +194,7 @@ private[jms] final class JmsProducerStage[A <: JmsMessage, PassThrough](settings
 
           outcome match {
             case Success(_) =>
-              holder(Success(envelope))
+              holder(Success(send.envelope))
               pushNextIfPossible()
             case Failure(t: jms.JMSException) =>
               nextTryOrFail(send, t)
@@ -272,8 +269,8 @@ private[jms] object JmsProducerStage {
     override def apply(t: Try[A]): Unit = elem = t
   }
 
-  case class SendAttempt[E](envelope: Message[JmsMessage, _] with E,
-                            holder: Holder[E],
-                            attempt: Int = 0,
-                            backoffMaxed: Boolean = false)
+  case class SendAttempt[E <: JmsEnvelope[_]](envelope: E,
+                                              holder: Holder[E],
+                                              attempt: Int = 0,
+                                              backoffMaxed: Boolean = false)
 }

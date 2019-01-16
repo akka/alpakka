@@ -6,7 +6,6 @@ package akka.stream.alpakka.jms
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.NotUsed
 import akka.stream.OverflowStrategy
 import akka.stream.alpakka.jms.scaladsl.JmsConnectorState._
 import akka.stream.alpakka.jms.scaladsl.{JmsConnectorState, JmsConsumer, JmsProducer, JmsProducerStatus}
@@ -358,8 +357,8 @@ class JmsConnectionStatusSpec extends JmsSpec {
 
   private def textSink(settings: JmsProducerSettings): Sink[String, JmsProducerStatus] =
     Flow[String]
-      .map(s => JmsProducerMessage.message(JmsTextMessage(s), NotUsed))
-      .viaMat(JmsProducer.flexiFlow(settings))(Keep.right)
+      .map(s => JmsTextMessage(s))
+      .viaMat(JmsProducer.flow(settings))(Keep.right)
       .to(Sink.ignore)
 
   class ConnectionStateMatcher(expectedState: JmsConnectorState)
