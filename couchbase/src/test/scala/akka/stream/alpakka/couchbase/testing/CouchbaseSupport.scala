@@ -192,7 +192,8 @@ trait CouchbaseSupport {
   def cleanAllInBucket(ids: Seq[String], bucketName: String): Unit = {
     val result: Future[Done] =
       Source(ids)
-        .runWith(CouchbaseSink.delete(sessionSettings, CouchbaseWriteSettings.inMemory, bucketName))
+        .via(CouchbaseFlow.deleteWithResult(sessionSettings, CouchbaseWriteSettings.inMemory, bucketName))
+        .runWith(Sink.ignore)
     Await.result(result, 5.seconds)
     ()
   }

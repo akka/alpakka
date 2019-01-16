@@ -133,6 +133,14 @@ Scala
 Java
 : @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #delete }
 
+To handle any delete failures such as non-existent documents in-stream, use the the `deleteWithResult` operator. It captures failures from Couchbase and emits `CouchbaseDeleteResult`s.
+
+Scala
+: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #deleteWithResult }
+
+Java
+: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #deleteWithResult }
+
 
 # Using `CouchbaseSession` directly
 

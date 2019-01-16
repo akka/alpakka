@@ -110,10 +110,36 @@ object CouchbaseFlow {
         val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
         Flow[String]
           .mapAsync(writeSettings.parallelism)(
-            id =>
+            id => {
+              implicit val executor = materializer.system.dispatcher
               session
-                .map(_.remove(id, writeSettings))(materializer.system.dispatcher)
-                .map(_ => id)(materializer.system.dispatcher)
+                .flatMap(_.remove(id, writeSettings))
+                .map(_ => id)
+            }
+          )
+      }
+      .mapMaterializedValue(_ => NotUsed)
+
+  /**
+   * Create a flow to delete documents from Couchbase by `id` and emit operation outcome containing the same `id`.
+   */
+  def deleteWithResult(sessionSettings: CouchbaseSessionSettings,
+                       writeSettings: CouchbaseWriteSettings,
+                       bucketName: String): Flow[String, CouchbaseDeleteResult, NotUsed] =
+    Setup
+      .flow { materializer => _ =>
+        val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
+        Flow[String]
+          .mapAsync(writeSettings.parallelism)(
+            id => {
+              implicit val executor = materializer.system.dispatcher
+              session
+                .flatMap(_.remove(id, writeSettings))
+                .map(_ => CouchbaseDeleteSuccess(id))
+                .recover {
+                  case exception => CouchbaseDeleteFailure(id, exception)
+                }
+            }
           )
       }
       .mapMaterializedValue(_ => NotUsed)
