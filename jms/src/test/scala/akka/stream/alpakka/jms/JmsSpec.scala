@@ -6,14 +6,14 @@ package akka.stream.alpakka.jms
 
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
-import akka.testkit.{SocketUtil, TestKit}
+import akka.testkit.TestKit
 import javax.jms._
-import org.apache.activemq.broker.BrokerService
 import org.mockito.ArgumentMatchers.{any, anyBoolean, anyInt}
 import org.mockito.Mockito.when
 import org.scalatest._
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.mockito.MockitoSugar
+import jmstestkit.JmsBroker
 
 abstract class JmsSpec
     extends WordSpec
@@ -39,32 +39,22 @@ abstract class JmsSpec
   override protected def afterAll(): Unit =
     TestKit.shutdownActorSystem(system)
 
-  def withServer(network: Boolean = true)(test: Context => Unit): Unit = {
-    val broker = new BrokerService()
-    val host: String = "localhost"
-    val url = if (network) {
-      val port = SocketUtil.temporaryServerAddress(host).getPort
-      val serverUrl = s"tcp://$host:$port"
-      broker.addConnector(serverUrl)
-      serverUrl
-    } else {
-      s"vm://$host"
+  def withConnectionFactory()(test: ConnectionFactory => Unit): Unit =
+    withServer() { server =>
+      test(server.createConnectionFactory)
     }
-    broker.setPersistent(false)
-    broker.setBrokerName(host)
-    broker.setUseJmx(false)
-    broker.start()
+
+  def withServer()(test: JmsBroker => Unit): Unit = {
+    val jmsBroker = JmsBroker()
     try {
-      test(Context(url, broker))
+      test(jmsBroker)
       Thread.sleep(500)
     } finally {
-      if (broker.isStarted) {
-        broker.stop()
+      if (jmsBroker.isStarted) {
+        jmsBroker.stop()
       }
     }
   }
-
-  case class Context(url: String, broker: BrokerService)
 
   def withMockedProducer(test: ProducerMock => Unit): Unit = test(ProducerMock())
 
