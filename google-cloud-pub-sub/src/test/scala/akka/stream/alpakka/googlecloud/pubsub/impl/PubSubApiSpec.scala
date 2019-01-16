@@ -68,7 +68,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
         .post(
           urlEqualTo(s"/v1/projects/${config.projectId}/topics/topic1:publish")
         )
-        .withRequestBody(WireMock.equalTo(expectedPublishRequest))
+        .withRequestBody(WireMock.equalToJson(expectedPublishRequest))
         .withHeader("Authorization", WireMock.equalTo("Bearer " + accessToken))
         .willReturn(
           aResponse()
@@ -105,7 +105,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
         .post(
           urlEqualTo(s"/v1/projects/${config.projectId}/topics/topic1:publish")
         )
-        .withRequestBody(WireMock.equalTo(expectedPublishRequest))
+        .withRequestBody(WireMock.equalToJson(expectedPublishRequest))
         .withHeader("Authorization", WireMock.absent())
         .willReturn(
           aResponse()
@@ -138,7 +138,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
             s"/v1/projects/${config.projectId}/subscriptions/sub1:pull"
           )
         )
-        .withRequestBody(WireMock.equalTo(pullRequest))
+        .withRequestBody(WireMock.equalToJson(pullRequest))
         .withHeader("Authorization", WireMock.equalTo("Bearer " + accessToken))
         .willReturn(aResponse().withStatus(200).withBody(pullResponse).withHeader("Content-Type", "application/json"))
     )
@@ -170,7 +170,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
             s"/v1/projects/${config.projectId}/subscriptions/sub1:pull"
           )
         )
-        .withRequestBody(WireMock.equalTo(pullRequest))
+        .withRequestBody(WireMock.equalToJson(pullRequest))
         .withHeader("Authorization", WireMock.absent())
         .willReturn(aResponse().withStatus(200).withBody(pullResponse).withHeader("Content-Type", "application/json"))
     )
@@ -193,7 +193,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
             s"/v1/projects/${config.projectId}/subscriptions/sub1:pull"
           )
         )
-        .withRequestBody(WireMock.equalTo(pullRequest))
+        .withRequestBody(WireMock.equalToJson(pullRequest))
         .withHeader("Authorization", WireMock.equalTo("Bearer " + accessToken))
         .willReturn(aResponse().withStatus(200).withBody(pullResponse).withHeader("Content-Type", "application/json"))
     )
@@ -212,7 +212,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
             s"/v1/projects/${config.projectId}/subscriptions/sub1:acknowledge"
           )
         )
-        .withRequestBody(WireMock.equalTo(ackRequest))
+        .withRequestBody(WireMock.equalToJson(ackRequest))
         .withHeader("Authorization", WireMock.equalTo("Bearer " + accessToken))
         .willReturn(aResponse().withStatus(200))
     )
@@ -243,7 +243,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
         .post(
           urlEqualTo(s"/v1/projects/${config.projectId}/topics/topic1:publish")
         )
-        .withRequestBody(WireMock.equalTo(expectedPublishRequest))
+        .withRequestBody(WireMock.equalToJson(expectedPublishRequest))
         .withHeader("Authorization", WireMock.equalTo("Bearer " + accessToken))
         .willReturn(
           aResponse()
