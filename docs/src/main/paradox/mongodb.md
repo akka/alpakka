@@ -29,7 +29,7 @@ The table below shows direct dependencies of this module and the second tab show
 @@dependencies { projectId="mongodb" }
 
 
-## Usage
+## Initialization
 
 Sources provided by this connector need a prepared session to communicate with MongoDB server.
 
@@ -55,7 +55,7 @@ Scala
 
 This is all preparation that we are going to need.
 
-### Source Usage
+## Source
 
 Let's create a source from a MongoDB collection observable, which can optionally take a filter.
 
@@ -79,7 +79,7 @@ Scala
 
 Here we used a basic sink to complete the stream by collecting all of the stream elements to a collection. The power of streams comes from building larger data pipelines which leverage backpressure to ensure efficient flow control. Feel free to edit the example code and build @extref[more advanced stream topologies](akka-docs:scala/stream/stream-introduction).
 
-### Flow and Sink Usage
+## Flow and Sink
 
 Each of these sink factory methods have a corresponding factory in @scaladoc[insertOne](akka.stream.alpakka.mongodb.scaladsl.MongoFlow) which will emit the written document or result of the operation downstream.
 
@@ -88,7 +88,7 @@ For codec support, the type must be specified in the database or collection decl
 Scala
 : @@snip [snip](/mongodb/src/test/scala/akka/stream/alpakka/mongodb/MongoSinkSpec.scala) { #init-connection-codec }
 
-#### Insert
+### Insert
 
 We can use a Source of documents to save them to a mongo collection using @scaladoc[insertOne](akka.stream.alpakka.mongodb.scaladsl.MongoSink$#insertOne) or @scaladoc[insertMany](akka.stream.alpakka.mongodb.scaladsl.MongoSink$#insertMany).
 
@@ -101,7 +101,7 @@ With codec support
 Scala
 : @@snip [snip](/mongodb/src/test/scala/akka/stream/alpakka/mongodb/MongoSinkSpec.scala) { #insertOneCodec }
 
-#### Insert Many
+### Insert Many
 
 Insert many can be used if you have a collection of documents to insert at once.
 
@@ -113,7 +113,7 @@ With codec support
 Scala
 : @@snip [snip](/mongodb/src/test/scala/akka/stream/alpakka/mongodb/MongoSinkSpec.scala) { #insertManyCodec }
 
-#### Update
+### Update
 
 We can update documents with a Source of @scaladoc[DocumentUpdate](akka.stream.alpakka.mongodb.scaladsl.DocumentUpdate) which is a filter and a update definition.
 Use either @scaladoc[updateOne](akka.stream.alpakka.mongodb.scaladsl.MongoSink$#updateOne) or @scaladoc[updateMany](akka.stream.alpakka.mongodb.scaladsl.MongoSink$#updateMany) if the filter should target one or many documents.
@@ -121,13 +121,14 @@ Use either @scaladoc[updateOne](akka.stream.alpakka.mongodb.scaladsl.MongoSink$#
 Scala
 : @@snip [snip](../../../../mongodb/src/test/scala/akka/stream/alpakka/mongodb/MongoSinkSpec.scala) { #updateOne }
 
-#### Delete
+### Delete
+
 We can delete documents with a Source of filters. Use either @scaladoc[deleteOne](akka.stream.alpakka.mongodb.scaladsl.MongoSink$#deleteOne) or @scaladoc[deleteMany](akka.stream.alpakka.mongodb.scaladsl.MongoSink$#deleteMany) if the filter should target one or many documents.
 
 Scala
 : @@snip [snip](../../../../mongodb/src/test/scala/akka/stream/alpakka/mongodb/MongoSinkSpec.scala) { #deleteOne }
 
-### Running the example code
+## Running the example code
 
 The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
 

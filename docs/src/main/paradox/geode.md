@@ -21,9 +21,7 @@ The table below shows direct dependencies of this module and the second tab show
 @@dependencies { projectId="geode" }
 
 
-#Usage
-
-##Connection
+## Connection
 
 First of all you need to connect to the geode cache. In a client application, connection is handle by a
  @extref[ClientCache](geode:basic_config/the_cache/managing_a_client_cache.html). A single
@@ -44,7 +42,7 @@ scala
 java
 : @@snip [snip](/geode/src/test/java/docs/javadsl/GeodeBaseTestCase.java) { #connection-with-pool }
 
-##Region
+## Region
 
 Define a @extref[region](geode:/basic_config/data_regions/chapter_overview.html) setting to
 describe how to access region and the key extraction function.
@@ -56,7 +54,7 @@ java
 : @@snip [snip](/geode/src/test/java/docs/javadsl/GeodeBaseTestCase.java) { #region }
 
 
-###Serialization
+## Serialization
 
 Object must be serialized to flow in a geode region.
 
@@ -84,7 +82,7 @@ Java user will need to write by hand their custom serializer.
 
 Runtime reflection is also an option see @extref[auto_serialization.html](geode:/developing/data_serialization/auto_serialization.html).
 
-###Flow usage
+## Flow usage
 
 This sample stores (case) classes in Geode.
 
@@ -95,7 +93,7 @@ java
 : @@snip [snip](/geode/src/test/java/docs/javadsl/GeodeFlowTestCase.java) { #flow }
 
 
-###Sink usage
+## Sink usage
 
 scala
 : @@snip [snip](/geode/src/test/scala/docs/scaladsl/GeodeSinkSpec.scala) { #sink }
@@ -104,9 +102,9 @@ java
 : @@snip [snip](/geode/src/test/java/docs/javadsl/GeodeSinkTestCase.java) { #sink }
 
 
-###Source usage
+### ource usage
 
-####Simple query
+### Simple query
 
 Apache Geode support simple queries.
 
@@ -117,7 +115,7 @@ java
 : @@snip [snip](/geode/src/test/java/docs/javadsl/GeodeFiniteSourceTestCase.java) { #query }
 
 
-####Continuous query
+### Continuous query
 
 
 scala
@@ -127,7 +125,7 @@ java
 : @@snip [snip](/geode/src/test/java/docs/javadsl/GeodeContinuousSourceTestCase.java) { #continuousQuery }
 
 
-##Geode basic command:
+## Geode basic commands
 
 Assuming Apache geode is installed:
 
@@ -147,7 +145,7 @@ create region --name=persons --type=PARTITION_REDUNDANT --redundant-copies=2
 
 ```
 
-###Run the test
+## Run the example code
 
 Integration test are run against localhost geode, but IT_GEODE_HOSTNAME environment variable can change this:
 
