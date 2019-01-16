@@ -82,6 +82,16 @@ object ActorMqttClientSession {
     new ActorMqttClientSession(settings)
 
   /**
+   * No ACK received - the CONNECT failed
+   */
+  case object ConnectFailed extends Exception with NoStackTrace
+
+  /**
+   * No ACK received - the SUBSCRIBE failed
+   */
+  case object SubscribeFailed extends Exception with NoStackTrace
+
+  /**
    * A PINGREQ failed to receive a PINGRESP - the connection must close
    *
    * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
@@ -149,8 +159,6 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
 
         Future.successful(
           Flow[Command[A]]
-            .log("client-commandFlow")
-            .withAttributes(ActorAttributes.logLevels(onFailure = Logging.DebugLevel))
             .watch(clientConnector.toUntyped)
             .watchTermination() {
               case (_, terminated) =>
@@ -176,6 +184,8 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
                       case ClientConnector.ForwardPubRel(packetId) =>
                         PubRel(packetId).encode(ByteString.newBuilder).result()
                     }.mapError {
+                        case ClientConnector.ConnectFailed => ActorMqttClientSession.ConnectFailed
+                        case Subscriber.SubscribeFailed => ActorMqttClientSession.SubscribeFailed
                         case ClientConnector.PingFailed => ActorMqttClientSession.PingFailed
                       }
                       .watchTermination() { (_, done) =>
@@ -232,6 +242,8 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
               case _ =>
                 Supervision.Stop
             })
+            .log("client-commandFlow", _.iterator.decodeControlPacket(settings.maxPacketSize)) // we decode here so we can see the generated packet id
+            .withAttributes(ActorAttributes.logLevels(onFailure = Logging.DebugLevel))
         )
       }
       .mapMaterializedValue(_ => NotUsed)
@@ -446,8 +458,6 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
 
         Future.successful(
           Flow[Command[A]]
-            .log("server-commandFlow")
-            .withAttributes(ActorAttributes.logLevels(onFailure = Logging.DebugLevel))
             .watch(serverConnector.toUntyped)
             .watchTermination() {
               case (_, terminated) =>
@@ -527,6 +537,8 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
               case _ =>
                 Supervision.Stop
             })
+            .log("server-commandFlow", _.iterator.decodeControlPacket(settings.maxPacketSize)) // we decode here so we can see the generated packet id
+            .withAttributes(ActorAttributes.logLevels(onFailure = Logging.DebugLevel))
         )
       }
       .mapMaterializedValue(_ => NotUsed)

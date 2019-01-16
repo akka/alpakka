@@ -6,7 +6,7 @@ package akka.stream.alpakka.mqtt.streaming
 package impl
 
 import akka.NotUsed
-import akka.actor.typed.{ActorRef, Behavior, PostStop, Terminated}
+import akka.actor.typed.{ActorRef, Behavior, ChildFailed, PostStop, Terminated}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.annotation.InternalApi
 import akka.stream.{Materializer, OverflowStrategy}
@@ -25,6 +25,11 @@ import scala.util.{Failure, Success}
 @InternalApi private[streaming] object ClientConnector {
 
   type ConnectData = Option[_]
+
+  /*
+   * No ACK received - the CONNECT failed
+   */
+  case object ConnectFailed extends Exception with NoStackTrace
 
   /*
    * A PINGREQ failed to receive a PINGRESP - the connection must close
@@ -262,6 +267,7 @@ import scala.util.{Failure, Success}
             timer.cancel(ReceiveConnAck)
             disconnect(context, data.connect.connectFlags, data.remote, data)
           case (context, ReceiveConnAckTimeout) =>
+            data.remote.fail(ConnectFailed)
             timer.cancel(ReceiveConnAck)
             disconnect(context, data.connect.connectFlags, data.remote, data)
           case (context, ConnectionLost) =>
@@ -307,7 +313,7 @@ import scala.util.{Failure, Success}
                   PendingSubscribe(
                     data.connectFlags,
                     data.keepAlive,
-                    data.pendingPingResp,
+                    pendingPingResp = false,
                     data.activeConsumers,
                     data.activeProducers,
                     data.pendingLocalPublications,
@@ -464,6 +470,9 @@ import scala.util.{Failure, Success}
           pendingSubAck(data.copy(stash = data.stash :+ e))
       }
       .receiveSignal {
+        case (context, ChildFailed(_, failure)) if failure == Subscriber.SubscribeFailed =>
+          data.remote.fail(Subscriber.SubscribeFailed)
+          disconnect(context, data.connectFlags, data.remote, data)
         case (context, _: Terminated) =>
           data.stash.foreach(context.self.tell)
           serverConnected(
