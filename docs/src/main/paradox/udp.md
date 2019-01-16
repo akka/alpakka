@@ -17,9 +17,7 @@ The table below shows direct dependencies of this module and the second tab show
 @@dependencies { projectId="udp" }
 
 
-## Usage
-
-### Sending
+## Sending
 
 Datagrams can be sent to remote destinations by using a `Udp.sendFlow` or `Udp.sendSink` which can be found in the
 @scaladoc[Udp](akka.stream.alpakka.udp.scaladsl.Udp$) factory object.
@@ -30,7 +28,7 @@ Scala
 Java
 : @@snip [snip](/udp/src/test/java/docs/javadsl/UdpTest.java) { #send-datagrams }
 
-### Receiving
+## Receiving
 
 First create an address which will be used to bind and listen for incoming datagrams.
 
@@ -53,7 +51,7 @@ Scala
 Java
 : @@snip [snip](/udp/src/test/java/docs/javadsl/UdpTest.java) { #bind-flow }
 
-### Running the example code
+## Running the example code
 
 The code in this guide is part of runnable tests of this project. You are welcome to browse the code, edit and run it in sbt.
 
