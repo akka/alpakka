@@ -18,9 +18,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 @@dependencies { projectId="amqp" }
 
-## Usage
-
-### Connecting to AMQP server
+## Connecting to server
 
 All the AMQP connectors are configured using a @scaladoc[AmqpConnectionProvider](akka.stream.alpakka.amqp.AmqpConnectionProvider) and a list of @scaladoc[Declaration](akka.stream.alpakka.amqp.Declaration)
 
@@ -32,7 +30,7 @@ There are several types of @scaladoc[AmqpConnectionProvider](akka.stream.alpakka
 * @scaladoc[AmqpConnectionFactoryConnectionProvider](akka.stream.alpakka.amqp.AmqpConnectionFactoryConnectionProvider) which takes a raw [ConnectionFactory](https://www.rabbitmq.com/releases/rabbitmq-java-client/current-javadoc/com/rabbitmq/client/ConnectionFactory.html). It creates a new connection for each stage.
 * @scaladoc[AmqpCachedConnectionProvider](akka.stream.alpakka.amqp.AmqpCachedConnectionProvider) which receive any other provider as parameter and caches the connection it provides to be used in all stages. By default it closes the connection whenever the last stage using the provider stops. Optionally, it takes `automaticRelease` boolean parameter so the connection is not automatically release and the user have to release it explicitly.
 
-### Sending messages to AMQP server
+## Sending messages
 
 First define a queue name and the declaration of the queue that the messages will be sent to.
 
@@ -62,7 +60,7 @@ Scala
 Java
 : @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #run-sink }
 
-### Receiving messages from AMQP server
+## Receiving messages
 
 Create a source using the same queue declaration as before.
 
@@ -84,7 +82,7 @@ Java
 
 This is how you send and receive message from AMQP server using this connector.
 
-### Using Pub/Sub with an AMQP server
+## Using Pub/Sub
 
 Instead of sending messages directly to queues, it is possible to send messages to an exchange and then provide instructions to AMQP server what to do with incoming messages to the exchange. We are going to use the *fanout* type of the exchange, which enables message broadcasting to multiple consumers. We are going to do that by using an exchange declaration for the sink and all of the sources.
 
@@ -114,7 +112,7 @@ We merge all sources into one and add the index of the source to all incoming me
 
 Such sink and source can be started the same way as in the previous example.
 
-### Using rabbitmq as an RPC mechanism
+## Using rabbitmq as an RPC mechanism
 
 If you have remote workers that you want to incorporate into a stream, you can do it using rabbit RPC workflow [RabbitMQ RPC](https://www.rabbitmq.com/tutorials/tutorial-six-java.html)
 
@@ -132,7 +130,7 @@ Java
 : @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #run-rpc-flow }
 
 
-### Acknowledging messages downstream
+## Acknowledging messages downstream
 
 Create a committable sink which returns 
 
@@ -160,7 +158,7 @@ Scala
 Java
 : @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #run-source-withoutautoack-and-nack }
 
-### Running the example code
+## Running the example code
 
 The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
 

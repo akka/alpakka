@@ -20,15 +20,12 @@ The table below shows direct dependencies of this module and the second tab show
 
 @@dependencies { projectId="ironmq" }
 
-
-## Usage
+## Consumer
 
 IronMQ can be used either in cloud or on-premise. Either way you need a authentication token and a project ID. These can
 be set in the Typesafe config:
 
 @@snip [snip](/ironmq/src/main/resources/reference.conf)
-
-### Consumer
 
 The consumer is poll based one. It will poll every `n` milliseconds, waiting for `m` milliseconds to consume new messages and
 will push them to the downstream. All These parameters are configurable by the Typesafe config.
@@ -41,7 +38,8 @@ The consumer could be instantiated using the @scaladoc[IronMqConsumer](akka.stre
 It provides methods to obtain either a `Source[Message, NotUsed]` or `Source[CommittableMessage, NotUsed]`. The first is
 for at-most-one semantic, the latter for at-least-once semantic.
 
-### Producer
+## Producer
+
 The producer is very trivial at this time, it does not provide any batching mechanism, but sends messages to IronMq as
 soon as they arrive to the stage.
 
@@ -60,6 +58,8 @@ if the producer will implement a batch mechanism in the future.
 
 The producer also provides a Committable aware Flow/Sink as `Flow[(PushMessage, ToCommit), (Message.Id, CommitResult), CommitMat]`.
 It can be used to consume a Flow from an IronMQ consumer or any other source that provides a commit mechanism.
+
+## Running the test code
 
 > Test code requires IronMQ running in the background. You can start it quickly using docker:
 >
