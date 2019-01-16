@@ -10,7 +10,6 @@ import akka.stream._
 import akka.stream.alpakka.jms.scaladsl.{JmsConsumer, JmsProducer}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import javax.jms.{JMSException, Message, TextMessage}
-import org.apache.activemq.ActiveMQConnectionFactory
 import org.mockito.ArgumentMatchers.{any, anyInt, anyLong}
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
@@ -23,9 +22,8 @@ class JmsProducerRetrySpec extends JmsSpec {
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(20.seconds)
 
   "JmsProducer retries" should {
-    "retry sending on network failures" in withServer() { ctx =>
-      val connectionFactory: javax.jms.ConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
-
+    "retry sending on network failures" in withServer() { server =>
+      val connectionFactory = server.createConnectionFactory
       val jms = JmsProducer.flow[JmsMapMessage](
         JmsProducerSettings(producerConfig, connectionFactory)
           .withQueue("test")
@@ -58,10 +56,10 @@ class JmsProducerRetrySpec extends JmsSpec {
 
       for (_ <- 1 to 10) queue.offer(1) // 10 before the crash
       Thread.sleep(500)
-      ctx.broker.stop() // crash.
+      server.stop() // crash.
 
       Thread.sleep(1000)
-      ctx.broker.start(true) // recover.
+      server.restart() // recover.
       val restartTime = System.currentTimeMillis()
       for (_ <- 1 to 10) queue.offer(1) // 10 after the crash
       queue.complete()
@@ -82,9 +80,8 @@ class JmsProducerRetrySpec extends JmsSpec {
       } shouldBe true
     }
 
-    "fail sending only after max retries" in withServer() { ctx =>
-      val connectionFactory: javax.jms.ConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
-
+    "fail sending only after max retries" in withServer() { server =>
+      val connectionFactory = server.createConnectionFactory
       val jms = JmsProducer.flow[JmsMapMessage](
         JmsProducerSettings(producerConfig, connectionFactory)
           .withQueue("test")
@@ -109,7 +106,7 @@ class JmsProducerRetrySpec extends JmsSpec {
 
       Thread.sleep(500)
       val crashTime = System.currentTimeMillis()
-      ctx.broker.stop()
+      server.stop()
       val failure = result.failed.futureValue
       val failureTime = System.currentTimeMillis()
 
@@ -118,9 +115,7 @@ class JmsProducerRetrySpec extends JmsSpec {
       failure shouldBe RetrySkippedOnMissingConnection
     }
 
-    "fail immediately on non-recoverable errors" in withServer() { ctx =>
-      val connectionFactory: javax.jms.ConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
-
+    "fail immediately on non-recoverable errors" in withConnectionFactory() { connectionFactory =>
       val jms = JmsProducer.flow[JmsMapMessage](
         JmsProducerSettings(producerConfig, connectionFactory)
           .withQueue("test")
@@ -137,7 +132,7 @@ class JmsProducerRetrySpec extends JmsSpec {
       failure shouldBe a[UnsupportedMapMessageEntryType]
     }
 
-    "invoke supervisor when send fails" in withServer() { ctx =>
+    "invoke supervisor when send fails" in withConnectionFactory() { connectionFactory =>
       val deciderCalls = new AtomicInteger()
       val decider: Supervision.Decider = { ex =>
         deciderCalls.incrementAndGet()
@@ -145,8 +140,6 @@ class JmsProducerRetrySpec extends JmsSpec {
       }
       val settings = ActorMaterializerSettings(system).withSupervisionStrategy(decider)
       val materializer = ActorMaterializer(settings)(system)
-
-      val connectionFactory: javax.jms.ConnectionFactory = new ActiveMQConnectionFactory(ctx.url)
 
       val jms = JmsProducer.flow[JmsMapMessage](
         JmsProducerSettings(producerConfig, connectionFactory)

@@ -16,9 +16,8 @@ import akka.stream.alpakka.jms.javadsl.JmsProducer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
+import jmstestkit.JmsBroker;
 import com.typesafe.config.Config;
-import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.activemq.broker.BrokerService;
 import org.apache.activemq.command.ActiveMQQueue;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -76,8 +75,8 @@ public class JmsTxConnectorsTest {
   @Test
   public void publishAndConsume() throws Exception {
     withServer(
-        ctx -> {
-          ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+        server -> {
+          ConnectionFactory connectionFactory = server.createConnectionFactory();
 
           Sink<String, CompletionStage<Done>> jmsSink =
               JmsProducer.textSink(
@@ -112,9 +111,9 @@ public class JmsTxConnectorsTest {
   @Test
   public void publishAndConsumeJmsTextMessagesWithProperties() throws Exception {
     withServer(
-        ctx -> {
+        server -> {
           // #source
-          ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+          ConnectionFactory connectionFactory = server.createConnectionFactory();
 
           // #source
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
@@ -173,8 +172,8 @@ public class JmsTxConnectorsTest {
   @Test
   public void publishAndConsumeJmsTextMessagesWithHeaders() throws Exception {
     withServer(
-        ctx -> {
-          ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+        server -> {
+          ConnectionFactory connectionFactory = server.createConnectionFactory();
 
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
               JmsProducer.create(
@@ -240,8 +239,8 @@ public class JmsTxConnectorsTest {
   @Test
   public void publishJmsTextMessagesWithPropertiesAndConsumeThemWithASelector() throws Exception {
     withServer(
-        ctx -> {
-          ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+        server -> {
+          ConnectionFactory connectionFactory = server.createConnectionFactory();
 
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
               JmsProducer.create(
@@ -306,8 +305,8 @@ public class JmsTxConnectorsTest {
   @Test
   public void publishAndConsumeTopic() throws Exception {
     withServer(
-        ctx -> {
-          ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ctx.url);
+        server -> {
+          ConnectionFactory connectionFactory = server.createConnectionFactory();
 
           List<String> in = Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
           List<String> inNumbers =
@@ -370,18 +369,10 @@ public class JmsTxConnectorsTest {
         });
   }
 
-  private void withServer(ConsumerChecked<Context> test) throws Exception {
-    BrokerService broker = new BrokerService();
-    broker.setPersistent(false);
-    String host = "localhost";
-    Integer port = akka.testkit.SocketUtil.temporaryServerAddress(host, false).getPort();
-    broker.setBrokerName(host);
-    broker.setUseJmx(false);
-    String url = "tcp://" + host + ":" + port;
-    broker.addConnector(url);
-    broker.start();
+  private void withServer(ConsumerChecked<JmsBroker> test) throws Exception {
+    JmsBroker broker = JmsBroker.apply();
     try {
-      test.accept(new Context(url, broker));
+      test.accept(broker);
       Thread.sleep(500);
     } finally {
       if (broker.isStarted()) {
@@ -393,15 +384,5 @@ public class JmsTxConnectorsTest {
   @FunctionalInterface
   private interface ConsumerChecked<T> {
     void accept(T elt) throws Exception;
-  }
-
-  private static class Context {
-    final String url;
-    final BrokerService broker;
-
-    public Context(String url, BrokerService broker) {
-      this.url = url;
-      this.broker = broker;
-    }
   }
 }
