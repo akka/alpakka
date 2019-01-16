@@ -37,15 +37,14 @@ class JmsMessageProducerSpec extends JmsSpec with MockitoSugar {
       val jmsProducer = JmsMessageProducer(jmsSession, settings, 0)
       jmsProducer.populateMessageProperties(
         textMessage,
-        JmsTextMessage("test",
-                       Set.empty,
-                       Map("string" -> "string",
-                           "int" -> 1,
-                           "boolean" -> true,
-                           "byte" -> 2.toByte,
-                           "short" -> 3.toShort,
-                           "long" -> 4L,
-                           "double" -> 5.0))
+        JmsTextMessage("test")
+          .withProperty("string", "string")
+          .withProperty("int", 1)
+          .withProperty("boolean", true)
+          .withProperty("byte", 2.toByte)
+          .withProperty("short", 3.toShort)
+          .withProperty("long", 4L)
+          .withProperty("double", 5.0)
       )
 
       verify(textMessage).setStringProperty("string", "string")
@@ -60,16 +59,14 @@ class JmsMessageProducerSpec extends JmsSpec with MockitoSugar {
     "fail if a property is set to an unsupported type" in new Setup {
       val jmsProducer = JmsMessageProducer(jmsSession, settings, 0)
       assertThrows[UnsupportedMessagePropertyType] {
-        val wrongProperties: Map[String, Any] = Map("object" -> this)
-        jmsProducer.populateMessageProperties(textMessage, JmsTextMessage("test", Set.empty, wrongProperties))
+        jmsProducer.populateMessageProperties(textMessage, JmsTextMessage("test").withProperty("object", this))
       }
     }
 
     "fail if a property is set to a null value" in new Setup {
       val jmsProducer = JmsMessageProducer(jmsSession, settings, 0)
       assertThrows[NullMessageProperty] {
-        val wrongProperties: Map[String, Any] = Map("object" -> null)
-        jmsProducer.populateMessageProperties(textMessage, JmsTextMessage("test", Set.empty, wrongProperties))
+        jmsProducer.populateMessageProperties(textMessage, JmsTextMessage("test").withProperty("object", null))
       }
     }
   }

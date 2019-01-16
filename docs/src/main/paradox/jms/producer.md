@@ -3,8 +3,8 @@
 The Alpakka JMS connector offers producing JMS messages to topics or queues in three ways
 
 * JVM types to an Akka Streams Sink
-* `JmsMessage` sub-types to a Akka Streams Sink or Flow (using `JmsProducer.create` or `JmsProducer.flow`)
-* `Envelopes` for `JmsMessage` sub-types to a Akka Streams Flow (using `JmsProducer.flexiFlow`) to support pass-throughs
+* `JmsMessage` sub-types to a Akka Streams Sink or Flow (using `JmsProducer.sink` or `JmsProducer.flow`)
+* `JmsEnvelope` sub-types to a Akka Streams Flow (using `JmsProducer.flexiFlow`) to support pass-throughs
 
 The JMS message model supports several types of message bodies in (see @javadoc[javax.jms.Message](javax.jms.Message)), which may be created directly from the Akka Stream elements, or in wrappers to access more advanced features.
 
@@ -14,11 +14,12 @@ The JMS message model supports several types of message bodies in (see @javadoc[
 | @scala[Array[Byte]]@java[byte[]]                      | [`JmsProducer.bytesSink`](#byte-array-sinks)  |
 | @scala[Map[String, AnyRef]]@java[Map<String, Object>] | [`JmsProducer.mapSink`](#map-messages-sinks)  |
 | Object (`java.io.Serializable`)                       | [`JmsProducer.objectSink`](#object-sinks)     |
-| `JmsTextMessage`                                      | @scala[`JmsProducer.apply`]@java[`JmsProducer.create`] or [`JmsProducer.flow`](#sending-messages-as-a-flow) |  
-| `JmsByteMessage`                                      | @scala[`JmsProducer.apply`]@java[`JmsProducer.create`] or [`JmsProducer.flow`](#sending-messages-as-a-flow) |  
-| `JmsMapMessage`                                       | @scala[`JmsProducer.apply`]@java[`JmsProducer.create`] or [`JmsProducer.flow`](#sending-messages-as-a-flow) |  
-| `JmsObjectMessage`                                    | @scala[`JmsProducer.apply`]@java[`JmsProducer.create`] or [`JmsProducer.flow`](#sending-messages-as-a-flow) |  
-| @scala[`JmsProducerMessage.Envelope[JmsMessage, PassThrough]`]@java[`JmsProducerMessage.Envelope<JmsMessage, PassThrough>`]             | [`JmsProducer.flexiFlow`](#passing-context-through-the-producer) |  
+| `JmsTextMessage`                                      | [`JmsProducer.sink`](#a-jmsmessage-sub-type-sink) or [`JmsProducer.flow`](#sending-messages-as-a-flow) |
+| `JmsByteMessage`                                      | [`JmsProducer.sink`](#a-jmsmessage-sub-type-sink) or [`JmsProducer.flow`](#sending-messages-as-a-flow) |
+| `JmsByteStringMessage`                                | [`JmsProducer.sink`](#a-jmsmessage-sub-type-sink) or [`JmsProducer.flow`](#sending-messages-as-a-flow) |
+| `JmsMapMessage`                                       | [`JmsProducer.sink`](#a-jmsmessage-sub-type-sink) or [`JmsProducer.flow`](#sending-messages-as-a-flow) |
+| `JmsObjectMessage`                                    | [`JmsProducer.sink`](#a-jmsmessage-sub-type-sink) or [`JmsProducer.flow`](#sending-messages-as-a-flow) |
+| @scala[`JmsEnvelope[PassThrough]`]@java[`JmsEnvelope<PassThrough>`] with instances `JmsPassThrough`, `JmsTextMessagePassThrough`, `JmsByteMessagePassThrough`, `JmsByteStringMessagePassThrough`, `JmsMapMessagePassThrough`, `JmsObjectMessagePassThrough`      | [`JmsProducer.flexiFlow`](#passing-context-through-the-producer) |
 
 
 
@@ -35,6 +36,38 @@ Java
 
 The created @javadoc[ConnectionFactory](javax.jms.ConnectionFactory) is then used for the creation of the different JMS sinks or sources (see below).
 
+### A `JmsMessage` sub-type sink
+
+Use a case class with the subtype of @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage$) to wrap the messages you want to send and optionally set message specific properties or headers.
+@java[@scaladoc[JmsProducer](akka.stream.alpakka.jms.javadsl.JmsProducer$)]@scala[@scaladoc[JmsProducer](akka.stream.alpakka.jms.scaladsl.JmsProducer$)] contains factory methods to facilitate the creation of sinks according to the message type.
+
+Scala
+: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-jms-sink }
+
+Java
+: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #create-jms-sink }
+
+
+#### Setting JMS message properties
+
+For every @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage$) you can set JMS message properties.
+
+Scala
+: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-messages-with-properties }
+
+Java
+: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #create-messages-with-properties }
+
+
+#### Setting JMS message header attributes
+For every @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage$) you can set also JMS message headers.
+
+Scala
+: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-messages-with-headers }
+
+Java
+: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #create-messages-with-headers }
+
 
 ### Raw JVM type sinks
 
@@ -48,7 +81,7 @@ Scala
 Java
 : @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #text-sink }
 
-### Byte array sinks
+#### Byte array sinks
 
 Create a sink, that accepts and forwards @scaladoc[JmsByteMessage](akka.stream.alpakka.jms.JmsByteMessage$)s to the JMS provider.
 
@@ -83,34 +116,6 @@ Java
 : @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #object-sink }
 
 
-### Use `JmsMessage` sub-types
-
-Use a case class with the subtype of @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage$) to wrap the messages you want to send and optionally set message specific properties or headers.
-@java[@scaladoc[JmsProducer](akka.stream.alpakka.jms.javadsl.JmsProducer$)]@scala[@scaladoc[JmsProducer](akka.stream.alpakka.jms.scaladsl.JmsProducer$)] contains factory methods to facilitate
-the creation of sinks according to the message type (see below for an example).
-
-
-#### Setting JMS messages properties
-
-For every @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage$) you can set JMS message properties.
-
-Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-messages-with-properties }
-
-Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #create-messages-with-properties }
-
-
-#### Setting JMS message header attributes
-For every @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage$) you can set also JMS message headers.
-
-Scala
-: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-messages-with-headers }
-
-Java
-: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #create-messages-with-headers }
-
-
 ### Sending messages as a Flow
 
 The producer can also act as a flow, in order to publish messages in the middle of stream processing.
@@ -140,8 +145,15 @@ When no destination is defined on the message, the destination given in the prod
 ### Passing context through the producer
 
 In some use cases, it is useful to pass through context information when producing (e.g. for acknowledging or committing
-messages after sending to Jms). For this, the `JmsProducer.flexiFlow` accepts implementations of `JmsProducer.Envelope`,
-which it will pass through.
+messages after sending to Jms). For this, the `JmsProducer.flexiFlow` accepts implementations of `JmsEnvelope`,
+which it will pass through:
+
+* `JmsPassThrough`
+* `JmsTextMessagePassThrough`
+* `JmsByteMessagePassThrough`
+* `JmsByteStringMessagePassThrough` 
+* `JmsMapMessagePassThrough`
+* `JmsObjectMessagePassThrough`  
 
 Scala
 : @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #run-flexi-flow-producer }

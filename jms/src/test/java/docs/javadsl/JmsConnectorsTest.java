@@ -11,7 +11,6 @@ import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.jms.*;
-import akka.stream.alpakka.jms.JmsProducerMessage.*;
 import akka.stream.alpakka.jms.javadsl.JmsConsumer;
 import akka.stream.alpakka.jms.javadsl.JmsConsumerControl;
 import akka.stream.alpakka.jms.javadsl.JmsProducer;
@@ -35,9 +34,7 @@ import scala.util.Success;
 import scala.util.Try;
 
 import javax.jms.*;
-import javax.jms.Destination;
 import javax.jms.Message;
-import javax.jms.Queue;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -283,17 +280,18 @@ public class JmsConnectorsTest {
 
           // #jms-source
 
+          int expectedMessages = 2;
+
           // #create-jms-sink
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(
+              JmsProducer.sink(
                   JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
+
+          CompletionStage<Done> finished =
+              Source.from(Arrays.asList("Message A", "Message B"))
+                  .map(JmsTextMessage::create)
+                  .runWith(jmsSink, materializer);
           // #create-jms-sink
-
-          List<JmsTextMessage> msgsIn = createTestMessageList();
-
-          // #run-jms-sink
-          CompletionStage<Done> finished = Source.from(msgsIn).runWith(jmsSink, materializer);
-          // #run-jms-sink
 
           // #jms-source
           Source<javax.jms.Message, JmsConsumerControl> jmsSource =
@@ -302,7 +300,7 @@ public class JmsConnectorsTest {
 
           Pair<JmsConsumerControl, CompletionStage<List<String>>> controlAndResult =
               jmsSource
-                  .take(msgsIn.size())
+                  .take(expectedMessages)
                   .map(
                       msg -> {
                         if (msg instanceof TextMessage) {
@@ -318,7 +316,7 @@ public class JmsConnectorsTest {
 
           CompletionStage<List<String>> result = controlAndResult.second();
           List<String> outMessages = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
-          assertEquals("unexpected number of elements", 10, outMessages.size());
+          assertEquals("unexpected number of elements", expectedMessages, outMessages.size());
           // #jms-source
           JmsConsumerControl control = controlAndResult.first();
           control.shutdown();
@@ -333,7 +331,7 @@ public class JmsConnectorsTest {
           ConnectionFactory connectionFactory = server.createConnectionFactory();
 
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(
+              JmsProducer.sink(
                   JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
 
           // #create-messages-with-headers
@@ -404,7 +402,7 @@ public class JmsConnectorsTest {
         server -> {
           ConnectionFactory connectionFactory = server.createConnectionFactory();
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(
+              JmsProducer.sink(
                   JmsProducerSettings.create(producerConfig, connectionFactory)
                       .withDestination(new CustomDestination("custom", createQueue("custom"))));
 
@@ -433,7 +431,7 @@ public class JmsConnectorsTest {
           ConnectionFactory connectionFactory = server.createConnectionFactory();
 
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(
+              JmsProducer.sink(
                   JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
 
           List<JmsTextMessage> msgsIn = createTestMessageList();
@@ -535,7 +533,7 @@ public class JmsConnectorsTest {
           ConnectionFactory connectionFactory = server.createConnectionFactory();
 
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(
+              JmsProducer.sink(
                   JmsProducerSettings.create(producerConfig, connectionFactory)
                       .withQueue("test")
                       .withConnectionRetrySettings(
@@ -557,7 +555,7 @@ public class JmsConnectorsTest {
           ConnectionFactory connectionFactory = server.createConnectionFactory();
 
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(
+              JmsProducer.sink(
                   JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
 
           CompletionStage<Done> completionFuture =
@@ -581,7 +579,7 @@ public class JmsConnectorsTest {
           ConnectionFactory connectionFactory = server.createConnectionFactory();
 
           Sink<JmsTextMessage, CompletionStage<Done>> jmsSink =
-              JmsProducer.create(
+              JmsProducer.sink(
                   JmsProducerSettings.create(producerConfig, connectionFactory)
                       .withQueue("test")
                       .withConnectionRetrySettings(
@@ -809,25 +807,21 @@ public class JmsConnectorsTest {
         server -> {
           ConnectionFactory connectionFactory = server.createConnectionFactory();
           // #run-flexi-flow-producer
-          Flow<
-                  Envelope<JmsTextMessage, String>,
-                  Envelope<JmsTextMessage, String>,
-                  JmsProducerStatus>
-              jmsProducer =
-                  JmsProducer.flexiFlow(
-                      JmsProducerSettings.create(producerConfig, connectionFactory)
-                          .withQueue("test"));
+          Flow<JmsEnvelope<String>, JmsEnvelope<String>, JmsProducerStatus> jmsProducer =
+              JmsProducer.flexiFlow(
+                  JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
 
           List<String> data = Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
-          List<Envelope<JmsTextMessage, String>> input = new ArrayList<>();
+          List<JmsEnvelope<String>> input = new ArrayList<>();
           for (String s : data) {
-            input.add(JmsProducerMessage.message(JmsTextMessage.create(s), s));
+            String passThrough = s;
+            input.add(JmsTextMessage.create(s, passThrough));
           }
 
           CompletionStage<List<String>> result =
               Source.from(input)
                   .via(jmsProducer)
-                  .map(Envelope::passThrough)
+                  .map(JmsEnvelope::passThrough)
                   .runWith(Sink.seq(), materializer);
           // #run-flexi-flow-producer
           assertEquals(data, result.toCompletableFuture().get());
@@ -847,25 +841,21 @@ public class JmsConnectorsTest {
                   .run(materializer);
 
           // #run-flexi-flow-pass-through-producer
-          Flow<
-                  Envelope<JmsTextMessage, String>,
-                  Envelope<JmsTextMessage, String>,
-                  JmsProducerStatus>
-              jmsProducer =
-                  JmsProducer.flexiFlow(
-                      JmsProducerSettings.create(producerConfig, connectionFactory)
-                          .withQueue("test"));
+          Flow<JmsEnvelope<String>, JmsEnvelope<String>, JmsProducerStatus> jmsProducer =
+              JmsProducer.flexiFlow(
+                  JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
 
           List<String> data = Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
-          List<Envelope<JmsTextMessage, String>> input = new ArrayList<>();
+          List<JmsEnvelope<String>> input = new ArrayList<>();
           for (String s : data) {
-            input.add(JmsProducerMessage.passThroughMessage(s));
+            String passThrough = s;
+            input.add(JmsPassThrough.create(passThrough));
           }
 
           CompletionStage<List<String>> result =
               Source.from(input)
                   .via(jmsProducer)
-                  .map(Envelope::passThrough)
+                  .map(JmsEnvelope::passThrough)
                   .runWith(Sink.seq(), materializer);
           // #run-flexi-flow-pass-through-producer
 
