@@ -5,7 +5,7 @@
 package akka.stream.alpakka.couchbase.scaladsl
 import akka.NotUsed
 import akka.stream.alpakka.couchbase.impl.Setup
-import akka.stream.alpakka.couchbase.{CouchbaseSessionRegistry, CouchbaseSessionSettings, CouchbaseWriteSettings}
+import akka.stream.alpakka.couchbase._
 import akka.stream.scaladsl.Flow
 import com.couchbase.client.java.document.{Document, JsonDocument}
 
@@ -70,6 +70,31 @@ object CouchbaseFlow {
         Flow[T]
           .mapAsync(writeSettings.parallelism)(
             doc => session.flatMap(_.upsertDoc(doc, writeSettings))(materializer.system.dispatcher)
+          )
+      }
+      .mapMaterializedValue(_ => NotUsed)
+
+  /**
+   * Create a flow to update or insert a Couchbase document of the given class and emit a result so that write failures
+   * can be handled in-stream.
+   */
+  def upsertDocWithResult[T <: Document[_]](sessionSettings: CouchbaseSessionSettings,
+                                            writeSettings: CouchbaseWriteSettings,
+                                            bucketName: String): Flow[T, CouchbaseWriteResult[T], NotUsed] =
+    Setup
+      .flow { materializer => _ =>
+        val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
+        Flow[T]
+          .mapAsync(writeSettings.parallelism)(
+            doc => {
+              implicit val executor = materializer.system.dispatcher
+              session
+                .flatMap(_.upsertDoc(doc, writeSettings))
+                .map(_ => CouchbaseWriteSuccess(doc))
+                .recover {
+                  case exception => CouchbaseWriteFailure(doc, exception)
+                }
+            }
           )
       }
       .mapMaterializedValue(_ => NotUsed)

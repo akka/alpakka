@@ -5,7 +5,7 @@
 package akka.stream.alpakka.couchbase.javadsl
 
 import akka.NotUsed
-import akka.stream.alpakka.couchbase.{scaladsl, CouchbaseSessionSettings, CouchbaseWriteSettings}
+import akka.stream.alpakka.couchbase.{scaladsl, CouchbaseSessionSettings, CouchbaseWriteResult, CouchbaseWriteSettings}
 import akka.stream.javadsl.Flow
 import com.couchbase.client.java.document.{Document, JsonDocument}
 
@@ -43,6 +43,15 @@ object CouchbaseFlow {
                                   writeSettings: CouchbaseWriteSettings,
                                   bucketName: String): Flow[T, T, NotUsed] =
     scaladsl.CouchbaseFlow.upsertDoc(sessionSettings, writeSettings, bucketName).asJava
+
+  /**
+   * Create a flow to update or insert a Couchbase document of the given class and emit a result so that write failures
+   * can be handled in-stream.
+   */
+  def upsertDocWithResult[T <: Document[_]](sessionSettings: CouchbaseSessionSettings,
+                                            writeSettings: CouchbaseWriteSettings,
+                                            bucketName: String): Flow[T, CouchbaseWriteResult[T], NotUsed] =
+    scaladsl.CouchbaseFlow.upsertDocWithResult(sessionSettings, writeSettings, bucketName).asJava
 
   /**
    * Create a flow to delete documents from Couchbase by `id`. Emits the same `id`.
