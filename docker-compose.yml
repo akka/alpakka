@@ -109,6 +109,27 @@ services:
     command: tserver
     links:
       - kudu-master
+  minio:
+    image: minio/minio
+    ports:
+      - "9000:9000"
+    environment:
+      - "MINIO_ACCESS_KEY=TESTKEY"
+      - "MINIO_SECRET_KEY=TESTSECRET"
+    command: server /data
+  minio_prep:
+    image: mesosphere/aws-cli
+    links:
+      - "minio"
+    environment:
+      - "AWS_ACCESS_KEY_ID=TESTKEY"
+      - "AWS_SECRET_ACCESS_KEY=TESTSECRET"
+    entrypoint: ""
+    command: >
+      sh -c "
+        aws --endpoint-url http://minio:9000 s3api create-bucket --bucket my.test.frankfurt
+        aws --endpoint-url http://minio:9000 s3api create-bucket --bucket my-test-us-east-1
+      "
   mongo:
     image: mongo
     ports:

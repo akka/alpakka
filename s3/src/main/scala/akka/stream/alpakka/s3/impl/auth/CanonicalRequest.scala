@@ -2,13 +2,14 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.s3.auth
+package akka.stream.alpakka.s3.impl.auth
 
+import akka.annotation.InternalApi
 import akka.http.scaladsl.model.Uri.{Path, Query}
 import akka.http.scaladsl.model.{HttpHeader, HttpRequest}
 
 // Documentation: http://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
-private[alpakka] final case class CanonicalRequest(
+@InternalApi private[impl] final case class CanonicalRequest(
     method: String,
     uri: String,
     queryString: String,
@@ -20,7 +21,7 @@ private[alpakka] final case class CanonicalRequest(
     s"$method\n$uri\n$queryString\n$headerString\n\n$signedHeaders\n$hashedPayload"
 }
 
-private[alpakka] object CanonicalRequest {
+@InternalApi private[impl] object CanonicalRequest {
   def from(request: HttpRequest): CanonicalRequest = {
     val hashedBody =
       request.headers

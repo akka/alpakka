@@ -2,14 +2,15 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.s3.auth
+package akka.stream.alpakka.s3.impl.auth
 
 import java.nio.charset.StandardCharsets._
 import java.nio.file.{Files, Path}
 import java.security.{DigestInputStream, MessageDigest}
+
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
-import akka.stream.scaladsl.{Source, StreamConverters}
+import akka.stream.scaladsl.{Sink, Source, StreamConverters}
 import akka.testkit.TestKit
 import akka.util.ByteString
 import com.google.common.jimfs.{Configuration, Jimfs}
@@ -51,7 +52,7 @@ class StreamUtilsSpec(_system: ActorSystem)
 
   "digest" should "calculate the digest of a short string" in {
     val bytes = "abcdefghijklmnopqrstuvwxyz".getBytes()
-    val flow = Source.single(ByteString(bytes)).runWith(digest())
+    val flow = Source.single(ByteString(bytes)).via(digest()).runWith(Sink.head)
 
     val testDigest = MessageDigest.getInstance("SHA-256").digest(bytes)
     whenReady(flow) { result =>
@@ -61,7 +62,7 @@ class StreamUtilsSpec(_system: ActorSystem)
 
   it should "calculate the digest of a file" in {
     val input = StreamConverters.fromInputStream(() => Files.newInputStream(bigFile))
-    val flow = input.runWith(digest())
+    val flow = input.via(digest()).runWith(Sink.head)
 
     val testDigest = MessageDigest.getInstance("SHA-256")
     val dis = new DigestInputStream(Files.newInputStream(bigFile), testDigest)
