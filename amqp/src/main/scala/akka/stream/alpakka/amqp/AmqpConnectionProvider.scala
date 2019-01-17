@@ -296,7 +296,7 @@ final class AmqpConnectionFactoryConnectionProvider private (val factory: Connec
     factory.newConnection(hostAndPortList.map(hp => new Address(hp._1, hp._2)).asJava)
   }
 
-  private def copy(hostAndPorts: immutable.Seq[(String, Int)] = hostAndPorts) =
+  private def copy(hostAndPorts: immutable.Seq[(String, Int)]) =
     new AmqpConnectionFactoryConnectionProvider(factory, hostAndPorts)
 
   override def toString: String =
@@ -372,7 +372,7 @@ final class AmqpCachedConnectionProvider private (val provider: AmqpConnectionPr
     case Closing => release(connection)
   }
 
-  private def copy(automaticRelease: Boolean = automaticRelease): AmqpCachedConnectionProvider =
+  private def copy(automaticRelease: Boolean): AmqpCachedConnectionProvider =
     new AmqpCachedConnectionProvider(provider, automaticRelease)
 
   override def toString: String =
