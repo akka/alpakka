@@ -668,7 +668,7 @@ class MqttSessionSpec
     }
 
     "publish with a QoS of 1 and cause a retry given a timeout" in {
-      val session = ActorMqttClientSession(settings.withReceivePubAckRecTimeout(10.millis))
+      val session = ActorMqttClientSession(settings.withProducerPubAckRecTimeout(10.millis))
 
       val server = TestProbe()
       val pipeToServer = Flow[ByteString].mapAsync(1)(msg => server.ref.ask(msg).mapTo[ByteString])
@@ -1409,7 +1409,7 @@ class MqttSessionSpec
     }
 
     "produce a duplicate publish on the server given two client connections" in {
-      val serverSession = ActorMqttServerSession(settings.withReceivePubAckRecTimeout(10.millis))
+      val serverSession = ActorMqttServerSession(settings.withProducerPubAckRecTimeout(10.millis))
 
       val client1 = TestProbe()
       val toClient1 = Sink.foreach[ByteString](bytes => client1.ref ! bytes)
