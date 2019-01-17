@@ -115,7 +115,7 @@ import scala.util.{Failure, Success}
   def publishUnacknowledged(data: Publishing)(implicit mat: Materializer): Behavior[Event] = Behaviors.withTimers {
     val ReceivePubackrec = "producer-receive-pubackrec"
     timer =>
-      timer.startSingleTimer(ReceivePubackrec, ReceivePubAckRecTimeout, data.settings.receivePubAckRecTimeout)
+      timer.startSingleTimer(ReceivePubackrec, ReceivePubAckRecTimeout, data.settings.producerPubAckRecTimeout)
 
       Behaviors
         .receiveMessagePartial[Event] {
@@ -146,7 +146,7 @@ import scala.util.{Failure, Success}
   def publishAcknowledged(data: Publishing)(implicit mat: Materializer): Behavior[Event] = Behaviors.withTimers {
     val ReceivePubrel = "producer-receive-pubrel"
     timer =>
-      timer.startSingleTimer(ReceivePubrel, ReceivePubCompTimeout, data.settings.receivePubCompTimeout)
+      timer.startSingleTimer(ReceivePubrel, ReceivePubCompTimeout, data.settings.producerPubCompTimeout)
 
       data.remote.offer(ForwardPubRel(data.publish, data.packetId))
 
@@ -157,7 +157,6 @@ import scala.util.{Failure, Success}
             Behaviors.stopped
           case ReceivePubCompTimeout =>
             data.remote.offer(ForwardPubRel(data.publish, data.packetId))
-            timer.cancel(ReceivePubrel)
             publishAcknowledged(data)
         }
         .receiveSignal {
@@ -265,7 +264,7 @@ import scala.util.{Failure, Success}
 
   def consumeUnacknowledged(data: ClientConsuming): Behavior[Event] = Behaviors.withTimers { timer =>
     val ReceivePubackrel = "consumer-receive-pubackrel"
-    timer.startSingleTimer(ReceivePubackrel, ReceivePubAckRecTimeout, data.settings.receivePubAckRecTimeout)
+    timer.startSingleTimer(ReceivePubackrel, ReceivePubAckRecTimeout, data.settings.consumerPubAckRecTimeout)
     Behaviors
       .receiveMessagePartial[Event] {
         case PubAckReceivedLocally(remote) if data.publish.flags.contains(ControlPacketFlags.QoSAtLeastOnceDelivery) =>
@@ -290,7 +289,7 @@ import scala.util.{Failure, Success}
 
   def consumeReceived(data: ClientConsuming): Behavior[Event] = Behaviors.withTimers { timer =>
     val ReceivePubrel = "consumer-receive-pubrel"
-    timer.startSingleTimer(ReceivePubrel, ReceivePubRelTimeout, data.settings.receivePubRelTimeout)
+    timer.startSingleTimer(ReceivePubrel, ReceivePubRelTimeout, data.settings.consumerPubRelTimeout)
     Behaviors
       .receiveMessagePartial[Event] {
         case PubRelReceivedFromRemote(local) =>
@@ -312,7 +311,7 @@ import scala.util.{Failure, Success}
 
   def consumeAcknowledged(data: ClientConsuming): Behavior[Event] = Behaviors.withTimers { timer =>
     val ReceivePubcomp = "consumer-receive-pubcomp"
-    timer.startSingleTimer(ReceivePubcomp, ReceivePubCompTimeout, data.settings.receivePubCompTimeout)
+    timer.startSingleTimer(ReceivePubcomp, ReceivePubCompTimeout, data.settings.consumerPubCompTimeout)
     Behaviors
       .receiveMessagePartial[Event] {
         case PubCompReceivedLocally(remote) =>
