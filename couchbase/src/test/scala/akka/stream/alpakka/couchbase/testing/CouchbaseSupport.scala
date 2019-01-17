@@ -135,25 +135,38 @@ trait CouchbaseSupport {
       ).withHeaders(headers.RawHeader("Authorization", "Basic QWRtaW5pc3RyYXRvcjpwYXNzd29yZA=="))
     )
 
+    def logError(name: String, fut: Future[HttpResponse]): Future[Unit] =
+      fut
+        .map { res =>
+          log.debug(s"$name: ${res.status}")
+        }
+        .recover {
+          case e: Throwable =>
+            log.error(s"$name: $e")
+        }
+
     log.info("Creating CB Server")
     try {
-      Await.result(Future.sequence(
-                     Seq(
-                       setupIndexAndQuota,
-                       setupServices,
-                       setupCredentials,
-                       setupIndexService,
-                       setupQueryBucket,
-                       setupBucket
-                     )
-                   ),
-                   5.seconds)
+      Await.result(
+        {
+          for {
+            _ <- logError("setupIndexAndQuota", setupIndexAndQuota)
+            _ <- logError("setupServices", setupServices)
+            _ <- logError("setupCredentials", setupCredentials)
+            _ <- logError("setupIndexService", setupIndexService)
+            _ <- logError("setupQueryBucket", setupQueryBucket)
+            _ <- logError("setupBucket", setupBucket)
+            _ <- logError("createIndex", createIndex)
+          } yield ()
+        },
+        10.seconds
+      )
     } catch {
-      case ex: Throwable => log.warn(ex.getMessage + " Obviously all buckets already created. ")
+      case ex: Throwable => log.error(ex.toString, ex)
     }
 
-    Thread.sleep(4000)
-    Await.result(createIndex, 10.seconds)
+//    Thread.sleep(4000)
+//    Await.result(createIndex, 10.seconds)
     Thread.sleep(4000)
 
     session = Await.result(CouchbaseSession(sessionSettings, bucketName), 2.seconds)

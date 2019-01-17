@@ -7,6 +7,11 @@
         </encoder>
     </appender>
 
+    <logger name="akka" level="INFO"/>
+    <logger name="akka.http.impl" level="WARN"/>
+    <logger name="akka.stream.alpakka" level="DEBUG"/>
+    <logger name="com.couchbase" level="INFO"/>
+
     <root level="debug">
         <appender-ref ref="FILE" />
     </root>
