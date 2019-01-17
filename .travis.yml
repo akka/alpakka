@@ -45,7 +45,7 @@ jobs:
       - PRE_CMD="docker-compose up -d cassandra"
       - CMD=+cassandra/testChanged
     - env:
-      - PRE_CMD="docker-compose up -d couchbase"
+      - PRE_CMD="docker-compose up -d couchbase_prep"
       - CMD=+couchbase/testChanged
     - env: CMD=+csv/testChanged
     - env:
