@@ -144,8 +144,7 @@ final class AmqpReplyToSinkSettings private (
   def withFailIfReplyToMissing(failIfReplyToMissing: Boolean): AmqpReplyToSinkSettings =
     copy(failIfReplyToMissing = failIfReplyToMissing)
 
-  private def copy(connectionProvider: AmqpConnectionProvider = connectionProvider,
-                   failIfReplyToMissing: Boolean = failIfReplyToMissing) =
+  private def copy(connectionProvider: AmqpConnectionProvider = connectionProvider, failIfReplyToMissing: Boolean) =
     new AmqpReplyToSinkSettings(connectionProvider, failIfReplyToMissing)
 
   override def toString: String =
