@@ -34,9 +34,11 @@ final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
                                          val eventParallelism: Int = 10,
                                          val receiveConnectTimeout: FiniteDuration = 5.minutes,
                                          val receiveConnAckTimeout: FiniteDuration = 30.seconds,
-                                         val receivePubAckRecTimeout: FiniteDuration = 30.seconds,
-                                         val receivePubCompTimeout: FiniteDuration = 30.seconds,
-                                         val receivePubRelTimeout: FiniteDuration = 30.seconds,
+                                         val producerPubAckRecTimeout: FiniteDuration = 15.seconds,
+                                         val producerPubCompTimeout: FiniteDuration = 15.seconds,
+                                         val consumerPubAckRecTimeout: FiniteDuration = 30.seconds,
+                                         val consumerPubCompTimeout: FiniteDuration = 30.seconds,
+                                         val consumerPubRelTimeout: FiniteDuration = 30.seconds,
                                          val receiveSubAckTimeout: FiniteDuration = 30.seconds,
                                          val receiveUnsubAckTimeout: FiniteDuration = 30.seconds,
                                          val serverSendBufferSize: Int = 100) {
@@ -102,52 +104,84 @@ final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
     copy(receiveConnAckTimeout = receiveConnAckTimeout.asScala)
 
   /**
-   * For clients, the amount of time to wait for a server to ack/receive a QoS 1/2 publish. For servers, the amount of time
-   * to wait before receiving an ack/receive command locally in reply to a QoS 1/2 publish event. Defaults to 30 seconds.
+   * For producers of PUBLISH, the amount of time to wait to ack/receive a QoS 1/2 publish before retrying with
+   * the DUP flag set. Defaults to 15 seconds.
    */
-  def withReceivePubAckRecTimeout(receivePubAckRecTimeout: FiniteDuration): MqttSessionSettings =
-    copy(receivePubAckRecTimeout = receivePubAckRecTimeout)
+  def withProducerPubAckRecTimeout(producerPubAckRecTimeout: FiniteDuration): MqttSessionSettings =
+    copy(producerPubAckRecTimeout = producerPubAckRecTimeout)
 
   /**
    * JAVA API
    *
-   * For clients, the amount of time to wait for a server to ack/receive a QoS 1/2 publish. For servers, the amount of time
-   * to wait before receiving an ack/receive command locally in reply to a QoS 1/2 publish event. Defaults to 30 seconds.
+   * For producers of PUBLISH, the amount of time to wait to ack/receive a QoS 1/2 publish before retrying with
+   * the DUP flag set. Defaults to 15 seconds.
    */
-  def withReceivePubAckRecTimeout(receivePubAckRecTimeout: Duration): MqttSessionSettings =
-    copy(receivePubAckRecTimeout = receivePubAckRecTimeout.asScala)
+  def withProducerPubAckRecTimeout(producerPubAckRecTimeout: Duration): MqttSessionSettings =
+    copy(producerPubAckRecTimeout = producerPubAckRecTimeout.asScala)
 
   /**
-   * For clients, the amount of time to wait for a server to complete a QoS 2 publish. For servers, the amount of time
-   * to wait before receiving a complete command locally in reply to a QoS 2 publish event. Defaults to 30 seconds.
+   * For producers of PUBLISH, the amount of time to wait for a server to complete a QoS 2 publish before retrying
+   * with another PUBREL. Defaults to 15 seconds.
    */
-  def withReceivePubCompTimeout(receivePubCompTimeout: FiniteDuration): MqttSessionSettings =
-    copy(receivePubCompTimeout = receivePubCompTimeout)
-
-  /**
-   * JAVA API
-   *
-   * For clients, the amount of time to wait for a server to complete a QoS 2 publish. For servers, the amount of time
-   * to wait before receiving a complete command locally in reply to a QoS 2 publish event. Defaults to 30 seconds.
-   */
-  def withReceivePubCompTimeout(receivePubCompTimeout: Duration): MqttSessionSettings =
-    copy(receivePubCompTimeout = receivePubCompTimeout.asScala)
-
-  /**
-   * For clients, the amount of time to wait for a server to release a QoS 2 publish. For servers, the amount of time
-   * to wait before receiving a release command locally in reply to a QoS 2 publish event. Defaults to 30 seconds.
-   */
-  def withReceivePubRelTimeout(receivePubRelTimeout: FiniteDuration): MqttSessionSettings =
-    copy(receivePubRelTimeout = receivePubRelTimeout)
+  def withProducerPubCompTimeout(producerPubCompTimeout: FiniteDuration): MqttSessionSettings =
+    copy(producerPubCompTimeout = producerPubCompTimeout)
 
   /**
    * JAVA API
    *
-   * For clients, the amount of time to wait for a server to release a QoS 2 publish. For servers, the amount of time
-   * to wait before receiving a release command locally in reply to a QoS 2 publish event. Defaults to 30 seconds.
+   * For producers of PUBLISH, the amount of time to wait for a server to complete a QoS 2 publish before retrying
+   * with another PUBREL. Defaults to 15 seconds.
    */
-  def withReceivePubRelTimeout(receivePubRelTimeout: Duration): MqttSessionSettings =
-    copy(receivePubRelTimeout = receivePubRelTimeout.asScala)
+  def withProducerPubCompTimeout(producerPubCompTimeout: Duration): MqttSessionSettings =
+    copy(producerPubCompTimeout = producerPubCompTimeout.asScala)
+
+  /**
+   * For consumers of PUBLISH, the amount of time to wait before receiving an ack/receive command locally in reply
+   * to a QoS 1/2 publish event before failing. Defaults to 30 seconds.
+   */
+  def withConsumerPubAckRecTimeout(consumerPubAckRecTimeout: FiniteDuration): MqttSessionSettings =
+    copy(consumerPubAckRecTimeout = consumerPubAckRecTimeout)
+
+  /**
+   * JAVA API
+   *
+   * For consumers of PUBLISH, the amount of time to wait before receiving an ack/receive command locally in reply
+   * to a QoS 1/2 publish event before failing. Defaults to 30 seconds.
+   */
+  def withConsumerPubAckRecTimeout(consumerPubAckRecTimeout: Duration): MqttSessionSettings =
+    copy(consumerPubAckRecTimeout = consumerPubAckRecTimeout.asScala)
+
+  /**
+   * For consumers of PUBLISH, the amount of time to wait before receiving a complete command locally in reply to a
+   * QoS 2 publish event before failing. Defaults to 30 seconds.
+   */
+  def withConsumerPubCompTimeout(consumerPubCompTimeout: FiniteDuration): MqttSessionSettings =
+    copy(consumerPubCompTimeout = consumerPubCompTimeout)
+
+  /**
+   * JAVA API
+   *
+   * For consumers of PUBLISH, the amount of time to wait before receiving a complete command locally in reply to a
+   * QoS 2 publish event before failing. Defaults to 30 seconds.
+   */
+  def withConsumerPubCompTimeout(consumerPubCompTimeout: Duration): MqttSessionSettings =
+    copy(consumerPubCompTimeout = consumerPubCompTimeout.asScala)
+
+  /**
+   * For consumers of PUBLISH, the amount of time to wait for a server to release a QoS 2 publish before failing.
+   * Defaults to 30 seconds.
+   */
+  def withConsumerPubRelTimeout(consumerPubRelTimeout: FiniteDuration): MqttSessionSettings =
+    copy(consumerPubRelTimeout = consumerPubRelTimeout)
+
+  /**
+   * JAVA API
+   *
+   * For consumers of PUBLISH, the amount of time to wait for a server to release a QoS 2 publish before failing.
+   * Defaults to 30 seconds.
+   */
+  def withConsumerPubRelTimeout(consumerPubRelTimeout: Duration): MqttSessionSettings =
+    copy(consumerPubRelTimeout = consumerPubRelTimeout.asScala)
 
   /**
    * For clients, the amount of time to wait for a server to ack a subscribe. For servers, the amount of time
@@ -201,9 +235,11 @@ final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
                    eventParallelism: Int = eventParallelism,
                    receiveConnectTimeout: FiniteDuration = receiveConnectTimeout,
                    receiveConnAckTimeout: FiniteDuration = receiveConnAckTimeout,
-                   receivePubAckRecTimeout: FiniteDuration = receivePubAckRecTimeout,
-                   receivePubCompTimeout: FiniteDuration = receivePubCompTimeout,
-                   receivePubRelTimeout: FiniteDuration = receivePubRelTimeout,
+                   producerPubAckRecTimeout: FiniteDuration = producerPubAckRecTimeout,
+                   producerPubCompTimeout: FiniteDuration = producerPubCompTimeout,
+                   consumerPubAckRecTimeout: FiniteDuration = consumerPubAckRecTimeout,
+                   consumerPubCompTimeout: FiniteDuration = consumerPubCompTimeout,
+                   consumerPubRelTimeout: FiniteDuration = consumerPubRelTimeout,
                    receiveSubAckTimeout: FiniteDuration = receiveSubAckTimeout,
                    receiveUnsubAckTimeout: FiniteDuration = receiveUnsubAckTimeout,
                    serverSendBufferSize: Int = serverSendBufferSize) =
@@ -214,14 +250,16 @@ final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
       eventParallelism,
       receiveConnectTimeout,
       receiveConnAckTimeout,
-      receivePubAckRecTimeout,
-      receivePubCompTimeout,
-      receivePubRelTimeout,
+      producerPubAckRecTimeout,
+      producerPubCompTimeout,
+      consumerPubAckRecTimeout,
+      consumerPubCompTimeout,
+      consumerPubRelTimeout,
       receiveSubAckTimeout,
       receiveUnsubAckTimeout,
       serverSendBufferSize
     )
 
   override def toString: String =
-    s"MqttSessionSettings(maxPacketSize=$maxPacketSize,clientTerminationWatcherBufferSize=$clientTerminationWatcherBufferSize,commandParallelism=$commandParallelism,eventParallelism=$eventParallelism,receiveConnectTimeout=$receiveConnectTimeout,receiveConnAckTimeout=$receiveConnAckTimeout,receivePubAckRecTimeout=$receivePubAckRecTimeout,receivePubCompTimeout=$receivePubCompTimeout,receivePubRelTimeout=$receivePubRelTimeout,receiveSubAckTimeout=$receiveSubAckTimeout,receiveUnsubAckTimeout=$receiveUnsubAckTimeout,serverSendBufferSize=$serverSendBufferSize)"
+    s"MqttSessionSettings(maxPacketSize=$maxPacketSize,clientTerminationWatcherBufferSize=$clientTerminationWatcherBufferSize,commandParallelism=$commandParallelism,eventParallelism=$eventParallelism,receiveConnectTimeout=$receiveConnectTimeout,receiveConnAckTimeout=$receiveConnAckTimeout,receivePubAckRecTimeout=$producerPubAckRecTimeout,receivePubCompTimeout=$producerPubCompTimeout,receivePubAckRecTimeout=$consumerPubAckRecTimeout,receivePubCompTimeout=$consumerPubCompTimeout,receivePubRelTimeout=$consumerPubRelTimeout,receiveSubAckTimeout=$receiveSubAckTimeout,receiveUnsubAckTimeout=$receiveUnsubAckTimeout,serverSendBufferSize=$serverSendBufferSize)"
 }
