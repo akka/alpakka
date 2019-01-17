@@ -36,6 +36,7 @@ Gradle
     }
     ```
 
+The [snapshot documentation](https://doc.akka.io/docs/alpakka/snapshot/) is updated with every snapshot build.
 
-Last published snapshot version is [![bintray-badge][]][bintray]
+Latest published snapshot version is [![bintray-badge][]][bintray]
 
