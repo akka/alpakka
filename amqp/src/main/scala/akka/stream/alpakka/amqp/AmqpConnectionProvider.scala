@@ -224,7 +224,7 @@ final class AmqpSSLConfiguration private (val protocol: Option[String] = None,
     copy(protocol = Some(protocol), trustManager = Some(trustManager))
 
   def withSSLContext(context: Option[javax.net.ssl.SSLContext]): AmqpSSLConfiguration =
-    copy(protocol = protocol)
+    copy(context = context)
 
   private def copy(protocol: Option[String] = protocol,
                    trustManager: Option[TrustManager] = trustManager,
