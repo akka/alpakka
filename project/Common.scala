@@ -48,7 +48,7 @@ object Common extends AutoPlugin {
       "-sourcepath",
       (baseDirectory in ThisBuild).value.toString,
       "-doc-source-url", {
-        val branch = if (isSnapshot.value) "master" else s"v$version"
+        val branch = if (isSnapshot.value) "master" else s"v${version.value}"
         s"https://github.com/akka/alpakka/tree/${branch}€{FILE_PATH}.scala#L1"
       },
       "-skip-packages",
