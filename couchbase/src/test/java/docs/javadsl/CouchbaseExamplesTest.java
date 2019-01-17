@@ -7,6 +7,13 @@ package docs.javadsl;
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.stream.Materializer;
+// #deleteWithResult
+import akka.stream.alpakka.couchbase.CouchbaseDeleteResult;
+// #deleteWithResult
+// #upsertDocWithResult
+import akka.stream.alpakka.couchbase.CouchbaseWriteFailure;
+import akka.stream.alpakka.couchbase.CouchbaseWriteResult;
+// #upsertDocWithResult
 import akka.stream.alpakka.couchbase.CouchbaseWriteSettings;
 import akka.stream.alpakka.couchbase.javadsl.CouchbaseFlow;
 import akka.stream.alpakka.couchbase.javadsl.CouchbaseSource;
@@ -17,9 +24,12 @@ import akka.stream.javadsl.Source;
 import com.couchbase.client.java.PersistTo;
 import com.couchbase.client.java.ReplicateTo;
 import com.couchbase.client.java.document.JsonDocument;
+import com.couchbase.client.java.document.StringDocument;
 import com.couchbase.client.java.document.json.JsonObject;
+// #n1ql
 import com.couchbase.client.java.query.N1qlParams;
 import com.couchbase.client.java.query.N1qlQuery;
+// #n1ql
 import com.couchbase.client.java.query.SimpleN1qlQuery;
 
 import org.junit.AfterClass;
@@ -36,8 +46,9 @@ import akka.stream.alpakka.couchbase.CouchbaseSessionSettings;
 import akka.stream.alpakka.couchbase.javadsl.CouchbaseSession;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 // #session
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 // #sessionFromBucket
 import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.CouchbaseCluster;
@@ -47,10 +58,10 @@ import com.couchbase.client.java.auth.PasswordAuthenticator;
 import static com.couchbase.client.java.query.Select.select;
 import static com.couchbase.client.java.query.dsl.Expression.*;
 // #statement
-// #n1ql
-import scala.concurrent.duration.FiniteDuration;
-// #n1ql
 
+import scala.concurrent.duration.FiniteDuration;
+
+import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 
 public class CouchbaseExamplesTest {
@@ -62,6 +73,7 @@ public class CouchbaseExamplesTest {
   private static ActorSystem actorSystem;
   private static Materializer materializer;
   private static TestObject sampleData;
+  private static List<TestObject> sampleSequence;
 
   @BeforeClass
   public static void beforeAll() {
@@ -69,6 +81,7 @@ public class CouchbaseExamplesTest {
     actorSystem = support.actorSystem();
     materializer = support.mat();
     sampleData = support.sampleData();
+    sampleSequence = support.sampleJavaList();
   }
 
   @AfterClass
@@ -220,6 +233,30 @@ public class CouchbaseExamplesTest {
   }
 
   @Test
+  public void upsertDocWitResult() throws Exception {
+    CouchbaseWriteSettings writeSettings = CouchbaseWriteSettings.create();
+    // #upsertDocWithResult
+
+    CompletionStage<List<CouchbaseWriteResult<StringDocument>>> upsertResults =
+        Source.from(sampleSequence)
+            .map(support::toStringDocument)
+            .via(CouchbaseFlow.upsertDocWithResult(sessionSettings, writeSettings, bucketName))
+            .runWith(Sink.seq(), materializer);
+
+    List<CouchbaseWriteResult<StringDocument>> writeResults =
+        upsertResults.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    List<CouchbaseWriteFailure<StringDocument>> failedDocs =
+        writeResults
+            .stream()
+            .filter(CouchbaseWriteResult::isFailure)
+            .map(res -> (CouchbaseWriteFailure<StringDocument>) res)
+            .collect(Collectors.toList());
+    // #upsertDocWithResult
+    assertThat(writeResults.size(), is(sampleSequence.size()));
+    assertTrue("unexpected failed writes", failedDocs.isEmpty());
+  }
+
+  @Test
   public void delete() {
     CouchbaseWriteSettings writeSettings = CouchbaseWriteSettings.create();
     // #delete
@@ -228,6 +265,18 @@ public class CouchbaseExamplesTest {
             .via(CouchbaseFlow.delete(sessionSettings, writeSettings, bucketName))
             .runWith(Sink.ignore(), materializer);
     // #delete
+  }
 
+  @Test
+  public void deleteWithResult() throws Exception {
+    CouchbaseWriteSettings writeSettings = CouchbaseWriteSettings.create();
+    // #deleteWithResult
+    CompletionStage<CouchbaseDeleteResult> result =
+        Source.single("non-existent")
+            .via(CouchbaseFlow.deleteWithResult(sessionSettings, writeSettings, bucketName))
+            .runWith(Sink.head(), materializer);
+    // #deleteWithResult
+    CouchbaseDeleteResult deleteResult = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    assertTrue(deleteResult.isFailure());
   }
 }

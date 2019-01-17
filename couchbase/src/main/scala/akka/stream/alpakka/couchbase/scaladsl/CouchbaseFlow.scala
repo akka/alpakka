@@ -5,7 +5,7 @@
 package akka.stream.alpakka.couchbase.scaladsl
 import akka.NotUsed
 import akka.stream.alpakka.couchbase.impl.Setup
-import akka.stream.alpakka.couchbase.{CouchbaseSessionRegistry, CouchbaseSessionSettings, CouchbaseWriteSettings}
+import akka.stream.alpakka.couchbase._
 import akka.stream.scaladsl.Flow
 import com.couchbase.client.java.document.{Document, JsonDocument}
 
@@ -75,6 +75,31 @@ object CouchbaseFlow {
       .mapMaterializedValue(_ => NotUsed)
 
   /**
+   * Create a flow to update or insert a Couchbase document of the given class and emit a result so that write failures
+   * can be handled in-stream.
+   */
+  def upsertDocWithResult[T <: Document[_]](sessionSettings: CouchbaseSessionSettings,
+                                            writeSettings: CouchbaseWriteSettings,
+                                            bucketName: String): Flow[T, CouchbaseWriteResult[T], NotUsed] =
+    Setup
+      .flow { materializer => _ =>
+        val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
+        Flow[T]
+          .mapAsync(writeSettings.parallelism)(
+            doc => {
+              implicit val executor = materializer.system.dispatcher
+              session
+                .flatMap(_.upsertDoc(doc, writeSettings))
+                .map(_ => CouchbaseWriteSuccess(doc))
+                .recover {
+                  case exception => CouchbaseWriteFailure(doc, exception)
+                }
+            }
+          )
+      }
+      .mapMaterializedValue(_ => NotUsed)
+
+  /**
    * Create a flow to delete documents from Couchbase by `id`. Emits the same `id`.
    */
   def delete(sessionSettings: CouchbaseSessionSettings,
@@ -85,10 +110,36 @@ object CouchbaseFlow {
         val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
         Flow[String]
           .mapAsync(writeSettings.parallelism)(
-            id =>
+            id => {
+              implicit val executor = materializer.system.dispatcher
               session
-                .map(_.remove(id, writeSettings))(materializer.system.dispatcher)
-                .map(_ => id)(materializer.system.dispatcher)
+                .flatMap(_.remove(id, writeSettings))
+                .map(_ => id)
+            }
+          )
+      }
+      .mapMaterializedValue(_ => NotUsed)
+
+  /**
+   * Create a flow to delete documents from Couchbase by `id` and emit operation outcome containing the same `id`.
+   */
+  def deleteWithResult(sessionSettings: CouchbaseSessionSettings,
+                       writeSettings: CouchbaseWriteSettings,
+                       bucketName: String): Flow[String, CouchbaseDeleteResult, NotUsed] =
+    Setup
+      .flow { materializer => _ =>
+        val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
+        Flow[String]
+          .mapAsync(writeSettings.parallelism)(
+            id => {
+              implicit val executor = materializer.system.dispatcher
+              session
+                .flatMap(_.remove(id, writeSettings))
+                .map(_ => CouchbaseDeleteSuccess(id))
+                .recover {
+                  case exception => CouchbaseDeleteFailure(id, exception)
+                }
+            }
           )
       }
       .mapMaterializedValue(_ => NotUsed)
