@@ -23,7 +23,7 @@ object PublishRsyncPlugin extends AutoPlugin {
       val (from, to) = publishRsyncArtifact.value
       Process(Seq("rsync", "-azP", s"$from/", s"${publishRsyncHost.value}:$to"),
               None,
-              "RSYNC_RSH" -> "ssh -o StrictHostKeyChecking=no -i .travis/id_rsa").! match {
+              "RSYNC_RSH" -> "ssh -o StrictHostKeyChecking=no").! match {
         case 0 => () // success
         case error => throw new IllegalStateException(s"rsync command exited with an error code $error")
       }
