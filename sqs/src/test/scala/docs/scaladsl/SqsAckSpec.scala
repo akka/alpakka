@@ -5,38 +5,58 @@
 package docs.scaladsl
 
 import java.util.concurrent.CompletableFuture
+import java.util.function.Supplier
 
 import akka.Done
-import akka.stream.alpakka.sqs._
+import akka.stream.alpakka.sqs.{MessageAction, _}
 import akka.stream.alpakka.sqs.scaladsl._
 import akka.stream.scaladsl.{Sink, Source}
-import com.amazonaws.handlers.AsyncHandler
-import com.amazonaws.services.sqs.AmazonSQSAsync
-import com.amazonaws.services.sqs.model._
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{spy, times, verify, when}
-import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
 import org.scalatest.mockito.MockitoSugar.mock
 import org.scalatest.{FlatSpec, Matchers}
+import software.amazon.awssdk.services.sqs.SqsAsyncClient
+import software.amazon.awssdk.services.sqs.model._
 
 import scala.concurrent.duration._
+
 import scala.collection.JavaConverters._
 
 class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
 
   trait IntegrationFixture {
     val queueUrl: String = randomQueueUrl()
-    implicit val awsSqsClient: AmazonSQSAsync = spy(sqsClient)
+    implicit val awsSqsClient: SqsAsyncClient = spy(sqsClient)
 
-    def sendMessage(message: String): Unit =
-      awsSqsClient.sendMessage(queueUrl, message)
+    def sendMessage(message: String): Unit = {
+      def request =
+        SendMessageRequest
+          .builder()
+          .queueUrl(queueUrl)
+          .messageBody(message)
+          .build()
+
+      awsSqsClient.sendMessage(request).get()
+    }
 
     def sendMessages(messages: Seq[String]): Unit = {
-      val batch = messages.zipWithIndex.map {
-        case (m, i) => new SendMessageBatchRequestEntry().withMessageBody(m).withId(i.toString)
+      def entries = messages.zipWithIndex.foldLeft(List.empty[SendMessageBatchRequestEntry]) {
+        case (list, (m, i)) =>
+          SendMessageBatchRequestEntry
+            .builder()
+            .messageBody(m)
+            .id(i.toString)
+            .build() :: list
       }
-      awsSqsClient.sendMessageBatch(queueUrl, batch.asJava)
+
+      def batch =
+        SendMessageBatchRequest
+          .builder()
+          .queueUrl(queueUrl)
+          .entries(entries.asJava)
+          .build()
+
+      awsSqsClient.sendMessageBatch(batch).get()
     }
   }
 
@@ -84,16 +104,15 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     val future =
       //#ack
-      SqsSource(queueUrl)
+      SqsSource(queueUrl, sqsSourceSettings)
         .take(1)
         .map(MessageAction.Delete(_))
         .runWith(SqsAckSink(queueUrl))
     //#ack
 
     future.futureValue shouldBe Done
-    verify(awsSqsClient).deleteMessageAsync(
-      any[DeleteMessageRequest],
-      any[AsyncHandler[DeleteMessageRequest, DeleteMessageResult]]
+    verify(awsSqsClient).deleteMessage(
+      any[DeleteMessageRequest]
     )
   }
 
@@ -102,16 +121,15 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     val future =
       //#requeue
-      SqsSource(queueUrl)
+      SqsSource(queueUrl, sqsSourceSettings)
         .take(1)
         .map(MessageAction.ChangeMessageVisibility(_, 5))
         .runWith(SqsAckSink(queueUrl))
     //#requeue
 
     future.futureValue shouldBe Done
-    verify(awsSqsClient).changeMessageVisibilityAsync(
-      any[ChangeMessageVisibilityRequest],
-      any[AsyncHandler[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult]]
+    verify(awsSqsClient).changeMessageVisibility(
+      any[ChangeMessageVisibilityRequest]
     )
   }
 
@@ -119,7 +137,7 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
     sendMessage("alpakka-flow-ack")
 
     //#ignore
-    SqsSource(queueUrl)
+    SqsSource(queueUrl, sqsSourceSettings)
       .map(MessageAction.Ignore(_))
       .runWith(SqsAckSink(queueUrl))
     //#ignore
@@ -132,7 +150,7 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     val future =
       //#flow-ack
-      SqsSource(queueUrl)
+      SqsSource(queueUrl, sqsSourceSettings)
         .take(1)
         .map(MessageAction.Delete(_))
         .via(SqsAckFlow(queueUrl))
@@ -142,16 +160,15 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
     val result = future.futureValue
     result.metadata shouldBe defined
     result.messageAction shouldBe a[MessageAction.Delete]
-    result.messageAction.message.getBody shouldBe "alpakka-flow-ack"
-    verify(awsSqsClient).deleteMessageAsync(any[DeleteMessageRequest],
-                                            any[AsyncHandler[DeleteMessageRequest, DeleteMessageResult]])
+    result.messageAction.message.body() shouldBe "alpakka-flow-ack"
+    verify(awsSqsClient).deleteMessage(any[DeleteMessageRequest])
   }
 
   it should "pull and ignore a message" taggedAs Integration in new IntegrationFixture {
     sendMessage("alpakka-4")
 
     val future =
-      SqsSource(queueUrl)
+      SqsSource(queueUrl, sqsSourceSettings)
         .take(1)
         .map(MessageAction.Ignore(_))
         .via(SqsAckFlow(queueUrl))
@@ -160,7 +177,7 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
     val result = future.futureValue
     result.metadata shouldBe empty
     result.messageAction shouldBe a[MessageAction.Ignore]
-    result.messageAction.message.getBody shouldBe "alpakka-4"
+    result.messageAction.message.body() shouldBe "alpakka-4"
   }
 
   it should "delete batch of messages" taggedAs Integration in new IntegrationFixture {
@@ -169,7 +186,7 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     val future =
       //#batch-ack
-      SqsSource(queueUrl)
+      SqsSource(queueUrl, sqsSourceSettings)
         .take(10)
         .map(MessageAction.Delete(_))
         .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings.Defaults))
@@ -182,10 +199,9 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
       r.metadata shouldBe defined
       r.messageAction shouldBe a[MessageAction.Delete]
     }
-    results.map(_.messageAction.message.getBody) should contain theSameElementsAs messages
-    verify(awsSqsClient, times(1)).deleteMessageBatchAsync(
-      any[DeleteMessageBatchRequest],
-      any[AsyncHandler[DeleteMessageBatchRequest, DeleteMessageBatchResult]]
+    results.map(_.messageAction.message.body()) should contain theSameElementsAs messages
+    verify(awsSqsClient, times(1)).deleteMessageBatch(
+      any[DeleteMessageBatchRequest]
     )
   }
 
@@ -193,7 +209,7 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
     val messages = for (i <- 0 until 10) yield s"Message - $i"
     sendMessages(messages)
 
-    val future = SqsSource(queueUrl)
+    val future = SqsSource(queueUrl, sqsSourceSettings)
       .take(10)
       .map(MessageAction.Delete(_))
       .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings().withMaxBatchSize(5)))
@@ -204,29 +220,24 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
       r.metadata shouldBe defined
       r.messageAction shouldBe a[MessageAction.Delete]
     }
-    results.map(_.messageAction.message.getBody) should contain theSameElementsAs messages
-    verify(awsSqsClient, times(2)).deleteMessageBatchAsync(
-      any[DeleteMessageBatchRequest],
-      any[AsyncHandler[DeleteMessageBatchRequest, DeleteMessageBatchResult]]
+    results.map(_.messageAction.message.body()) should contain theSameElementsAs messages
+    verify(awsSqsClient, times(2)).deleteMessageBatch(
+      any[DeleteMessageBatchRequest]
     )
   }
 
   it should "fail if any of the messages in the batch request failed" in {
-    val messages = for (i <- 0 until 10) yield new Message().withBody(s"Message - $i")
+    val messages = for (i <- 0 until 10) yield Message.builder().body(s"Message - $i").build()
 
-    implicit val mockAwsSqsClient = mock[AmazonSQSAsync]
-    when(
-      mockAwsSqsClient.deleteMessageBatchAsync(any[DeleteMessageBatchRequest],
-                                               any[AsyncHandler[DeleteMessageBatchRequest, DeleteMessageBatchResult]])
-    ).thenAnswer(new Answer[AnyRef] {
-      override def answer(invocation: InvocationOnMock): AnyRef = {
-        val request = invocation.getArgument[DeleteMessageBatchRequest](0)
-        invocation
-          .getArgument[AsyncHandler[DeleteMessageBatchRequest, DeleteMessageBatchResult]](1)
-          .onSuccess(request, new DeleteMessageBatchResult().withFailed(new BatchResultErrorEntry()))
-        new CompletableFuture[DeleteMessageBatchRequest]
-      }
-    })
+    implicit val mockAwsSqsClient = mock[SqsAsyncClient]
+
+    when(mockAwsSqsClient.deleteMessageBatch(any[DeleteMessageBatchRequest]))
+      .thenReturn(CompletableFuture.completedFuture {
+        DeleteMessageBatchResponse
+          .builder()
+          .failed(BatchResultErrorEntry.builder().build())
+          .build()
+      })
 
     val future = Source(messages)
       .take(10)
@@ -237,20 +248,16 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
   }
 
   it should "fail if the batch request failed" in {
-    val messages = for (i <- 0 until 10) yield new Message().withBody(s"Message - $i")
+    val messages = for (i <- 0 until 10) yield Message.builder().body(s"Message - $i").build()
 
-    implicit val mockAwsSqsClient = mock[AmazonSQSAsync]
-    when(
-      mockAwsSqsClient.deleteMessageBatchAsync(any[DeleteMessageBatchRequest],
-                                               any[AsyncHandler[DeleteMessageBatchRequest, DeleteMessageBatchResult]])
-    ).thenAnswer(new Answer[AnyRef] {
-      override def answer(invocation: InvocationOnMock): AnyRef = {
-        invocation
-          .getArgument[AsyncHandler[DeleteMessageBatchRequest, DeleteMessageBatchResult]](1)
-          .onError(new RuntimeException("error"))
-        new CompletableFuture[DeleteMessageBatchRequest]
-      }
-    })
+    implicit val mockAwsSqsClient = mock[SqsAsyncClient]
+
+    when(mockAwsSqsClient.deleteMessageBatch(any[DeleteMessageBatchRequest]))
+      .thenReturn(
+        CompletableFuture.supplyAsync[DeleteMessageBatchResponse](new Supplier[DeleteMessageBatchResponse] {
+          override def get(): DeleteMessageBatchResponse = throw new RuntimeException("Fake client error")
+        })
+      )
 
     val future = Source(messages)
       .take(10)
@@ -262,12 +269,12 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
   }
 
   it should "fail if the client invocation failed" in {
-    val messages = for (i <- 0 until 10) yield new Message().withBody(s"Message - $i")
+    val messages = for (i <- 0 until 10) yield Message.builder().body(s"Message - $i").build()
 
-    implicit val mockAwsSqsClient = mock[AmazonSQSAsync]
+    implicit val mockAwsSqsClient = mock[SqsAsyncClient]
+
     when(
-      mockAwsSqsClient.deleteMessageBatchAsync(any[DeleteMessageBatchRequest],
-                                               any[AsyncHandler[DeleteMessageBatchRequest, DeleteMessageBatchResult]])
+      mockAwsSqsClient.deleteMessageBatch(any[DeleteMessageBatchRequest])
     ).thenThrow(new RuntimeException("error"))
 
     val future = Source(messages)
@@ -283,7 +290,7 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
     val messages = for (i <- 0 until 10) yield s"Message - $i"
     sendMessages(messages)
 
-    val future = SqsSource(queueUrl)
+    val future = SqsSource(queueUrl, sqsSourceSettings)
       .take(10)
       .zipWithIndex
       .map {
@@ -298,17 +305,10 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
     results.count(_.messageAction.isInstanceOf[MessageAction.Delete]) shouldBe 4
     results.count(_.messageAction.isInstanceOf[MessageAction.ChangeMessageVisibility]) shouldBe 3
     results.count(_.messageAction.isInstanceOf[MessageAction.Ignore]) shouldBe 3
-    results.map(_.messageAction.message.getBody) should contain theSameElementsAs messages
+    results.map(_.messageAction.message.body()) should contain theSameElementsAs messages
 
-    verify(awsSqsClient, times(1)).deleteMessageBatchAsync(
-      any[DeleteMessageBatchRequest],
-      any[AsyncHandler[DeleteMessageBatchRequest, DeleteMessageBatchResult]]
-    )
-    verify(awsSqsClient, times(1))
-      .changeMessageVisibilityBatchAsync(
-        any[ChangeMessageVisibilityBatchRequest],
-        any[AsyncHandler[ChangeMessageVisibilityBatchRequest, ChangeMessageVisibilityBatchResult]]
-      )
+    verify(awsSqsClient, times(1)).deleteMessageBatch(any[DeleteMessageBatchRequest])
+    verify(awsSqsClient, times(1)).changeMessageVisibilityBatch(any[ChangeMessageVisibilityBatchRequest])
   }
 
   it should "delay batch of messages" taggedAs Integration in new IntegrationFixture {
@@ -317,7 +317,7 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     val future =
       //#batch-requeue
-      SqsSource(queueUrl)
+      SqsSource(queueUrl, sqsSourceSettings)
         .take(10)
         .map(MessageAction.ChangeMessageVisibility(_, 5))
         .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings.Defaults))
@@ -329,17 +329,17 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
       r.metadata shouldBe defined
       r.messageAction shouldBe a[MessageAction.ChangeMessageVisibility]
     }
-    results.map(_.messageAction.message.getBody) should contain theSameElementsAs messages
+    results.map(_.messageAction.message.body()) should contain theSameElementsAs messages
     verify(awsSqsClient, times(1))
-      .changeMessageVisibilityBatchAsync(
-        any[ChangeMessageVisibilityBatchRequest],
-        any[AsyncHandler[ChangeMessageVisibilityBatchRequest, ChangeMessageVisibilityBatchResult]]
+      .changeMessageVisibilityBatch(
+        any[ChangeMessageVisibilityBatchRequest]
       )
   }
 
   it should "ignore batch of messages" in {
-    val messages = for (i <- 0 until 10) yield new Message().withBody(s"Message - $i")
-    implicit val mockAwsSqsClient = mock[AmazonSQSAsync]
+    val messages = for (i <- 0 until 10) yield Message.builder().body(s"Message - $i").build()
+
+    implicit val mockAwsSqsClient = mock[SqsAsyncClient]
 
     val future =
       //#batch-ignore

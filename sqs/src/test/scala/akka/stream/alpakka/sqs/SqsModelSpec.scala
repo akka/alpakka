@@ -4,14 +4,13 @@
 
 package akka.stream.alpakka.sqs
 
-import akka.stream.alpakka.sqs.testkit.MessageFactory
-import com.amazonaws.services.sqs.model.{Message, SendMessageResult}
 import org.scalatest.{FlatSpec, Matchers}
+import software.amazon.awssdk.services.sqs.model.{Message, SendMessageResponse}
 
 class SqsModelSpec extends FlatSpec with Matchers {
 
-  val msg = new Message()
-  val otherMsg = new Message().withBody("other-body")
+  val msg = Message.builder().build()
+  val otherMsg = Message.builder().body("other-body").build()
 
   "MessageAction.Delete" should "implement proper equality" in {
     MessageAction.Delete(msg) shouldBe MessageAction.Delete(msg)
@@ -56,65 +55,68 @@ class SqsModelSpec extends FlatSpec with Matchers {
     val messageDeduplicationId = Option.empty[String]
     val otherMessageDeduplicationId = Some("deduplication-id")
 
-    MessageFactory.createFifoMessageIdentifiers(sequenceNumber, messageGroupId, messageDeduplicationId) shouldBe MessageFactory
-      .createFifoMessageIdentifiers(
-        sequenceNumber,
-        messageGroupId,
-        messageDeduplicationId
-      )
-    MessageFactory.createFifoMessageIdentifiers(sequenceNumber, messageGroupId, messageDeduplicationId) should not be MessageFactory
-      .createFifoMessageIdentifiers(
-        otherSequenceNumber,
-        messageGroupId,
-        messageDeduplicationId
-      )
-    MessageFactory.createFifoMessageIdentifiers(sequenceNumber, messageGroupId, messageDeduplicationId) should not be MessageFactory
-      .createFifoMessageIdentifiers(
-        sequenceNumber,
-        otherMessageGroupId,
-        messageDeduplicationId
-      )
-    MessageFactory.createFifoMessageIdentifiers(sequenceNumber, messageGroupId, messageDeduplicationId) should not be MessageFactory
-      .createFifoMessageIdentifiers(
-        sequenceNumber,
-        messageGroupId,
-        otherMessageDeduplicationId
-      )
+    new FifoMessageIdentifiers(
+      sequenceNumber,
+      messageGroupId,
+      messageDeduplicationId
+    ) shouldBe new FifoMessageIdentifiers(
+      sequenceNumber,
+      messageGroupId,
+      messageDeduplicationId
+    )
+
+    new FifoMessageIdentifiers(
+      sequenceNumber,
+      messageGroupId,
+      messageDeduplicationId
+    ) should not be new FifoMessageIdentifiers(
+      otherSequenceNumber,
+      messageGroupId,
+      messageDeduplicationId
+    )
+
+    new FifoMessageIdentifiers(
+      sequenceNumber,
+      messageGroupId,
+      messageDeduplicationId
+    ) should not be new FifoMessageIdentifiers(
+      sequenceNumber,
+      otherMessageGroupId,
+      messageDeduplicationId
+    )
+
+    new FifoMessageIdentifiers(
+      sequenceNumber,
+      messageGroupId,
+      messageDeduplicationId
+    ) should not be new FifoMessageIdentifiers(
+      sequenceNumber,
+      messageGroupId,
+      otherMessageDeduplicationId
+    )
   }
 
   "SqsPublishResult" should "implement proper equality" in {
-    val metadata = new SendMessageResult()
-    val otherMetadata = new SendMessageResult().withMessageId("other-id")
+    val metadata = SendMessageResponse.builder().build()
+    val otherMetadata = SendMessageResponse.builder().messageId("other-id").build()
 
     val fifoIdentifiers = Option.empty[FifoMessageIdentifiers]
-    val otherFifoIdentifiers = Some(MessageFactory.createFifoMessageIdentifiers("sequence-number", "group-id", None))
+    val otherFifoIdentifiers = Some(new FifoMessageIdentifiers("sequence-number", "group-id", None))
 
-    MessageFactory.createSqsPublishResult(metadata, msg, fifoIdentifiers) shouldBe MessageFactory
-      .createSqsPublishResult(metadata, msg, fifoIdentifiers)
-    MessageFactory.createSqsPublishResult(metadata, msg, fifoIdentifiers) should not be MessageFactory
-      .createSqsPublishResult(otherMetadata, msg, fifoIdentifiers)
-    MessageFactory.createSqsPublishResult(metadata, msg, fifoIdentifiers) should not be MessageFactory
-      .createSqsPublishResult(metadata, otherMsg, fifoIdentifiers)
-    MessageFactory.createSqsPublishResult(metadata, msg, fifoIdentifiers) should not be MessageFactory
-      .createSqsPublishResult(metadata, msg, otherFifoIdentifiers)
+    new SqsPublishResult(metadata, fifoIdentifiers) shouldBe new SqsPublishResult(metadata, fifoIdentifiers)
+    new SqsPublishResult(otherMetadata, fifoIdentifiers) should not be new SqsPublishResult(metadata, fifoIdentifiers)
+    new SqsPublishResult(metadata, otherFifoIdentifiers) should not be new SqsPublishResult(metadata, fifoIdentifiers)
   }
 
   "SqsAckResult" should "implement proper equality" in {
-    val metadata = Some(new SendMessageResult())
-    val otherMetadata = Some(new SendMessageResult().withMessageId("other-id"))
+    val metadata = Some(SendMessageResponse.builder().build())
+    val otherMetadata = Some(SendMessageResponse.builder().messageId("other-id").build())
 
     val messageAction = MessageAction.Ignore(msg)
     val otherMessageAction = MessageAction.Ignore(otherMsg)
 
-    MessageFactory.createSqsAckResult(metadata, messageAction) shouldBe MessageFactory.createSqsAckResult(metadata,
-                                                                                                          messageAction)
-    MessageFactory.createSqsAckResult(metadata, messageAction) should not be MessageFactory.createSqsAckResult(
-      otherMetadata,
-      messageAction
-    )
-    MessageFactory.createSqsAckResult(metadata, messageAction) should not be MessageFactory.createSqsAckResult(
-      metadata,
-      otherMessageAction
-    )
+    new SqsAckResult(metadata, messageAction) shouldBe new SqsAckResult(metadata, messageAction)
+    new SqsAckResult(otherMetadata, messageAction) should not be new SqsAckResult(metadata, messageAction)
+    new SqsAckResult(metadata, otherMessageAction) should not be new SqsAckResult(metadata, messageAction)
   }
 }
