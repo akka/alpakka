@@ -97,7 +97,7 @@ import scala.util.{Failure, Success}
       connectFlags: ConnectFlags,
       keepAlive: FiniteDuration,
       pendingPingResp: Boolean,
-      activeConsumers: Set[String],
+      activeConsumers: Map[String, ActorRef[Consumer.Event]],
       activeProducers: Set[String],
       pendingLocalPublications: Seq[(String, PublishReceivedLocally)],
       pendingRemotePublications: Seq[(String, PublishReceivedFromRemote)],
@@ -118,7 +118,7 @@ import scala.util.{Failure, Success}
       connectFlags: ConnectFlags,
       keepAlive: FiniteDuration,
       pendingPingResp: Boolean,
-      activeConsumers: Set[String],
+      activeConsumers: Map[String, ActorRef[Consumer.Event]],
       activeProducers: Set[String],
       pendingLocalPublications: Seq[(String, PublishReceivedLocally)],
       pendingRemotePublications: Seq[(String, PublishReceivedFromRemote)],
@@ -249,7 +249,7 @@ import scala.util.{Failure, Success}
                 data.connect.connectFlags,
                 data.connect.keepAlive,
                 pendingPingResp = false,
-                Set.empty,
+                Map.empty,
                 Set.empty,
                 Vector.empty,
                 Vector.empty,
@@ -349,40 +349,43 @@ import scala.util.{Failure, Success}
             local.success(Consumer.ForwardPublish)
             serverConnected(data)
           case (context, prfr @ PublishReceivedFromRemote(publish @ Publish(_, topicName, Some(packetId), _), local)) =>
-            if (!data.activeConsumers.contains(topicName)) {
-              val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName + "-" + context.children.size)
-              context.watchWith(
-                context.spawn(
-                  Consumer(publish, None, packetId, local, data.consumerPacketRouter, data.settings),
-                  consumerName
-                ),
-                ConsumerFree(publish.topicName)
-              )
-              serverConnected(data.copy(activeConsumers = data.activeConsumers + publish.topicName))
-            } else {
-              serverConnected(
-                data.copy(pendingRemotePublications = data.pendingRemotePublications :+ (publish.topicName -> prfr))
-              )
+            data.activeConsumers.get(topicName) match {
+              case None =>
+                val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName + "-" + context.children.size)
+                val consumer =
+                  context.spawn(Consumer(publish, None, packetId, local, data.consumerPacketRouter, data.settings),
+                                consumerName)
+                context.watchWith(consumer, ConsumerFree(publish.topicName))
+                serverConnected(data.copy(activeConsumers = data.activeConsumers + (publish.topicName -> consumer)))
+              case Some(consumer) if publish.flags.contains(ControlPacketFlags.DUP) =>
+                consumer ! Consumer.DupPublishReceivedFromRemote(local)
+                serverConnected(data)
+              case Some(_) =>
+                serverConnected(
+                  data.copy(pendingRemotePublications = data.pendingRemotePublications :+ (publish.topicName -> prfr))
+                )
             }
           case (context, ConsumerFree(topicName)) =>
             val i = data.pendingRemotePublications.indexWhere(_._1 == topicName)
             if (i >= 0) {
               val prfr = data.pendingRemotePublications(i)._2
               val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName + "-" + context.children.size)
+              val consumer = context.spawn(
+                Consumer(prfr.publish,
+                         None,
+                         prfr.publish.packetId.get,
+                         prfr.local,
+                         data.consumerPacketRouter,
+                         data.settings),
+                consumerName
+              )
               context.watchWith(
-                context.spawn(
-                  Consumer(prfr.publish,
-                           None,
-                           prfr.publish.packetId.get,
-                           prfr.local,
-                           data.consumerPacketRouter,
-                           data.settings),
-                  consumerName
-                ),
+                consumer,
                 ConsumerFree(topicName)
               )
               serverConnected(
                 data.copy(
+                  activeConsumers = data.activeConsumers + (topicName -> consumer),
                   pendingRemotePublications =
                   data.pendingRemotePublications.take(i) ++ data.pendingRemotePublications.drop(i + 1)
                 )

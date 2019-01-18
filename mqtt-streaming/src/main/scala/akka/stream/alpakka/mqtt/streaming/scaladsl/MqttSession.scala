@@ -285,13 +285,6 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
           reply.future.map {
             case Unsubscriber.ForwardUnsubAck(carry: Option[A] @unchecked) => Right(Event(cp, carry))
           }
-        case Right(cp @ Publish(flags, _, Some(packetId), _)) if flags.contains(ControlPacketFlags.DUP) =>
-          val reply = Promise[Consumer.ForwardPublish.type]
-          consumerPacketRouter ! RemotePacketRouter.Route(None,
-                                                          packetId,
-                                                          Consumer.DupPublishReceivedFromRemote(reply),
-                                                          reply)
-          reply.future.map(_ => Right(Event(cp)))
         case Right(cp: Publish) =>
           val reply = Promise[Consumer.ForwardPublish.type]
           clientConnector ! ClientConnector.PublishReceivedFromRemote(cp, reply)
@@ -569,13 +562,6 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
         case Right(cp: Unsubscribe) =>
           val reply = Promise[Unpublisher.ForwardUnsubscribe.type]
           serverConnector ! ServerConnector.UnsubscribeReceivedFromRemote(connectionId, cp, reply)
-          reply.future.map(_ => Right(Event(cp)))
-        case Right(cp @ Publish(flags, _, Some(packetId), _)) if flags.contains(ControlPacketFlags.DUP) =>
-          val reply = Promise[Consumer.ForwardPublish.type]
-          consumerPacketRouter ! RemotePacketRouter.RouteViaConnection(connectionId,
-                                                                       packetId,
-                                                                       Consumer.DupPublishReceivedFromRemote(reply),
-                                                                       reply)
           reply.future.map(_ => Right(Event(cp)))
         case Right(cp: Publish) =>
           val reply = Promise[Consumer.ForwardPublish.type]
