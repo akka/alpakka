@@ -100,7 +100,11 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
 
     when(config.session.getToken()).thenReturn(Future.successful("ok"))
     when(
-      mockHttpApi.pull(project = TestCredentials.projectId, subscription = "sub1", maybeAccessToken = Some("ok"))
+      mockHttpApi.pull(project = TestCredentials.projectId,
+                       subscription = "sub1",
+                       maybeAccessToken = Some("ok"),
+                       returnImmediately = true,
+                       maxMessages = 1000)
     ).thenReturn(Future.successful(PullResponse(receivedMessages = Some(Seq()))))
       .thenReturn(Future.successful(PullResponse(receivedMessages = Some(Seq(message)))))
 
