@@ -8,9 +8,8 @@ import akka.Done
 import akka.stream.alpakka.sqs._
 import akka.stream.alpakka.sqs.scaladsl._
 import akka.stream.scaladsl.{Sink, Source}
-import com.amazonaws.services.sqs.AmazonSQSAsync
-import com.amazonaws.services.sqs.model._
 import org.scalatest.{FlatSpec, Matchers}
+import software.amazon.awssdk.services.sqs.model.{Message, ReceiveMessageRequest, SendMessageRequest}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
@@ -19,19 +18,28 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
 
   abstract class IntegrationFixture(fifo: Boolean = false) {
     val queueUrl: String = if (fifo) randomFifoQueueUrl() else randomQueueUrl()
-    implicit val awsSqsClient: AmazonSQSAsync = sqsClient
+    implicit val awsSqsClient = sqsClient
 
     def receiveMessage(): Message =
-      awsSqsClient.receiveMessage(queueUrl).getMessages.asScala.head
+      awsSqsClient
+        .receiveMessage(ReceiveMessageRequest.builder().queueUrl(queueUrl).build())
+        .get()
+        .messages()
+        .asScala
+        .head
 
     def receiveMessages(maxNumberOfMessages: Int): Seq[Message] = {
       // see https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/sqs/model/ReceiveMessageRequest.html
       require(maxNumberOfMessages > 0 && maxNumberOfMessages <= 10, "maxNumberOfMessages must be in 1 to 10")
 
-      val request = new ReceiveMessageRequest()
-        .withQueueUrl(queueUrl)
-        .withMaxNumberOfMessages(maxNumberOfMessages)
-      awsSqsClient.receiveMessage(request).getMessages.asScala
+      val request =
+        ReceiveMessageRequest
+          .builder()
+          .queueUrl(queueUrl)
+          .maxNumberOfMessages(maxNumberOfMessages)
+          .build()
+
+      awsSqsClient.receiveMessage(request).get().messages().asScala
     }
   }
 
@@ -83,7 +91,7 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
     //#run-string
     future.futureValue shouldBe Done
 
-    receiveMessage().getBody shouldBe "alpakka"
+    receiveMessage().body() shouldBe "alpakka"
   }
 
   it should "publish and pull a message provided as a SendMessageRequest" taggedAs Integration in new IntegrationFixture {
@@ -91,14 +99,14 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
       //#run-send-request
       // for fix SQS queue
       Source
-        .single(new SendMessageRequest().withMessageBody("alpakka"))
+        .single(SendMessageRequest.builder().messageBody("alpakka").build())
         .runWith(SqsPublishSink.messageSink(queueUrl))
 
     //#run-send-request
 
     future.futureValue shouldBe Done
 
-    receiveMessage().getBody shouldBe "alpakka"
+    receiveMessage().body() shouldBe "alpakka"
   }
 
   it should "publish and pull a message provided as a SendMessageRequest with dynamic queue" taggedAs Integration in new IntegrationFixture {
@@ -106,13 +114,13 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
       //#run-send-request
       // for dynamic SQS queues
       Source
-        .single(new SendMessageRequest().withMessageBody("alpakka").withQueueUrl(queueUrl))
+        .single(SendMessageRequest.builder().messageBody("alpakka").queueUrl(queueUrl).build())
         .runWith(SqsPublishSink.messageSink())
     //#run-send-request
 
     future.futureValue shouldBe Done
 
-    receiveMessage().getBody shouldBe "alpakka"
+    receiveMessage().body() shouldBe "alpakka"
   }
 
   it should "publish messages by grouping and pull them" taggedAs Integration in new IntegrationFixture {
@@ -144,7 +152,7 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
 
   it should "publish batch of SendMessageRequests and pull them" taggedAs Integration in new IntegrationFixture {
     //#batch-send-request
-    val messages = for (i <- 0 until 10) yield new SendMessageRequest().withMessageBody(s"Message - $i")
+    val messages = for (i <- 0 until 10) yield SendMessageRequest.builder().messageBody(s"Message - $i").build()
 
     val future = Source
       .single(messages)
@@ -161,17 +169,17 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
       //#flow
       // for fix SQS queue
       Source
-        .single(new SendMessageRequest().withMessageBody("alpakka"))
+        .single(SendMessageRequest.builder().messageBody("alpakka").build())
         .via(SqsPublishFlow(queueUrl))
         .runWith(Sink.head)
 
     //#flow
 
     val result = future.futureValue
-    result.message.getBody shouldBe "alpakka"
+    result.metadata.md5OfMessageBody() shouldBe md5HashString("alpakka")
     result.fifoMessageIdentifiers shouldBe empty
 
-    receiveMessage().getBody shouldBe "alpakka"
+    receiveMessage().body() shouldBe "alpakka"
   }
 
   it should "put message in a flow, then pass the result further with dynamic queue" taggedAs Integration in new IntegrationFixture {
@@ -179,16 +187,16 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
       //#flow
       // for dynamic SQS queues
       Source
-        .single(new SendMessageRequest().withMessageBody("alpakka").withQueueUrl(queueUrl))
+        .single(SendMessageRequest.builder().messageBody("alpakka").queueUrl(queueUrl).build())
         .via(SqsPublishFlow())
         .runWith(Sink.head)
     //#flow
 
     val result = future.futureValue
-    result.message.getBody shouldBe "alpakka"
+    result.metadata.md5OfMessageBody() shouldBe md5HashString("alpakka")
     result.fifoMessageIdentifiers shouldBe empty
 
-    receiveMessage().getBody shouldBe "alpakka"
+    receiveMessage().body() shouldBe "alpakka"
   }
 
   ignore should "put message in a flow, then pass the result further with fifo queues" taggedAs Integration in new IntegrationFixture(
@@ -202,20 +210,32 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
     val future =
       Source
         .single(
-          new SendMessageRequest()
-            .withMessageBody("alpakka")
-            .withMessageGroupId("group-id")
-            .withMessageDeduplicationId(s"deduplication-id")
+          SendMessageRequest
+            .builder()
+            .messageBody("alpakka")
+            .messageGroupId("group-id")
+            .messageDeduplicationId(s"deduplication-id")
+            .build()
         )
         .via(SqsPublishFlow(queueUrl))
         .runWith(Sink.head)
 
     val result = future.futureValue
-    result.message.getBody shouldBe "alpakka"
+    result.metadata.md5OfMessageBody() shouldBe md5HashString("alpakka")
     result.fifoMessageIdentifiers.map(_.sequenceNumber) shouldBe defined
     result.fifoMessageIdentifiers.map(_.messageGroupId) shouldBe Some("group-id")
     result.fifoMessageIdentifiers.flatMap(_.messageDeduplicationId) shouldBe Some("deduplication-id")
 
-    receiveMessage().getBody shouldBe "alpakka"
+    receiveMessage().body() shouldBe "alpakka"
+  }
+
+  def md5HashString(s: String): String = {
+    import java.security.MessageDigest
+    import java.math.BigInteger
+    val md = MessageDigest.getInstance("MD5")
+    val digest = md.digest(s.getBytes)
+    val bigInt = new BigInteger(1, digest)
+    val hashedString = bigInt.toString(16)
+    hashedString
   }
 }

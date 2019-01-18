@@ -7,7 +7,8 @@ package akka.stream.alpakka.sqs.javadsl
 import akka.NotUsed
 import akka.stream.alpakka.sqs._
 import akka.stream.javadsl.Flow
-import com.amazonaws.services.sqs.AmazonSQSAsync
+import software.amazon.awssdk.services.sqs.SqsAsyncClient
+import software.amazon.awssdk.services.sqs.model.SqsResponse
 
 /**
  * Java API to create acknowledging SQS flows.
@@ -15,19 +16,18 @@ import com.amazonaws.services.sqs.AmazonSQSAsync
 object SqsAckFlow {
 
   /**
-   * Creates an acknowledging flow for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]].
+   * creates a [[akka.stream.javadsl.Flow Flow]] for ack a single SQS message at a time using an [[software.amazon.awssdk.services.sqs.SqsAsyncClient]].
    */
   def create(queueUrl: String,
              settings: SqsAckSettings,
-             sqsClient: AmazonSQSAsync): Flow[MessageAction, SqsAckResult, NotUsed] =
-    scaladsl.SqsAckFlow.apply(queueUrl, settings)(sqsClient).asJava
+             sqsClient: SqsAsyncClient): Flow[MessageAction, SqsAckResult[SqsResponse], NotUsed] =
+    akka.stream.alpakka.sqs.scaladsl.SqsAckFlow.apply(queueUrl, settings)(sqsClient).asJava
 
   /**
-   * Creates an acknowledging flow for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]].
+   * creates a [[akka.stream.javadsl.Flow Flow]] for ack grouped SQS messages using an [[software.amazon.awssdk.services.sqs.SqsAsyncClient]].
    */
   def grouped(queueUrl: String,
               settings: SqsAckGroupedSettings,
-              sqsClient: AmazonSQSAsync): Flow[MessageAction, SqsAckResult, NotUsed] =
-    scaladsl.SqsAckFlow.grouped(queueUrl, settings)(sqsClient).asJava
-
+              sqsClient: SqsAsyncClient): Flow[MessageAction, SqsAckResult[SqsResponse], NotUsed] =
+    akka.stream.alpakka.sqs.scaladsl.SqsAckFlow.grouped(queueUrl, settings)(sqsClient).asJava
 }

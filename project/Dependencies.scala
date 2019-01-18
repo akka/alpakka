@@ -11,6 +11,8 @@ object Dependencies {
   }
 
   val AwsSdkVersion = "1.11.476"
+  val AwsSdk2Version = "2.3.9"
+
   val AkkaHttpVersion = "10.1.7"
   
   val CouchbaseVersion = "2.7.2"
@@ -363,9 +365,11 @@ object Dependencies {
 
   val Sqs = Seq(
     libraryDependencies ++= Seq(
-      "com.amazonaws" % "aws-java-sdk-sqs" % AwsSdkVersion, // ApacheV2
-      "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion % Test, // ApacheV2
-      "org.mockito" % "mockito-core" % "2.23.4" % Test // MIT
+      "com.github.matsluni" %% "aws-spi-akka-http" % "0.0.4" excludeAll ExclusionRule(organization = "com.typesafe.akka"), // ApacheV2
+      "software.amazon.awssdk" % "sqs" % AwsSdk2Version excludeAll(ExclusionRule(organization = "software.amazon.awssdk", name = "netty-nio-client"), ExclusionRule(organization = "io.netty")), // ApacheV2
+      "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
+      "org.mockito" % "mockito-core" % "2.23.4" % Test, // MIT
+      "org.mockito" % "mockito-inline" % "2.23.4" % Test // MIT
     )
   )
 
