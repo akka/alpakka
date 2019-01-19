@@ -15,7 +15,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.ReactiveAdapterRegistry;
-import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter;
 
 @Configuration
 @ConditionalOnClass(akka.stream.javadsl.Source.class)
@@ -25,10 +24,8 @@ public class SpringWebAkkaStreamsConfiguration {
   private final ActorMaterializer mat;
 
   @Autowired
-  public SpringWebAkkaStreamsConfiguration(
-      RequestMappingHandlerAdapter requestMappingHandlerAdapter) {
-    final ReactiveAdapterRegistry registry =
-        requestMappingHandlerAdapter.getReactiveAdapterRegistry();
+  public SpringWebAkkaStreamsConfiguration() {
+    final ReactiveAdapterRegistry registry = ReactiveAdapterRegistry.getSharedInstance();
 
     system = ActorSystem.create("SpringWebAkkaStreamsSystem");
     mat = ActorMaterializer.create(system);
