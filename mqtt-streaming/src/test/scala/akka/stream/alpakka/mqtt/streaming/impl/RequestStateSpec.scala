@@ -18,6 +18,39 @@ class RequestStateSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
   val testKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit()
 
+  "publisher" should {
+    "match topic filters" in {
+      Topics.filter("sport/tennis/player1", "sport/tennis/player1") shouldBe true
+
+      Topics.filter("sport/tennis/player1/#", "sport/tennis/player1") shouldBe true
+      Topics.filter("sport/tennis/player1/#", "sport/tennis/player1/ranking") shouldBe true
+      Topics.filter("sport/tennis/player1/#", "sport/tennis/player1/score/wimbledon") shouldBe true
+
+      Topics.filter("sport/#", "sport") shouldBe true
+      Topics.filter("#", "sport") shouldBe true
+      Topics.filter("sport/tennis/#", "sport/tennis") shouldBe true
+      Topics.filter("sport/tennis#", "sport/tennis") shouldBe false
+      Topics.filter("sport/tennis/#/ranking", "sport/tennis/player1/ranking") shouldBe false
+
+      Topics.filter("sport/tennis/+", "sport/tennis/player1") shouldBe true
+      Topics.filter("sport/tennis/+", "sport/tennis/player1/tranking") shouldBe false
+
+      Topics.filter("sport/+", "sport") shouldBe false
+      Topics.filter("sport/+", "sport/") shouldBe true
+
+      Topics.filter("+", "sport") shouldBe true
+      Topics.filter("+/tennis/#", "sport/tennis") shouldBe true
+      Topics.filter("sport+", "sport") shouldBe false
+    }
+
+    "match topic filters that are topic filters" in {
+      Topics.filter("#", "#") shouldBe true
+      Topics.filter("#", "/a/#") shouldBe true
+      Topics.filter("+", "+") shouldBe true
+      Topics.filter("/+/#", "/+/#") shouldBe true
+    }
+  }
+
   "local packet router" should {
     "acquire a packet id" in {
       val registrant = testKit.createTestProbe[String]()
