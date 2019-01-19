@@ -15,7 +15,6 @@ import akka.stream.{Materializer, OverflowStrategy}
 import akka.stream.scaladsl.{BroadcastHub, Keep, Source, SourceQueueWithComplete}
 import akka.util.ByteString
 
-import scala.annotation.tailrec
 import scala.concurrent.Promise
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NoStackTrace
@@ -460,7 +459,7 @@ import scala.util.{Failure, Success}
             clientConnected(data)
           case (_, UnpublisherFree(topicFilters)) =>
             val unsubscribedTopicFilters =
-              data.publishers.filter(publisher => topicFilters.exists(matchTopicFilter(_, publisher)))
+              data.publishers.filter(publisher => topicFilters.exists(Topics.filter(_, publisher)))
             clientConnected(data.copy(publishers = data.publishers -- unsubscribedTopicFilters))
           case (_, PublishReceivedFromRemote(publish, local))
               if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
@@ -518,11 +517,11 @@ import scala.util.{Failure, Success}
             }
           case (_, PublishReceivedLocally(publish, _))
               if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 &&
-              data.publishers.exists(matchTopicFilter(_, publish.topicName)) =>
+              data.publishers.exists(Topics.filter(_, publish.topicName)) =>
             data.remote.offer(ForwardPublish(publish, None))
             clientConnected(data)
           case (context, prl @ PublishReceivedLocally(publish, publishData))
-              if data.publishers.exists(matchTopicFilter(_, publish.topicName)) =>
+              if data.publishers.exists(Topics.filter(_, publish.topicName)) =>
             val producerName = ActorName.mkName(ProducerNamePrefix + publish.topicName + "-" + context.children.size)
             if (!data.activeProducers.contains(publish.topicName)) {
               val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]
@@ -782,45 +781,6 @@ import scala.util.{Failure, Success}
           case (_, _: Terminated) =>
             Behaviors.same
         }
-  }
-
-  //
-
-  /*
-   * 4.7 Topic Names and Topic Filters
-   * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
-   *
-   * Inspired by https://github.com/eclipse/paho.mqtt.java/blob/master/org.eclipse.paho.client.mqttv3/src/main/java/org/eclipse/paho/client/mqttv3/MqttTopic.java#L240
-   */
-  def matchTopicFilter(topicFilterName: String, topicName: String): Boolean = {
-    @tailrec
-    def matchStrings(tfn: String, tn: String): Boolean =
-      if (tfn == "/+" && tn == "/") {
-        true
-      } else if (tfn.nonEmpty && tn.nonEmpty) {
-        val tfnHead = tfn.charAt(0)
-        val tnHead = tn.charAt(0)
-        if (tfnHead == '/' && tnHead != '/') {
-          false
-        } else if (tfnHead == '/' && tnHead == '/' && tn.length == 1) {
-          matchStrings(tfn, tn.tail)
-        } else if (tfnHead != '+' && tfnHead != '#' && tfnHead != tnHead) {
-          false
-        } else if (tfnHead == '+') {
-          matchStrings(tfn.tail, tn.tail.dropWhile(_ != '/'))
-        } else if (tfnHead == '#') {
-          matchStrings(tfn.tail, "")
-        } else {
-          matchStrings(tfn.tail, tn.tail)
-        }
-      } else if (tfn.isEmpty && tn.isEmpty) {
-        true
-      } else if (tfn == "/#" && tn.isEmpty) {
-        true
-      } else {
-        false
-      }
-    matchStrings(topicFilterName, topicName)
   }
 }
 
