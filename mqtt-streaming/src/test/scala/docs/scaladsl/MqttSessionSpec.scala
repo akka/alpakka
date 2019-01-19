@@ -880,14 +880,18 @@ class MqttSessionSpec
 
       val (client, result) =
         Source
-          .queue(1, OverflowStrategy.fail)
+          .queue(2, OverflowStrategy.fail)
           .via(
             Mqtt
               .clientSessionFlow(session)
               .join(pipeToServer)
           )
-          .drop(1)
-          .toMat(Sink.head)(Keep.both)
+          .drop(3)
+          .takeWhile {
+            case Right(Event(PingResp, None)) => false
+            case _ => true
+          }
+          .toMat(Sink.collection)(Keep.both)
           .run()
 
       val connect = Connect("some-client-id", ConnectFlags.None)
@@ -895,22 +899,41 @@ class MqttSessionSpec
       val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
       val connAckBytes = connAck.encode(ByteString.newBuilder).result()
 
+      val subscribe = Subscribe("some-topic")
+      val subscribeBytes = subscribe.encode(ByteString.newBuilder, PacketId(1)).result()
+      val subAck = SubAck(PacketId(1), List(ControlPacketFlags.QoSAtLeastOnceDelivery))
+      val subAckBytes = subAck.encode(ByteString.newBuilder).result()
+
       val unsubscribe = Unsubscribe("some-topic")
       val unsubscribeBytes = unsubscribe.encode(ByteString.newBuilder, PacketId(1)).result()
       val unsubAck = UnsubAck(PacketId(1))
       val unsubAckBytes = unsubAck.encode(ByteString.newBuilder).result()
+
+      val publish = Publish("some-topic", ByteString("some-payload"))
+      val publishBytes = publish.encode(ByteString.newBuilder, Some(PacketId(1))).result()
+      val publishDup = publish.copy(flags = publish.flags | ControlPacketFlags.DUP, packetId = Some(PacketId(1)))
+      val publishDupBytes = publishDup.encode(ByteString.newBuilder, Some(PacketId(1))).result()
+
+      val pingResp = PingResp
+      val pingRespBytes = pingResp.encode(ByteString.newBuilder).result()
 
       client.offer(Command(connect))
 
       server.expectMsg(connectBytes)
       server.reply(connAckBytes)
 
+      client.offer(Command(subscribe))
+
+      server.expectMsg(subscribeBytes)
+      server.reply(subAckBytes ++ publishBytes)
+
       client.offer(Command(unsubscribe))
 
       server.expectMsg(unsubscribeBytes)
-      server.reply(unsubAckBytes)
+      server.reply(unsubAckBytes ++ publishDupBytes ++ pingRespBytes)
 
-      result.futureValue shouldBe Right(Event(unsubAck))
+      // Quite possible to receive a pub from an unsubscribed topic given that it may be in transit
+      result.futureValue shouldBe Vector(Right(Event(unsubAck)), Right(Event(publishDup)))
     }
 
     "shutdown a session" in {
