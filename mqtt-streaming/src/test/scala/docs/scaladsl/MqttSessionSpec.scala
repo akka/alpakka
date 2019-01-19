@@ -1138,6 +1138,87 @@ class MqttSessionSpec
       client.expectMsg(sub2AckBytes)
     }
 
+    "unsubscribe a server session" in {
+      val session = ActorMqttServerSession(settings.withProducerPubAckRecTimeout(0.seconds))
+
+      val client = TestProbe()
+      val toClient = Sink.foreach[ByteString](bytes => client.ref ! bytes)
+      val (fromClientQueue, fromClient) = Source
+        .queue[ByteString](1, OverflowStrategy.dropHead)
+        .toMat(BroadcastHub.sink)(Keep.both)
+        .run()
+
+      val pipeToClient = Flow.fromSinkAndSource(toClient, fromClient)
+
+      val connect = Connect("some-client-id", ConnectFlags.None)
+      val connectReceived = Promise[Done]
+
+      val subscribe = Subscribe("some-topic")
+      val subscribeReceived = Promise[Done]
+
+      val unsubscribe = Unsubscribe("some-topic")
+      val unsubscribeReceived = Promise[Done]
+
+      val (server, result) =
+        Source
+          .queue[Command[Nothing]](1, OverflowStrategy.fail)
+          .via(
+            Mqtt
+              .serverSessionFlow(session, ByteString.empty)
+              .join(pipeToClient)
+          )
+          .wireTap(Sink.foreach[Either[DecodeError, Event[_]]] {
+            case Right(Event(`connect`, _)) =>
+              connectReceived.success(Done)
+            case Right(Event(cp: Subscribe, _)) if cp.topicFilters == subscribe.topicFilters =>
+              subscribeReceived.success(Done)
+            case Right(Event(cp: Unsubscribe, _)) if cp.topicFilters == unsubscribe.topicFilters =>
+              unsubscribeReceived.success(Done)
+          })
+          .toMat(Sink.collection)(Keep.both)
+          .run()
+
+      val connectBytes = connect.encode(ByteString.newBuilder).result()
+      val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
+      val connAckBytes = connAck.encode(ByteString.newBuilder).result()
+
+      val subscribeBytes = subscribe.encode(ByteString.newBuilder, PacketId(1)).result()
+      val subAck = SubAck(PacketId(1), List(ControlPacketFlags.QoSAtLeastOnceDelivery))
+      val subAckBytes = subAck.encode(ByteString.newBuilder).result()
+
+      val publish = Publish("some-topic", ByteString("some-payload"))
+      val publishBytes = publish.encode(ByteString.newBuilder, Some(PacketId(1))).result()
+
+      val unsubscribeBytes = unsubscribe.encode(ByteString.newBuilder, PacketId(1)).result()
+      val unsubAck = UnsubAck(PacketId(1))
+      val unsubAckBytes = unsubAck.encode(ByteString.newBuilder).result()
+
+      fromClientQueue.offer(connectBytes)
+
+      connectReceived.future.futureValue shouldBe Done
+
+      server.offer(Command(connAck))
+      client.expectMsg(connAckBytes)
+
+      fromClientQueue.offer(subscribeBytes)
+
+      subscribeReceived.future.futureValue shouldBe Done
+
+      server.offer(Command(subAck))
+      client.expectMsg(subAckBytes)
+
+      session ! Command(publish)
+      client.expectMsg(publishBytes)
+
+      fromClientQueue.offer(unsubscribeBytes)
+
+      unsubscribeReceived.future.foreach(_ => server.offer(Command(unsubAck)))(mat.executionContext)
+
+      client.fishForSpecificMessage(3.seconds.dilated) {
+        case `unsubAckBytes` =>
+      }
+    }
+
     "reply to a ping request" in {
       val session = ActorMqttServerSession(settings)
 
