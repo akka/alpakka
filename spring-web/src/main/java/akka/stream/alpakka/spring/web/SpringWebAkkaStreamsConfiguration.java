@@ -9,7 +9,6 @@ package akka.stream.alpakka.spring.web;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -23,7 +22,6 @@ public class SpringWebAkkaStreamsConfiguration {
   private final ActorSystem system;
   private final ActorMaterializer mat;
 
-  @Autowired
   public SpringWebAkkaStreamsConfiguration() {
     final ReactiveAdapterRegistry registry = ReactiveAdapterRegistry.getSharedInstance();
 
