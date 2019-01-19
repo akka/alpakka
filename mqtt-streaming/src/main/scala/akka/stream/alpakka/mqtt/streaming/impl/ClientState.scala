@@ -258,23 +258,46 @@ import scala.util.{Failure, Success}
 
       queue.offer(ForwardConnect)
       data.stash.foreach(context.self.tell)
-      serverConnect(
-        ConnectReceived(
-          connect,
-          connectData,
-          queue,
-          Vector.empty,
-          data.activeConsumers,
-          data.activeProducers,
-          data.pendingLocalPublications,
-          data.pendingRemotePublications,
-          data.consumerPacketRouter,
-          data.producerPacketRouter,
-          data.subscriberPacketRouter,
-          data.unsubscriberPacketRouter,
-          data.settings
+
+      if (connect.connectFlags.contains(ConnectFlags.CleanSession)) {
+        context.children.foreach(context.stop)
+        serverConnect(
+          ConnectReceived(
+            connect,
+            connectData,
+            queue,
+            Vector.empty,
+            Map.empty,
+            Map.empty,
+            Vector.empty,
+            Vector.empty,
+            data.consumerPacketRouter,
+            data.producerPacketRouter,
+            data.subscriberPacketRouter,
+            data.unsubscriberPacketRouter,
+            data.settings
+          )
         )
-      )
+      } else {
+        serverConnect(
+          ConnectReceived(
+            connect,
+            connectData,
+            queue,
+            Vector.empty,
+            data.activeConsumers,
+            data.activeProducers,
+            data.pendingLocalPublications,
+            data.pendingRemotePublications,
+            data.consumerPacketRouter,
+            data.producerPacketRouter,
+            data.subscriberPacketRouter,
+            data.unsubscriberPacketRouter,
+            data.settings
+          )
+        )
+
+      }
     case (_, ConnectionLost) =>
       Behavior.same
     case (_, e) =>
@@ -285,9 +308,6 @@ import scala.util.{Failure, Success}
                  connectFlags: ConnectFlags,
                  remote: SourceQueueWithComplete[ForwardConnectCommand],
                  data: Data)(implicit mat: Materializer): Behavior[Event] = {
-    if (connectFlags.contains(ConnectFlags.CleanSession))
-      context.children.foreach(context.stop)
-
     remote.complete()
 
     disconnected(
@@ -318,8 +338,6 @@ import scala.util.{Failure, Success}
           case (context, ConnAckReceivedFromRemote(connAck, local))
               if connAck.returnCode.contains(ConnAckReturnCode.ConnectionAccepted) =>
             local.success(ForwardConnAck(data.connectData))
-            if (data.connect.connectFlags.contains(ConnectFlags.CleanSession))
-              context.children.foreach(context.stop)
             data.stash.foreach(context.self.tell)
             timer.cancel(ReceiveConnAck)
             serverConnected(
