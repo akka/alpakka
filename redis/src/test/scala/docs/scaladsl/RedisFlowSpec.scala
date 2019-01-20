@@ -79,7 +79,7 @@ class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport 
     "implement pub/sub for single topic and return notification of single consumer" in {
       val topic = "topic20"
       RedisSource.subscribe(Seq(topic), pubSub).runWith(Sink.ignore)
-
+      Thread.sleep(1000)
       val result = Source
         .single("Bla")
         .map(f => RedisPubSub(topic, f))
@@ -93,7 +93,7 @@ class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport 
       val topic = "topic0"
 
       val recievedMessage = RedisSource.subscribe(Seq(topic), pubSub).runWith(Sink.head[RedisPubSub[String, String]])
-
+      Thread.sleep(1000)
       Source
         .single("Bla")
         .map(f => RedisPubSub(topic, f))
