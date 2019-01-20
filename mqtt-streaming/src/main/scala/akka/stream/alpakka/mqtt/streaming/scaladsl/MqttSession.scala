@@ -237,7 +237,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
             )
             .withAttributes(ActorAttributes.supervisionStrategy {
               // Benign exceptions
-              case RemotePacketRouter.CannotRoute =>
+              case _: RemotePacketRouter.CannotRoute =>
                 Supervision.Resume
               case _ =>
                 Supervision.Stop
@@ -323,7 +323,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
       }
       .withAttributes(ActorAttributes.supervisionStrategy {
         // Benign exceptions
-        case Consumer.ConsumeActive | LocalPacketRouter.CannotRoute | RemotePacketRouter.CannotRoute =>
+        case _: Consumer.ConsumeActive | _: LocalPacketRouter.CannotRoute | _: RemotePacketRouter.CannotRoute =>
           Supervision.Resume
         case _ =>
           Supervision.Stop
@@ -525,7 +525,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
             )
             .withAttributes(ActorAttributes.supervisionStrategy {
               // Benign exceptions
-              case RemotePacketRouter.CannotRoute =>
+              case _: RemotePacketRouter.CannotRoute =>
                 Supervision.Resume
               case _ =>
                 Supervision.Stop
@@ -605,7 +605,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
       }
       .withAttributes(ActorAttributes.supervisionStrategy {
         // Benign exceptions
-        case Consumer.ConsumeActive | LocalPacketRouter.CannotRoute | RemotePacketRouter.CannotRoute =>
+        case _: Consumer.ConsumeActive | _: LocalPacketRouter.CannotRoute | _: RemotePacketRouter.CannotRoute =>
           Supervision.Resume
         case _ =>
           Supervision.Stop

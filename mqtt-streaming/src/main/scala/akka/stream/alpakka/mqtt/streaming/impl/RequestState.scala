@@ -178,12 +178,12 @@ import scala.util.{Failure, Success}
   /*
    * No ACK received - the publication failed
    */
-  case object ConsumeFailed extends Exception with NoStackTrace
+  case class ConsumeFailed(publish: Publish) extends Exception with NoStackTrace
 
   /*
    * A consume is active while a duplicate publish was received.
    */
-  case object ConsumeActive extends Exception with NoStackTrace
+  case class ConsumeActive(publish: Publish) extends Exception with NoStackTrace
 
   /*
    * Construct with the starting state
@@ -254,11 +254,13 @@ import scala.util.{Failure, Success}
           ClientConsuming(data.publish, data.clientId, data.packetId, data.packetRouter, data.settings)
         )
       case _: DupPublishReceivedFromRemote =>
-        data.local.failure(ConsumeActive)
-        throw ConsumeActive
+        val ex = ConsumeActive(data.publish)
+        data.local.failure(ex)
+        throw ex
       case UnobtainablePacketId =>
-        data.local.failure(ConsumeFailed)
-        throw ConsumeFailed
+        val ex = ConsumeFailed(data.publish)
+        data.local.failure(ex)
+        throw ex
     }
 
   }
@@ -279,7 +281,7 @@ import scala.util.{Failure, Success}
           local.success(ForwardPublish)
           consumeUnacknowledged(data)
         case ReceivePubAckRecTimeout =>
-          throw ConsumeFailed
+          throw ConsumeFailed(data.publish)
       }
       .receiveSignal {
         case (_, PostStop) =>
@@ -301,7 +303,7 @@ import scala.util.{Failure, Success}
           local.success(ForwardPublish)
           consumeUnacknowledged(data)
         case ReceivePubRelTimeout =>
-          throw ConsumeFailed
+          throw ConsumeFailed(data.publish)
       }
       .receiveSignal {
         case (_, PostStop) =>
@@ -323,7 +325,7 @@ import scala.util.{Failure, Success}
           timer.cancel(ReceivePubcomp)
           consumeUnacknowledged(data)
         case ReceivePubCompTimeout =>
-          throw ConsumeFailed
+          throw ConsumeFailed(data.publish)
       }
       .receiveSignal {
         case (_, PostStop) =>
@@ -337,7 +339,7 @@ import scala.util.{Failure, Success}
   /*
    * Raised on routing if a packet id cannot determine an actor to route to
    */
-  case object CannotRoute extends Exception with NoStackTrace
+  case class CannotRoute(packetId: PacketId) extends Exception with NoStackTrace
 
   /*
    * In case some brokers treat 0 as no packet id, we set our min to 1
@@ -401,7 +403,7 @@ import scala.util.{Failure, Success}
       case Route(packetId, event, failureReply) =>
         registrantsByPacketId.get(packetId) match {
           case Some(reply) => reply ! event
-          case None => failureReply.failure(CannotRoute)
+          case None => failureReply.failure(CannotRoute(packetId))
         }
         Behaviors.same
     }
@@ -411,7 +413,7 @@ import scala.util.{Failure, Success}
   /*
    * Raised on routing if a packet id cannot determine an actor to route to
    */
-  case object CannotRoute extends Exception with NoStackTrace
+  case class CannotRoute(packetId: PacketId) extends Exception with NoStackTrace
 
   // Requests
 
@@ -473,7 +475,7 @@ import scala.util.{Failure, Success}
         val key = (clientId, packetId)
         registrantsByPacketId.get(key) match {
           case Some(reply) => reply ! event
-          case None => failureReply.failure(CannotRoute)
+          case None => failureReply.failure(CannotRoute(packetId))
         }
         Behaviors.same
       case RouteViaConnection(connectionId, packetId, event, failureReply) =>
@@ -482,10 +484,10 @@ import scala.util.{Failure, Success}
             val key = (clientId, packetId)
             registrantsByPacketId.get(key) match {
               case Some(reply) => reply ! event
-              case None => failureReply.failure(CannotRoute)
+              case None => failureReply.failure(CannotRoute(packetId))
             }
           case None =>
-            failureReply.failure(CannotRoute)
+            failureReply.failure(CannotRoute(packetId))
         }
         Behaviors.same
     }

@@ -110,7 +110,7 @@ class RequestStateSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       val reply = Promise[LocalPacketRouter.Registered]()
       val router = testKit.spawn(LocalPacketRouter[String])
       router ! LocalPacketRouter.Route(PacketId(1), "some-packet", reply)
-      reply.future.failed.futureValue shouldBe LocalPacketRouter.CannotRoute
+      reply.future.failed.futureValue shouldBe LocalPacketRouter.CannotRoute(PacketId(1))
     }
   }
 
@@ -144,12 +144,12 @@ class RequestStateSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
       router ! RemotePacketRouter.UnregisterConnection(connectionId)
       router ! RemotePacketRouter.RouteViaConnection(connectionId, packetId, "some-packet2", failureReply4)
-      failureReply4.future.failed.futureValue shouldBe RemotePacketRouter.CannotRoute
+      failureReply4.future.failed.futureValue shouldBe RemotePacketRouter.CannotRoute(packetId)
       registrant.expectNoMessage(100.millis)
 
       router ! RemotePacketRouter.Unregister(Some(clientId), packetId)
       router ! RemotePacketRouter.Route(Some(clientId), packetId, "some-packet", failureReply2)
-      failureReply2.future.failed.futureValue shouldBe RemotePacketRouter.CannotRoute
+      failureReply2.future.failed.futureValue shouldBe RemotePacketRouter.CannotRoute(packetId)
       registrant.expectNoMessage(100.millis)
 
     }
