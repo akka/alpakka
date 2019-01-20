@@ -181,11 +181,6 @@ import scala.util.{Failure, Success}
   case class ConsumeFailed(publish: Publish) extends Exception with NoStackTrace
 
   /*
-   * A consume is active while a duplicate publish was received.
-   */
-  case class ConsumeActive(publish: Publish) extends Exception with NoStackTrace
-
-  /*
    * Construct with the starting state
    */
   def apply(publish: Publish,
@@ -253,10 +248,6 @@ import scala.util.{Failure, Success}
         consumeUnacknowledged(
           ClientConsuming(data.publish, data.clientId, data.packetId, data.packetRouter, data.settings)
         )
-      case _: DupPublishReceivedFromRemote =>
-        val ex = ConsumeActive(data.publish)
-        data.local.failure(ex)
-        throw ex
       case UnobtainablePacketId =>
         val ex = ConsumeFailed(data.publish)
         data.local.failure(ex)

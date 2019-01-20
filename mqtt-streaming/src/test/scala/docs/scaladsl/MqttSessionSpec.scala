@@ -474,6 +474,68 @@ class MqttSessionSpec
       server.expectMsg(pubAckBytes)
     }
 
+    "receive a QoS 1 publication from a subscribed topic and ack it and then ack it again - the stream should ignore" in {
+      val session = ActorMqttClientSession(settings)
+
+      val server = TestProbe()
+      val pipeToServer = Flow[ByteString].mapAsync(1)(msg => server.ref.ask(msg).mapTo[ByteString])
+
+      val connect = Connect("some-client-id", ConnectFlags.None)
+
+      val publishReceived = Promise[Done]
+
+      val (client, result) = Source
+        .queue(1, OverflowStrategy.fail)
+        .via(
+          Mqtt
+            .clientSessionFlow(session)
+            .join(pipeToServer)
+        )
+        .collect {
+          case Right(Event(cp: Publish, None)) => cp
+        }
+        .wireTap(_ => publishReceived.success(Done))
+        .toMat(Sink.ignore)(Keep.both)
+        .run()
+
+      val connectBytes = connect.encode(ByteString.newBuilder).result()
+      val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
+      val connAckBytes = connAck.encode(ByteString.newBuilder).result()
+
+      val subscribe = Subscribe("some-topic")
+      val subscribeBytes = subscribe.encode(ByteString.newBuilder, PacketId(1)).result()
+      val subAck = SubAck(PacketId(1), List(ControlPacketFlags.QoSAtLeastOnceDelivery))
+      val subAckBytes = subAck.encode(ByteString.newBuilder).result()
+
+      val publish = Publish(ControlPacketFlags.QoSAtLeastOnceDelivery, "some-topic", ByteString("some-payload"))
+      val publishBytes = publish.encode(ByteString.newBuilder, Some(PacketId(1))).result()
+      val pubAck = PubAck(PacketId(1))
+      val pubAckBytes = pubAck.encode(ByteString.newBuilder).result()
+
+      client.offer(Command(connect))
+
+      server.expectMsg(connectBytes)
+      server.reply(connAckBytes)
+
+      client.offer(Command(subscribe))
+
+      server.expectMsg(subscribeBytes)
+      server.reply(subAckBytes ++ publishBytes)
+
+      publishReceived.future.futureValue shouldBe Done
+
+      client.offer(Command(pubAck))
+
+      server.expectMsg(pubAckBytes)
+
+      client.offer(Command(pubAck))
+
+      server.expectNoMessage()
+
+      client.complete()
+      result.futureValue shouldBe Done
+    }
+
     "receive a QoS 1 publication with DUP indicated from a unsubscribed topic - simulates a reconnect" in {
       val session = ActorMqttClientSession(settings)
 
