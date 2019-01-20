@@ -113,7 +113,7 @@ class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport 
 
       val receivedMessages: Future[immutable.Seq[RedisPubSub[String, String]]] =
         RedisSource.subscribe(Seq("topic3", "topic2"), pubSub).grouped(2).runWith(Sink.head)
-
+      Thread.sleep(1000)
       Source
         .fromIterator(() => messages.iterator)
         .via(RedisFlow.publish[String, String](1, redisClient.connectPubSub().async().getStatefulConnection))
