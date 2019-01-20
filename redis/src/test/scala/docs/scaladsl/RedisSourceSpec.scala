@@ -100,7 +100,7 @@ class RedisSourceSpec extends Specification with BeforeAfterAll with RedisSuppor
       val resultAsFuture = Source.single(redisHMSet).via(RedisFlow.hmset(1, connection)).runWith(Sink.head)
       Await.result(resultAsFuture, 5.seconds)
       val hgetallFuture: Future[scala.Seq[RedisKeyValue[String, String]]] =
-        RedisSource.hgetall(key, connection).runWith(Sink.head)
+        RedisSource.hgetall(key, connection).runWith(Sink.seq)
       val hgetAll = Await.result(hgetallFuture, 5.seconds)
       hgetAll shouldEqual redisFieldValues
 

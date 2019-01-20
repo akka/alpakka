@@ -103,6 +103,7 @@ class RedisFlowSpec extends Specification with BeforeAfterAll with RedisSupport 
       val result = Await.result(recievedMessage, 5.seconds)
 
       redisClient.connectPubSub().sync().unsubscribe(topic)
+
       result shouldEqual RedisPubSub(topic, "Bla")
     }
 

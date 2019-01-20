@@ -6,14 +6,13 @@ package akka.streams.alpakka.redis.scaladsl
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import akka.streams.alpakka.redis.impl.RedisSubscribeSourceStage
+import akka.streams.alpakka.redis.impl.{RedisSubscribeSourceStage, RedishgetallSourceStage, RedishmgetSourceStage}
 import akka.streams.alpakka.redis.{RedisHSet, RedisKeyValue, RedisPubSub, RedisSubscriberSettings}
 import io.lettuce.core.KeyValue
 import io.lettuce.core.api.StatefulRedisConnection
 import io.lettuce.core.pubsub.StatefulRedisPubSubConnection
 import reactor.core.publisher.Flux
 
-import scala.collection.JavaConverters._
 import scala.collection.immutable.Seq
 
 object RedisSource {
@@ -39,12 +38,8 @@ object RedisSource {
   def hmget[K, V](key: K,
                   fields: Seq[K],
                   connection: StatefulRedisConnection[K, V]): Source[RedisKeyValue[K, V], NotUsed] =
-    Source.fromPublisher(connection.reactive().hmget(key, fields: _*)).map(f => RedisKeyValue(f.getKey, f.getValue))
+    Source.fromGraph(new RedishmgetSourceStage(key, fields, connection))
 
-  def hgetall[K, V](key: K,
-                    connection: StatefulRedisConnection[K, V]): Source[scala.Seq[RedisKeyValue[K, V]], NotUsed] =
-    Source
-      .fromPublisher(connection.reactive().hgetall(key))
-      .map(f => f.asScala.map(f => RedisKeyValue(f._1, f._2)).toSeq)
-
+  def hgetall[K, V](key: K, connection: StatefulRedisConnection[K, V]): Source[RedisKeyValue[K, V], NotUsed] =
+    Source.fromGraph(new RedishgetallSourceStage(key, connection))
 }
