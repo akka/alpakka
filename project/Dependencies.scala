@@ -200,7 +200,7 @@ object Dependencies {
     )
   }
 
-  val HadoopVersion = "3.1.0"
+  val HadoopVersion = "3.1.1"
   val Hdfs = {
     val hadoopVersion = HadoopVersion
     val catsVersion = "1.1.0"
