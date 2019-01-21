@@ -2,10 +2,11 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.hdfs
+package docs.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.stream.alpakka.hdfs._
 import akka.stream.alpakka.hdfs.scaladsl.HdfsFlow
 import akka.stream.alpakka.hdfs.util.ScalaTestUtils._
 import akka.stream.scaladsl.{Keep, Sink, Source}
@@ -229,7 +230,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
             fs,
             SyncStrategy.count(50),
             RotationStrategy.count(4),
-            HdfsWritingSettings(newLine = true)
+            HdfsWritingSettings().withNewLine(true)
           )
         )
         .map { message =>
@@ -497,12 +498,11 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
     //#define-generator
     //#define-settings
     val settings =
-      HdfsWritingSettings(
-        overwrite = true,
-        newLine = false,
-        lineSeparator = System.getProperty("line.separator"),
-        pathGenerator = pathGenerator
-      )
+      HdfsWritingSettings()
+        .withOverwrite(true)
+        .withNewLine(false)
+        .withLineSeparator(System.getProperty("line.separator"))
+        .withPathGenerator(pathGenerator)
     //#define-settings
   }
 }

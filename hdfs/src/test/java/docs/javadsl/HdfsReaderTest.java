@@ -2,13 +2,14 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.hdfs;
+package docs.javadsl;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.IOResult;
+import akka.stream.alpakka.hdfs.*;
 import akka.stream.alpakka.hdfs.javadsl.HdfsFlow;
 import akka.stream.alpakka.hdfs.javadsl.HdfsSource;
 import akka.stream.alpakka.hdfs.util.JavaTestUtils;

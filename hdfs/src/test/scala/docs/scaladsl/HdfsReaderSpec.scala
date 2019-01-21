@@ -2,10 +2,11 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.hdfs
+package docs.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.stream.alpakka.hdfs._
 import akka.stream.alpakka.hdfs.scaladsl.{HdfsFlow, HdfsSource}
 import akka.stream.alpakka.hdfs.util.ScalaTestUtils._
 import akka.stream.scaladsl.{Sink, Source}
