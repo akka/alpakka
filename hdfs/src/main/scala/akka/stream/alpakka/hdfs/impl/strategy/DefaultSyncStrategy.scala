@@ -4,8 +4,13 @@
 
 package akka.stream.alpakka.hdfs.impl.strategy
 
+import akka.annotation.InternalApi
 import akka.stream.alpakka.hdfs.SyncStrategy
 
+/**
+ * Internal API
+ */
+@InternalApi
 private[hdfs] object DefaultSyncStrategy {
   final case class CountSyncStrategy(
       executeCount: Long = 0,
