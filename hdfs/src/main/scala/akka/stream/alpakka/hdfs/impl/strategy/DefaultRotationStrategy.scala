@@ -4,11 +4,16 @@
 
 package akka.stream.alpakka.hdfs.impl.strategy
 
+import akka.annotation.InternalApi
 import akka.stream.alpakka.hdfs.RotationStrategy
 import akka.stream.alpakka.hdfs.impl.HdfsFlowLogic
 
 import scala.concurrent.duration.FiniteDuration
 
+/**
+ * Internal API
+ */
+@InternalApi
 private[hdfs] object DefaultRotationStrategy {
   final case class SizeRotationStrategy(
       bytesWritten: Long,
