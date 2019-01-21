@@ -21,7 +21,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Specifying a Hadoop Version
 
-By default, HDFS connector uses Hadoop **3.1.0**. If you are using a different version of Hadoop, 
+By default, HDFS connector uses Hadoop **@var[hadoop.version]**. If you are using a different version of Hadoop,
 you should exclude the Hadoop libraries from the connector dependency and add the dependency for your preferred version.
 
 ## Set up client
