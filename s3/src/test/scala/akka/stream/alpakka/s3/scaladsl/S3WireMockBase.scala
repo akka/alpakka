@@ -14,7 +14,7 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
-import com.github.tomakehurst.wiremock.matching.EqualToPattern
+import com.github.tomakehurst.wiremock.matching.{ContainsPattern, EqualToPattern}
 import com.github.tomakehurst.wiremock.stubbing.Scenario
 import com.typesafe.config.ConfigFactory
 
@@ -86,6 +86,20 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
             .withHeader("Content-Length", body.length.toString)
             .withBody(body)
         )
+      )
+
+  def mockDownload(region: String): Unit =
+    mock
+      .register(
+        get(urlEqualTo(s"/$bucketKey"))
+          .withHeader("Authorization", new ContainsPattern(region))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("ETag", """"fba9dede5f27731c9771645a39863328"""")
+              .withHeader("Content-Length", body.length.toString)
+              .withBody(body)
+          )
       )
 
   def mockDownloadSSEC(): Unit =

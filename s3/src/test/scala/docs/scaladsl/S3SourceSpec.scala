@@ -12,6 +12,7 @@ import akka.stream.alpakka.s3.headers.ServerSideEncryption
 import akka.stream.alpakka.s3.scaladsl.{S3, S3ClientIntegrationSpec, S3WireMockBase}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
+import com.amazonaws.regions.AwsRegionProvider
 
 import scala.concurrent.Future
 
@@ -48,6 +49,26 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
       )
     )
     //#downloadToAkkaHttp
+  }
+
+  "S3Source" should "use custom settings when downloading a file" in {
+
+    val region = "my-custom-region"
+
+    mockDownload(region)
+
+    val customRegion = S3Ext(system).settings
+      .withS3RegionProvider(new AwsRegionProvider {
+        override def getRegion: String = region
+      })
+
+    val Some((data: Source[ByteString, _], _)) = S3
+      .download(bucket, bucketKey)
+      .withAttributes(S3Attributes.settings(customRegion))
+      .runWith(Sink.head)
+      .futureValue
+
+    data.map(_.utf8String).runWith(Sink.head).futureValue shouldBe body
   }
 
   "S3Source" should "download a metadata from S3" in {
