@@ -14,7 +14,14 @@ import akka.stream.alpakka.googlecloud.pubsub.impl.{GoogleSession, GoogleTokenAp
 import scala.collection.immutable
 import scala.collection.JavaConverters._
 
+/**
+ * @param projectId the project Id in the google account
+ * @param pullReturnImmediately when pulling messages, if there are non the API will wait or return immediately. Defaults to true.
+ * @param pullMaxMessagesPerInternalBatch when pulling messages, the maximum that will be in the batch of messages. Defaults to 1000.
+ */
 class PubSubConfig private (val projectId: String,
+                            val pullReturnImmediately: Boolean,
+                            val pullMaxMessagesPerInternalBatch: Int,
                             /**
                              * Internal API
                              */
@@ -27,7 +34,7 @@ class PubSubConfig private (val projectId: String,
     copy(session = session)
 
   private def copy(session: GoogleSession) =
-    new PubSubConfig(projectId, session)
+    new PubSubConfig(projectId, pullReturnImmediately, pullMaxMessagesPerInternalBatch, session)
 
   override def toString: String =
     s"PubSubConfig(projectId=$projectId)"
@@ -36,12 +43,47 @@ class PubSubConfig private (val projectId: String,
 object PubSubConfig {
   def apply(projectId: String, clientEmail: String, privateKey: String)(
       implicit actorSystem: ActorSystem
-  ) = new PubSubConfig(projectId, new GoogleSession(clientEmail, privateKey, new GoogleTokenApi(Http())))
+  ): PubSubConfig =
+    new PubSubConfig(
+      projectId = projectId,
+      pullReturnImmediately = true,
+      pullMaxMessagesPerInternalBatch = 1000,
+      session = new GoogleSession(clientEmail, privateKey, new GoogleTokenApi(Http()))
+    )
+
+  def apply(projectId: String,
+            clientEmail: String,
+            privateKey: String,
+            pullReturnImmediately: Boolean,
+            pullMaxMessagesPerInternalBatch: Int)(
+      implicit actorSystem: ActorSystem
+  ): PubSubConfig =
+    new PubSubConfig(
+      projectId = projectId,
+      pullReturnImmediately = pullReturnImmediately,
+      pullMaxMessagesPerInternalBatch = pullMaxMessagesPerInternalBatch,
+      session = new GoogleSession(clientEmail, privateKey, new GoogleTokenApi(Http()))
+    )
 
   def create(projectId: String, clientEmail: String, privateKey: String, actorSystem: ActorSystem): PubSubConfig =
     apply(projectId, clientEmail, privateKey)(actorSystem)
+
+  def create(projectId: String,
+             clientEmail: String,
+             privateKey: String,
+             actorSystem: ActorSystem,
+             pullReturnImmediately: Boolean,
+             pullMaxMessagesPerInternalBatch: Int): PubSubConfig =
+    apply(projectId, clientEmail, privateKey, pullReturnImmediately, pullMaxMessagesPerInternalBatch)(actorSystem)
 }
 
+/**
+ *
+ * @param data the base64 encoded data
+ * @param messageId the message id
+ * @param attributes optional extra attributes for this message.
+ * @param publishTime the time the message was published. It must not be populated when publishing.
+ */
 final case class PubSubMessage(data: String,
                                messageId: String,
                                attributes: Option[immutable.Map[String, String]] = None,
@@ -71,6 +113,11 @@ object PublishRequest {
     PublishRequest(messages.asScala.toList)
 }
 
+/**
+ * A message as it is received
+ * @param ackId acknowledgement id. This id is used to tell pub/sub the message has been processed.
+ * @param message the pubsub message including its data.
+ */
 final case class ReceivedMessage(ackId: String, message: PubSubMessage)
 
 final case class AcknowledgeRequest(ackIds: immutable.Seq[String])

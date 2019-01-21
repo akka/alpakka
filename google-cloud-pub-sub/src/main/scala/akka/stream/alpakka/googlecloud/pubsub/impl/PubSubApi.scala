@@ -66,7 +66,11 @@ private[pubsub] trait PubSubApi {
     DefaultJsonProtocol.jsonFormat1(AcknowledgeRequest.apply)
   private implicit val pullRequestFormat = DefaultJsonProtocol.jsonFormat2(PubSubApi.PullRequest)
 
-  def pull(project: String, subscription: String, maybeAccessToken: Option[String])(
+  def pull(project: String,
+           subscription: String,
+           maybeAccessToken: Option[String],
+           returnImmediately: Boolean,
+           maxMessages: Int)(
       implicit as: ActorSystem,
       materializer: Materializer
   ): Future[PullResponse] = {
@@ -74,7 +78,7 @@ private[pubsub] trait PubSubApi {
 
     val uri: Uri = s"$PubSubGoogleApisHost/v1/projects/$project/subscriptions/$subscription:pull"
 
-    val request = PubSubApi.PullRequest(returnImmediately = true, maxMessages = 1000)
+    val request = PubSubApi.PullRequest(returnImmediately = returnImmediately, maxMessages = maxMessages)
 
     for {
       request <- Marshal((HttpMethods.POST, uri, request)).to[HttpRequest]

@@ -47,10 +47,14 @@ protected[pubsub] trait GooglePubSub {
       implicit actorSystem: ActorSystem
   ): Source[ReceivedMessage, NotUsed] =
     Source.fromGraph(
-      new GooglePubSubSource(projectId = config.projectId,
-                             session = config.session,
-                             subscription = subscription,
-                             httpApi = httpApi)
+      new GooglePubSubSource(
+        projectId = config.projectId,
+        session = config.session,
+        subscription = subscription,
+        returnImmediately = config.pullReturnImmediately,
+        maxMessages = config.pullMaxMessagesPerInternalBatch,
+        httpApi = httpApi
+      )
     )
 
   def acknowledge(

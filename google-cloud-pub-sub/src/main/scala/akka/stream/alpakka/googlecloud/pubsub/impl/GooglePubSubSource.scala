@@ -13,6 +13,7 @@ import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler, TimerGraphSta
 import akka.stream.{Attributes, Materializer, Outlet, SourceShape}
 
 import scala.collection.immutable
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
@@ -20,6 +21,8 @@ import scala.util.{Failure, Success, Try}
 private[pubsub] final class GooglePubSubSource(projectId: String,
                                                session: GoogleSession,
                                                subscription: String,
+                                               returnImmediately: Boolean,
+                                               maxMessages: Int,
                                                httpApi: PubSubApi)(implicit as: ActorSystem)
     extends GraphStage[SourceShape[ReceivedMessage]] {
 
@@ -33,14 +36,16 @@ private[pubsub] final class GooglePubSubSource(projectId: String,
       def fetch(implicit mat: Materializer): Unit = {
         import mat.executionContext
 
+        def pull(maybeAccessToken: Option[String]): Future[PullResponse] =
+          httpApi.pull(projectId, subscription, maybeAccessToken, returnImmediately, maxMessages)
+
         val req = if (httpApi.isEmulated) {
-          httpApi
-            .pull(project = projectId, subscription = subscription, maybeAccessToken = None)
+          pull(None)
         } else {
           session
             .getToken()
             .flatMap { token =>
-              httpApi.pull(project = projectId, subscription = subscription, maybeAccessToken = Some(token))
+              pull(Some(token))
             }
         }
         req.onComplete { tr =>
