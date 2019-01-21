@@ -27,6 +27,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -197,6 +198,33 @@ public class OrientDBTest {
     if (client.getMetadata().getSchema().existsClass(className)) {
       client.getMetadata().getSchema().dropClass(className);
     }
+  }
+
+  @Test
+  public void sourceSettings() {
+    // #source-settings
+    // re-iterating default values
+    OrientDBSourceSettings sourceSettings =
+        OrientDBSourceSettings.create(oDatabase)
+            .withMaxPartitionSize(Runtime.getRuntime().availableProcessors())
+            .withMaxPoolSize(-1)
+            .withSkip(0)
+            .withLimit(10);
+    // #source-settings
+  }
+
+  @Test
+  public void writeSettings() {
+    // #write-settings
+    // re-iterating default values
+    OrientDBUpdateSettings updateSettings =
+        OrientDBUpdateSettings.create(oDatabase)
+            .withMaxPartitionSize(Runtime.getRuntime().availableProcessors())
+            .withMaxPoolSize(-1)
+            .withMaxRetries(1)
+            .withRetryInterval(Duration.ofSeconds(5))
+            .withBufferSize(10);
+    // #write-settings
   }
 
   @Test

@@ -101,6 +101,35 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     if (client.getMetadata.getSchema.existsClass(className))
       client.getMetadata.getSchema.dropClass(className)
 
+  "source settings" should {
+    "have defaults" in {
+      // #source-settings
+      // re-iterating default values
+      val sourceSettings = OrientDBSourceSettings(oDatabase)
+        .withMaxPartitionSize(Runtime.getRuntime.availableProcessors())
+        .withMaxPoolSize(-1)
+        .withSkip(0)
+        .withLimit(10)
+      // #source-settings
+      sourceSettings.toString shouldBe OrientDBSourceSettings(oDatabase).toString
+    }
+  }
+
+  "write settings" should {
+    "have defaults" in {
+      // #write-settings
+      // re-iterating default values
+      val updateSettings = OrientDBUpdateSettings(oDatabase)
+        .withMaxPartitionSize(Runtime.getRuntime.availableProcessors())
+        .withMaxPoolSize(-1)
+        .withMaxRetries(1)
+        .withRetryInterval(5.seconds)
+        .withBufferSize(10)
+      // #write-settings
+      updateSettings.toString shouldBe OrientDBUpdateSettings(oDatabase).toString
+    }
+  }
+
   "OrientDB connector" should {
     "consume and publish documents as ODocument" in {
       //Copy source to sink1 through ODocument stream

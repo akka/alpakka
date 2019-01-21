@@ -78,31 +78,39 @@ Java
 
 We can configure the source by `OrientDBSourceSettings`.
 
-Scala (source)
-: @@snip [snip](/orientdb/src/main/scala/akka/stream/alpakka/orientdb/OrientDBSourceSettings.scala) { #source-settings }
+Scala
+: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDBSpec.scala) { #source-settings }
+
+Java
+: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #source-settings }
+
 
 | Parameter        | Default | Description                                                                                                              |
 | ---------------- | ------- | ------------------------------------------------------------------------------------------------------------------------ |
-| maxPartitionSize |         | `OrientDBSource` and `OrientDBSink` uses this for initializing DB Connections. |
-| maxPoolSize      |    -1   | `OrientDBSource` and `OrientDBSink` uses this for initializing DB Connections. |
-| skip             |         | `OrientDBSource` uses this property to fetch data from the DB. |
-| limit            |         | `OrientDBSource` uses this property to fetch data from the DB. |
+| maxPartitionSize |         | `OrientDBSource` and `OrientDBSink` use this for initializing DB Connections. |
+| maxPoolSize      |    -1   | `OrientDBSource` and `OrientDBSink` use this for initializing DB Connections. |
+| skip             |   0     | `OrientDBSource` uses this property to fetch data from the DB. |
+| limit            |    10   | `OrientDBSource` uses this property to fetch data from the DB. |
 | dbUrl            |         | url to the OrientDB database. |
 | username         |         | username to connect to OrientDB. |
 | password         |         | password to connect to OrientDB. | 
 
 Also, we can configure the sink by `OrientDBUpdateSettings`.
 
-Scala (sink)
-: @@snip [snip](/orientdb/src/main/scala/akka/stream/alpakka/orientdb/OrientDBUpdateSettings.scala) { #sink-settings }
+Scala
+: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDBSpec.scala) { #write-settings }
+
+Java
+: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #write-settings }
+
 
 | Parameter           | Default | Description                                                                                            |
 | ------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
-| maxPartitionSize |         | `OrientDBSource` and `OrientDBSink` uses this for initializing DB Connections. |
-| maxPoolSize      |    -1   | `OrientDBSource` and `OrientDBSink` uses this for initializing DB Connections. |
+| maxPartitionSize |         | `OrientDBSource` and `OrientDBSink` use this for initializing DB Connections. |
+| maxPoolSize      |    -1   | `OrientDBSource` and `OrientDBSink` use this for initializing DB Connections. |
 | maxRetry         |     1   | `OrientDBSink` uses this for retrying write operations to OrientDB. |
 | retryInterval    |  5000   | `OrientDBSink` uses this for retrying write operations to OrientDB. |
-| bufferSize       |         | `OrientDBSink` uses this for retrieving data from DB. |
+| bufferSize       |    10   | `OrientDBSink` uses this for retrieving data from DB. |
 | dbUrl            |         | url to the OrientDB database. |
 | username         |         | username to connect to OrientDB. |
 | password         |         | password to connect to OrientDB. | 
