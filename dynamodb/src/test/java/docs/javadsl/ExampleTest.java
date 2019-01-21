@@ -69,10 +69,14 @@ public class ExampleTest {
   @Test
   public void listTables() throws Exception {
     // #simple-request
-    final CompletionStage<ListTablesResult> listTablesResultFuture =
-        DynamoDb.listTables(new ListTablesRequest(), system);
+    final Source<ListTablesResult, NotUsed> listTablesResultFuture =
+        DynamoDb.listTables(new ListTablesRequest());
     // #simple-request
-    ListTablesResult result = listTablesResultFuture.toCompletableFuture().get(5, TimeUnit.SECONDS);
+    ListTablesResult result =
+        listTablesResultFuture
+            .runWith(Sink.head(), materializer)
+            .toCompletableFuture()
+            .get(5, TimeUnit.SECONDS);
     assertNotNull(result.getTableNames());
   }
 
@@ -80,9 +84,7 @@ public class ExampleTest {
   public void flow() throws Exception {
     // #flow
     Source<String, NotUsed> tableArnSource =
-        Source.single(new CreateTable(new CreateTableRequest().withTableName("testTable")))
-            .via(DynamoDb.flow(system))
-            .map(result -> (CreateTableResult) result)
+        DynamoDb.createTable(new CreateTableRequest().withTableName("testTable"))
             .map(result -> result.getTableDescription().getTableArn());
     // #flow
     //    final Duration duration = Duration.create(5, "seconds");
@@ -100,7 +102,7 @@ public class ExampleTest {
   public void paginated() throws Exception {
     // #paginated
     Source<ScanResult, NotUsed> scanPages =
-        DynamoDb.scanAll(new ScanRequest().withTableName("testTable"), system);
+        DynamoDb.scanAll(new ScanRequest().withTableName("testTable"));
     // #paginated
     CompletionStage<List<ScanResult>> streamCompletion =
         scanPages.runWith(Sink.seq(), materializer);
