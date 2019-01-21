@@ -37,12 +37,7 @@ private[pubsub] final class GooglePubSubSource(projectId: String,
         import mat.executionContext
 
         def pull(maybeAccessToken: Option[String]): Future[PullResponse] =
-          httpApi
-            .pull(project = projectId,
-                  subscription = subscription,
-                  maybeAccessToken = maybeAccessToken,
-                  returnImmediately = returnImmediately,
-                  maxMessages = maxMessages)
+          httpApi.pull(projectId, subscription, maybeAccessToken, returnImmediately, maxMessages)
 
         val req = if (httpApi.isEmulated) {
           pull(None)
