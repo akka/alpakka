@@ -32,7 +32,7 @@ private final class SetupSinkStage[T, M](factory: ActorMaterializer => Attribute
     override def preStart(): Unit = {
       val sink = factory(actorMaterializer(materializer))(attributes)
 
-      val mat = Source.fromGraph(subOutlet.source).runWith(sink)(subFusingMaterializer)
+      val mat = Source.fromGraph(subOutlet.source).runWith(sink.withAttributes(attributes))(subFusingMaterializer)
       matPromise.success(mat)
     }
   }
@@ -68,7 +68,7 @@ private final class SetupFlowStage[T, U, M](factory: ActorMaterializer => Attrib
 
       val mat = Source
         .fromGraph(subOutlet.source)
-        .viaMat(flow)(Keep.right)
+        .viaMat(flow.withAttributes(attributes))(Keep.right)
         .to(Sink.fromGraph(subInlet.sink))
         .run()(subFusingMaterializer)
       matPromise.success(mat)
@@ -98,6 +98,7 @@ private final class SetupSourceStage[T, M](factory: ActorMaterializer => Attribu
       val source = factory(actorMaterializer(materializer))(attributes)
 
       val mat = source
+        .withAttributes(attributes)
         .to(Sink.fromGraph(subInlet.sink))
         .run()(subFusingMaterializer)
       matPromise.success(mat)
