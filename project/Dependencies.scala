@@ -301,14 +301,12 @@ object Dependencies {
   )
 
   val SpringWeb = {
-    val SpringVersion = "5.0.7.RELEASE"
-    val SpringBootVersion = "1.5.14.RELEASE"
+    val SpringVersion = "5.1.4.RELEASE"
+    val SpringBootVersion = "2.1.2.RELEASE"
     Seq(
       libraryDependencies ++= Seq(
         "org.springframework" % "spring-core" % SpringVersion,
         "org.springframework" % "spring-context" % SpringVersion,
-        "org.springframework" % "spring-webflux" % SpringVersion,
-        "org.springframework" % "spring-webmvc" % SpringVersion,
         "org.springframework.boot" % "spring-boot-autoconfigure" % SpringBootVersion, // TODO should this be provided?
 
         // for examples
