@@ -28,6 +28,7 @@ public class SpringWebAkkaStreamsConfiguration {
     system = ActorSystem.create("SpringWebAkkaStreamsSystem");
     mat = ActorMaterializer.create(system);
     new AkkaStreamsRegistrar(mat).registerAdapters(registry);
+    
   }
 
   @Bean
