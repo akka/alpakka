@@ -36,10 +36,6 @@ private[orientdb] class OrientDBFlowStage[T, C](
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with InHandler with OutHandler {
 
-      private val failureHandler =
-        getAsyncCallback[(immutable.Seq[OrientDbWriteMessage[T, C]], Throwable)](handleFailure)
-      private val responseHandler =
-        getAsyncCallback[(immutable.Seq[OrientDbWriteMessage[T, C]], Option[String])](handleResponse)
       private var failedMessages: immutable.Seq[OrientDbWriteMessage[T, C]] = Nil
       private var retryCount: Int = 0
 
@@ -57,11 +53,6 @@ private[orientdb] class OrientDBFlowStage[T, C](
         client.close()
       }
 
-      private def tryPull(): Unit =
-        if (!isClosed(in) && !hasBeenPulled(in)) {
-          pull(in)
-        }
-
       override def onTimer(timerKey: Any): Unit = {
         sendOSQLBulkInsertRequest(failedMessages)
         failedMessages = Nil
@@ -77,9 +68,6 @@ private[orientdb] class OrientDBFlowStage[T, C](
           scheduleOnce(NotUsed, settings.retryInterval)
         }
       }
-
-      private def handleSuccess(): Unit =
-        completeStage()
 
       private def handleResponse(args: (immutable.Seq[OrientDbWriteMessage[T, C]], Option[String])): Unit =
         push(out, failedMessages)
@@ -125,10 +113,10 @@ private[orientdb] class OrientDBFlowStage[T, C](
             }
             client.commit()
             if (faultyMessages.nonEmpty) {
-              responseHandler.invoke((faultyMessages, Some("Records are invalid OrientDB Records")))
+              handleResponse((faultyMessages, Some("Records are invalid OrientDB Records")))
             } else {
               emit(out, successfulMessages)
-              responseHandler.invoke((immutable.Seq.empty, None))
+              handleResponse((immutable.Seq.empty, None))
             }
           } else {
             client.setDatabaseOwner(oObjectClient)
@@ -149,30 +137,29 @@ private[orientdb] class OrientDBFlowStage[T, C](
             }
 
             if (faultyMessages.nonEmpty) {
-              responseHandler.invoke((faultyMessages, Some("Records are invalid OrientDB Records")))
+              handleResponse((faultyMessages, Some("Records are invalid OrientDB Records")))
             } else {
               emit(out, successfulMessages)
-              responseHandler.invoke((immutable.Seq.empty, None))
+              handleResponse((immutable.Seq.empty, None))
             }
           }
         } catch {
           case exception: Exception =>
-            failureHandler.invoke((messages, exception))
+            handleFailure((messages, exception))
         }
 
       setHandlers(in, out, this)
 
-      override def onPull(): Unit = tryPull()
+      override def onPull(): Unit = tryPull(in)
 
       override def onPush(): Unit = {
         val messages = grab(in)
         sendOSQLBulkInsertRequest(messages)
-        tryPull()
+        tryPull(in)
       }
 
       override def onUpstreamFailure(exception: Throwable): Unit =
         failStage(exception)
 
-      override def onUpstreamFinish(): Unit = handleSuccess()
     }
 }
