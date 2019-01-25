@@ -17,10 +17,10 @@ object OrientDBSink {
    * Java API: creates a sink that accepts as ODocument
    */
   def create(className: String,
-             settings: OrientDBUpdateSettings): Sink[OIncomingMessage[ODocument, NotUsed], CompletionStage[Done]] =
+             settings: OrientDBUpdateSettings): Sink[OrientDbWriteMessage[ODocument, NotUsed], CompletionStage[Done]] =
     OrientDBFlow
       .create(className, settings)
-      .toMat(Sink.ignore[java.util.List[OIncomingMessage[ODocument, NotUsed]]],
+      .toMat(Sink.ignore[java.util.List[OrientDbWriteMessage[ODocument, NotUsed]]],
              Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
@@ -28,8 +28,8 @@ object OrientDBSink {
    */
   def typed[T](className: String,
                settings: OrientDBUpdateSettings,
-               clazz: Class[T]): Sink[OIncomingMessage[T, NotUsed], CompletionStage[Done]] =
+               clazz: Class[T]): Sink[OrientDbWriteMessage[T, NotUsed], CompletionStage[Done]] =
     OrientDBFlow
       .typed[T](className, settings, Some(clazz))
-      .toMat(Sink.ignore[java.util.List[OIncomingMessage[T, NotUsed]]], Keep.right[NotUsed, CompletionStage[Done]])
+      .toMat(Sink.ignore[java.util.List[OrientDbWriteMessage[T, NotUsed]]], Keep.right[NotUsed, CompletionStage[Done]])
 }

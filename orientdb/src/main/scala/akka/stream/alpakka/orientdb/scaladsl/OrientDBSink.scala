@@ -17,7 +17,7 @@ object OrientDBSink {
    * Scala API: creates a sink that accepts as ODocument
    */
   def apply(className: String,
-            settings: OrientDBUpdateSettings): Sink[OIncomingMessage[ODocument, NotUsed], Future[Done]] =
+            settings: OrientDBUpdateSettings): Sink[OrientDbWriteMessage[ODocument, NotUsed], Future[Done]] =
     OrientDBFlow.create(className, settings).toMat(Sink.ignore)(Keep.right)
 
 }

@@ -8,7 +8,7 @@ import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
-import akka.stream.alpakka.orientdb.OIncomingMessage;
+import akka.stream.alpakka.orientdb.OrientDbWriteMessage;
 import akka.stream.alpakka.orientdb.OrientDBSourceSettings;
 import akka.stream.alpakka.orientdb.OrientDBUpdateSettings;
 import akka.stream.alpakka.orientdb.javadsl.OrientDBFlow;
@@ -233,7 +233,7 @@ public class OrientDBTest {
     // #run-odocument
     CompletionStage<Done> f1 =
         OrientDBSource.create(source, OrientDBSourceSettings.create(oDatabase), null)
-            .map(m -> OIncomingMessage.create(m.oDocument()))
+            .map(m -> OrientDbWriteMessage.create(m.oDocument()))
             .runWith(
                 OrientDBSink.create(sink1, OrientDBUpdateSettings.create(oDatabase)), materializer);
     // #run-odocument
@@ -274,7 +274,7 @@ public class OrientDBTest {
                   ODatabaseRecordThreadLocal.instance().set(db);
                   sink2 sink = new sink2();
                   sink.setBook_title(m.oDocument().getBook_title());
-                  return OIncomingMessage.create(sink);
+                  return OrientDbWriteMessage.create(sink);
                 })
             .runWith(
                 OrientDBSink.typed(sink2, OrientDBUpdateSettings.create(oDatabase), sink2.class),
@@ -336,7 +336,7 @@ public class OrientDBTest {
         .map(
             kafkaMessage -> {
               String book_title = kafkaMessage.getBook_title();
-              return OIncomingMessage.create(
+              return OrientDbWriteMessage.create(
                   new ODocument().field("book_title", book_title), kafkaMessage.kafkaOffset);
             })
         .via(OrientDBFlow.createWithPassThrough(sink6, OrientDBUpdateSettings.create(oDatabase)))
@@ -380,9 +380,9 @@ public class OrientDBTest {
   public void flow() throws Exception {
     // Copy source to sink3 through ODocument stream
     // #run-flow
-    CompletionStage<List<List<OIncomingMessage<ODocument, NotUsed>>>> f1 =
+    CompletionStage<List<List<OrientDbWriteMessage<ODocument, NotUsed>>>> f1 =
         OrientDBSource.create(source, OrientDBSourceSettings.create(oDatabase), null)
-            .map(m -> OIncomingMessage.create(m.oDocument()))
+            .map(m -> OrientDbWriteMessage.create(m.oDocument()))
             .via(OrientDBFlow.create(sink3, OrientDBUpdateSettings.create(oDatabase)))
             .runWith(Sink.seq(), materializer);
     // #run-flow

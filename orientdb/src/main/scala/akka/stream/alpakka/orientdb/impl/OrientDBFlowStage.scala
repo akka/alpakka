@@ -6,7 +6,7 @@ package akka.stream.alpakka.orientdb.impl
 
 import akka.NotUsed
 import akka.annotation.InternalApi
-import akka.stream.alpakka.orientdb.{OIncomingMessage, OrientDBUpdateSettings}
+import akka.stream.alpakka.orientdb.{OrientDBUpdateSettings, OrientDbWriteMessage}
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import com.orientechnologies.orient.`object`.db.OObjectDatabaseTx
@@ -27,20 +27,21 @@ private[orientdb] class OrientDBFlowStage[T, C](
     className: String,
     settings: OrientDBUpdateSettings,
     clazz: Option[Class[T]]
-) extends GraphStage[FlowShape[OIncomingMessage[T, C], immutable.Seq[OIncomingMessage[T, C]]]] {
+) extends GraphStage[FlowShape[OrientDbWriteMessage[T, C], immutable.Seq[OrientDbWriteMessage[T, C]]]] {
 
-  private val in = Inlet[OIncomingMessage[T, C]]("messages")
-  private val out = Outlet[immutable.Seq[OIncomingMessage[T, C]]]("failed")
+  private val in = Inlet[OrientDbWriteMessage[T, C]]("messages")
+  private val out = Outlet[immutable.Seq[OrientDbWriteMessage[T, C]]]("failed")
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with InHandler with OutHandler {
 
-      private val queue = new mutable.Queue[OIncomingMessage[T, C]]()
-      private val failureHandler = getAsyncCallback[(immutable.Seq[OIncomingMessage[T, C]], Throwable)](handleFailure)
+      private val queue = new mutable.Queue[OrientDbWriteMessage[T, C]]()
+      private val failureHandler =
+        getAsyncCallback[(immutable.Seq[OrientDbWriteMessage[T, C]], Throwable)](handleFailure)
       private val responseHandler =
-        getAsyncCallback[(immutable.Seq[OIncomingMessage[T, C]], Option[String])](handleResponse)
-      private var failedMessages: immutable.Seq[OIncomingMessage[T, C]] = Nil
+        getAsyncCallback[(immutable.Seq[OrientDbWriteMessage[T, C]], Option[String])](handleResponse)
+      private var failedMessages: immutable.Seq[OrientDbWriteMessage[T, C]] = Nil
       private var retryCount: Int = 0
 
       private var client: ODatabaseDocumentTx = _
@@ -67,7 +68,7 @@ private[orientdb] class OrientDBFlowStage[T, C](
         failedMessages = Nil
       }
 
-      private def handleFailure(args: (immutable.Seq[OIncomingMessage[T, C]], Throwable)): Unit = {
+      private def handleFailure(args: (immutable.Seq[OrientDbWriteMessage[T, C]], Throwable)): Unit = {
         val (messages, exception) = args
         if (retryCount >= settings.maxRetry) {
           failStage(exception)
@@ -81,7 +82,7 @@ private[orientdb] class OrientDBFlowStage[T, C](
       private def handleSuccess(): Unit =
         completeStage()
 
-      private def handleResponse(args: (immutable.Seq[OIncomingMessage[T, C]], Option[String])): Unit = {
+      private def handleResponse(args: (immutable.Seq[OrientDbWriteMessage[T, C]], Option[String])): Unit = {
         retryCount = 0
         val (messages, error) = args
 
@@ -107,7 +108,7 @@ private[orientdb] class OrientDBFlowStage[T, C](
         push(out, failedMessages)
       }
 
-      private def sendOSQLBulkInsertRequest(messages: immutable.Seq[OIncomingMessage[T, C]]): Unit =
+      private def sendOSQLBulkInsertRequest(messages: immutable.Seq[OrientDbWriteMessage[T, C]]): Unit =
         try {
           ODatabaseRecordThreadLocal.instance().set(client)
           if (clazz.isEmpty) {
@@ -116,10 +117,10 @@ private[orientdb] class OrientDBFlowStage[T, C](
             }
             client.begin(OTransaction.TXTYPE.OPTIMISTIC)
 
-            var faultyMessages: List[OIncomingMessage[T, C]] = List()
-            var successfulMessages: List[OIncomingMessage[T, C]] = List()
+            var faultyMessages: List[OrientDbWriteMessage[T, C]] = List()
+            var successfulMessages: List[OrientDbWriteMessage[T, C]] = List()
             messages.foreach {
-              case OIncomingMessage(oDocument: ODocument, passThrough: C) =>
+              case OrientDbWriteMessage(oDocument: ODocument, passThrough: C) =>
                 val document = new ODocument()
                 oDocument
                   .asInstanceOf[ODocument]
@@ -133,15 +134,17 @@ private[orientdb] class OrientDBFlowStage[T, C](
                 document.setClassName(className)
                 client.save(document)
                 successfulMessages = successfulMessages ++ List(
-                  OIncomingMessage(oDocument.asInstanceOf[T], passThrough)
+                  OrientDbWriteMessage(oDocument.asInstanceOf[T], passThrough)
                 )
                 ()
-              case OIncomingMessage(oRecord: ORecord, passThrough: C) =>
+              case OrientDbWriteMessage(oRecord: ORecord, passThrough: C) =>
                 client.save(oRecord)
-                successfulMessages = successfulMessages ++ List(OIncomingMessage(oRecord.asInstanceOf[T], passThrough))
+                successfulMessages = successfulMessages ++ List(
+                  OrientDbWriteMessage(oRecord.asInstanceOf[T], passThrough)
+                )
                 ()
-              case OIncomingMessage(others: AnyRef, passThrough: C) =>
-                faultyMessages = faultyMessages ++ List(OIncomingMessage(others.asInstanceOf[T], passThrough))
+              case OrientDbWriteMessage(others: AnyRef, passThrough: C) =>
+                faultyMessages = faultyMessages ++ List(OrientDbWriteMessage(others.asInstanceOf[T], passThrough))
                 ()
             }
             client.commit()
@@ -157,15 +160,15 @@ private[orientdb] class OrientDBFlowStage[T, C](
               clazz.getOrElse(throw new RuntimeException("Typed stream class is invalid"))
             )
 
-            var faultyMessages: List[OIncomingMessage[T, C]] = List()
-            var successfulMessages: List[OIncomingMessage[T, C]] = List()
+            var faultyMessages: List[OrientDbWriteMessage[T, C]] = List()
+            var successfulMessages: List[OrientDbWriteMessage[T, C]] = List()
             messages.foreach {
-              case OIncomingMessage(typeRecord: T, passThrough: C) =>
+              case OrientDbWriteMessage(typeRecord: T, passThrough: C) =>
                 oObjectClient.save(typeRecord)
-                successfulMessages = successfulMessages ++ List(OIncomingMessage(typeRecord, passThrough))
+                successfulMessages = successfulMessages ++ List(OrientDbWriteMessage(typeRecord, passThrough))
                 ()
-              case OIncomingMessage(others: AnyRef, passThrough: C) =>
-                faultyMessages = faultyMessages ++ List(OIncomingMessage(others.asInstanceOf[T], passThrough))
+              case OrientDbWriteMessage(others: AnyRef, passThrough: C) =>
+                faultyMessages = faultyMessages ++ List(OrientDbWriteMessage(others.asInstanceOf[T], passThrough))
                 ()
             }
 

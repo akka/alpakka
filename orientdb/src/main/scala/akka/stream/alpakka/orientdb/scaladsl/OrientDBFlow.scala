@@ -19,7 +19,7 @@ object OrientDBFlow {
   def create(
       className: String,
       settings: OrientDBUpdateSettings
-  ): Flow[OIncomingMessage[ODocument, NotUsed], immutable.Seq[OIncomingMessage[ODocument, NotUsed]], NotUsed] =
+  ): Flow[OrientDbWriteMessage[ODocument, NotUsed], immutable.Seq[OrientDbWriteMessage[ODocument, NotUsed]], NotUsed] =
     Flow
       .fromGraph(
         new OrientDBFlowStage[ODocument, NotUsed](
@@ -36,7 +36,7 @@ object OrientDBFlow {
   def createWithPassThrough[C](
       className: String,
       settings: OrientDBUpdateSettings
-  ): Flow[OIncomingMessage[ODocument, C], immutable.Seq[OIncomingMessage[ODocument, C]], NotUsed] =
+  ): Flow[OrientDbWriteMessage[ODocument, C], immutable.Seq[OrientDbWriteMessage[ODocument, C]], NotUsed] =
     Flow
       .fromGraph(
         new OrientDBFlowStage[ODocument, C](

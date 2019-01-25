@@ -5,7 +5,7 @@
 package akka.stream.alpakka.orientdb.impl
 
 import akka.annotation.InternalApi
-import akka.stream.alpakka.orientdb.{OOutgoingMessage, OSQLResponse, OrientDBSourceSettings}
+import akka.stream.alpakka.orientdb.{OSQLResponse, OrientDBSourceSettings, OrientDbReadResult}
 import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import com.orientechnologies.orient.`object`.db.OObjectDatabaseTx
@@ -33,9 +33,9 @@ private[orientdb] final class OrientDBSourceStage[T](className: String,
                                                      settings: OrientDBSourceSettings,
                                                      reader: MessageReader[T],
                                                      clazz: Option[Class[T]] = None)
-    extends GraphStage[SourceShape[OOutgoingMessage[T]]] {
+    extends GraphStage[SourceShape[OrientDbReadResult[T]]] {
 
-  val out: Outlet[OOutgoingMessage[T]] = Outlet("OrientDBSource.out")
+  val out: Outlet[OrientDbReadResult[T]] = Outlet("OrientDBSource.out")
   override val shape = SourceShape(out)
 
   override def createLogic(inheritedAttributes: Attributes) =
@@ -52,8 +52,8 @@ private[orientdb] final class OrientDBSourceStage[T](className: String,
 private[orientdb] sealed class OrientDBSourceLogic[T](className: String,
                                                       query: Option[String],
                                                       settings: OrientDBSourceSettings,
-                                                      out: Outlet[OOutgoingMessage[T]],
-                                                      shape: SourceShape[OOutgoingMessage[T]],
+                                                      out: Outlet[OrientDbReadResult[T]],
+                                                      shape: SourceShape[OrientDbReadResult[T]],
                                                       reader: MessageReader[T],
                                                       skipAndLimit: SkipAndLimit,
                                                       clazz: Option[Class[T]] = None)

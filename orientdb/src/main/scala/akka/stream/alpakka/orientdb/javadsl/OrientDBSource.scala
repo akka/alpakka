@@ -18,7 +18,7 @@ object OrientDBSource {
    */
   def create(className: String,
              settings: OrientDBSourceSettings,
-             query: String): Source[OOutgoingMessage[ODocument], NotUsed] =
+             query: String): Source[OrientDbReadResult[ODocument], NotUsed] =
     Source.fromGraph(
       new OrientDBSourceStage(
         className,
@@ -34,7 +34,7 @@ object OrientDBSource {
   def typed[T](className: String,
                settings: OrientDBSourceSettings,
                clazz: Class[T],
-               query: String = null): Source[OOutgoingMessage[T], NotUsed] =
+               query: String = null): Source[OrientDbReadResult[T], NotUsed] =
     Source.fromGraph(
       new OrientDBSourceStage[T](
         className,
@@ -49,7 +49,7 @@ object OrientDBSource {
 
     override def convert(oDocs: List[T]): OSQLResponse[T] =
       try {
-        OSQLResponse(None, oDocs.map(OOutgoingMessage(_)))
+        OSQLResponse(None, oDocs.map(OrientDbReadResult(_)))
       } catch {
         case exception: Exception => OSQLResponse(Some(exception.toString), immutable.Seq.empty)
       }

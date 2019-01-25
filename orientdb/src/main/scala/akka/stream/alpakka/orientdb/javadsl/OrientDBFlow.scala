@@ -21,7 +21,7 @@ object OrientDBFlow {
   def create(
       className: String,
       settings: OrientDBUpdateSettings
-  ): Flow[OIncomingMessage[ODocument, NotUsed], java.util.List[OIncomingMessage[ODocument, NotUsed]], NotUsed] =
+  ): Flow[OrientDbWriteMessage[ODocument, NotUsed], java.util.List[OrientDbWriteMessage[ODocument, NotUsed]], NotUsed] =
     akka.stream.scaladsl.Flow
       .fromGraph(
         new OrientDBFlowStage[ODocument, NotUsed](
@@ -40,7 +40,7 @@ object OrientDBFlow {
       className: String,
       settings: OrientDBUpdateSettings,
       clazz: Option[Class[T]]
-  ): Flow[OIncomingMessage[T, NotUsed], java.util.List[OIncomingMessage[T, NotUsed]], NotUsed] =
+  ): Flow[OrientDbWriteMessage[T, NotUsed], java.util.List[OrientDbWriteMessage[T, NotUsed]], NotUsed] =
     akka.stream.scaladsl.Flow
       .fromGraph(
         new OrientDBFlowStage[T, NotUsed](className, settings, clazz)
@@ -49,13 +49,13 @@ object OrientDBFlow {
       .asJava
 
   /**
-   * Creates a [[akka.stream.javadsl.Flow]] from [[OIncomingMessage]]
+   * Creates a [[akka.stream.javadsl.Flow]] from [[OrientDbWriteMessage]]
    * with `passThrough` of type `C`.
    */
   def createWithPassThrough[C](
       className: String,
       settings: OrientDBUpdateSettings
-  ): Flow[OIncomingMessage[ODocument, C], java.util.List[OIncomingMessage[ODocument, C]], NotUsed] =
+  ): Flow[OrientDbWriteMessage[ODocument, C], java.util.List[OrientDbWriteMessage[ODocument, C]], NotUsed] =
     akka.stream.scaladsl.Flow
       .fromGraph(
         new OrientDBFlowStage[ODocument, C](

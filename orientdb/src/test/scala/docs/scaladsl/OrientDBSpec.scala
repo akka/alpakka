@@ -7,7 +7,12 @@ package docs.scaladsl
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.orientdb.scaladsl._
-import akka.stream.alpakka.orientdb.{OIncomingMessage, OOutgoingMessage, OrientDBSourceSettings, OrientDBUpdateSettings}
+import akka.stream.alpakka.orientdb.{
+  OrientDBSourceSettings,
+  OrientDBUpdateSettings,
+  OrientDbReadResult,
+  OrientDbWriteMessage
+}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
 import com.orientechnologies.orient.client.remote.OServerAdmin
@@ -136,8 +141,8 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       val f1 = OrientDBSource(
         source,
         OrientDBSourceSettings(oDatabasePool = oDatabase)
-      ).map { message: OOutgoingMessage[ODocument] =>
-          OIncomingMessage(message.oDocument)
+      ).map { message: OrientDbReadResult[ODocument] =>
+          OrientDbWriteMessage(message.oDocument)
         }
         .runWith(
           OrientDBSink(
@@ -180,8 +185,8 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       val f1 = OrientDBSource(
         source,
         OrientDBSourceSettings(oDatabasePool = oDatabase)
-      ).map { message: OOutgoingMessage[ODocument] =>
-          OIncomingMessage(message.oDocument)
+      ).map { message: OrientDbReadResult[ODocument] =>
+          OrientDbWriteMessage(message.oDocument)
         }
         .via(
           OrientDBFlow.create(
@@ -243,7 +248,7 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
           val id = book.title
           println("title: " + book.title)
 
-          OIncomingMessage(new ODocument().field("book_title", id), kafkaMessage.offset)
+          OrientDbWriteMessage(new ODocument().field("book_title", id), kafkaMessage.offset)
         }
         .via(
           OrientDBFlow.createWithPassThrough(
@@ -251,7 +256,7 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
             OrientDBUpdateSettings(oDatabase)
           )
         )
-        .map { messages: Seq[OIncomingMessage[ODocument, KafkaOffset]] =>
+        .map { messages: Seq[OrientDbWriteMessage[ODocument, KafkaOffset]] =>
           messages.foreach { message =>
             commitToKafka(message.passThrough)
           }
