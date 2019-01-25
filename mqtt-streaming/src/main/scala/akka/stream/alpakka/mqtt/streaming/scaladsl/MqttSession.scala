@@ -261,6 +261,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
       }
       .via(new MqttFrameStage(settings.maxPacketSize))
       .map(_.iterator.decodeControlPacket(settings.maxPacketSize))
+      .log("client-events")
       .mapAsync[Either[MqttCodec.DecodeError, Event[A]]](settings.eventParallelism) {
         case Right(cp: ConnAck) =>
           val reply = Promise[ClientConnector.ForwardConnAck]
@@ -327,7 +328,6 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
         case _ =>
           Supervision.Stop
       })
-      .log("client-events")
       .withAttributes(ActorAttributes.logLevels(onFailure = Logging.DebugLevel))
 }
 
@@ -552,6 +552,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
       }
       .via(new MqttFrameStage(settings.maxPacketSize))
       .map(_.iterator.decodeControlPacket(settings.maxPacketSize))
+      .log("server-events")
       .mapAsync[Either[MqttCodec.DecodeError, Event[A]]](settings.eventParallelism) {
         case Right(cp: Connect) =>
           val reply = Promise[ClientConnection.ForwardConnect.type]
@@ -612,6 +613,5 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
         case _ =>
           Supervision.Stop
       })
-      .log("server-events")
       .withAttributes(ActorAttributes.logLevels(onFailure = Logging.DebugLevel))
 }

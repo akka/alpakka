@@ -4,8 +4,6 @@
 
 package docs.scaladsl
 
-import java.util.concurrent.atomic.AtomicInteger
-
 import akka.Done
 import akka.actor.ActorSystem
 import akka.pattern.ask
@@ -16,7 +14,7 @@ import akka.stream.alpakka.mqtt.streaming.scaladsl.{
   Mqtt,
   MqttServerSession
 }
-import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Sink, Source}
+import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Sink, Source, SourceQueueWithComplete}
 import akka.stream.{ActorMaterializer, Materializer, OverflowStrategy, WatchedActorTerminatedException}
 import akka.testkit._
 import akka.util.{ByteString, Timeout}
@@ -1463,14 +1461,12 @@ class MqttSessionSpec
       val publish = Publish("some-topic", ByteString("some-payload"))
       val publishReceived = Promise[Done]
 
-      val connectionId = new AtomicInteger(0)
-
-      val server =
+      def server(connectionId: ByteString): SourceQueueWithComplete[Command[Nothing]] =
         Source
           .queue[Command[Nothing]](1, OverflowStrategy.fail)
           .via(
             Mqtt
-              .serverSessionFlow(session, ByteString(connectionId.getAndIncrement()))
+              .serverSessionFlow(session, connectionId)
               .join(pipeToClient)
           )
           .wireTap(Sink.foreach[Either[DecodeError, Event[_]]] {
@@ -1502,38 +1498,44 @@ class MqttSessionSpec
       val pubAck = PubAck(PacketId(1))
       val pubAckBytes = pubAck.encode(ByteString.newBuilder).result()
 
+      val serverConnection1 = server(ByteString(0))
+
       fromClientQueue.offer(connectBytes)
 
       firstConnectReceived.future.futureValue shouldBe Done
 
-      server.offer(Command(connAck))
+      serverConnection1.offer(Command(connAck))
       client.expectMsg(connAckBytes)
 
       fromClientQueue.offer(subscribeBytes)
 
       subscribeReceived.future.futureValue shouldBe Done
 
-      server.offer(Command(subAck))
+      serverConnection1.offer(Command(subAck))
       client.expectMsg(subAckBytes)
 
       if (explicitDisconnect) {
         fromClientQueue.offer(disconnectBytes)
 
         disconnectReceived.future.futureValue shouldBe Done
+      } else {
+        serverConnection1.complete()
       }
+
+      val serverConnection2 = server(ByteString(1))
 
       fromClientQueue.offer(connectBytes)
 
       secondConnectReceived.future.futureValue shouldBe Done
 
-      server.offer(Command(connAck))
+      serverConnection2.offer(Command(connAck))
       client.expectMsg(connAckBytes)
 
       fromClientQueue.offer(publishBytes)
 
       publishReceived.future.futureValue shouldBe Done
 
-      server.offer(Command(pubAck))
+      serverConnection2.offer(Command(pubAck))
       client.expectMsg(pubAckBytes)
 
       session ! Command(publish)
