@@ -113,12 +113,20 @@ private[orientdb] class OrientDBFlowStage[T, C](
       ODatabaseRecordThreadLocal.instance().set(client)
       client.setDatabaseOwner(oObjectClient)
       oObjectClient.getEntityManager.registerEntityClass(clazz)
-      messages.foreach {
-        case OrientDbWriteMessage(typeRecord: Any, _) =>
-          oObjectClient.save(typeRecord)
-          ()
+      client.begin(OTransaction.TXTYPE.OPTIMISTIC)
+      try {
+        messages.foreach {
+          case OrientDbWriteMessage(typeRecord: Any, _) =>
+            oObjectClient.save(typeRecord)
+            ()
+        }
+        client.commit()
+        push(out, messages)
+      } catch {
+        case NonFatal(e) =>
+          client.rollback()
+          throw e
       }
-      push(out, messages)
     }
 
   }
