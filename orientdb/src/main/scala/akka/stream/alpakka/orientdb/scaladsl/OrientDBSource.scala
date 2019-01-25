@@ -6,7 +6,7 @@ package akka.stream.alpakka.orientdb.scaladsl
 
 import akka.NotUsed
 import akka.stream.alpakka.orientdb._
-import akka.stream.alpakka.orientdb.impl.{MessageReader, OrientDBSourceStage}
+import akka.stream.alpakka.orientdb.impl.{OrientDBSourceStage}
 import akka.stream.scaladsl.Source
 import com.orientechnologies.orient.core.record.impl.ODocument
 import scala.collection.immutable
@@ -23,18 +23,8 @@ object OrientDBSource {
       new OrientDBSourceStage(
         className,
         query,
-        settings,
-        new ODocumentMessageReader[ODocument]()
+        settings
       )
     )
 
-  private class ODocumentMessageReader[T] extends MessageReader[T] {
-
-    override def convert(oDocs: List[T]): OSQLResponse[T] =
-      try {
-        OSQLResponse(None, oDocs.map(OrientDbReadResult(_)))
-      } catch {
-        case exception: Exception => OSQLResponse(Some(exception.toString), immutable.Seq.empty)
-      }
-  }
 }

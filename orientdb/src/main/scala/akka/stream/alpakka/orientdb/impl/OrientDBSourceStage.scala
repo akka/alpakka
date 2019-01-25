@@ -5,9 +5,9 @@
 package akka.stream.alpakka.orientdb.impl
 
 import akka.annotation.InternalApi
-import akka.stream.alpakka.orientdb.{OSQLResponse, OrientDBSourceSettings, OrientDbReadResult}
-import akka.stream.{Attributes, Outlet, SourceShape}
+import akka.stream.alpakka.orientdb.{OrientDBSourceSettings, OrientDbReadResult}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
+import akka.stream.{Attributes, Outlet, SourceShape}
 import com.orientechnologies.orient.`object`.db.OObjectDatabaseTx
 import com.orientechnologies.orient.core.command.OCommandResultListener
 import com.orientechnologies.orient.core.db.ODatabaseRecordThreadLocal
@@ -15,14 +15,7 @@ import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx
 import com.orientechnologies.orient.core.sql.query.{OSQLNonBlockingQuery, OSQLSynchQuery}
 
 import scala.collection.JavaConverters._
-
-/**
- * INTERNAL API
- */
-@InternalApi
-private[orientdb] trait MessageReader[T] {
-  def convert(oDocs: List[T]): OSQLResponse[T]
-}
+import scala.collection.immutable
 
 /**
  * INTERNAL API
@@ -31,7 +24,6 @@ private[orientdb] trait MessageReader[T] {
 private[orientdb] final class OrientDBSourceStage[T](className: String,
                                                      query: Option[String],
                                                      settings: OrientDBSourceSettings,
-                                                     reader: MessageReader[T],
                                                      clazz: Option[Class[T]] = None)
     extends GraphStage[SourceShape[OrientDbReadResult[T]]] {
 
@@ -44,7 +36,6 @@ private[orientdb] final class OrientDBSourceStage[T](className: String,
                                settings,
                                out,
                                shape,
-                               reader,
                                SkipAndLimit(settings.skip, settings.limit),
                                clazz)
 }
@@ -54,7 +45,6 @@ private[orientdb] sealed class OrientDBSourceLogic[T](className: String,
                                                       settings: OrientDBSourceSettings,
                                                       out: Outlet[OrientDbReadResult[T]],
                                                       shape: SourceShape[OrientDbReadResult[T]],
-                                                      reader: MessageReader[T],
                                                       skipAndLimit: SkipAndLimit,
                                                       clazz: Option[Class[T]] = None)
     extends GraphStageLogic(shape)
@@ -72,6 +62,7 @@ private[orientdb] sealed class OrientDBSourceLogic[T](className: String,
   }
 
   override def postStop(): Unit = {
+    ODatabaseRecordThreadLocal.instance().set(client)
     oObjectClient.close()
     client.close()
   }
@@ -130,14 +121,10 @@ private[orientdb] sealed class OrientDBSourceLogic[T](className: String,
     failStage(ex)
 
   def handleResponse(res: List[T]): Unit =
-    reader.convert(res) match {
-      case OSQLResponse(Some(error), _) =>
-        failStage(new IllegalStateException(error))
-      case OSQLResponse(None, result) if result.isEmpty =>
-        completeStage()
-      case OSQLResponse(_, result) =>
-        emitMultiple(out, result.toIterator)
-    }
+    if (res.isEmpty)
+      completeStage()
+    else
+      emitMultiple(out, res.map(OrientDbReadResult(_)).toIterator)
 
   setHandler(out, this)
 

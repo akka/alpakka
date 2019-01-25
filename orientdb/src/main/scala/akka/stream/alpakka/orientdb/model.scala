@@ -23,5 +23,3 @@ object OrientDbWriteMessage {
 final case class OrientDbWriteMessage[T, C](oDocument: T, passThrough: C)
 
 final case class OrientDbReadResult[T](oDocument: T)
-
-case class OSQLResponse[T](error: Option[String], result: Seq[OrientDbReadResult[T]])

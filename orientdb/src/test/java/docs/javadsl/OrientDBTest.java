@@ -388,7 +388,7 @@ public class OrientDBTest {
             .runWith(Sink.seq(), materializer);
     // #run-flow
 
-    f1.toCompletableFuture().get();
+    f1.toCompletableFuture().get(10, TimeUnit.SECONDS);
 
     // Assert docs in sink3
     CompletionStage<List<String>> f2 =

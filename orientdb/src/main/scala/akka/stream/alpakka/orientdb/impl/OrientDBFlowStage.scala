@@ -50,6 +50,7 @@ private[orientdb] class OrientDBFlowStage[T, C](
     }
 
     override def postStop(): Unit = {
+      ODatabaseRecordThreadLocal.instance().set(client)
       oObjectClient.close()
       client.close()
     }
