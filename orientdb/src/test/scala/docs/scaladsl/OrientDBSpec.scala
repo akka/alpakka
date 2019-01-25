@@ -127,8 +127,6 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       val updateSettings = OrientDBUpdateSettings(oDatabase)
         .withMaxPartitionSize(Runtime.getRuntime.availableProcessors())
         .withMaxPoolSize(-1)
-        .withMaxRetries(1)
-        .withRetryInterval(5.seconds)
       // #write-settings
       updateSettings.toString shouldBe OrientDBUpdateSettings(oDatabase).toString
     }

@@ -12,9 +12,7 @@ import akka.util.JavaDurationConverters._
 final class OrientDBUpdateSettings private (
     val oDatabasePool: com.orientechnologies.orient.core.db.OPartitionedDatabasePool,
     val maxPartitionSize: Int,
-    val maxPoolSize: Int,
-    val maxRetry: Int,
-    val retryInterval: scala.concurrent.duration.FiniteDuration,
+    val maxPoolSize: Int
 ) {
 
   def withOrientDBCredentials(
@@ -22,36 +20,22 @@ final class OrientDBUpdateSettings private (
   ): OrientDBUpdateSettings = copy(oDatabasePool = value)
   def withMaxPartitionSize(value: Int): OrientDBUpdateSettings = copy(maxPartitionSize = value)
   def withMaxPoolSize(value: Int): OrientDBUpdateSettings = copy(maxPoolSize = value)
-  def withMaxRetries(value: Int): OrientDBUpdateSettings = copy(maxRetry = value)
-
-  /** Scala API */
-  def withRetryInterval(value: scala.concurrent.duration.FiniteDuration): OrientDBUpdateSettings =
-    copy(retryInterval = value)
-
-  /** Java API */
-  def withRetryInterval(value: java.time.Duration): OrientDBUpdateSettings = copy(retryInterval = value.asScala)
 
   private def copy(
       oDatabasePool: com.orientechnologies.orient.core.db.OPartitionedDatabasePool = oDatabasePool,
       maxPartitionSize: Int = maxPartitionSize,
-      maxPoolSize: Int = maxPoolSize,
-      maxRetry: Int = maxRetry,
-      retryInterval: scala.concurrent.duration.FiniteDuration = retryInterval
+      maxPoolSize: Int = maxPoolSize
   ): OrientDBUpdateSettings = new OrientDBUpdateSettings(
     oDatabasePool = oDatabasePool,
     maxPartitionSize = maxPartitionSize,
-    maxPoolSize = maxPoolSize,
-    maxRetry = maxRetry,
-    retryInterval = retryInterval
+    maxPoolSize = maxPoolSize
   )
 
   override def toString =
     "OrientDBUpdateSettings(" +
     s"oDatabasePool=$oDatabasePool," +
     s"maxPartitionSize=$maxPartitionSize," +
-    s"maxPoolSize=$maxPoolSize," +
-    s"maxRetry=$maxRetry," +
-    s"retryInterval=${retryInterval.toCoarsest}" +
+    s"maxPoolSize=$maxPoolSize" +
     ")"
 }
 
@@ -62,9 +46,7 @@ object OrientDBUpdateSettings {
     new OrientDBUpdateSettings(
       oDatabasePool: OPartitionedDatabasePool,
       maxPartitionSize = Runtime.getRuntime.availableProcessors(),
-      maxPoolSize = -1,
-      maxRetry = 1,
-      retryInterval = 5.seconds,
+      maxPoolSize = -1
     )
 
   /** Java API */

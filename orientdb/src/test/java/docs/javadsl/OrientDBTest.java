@@ -220,9 +220,7 @@ public class OrientDBTest {
     OrientDBUpdateSettings updateSettings =
         OrientDBUpdateSettings.create(oDatabase)
             .withMaxPartitionSize(Runtime.getRuntime().availableProcessors())
-            .withMaxPoolSize(-1)
-            .withMaxRetries(1)
-            .withRetryInterval(Duration.ofSeconds(5));
+            .withMaxPoolSize(-1);
     // #write-settings
   }
 
