@@ -308,6 +308,7 @@ object Dependencies {
         "org.springframework" % "spring-core" % SpringVersion,
         "org.springframework" % "spring-context" % SpringVersion,
         "org.springframework.boot" % "spring-boot-autoconfigure" % SpringBootVersion, // TODO should this be provided?
+        "org.springframework.boot" % "spring-boot-configuration-processor" % SpringBootVersion % Optional,
 
         // for examples
         "org.springframework.boot" % "spring-boot-starter-web" % SpringBootVersion % Test
