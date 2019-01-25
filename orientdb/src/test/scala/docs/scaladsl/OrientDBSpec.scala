@@ -149,7 +149,7 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
           )
         )
 
-      Await.ready(f1, Duration.Inf)
+      Await.ready(f1, 10.seconds)
 
       //#run-odocument
       val f2 = OrientDBSource(
@@ -158,13 +158,12 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       ).map { message =>
           message.oDocument.field[String]("book_title")
         }
-        .groupedWithin(10, 50.millis)
         .runWith(Sink.seq)
       //#run-odocument
 
-      val result = Await.result(f2, Duration.Inf)
+      val result = Await.result(f2, 10.seconds)
 
-      result shouldEqual Seq(
+      result.sorted shouldEqual Seq(
         "Akka Concurrency",
         "Akka in Action",
         "Effective Akka",
@@ -197,7 +196,7 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         .runWith(Sink.seq)
       //#run-flow
 
-      Await.ready(f1, Duration.Inf)
+      Await.ready(f1, 10.second)
 
       val f2 = OrientDBSource(
         sink5,
@@ -207,7 +206,7 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         }
         .runWith(Sink.seq)
 
-      val result2 = Await.result(f2, Duration.Inf)
+      val result2 = Await.result(f2, 10.seconds)
 
       result2.sorted shouldEqual Seq(
         "Akka Concurrency",
@@ -264,7 +263,7 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         }
         .runWith(Sink.seq)
 
-      Await.ready(f1, Duration.Inf)
+      Await.ready(f1, 10.seconds)
       //#kafka-example
       assert(List(0, 1, 2) == committedOffsets.map(_.offset))
 
@@ -276,7 +275,7 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         }
         .runWith(Sink.seq)
 
-      val result2 = Await.result(f2, Duration.Inf)
+      val result2 = Await.result(f2, 10.seconds)
 
       result2.sorted shouldEqual Seq(
         "Book 1",

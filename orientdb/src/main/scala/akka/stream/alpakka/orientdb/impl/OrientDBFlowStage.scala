@@ -47,7 +47,6 @@ private[orientdb] class OrientDBFlowStage[T, C](
     override def preStart(): Unit = {
       client = settings.oDatabasePool.acquire()
       oObjectClient = new OObjectDatabaseTx(client)
-      pull(in)
     }
 
     override def postStop(): Unit = {
@@ -59,7 +58,7 @@ private[orientdb] class OrientDBFlowStage[T, C](
 
     setHandlers(in, out, this)
 
-    override def onPull(): Unit = tryPull(in)
+    override def onPull(): Unit = if (!isClosed(in) && !hasBeenPulled(in)) pull(in)
 
     override def onPush(): Unit = {
       val messages = grab(in)
@@ -88,12 +87,13 @@ private[orientdb] class OrientDBFlowStage[T, C](
               .foreach {
                 case (fieldName, fieldVal) =>
                   document.field(fieldName, fieldVal)
-                  ()
               }
             document.setClassName(className)
             client.save(document)
+            ()
           case OrientDbWriteMessage(oRecord: ORecord, _) =>
             client.save(oRecord)
+            ()
           case OrientDbWriteMessage(others: AnyRef, _) =>
             failStage(new RuntimeException(s"unexpected type [${others.getClass()}], ORecord required"))
         }
@@ -116,6 +116,7 @@ private[orientdb] class OrientDBFlowStage[T, C](
       messages.foreach {
         case OrientDbWriteMessage(typeRecord: Any, _) =>
           oObjectClient.save(typeRecord)
+          ()
       }
       push(out, messages)
     }
