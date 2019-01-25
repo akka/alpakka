@@ -15,7 +15,6 @@ final class OrientDBUpdateSettings private (
     val maxPoolSize: Int,
     val maxRetry: Int,
     val retryInterval: scala.concurrent.duration.FiniteDuration,
-    val bufferSize: Int
 ) {
 
   def withOrientDBCredentials(
@@ -31,22 +30,19 @@ final class OrientDBUpdateSettings private (
 
   /** Java API */
   def withRetryInterval(value: java.time.Duration): OrientDBUpdateSettings = copy(retryInterval = value.asScala)
-  def withBufferSize(value: Int): OrientDBUpdateSettings = copy(bufferSize = value)
 
   private def copy(
       oDatabasePool: com.orientechnologies.orient.core.db.OPartitionedDatabasePool = oDatabasePool,
       maxPartitionSize: Int = maxPartitionSize,
       maxPoolSize: Int = maxPoolSize,
       maxRetry: Int = maxRetry,
-      retryInterval: scala.concurrent.duration.FiniteDuration = retryInterval,
-      bufferSize: Int = bufferSize
+      retryInterval: scala.concurrent.duration.FiniteDuration = retryInterval
   ): OrientDBUpdateSettings = new OrientDBUpdateSettings(
     oDatabasePool = oDatabasePool,
     maxPartitionSize = maxPartitionSize,
     maxPoolSize = maxPoolSize,
     maxRetry = maxRetry,
-    retryInterval = retryInterval,
-    bufferSize = bufferSize
+    retryInterval = retryInterval
   )
 
   override def toString =
@@ -55,8 +51,7 @@ final class OrientDBUpdateSettings private (
     s"maxPartitionSize=$maxPartitionSize," +
     s"maxPoolSize=$maxPoolSize," +
     s"maxRetry=$maxRetry," +
-    s"retryInterval=${retryInterval.toCoarsest}," +
-    s"bufferSize=$bufferSize" +
+    s"retryInterval=${retryInterval.toCoarsest}" +
     ")"
 }
 
@@ -70,7 +65,6 @@ object OrientDBUpdateSettings {
       maxPoolSize = -1,
       maxRetry = 1,
       retryInterval = 5.seconds,
-      bufferSize = 10
     )
 
   /** Java API */

@@ -129,7 +129,6 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         .withMaxPoolSize(-1)
         .withMaxRetries(1)
         .withRetryInterval(5.seconds)
-        .withBufferSize(10)
       // #write-settings
       updateSettings.toString shouldBe OrientDBUpdateSettings(oDatabase).toString
     }
@@ -144,6 +143,7 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       ).map { message: OrientDbReadResult[ODocument] =>
           OrientDbWriteMessage(message.oDocument)
         }
+        .groupedWithin(10, 50.millis)
         .runWith(
           OrientDBSink(
             sink4,
@@ -160,12 +160,13 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       ).map { message =>
           message.oDocument.field[String]("book_title")
         }
+        .groupedWithin(10, 50.millis)
         .runWith(Sink.seq)
       //#run-odocument
 
       val result = Await.result(f2, Duration.Inf)
 
-      result.sorted shouldEqual Seq(
+      result shouldEqual Seq(
         "Akka Concurrency",
         "Akka in Action",
         "Effective Akka",
@@ -188,6 +189,7 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       ).map { message: OrientDbReadResult[ODocument] =>
           OrientDbWriteMessage(message.oDocument)
         }
+        .groupedWithin(10, 50.millis)
         .via(
           OrientDBFlow.create(
             sink5,
@@ -250,6 +252,7 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
           OrientDbWriteMessage(new ODocument().field("book_title", id), kafkaMessage.offset)
         }
+        .groupedWithin(10, 50.millis)
         .via(
           OrientDBFlow.createWithPassThrough(
             sink7,

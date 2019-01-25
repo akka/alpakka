@@ -27,16 +27,15 @@ private[orientdb] class OrientDBFlowStage[T, C](
     className: String,
     settings: OrientDBUpdateSettings,
     clazz: Option[Class[T]]
-) extends GraphStage[FlowShape[OrientDbWriteMessage[T, C], immutable.Seq[OrientDbWriteMessage[T, C]]]] {
+) extends GraphStage[FlowShape[immutable.Seq[OrientDbWriteMessage[T, C]], immutable.Seq[OrientDbWriteMessage[T, C]]]] {
 
-  private val in = Inlet[OrientDbWriteMessage[T, C]]("messages")
-  private val out = Outlet[immutable.Seq[OrientDbWriteMessage[T, C]]]("failed")
+  private val in = Inlet[immutable.Seq[OrientDbWriteMessage[T, C]]]("in")
+  private val out = Outlet[immutable.Seq[OrientDbWriteMessage[T, C]]]("out")
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with InHandler with OutHandler {
 
-      private val queue = new mutable.Queue[OrientDbWriteMessage[T, C]]()
       private val failureHandler =
         getAsyncCallback[(immutable.Seq[OrientDbWriteMessage[T, C]], Throwable)](handleFailure)
       private val responseHandler =
@@ -59,7 +58,7 @@ private[orientdb] class OrientDBFlowStage[T, C](
       }
 
       private def tryPull(): Unit =
-        if (queue.size < settings.bufferSize && !isClosed(in) && !hasBeenPulled(in)) {
+        if (!isClosed(in) && !hasBeenPulled(in)) {
           pull(in)
         }
 
@@ -82,31 +81,8 @@ private[orientdb] class OrientDBFlowStage[T, C](
       private def handleSuccess(): Unit =
         completeStage()
 
-      private def handleResponse(args: (immutable.Seq[OrientDbWriteMessage[T, C]], Option[String])): Unit = {
-        retryCount = 0
-        val (messages, error) = args
-
-        val failedMessages = messages.flatMap {
-          case message =>
-            if (error.isEmpty) {
-              None
-            } else {
-              Some(message)
-            }
-        }
-
-        val nextMessages = (1 to settings.bufferSize).flatMap { _ =>
-          queue.dequeueFirst(_ => true)
-        }
-
-        if (nextMessages.isEmpty) {
-          handleSuccess()
-        } else {
-          sendOSQLBulkInsertRequest(nextMessages)
-        }
-
+      private def handleResponse(args: (immutable.Seq[OrientDbWriteMessage[T, C]], Option[String])): Unit =
         push(out, failedMessages)
-      }
 
       private def sendOSQLBulkInsertRequest(messages: immutable.Seq[OrientDbWriteMessage[T, C]]): Unit =
         try {
@@ -189,14 +165,8 @@ private[orientdb] class OrientDBFlowStage[T, C](
       override def onPull(): Unit = tryPull()
 
       override def onPush(): Unit = {
-        val message = grab(in)
-        queue.enqueue(message)
-
-        val messages = (1 to settings.bufferSize).flatMap { _ =>
-          queue.dequeueFirst(_ => true)
-        }
+        val messages = grab(in)
         sendOSQLBulkInsertRequest(messages)
-
         tryPull()
       }
 

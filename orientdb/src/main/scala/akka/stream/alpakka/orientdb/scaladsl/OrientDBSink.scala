@@ -10,14 +10,17 @@ import akka.stream.scaladsl.{Keep, Sink}
 import com.orientechnologies.orient.core.record.impl.ODocument
 
 import scala.concurrent.Future
+import scala.collection.immutable
 
 object OrientDBSink {
 
   /**
    * Scala API: creates a sink that accepts as ODocument
    */
-  def apply(className: String,
-            settings: OrientDBUpdateSettings): Sink[OrientDbWriteMessage[ODocument, NotUsed], Future[Done]] =
+  def apply(
+      className: String,
+      settings: OrientDBUpdateSettings
+  ): Sink[immutable.Seq[OrientDbWriteMessage[ODocument, NotUsed]], Future[Done]] =
     OrientDBFlow.create(className, settings).toMat(Sink.ignore)(Keep.right)
 
 }

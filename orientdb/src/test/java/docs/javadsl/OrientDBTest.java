@@ -222,8 +222,7 @@ public class OrientDBTest {
             .withMaxPartitionSize(Runtime.getRuntime().availableProcessors())
             .withMaxPoolSize(-1)
             .withMaxRetries(1)
-            .withRetryInterval(Duration.ofSeconds(5))
-            .withBufferSize(10);
+            .withRetryInterval(Duration.ofSeconds(5));
     // #write-settings
   }
 
@@ -234,6 +233,7 @@ public class OrientDBTest {
     CompletionStage<Done> f1 =
         OrientDBSource.create(source, OrientDBSourceSettings.create(oDatabase), null)
             .map(m -> OrientDbWriteMessage.create(m.oDocument()))
+            .groupedWithin(10, Duration.ofMillis(10))
             .runWith(
                 OrientDBSink.create(sink1, OrientDBUpdateSettings.create(oDatabase)), materializer);
     // #run-odocument
@@ -276,6 +276,7 @@ public class OrientDBTest {
                   sink.setBook_title(m.oDocument().getBook_title());
                   return OrientDbWriteMessage.create(sink);
                 })
+            .groupedWithin(10, Duration.ofMillis(10))
             .runWith(
                 OrientDBSink.typed(sink2, OrientDBUpdateSettings.create(oDatabase), sink2.class),
                 materializer);
@@ -339,6 +340,7 @@ public class OrientDBTest {
               return OrientDbWriteMessage.create(
                   new ODocument().field("book_title", book_title), kafkaMessage.kafkaOffset);
             })
+        .groupedWithin(10, Duration.ofMillis(10))
         .via(OrientDBFlow.createWithPassThrough(sink6, OrientDBUpdateSettings.create(oDatabase)))
         .map(
             messages -> {
@@ -383,6 +385,7 @@ public class OrientDBTest {
     CompletionStage<List<List<OrientDbWriteMessage<ODocument, NotUsed>>>> f1 =
         OrientDBSource.create(source, OrientDBSourceSettings.create(oDatabase), null)
             .map(m -> OrientDbWriteMessage.create(m.oDocument()))
+            .groupedWithin(10, Duration.ofMillis(10))
             .via(OrientDBFlow.create(sink3, OrientDBUpdateSettings.create(oDatabase)))
             .runWith(Sink.seq(), materializer);
     // #run-flow
