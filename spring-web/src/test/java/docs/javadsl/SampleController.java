@@ -35,7 +35,7 @@ public class SampleController {
   @PostConstruct
   public void setup() {
     LoggingAdapter log = system.log();
-	  log.info("Injected ActorSystem Name -> {}", system.name());
+   log.info("Injected ActorSystem Name -> {}", system.name());
     log.info("Property ActorSystemName -> {}", actorSystemName);
     Assert.isTrue((system.name().equals(actorSystemName)), "Validating ActorSystem name");
   }
