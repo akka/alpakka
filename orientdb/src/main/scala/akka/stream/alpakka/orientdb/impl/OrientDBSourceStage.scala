@@ -51,7 +51,6 @@ private[orientdb] sealed class OrientDBSourceLogic[T](className: String,
     with OutHandler {
 
   private val responseHandler = getAsyncCallback[List[T]](handleResponse)
-  private val failureHandler = getAsyncCallback[Throwable](handleFailure)
 
   private var client: ODatabaseDocumentTx = _
   private var oObjectClient: OObjectDatabaseTx = _
@@ -70,19 +69,15 @@ private[orientdb] sealed class OrientDBSourceLogic[T](className: String,
   def sendOSQLRequest(): Unit =
     if (clazz.isEmpty) {
       ODatabaseRecordThreadLocal.instance().set(client)
-      try {
-        if (query.nonEmpty) {
-          client.query[java.util.List[T]](new OSQLNonBlockingQuery[T](query.get, new OSQLCallback))
-        } else {
-          client.query[java.util.List[T]](
-            new OSQLNonBlockingQuery[T](
-              s"SELECT * FROM $className SKIP ${skipAndLimit.skip} LIMIT ${skipAndLimit.limit}",
-              new OSQLCallback
-            )
+      if (query.nonEmpty) {
+        client.query[java.util.List[T]](new OSQLNonBlockingQuery[T](query.get, new OSQLCallback))
+      } else {
+        client.query[java.util.List[T]](
+          new OSQLNonBlockingQuery[T](
+            s"SELECT * FROM $className SKIP ${skipAndLimit.skip} LIMIT ${skipAndLimit.limit}",
+            new OSQLCallback
           )
-        }
-      } catch {
-        case ex: Exception => handleFailure(ex)
+        )
       }
     } else {
       client.setDatabaseOwner(oObjectClient)
@@ -91,34 +86,24 @@ private[orientdb] sealed class OrientDBSourceLogic[T](className: String,
         clazz.getOrElse(throw new RuntimeException("Typed stream class is invalid"))
       )
 
-      try {
-        if (query.nonEmpty) {
-          oObjectClient.query[java.util.List[T]](new OSQLNonBlockingQuery[T](query.get, new OSQLCallback))
-        } else {
-          val oDocs =
-            oObjectClient
-              .query[java.util.List[T]](
-                new OSQLSynchQuery[T](
-                  s"SELECT * FROM $className SKIP ${skipAndLimit.skip} LIMIT ${skipAndLimit.limit}"
-                )
+      if (query.nonEmpty) {
+        oObjectClient.query[java.util.List[T]](new OSQLNonBlockingQuery[T](query.get, new OSQLCallback))
+      } else {
+        val oDocs =
+          oObjectClient
+            .query[java.util.List[T]](
+              new OSQLSynchQuery[T](
+                s"SELECT * FROM $className SKIP ${skipAndLimit.skip} LIMIT ${skipAndLimit.limit}"
               )
-              .asScala
-              .toList
-          if (oDocs.nonEmpty) {
-            skipAndLimit.skip = skipAndLimit.skip + skipAndLimit.limit
-          }
-          onSuccess(oDocs)
+            )
+            .asScala
+            .toList
+        if (oDocs.nonEmpty) {
+          skipAndLimit.skip = skipAndLimit.skip + skipAndLimit.limit
         }
-      } catch {
-        case ex: Exception => handleFailure(ex)
+        handleResponse(oDocs)
       }
     }
-
-  def onFailure(exception: Exception) = failureHandler.invoke(exception)
-  def onSuccess(response: List[T]) = responseHandler.invoke(response)
-
-  def handleFailure(ex: Throwable): Unit =
-    failStage(ex)
 
   def handleResponse(res: List[T]): Unit =
     if (res.isEmpty)
@@ -144,7 +129,7 @@ private[orientdb] sealed class OrientDBSourceLogic[T](className: String,
       if (oDocs.nonEmpty) {
         skipAndLimit.skip = skipAndLimit.skip + skipAndLimit.limit
       }
-      onSuccess(oDocs)
+      responseHandler.invoke(oDocs)
     }
   }
 }
