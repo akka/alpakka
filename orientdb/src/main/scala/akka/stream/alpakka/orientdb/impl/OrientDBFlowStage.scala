@@ -34,109 +34,114 @@ private[orientdb] class OrientDBFlowStage[T, C](
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with InHandler with OutHandler {
-
-      private var client: ODatabaseDocumentTx = _
-      private var oObjectClient: OObjectDatabaseTx = _
-
-      override def preStart(): Unit = {
-        client = settings.oDatabasePool.acquire()
-        oObjectClient = new OObjectDatabaseTx(client)
-        pull(in)
-      }
-
-      override def postStop(): Unit = {
-        oObjectClient.close()
-        client.close()
-      }
-
-      private def handleResponse(args: (immutable.Seq[OrientDbWriteMessage[T, C]], Option[String])): Unit =
-        push(out, args._1)
-
-      private def sendOSQLBulkInsertRequest(messages: immutable.Seq[OrientDbWriteMessage[T, C]]): Unit = {
-        ODatabaseRecordThreadLocal.instance().set(client)
-        if (clazz.isEmpty) {
-          if (!client.getMetadata.getSchema.existsClass(className)) {
-            client.getMetadata.getSchema.createClass(className)
-          }
-          client.begin(OTransaction.TXTYPE.OPTIMISTIC)
-
-          var faultyMessages: List[OrientDbWriteMessage[T, C]] = List()
-          var successfulMessages: List[OrientDbWriteMessage[T, C]] = List()
-          messages.foreach {
-            case OrientDbWriteMessage(oDocument: ODocument, passThrough: C) =>
-              val document = new ODocument()
-              oDocument
-                .asInstanceOf[ODocument]
-                .fieldNames()
-                .zip(oDocument.asInstanceOf[ODocument].fieldValues())
-                .foreach {
-                  case (fieldName, fieldVal) =>
-                    document.field(fieldName, fieldVal)
-                    ()
-                }
-              document.setClassName(className)
-              client.save(document)
-              successfulMessages = successfulMessages ++ List(
-                OrientDbWriteMessage(oDocument.asInstanceOf[T], passThrough)
-              )
-              ()
-            case OrientDbWriteMessage(oRecord: ORecord, passThrough: C) =>
-              client.save(oRecord)
-              successfulMessages = successfulMessages ++ List(
-                OrientDbWriteMessage(oRecord.asInstanceOf[T], passThrough)
-              )
-              ()
-            case OrientDbWriteMessage(others: AnyRef, passThrough: C) =>
-              faultyMessages = faultyMessages ++ List(OrientDbWriteMessage(others.asInstanceOf[T], passThrough))
-              ()
-          }
-          client.commit()
-          if (faultyMessages.nonEmpty) {
-            handleResponse((faultyMessages, Some("Records are invalid OrientDB Records")))
-          } else {
-            emit(out, successfulMessages)
-            handleResponse((immutable.Seq.empty, None))
-          }
-        } else {
-          client.setDatabaseOwner(oObjectClient)
-          oObjectClient.getEntityManager.registerEntityClass(
-            clazz.getOrElse(throw new RuntimeException("Typed stream class is invalid"))
-          )
-
-          var faultyMessages: List[OrientDbWriteMessage[T, C]] = List()
-          var successfulMessages: List[OrientDbWriteMessage[T, C]] = List()
-          messages.foreach {
-            case OrientDbWriteMessage(typeRecord: T, passThrough: C) =>
-              oObjectClient.save(typeRecord)
-              successfulMessages = successfulMessages ++ List(OrientDbWriteMessage(typeRecord, passThrough))
-              ()
-            case OrientDbWriteMessage(others: AnyRef, passThrough: C) =>
-              faultyMessages = faultyMessages ++ List(OrientDbWriteMessage(others.asInstanceOf[T], passThrough))
-              ()
-          }
-
-          if (faultyMessages.nonEmpty) {
-            handleResponse((faultyMessages, Some("Records are invalid OrientDB Records")))
-          } else {
-            emit(out, successfulMessages)
-            handleResponse((immutable.Seq.empty, None))
-          }
-        }
-      }
-
-      setHandlers(in, out, this)
-
-      override def onPull(): Unit = tryPull(in)
-
-      override def onPush(): Unit = {
-        val messages = grab(in)
-        sendOSQLBulkInsertRequest(messages)
-        tryPull(in)
-      }
-
-      override def onUpstreamFailure(exception: Throwable): Unit =
-        failStage(exception)
-
+    clazz match {
+      case Some(c) => new OrientDbTypedLogic(c)
+      case None => new ORecordLogic(className)
     }
+
+  sealed abstract class OrientDbLogic extends GraphStageLogic(shape) with InHandler with OutHandler {
+
+    protected var client: ODatabaseDocumentTx = _
+    protected var oObjectClient: OObjectDatabaseTx = _
+
+    override def preStart(): Unit = {
+      client = settings.oDatabasePool.acquire()
+      oObjectClient = new OObjectDatabaseTx(client)
+      pull(in)
+    }
+
+    override def postStop(): Unit = {
+      oObjectClient.close()
+      client.close()
+    }
+
+    protected def sendOSQLBulkInsertRequest(messages: immutable.Seq[OrientDbWriteMessage[T, C]]): Unit
+
+    setHandlers(in, out, this)
+
+    override def onPull(): Unit = tryPull(in)
+
+    override def onPush(): Unit = {
+      val messages = grab(in)
+      sendOSQLBulkInsertRequest(messages)
+      tryPull(in)
+    }
+
+  }
+
+  final class ORecordLogic(className: String) extends OrientDbLogic {
+
+    protected def sendOSQLBulkInsertRequest(messages: immutable.Seq[OrientDbWriteMessage[T, C]]): Unit = {
+      ODatabaseRecordThreadLocal.instance().set(client)
+      if (!client.getMetadata.getSchema.existsClass(className)) {
+        client.getMetadata.getSchema.createClass(className)
+      }
+      client.begin(OTransaction.TXTYPE.OPTIMISTIC)
+
+      var faultyMessages: List[OrientDbWriteMessage[T, C]] = List()
+      var successfulMessages: List[OrientDbWriteMessage[T, C]] = List()
+      messages.foreach {
+        case OrientDbWriteMessage(oDocument: ODocument, passThrough: C) =>
+          val document = new ODocument()
+          oDocument
+            .asInstanceOf[ODocument]
+            .fieldNames()
+            .zip(oDocument.asInstanceOf[ODocument].fieldValues())
+            .foreach {
+              case (fieldName, fieldVal) =>
+                document.field(fieldName, fieldVal)
+                ()
+            }
+          document.setClassName(className)
+          client.save(document)
+          successfulMessages = successfulMessages ++ List(
+            OrientDbWriteMessage(oDocument.asInstanceOf[T], passThrough)
+          )
+          ()
+        case OrientDbWriteMessage(oRecord: ORecord, passThrough: C) =>
+          client.save(oRecord)
+          successfulMessages = successfulMessages ++ List(
+            OrientDbWriteMessage(oRecord.asInstanceOf[T], passThrough)
+          )
+          ()
+        case OrientDbWriteMessage(others: AnyRef, passThrough: C) =>
+          faultyMessages = faultyMessages ++ List(OrientDbWriteMessage(others.asInstanceOf[T], passThrough))
+          ()
+      }
+      client.commit()
+      if (faultyMessages.nonEmpty) {
+        push(out, faultyMessages)
+      } else {
+        push(out, successfulMessages)
+      }
+    }
+  }
+
+  final class OrientDbTypedLogic(clazz: Class[T]) extends OrientDbLogic() {
+
+    protected def sendOSQLBulkInsertRequest(messages: immutable.Seq[OrientDbWriteMessage[T, C]]): Unit = {
+      ODatabaseRecordThreadLocal.instance().set(client)
+      client.setDatabaseOwner(oObjectClient)
+      oObjectClient.getEntityManager.registerEntityClass(clazz)
+
+      var faultyMessages: List[OrientDbWriteMessage[T, C]] = List()
+      var successfulMessages: List[OrientDbWriteMessage[T, C]] = List()
+      messages.foreach {
+        case OrientDbWriteMessage(typeRecord: T, passThrough: C) =>
+          oObjectClient.save(typeRecord)
+          successfulMessages = successfulMessages ++ List(OrientDbWriteMessage(typeRecord, passThrough))
+          ()
+        case OrientDbWriteMessage(others: AnyRef, passThrough: C) =>
+          faultyMessages = faultyMessages ++ List(OrientDbWriteMessage(others.asInstanceOf[T], passThrough))
+          ()
+      }
+
+      if (faultyMessages.nonEmpty) {
+        push(out, faultyMessages)
+      } else {
+        push(out, successfulMessages)
+      }
+    }
+
+  }
 }
