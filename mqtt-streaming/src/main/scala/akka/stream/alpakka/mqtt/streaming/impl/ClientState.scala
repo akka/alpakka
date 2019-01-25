@@ -304,11 +304,12 @@ import scala.util.{Failure, Success}
       disconnected(data.copy(stash = data.stash :+ e))
   }
 
-  def disconnect(context: ActorContext[Event],
-                 connectFlags: ConnectFlags,
-                 remote: SourceQueueWithComplete[ForwardConnectCommand],
-                 data: Data)(implicit mat: Materializer): Behavior[Event] = {
+  def disconnect(context: ActorContext[Event], remote: SourceQueueWithComplete[ForwardConnectCommand], data: Data)(
+      implicit mat: Materializer
+  ): Behavior[Event] = {
     remote.complete()
+
+    data.stash.foreach(context.self.tell)
 
     disconnected(
       Disconnected(
@@ -361,14 +362,14 @@ import scala.util.{Failure, Success}
           case (context, ConnAckReceivedFromRemote(_, local)) =>
             local.success(ForwardConnAck(data.connectData))
             timer.cancel(ReceiveConnAck)
-            disconnect(context, data.connect.connectFlags, data.remote, data)
+            disconnect(context, data.remote, data)
           case (context, ReceiveConnAckTimeout) =>
             data.remote.fail(ConnectFailed)
             timer.cancel(ReceiveConnAck)
-            disconnect(context, data.connect.connectFlags, data.remote, data)
+            disconnect(context, data.remote, data)
           case (context, ConnectionLost) =>
             timer.cancel(ReceiveConnAck)
-            disconnect(context, data.connect.connectFlags, data.remote, data)
+            disconnect(context, data.remote, data)
           case (_, e) =>
             serverConnect(data.copy(stash = data.stash :+ e))
         }
@@ -390,11 +391,11 @@ import scala.util.{Failure, Success}
         .receivePartial[Event] {
           case (context, ConnectionLost) =>
             timer.cancel(SendPingreq)
-            disconnect(context, data.connectFlags, data.remote, data)
+            disconnect(context, data.remote, data)
           case (context, DisconnectReceivedLocally(remote)) =>
             remote.success(ForwardDisconnect)
             timer.cancel(SendPingreq)
-            disconnect(context, data.connectFlags, data.remote, data)
+            disconnect(context, data.remote, data)
           case (context, SubscribeReceivedLocally(subscribe, subscribeData, remote)) =>
             val subscriberName = ActorName.mkName(SubscriberNamePrefix + subscribe.topicFilters.map(_._1).mkString("-"))
             context.child(subscriberName) match {
@@ -569,7 +570,7 @@ import scala.util.{Failure, Success}
           case (context, SendPingReqTimeout) if data.pendingPingResp =>
             data.remote.fail(PingFailed)
             timer.cancel(SendPingreq)
-            disconnect(context, data.connectFlags, data.remote, data)
+            disconnect(context, data.remote, data)
           case (_, SendPingReqTimeout) =>
             data.remote.offer(ForwardPingReq)
             serverConnected(data.copy(pendingPingResp = true))
@@ -590,14 +591,14 @@ import scala.util.{Failure, Success}
     Behaviors
       .receivePartial[Event] {
         case (context, ConnectionLost) =>
-          disconnect(context, data.connectFlags, data.remote, data)
+          disconnect(context, data.remote, data)
         case (_, e) =>
           pendingSubAck(data.copy(stash = data.stash :+ e))
       }
       .receiveSignal {
         case (context, ChildFailed(_, failure)) if failure == Subscriber.SubscribeFailed =>
           data.remote.fail(Subscriber.SubscribeFailed)
-          disconnect(context, data.connectFlags, data.remote, data)
+          disconnect(context, data.remote, data)
         case (context, _: Terminated) =>
           data.stash.foreach(context.self.tell)
           serverConnected(
@@ -627,14 +628,14 @@ import scala.util.{Failure, Success}
     Behaviors
       .receivePartial[Event] {
         case (context, ConnectionLost) =>
-          disconnect(context, data.connectFlags, data.remote, data)
+          disconnect(context, data.remote, data)
         case (_, e) =>
           pendingUnsubAck(data.copy(stash = data.stash :+ e))
       }
       .receiveSignal {
         case (context, ChildFailed(_, failure)) if failure == Unsubscriber.UnsubscribeFailed =>
           data.remote.fail(Unsubscriber.UnsubscribeFailed)
-          disconnect(context, data.connectFlags, data.remote, data)
+          disconnect(context, data.remote, data)
         case (context, _: Terminated) =>
           val unsubscribableConsumers = for ((topicName, consumer) <- data.activeConsumers;
                                              topicFilter <- data.topicFilters
