@@ -52,7 +52,7 @@ object Dependencies {
 
   val AwsLambda = Seq(
     libraryDependencies ++= Seq(
-      "com.amazonaws" % "aws-java-sdk-lambda" % AwsSdkVersion, // ApacheV2
+      "software.amazon.awssdk" % "lambda" % AwsSdk2Version, // ApacheV2
       "org.mockito" % "mockito-core" % "2.23.4" % Test // MIT
     )
   )

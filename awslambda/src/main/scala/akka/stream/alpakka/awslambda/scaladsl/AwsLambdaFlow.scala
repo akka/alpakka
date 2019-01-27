@@ -5,19 +5,19 @@
 package akka.stream.alpakka.awslambda.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.awslambda.impl.AwsLambdaFlowStage
 import akka.stream.scaladsl.Flow
-import com.amazonaws.services.lambda.model.{InvokeRequest, InvokeResult}
-import com.amazonaws.services.lambda.AWSLambdaAsync
+import software.amazon.awssdk.services.lambda.model.{InvokeRequest, InvokeResponse}
+import software.amazon.awssdk.services.lambda.LambdaAsyncClient
+import scala.compat.java8.FutureConverters._
 
 object AwsLambdaFlow {
 
   /**
-   * Scala API: creates a [[AwsLambdaFlowStage]] for a AWS Lambda function invocation using [[AWSLambdaAsync]]
+   * Scala API: creates a [[AwsLambdaFlowStage]] for a AWS Lambda function invocation using [[LambdaAsyncClient]]
    */
   def apply(
       parallelism: Int
-  )(implicit awsLambdaClient: AWSLambdaAsync): Flow[InvokeRequest, InvokeResult, NotUsed] =
-    Flow.fromGraph(new AwsLambdaFlowStage(awsLambdaClient)(parallelism))
+  )(implicit awsLambdaClient: LambdaAsyncClient): Flow[InvokeRequest, InvokeResponse, NotUsed] =
+    Flow[InvokeRequest].mapAsyncUnordered(parallelism)(awsLambdaClient.invoke(_).toScala)
 
 }
