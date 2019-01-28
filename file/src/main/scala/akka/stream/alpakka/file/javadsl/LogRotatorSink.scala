@@ -5,7 +5,6 @@
 package akka.stream.alpakka.file.javadsl
 
 import java.nio.file.{Path, StandardOpenOption}
-import java.util
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 
@@ -20,8 +19,15 @@ import scala.collection.JavaConverters._
 import scala.concurrent.Future
 
 import scala.compat.java8.FutureConverters._
+import scala.compat.java8.OptionConverters._
 
 object LogRotatorSink {
+
+  /**
+   * Sink directing the incoming `ByteString`s to new files whenever `generatorFunction` returns a new value.
+   *
+   * @param f creates a function that triggers rotation by returning a value
+   */
   def createFromFunction(
       f: function.Creator[function.Function[ByteString, Optional[Path]]]
   ): javadsl.Sink[ByteString, CompletionStage[Done]] =
@@ -31,35 +37,41 @@ object LogRotatorSink {
         .toCompletionStage()
     )
 
+  /**
+   * Sink directing the incoming `ByteString`s to new files whenever `generatorFunction` returns a value.
+   *
+   * @param f creates a function that triggers rotation by returning a value
+   * @param fileOpenOptions file options for file creation
+   */
   def createFromFunctionAndOptions(
       f: function.Creator[function.Function[ByteString, Optional[Path]]],
-      options: util.Set[StandardOpenOption]
+      fileOpenOptions: java.util.Set[StandardOpenOption]
   ): javadsl.Sink[ByteString, CompletionStage[Done]] =
     new Sink(
       akka.stream.alpakka.file.scaladsl
-        .LogRotatorSink(asScala(f), options.asScala.toSet)
+        .LogRotatorSink(asScala(f), fileOpenOptions.asScala.toSet)
         .toCompletionStage()
     )
 
-  def withSinkFactory[R](
-      f: function.Creator[function.Function[ByteString, Optional[Path]]],
-      target: function.Function[Path, Sink[ByteString, CompletionStage[R]]]
+  def withSinkFactory[C, R](
+      f: function.Creator[function.Function[ByteString, Optional[C]]],
+      target: function.Function[C, Sink[ByteString, CompletionStage[R]]]
   ): javadsl.Sink[ByteString, CompletionStage[Done]] = {
-    val t: Path => scaladsl.Sink[ByteString, Future[R]] = path =>
+    val t: C => scaladsl.Sink[ByteString, Future[R]] = path =>
       target.apply(path).asScala.mapMaterializedValue(_.toScala)
     new Sink(
       akka.stream.alpakka.file.scaladsl.LogRotatorSink
-        .withSinkFactory(asScala(f), t)
+        .withSinkFactory(asScala[C](f), t)
         .toCompletionStage()
     )
   }
 
-  private def asScala(
-      f: function.Creator[function.Function[ByteString, Optional[Path]]]
-  ): () => ByteString => Option[Path] = () => {
+  private def asScala[C](
+      f: function.Creator[function.Function[ByteString, Optional[C]]]
+  ): () => ByteString => Option[C] = () => {
     val fun = f.create()
     elem =>
-      Option(fun(elem).orElse(null))
+      fun(elem).asScala
   }
 
 }
