@@ -938,6 +938,9 @@ class MqttSessionSpec
       val server = TestProbe()
       val pipeToServer = Flow[ByteString].mapAsync(1)(msg => server.ref.ask(msg).mapTo[ByteString])
 
+      val unsubAck = UnsubAck(PacketId(1))
+      val unsubAckReceived = Promise[Done]
+
       val (client, result) =
         Source
           .queue(2, OverflowStrategy.fail)
@@ -947,6 +950,12 @@ class MqttSessionSpec
               .join(pipeToServer)
           )
           .drop(3)
+          .wireTap { e =>
+            e match {
+              case Right(Event(`unsubAck`, None)) =>
+                unsubAckReceived.success(Done)
+            }
+          }
           .takeWhile {
             case Right(Event(PingResp, None)) => false
             case _ => true
@@ -966,7 +975,6 @@ class MqttSessionSpec
 
       val unsubscribe = Unsubscribe("some-topic")
       val unsubscribeBytes = unsubscribe.encode(ByteString.newBuilder, PacketId(1)).result()
-      val unsubAck = UnsubAck(PacketId(1))
       val unsubAckBytes = unsubAck.encode(ByteString.newBuilder).result()
 
       val publish = Publish("some-topic", ByteString("some-payload"))
@@ -976,6 +984,8 @@ class MqttSessionSpec
 
       val pingResp = PingResp
       val pingRespBytes = pingResp.encode(ByteString.newBuilder).result()
+      val pubAck = PubAck(PacketId(1))
+      val pubAckBytes = pubAck.encode(ByteString.newBuilder).result()
 
       client.offer(Command(connect))
 
@@ -990,7 +1000,14 @@ class MqttSessionSpec
       client.offer(Command(unsubscribe))
 
       server.expectMsg(unsubscribeBytes)
-      server.reply(unsubAckBytes ++ publishDupBytes ++ pingRespBytes)
+      server.reply(unsubAckBytes ++ publishDupBytes)
+
+      unsubAckReceived.future.futureValue shouldBe Done
+
+      client.offer(Command(pubAck))
+
+      server.expectMsg(pubAckBytes)
+      server.reply(pingRespBytes)
 
       // Quite possible to receive a pub from an unsubscribed topic given that it may be in transit
       result.futureValue shouldBe Vector(Right(Event(unsubAck)), Right(Event(publishDup)))

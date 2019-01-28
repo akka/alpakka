@@ -637,10 +637,6 @@ import scala.util.{Failure, Success}
           data.remote.fail(Unsubscriber.UnsubscribeFailed)
           disconnect(context, data.remote, data)
         case (context, _: Terminated) =>
-          val unsubscribableConsumers = for ((topicName, consumer) <- data.activeConsumers;
-                                             topicFilter <- data.topicFilters
-                                             if Topics.filter(topicFilter, topicName)) yield topicName -> consumer
-          unsubscribableConsumers.foreach { case (_, consumer) => context.stop(consumer) }
           data.stash.foreach(context.self.tell)
           serverConnected(
             ConnAckReceived(
@@ -649,7 +645,7 @@ import scala.util.{Failure, Success}
               pendingPingResp = false,
               data.remote,
               Vector.empty,
-              data.activeConsumers -- unsubscribableConsumers.map { case (topicName, _) => topicName },
+              data.activeConsumers,
               data.activeProducers,
               data.pendingLocalPublications,
               data.pendingRemotePublications,
