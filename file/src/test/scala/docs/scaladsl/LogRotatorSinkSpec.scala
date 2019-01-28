@@ -273,14 +273,8 @@ class LogRotatorSinkSpec
   }
 
   def readUpFilesAndSizesThenClean(files: Seq[Path]): (Seq[String], Seq[Long]) = {
-    var sizes = Seq.empty[Long]
-    var data = Seq.empty[String]
-    files.foreach { path =>
-      sizes = sizes :+ Files.size(path)
-      data = data :+ new String(Files.readAllBytes(path))
-      Files.delete(path)
-    }
-    (data, sizes)
+    val (bytes, sizes) = readUpFileBytesAndSizesThenClean(files)
+    (bytes.map(_.utf8String), sizes)
   }
 
   def readUpFileBytesAndSizesThenClean(files: Seq[Path]): (Seq[ByteString], Seq[Long]) = {
