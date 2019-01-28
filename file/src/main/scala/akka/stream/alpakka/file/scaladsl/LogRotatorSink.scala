@@ -19,50 +19,53 @@ import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
 
+/**
+ * Scala API.
+ */
 object LogRotatorSink {
 
   /**
-   * Sink directing the incoming `ByteString`s to new files whenever `generatorFunction` returns a new value.
+   * Sink directing the incoming `ByteString`s to new files whenever `triggerGenerator` returns a value.
    *
-   * @param functionGeneratorFunction creates a function that triggers rotation by returning a value
+   * @param triggerGeneratorCreator creates a function that triggers rotation by returning a value
    * @param fileOpenOptions file options for file creation
    */
   def apply(
-      functionGeneratorFunction: () => ByteString => Option[Path],
+      triggerGeneratorCreator: () => ByteString => Option[Path],
       fileOpenOptions: Set[OpenOption] = Set(StandardOpenOption.APPEND, StandardOpenOption.CREATE)
   ): Sink[ByteString, Future[Done]] =
     Sink.fromGraph(
-      new LogRotatorSink[Path, IOResult](functionGeneratorFunction, sinkFactory = FileIO.toPath(_, fileOpenOptions))
+      new LogRotatorSink[Path, IOResult](triggerGeneratorCreator, sinkFactory = FileIO.toPath(_, fileOpenOptions))
     )
 
   /**
-   * Sink directing the incoming `ByteString`s to a new `Sink` created bye `sinkFactory` whenever `generatorFunction returns a new value.
+   * Sink directing the incoming `ByteString`s to a new `Sink` created by `sinkFactory` whenever `triggerGenerator` returns a value.
    *
-   * @param functionGeneratorFunction creates a function that triggers rotation by returning a value
-   * @param sinkFactory creates sinks for `ByteString`s from the value returned by `functionGeneratorFunction`
+   * @param triggerGeneratorCreator creates a function that triggers rotation by returning a value
+   * @param sinkFactory creates sinks for `ByteString`s from the value returned by `triggerGenerator`
    * @tparam C criterion type (for files a `Path`)
    * @tparam R result type in materialized futures of `sinkFactory`
    **/
   def withSinkFactory[C, R](
-      functionGeneratorFunction: () => ByteString => Option[C],
+      triggerGeneratorCreator: () => ByteString => Option[C],
       sinkFactory: C => Sink[ByteString, Future[R]]
   ): Sink[ByteString, Future[Done]] =
-    Sink.fromGraph(new LogRotatorSink[C, R](functionGeneratorFunction, sinkFactory))
+    Sink.fromGraph(new LogRotatorSink[C, R](triggerGeneratorCreator, sinkFactory))
 }
 
 /**
  * "Log Rotator Sink" graph stage
  *
- * @param functionGeneratorFunction creates a function that triggers rotation by returning a value
- * @param sinkFactory creates sinks for `ByteString`s from the value returned by `functionGeneratorFunction`
+ * @param triggerGeneratorCreator creates a function that triggers rotation by returning a value
+ * @param sinkFactory creates sinks for `ByteString`s from the value returned by `triggerGenerator`
  * @tparam C criterion type (for files a `Path`)
  * @tparam R result type in materialized futures of `sinkFactory`
  */
-final private class LogRotatorSink[C, R](functionGeneratorFunction: () => ByteString => Option[C],
+final private class LogRotatorSink[C, R](triggerGeneratorCreator: () => ByteString => Option[C],
                                          sinkFactory: C => Sink[ByteString, Future[R]])
     extends GraphStageWithMaterializedValue[SinkShape[ByteString], Future[Done]] {
 
-  val in = Inlet[ByteString]("FRotator.in")
+  val in = Inlet[ByteString]("LogRotatorSink.in")
   override val shape = SinkShape.of(in)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
@@ -74,9 +77,10 @@ final private class LogRotatorSink[C, R](functionGeneratorFunction: () => ByteSt
   }
 
   private final class Logic(promise: Promise[Done], decider: Decider) extends GraphStageLogic(shape) {
-    val pathGeneratorFunction: ByteString => Option[C] = functionGeneratorFunction()
+    val triggerGenerator: ByteString => Option[C] = triggerGeneratorCreator()
     var sourceOut: SubSourceOutlet[ByteString] = _
-    var fileSinkCompleted: immutable.Seq[Future[R]] = immutable.Seq.empty
+    var sinkCompletions: immutable.Seq[Future[R]] = immutable.Seq.empty
+
     def failThisStage(ex: Throwable): Unit =
       if (!promise.isCompleted) {
         if (sourceOut != null) {
@@ -86,29 +90,26 @@ final private class LogRotatorSink[C, R](functionGeneratorFunction: () => ByteSt
         promise.failure(ex)
       }
 
-    def generatePathOrFailPeacefully(data: ByteString): Option[C] = {
-      var ret = Option.empty[C]
+    def checkTrigger(data: ByteString): Option[C] =
       try {
-        ret = pathGeneratorFunction(data)
+        triggerGenerator(data)
       } catch {
         case ex: Throwable =>
           failThisStage(ex)
+          None
       }
-      ret
-    }
 
-    def fileSinkFutureCallbackHandler(future: Future[R])(h: Holder[R]): Unit =
+    def sinkCompletionCallbackHandler(future: Future[R])(h: Holder[R]): Unit =
       h.elem match {
         case Success(IOResult(_, Failure(ex))) if decider(ex) == Supervision.Stop =>
           promise.failure(ex)
-        case Success(x) if fileSinkCompleted.size == 1 && fileSinkCompleted.head == future =>
+        case Success(x) if sinkCompletions.size == 1 && sinkCompletions.head == future =>
           promise.trySuccess(Done)
           completeStage()
         case x: Success[R] =>
-          fileSinkCompleted = fileSinkCompleted.filter(_ != future)
+          sinkCompletions = sinkCompletions.filter(_ != future)
         case Failure(ex) =>
           failThisStage(ex)
-        case _ =>
       }
 
     //init stage where we are waiting for the first path
@@ -117,12 +118,10 @@ final private class LogRotatorSink[C, R](functionGeneratorFunction: () => ByteSt
       new InHandler {
         override def onPush(): Unit = {
           val data = grab(in)
-          val pathO = generatePathOrFailPeacefully(data)
-          pathO.fold(
-            if (!isClosed(in)) pull(in)
-          )(
-            switchPath(_, data)
-          )
+          checkTrigger(data) match {
+            case None => if (!isClosed(in)) pull(in)
+            case Some(triggerValue) => rotate(triggerValue, data)
+          }
         }
 
         override def onUpstreamFinish(): Unit =
@@ -140,13 +139,13 @@ final private class LogRotatorSink[C, R](functionGeneratorFunction: () => ByteSt
     }
 
     def futureCB(newFuture: Future[R]) =
-      getAsyncCallback[Holder[R]](fileSinkFutureCallbackHandler(newFuture))
+      getAsyncCallback[Holder[R]](sinkCompletionCallbackHandler(newFuture))
 
     //we recreate the tail of the stream, and emit the data for the next req
-    def switchPath(path: C, data: ByteString): Unit = {
+    def rotate(triggerValue: C, data: ByteString): Unit = {
       val prevOut = Option(sourceOut)
 
-      sourceOut = new SubSourceOutlet[ByteString]("FRotatorSource")
+      sourceOut = new SubSourceOutlet[ByteString]("LogRotatorSink.sub-out")
       sourceOut.setHandler(new OutHandler {
         override def onPull(): Unit = {
           sourceOut.push(data)
@@ -155,9 +154,9 @@ final private class LogRotatorSink[C, R](functionGeneratorFunction: () => ByteSt
       })
       val newFuture = Source
         .fromGraph(sourceOut.source)
-        .runWith(sinkFactory(path))(interpreter.subFusingMaterializer)
+        .runWith(sinkFactory(triggerValue))(interpreter.subFusingMaterializer)
 
-      fileSinkCompleted = fileSinkCompleted :+ newFuture
+      sinkCompletions = sinkCompletions :+ newFuture
 
       val holder = new Holder[R](NotYetThere, futureCB(newFuture))
 
@@ -175,18 +174,16 @@ final private class LogRotatorSink[C, R](functionGeneratorFunction: () => ByteSt
         new InHandler {
           override def onPush(): Unit = {
             val data = grab(in)
-            val pathO = generatePathOrFailPeacefully(data)
-            pathO.fold(
-              sourceOut.push(data)
-            )(
-              switchPath(_, data)
-            )
+            checkTrigger(data) match {
+              case None => sourceOut.push(data)
+              case Some(triggerValue) => rotate(triggerValue, data)
+            }
           }
 
           override def onUpstreamFinish(): Unit = {
             implicit val executionContext: ExecutionContext =
               akka.dispatch.ExecutionContexts.sameThreadExecutionContext
-            promise.completeWith(Future.sequence(fileSinkCompleted).map(_ => Done))
+            promise.completeWith(Future.sequence(sinkCompletions).map(_ => Done))
             sourceOut.complete()
           }
 

@@ -43,7 +43,7 @@ public class LogRotatorSinkTest {
   @Test
   public void sizeBased() throws Exception {
     // #size
-    Creator<Function<ByteString, Optional<Path>>> sizeBasedPathGenerator =
+    Creator<Function<ByteString, Optional<Path>>> sizeBasedTriggerCreator =
         () -> {
           long max = 10 * 1024 * 1024;
           final long[] size = new long[] {max};
@@ -60,7 +60,7 @@ public class LogRotatorSinkTest {
         };
 
     Sink<ByteString, CompletionStage<Done>> sizeRotatorSink =
-        LogRotatorSink.createFromFunction(sizeBasedPathGenerator);
+        LogRotatorSink.createFromFunction(sizeBasedTriggerCreator);
     // #size
     CompletionStage<Done> fileSizeCompletion =
         Source.from(Arrays.asList("test1", "test2", "test3", "test4", "test5", "test6"))
@@ -77,7 +77,7 @@ public class LogRotatorSinkTest {
     final Path destinationDir = FileSystems.getDefault().getPath("/tmp");
     final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("'stream-'yyyy-MM-dd_HH'.log'");
 
-    Creator<Function<ByteString, Optional<Path>>> timeBasedPathCreator =
+    Creator<Function<ByteString, Optional<Path>>> timeBasedTriggerCreator =
         () -> {
           final String[] currentFileName = new String[] {null};
           return (element) -> {
@@ -92,7 +92,7 @@ public class LogRotatorSinkTest {
         };
 
     Sink<ByteString, CompletionStage<Done>> timeBasedSink =
-        LogRotatorSink.createFromFunction(timeBasedPathCreator);
+        LogRotatorSink.createFromFunction(timeBasedTriggerCreator);
     // #time
 
     CompletionStage<Done> fileSizeCompletion =
@@ -107,11 +107,11 @@ public class LogRotatorSinkTest {
     // #sample
     import akka.stream.alpakka.file.javadsl.LogRotatorSink;
 
-    Creator<Function<ByteString, Optional<Path>>> pathGeneratorCreator = ...;
+    Creator<Function<ByteString, Optional<Path>>> triggerFunctionCreator = ...;
 
     // #sample
     */
-    Creator<Function<ByteString, Optional<Path>>> pathGeneratorCreator = timeBasedPathCreator;
+    Creator<Function<ByteString, Optional<Path>>> triggerFunctionCreator = timeBasedTriggerCreator;
 
     Source<ByteString, NotUsed> source =
         Source.from(Arrays.asList("test1", "test2", "test3", "test4", "test5", "test6"))
@@ -120,13 +120,13 @@ public class LogRotatorSinkTest {
     CompletionStage<Done> completion =
         Source.from(Arrays.asList("test1", "test2", "test3", "test4", "test5", "test6"))
             .map(ByteString::fromString)
-            .runWith(LogRotatorSink.createFromFunction(pathGeneratorCreator), materializer);
+            .runWith(LogRotatorSink.createFromFunction(triggerFunctionCreator), materializer);
 
     // GZip compressing the data written
     CompletionStage<Done> compressedCompletion =
         source.runWith(
             LogRotatorSink.withSinkFactory(
-                pathGeneratorCreator,
+                triggerFunctionCreator,
                 path ->
                     Flow.of(ByteString.class)
                         .via(Compression.gzip())

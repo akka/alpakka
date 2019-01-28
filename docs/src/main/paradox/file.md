@@ -83,7 +83,7 @@ Java
 The @scala[@scaladoc[LogRotatatorSink](akka.stream.alpakka.file.scaladsl.LogRotatorSink$)]
  @java[@scaladoc[LogRotatatorSink](akka.stream.alpakka.file.javadsl.LogRotatorSink$)] will create and 
  write to multiple files.  
-This sink takes a function as parameter which returns a
+This sink takes a creator as parameter which returns a
  @scala[`Bytestring => Option[Path]` function]@java[`Function<ByteString, Optional<Path>>`]. If the generated function returns a path
  the sink will rotate the file output to this new path and the actual `ByteString` will be
   written to this new file too.

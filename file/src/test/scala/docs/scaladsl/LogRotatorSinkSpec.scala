@@ -55,7 +55,7 @@ class LogRotatorSinkSpec
     buffer.toList
   }
 
-  def fileLengthFunctionFactory(): (() => (ByteString) => Option[Path], () => Seq[Path]) = {
+  def fileLengthTriggerCreator(): (() => ByteString => Option[Path], () => Seq[Path]) = {
     var files = Seq.empty[Path]
     val testFunction = () => {
       val max = 2002
@@ -84,7 +84,7 @@ class LogRotatorSinkSpec
       // #size
       import akka.stream.alpakka.file.scaladsl.LogRotatorSink
 
-      val fileSizeRotationFunction: () => ByteString => Option[Path] = () => {
+      val fileSizeTriggerCreator: () => ByteString => Option[Path] = () => {
         val max = 10 * 1024 * 1024
         var size: Long = max
         element: ByteString =>
@@ -99,7 +99,7 @@ class LogRotatorSinkSpec
       }
 
       val sizeRotatorSink: Sink[ByteString, Future[Done]] =
-        LogRotatorSink(fileSizeRotationFunction)
+        LogRotatorSink(fileSizeTriggerCreator)
       // #size
 
       val fileSizeCompletion = Source(immutable.Seq("test1", "test2", "test3", "test4", "test5", "test6"))
@@ -114,7 +114,7 @@ class LogRotatorSinkSpec
       val destinationDir = FileSystems.getDefault.getPath("/tmp")
       val formatter = DateTimeFormatter.ofPattern("'stream-'yyyy-MM-dd_HH'.log'")
 
-      val timeBasedRotationFunction = () => {
+      val timeBasedTriggerCreator: () => ByteString => Option[Path] = () => {
         var currentFilename: Option[String] = None
         (_: ByteString) =>
           {
@@ -129,7 +129,7 @@ class LogRotatorSinkSpec
       }
 
       val timeBasedSink: Sink[ByteString, Future[Done]] =
-        LogRotatorSink(timeBasedRotationFunction)
+        LogRotatorSink(timeBasedTriggerCreator)
       // #time
 
       val timeBaseCompletion = Source(immutable.Seq("test1", "test2", "test3", "test4", "test5", "test6"))
@@ -138,15 +138,15 @@ class LogRotatorSinkSpec
 
       /*
       // #sample
-      val pathGeneratorFunction: () => ByteString => Option[Path] = ???
+      val triggerFunctionCreator: () => ByteString => Option[Path] = ???
 
       // #sample
        */
-      val pathGeneratorFunction: () => ByteString => Option[Path] = timeBasedRotationFunction
+      val triggerFunctionCreator: () => ByteString => Option[Path] = timeBasedTriggerCreator
       // #sample
       val completion = Source(immutable.Seq("test1", "test2", "test3", "test4", "test5", "test6"))
         .map(ByteString(_))
-        .runWith(LogRotatorSink(pathGeneratorFunction))
+        .runWith(LogRotatorSink(triggerFunctionCreator))
       // #sample
       completion.futureValue shouldBe Done
 
@@ -156,7 +156,7 @@ class LogRotatorSinkSpec
 
     "write lines to a single file" in {
       var files = Seq.empty[Path]
-      val testFunction = () => {
+      val triggerFunctionCreator = () => {
         var fileName: String = null
         (element: ByteString) =>
           {
@@ -170,7 +170,7 @@ class LogRotatorSinkSpec
             }
           }
       }
-      val completion = Source(testByteStrings).runWith(LogRotatorSink(testFunction))
+      val completion = Source(testByteStrings).runWith(LogRotatorSink(triggerFunctionCreator))
       Await.result(completion, 3.seconds)
 
       val (contents, sizes) = readUpFilesAndSizesThenClean(files)
@@ -179,9 +179,9 @@ class LogRotatorSinkSpec
     }
 
     "write lines to multiple files due to filesize" in {
-      val (testFunction, files) = fileLengthFunctionFactory()
+      val (triggerFunctionCreator, files) = fileLengthTriggerCreator()
       val completion =
-        Source(testByteStrings).runWith(LogRotatorSink(testFunction))
+        Source(testByteStrings).runWith(LogRotatorSink(triggerFunctionCreator))
 
       Await.result(completion, 3.seconds)
 
@@ -191,7 +191,7 @@ class LogRotatorSinkSpec
     }
 
     "write compressed lines to multiple targets" in {
-      val (pathGeneratorFunction, files) = fileLengthFunctionFactory()
+      val (triggerFunctionCreator, files) = fileLengthTriggerCreator()
       val source = Source(testByteStrings)
       // #sample
 
@@ -200,7 +200,7 @@ class LogRotatorSinkSpec
         source
           .runWith(
             LogRotatorSink.withSinkFactory(
-              pathGeneratorFunction,
+              triggerFunctionCreator,
               (path: Path) =>
                 Flow[ByteString]
                   .via(Compression.gzip)
@@ -220,9 +220,9 @@ class LogRotatorSinkSpec
     }
 
     "upstream fail before first file creation" in {
-      val (testFunction, files) = fileLengthFunctionFactory()
+      val (triggerFunctionCreator, files) = fileLengthTriggerCreator()
       val (probe, completion) =
-        TestSource.probe[ByteString].toMat(LogRotatorSink(testFunction))(Keep.both).run()
+        TestSource.probe[ByteString].toMat(LogRotatorSink(triggerFunctionCreator))(Keep.both).run()
 
       val ex = new Exception("my-exception")
       probe.sendError(ex)
@@ -231,9 +231,9 @@ class LogRotatorSinkSpec
     }
 
     "upstream fail after first file creation" in {
-      val (testFunction, files) = fileLengthFunctionFactory()
+      val (triggerFunctionCreator, files) = fileLengthTriggerCreator()
       val (probe, completion) =
-        TestSource.probe[ByteString].toMat(LogRotatorSink(testFunction))(Keep.both).run()
+        TestSource.probe[ByteString].toMat(LogRotatorSink(triggerFunctionCreator))(Keep.both).run()
 
       val ex = new Exception("my-exception")
       probe.sendNext(ByteString("test"))
@@ -244,26 +244,26 @@ class LogRotatorSinkSpec
     }
     "function fail on path creation" in {
       val ex = new Exception("my-exception")
-      val testFunction = () => { (x: ByteString) =>
+      val triggerFunctionCreator = () => { (x: ByteString) =>
         {
           throw ex
         }
       }
       val (probe, completion) =
-        TestSource.probe[ByteString].toMat(LogRotatorSink(testFunction))(Keep.both).run()
+        TestSource.probe[ByteString].toMat(LogRotatorSink(triggerFunctionCreator))(Keep.both).run()
       probe.sendNext(ByteString("test"))
       the[Exception] thrownBy Await.result(completion, 3.seconds) shouldBe ex
     }
 
     "downstream fail on file write" in {
       val path = Files.createTempFile(fs.getPath("/"), "test", ".log")
-      val testFunction = () => { (x: ByteString) =>
+      val triggerFunctionCreator = () => { (x: ByteString) =>
         {
           Option(path)
         }
       }
       val (probe, completion) =
-        TestSource.probe[ByteString].toMat(LogRotatorSink(testFunction, Set(StandardOpenOption.READ)))(Keep.both).run()
+        TestSource.probe[ByteString].toMat(LogRotatorSink(triggerFunctionCreator, Set(StandardOpenOption.READ)))(Keep.both).run()
       probe.sendNext(ByteString("test"))
       probe.sendNext(ByteString("test"))
       probe.expectCancellation()
