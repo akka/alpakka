@@ -241,6 +241,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
                 case c: Command[A] => throw new IllegalStateException(c + " is not a client command")
               }
             )
+            .filter(_.nonEmpty)
             .log("client-commandFlow", _.iterator.decodeControlPacket(settings.maxPacketSize)) // we decode here so we can see the generated packet id
             .withAttributes(ActorAttributes.logLevels(onFailure = Logging.DebugLevel))
         )
@@ -532,6 +533,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
                 case c: Command[A] => throw new IllegalStateException(c + " is not a server command")
               }
             )
+            .filter(_.nonEmpty)
             .log("server-commandFlow", _.iterator.decodeControlPacket(settings.maxPacketSize)) // we decode here so we can see the generated packet id
             .withAttributes(ActorAttributes.logLevels(onFailure = Logging.DebugLevel))
         )
