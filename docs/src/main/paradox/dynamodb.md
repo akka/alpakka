@@ -19,8 +19,6 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Setup
 
-This connector needs a @scaladoc[DynamoClient](akka.stream.alpakka.dynamodb.DynamoClient) instance in order to create stream operators. You can create the client yourself, or let the Akka Extension handle the lifecycle of the client for you.
-
 Factories provided in the @scaladoc[DynamoDb](akka.stream.alpakka.dynamodb.scaladsl.DynamoDb$) will use the client managed by the extension. The managed client will be created using the configuration resolved from `reference.conf` and with overrides from `application.conf`.
 
 Example `application.conf`
@@ -30,14 +28,6 @@ Example `application.conf`
 : @@snip [snip](/dynamodb/src/main/resources/reference.conf)
 
 If the credentials are not set in the configuration, connector will use the [default credential provider chain](http://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html) provided by the [DynamoDB Java SDK](http://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/basics.html) to retrieve credentials.
-
-There is another set of factories under the @scaladoc[DynamoDbExternal](akka.stream.alpakka.dynamodb.scaladsl.DynamoDbExternal$) which take an instance of @scaladoc[DynamoClient](akka.stream.alpakka.dynamodb.DynamoClient) as a parameter. You might want to use a manually initiated client, if, for example, you need to use a custom credentials provider, which you may attach programmatically via the `withCredentialsProvider` method in @scaladoc[DynamoSettings](akka.stream.alpakka.dynamodb.DynamoSettings$).
-
-Scala
-: @@snip [snip](/dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/DynamoSettingsSpec.scala) { #credentials-provider } 
-
-Java
-: @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #credentials-provider }
 
 ## Usage
 
@@ -65,6 +55,15 @@ Scala
 
 Java
 : @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #paginated }
+
+A custom configured client can be used by attaching it as an attribute to the stream:
+
+Scala
+: @@snip [snip](/dynamodb/src/test/scala/docs/scaladsl/ExampleSpec.scala) { #attributes }
+
+Java
+: @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #attributes }
+
 
 ## Running the example code
 
