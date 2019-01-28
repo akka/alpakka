@@ -11,16 +11,16 @@ import akka.stream.alpakka.orientdb._
 import akka.stream.javadsl._
 import com.orientechnologies.orient.core.record.impl.ODocument
 
-object OrientDBSink {
+object OrientDbSink {
 
   /**
    * Java API: creates a sink that accepts as ODocument
    */
   def create(
       className: String,
-      settings: OrientDBUpdateSettings
+      settings: OrientDbWriteSettings
   ): Sink[java.util.List[OrientDbWriteMessage[ODocument, NotUsed]], CompletionStage[Done]] =
-    OrientDBFlow
+    OrientDbFlow
       .create(className, settings)
       .toMat(Sink.ignore[java.util.List[OrientDbWriteMessage[ODocument, NotUsed]]],
              Keep.right[NotUsed, CompletionStage[Done]])
@@ -29,9 +29,9 @@ object OrientDBSink {
    * Java API: creates a sink that accepts as specific type
    */
   def typed[T](className: String,
-               settings: OrientDBUpdateSettings,
+               settings: OrientDbWriteSettings,
                clazz: Class[T]): Sink[java.util.List[OrientDbWriteMessage[T, NotUsed]], CompletionStage[Done]] =
-    OrientDBFlow
+    OrientDbFlow
       .typed[T](className, settings, clazz)
       .toMat(Sink.ignore[java.util.List[OrientDbWriteMessage[T, NotUsed]]], Keep.right[NotUsed, CompletionStage[Done]])
 }

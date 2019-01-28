@@ -8,10 +8,10 @@ import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.orientdb.scaladsl._
 import akka.stream.alpakka.orientdb.{
-  OrientDBSourceSettings,
-  OrientDBUpdateSettings,
   OrientDbReadResult,
-  OrientDbWriteMessage
+  OrientDbSourceSettings,
+  OrientDbWriteMessage,
+  OrientDbWriteSettings
 }
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
@@ -110,13 +110,11 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     "have defaults" in {
       // #source-settings
       // re-iterating default values
-      val sourceSettings = OrientDBSourceSettings(oDatabase)
-        .withMaxPartitionSize(Runtime.getRuntime.availableProcessors())
-        .withMaxPoolSize(-1)
+      val sourceSettings = OrientDbSourceSettings(oDatabase)
         .withSkip(0)
         .withLimit(10)
       // #source-settings
-      sourceSettings.toString shouldBe OrientDBSourceSettings(oDatabase).toString
+      sourceSettings.toString shouldBe OrientDbSourceSettings(oDatabase).toString
     }
   }
 
@@ -124,37 +122,35 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     "have defaults" in {
       // #write-settings
       // re-iterating default values
-      val updateSettings = OrientDBUpdateSettings(oDatabase)
-        .withMaxPartitionSize(Runtime.getRuntime.availableProcessors())
-        .withMaxPoolSize(-1)
+      val updateSettings = OrientDbWriteSettings(oDatabase)
       // #write-settings
-      updateSettings.toString shouldBe OrientDBUpdateSettings(oDatabase).toString
+      updateSettings.toString shouldBe OrientDbWriteSettings(oDatabase).toString
     }
   }
 
   "OrientDB connector" should {
     "consume and publish documents as ODocument" in {
       //Copy source to sink1 through ODocument stream
-      val f1 = OrientDBSource(
+      val f1 = OrientDbSource(
         source,
-        OrientDBSourceSettings(oDatabasePool = oDatabase)
+        OrientDbSourceSettings(oDatabasePool = oDatabase)
       ).map { message: OrientDbReadResult[ODocument] =>
           OrientDbWriteMessage(message.oDocument)
         }
         .groupedWithin(10, 50.millis)
         .runWith(
-          OrientDBSink(
+          OrientDbSink(
             sink4,
-            OrientDBUpdateSettings(oDatabasePool = oDatabase)
+            OrientDbWriteSettings(oDatabasePool = oDatabase)
           )
         )
 
       Await.ready(f1, 10.seconds)
 
       //#run-odocument
-      val f2 = OrientDBSource(
+      val f2 = OrientDbSource(
         sink4,
-        OrientDBSourceSettings(oDatabasePool = oDatabase)
+        OrientDbSourceSettings(oDatabasePool = oDatabase)
       ).map { message =>
           message.oDocument.field[String]("book_title")
         }
@@ -180,17 +176,17 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       // Copy source/book to sink3/book through ODocument stream
       //#run-flow
 
-      val f1 = OrientDBSource(
+      val f1 = OrientDbSource(
         source,
-        OrientDBSourceSettings(oDatabasePool = oDatabase)
+        OrientDbSourceSettings(oDatabasePool = oDatabase)
       ).map { message: OrientDbReadResult[ODocument] =>
           OrientDbWriteMessage(message.oDocument)
         }
         .groupedWithin(10, 50.millis)
         .via(
-          OrientDBFlow.create(
+          OrientDbFlow.create(
             sink5,
-            OrientDBUpdateSettings(oDatabasePool = oDatabase)
+            OrientDbWriteSettings(oDatabasePool = oDatabase)
           )
         )
         .runWith(Sink.seq)
@@ -198,9 +194,9 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
       Await.ready(f1, 10.second)
 
-      val f2 = OrientDBSource(
+      val f2 = OrientDbSource(
         sink5,
-        OrientDBSourceSettings(oDatabasePool = oDatabase)
+        OrientDbSourceSettings(oDatabasePool = oDatabase)
       ).map { message =>
           message.oDocument.field[String]("book_title")
         }
@@ -251,9 +247,9 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         }
         .groupedWithin(10, 50.millis)
         .via(
-          OrientDBFlow.createWithPassThrough(
+          OrientDbFlow.createWithPassThrough(
             sink7,
-            OrientDBUpdateSettings(oDatabase)
+            OrientDbWriteSettings(oDatabase)
           )
         )
         .map { messages: Seq[OrientDbWriteMessage[ODocument, KafkaOffset]] =>
@@ -267,9 +263,9 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       //#kafka-example
       assert(List(0, 1, 2) == committedOffsets.map(_.offset))
 
-      val f2 = OrientDBSource(
+      val f2 = OrientDbSource(
         sink7,
-        OrientDBSourceSettings(oDatabasePool = oDatabase)
+        OrientDbSourceSettings(oDatabasePool = oDatabase)
       ).map { message =>
           message.oDocument.field[String]("book_title")
         }

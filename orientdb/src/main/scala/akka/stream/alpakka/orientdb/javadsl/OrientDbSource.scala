@@ -11,13 +11,13 @@ import akka.stream.javadsl.Source
 import com.orientechnologies.orient.core.record.impl.ODocument
 import scala.collection.immutable
 
-object OrientDBSource {
+object OrientDbSource {
 
   /**
    * Java API: creates a [[OrientDBSourceStage]] that producer as ODocument
    */
   def create(className: String,
-             settings: OrientDBSourceSettings,
+             settings: OrientDbSourceSettings,
              query: String): Source[OrientDbReadResult[ODocument], NotUsed] =
     Source.fromGraph(
       new OrientDBSourceStage(
@@ -31,7 +31,7 @@ object OrientDBSource {
    * Java API: creates a [[OrientDBSourceStage]] that produces as specific type
    */
   def typed[T](className: String,
-               settings: OrientDBSourceSettings,
+               settings: OrientDbSourceSettings,
                clazz: Class[T],
                query: String = null): Source[OrientDbReadResult[T], NotUsed] =
     Source.fromGraph(

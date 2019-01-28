@@ -5,7 +5,7 @@
 package akka.stream.alpakka.orientdb.impl
 
 import akka.annotation.InternalApi
-import akka.stream.alpakka.orientdb.{OrientDBSourceSettings, OrientDbReadResult}
+import akka.stream.alpakka.orientdb.{OrientDbReadResult, OrientDbSourceSettings}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import akka.stream.{Attributes, Outlet, SourceShape}
 import com.orientechnologies.orient.`object`.db.OObjectDatabaseTx
@@ -24,7 +24,7 @@ import scala.collection.mutable.ListBuffer
 @InternalApi
 private[orientdb] final class OrientDBSourceStage[T](className: String,
                                                      query: Option[String],
-                                                     settings: OrientDBSourceSettings,
+                                                     settings: OrientDbSourceSettings,
                                                      clazz: Option[Class[T]] = None)
     extends GraphStage[SourceShape[OrientDbReadResult[T]]] {
 
@@ -37,7 +37,7 @@ private[orientdb] final class OrientDBSourceStage[T](className: String,
 
 private[orientdb] sealed class OrientDBSourceLogic[T](className: String,
                                                       query: Option[String],
-                                                      settings: OrientDBSourceSettings,
+                                                      settings: OrientDbSourceSettings,
                                                       out: Outlet[OrientDbReadResult[T]],
                                                       shape: SourceShape[OrientDbReadResult[T]],
                                                       clazz: Option[Class[T]] = None)

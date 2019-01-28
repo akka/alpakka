@@ -6,25 +6,25 @@ package akka.stream.alpakka.orientdb.scaladsl
 
 import akka.NotUsed
 import akka.stream.alpakka.orientdb._
-import akka.stream.alpakka.orientdb.impl.OrientDBFlowStage
+import akka.stream.alpakka.orientdb.impl.OrientDbFlowStage
 import akka.stream.scaladsl.Flow
 import com.orientechnologies.orient.core.record.impl.ODocument
 import scala.collection.immutable
 
-object OrientDBFlow {
+object OrientDbFlow {
 
   /**
-   * Scala API: creates a [[OrientDBFlowStage]] that accepts as ODocument
+   * Scala API: creates a [[OrientDbFlowStage]] that accepts as ODocument
    */
   def create(
       className: String,
-      settings: OrientDBUpdateSettings
+      settings: OrientDbWriteSettings
   ): Flow[immutable.Seq[OrientDbWriteMessage[ODocument, NotUsed]],
           immutable.Seq[OrientDbWriteMessage[ODocument, NotUsed]],
           NotUsed] =
     Flow
       .fromGraph(
-        new OrientDBFlowStage[ODocument, NotUsed](
+        new OrientDbFlowStage[ODocument, NotUsed](
           className,
           settings,
           None
@@ -37,13 +37,13 @@ object OrientDBFlow {
    */
   def createWithPassThrough[C](
       className: String,
-      settings: OrientDBUpdateSettings
+      settings: OrientDbWriteSettings
   ): Flow[immutable.Seq[OrientDbWriteMessage[ODocument, C]],
           immutable.Seq[OrientDbWriteMessage[ODocument, C]],
           NotUsed] =
     Flow
       .fromGraph(
-        new OrientDBFlowStage[ODocument, C](
+        new OrientDbFlowStage[ODocument, C](
           className,
           settings,
           None
@@ -55,12 +55,12 @@ object OrientDBFlow {
    */
   def typed[T](
       className: String,
-      settings: OrientDBUpdateSettings,
+      settings: OrientDbWriteSettings,
       clazz: Class[T]
   ): Flow[immutable.Seq[OrientDbWriteMessage[T, NotUsed]], immutable.Seq[OrientDbWriteMessage[T, NotUsed]], NotUsed] =
     Flow
       .fromGraph(
-        new OrientDBFlowStage[T, NotUsed](
+        new OrientDbFlowStage[T, NotUsed](
           className,
           settings,
           Some(clazz)

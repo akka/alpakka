@@ -9,11 +9,11 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.orientdb.OrientDbWriteMessage;
-import akka.stream.alpakka.orientdb.OrientDBSourceSettings;
-import akka.stream.alpakka.orientdb.OrientDBUpdateSettings;
-import akka.stream.alpakka.orientdb.javadsl.OrientDBFlow;
-import akka.stream.alpakka.orientdb.javadsl.OrientDBSink;
-import akka.stream.alpakka.orientdb.javadsl.OrientDBSource;
+import akka.stream.alpakka.orientdb.OrientDbSourceSettings;
+import akka.stream.alpakka.orientdb.OrientDbWriteSettings;
+import akka.stream.alpakka.orientdb.javadsl.OrientDbFlow;
+import akka.stream.alpakka.orientdb.javadsl.OrientDbSink;
+import akka.stream.alpakka.orientdb.javadsl.OrientDbSource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.JavaTestKit;
@@ -204,12 +204,8 @@ public class OrientDBTest {
   public void sourceSettings() {
     // #source-settings
     // re-iterating default values
-    OrientDBSourceSettings sourceSettings =
-        OrientDBSourceSettings.create(oDatabase)
-            .withMaxPartitionSize(Runtime.getRuntime().availableProcessors())
-            .withMaxPoolSize(-1)
-            .withSkip(0)
-            .withLimit(10);
+    OrientDbSourceSettings sourceSettings =
+        OrientDbSourceSettings.create(oDatabase).withSkip(0).withLimit(10);
     // #source-settings
   }
 
@@ -217,10 +213,7 @@ public class OrientDBTest {
   public void writeSettings() {
     // #write-settings
     // re-iterating default values
-    OrientDBUpdateSettings updateSettings =
-        OrientDBUpdateSettings.create(oDatabase)
-            .withMaxPartitionSize(Runtime.getRuntime().availableProcessors())
-            .withMaxPoolSize(-1);
+    OrientDbWriteSettings updateSettings = OrientDbWriteSettings.create(oDatabase);
     // #write-settings
   }
 
@@ -229,17 +222,17 @@ public class OrientDBTest {
     // Copy source to sink1 through ODocument stream
     // #run-odocument
     CompletionStage<Done> f1 =
-        OrientDBSource.create(source, OrientDBSourceSettings.create(oDatabase), null)
+        OrientDbSource.create(source, OrientDbSourceSettings.create(oDatabase), null)
             .map(m -> OrientDbWriteMessage.create(m.oDocument()))
             .groupedWithin(10, Duration.ofMillis(10))
             .runWith(
-                OrientDBSink.create(sink1, OrientDBUpdateSettings.create(oDatabase)), materializer);
+                OrientDbSink.create(sink1, OrientDbWriteSettings.create(oDatabase)), materializer);
     // #run-odocument
 
     f1.toCompletableFuture().get(60, TimeUnit.SECONDS);
 
     CompletionStage<List<String>> f2 =
-        OrientDBSource.create(sink1, OrientDBSourceSettings.create(oDatabase), null)
+        OrientDbSource.create(sink1, OrientDbSourceSettings.create(oDatabase), null)
             .map(m -> m.oDocument().<String>field("book_title"))
             .runWith(Sink.seq(), materializer);
 
@@ -264,7 +257,7 @@ public class OrientDBTest {
     // Copy source/book to sink2/book through Typed stream
     // #run-typed
     CompletionStage<Done> f1 =
-        OrientDBSource.typed(source, OrientDBSourceSettings.create(oDatabase), source1.class, null)
+        OrientDbSource.typed(source, OrientDbSourceSettings.create(oDatabase), source1.class, null)
             .map(
                 m -> {
                   ODatabaseDocumentTx db = oDatabase.acquire();
@@ -276,14 +269,14 @@ public class OrientDBTest {
                 })
             .groupedWithin(10, Duration.ofMillis(10))
             .runWith(
-                OrientDBSink.typed(sink2, OrientDBUpdateSettings.create(oDatabase), sink2.class),
+                OrientDbSink.typed(sink2, OrientDbWriteSettings.create(oDatabase), sink2.class),
                 materializer);
     // #run-typed
 
     f1.toCompletableFuture().get(60, TimeUnit.SECONDS);
 
     CompletionStage<List<String>> f2 =
-        OrientDBSource.typed(sink2, OrientDBSourceSettings.create(oDatabase), sink2.class, null)
+        OrientDbSource.typed(sink2, OrientDbSourceSettings.create(oDatabase), sink2.class, null)
             .map(
                 m -> {
                   ODatabaseDocumentTx db = oDatabase.acquire();
@@ -339,7 +332,7 @@ public class OrientDBTest {
                   new ODocument().field("book_title", book_title), kafkaMessage.kafkaOffset);
             })
         .groupedWithin(10, Duration.ofMillis(10))
-        .via(OrientDBFlow.createWithPassThrough(sink6, OrientDBUpdateSettings.create(oDatabase)))
+        .via(OrientDbFlow.createWithPassThrough(sink6, OrientDbWriteSettings.create(oDatabase)))
         .map(
             messages -> {
               ODatabaseDocumentTx db = oDatabase.acquire();
@@ -361,7 +354,7 @@ public class OrientDBTest {
     assertEquals(Arrays.asList(0, 1, 2), committedOffsets);
 
     List<Object> result2 =
-        OrientDBSource.create(sink6, OrientDBSourceSettings.create(oDatabase), null)
+        OrientDbSource.create(sink6, OrientDbSourceSettings.create(oDatabase), null)
             .map(m -> m.oDocument().field("book_title"))
             .runWith(Sink.seq(), materializer)
             .toCompletableFuture()
@@ -381,10 +374,10 @@ public class OrientDBTest {
     // Copy source to sink3 through ODocument stream
     // #run-flow
     CompletionStage<List<List<OrientDbWriteMessage<ODocument, NotUsed>>>> f1 =
-        OrientDBSource.create(source, OrientDBSourceSettings.create(oDatabase), null)
+        OrientDbSource.create(source, OrientDbSourceSettings.create(oDatabase), null)
             .map(m -> OrientDbWriteMessage.create(m.oDocument()))
             .groupedWithin(10, Duration.ofMillis(10))
-            .via(OrientDBFlow.create(sink3, OrientDBUpdateSettings.create(oDatabase)))
+            .via(OrientDbFlow.create(sink3, OrientDbWriteSettings.create(oDatabase)))
             .runWith(Sink.seq(), materializer);
     // #run-flow
 
@@ -392,7 +385,7 @@ public class OrientDBTest {
 
     // Assert docs in sink3
     CompletionStage<List<String>> f2 =
-        OrientDBSource.create(sink3, OrientDBSourceSettings.create(oDatabase), null)
+        OrientDbSource.create(sink3, OrientDbSourceSettings.create(oDatabase), null)
             .map(m -> m.oDocument().<String>field("book_title"))
             .runWith(Sink.seq(), materializer);
 

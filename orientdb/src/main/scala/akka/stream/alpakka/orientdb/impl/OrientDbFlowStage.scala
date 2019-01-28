@@ -6,7 +6,7 @@ package akka.stream.alpakka.orientdb.impl
 
 import akka.annotation.InternalApi
 import akka.stream._
-import akka.stream.alpakka.orientdb.{OrientDBUpdateSettings, OrientDbWriteMessage}
+import akka.stream.alpakka.orientdb.{OrientDbWriteMessage, OrientDbWriteSettings}
 import akka.stream.stage._
 import com.orientechnologies.orient.`object`.db.OObjectDatabaseTx
 import com.orientechnologies.orient.core.db.ODatabaseRecordThreadLocal
@@ -22,9 +22,9 @@ import scala.util.control.NonFatal
  * INTERNAL API
  */
 @InternalApi
-private[orientdb] class OrientDBFlowStage[T, C](
+private[orientdb] class OrientDbFlowStage[T, C](
     className: String,
-    settings: OrientDBUpdateSettings,
+    settings: OrientDbWriteSettings,
     clazz: Option[Class[T]]
 ) extends GraphStage[FlowShape[immutable.Seq[OrientDbWriteMessage[T, C]], immutable.Seq[OrientDbWriteMessage[T, C]]]] {
 
