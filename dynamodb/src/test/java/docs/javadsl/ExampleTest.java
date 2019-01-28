@@ -8,6 +8,7 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+import akka.stream.alpakka.dynamodb.DynamoAttributes;
 import akka.stream.alpakka.dynamodb.DynamoClient;
 import akka.stream.alpakka.dynamodb.DynamoSettings;
 import akka.stream.alpakka.dynamodb.javadsl.DynamoDb;
@@ -108,6 +109,25 @@ public class ExampleTest {
         scanPages.runWith(Sink.seq(), materializer);
     try {
       List<ScanResult> strings = streamCompletion.toCompletableFuture().get(1, TimeUnit.SECONDS);
+      fail("expeced missing schema");
+    } catch (ExecutionException expected) {
+      // expected
+    }
+  }
+
+  @Test
+  public void useClientFromAttributes() throws Exception {
+    // #attributes
+    final DynamoSettings settings = DynamoSettings.create(system).withRegion("custom-region");
+    final DynamoClient client = DynamoClient.create(settings, system, materializer);
+
+    final Source<ListTablesResult, NotUsed> source =
+    DynamoDb.listTables(new ListTablesRequest())
+      .withAttributes(DynamoAttributes.client(client));
+    // #attributes
+
+    try {
+      ListTablesResult result = source.runWith(Sink.head(), materializer).toCompletableFuture().get(1, TimeUnit.SECONDS);
       fail("expeced missing schema");
     } catch (ExecutionException expected) {
       // expected

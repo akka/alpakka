@@ -5,9 +5,9 @@
 package akka.stream.alpakka.dynamodb.scaladsl
 
 import akka.NotUsed
-import akka.stream.Materializer
+import akka.stream.{ActorMaterializer, Attributes, Materializer}
 import akka.stream.alpakka.dynamodb.impl.{Paginator, Setup}
-import akka.stream.alpakka.dynamodb.{AwsOp, AwsPagedOp, DynamoClientExt}
+import akka.stream.alpakka.dynamodb.{AwsOp, AwsPagedOp, DynamoAttributes, DynamoClientExt}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 
 import scala.concurrent.Future
@@ -22,9 +22,7 @@ object DynamoDb {
    */
   def flow[Op <: AwsOp]: Flow[Op, Op#B, NotUsed] =
     Setup
-      .flow { mat => _ =>
-        DynamoClientExt(mat.system).dynamoClient.underlying.flow[Op]
-      }
+      .flow(clientFlow[Op])
       .mapMaterializedValue(_ => NotUsed)
 
   /**
@@ -34,8 +32,8 @@ object DynamoDb {
    */
   def source(op: AwsPagedOp): Source[op.B, NotUsed] =
     Setup
-      .source { mat => _ =>
-        Paginator.source(DynamoClientExt(mat.system).dynamoClient.underlying.flow, op)
+      .source { mat => attr =>
+        Paginator.source(clientFlow(mat)(attr), op)
       }
       .mapMaterializedValue(_ => NotUsed)
 
@@ -55,4 +53,10 @@ object DynamoDb {
    */
   def single(op: AwsOp)(implicit mat: Materializer): Future[op.B] =
     source(op).runWith(Sink.head)
+
+  private def clientFlow[Op <: AwsOp](mat: ActorMaterializer)(attr: Attributes) =
+    attr.get[DynamoAttributes.Client]
+      .map(_.client)
+      .getOrElse(DynamoClientExt(mat.system).dynamoClient)
+      .underlying.flow[Op]
 }

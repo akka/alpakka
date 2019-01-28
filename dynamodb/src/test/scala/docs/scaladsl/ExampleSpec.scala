@@ -8,6 +8,7 @@ import java.lang
 
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.stream.alpakka.dynamodb.{DynamoAttributes, DynamoClient, DynamoSettings}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.dynamodb.scaladsl._
 import akka.stream.scaladsl.{Sink, Source}
@@ -94,6 +95,22 @@ class ExampleSpec
         DynamoDb.source(new ScanRequest().withTableName("testTable"))
       //##paginated
       val streamCompletion = scanPages.runWith(Sink.seq)
+      streamCompletion.failed.futureValue shouldBe a[AmazonDynamoDBException]
+    }
+
+    "use client from attributes" in {
+      import DynamoImplicits._
+
+      // #attributes
+      val settings = DynamoSettings(system).withRegion("custom-region")
+      val client = DynamoClient(settings)
+
+      val source: Source[ListTablesResult, NotUsed] =
+        DynamoDb.source(new ListTablesRequest())
+          .withAttributes(DynamoAttributes.client(client))
+      // #attributes
+
+      val streamCompletion = source.runWith(Sink.seq)
       streamCompletion.failed.futureValue shouldBe a[AmazonDynamoDBException]
     }
   }
