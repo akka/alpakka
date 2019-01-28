@@ -6,15 +6,17 @@ package akka.stream.alpakka.orientdb.scaladsl
 
 import akka.NotUsed
 import akka.stream.alpakka.orientdb._
-import akka.stream.alpakka.orientdb.impl.{OrientDBSourceStage}
+import akka.stream.alpakka.orientdb.impl.OrientDBSourceStage
 import akka.stream.scaladsl.Source
 import com.orientechnologies.orient.core.record.impl.ODocument
-import scala.collection.immutable
 
+/**
+ * Scala API.
+ */
 object OrientDbSource {
 
   /**
-   * Scala API: creates a [[OrientDBSourceStage]] that produces as ODocument
+   * Read `ODocument`s from `className` or by `query`.
    */
   def apply(className: String,
             settings: OrientDbSourceSettings,
@@ -24,6 +26,22 @@ object OrientDbSource {
         className,
         query,
         settings
+      )
+    )
+
+  /**
+   * Read elements of `T` from `className` or by `query`.
+   */
+  def typed[T](className: String,
+               settings: OrientDbSourceSettings,
+               clazz: Class[T],
+               query: String = null): Source[OrientDbReadResult[T], NotUsed] =
+    Source.fromGraph(
+      new OrientDBSourceStage[T](
+        className,
+        Option(query),
+        settings,
+        clazz = Some(clazz)
       )
     )
 

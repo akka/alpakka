@@ -4,10 +4,12 @@
 
 package akka.stream.alpakka.orientdb.impl
 
+import java.util
+
 import akka.annotation.InternalApi
 import akka.stream.alpakka.orientdb.{OrientDbReadResult, OrientDbSourceSettings}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
-import akka.stream.{Attributes, Outlet, SourceShape}
+import akka.stream.{ActorAttributes, Attributes, Outlet, SourceShape}
 import com.orientechnologies.orient.`object`.db.OObjectDatabaseTx
 import com.orientechnologies.orient.core.command.OCommandResultListener
 import com.orientechnologies.orient.core.db.ODatabaseRecordThreadLocal
@@ -30,100 +32,96 @@ private[orientdb] final class OrientDBSourceStage[T](className: String,
 
   val out: Outlet[OrientDbReadResult[T]] = Outlet("OrientDBSource.out")
   override val shape = SourceShape(out)
+  override def initialAttributes: Attributes = super.initialAttributes and ActorAttributes.IODispatcher
 
-  override def createLogic(inheritedAttributes: Attributes) =
-    new OrientDBSourceLogic[T](className, query, settings, out, shape, clazz)
-}
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new GraphStageLogic(shape) with OutHandler {
 
-private[orientdb] sealed class OrientDBSourceLogic[T](className: String,
-                                                      query: Option[String],
-                                                      settings: OrientDbSourceSettings,
-                                                      out: Outlet[OrientDbReadResult[T]],
-                                                      shape: SourceShape[OrientDbReadResult[T]],
-                                                      clazz: Option[Class[T]] = None)
-    extends GraphStageLogic(shape)
-    with OutHandler {
+      private val responseHandler = getAsyncCallback[List[T]](handleResponse)
 
-  private val responseHandler = getAsyncCallback[List[T]](handleResponse)
+      private var client: ODatabaseDocumentTx = _
+      private var oObjectClient: OObjectDatabaseTx = _
+      private var skip = settings.skip
 
-  private var client: ODatabaseDocumentTx = _
-  private var oObjectClient: OObjectDatabaseTx = _
-  private var skip = settings.skip
-
-  override def preStart(): Unit = {
-    client = settings.oDatabasePool.acquire()
-    oObjectClient = new OObjectDatabaseTx(client)
-  }
-
-  override def postStop(): Unit = {
-    ODatabaseRecordThreadLocal.instance().set(client)
-    oObjectClient.close()
-    client.close()
-  }
-
-  def handleResponse(res: List[T]): Unit =
-    if (res.isEmpty)
-      completeStage()
-    else
-      emitMultiple(out, res.map(OrientDbReadResult(_)).toIterator)
-
-  setHandler(out, this)
-
-  override def onPull(): Unit =
-    if (clazz.isEmpty) {
-      ODatabaseRecordThreadLocal.instance().set(client)
-      if (query.nonEmpty) {
-        client.query[java.util.List[T]](new OSQLNonBlockingQuery[T](query.get, new OSQLCallback))
-      } else {
-        client.query[java.util.List[T]](
-          new OSQLNonBlockingQuery[T](
-            s"SELECT * FROM $className SKIP ${skip} LIMIT ${settings.limit}",
-            new OSQLCallback
-          )
-        )
+      override def preStart(): Unit = {
+        client = settings.oDatabasePool.acquire()
+        oObjectClient = new OObjectDatabaseTx(client)
       }
-    } else {
-      client.setDatabaseOwner(oObjectClient)
-      ODatabaseRecordThreadLocal.instance().set(client)
-      oObjectClient.getEntityManager.registerEntityClass(
-        clazz.getOrElse(throw new RuntimeException("Typed stream class is invalid"))
-      )
 
-      if (query.nonEmpty) {
-        oObjectClient.query[java.util.List[T]](new OSQLNonBlockingQuery[T](query.get, new OSQLCallback))
-      } else {
-        val oDocs =
-          oObjectClient
-            .query[java.util.List[T]](
-              new OSQLSynchQuery[T](
-                s"SELECT * FROM $className SKIP ${skip} LIMIT ${settings.limit}"
-              )
-            )
-            .asScala
-            .toList
-        if (oDocs.nonEmpty) {
-          skip += settings.limit
+      override def postStop(): Unit = {
+        ODatabaseRecordThreadLocal.instance().set(client)
+        oObjectClient.close()
+        client.close()
+      }
+
+      setHandler(out, this)
+
+      override def onPull(): Unit = {
+        ODatabaseRecordThreadLocal.instance().set(client)
+        clazz match {
+          case None => queryORecords()
+          case Some(c) =>
+            queryTyped(c)
         }
-        handleResponse(oDocs)
+      }
+
+      private def queryTyped(clazz: Class[T]): Unit = {
+        client.setDatabaseOwner(oObjectClient)
+        oObjectClient.getEntityManager.registerEntityClass(clazz)
+        if (query.nonEmpty) {
+          oObjectClient.query[util.List[T]](new OSQLNonBlockingQuery[T](query.get, new OSQLCallback))
+        } else {
+          val oDocs =
+            oObjectClient
+              .query[util.List[T]](
+                new OSQLSynchQuery[T](
+                  s"SELECT * FROM $className SKIP ${skip} LIMIT ${settings.limit}"
+                )
+              )
+              .asScala
+              .toList
+          if (oDocs.nonEmpty) {
+            skip += settings.limit
+          }
+          handleResponse(oDocs)
+        }
+      }
+
+      private def queryORecords(): Unit =
+        if (query.nonEmpty) {
+          client.query[util.List[T]](new OSQLNonBlockingQuery[T](query.get, new OSQLCallback))
+        } else {
+          client.query[util.List[T]](
+            new OSQLNonBlockingQuery[T](
+              s"SELECT * FROM $className SKIP ${skip} LIMIT ${settings.limit}",
+              new OSQLCallback
+            )
+          )
+        }
+
+      private def handleResponse(res: List[T]): Unit =
+        if (res.isEmpty)
+          completeStage()
+        else
+          emitMultiple(out, res.map(OrientDbReadResult(_)).toIterator)
+
+      final private class OSQLCallback extends OCommandResultListener {
+        val oDocs = ListBuffer.newBuilder[T]
+
+        override def result(iRecord: scala.Any): Boolean = {
+          oDocs += iRecord.asInstanceOf[T]
+          true
+        }
+
+        override def getResult: AnyRef = oDocs
+
+        override def end(): Unit = {
+          val res = oDocs.result().toList
+          if (res.nonEmpty) {
+            skip += settings.limit
+          }
+          responseHandler.invoke(res)
+        }
       }
     }
-
-  final private class OSQLCallback extends OCommandResultListener {
-    val oDocs = ListBuffer.newBuilder[T]
-
-    override def result(iRecord: scala.Any): Boolean = {
-      oDocs += iRecord.asInstanceOf[T]
-      true
-    }
-
-    override def getResult: AnyRef = oDocs
-
-    override def end(): Unit = {
-      val res = oDocs.result().toList
-      if (res.nonEmpty) {
-        skip += settings.limit
-      }
-      responseHandler.invoke(res)
-    }
-  }
 }

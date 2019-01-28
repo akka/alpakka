@@ -12,10 +12,13 @@ import com.orientechnologies.orient.core.record.impl.ODocument
 import scala.concurrent.Future
 import scala.collection.immutable
 
+/**
+ * Scala API.
+ */
 object OrientDbSink {
 
   /**
-   * Scala API: creates a sink that accepts as ODocument
+   * Sink to write `ODocument`s to OrientDB, elements within one sequence are stored within one transaction.
    */
   def apply(
       className: String,

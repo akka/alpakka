@@ -11,10 +11,13 @@ import akka.stream.scaladsl.Flow
 import com.orientechnologies.orient.core.record.impl.ODocument
 import scala.collection.immutable
 
+/**
+ * Scala API.
+ */
 object OrientDbFlow {
 
   /**
-   * Scala API: creates a [[OrientDbFlowStage]] that accepts as ODocument
+   * Flow to write `ODocument`s to OrientDB, elements within one list are stored within one transaction.
    */
   def create(
       className: String,
@@ -32,8 +35,8 @@ object OrientDbFlow {
       )
 
   /**
-   * Creates a [[akka.stream.scaladsl.Flow]]
-   * with `passThrough` of type `C`.
+   * Flow to write `ODocument`s to OrientDB, elements within one sequence are stored within one transaction.
+   * Allows a `passThrough` of type `C`.
    */
   def createWithPassThrough[C](
       className: String,
@@ -51,7 +54,7 @@ object OrientDbFlow {
       )
 
   /**
-   *
+   * Flow to write elements of type `T` to OrientDB, elements within one sequence are stored within one transaction.
    */
   def typed[T](
       className: String,
@@ -67,4 +70,21 @@ object OrientDbFlow {
         )
       )
 
+  /**
+   * Flow to write elements of type `T` to OrientDB, elements within one sequence are stored within one transaction.
+   * Allows a `passThrough` of type `C`.
+   */
+  def typedWithPassThrough[T, C](
+      className: String,
+      settings: OrientDbWriteSettings,
+      clazz: Class[T]
+  ): Flow[immutable.Seq[OrientDbWriteMessage[T, C]], immutable.Seq[OrientDbWriteMessage[T, C]], NotUsed] =
+    Flow
+      .fromGraph(
+        new OrientDbFlowStage[T, C](
+          className,
+          settings,
+          Some(clazz)
+        )
+      )
 }

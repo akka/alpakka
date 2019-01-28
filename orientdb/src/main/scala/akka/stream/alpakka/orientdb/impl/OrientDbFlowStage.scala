@@ -63,6 +63,7 @@ private[orientdb] class OrientDbFlowStage[T, C](
 
     override def onPush(): Unit = {
       val messages = grab(in)
+      ODatabaseRecordThreadLocal.instance().set(client)
       sendOSQLBulkInsertRequest(messages)
       tryPull(in)
     }
@@ -72,7 +73,6 @@ private[orientdb] class OrientDbFlowStage[T, C](
   final class ORecordLogic(className: String) extends OrientDbLogic {
 
     protected def sendOSQLBulkInsertRequest(messages: immutable.Seq[OrientDbWriteMessage[T, C]]): Unit = {
-      ODatabaseRecordThreadLocal.instance().set(client)
       if (!client.getMetadata.getSchema.existsClass(className)) {
         client.getMetadata.getSchema.createClass(className)
       }
@@ -82,7 +82,6 @@ private[orientdb] class OrientDbFlowStage[T, C](
           case OrientDbWriteMessage(oDocument: ODocument, _) =>
             val document = new ODocument()
             oDocument
-              .asInstanceOf[ODocument]
               .fieldNames()
               .zip(oDocument.asInstanceOf[ODocument].fieldValues())
               .foreach {
@@ -111,7 +110,6 @@ private[orientdb] class OrientDbFlowStage[T, C](
   final class OrientDbTypedLogic(clazz: Class[T]) extends OrientDbLogic() {
 
     protected def sendOSQLBulkInsertRequest(messages: immutable.Seq[OrientDbWriteMessage[T, C]]): Unit = {
-      ODatabaseRecordThreadLocal.instance().set(client)
       client.setDatabaseOwner(oObjectClient)
       oObjectClient.getEntityManager.registerEntityClass(clazz)
       client.begin(OTransaction.TXTYPE.OPTIMISTIC)

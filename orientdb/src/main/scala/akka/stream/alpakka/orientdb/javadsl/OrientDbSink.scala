@@ -11,10 +11,13 @@ import akka.stream.alpakka.orientdb._
 import akka.stream.javadsl._
 import com.orientechnologies.orient.core.record.impl.ODocument
 
+/**
+ * Java API.
+ */
 object OrientDbSink {
 
   /**
-   * Java API: creates a sink that accepts as ODocument
+   * Sink to write `ODocument`s to OrientDB, elements within one list are stored within one transaction.
    */
   def create(
       className: String,
@@ -26,7 +29,7 @@ object OrientDbSink {
              Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
-   * Java API: creates a sink that accepts as specific type
+   * Flow to write elements of type `T` to OrientDB, elements within one list are stored within one transaction.
    */
   def typed[T](className: String,
                settings: OrientDbWriteSettings,

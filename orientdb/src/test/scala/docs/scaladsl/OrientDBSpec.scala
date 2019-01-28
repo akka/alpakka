@@ -4,6 +4,7 @@
 
 package docs.scaladsl
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.orientdb.scaladsl._
@@ -19,12 +20,15 @@ import com.orientechnologies.orient.client.remote.OServerAdmin
 import com.orientechnologies.orient.core.db.OPartitionedDatabasePool
 import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx
 import com.orientechnologies.orient.core.record.impl.ODocument
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
+class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
+
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 100.millis)
 
   //#init-mat
   implicit val system: ActorSystem = ActorSystem()
@@ -145,7 +149,7 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
           )
         )
 
-      Await.ready(f1, 10.seconds)
+      f1.futureValue shouldBe Done
 
       //#run-odocument
       val f2 = OrientDbSource(
@@ -157,9 +161,7 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         .runWith(Sink.seq)
       //#run-odocument
 
-      val result = Await.result(f2, 10.seconds)
-
-      result.sorted shouldEqual Seq(
+      f2.futureValue.sorted shouldEqual Seq(
         "Akka Concurrency",
         "Akka in Action",
         "Effective Akka",
@@ -192,7 +194,7 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         .runWith(Sink.seq)
       //#run-flow
 
-      Await.ready(f1, 10.second)
+      f1.futureValue.flatten should have('size (7))
 
       val f2 = OrientDbSource(
         sink5,
@@ -202,9 +204,7 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         }
         .runWith(Sink.seq)
 
-      val result2 = Await.result(f2, 10.seconds)
-
-      result2.sorted shouldEqual Seq(
+      f2.futureValue.sorted shouldEqual Seq(
         "Akka Concurrency",
         "Akka in Action",
         "Effective Akka",
@@ -214,9 +214,7 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         "Scala for Spark in Production"
       )
     }
-  }
 
-  "OrientDBFlow" should {
     "kafka-example - store documents and pass Responses with passThrough" in {
       //#kafka-example
       // We're going to pretend we got messages from kafka.
@@ -257,10 +255,10 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
             commitToKafka(message.passThrough)
           }
         }
-        .runWith(Sink.seq)
+        .runWith(Sink.ignore)
 
-      Await.ready(f1, 10.seconds)
       //#kafka-example
+      f1.futureValue shouldBe Done
       assert(List(0, 1, 2) == committedOffsets.map(_.offset))
 
       val f2 = OrientDbSource(
@@ -271,9 +269,7 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         }
         .runWith(Sink.seq)
 
-      val result2 = Await.result(f2, 10.seconds)
-
-      result2.sorted shouldEqual Seq(
+      f2.futureValue.sorted shouldEqual Seq(
         "Book 1",
         "Book 2",
         "Book 3"

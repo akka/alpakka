@@ -6,15 +6,17 @@ package akka.stream.alpakka.orientdb.javadsl
 
 import akka.NotUsed
 import akka.stream.alpakka.orientdb._
-import akka.stream.alpakka.orientdb.impl.{OrientDBSourceStage}
+import akka.stream.alpakka.orientdb.impl.OrientDBSourceStage
 import akka.stream.javadsl.Source
 import com.orientechnologies.orient.core.record.impl.ODocument
-import scala.collection.immutable
 
+/**
+ * Java API.
+ */
 object OrientDbSource {
 
   /**
-   * Java API: creates a [[OrientDBSourceStage]] that producer as ODocument
+   * Read `ODocument`s from `className` or by `query`.
    */
   def create(className: String,
              settings: OrientDbSourceSettings,
@@ -28,7 +30,7 @@ object OrientDbSource {
     )
 
   /**
-   * Java API: creates a [[OrientDBSourceStage]] that produces as specific type
+   * Read elements of `T` from `className` or by `query`.
    */
   def typed[T](className: String,
                settings: OrientDbSourceSettings,

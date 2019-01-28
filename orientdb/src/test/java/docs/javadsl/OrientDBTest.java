@@ -229,14 +229,14 @@ public class OrientDBTest {
                 OrientDbSink.create(sink1, OrientDbWriteSettings.create(oDatabase)), materializer);
     // #run-odocument
 
-    f1.toCompletableFuture().get(60, TimeUnit.SECONDS);
+    f1.toCompletableFuture().get(10, TimeUnit.SECONDS);
 
     CompletionStage<List<String>> f2 =
         OrientDbSource.create(sink1, OrientDbSourceSettings.create(oDatabase), null)
             .map(m -> m.oDocument().<String>field("book_title"))
             .runWith(Sink.seq(), materializer);
 
-    List<String> result = new ArrayList<>(f2.toCompletableFuture().get(60, TimeUnit.SECONDS));
+    List<String> result = new ArrayList<>(f2.toCompletableFuture().get(10, TimeUnit.SECONDS));
 
     List<String> expect =
         Arrays.asList(
@@ -273,7 +273,7 @@ public class OrientDBTest {
                 materializer);
     // #run-typed
 
-    f1.toCompletableFuture().get(60, TimeUnit.SECONDS);
+    f1.toCompletableFuture().get(10, TimeUnit.SECONDS);
 
     CompletionStage<List<String>> f2 =
         OrientDbSource.typed(sink2, OrientDbSourceSettings.create(oDatabase), sink2.class, null)
@@ -286,7 +286,7 @@ public class OrientDBTest {
                 })
             .runWith(Sink.seq(), materializer);
 
-    List<String> result = new ArrayList<>(f2.toCompletableFuture().get(60, TimeUnit.SECONDS));
+    List<String> result = new ArrayList<>(f2.toCompletableFuture().get(10, TimeUnit.SECONDS));
 
     List<String> expect =
         Arrays.asList(
@@ -348,7 +348,7 @@ public class OrientDBTest {
             })
         .runWith(Sink.seq(), materializer)
         .toCompletableFuture()
-        .get(60, TimeUnit.SECONDS);
+        .get(10, TimeUnit.SECONDS);
     // #kafka-example
 
     assertEquals(Arrays.asList(0, 1, 2), committedOffsets);
@@ -358,7 +358,7 @@ public class OrientDBTest {
             .map(m -> m.oDocument().field("book_title"))
             .runWith(Sink.seq(), materializer)
             .toCompletableFuture()
-            .get(60, TimeUnit.SECONDS);
+            .get(10, TimeUnit.SECONDS);
 
     assertEquals(
         messagesFromKafkas
@@ -389,7 +389,7 @@ public class OrientDBTest {
             .map(m -> m.oDocument().<String>field("book_title"))
             .runWith(Sink.seq(), materializer);
 
-    List<String> result2 = new ArrayList<>(f2.toCompletableFuture().get(60, TimeUnit.SECONDS));
+    List<String> result2 = new ArrayList<>(f2.toCompletableFuture().get(10, TimeUnit.SECONDS));
 
     List<String> expect =
         Arrays.asList(
