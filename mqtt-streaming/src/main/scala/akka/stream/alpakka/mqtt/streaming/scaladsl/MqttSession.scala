@@ -201,21 +201,27 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
                                                                   cp.packetId,
                                                                   Consumer.PubAckReceivedLocally(reply),
                                                                   reply)
-                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result()))
+                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
+                    case _: RemotePacketRouter.CannotRoute => ByteString.empty
+                  }
                 case Command(cp: PubRec, _) =>
                   val reply = Promise[Consumer.ForwardPubRec.type]
                   consumerPacketRouter ! RemotePacketRouter.Route(None,
                                                                   cp.packetId,
                                                                   Consumer.PubRecReceivedLocally(reply),
                                                                   reply)
-                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result()))
+                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
+                    case _: RemotePacketRouter.CannotRoute => ByteString.empty
+                  }
                 case Command(cp: PubComp, _) =>
                   val reply = Promise[Consumer.ForwardPubComp.type]
                   consumerPacketRouter ! RemotePacketRouter.Route(None,
                                                                   cp.packetId,
                                                                   Consumer.PubCompReceivedLocally(reply),
                                                                   reply)
-                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result()))
+                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
+                    case _: RemotePacketRouter.CannotRoute => ByteString.empty
+                  }
                 case Command(cp: Subscribe, carry) =>
                   val reply = Promise[Subscriber.ForwardSubscribe]
                   clientConnector ! ClientConnector.SubscribeReceivedLocally(cp, carry, reply)
@@ -235,13 +241,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
                 case c: Command[A] => throw new IllegalStateException(c + " is not a client command")
               }
             )
-            .withAttributes(ActorAttributes.supervisionStrategy {
-              // Benign exceptions
-              case RemotePacketRouter.CannotRoute =>
-                Supervision.Resume
-              case _ =>
-                Supervision.Stop
-            })
+            .filter(_.nonEmpty)
             .log("client-commandFlow", _.iterator.decodeControlPacket(settings.maxPacketSize)) // we decode here so we can see the generated packet id
             .withAttributes(ActorAttributes.logLevels(onFailure = Logging.DebugLevel))
         )
@@ -262,6 +262,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
       }
       .via(new MqttFrameStage(settings.maxPacketSize))
       .map(_.iterator.decodeControlPacket(settings.maxPacketSize))
+      .log("client-events")
       .mapAsync[Either[MqttCodec.DecodeError, Event[A]]](settings.eventParallelism) {
         case Right(cp: ConnAck) =>
           val reply = Promise[ClientConnector.ForwardConnAck]
@@ -323,12 +324,11 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
       }
       .withAttributes(ActorAttributes.supervisionStrategy {
         // Benign exceptions
-        case Consumer.ConsumeActive | LocalPacketRouter.CannotRoute | RemotePacketRouter.CannotRoute =>
+        case _: LocalPacketRouter.CannotRoute | _: RemotePacketRouter.CannotRoute =>
           Supervision.Resume
         case _ =>
           Supervision.Stop
       })
-      .log("client-events")
       .withAttributes(ActorAttributes.logLevels(onFailure = Logging.DebugLevel))
 }
 
@@ -493,43 +493,47 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
                                                                                 cp.packetId,
                                                                                 Publisher.SubAckReceivedLocally(reply),
                                                                                 reply)
-                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result()))
+                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
+                    case _: RemotePacketRouter.CannotRoute => ByteString.empty
+                  }
                 case Command(cp: UnsubAck, _) =>
                   val reply = Promise[Unpublisher.ForwardUnsubAck.type]
                   unpublisherPacketRouter ! RemotePacketRouter
                     .RouteViaConnection(connectionId, cp.packetId, Unpublisher.UnsubAckReceivedLocally(reply), reply)
-                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result()))
+                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
+                    case _: RemotePacketRouter.CannotRoute => ByteString.empty
+                  }
                 case Command(cp: PubAck, _) =>
                   val reply = Promise[Consumer.ForwardPubAck.type]
                   consumerPacketRouter ! RemotePacketRouter.RouteViaConnection(connectionId,
                                                                                cp.packetId,
                                                                                Consumer.PubAckReceivedLocally(reply),
                                                                                reply)
-                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result()))
+                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
+                    case _: RemotePacketRouter.CannotRoute => ByteString.empty
+                  }
                 case Command(cp: PubRec, _) =>
                   val reply = Promise[Consumer.ForwardPubRec.type]
                   consumerPacketRouter ! RemotePacketRouter.RouteViaConnection(connectionId,
                                                                                cp.packetId,
                                                                                Consumer.PubRecReceivedLocally(reply),
                                                                                reply)
-                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result()))
+                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
+                    case _: RemotePacketRouter.CannotRoute => ByteString.empty
+                  }
                 case Command(cp: PubComp, _) =>
                   val reply = Promise[Consumer.ForwardPubComp.type]
                   consumerPacketRouter ! RemotePacketRouter.RouteViaConnection(connectionId,
                                                                                cp.packetId,
                                                                                Consumer.PubCompReceivedLocally(reply),
                                                                                reply)
-                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result()))
+                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
+                    case _: RemotePacketRouter.CannotRoute => ByteString.empty
+                  }
                 case c: Command[A] => throw new IllegalStateException(c + " is not a server command")
               }
             )
-            .withAttributes(ActorAttributes.supervisionStrategy {
-              // Benign exceptions
-              case RemotePacketRouter.CannotRoute =>
-                Supervision.Resume
-              case _ =>
-                Supervision.Stop
-            })
+            .filter(_.nonEmpty)
             .log("server-commandFlow", _.iterator.decodeControlPacket(settings.maxPacketSize)) // we decode here so we can see the generated packet id
             .withAttributes(ActorAttributes.logLevels(onFailure = Logging.DebugLevel))
         )
@@ -550,6 +554,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
       }
       .via(new MqttFrameStage(settings.maxPacketSize))
       .map(_.iterator.decodeControlPacket(settings.maxPacketSize))
+      .log("server-events")
       .mapAsync[Either[MqttCodec.DecodeError, Event[A]]](settings.eventParallelism) {
         case Right(cp: Connect) =>
           val reply = Promise[ClientConnection.ForwardConnect.type]
@@ -605,11 +610,10 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
       }
       .withAttributes(ActorAttributes.supervisionStrategy {
         // Benign exceptions
-        case Consumer.ConsumeActive | LocalPacketRouter.CannotRoute | RemotePacketRouter.CannotRoute =>
+        case _: LocalPacketRouter.CannotRoute | _: RemotePacketRouter.CannotRoute =>
           Supervision.Resume
         case _ =>
           Supervision.Stop
       })
-      .log("server-events")
       .withAttributes(ActorAttributes.logLevels(onFailure = Logging.DebugLevel))
 }

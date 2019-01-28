@@ -18,6 +18,39 @@ class RequestStateSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
   val testKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit()
 
+  "publisher" should {
+    "match topic filters" in {
+      Topics.filter("sport/tennis/player1", "sport/tennis/player1") shouldBe true
+
+      Topics.filter("sport/tennis/player1/#", "sport/tennis/player1") shouldBe true
+      Topics.filter("sport/tennis/player1/#", "sport/tennis/player1/ranking") shouldBe true
+      Topics.filter("sport/tennis/player1/#", "sport/tennis/player1/score/wimbledon") shouldBe true
+
+      Topics.filter("sport/#", "sport") shouldBe true
+      Topics.filter("#", "sport") shouldBe true
+      Topics.filter("sport/tennis/#", "sport/tennis") shouldBe true
+      Topics.filter("sport/tennis#", "sport/tennis") shouldBe false
+      Topics.filter("sport/tennis/#/ranking", "sport/tennis/player1/ranking") shouldBe false
+
+      Topics.filter("sport/tennis/+", "sport/tennis/player1") shouldBe true
+      Topics.filter("sport/tennis/+", "sport/tennis/player1/tranking") shouldBe false
+
+      Topics.filter("sport/+", "sport") shouldBe false
+      Topics.filter("sport/+", "sport/") shouldBe true
+
+      Topics.filter("+", "sport") shouldBe true
+      Topics.filter("+/tennis/#", "sport/tennis") shouldBe true
+      Topics.filter("sport+", "sport") shouldBe false
+    }
+
+    "match topic filters that are topic filters" in {
+      Topics.filter("#", "#") shouldBe true
+      Topics.filter("#", "/a/#") shouldBe true
+      Topics.filter("+", "+") shouldBe true
+      Topics.filter("/+/#", "/+/#") shouldBe true
+    }
+  }
+
   "local packet router" should {
     "acquire a packet id" in {
       val registrant = testKit.createTestProbe[String]()
@@ -77,7 +110,7 @@ class RequestStateSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       val reply = Promise[LocalPacketRouter.Registered]()
       val router = testKit.spawn(LocalPacketRouter[String])
       router ! LocalPacketRouter.Route(PacketId(1), "some-packet", reply)
-      reply.future.failed.futureValue shouldBe LocalPacketRouter.CannotRoute
+      reply.future.failed.futureValue shouldBe LocalPacketRouter.CannotRoute(PacketId(1))
     }
   }
 
@@ -111,12 +144,12 @@ class RequestStateSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
       router ! RemotePacketRouter.UnregisterConnection(connectionId)
       router ! RemotePacketRouter.RouteViaConnection(connectionId, packetId, "some-packet2", failureReply4)
-      failureReply4.future.failed.futureValue shouldBe RemotePacketRouter.CannotRoute
+      failureReply4.future.failed.futureValue shouldBe RemotePacketRouter.CannotRoute(packetId)
       registrant.expectNoMessage(100.millis)
 
       router ! RemotePacketRouter.Unregister(Some(clientId), packetId)
       router ! RemotePacketRouter.Route(Some(clientId), packetId, "some-packet", failureReply2)
-      failureReply2.future.failed.futureValue shouldBe RemotePacketRouter.CannotRoute
+      failureReply2.future.failed.futureValue shouldBe RemotePacketRouter.CannotRoute(packetId)
       registrant.expectNoMessage(100.millis)
 
     }
