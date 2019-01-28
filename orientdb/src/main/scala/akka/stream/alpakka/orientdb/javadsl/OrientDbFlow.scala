@@ -25,11 +25,12 @@ object OrientDbFlow {
   ): Flow[java.util.List[OrientDbWriteMessage[ODocument, NotUsed]],
           java.util.List[OrientDbWriteMessage[ODocument, NotUsed]],
           NotUsed] =
-    akka.stream.javadsl.Flow
-      .of(classOf[java.util.List[OrientDbWriteMessage[ODocument, NotUsed]]])
+    akka.stream.scaladsl
+      .Flow[java.util.List[OrientDbWriteMessage[ODocument, NotUsed]]]
       .map(_.asScala.toList)
       .via(scaladsl.OrientDbFlow.create(className, settings))
       .map(_.asJava)
+      .asJava
 
   /**
    * Flow to write `ODocument`s to OrientDB, elements within one list are stored within one transaction.
@@ -41,11 +42,12 @@ object OrientDbFlow {
   ): Flow[java.util.List[OrientDbWriteMessage[ODocument, C]],
           java.util.List[OrientDbWriteMessage[ODocument, C]],
           NotUsed] =
-    akka.stream.javadsl.Flow
-      .of(classOf[java.util.List[OrientDbWriteMessage[ODocument, C]]])
+    akka.stream.scaladsl
+      .Flow[java.util.List[OrientDbWriteMessage[ODocument, C]]]
       .map(_.asScala.toList)
       .via(scaladsl.OrientDbFlow.createWithPassThrough[C](className, settings))
       .map(_.asJava)
+      .asJava
 
   /**
    * Flow to write elements of type `T` to OrientDB, elements within one list are stored within one transaction.
@@ -55,11 +57,12 @@ object OrientDbFlow {
       settings: OrientDbWriteSettings,
       clazz: Class[T]
   ): Flow[java.util.List[OrientDbWriteMessage[T, NotUsed]], java.util.List[OrientDbWriteMessage[T, NotUsed]], NotUsed] =
-    akka.stream.javadsl.Flow
-      .of(classOf[java.util.List[OrientDbWriteMessage[T, NotUsed]]])
+    akka.stream.scaladsl
+      .Flow[java.util.List[OrientDbWriteMessage[T, NotUsed]]]
       .map(_.asScala.toList)
       .via(scaladsl.OrientDbFlow.typed[T](className, settings, clazz))
       .map(_.asJava)
+      .asJava
 
   /**
    * Flow to write elements of type `T` to OrientDB, elements within one list are stored within one transaction.
@@ -70,9 +73,10 @@ object OrientDbFlow {
       settings: OrientDbWriteSettings,
       clazz: Class[T]
   ): Flow[java.util.List[OrientDbWriteMessage[T, C]], java.util.List[OrientDbWriteMessage[T, C]], NotUsed] =
-    akka.stream.javadsl.Flow
-      .of(classOf[java.util.List[OrientDbWriteMessage[T, C]]])
+    akka.stream.scaladsl
+      .Flow[java.util.List[OrientDbWriteMessage[T, C]]]
       .map(_.asScala.toList)
       .via(scaladsl.OrientDbFlow.typedWithPassThrough[T, C](className, settings, clazz))
       .map(_.asJava)
+      .asJava
 }
