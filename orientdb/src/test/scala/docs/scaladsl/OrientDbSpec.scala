@@ -19,7 +19,10 @@ import akka.testkit.TestKit
 import com.orientechnologies.orient.`object`.db.OObjectDatabaseTx
 import com.orientechnologies.orient.client.remote.OServerAdmin
 import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx
-import com.orientechnologies.orient.core.db.{ODatabaseRecordThreadLocal, OPartitionedDatabasePool}
+//#init-settings
+import com.orientechnologies.orient.core.db.OPartitionedDatabasePool
+//#init-settings
+import com.orientechnologies.orient.core.db.ODatabaseRecordThreadLocal
 import com.orientechnologies.orient.core.record.impl.ODocument
 import docs.javadsl.OrientDbTest
 import org.scalatest.concurrent.ScalaFutures
@@ -37,6 +40,7 @@ class OrientDbSpec extends WordSpec with Matchers with BeforeAndAfterAll with Sc
   implicit val materializer: Materializer = ActorMaterializer()
 
   //#init-settings
+
   val url = "remote:127.0.0.1:2424/"
   val dbName = "GratefulDeadConcertsScala"
   val dbUrl = s"$url$dbName"
@@ -65,10 +69,11 @@ class OrientDbSpec extends WordSpec with Matchers with BeforeAndAfterAll with Sc
     }
 
     //#init-settings
-    import com.orientechnologies.orient.core.db.OPartitionedDatabasePool
 
     val oDatabase: OPartitionedDatabasePool =
       new OPartitionedDatabasePool(dbUrl, username, password, Runtime.getRuntime.availableProcessors(), 10)
+
+    system.registerOnTermination(() -> oDatabase.close());
     //#init-settings
     this.oDatabase = oDatabase
     client = oDatabase.acquire()

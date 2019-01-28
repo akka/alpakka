@@ -152,6 +152,8 @@ public class OrientDbTest {
     oDatabase =
         new OPartitionedDatabasePool(
             dbUrl, username, password, Runtime.getRuntime().availableProcessors(), 10);
+
+    system.registerOnTermination(() -> oDatabase.close());
     // #init-settings
     client = oDatabase.acquire();
 

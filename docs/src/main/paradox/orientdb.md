@@ -28,7 +28,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Database connection
 
-Sources, Flows and Sinks provided by this connector need a `OPartitionedDatabasePool` to access to OrientDB.
+Sources, Flows and Sinks provided by this connector need a `OPartitionedDatabasePool` to access to OrientDB. It is your responsibility to close the database connection eg. at actor system termination. **This API has become deprecated in OrientDB, please suggest a Pull Request to use the latest APIs instead.**
 
 Scala
 : @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDBSpec.scala) { #init-settings }
