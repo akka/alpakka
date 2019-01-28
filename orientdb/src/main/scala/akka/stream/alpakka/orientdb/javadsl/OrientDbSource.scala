@@ -16,6 +16,18 @@ import com.orientechnologies.orient.core.record.impl.ODocument
 object OrientDbSource {
 
   /**
+   * Read `ODocument`s from `className`.
+   */
+  def create(className: String, settings: OrientDbSourceSettings): Source[OrientDbReadResult[ODocument], NotUsed] =
+    Source.fromGraph(
+      new OrientDBSourceStage(
+        className,
+        Option.empty,
+        settings
+      )
+    )
+
+  /**
    * Read `ODocument`s from `className` or by `query`.
    */
   def create(className: String,

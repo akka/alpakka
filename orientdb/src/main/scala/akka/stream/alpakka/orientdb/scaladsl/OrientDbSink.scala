@@ -26,4 +26,16 @@ object OrientDbSink {
   ): Sink[immutable.Seq[OrientDbWriteMessage[ODocument, NotUsed]], Future[Done]] =
     OrientDbFlow.create(className, settings).toMat(Sink.ignore)(Keep.right)
 
+  /**
+   * Flow to write elements of type `T` to OrientDB, elements within one sequence are stored within one transaction.
+   */
+  def typed[T](
+      className: String,
+      settings: OrientDbWriteSettings,
+      clazz: Class[T]
+  ): Sink[immutable.Seq[OrientDbWriteMessage[T, NotUsed]], Future[Done]] =
+    OrientDbFlow
+      .typed(className, settings, clazz)
+      .toMat(Sink.ignore)(Keep.right)
+
 }

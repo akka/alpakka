@@ -19,7 +19,9 @@ import akka.stream.javadsl.Source;
 import akka.testkit.JavaTestKit;
 import com.orientechnologies.orient.client.remote.OServerAdmin;
 import com.orientechnologies.orient.core.db.ODatabaseRecordThreadLocal;
+// #init-settings
 import com.orientechnologies.orient.core.db.OPartitionedDatabasePool;
+// #init-settings
 import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx;
 import com.orientechnologies.orient.core.record.impl.ODocument;
 import com.orientechnologies.orient.object.db.OObjectDatabaseTx;
@@ -39,7 +41,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 
-public class OrientDBTest {
+public class OrientDbTest {
 
   private static OServerAdmin oServerAdmin;
   private static OPartitionedDatabasePool oDatabase;
@@ -48,6 +50,7 @@ public class OrientDBTest {
   private static ActorMaterializer materializer;
 
   // #init-settings
+
   private static String url = "remote:127.0.0.1:2424/";
   private static String dbName = "GratefulDeadConcertsJava";
   private static String dbUrl = url + dbName;
@@ -55,14 +58,14 @@ public class OrientDBTest {
   private static String password = "root";
   // #init-settings
 
-  private static String source = "source1";
-  private static String sink1 = "sink1";
-  private static String sink2 = "sink2";
+  private static String sourceClass = "source1";
+  private static String sinkClass1 = "sink1";
+  private static String sinkClass2 = "sink2";
   private static String sink3 = "sink3";
   private static String sink6 = "sink6";
 
   // #define-class
-  public class source1 {
+  public static class source1 {
 
     private String book_title;
 
@@ -75,7 +78,7 @@ public class OrientDBTest {
     }
   }
 
-  public class sink2 {
+  public static class sink2 {
 
     private String book_title;
 
@@ -89,7 +92,7 @@ public class OrientDBTest {
   }
   // #define-class
 
-  public class KafkaOffset {
+  public static class KafkaOffset {
 
     private int offset;
 
@@ -106,7 +109,7 @@ public class OrientDBTest {
     }
   }
 
-  public class messagesFromKafka {
+  public static class messagesFromKafka {
 
     private String book_title;
 
@@ -136,39 +139,38 @@ public class OrientDBTest {
 
   @BeforeClass
   public static void setup() throws Exception {
-    // #init-mat
     system = ActorSystem.create();
     materializer = ActorMaterializer.create(system);
-    // #init-mat
 
-    // #init-db
     oServerAdmin = new OServerAdmin(url).connect(username, password);
     if (!oServerAdmin.existsDatabase(dbName, "plocal")) {
       oServerAdmin.createDatabase(dbName, "document", "plocal");
     }
-    // #init-db
+
+    // #init-settings
 
     oDatabase =
         new OPartitionedDatabasePool(
             dbUrl, username, password, Runtime.getRuntime().availableProcessors(), 10);
+    // #init-settings
     client = oDatabase.acquire();
 
-    register(source);
+    register(sourceClass);
 
-    flush(source, "book_title", "Akka in Action");
-    flush(source, "book_title", "Programming in Scala");
-    flush(source, "book_title", "Learning Scala");
-    flush(source, "book_title", "Scala for Spark in Production");
-    flush(source, "book_title", "Scala Puzzlers");
-    flush(source, "book_title", "Effective Akka");
-    flush(source, "book_title", "Akka Concurrency");
+    flush(sourceClass, "book_title", "Akka in Action");
+    flush(sourceClass, "book_title", "Programming in Scala");
+    flush(sourceClass, "book_title", "Learning Scala");
+    flush(sourceClass, "book_title", "Scala for Spark in Production");
+    flush(sourceClass, "book_title", "Scala Puzzlers");
+    flush(sourceClass, "book_title", "Effective Akka");
+    flush(sourceClass, "book_title", "Akka Concurrency");
   }
 
   @AfterClass
   public static void tearDown() throws Exception {
-    unregister(source);
-    unregister(sink1);
-    unregister(sink2);
+    unregister(sourceClass);
+    unregister(sinkClass1);
+    unregister(sinkClass2);
     unregister(sink3);
     unregister(sink6);
 
@@ -219,24 +221,25 @@ public class OrientDBTest {
 
   @Test
   public void oDocObjectStream() throws Exception {
-    // Copy source to sink1 through ODocument stream
-    // #run-odocument
+    // Copy sourceClass to sinkClass1 through ODocument stream
     CompletionStage<Done> f1 =
-        OrientDbSource.create(source, OrientDbSourceSettings.create(oDatabase), null)
+        OrientDbSource.create(sourceClass, OrientDbSourceSettings.create(oDatabase))
             .map(m -> OrientDbWriteMessage.create(m.oDocument()))
             .groupedWithin(10, Duration.ofMillis(10))
             .runWith(
-                OrientDbSink.create(sink1, OrientDbWriteSettings.create(oDatabase)), materializer);
-    // #run-odocument
+                OrientDbSink.create(sinkClass1, OrientDbWriteSettings.create(oDatabase)),
+                materializer);
 
     f1.toCompletableFuture().get(10, TimeUnit.SECONDS);
 
-    CompletionStage<List<String>> f2 =
-        OrientDbSource.create(sink1, OrientDbSourceSettings.create(oDatabase), null)
+    // #run-odocument
+    CompletionStage<List<String>> result =
+        OrientDbSource.create(sinkClass1, OrientDbSourceSettings.create(oDatabase))
             .map(m -> m.oDocument().<String>field("book_title"))
             .runWith(Sink.seq(), materializer);
+    // #run-odocument
 
-    List<String> result = new ArrayList<>(f2.toCompletableFuture().get(10, TimeUnit.SECONDS));
+    List<String> res = new ArrayList<>(result.toCompletableFuture().get(10, TimeUnit.SECONDS));
 
     List<String> expect =
         Arrays.asList(
@@ -248,35 +251,38 @@ public class OrientDBTest {
             "Scala Puzzlers",
             "Scala for Spark in Production");
 
-    Collections.sort(result);
-    assertEquals(expect, result);
+    Collections.sort(res);
+    assertEquals(expect, res);
   }
 
   @Test
   public void typedStream() throws Exception {
-    // Copy source/book to sink2/book through Typed stream
+    // Copy sourceClass/book to sinkClass2/book through Typed stream
     // #run-typed
     CompletionStage<Done> f1 =
-        OrientDbSource.typed(source, OrientDbSourceSettings.create(oDatabase), source1.class, null)
+        OrientDbSource.typed(
+                sourceClass, OrientDbSourceSettings.create(oDatabase), source1.class, null)
             .map(
-                m -> {
+                readResult -> {
                   ODatabaseDocumentTx db = oDatabase.acquire();
                   db.setDatabaseOwner(new OObjectDatabaseTx(db));
                   ODatabaseRecordThreadLocal.instance().set(db);
                   sink2 sink = new sink2();
-                  sink.setBook_title(m.oDocument().getBook_title());
+                  sink.setBook_title(readResult.oDocument().getBook_title());
                   return OrientDbWriteMessage.create(sink);
                 })
             .groupedWithin(10, Duration.ofMillis(10))
             .runWith(
-                OrientDbSink.typed(sink2, OrientDbWriteSettings.create(oDatabase), sink2.class),
+                OrientDbSink.typed(
+                    sinkClass2, OrientDbWriteSettings.create(oDatabase), sink2.class),
                 materializer);
     // #run-typed
 
     f1.toCompletableFuture().get(10, TimeUnit.SECONDS);
 
     CompletionStage<List<String>> f2 =
-        OrientDbSource.typed(sink2, OrientDbSourceSettings.create(oDatabase), sink2.class, null)
+        OrientDbSource.typed(
+                sinkClass2, OrientDbSourceSettings.create(oDatabase), sink2.class, null)
             .map(
                 m -> {
                   ODatabaseDocumentTx db = oDatabase.acquire();
@@ -371,10 +377,10 @@ public class OrientDBTest {
 
   @Test
   public void flow() throws Exception {
-    // Copy source to sink3 through ODocument stream
+    // Copy sourceClass to sink3 through ODocument stream
     // #run-flow
     CompletionStage<List<List<OrientDbWriteMessage<ODocument, NotUsed>>>> f1 =
-        OrientDbSource.create(source, OrientDbSourceSettings.create(oDatabase), null)
+        OrientDbSource.create(sourceClass, OrientDbSourceSettings.create(oDatabase), null)
             .map(m -> OrientDbWriteMessage.create(m.oDocument()))
             .groupedWithin(10, Duration.ofMillis(10))
             .via(OrientDbFlow.create(sink3, OrientDbWriteSettings.create(oDatabase)))

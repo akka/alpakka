@@ -26,9 +26,9 @@ The table below shows direct dependencies of this module and the second tab show
 
 @@dependencies { projectId="orientdb" }
 
-## Usage
+## Database connection
 
-Sources, Flows and Sinks provided by this connector need dbUrl & credentials to access to OrientDB.
+Sources, Flows and Sinks provided by this connector need a `OPartitionedDatabasePool` to access to OrientDB.
 
 Scala
 : @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDBSpec.scala) { #init-settings }
@@ -36,22 +36,11 @@ Scala
 Java
 : @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #init-settings }
 
-We will also need an @scaladoc[ActorSystem](akka.actor.ActorSystem) and an @scaladoc[ActorMaterializer](akka.stream.ActorMaterializer).
 
-Scala
-: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDBSpec.scala) { #init-mat }
+## Reading `ODocument` from OrientDB
 
-Java
-: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #init-mat }
-
-This is all preparation that we are going to need.
-
-## ODocument message
-
-Now we can stream messages which contain OrientDB's `ODocument` (in Scala or Java)
-from or to OrientDB by providing the `ODatabaseDocumentTx` to the
-@scaladoc[OrientDBSource](akka.stream.alpakka.orientdb.scaladsl.OrientDBSource$) or the
-@scaladoc[OrientDBSink](akka.stream.alpakka.orientdb.scaladsl.OrientDBSink$).
+Now we can stream messages which contain OrientDB's `ODocument` (in Scala or Java) from or to OrientDB by providing the `ODatabaseDocumentTx` to the
+@scala[@scaladoc[OrientDBSource](akka.stream.alpakka.orientdb.scaladsl.OrientDBSource$)]@java[@scaladoc[OrientDBSink](akka.stream.alpakka.orientdb.scaladsl.OrientDBSink$)].
 
 Scala
 : @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDBSpec.scala) { #run-odocument }
@@ -68,15 +57,18 @@ Java
 : @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #define-class }
 
 
-Use `OrientDBSource.typed` and `OrientDBSink.typed` to create source and sink instead.
+Use `OrientDbSource.typed` and `OrientDbSink.typed` to create source and sink instead.
+
+Scala
+: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDBSpec.scala) { #run-typed }
 
 Java
 : @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #run-typed }
 
 
-## Configuration
+## Source configuration
 
-We can configure the source by `OrientDBSourceSettings`.
+We can configure the source by `OrientDbSourceSettings`.
 
 Scala
 : @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDBSpec.scala) { #source-settings }
@@ -85,45 +77,23 @@ Java
 : @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #source-settings }
 
 
-| Parameter        | Default | Description                                                                                                              |
-| ---------------- | ------- | ------------------------------------------------------------------------------------------------------------------------ |
-| maxPartitionSize |         | `OrientDBSource` and `OrientDBSink` use this for initializing DB Connections. |
-| maxPoolSize      |    -1   | `OrientDBSource` and `OrientDBSink` use this for initializing DB Connections. |
-| skip             |   0     | `OrientDBSource` uses this property to fetch data from the DB. |
-| limit            |    10   | `OrientDBSource` uses this property to fetch data from the DB. |
-| dbUrl            |         | url to the OrientDB database. |
-| username         |         | username to connect to OrientDB. |
-| password         |         | password to connect to OrientDB. | 
-
-Also, we can configure the sink by `OrientDBUpdateSettings`.
-
-Scala
-: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDBSpec.scala) { #write-settings }
-
-Java
-: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #write-settings }
+| Parameter        | Default | Description |
+| ---------------- | ------- | ------------------------------------------- |
+| skip             |   0     | Rows skipped in the beginning of the result. |
+| limit            |    10   | Result items fetched per query. |
 
 
-| Parameter           | Default | Description                                                                                            |
-| ------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
-| maxPartitionSize |         | `OrientDBSource` and `OrientDBSink` use this for initializing DB Connections. |
-| maxPoolSize      |    -1   | `OrientDBSource` and `OrientDBSink` use this for initializing DB Connections. |
-| maxRetry         |     1   | `OrientDBSink` uses this for retrying write operations to OrientDB. |
-| retryInterval    |  5000   | `OrientDBSink` uses this for retrying write operations to OrientDB. |
-| bufferSize       |    10   | `OrientDBSink` uses this for retrieving data from DB. |
-| dbUrl            |         | url to the OrientDB database. |
-| username         |         | username to connect to OrientDB. |
-| password         |         | password to connect to OrientDB. | 
 
-## Using OrientDB as a Flow
+## Writing to OrientDB
 
 You can also build flow stages. The API is similar to creating Sinks.
 
-Scala (flow)
+Scala
 : @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDBSpec.scala) { #run-flow }
 
-Java (flow)
+Java
 : @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #run-flow }
+
 
 ### Passing data through OrientDBFlow
 
@@ -134,23 +104,3 @@ Scala
 
 Java
 : @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #kafka-example } 
-
-## Running the example code
-
-The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
-
-  > Test code requires OrientDB server running in the background. You can start one quickly using docker:
-  >		  
-  > `docker run --rm -p 2424:2424 orientdb:latest`
-
-Scala
-:   ```
-    sbt
-    > orientdb/testOnly *.OrientDBSpec
-    ```
-
-Java
-:   ```
-    sbt
-    > orientdb/testOnly *.OrientDBTest
-    ```

@@ -6,7 +6,6 @@ package docs.scaladsl
 
 import akka.Done
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.orientdb.scaladsl._
 import akka.stream.alpakka.orientdb.{
   OrientDbReadResult,
@@ -15,25 +14,27 @@ import akka.stream.alpakka.orientdb.{
   OrientDbWriteSettings
 }
 import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
+import com.orientechnologies.orient.`object`.db.OObjectDatabaseTx
 import com.orientechnologies.orient.client.remote.OServerAdmin
-import com.orientechnologies.orient.core.db.OPartitionedDatabasePool
 import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx
+import com.orientechnologies.orient.core.db.{ODatabaseRecordThreadLocal, OPartitionedDatabasePool}
 import com.orientechnologies.orient.core.record.impl.ODocument
+import docs.javadsl.OrientDbTest
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 
-import scala.concurrent.Await
+import scala.collection.immutable
+import scala.concurrent.Future
 import scala.concurrent.duration._
 
-class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
+class OrientDbSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 100.millis)
 
-  //#init-mat
   implicit val system: ActorSystem = ActorSystem()
   implicit val materializer: Materializer = ActorMaterializer()
-  //#init-mat
 
   //#init-settings
   val url = "remote:127.0.0.1:2424/"
@@ -43,7 +44,8 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll with Sc
   val password = "root"
   //#init-settings
 
-  val source = "source2"
+  val sourceClass = "source1"
+  val sinkClass2 = "sink2"
   val sink4 = "sink4"
   val sink5 = "sink5"
   val sink7 = "sink7"
@@ -52,35 +54,38 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll with Sc
   case class Book(title: String)
   //#define-class
 
-  //#define-client
   var oServerAdmin: OServerAdmin = _
   var oDatabase: OPartitionedDatabasePool = _
   var client: ODatabaseDocumentTx = _
-  //#define-client
 
   override def beforeAll() = {
-    //#init-db
     oServerAdmin = new OServerAdmin(url).connect(username, password)
     if (!oServerAdmin.existsDatabase(dbName, "plocal")) {
       oServerAdmin.createDatabase(dbName, "document", "plocal")
     }
 
-    oDatabase = new OPartitionedDatabasePool(dbUrl, username, password, Runtime.getRuntime.availableProcessors(), 10)
+    //#init-settings
+    import com.orientechnologies.orient.core.db.OPartitionedDatabasePool
+
+    val oDatabase: OPartitionedDatabasePool =
+      new OPartitionedDatabasePool(dbUrl, username, password, Runtime.getRuntime.availableProcessors(), 10)
+    //#init-settings
+    this.oDatabase = oDatabase
     client = oDatabase.acquire()
 
-    register(source)
+    register(sourceClass)
 
-    flush(source, "book_title", "Akka in Action")
-    flush(source, "book_title", "Programming in Scala")
-    flush(source, "book_title", "Learning Scala")
-    flush(source, "book_title", "Scala for Spark in Production")
-    flush(source, "book_title", "Scala Puzzlers")
-    flush(source, "book_title", "Effective Akka")
-    flush(source, "book_title", "Akka Concurrency")
+    flush(sourceClass, "book_title", "Akka in Action")
+    flush(sourceClass, "book_title", "Programming in Scala")
+    flush(sourceClass, "book_title", "Learning Scala")
+    flush(sourceClass, "book_title", "Scala for Spark in Production")
+    flush(sourceClass, "book_title", "Scala Puzzlers")
+    flush(sourceClass, "book_title", "Effective Akka")
+    flush(sourceClass, "book_title", "Akka Concurrency")
   }
 
   override def afterAll() = {
-    unregister(source)
+    unregister(sourceClass)
     unregister(sink4)
     unregister(sink5)
     unregister(sink7)
@@ -136,8 +141,8 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll with Sc
     "consume and publish documents as ODocument" in {
       //Copy source to sink1 through ODocument stream
       val f1 = OrientDbSource(
-        source,
-        OrientDbSourceSettings(oDatabasePool = oDatabase)
+        sourceClass,
+        OrientDbSourceSettings(oDatabase)
       ).map { message: OrientDbReadResult[ODocument] =>
           OrientDbWriteMessage(message.oDocument)
         }
@@ -145,23 +150,23 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll with Sc
         .runWith(
           OrientDbSink(
             sink4,
-            OrientDbWriteSettings(oDatabasePool = oDatabase)
+            OrientDbWriteSettings(oDatabase)
           )
         )
 
       f1.futureValue shouldBe Done
 
       //#run-odocument
-      val f2 = OrientDbSource(
+      val result: Future[immutable.Seq[String]] = OrientDbSource(
         sink4,
-        OrientDbSourceSettings(oDatabasePool = oDatabase)
-      ).map { message =>
+        OrientDbSourceSettings(oDatabase)
+      ).map { message: OrientDbReadResult[ODocument] =>
           message.oDocument.field[String]("book_title")
         }
         .runWith(Sink.seq)
       //#run-odocument
 
-      f2.futureValue.sorted shouldEqual Seq(
+      result.futureValue.sorted shouldEqual Seq(
         "Akka Concurrency",
         "Akka in Action",
         "Effective Akka",
@@ -179,8 +184,8 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll with Sc
       //#run-flow
 
       val f1 = OrientDbSource(
-        source,
-        OrientDbSourceSettings(oDatabasePool = oDatabase)
+        sourceClass,
+        OrientDbSourceSettings(oDatabase)
       ).map { message: OrientDbReadResult[ODocument] =>
           OrientDbWriteMessage(message.oDocument)
         }
@@ -188,7 +193,7 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll with Sc
         .via(
           OrientDbFlow.create(
             sink5,
-            OrientDbWriteSettings(oDatabasePool = oDatabase)
+            OrientDbWriteSettings(oDatabase)
           )
         )
         .runWith(Sink.seq)
@@ -198,7 +203,7 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll with Sc
 
       val f2 = OrientDbSource(
         sink5,
-        OrientDbSourceSettings(oDatabasePool = oDatabase)
+        OrientDbSourceSettings(oDatabase)
       ).map { message =>
           message.oDocument.field[String]("book_title")
         }
@@ -213,6 +218,26 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll with Sc
         "Scala Puzzlers",
         "Scala for Spark in Production"
       )
+    }
+
+    "support typed source and sink" in {
+      // #run-typed
+      val streamCompletion: Future[Done] = OrientDbSource
+        .typed(sourceClass, OrientDbSourceSettings(oDatabase), classOf[OrientDbTest.source1])
+        .map { m: OrientDbReadResult[OrientDbTest.source1] =>
+          val db: ODatabaseDocumentTx = oDatabase.acquire
+          db.setDatabaseOwner(new OObjectDatabaseTx(db))
+          ODatabaseRecordThreadLocal.instance.set(db)
+          val sink: OrientDbTest.sink2 = new OrientDbTest.sink2
+          sink.setBook_title(m.oDocument.getBook_title)
+          OrientDbWriteMessage(sink)
+        }
+        .groupedWithin(10, 10.millis)
+        .runWith(OrientDbSink.typed(sinkClass2, OrientDbWriteSettings.create(oDatabase), classOf[OrientDbTest.sink2]))
+      // #run-typed
+
+      streamCompletion.futureValue shouldBe Done
+
     }
 
     "kafka-example - store documents and pass Responses with passThrough" in {
@@ -263,7 +288,7 @@ class OrientDBSpec extends WordSpec with Matchers with BeforeAndAfterAll with Sc
 
       val f2 = OrientDbSource(
         sink7,
-        OrientDbSourceSettings(oDatabasePool = oDatabase)
+        OrientDbSourceSettings(oDatabase)
       ).map { message =>
           message.oDocument.field[String]("book_title")
         }
