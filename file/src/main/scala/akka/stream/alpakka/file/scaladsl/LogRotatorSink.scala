@@ -22,11 +22,19 @@ object LogRotatorSink {
       functionGeneratorFunction: () => ByteString => Option[Path],
       fileOpenOptions: Set[OpenOption] = Set(StandardOpenOption.APPEND, StandardOpenOption.CREATE)
   ): Sink[ByteString, Future[Done]] =
-    Sink.fromGraph(new LogRotatorSink(functionGeneratorFunction, fileOpenOptions))
+    Sink.fromGraph(
+      new LogRotatorSink(functionGeneratorFunction, sinkFactory = FileIO.toPath(_, fileOpenOptions))
+    )
+
+  def withSinkFactory[R](
+      functionGeneratorFunction: () => ByteString => Option[Path],
+      target: Path => Sink[ByteString, Future[R]]
+  ): Sink[ByteString, Future[Done]] =
+    Sink.fromGraph(new LogRotatorSink[R](functionGeneratorFunction, target))
 }
 
-final private[scaladsl] class LogRotatorSink(functionGeneratorFunction: () => ByteString => Option[Path],
-                                             fileOpenOptions: Set[OpenOption])
+final private class LogRotatorSink[R](functionGeneratorFunction: () => ByteString => Option[Path],
+                                      sinkFactory: Path => Sink[ByteString, Future[R]])
     extends GraphStageWithMaterializedValue[SinkShape[ByteString], Future[Done]] {
 
   val in = Inlet[ByteString]("FRotator.in")
@@ -37,7 +45,7 @@ final private[scaladsl] class LogRotatorSink(functionGeneratorFunction: () => By
     val logic = new GraphStageLogic(shape) {
       val pathGeneratorFunction: ByteString => Option[Path] = functionGeneratorFunction()
       var sourceOut: SubSourceOutlet[ByteString] = _
-      var fileSinkCompleted: Seq[Future[IOResult]] = Seq.empty
+      var fileSinkCompleted: Seq[Future[R]] = Seq.empty
       val decider =
         inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
 
@@ -61,14 +69,14 @@ final private[scaladsl] class LogRotatorSink(functionGeneratorFunction: () => By
         ret
       }
 
-      def fileSinkFutureCallbackHandler(future: Future[IOResult])(h: Holder[IOResult]): Unit =
+      def fileSinkFutureCallbackHandler(future: Future[R])(h: Holder[R]): Unit =
         h.elem match {
           case Success(IOResult(_, Failure(ex))) if decider(ex) == Supervision.Stop =>
             promise.failure(ex)
           case Success(x) if fileSinkCompleted.size == 1 && fileSinkCompleted.head == future =>
             promise.trySuccess(Done)
             completeStage()
-          case x: Success[IOResult] =>
+          case x: Success[R] =>
             fileSinkCompleted = fileSinkCompleted.filter(_ != future)
           case Failure(ex) =>
             failThisStage(ex)
@@ -103,8 +111,8 @@ final private[scaladsl] class LogRotatorSink(functionGeneratorFunction: () => By
         pull(in)
       }
 
-      def futureCB(newFuture: Future[IOResult]) =
-        getAsyncCallback[Holder[IOResult]](fileSinkFutureCallbackHandler(newFuture))
+      def futureCB(newFuture: Future[R]) =
+        getAsyncCallback[Holder[R]](fileSinkFutureCallbackHandler(newFuture))
 
       //we recreate the tail of the stream, and emit the data for the next req
       def switchPath(path: Path, data: ByteString): Unit = {
@@ -119,11 +127,11 @@ final private[scaladsl] class LogRotatorSink(functionGeneratorFunction: () => By
         })
         val newFuture = Source
           .fromGraph(sourceOut.source)
-          .runWith(FileIO.toPath(path, fileOpenOptions))(interpreter.subFusingMaterializer)
+          .runWith(sinkFactory(path))(interpreter.subFusingMaterializer)
 
         fileSinkCompleted = fileSinkCompleted :+ newFuture
 
-        val holder = new Holder[IOResult](NotYetThere, futureCB(newFuture))
+        val holder = new Holder[R](NotYetThere, futureCB(newFuture))
 
         newFuture.onComplete(holder)(
           akka.dispatch.ExecutionContexts.sameThreadExecutionContext

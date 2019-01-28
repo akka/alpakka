@@ -11,17 +11,18 @@ import java.time.format.DateTimeFormatter
 
 import akka.Done
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{Keep, Sink, Source}
+import akka.stream.scaladsl.{Compression, FileIO, Flow, Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSource
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Materializer}
 import akka.testkit.TestKit
 import akka.util.ByteString
 import com.google.common.jimfs.{Configuration, Jimfs}
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 object LogRotatorSinkSpec {
 
@@ -107,7 +108,8 @@ class LogRotatorSinkSpec
     extends TestKit(ActorSystem("LogRotatorSinkSpec"))
     with WordSpecLike
     with Matchers
-    with BeforeAndAfterAll {
+    with BeforeAndAfterAll
+    with ScalaFutures {
 
   import akka.stream.alpakka.file.scaladsl.LogRotatorSink
 
@@ -118,6 +120,7 @@ class LogRotatorSinkSpec
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
   implicit val materializer = ActorMaterializer(settings)
+  implicit val ec: ExecutionContext = system.dispatcher
   val fs = Jimfs.newFileSystem("LogRotatorSinkSpec", Configuration.unix())
 
   val TestLines = {
@@ -179,6 +182,7 @@ class LogRotatorSinkSpec
       sizes should contain theSameElementsAs Seq(6006L)
       contents should contain theSameElementsAs Seq(TestLines.mkString(""))
     }
+
     "write lines to multiple files due to filesize" in {
       val (testFunction, files) = fileLengthFunctionFactory()
       val completion =
@@ -190,6 +194,30 @@ class LogRotatorSinkSpec
       sizes should contain theSameElementsAs Seq(2002L, 2002L, 2002L)
       contents should contain theSameElementsAs TestLines.sliding(2, 2).map(_.mkString("")).toList
     }
+
+    "write compressed lines to multiple targets" in {
+      val (testFunction, files) = fileLengthFunctionFactory()
+      val completion =
+        Source(testByteStrings).runWith(
+          LogRotatorSink.withSinkFactory(
+            testFunction,
+            path =>
+              Flow[ByteString]
+                .via(Compression.gzip)
+                .toMat(FileIO.toPath(path, Set(StandardOpenOption.APPEND, StandardOpenOption.CREATE)))(Keep.right)
+          )
+        )
+
+      completion.futureValue shouldBe Done
+
+      val (contents, sizes) = readUpFileBytesAndSizesThenClean(files())
+      sizes should contain theSameElementsAs Seq(51L, 51L, 51L)
+      val uncompressed = Future.sequence(contents.map { c =>
+        Source.single(c).via(Compression.gunzip()).map(_.utf8String).runWith(Sink.head)
+      })
+      uncompressed.futureValue should contain theSameElementsAs TestLines.sliding(2, 2).map(_.mkString("")).toList
+    }
+
     "upstream fail before first file creation" in {
       val (testFunction, files) = fileLengthFunctionFactory()
       val (probe, completion) =
@@ -250,6 +278,18 @@ class LogRotatorSinkSpec
       sizes = sizes :+ Files.size(path)
       data = data :+ new String(Files.readAllBytes(path))
       Files.delete(path)
+    }
+    (data, sizes)
+  }
+
+  def readUpFileBytesAndSizesThenClean(files: Seq[Path]): (Seq[ByteString], Seq[Long]) = {
+    var sizes = Seq.empty[Long]
+    var data = Seq.empty[ByteString]
+    files.foreach { path =>
+      sizes = sizes :+ Files.size(path)
+      data = data :+ ByteString(Files.readAllBytes(path))
+      Files.delete(path)
+      ()
     }
     (data, sizes)
   }
