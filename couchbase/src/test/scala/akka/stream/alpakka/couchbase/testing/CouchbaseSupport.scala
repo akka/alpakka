@@ -51,7 +51,7 @@ trait CouchbaseSupport {
   var session: CouchbaseSession = _
 
   def beforeAll(): Unit = {
-    session = Await.result(CouchbaseSession(sessionSettings, bucketName), 2.seconds)
+    session = Await.result(CouchbaseSession(sessionSettings, bucketName), 10.seconds)
     log.info("Done Creating CB Server")
   }
 
