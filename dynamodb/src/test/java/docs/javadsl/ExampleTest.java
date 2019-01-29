@@ -8,11 +8,11 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+import akka.stream.alpakka.dynamodb.AwsOp;
 import akka.stream.alpakka.dynamodb.DynamoAttributes;
 import akka.stream.alpakka.dynamodb.DynamoClient;
 import akka.stream.alpakka.dynamodb.DynamoSettings;
 import akka.stream.alpakka.dynamodb.javadsl.DynamoDb;
-import akka.stream.alpakka.dynamodb.scaladsl.DynamoImplicits.CreateTable;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -82,13 +82,15 @@ public class ExampleTest {
   }
 
   @Test
-  public void flow() throws Exception {
+  public void allowMultipleRequests() throws Exception {
     // #flow
     Source<String, NotUsed> tableArnSource =
-        DynamoDb.createTable(new CreateTableRequest().withTableName("testTable"))
+        Source.single(AwsOp.create(new CreateTableRequest().withTableName("testTable")))
+            .via(DynamoDb.flow())
+            .map(r -> (CreateTableResult) r)
             .map(result -> result.getTableDescription().getTableArn());
     // #flow
-    //    final Duration duration = Duration.create(5, "seconds");
+
     CompletionStage<List<String>> streamCompletion =
         tableArnSource.runWith(Sink.seq(), materializer);
     try {
@@ -122,12 +124,13 @@ public class ExampleTest {
     final DynamoClient client = DynamoClient.create(settings, system, materializer);
 
     final Source<ListTablesResult, NotUsed> source =
-    DynamoDb.listTables(new ListTablesRequest())
-      .withAttributes(DynamoAttributes.client(client));
+        DynamoDb.listTables(new ListTablesRequest())
+            .withAttributes(DynamoAttributes.client(client));
     // #attributes
 
     try {
-      ListTablesResult result = source.runWith(Sink.head(), materializer).toCompletableFuture().get(1, TimeUnit.SECONDS);
+      ListTablesResult result =
+          source.runWith(Sink.head(), materializer).toCompletableFuture().get(1, TimeUnit.SECONDS);
       fail("expeced missing schema");
     } catch (ExecutionException expected) {
       // expected
