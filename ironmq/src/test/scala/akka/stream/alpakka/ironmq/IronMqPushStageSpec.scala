@@ -10,7 +10,7 @@ import akka.stream.scaladsl._
 
 import scala.concurrent.ExecutionContext
 
-class IronMqPushStageSpec extends IronMqSpec with IronMqFixture with AkkaStreamFixture {
+class IronMqPushStageSpec extends IronMqSpec {
 
   implicit val ec: ExecutionContext = ExecutionContexts.global()
 

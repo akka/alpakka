@@ -9,7 +9,7 @@ import akka.stream.scaladsl.{Sink, Source}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class IronMqPullStageSpec extends IronMqSpec with IronMqFixture with AkkaStreamFixture {
+class IronMqPullStageSpec extends IronMqSpec {
 
   "IronMqSourceStage" when {
     "there are messages" should {

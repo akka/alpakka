@@ -5,13 +5,13 @@
 package akka.stream.alpakka.ironmq.scaladsl
 
 import akka.dispatch.ExecutionContexts
-import akka.stream.alpakka.ironmq.{AkkaStreamFixture, IronMqFixture, IronMqSettings, IronMqSpec, PushMessage}
+import akka.stream.alpakka.ironmq.{IronMqSettings, IronMqSpec, PushMessage}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.{Done, NotUsed}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class IronMqProducerSpec extends IronMqSpec with IronMqFixture with AkkaStreamFixture {
+class IronMqProducerSpec extends IronMqSpec {
 
   import IronMqProducer._
 

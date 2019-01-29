@@ -6,14 +6,14 @@ package akka.stream.alpakka.ironmq.scaladsl
 
 import akka.NotUsed
 import akka.dispatch.ExecutionContexts
-import akka.stream.alpakka.ironmq.{AkkaStreamFixture, IronMqFixture, IronMqSettings, IronMqSpec, PushMessage}
+import akka.stream.alpakka.ironmq.{IronMqSettings, IronMqSpec, PushMessage}
 import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.ParallelTestExecution
 
 import scala.concurrent.ExecutionContext
 
-class IronMqConsumerSpec extends IronMqSpec with IronMqFixture with AkkaStreamFixture with ParallelTestExecution {
+class IronMqConsumerSpec extends IronMqSpec with ParallelTestExecution {
 
   implicit val ec: ExecutionContext = ExecutionContexts.global()
 
