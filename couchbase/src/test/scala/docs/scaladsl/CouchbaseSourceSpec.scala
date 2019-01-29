@@ -23,7 +23,7 @@ class CouchbaseSourceSpec
     with Matchers
     with ScalaFutures {
 
-  override implicit def patienceConfig: PatienceConfig = PatienceConfig(3.seconds)
+  override implicit def patienceConfig: PatienceConfig = PatienceConfig(10.seconds, 250.millis)
 
   "CouchbaseSource" should {
 
