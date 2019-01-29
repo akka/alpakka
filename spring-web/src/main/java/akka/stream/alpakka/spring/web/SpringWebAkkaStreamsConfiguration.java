@@ -25,15 +25,15 @@ import akka.stream.Materializer;
 public class SpringWebAkkaStreamsConfiguration {
 
   private static final String DEFAULT_ACTORY_SYSTEM_NAME = "SpringWebAkkaStreamsSystem";
-  
+
   private final ActorSystem system;
   private final ActorMaterializer mat;
   private final SpringWebAkkaStreamsProperties properties;
 
   public SpringWebAkkaStreamsConfiguration(final SpringWebAkkaStreamsProperties properties) {
-	  this.properties = properties;
+    this.properties = properties;
     final ReactiveAdapterRegistry registry = ReactiveAdapterRegistry.getSharedInstance();
-   
+
     system = ActorSystem.create(getActorSystemName(properties));
     mat = ActorMaterializer.create(system);
     new AkkaStreamsRegistrar(mat).registerAdapters(registry);
@@ -52,24 +52,26 @@ public class SpringWebAkkaStreamsConfiguration {
   }
 
   public SpringWebAkkaStreamsProperties getProperties() {
-	  return properties;
+    return properties;
   }
-  
+
   private String getActorSystemName(final SpringWebAkkaStreamsProperties properties) {
-    Objects.requireNonNull(properties, 
-        String.format("%s is not present in application context", SpringWebAkkaStreamsProperties.class.getSimpleName()));
-    
-    if(isBlank(properties.getActorSystemName())) {
+    Objects.requireNonNull(
+        properties,
+        String.format(
+            "%s is not present in application context",
+            SpringWebAkkaStreamsProperties.class.getSimpleName()));
+
+    if (isBlank(properties.getActorSystemName())) {
       return DEFAULT_ACTORY_SYSTEM_NAME;
     }
-    
+
     return properties.getActorSystemName();
   }
- 
+
   private boolean isBlank(String str) {
     return (str == null || str.isEmpty());
   }
-
 }
 
 // #configure

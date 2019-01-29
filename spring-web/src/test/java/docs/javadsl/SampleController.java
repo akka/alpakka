@@ -23,9 +23,8 @@ public class SampleController {
 
   @Value("${akka.stream.alpakka.spring.web.actor-system-name}")
   private String actorSystemName;
-  
-  @Autowired
-  private ActorSystem system;
+
+  @Autowired private ActorSystem system;
 
   @RequestMapping("/")
   public Source<String, NotUsed> index() {
@@ -35,7 +34,7 @@ public class SampleController {
   @PostConstruct
   public void setup() {
     LoggingAdapter log = system.log();
-   log.info("Injected ActorSystem Name -> {}", system.name());
+    log.info("Injected ActorSystem Name -> {}", system.name());
     log.info("Property ActorSystemName -> {}", actorSystemName);
     Assert.isTrue((system.name().equals(actorSystemName)), "Validating ActorSystem name");
   }
