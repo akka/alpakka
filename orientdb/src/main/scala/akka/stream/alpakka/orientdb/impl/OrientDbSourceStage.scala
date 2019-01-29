@@ -17,7 +17,6 @@ import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx
 import com.orientechnologies.orient.core.sql.query.{OSQLNonBlockingQuery, OSQLSynchQuery}
 
 import scala.collection.JavaConverters._
-import scala.collection.immutable
 import scala.collection.mutable.ListBuffer
 
 /**
@@ -49,9 +48,11 @@ private[orientdb] final class OrientDbSourceStage[T](className: String,
       }
 
       override def postStop(): Unit = {
-        ODatabaseRecordThreadLocal.instance().set(client)
-        oObjectClient.close()
-        client.close()
+        if (client != null) {
+          ODatabaseRecordThreadLocal.instance().set(client)
+          if (oObjectClient != null) oObjectClient.close()
+          client.close()
+        }
       }
 
       setHandler(out, this)
