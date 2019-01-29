@@ -11,6 +11,7 @@ import java.time.format.DateTimeFormatter
 
 import akka.Done
 import akka.actor.ActorSystem
+import akka.stream.alpakka.file.scaladsl.LogRotatorSink
 import akka.stream.scaladsl.{Compression, FileIO, Flow, Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSource
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
@@ -32,7 +33,7 @@ class LogRotatorSinkSpec
     with BeforeAndAfterAll
     with ScalaFutures {
 
-  import akka.stream.alpakka.file.scaladsl.LogRotatorSink
+  implicit val patience: PatienceConfig = PatienceConfig(5.seconds, 100.millis)
 
   override protected def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
@@ -263,7 +264,10 @@ class LogRotatorSinkSpec
         }
       }
       val (probe, completion) =
-        TestSource.probe[ByteString].toMat(LogRotatorSink(triggerFunctionCreator, Set(StandardOpenOption.READ)))(Keep.both).run()
+        TestSource
+          .probe[ByteString]
+          .toMat(LogRotatorSink(triggerFunctionCreator, Set(StandardOpenOption.READ)))(Keep.both)
+          .run()
       probe.sendNext(ByteString("test"))
       probe.sendNext(ByteString("test"))
       probe.expectCancellation()
