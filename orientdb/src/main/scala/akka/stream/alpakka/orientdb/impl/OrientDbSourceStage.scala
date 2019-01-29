@@ -47,13 +47,12 @@ private[orientdb] final class OrientDbSourceStage[T](className: String,
         oObjectClient = new OObjectDatabaseTx(client)
       }
 
-      override def postStop(): Unit = {
+      override def postStop(): Unit =
         if (client != null) {
           ODatabaseRecordThreadLocal.instance().set(client)
           if (oObjectClient != null) oObjectClient.close()
           client.close()
         }
-      }
 
       setHandler(out, this)
 
