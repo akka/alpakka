@@ -13,7 +13,7 @@ import akka.stream.scaladsl.{Flow, Sink, Source}
 import scala.concurrent.Future
 
 /**
- * Factory of DynamoDB Akka Stream operators.
+ * Factory of DynamoDb Akka Stream operators.
  */
 object DynamoDb {
 
@@ -26,9 +26,7 @@ object DynamoDb {
       .mapMaterializedValue(_ => NotUsed)
 
   /**
-   * Create a Source that will emit a response for a given request.
-   *
-   * @param op request to send
+   * Create a Source that will emit potentially multiple responses for a given request.
    */
   def source(op: AwsPagedOp): Source[op.B, NotUsed] =
     Setup
@@ -39,24 +37,21 @@ object DynamoDb {
 
   /**
    * Create a Source that will emit a response for a given request.
-   *
-   * @param op request to send
    */
   def source(op: AwsOp): Source[op.B, NotUsed] =
     Source.single(op).via(flow).map(_.asInstanceOf[op.B])
 
   /**
    * Create a Future that will be completed with a response to a given request.
-   *
-   * @param op request to send
-   * @param mat materialized that will be used to run the stream
    */
   def single(op: AwsOp)(implicit mat: Materializer): Future[op.B] =
     source(op).runWith(Sink.head)
 
   private def clientFlow[Op <: AwsOp](mat: ActorMaterializer)(attr: Attributes) =
-    attr.get[DynamoAttributes.Client]
+    attr
+      .get[DynamoAttributes.Client]
       .map(_.client)
       .getOrElse(DynamoClientExt(mat.system).dynamoClient)
-      .underlying.flow[Op]
+      .underlying
+      .flow[Op]
 }

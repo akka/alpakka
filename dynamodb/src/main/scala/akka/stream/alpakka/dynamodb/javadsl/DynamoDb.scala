@@ -15,7 +15,7 @@ import akka.stream.javadsl.{Flow, Sink, Source}
 import com.amazonaws.services.dynamodbv2.model._
 
 /**
- * A factory of operations that use provided DynamoClient.
+ * Factory of DynamoDb Akka Stream operators.
  */
 object DynamoDb {
 
@@ -25,12 +25,21 @@ object DynamoDb {
   def flow[Op <: AwsOp](): Flow[Op, Op#B, NotUsed] =
     scaladsl.DynamoDb.flow.asJava
 
+  /**
+   * Create a Source that will emit potentially multiple responses for a given request.
+   */
   def source(op: AwsPagedOp): Source[op.B, NotUsed] =
     scaladsl.DynamoDb.source(op).asJava
 
+  /**
+   * Create a Source that will emit a response for a given request.
+   */
   def source(op: AwsOp): Source[op.B, NotUsed] =
     scaladsl.DynamoDb.source(op).asJava
 
+  /**
+   * Create a CompletionStage that will be completed with a response to a given request.
+   */
   def single[Op <: AwsOp](op: Op, mat: Materializer): CompletionStage[Op#B] =
     source(op).runWith(Sink.head(), mat)
 

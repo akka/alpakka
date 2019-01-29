@@ -70,11 +70,11 @@ public class ExampleTest {
   @Test
   public void listTables() throws Exception {
     // #simple-request
-    final Source<ListTablesResult, NotUsed> listTablesResultFuture =
+    final Source<ListTablesResult, NotUsed> listTables =
         DynamoDb.listTables(new ListTablesRequest());
     // #simple-request
     ListTablesResult result =
-        listTablesResultFuture
+        listTables
             .runWith(Sink.head(), materializer)
             .toCompletableFuture()
             .get(5, TimeUnit.SECONDS);
