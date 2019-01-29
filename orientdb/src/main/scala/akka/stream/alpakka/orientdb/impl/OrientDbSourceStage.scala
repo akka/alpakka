@@ -24,7 +24,7 @@ import scala.collection.mutable.ListBuffer
  * INTERNAL API
  */
 @InternalApi
-private[orientdb] final class OrientDBSourceStage[T](className: String,
+private[orientdb] final class OrientDbSourceStage[T](className: String,
                                                      query: Option[String],
                                                      settings: OrientDbSourceSettings,
                                                      clazz: Option[Class[T]] = None)

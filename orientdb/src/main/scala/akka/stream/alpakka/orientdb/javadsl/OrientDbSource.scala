@@ -6,7 +6,7 @@ package akka.stream.alpakka.orientdb.javadsl
 
 import akka.NotUsed
 import akka.stream.alpakka.orientdb._
-import akka.stream.alpakka.orientdb.impl.OrientDBSourceStage
+import akka.stream.alpakka.orientdb.impl.OrientDbSourceStage
 import akka.stream.javadsl.Source
 import com.orientechnologies.orient.core.record.impl.ODocument
 
@@ -20,7 +20,7 @@ object OrientDbSource {
    */
   def create(className: String, settings: OrientDbSourceSettings): Source[OrientDbReadResult[ODocument], NotUsed] =
     Source.fromGraph(
-      new OrientDBSourceStage(
+      new OrientDbSourceStage(
         className,
         Option.empty,
         settings
@@ -34,7 +34,7 @@ object OrientDbSource {
              settings: OrientDbSourceSettings,
              query: String): Source[OrientDbReadResult[ODocument], NotUsed] =
     Source.fromGraph(
-      new OrientDBSourceStage(
+      new OrientDbSourceStage(
         className,
         Option(query),
         settings
@@ -49,7 +49,7 @@ object OrientDbSource {
                clazz: Class[T],
                query: String = null): Source[OrientDbReadResult[T], NotUsed] =
     Source.fromGraph(
-      new OrientDBSourceStage[T](
+      new OrientDbSourceStage[T](
         className,
         Option(query),
         settings,
