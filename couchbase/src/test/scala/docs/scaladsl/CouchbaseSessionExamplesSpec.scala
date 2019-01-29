@@ -20,7 +20,7 @@ class CouchbaseSessionExamplesSpec
     with BeforeAndAfterAll
     with ScalaFutures {
 
-  override implicit def patienceConfig: PatienceConfig = PatienceConfig(2.seconds)
+  override implicit def patienceConfig: PatienceConfig = PatienceConfig(10.seconds, 250.millis)
 
   override def beforeAll(): Unit = super.beforeAll()
   override def afterAll(): Unit = super.afterAll()
