@@ -5,11 +5,12 @@
 package akka.stream.alpakka.ironmq
 
 import akka.dispatch.ExecutionContexts
+import akka.stream.alpakka.ironmq.impl.IronMqPushStage
 import akka.stream.scaladsl._
 
 import scala.concurrent.ExecutionContext
 
-class IronMqPushStageSpec extends UnitSpec with IronMqFixture with AkkaStreamFixture {
+class IronMqPushStageSpec extends IronMqSpec with IronMqFixture with AkkaStreamFixture {
 
   implicit val ec: ExecutionContext = ExecutionContexts.global()
 

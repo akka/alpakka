@@ -7,6 +7,7 @@ package akka.stream.alpakka.ironmq.scaladsl
 import akka.{Done, NotUsed}
 import akka.stream.FlowShape
 import akka.stream.alpakka.ironmq._
+import akka.stream.alpakka.ironmq.impl.IronMqPushStage
 import akka.stream.scaladsl._
 
 import scala.concurrent.Future

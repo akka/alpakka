@@ -9,7 +9,7 @@ import org.scalatest.concurrent.Eventually
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
-class IronMqClientSpec extends UnitSpec with IronMqFixture with Eventually {
+class IronMqClientSpec extends IronMqSpec with IronMqFixture with Eventually {
 
   "IronMqClient" when {
     "listQueues is called" should {

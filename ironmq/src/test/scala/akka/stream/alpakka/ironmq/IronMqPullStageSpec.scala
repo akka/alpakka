@@ -4,10 +4,12 @@
 
 package akka.stream.alpakka.ironmq
 
+import akka.stream.alpakka.ironmq.impl.IronMqPullStage
 import akka.stream.scaladsl.{Sink, Source}
+
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class IronMqPullStageSpec extends UnitSpec with IronMqFixture with AkkaStreamFixture {
+class IronMqPullStageSpec extends IronMqSpec with IronMqFixture with AkkaStreamFixture {
 
   "IronMqSourceStage" when {
     "there are messages" should {

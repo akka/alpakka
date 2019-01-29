@@ -5,6 +5,7 @@
 package akka.stream.alpakka.ironmq
 
 import akka.actor.ActorSystem
+import akka.annotation.InternalApi
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.HostConnectionPool
 import akka.http.scaladsl.client.RequestBuilding._
@@ -25,12 +26,15 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 /**
+ * Internal API.
  * An IronMq client based on Akka-http.
  *
  * This client provide a subset of the operation you can do by the IronMQ protocol. It is not intended to be used by
  * the final user but as internal API. Still it could be used to create/list/delete queues if needed.
  */
-class IronMqClient(settings: IronMqSettings)(implicit actorSystem: ActorSystem, materializer: Materializer) {
+@InternalApi
+private[ironmq] final class IronMqClient(settings: IronMqSettings)(implicit actorSystem: ActorSystem,
+                                                                   materializer: Materializer) {
 
   import Codec._
 

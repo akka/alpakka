@@ -34,7 +34,7 @@ public abstract class UnitTest {
     materializer = ActorMaterializer.create(system);
     ironMqClient =
         new IronMqClient(
-            IronMqSettings.create(config.getConfig("akka.stream.alpakka.ironmq")),
+            IronMqSettings.create(config.getConfig(IronMqSettings.ConfigPath())),
             system,
             materializer);
   }

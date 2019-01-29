@@ -4,9 +4,8 @@
 
 package akka.stream.alpakka.ironmq
 
-import java.util.concurrent.TimeUnit
-
 import scala.concurrent.duration.{Duration, FiniteDuration}
+import akka.util.JavaDurationConverters._
 
 case class PushMessage(body: String, delay: FiniteDuration = Duration.Zero)
 
@@ -15,7 +14,7 @@ object PushMessage {
   def create(body: String): PushMessage = PushMessage(body)
 
   def create(body: String, duration: java.time.Duration): PushMessage =
-    PushMessage(body, FiniteDuration(duration.getSeconds, TimeUnit.SECONDS))
+    PushMessage(body, duration.asScala)
 }
 
 /**

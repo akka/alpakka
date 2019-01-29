@@ -7,6 +7,7 @@ package akka.stream.alpakka.ironmq.scaladsl
 import akka.NotUsed
 import akka.dispatch.ExecutionContexts
 import akka.stream.alpakka.ironmq._
+import akka.stream.alpakka.ironmq.impl.IronMqPullStage
 import akka.stream.scaladsl._
 
 object IronMqConsumer {

@@ -9,6 +9,6 @@ import org.scalatest.{Matchers, WordSpec}
 
 import scala.concurrent.duration._
 
-class UnitSpec extends WordSpec with Matchers with ScalaFutures {
+class IronMqSpec extends WordSpec with Matchers with ScalaFutures {
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(timeout = 15.seconds, interval = 1.second)
 }
