@@ -23,32 +23,34 @@ final class GeodeSettings private (val hostname: String,
                                    val pdxCompat: (Class[_], Class[_]) => Boolean = (c1, c2) =>
                                      c1.getSimpleName equals c2.getSimpleName) {
 
-  def copy(hostname: String = hostname,
-           port: Int = port,
-           configure: Option[ClientCacheFactory => ClientCacheFactory] = configure,
-           pdxCompat: (Class[_], Class[_]) => Boolean = pdxCompat) =
+  private def copy(hostname: String = hostname,
+                   port: Int = port,
+                   configure: Option[ClientCacheFactory => ClientCacheFactory] = configure,
+                   pdxCompat: (Class[_], Class[_]) => Boolean = pdxCompat) =
     new GeodeSettings(hostname, port, configure, pdxCompat)
 
   /**
    * @param configure function to configure geode client factory
    */
-  def withConfiguration(configure: ClientCacheFactory => ClientCacheFactory) = copy(configure = Some(configure))
+  def withConfiguration(configure: ClientCacheFactory => ClientCacheFactory): GeodeSettings =
+    copy(configure = Some(configure))
 
   /**
    * @param configure function to configure geode client factory
    */
-  def withConfiguration(configure: JFunction[ClientCacheFactory, ClientCacheFactory]) =
+  def withConfiguration(configure: JFunction[ClientCacheFactory, ClientCacheFactory]): GeodeSettings =
     copy(configure = Some(configure.asScala))
 
   /**
    * @param pdxCompat a function that determines if two class are equivalent (java class / scala case class)
    */
-  def withPdxCompat(pdxCompat: (Class[_], Class[_]) => Boolean) = copy(pdxCompat = pdxCompat)
+  def withPdxCompat(pdxCompat: (Class[_], Class[_]) => Boolean): GeodeSettings = copy(pdxCompat = pdxCompat)
 
   /**
    * @param pdxCompat a function that determines if two class are equivalent (java class / scala case class)
    */
-  def withPdxCompat(pdxCompat: BiFunction[Class[_], Class[_], Boolean]) = copy(pdxCompat = pdxCompat.asScala)
+  def withPdxCompat(pdxCompat: BiFunction[Class[_], Class[_], Boolean]): GeodeSettings =
+    copy(pdxCompat = pdxCompat.asScala)
 
   override def toString: String =
     s"""GeodeSettings(
@@ -60,16 +62,19 @@ final class GeodeSettings private (val hostname: String,
 
 object GeodeSettings {
 
-  def apply(hostname: String, port: Int = 10334) = new GeodeSettings(hostname, port)
+  def apply(hostname: String, port: Int = 10334): GeodeSettings = new GeodeSettings(hostname, port)
 
-  def create(hostname: String) = new GeodeSettings(hostname)
+  def create(hostname: String): GeodeSettings = new GeodeSettings(hostname)
 
-  def create(hostname: String, port: Int) = new GeodeSettings(hostname, port)
+  def create(hostname: String, port: Int): GeodeSettings = new GeodeSettings(hostname, port)
 
 }
 
 final class RegionSettings[K, V] private (val name: String, val keyExtractor: V => K) {
-  def copy(name: String = name, keyExtractor: V => K = keyExtractor) = new RegionSettings(name, keyExtractor)
+  override def toString: String =
+    "RegionSettings(" +
+    s"name=$name" +
+    ")"
 }
 
 object RegionSettings {
