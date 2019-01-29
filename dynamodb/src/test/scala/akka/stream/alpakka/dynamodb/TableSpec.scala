@@ -27,7 +27,6 @@ class TableSpec extends TestKit(ActorSystem("TableSpec")) with AsyncWordSpecLike
   "DynamoDB with external client" should {
 
     import TableSpecOps._
-    import akka.stream.alpakka.dynamodb.scaladsl.DynamoImplicits._
 
     "1) create table" in {
       DynamoDb.single(createTableRequest).map(_.getTableDescription.getTableName shouldEqual tableName)

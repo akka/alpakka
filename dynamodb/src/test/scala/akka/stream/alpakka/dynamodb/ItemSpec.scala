@@ -28,7 +28,6 @@ class ItemSpec extends TestKit(ActorSystem("ItemSpec")) with AsyncWordSpecLike w
 
   "DynamoDB with external client" should {
 
-    import DynamoImplicits._
     import ItemSpecOps._
 
     "1) list zero tables" in {

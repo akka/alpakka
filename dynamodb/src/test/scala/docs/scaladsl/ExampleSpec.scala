@@ -42,7 +42,6 @@ class ExampleSpec
     "provide a simple usage example" in {
 
       //##simple-request
-      import DynamoImplicits._
       val listTablesResult: Future[ListTablesResult] =
         DynamoDb.single(new ListTablesRequest())
       //##simple-request
@@ -51,7 +50,7 @@ class ExampleSpec
     }
 
     "allow multiple requests - explicit types" in {
-      import DynamoImplicits._
+      import akka.stream.alpakka.dynamodb.AwsOp._
       val source = Source
         .single[CreateTable](new CreateTableRequest().withTableName("testTable"))
         .via(DynamoDb.flow)
@@ -66,7 +65,7 @@ class ExampleSpec
 
     "allow multiple requests" in {
       //##flow
-      import DynamoImplicits._
+      import akka.stream.alpakka.dynamodb.AwsOp._
       val source: Source[String, NotUsed] = Source
         .single[CreateTable](new CreateTableRequest().withTableName("testTable"))
         .via(DynamoDb.flow)
@@ -77,7 +76,7 @@ class ExampleSpec
     }
 
     "allow multiple requests - single source" in {
-      import DynamoImplicits._
+      import akka.stream.alpakka.dynamodb.AwsOp._
       val source: Source[lang.Long, NotUsed] = DynamoDb
         .source(new CreateTableRequest().withTableName("testTable")) // creating a source from a single req is common enough to warrant a utility function
         .map[DescribeTable](result => new DescribeTableRequest().withTableName(result.getTableDescription.getTableName))
@@ -88,8 +87,6 @@ class ExampleSpec
     }
 
     "provide a paginated requests example" in {
-      import DynamoImplicits._
-
       //##paginated
       val scanPages: Source[ScanResult, NotUsed] =
         DynamoDb.source(new ScanRequest().withTableName("testTable"))
@@ -99,14 +96,13 @@ class ExampleSpec
     }
 
     "use client from attributes" in {
-      import DynamoImplicits._
-
       // #attributes
       val settings = DynamoSettings(system).withRegion("custom-region")
       val client = DynamoClient(settings)
 
       val source: Source[ListTablesResult, NotUsed] =
-        DynamoDb.source(new ListTablesRequest())
+        DynamoDb
+          .source(new ListTablesRequest())
           .withAttributes(DynamoAttributes.client(client))
       // #attributes
 

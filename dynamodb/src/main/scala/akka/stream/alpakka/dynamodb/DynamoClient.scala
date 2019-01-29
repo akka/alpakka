@@ -6,7 +6,6 @@ package akka.stream.alpakka.dynamodb
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.dynamodb.impl.DynamoClientImpl
-import akka.stream.alpakka.dynamodb.scaladsl.DynamoImplicits
 
 /**
  * Holds an instance of `DynamoClientImpl`. This is usually created and managed by an extension,
@@ -14,7 +13,7 @@ import akka.stream.alpakka.dynamodb.scaladsl.DynamoImplicits
  */
 final class DynamoClient private (settings: DynamoSettings)(implicit system: ActorSystem,
                                                             val materializer: Materializer) {
-  final val underlying = new DynamoClientImpl(settings, DynamoImplicits.errorResponseHandler)
+  final val underlying = new DynamoClientImpl(settings, AwsOp.errorResponseHandler)
 }
 
 object DynamoClient {

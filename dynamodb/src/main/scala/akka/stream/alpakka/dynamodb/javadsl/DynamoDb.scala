@@ -10,7 +10,6 @@ import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.alpakka.dynamodb.{AwsOp, AwsPagedOp}
 import akka.stream.alpakka.dynamodb.scaladsl
-import akka.stream.alpakka.dynamodb.scaladsl.DynamoImplicits._
 import akka.stream.javadsl.{Flow, Sink, Source}
 import com.amazonaws.services.dynamodbv2.model._
 
@@ -44,62 +43,62 @@ object DynamoDb {
     source(op).runWith(Sink.head(), mat)
 
   def batchGetItem(request: BatchGetItemRequest): Source[BatchGetItemResult, NotUsed] =
-    scaladsl.DynamoDb.source(BatchGetItem(request)).asJava
+    scaladsl.DynamoDb.source(request).asJava
 
   def createTable(request: CreateTableRequest): Source[CreateTableResult, NotUsed] =
-    scaladsl.DynamoDb.source(CreateTable(request)).asJava
+    scaladsl.DynamoDb.source(request).asJava
 
   def deleteItem(request: DeleteItemRequest): Source[DeleteItemResult, NotUsed] =
-    scaladsl.DynamoDb.source(DeleteItem(request)).asJava
+    scaladsl.DynamoDb.source(request).asJava
 
   def deleteTable(request: DeleteTableRequest): Source[DeleteTableResult, NotUsed] =
-    scaladsl.DynamoDb.source(DeleteTable(request)).asJava
+    scaladsl.DynamoDb.source(request).asJava
 
   def describeLimits(request: DescribeLimitsRequest): Source[DescribeLimitsResult, NotUsed] =
-    scaladsl.DynamoDb.source(DescribeLimits(request)).asJava
+    scaladsl.DynamoDb.source(request).asJava
 
   def describeTable(request: DescribeTableRequest): Source[DescribeTableResult, NotUsed] =
-    scaladsl.DynamoDb.source(DescribeTable(request)).asJava
+    scaladsl.DynamoDb.source(request).asJava
 
   def describeTimeToLive(request: DescribeTimeToLiveRequest): Source[DescribeTimeToLiveResult, NotUsed] =
-    scaladsl.DynamoDb.source(DescribeTimeToLive(request)).asJava
+    scaladsl.DynamoDb.source(request).asJava
 
   def query(request: QueryRequest): Source[QueryResult, NotUsed] =
-    scaladsl.DynamoDb.source(Query(request)).asJava
+    scaladsl.DynamoDb.source(request).asJava
 
   def queryAll(request: QueryRequest): Source[QueryResult, NotUsed] =
-    scaladsl.DynamoDb.source(Query(request)).asJava
+    scaladsl.DynamoDb.source(request).asJava
 
   def scan(request: ScanRequest): Source[ScanResult, NotUsed] =
-    scaladsl.DynamoDb.source(Scan(request)).asJava
+    scaladsl.DynamoDb.source(request).asJava
 
   def scanAll(request: ScanRequest): Source[ScanResult, NotUsed] =
-    scaladsl.DynamoDb.source(Scan(request)).asJava
+    scaladsl.DynamoDb.source(request).asJava
 
   def updateItem(request: UpdateItemRequest): Source[UpdateItemResult, NotUsed] =
-    scaladsl.DynamoDb.source(UpdateItem(request)).asJava
+    scaladsl.DynamoDb.source(request).asJava
 
   def updateTable(request: UpdateTableRequest): Source[UpdateTableResult, NotUsed] =
-    scaladsl.DynamoDb.source(UpdateTable(request)).asJava
+    scaladsl.DynamoDb.source(request).asJava
 
   def putItem(request: PutItemRequest): Source[PutItemResult, NotUsed] =
-    scaladsl.DynamoDb.source(PutItem(request)).asJava
+    scaladsl.DynamoDb.source(request).asJava
 
   def batchWriteItem(request: BatchWriteItemRequest): Source[BatchWriteItemResult, NotUsed] =
-    scaladsl.DynamoDb.source(BatchWriteItem(request)).asJava
+    scaladsl.DynamoDb.source(request).asJava
 
   def getItem(request: GetItemRequest): Source[GetItemResult, NotUsed] =
-    scaladsl.DynamoDb.source(GetItem(request)).asJava
+    scaladsl.DynamoDb.source(request).asJava
 
   def listTables(request: ListTablesRequest): Source[ListTablesResult, NotUsed] =
-    scaladsl.DynamoDb.source(ListTables(request)).asJava
+    scaladsl.DynamoDb.source(request).asJava
 
   def transactGetItems(request: TransactGetItemsRequest): Source[TransactGetItemsResult, NotUsed] =
-    scaladsl.DynamoDb.source(TransactGetItems(request)).asJava
+    scaladsl.DynamoDb.source(request).asJava
 
   def transactWriteItems(request: TransactWriteItemsRequest): Source[TransactWriteItemsResult, NotUsed] =
-    scaladsl.DynamoDb.source(TransactWriteItems(request)).asJava
+    scaladsl.DynamoDb.source(request).asJava
 
   def updateTimeToLive(request: UpdateTimeToLiveRequest): Source[UpdateTimeToLiveResult, NotUsed] =
-    scaladsl.DynamoDb.source(UpdateTimeToLive(request)).asJava
+    scaladsl.DynamoDb.source(request).asJava
 }
