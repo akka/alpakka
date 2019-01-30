@@ -47,4 +47,6 @@ object Queue {
   case class Name(value: String) extends AnyVal {
     override def toString: String = value
   }
+
+  def name(name: String): Queue = Queue(Queue.Name(name))
 }
