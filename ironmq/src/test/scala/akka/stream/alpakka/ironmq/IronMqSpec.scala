@@ -7,6 +7,7 @@ package akka.stream.alpakka.ironmq
 import java.util.UUID
 
 import akka.actor.ActorSystem
+import akka.stream.alpakka.ironmq.impl.IronMqClient
 import akka.stream.{ActorMaterializer, Materializer}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.concurrent.ScalaFutures

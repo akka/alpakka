@@ -2,8 +2,9 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.ironmq
+package akka.stream.alpakka.ironmq.impl
 
+import akka.stream.alpakka.ironmq.{IronMqSpec, PushMessage, Queue}
 import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.ExecutionContext.Implicits.global

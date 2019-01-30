@@ -2,12 +2,13 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.ironmq
+package akka.stream.alpakka.ironmq.impl
 
-import io.circe.{Decoder, Encoder, Json}
+import akka.stream.alpakka.ironmq.{Message, Queue}
 import io.circe.syntax._
+import io.circe.{Decoder, Encoder, Json}
 
-trait Codec {
+private trait Codec {
 
   implicit val messageIdEncoder: Encoder[Message.Id] = Encoder.instance { id =>
     Json.fromString(id.value)
@@ -63,4 +64,4 @@ trait Codec {
   }
 }
 
-object Codec extends Codec
+private object Codec extends Codec
