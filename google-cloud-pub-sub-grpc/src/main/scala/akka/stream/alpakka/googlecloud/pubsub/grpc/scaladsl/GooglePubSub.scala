@@ -4,18 +4,18 @@
 
 package akka.stream.alpakka.googlecloud.pubsub.grpc.scaladsl
 
-import akka.actor.{ActorSystem, Cancellable}
+import akka.actor.Cancellable
+import akka.stream.{ActorMaterializer, Attributes}
+import akka.stream.alpakka.googlecloud.pubsub.grpc.impl.Setup
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.{Done, NotUsed}
-import akka.stream.scaladsl.{Flow, Sink, Source}
 import com.google.pubsub.v1.pubsub._
 
-import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
+import scala.concurrent.{Future, Promise}
 
 /**
- * Google Pub/Sub operator factory.
- *
- * Operators use the GrpcPublisher/GrpcSubscriber that is resolved from the provided actor system.
+ * Google Pub/Sub Akka Stream operator factory.
  */
 object GooglePubSub {
 
@@ -24,13 +24,14 @@ object GooglePubSub {
    * message ids.
    *
    * @param parallelism controls how many messages can be in-flight at any given time
-   * @param sys actor system that is used to resolve the GrpcPublisher extension
    */
-  def publish(parallelism: Int)(implicit sys: ActorSystem): Flow[PublishRequest, PublishResponse, NotUsed] = {
-    val grpc = GrpcPublisherExt()
-    import grpc.publisher
-    GooglePubSubExternal.publish(parallelism)
-  }
+  def publish(parallelism: Int): Flow[PublishRequest, PublishResponse, NotUsed] =
+    Setup
+      .flow { implicit mat => implicit attr =>
+        Flow[PublishRequest]
+          .mapAsyncUnordered(parallelism)(publisher().client.publish)
+      }
+      .mapMaterializedValue(_ => NotUsed)
 
   /**
    * Create a source that emits messages for a given subscription.
@@ -39,16 +40,34 @@ object GooglePubSub {
    *
    * @param request the subscription FQRS and ack deadline fields are mandatory for the request
    * @param pollInterval time between StreamingPullRequest messages are being sent
-   * @param sys actor system that is used to resolve the GrpcSubscriber extension
    */
   def subscribe(
       request: StreamingPullRequest,
       pollInterval: FiniteDuration
-  )(implicit sys: ActorSystem): Source[ReceivedMessage, Future[Cancellable]] = {
-    val grpc = GrpcSubscriberExt()
-    import grpc.subscriber
-    GooglePubSubExternal.subscribe(request, pollInterval)
-  }
+  ): Source[ReceivedMessage, Future[Cancellable]] =
+    Setup
+      .source { implicit mat => implicit attr =>
+        val cancellable = Promise[Cancellable]
+
+        val subsequentRequest = request
+          .withSubscription("")
+          .withStreamAckDeadlineSeconds(0)
+
+        subscriber().client
+          .streamingPull(
+            Source
+              .single(request)
+              .concat(
+                Source
+                  .tick(0.seconds, pollInterval, ())
+                  .map(_ => subsequentRequest)
+                  .mapMaterializedValue(cancellable.success)
+              )
+          )
+          .mapConcat(_.receivedMessages.toVector)
+          .mapMaterializedValue(_ => cancellable.future)
+      }
+      .mapMaterializedValue(_.flatten)
 
   /**
    * Create a sink that accepts consumed message acknowledgements.
@@ -56,11 +75,25 @@ object GooglePubSub {
    * The materialized value completes on stream completion.
    *
    * @param parallelism controls how many acknowledgements can be in-flight at any given time
-   * @param sys actor system that is used to resolve the GrpcSubscriber extension
    */
-  def acknowledge(parallelism: Int)(implicit sys: ActorSystem): Sink[AcknowledgeRequest, Future[Done]] = {
-    val grpc = GrpcSubscriberExt()
-    import grpc.subscriber
-    GooglePubSubExternal.acknowledge(parallelism)
-  }
+  def acknowledge(parallelism: Int): Sink[AcknowledgeRequest, Future[Done]] =
+    Setup
+      .sink { implicit mat => implicit attr =>
+        Flow[AcknowledgeRequest]
+          .mapAsyncUnordered(parallelism)(subscriber().client.acknowledge)
+          .toMat(Sink.ignore)(Keep.right)
+      }
+      .mapMaterializedValue(_.flatten)
+
+  private def publisher()(implicit mat: ActorMaterializer, attr: Attributes) =
+    attr
+      .get[PubSubAttributes.Publisher]
+      .map(_.publisher)
+      .getOrElse(GrpcPublisherExt()(mat.system).publisher)
+
+  private def subscriber()(implicit mat: ActorMaterializer, attr: Attributes) =
+    attr
+      .get[PubSubAttributes.Subscriber]
+      .map(_.subscriber)
+      .getOrElse(GrpcSubscriberExt()(mat.system).subscriber)
 }

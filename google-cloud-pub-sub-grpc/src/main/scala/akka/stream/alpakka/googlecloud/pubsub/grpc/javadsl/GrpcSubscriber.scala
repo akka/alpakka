@@ -19,7 +19,7 @@ final class GrpcSubscriber(sys: ActorSystem, mat: Materializer) {
 
   @ApiMayChange
   final val client =
-    JavaSubscriberClient.create(AkkaGrpcSettings.fromPubSubConfig(pubSubConfig)(sys), mat, sys.dispatcher)
+    JavaSubscriberClient.create(AkkaGrpcSettings.fromPubSubSettings(pubSubConfig)(sys), mat, sys.dispatcher)
 
   sys.registerOnTermination(client.close())
 }
