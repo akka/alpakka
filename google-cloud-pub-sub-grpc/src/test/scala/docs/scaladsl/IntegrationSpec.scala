@@ -5,14 +5,11 @@
 package docs.scaladsl
 
 import akka.Done
-import akka.actor.Cancellable
-import org.scalatest.OptionValues
-
-//#init-mat
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Cancellable}
 import akka.stream.ActorMaterializer
-
-//#init-mat
+import akka.stream.alpakka.googlecloud.pubsub.grpc.PubSubSettings
+import akka.stream.alpakka.googlecloud.pubsub.grpc.scaladsl.{GrpcPublisher, PubSubAttributes}
+import org.scalatest.OptionValues
 
 //#publish-single
 import akka.stream.alpakka.googlecloud.pubsub.grpc.scaladsl.GooglePubSub
@@ -37,10 +34,8 @@ class IntegrationSpec
     with ScalaFutures
     with OptionValues {
 
-  //#init-mat
   implicit val system = ActorSystem("IntegrationSpec")
   implicit val materializer = ActorMaterializer()
-  //#init-mat
 
   implicit val defaultPatience = PatienceConfig(timeout = 15.seconds, interval = 50.millis)
 
@@ -198,6 +193,18 @@ class IntegrationSpec
         .runWith(Sink.ignore)
         .failed
         .futureValue
+    }
+
+    "custom publisher" in {
+      // #attributes
+      val settings = PubSubSettings(system)
+      val publisher = GrpcPublisher(settings)
+
+      val publishFlow: Flow[PublishRequest, PublishResponse, NotUsed] =
+        GooglePubSub
+          .publish(parallelism = 1)
+          .withAttributes(PubSubAttributes.publisher(publisher))
+      // #attributes
     }
   }
 
