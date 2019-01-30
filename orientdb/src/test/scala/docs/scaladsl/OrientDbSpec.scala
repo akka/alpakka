@@ -73,7 +73,7 @@ class OrientDbSpec extends WordSpec with Matchers with BeforeAndAfterAll with Sc
     val oDatabase: OPartitionedDatabasePool =
       new OPartitionedDatabasePool(dbUrl, username, password, Runtime.getRuntime.availableProcessors(), 10)
 
-    system.registerOnTermination(() -> oDatabase.close());
+    system.registerOnTermination(() -> oDatabase.close())
     //#init-settings
     this.oDatabase = oDatabase
     client = oDatabase.acquire()
