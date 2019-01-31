@@ -30,11 +30,11 @@ public class IronMqConsumerTest extends UnitTest {
     int expectedNumberOfMessages = 10;
 
     int numberOfMessages =
-        IronMqConsumer.atLeastOnceConsumerSource(from, settings)
+        IronMqConsumer.atLeastOnceSource(from, settings)
             .take(expectedNumberOfMessages)
             .map(cm -> new CommittablePushMessage<>(PushMessage.create(cm.message().body()), cm))
             .alsoToMat(Sink.fold(0, (x, y) -> x + 1), Keep.right())
-            .to(IronMqProducer.atLeastOnceProducerSink(to, settings))
+            .to(IronMqProducer.atLeastOnceSink(to, settings))
             .run(getMaterializer())
             .toCompletableFuture()
             .get(10, TimeUnit.SECONDS);

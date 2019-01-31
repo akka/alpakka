@@ -40,7 +40,7 @@ Scala
 : @@snip [snip](/ironmq/src/test/scala/docs/scaladsl/IronMqDocsSpec.scala) { #atMostOnce }
 
 Java
-: @@snip [snip](/ironmq/src/test/java/docs/javadsl/IronMqDocsTest.java) { #atMostOnce }
+: @@snip [snip](/ironmq/src/test/java/docs/javadsl/IronMqDocsTest.java) { #imports #atMostOnce }
 
 ### At least once
 
@@ -50,7 +50,7 @@ Scala
 : @@snip [snip](/ironmq/src/test/scala/docs/scaladsl/IronMqDocsSpec.scala) { #atLeastOnce }
 
 Java
-: @@snip [snip](/ironmq/src/test/java/docs/javadsl/IronMqDocsTest.java) { #atLeastOnce }
+: @@snip [snip](/ironmq/src/test/java/docs/javadsl/IronMqDocsTest.java) { #imports #atLeastOnce }
 
 
 
@@ -60,29 +60,29 @@ The producer is very trivial at this time, it does not provide any batching mech
 soon as they arrive to the stage.
 
 The producer is instantiated using the @scala[@scaladoc[IronMqProducer](akka.stream.alpakka.ironmq.scaladsl.IronMqProducer$)]@java[@scaladoc[IronMqProducer](akka.stream.alpakka.ironmq.javadsl.IronMqProducer$)].
-It provides methods to obtain either a `Flow[PushMessage, Messages.Id, NotUsed]` or a `Sink[PushMessage, NotUsed]`.
+It provides methods to obtain either a @scala[`Flow[PushMessage, Messages.Id, NotUsed]`]@java[`Flow<PushMessage, Messages.Id, NotUsed>`] or a @scala[`Sink[PushMessage, NotUsed]`]@java`Sink<PushMessage, NotUsed>`].
 
 
 ### Flow
 
 The @scaladoc[PushMessage](akka.stream.alpakka.ironmq.PushMessage) allows to specify the delay per individual message. The message expiration is set a queue level.
 
-When using the `Flow` the returned @scaladoc[Messages.Ids](akka.stream.alpakka.ironmq.Messages$$Id) contains the ID of the pushed message, that can be used to manipulate the message. For each `PushMessage` from the upstream you will have exactly one `Message.Id` in downstream in the same order. Regardless if the producer will implement a batch mechanism in the future.
+When using the `Flow` the returned @scala[@scaladoc[Messages.Ids](akka.stream.alpakka.ironmq.Messages$$Id)]@java[`String`] contains the ID of the pushed message, that can be used to manipulate the message. For each `PushMessage` from the upstream you will have exactly one @scala[`Message.Id`]@java[`String`] in downstream in the same order.
 
 Scala
 : @@snip [snip](/ironmq/src/test/scala/docs/scaladsl/IronMqDocsSpec.scala) { #flow }
 
 Java
-: @@snip [snip](/ironmq/src/test/java/docs/javadsl/IronMqDocsTest.java) { #flow }
+: @@snip [snip](/ironmq/src/test/java/docs/javadsl/IronMqDocsTest.java) { #imports #flow }
 
-The producer also provides a committable aware Flow/Sink as @scala[`Flow[(PushMessage, Committable), Message.Id, NotUsed]`]@java[`Flow<Pair<PushMessage, Committable>, Message.Id, NotUsed>`].
+The producer also provides a committable aware Flow/Sink as @scala[`Flow[(PushMessage, Committable), Message.Id, NotUsed]`]@java[`Flow<CommittablePushMessage<Committable>, String, NotUsed>`].
 It can be used to consume a Flow from an IronMQ consumer or any other source that provides a commit mechanism.
 
 Scala
 : @@snip [snip](/ironmq/src/test/scala/docs/scaladsl/IronMqDocsSpec.scala) { #atLeastOnceFlow }
 
 Java
-: @@snip [snip](/ironmq/src/test/java/docs/javadsl/IronMqDocsTest.java) { #atLeastOnceFlow }
+: @@snip [snip](/ironmq/src/test/java/docs/javadsl/IronMqDocsTest.java) { #imports #atLeastOnceFlow }
 
 
 ### Sink
@@ -91,4 +91,4 @@ Scala
 : @@snip [snip](/ironmq/src/test/scala/docs/scaladsl/IronMqDocsSpec.scala) { #sink }
 
 Java
-: @@snip [snip](/ironmq/src/test/java/docs/javadsl/IronMqDocsTest.java) { #sink }
+: @@snip [snip](/ironmq/src/test/java/docs/javadsl/IronMqDocsTest.java) { #imports #sink }

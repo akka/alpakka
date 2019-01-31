@@ -39,7 +39,7 @@ class IronMqConsumerSpec extends IronMqSpec with ParallelTestExecution {
         .futureValue
 
       IronMqConsumer
-        .atLeastOnceConsumerSource(queue, IronMqSettings())
+        .atLeastOnceSource(queue, IronMqSettings())
         .take(numberOfMessages)
         .runWith(Sink.ignore)
         .futureValue
@@ -63,7 +63,7 @@ class IronMqConsumerSpec extends IronMqSpec with ParallelTestExecution {
         .futureValue
 
       IronMqConsumer
-        .atLeastOnceConsumerSource(queue, IronMqSettings())
+        .atLeastOnceSource(queue, IronMqSettings())
         .take(numberOfMessages)
         .mapAsync(3)(_.commit())
         .runWith(Sink.ignore)

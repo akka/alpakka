@@ -33,14 +33,14 @@ class IronMqDocsSpec extends WordSpec with IronMqClientForTests with Matchers wi
       val messages = (1 to 100).map(i => s"test-$i")
       val produced = Source(messages)
         .map(PushMessage(_))
-        .runWith(IronMqProducer.producerSink(queueName, ironMqSettings))
+        .runWith(IronMqProducer.sink(queueName, ironMqSettings))
       produced.futureValue shouldBe Done
 
       // #atMostOnce
       import akka.stream.alpakka.ironmq.Message
 
       val source: Source[Message, NotUsed] =
-        IronMqConsumer.atMostOnceConsumerSource(queueName, ironMqSettings)
+        IronMqConsumer.atMostOnceSource(queueName, ironMqSettings)
 
       val receivedMessages: Future[immutable.Seq[Message]] = source
         .take(100)
@@ -56,7 +56,7 @@ class IronMqDocsSpec extends WordSpec with IronMqClientForTests with Matchers wi
       val messages = (1 to 100).map(i => s"test-$i")
       val produced = Source(messages)
         .map(PushMessage(_))
-        .runWith(IronMqProducer.producerSink(queueName, ironMqSettings))
+        .runWith(IronMqProducer.sink(queueName, ironMqSettings))
       produced.futureValue shouldBe Done
 
       // #atLeastOnce
@@ -64,7 +64,7 @@ class IronMqDocsSpec extends WordSpec with IronMqClientForTests with Matchers wi
       import akka.stream.alpakka.ironmq.Message
 
       val source: Source[CommittableMessage, NotUsed] =
-        IronMqConsumer.atLeastOnceConsumerSource(queueName, ironMqSettings)
+        IronMqConsumer.atLeastOnceSource(queueName, ironMqSettings)
 
       val businessLogic: Flow[CommittableMessage, CommittableMessage, NotUsed] =
         Flow[CommittableMessage] // do something useful with the received messages
@@ -91,13 +91,13 @@ class IronMqDocsSpec extends WordSpec with IronMqClientForTests with Matchers wi
       val messages: immutable.Seq[String] = (1 to messageCount).map(i => s"test-$i")
       val producedIds: Future[immutable.Seq[Message.Id]] = Source(messages)
         .map(PushMessage(_))
-        .via(IronMqProducer.producerFlow(queueName, ironMqSettings))
+        .via(IronMqProducer.flow(queueName, ironMqSettings))
         .runWith(Sink.seq)
       // #flow
       producedIds.futureValue.size shouldBe messageCount
 
       val receivedMessages: Future[immutable.Seq[Message]] = IronMqConsumer
-        .atMostOnceConsumerSource(queueName, ironMqSettings)
+        .atMostOnceSource(queueName, ironMqSettings)
         .take(messages.size)
         .runWith(Sink.seq)
       receivedMessages.futureValue.map(_.body) should contain theSameElementsInOrderAs messages
@@ -112,7 +112,7 @@ class IronMqDocsSpec extends WordSpec with IronMqClientForTests with Matchers wi
       val messages: immutable.Seq[String] = (1 to messageCount).map(i => s"test-$i")
       val produced = Source(messages)
         .map(PushMessage(_))
-        .runWith(IronMqProducer.producerSink(sourceQueue, ironMqSettings))
+        .runWith(IronMqProducer.sink(sourceQueue, ironMqSettings))
       produced.futureValue shouldBe Done
 
       // #atLeastOnceFlow
@@ -120,10 +120,10 @@ class IronMqDocsSpec extends WordSpec with IronMqClientForTests with Matchers wi
       import akka.stream.alpakka.ironmq.scaladsl.Committable
 
       val pushAndCommit: Flow[(PushMessage, Committable), Message.Id, NotUsed] =
-        IronMqProducer.atLeastOnceProducerFlow(targetQueue, ironMqSettings)
+        IronMqProducer.atLeastOnceFlow(targetQueue, ironMqSettings)
 
       val producedIds: Future[immutable.Seq[Message.Id]] = IronMqConsumer
-        .atLeastOnceConsumerSource(sourceQueue, ironMqSettings)
+        .atLeastOnceSource(sourceQueue, ironMqSettings)
         .take(messages.size)
         .map { committableMessage =>
           (PushMessage(committableMessage.message.body), committableMessage)
@@ -134,7 +134,7 @@ class IronMqDocsSpec extends WordSpec with IronMqClientForTests with Matchers wi
       producedIds.futureValue.size shouldBe messageCount
 
       val receivedMessages: Future[immutable.Seq[Message]] = IronMqConsumer
-        .atMostOnceConsumerSource(targetQueue, ironMqSettings)
+        .atMostOnceSource(targetQueue, ironMqSettings)
         .take(messages.size)
         .runWith(Sink.seq)
       receivedMessages.futureValue.map(_.body) should contain theSameElementsInOrderAs messages
@@ -151,12 +151,12 @@ class IronMqDocsSpec extends WordSpec with IronMqClientForTests with Matchers wi
       val messages: immutable.Seq[String] = (1 to messageCount).map(i => s"test-$i")
       val producedIds: Future[Done] = Source(messages)
         .map(PushMessage(_))
-        .runWith(IronMqProducer.producerSink(queueName, ironMqSettings))
+        .runWith(IronMqProducer.sink(queueName, ironMqSettings))
       // #sink
       producedIds.futureValue shouldBe Done
 
       val receivedMessages: Future[immutable.Seq[Message]] = IronMqConsumer
-        .atMostOnceConsumerSource(queueName, ironMqSettings)
+        .atMostOnceSource(queueName, ironMqSettings)
         .take(messages.size)
         .runWith(Sink.seq)
       receivedMessages.futureValue.map(_.body) should contain theSameElementsInOrderAs messages
