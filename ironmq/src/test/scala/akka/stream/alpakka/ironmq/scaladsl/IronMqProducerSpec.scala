@@ -28,11 +28,11 @@ class IronMqProducerSpec extends IronMqSpec {
 
       val expectedMessagesBodies = List("test-1", "test-2")
 
-      val done = Source(expectedMessagesBodies).map(PushMessage(_)).runWith(producerSink(queue.name, settings))
+      val done = Source(expectedMessagesBodies).map(PushMessage(_)).runWith(producerSink(queue, settings))
 
       whenReady(done) { _ =>
         ironMqClient
-          .pullMessages(queue.name, 20)
+          .pullMessages(queue, 20)
           .futureValue
           .map(_.body)
           .toSeq should contain theSameElementsInOrderAs expectedMessagesBodies
@@ -48,10 +48,10 @@ class IronMqProducerSpec extends IronMqSpec {
       val queue = givenQueue()
       val settings = IronMqSettings()
 
-      val messageIds = messages.take(10).via(producerFlow(queue.name, settings)).runWith(Sink.seq).futureValue
+      val messageIds = messages.take(10).via(producerFlow(queue, settings)).runWith(Sink.seq).futureValue
 
       ironMqClient
-        .pullMessages(queue.name, 10)
+        .pullMessages(queue, 10)
         .futureValue
         .map(_.messageId)
         .toSeq should contain theSameElementsInOrderAs messageIds
@@ -74,7 +74,7 @@ class IronMqProducerSpec extends IronMqSpec {
       whenReady(
         messages
           .zip(Source(committables))
-          .via(atLeastOnceProducerFlow(queue.name, settings, Flow[Committable].mapAsync(1)(_.commit())))
+          .via(atLeastOnceProducerFlow(queue, settings, Flow[Committable].mapAsync(1)(_.commit())))
           .runWith(Sink.ignore)
       ) { _ =>
         committables.forall(_.committed) shouldBe true

@@ -21,7 +21,7 @@ import scala.concurrent.{ExecutionContext, Future}
  * requests.
  */
 @InternalApi
-private[ironmq] class IronMqPushStage(queue: Queue.Name, settings: IronMqSettings)
+private[ironmq] class IronMqPushStage(queueName: String, settings: IronMqSettings)
     extends GraphStage[FlowShape[PushMessage, Future[Message.Ids]]] {
 
   val in: Inlet[PushMessage] = Inlet("IronMqPush.in")
@@ -54,7 +54,7 @@ private[ironmq] class IronMqPushStage(queue: Queue.Name, settings: IronMqSetting
           override def onPush(): Unit = {
             val pushMessage = grab(in)
 
-            val future = client.pushMessages(queue, pushMessage)
+            val future = client.pushMessages(queueName, pushMessage)
             runningFutures = runningFutures + 1
             setKeepGoing(true)
 

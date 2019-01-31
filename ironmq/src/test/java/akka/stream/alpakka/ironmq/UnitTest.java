@@ -70,11 +70,11 @@ public abstract class UnitTest {
     return ironMqClient;
   }
 
-  protected Queue givenQueue() {
+  protected String givenQueue() {
     return givenQueue("test-" + UUID.randomUUID());
   }
 
-  protected Queue givenQueue(String name) {
+  protected String givenQueue(String name) {
     try {
       return toJava(ironMqClient.createQueue(name, system.dispatcher()))
           .toCompletableFuture()

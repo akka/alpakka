@@ -17,21 +17,21 @@ object IronMqProducer {
   /**
    * This is plain producer [[akka.stream.scaladsl.Flow Flow]] that consume [[PushMessage]] and emit [[Message.Id]] for each produced message.
    */
-  def producerFlow(queueName: Queue.Name, settings: IronMqSettings): Flow[PushMessage, Message.Id, NotUsed] =
+  def producerFlow(queueName: String, settings: IronMqSettings): Flow[PushMessage, Message.Id, NotUsed] =
     // The parallelism MUST be 1 to guarantee the order of the messages
     Flow.fromGraph(new IronMqPushStage(queueName, settings)).mapAsync(1)(identity).mapConcat(_.ids)
 
   /**
    * A plain producer [[akka.stream.scaladsl.Sink Sink]] that consume [[PushMessage]] and push them on IronMq.
    */
-  def producerSink(queueName: Queue.Name, settings: IronMqSettings): Sink[PushMessage, Future[Done]] =
+  def producerSink(queueName: String, settings: IronMqSettings): Sink[PushMessage, Future[Done]] =
     producerFlow(queueName, settings).toMat(Sink.ignore)(Keep.right)
 
   /**
    * A [[Committable]] aware producer [[akka.stream.scaladsl.Flow Flow]] that consume [[(PushMessage, Committable)]], push messages on IronMq and
    * commit the associated [[Committable]].
    */
-  def atLeastOnceProducerFlow(queueName: Queue.Name,
+  def atLeastOnceProducerFlow(queueName: String,
                               settings: IronMqSettings): Flow[(PushMessage, Committable), Message.Id, NotUsed] =
     // TODO Not sure about parallelism, as the commits should not be in-order, maybe add it as parameter?
     atLeastOnceProducerFlow(queueName, settings, Flow[Committable].mapAsync(1)(_.commit())).map(_._1)
@@ -40,8 +40,7 @@ object IronMqProducer {
    * A [[Committable]] aware producer [[akka.stream.scaladsl.Sink Sink]] that consume [[(PushMessage, Committable)]] push messages on IronMq and
    * commit the associated [[Committable]].
    */
-  def atLeastOnceProducerSink(queueName: Queue.Name,
-                              settings: IronMqSettings): Sink[(PushMessage, Committable), NotUsed] =
+  def atLeastOnceProducerSink(queueName: String, settings: IronMqSettings): Sink[(PushMessage, Committable), NotUsed] =
     atLeastOnceProducerFlow(queueName, settings).to(Sink.ignore)
 
   /**
@@ -50,7 +49,7 @@ object IronMqProducer {
    * value of the committing flow.
    */
   def atLeastOnceProducerFlow[ToCommit, CommitResult, CommitMat](
-      queueName: Queue.Name,
+      queueName: String,
       settings: IronMqSettings,
       commitFlow: Flow[ToCommit, CommitResult, CommitMat]
   ): Flow[(PushMessage, ToCommit), (Message.Id, CommitResult), CommitMat] = {
@@ -91,7 +90,7 @@ object IronMqProducer {
    * user is responsible to supply the committing flow. The materialized value of the committing flow is returned.
    */
   def atLeastOnceProducerSink[ToCommit, CommitResult, CommitMat](
-      queueName: Queue.Name,
+      queueName: String,
       settings: IronMqSettings,
       commitFlow: Flow[ToCommit, CommitResult, CommitMat]
   ): Sink[(PushMessage, ToCommit), CommitMat] =

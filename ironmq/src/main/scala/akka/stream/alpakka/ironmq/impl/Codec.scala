@@ -4,9 +4,25 @@
 
 package akka.stream.alpakka.ironmq.impl
 
-import akka.stream.alpakka.ironmq.{Message, Queue}
+import akka.stream.alpakka.ironmq.{Message}
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json}
+
+/**
+ * Internal API.
+ *
+ * Simplified representation of the IronMq queue for JSON conversion.
+ *
+ * @param name The name associated with this Queue.
+ */
+private case class Queue(name: Queue.Name)
+
+private object Queue {
+
+  case class Name(value: String) extends AnyVal {
+    override def toString: String = value
+  }
+}
 
 private trait Codec {
 

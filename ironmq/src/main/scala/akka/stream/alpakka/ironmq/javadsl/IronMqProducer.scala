@@ -19,10 +19,10 @@ object IronMqProducer {
   import FutureConverters._
 
   def producerFlow(queueName: String, settings: IronMqSettings): Flow[PushMessage, Message.Id, NotUsed] =
-    ScalaIronMqProducer.producerFlow(Queue.Name(queueName), settings).asJava
+    ScalaIronMqProducer.producerFlow(queueName, settings).asJava
 
   def producerSink(queueName: String, settings: IronMqSettings): Sink[PushMessage, CompletionStage[Done]] =
-    ScalaIronMqProducer.producerSink(Queue.Name(queueName), settings).mapMaterializedValue(_.toJava).asJava
+    ScalaIronMqProducer.producerSink(queueName, settings).mapMaterializedValue(_.toJava).asJava
 
   def atLeastOnceProducerFlow[C1 <: Committable](
       queueName: String,
@@ -32,7 +32,7 @@ object IronMqProducer {
       .map { cm =>
         cm.message -> cm.toCommit.asScala
       }
-      .via(ScalaIronMqProducer.atLeastOnceProducerFlow(Queue.Name(queueName), settings))
+      .via(ScalaIronMqProducer.atLeastOnceProducerFlow(queueName, settings))
       .asJava
 
   def atLeastOnceProducerSink[C1 <: Committable](queueName: String,
@@ -41,7 +41,7 @@ object IronMqProducer {
       .map { cm =>
         cm.message -> cm.toCommit.asScala
       }
-      .to(ScalaIronMqProducer.atLeastOnceProducerSink(Queue.Name(queueName), settings))
+      .to(ScalaIronMqProducer.atLeastOnceProducerSink(queueName, settings))
       .asJava
 
   def atLeastOnceProducerFlow[ToCommit, CommitResult, CommitMat](
@@ -53,7 +53,7 @@ object IronMqProducer {
       .map { cm =>
         cm.message -> cm.toCommit
       }
-      .viaMat(ScalaIronMqProducer.atLeastOnceProducerFlow(Queue.Name(queueName), settings, commitFlow.asScala))(
+      .viaMat(ScalaIronMqProducer.atLeastOnceProducerFlow(queueName, settings, commitFlow.asScala))(
         Keep.right
       )
       .asJava
@@ -67,7 +67,7 @@ object IronMqProducer {
       .map { cm =>
         cm.message -> cm.toCommit
       }
-      .toMat(ScalaIronMqProducer.atLeastOnceProducerSink(Queue.Name(queueName), settings, commitFlow.asScala))(
+      .toMat(ScalaIronMqProducer.atLeastOnceProducerSink(queueName, settings, commitFlow.asScala))(
         Keep.right
       )
       .asJava

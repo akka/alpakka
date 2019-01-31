@@ -34,19 +34,3 @@ object Message {
 
   case class Ids(ids: List[Id])
 }
-
-/**
- * Simplified representation of the IronMq queue.
- *
- * @param name The name associated with this Queue.
- */
-case class Queue(name: Queue.Name)
-
-object Queue {
-
-  case class Name(value: String) extends AnyVal {
-    override def toString: String = value
-  }
-
-  def ofName(name: String): Queue = Queue(Queue.Name(name))
-}

@@ -27,23 +27,20 @@ class IronMqDocsSpec extends WordSpec with IronMqClientForTests with Matchers wi
 
   "IronMqConsumer" should {
     "read messages" in assertAllStagesStopped {
-      // #atMostOnce
-      import akka.stream.alpakka.ironmq.{Message, Queue}
-
-      val queue: Queue = Queue.ofName("alpakka-sample")
-      // #atMostOnce
-      givenQueue(queue.name).futureValue
+      val queueName = givenQueue().futureValue
       import akka.stream.alpakka.ironmq.PushMessage
 
       val messages = (1 to 100).map(i => s"test-$i")
       val produced = Source(messages)
         .map(PushMessage(_))
-        .runWith(IronMqProducer.producerSink(queue.name, ironMqSettings))
+        .runWith(IronMqProducer.producerSink(queueName, ironMqSettings))
       produced.futureValue shouldBe Done
 
       // #atMostOnce
+      import akka.stream.alpakka.ironmq.Message
+
       val source: Source[Message, NotUsed] =
-        IronMqConsumer.atMostOnceConsumerSource(queue.name, ironMqSettings)
+        IronMqConsumer.atMostOnceConsumerSource(queueName, ironMqSettings)
 
       val receivedMessages: Future[immutable.Seq[Message]] = source
         .take(100)
@@ -53,25 +50,21 @@ class IronMqDocsSpec extends WordSpec with IronMqClientForTests with Matchers wi
     }
 
     "read messages and allow committing" in assertAllStagesStopped {
-      // #atLeastOnce
-      import akka.stream.alpakka.ironmq.scaladsl.CommittableMessage
-      import akka.stream.alpakka.ironmq.{Message, Queue}
-
-      val queue: Queue = Queue.ofName("alpakka-committing")
-      // #atLeastOnce
-      givenQueue(queue.name).futureValue
+      val queueName = givenQueue().futureValue
 
       import akka.stream.alpakka.ironmq.PushMessage
       val messages = (1 to 100).map(i => s"test-$i")
       val produced = Source(messages)
         .map(PushMessage(_))
-        .runWith(IronMqProducer.producerSink(queue.name, ironMqSettings))
+        .runWith(IronMqProducer.producerSink(queueName, ironMqSettings))
       produced.futureValue shouldBe Done
 
       // #atLeastOnce
+      import akka.stream.alpakka.ironmq.scaladsl.CommittableMessage
+      import akka.stream.alpakka.ironmq.Message
 
       val source: Source[CommittableMessage, NotUsed] =
-        IronMqConsumer.atLeastOnceConsumerSource(queue.name, ironMqSettings)
+        IronMqConsumer.atLeastOnceConsumerSource(queueName, ironMqSettings)
 
       val businessLogic: Flow[CommittableMessage, CommittableMessage, NotUsed] =
         Flow[CommittableMessage] // do something useful with the received messages
@@ -89,8 +82,7 @@ class IronMqDocsSpec extends WordSpec with IronMqClientForTests with Matchers wi
 
   "IronMqProducer" should {
     "push messages in flow" in assertAllStagesStopped {
-      import akka.stream.alpakka.ironmq.Queue
-      val queue: Queue = givenQueue().futureValue
+      val queueName = givenQueue().futureValue
 
       val messageCount = 10
       // #flow
@@ -99,13 +91,13 @@ class IronMqDocsSpec extends WordSpec with IronMqClientForTests with Matchers wi
       val messages: immutable.Seq[String] = (1 to messageCount).map(i => s"test-$i")
       val producedIds: Future[immutable.Seq[Message.Id]] = Source(messages)
         .map(PushMessage(_))
-        .via(IronMqProducer.producerFlow(queue.name, ironMqSettings))
+        .via(IronMqProducer.producerFlow(queueName, ironMqSettings))
         .runWith(Sink.seq)
       // #flow
       producedIds.futureValue.size shouldBe messageCount
 
       val receivedMessages: Future[immutable.Seq[Message]] = IronMqConsumer
-        .atMostOnceConsumerSource(queue.name, ironMqSettings)
+        .atMostOnceConsumerSource(queueName, ironMqSettings)
         .take(messages.size)
         .runWith(Sink.seq)
       receivedMessages.futureValue.map(_.body) should contain theSameElementsInOrderAs messages
@@ -113,15 +105,14 @@ class IronMqDocsSpec extends WordSpec with IronMqClientForTests with Matchers wi
     }
 
     "push messages at-least-once" in assertAllStagesStopped {
-      import akka.stream.alpakka.ironmq.Queue
-      val sourceQueue: Queue = givenQueue().futureValue
-      val targetQueue: Queue = givenQueue().futureValue
+      val sourceQueue = givenQueue().futureValue
+      val targetQueue = givenQueue().futureValue
 
       val messageCount = 10
       val messages: immutable.Seq[String] = (1 to messageCount).map(i => s"test-$i")
       val produced = Source(messages)
         .map(PushMessage(_))
-        .runWith(IronMqProducer.producerSink(sourceQueue.name, ironMqSettings))
+        .runWith(IronMqProducer.producerSink(sourceQueue, ironMqSettings))
       produced.futureValue shouldBe Done
 
       // #atLeastOnceFlow
@@ -129,10 +120,10 @@ class IronMqDocsSpec extends WordSpec with IronMqClientForTests with Matchers wi
       import akka.stream.alpakka.ironmq.scaladsl.Committable
 
       val pushAndCommit: Flow[(PushMessage, Committable), Message.Id, NotUsed] =
-        IronMqProducer.atLeastOnceProducerFlow(targetQueue.name, ironMqSettings)
+        IronMqProducer.atLeastOnceProducerFlow(targetQueue, ironMqSettings)
 
       val producedIds: Future[immutable.Seq[Message.Id]] = IronMqConsumer
-        .atLeastOnceConsumerSource(sourceQueue.name, ironMqSettings)
+        .atLeastOnceConsumerSource(sourceQueue, ironMqSettings)
         .take(messages.size)
         .map { committableMessage =>
           (PushMessage(committableMessage.message.body), committableMessage)
@@ -143,7 +134,7 @@ class IronMqDocsSpec extends WordSpec with IronMqClientForTests with Matchers wi
       producedIds.futureValue.size shouldBe messageCount
 
       val receivedMessages: Future[immutable.Seq[Message]] = IronMqConsumer
-        .atMostOnceConsumerSource(targetQueue.name, ironMqSettings)
+        .atMostOnceConsumerSource(targetQueue, ironMqSettings)
         .take(messages.size)
         .runWith(Sink.seq)
       receivedMessages.futureValue.map(_.body) should contain theSameElementsInOrderAs messages
@@ -151,8 +142,7 @@ class IronMqDocsSpec extends WordSpec with IronMqClientForTests with Matchers wi
     }
 
     "push messages to a sink" in assertAllStagesStopped {
-      import akka.stream.alpakka.ironmq.Queue
-      val queue: Queue = givenQueue().futureValue
+      val queueName = givenQueue().futureValue
 
       val messageCount = 10
       // #sink
@@ -161,12 +151,12 @@ class IronMqDocsSpec extends WordSpec with IronMqClientForTests with Matchers wi
       val messages: immutable.Seq[String] = (1 to messageCount).map(i => s"test-$i")
       val producedIds: Future[Done] = Source(messages)
         .map(PushMessage(_))
-        .runWith(IronMqProducer.producerSink(queue.name, ironMqSettings))
+        .runWith(IronMqProducer.producerSink(queueName, ironMqSettings))
       // #sink
       producedIds.futureValue shouldBe Done
 
       val receivedMessages: Future[immutable.Seq[Message]] = IronMqConsumer
-        .atMostOnceConsumerSource(queue.name, ironMqSettings)
+        .atMostOnceConsumerSource(queueName, ironMqSettings)
         .take(messages.size)
         .runWith(Sink.seq)
       receivedMessages.futureValue.map(_.body) should contain theSameElementsInOrderAs messages

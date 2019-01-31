@@ -6,7 +6,7 @@ package akka.stream.alpakka.ironmq.impl
 import java.util.UUID
 
 import akka.actor.ActorSystem
-import akka.stream.alpakka.ironmq.{IronMqSettings, Queue}
+import akka.stream.alpakka.ironmq.IronMqSettings
 import akka.stream.{ActorMaterializer, Materializer}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -25,11 +25,11 @@ trait IronMqClientForTests {
 
   val ironMqClient = IronMqClient(ironMqSettings)
 
-  def givenQueue(name: Queue.Name): Future[Queue] =
+  def givenQueue(name: String): Future[String] =
     ironMqClient.createQueue(name)
 
-  def givenQueue(): Future[Queue] =
-    givenQueue(Queue.Name(s"test-${UUID.randomUUID()}"))
+  def givenQueue(): Future[String] =
+    givenQueue(s"test-${UUID.randomUUID()}")
 
 }
 

@@ -57,19 +57,19 @@ public class IronMqDocsTest extends IronMqClientForJava {
 
   @Test
   public void atMostOnce() throws Exception {
-    Queue queue = Queue.ofName("alpakka-java");
-    String name = queue.name();
-    Await.result(givenQueue(name), awaiting);
+    String queueName = "alpakka-java";
+    Await.result(givenQueue(queueName), awaiting);
 
     CompletionStage<Done> produced =
         Source.from(messages)
             .map(PushMessage::create)
-            .runWith(IronMqProducer.producerSink(name, ironMqSettings), materializer);
+            .runWith(IronMqProducer.producerSink(queueName, ironMqSettings), materializer);
     await(produced, patience);
 
     // #atMostOnce
 
-    Source<Message, NotUsed> source = IronMqConsumer.atMostOnceConsumerSource(name, ironMqSettings);
+    Source<Message, NotUsed> source =
+        IronMqConsumer.atMostOnceConsumerSource(queueName, ironMqSettings);
 
     CompletionStage<List<Message>> receivedMessages =
         source.take(5).runWith(Sink.seq(), materializer);
@@ -81,20 +81,19 @@ public class IronMqDocsTest extends IronMqClientForJava {
 
   @Test
   public void atLeastOnce() throws Exception {
-    Queue queue = Queue.ofName("alpakka-java-committing");
-    String name = queue.name();
-    Await.result(givenQueue(name), awaiting);
+    String queueName = "alpakka-java-committing";
+    Await.result(givenQueue(queueName), awaiting);
 
     CompletionStage<Done> produced =
         Source.from(messages)
             .map(PushMessage::create)
-            .runWith(IronMqProducer.producerSink(name, ironMqSettings), materializer);
+            .runWith(IronMqProducer.producerSink(queueName, ironMqSettings), materializer);
     await(produced, patience);
 
     // #atLeastOnce
 
     Source<CommittableMessage, NotUsed> source =
-        IronMqConsumer.atLeastOnceConsumerSource(name, ironMqSettings);
+        IronMqConsumer.atLeastOnceConsumerSource(queueName, ironMqSettings);
 
     Flow<CommittableMessage, CommittableMessage, NotUsed> businessLogic =
         Flow.of(CommittableMessage.class); // do something useful with the received messages
@@ -113,20 +112,20 @@ public class IronMqDocsTest extends IronMqClientForJava {
 
   @Test
   public void pushMessagesFlow() throws Exception {
-    Queue queue = Await.result(givenQueue(), awaiting);
+    String queueName = Await.result(givenQueue(), awaiting);
 
     // #flow
     CompletionStage<List<String>> producedIds =
         Source.from(messages)
             .map(PushMessage::create)
-            .via(IronMqProducer.producerFlow(queue.name(), ironMqSettings))
+            .via(IronMqProducer.producerFlow(queueName, ironMqSettings))
             .runWith(Sink.seq(), materializer);
 
     // #flow
     assertEquals(messages.size(), await(producedIds, patience).size());
 
     CompletionStage<List<Message>> receivedMessages =
-        IronMqConsumer.atMostOnceConsumerSource(queue.name(), ironMqSettings)
+        IronMqConsumer.atMostOnceConsumerSource(queueName, ironMqSettings)
             .take(messages.size())
             .runWith(Sink.seq(), materializer);
 
@@ -136,23 +135,22 @@ public class IronMqDocsTest extends IronMqClientForJava {
 
   @Test
   public void atLeastOnceFlow() throws Exception {
-    Queue sourceQueue = Await.result(givenQueue(), awaiting);
-    Queue targetQueue = Await.result(givenQueue(), awaiting);
+    String sourceQueue = Await.result(givenQueue(), awaiting);
+    String targetQueue = Await.result(givenQueue(), awaiting);
 
     CompletionStage<Done> produced =
         Source.from(messages)
             .map(PushMessage::create)
-            .runWith(IronMqProducer.producerSink(sourceQueue.name(), ironMqSettings), materializer);
+            .runWith(IronMqProducer.producerSink(sourceQueue, ironMqSettings), materializer);
     assertEquals(Done.getInstance(), await(produced, patience));
 
     // #atLeastOnceFlow
 
     Flow<CommittablePushMessage<CommittableMessage>, String, NotUsed> pushAndCommit =
-        IronMqProducer.<CommittableMessage>atLeastOnceProducerFlow(
-            targetQueue.name(), ironMqSettings);
+        IronMqProducer.<CommittableMessage>atLeastOnceProducerFlow(targetQueue, ironMqSettings);
 
     CompletionStage<List<String>> producedIds =
-        IronMqConsumer.atLeastOnceConsumerSource(sourceQueue.name(), ironMqSettings)
+        IronMqConsumer.atLeastOnceConsumerSource(sourceQueue, ironMqSettings)
             .take(messages.size())
             .map(
                 committableMessage ->
@@ -165,7 +163,7 @@ public class IronMqDocsTest extends IronMqClientForJava {
     assertEquals(messages.size(), await(producedIds, patience).size());
 
     CompletionStage<List<Message>> receivedMessages =
-        IronMqConsumer.atMostOnceConsumerSource(targetQueue.name(), ironMqSettings)
+        IronMqConsumer.atMostOnceConsumerSource(targetQueue, ironMqSettings)
             .take(messages.size())
             .runWith(Sink.seq(), materializer);
 
@@ -174,18 +172,18 @@ public class IronMqDocsTest extends IronMqClientForJava {
 
   @Test
   public void sink() throws Exception {
-    Queue queue = Await.result(givenQueue(), awaiting);
+    String queueName = Await.result(givenQueue(), awaiting);
 
     // #sink
     CompletionStage<Done> producedIds =
         Source.from(messages)
             .map(PushMessage::create)
-            .runWith(IronMqProducer.producerSink(queue.name(), ironMqSettings), materializer);
+            .runWith(IronMqProducer.producerSink(queueName, ironMqSettings), materializer);
     // #sink
     assertEquals(Done.getInstance(), await(producedIds, patience));
 
     CompletionStage<List<Message>> receivedMessages =
-        IronMqConsumer.atMostOnceConsumerSource(queue.name(), ironMqSettings)
+        IronMqConsumer.atMostOnceConsumerSource(queueName, ironMqSettings)
             .take(messages.size())
             .runWith(Sink.seq(), materializer);
 

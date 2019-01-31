@@ -2,9 +2,9 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.ironmq
+package akka.stream.alpakka.ironmq.impl
 
-import akka.stream.alpakka.ironmq.impl.IronMqPullStage
+import akka.stream.alpakka.ironmq.{IronMqSettings, IronMqSpec, PushMessage}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 
@@ -15,11 +15,11 @@ class IronMqPullStageSpec extends IronMqSpec {
   "IronMqSourceStage" when {
     "there are messages" should {
       "consume all messages" in assertAllStagesStopped {
-        val queue = givenQueue()
+        val queueName = givenQueue()
         val messages = (1 to 100).map(i => PushMessage(s"test-$i"))
-        ironMqClient.pushMessages(queue.name, messages: _*).futureValue
+        ironMqClient.pushMessages(queueName, messages: _*).futureValue
 
-        val source = Source.fromGraph(new IronMqPullStage(queue.name, IronMqSettings()))
+        val source = Source.fromGraph(new IronMqPullStage(queueName, IronMqSettings()))
         val receivedMessages = source.take(100).runWith(Sink.seq).map(_.map(_.message.body)).futureValue
         val expectedMessages = messages.map(_.body)
 

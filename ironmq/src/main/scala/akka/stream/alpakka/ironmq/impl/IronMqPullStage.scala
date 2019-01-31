@@ -35,7 +35,7 @@ private[ironmq] object IronMqPullStage {
  * Keep in mind that the IronMq time unit is the second, so any value below the second is considered 0.
  */
 @InternalApi
-private[ironmq] final class IronMqPullStage(queue: Queue.Name, settings: IronMqSettings)
+private[ironmq] final class IronMqPullStage(queueName: String, settings: IronMqSettings)
     extends GraphStage[SourceShape[CommittableMessage]] {
 
   import IronMqPullStage._
@@ -86,7 +86,7 @@ private[ironmq] final class IronMqPullStage(queue: Queue.Name, settings: IronMqS
           fetching = true
           client
             .reserveMessages(
-              queue,
+              queueName,
               bufferMaxSize - buffer.size,
               watch = pollTimeout,
               timeout = reservationTimeout
@@ -108,7 +108,7 @@ private[ironmq] final class IronMqPullStage(queue: Queue.Name, settings: IronMqS
           val committableMessage: CommittableMessage = new CommittableMessage {
             override val message: Message = messageToDelivery.message
             override def commit(): Future[Done] =
-              client.deleteMessages(queue, messageToDelivery.reservation).map(_ => Done)
+              client.deleteMessages(queueName, messageToDelivery.reservation).map(_ => Done)
           }
 
           push(out, committableMessage)

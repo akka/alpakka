@@ -64,10 +64,10 @@ abstract class IronMqSpec extends WordSpec with Matchers with ScalaFutures with 
     Await.result(actorSystem.terminate(), actorSystemTerminateTimeout)
   }
 
-  def givenQueue(name: Queue.Name): Queue =
+  def givenQueue(name: String): String =
     ironMqClient.createQueue(name).futureValue
 
-  def givenQueue(): Queue =
-    givenQueue(Queue.Name(s"test-${UUID.randomUUID()}"))
+  def givenQueue(): String =
+    givenQueue(s"test-${UUID.randomUUID()}")
 
 }

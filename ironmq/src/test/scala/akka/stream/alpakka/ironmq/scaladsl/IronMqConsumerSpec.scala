@@ -34,22 +34,22 @@ class IronMqConsumerSpec extends IronMqSpec with ParallelTestExecution {
 
       messages
         .take(numberOfMessages)
-        .mapAsync(1)(ironMqClient.pushMessages(queue.name, _))
+        .mapAsync(1)(ironMqClient.pushMessages(queue, _))
         .runWith(Sink.ignore)
         .futureValue
 
       IronMqConsumer
-        .atLeastOnceConsumerSource(queue.name, IronMqSettings())
+        .atLeastOnceConsumerSource(queue, IronMqSettings())
         .take(numberOfMessages)
         .runWith(Sink.ignore)
         .futureValue
 
-      ironMqClient.peekMessages(queue.name, 100).futureValue shouldBe empty
+      ironMqClient.peekMessages(queue, 100).futureValue shouldBe empty
 
       // Sleep enough time to be sure the messages has been put back in queue by IronMQ
       Thread.sleep(45000L)
 
-      ironMqClient.peekMessages(queue.name, 100).futureValue should have size numberOfMessages
+      ironMqClient.peekMessages(queue, 100).futureValue should have size numberOfMessages
     }
 
     "delete the messages from the queue when committed" in assertAllStagesStopped {
@@ -58,23 +58,23 @@ class IronMqConsumerSpec extends IronMqSpec with ParallelTestExecution {
 
       messages
         .take(numberOfMessages)
-        .mapAsync(1)(ironMqClient.pushMessages(queue.name, _))
+        .mapAsync(1)(ironMqClient.pushMessages(queue, _))
         .runWith(Sink.ignore)
         .futureValue
 
       IronMqConsumer
-        .atLeastOnceConsumerSource(queue.name, IronMqSettings())
+        .atLeastOnceConsumerSource(queue, IronMqSettings())
         .take(numberOfMessages)
         .mapAsync(3)(_.commit())
         .runWith(Sink.ignore)
         .futureValue
 
-      ironMqClient.peekMessages(queue.name, 100).futureValue shouldBe empty
+      ironMqClient.peekMessages(queue, 100).futureValue shouldBe empty
 
       // Sleep enough time to be sure the messages may have been put back in queue by IronMQ
       Thread.sleep(45000L)
 
-      ironMqClient.peekMessages(queue.name, 100).futureValue shouldBe empty
+      ironMqClient.peekMessages(queue, 100).futureValue shouldBe empty
     }
 
   }
