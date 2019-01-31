@@ -21,14 +21,12 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Configuration
 
-To connect to Kudu
+To connect to Kudu you need:
 
-1. Create a Kudu client and manage its life-cycle
-1. Describe the Kudu `Schema` (@javadoc[API](org.apache.kudu.Schema))
-1. Define a converter function to map your data type to a `PartialRow` (@javadoc[API](org.apache.kudu.client.PartialRow))
-1. Specify Kudu `CreateTableOptions` (@javadoc[API](org.apache.kudu.client.CreateTableOptions))
-1. Set up Alpakka's `KuduTableSettings` (@scaladoc[API](akka.stream.alpakka.kudu.KuduTableSettings)).
-
+1. Describe the Kudu @javadoc[`Schema`](org.apache.kudu.Schema)
+1. Define a converter function to map your data type to a @javadoc[`PartialRow`](org.apache.kudu.client.PartialRow)
+1. Specify Kudu @javadoc[`CreateTableOptions`](org.apache.kudu.client.CreateTableOptions)
+1. Set up Alpakka's @scaladoc[`KuduTableSettings`](akka.stream.alpakka.kudu.KuduTableSettings)
 
 Scala
 :   @@snip [snip](/kudu/src/test/scala/docs/scaladsl/KuduTableSpec.scala) { #configure }
@@ -36,6 +34,15 @@ Scala
 Java
 :   @@snip [snip](/kudu/src/test/java/docs/javadsl/KuduTableTest.java) { #configure }
 
+The @javadoc[`KuduClient`](org.apache.kudu.client.KuduClient) by default is automatically managed by the connector.
+Settings for the client are read from the @github[reference.conf](/kudu/src/main/resources/reference.conf) file.
+A manually initialized client can be injected to the stream using @scaladoc[`KuduAttributes`](akka.stream.alpakka.kudu.KuduAttributes$)
+
+Scala
+:   @@snip [snip](/kudu/src/test/scala/docs/scaladsl/KuduTableSpec.scala) { #attributes }
+
+Java
+:   @@snip [snip](/kudu/src/test/java/docs/javadsl/KuduTableTest.java) { #attributes }
 
 ## Writing to Kudu in a Flow
 
