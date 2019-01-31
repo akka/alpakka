@@ -48,8 +48,7 @@ public abstract class UnitTest {
 
   protected Config initConfig() {
     String projectId = "project-" + System.currentTimeMillis();
-    return ConfigFactory.parseString(
-            "akka.stream.alpakka.ironmq.credentials.project-id = " + projectId)
+    return ConfigFactory.parseString("alpakka.ironmq.credentials.project-id = " + projectId)
         .withFallback(ConfigFactory.load());
   }
 

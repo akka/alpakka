@@ -57,7 +57,7 @@ final class IronMqSettings private (
 
 object IronMqSettings {
 
-  val ConfigPath = "akka.stream.alpakka.ironmq"
+  val ConfigPath = "alpakka.ironmq"
 
   final class ConsumerSettings private (
       val bufferMinSize: Int,
@@ -155,7 +155,7 @@ object IronMqSettings {
   }
 
   /**
-   * Will create a [[IronMqSettings]] from a ActorSystem using the default config path `akka.stream.alpakka.ironmq`.
+   * Will create a [[IronMqSettings]] from a ActorSystem using the default config path `alpakka.ironmq`.
    */
   def apply()(implicit as: ActorSystem): IronMqSettings =
     apply(as.settings.config.getConfig(ConfigPath))

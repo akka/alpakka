@@ -4,12 +4,11 @@
 
 package akka.stream.alpakka.ironmq.impl
 
-import akka.stream.alpakka.ironmq.{Message}
+import akka.stream.alpakka.ironmq.Message
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json}
 
 // required on Scala 2.11
-import cats.syntax.either._
 
 /**
  * Internal API.

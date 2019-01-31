@@ -22,7 +22,7 @@ class IronMqConsumerSpec extends IronMqSpec with ParallelTestExecution {
     Source.fromIterator(() => Iterator.from(0)).map(i => PushMessage(s"test-$i"))
 
   override protected def initConfig(): Config =
-    ConfigFactory.parseString(s"""akka.stream.alpakka.ironmq {
+    ConfigFactory.parseString(s"""alpakka.ironmq {
          |  consumer.reservation-timeout = 30 seconds
          |}
       """.stripMargin).withFallback(super.initConfig())

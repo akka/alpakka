@@ -29,7 +29,7 @@ abstract class IronMqSpec extends WordSpec with Matchers with ScalaFutures with 
   def config: Config = mutableConfig.getOrElse(throw new IllegalStateException("Config not initialized"))
 
   protected def initConfig(): Config =
-    ConfigFactory.parseString(s"""akka.stream.alpakka.ironmq {
+    ConfigFactory.parseString(s"""alpakka.ironmq {
                                  |  credentials {
                                  |    project-id = "${MurmurHash3.stringHash(System.currentTimeMillis().toString)}"
                                  |  }
@@ -56,7 +56,7 @@ abstract class IronMqSpec extends WordSpec with Matchers with ScalaFutures with 
     mutableConfig = Option(initConfig())
     mutableActorSystem = Option(ActorSystem(s"test-${System.currentTimeMillis()}", config))
     mutableMaterializer = Option(ActorMaterializer())
-    mutableIronMqClient = Option(IronMqClient(IronMqSettings(config.getConfig("akka.stream.alpakka.ironmq"))))
+    mutableIronMqClient = Option(IronMqClient(IronMqSettings(config.getConfig("alpakka.ironmq"))))
   }
 
   override protected def afterEach(): Unit = {
