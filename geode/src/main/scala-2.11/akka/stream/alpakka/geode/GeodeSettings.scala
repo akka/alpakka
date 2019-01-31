@@ -11,11 +11,7 @@ import scala.compat.java8.FunctionConverters._
 import java.util.function.{Function => JFunction, BiFunction}
 
 /**
- * General settings to connect Apache Geode.
- *
- * @param hostname
- * @param port      default to 10334
- * @param pdxCompat a function that determines if two class are equivalent (java class / scala case class)
+ * General settings to connect to Apache Geode.
  */
 final class GeodeSettings private (val hostname: String,
                                    val port: Int = 10334,
@@ -53,10 +49,11 @@ final class GeodeSettings private (val hostname: String,
     copy(pdxCompat = pdxCompat.asScala)
 
   override def toString: String =
-    s"""GeodeSettings(
-       |hostname     = $hostname
-       |port         = $port
-     """.stripMargin
+    "GeodeSettings(" +
+    s"hostname=$hostname," +
+    s"port=$port," +
+    s"configuration=${configure.isDefined}" +
+    ")"
 
 }
 
