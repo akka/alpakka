@@ -15,6 +15,7 @@ import akka.stream.alpakka.orientdb.{
 }
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
 import com.orientechnologies.orient.`object`.db.OObjectDatabaseTx
 import com.orientechnologies.orient.client.remote.OServerAdmin
@@ -121,7 +122,7 @@ class OrientDbSpec extends WordSpec with Matchers with BeforeAndAfterAll with Sc
       client.getMetadata.getSchema.dropClass(className)
 
   "source settings" should {
-    "have defaults" in {
+    "have defaults" in assertAllStagesStopped {
       // #source-settings
       // re-iterating default values
       val sourceSettings = OrientDbSourceSettings(oDatabase)
@@ -133,7 +134,7 @@ class OrientDbSpec extends WordSpec with Matchers with BeforeAndAfterAll with Sc
   }
 
   "write settings" should {
-    "have defaults" in {
+    "have defaults" in assertAllStagesStopped {
       // #write-settings
       // re-iterating default values
       val updateSettings = OrientDbWriteSettings(oDatabase)
@@ -143,7 +144,7 @@ class OrientDbSpec extends WordSpec with Matchers with BeforeAndAfterAll with Sc
   }
 
   "OrientDB connector" should {
-    "consume and publish documents as ODocument" in {
+    "consume and publish documents as ODocument" in assertAllStagesStopped {
       //Copy source to sink1 through ODocument stream
       val f1 = OrientDbSource(
         sourceClass,
@@ -184,7 +185,7 @@ class OrientDbSpec extends WordSpec with Matchers with BeforeAndAfterAll with Sc
   }
 
   "OrientDBFlow" should {
-    "store ODocuments and pass ODocuments" in {
+    "store ODocuments and pass ODocuments" in assertAllStagesStopped {
       // Copy source/book to sink3/book through ODocument stream
       //#run-flow
 
@@ -225,7 +226,7 @@ class OrientDbSpec extends WordSpec with Matchers with BeforeAndAfterAll with Sc
       )
     }
 
-    "support typed source and sink" in {
+    "support typed source and sink" in assertAllStagesStopped {
       // #run-typed
       val streamCompletion: Future[Done] = OrientDbSource
         .typed(sourceClass, OrientDbSourceSettings(oDatabase), classOf[OrientDbTest.source1])
@@ -245,7 +246,7 @@ class OrientDbSpec extends WordSpec with Matchers with BeforeAndAfterAll with Sc
 
     }
 
-    "kafka-example - store documents and pass Responses with passThrough" in {
+    "kafka-example - store documents and pass Responses with passThrough" in assertAllStagesStopped {
       //#kafka-example
       // We're going to pretend we got messages from kafka.
       // After we've written them to oRIENTdb, we want
