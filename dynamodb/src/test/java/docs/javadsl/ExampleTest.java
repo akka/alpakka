@@ -128,12 +128,9 @@ public class ExampleTest {
             .withAttributes(DynamoAttributes.client(client));
     // #attributes
 
-    try {
-      ListTablesResult result =
-          source.runWith(Sink.head(), materializer).toCompletableFuture().get(1, TimeUnit.SECONDS);
-      fail("expeced missing schema");
-    } catch (ExecutionException expected) {
-      // expected
-    }
+    ListTablesResult result =
+        source.runWith(Sink.head(), materializer).toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+    assertNotNull(result.getTableNames());
   }
 }

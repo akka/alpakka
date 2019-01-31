@@ -46,7 +46,7 @@ class ExampleSpec
         DynamoDb.single(new ListTablesRequest())
       //##simple-request
 
-      listTablesResult.futureValue
+      listTablesResult.futureValue.getTableNames.size shouldBe 0
     }
 
     "allow multiple requests - explicit types" in {
@@ -106,8 +106,7 @@ class ExampleSpec
           .withAttributes(DynamoAttributes.client(client))
       // #attributes
 
-      val streamCompletion = source.runWith(Sink.seq)
-      streamCompletion.failed.futureValue shouldBe a[AmazonDynamoDBException]
+      source.runWith(Sink.head).futureValue.getTableNames.size shouldBe 0
     }
   }
 }
