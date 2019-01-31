@@ -173,7 +173,7 @@ public class IntegrationTest {
   }
 
   @Test
-  void customPublisher() {
+  public void customPublisher() {
     // #attributes
     final PubSubSettings settings = PubSubSettings.create(system);
     final GrpcPublisher publisher = GrpcPublisher.create(settings, system, materializer);
