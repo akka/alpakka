@@ -86,6 +86,7 @@ private[orientdb] final class OrientDbSourceStage[T](className: String,
     override def preStart(): Unit = {
       client = settings.oDatabasePool.acquire()
       oObjectClient = new OObjectDatabaseTx(client)
+      client.setDatabaseOwner(oObjectClient)
     }
 
     override def postStop(): Unit =

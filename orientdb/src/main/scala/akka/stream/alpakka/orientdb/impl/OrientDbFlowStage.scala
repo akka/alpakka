@@ -41,21 +41,8 @@ private[orientdb] class OrientDbFlowStage[T, C](
 
   sealed abstract class OrientDbLogic extends GraphStageLogic(shape) with InHandler with OutHandler {
 
-    protected var client: ODatabaseDocumentTx = _
-    protected var oObjectClient: OObjectDatabaseTx = _
-
-    override def preStart(): Unit = {
-      client = settings.oDatabasePool.acquire()
-      oObjectClient = new OObjectDatabaseTx(client)
-    }
-
-    override def postStop(): Unit = {
-      ODatabaseRecordThreadLocal.instance().set(client)
-      oObjectClient.close()
-      client.close()
-    }
-
-    protected def sendOSQLBulkInsertRequest(messages: immutable.Seq[OrientDbWriteMessage[T, C]]): Unit
+    protected def sendOSQLBulkInsertRequest(client: ODatabaseDocumentTx,
+                                            messages: immutable.Seq[OrientDbWriteMessage[T, C]]): Unit
 
     setHandlers(in, out, this)
 
@@ -63,8 +50,16 @@ private[orientdb] class OrientDbFlowStage[T, C](
 
     override def onPush(): Unit = {
       val messages = grab(in)
-      ODatabaseRecordThreadLocal.instance().set(client)
-      sendOSQLBulkInsertRequest(messages)
+      if (messages.nonEmpty) {
+        // This is ridiculous, but the docs state
+        // "OrientDB supports multi-threads access to the database. ODatabase* and OrientGraph* instances are
+        // not thread-safe, so you've to get an instance per thread and each database instance can be used
+        // only in one thread per time. The ODocument, OrientVertex and OrientEdge classes are non thread-safe
+        // too, so if you share them across threads you can have unexpected errors hard to recognize.
+        val client = settings.oDatabasePool.acquire()
+        sendOSQLBulkInsertRequest(client, messages)
+        client.close()
+      }
       tryPull(in)
     }
 
@@ -72,7 +67,8 @@ private[orientdb] class OrientDbFlowStage[T, C](
 
   final class ORecordLogic(className: String) extends OrientDbLogic {
 
-    protected def sendOSQLBulkInsertRequest(messages: immutable.Seq[OrientDbWriteMessage[T, C]]): Unit = {
+    protected def sendOSQLBulkInsertRequest(client: ODatabaseDocumentTx,
+                                            messages: immutable.Seq[OrientDbWriteMessage[T, C]]): Unit = {
       if (!client.getMetadata.getSchema.existsClass(className)) {
         client.getMetadata.getSchema.createClass(className)
       }
@@ -109,7 +105,9 @@ private[orientdb] class OrientDbFlowStage[T, C](
 
   final class OrientDbTypedLogic(clazz: Class[T]) extends OrientDbLogic() {
 
-    protected def sendOSQLBulkInsertRequest(messages: immutable.Seq[OrientDbWriteMessage[T, C]]): Unit = {
+    protected def sendOSQLBulkInsertRequest(client: ODatabaseDocumentTx,
+                                            messages: immutable.Seq[OrientDbWriteMessage[T, C]]): Unit = {
+      val oObjectClient = new OObjectDatabaseTx(client)
       client.setDatabaseOwner(oObjectClient)
       oObjectClient.getEntityManager.registerEntityClass(clazz)
       client.begin(OTransaction.TXTYPE.OPTIMISTIC)
