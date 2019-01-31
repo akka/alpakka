@@ -34,8 +34,6 @@ public class ExampleTest {
 
   static ActorSystem system;
   static Materializer materializer;
-  static DynamoSettings settings;
-  static DynamoClient dynamoClient;
 
   @BeforeClass
   public static void setup() throws Exception {

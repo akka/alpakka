@@ -17,14 +17,12 @@ class TableSpec extends TestKit(ActorSystem("TableSpec")) with AsyncWordSpecLike
   implicit val materializer = ActorMaterializer()
   implicit val ec = system.dispatcher
 
-  val settings = DynamoSettings(system)
-
   override def beforeAll() = {
     System.setProperty("aws.accessKeyId", "someKeyId")
     System.setProperty("aws.secretKey", "someSecretKey")
   }
 
-  "DynamoDB with external client" should {
+  "DynamoDB" should {
 
     import TableSpecOps._
 

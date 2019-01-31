@@ -19,14 +19,12 @@ class ItemSpec extends TestKit(ActorSystem("ItemSpec")) with AsyncWordSpecLike w
   implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val ec: ExecutionContext = system.dispatcher
 
-  val settings = DynamoSettings(system)
-
   override def beforeAll(): Unit = {
     System.setProperty("aws.accessKeyId", "someKeyId")
     System.setProperty("aws.secretKey", "someSecretKey")
   }
 
-  "DynamoDB with external client" should {
+  "DynamoDB" should {
 
     import ItemSpecOps._
 
