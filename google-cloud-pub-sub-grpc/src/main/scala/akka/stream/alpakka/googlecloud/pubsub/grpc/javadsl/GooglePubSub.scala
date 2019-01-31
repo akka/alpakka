@@ -16,6 +16,7 @@ import akka.{Done, NotUsed}
 import com.google.pubsub.v1._
 
 import scala.compat.java8.FutureConverters._
+import scala.concurrent.Future
 
 /**
  * Google Pub/Sub Akka Stream operator factory.
@@ -35,7 +36,7 @@ object GooglePubSub {
           .create[PublishRequest]
           .mapAsyncUnordered(parallelism, javaFunction(publisher().client.publish))
       }
-      .mapMaterializedValue(_ => NotUsed)
+      .mapMaterializedValue(javaFunction(_ => NotUsed))
 
   /**
    * Create a source that emits messages for a given subscription.
@@ -69,9 +70,8 @@ object GooglePubSub {
           .mapConcat(javaFunction(_.getReceivedMessagesList))
           .mapMaterializedValue(javaFunction(_ => cancellable))
       }
-      .mapMaterializedValue(
-        _.map(_.toScala)(ExecutionContexts.sameThreadExecutionContext).flatten.toJava.toCompletableFuture
-      )
+      .mapMaterializedValue(javaFunction(flattenFutureCs))
+      .mapMaterializedValue(javaFunction(_.toCompletableFuture))
 
   /**
    * Create a sink that accepts consumed message acknowledgements.
@@ -88,7 +88,7 @@ object GooglePubSub {
           .mapAsyncUnordered(parallelism, javaFunction(subscriber().client.acknowledge))
           .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
       }
-      .mapMaterializedValue(_.map(_.toScala)(ExecutionContexts.sameThreadExecutionContext).flatten.toJava)
+      .mapMaterializedValue(javaFunction(flattenFutureCs))
 
   /**
    * Helper for creating akka.japi.function.Function instances from Scala
@@ -98,6 +98,11 @@ object GooglePubSub {
     new akka.japi.function.Function[A, B]() {
       override def apply(a: A): B = f(a)
     }
+
+  private def flattenFutureCs[T](f: Future[CompletionStage[T]]): CompletionStage[T] =
+    f.map(_.toScala)(ExecutionContexts.sameThreadExecutionContext)
+      .flatMap(identity)(ExecutionContexts.sameThreadExecutionContext)
+      .toJava
 
   private def publisher()(implicit mat: ActorMaterializer, attr: Attributes) =
     attr
