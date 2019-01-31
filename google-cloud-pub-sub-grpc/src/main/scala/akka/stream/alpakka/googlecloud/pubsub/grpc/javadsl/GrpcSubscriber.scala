@@ -14,14 +14,21 @@ import com.google.pubsub.v1.{SubscriberClient => JavaSubscriberClient}
 /**
  * Holds the gRPC java subscriber client instance.
  */
-final class GrpcSubscriber(sys: ActorSystem, mat: Materializer) {
-  private final val pubSubConfig = PubSubSettings(sys)
+final class GrpcSubscriber private (settings: PubSubSettings, sys: ActorSystem, mat: Materializer) {
 
   @ApiMayChange
   final val client =
-    JavaSubscriberClient.create(AkkaGrpcSettings.fromPubSubSettings(pubSubConfig)(sys), mat, sys.dispatcher)
+    JavaSubscriberClient.create(AkkaGrpcSettings.fromPubSubSettings(settings)(sys), mat, sys.dispatcher)
 
   sys.registerOnTermination(client.close())
+}
+
+object GrpcSubscriber {
+  def create(settings: PubSubSettings, sys: ActorSystem, mat: Materializer): GrpcSubscriber =
+    new GrpcSubscriber(settings, sys, mat)
+
+  def create(sys: ActorSystem, mat: Materializer): GrpcSubscriber =
+    create(PubSubSettings(sys), sys, mat)
 }
 
 /**
@@ -30,7 +37,7 @@ final class GrpcSubscriber(sys: ActorSystem, mat: Materializer) {
 final class GrpcSubscriberExt private (sys: ExtendedActorSystem) extends Extension {
   private[this] val systemMaterializer = ActorMaterializer()(sys)
 
-  implicit val subscriber = new GrpcSubscriber(sys, systemMaterializer)
+  implicit val subscriber = GrpcSubscriber.create(sys, systemMaterializer)
 }
 
 object GrpcSubscriberExt extends ExtensionId[GrpcSubscriberExt] with ExtensionIdProvider {
