@@ -14,7 +14,7 @@ import com.google.pubsub.v1.{PublisherClient => JavaPublisherClient}
 /**
  * Holds the gRPC java publisher client instance.
  */
-final class GrpcPublisher(settings: PubSubSettings, sys: ActorSystem, mat: Materializer) {
+final class GrpcPublisher private (settings: PubSubSettings, sys: ActorSystem, mat: Materializer) {
 
   @ApiMayChange
   final val client =
