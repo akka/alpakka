@@ -30,7 +30,10 @@ private[ftp] trait CommonFtpOperations {
         case file: FTPFile if file.getName != "." && file.getName != ".." =>
           FtpFile(
             file.getName,
-            Paths.get(s"$path/${file.getName}").normalize.toString,
+            if (java.io.File.separatorChar == '\\')
+              Paths.get(s"$path/${file.getName}").normalize.toString.replace('\\', '/')
+            else
+              Paths.get(s"$path/${file.getName}").normalize.toString,
             file.isDirectory,
             file.getSize,
             file.getTimestamp.getTimeInMillis,
