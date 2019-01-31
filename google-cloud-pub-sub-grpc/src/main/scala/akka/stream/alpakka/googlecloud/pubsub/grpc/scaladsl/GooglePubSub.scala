@@ -5,6 +5,7 @@
 package akka.stream.alpakka.googlecloud.pubsub.grpc.scaladsl
 
 import akka.actor.Cancellable
+import akka.dispatch.ExecutionContexts
 import akka.stream.{ActorMaterializer, Attributes}
 import akka.stream.alpakka.googlecloud.pubsub.grpc.impl.Setup
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
@@ -67,7 +68,7 @@ object GooglePubSub {
           .mapConcat(_.receivedMessages.toVector)
           .mapMaterializedValue(_ => cancellable.future)
       }
-      .mapMaterializedValue(_.flatten)
+      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.sameThreadExecutionContext))
 
   /**
    * Create a sink that accepts consumed message acknowledgements.
@@ -83,7 +84,7 @@ object GooglePubSub {
           .mapAsyncUnordered(parallelism)(subscriber().client.acknowledge)
           .toMat(Sink.ignore)(Keep.right)
       }
-      .mapMaterializedValue(_.flatten)
+      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.sameThreadExecutionContext))
 
   private def publisher()(implicit mat: ActorMaterializer, attr: Attributes) =
     attr
