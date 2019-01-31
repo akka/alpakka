@@ -8,11 +8,8 @@ import akka.Done;
 import akka.NotUsed;
 import akka.actor.Cancellable;
 
-// #init-mat
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
-
-// #init-mat
 
 // #publish-single
 import akka.stream.alpakka.googlecloud.pubsub.grpc.PubSubSettings;
