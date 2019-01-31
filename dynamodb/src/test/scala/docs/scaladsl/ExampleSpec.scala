@@ -37,7 +37,7 @@ class ExampleSpec
 
   override def afterAll(): Unit = shutdown()
 
-  "DynamoDB with external client" should {
+  "DynamoDB" should {
 
     "provide a simple usage example" in {
 
