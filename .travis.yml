@@ -59,7 +59,7 @@ jobs:
       - CMD=+geode/testChanged
     - env: CMD=+google-cloud-pub-sub/testChanged
     - env:
-      - PRE_CMD="docker-compose up -d gcloud-pubsub-client"
+      - PRE_CMD="docker-compose up -d gcloud-pubsub-emulator_prep"
       - CMD=+google-cloud-pub-sub-grpc/testChanged
     - env: CMD=+google-fcm/testChanged
     - env: CMD=+hbase/testChanged

@@ -14,7 +14,7 @@ import com.typesafe.config.ConfigFactory
  * Internal API
  */
 @InternalApi private[grpc] object AkkaGrpcSettings {
-  def fromPubSubConfig(config: PubSubSettings)(implicit sys: ActorSystem): GrpcClientSettings = {
+  def fromPubSubSettings(config: PubSubSettings)(implicit sys: ActorSystem): GrpcClientSettings = {
     val sslConfig = config.rootCa.fold("") { rootCa =>
       s"""
       |ssl-config {

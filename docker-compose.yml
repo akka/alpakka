@@ -91,7 +91,7 @@ services:
     ports:
       - "8538:8538"
     command: start --host-port=0.0.0.0:8538 --data-dir=/data
-  gcloud-pubsub-client:
+  gcloud-pubsub-emulator_prep:
     image: martynas/gcloud-pubsub-client
     links:
       - "gcloud-pubsub-emulator"

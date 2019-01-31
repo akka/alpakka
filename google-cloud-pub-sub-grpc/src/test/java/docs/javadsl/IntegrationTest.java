@@ -8,14 +8,14 @@ import akka.Done;
 import akka.NotUsed;
 import akka.actor.Cancellable;
 
-// #init-mat
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 
-// #init-mat
-
 // #publish-single
+import akka.stream.alpakka.googlecloud.pubsub.grpc.PubSubSettings;
 import akka.stream.alpakka.googlecloud.pubsub.grpc.javadsl.GooglePubSub;
+import akka.stream.alpakka.googlecloud.pubsub.grpc.javadsl.GrpcPublisher;
+import akka.stream.alpakka.googlecloud.pubsub.grpc.javadsl.PubSubAttributes;
 import akka.stream.javadsl.*;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.*;
@@ -24,22 +24,23 @@ import com.google.pubsub.v1.*;
 
 import akka.stream.Materializer;
 import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class IntegrationTest {
 
-  // #init-mat
   static final ActorSystem system = ActorSystem.create("IntegrationTest");
   static final Materializer materializer = ActorMaterializer.create(system);
-  // #init-mat
 
   @Test
   public void shouldPublishAMessage()
@@ -59,8 +60,7 @@ public class IntegrationTest {
 
     final Source<PublishRequest, NotUsed> source = Source.single(publishRequest);
 
-    final Flow<PublishRequest, PublishResponse, NotUsed> publishFlow =
-        GooglePubSub.publish(1, system);
+    final Flow<PublishRequest, PublishResponse, NotUsed> publishFlow = GooglePubSub.publish(1);
 
     final CompletionStage<List<PublishResponse>> publishedMessageIds =
         source.via(publishFlow).runWith(Sink.seq(), materializer);
@@ -91,7 +91,7 @@ public class IntegrationTest {
                         .setTopic("projects/" + projectId + "/topics/" + topic)
                         .addAllMessages(messages)
                         .build())
-            .via(GooglePubSub.publish(1, system))
+            .via(GooglePubSub.publish(1))
             .runWith(Sink.seq(), materializer);
     // #publish-fast
 
@@ -114,7 +114,7 @@ public class IntegrationTest {
 
     final Duration pollInterval = Duration.ofSeconds(1);
     final Source<ReceivedMessage, CompletableFuture<Cancellable>> subscriptionSource =
-        GooglePubSub.subscribe(request, pollInterval, system);
+        GooglePubSub.subscribe(request, pollInterval);
     // #subscribe
 
     final CompletionStage<ReceivedMessage> first =
@@ -131,9 +131,7 @@ public class IntegrationTest {
             .addMessages(publishMessage)
             .build();
 
-    Source.single(publishRequest)
-        .via(GooglePubSub.publish(1, system))
-        .runWith(Sink.ignore(), materializer);
+    Source.single(publishRequest).via(GooglePubSub.publish(1)).runWith(Sink.ignore(), materializer);
 
     assertEquals(
         "received and expected messages not the same",
@@ -154,11 +152,10 @@ public class IntegrationTest {
 
     final Duration pollInterval = Duration.ofSeconds(1);
     final Source<ReceivedMessage, CompletableFuture<Cancellable>> subscriptionSource =
-        GooglePubSub.subscribe(request, pollInterval, system);
+        GooglePubSub.subscribe(request, pollInterval);
 
     // #acknowledge
-    final Sink<AcknowledgeRequest, CompletionStage<Done>> ackSink =
-        GooglePubSub.acknowledge(1, system);
+    final Sink<AcknowledgeRequest, CompletionStage<Done>> ackSink = GooglePubSub.acknowledge(1);
 
     subscriptionSource
         .map(
@@ -170,6 +167,17 @@ public class IntegrationTest {
         .map(acks -> AcknowledgeRequest.newBuilder().addAllAckIds(acks).build())
         .to(ackSink);
     // #acknowledge
+  }
+
+  @Test
+  public void customPublisher() {
+    // #attributes
+    final PubSubSettings settings = PubSubSettings.create(system);
+    final GrpcPublisher publisher = GrpcPublisher.create(settings, system, materializer);
+
+    final Flow<PublishRequest, PublishResponse, NotUsed> publishFlow =
+        GooglePubSub.publish(1).withAttributes(PubSubAttributes.publisher(publisher));
+    // #attributes
   }
 
   @AfterClass
