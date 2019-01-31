@@ -152,11 +152,7 @@ public class IronMqDocsTest extends IronMqClientForJava {
     CompletionStage<List<String>> producedIds =
         IronMqConsumer.atLeastOnceConsumerSource(sourceQueue, ironMqSettings)
             .take(messages.size())
-            .map(
-                committableMessage ->
-                    CommittablePushMessage.apply(
-                        PushMessage.create(committableMessage.message().body()),
-                        committableMessage))
+            .map(CommittablePushMessage::create)
             .via(pushAndCommit)
             .runWith(Sink.seq(), materializer);
     // #atLeastOnceFlow

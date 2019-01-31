@@ -83,3 +83,15 @@ object IronMqProducer {
 }
 
 case class CommittablePushMessage[ToCommit](message: PushMessage, toCommit: ToCommit)
+
+object CommittablePushMessage {
+
+  def create[ToCommit](message: PushMessage, toCommit: ToCommit): CommittablePushMessage[ToCommit] =
+    CommittablePushMessage(message, toCommit)
+
+  def create[ToCommit](messageBody: String, toCommit: ToCommit): CommittablePushMessage[ToCommit] =
+    CommittablePushMessage(PushMessage(messageBody), toCommit)
+
+  def create(committableMessage: CommittableMessage): CommittablePushMessage[CommittableMessage] =
+    CommittablePushMessage(PushMessage(committableMessage.message.body), committableMessage)
+}
