@@ -3,6 +3,7 @@ name: "\U0001F41B Bug report"
 about: Create a report to improve Alpakka
 ---
 
+<!--
 ### Are you looking for help?
 
 If you have a [Lightbend Subscription](https://www.lightbend.com/lightbend-platform-subscription), please reach out via the [Lightbend Portal](https://portal.lightbend.com/).
@@ -15,7 +16,7 @@ Please report issues regarding other projects in their respective issue trackers
  - Alpakka Kafka: https://github.com/akka/alpakka-kafka/issues 
 
 Please ask questions or discuss ideas in the [Lightbend discuss forum](https://discuss.lightbend.com/c/akka/streams-and-alpakka).
-
+-->
 
 ## Please add the following sections to your bug report
 
