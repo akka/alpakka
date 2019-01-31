@@ -3,11 +3,12 @@
  */
 
 package docs.scaladsl
-import akka.stream.{FlowShape, Graph}
+
 import akka.stream.alpakka.ironmq.PushMessage
 import akka.stream.alpakka.ironmq.impl.IronMqClientForTests
 import akka.stream.alpakka.ironmq.scaladsl._
 import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
 import akka.{Done, NotUsed}
 import org.scalatest.concurrent.ScalaFutures
@@ -21,15 +22,15 @@ class IronMqDocsSpec extends WordSpec with IronMqClientForTests with Matchers wi
 
   override implicit def patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 250.millis)
 
-  override def afterAll() =
+  override def afterAll(): Unit =
     TestKit.shutdownActorSystem(system)
 
   "IronMqConsumer" should {
-    "read messages" in {
+    "read messages" in assertAllStagesStopped {
       // #atMostOnce
       import akka.stream.alpakka.ironmq.{Message, Queue}
 
-      val queue: Queue = Queue.name("alpakka-sample")
+      val queue: Queue = Queue.ofName("alpakka-sample")
       // #atMostOnce
       givenQueue(queue.name).futureValue
       import akka.stream.alpakka.ironmq.PushMessage
@@ -51,12 +52,12 @@ class IronMqDocsSpec extends WordSpec with IronMqClientForTests with Matchers wi
       receivedMessages.futureValue.map(_.body) should contain theSameElementsInOrderAs messages
     }
 
-    "read messages and allow committing" in {
+    "read messages and allow committing" in assertAllStagesStopped {
       // #atLeastOnce
-      import akka.stream.alpakka.ironmq.{Message, Queue}
       import akka.stream.alpakka.ironmq.scaladsl.CommittableMessage
+      import akka.stream.alpakka.ironmq.{Message, Queue}
 
-      val queue: Queue = Queue.name("alpakka-committing")
+      val queue: Queue = Queue.ofName("alpakka-committing")
       // #atLeastOnce
       givenQueue(queue.name).futureValue
 
@@ -87,14 +88,13 @@ class IronMqDocsSpec extends WordSpec with IronMqClientForTests with Matchers wi
   }
 
   "IronMqProducer" should {
-    "push messages in flow" in {
+    "push messages in flow" in assertAllStagesStopped {
       import akka.stream.alpakka.ironmq.Queue
       val queue: Queue = givenQueue().futureValue
 
       val messageCount = 10
       // #flow
-      import akka.stream.alpakka.ironmq.Message
-      import akka.stream.alpakka.ironmq.PushMessage
+      import akka.stream.alpakka.ironmq.{Message, PushMessage}
 
       val messages: immutable.Seq[String] = (1 to messageCount).map(i => s"test-$i")
       val producedIds: Future[immutable.Seq[Message.Id]] = Source(messages)
@@ -112,7 +112,7 @@ class IronMqDocsSpec extends WordSpec with IronMqClientForTests with Matchers wi
 
     }
 
-    "push messages at-least-once" in {
+    "push messages at-least-once" in assertAllStagesStopped {
       import akka.stream.alpakka.ironmq.Queue
       val sourceQueue: Queue = givenQueue().futureValue
       val targetQueue: Queue = givenQueue().futureValue
@@ -125,8 +125,7 @@ class IronMqDocsSpec extends WordSpec with IronMqClientForTests with Matchers wi
       produced.futureValue shouldBe Done
 
       // #atLeastOnceFlow
-      import akka.stream.alpakka.ironmq.Message
-      import akka.stream.alpakka.ironmq.PushMessage
+      import akka.stream.alpakka.ironmq.{Message, PushMessage}
       import akka.stream.alpakka.ironmq.scaladsl.Committable
 
       val pushAndCommit: Flow[(PushMessage, Committable), Message.Id, NotUsed] =
@@ -151,14 +150,13 @@ class IronMqDocsSpec extends WordSpec with IronMqClientForTests with Matchers wi
 
     }
 
-    "push messages to a sink" in {
+    "push messages to a sink" in assertAllStagesStopped {
       import akka.stream.alpakka.ironmq.Queue
       val queue: Queue = givenQueue().futureValue
 
       val messageCount = 10
       // #sink
-      import akka.stream.alpakka.ironmq.Message
-      import akka.stream.alpakka.ironmq.PushMessage
+      import akka.stream.alpakka.ironmq.{Message, PushMessage}
 
       val messages: immutable.Seq[String] = (1 to messageCount).map(i => s"test-$i")
       val producedIds: Future[Done] = Source(messages)

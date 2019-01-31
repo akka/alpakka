@@ -48,5 +48,5 @@ object Queue {
     override def toString: String = value
   }
 
-  def name(name: String): Queue = Queue(Queue.Name(name))
+  def ofName(name: String): Queue = Queue(Queue.Name(name))
 }

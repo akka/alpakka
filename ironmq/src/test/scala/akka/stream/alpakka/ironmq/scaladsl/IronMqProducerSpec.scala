@@ -8,6 +8,7 @@ import akka.dispatch.ExecutionContexts
 import akka.stream.alpakka.ironmq.{IronMqSettings, IronMqSpec, PushMessage}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.{Done, NotUsed}
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -20,7 +21,7 @@ class IronMqProducerSpec extends IronMqSpec {
   implicit val ec: ExecutionContext = ExecutionContexts.global()
 
   "producerSink" should {
-    "publish messages on IronMq" in {
+    "publish messages on IronMq" in assertAllStagesStopped {
 
       val queue = givenQueue()
       val settings = IronMqSettings()
@@ -42,7 +43,7 @@ class IronMqProducerSpec extends IronMqSpec {
   }
 
   "producerFlow" should {
-    "return published messages' ids" in {
+    "return published messages' ids" in assertAllStagesStopped {
 
       val queue = givenQueue()
       val settings = IronMqSettings()
@@ -59,7 +60,7 @@ class IronMqProducerSpec extends IronMqSpec {
   }
 
   "atLeastOnceProducerFlow" should {
-    "commit the committables" in {
+    "commit the committables" in assertAllStagesStopped {
 
       val queue = givenQueue()
       val settings = IronMqSettings()

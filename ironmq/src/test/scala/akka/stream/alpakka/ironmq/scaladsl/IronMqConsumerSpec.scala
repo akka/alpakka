@@ -10,6 +10,7 @@ import akka.stream.alpakka.ironmq.{IronMqSettings, IronMqSpec, PushMessage}
 import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.ParallelTestExecution
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 
 import scala.concurrent.ExecutionContext
 
@@ -27,7 +28,7 @@ class IronMqConsumerSpec extends IronMqSpec with ParallelTestExecution {
       """.stripMargin).withFallback(super.initConfig())
 
   "atLeastOnceConsumerSource" should {
-    "not delete messages from the queue if not committed" in {
+    "not delete messages from the queue if not committed" in assertAllStagesStopped {
       val queue = givenQueue()
       val numberOfMessages = 10
 
@@ -51,7 +52,7 @@ class IronMqConsumerSpec extends IronMqSpec with ParallelTestExecution {
       ironMqClient.peekMessages(queue.name, 100).futureValue should have size numberOfMessages
     }
 
-    "delete the messages from the queue when committed" in {
+    "delete the messages from the queue when committed" in assertAllStagesStopped {
       val queue = givenQueue()
       val numberOfMessages = 10
 

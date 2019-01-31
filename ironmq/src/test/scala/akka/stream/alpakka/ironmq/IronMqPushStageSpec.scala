@@ -7,6 +7,7 @@ package akka.stream.alpakka.ironmq
 import akka.dispatch.ExecutionContexts
 import akka.stream.alpakka.ironmq.impl.IronMqPushStage
 import akka.stream.scaladsl._
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 
 import scala.concurrent.ExecutionContext
 
@@ -15,7 +16,7 @@ class IronMqPushStageSpec extends IronMqSpec {
   implicit val ec: ExecutionContext = ExecutionContexts.global()
 
   "IronMqPushMessageStage" should {
-    "push messages to the queue" in {
+    "push messages to the queue" in assertAllStagesStopped {
 
       val queue = givenQueue()
       val flow = Flow.fromGraph(new IronMqPushStage(queue.name, IronMqSettings()))

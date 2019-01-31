@@ -40,7 +40,7 @@ Scala
 : @@snip [snip](/ironmq/src/test/scala/docs/scaladsl/IronMqDocsSpec.scala) { #atMostOnce }
 
 Java
-: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #init-settings }
+: @@snip [snip](/ironmq/src/test/java/docs/javadsl/IronMqDocsTest.java) { #atMostOnce }
 
 ### At least once
 
@@ -50,7 +50,7 @@ Scala
 : @@snip [snip](/ironmq/src/test/scala/docs/scaladsl/IronMqDocsSpec.scala) { #atLeastOnce }
 
 Java
-: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #init-settings }
+: @@snip [snip](/ironmq/src/test/java/docs/javadsl/IronMqDocsTest.java) { #atLeastOnce }
 
 
 
@@ -62,6 +62,7 @@ soon as they arrive to the stage.
 The producer is instantiated using the @scala[@scaladoc[IronMqProducer](akka.stream.alpakka.ironmq.scaladsl.IronMqProducer$)]@java[@scaladoc[IronMqProducer](akka.stream.alpakka.ironmq.javadsl.IronMqProducer$)].
 It provides methods to obtain either a `Flow[PushMessage, Messages.Id, NotUsed]` or a `Sink[PushMessage, NotUsed]`.
 
+
 ### Flow
 
 The @scaladoc[PushMessage](akka.stream.alpakka.ironmq.PushMessage) allows to specify the delay per individual message. The message expiration is set a queue level.
@@ -72,7 +73,7 @@ Scala
 : @@snip [snip](/ironmq/src/test/scala/docs/scaladsl/IronMqDocsSpec.scala) { #flow }
 
 Java
-: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #init-settings }
+: @@snip [snip](/ironmq/src/test/java/docs/javadsl/IronMqDocsTest.java) { #flow }
 
 The producer also provides a committable aware Flow/Sink as @scala[`Flow[(PushMessage, Committable), Message.Id, NotUsed]`]@java[`Flow<Pair<PushMessage, Committable>, Message.Id, NotUsed>`].
 It can be used to consume a Flow from an IronMQ consumer or any other source that provides a commit mechanism.
@@ -81,7 +82,7 @@ Scala
 : @@snip [snip](/ironmq/src/test/scala/docs/scaladsl/IronMqDocsSpec.scala) { #atLeastOnceFlow }
 
 Java
-: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #init-settings }
+: @@snip [snip](/ironmq/src/test/java/docs/javadsl/IronMqDocsTest.java) { #atLeastOnceFlow }
 
 
 ### Sink
@@ -90,24 +91,4 @@ Scala
 : @@snip [snip](/ironmq/src/test/scala/docs/scaladsl/IronMqDocsSpec.scala) { #sink }
 
 Java
-: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #init-settings }
-
-
-
-## Running the test code
-
-> Test code requires IronMQ running in the background. You can start it quickly using docker:
->
-> `docker-compose up ironauth ironmq`
-
-Scala
-:   ```
-    sbt
-    > ironmq/testOnly *Spec
-    ```
-
-Java
-:   ```
-    sbt
-    > ironmq/testOnly *Test
-    ```
+: @@snip [snip](/ironmq/src/test/java/docs/javadsl/IronMqDocsTest.java) { #sink }

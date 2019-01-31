@@ -14,9 +14,9 @@ import scala.util.hashing.MurmurHash3
 
 trait IronMqClientForTests {
 
-  implicit val system: ActorSystem = ActorSystem()
-  implicit val materializer: Materializer = ActorMaterializer()
-  implicit def executionContext: ExecutionContext = system.dispatcher
+  implicit def system: ActorSystem = ActorSystem()
+  implicit def materializer: Materializer = ActorMaterializer()
+  implicit lazy val executionContext: ExecutionContext = system.dispatcher
 
   val projectId = s"""${MurmurHash3.stringHash(System.currentTimeMillis().toString)}"""
 
@@ -30,5 +30,11 @@ trait IronMqClientForTests {
 
   def givenQueue(): Future[Queue] =
     givenQueue(Queue.Name(s"test-${UUID.randomUUID()}"))
+
+}
+
+class IronMqClientForJava(_system: ActorSystem, _mat: Materializer) extends IronMqClientForTests {
+  override implicit def system: ActorSystem = _system
+  override implicit def materializer: Materializer = _mat
 
 }

@@ -6,6 +6,7 @@ package akka.stream.alpakka.ironmq
 
 import akka.stream.alpakka.ironmq.impl.IronMqPullStage
 import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -13,7 +14,7 @@ class IronMqPullStageSpec extends IronMqSpec {
 
   "IronMqSourceStage" when {
     "there are messages" should {
-      "consume all messages" in {
+      "consume all messages" in assertAllStagesStopped {
         val queue = givenQueue()
         val messages = (1 to 100).map(i => PushMessage(s"test-$i"))
         ironMqClient.pushMessages(queue.name, messages: _*).futureValue
