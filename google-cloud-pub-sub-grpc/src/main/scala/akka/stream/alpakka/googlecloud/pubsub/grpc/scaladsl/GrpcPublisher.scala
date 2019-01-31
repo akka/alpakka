@@ -14,14 +14,21 @@ import com.google.pubsub.v1.pubsub.{PublisherClient => ScalaPublisherClient}
 /**
  * Holds the gRPC scala publisher client instance.
  */
-final class GrpcPublisher(sys: ActorSystem, mat: Materializer) {
-  private final val pubSubConfig = PubSubSettings(sys)
+final class GrpcPublisher private (settings: PubSubSettings, sys: ActorSystem, mat: Materializer) {
 
   @ApiMayChange
   final val client =
-    ScalaPublisherClient(AkkaGrpcSettings.fromPubSubConfig(pubSubConfig)(sys))(mat, sys.dispatcher)
+    ScalaPublisherClient(AkkaGrpcSettings.fromPubSubSettings(settings)(sys))(mat, sys.dispatcher)
 
   sys.registerOnTermination(client.close())
+}
+
+object GrpcPublisher {
+  def apply(settings: PubSubSettings)(implicit sys: ActorSystem, mat: Materializer): GrpcPublisher =
+    new GrpcPublisher(settings, sys, mat)
+
+  def apply()(implicit sys: ActorSystem, mat: Materializer): GrpcPublisher =
+    apply(PubSubSettings(sys))
 }
 
 /**
@@ -30,7 +37,7 @@ final class GrpcPublisher(sys: ActorSystem, mat: Materializer) {
 final class GrpcPublisherExt private (sys: ExtendedActorSystem) extends Extension {
   private[this] val systemMaterializer = ActorMaterializer()(sys)
 
-  implicit val publisher = new GrpcPublisher(sys, systemMaterializer)
+  implicit val publisher = GrpcPublisher()(sys, systemMaterializer)
 }
 
 object GrpcPublisherExt extends ExtensionId[GrpcPublisherExt] with ExtensionIdProvider {

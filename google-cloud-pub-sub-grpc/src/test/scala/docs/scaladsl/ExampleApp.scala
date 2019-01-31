@@ -52,7 +52,7 @@ object ExampleApp {
     }
   }
 
-  private def publishSingle(args: List[String])(implicit sys: ActorSystem, mat: Materializer) = {
+  private def publishSingle(args: List[String])(implicit mat: Materializer) = {
     val projectId :: topic :: Nil = args
 
     Source
@@ -61,7 +61,7 @@ object ExampleApp {
       .runWith(Sink.head)
   }
 
-  private def publishStream(args: List[String])(implicit sys: ActorSystem, mat: Materializer) = {
+  private def publishStream(args: List[String])(implicit mat: Materializer) = {
     val projectId :: topic :: Nil = args
 
     Source
@@ -78,7 +78,7 @@ object ExampleApp {
       .run()
   }
 
-  private def subscribeStream(args: List[String])(implicit sys: ActorSystem, mat: Materializer) = {
+  private def subscribeStream(args: List[String])(implicit mat: Materializer) = {
     val projectId :: sub :: Nil = args
 
     GooglePubSub

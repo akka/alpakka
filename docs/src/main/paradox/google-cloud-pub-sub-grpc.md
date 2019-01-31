@@ -40,13 +40,13 @@ reference.conf
 Test Configuration
 : @@snip (/google-cloud-pub-sub-grpc/src/test/resources/application.conf)
 
-Prepare the actor system and materializer:
+A manually initialized @scala[@scaladoc[GrpcPublisher](akka.stream.alpakka.googlecloud.pubsub.grpc.scaladsl.GrpcPublisher)]@java[@scaladoc[GrpcPublisher](akka.stream.alpakka.googlecloud.pubsub.grpc.javadsl.GrpcPublisher)] or @scala[@scaladoc[GrpcSubscriber](akka.stream.alpakka.googlecloud.pubsub.grpc.scaladsl.GrpcSubscriber)]@java[@scaladoc[GrpcSubscriber](akka.stream.alpakka.googlecloud.pubsub.grpc.javadsl.GrpcSubscriber)] can be used by providing it as an attribute to the stream:
 
 Scala
-: @@snip (/google-cloud-pub-sub-grpc/src/test/scala/docs/scaladsl/IntegrationSpec.scala) { #init-mat }
+: @@snip (/google-cloud-pub-sub-grpc/src/test/scala/docs/scaladsl/IntegrationSpec.scala) { #attributes }
 
 Java
-: @@snip (/google-cloud-pub-sub-grpc/src/test/java/docs/javadsl/IntegrationTest.java) { #init-mat }
+: @@snip (/google-cloud-pub-sub-grpc/src/test/java/docs/javadsl/IntegrationTest.java) { #attributes }
 
 ## Publishing 
 
