@@ -11,7 +11,6 @@ import akka.stream.alpakka.orientdb.{OrientDbReadResult, OrientDbSourceSettings}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import akka.stream.{ActorAttributes, Attributes, Outlet, SourceShape}
 import com.orientechnologies.orient.`object`.db.OObjectDatabaseTx
-import com.orientechnologies.orient.core.db.ODatabaseRecordThreadLocal
 import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx
 import com.orientechnologies.orient.core.sql.query.OSQLSynchQuery
 
@@ -29,7 +28,9 @@ private[orientdb] final class OrientDbSourceStage[T](className: String,
 
   val out: Outlet[OrientDbReadResult[T]] = Outlet("OrientDBSource.out")
   override val shape = SourceShape(out)
-  override def initialAttributes: Attributes = super.initialAttributes and ActorAttributes.IODispatcher
+  override def initialAttributes: Attributes =
+    // see https://orientdb.com/docs/last/Java-Multi-Threading.html
+    super.initialAttributes.and(ActorAttributes.Dispatcher("alpakka.orientdb.pinned-dispatcher"))
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     clazz match {
@@ -54,6 +55,11 @@ private[orientdb] final class OrientDbSourceStage[T](className: String,
         query match {
           case Some(q) =>
             new Logic {
+              override def preStart(): Unit = {
+                super.preStart()
+                oObjectClient.getEntityManager.registerEntityClass(c)
+              }
+
               override protected def runQuery(): util.List[T] = {
                 client.setDatabaseOwner(oObjectClient)
                 oObjectClient.getEntityManager.registerEntityClass(c)
@@ -62,16 +68,18 @@ private[orientdb] final class OrientDbSourceStage[T](className: String,
             }
           case None =>
             new Logic {
-              override protected def runQuery(): util.List[T] = {
-                client.setDatabaseOwner(oObjectClient)
+              override def preStart(): Unit = {
+                super.preStart()
                 oObjectClient.getEntityManager.registerEntityClass(c)
+              }
+
+              override protected def runQuery(): util.List[T] =
                 oObjectClient
                   .query[util.List[T]](
                     new OSQLSynchQuery[T](
                       s"SELECT * FROM $className SKIP ${skip} LIMIT ${settings.limit}"
                     )
                   )
-              }
             }
         }
 
@@ -91,7 +99,6 @@ private[orientdb] final class OrientDbSourceStage[T](className: String,
 
     override def postStop(): Unit =
       if (client != null) {
-        ODatabaseRecordThreadLocal.instance().set(client)
         if (oObjectClient != null) oObjectClient.close()
         client.close()
       }
@@ -99,7 +106,6 @@ private[orientdb] final class OrientDbSourceStage[T](className: String,
     setHandler(out, this)
 
     override def onPull(): Unit = {
-      ODatabaseRecordThreadLocal.instance().set(client)
       val data = runQuery().asScala.toList
       if (data.isEmpty)
         completeStage()
