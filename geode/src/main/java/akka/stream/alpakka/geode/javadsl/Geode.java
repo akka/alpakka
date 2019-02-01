@@ -23,12 +23,12 @@ import scala.compat.java8.FutureConverters;
 
 import java.util.concurrent.CompletionStage;
 
-/** Reactive geode without server event subscription. Cannot build continuous source. */
-public class ReactiveGeode extends GeodeCache {
+/** Java API: Geode client without server event subscription. */
+public class Geode extends GeodeCache {
 
   final GeodeSettings geodeSettings;
 
-  public ReactiveGeode(GeodeSettings settings) {
+  public Geode(GeodeSettings settings) {
     super(settings);
     this.geodeSettings = settings;
   }
