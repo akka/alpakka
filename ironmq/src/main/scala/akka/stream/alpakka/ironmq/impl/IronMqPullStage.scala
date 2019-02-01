@@ -2,34 +2,41 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.ironmq
+package akka.stream.alpakka.ironmq.impl
 
 import akka.Done
-import akka.stream.stage._
+import akka.annotation.InternalApi
 import akka.stream._
-
-import scala.concurrent.ExecutionContextExecutor
-import scala.util.{Failure, Success}
-import IronMqSettings.ConsumerSettings
+import akka.stream.alpakka.ironmq.IronMqSettings.ConsumerSettings
+import akka.stream.alpakka.ironmq._
 import akka.stream.alpakka.ironmq.scaladsl.CommittableMessage
+import akka.stream.stage._
 
-object IronMqPullStage {
+import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.util.{Failure, Success}
+
+@InternalApi
+private[ironmq] object IronMqPullStage {
 
   private val FetchMessagesTimerKey = "fetch-messages"
 }
 
 /**
+ * Internal API.
+ *
  * This stage will fetch messages from IronMq and buffer them internally.
  *
  * It is implemented as a timed loop, each invocation will fetch new messages from IronMq if the amount of buffered
- * messages is lower than [[ConsumerSettings.bufferMinSize]].
+ * messages is lower than [[akka.stream.alpakka.ironmq.IronMqSettings.ConsumerSettings.bufferMinSize]].
  *
- * The frequency of the loop is controlled by [[ConsumerSettings.fetchInterval]] while the amount of time the client is
+ * The frequency of the loop is controlled by [[akka.stream.alpakka.ironmq.IronMqSettings.ConsumerSettings.fetchInterval]] while the amount of time the client is
  * blocked on the HTTP request waiting for messages is controlled by [[ConsumerSettings.pollTimeout]].
  *
  * Keep in mind that the IronMq time unit is the second, so any value below the second is considered 0.
  */
-class IronMqPullStage(queue: Queue.Name, settings: IronMqSettings) extends GraphStage[SourceShape[CommittableMessage]] {
+@InternalApi
+private[ironmq] final class IronMqPullStage(queueName: String, settings: IronMqSettings)
+    extends GraphStage[SourceShape[CommittableMessage]] {
 
   import IronMqPullStage._
 
@@ -42,7 +49,7 @@ class IronMqPullStage(queue: Queue.Name, settings: IronMqSettings) extends Graph
 
   override val shape: SourceShape[CommittableMessage] = SourceShape(out)
 
-  override def createLogic(inheritedAttributes: Attributes): TimerGraphStageLogic =
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) {
 
       implicit def ec: ExecutionContextExecutor = materializer.executionContext
@@ -53,44 +60,33 @@ class IronMqPullStage(queue: Queue.Name, settings: IronMqSettings) extends Graph
       private var buffer: List[ReservedMessage] = List.empty
       private var client: IronMqClient = _ // set in preStart
 
-      override def preStart(): Unit = {
-        super.preStart()
+      override def preStart(): Unit =
         client = IronMqClient(settings)(ActorMaterializerHelper.downcast(materializer).system, materializer)
-      }
-
-      override def postStop(): Unit =
-        super.postStop()
 
       setHandler(
         out,
         new OutHandler {
 
           override def onPull(): Unit = {
-
             if (!isTimerActive(FetchMessagesTimerKey)) {
               schedulePeriodically(FetchMessagesTimerKey, fetchInterval)
             }
-
             deliveryMessages()
           }
         }
       )
 
       override protected def onTimer(timerKey: Any): Unit = timerKey match {
-
         case FetchMessagesTimerKey =>
           fetchMessages()
-
       }
 
       def fetchMessages(): Unit =
         if (!fetching && buffer.size < bufferMinSize) {
-
           fetching = true
-
           client
             .reserveMessages(
-              queue,
+              queueName,
               bufferMaxSize - buffer.size,
               watch = pollTimeout,
               timeout = reservationTimeout
@@ -109,11 +105,10 @@ class IronMqPullStage(queue: Queue.Name, settings: IronMqSettings) extends Graph
         while (buffer.nonEmpty && isAvailable(out)) {
           val messageToDelivery: ReservedMessage = buffer.head
 
-          val committableMessage = new CommittableMessage {
-            override val message =
-              messageToDelivery.message
-            override def commit() =
-              client.deleteMessages(queue, messageToDelivery.reservation).map(_ => Done)
+          val committableMessage: CommittableMessage = new CommittableMessage {
+            override val message: Message = messageToDelivery.message
+            override def commit(): Future[Done] =
+              client.deleteMessages(queueName, messageToDelivery.reservation).map(_ => Done)
           }
 
           push(out, committableMessage)

@@ -154,7 +154,7 @@ lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, fork in Te
 
 lazy val hdfs = alpakkaProject("hdfs", "hdfs", Dependencies.Hdfs, parallelExecution in Test := false)
 
-lazy val ironmq = alpakkaProject("ironmq", "ironmq", Dependencies.IronMq)
+lazy val ironmq = alpakkaProject("ironmq", "ironmq", Dependencies.IronMq, fork in Test := true)
 
 lazy val jms = alpakkaProject("jms", "jms", Dependencies.Jms, parallelExecution in Test := false)
 

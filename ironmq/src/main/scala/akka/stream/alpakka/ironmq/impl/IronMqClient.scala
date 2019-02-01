@@ -2,9 +2,10 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.ironmq
+package akka.stream.alpakka.ironmq.impl
 
 import akka.actor.ActorSystem
+import akka.annotation.InternalApi
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.HostConnectionPool
 import akka.http.scaladsl.client.RequestBuilding._
@@ -13,6 +14,7 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
+import akka.stream.alpakka.ironmq._
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.{Done, NotUsed}
 import com.typesafe.config.Config
@@ -25,12 +27,15 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 /**
+ * Internal API.
  * An IronMq client based on Akka-http.
  *
  * This client provide a subset of the operation you can do by the IronMQ protocol. It is not intended to be used by
  * the final user but as internal API. Still it could be used to create/list/delete queues if needed.
  */
-class IronMqClient(settings: IronMqSettings)(implicit actorSystem: ActorSystem, materializer: Materializer) {
+@InternalApi
+private[ironmq] final class IronMqClient(settings: IronMqSettings)(implicit actorSystem: ActorSystem,
+                                                                   materializer: Materializer) {
 
   import Codec._
 
@@ -67,9 +72,9 @@ class IronMqClient(settings: IronMqSettings)(implicit actorSystem: ActorSystem, 
    * It support pagination by providing the last queue name and number of desired results. It can also filter by queue
    * name prefix.
    */
-  def listQueues(prefix: Option[String] = None, from: Option[Queue.Name] = None, noOfQueues: Int = 50)(
+  def listQueues(prefix: Option[String] = None, from: Option[String] = None, noOfQueues: Int = 50)(
       implicit ec: ExecutionContext
-  ): Future[Traversable[Queue.Name]] = {
+  ): Future[Traversable[String]] = {
 
     def parseQueues(json: Json) = {
 
@@ -85,7 +90,7 @@ class IronMqClient(settings: IronMqSettings)(implicit actorSystem: ActorSystem, 
             xs.map(extractName)
           }
         }
-        .as[Traversable[Queue.Name]]
+        .as[Traversable[String]]
     }
 
     val query = List(prefix.map("prefix" -> _), from.map("previous" -> _.value))
@@ -104,25 +109,24 @@ class IronMqClient(settings: IronMqSettings)(implicit actorSystem: ActorSystem, 
   /**
    * Create a new queue, with default parameters, with the given name.
    */
-  def createQueue(name: Queue.Name)(implicit ec: ExecutionContext): Future[Queue] =
-    makeRequest(Put(Uri(s"$queuesPath/${name.value}"), Json.obj()))
+  def createQueue(name: String)(implicit ec: ExecutionContext): Future[String] =
+    makeRequest(Put(Uri(s"$queuesPath/${name}"), Json.obj()))
       .flatMap(Unmarshal(_).to[Json])
       .map(_.hcursor.downField("queue").as[Queue])
       .collect {
-        case Right(queue) => queue
+        case Right(queue) => queue.name.value
       }
 
   /**
    * Delete the queue with the given name.
    */
-  def deleteQueue(name: Queue.Name)(implicit ec: ExecutionContext): Future[Done] =
-    makeRequest(Delete(Uri(s"$queuesPath/${name.value}"))).map(_ => Done)
+  def deleteQueue(name: String)(implicit ec: ExecutionContext): Future[Done] =
+    makeRequest(Delete(Uri(s"$queuesPath/${name}"))).map(_ => Done)
 
   /**
    * Produce the given messages to the queue with the given name. Return the ids ot the produced messages.
    */
-  def pushMessages(queueName: Queue.Name,
-                   messages: PushMessage*)(implicit ec: ExecutionContext): Future[Message.Ids] = {
+  def pushMessages(queueName: String, messages: PushMessage*)(implicit ec: ExecutionContext): Future[Message.Ids] = {
 
     val payload = Json.obj(
       "messages" -> Json.fromValues(
@@ -132,7 +136,7 @@ class IronMqClient(settings: IronMqSettings)(implicit actorSystem: ActorSystem, 
       )
     )
 
-    makeRequest(Post(Uri(s"$queuesPath/${queueName.value}/messages"), payload)).flatMap(Unmarshal(_).to[Message.Ids])
+    makeRequest(Post(Uri(s"$queuesPath/${queueName}/messages"), payload)).flatMap(Unmarshal(_).to[Message.Ids])
   }
 
   /**
@@ -147,7 +151,7 @@ class IronMqClient(settings: IronMqSettings)(implicit actorSystem: ActorSystem, 
    * @param watch The amount of time the consumer will wait for more messages to be reserved.
    */
   def reserveMessages(
-      queueName: Queue.Name,
+      queueName: String,
       noOfMessages: Int = 1,
       timeout: Duration = Duration.Undefined,
       watch: Duration = Duration.Undefined
@@ -164,7 +168,7 @@ class IronMqClient(settings: IronMqSettings)(implicit actorSystem: ActorSystem, 
                                  }) deepMerge Json.obj("n" -> Json.fromInt(noOfMessages),
                                                        "delete" -> Json.fromBoolean(false))
 
-    makeRequest(Post(Uri(s"$queuesPath/${queueName.value}/reservations"), payload))
+    makeRequest(Post(Uri(s"$queuesPath/${queueName}/reservations"), payload))
       .flatMap(Unmarshal(_).to[Json])
       .map { json =>
         json.hcursor.downField("messages").as[Iterable[ReservedMessage]]
@@ -184,7 +188,7 @@ class IronMqClient(settings: IronMqSettings)(implicit actorSystem: ActorSystem, 
    * @param noOfMessages The maximum number of messages to consume (It will return a number of messages up to this number)
    * @param watch The amount of time the consumer will wait for more messages to be consumed.
    */
-  def pullMessages(queueName: Queue.Name, noOfMessages: Int = 1, watch: Duration = Duration.Undefined)(
+  def pullMessages(queueName: String, noOfMessages: Int = 1, watch: Duration = Duration.Undefined)(
       implicit ec: ExecutionContext
   ): Future[Iterable[Message]] = {
 
@@ -194,7 +198,7 @@ class IronMqClient(settings: IronMqSettings)(implicit actorSystem: ActorSystem, 
                      Json.Null
                    }) deepMerge Json.obj("n" -> Json.fromInt(noOfMessages), "delete" -> Json.fromBoolean(true))
 
-    makeRequest(Post(Uri(s"$queuesPath/${queueName.value}/reservations"), payload))
+    makeRequest(Post(Uri(s"$queuesPath/${queueName}/reservations"), payload))
       .flatMap(Unmarshal(_).to[Json])
       .map { json =>
         json.hcursor.downField("messages").as[Iterable[Message]]
@@ -211,7 +215,7 @@ class IronMqClient(settings: IronMqSettings)(implicit actorSystem: ActorSystem, 
    * @param reservation The Reservation to be renewed.
    * @param timeout The new reservation timeout.
    */
-  def touchMessage(queueName: Queue.Name, reservation: Reservation, timeout: Duration = Duration.Undefined)(
+  def touchMessage(queueName: String, reservation: Reservation, timeout: Duration = Duration.Undefined)(
       implicit ec: ExecutionContext
   ): Future[Reservation] = {
 
@@ -221,7 +225,7 @@ class IronMqClient(settings: IronMqSettings)(implicit actorSystem: ActorSystem, 
                      Json.Null
                    }) deepMerge Json.obj("reservation_id" -> reservation.reservationId.asJson)
 
-    makeRequest(Post(s"$queuesPath/${queueName.value}/messages/${reservation.messageId}/touch", payload))
+    makeRequest(Post(s"$queuesPath/${queueName}/messages/${reservation.messageId}/touch", payload))
       .flatMap(Unmarshal(_).to[Json])
       .map { json =>
         for {
@@ -244,10 +248,10 @@ class IronMqClient(settings: IronMqSettings)(implicit actorSystem: ActorSystem, 
    * @param queueName The name of the queue to fetch the messages from.
    * @param numberOfMessages The maximum number of the messages to fetch.
    */
-  def peekMessages(queueName: Queue.Name,
+  def peekMessages(queueName: String,
                    numberOfMessages: Int = 1)(implicit ec: ExecutionContext): Future[Iterable[Message]] =
     makeRequest(
-      Get(Uri(s"$queuesPath/${queueName.value}/messages").withQuery(Uri.Query("n" -> numberOfMessages.toString)))
+      Get(Uri(s"$queuesPath/${queueName}/messages").withQuery(Uri.Query("n" -> numberOfMessages.toString)))
     ).flatMap(Unmarshal(_).to[Json])
       .map { json =>
         json.hcursor.downField("messages").as[Iterable[Message]]
@@ -262,11 +266,11 @@ class IronMqClient(settings: IronMqSettings)(implicit actorSystem: ActorSystem, 
    * @param queueName The queue to delete messages from.
    * @param reservations The reservations to be used to delete messages. They should not be already expired.
    */
-  def deleteMessages(queueName: Queue.Name, reservations: Reservation*)(implicit ec: ExecutionContext): Future[Unit] = {
+  def deleteMessages(queueName: String, reservations: Reservation*)(implicit ec: ExecutionContext): Future[Unit] = {
 
     val payload = Json.obj("ids" -> Json.fromValues(reservations.map(_.asJson)))
 
-    makeRequest(Delete(Uri(s"$queuesPath/${queueName.value}/messages"), payload)).map(_ => Unit)
+    makeRequest(Delete(Uri(s"$queuesPath/${queueName}/messages"), payload)).map(_ => Unit)
 
   }
 
@@ -277,13 +281,13 @@ class IronMqClient(settings: IronMqSettings)(implicit actorSystem: ActorSystem, 
    * @param reservation The reservations to be used to release messages. It should not be already expired.
    * @param delay How much time before the message will be available to other consumers.
    */
-  def releaseMessage(queueName: Queue.Name, reservation: Reservation, delay: FiniteDuration = Duration.Zero)(
+  def releaseMessage(queueName: String, reservation: Reservation, delay: FiniteDuration = Duration.Zero)(
       implicit ec: ExecutionContext
   ): Future[Unit] = {
 
     val payload = Json.obj("reservation_id" -> reservation.reservationId.asJson, "delay" -> delay.toSeconds.asJson)
 
-    makeRequest(Post(Uri(s"$queuesPath/${queueName.value}/messages/${reservation.messageId.value}/release"), payload))
+    makeRequest(Post(Uri(s"$queuesPath/${queueName}/messages/${reservation.messageId.value}/release"), payload))
       .map(_ => Unit)
   }
 
@@ -294,8 +298,8 @@ class IronMqClient(settings: IronMqSettings)(implicit actorSystem: ActorSystem, 
    *
    * @param queueName The queue to be purged.
    */
-  def clearMessages(queueName: Queue.Name)(implicit ec: ExecutionContext): Future[Unit] =
-    makeRequest(Delete(Uri(s"$queuesPath/${queueName.value}/messages"), Json.obj())).map(_ => Unit)
+  def clearMessages(queueName: String)(implicit ec: ExecutionContext): Future[Unit] =
+    makeRequest(Delete(Uri(s"$queuesPath/${queueName}/messages"), Json.obj())).map(_ => Unit)
 
   private val queuesPath = s"/3/projects/${settings.projectId}/queues"
 

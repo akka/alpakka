@@ -2,22 +2,24 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.ironmq
+package akka.stream.alpakka.ironmq.impl
 
 import akka.dispatch.ExecutionContexts
+import akka.stream.alpakka.ironmq.{IronMqSettings, IronMqSpec, PushMessage}
 import akka.stream.scaladsl._
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 
 import scala.concurrent.ExecutionContext
 
-class IronMqPushStageSpec extends UnitSpec with IronMqFixture with AkkaStreamFixture {
+class IronMqPushStageSpec extends IronMqSpec {
 
   implicit val ec: ExecutionContext = ExecutionContexts.global()
 
   "IronMqPushMessageStage" should {
-    "push messages to the queue" in {
+    "push messages to the queue" in assertAllStagesStopped {
 
-      val queue = givenQueue()
-      val flow = Flow.fromGraph(new IronMqPushStage(queue.name, IronMqSettings()))
+      val queueName = givenQueue()
+      val flow = Flow.fromGraph(new IronMqPushStage(queueName, IronMqSettings()))
 
       val expectedMessagesBodies = List("test-1", "test-2")
 
@@ -30,7 +32,7 @@ class IronMqPushStageSpec extends UnitSpec with IronMqFixture with AkkaStreamFix
         .run()
         .futureValue
 
-      val consumedMessagesIds = ironMqClient.pullMessages(queue.name, 20).futureValue.map(_.messageId).toSeq
+      val consumedMessagesIds = ironMqClient.pullMessages(queueName, 20).futureValue.map(_.messageId).toSeq
 
       consumedMessagesIds should contain theSameElementsAs producedMessagesIds
     }

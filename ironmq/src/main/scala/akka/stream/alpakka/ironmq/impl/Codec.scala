@@ -2,14 +2,32 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.ironmq
+package akka.stream.alpakka.ironmq.impl
 
-import io.circe.{Decoder, Encoder, Json}
+import akka.stream.alpakka.ironmq.Message
 import io.circe.syntax._
+import io.circe.{Decoder, Encoder, Json}
 
+// required on Scala 2.11
 import cats.syntax.either._
 
-trait Codec {
+/**
+ * Internal API.
+ *
+ * Simplified representation of the IronMq queue for JSON conversion.
+ *
+ * @param name The name associated with this Queue.
+ */
+private case class Queue(name: Queue.Name)
+
+private object Queue {
+
+  case class Name(value: String) extends AnyVal {
+    override def toString: String = value
+  }
+}
+
+private trait Codec {
 
   implicit val messageIdEncoder: Encoder[Message.Id] = Encoder.instance { id =>
     Json.fromString(id.value)
@@ -65,4 +83,4 @@ trait Codec {
   }
 }
 
-object Codec extends Codec
+private object Codec extends Codec
