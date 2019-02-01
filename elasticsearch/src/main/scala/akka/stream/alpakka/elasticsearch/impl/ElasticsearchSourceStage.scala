@@ -49,6 +49,7 @@ private[elasticsearch] final class ElasticsearchSourceStage[T](indexName: String
                                                                settings: ElasticsearchSourceSettings,
                                                                reader: MessageReader[T])
     extends GraphStage[SourceShape[ReadResult[T]]] {
+  require(indexName != null, "You must define an index name")
 
   val out: Outlet[ReadResult[T]] = Outlet("ElasticsearchSource.out")
   override val shape: SourceShape[ReadResult[T]] = SourceShape(out)

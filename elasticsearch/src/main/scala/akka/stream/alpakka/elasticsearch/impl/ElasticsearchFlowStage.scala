@@ -32,6 +32,8 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
     settings: ElasticsearchWriteSettings,
     writer: MessageWriter[T]
 ) extends GraphStage[FlowShape[WriteMessage[T, C], Future[Seq[WriteResult[T, C]]]]] {
+  require(indexName != null, "You must define an index name")
+  require(typeName != null, "You must define a type name")
 
   private val in = Inlet[WriteMessage[T, C]]("messages")
   private val out = Outlet[Future[Seq[WriteResult[T, C]]]]("result")
