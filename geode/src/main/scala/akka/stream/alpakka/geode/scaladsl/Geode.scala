@@ -15,10 +15,13 @@ import org.apache.geode.cache.client.ClientCacheFactory
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 
-class ReactiveGeode(settings: GeodeSettings) extends GeodeCache(settings) {
+/**
+ * Scala API: Geode client without server event subscription.
+ */
+class Geode(settings: GeodeSettings) extends GeodeCache(settings) {
 
   /**
-   * This method will overloaded to provide server event subscription.
+   * This method is overloaded by [[PoolSubscription]] to provide server event subscriptions.
    */
   override protected def configure(factory: ClientCacheFactory): ClientCacheFactory =
     factory.addPoolLocator(settings.hostname, settings.port)
@@ -74,7 +77,7 @@ class ReactiveGeode(settings: GeodeSettings) extends GeodeCache(settings) {
 
 }
 
-trait PoolSubscription extends ReactiveGeode {
+trait PoolSubscription extends Geode {
 
   /**
    * Pool subscription is mandatory for continuous query.
