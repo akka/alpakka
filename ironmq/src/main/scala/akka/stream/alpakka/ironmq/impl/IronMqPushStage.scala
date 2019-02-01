@@ -2,21 +2,26 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.ironmq
+package akka.stream.alpakka.ironmq.impl
 
+import akka.annotation.InternalApi
 import akka.stream._
+import akka.stream.alpakka.ironmq._
 import akka.stream.stage._
 
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
+ * Internal API.
+ *
  * It is a very trivial IronMQ push stage. It push the message to IronMq as soon as they are pushed to this Stage.
  *
  * Because of that it does not guarantee the order of the produced messages and does not apply any backpressure. A more
  * sophisticated implementation will buffer the messages before pushing them and allow only a certain amount of parallel
  * requests.
  */
-class IronMqPushStage(queue: Queue.Name, settings: IronMqSettings)
+@InternalApi
+private[ironmq] class IronMqPushStage(queueName: String, settings: IronMqSettings)
     extends GraphStage[FlowShape[PushMessage, Future[Message.Ids]]] {
 
   val in: Inlet[PushMessage] = Inlet("IronMqPush.in")
@@ -49,7 +54,7 @@ class IronMqPushStage(queue: Queue.Name, settings: IronMqSettings)
           override def onPush(): Unit = {
             val pushMessage = grab(in)
 
-            val future = client.pushMessages(queue, pushMessage)
+            val future = client.pushMessages(queueName, pushMessage)
             runningFutures = runningFutures + 1
             setKeepGoing(true)
 
