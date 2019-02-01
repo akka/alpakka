@@ -18,7 +18,7 @@ import scala.concurrent.Future
  * INTERNAL API
  */
 @InternalApi
-private class GoogleTokenApi(http: => HttpExt) {
+private[fcm] class GoogleTokenApi(http: => HttpExt) {
   import FcmJsonSupport._
 
   protected val encodingAlgorithm: JwtAlgorithm.RS256.type = JwtAlgorithm.RS256
@@ -63,7 +63,7 @@ private class GoogleTokenApi(http: => HttpExt) {
  * INTERNAL API
  */
 @InternalApi
-private object GoogleTokenApi {
+private[fcm] object GoogleTokenApi {
   case class AccessTokenExpiry(accessToken: String, expiresAt: Long)
   case class OAuthResponse(access_token: String, token_type: String, expires_in: Int)
 }

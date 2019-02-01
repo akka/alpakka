@@ -4,17 +4,18 @@
 
 package docs.scaladsl
 
-//#imports
 import akka.actor.ActorSystem
+//#imports
 import akka.stream.alpakka.google.firebase.fcm.FcmNotificationModels._
-import akka.stream.alpakka.google.firebase.fcm.scaladsl.{GoogleFcmFlow, GoogleFcmSink}
-import akka.stream.alpakka.google.firebase.fcm.{FcmFlowConfig, FcmNotification, _}
+import akka.stream.alpakka.google.firebase.fcm.scaladsl.GoogleFcm
+import akka.stream.alpakka.google.firebase.fcm.{FcmSettings, FcmNotification, _}
+
+//#imports
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
 
 import scala.collection.immutable
 import scala.concurrent.Future
-//#imports
 
 class Examples {
 
@@ -36,22 +37,38 @@ class Examples {
       |-----END RSA PRIVATE KEY-----""".stripMargin
   val clientEmail = "test-XXX@test-XXXXX.iam.gserviceaccount.com"
   val projectId = "test-XXXXX"
-  val fcmConfig = FcmFlowConfig(clientEmail, privateKey, projectId)
+  val fcmConfig = FcmSettings(clientEmail, privateKey, projectId)
   //#init-credentials
 
   //#simple-send
   val notification = FcmNotification("Test", "This is a test notification!", Token("token"))
-  Source.single(notification).runWith(GoogleFcmSink.fireAndForget(fcmConfig))
+  Source
+    .single(notification)
+    .runWith(GoogleFcm.fireAndForget(fcmConfig))
   //#simple-send
 
   //#asFlow-send
   val result1: Future[immutable.Seq[FcmResponse]] =
-    Source.single(notification).via(GoogleFcmFlow.send(fcmConfig)).runWith(Sink.seq)
+    Source
+      .single(notification)
+      .via(GoogleFcm.send(fcmConfig))
+      .map {
+        case res @ FcmSuccessResponse(name) =>
+          println(s"Successful $name")
+          res
+        case res @ FcmErrorResponse(errorMessage) =>
+          println(s"Send error $errorMessage")
+          res
+      }
+      .runWith(Sink.seq)
   //#asFlow-send
 
   //#withData-send
   val result2: Future[immutable.Seq[(FcmResponse, String)]] =
-    Source.single((notification, "superData")).via(GoogleFcmFlow.sendWithPassThrough(fcmConfig)).runWith(Sink.seq)
+    Source
+      .single((notification, "superData"))
+      .via(GoogleFcm.sendWithPassThrough(fcmConfig))
+      .runWith(Sink.seq)
   //#withData-send
 
   //#noti-create
