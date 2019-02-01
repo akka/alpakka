@@ -30,10 +30,10 @@ The table below shows direct dependencies of this module and the second tab show
 Prepare your credentials for access to FCM.
 
 Scala
-: @@snip [snip](/google-fcm/src/test/scala/docs/scaladsl/Examples.scala) { #init-credentials }
+: @@snip [snip](/google-fcm/src/test/scala/docs/scaladsl/FcmExamples.scala) { #init-credentials }
 
 Java
-: @@snip [snip](/google-fcm/src/test/java/docs/javadsl/Examples.java) { #init-credentials }
+: @@snip [snip](/google-fcm/src/test/java/docs/javadsl/FcmExamples.java) { #init-credentials }
 
 The last two parameters in the above example are the predefined values. 
 You can send test notifications [(so called validate only).](https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages/send)
@@ -47,10 +47,10 @@ and you may need to configure `akka.http.host-connection-pool.max-open-requests`
 To send a notification message create your notification object, and send it!
 
 Scala
-: @@snip [snip](/google-fcm/src/test/scala/docs/scaladsl/Examples.scala) { #asFlow-send }
+: @@snip [snip](/google-fcm/src/test/scala/docs/scaladsl/FcmExamples.scala) { #imports #asFlow-send }
 
 Java
-: @@snip [snip](/google-fcm/src/test/java/docs/javadsl/Examples.java) { #asFlow-send }
+: @@snip [snip](/google-fcm/src/test/java/docs/javadsl/FcmExamples.java) { #imports #asFlow-send }
 
 With this type of send you can get responses from the server.
 These responses can be @scaladoc[`FcmSuccessResponse`](akka.stream.alpakka.google.firebase.fcm.FcmFlowModels.FcmSuccessResponse) or @scaladoc[`FcmErrorResponse`](akka.stream.alpakka.google.firebase.fcm.FcmFlowModels.FcmErrorResponse). 
@@ -60,20 +60,20 @@ if you try to resend the failed messages you will need to use exponential backof
 If you don't care if the notification was sent successfully, you may use `fireAndForget`.
 
 Scala
-: @@snip [snip](/google-fcm/src/test/scala/docs/scaladsl/Examples.scala) { #imports #simple-send }
+: @@snip [snip](/google-fcm/src/test/scala/docs/scaladsl/FcmExamples.scala) { #imports #simple-send }
 
 Java
-: @@snip [snip](/google-fcm/src/test/java/docs/javadsl/Examples.java) { #imports #simple-send }
+: @@snip [snip](/google-fcm/src/test/java/docs/javadsl/FcmExamples.java) { #imports #simple-send }
 
 With fire and forget you will just send messages and ignore all the errors.
 
 To help the integration and error handling or logging, there is a variation of the flow where you can send data beside your notification.
 
 Scala
-: @@snip [snip](/google-fcm/src/test/scala/docs/scaladsl/Examples.scala) { #withData-send }
+: @@snip [snip](/google-fcm/src/test/scala/docs/scaladsl/FcmExamples.scala) { #imports #withData-send }
 
 Java
-: @@snip [snip](/google-fcm/src/test/java/docs/javadsl/Examples.java) { #withData-send }
+: @@snip [snip](/google-fcm/src/test/java/docs/javadsl/FcmExamples.java) { #imports #withData-send }
 
 Here I send a simple string, but you could use any type.
 
@@ -84,9 +84,9 @@ It can be done by hand, or using some builder method.
 If you build your notification from scratch with options (and not with the provided builders), worth to check isSendable before sending.
 
 Scala
-: @@snip [snip](/google-fcm/src/test/scala/docs/scaladsl/Examples.scala) { #noti-create }
+: @@snip [snip](/google-fcm/src/test/scala/docs/scaladsl/FcmExamples.scala) { #noti-create }
 
 There is a condition builder too.
 
 Scala
-: @@snip [snip](/google-fcm/src/test/scala/docs/scaladsl/Examples.scala) { #condition-builder }
+: @@snip [snip](/google-fcm/src/test/scala/docs/scaladsl/FcmExamples.scala) { #condition-builder }
