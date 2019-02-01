@@ -280,8 +280,8 @@ object Dependencies {
 
   val OrientDB = Seq(
     libraryDependencies ++= Seq(
-      "com.orientechnologies" % "orientdb-graphdb" % "3.0.4", // ApacheV2
-      "com.orientechnologies" % "orientdb-object" % "3.0.4" // ApacheV2
+      "com.orientechnologies" % "orientdb-graphdb" % "3.0.13", // ApacheV2
+      "com.orientechnologies" % "orientdb-object" % "3.0.13" // ApacheV2
     )
   )
 
