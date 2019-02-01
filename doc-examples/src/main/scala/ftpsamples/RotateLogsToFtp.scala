@@ -18,7 +18,11 @@ import scala.util.{Failure, Success}
 
 object RotateLogsToFtp extends ActorSystemAvailable with App {
 
-  val data = ('a' to 'd').flatMap(letter => Seq.fill(10)(ByteString(letter.toString * 100)))
+  // #sample
+  val data = ('a' to 'd') // (1)
+    .flatMap(letter => Seq.fill(10)(ByteString(letter.toString * 100)))
+
+  // (2)
   val rotator = () => {
     var last: Char = ' '
     (bs: ByteString) =>
@@ -32,18 +36,22 @@ object RotateLogsToFtp extends ActorSystemAvailable with App {
       }
   }
 
+  // (3)
   val identity = SftpIdentity.createFileSftpIdentity("<path_to_identity_file>")
   val credentials = FtpCredentials.create("username", "")
   val settings = SftpSettings(InetAddress.getByName("hostname"))
     .withSftpIdentity(identity)
     .withStrictHostKeyChecking(false)
     .withCredentials(credentials)
+
   val sink = (path: Path) =>
     Flow[ByteString]
-      .via(Compression.gzip)
+      .via(Compression.gzip) // (4s)
       .toMat(Sftp.toPath(s"tmp/${path.getFileName.toString}", settings))(Keep.right)
 
   val completion = Source(data).runWith(LogRotatorSink.withSinkFactory(rotator, sink))
+  // #sample
+
   completion.onComplete {
     case Success(_) => println("Done")
     case Failure(f) => println(f.getMessage)
