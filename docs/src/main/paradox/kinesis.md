@@ -23,6 +23,15 @@ This library combines the convenience of Akka Streams with KCL checkpoint manage
 Please read more about it at [GitHub StreetContxt/kcl-akka-stream](https://github.com/StreetContxt/kcl-akka-stream).
 @@@
 
+@@@ note { title="Alternative connector 3" }
+
+Another Kinesis connector which is based on the Kinesis Client Library 2.x is available.
+
+This library exposes an Akka Streams Source backed by the KCL for checkpoint management, failover, load-balancing, and re-sharding capabilities.
+
+Please read more about it at [GitHub 500px/kinesis-stream](https://github.com/500px/kinesis-stream).
+@@@
+
 @@project-info{ projectId="kinesis" }
 
 ## Artifacts
