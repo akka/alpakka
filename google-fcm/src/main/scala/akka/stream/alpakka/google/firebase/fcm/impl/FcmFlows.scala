@@ -19,7 +19,7 @@ import scala.concurrent.Future
 @InternalApi
 private[fcm] object FcmFlows {
 
-  private[fcm] def fcmWithData[T](conf: FcmFlowConfig, http: => HttpExt, sender: FcmSender)(
+  private[fcm] def fcmWithData[T](conf: FcmSettings, http: => HttpExt, sender: FcmSender)(
       implicit materializer: Materializer
   ): Flow[(FcmNotification, T), (FcmResponse, T), NotUsed] = {
     import materializer.executionContext
@@ -33,7 +33,7 @@ private[fcm] object FcmFlows {
       )
   }
 
-  private[fcm] def fcm(conf: FcmFlowConfig, http: => HttpExt, sender: FcmSender)(
+  private[fcm] def fcm(conf: FcmSettings, http: => HttpExt, sender: FcmSender)(
       implicit materializer: Materializer
   ): Flow[FcmNotification, FcmResponse, NotUsed] = {
     import materializer.executionContext

@@ -9,12 +9,8 @@ package docs.javadsl;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
-import akka.stream.alpakka.google.firebase.fcm.FcmFlowConfig;
-import akka.stream.alpakka.google.firebase.fcm.FcmNotification;
-import akka.stream.alpakka.google.firebase.fcm.FcmNotificationModels;
-import akka.stream.alpakka.google.firebase.fcm.FcmResponse;
-import akka.stream.alpakka.google.firebase.fcm.javadsl.GoogleFcmFlow;
-import akka.stream.alpakka.google.firebase.fcm.javadsl.GoogleFcmSink;
+import akka.stream.alpakka.google.firebase.fcm.*;
+import akka.stream.alpakka.google.firebase.fcm.javadsl.GoogleFcm;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 
@@ -44,7 +40,7 @@ public class Examples {
             + "-----END RSA PRIVATE KEY-----";
     String clientEmail = "test-XXX@test-XXXXX.iam.gserviceaccount.com";
     String projectId = "test-XXXXX";
-    FcmFlowConfig fcmConfig = FcmFlowConfig.create(clientEmail, privateKey, projectId);
+    FcmSettings fcmConfig = FcmSettings.create(clientEmail, privateKey, projectId);
     // #init-credentials
 
     // #simple-send
@@ -52,20 +48,31 @@ public class Examples {
         FcmNotification.basic(
             "Test", "This is a test notification!", new FcmNotificationModels.Token("token"));
     Source.single(notification)
-        .runWith(GoogleFcmSink.fireAndForget(fcmConfig, system, materializer), materializer);
+        .runWith(GoogleFcm.fireAndForget(fcmConfig, system, materializer), materializer);
     // #simple-send
 
     // #asFlow-send
     CompletionStage<List<FcmResponse>> result1 =
         Source.single(notification)
-            .via(GoogleFcmFlow.send(fcmConfig, system, materializer))
+            .via(GoogleFcm.send(fcmConfig, system, materializer))
+            .map(
+                res -> {
+                  if (res.isSuccess()) {
+                    FcmSuccessResponse response = (FcmSuccessResponse) res;
+                    System.out.println("Successful " + response.getName());
+                  } else {
+                    FcmErrorResponse response = (FcmErrorResponse) res;
+                    System.out.println("Send error " + response.getRawError());
+                                    }
+                  return res;
+                })
             .runWith(Sink.seq(), materializer);
     // #asFlow-send
 
     // #withData-send
     CompletionStage<List<Pair<FcmResponse, String>>> result2 =
         Source.single(new Pair<FcmNotification, String>(notification, "superData"))
-            .via(GoogleFcmFlow.sendWithPassThrough(fcmConfig, system, materializer))
+            .via(GoogleFcm.sendWithPassThrough(fcmConfig, system, materializer))
             .runWith(Sink.seq(), materializer);
     // #withData-send
 

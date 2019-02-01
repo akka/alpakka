@@ -30,8 +30,9 @@ class FcmSenderSpec
     with Matchers
     with ScalaFutures
     with MockitoSugar
-    with BeforeAndAfterAll
-    with FcmJsonSupport {
+    with BeforeAndAfterAll {
+
+  import FcmJsonSupport._
 
   override def afterAll: Unit =
     TestKit.shutdownActorSystem(system)
