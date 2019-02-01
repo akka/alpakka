@@ -4,31 +4,22 @@
 
 package akka.stream.alpakka.google.firebase.fcm.scaladsl
 
-import akka.{Done, NotUsed}
-import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
-import akka.stream.Materializer
-import akka.stream.alpakka.google.firebase.fcm.{FcmResponse, FcmSettings}
 import akka.stream.alpakka.google.firebase.fcm.impl.{FcmFlows, FcmSender}
-import akka.stream.alpakka.google.firebase.fcm.FcmNotification
+import akka.stream.alpakka.google.firebase.fcm.{FcmNotification, FcmResponse, FcmSettings}
 import akka.stream.scaladsl.{Flow, Keep, Sink}
+import akka.{Done, NotUsed}
 
 import scala.concurrent.Future
 
 object GoogleFcm {
 
-  def sendWithPassThrough[T](
-      conf: FcmSettings
-  )(implicit materializer: Materializer,
-    actorSystem: ActorSystem): Flow[(FcmNotification, T), (FcmResponse, T), NotUsed] =
-    FcmFlows.fcmWithData[T](conf, Http(), new FcmSender)
+  def sendWithPassThrough[T](conf: FcmSettings): Flow[(FcmNotification, T), (FcmResponse, T), NotUsed] =
+    FcmFlows.fcmWithData[T](conf, new FcmSender)
 
-  def send(conf: FcmSettings)(implicit materializer: Materializer,
-                              actorSystem: ActorSystem): Flow[FcmNotification, FcmResponse, NotUsed] =
-    FcmFlows.fcm(conf, Http(), new FcmSender)
+  def send(conf: FcmSettings): Flow[FcmNotification, FcmResponse, NotUsed] =
+    FcmFlows.fcm(conf, new FcmSender)
 
-  def fireAndForget(conf: FcmSettings)(implicit materializer: Materializer,
-                                       actorSystem: ActorSystem): Sink[FcmNotification, Future[Done]] =
-    FcmFlows.fcm(conf, Http(), new FcmSender).toMat(Sink.ignore)(Keep.right)
+  def fireAndForget(conf: FcmSettings): Sink[FcmNotification, Future[Done]] =
+    FcmFlows.fcm(conf, new FcmSender).toMat(Sink.ignore)(Keep.right)
 
 }
