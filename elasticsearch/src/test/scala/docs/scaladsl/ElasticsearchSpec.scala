@@ -859,6 +859,37 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         "Scala for Spark in Production"
       )
     }
+
+    "should throw an IllegalArgumentException if indexName is null when passed to ElasticsearchSource" in {
+      assertThrows[IllegalArgumentException] {
+        ElasticsearchSource
+          .create(
+            indexName = null,
+            typeName = "_doc",
+            query = """{"match_all": {}}"""
+        )
+      }
+    }
+
+    "should throw an IllegalArgumentException if indexName is null when passed to ElasticsearchFlow" in {
+      assertThrows[IllegalArgumentException] {
+        ElasticsearchFlow
+          .create[Book](
+            indexName = null,
+            typeName = "_doc"
+          )
+      }
+    }
+
+    "should throw an IllegalArgumentException if typeName is null when passed to ElasticsearchFlow" in {
+      assertThrows[IllegalArgumentException] {
+        ElasticsearchFlow
+          .create[Book](
+            indexName = "foo",
+            typeName = null
+          )
+      }
+    }
   }
 
   "ElasticsearchSource" should {
