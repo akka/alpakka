@@ -42,7 +42,7 @@ object FcmSettings {
   def apply(
       clientEmail: String,
       privateKey: String,
-      projectid: String,
+      projectid: String
   ): FcmSettings = new FcmSettings(
     clientEmail,
     privateKey,
@@ -55,7 +55,7 @@ object FcmSettings {
   def create(
       clientEmail: String,
       privateKey: String,
-      projectid: String,
+      projectid: String
   ): FcmSettings = new FcmSettings(
     clientEmail,
     privateKey,

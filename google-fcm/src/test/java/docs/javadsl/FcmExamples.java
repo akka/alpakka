@@ -4,7 +4,6 @@
 
 package docs.javadsl;
 
-
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
@@ -18,7 +17,6 @@ import akka.stream.javadsl.Source;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
-
 
 public class FcmExamples {
 
