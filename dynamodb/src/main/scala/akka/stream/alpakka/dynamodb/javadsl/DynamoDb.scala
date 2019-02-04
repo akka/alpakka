@@ -7,83 +7,98 @@ package akka.stream.alpakka.dynamodb.javadsl
 import java.util.concurrent.CompletionStage
 
 import akka.NotUsed
-import akka.actor.ActorSystem
-import akka.stream.alpakka.dynamodb._
-import akka.stream.javadsl.{Flow, Source}
+import akka.stream.Materializer
+import akka.stream.alpakka.dynamodb.{AwsOp, AwsPagedOp}
+import akka.stream.alpakka.dynamodb.scaladsl
+import akka.stream.javadsl.{Flow, Sink, Source}
 import com.amazonaws.services.dynamodbv2.model._
 
 /**
- * A factory of operations that use managed DynamoClient.
+ * Factory of DynamoDb Akka Stream operators.
  */
 object DynamoDb {
 
   /**
    * Create a Flow that emits a response for every request.
-   *
-   * @param sys actor system that will be used to resolved managed DynamoClient
    */
-  def flow[Op <: AwsOp](sys: ActorSystem): Flow[Op, Op#B, NotUsed] =
-    DynamoDbExternal.flow(DynamoClientExt(sys).dynamoClient)
+  def flow[Op <: AwsOp](): Flow[Op, Op#B, NotUsed] =
+    scaladsl.DynamoDb.flow.asJava
 
-  def batchGetItem(request: BatchGetItemRequest, sys: ActorSystem): CompletionStage[BatchGetItemResult] =
-    DynamoDbExternal.batchGetItem(request, DynamoClientExt(sys).dynamoClient)
+  /**
+   * Create a Source that will emit potentially multiple responses for a given request.
+   */
+  def source(op: AwsPagedOp): Source[op.B, NotUsed] =
+    scaladsl.DynamoDb.source(op).asJava
 
-  def createTable(request: CreateTableRequest, sys: ActorSystem): CompletionStage[CreateTableResult] =
-    DynamoDbExternal.createTable(request, DynamoClientExt(sys).dynamoClient)
+  /**
+   * Create a Source that will emit a response for a given request.
+   */
+  def source(op: AwsOp): Source[op.B, NotUsed] =
+    scaladsl.DynamoDb.source(op).asJava
 
-  def deleteItem(request: DeleteItemRequest, sys: ActorSystem): CompletionStage[DeleteItemResult] =
-    DynamoDbExternal.deleteItem(request, DynamoClientExt(sys).dynamoClient)
+  /**
+   * Create a CompletionStage that will be completed with a response to a given request.
+   */
+  def single[Op <: AwsOp](op: Op, mat: Materializer): CompletionStage[Op#B] =
+    source(op).runWith(Sink.head(), mat)
 
-  def deleteTable(request: DeleteTableRequest, sys: ActorSystem): CompletionStage[DeleteTableResult] =
-    DynamoDbExternal.deleteTable(request, DynamoClientExt(sys).dynamoClient)
+  def batchGetItem(request: BatchGetItemRequest): Source[BatchGetItemResult, NotUsed] =
+    scaladsl.DynamoDb.source(request).asJava
 
-  def describeLimits(request: DescribeLimitsRequest, sys: ActorSystem): CompletionStage[DescribeLimitsResult] =
-    DynamoDbExternal.describeLimits(request, DynamoClientExt(sys).dynamoClient)
+  def createTable(request: CreateTableRequest): Source[CreateTableResult, NotUsed] =
+    scaladsl.DynamoDb.source(request).asJava
 
-  def describeTable(request: DescribeTableRequest, sys: ActorSystem): CompletionStage[DescribeTableResult] =
-    DynamoDbExternal.describeTable(request, DynamoClientExt(sys).dynamoClient)
+  def deleteItem(request: DeleteItemRequest): Source[DeleteItemResult, NotUsed] =
+    scaladsl.DynamoDb.source(request).asJava
 
-  def describeTimeToLive(request: DescribeTimeToLiveRequest,
-                         sys: ActorSystem): CompletionStage[DescribeTimeToLiveResult] =
-    DynamoDbExternal.describeTimeToLive(request, DynamoClientExt(sys).dynamoClient)
+  def deleteTable(request: DeleteTableRequest): Source[DeleteTableResult, NotUsed] =
+    scaladsl.DynamoDb.source(request).asJava
 
-  def query(request: QueryRequest, sys: ActorSystem): CompletionStage[QueryResult] =
-    DynamoDbExternal.query(request, DynamoClientExt(sys).dynamoClient)
+  def describeLimits(request: DescribeLimitsRequest): Source[DescribeLimitsResult, NotUsed] =
+    scaladsl.DynamoDb.source(request).asJava
 
-  def queryAll(request: QueryRequest, sys: ActorSystem): Source[QueryResult, NotUsed] =
-    DynamoDbExternal.queryAll(request, DynamoClientExt(sys).dynamoClient)
+  def describeTable(request: DescribeTableRequest): Source[DescribeTableResult, NotUsed] =
+    scaladsl.DynamoDb.source(request).asJava
 
-  def scan(request: ScanRequest, sys: ActorSystem): CompletionStage[ScanResult] =
-    DynamoDbExternal.scan(request, DynamoClientExt(sys).dynamoClient)
+  def describeTimeToLive(request: DescribeTimeToLiveRequest): Source[DescribeTimeToLiveResult, NotUsed] =
+    scaladsl.DynamoDb.source(request).asJava
 
-  def scanAll(request: ScanRequest, sys: ActorSystem): Source[ScanResult, NotUsed] =
-    DynamoDbExternal.scanAll(request, DynamoClientExt(sys).dynamoClient)
+  def query(request: QueryRequest): Source[QueryResult, NotUsed] =
+    scaladsl.DynamoDb.source(request).asJava
 
-  def updateItem(request: UpdateItemRequest, sys: ActorSystem): CompletionStage[UpdateItemResult] =
-    DynamoDbExternal.updateItem(request, DynamoClientExt(sys).dynamoClient)
+  def queryAll(request: QueryRequest): Source[QueryResult, NotUsed] =
+    scaladsl.DynamoDb.source(request).asJava
 
-  def updateTable(request: UpdateTableRequest, sys: ActorSystem): CompletionStage[UpdateTableResult] =
-    DynamoDbExternal.updateTable(request, DynamoClientExt(sys).dynamoClient)
+  def scan(request: ScanRequest): Source[ScanResult, NotUsed] =
+    scaladsl.DynamoDb.source(request).asJava
 
-  def putItem(request: PutItemRequest, sys: ActorSystem): CompletionStage[PutItemResult] =
-    DynamoDbExternal.putItem(request, DynamoClientExt(sys).dynamoClient)
+  def scanAll(request: ScanRequest): Source[ScanResult, NotUsed] =
+    scaladsl.DynamoDb.source(request).asJava
 
-  def batchWriteItem(request: BatchWriteItemRequest, sys: ActorSystem): CompletionStage[BatchWriteItemResult] =
-    DynamoDbExternal.batchWriteItem(request, DynamoClientExt(sys).dynamoClient)
+  def updateItem(request: UpdateItemRequest): Source[UpdateItemResult, NotUsed] =
+    scaladsl.DynamoDb.source(request).asJava
 
-  def getItem(request: GetItemRequest, sys: ActorSystem): CompletionStage[GetItemResult] =
-    DynamoDbExternal.getItem(request, DynamoClientExt(sys).dynamoClient)
+  def updateTable(request: UpdateTableRequest): Source[UpdateTableResult, NotUsed] =
+    scaladsl.DynamoDb.source(request).asJava
 
-  def listTables(request: ListTablesRequest, sys: ActorSystem): CompletionStage[ListTablesResult] =
-    DynamoDbExternal.listTables(request, DynamoClientExt(sys).dynamoClient)
+  def putItem(request: PutItemRequest): Source[PutItemResult, NotUsed] =
+    scaladsl.DynamoDb.source(request).asJava
 
-  def transactGetItems(request: TransactGetItemsRequest, sys: ActorSystem): CompletionStage[TransactGetItemsResult] =
-    DynamoDbExternal.transactGetItems(request, DynamoClientExt(sys).dynamoClient)
+  def batchWriteItem(request: BatchWriteItemRequest): Source[BatchWriteItemResult, NotUsed] =
+    scaladsl.DynamoDb.source(request).asJava
 
-  def transactWriteItems(request: TransactWriteItemsRequest,
-                         sys: ActorSystem): CompletionStage[TransactWriteItemsResult] =
-    DynamoDbExternal.transactWriteItems(request, DynamoClientExt(sys).dynamoClient)
+  def getItem(request: GetItemRequest): Source[GetItemResult, NotUsed] =
+    scaladsl.DynamoDb.source(request).asJava
 
-  def updateTimeToLive(request: UpdateTimeToLiveRequest, sys: ActorSystem): CompletionStage[UpdateTimeToLiveResult] =
-    DynamoDbExternal.updateTimeToLive(request, DynamoClientExt(sys).dynamoClient)
+  def listTables(request: ListTablesRequest): Source[ListTablesResult, NotUsed] =
+    scaladsl.DynamoDb.source(request).asJava
+
+  def transactGetItems(request: TransactGetItemsRequest): Source[TransactGetItemsResult, NotUsed] =
+    scaladsl.DynamoDb.source(request).asJava
+
+  def transactWriteItems(request: TransactWriteItemsRequest): Source[TransactWriteItemsResult, NotUsed] =
+    scaladsl.DynamoDb.source(request).asJava
+
+  def updateTimeToLive(request: UpdateTimeToLiveRequest): Source[UpdateTimeToLiveResult, NotUsed] =
+    scaladsl.DynamoDb.source(request).asJava
 }
