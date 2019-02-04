@@ -112,3 +112,7 @@ Scala
 
 Java
 : @@snip [snip](/file/src/test/java/docs/javadsl/LogRotatorSinkTest.java) { #time }
+
+### Example: content-based rotation with compression to SFTP file
+
+This example can be found in the @ref:[self-contained example documentation section](examples/ftp-samples.md#example-rotate-data-stream-over-to-multiple-compressed-files-on-sftp-server).
