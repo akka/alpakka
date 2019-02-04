@@ -2,26 +2,25 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.google.firebase.fcm.scaladsl
+package docs.scaladsl
+
+import akka.actor.ActorSystem
+//#imports
+import akka.stream.alpakka.google.firebase.fcm.FcmNotificationModels._
+import akka.stream.alpakka.google.firebase.fcm.scaladsl.GoogleFcm
+import akka.stream.alpakka.google.firebase.fcm._
 
 //#imports
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.stream.alpakka.google.firebase.fcm.FcmFlowModels.FcmFlowConfig
-import akka.stream.alpakka.google.firebase.fcm.{FcmFlowModels, FcmNotification}
-import akka.stream.alpakka.google.firebase.fcm.FcmNotificationModels._
 import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.{ActorMaterializer, Materializer}
 
 import scala.collection.immutable
 import scala.concurrent.Future
-//#imports
 
-class Examples {
+class FcmExamples {
 
-  //#init-mat
   implicit val system = ActorSystem()
-  implicit val mat = ActorMaterializer()
-  //#init-mat
+  implicit val mat: Materializer = ActorMaterializer()
 
   //#init-credentials
   val privateKey =
@@ -36,22 +35,38 @@ class Examples {
       |-----END RSA PRIVATE KEY-----""".stripMargin
   val clientEmail = "test-XXX@test-XXXXX.iam.gserviceaccount.com"
   val projectId = "test-XXXXX"
-  val fcmConfig = FcmFlowConfig(clientEmail, privateKey, projectId, isTest = false, maxConcurentConnections = 100)
+  val fcmConfig = FcmSettings(clientEmail, privateKey, projectId)
   //#init-credentials
 
   //#simple-send
   val notification = FcmNotification("Test", "This is a test notification!", Token("token"))
-  Source.single(notification).runWith(GoogleFcmSink.fireAndForget(fcmConfig))
+  Source
+    .single(notification)
+    .runWith(GoogleFcm.fireAndForget(fcmConfig))
   //#simple-send
 
   //#asFlow-send
-  val result1: Future[immutable.Seq[FcmFlowModels.FcmResponse]] =
-    Source.single(notification).via(GoogleFcmFlow.send(fcmConfig)).runWith(Sink.seq)
+  val result1: Future[immutable.Seq[FcmResponse]] =
+    Source
+      .single(notification)
+      .via(GoogleFcm.send(fcmConfig))
+      .map {
+        case res @ FcmSuccessResponse(name) =>
+          println(s"Successful $name")
+          res
+        case res @ FcmErrorResponse(errorMessage) =>
+          println(s"Send error $errorMessage")
+          res
+      }
+      .runWith(Sink.seq)
   //#asFlow-send
 
   //#withData-send
-  val result2: Future[immutable.Seq[(FcmFlowModels.FcmResponse, String)]] =
-    Source.single((notification, "superData")).via(GoogleFcmFlow.sendWithPassThrough(fcmConfig)).runWith(Sink.seq)
+  val result2: Future[immutable.Seq[(FcmResponse, String)]] =
+    Source
+      .single((notification, "superData"))
+      .via(GoogleFcm.sendWithPassThrough(fcmConfig))
+      .runWith(Sink.seq)
   //#withData-send
 
   //#noti-create
