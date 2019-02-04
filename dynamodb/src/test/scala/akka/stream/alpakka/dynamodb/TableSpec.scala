@@ -6,7 +6,7 @@ package akka.stream.alpakka.dynamodb
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.dynamodb.scaladsl.DynamoDbExternal
+import akka.stream.alpakka.dynamodb.scaladsl.DynamoDb
 import akka.testkit.TestKit
 import org.scalatest.{AsyncWordSpecLike, BeforeAndAfterAll, Matchers}
 
@@ -17,53 +17,48 @@ class TableSpec extends TestKit(ActorSystem("TableSpec")) with AsyncWordSpecLike
   implicit val materializer = ActorMaterializer()
   implicit val ec = system.dispatcher
 
-  val settings = DynamoSettings(system)
-
   override def beforeAll() = {
     System.setProperty("aws.accessKeyId", "someKeyId")
     System.setProperty("aws.secretKey", "someSecretKey")
   }
 
-  "DynamoDB with external client" should {
+  "DynamoDB" should {
 
     import TableSpecOps._
-    import akka.stream.alpakka.dynamodb.scaladsl.DynamoImplicits._
-
-    implicit val client = DynamoClient(settings)
 
     "1) create table" in {
-      DynamoDbExternal.single(createTableRequest).map(_.getTableDescription.getTableName shouldEqual tableName)
+      DynamoDb.single(createTableRequest).map(_.getTableDescription.getTableName shouldEqual tableName)
     }
 
     "2) list tables" in {
-      DynamoDbExternal.single(listTablesRequest).map(_.getTableNames.asScala.count(_ == tableName) shouldEqual 1)
+      DynamoDb.single(listTablesRequest).map(_.getTableNames.asScala.count(_ == tableName) shouldEqual 1)
     }
 
     "3) describe table" in {
-      DynamoDbExternal.single(describeTableRequest).map(_.getTable.getTableName shouldEqual tableName)
+      DynamoDb.single(describeTableRequest).map(_.getTable.getTableName shouldEqual tableName)
     }
 
     "4) update table" in {
-      DynamoDbExternal
+      DynamoDb
         .single(describeTableRequest)
         .map(_.getTable.getProvisionedThroughput.getWriteCapacityUnits shouldEqual 10L)
-        .flatMap(_ => DynamoDbExternal.single(updateTableRequest))
+        .flatMap(_ => DynamoDb.single(updateTableRequest))
         .map(_.getTableDescription.getProvisionedThroughput.getWriteCapacityUnits shouldEqual newMaxLimit)
     }
 
     // TODO: Enable this test when DynamoDB Local supports TTLs
     "5) update time to live" ignore {
-      DynamoDbExternal
+      DynamoDb
         .single(describeTimeToLiveRequest)
         .map(_.getTimeToLiveDescription.getAttributeName shouldEqual null)
-        .flatMap(_ => DynamoDbExternal.single(updateTimeToLiveRequest))
+        .flatMap(_ => DynamoDb.single(updateTimeToLiveRequest))
         .map(_.getTimeToLiveSpecification.getAttributeName shouldEqual "expires")
     }
 
     "6) delete table" in {
-      DynamoDbExternal
+      DynamoDb
         .single(deleteTableRequest)
-        .flatMap(_ => DynamoDbExternal.single(listTablesRequest))
+        .flatMap(_ => DynamoDb.single(listTablesRequest))
         .map(_.getTableNames.asScala.count(_ == tableName) shouldEqual 0)
     }
 
