@@ -7,32 +7,32 @@ package akka.stream.alpakka.google.firebase.fcm
 final class FcmSettings private (
     val clientEmail: String,
     val privateKey: String,
-    val projectid: String,
+    val projectId: String,
     val isTest: Boolean,
-    val maxConcurentConnections: Int
+    val maxConcurrentConnections: Int
 ) {
 
   def withClientEmail(value: String): FcmSettings = copy(clientEmail = value)
   def withPrivateKey(value: String): FcmSettings = copy(privateKey = value)
-  def withProjectid(value: String): FcmSettings = copy(projectid = value)
+  def withProjectId(value: String): FcmSettings = copy(projectId = value)
   def withIsTest(value: Boolean): FcmSettings = if (isTest == value) this else copy(isTest = value)
-  def withMaxConcurentConnections(value: Int): FcmSettings = copy(maxConcurentConnections = value)
+  def withMaxConcurrentConnections(value: Int): FcmSettings = copy(maxConcurrentConnections = value)
 
   private def copy(
       clientEmail: String = clientEmail,
       privateKey: String = privateKey,
-      projectid: String = projectid,
+      projectId: String = projectId,
       isTest: Boolean = isTest,
-      maxConcurentConnections: Int = maxConcurentConnections
+      maxConcurrentConnections: Int = maxConcurrentConnections
   ): FcmSettings =
     new FcmSettings(clientEmail = clientEmail,
                     privateKey = privateKey,
-                    projectid = projectid,
+                    projectId = projectId,
                     isTest = isTest,
-                    maxConcurentConnections = maxConcurentConnections)
+                    maxConcurrentConnections = maxConcurrentConnections)
 
   override def toString =
-    s"""FcmFlowConfig(clientEmail=$clientEmail,projectid=$projectid,isTest=$isTest,maxConcurentConnections=$maxConcurentConnections)"""
+    s"""FcmFlowConfig(clientEmail=$clientEmail,projectId=$projectId,isTest=$isTest,maxConcurrentConnections=$maxConcurrentConnections)"""
 
 }
 
@@ -42,25 +42,25 @@ object FcmSettings {
   def apply(
       clientEmail: String,
       privateKey: String,
-      projectid: String
+      projectId: String
   ): FcmSettings = new FcmSettings(
     clientEmail,
     privateKey,
-    projectid,
+    projectId,
     isTest = false,
-    maxConcurentConnections = 100
+    maxConcurrentConnections = 100
   )
 
   /** Java API */
   def create(
       clientEmail: String,
       privateKey: String,
-      projectid: String
+      projectId: String
   ): FcmSettings = new FcmSettings(
     clientEmail,
     privateKey,
-    projectid,
+    projectId,
     isTest = false,
-    maxConcurentConnections = 100
+    maxConcurrentConnections = 100
   )
 }
