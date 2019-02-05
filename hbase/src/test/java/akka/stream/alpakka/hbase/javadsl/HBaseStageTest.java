@@ -11,7 +11,6 @@ import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.hbase.HTableSettings;
-import akka.stream.alpakka.hbase.Utils.DNSUtils;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
@@ -49,7 +48,6 @@ public class HBaseStageTest {
   public static void setup() {
     system = ActorSystem.create();
     materializer = ActorMaterializer.create(system);
-    DNSUtils.setupDNS("hbase");
   }
 
   @AfterClass
