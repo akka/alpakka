@@ -60,6 +60,8 @@ import static org.junit.Assert.assertEquals;
 
 public class MqttFlowTest {
 
+  private static int TIMEOUT_SECONDS = 5;
+
   private static ActorSystem system;
   private static Materializer materializer;
 
@@ -126,7 +128,7 @@ public class MqttFlowTest {
     // #run-streaming-flow
 
     CompletionStage<Publish> event = run.second();
-    Publish publishEvent = event.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    Publish publishEvent = event.toCompletableFuture().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
     assertEquals(publishEvent.topicName(), topic);
     assertEquals(publishEvent.payload(), ByteString.fromString("ohi"));
   }
@@ -215,7 +217,7 @@ public class MqttFlowTest {
         bindSource.toMat(Sink.ignore(), Keep.left()).run(materializer);
     // #run-streaming-bind-flow
 
-    bound.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    bound.toCompletableFuture().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
     Flow<ByteString, ByteString, CompletionStage<Tcp.OutgoingConnection>> connection =
         Tcp.get(system).outgoingConnection(host, port);
@@ -251,7 +253,7 @@ public class MqttFlowTest {
                 ByteString.fromString("ohi"))));
 
     CompletionStage<Publish> event = run.second();
-    Publish publish = event.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    Publish publish = event.toCompletableFuture().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
     assertEquals(publish.topicName(), topic);
     assertEquals(publish.payload(), ByteString.fromString("ohi"));
   }
