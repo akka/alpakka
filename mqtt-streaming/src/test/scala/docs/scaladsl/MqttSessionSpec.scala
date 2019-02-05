@@ -223,51 +223,6 @@ class MqttSessionSpec
       result.failed.futureValue shouldBe an[ActorMqttClientSession.SubscribeFailed.type]
     }
 
-    "Subscribe and stash any subsequent subscriptions" in {
-      val session = ActorMqttClientSession(settings)
-
-      val server = TestProbe()
-      val pipeToServer = Flow[ByteString].mapAsync(1)(msg => server.ref.ask(msg).mapTo[ByteString])
-
-      val connect = Connect("some-client-id", ConnectFlags.None)
-      val subscribe = Subscribe("some-topic")
-
-      val (client, result) =
-        Source
-          .queue[Command[String]](1, OverflowStrategy.fail)
-          .via(
-            Mqtt
-              .clientSessionFlow(session)
-              .join(pipeToServer)
-          )
-          .drop(2)
-          .toMat(Sink.head)(Keep.both)
-          .run()
-
-      val connectBytes = connect.encode(ByteString.newBuilder).result()
-      val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
-      val connAckBytes = connAck.encode(ByteString.newBuilder).result()
-
-      val subscribeBytes = subscribe.encode(ByteString.newBuilder, PacketId(1)).result()
-      val subAck = SubAck(PacketId(1), List(ControlPacketFlags.QoSAtLeastOnceDelivery))
-      val subAckBytes = subAck.encode(ByteString.newBuilder).result()
-
-      client.offer(Command(connect))
-      client.offer(Command(subscribe))
-      client.offer(Command(subscribe))
-
-      server.expectMsg(connectBytes)
-      server.reply(connAckBytes)
-
-      server.expectMsg(subscribeBytes)
-      server.reply(subAckBytes)
-
-      server.expectMsg(subscribeBytes)
-      server.reply(subAckBytes)
-
-      result.futureValue shouldBe Right(Event(subAck))
-    }
-
     "disconnect when connected" in {
       val session = ActorMqttClientSession(settings)
 
@@ -954,6 +909,7 @@ class MqttSessionSpec
             e match {
               case Right(Event(`unsubAck`, None)) =>
                 unsubAckReceived.success(Done)
+              case _ =>
             }
           }
           .takeWhile {
