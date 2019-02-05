@@ -106,6 +106,19 @@ services:
         python publisher.py alpakka create testTopic &&
         python subscriber.py alpakka create testTopic testSubscription
       "
+  hbase:
+    image: harisekhon/hbase:1.2
+    ports:
+      - 2181:2181
+      - 8080:8080
+      - 8085:8085
+      - 9090:9090
+      - 9095:9095
+      - 16000:16000
+      - 16010:16010
+      - 16201:16201
+      - 16030:16030
+      - 16301:16301
   ironauth:
     image: iron/auth
     ports:
@@ -182,17 +195,3 @@ services:
     environment:
       - "ORIENTDB_ROOT_PASSWORD=root"
     command: /orientdb/bin/server.sh -Dmemory.chunk.size=268435456
-  zookeeper:
-    image: zookeeper
-    ports:
-      - 2181:2181
-  hbase:
-    image: yiftizur/hbase-docker:ver-1.2.4
-    hostname: hbase
-    ports:
-      - 60000:60000
-      - 60010:60010
-      - 60020:60020
-      - 60030:60030
-    links:
-      - zookeeper:zookeeper
