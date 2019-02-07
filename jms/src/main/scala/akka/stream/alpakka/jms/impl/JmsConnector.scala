@@ -101,9 +101,12 @@ trait JmsConnector[S <: JmsSession] {
 
   protected def connectionFailed(ex: Throwable): Unit = ex match {
     case ex: jms.JMSSecurityException =>
-      log.error(ex,
-                "{} initializing connection failed, security settings are not properly configured",
-                attributes.nameLifted.mkString)
+      log.error(
+        ex,
+        "{} initializing connection failed, security settings are not properly configured for destination[{}]",
+        attributes.nameLifted.mkString,
+        destination.name
+      )
       publishAndFailStage(ex)
 
     case _: jms.JMSException | _: JmsConnectTimedOut => handleRetriableException(ex)
@@ -112,7 +115,7 @@ trait JmsConnector[S <: JmsSession] {
       connectionState match {
         case _: JmsConnectorStopping | _: JmsConnectorStopped => logStoppingException(ex)
         case _ =>
-          log.error(ex, "{} connection failed", attributes.nameLifted.mkString)
+          log.error(ex, "{} connection failed for destination[{}]", attributes.nameLifted.mkString, destination.name)
           publishAndFailStage(ex)
       }
   }
@@ -163,7 +166,10 @@ trait JmsConnector[S <: JmsSession] {
       }
 
     case Failure(ex) =>
-      log.error(ex, "{} initializing connection failed", attributes.nameLifted.mkString)
+      log.error(ex,
+                "{} initializing connection failed for destination[{}]",
+                attributes.nameLifted.mkString,
+                destination.name)
       publishAndFailStage(ex)
   }
 
@@ -177,7 +183,10 @@ trait JmsConnector[S <: JmsSession] {
       val exception =
         if (maxRetries == 0) ex
         else ConnectionRetryException(s"Could not establish connection after $maxRetries retries.", ex)
-      log.error(exception, "{} initializing connection failed", attributes.nameLifted.mkString)
+      log.error(exception,
+                "{} initializing connection failed for destination[{}]",
+                attributes.nameLifted.mkString,
+                destination.name)
       publishAndFailStage(exception)
     } else {
       val status = updateState(JmsConnectorDisconnected)
