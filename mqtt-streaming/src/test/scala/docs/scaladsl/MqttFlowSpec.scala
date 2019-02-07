@@ -109,8 +109,7 @@ class MqttFlowSpec
                   case Right(Event(_: Connect, _)) =>
                     queue.offer(Command(ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)))
                   case Right(Event(cp: Subscribe, _)) =>
-                    queue.offer(Command(SubAck(cp.packetId, cp.topicFilters.map(_._2))))
-                    subscribed.success(Done)
+                    queue.offer(Command(SubAck(cp.packetId, cp.topicFilters.map(_._2)), Some(subscribed), None))
                   case Right(Event(publish @ Publish(flags, _, Some(packetId), _), _))
                       if flags.contains(ControlPacketFlags.RETAIN) =>
                     queue.offer(Command(PubAck(packetId)))

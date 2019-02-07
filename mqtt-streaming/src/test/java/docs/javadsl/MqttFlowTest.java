@@ -49,6 +49,7 @@ import scala.collection.JavaConverters;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
@@ -194,8 +195,11 @@ public class MqttFlowTest {
                                     .stream()
                                     .map(x -> x._2().underlying())
                                     .collect(Collectors.toList());
-                            queue.offer(new Command<>(new SubAck(subscribe.packetId(), flags)));
-                            subscribed.complete(Done.getInstance());
+                            queue.offer(
+                                new Command<>(
+                                    new SubAck(subscribe.packetId(), flags),
+                                    Optional.of(subscribed),
+                                    Optional.empty()));
                           } else if (cp instanceof Publish) {
                             Publish publish = (Publish) cp;
                             if ((publish.flags() & ControlPacketFlags.RETAIN()) != 0) {
