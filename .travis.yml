@@ -67,7 +67,9 @@ jobs:
     - env:
       - PRE_CMD="docker-compose up -d ironauth ironmq"
       - CMD=+ironmq/testChanged
-    - env: CMD=+jms/testChanged
+    - env:
+      - PRE_CMD="docker-compose up -d ibmmq"
+      - CMD=+jms/testChanged
     - env: CMD=+json-streaming/testChanged
     - env: CMD=+kinesis/testChanged
     - env:
