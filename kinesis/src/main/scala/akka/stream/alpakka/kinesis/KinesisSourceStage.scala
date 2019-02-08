@@ -65,8 +65,9 @@ class KinesisSourceStage(shardSettings: ShardSettings, amazonKinesisAsync: => Am
           self.become(awaitingRecords)
           requestRecords(self.ref)
         }
-        case ((_, GetShardIteratorFailure(_))) => {
+        case ((_, GetShardIteratorFailure(ex))) => {
           log.error("Failed to get a shard iterator for shard {}", shardId)
+          log.error(ex.getMessage)
           failStage(Errors.GetShardIteratorError)
         }
         case ((_, Pump)) => ()
