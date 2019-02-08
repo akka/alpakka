@@ -341,12 +341,12 @@ import scala.util.{Failure, Success}
             remote.success(ForwardDisconnect)
             timer.cancel(SendPingreq)
             disconnect(context, data.remote, data)
-          case (context, SubscribeReceivedLocally(subscribe, subscribeData, remote)) =>
+          case (context, SubscribeReceivedLocally(_, subscribeData, remote)) =>
             context.watch(
               context.spawnAnonymous(Subscriber(subscribeData, remote, data.subscriberPacketRouter, data.settings))
             )
             serverConnected(data)
-          case (context, UnsubscribeReceivedLocally(unsubscribe, unsubscribeData, remote)) =>
+          case (context, UnsubscribeReceivedLocally(_, unsubscribeData, remote)) =>
             context.watch(
               context
                 .spawnAnonymous(Unsubscriber(unsubscribeData, remote, data.unsubscriberPacketRouter, data.settings))
