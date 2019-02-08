@@ -490,21 +490,7 @@ import scala.util.{Failure, Success}
             unsubscribed.future.foreach(_ => context.self ! Unsubscribed(unsubscribe))(context.executionContext)
             clientConnected(data)
           case (context, Unsubscribed(unsubscribe)) =>
-            val unsubscribableProducers =
-              for ((topicName, producer) <- data.activeProducers;
-                   topicFilter <- unsubscribe.topicFilters
-                   if Topics.filter(topicFilter, topicName)) yield topicName -> producer
-
-            unsubscribableProducers.foreach { case (_, producer) => context.stop(producer) }
-
-            clientConnected(
-              data.copy(
-                publishers = data.publishers -- unsubscribe.topicFilters,
-                activeProducers = data.activeProducers -- unsubscribableProducers.map {
-                  case (topicName, _) => topicName
-                }
-              )
-            )
+            clientConnected(data.copy(publishers = data.publishers -- unsubscribe.topicFilters))
           case (_, PublishReceivedFromRemote(publish, local))
               if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
             local.success(Consumer.ForwardPublish)
