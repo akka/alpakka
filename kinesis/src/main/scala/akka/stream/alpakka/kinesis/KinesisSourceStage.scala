@@ -47,7 +47,7 @@ class KinesisSourceStage(shardSettings: ShardSettings, amazonKinesisAsync: => Am
       import shardSettings._
 
       private[this] var iterator: String = _
-      private[this] var buffer = mutable.Queue.empty[Record]
+      private[this] val buffer = mutable.Queue.empty[Record]
       private[this] var self: StageActor = _
 
       override def preStart(): Unit = {
