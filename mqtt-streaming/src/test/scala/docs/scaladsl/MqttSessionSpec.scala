@@ -1413,13 +1413,6 @@ class MqttSessionSpec
       val session = ActorMqttServerSession(settings)
 
       val client = TestProbe()
-      val toClient = Sink.foreach[ByteString](bytes => client.ref ! bytes)
-      val (fromClientQueue, fromClient) = Source
-        .queue[ByteString](1, OverflowStrategy.dropHead)
-        .toMat(BroadcastHub.sink)(Keep.both)
-        .run()
-
-      val pipeToClient = Flow.fromSinkAndSource(toClient, fromClient)
 
       val connect = Connect("some-client-id", ConnectFlags.None)
       val firstConnectReceived = Promise[Done]
@@ -1434,8 +1427,18 @@ class MqttSessionSpec
       val publish = Publish("some-topic", ByteString("some-payload"))
       val publishReceived = Promise[Done]
 
-      def server(connectionId: ByteString): SourceQueueWithComplete[Command[Nothing]] =
-        Source
+      def server(
+          connectionId: ByteString
+      ): (SourceQueueWithComplete[ByteString], SourceQueueWithComplete[Command[Nothing]]) = {
+        val toClient = Sink.foreach[ByteString](bytes => client.ref ! bytes)
+        val (fromClientQueue, fromClient) = Source
+          .queue[ByteString](1, OverflowStrategy.dropHead)
+          .toMat(BroadcastHub.sink)(Keep.both)
+          .run()
+
+        val pipeToClient = Flow.fromSinkAndSource(toClient, fromClient)
+
+        val connection = Source
           .queue[Command[Nothing]](1, OverflowStrategy.fail)
           .via(
             Mqtt
@@ -1456,6 +1459,8 @@ class MqttSessionSpec
           })
           .toMat(Sink.ignore)(Keep.left)
           .run()
+        fromClientQueue -> connection
+      }
 
       val connectBytes = connect.encode(ByteString.newBuilder).result()
       val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
@@ -1471,16 +1476,16 @@ class MqttSessionSpec
       val pubAck = PubAck(PacketId(1))
       val pubAckBytes = pubAck.encode(ByteString.newBuilder).result()
 
-      val serverConnection1 = server(ByteString(0))
+      val (fromClientQueue1, serverConnection1) = server(ByteString(0))
 
-      fromClientQueue.offer(connectBytes)
+      fromClientQueue1.offer(connectBytes)
 
       firstConnectReceived.future.futureValue shouldBe Done
 
       serverConnection1.offer(Command(connAck))
       client.expectMsg(connAckBytes)
 
-      fromClientQueue.offer(subscribeBytes)
+      fromClientQueue1.offer(subscribeBytes)
 
       subscribeReceived.future.futureValue shouldBe Done
 
@@ -1488,23 +1493,23 @@ class MqttSessionSpec
       client.expectMsg(subAckBytes)
 
       if (explicitDisconnect) {
-        fromClientQueue.offer(disconnectBytes)
+        fromClientQueue1.offer(disconnectBytes)
 
         disconnectReceived.future.futureValue shouldBe Done
       } else {
         serverConnection1.complete()
       }
 
-      val serverConnection2 = server(ByteString(1))
+      val (fromClientQueue2, serverConnection2) = server(ByteString(1))
 
-      fromClientQueue.offer(connectBytes)
+      fromClientQueue2.offer(connectBytes)
 
       secondConnectReceived.future.futureValue shouldBe Done
 
       serverConnection2.offer(Command(connAck))
       client.expectMsg(connAckBytes)
 
-      fromClientQueue.offer(publishBytes)
+      fromClientQueue2.offer(publishBytes)
 
       publishReceived.future.futureValue shouldBe Done
 
