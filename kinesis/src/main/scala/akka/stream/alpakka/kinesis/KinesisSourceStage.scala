@@ -60,21 +60,21 @@ class KinesisSourceStage(shardSettings: ShardSettings, amazonKinesisAsync: => Am
       })
 
       private def awaitingShardIterator(in: (ActorRef, Any)): Unit = in match {
-        case ((_, GetShardIteratorSuccess(result))) => {
+        case (_, GetShardIteratorSuccess(result)) => {
           iterator = result.getShardIterator
           self.become(awaitingRecords)
           requestRecords(self.ref)
         }
-        case ((_, GetShardIteratorFailure(ex))) => {
+        case (_, GetShardIteratorFailure(ex)) => {
           log.error("Failed to get a shard iterator for shard {}", shardId)
           log.error(ex.getMessage)
           failStage(Errors.GetShardIteratorError)
         }
-        case ((_, Pump)) => ()
+        case (_, Pump) => ()
       }
 
       private def awaitingRecords(in: (ActorRef, Any)): Unit = in match {
-        case ((_, GetRecordsSuccess(result))) => {
+        case (_, GetRecordsSuccess(result)) => {
           val records = result.getRecords.asScala
           Option(result.getNextShardIterator).fold {
             log.info("Shard {} returned a null iterator and will now complete.", shardId)
@@ -90,15 +90,15 @@ class KinesisSourceStage(shardSettings: ShardSettings, amazonKinesisAsync: => Am
             scheduleOnce('GET_RECORDS, refreshInterval)
           }
         }
-        case ((_, GetRecordsFailure(_))) => {
+        case (_, GetRecordsFailure(_)) => {
           log.error("Failed to fetch records from Kinesis for shard {}", shardId)
           failStage(Errors.GetRecordsError)
         }
-        case ((_, Pump)) => ()
+        case (_, Pump) => ()
       }
 
       private def ready(in: (ActorRef, Any)): Unit = in match {
-        case ((_, Pump)) => {
+        case (_, Pump) => {
           if (isAvailable(shape.out)) {
             push(shape.out, buffer.dequeue())
             self.ref ! Pump
