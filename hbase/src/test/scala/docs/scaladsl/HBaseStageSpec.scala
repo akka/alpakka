@@ -2,12 +2,13 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.hbase.scaladsl
+package docs.scaladsl
 
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.hbase.HTableSettings
+import akka.stream.alpakka.hbase.scaladsl.HTableStage
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
 import org.apache.hadoop.hbase.client._
@@ -17,8 +18,8 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 import scala.collection.immutable
-import scala.language.implicitConversions
 import scala.concurrent.duration._
+import scala.language.implicitConversions
 
 class HBaseStageSpec
     extends TestKit(ActorSystem("HBaseStageSpec"))

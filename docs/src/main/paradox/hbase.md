@@ -27,34 +27,34 @@ Converters map the domain object to a list of HBase mutations (`Append`, `Delete
 ### Put
 
 Scala
-:   @@snip [snip](/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #create-converter-put }
+:   @@snip [snip](/hbase/src/test/scala/docs/scaladsl/HBaseStageSpec.scala) { #create-converter-put }
 
 Java
-:   @@snip [snip](/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #create-converter-put }
+:   @@snip [snip](/hbase/src/test/java/docs/javadsl/HBaseStageTest.java) { #create-converter-put }
 
 ### Append
 
 Scala
-:   @@snip [snip](/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #create-converter-append }
+:   @@snip [snip](/hbase/src/test/scala/docs/scaladsl/HBaseStageSpec.scala) { #create-converter-append }
 
 Java
-:   @@snip [snip](/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #create-converter-append }
+:   @@snip [snip](/hbase/src/test/java/docs/javadsl/HBaseStageTest.java) { #create-converter-append }
 
 ### Delete
 
 Scala
-:   @@snip [snip](/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #create-converter-delete }
+:   @@snip [snip](/hbase/src/test/scala/docs/scaladsl/HBaseStageSpec.scala) { #create-converter-delete }
 
 Java
-:   @@snip [snip](/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #create-converter-delete }
+:   @@snip [snip](/hbase/src/test/java/docs/javadsl/HBaseStageTest.java) { #create-converter-delete }
 
 ### Increment
 
 Scala
-:   @@snip [snip](/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #create-converter-increment }
+:   @@snip [snip](/hbase/src/test/scala/docs/scaladsl/HBaseStageSpec.scala) { #create-converter-increment }
 
 Java
-:   @@snip [snip](/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #create-converter-increment }
+:   @@snip [snip](/hbase/src/test/java/docs/javadsl/HBaseStageTest.java) { #create-converter-increment }
 
 ### Complex and noop mutations
 
@@ -62,10 +62,10 @@ To ignore an object return an empty `List` - this will have no effect on HBase.
 You can also combine mutations to perform complex business logic:
 
 Scala
-:   @@snip [snip](/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #create-converter-complex }
+:   @@snip [snip](/hbase/src/test/scala/docs/scaladsl/HBaseStageSpec.scala) { #create-converter-complex }
 
 Java
-:   @@snip [snip](/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #create-converter-complex }
+:   @@snip [snip](/hbase/src/test/java/docs/javadsl/HBaseStageTest.java) { #create-converter-complex }
 
 If you return a list of mutations they will be applied in the same order.
 The list of mutations are not applied in an transaction, each mutation is independent.
@@ -76,27 +76,27 @@ HBase combinators require @scaladoc[HTableSettings](akka.stream.alpakka.hbase.HT
 If the table referenced in the settings does not exist, it will be created on demand.
 
 Scala
-:   @@snip [snip](/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #create-settings }
+:   @@snip [snip](/hbase/src/test/scala/docs/scaladsl/HBaseStageSpec.scala) { #create-settings }
 
 Java
-:   @@snip [snip](/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #create-settings }
+:   @@snip [snip](/hbase/src/test/java/docs/javadsl/HBaseStageTest.java) { #create-settings }
 
 ## Flow
 
 Scala
-: @@snip [snip](/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #flow }
+: @@snip [snip](/hbase/src/test/scala/docs/scaladsl/HBaseStageSpec.scala) { #flow }
 
 Java
-: @@snip [snip](/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #flow }
+: @@snip [snip](/hbase/src/test/java/docs/javadsl/HBaseStageTest.java) { #flow }
 
 
 ## Sink
 
 Scala
-: @@snip [snip](/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #sink }
+: @@snip [snip](/hbase/src/test/scala/docs/scaladsl/HBaseStageSpec.scala) { #sink }
 
 Java
-: @@snip [snip](/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #sink }
+: @@snip [snip](/hbase/src/test/java/docs/javadsl/HBaseStageTest.java) { #sink }
 
 ## HBase administration commands
 
