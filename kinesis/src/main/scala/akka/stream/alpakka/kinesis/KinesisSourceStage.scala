@@ -89,8 +89,8 @@ class KinesisSourceStage(shardSettings: ShardSettings, amazonKinesisAsync: => Am
             scheduleOnce('GET_RECORDS, refreshInterval)
           }
         }
-        case (_, GetRecordsFailure(_)) => {
-          log.error("Failed to fetch records from Kinesis for shard {}", shardId)
+        case (_, GetRecordsFailure(ex)) => {
+          log.error(ex,"Failed to fetch records from Kinesis for shard {}", shardId)
           failStage(Errors.GetRecordsError)
         }
         case (_, Pump) => ()
