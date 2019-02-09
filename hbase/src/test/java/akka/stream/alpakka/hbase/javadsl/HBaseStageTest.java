@@ -141,7 +141,7 @@ public class HBaseStageTest {
   // #create-converter-complex
 
   @Test
-  public void sink() throws InterruptedException, TimeoutException, ExecutionException {
+  public void writeToSink() throws InterruptedException, TimeoutException, ExecutionException {
 
     // #create-settings
     HTableSettings<Person> tableSettings =
@@ -164,7 +164,7 @@ public class HBaseStageTest {
   }
 
   @Test
-  public void flow() throws ExecutionException, InterruptedException {
+  public void writeThroughFlow() throws ExecutionException, InterruptedException {
 
     HTableSettings<Person> tableSettings =
         HTableSettings.create(
