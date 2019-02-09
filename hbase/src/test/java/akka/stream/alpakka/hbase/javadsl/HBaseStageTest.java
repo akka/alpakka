@@ -16,17 +16,12 @@ import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
@@ -34,15 +29,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
+
+import static org.junit.Assert.assertEquals;
 
 public class HBaseStageTest {
 
   private static ActorSystem system;
   private static Materializer materializer;
-
-  private Configuration config;
 
   @BeforeClass
   public static void setup() {
@@ -53,15 +49,6 @@ public class HBaseStageTest {
   @AfterClass
   public static void teardown() {
     TestKit.shutdownActorSystem(system);
-  }
-
-  @Before
-  public void setUp() throws Exception {
-    config = HBaseConfiguration.create();
-    config.clear();
-    config.set("hbase.zookeeper.quorum", "localhost");
-    config.set("hbase.zookeeper.property.clientPort", "2181");
-    config.set("hbase.master.port", "60000");
   }
 
   // #create-converter-put
@@ -154,7 +141,7 @@ public class HBaseStageTest {
   // #create-converter-complex
 
   @Test
-  public void sink() throws InterruptedException, TimeoutException {
+  public void sink() throws InterruptedException, TimeoutException, ExecutionException {
 
     // #create-settings
     HTableSettings<Person> tableSettings =
@@ -166,14 +153,14 @@ public class HBaseStageTest {
     // #create-settings
 
     // #sink
-    final Sink<Person, scala.concurrent.Future<Done>> sink = HTableStage.sink(tableSettings);
-    Future<Done> o =
+    final Sink<Person, CompletionStage<Done>> sink = HTableStage.sink(tableSettings);
+    CompletionStage<Done> o =
         Source.from(Arrays.asList(100, 101, 102, 103, 104))
             .map((i) -> new Person(i, String.format("name %d", i)))
             .runWith(sink, materializer);
     // #sink
 
-    Await.ready(o, Duration.Inf());
+    assertEquals(Done.getInstance(), o.toCompletableFuture().get(5, TimeUnit.SECONDS));
   }
 
   @Test
@@ -196,7 +183,7 @@ public class HBaseStageTest {
             .run(materializer);
     // #flow
 
-    run.second().toCompletableFuture().get();
+    assertEquals(5, run.second().toCompletableFuture().get().size());
   }
 }
 

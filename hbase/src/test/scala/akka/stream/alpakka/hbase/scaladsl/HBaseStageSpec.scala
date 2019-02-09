@@ -4,23 +4,33 @@
 
 package akka.stream.alpakka.hbase.scaladsl
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.hbase.HTableSettings
 import akka.stream.scaladsl.{Sink, Source}
+import akka.testkit.TestKit
 import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 import scala.collection.immutable
-import scala.concurrent.Await
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
 import scala.language.implicitConversions
-import scala.util.{Failure, Success}
+import scala.concurrent.duration._
 
-class HBaseStageSpec extends WordSpec with Matchers {
+class HBaseStageSpec
+    extends TestKit(ActorSystem("HBaseStageSpec"))
+    with WordSpecLike
+    with Matchers
+    with ScalaFutures
+    with BeforeAndAfterAll {
+
+  implicit val mat = ActorMaterializer()
+
+  implicit val defaultPatience =
+    PatienceConfig(timeout = 5.seconds, interval = 500.millis)
 
   //#create-converter-put
   implicit def toBytes(string: String): Array[Byte] = Bytes.toBytes(string)
@@ -83,53 +93,33 @@ class HBaseStageSpec extends WordSpec with Matchers {
   //#create-converter-complex
 
   //#create-settings
-  val table: TableName = TableName.valueOf("person")
-  private val config = HBaseConfiguration.create()
-  config.clear()
-  config.set("hbase.zookeeper.quorum", "localhost")
-  config.set("hbase.zookeeper.property.clientPort", "2181")
-  config.set("hbase.master.port", "60000")
   val tableSettings =
-    HTableSettings(config, table, immutable.Seq("info"), hBaseConverter)
+    HTableSettings(HBaseConfiguration.create(), TableName.valueOf("person"), immutable.Seq("info"), hBaseConverter)
   //#create-settings
 
   "HBase stages " must {
 
     "sinks in hbase" in {
-      implicit val actorSystem: ActorSystem = ActorSystem("reactiveStreams")
-      implicit val materilizer: ActorMaterializer = ActorMaterializer()
-
       //#sink
       val sink = HTableStage.sink[Person](tableSettings)
 
       val f = Source(1 to 10).map(i => Person(i, s"zozo_$i")).runWith(sink)
       //#sink
 
-      f.onComplete(e => actorSystem.terminate())
-
-      Await.ready(f, Duration.Inf)
-
+      f.futureValue shouldBe Done
     }
 
     "flows through hbase" in {
-      implicit val actorSystem: ActorSystem = ActorSystem("reactiveStreams")
-      implicit val materilizer: ActorMaterializer = ActorMaterializer()
-
       //#flow
       val flow = HTableStage.flow[Person](tableSettings)
 
       val f = Source(11 to 20).map(i => Person(i, s"zozo_$i")).via(flow).runWith(Sink.fold(0)((a, d) => a + d.id))
       //#flow
 
-      f.onComplete {
-        case Success(sum) =>
-          println(s"id sums: $sum")
-          actorSystem.terminate()
-        case Failure(e) =>
-          actorSystem.terminate()
-      }
-
-      Await.ready(f, Duration.Inf)
+      f.futureValue shouldBe 155
     }
   }
+
+  override def afterAll(): Unit =
+    TestKit.shutdownActorSystem(system)
 }
