@@ -97,9 +97,9 @@ class HBaseStageSpec
     HTableSettings(HBaseConfiguration.create(), TableName.valueOf("person"), immutable.Seq("info"), hBaseConverter)
   //#create-settings
 
-  "HBase stages " must {
+  "HBase stage" must {
 
-    "sinks in hbase" in {
+    "write write entries to a sink" in {
       //#sink
       val sink = HTableStage.sink[Person](tableSettings)
 
@@ -109,7 +109,7 @@ class HBaseStageSpec
       f.futureValue shouldBe Done
     }
 
-    "flows through hbase" in {
+    "write entries through a flow" in {
       //#flow
       val flow = HTableStage.flow[Person](tableSettings)
 
