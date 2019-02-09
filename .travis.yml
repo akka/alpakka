@@ -62,7 +62,9 @@ jobs:
       - PRE_CMD="docker-compose up -d gcloud-pubsub-emulator_prep"
       - CMD=+google-cloud-pub-sub-grpc/testChanged
     - env: CMD=+google-fcm/testChanged
-    - env: CMD=+hbase/testChanged
+    - env:
+      - PRE_CMD="docker-compose up -d hbase"
+      - CMD=+hbase/testChanged
     - env: CMD=+hdfs/testChanged
     - env:
       - PRE_CMD="docker-compose up -d ironauth ironmq"
@@ -145,6 +147,11 @@ cache:
     - $HOME/.sbt/boot
     - $HOME/.jabba/jdk
   timeout: 900
+
+addons:
+  hosts:
+    # to run tests locally, these hostnames need to resolve to localhost IP
+    - hbase
 
 env:
   global:
