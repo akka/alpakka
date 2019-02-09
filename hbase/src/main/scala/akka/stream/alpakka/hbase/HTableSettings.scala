@@ -10,13 +10,26 @@ import org.apache.hadoop.hbase.client.Mutation
 
 import scala.collection.immutable
 
-final case class HTableSettings[T](conf: Configuration,
-                                   tableName: TableName,
-                                   columnFamilies: immutable.Seq[String],
-                                   converter: T => immutable.Seq[Mutation])
+final class HTableSettings[T] private (val conf: Configuration,
+                                       val tableName: TableName,
+                                       val columnFamilies: immutable.Seq[String],
+                                       val converter: T => immutable.Seq[Mutation]) {}
 
 object HTableSettings {
 
+  /**
+   * Create table settings, describing table name, columns and HBase mutations for every model object
+   */
+  def apply[T](conf: Configuration,
+               tableName: TableName,
+               columnFamilies: immutable.Seq[String],
+               converter: T => immutable.Seq[Mutation]) =
+    new HTableSettings(conf, tableName, columnFamilies, converter)
+
+  /**
+   * Java Api
+   * Create table settings, describing table name, columns and HBase mutations for every model object
+   */
   def create[T](conf: Configuration,
                 tableName: TableName,
                 columnFamilies: java.util.List[String],

@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.hbase.internal
+package akka.stream.alpakka.hbase.impl
 
 import java.io.Closeable
 
@@ -19,7 +19,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 import scala.language.postfixOps
 
-private[internal] trait HBaseCapabilities { this: StageLogging =>
+private[impl] trait HBaseCapabilities { this: StageLogging =>
 
   def twr[A <: Closeable, B](resource: A)(doWork: A => B): Try[B] =
     try {
@@ -46,7 +46,7 @@ private[internal] trait HBaseCapabilities { this: StageLogging =>
   def connect(conf: Configuration, timeout: Int = 10) =
     Await.result(Future(ConnectionFactory.createConnection(conf)), timeout seconds)
 
-  private[internal] def getOrCreateTable(tableName: TableName, columnFamilies: Seq[String])(
+  private[impl] def getOrCreateTable(tableName: TableName, columnFamilies: Seq[String])(
       implicit connection: Connection
   ): Try[Table] = twr(connection.getAdmin) { admin =>
     val table =
