@@ -16,6 +16,14 @@ object Dependencies {
   val CouchbaseVersion = "2.7.2"
   val CouchbaseVersionForDocs = "2.7"
 
+  val Silencer = {
+    val Version = "1.3.1"
+    Seq(
+      compilerPlugin("com.github.ghik" %% "silencer-plugin" % Version),
+      "com.github.ghik" %% "silencer-lib" % Version % Provided
+    )
+  }
+
   val Common = Seq(
     // These libraries are added to all modules via the `Common` AutoPlugin
     libraryDependencies ++= Seq(
@@ -171,7 +179,7 @@ object Dependencies {
       "com.google.api.grpc" % "grpc-google-cloud-pubsub-v1" % "0.12.0" % "protobuf", // ApacheV2
       "io.grpc" % "grpc-auth" % "1.14.0", // ApacheV2
       "com.google.auth" % "google-auth-library-oauth2-http" % "0.10.0" // BSD 3-clause
-    )
+    ) ++ Silencer
   )
 
   val GooglePubSubGrpcAlpnAgent = "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.7"
