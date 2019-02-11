@@ -14,7 +14,7 @@ MQ settings for this image are shown here: https://github.com/ibm-messaging/mq-d
 @@dependency [sbt,Maven,Gradle] {
   group1=com.lightbend.akka
   artifact1=akka-stream-alpakka-jms_$scala.binary.version$
-  version1=1.0-M2
+  version1=$project.version$
   group2=javax.jms
   artifact2=jms
   version2=1.1
@@ -27,7 +27,7 @@ MQ settings for this image are shown here: https://github.com/ibm-messaging/mq-d
 The `MQConnectionFactory` needs a queue manager name and a channel name, the docker command used in the previous section sets up a `QM1` queue manager and a `DEV.APP.SVRCONN` channel. The IBM MQ client makes it possible to
 connect to the MQ server over TCP/IP or natively through JNI (when the client and server run on the same machine). In the examples below we have chosen to use TCP/IP, which is done by setting the transport type to `CommonConstants.WMQ_CM_CLIENT`.
 
-Depends on connection target, choose correct implementation of connection factory.
+Depending on the connection target, choose an appropriate implementation for the connection factory.
 
 Scala
 : @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsIbmmqConnectorsSpec.scala) { #ibmmq-connection-factory }
