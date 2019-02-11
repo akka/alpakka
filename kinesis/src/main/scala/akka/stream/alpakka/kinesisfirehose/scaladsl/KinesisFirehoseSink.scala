@@ -11,7 +11,7 @@ import com.amazonaws.services.kinesisfirehose.AmazonKinesisFirehoseAsync
 import com.amazonaws.services.kinesisfirehose.model.Record
 
 object KinesisFirehoseSink {
-  def apply(streamName: String, settings: KinesisFirehoseFlowSettings = KinesisFirehoseFlowSettings.defaultInstance)(
+  def apply(streamName: String, settings: KinesisFirehoseFlowSettings = KinesisFirehoseFlowSettings.Defaults)(
       implicit kinesisClient: AmazonKinesisFirehoseAsync
   ): Sink[Record, NotUsed] =
     KinesisFirehoseFlow(streamName, settings).to(Sink.ignore)

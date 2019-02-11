@@ -13,7 +13,7 @@ import com.amazonaws.services.kinesis.model.PutRecordsRequestEntry
 object KinesisSink {
 
   def apply(streamName: String, kinesisClient: AmazonKinesisAsync): Sink[PutRecordsRequestEntry, NotUsed] =
-    apply(streamName, KinesisFlowSettings.defaultInstance, kinesisClient)
+    apply(streamName, KinesisFlowSettings.Defaults, kinesisClient)
 
   def apply(streamName: String,
             settings: KinesisFlowSettings,

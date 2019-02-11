@@ -22,7 +22,7 @@ import scala.language.postfixOps
 
 object KinesisFlow {
 
-  def apply(streamName: String, settings: KinesisFlowSettings = KinesisFlowSettings.defaultInstance)(
+  def apply(streamName: String, settings: KinesisFlowSettings = KinesisFlowSettings.Defaults)(
       implicit kinesisClient: AmazonKinesisAsync
   ): Flow[PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed] =
     Flow[PutRecordsRequestEntry]
@@ -30,7 +30,7 @@ object KinesisFlow {
       .via(withUserContext(streamName, settings))
       .map(_._1)
 
-  def withUserContext[T](streamName: String, settings: KinesisFlowSettings = KinesisFlowSettings.defaultInstance)(
+  def withUserContext[T](streamName: String, settings: KinesisFlowSettings = KinesisFlowSettings.Defaults)(
       implicit kinesisClient: AmazonKinesisAsync
   ): Flow[(PutRecordsRequestEntry, T), (PutRecordsResultEntry, T), NotUsed] =
     Flow[(PutRecordsRequestEntry, T)]
@@ -58,7 +58,7 @@ object KinesisFlow {
 
   def byPartitionAndData(
       streamName: String,
-      settings: KinesisFlowSettings = KinesisFlowSettings.defaultInstance
+      settings: KinesisFlowSettings = KinesisFlowSettings.Defaults
   )(
       implicit kinesisClient: AmazonKinesisAsync
   ): Flow[(String, ByteBuffer), PutRecordsResultEntry, NotUsed] =
@@ -73,7 +73,7 @@ object KinesisFlow {
 
   def byPartitionAndBytes(
       streamName: String,
-      settings: KinesisFlowSettings = KinesisFlowSettings.defaultInstance
+      settings: KinesisFlowSettings = KinesisFlowSettings.Defaults
   )(
       implicit kinesisClient: AmazonKinesisAsync
   ): Flow[(String, ByteString), PutRecordsResultEntry, NotUsed] =

@@ -5,7 +5,7 @@
 package akka.stream.alpakka.kinesis.scaladsl
 
 import java.nio.ByteBuffer
-import java.util.Date
+import java.time.Instant
 
 import akka.NotUsed
 import akka.actor.ActorSystem
@@ -14,7 +14,7 @@ import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.ByteString
 import com.amazonaws.services.kinesis.model.{PutRecordsRequestEntry, PutRecordsResultEntry, Record, ShardIteratorType}
-import com.amazonaws.services.kinesis.{AmazonKinesisAsync, AmazonKinesisAsyncClientBuilder}
+import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder
 
 import scala.concurrent.duration._
 
@@ -31,11 +31,9 @@ object Examples {
   //#init-client
 
   //#source-settings
-  val settings = ShardSettings(streamName = "myStreamName",
-                               shardId = "shard-id",
-                               shardIteratorType = ShardIteratorType.TRIM_HORIZON,
-                               refreshInterval = 1.second,
-                               limit = 500)
+  val settings =
+    ShardSettings(streamName = "myStreamName", shardId = "shard-id", refreshInterval = 1.second, limit = 500)
+      .withShardIteratorType(ShardIteratorType.TRIM_HORIZON)
   //#source-settings
 
   //#source-single
@@ -45,35 +43,27 @@ object Examples {
 
   //#source-list
   val mergeSettings = List(
-    ShardSettings("myStreamName",
-                  "shard-id-1",
-                  ShardIteratorType.AT_SEQUENCE_NUMBER,
-                  startingSequenceNumber = Some("sequence"),
-                  refreshInterval = 1.second,
-                  limit = 500),
-    ShardSettings("myStreamName",
-                  "shard-id-2",
-                  ShardIteratorType.AT_TIMESTAMP,
-                  atTimestamp = Some(new Date()),
-                  refreshInterval = 1.second,
-                  limit = 500)
+    ShardSettings("myStreamName", "shard-id-1", refreshInterval = 1.second, limit = 500)
+      .withStartingSequenceNumber("sequence"),
+    ShardSettings("myStreamName", "shard-id-2", refreshInterval = 1.second, limit = 500)
+      .withAtTimestamp(Instant.now())
   )
 
   val mergedSource: Source[Record, NotUsed] = KinesisSource.basicMerge(mergeSettings, amazonKinesisAsync)
   //#source-list
 
   //#flow-settings
-  val flowSettings = KinesisFlowSettings(
-    parallelism = 1,
-    maxBatchSize = 500,
-    maxRecordsPerSecond = 1000,
-    maxBytesPerSecond = 1000000,
-    maxRetries = 5,
-    backoffStrategy = KinesisFlowSettings.Exponential,
-    retryInitialTimeout = 100.millis
-  )
+  val flowSettings = KinesisFlowSettings
+    .create()
+    .withParallelism(1)
+    .withMaxBatchSize(500)
+    .withMaxRecordsPerSecond(1000)
+    .withMaxBytesPerSecond(1000000)
+    .withMaxRetries(5)
+    .withBackoffStrategy(KinesisFlowSettings.Exponential)
+    .withRetryInitialTimeout(100.milli)
 
-  val defaultFlowSettings = KinesisFlowSettings.defaultInstance
+  val defaultFlowSettings = KinesisFlowSettings.Defaults
 
   val fourShardFlowSettings = KinesisFlowSettings.byNumberOfShards(4)
   //#flow-settings

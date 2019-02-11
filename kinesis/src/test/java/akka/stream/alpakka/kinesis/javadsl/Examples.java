@@ -21,6 +21,7 @@ import com.amazonaws.services.kinesis.model.Record;
 import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import scala.concurrent.duration.FiniteDuration;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
@@ -44,8 +45,7 @@ public class Examples {
   // #source-settings
   final ShardSettings settings =
       ShardSettings.create("streamName", "shard-id")
-          .withShardIteratorType(ShardIteratorType.LATEST)
-          .withRefreshInterval(1L, TimeUnit.SECONDS)
+          .withRefreshInterval(Duration.ofSeconds(1L))
           .withLimit(500);
   // #source-settings
 
@@ -68,7 +68,7 @@ public class Examples {
           .withMaxBytesPerSecond(1_000_000)
           .withMaxRecordsPerSecond(5)
           .withBackoffStrategyExponential()
-          .withRetryInitialTimeout(100L, TimeUnit.MILLISECONDS);
+          .withRetryInitialTimeout(Duration.ofMillis(100L));
 
   final KinesisFlowSettings defaultFlowSettings = KinesisFlowSettings.create();
 

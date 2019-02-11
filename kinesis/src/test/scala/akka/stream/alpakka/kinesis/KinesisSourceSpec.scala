@@ -30,7 +30,8 @@ class KinesisSourceSpec extends WordSpecLike with Matchers with DefaultTestConte
   "KinesisSource" must {
 
     val shardSettings =
-      ShardSettings("stream_name", "shard-id", ShardIteratorType.TRIM_HORIZON, None, None, 1.second, 500)
+      ShardSettings("stream_name", "shard-id", 1.second, 500)
+        .withShardIteratorType(ShardIteratorType.TRIM_HORIZON)
 
     "poll for records" in new KinesisSpecContext with WithGetShardIteratorSuccess with WithGetRecordsSuccess {
       override def shards: util.List[Shard] = util.Arrays.asList(new Shard().withShardId("id"))
@@ -94,8 +95,8 @@ class KinesisSourceSpec extends WordSpecLike with Matchers with DefaultTestConte
 
     "merge multiple shards" in new KinesisSpecContext with WithGetShardIteratorSuccess with WithGetRecordsSuccess {
       val mergeSettings = List(
-        shardSettings.copy(shardId = "0"),
-        shardSettings.copy(shardId = "1")
+        shardSettings.withShardId("0"),
+        shardSettings.withShardId("1")
       )
 
       override def shards: util.List[Shard] =

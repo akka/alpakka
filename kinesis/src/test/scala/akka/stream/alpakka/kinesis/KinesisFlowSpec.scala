@@ -99,10 +99,10 @@ class KinesisFlowSpec extends WordSpecLike with Matchers with DefaultTestContext
     val settings: KinesisFlowSettings
   }
   trait DefaultSettings extends Settings {
-    val settings = KinesisFlowSettings.defaultInstance.copy(maxRetries = 1)
+    val settings = KinesisFlowSettings.Defaults.withMaxRetries(1)
   }
   trait NoRetries extends Settings {
-    val settings = KinesisFlowSettings.defaultInstance.copy(maxRetries = 0)
+    val settings = KinesisFlowSettings.Defaults.withMaxRetries(0)
   }
 
   trait KinesisFlowProbe { self: Settings =>

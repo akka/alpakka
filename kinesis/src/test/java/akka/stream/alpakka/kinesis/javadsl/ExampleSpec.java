@@ -21,6 +21,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import scala.concurrent.duration.FiniteDuration;
 
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -42,12 +43,7 @@ public class ExampleSpec {
 
   public static Pair<ShardSettings, AmazonKinesisAsync> setupClient() {
     final ShardSettings settings =
-        ShardSettings.create(
-            "my-stream",
-            "shard-id",
-            ShardIteratorType.LATEST,
-            FiniteDuration.create(1L, "second"),
-            500);
+        ShardSettings.create("my-stream", "shard-id", Duration.ofSeconds(1L), 500);
     final AmazonKinesisAsync client = mock(AmazonKinesisAsync.class);
     return Pair.create(settings, client);
   }

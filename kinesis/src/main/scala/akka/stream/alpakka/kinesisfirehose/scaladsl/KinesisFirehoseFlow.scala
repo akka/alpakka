@@ -17,7 +17,7 @@ import scala.collection.immutable.{Iterable, Queue}
 import scala.concurrent.duration._
 
 object KinesisFirehoseFlow {
-  def apply(streamName: String, settings: KinesisFirehoseFlowSettings = KinesisFirehoseFlowSettings.defaultInstance)(
+  def apply(streamName: String, settings: KinesisFirehoseFlowSettings = KinesisFirehoseFlowSettings.Defaults)(
       implicit kinesisClient: AmazonKinesisFirehoseAsync
   ): Flow[Record, PutRecordBatchResponseEntry, NotUsed] =
     Flow[Record]

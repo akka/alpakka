@@ -146,7 +146,7 @@ private[kinesis] class KinesisSourceStage(shardSettings: ShardSettings, amazonKi
             _.withShardId(shardId),
             _.withShardIteratorType(shardIteratorType),
             r => startingSequenceNumber.fold(r)(r.withStartingSequenceNumber),
-            r => atTimestamp.fold(r)(r.withTimestamp)
+            r => atTimestamp.fold(r)(instant => r.withTimestamp(java.util.Date.from(instant)))
           )
         )(new GetShardIteratorRequest())
         amazonKinesisAsync.getShardIteratorAsync(request, getShardIteratorHandler(self.ref))

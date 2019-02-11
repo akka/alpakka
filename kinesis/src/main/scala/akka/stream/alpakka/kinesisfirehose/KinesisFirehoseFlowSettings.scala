@@ -4,17 +4,20 @@
 
 package akka.stream.alpakka.kinesisfirehose
 
-import akka.stream.alpakka.kinesisfirehose.KinesisFirehoseFlowSettings.{Exponential, Linear, RetryBackoffStrategy}
+import akka.stream.alpakka.kinesisfirehose.KinesisFirehoseFlowSettings.{Exponential, Linear}
+import akka.util.JavaDurationConverters._
+import com.typesafe.config.Config
 
 import scala.concurrent.duration._
 
-case class KinesisFirehoseFlowSettings(parallelism: Int,
-                                       maxBatchSize: Int,
-                                       maxRecordsPerSecond: Int,
-                                       maxBytesPerSecond: Int,
-                                       maxRetries: Int,
-                                       backoffStrategy: RetryBackoffStrategy,
-                                       retryInitialTimeout: FiniteDuration) {
+final class KinesisFirehoseFlowSettings private (val parallelism: Int,
+                                                 val maxBatchSize: Int,
+                                                 val maxRecordsPerSecond: Int,
+                                                 val maxBytesPerSecond: Int,
+                                                 val maxRetries: Int,
+                                                 val backoffStrategy: KinesisFirehoseFlowSettings.RetryBackoffStrategy,
+                                                 val retryInitialTimeout: scala.concurrent.duration.FiniteDuration) {
+
   require(
     maxBatchSize >= 1 && maxBatchSize <= 500,
     "Limit must be between 1 and 500. See: https://docs.aws.amazon.com/firehose/latest/APIReference/API_PutRecordBatch.html"
@@ -23,27 +26,52 @@ case class KinesisFirehoseFlowSettings(parallelism: Int,
   require(maxBytesPerSecond >= 1)
   require(maxRetries >= 0)
 
-  def withParallelism(parallelism: Int): KinesisFirehoseFlowSettings = copy(parallelism = parallelism)
-
-  def withMaxBatchSize(maxBatchSize: Int): KinesisFirehoseFlowSettings = copy(maxBatchSize = maxBatchSize)
-
-  def withMaxRecordsPerSecond(maxRecordsPerSecond: Int): KinesisFirehoseFlowSettings =
-    copy(maxRecordsPerSecond = maxRecordsPerSecond)
-
-  def withMaxBytesPerSecond(maxBytesPerSecond: Int): KinesisFirehoseFlowSettings =
-    copy(maxBytesPerSecond = maxBytesPerSecond)
-
-  def withMaxRetries(maxRetries: Int): KinesisFirehoseFlowSettings = copy(maxRetries = maxRetries)
-
+  def withParallelism(value: Int): KinesisFirehoseFlowSettings = copy(parallelism = value)
+  def withMaxBatchSize(value: Int): KinesisFirehoseFlowSettings = copy(maxBatchSize = value)
+  def withMaxRecordsPerSecond(value: Int): KinesisFirehoseFlowSettings = copy(maxRecordsPerSecond = value)
+  def withMaxBytesPerSecond(value: Int): KinesisFirehoseFlowSettings = copy(maxBytesPerSecond = value)
+  def withMaxRetries(value: Int): KinesisFirehoseFlowSettings = copy(maxRetries = value)
   def withBackoffStrategyExponential(): KinesisFirehoseFlowSettings = copy(backoffStrategy = Exponential)
-
   def withBackoffStrategyLinear(): KinesisFirehoseFlowSettings = copy(backoffStrategy = Linear)
+  def withBackoffStrategy(value: KinesisFirehoseFlowSettings.RetryBackoffStrategy): KinesisFirehoseFlowSettings =
+    copy(backoffStrategy = value)
 
-  def withBackoffStrategy(backoffStrategy: RetryBackoffStrategy): KinesisFirehoseFlowSettings =
-    copy(backoffStrategy = backoffStrategy)
+  /** Scala API */
+  def withRetryInitialTimeout(value: scala.concurrent.duration.FiniteDuration): KinesisFirehoseFlowSettings =
+    copy(retryInitialTimeout = value)
 
-  def withRetryInitialTimeout(timeout: Long, unit: java.util.concurrent.TimeUnit): KinesisFirehoseFlowSettings =
-    copy(retryInitialTimeout = FiniteDuration(timeout, unit))
+  /** Java API */
+  def withRetryInitialTimeout(value: java.time.Duration): KinesisFirehoseFlowSettings =
+    copy(retryInitialTimeout = value.asScala)
+
+  private def copy(
+      parallelism: Int = parallelism,
+      maxBatchSize: Int = maxBatchSize,
+      maxRecordsPerSecond: Int = maxRecordsPerSecond,
+      maxBytesPerSecond: Int = maxBytesPerSecond,
+      maxRetries: Int = maxRetries,
+      backoffStrategy: KinesisFirehoseFlowSettings.RetryBackoffStrategy = backoffStrategy,
+      retryInitialTimeout: scala.concurrent.duration.FiniteDuration = retryInitialTimeout
+  ): KinesisFirehoseFlowSettings = new KinesisFirehoseFlowSettings(
+    parallelism = parallelism,
+    maxBatchSize = maxBatchSize,
+    maxRecordsPerSecond = maxRecordsPerSecond,
+    maxBytesPerSecond = maxBytesPerSecond,
+    maxRetries = maxRetries,
+    backoffStrategy = backoffStrategy,
+    retryInitialTimeout = retryInitialTimeout
+  )
+
+  override def toString =
+    "KinesisFirehoseFlowSettings(" +
+    s"parallelism=$parallelism," +
+    s"maxBatchSize=$maxBatchSize," +
+    s"maxRecordsPerSecond=$maxRecordsPerSecond," +
+    s"maxBytesPerSecond=$maxBytesPerSecond," +
+    s"maxRetries=$maxRetries," +
+    s"backoffStrategy=$backoffStrategy," +
+    s"retryInitialTimeout=${retryInitialTimeout.toCoarsest}" +
+    ")"
 }
 
 object KinesisFirehoseFlowSettings {
@@ -58,7 +86,7 @@ object KinesisFirehoseFlowSettings {
   val exponential: RetryBackoffStrategy = Exponential
   val linear: RetryBackoffStrategy = Linear
 
-  val defaultInstance: KinesisFirehoseFlowSettings = KinesisFirehoseFlowSettings(
+  val Defaults: KinesisFirehoseFlowSettings = new KinesisFirehoseFlowSettings(
     parallelism = MaxRecordsPerSecond / MaxRecordsPerRequest,
     maxBatchSize = MaxRecordsPerRequest,
     maxRecordsPerSecond = MaxRecordsPerSecond,
@@ -68,5 +96,54 @@ object KinesisFirehoseFlowSettings {
     retryInitialTimeout = 100.millis
   )
 
-  def create(): KinesisFirehoseFlowSettings = defaultInstance
+  /** Scala API */
+  def apply(): KinesisFirehoseFlowSettings = Defaults
+
+  /** Java API */
+  def create(): KinesisFirehoseFlowSettings = Defaults
+
+  /**
+   * Reads from the given config.
+   */
+  def apply(c: Config): KinesisFirehoseFlowSettings = {
+    val parallelism = c.getInt("parallelism")
+    val maxBatchSize = c.getInt("max-batch-size")
+    val maxRecordsPerSecond = c.getInt("max-records-per-second")
+    val maxBytesPerSecond = c.getMemorySize("max-bytes-per-second").toBytes.toInt
+    val maxRetries = c.getInt("max-retries")
+    val backoffStrategy = {
+      c.getString("backoff-strategy") match {
+        case "exponential" => Exponential
+        case "linear" => Linear
+        case other => throw new IllegalArgumentException(s"unknown backoff-strategy: $other")
+      }
+    }
+    val retryInitialTimeout = c.getDuration("retry-initial-timeout").asScala
+    new KinesisFirehoseFlowSettings(
+      parallelism,
+      maxBatchSize,
+      maxRecordsPerSecond,
+      maxBytesPerSecond,
+      maxRetries,
+      backoffStrategy,
+      retryInitialTimeout
+    )
+  }
+
+  /**
+   * Java API: Reads from the given config.
+   */
+  def create(c: Config): KinesisFirehoseFlowSettings = apply(c)
+
+  /* sample config section
+  kinesis-firehose-flow-settings {
+    parallelism = 1234567
+    max-batch-size = 1234567
+    max-records-per-second = 1234567
+    max-bytes-per-second = 4 megabytes
+    max-retries = 1234567
+    backoff-strategy = ???
+    retry-initial-timeout = 50 seconds
+  }
+ */
 }

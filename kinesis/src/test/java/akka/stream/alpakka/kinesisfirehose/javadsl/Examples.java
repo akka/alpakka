@@ -14,6 +14,7 @@ import com.amazonaws.services.kinesisfirehose.AmazonKinesisFirehoseAsyncClientBu
 import com.amazonaws.services.kinesisfirehose.model.PutRecordBatchResponseEntry;
 import com.amazonaws.services.kinesisfirehose.model.Record;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 public class Examples {
@@ -42,7 +43,7 @@ public class Examples {
           .withMaxBytesPerSecond(1_000_000)
           .withMaxRecordsPerSecond(5)
           .withBackoffStrategyExponential()
-          .withRetryInitialTimeout(100L, TimeUnit.MILLISECONDS);
+          .withRetryInitialTimeout(Duration.ofMillis(100L));
 
   final KinesisFirehoseFlowSettings defaultFlowSettings = KinesisFirehoseFlowSettings.create();
   // #flow-settings

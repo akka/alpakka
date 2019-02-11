@@ -15,14 +15,14 @@ import com.amazonaws.services.kinesis.model.PutRecordsRequestEntry
 
 object KinesisSink {
 
-  def apply(streamName: String, settings: KinesisFlowSettings = KinesisFlowSettings.defaultInstance)(
+  def apply(streamName: String, settings: KinesisFlowSettings = KinesisFlowSettings.Defaults)(
       implicit kinesisClient: AmazonKinesisAsync
   ): Sink[PutRecordsRequestEntry, NotUsed] =
     KinesisFlow(streamName, settings).to(Sink.ignore)
 
   def byPartitionAndData(
       streamName: String,
-      settings: KinesisFlowSettings = KinesisFlowSettings.defaultInstance
+      settings: KinesisFlowSettings = KinesisFlowSettings.Defaults
   )(
       implicit kinesisClient: AmazonKinesisAsync
   ): Sink[(String, ByteBuffer), NotUsed] =
@@ -30,7 +30,7 @@ object KinesisSink {
 
   def byPartitionAndBytes(
       streamName: String,
-      settings: KinesisFlowSettings = KinesisFlowSettings.defaultInstance
+      settings: KinesisFlowSettings = KinesisFlowSettings.Defaults
   )(
       implicit kinesisClient: AmazonKinesisAsync
   ): Sink[(String, ByteString), NotUsed] =

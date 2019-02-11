@@ -27,17 +27,17 @@ object Examples {
   //#init-client
 
   //#flow-settings
-  val flowSettings = KinesisFirehoseFlowSettings(
-    parallelism = 1,
-    maxBatchSize = 500,
-    maxRecordsPerSecond = 5000,
-    maxBytesPerSecond = 4000000,
-    maxRetries = 5,
-    backoffStrategy = KinesisFirehoseFlowSettings.Exponential,
-    retryInitialTimeout = 100.millis
-  )
+  val flowSettings = KinesisFirehoseFlowSettings
+    .create()
+    .withParallelism(1)
+    .withMaxBatchSize(500)
+    .withMaxRecordsPerSecond(5000)
+    .withMaxBytesPerSecond(4000000)
+    .withMaxRetries(5)
+    .withBackoffStrategy(KinesisFirehoseFlowSettings.Exponential)
+    .withRetryInitialTimeout(100.millis)
 
-  val defaultFlowSettings = KinesisFirehoseFlowSettings.defaultInstance
+  val defaultFlowSettings = KinesisFirehoseFlowSettings.Defaults
   //#flow-settings
 
   //#flow-sink

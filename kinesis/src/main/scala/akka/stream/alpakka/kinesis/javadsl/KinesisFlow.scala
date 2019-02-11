@@ -15,7 +15,7 @@ object KinesisFlow {
 
   def apply(streamName: String,
             kinesisClient: AmazonKinesisAsync): Flow[PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed] =
-    apply(streamName, KinesisFlowSettings.defaultInstance, kinesisClient)
+    apply(streamName, KinesisFlowSettings.Defaults, kinesisClient)
 
   def apply(streamName: String,
             settings: KinesisFlowSettings,
@@ -26,7 +26,7 @@ object KinesisFlow {
       streamName: String,
       kinesisClient: AmazonKinesisAsync
   ): Flow[Pair[PutRecordsRequestEntry, T], Pair[PutRecordsResultEntry, T], NotUsed] =
-    withUserContext(streamName, KinesisFlowSettings.defaultInstance, kinesisClient)
+    withUserContext(streamName, KinesisFlowSettings.Defaults, kinesisClient)
 
   def withUserContext[T](
       streamName: String,

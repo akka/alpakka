@@ -108,10 +108,10 @@ class KinesisFirehoseFlowSpec extends WordSpecLike with Matchers with DefaultTes
     val settings: KinesisFirehoseFlowSettings
   }
   trait DefaultSettings extends Settings {
-    val settings = KinesisFirehoseFlowSettings.defaultInstance.copy(maxRetries = 1)
+    val settings = KinesisFirehoseFlowSettings.Defaults.withMaxRetries(1)
   }
   trait NoRetries extends Settings {
-    val settings = KinesisFirehoseFlowSettings.defaultInstance.copy(maxRetries = 0)
+    val settings = KinesisFirehoseFlowSettings.Defaults.withMaxRetries(0)
   }
 
   trait KinesisFirehoseFlowProbe { self: Settings =>
