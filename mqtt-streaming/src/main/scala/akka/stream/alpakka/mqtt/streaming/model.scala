@@ -6,8 +6,9 @@ package akka.stream.alpakka.mqtt.streaming
 import java.nio.ByteOrder
 import java.nio.charset.StandardCharsets
 import java.util.{NoSuchElementException, Optional}
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{CompletionStage, ForkJoinPool, TimeUnit}
 
+import akka.Done
 import akka.annotation.InternalApi
 import akka.japi.{Pair => AkkaPair}
 import akka.stream.alpakka.mqtt.streaming.Connect.ProtocolLevel
@@ -17,6 +18,7 @@ import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.collection.JavaConverters._
 import scala.compat.java8.OptionConverters._
+import scala.concurrent.{ExecutionContext, Promise}
 
 /**
  * 2.2.1 MQTT Control Packet type
@@ -1086,10 +1088,14 @@ object Command {
  * Send a command to an MQTT session with optional data to carry through
  * into any related event.
  * @param command The command to send
+ * @param completed A promise that is completed by the session when the command has been processed -
+ *                  useful for synchronizing when activities should occur in relation to a command
+ *                  The only command that supports this presently is SubAck on the server side. This
+ *                  is because it is important to know when to start publishing.
  * @param carry The data to carry though
  * @tparam A The type of data to carry through
  */
-final case class Command[A](command: ControlPacket, carry: Option[A]) {
+final case class Command[A](command: ControlPacket, completed: Option[Promise[Done]], carry: Option[A]) {
 
   /**
    * JAVA API
@@ -1097,17 +1103,30 @@ final case class Command[A](command: ControlPacket, carry: Option[A]) {
    * Send a command to an MQTT session with optional data to carry through
    * into any related event.
    * @param command The command to send
+   * @param completed A promise that is completed by the session when the command has been processed -
+   *                  useful for synchronizing when activities should occur in relation to a command
+   *                  The only command that supports this presently is SubAck on the server side. This
+   *                  is because it is important to know when to start publishing.
    * @param carry The data to carry though
    */
-  def this(command: ControlPacket, carry: Optional[A]) =
-    this(command, carry.asScala)
+  def this(command: ControlPacket, completed: Optional[CompletionStage[Done]], carry: Optional[A]) =
+    this(
+      command,
+      completed.asScala.map { f =>
+        val p = Promise[Done]
+        p.future
+          .foreach(f.toCompletableFuture.complete)(ExecutionContext.fromExecutorService(ForkJoinPool.commonPool()))
+        p
+      },
+      carry.asScala
+    )
 
   /**
    * Send a command to an MQTT session
    * @param command The command to send
    */
   def this(command: ControlPacket) =
-    this(command, None)
+    this(command, None, None)
 
   /**
    * Send a command to an MQTT session with data to carry through into
@@ -1116,7 +1135,7 @@ final case class Command[A](command: ControlPacket, carry: Option[A]) {
    * @param carry The data to carry through
    */
   def this(command: ControlPacket, carry: A) =
-    this(command, Some(carry))
+    this(command, None, Some(carry))
 }
 
 object Event {
