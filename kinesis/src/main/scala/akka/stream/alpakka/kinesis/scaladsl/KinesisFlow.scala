@@ -18,7 +18,6 @@ import com.amazonaws.services.kinesis.model.{PutRecordsRequestEntry, PutRecordsR
 import scala.collection.immutable.Queue
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.language.postfixOps
 
 object KinesisFlow {
 
@@ -34,9 +33,9 @@ object KinesisFlow {
       implicit kinesisClient: AmazonKinesisAsync
   ): Flow[(PutRecordsRequestEntry, T), (PutRecordsResultEntry, T), NotUsed] =
     Flow[(PutRecordsRequestEntry, T)]
-      .throttle(settings.maxRecordsPerSecond, 1 second, settings.maxRecordsPerSecond, ThrottleMode.Shaping)
+      .throttle(settings.maxRecordsPerSecond, 1.second, settings.maxRecordsPerSecond, ThrottleMode.Shaping)
       .throttle(settings.maxBytesPerSecond,
-                1 second,
+                1.second,
                 settings.maxBytesPerSecond,
                 getPayloadByteSize,
                 ThrottleMode.Shaping)

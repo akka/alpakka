@@ -12,8 +12,12 @@ object KinesisErrors {
 
   sealed trait KinesisSourceError extends NoStackTrace
   case object NoShardsError extends KinesisSourceError
-  case object GetShardIteratorError extends KinesisSourceError
-  case object GetRecordsError extends KinesisSourceError
+  class GetShardIteratorError(val shardId: String, e: Exception)
+      extends RuntimeException(s"Failed to get a shard iterator for shard [$shardId]", e)
+      with KinesisSourceError
+  class GetRecordsError(val shardId: String, e: Exception)
+      extends RuntimeException(s"Failed to fetch records from Kinesis for shard [$shardId]", e)
+      with KinesisSourceError
 
   sealed trait KinesisFlowErrors extends NoStackTrace
   case class FailurePublishingRecords(e: Exception) extends RuntimeException(e) with KinesisFlowErrors

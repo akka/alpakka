@@ -131,7 +131,7 @@ class KinesisSourceSpec extends WordSpecLike with Matchers with DefaultTestConte
     with WithGetRecordsFailure {
       val probe = KinesisSource.basic(shardSettings, amazonKinesisAsync).runWith(TestSink.probe)
       probe.request(1)
-      probe.expectError() shouldBe an[KinesisErrors.GetRecordsError.type]
+      probe.expectError() shouldBe an[KinesisErrors.GetRecordsError]
     }
   }
 
