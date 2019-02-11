@@ -8,7 +8,8 @@ import java.nio.ByteBuffer
 
 import akka.NotUsed
 import akka.stream.ThrottleMode
-import akka.stream.alpakka.kinesis.{KinesisFlowSettings, KinesisFlowStage}
+import akka.stream.alpakka.kinesis.KinesisFlowSettings
+import akka.stream.alpakka.kinesis.impl.KinesisFlowStage
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 import com.amazonaws.services.kinesis.AmazonKinesisAsync

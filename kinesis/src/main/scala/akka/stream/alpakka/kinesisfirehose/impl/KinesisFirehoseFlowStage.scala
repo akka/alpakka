@@ -2,10 +2,11 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.kinesisfirehose
+package akka.stream.alpakka.kinesisfirehose.impl
 
-import akka.stream.alpakka.kinesisfirehose.KinesisFirehoseFlowSettings.{Exponential, Linear, RetryBackoffStrategy}
+import akka.annotation.InternalApi
 import akka.stream.alpakka.kinesisfirehose.KinesisFirehoseErrors.{ErrorPublishingRecords, FailurePublishingRecords}
+import akka.stream.alpakka.kinesisfirehose.KinesisFirehoseFlowSettings.{Exponential, Linear, RetryBackoffStrategy}
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import com.amazonaws.handlers.AsyncHandler
@@ -19,11 +20,14 @@ import com.amazonaws.services.kinesisfirehose.model.{
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.concurrent.duration.{FiniteDuration, _}
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{Future, Promise}
-import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
+/**
+ * Internal API
+ */
+@InternalApi
 private[kinesisfirehose] final class KinesisFirehoseFlowStage(
     streamName: String,
     maxRetries: Int,
@@ -31,7 +35,8 @@ private[kinesisfirehose] final class KinesisFirehoseFlowStage(
     retryInitialTimeout: FiniteDuration
 )(implicit kinesisClient: AmazonKinesisFirehoseAsync)
     extends GraphStage[FlowShape[Seq[Record], Future[PutRecordBatchResult]]] {
-  import akka.stream.alpakka.kinesisfirehose.KinesisFirehoseFlowStage._
+
+  import KinesisFirehoseFlowStage._
 
   private val in = Inlet[Seq[Record]]("KinesisFirehoseFlowStage.in")
   private val out = Outlet[Future[PutRecordBatchResult]]("KinesisFirehoseFlowStage.out")
@@ -143,7 +148,11 @@ private[kinesisfirehose] final class KinesisFirehoseFlowStage(
 
 }
 
-object KinesisFirehoseFlowStage {
+/**
+ * Internal API
+ */
+@InternalApi
+private[kinesisfirehose] object KinesisFirehoseFlowStage {
   private def putRecordBatch(
       streamName: String,
       recordEntries: Seq[Record],

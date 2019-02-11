@@ -6,7 +6,8 @@ package akka.stream.alpakka.kinesis.scaladsl
 
 import akka.NotUsed
 import akka.stream.alpakka.kinesis.KinesisErrors.NoShardsError
-import akka.stream.alpakka.kinesis.{KinesisSourceStage, ShardSettings}
+import akka.stream.alpakka.kinesis.ShardSettings
+import akka.stream.alpakka.kinesis.impl.KinesisSourceStage
 import akka.stream.scaladsl.{Merge, Source}
 import com.amazonaws.services.kinesis.AmazonKinesisAsync
 import com.amazonaws.services.kinesis.model.Record

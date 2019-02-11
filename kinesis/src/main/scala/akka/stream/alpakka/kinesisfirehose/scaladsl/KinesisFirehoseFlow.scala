@@ -6,7 +6,8 @@ package akka.stream.alpakka.kinesisfirehose.scaladsl
 
 import akka.NotUsed
 import akka.stream.ThrottleMode
-import akka.stream.alpakka.kinesisfirehose.{KinesisFirehoseFlowSettings, KinesisFirehoseFlowStage}
+import akka.stream.alpakka.kinesisfirehose.KinesisFirehoseFlowSettings
+import akka.stream.alpakka.kinesisfirehose.impl.KinesisFirehoseFlowStage
 import akka.stream.scaladsl.Flow
 import com.amazonaws.services.kinesisfirehose.AmazonKinesisFirehoseAsync
 import com.amazonaws.services.kinesisfirehose.model.{PutRecordBatchResponseEntry, Record}

@@ -2,11 +2,11 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.kinesis
+package akka.stream.alpakka.kinesis.impl
 
+import akka.annotation.InternalApi
 import akka.stream.alpakka.kinesis.KinesisErrors.{ErrorPublishingRecords, FailurePublishingRecords}
 import akka.stream.alpakka.kinesis.KinesisFlowSettings.{Exponential, Linear, RetryBackoffStrategy}
-import akka.stream.alpakka.kinesis.KinesisFlowStage._
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import com.amazonaws.handlers.AsyncHandler
@@ -24,8 +24,10 @@ import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
 
-import scala.language.postfixOps
-
+/**
+ * Internal API
+ */
+@InternalApi
 private[kinesis] final class KinesisFlowStage[T](
     streamName: String,
     maxRetries: Int,
@@ -33,6 +35,8 @@ private[kinesis] final class KinesisFlowStage[T](
     retryInitialTimeout: FiniteDuration
 )(implicit kinesisClient: AmazonKinesisAsync)
     extends GraphStage[FlowShape[Seq[(PutRecordsRequestEntry, T)], Future[Seq[(PutRecordsResultEntry, T)]]]] {
+
+  import KinesisFlowStage._
 
   private val in = Inlet[Seq[(PutRecordsRequestEntry, T)]]("KinesisFlowStage.in")
   private val out = Outlet[Future[Seq[(PutRecordsResultEntry, T)]]]("KinesisFlowStage.out")
@@ -144,7 +148,11 @@ private[kinesis] final class KinesisFlowStage[T](
 
 }
 
-object KinesisFlowStage {
+/**
+ * Internal API
+ */
+@InternalApi
+private[kinesis] object KinesisFlowStage {
 
   private def putRecords[T](
       streamName: String,

@@ -2,13 +2,13 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.kinesis
+package akka.stream.alpakka.kinesis.impl
 
 import java.util.concurrent.Future
 
 import akka.actor.ActorRef
-import akka.stream.alpakka.kinesis.KinesisSourceStage._
-import akka.stream.alpakka.kinesis.{KinesisErrors => Errors}
+import akka.annotation.InternalApi
+import akka.stream.alpakka.kinesis.{ShardSettings, KinesisErrors => Errors}
 import akka.stream.stage.GraphStageLogic.StageActor
 import akka.stream.stage._
 import akka.stream.{Attributes, Outlet, SourceShape}
@@ -17,10 +17,14 @@ import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.kinesis.AmazonKinesisAsync
 import com.amazonaws.services.kinesis.model._
 
-import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.collection.JavaConverters._
 
-object KinesisSourceStage {
+/**
+ * Internal API
+ */
+@InternalApi
+private[kinesis] object KinesisSourceStage {
 
   private[kinesis] final case class GetShardIteratorSuccess(result: GetShardIteratorResult)
 
@@ -34,8 +38,14 @@ object KinesisSourceStage {
 
 }
 
-class KinesisSourceStage(shardSettings: ShardSettings, amazonKinesisAsync: => AmazonKinesisAsync)
+/**
+ * Internal API
+ */
+@InternalApi
+private[kinesis] class KinesisSourceStage(shardSettings: ShardSettings, amazonKinesisAsync: => AmazonKinesisAsync)
     extends GraphStage[SourceShape[Record]] {
+
+  import KinesisSourceStage._
 
   private val out = Outlet[Record]("Records")
 
