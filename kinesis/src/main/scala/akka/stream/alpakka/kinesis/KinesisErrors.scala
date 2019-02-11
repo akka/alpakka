@@ -20,7 +20,9 @@ object KinesisErrors {
       with KinesisSourceError
 
   sealed trait KinesisFlowErrors extends NoStackTrace
-  case class FailurePublishingRecords(e: Exception) extends RuntimeException(e) with KinesisFlowErrors
+  case class FailurePublishingRecords(e: Exception)
+      extends RuntimeException("Failure publishing records to Kinesis", e)
+      with KinesisFlowErrors
   case class ErrorPublishingRecords[T](attempts: Int, recordsWithContext: Seq[(PutRecordsResultEntry, T)])
       extends RuntimeException(s"Unable to publish records after $attempts attempts")
       with KinesisFlowErrors {

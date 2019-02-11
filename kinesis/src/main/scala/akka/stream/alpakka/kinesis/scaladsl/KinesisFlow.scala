@@ -16,7 +16,6 @@ import com.amazonaws.services.kinesis.AmazonKinesisAsync
 import com.amazonaws.services.kinesis.model.{PutRecordsRequestEntry, PutRecordsResultEntry}
 
 import scala.collection.immutable.Queue
-import scala.collection.immutable
 import scala.concurrent.duration._
 
 object KinesisFlow {
@@ -49,7 +48,7 @@ object KinesisFlow {
         )
       )
       .mapAsync(settings.parallelism)(identity)
-      .mapConcat(_.to[immutable.Iterable])
+      .mapConcat(identity)
 
   private def getPayloadByteSize[T](record: (PutRecordsRequestEntry, T)): Int = record match {
     case (request, _) => request.getPartitionKey.length + request.getData.position()

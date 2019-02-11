@@ -20,7 +20,9 @@ object KinesisFlow {
   def apply(streamName: String,
             settings: KinesisFlowSettings,
             kinesisClient: AmazonKinesisAsync): Flow[PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed] =
-    (scaladsl.KinesisFlow.apply(streamName, settings)(kinesisClient)).asJava
+    scaladsl.KinesisFlow
+      .apply(streamName, settings)(kinesisClient)
+      .asJava
 
   def withUserContext[T](
       streamName: String,
@@ -37,6 +39,6 @@ object KinesisFlow {
       .Flow[Pair[PutRecordsRequestEntry, T]]
       .map(_.toScala)
       .via(scaladsl.KinesisFlow.withUserContext[T](streamName, settings)(kinesisClient))
-      .map({ case (res, ctx) => Pair.create(res, ctx) })
+      .map { case (res, ctx) => Pair.create(res, ctx) }
       .asJava
 }
