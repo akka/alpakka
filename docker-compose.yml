@@ -107,7 +107,7 @@ services:
         python subscriber.py alpakka create testTopic testSubscription
       "
   hbase:
-    image: nerdammer/hbase:1.1.2-1
+    image: nerdammer/hbase:1.1.2
     hostname: hbase
     ports:
       - 2181:2181
