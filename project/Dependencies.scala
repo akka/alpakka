@@ -318,12 +318,12 @@ object Dependencies {
     )
   }
 
-  val SlickVersion = "3.2.3"
+  val SlickVersion = "3.3.0"
   val Slick = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.slick" %% "slick" % SlickVersion, // BSD 2-clause "Simplified" License
       "com.typesafe.slick" %% "slick-hikaricp" % SlickVersion, // BSD 2-clause "Simplified" License
-      "com.h2database" % "h2" % "1.4.196" % Test // Eclipse Public License 1.0
+      "com.h2database" % "h2" % "1.4.197" % Test // Eclipse Public License 1.0
     )
   )
 
