@@ -41,6 +41,14 @@ final class HTableSettings[T] private (val conf: Configuration,
   def withConverter(converter: java.util.function.Function[T, java.util.List[Mutation]]): HTableSettings[T] =
     copy(converter = converter.asScala(_).asScala.to[immutable.Seq])
 
+  override def toString: String =
+    "HTableSettings(" +
+    s"conf=$conf," +
+    s"tableName=$tableName," +
+    s"columnFamilies=$columnFamilies" +
+    s"converter=$converter" +
+    ")"
+
   private def copy(conf: Configuration = conf,
                    tableName: TableName = tableName,
                    columnFamilies: immutable.Seq[String] = columnFamilies,
