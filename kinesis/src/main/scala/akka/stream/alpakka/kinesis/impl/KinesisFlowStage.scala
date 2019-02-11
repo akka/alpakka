@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.kinesis.impl
 
+import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.stream.alpakka.kinesis.KinesisErrors.{ErrorPublishingRecords, FailurePublishingRecords}
 import akka.stream.alpakka.kinesis.KinesisFlowSettings.{Exponential, Linear, RetryBackoffStrategy}
@@ -48,52 +49,94 @@ private[kinesis] final class KinesisFlowStage[T](
       type Token = Int
       type RetryCount = Int
 
-      private var completionState: Option[Try[Unit]] = _
+      private var completionState: Option[Try[Unit]] = None
 
       private val pendingRequests: mutable.Queue[Job[T]] = mutable.Queue.empty
-      private var resultCallback: AsyncCallback[Result[T]] = _
+      private val putRecordsSuccessfulCallback: AsyncCallback[NotUsed] = getAsyncCallback(_ => putRecordsSuccessful())
+      private val resendCallback: AsyncCallback[Result[T]] = getAsyncCallback(resend)
+      private val failAfterResendsCallback: AsyncCallback[Result[T]] = getAsyncCallback(failAfterResends)
       private var inFlight: Int = _
 
       private val waitingRetries: mutable.HashMap[Token, Job[T]] = mutable.HashMap.empty
       private var retryToken: Token = _
 
-      private def tryToExecute() =
+      private def tryToExecute(): Unit =
         if (pendingRequests.nonEmpty && isAvailable(out)) {
           log.debug("Executing PutRecords call")
           inFlight += 1
           val job = pendingRequests.dequeue()
           push(
             out,
-            putRecords[T](
-              streamName,
-              job.records,
-              recordsToRetry => resultCallback.invoke(Result(job.attempt, recordsToRetry))
-            )
+            putRecords(job)
           )
         }
 
-      private def handleResult(result: Result[T]): Unit = result match {
-        case Result(_, Nil) =>
-          log.debug("PutRecords call finished successfully")
-          inFlight -= 1
-          tryToExecute()
-          if (!hasBeenPulled(in)) tryPull(in)
-          checkForCompletion()
-        case Result(attempt, errors) if attempt > maxRetries =>
-          log.debug("PutRecords call finished with partial errors after {} attempts", attempt)
-          failStage(ErrorPublishingRecords(attempt, errors.map({ case (_, res, ctx) => (res, ctx) })))
-        case Result(attempt, errors) =>
-          log.debug("PutRecords call finished with partial errors; scheduling retry")
-          inFlight -= 1
-          waitingRetries.put(retryToken, Job(attempt + 1, errors.map({ case (req, _, ctx) => (req, ctx) })))
-          scheduleOnce(retryToken, backoffStrategy match {
-            case Exponential => retryInitialTimeout * scala.math.pow(2, attempt - 1).toInt
-            case Linear => retryInitialTimeout * attempt
-          })
-          retryToken += 1
+      private def putRecords(job: Job[T]): Future[Seq[(PutRecordsResultEntry, T)]] = {
+
+        val p = Promise[Seq[(PutRecordsResultEntry, T)]]
+
+        val request = new PutRecordsRequest()
+          .withStreamName(streamName)
+          .withRecords(job.records.map(_._1).asJavaCollection)
+
+        val handler = new AsyncHandler[PutRecordsRequest, PutRecordsResult] {
+          override def onError(exception: Exception): Unit =
+            p.failure(FailurePublishingRecords(exception))
+
+          override def onSuccess(request: PutRecordsRequest, result: PutRecordsResult): Unit = {
+            val correlatedRequestResult = result.getRecords.asScala
+              .zip(job.records)
+              .map({ case (res, (req, ctx)) => (req, res, ctx) })
+            if (result.getFailedRecordCount > 0) {
+              val result = Result(job.attempt, correlatedRequestResult.filter(_._2.getErrorCode != null))
+              if (job.attempt > maxRetries) failAfterResendsCallback.invoke(result)
+              else resendCallback.invoke(result)
+            } else {
+              putRecordsSuccessfulCallback.invoke(NotUsed)
+            }
+            p.success(
+              correlatedRequestResult
+                .filter(_._2.getErrorCode == null)
+                .map({ case (_, res, ctx) => (res, ctx) })
+            )
+          }
+        }
+        kinesisClient.putRecordsAsync(request, handler)
+
+        p.future
       }
 
-      private def checkForCompletion() =
+      private def putRecordsSuccessful(): Unit = {
+        inFlight -= 1
+        tryToExecute()
+        if (!hasBeenPulled(in)) tryPull(in)
+        checkForCompletion()
+      }
+
+      private def failAfterResends(result: Result[T]): Unit = {
+        log.debug("PutRecords call finished with partial errors after {} attempts", result.attempt)
+        failStage(
+          ErrorPublishingRecords(result.attempt, result.recordsToRetry.map({ case (_, res, ctx) => (res, ctx) }))
+        )
+      }
+
+      private def resend(result: Result[T]): Unit = {
+        log.debug("PutRecords call finished with partial errors; scheduling retry")
+        inFlight -= 1
+        waitingRetries.put(retryToken, Job(result.attempt + 1, result.recordsToRetry.map({
+          case (req, _, ctx) => (req, ctx)
+        })))
+        scheduleOnce(
+          retryToken,
+          backoffStrategy match {
+            case Exponential => retryInitialTimeout * scala.math.pow(2, result.attempt - 1).toInt
+            case Linear => retryInitialTimeout * result.attempt
+          }
+        )
+        retryToken += 1
+      }
+
+      private def checkForCompletion(): Unit =
         if (inFlight == 0 && pendingRequests.isEmpty && waitingRetries.isEmpty && isClosed(in)) {
           completionState match {
             case Some(Success(_)) => completeStage()
@@ -102,18 +145,17 @@ private[kinesis] final class KinesisFlowStage[T](
           }
         }
 
-      override protected def onTimer(timerKey: Any) =
+      override protected def onTimer(timerKey: Any): Unit =
         waitingRetries.remove(timerKey.asInstanceOf[Token]) foreach { job =>
           log.debug("New PutRecords retry attempt available")
           pendingRequests.enqueue(job)
           tryToExecute()
         }
 
-      override def preStart() = {
+      override def preStart(): Unit = {
         completionState = None
         inFlight = 0
         retryToken = 0
-        resultCallback = getAsyncCallback[Result[T]](handleResult)
         pull(in)
       }
 
@@ -153,48 +195,6 @@ private[kinesis] final class KinesisFlowStage[T](
  */
 @InternalApi
 private[kinesis] object KinesisFlowStage {
-
-  private def putRecords[T](
-      streamName: String,
-      recordEntries: Seq[(PutRecordsRequestEntry, T)],
-      retryRecordsCallback: Seq[(PutRecordsRequestEntry, PutRecordsResultEntry, T)] => Unit
-  )(implicit kinesisClient: AmazonKinesisAsync): Future[Seq[(PutRecordsResultEntry, T)]] = {
-
-    val p = Promise[Seq[(PutRecordsResultEntry, T)]]
-
-    kinesisClient
-      .putRecordsAsync(
-        new PutRecordsRequest()
-          .withStreamName(streamName)
-          .withRecords(recordEntries.map(_._1).asJavaCollection),
-        new AsyncHandler[PutRecordsRequest, PutRecordsResult] {
-
-          override def onError(exception: Exception): Unit =
-            p.failure(FailurePublishingRecords(exception))
-
-          override def onSuccess(request: PutRecordsRequest, result: PutRecordsResult): Unit = {
-            val correlatedRequestResult = result.getRecords.asScala
-              .zip(recordEntries)
-              .map({ case (res, (req, ctx)) => (req, res, ctx) })
-            if (result.getFailedRecordCount > 0) {
-              retryRecordsCallback(
-                correlatedRequestResult
-                  .filter(_._2.getErrorCode != null)
-              )
-            } else {
-              retryRecordsCallback(Nil)
-            }
-            p.success(
-              correlatedRequestResult
-                .filter(_._2.getErrorCode == null)
-                .map({ case (_, res, ctx) => (res, ctx) })
-            )
-          }
-        }
-      )
-
-    p.future
-  }
 
   private case class Result[T](attempt: Int, recordsToRetry: Seq[(PutRecordsRequestEntry, PutRecordsResultEntry, T)])
   private case class Job[T](attempt: Int, records: Seq[(PutRecordsRequestEntry, T)])
