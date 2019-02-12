@@ -6,7 +6,6 @@ package akka.stream.alpakka.kinesis
 
 import akka.stream.alpakka.kinesis.KinesisFlowSettings.{Exponential, Linear}
 import akka.util.JavaDurationConverters._
-import com.typesafe.config.Config
 
 import scala.concurrent.duration._
 
@@ -97,51 +96,6 @@ object KinesisFlowSettings {
       backoffStrategy = Exponential,
       retryInitialTimeout = 100.millis
     )
-
-  /**
-   * Reads from the given config.
-   */
-  def apply(c: Config): KinesisFlowSettings = {
-    val parallelism = c.getInt("parallelism")
-    val maxBatchSize = c.getInt("max-batch-size")
-    val maxRecordsPerSecond = c.getInt("max-records-per-second")
-    val maxBytesPerSecond = c.getInt("max-bytes-per-second")
-    val maxRetries = c.getInt("max-retries")
-    val backoffStrategy = {
-      c.getString("backoff-strategy") match {
-        case "exponential" => Exponential
-        case "linear" => Linear
-        case other => throw new IllegalArgumentException(s"unknown backoff-strategy: $other")
-      }
-    }
-    val retryInitialTimeout = c.getDuration("retry-initial-timeout").asScala
-    new KinesisFlowSettings(
-      parallelism,
-      maxBatchSize,
-      maxRecordsPerSecond,
-      maxBytesPerSecond,
-      maxRetries,
-      backoffStrategy,
-      retryInitialTimeout
-    )
-  }
-
-  /**
-   * Java API: Reads from the given config.
-   */
-  def create(c: Config): KinesisFlowSettings = apply(c)
-
-  /* sample config section
-    kinesis-flow-settings {
-      parallelism = 1
-      max-batch-size = 500
-      max-records-per-second = 1000000
-      max-bytes-per-second = 1234567
-      max-retries = 1234567
-      backoff-strategy = exponential
-      retry-initial-timeout = 100 ms
-    }
-   */
 
   /** Java API */
   def create(): KinesisFlowSettings = Defaults

@@ -6,7 +6,6 @@ package akka.stream.alpakka.kinesisfirehose
 
 import akka.stream.alpakka.kinesisfirehose.KinesisFirehoseFlowSettings.{Exponential, Linear}
 import akka.util.JavaDurationConverters._
-import com.typesafe.config.Config
 
 import scala.concurrent.duration._
 
@@ -101,49 +100,4 @@ object KinesisFirehoseFlowSettings {
 
   /** Java API */
   def create(): KinesisFirehoseFlowSettings = Defaults
-
-  /**
-   * Reads from the given config.
-   */
-  def apply(c: Config): KinesisFirehoseFlowSettings = {
-    val parallelism = c.getInt("parallelism")
-    val maxBatchSize = c.getInt("max-batch-size")
-    val maxRecordsPerSecond = c.getInt("max-records-per-second")
-    val maxBytesPerSecond = c.getMemorySize("max-bytes-per-second").toBytes.toInt
-    val maxRetries = c.getInt("max-retries")
-    val backoffStrategy = {
-      c.getString("backoff-strategy") match {
-        case "exponential" => Exponential
-        case "linear" => Linear
-        case other => throw new IllegalArgumentException(s"unknown backoff-strategy: $other")
-      }
-    }
-    val retryInitialTimeout = c.getDuration("retry-initial-timeout").asScala
-    new KinesisFirehoseFlowSettings(
-      parallelism,
-      maxBatchSize,
-      maxRecordsPerSecond,
-      maxBytesPerSecond,
-      maxRetries,
-      backoffStrategy,
-      retryInitialTimeout
-    )
-  }
-
-  /**
-   * Java API: Reads from the given config.
-   */
-  def create(c: Config): KinesisFirehoseFlowSettings = apply(c)
-
-  /* sample config section
-  kinesis-firehose-flow-settings {
-    parallelism = 1234567
-    max-batch-size = 1234567
-    max-records-per-second = 1234567
-    max-bytes-per-second = 4 megabytes
-    max-retries = 1234567
-    backoff-strategy = ???
-    retry-initial-timeout = 50 seconds
-  }
- */
 }
