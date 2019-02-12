@@ -2,13 +2,15 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.solr
+package docs.scaladsl
 
 import java.io.File
+import java.util.{Arrays, Optional}
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.alpakka.solr._
 import akka.stream.alpakka.solr.scaladsl.{SolrFlow, SolrSink, SolrSource}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
@@ -28,16 +30,15 @@ import scala.concurrent.duration._
 
 class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
   private var cluster: MiniSolrCloudCluster = _
+
   private var zkTestServer: ZkTestServer = _
+  implicit val system: ActorSystem = ActorSystem()
 
-  //#init-mat
-  implicit val system = ActorSystem()
-  implicit val materializer = ActorMaterializer()
-  //#init-mat
+  implicit val materializer: Materializer = ActorMaterializer()
   //#init-client
-
-  val zkHost = "127.0.0.1:9984/solr"
-  implicit val client: CloudSolrClient = new CloudSolrClient.Builder().withZkHost(zkHost).build
+  final val zookeeperPort = 9984
+  final val zkHost = s"127.0.0.1:$zookeeperPort/solr"
+  implicit val client: CloudSolrClient = new CloudSolrClient.Builder(Arrays.asList(zkHost), Optional.empty()).build
 
   //#init-client
   //#define-class
@@ -117,6 +118,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
       //#define-bean
       import org.apache.solr.client.solrj.beans.Field
+
       import scala.annotation.meta.field
       case class BookBean(@(Field @field) title: String)
       //#define-bean
@@ -684,7 +686,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
   }
 
   override def afterAll(): Unit = {
-    //client.close()
+    client.close()
     cluster.shutdown()
     zkTestServer.shutdown()
     TestKit.shutdownActorSystem(system)
@@ -700,7 +702,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
     val confDir = new File("solr/src/test/resources/conf")
 
     val zkDir = testWorkingDir.toPath.resolve("zookeeper/server/data").toString
-    zkTestServer = new ZkTestServer(zkDir, 9984)
+    zkTestServer = new ZkTestServer(zkDir, zookeeperPort)
     zkTestServer.run()
 
     cluster = new MiniSolrCloudCluster(

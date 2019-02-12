@@ -2,21 +2,24 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.solr;
+package docs.javadsl;
 
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
+import akka.stream.alpakka.solr.*;
 import akka.stream.alpakka.solr.javadsl.SolrFlow;
 import akka.stream.alpakka.solr.javadsl.SolrSink;
 import akka.stream.alpakka.solr.javadsl.SolrSource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.beans.Field;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -50,9 +53,14 @@ import static org.junit.Assert.assertTrue;
 
 public class SolrTest {
   private static MiniSolrCloudCluster cluster;
+  private static SolrClient client;
+  private static SolrClient cl;
   private static ActorSystem system;
   private static ActorMaterializer materializer;
-  private static String zkHost;
+  // #init-client
+  private static final int zookeeperPort = 9984;
+  private static final String zkHost = "127.0.0.1:" + zookeeperPort + "/solr";
+  // #init-client
   private static ZkTestServer zkTestServer;
 
   // #define-class
@@ -114,8 +122,7 @@ public class SolrTest {
                   return IncomingUpsertMessage.create(doc);
                 })
             .groupedWithin(5, Duration.ofMillis(10))
-            .runWith(
-                SolrSink.documents("collection2", settings, cluster.getSolrClient()), materializer);
+            .runWith(SolrSink.documents("collection2", settings, client), materializer);
     // #run-document
 
     f1.toCompletableFuture().get();
@@ -169,9 +176,7 @@ public class SolrTest {
                   return IncomingUpsertMessage.create(new BookBean(title));
                 })
             .groupedWithin(5, Duration.ofMillis(10))
-            .runWith(
-                SolrSink.beans("collection3", settings, cluster.getSolrClient(), BookBean.class),
-                materializer);
+            .runWith(SolrSink.beans("collection3", settings, client, BookBean.class), materializer);
     // #run-bean
 
     f1.toCompletableFuture().get();
@@ -211,8 +216,7 @@ public class SolrTest {
             .map(tuple -> IncomingUpsertMessage.create(tupleToBook.apply(tuple)))
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(
-                SolrSink.typeds(
-                    "collection4", settings, bookToDoc, cluster.getSolrClient(), Book.class),
+                SolrSink.typeds("collection4", settings, bookToDoc, client, Book.class),
                 materializer);
     // #run-typed
 
@@ -252,9 +256,7 @@ public class SolrTest {
         SolrSource.fromTupleStream(stream)
             .map(tuple -> IncomingUpsertMessage.create(tupleToBook.apply(tuple)))
             .groupedWithin(5, Duration.ofMillis(10))
-            .via(
-                SolrFlow.typeds(
-                    "collection5", settings, bookToDoc, cluster.getSolrClient(), Book.class))
+            .via(SolrFlow.typeds("collection5", settings, bookToDoc, client, Book.class))
             .runWith(Sink.ignore(), materializer);
     // #run-flow
 
@@ -309,9 +311,7 @@ public class SolrTest {
               return IncomingUpsertMessage.create(book, kafkaMessage.offset);
             })
         .groupedWithin(5, Duration.ofMillis(10))
-        .via(
-            SolrFlow.typedsWithPassThrough(
-                "collection6", settings, bookToDoc, cluster.getSolrClient(), Book.class))
+        .via(SolrFlow.typedsWithPassThrough("collection6", settings, bookToDoc, client, Book.class))
         .map(
             messageResults -> {
               messageResults
@@ -365,8 +365,7 @@ public class SolrTest {
                   return IncomingUpsertMessage.create(doc);
                 })
             .groupedWithin(5, Duration.ofMillis(10))
-            .runWith(
-                SolrSink.documents("collection7", settings, cluster.getSolrClient()), materializer);
+            .runWith(SolrSink.documents("collection7", settings, client), materializer);
     // #run-document
 
     f1.toCompletableFuture().get();
@@ -381,8 +380,7 @@ public class SolrTest {
                     IncomingDeleteMessageByIds.<SolrInputDocument>create(
                         tupleToBook.apply(t).title))
             .groupedWithin(5, Duration.ofMillis(10))
-            .runWith(
-                SolrSink.documents("collection7", settings, cluster.getSolrClient()), materializer);
+            .runWith(SolrSink.documents("collection7", settings, client), materializer);
     // #delete-documents
 
     res2.toCompletableFuture().get();
@@ -418,8 +416,7 @@ public class SolrTest {
                   return IncomingUpsertMessage.create(doc);
                 })
             .groupedWithin(5, Duration.ofMillis(10))
-            .runWith(
-                SolrSink.documents("collection8", settings, cluster.getSolrClient()), materializer);
+            .runWith(SolrSink.documents("collection8", settings, client), materializer);
     // #run-document
 
     f1.toCompletableFuture().get();
@@ -439,13 +436,12 @@ public class SolrTest {
                       "title", t.fields.get("title").toString(), m1);
                 })
             .groupedWithin(5, Duration.ofMillis(10))
-            .runWith(
-                SolrSink.documents("collection8", settings, cluster.getSolrClient()), materializer);
+            .runWith(SolrSink.documents("collection8", settings, client), materializer);
     // #update-atomically-documents
 
     res2.toCompletableFuture().get();
 
-    cluster.getSolrClient().commit("collection8");
+    client.commit("collection8");
 
     TupleStream stream3 = getTupleStream("collection8");
 
@@ -493,9 +489,7 @@ public class SolrTest {
                   return IncomingUpsertMessage.create(doc);
                 })
             .groupedWithin(5, Duration.ofMillis(10))
-            .runWith(
-                SolrSink.documents("collection8-1", settings, cluster.getSolrClient()),
-                materializer);
+            .runWith(SolrSink.documents("collection8-1", settings, client), materializer);
 
     f1.toCompletableFuture().get();
 
@@ -513,13 +507,11 @@ public class SolrTest {
                       "title", t.fields.get("title").toString(), "router-value", m1);
                 })
             .groupedWithin(5, Duration.ofMillis(10))
-            .runWith(
-                SolrSink.documents("collection8-1", settings, cluster.getSolrClient()),
-                materializer);
+            .runWith(SolrSink.documents("collection8-1", settings, client), materializer);
 
     res2.toCompletableFuture().get();
 
-    cluster.getSolrClient().commit("collection8-1");
+    client.commit("collection8-1");
 
     TupleStream stream3 = getTupleStream("collection8-1");
 
@@ -564,8 +556,7 @@ public class SolrTest {
                   return IncomingUpsertMessage.create(doc);
                 })
             .groupedWithin(5, Duration.ofMillis(10))
-            .runWith(
-                SolrSink.documents("collection9", settings, cluster.getSolrClient()), materializer);
+            .runWith(SolrSink.documents("collection9", settings, client), materializer);
     // #run-document
 
     f1.toCompletableFuture().get();
@@ -580,8 +571,7 @@ public class SolrTest {
                     IncomingDeleteMessageByQuery.<SolrInputDocument>create(
                         "title:\"" + t.fields.get("title").toString() + "\""))
             .groupedWithin(5, Duration.ofMillis(10))
-            .runWith(
-                SolrSink.documents("collection9", settings, cluster.getSolrClient()), materializer);
+            .runWith(SolrSink.documents("collection9", settings, client), materializer);
     // #delete-documents-query
 
     res2.toCompletableFuture().get();
@@ -604,10 +594,6 @@ public class SolrTest {
   public static void setup() throws Exception {
     setupCluster();
 
-    // #init-client
-    zkHost = "127.0.0.1:9984/solr";
-    // #init-client
-
     // #init-mat
     system = ActorSystem.create();
     materializer = ActorMaterializer.create(system);
@@ -621,11 +607,12 @@ public class SolrTest {
         .add("title", "Scala Puzzlers")
         .add("title", "Effective Akka")
         .add("title", "Akka Concurrency")
-        .commit(cluster.getSolrClient(), "collection1");
+        .commit(client, "collection1");
   }
 
   @AfterClass
   public static void teardown() throws Exception {
+    client.close();
     cluster.shutdown();
     zkTestServer.shutdown();
     TestKit.shutdownActorSystem(system);
@@ -669,7 +656,7 @@ public class SolrTest {
     File confDir = new File("solr/src/test/resources/conf");
 
     String zkDir = testWorkingDir.toPath().resolve("zookeeper/server/data").toString();
-    zkTestServer = new ZkTestServer(zkDir, 9984);
+    zkTestServer = new ZkTestServer(zkDir, zookeeperPort);
     zkTestServer.run();
 
     cluster =
@@ -679,25 +666,31 @@ public class SolrTest {
             MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML,
             JettyConfig.builder().setContext("/solr").build(),
             zkTestServer);
-    ((ZkClientClusterStateProvider) cluster.getSolrClient().getClusterStateProvider())
+
+    // #init-client
+    CloudSolrClient client =
+        new CloudSolrClient.Builder(Arrays.asList(zkHost), Optional.empty()).build();
+    // #init-client
+    SolrTest.client = client;
+
+    ((ZkClientClusterStateProvider) client.getClusterStateProvider())
         .uploadConfig(confDir.toPath(), "conf");
 
-    cluster.getSolrClient().setIdField("router");
+    client.setIdField("router");
     createCollection("collection1");
 
-    assertTrue(
-        !cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes().isEmpty());
+    assertTrue(!client.getZkStateReader().getClusterState().getLiveNodes().isEmpty());
   }
 
   private static void createCollection(String name) throws IOException, SolrServerException {
-    CollectionAdminRequest.createCollection(name, "conf", 1, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(name, "conf", 1, 1).process(client);
   }
 
   private static void createCollection(String name, String router)
       throws IOException, SolrServerException {
     CollectionAdminRequest.createCollection(name, "conf", 1, 1)
         .setRouterField(router)
-        .process(cluster.getSolrClient());
+        .process(client);
   }
 
   private TupleStream getTupleStream(String collection) throws IOException {
