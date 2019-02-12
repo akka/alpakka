@@ -353,8 +353,8 @@ object Dependencies {
       libraryDependencies ++= Seq(
         "org.apache.solr" % "solr-solrj" % solrjVersion, // ApacheV2
         //Test
-        "org.apache.solr" % "solr-test-framework" % solrjVersion % Test, // ApacheV2
-        "org.slf4j" % "slf4j-log4j12" % slf4jVersion % Test // MIT like: http://www.slf4j.org/license.html
+        "org.apache.solr" % "solr-test-framework" % solrjVersion % Test exclude("org.apache.logging.log4j", "log4j-slf4j-impl"), // ApacheV2
+        "org.slf4j" % "log4j-over-slf4j" % slf4jVersion % Test // MIT like: http://www.slf4j.org/license.html
       ),
       resolvers += ("restlet" at "https://maven.restlet.com")
     )
