@@ -18,55 +18,6 @@ import java.util.{List => JavaList}
 object SolrSink {
 
   /**
-   * Java API: creates a [[SolrFlow]] to Solr for [[WriteMessage]] containing [[SolrInputDocument]].
-   *
-   * @deprecated ("use the method documents to batch operation","0.20")
-   */
-  def document(
-      collection: String,
-      settings: SolrUpdateSettings,
-      client: SolrClient
-  ): javadsl.Sink[WriteMessage[SolrInputDocument, NotUsed], CompletionStage[Done]] =
-    SolrFlow
-      .document(collection, settings, client)
-      .toMat(javadsl.Sink.ignore[java.util.List[WriteResult[SolrInputDocument, NotUsed]]],
-             javadsl.Keep.right[NotUsed, CompletionStage[Done]])
-
-  /**
-   * Java API: creates a [[SolrFlow]] to Solr for [[WriteMessage]] containing type `T`
-   * with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
-   *
-   * @deprecated ("use the method beans to batch operation","0.20")
-   */
-  def bean[T](
-      collection: String,
-      settings: SolrUpdateSettings,
-      client: SolrClient,
-      clazz: Class[T]
-  ): Sink[WriteMessage[T, NotUsed], CompletionStage[Done]] =
-    SolrFlow
-      .bean[T](collection, settings, client, clazz)
-      .toMat(javadsl.Sink.ignore[java.util.List[WriteResult[T, NotUsed]]],
-             javadsl.Keep.right[NotUsed, CompletionStage[Done]])
-
-  /**
-   * Java API: creates a [[SolrFlow]] to Solr for [[WriteMessage]] containing type `T` with `binder` of type 'T'.
-   *
-   * @deprecated ("use the method typeds to batch operation","0.20")
-   */
-  def typed[T](
-      collection: String,
-      settings: SolrUpdateSettings,
-      binder: Function[T, SolrInputDocument],
-      client: SolrClient,
-      clazz: Class[T]
-  ): javadsl.Sink[WriteMessage[T, NotUsed], CompletionStage[Done]] =
-    SolrFlow
-      .typed[T](collection, settings, binder, client, clazz)
-      .toMat(javadsl.Sink.ignore[java.util.List[WriteResult[T, NotUsed]]],
-             javadsl.Keep.right[NotUsed, CompletionStage[Done]])
-
-  /**
    * Java API: creates a [[SolrFlow]] to Solr for sequence of [[WriteMessage]] containing [[SolrInputDocument]].
    */
   def documents(

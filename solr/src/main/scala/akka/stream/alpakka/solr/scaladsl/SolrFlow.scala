@@ -11,6 +11,8 @@ import akka.stream.scaladsl.Flow
 import org.apache.solr.client.solrj.SolrClient
 import org.apache.solr.common.SolrInputDocument
 
+import scala.collection.immutable
+
 object SolrFlow {
 
   /**
@@ -22,12 +24,12 @@ object SolrFlow {
   def document(
       collection: String,
       settings: SolrUpdateSettings
-  )(implicit client: SolrClient): Flow[WriteMessage[SolrInputDocument, NotUsed], Seq[
-    WriteResult[SolrInputDocument, NotUsed]
-  ], NotUsed] =
+  )(
+      implicit client: SolrClient
+  ): Flow[WriteMessage[SolrInputDocument, NotUsed], immutable.Seq[WriteResult[SolrInputDocument, NotUsed]], NotUsed] =
     Flow
-      .fromFunction[WriteMessage[SolrInputDocument, NotUsed], Seq[WriteMessage[SolrInputDocument, NotUsed]]](
-        t => Seq(t)
+      .fromFunction[WriteMessage[SolrInputDocument, NotUsed], immutable.Seq[WriteMessage[SolrInputDocument, NotUsed]]](
+        t => immutable.Seq(t)
       )
       .via(
         documents(collection, settings)(client)
@@ -40,9 +42,10 @@ object SolrFlow {
   def documents(
       collection: String,
       settings: SolrUpdateSettings
-  )(implicit client: SolrClient): Flow[Seq[WriteMessage[SolrInputDocument, NotUsed]], Seq[
-    WriteResult[SolrInputDocument, NotUsed]
-  ], NotUsed] =
+  )(
+      implicit client: SolrClient
+  ): Flow[immutable.Seq[WriteMessage[SolrInputDocument, NotUsed]], immutable.Seq[WriteResult[SolrInputDocument,
+                                                                                             NotUsed]], NotUsed] =
     Flow
       .fromGraph(
         new SolrFlowStage[SolrInputDocument, NotUsed](
@@ -64,10 +67,10 @@ object SolrFlow {
       settings: SolrUpdateSettings
   )(
       implicit client: SolrClient
-  ): Flow[WriteMessage[T, NotUsed], Seq[WriteResult[T, NotUsed]], NotUsed] =
+  ): Flow[WriteMessage[T, NotUsed], immutable.Seq[WriteResult[T, NotUsed]], NotUsed] =
     Flow
-      .fromFunction[WriteMessage[T, NotUsed], Seq[WriteMessage[T, NotUsed]]](
-        t => Seq(t)
+      .fromFunction[WriteMessage[T, NotUsed], immutable.Seq[WriteMessage[T, NotUsed]]](
+        t => immutable.Seq(t)
       )
       .via(
         beans[T](collection, settings)(client)
@@ -82,7 +85,7 @@ object SolrFlow {
       settings: SolrUpdateSettings
   )(
       implicit client: SolrClient
-  ): Flow[Seq[WriteMessage[T, NotUsed]], Seq[WriteResult[T, NotUsed]], NotUsed] =
+  ): Flow[immutable.Seq[WriteMessage[T, NotUsed]], immutable.Seq[WriteResult[T, NotUsed]], NotUsed] =
     Flow
       .fromGraph(
         new SolrFlowStage[T, NotUsed](
@@ -105,10 +108,10 @@ object SolrFlow {
       binder: T => SolrInputDocument
   )(
       implicit client: SolrClient
-  ): Flow[WriteMessage[T, NotUsed], Seq[WriteResult[T, NotUsed]], NotUsed] =
+  ): Flow[WriteMessage[T, NotUsed], immutable.Seq[WriteResult[T, NotUsed]], NotUsed] =
     Flow
-      .fromFunction[WriteMessage[T, NotUsed], Seq[WriteMessage[T, NotUsed]]](
-        t => Seq(t)
+      .fromFunction[WriteMessage[T, NotUsed], immutable.Seq[WriteMessage[T, NotUsed]]](
+        t => immutable.Seq(t)
       )
       .via(
         typeds[T](collection, settings, binder)(client)
@@ -124,7 +127,7 @@ object SolrFlow {
       binder: T => SolrInputDocument
   )(
       implicit client: SolrClient
-  ): Flow[Seq[WriteMessage[T, NotUsed]], Seq[WriteResult[T, NotUsed]], NotUsed] =
+  ): Flow[immutable.Seq[WriteMessage[T, NotUsed]], immutable.Seq[WriteResult[T, NotUsed]], NotUsed] =
     Flow
       .fromGraph(
         new SolrFlowStage[T, NotUsed](
@@ -146,10 +149,10 @@ object SolrFlow {
       settings: SolrUpdateSettings
   )(
       implicit client: SolrClient
-  ): Flow[WriteMessage[SolrInputDocument, C], Seq[WriteResult[SolrInputDocument, C]], NotUsed] =
+  ): Flow[WriteMessage[SolrInputDocument, C], immutable.Seq[WriteResult[SolrInputDocument, C]], NotUsed] =
     Flow
-      .fromFunction[WriteMessage[SolrInputDocument, C], Seq[WriteMessage[SolrInputDocument, C]]](
-        t => Seq(t)
+      .fromFunction[WriteMessage[SolrInputDocument, C], immutable.Seq[WriteMessage[SolrInputDocument, C]]](
+        t => immutable.Seq(t)
       )
       .via(
         documentsWithPassThrough[C](collection, settings)(client)
@@ -164,7 +167,9 @@ object SolrFlow {
       settings: SolrUpdateSettings
   )(
       implicit client: SolrClient
-  ): Flow[Seq[WriteMessage[SolrInputDocument, C]], Seq[WriteResult[SolrInputDocument, C]], NotUsed] =
+  ): Flow[immutable.Seq[WriteMessage[SolrInputDocument, C]],
+          immutable.Seq[WriteResult[SolrInputDocument, C]],
+          NotUsed] =
     Flow
       .fromGraph(
         new SolrFlowStage[SolrInputDocument, C](
@@ -187,10 +192,10 @@ object SolrFlow {
       settings: SolrUpdateSettings
   )(
       implicit client: SolrClient
-  ): Flow[WriteMessage[T, C], Seq[WriteResult[T, C]], NotUsed] =
+  ): Flow[WriteMessage[T, C], immutable.Seq[WriteResult[T, C]], NotUsed] =
     Flow
-      .fromFunction[WriteMessage[T, C], Seq[WriteMessage[T, C]]](
-        t => Seq(t)
+      .fromFunction[WriteMessage[T, C], immutable.Seq[WriteMessage[T, C]]](
+        t => immutable.Seq(t)
       )
       .via(
         beansWithPassThrough(collection, settings)(client)
@@ -204,7 +209,7 @@ object SolrFlow {
   def beansWithPassThrough[T, C](
       collection: String,
       settings: SolrUpdateSettings
-  )(implicit client: SolrClient): Flow[Seq[WriteMessage[T, C]], Seq[WriteResult[T, C]], NotUsed] =
+  )(implicit client: SolrClient): Flow[immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]], NotUsed] =
     Flow
       .fromGraph(
         new SolrFlowStage[T, C](
@@ -227,10 +232,10 @@ object SolrFlow {
       binder: T => SolrInputDocument
   )(
       implicit client: SolrClient
-  ): Flow[WriteMessage[T, C], Seq[WriteResult[T, C]], NotUsed] =
+  ): Flow[WriteMessage[T, C], immutable.Seq[WriteResult[T, C]], NotUsed] =
     Flow
-      .fromFunction[WriteMessage[T, C], Seq[WriteMessage[T, C]]](
-        t => Seq(t)
+      .fromFunction[WriteMessage[T, C], immutable.Seq[WriteMessage[T, C]]](
+        t => immutable.Seq(t)
       )
       .via(
         typedsWithPassThrough(collection, settings, binder)(client)
@@ -244,7 +249,7 @@ object SolrFlow {
       collection: String,
       settings: SolrUpdateSettings,
       binder: T => SolrInputDocument
-  )(implicit client: SolrClient): Flow[Seq[WriteMessage[T, C]], Seq[WriteResult[T, C]], NotUsed] =
+  )(implicit client: SolrClient): Flow[immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]], NotUsed] =
     Flow
       .fromGraph(
         new SolrFlowStage[T, C](

@@ -17,6 +17,7 @@ import org.apache.solr.common.SolrInputDocument
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 
+import scala.collection.immutable
 import scala.collection.JavaConverters._
 
 /**
@@ -31,10 +32,10 @@ private[solr] final class SolrFlowStage[T, C](
     client: SolrClient,
     settings: SolrUpdateSettings,
     messageBinder: T => SolrInputDocument
-) extends GraphStage[FlowShape[Seq[WriteMessage[T, C]], Seq[WriteResult[T, C]]]] {
+) extends GraphStage[FlowShape[immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]]]] {
 
-  private val in = Inlet[Seq[WriteMessage[T, C]]]("messages")
-  private val out = Outlet[Seq[WriteResult[T, C]]]("result")
+  private val in = Inlet[immutable.Seq[WriteMessage[T, C]]]("messages")
+  private val out = Outlet[immutable.Seq[WriteResult[T, C]]]("result")
   override val shape = FlowShape(in, out)
 
   override protected def initialAttributes: Attributes =
@@ -50,9 +51,9 @@ private final class SolrFlowLogic[T, C](
     decider: Supervision.Decider,
     collection: String,
     client: SolrClient,
-    in: Inlet[Seq[WriteMessage[T, C]]],
-    out: Outlet[Seq[WriteResult[T, C]]],
-    shape: FlowShape[Seq[WriteMessage[T, C]], Seq[WriteResult[T, C]]],
+    in: Inlet[immutable.Seq[WriteMessage[T, C]]],
+    out: Outlet[immutable.Seq[WriteResult[T, C]]],
+    shape: FlowShape[immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]]],
     settings: SolrUpdateSettings,
     messageBinder: T => SolrInputDocument
 ) extends GraphStageLogic(shape)
@@ -98,28 +99,17 @@ private final class SolrFlowLogic[T, C](
     failStage(exc)
   }
 
-  private def handleResponse(args: (Seq[WriteMessage[T, C]], Int)): Unit = {
-    val (messages, status) = args
-    log.debug("Handle the response with {}", status)
-    val result = messages.map(
-      m =>
-        WriteResult(m.idField, m.idFieldValue, m.routingFieldValue, m.query, m.source, m.updates, m.passThrough, status)
-    )
-
-    emit(out, result)
-  }
-
   private def handleSuccess(): Unit =
     completeStage()
 
-  private def updateBulkToSolr(messages: Seq[WriteMessage[T, C]]): UpdateResponse = {
+  private def updateBulkToSolr(messages: immutable.Seq[WriteMessage[T, C]]): UpdateResponse = {
     val docs = messages.flatMap(_.source.map(messageBinder))
 
     if (log.isDebugEnabled) log.debug("Upsert {}", docs)
     client.add(collection, docs.asJava, settings.commitWithin)
   }
 
-  private def atomicUpdateBulkToSolr(messages: Seq[WriteMessage[T, C]]): UpdateResponse = {
+  private def atomicUpdateBulkToSolr(messages: immutable.Seq[WriteMessage[T, C]]): UpdateResponse = {
     val docs = messages.map { message =>
       val doc = new SolrInputDocument()
 
@@ -155,7 +145,7 @@ private final class SolrFlowLogic[T, C](
     client.add(collection, docs.asJava, settings.commitWithin)
   }
 
-  private def deleteBulkToSolrByIds(messages: Seq[WriteMessage[T, C]]): UpdateResponse = {
+  private def deleteBulkToSolrByIds(messages: immutable.Seq[WriteMessage[T, C]]): UpdateResponse = {
     val docsIds = messages
       .filter { message =>
         message.operation == DeleteByIds && message.idFieldValue.isDefined
@@ -167,7 +157,7 @@ private final class SolrFlowLogic[T, C](
     client.deleteById(collection, docsIds.asJava, settings.commitWithin)
   }
 
-  private def deleteEachByQuery(messages: Seq[WriteMessage[T, C]]): UpdateResponse = {
+  private def deleteEachByQuery(messages: immutable.Seq[WriteMessage[T, C]]): UpdateResponse = {
     val responses = messages.map { message =>
       val query = message.query.get
       if (log.isDebugEnabled) log.debug(s"Delete by the query $query")
@@ -176,10 +166,10 @@ private final class SolrFlowLogic[T, C](
     responses.find(_.getStatus != 0).getOrElse(responses.head)
   }
 
-  private def sendBulkToSolr(messages: Seq[WriteMessage[T, C]]): Unit = {
+  private def sendBulkToSolr(messages: immutable.Seq[WriteMessage[T, C]]): Unit = {
 
     @tailrec
-    def send(toSend: Seq[WriteMessage[T, C]]): UpdateResponse = {
+    def send(toSend: immutable.Seq[WriteMessage[T, C]]): UpdateResponse = {
       val operation = toSend.head.operation
       //Just take a subset of this operation
       val (current, remaining) = toSend.span { m =>
@@ -199,7 +189,19 @@ private final class SolrFlowLogic[T, C](
       }
     }
 
-    val response = if (messages.nonEmpty) send(messages) else new UpdateResponse
-    handleResponse((messages, response.getStatus))
+    val response = if (messages.nonEmpty) send(messages).getStatus else 0
+    log.debug("Handle the response with {}", response)
+    val results = messages.map(
+      m =>
+        WriteResult(m.idField,
+                    m.idFieldValue,
+                    m.routingFieldValue,
+                    m.query,
+                    m.source,
+                    m.updates,
+                    m.passThrough,
+                    response)
+    )
+    emit(out, results)
   }
 }
