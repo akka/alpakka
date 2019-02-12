@@ -20,7 +20,7 @@ private[solr] final class SolrSourceStage(tupleStream: TupleStream) extends Grap
   val out: Outlet[Tuple] = Outlet("SolrSource.out")
   override val shape: SourceShape[Tuple] = SourceShape(out)
 
-  override def createLogic(inheritedAttributes: Attributes) =
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new SolrSourceLogic(tupleStream, out, shape)
 }
 

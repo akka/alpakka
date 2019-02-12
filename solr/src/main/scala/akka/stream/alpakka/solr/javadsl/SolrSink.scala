@@ -7,7 +7,7 @@ package akka.stream.alpakka.solr.javadsl
 import java.util.concurrent.CompletionStage
 import java.util.function.Function
 
-import akka.stream.alpakka.solr.{IncomingMessage, IncomingMessageResult, SolrUpdateSettings}
+import akka.stream.alpakka.solr.{SolrUpdateSettings, WriteMessage, WriteResult}
 import akka.stream.javadsl
 import akka.stream.javadsl.Sink
 import akka.{Done, NotUsed}
@@ -18,22 +18,24 @@ import java.util.{List => JavaList}
 object SolrSink {
 
   /**
-   * Java API: creates a [[SolrFlow]] to Solr for [[IncomingMessage]] containing [[SolrInputDocument]].
+   * Java API: creates a [[SolrFlow]] to Solr for [[WriteMessage]] containing [[SolrInputDocument]].
+   *
    * @deprecated ("use the method documents to batch operation","0.20")
    */
   def document(
       collection: String,
       settings: SolrUpdateSettings,
       client: SolrClient
-  ): javadsl.Sink[IncomingMessage[SolrInputDocument, NotUsed], CompletionStage[Done]] =
+  ): javadsl.Sink[WriteMessage[SolrInputDocument, NotUsed], CompletionStage[Done]] =
     SolrFlow
       .document(collection, settings, client)
-      .toMat(javadsl.Sink.ignore[java.util.List[IncomingMessageResult[SolrInputDocument, NotUsed]]],
+      .toMat(javadsl.Sink.ignore[java.util.List[WriteResult[SolrInputDocument, NotUsed]]],
              javadsl.Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
-   * Java API: creates a [[SolrFlow]] to Solr for [[IncomingMessage]] containing type `T`
+   * Java API: creates a [[SolrFlow]] to Solr for [[WriteMessage]] containing type `T`
    * with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
+   *
    * @deprecated ("use the method beans to batch operation","0.20")
    */
   def bean[T](
@@ -41,14 +43,15 @@ object SolrSink {
       settings: SolrUpdateSettings,
       client: SolrClient,
       clazz: Class[T]
-  ): Sink[IncomingMessage[T, NotUsed], CompletionStage[Done]] =
+  ): Sink[WriteMessage[T, NotUsed], CompletionStage[Done]] =
     SolrFlow
       .bean[T](collection, settings, client, clazz)
-      .toMat(javadsl.Sink.ignore[java.util.List[IncomingMessageResult[T, NotUsed]]],
+      .toMat(javadsl.Sink.ignore[java.util.List[WriteResult[T, NotUsed]]],
              javadsl.Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
-   * Java API: creates a [[SolrFlow]] to Solr for [[IncomingMessage]] containing type `T` with `binder` of type 'T'.
+   * Java API: creates a [[SolrFlow]] to Solr for [[WriteMessage]] containing type `T` with `binder` of type 'T'.
+   *
    * @deprecated ("use the method typeds to batch operation","0.20")
    */
   def typed[T](
@@ -57,27 +60,27 @@ object SolrSink {
       binder: Function[T, SolrInputDocument],
       client: SolrClient,
       clazz: Class[T]
-  ): javadsl.Sink[IncomingMessage[T, NotUsed], CompletionStage[Done]] =
+  ): javadsl.Sink[WriteMessage[T, NotUsed], CompletionStage[Done]] =
     SolrFlow
       .typed[T](collection, settings, binder, client, clazz)
-      .toMat(javadsl.Sink.ignore[java.util.List[IncomingMessageResult[T, NotUsed]]],
+      .toMat(javadsl.Sink.ignore[java.util.List[WriteResult[T, NotUsed]]],
              javadsl.Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
-   * Java API: creates a [[SolrFlow]] to Solr for sequence of [[IncomingMessage]] containing [[SolrInputDocument]].
+   * Java API: creates a [[SolrFlow]] to Solr for sequence of [[WriteMessage]] containing [[SolrInputDocument]].
    */
   def documents(
       collection: String,
       settings: SolrUpdateSettings,
       client: SolrClient
-  ): javadsl.Sink[JavaList[IncomingMessage[SolrInputDocument, NotUsed]], CompletionStage[Done]] =
+  ): javadsl.Sink[JavaList[WriteMessage[SolrInputDocument, NotUsed]], CompletionStage[Done]] =
     SolrFlow
       .documents(collection, settings, client)
-      .toMat(javadsl.Sink.ignore[java.util.List[IncomingMessageResult[SolrInputDocument, NotUsed]]],
+      .toMat(javadsl.Sink.ignore[java.util.List[WriteResult[SolrInputDocument, NotUsed]]],
              javadsl.Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
-   * Java API: creates a [[SolrFlow]] to Solr for sequence of [[IncomingMessage]] containing type `T`
+   * Java API: creates a [[SolrFlow]] to Solr for sequence of [[WriteMessage]] containing type `T`
    * with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
    */
   def beans[T](
@@ -85,14 +88,14 @@ object SolrSink {
       settings: SolrUpdateSettings,
       client: SolrClient,
       clazz: Class[T]
-  ): Sink[JavaList[IncomingMessage[T, NotUsed]], CompletionStage[Done]] =
+  ): Sink[JavaList[WriteMessage[T, NotUsed]], CompletionStage[Done]] =
     SolrFlow
       .beans[T](collection, settings, client, clazz)
-      .toMat(javadsl.Sink.ignore[java.util.List[IncomingMessageResult[T, NotUsed]]],
+      .toMat(javadsl.Sink.ignore[java.util.List[WriteResult[T, NotUsed]]],
              javadsl.Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
-   * Java API: creates a [[SolrFlow]] to Solr for sequence of [[IncomingMessage]] containing type `T` with `binder` of type 'T'.
+   * Java API: creates a [[SolrFlow]] to Solr for sequence of [[WriteMessage]] containing type `T` with `binder` of type 'T'.
    */
   def typeds[T](
       collection: String,
@@ -100,9 +103,9 @@ object SolrSink {
       binder: Function[T, SolrInputDocument],
       client: SolrClient,
       clazz: Class[T]
-  ): javadsl.Sink[JavaList[IncomingMessage[T, NotUsed]], CompletionStage[Done]] =
+  ): javadsl.Sink[JavaList[WriteMessage[T, NotUsed]], CompletionStage[Done]] =
     SolrFlow
       .typeds[T](collection, settings, binder, client, clazz)
-      .toMat(javadsl.Sink.ignore[java.util.List[IncomingMessageResult[T, NotUsed]]],
+      .toMat(javadsl.Sink.ignore[java.util.List[WriteResult[T, NotUsed]]],
              javadsl.Keep.right[NotUsed, CompletionStage[Done]])
 }
