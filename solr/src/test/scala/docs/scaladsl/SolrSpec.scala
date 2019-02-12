@@ -78,7 +78,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .runWith(
           SolrSink.documents(
             collection = "collection2",
-            settings = SolrUpdateSettings(commitWithin = 5)
+            settings = SolrUpdateSettings().withCommitWithin(5)
           )
         )
       //#run-document
@@ -134,7 +134,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .runWith(
           SolrSink.beans[BookBean](
             collection = "collection3",
-            settings = SolrUpdateSettings(commitWithin = 5)
+            settings = SolrUpdateSettings().withCommitWithin(5)
           )
         )
       //#run-bean
@@ -183,7 +183,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
           SolrSink
             .typeds[Book](
               collection = "collection4",
-              settings = SolrUpdateSettings(commitWithin = 5),
+              settings = SolrUpdateSettings().withCommitWithin(5),
               binder = bookToDoc
             )
         )
@@ -233,7 +233,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
           SolrFlow
             .typeds[Book](
               collection = "collection5",
-              settings = SolrUpdateSettings(commitWithin = 5),
+              settings = SolrUpdateSettings().withCommitWithin(5),
               binder = bookToDoc
             )
         )
@@ -304,7 +304,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .via( // write to Solr
           SolrFlow.typedsWithPassThrough[Book, KafkaOffset](
             collection = "collection6",
-            settings = SolrUpdateSettings(commitWithin = 5),
+            settings = SolrUpdateSettings().withCommitWithin(5),
             binder = bookToDoc
           )
         )
@@ -355,7 +355,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .runWith(
           SolrSink.documents(
             collection = "collection7",
-            settings = SolrUpdateSettings(commitWithin = 5)
+            settings = SolrUpdateSettings().withCommitWithin(5)
           )
         )
 
@@ -416,7 +416,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .runWith(
           SolrSink.documents(
             collection = "collection8",
-            settings = SolrUpdateSettings(commitWithin = 5)
+            settings = SolrUpdateSettings().withCommitWithin(5)
           )
         )
 
@@ -490,7 +490,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .runWith(
           SolrSink.typeds[Book](
             collection = "collection9",
-            settings = SolrUpdateSettings(commitWithin = 5),
+            settings = SolrUpdateSettings().withCommitWithin(5),
             binder = bookToDoc
           )
         )
@@ -551,7 +551,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .runWith(
           SolrSink.typeds[Book](
             collection = "collection10",
-            settings = SolrUpdateSettings(commitWithin = 5),
+            settings = SolrUpdateSettings().withCommitWithin(5),
             binder = bookToDoc
           )
         )
@@ -576,7 +576,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .runWith(
           SolrSink.typeds[Book](
             collection = "collection10",
-            settings = SolrUpdateSettings(commitWithin = 5),
+            settings = SolrUpdateSettings().withCommitWithin(5),
             binder = bookToDoc
           )
         )
@@ -627,7 +627,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .runWith(
           SolrSink.documents(
             collection = "collection11",
-            settings = SolrUpdateSettings(commitWithin = 5)
+            settings = SolrUpdateSettings().withCommitWithin(5)
           )
         )
 
@@ -753,8 +753,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
     //#solr-update-settings
     import akka.stream.alpakka.solr.SolrUpdateSettings
 
-    val settings =
-      SolrUpdateSettings(commitWithin = -1)
+    val settings = SolrUpdateSettings()
     //#solr-update-settings
   }
 }

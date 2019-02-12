@@ -78,29 +78,12 @@ private final class SolrFlowLogic[T, C](
           case _ ⇒ tryPull() // for resume and restart strategies tryPull
         }
     }
-
   }
-
-  override def preStart(): Unit =
-    pull(in)
-
-  override def onUpstreamFailure(ex: Throwable): Unit =
-    handleFailure(ex)
-
-  override def onUpstreamFinish(): Unit = handleSuccess
 
   private def tryPull(): Unit =
     if (!isClosed(in) && !hasBeenPulled(in)) {
       pull(in)
     }
-
-  private def handleFailure(exc: Throwable): Unit = {
-    log.warning(s"Received error from solr. Error: ${exc.toString}")
-    failStage(exc)
-  }
-
-  private def handleSuccess(): Unit =
-    completeStage()
 
   private def updateBulkToSolr(messages: immutable.Seq[WriteMessage[T, C]]): UpdateResponse = {
     val docs = messages.flatMap(_.source.map(messageBinder))
