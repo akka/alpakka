@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
 
-public class ExampleSpec {
+public class KinesisTest {
   static ActorSystem system;
   static ActorMaterializer materializer;
   static ShardSettings settings;
@@ -62,7 +62,8 @@ public class ExampleSpec {
     amazonKinesisAsync = setclient.second();
   }
 
-  @Ignore("This test appears to trigger a deadlock, see https://github.com/akka/alpakka/issues/390")
+  //  @Ignore("This test appears to trigger a deadlock, see
+  // https://github.com/akka/alpakka/issues/390")
   @Test
   public void PullRecord() throws Exception {
 

@@ -2,23 +2,24 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.kinesis.scaladsl
+package docs.scaladsl
 
 import java.nio.ByteBuffer
 import java.time.Instant
 
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.stream.alpakka.kinesis.scaladsl.{KinesisFlow, KinesisSink, KinesisSource}
 import akka.stream.alpakka.kinesis.{KinesisFlowSettings, ShardSettings}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.ByteString
-import com.amazonaws.services.kinesis.model.{PutRecordsRequestEntry, PutRecordsResultEntry, Record, ShardIteratorType}
 import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder
+import com.amazonaws.services.kinesis.model.{PutRecordsRequestEntry, PutRecordsResultEntry, Record, ShardIteratorType}
 
 import scala.concurrent.duration._
 
-object Examples {
+object KinesisSnippets {
 
   //#init-client
   implicit val system: ActorSystem = ActorSystem()

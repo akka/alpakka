@@ -13,13 +13,13 @@ import com.amazonaws.services.kinesis.model.{PutRecordsRequestEntry, PutRecordsR
 
 object KinesisFlow {
 
-  def apply(streamName: String,
-            kinesisClient: AmazonKinesisAsync): Flow[PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed] =
-    apply(streamName, KinesisFlowSettings.Defaults, kinesisClient)
+  def create(streamName: String,
+             kinesisClient: AmazonKinesisAsync): Flow[PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed] =
+    create(streamName, KinesisFlowSettings.Defaults, kinesisClient)
 
-  def apply(streamName: String,
-            settings: KinesisFlowSettings,
-            kinesisClient: AmazonKinesisAsync): Flow[PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed] =
+  def create(streamName: String,
+             settings: KinesisFlowSettings,
+             kinesisClient: AmazonKinesisAsync): Flow[PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed] =
     scaladsl.KinesisFlow
       .apply(streamName, settings)(kinesisClient)
       .asJava

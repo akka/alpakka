@@ -5,7 +5,6 @@
 package akka.stream.alpakka.kinesis
 
 import java.time.Instant
-import java.util.Date
 
 import com.amazonaws.services.kinesis.model.ShardIteratorType
 import org.scalatest.{Matchers, WordSpec}

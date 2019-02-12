@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.kinesis.javadsl;
+package docs.javadsl;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
@@ -10,22 +10,21 @@ import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.kinesis.KinesisFlowSettings;
 import akka.stream.alpakka.kinesis.ShardSettings;
+import akka.stream.alpakka.kinesis.javadsl.KinesisFlow;
+import akka.stream.alpakka.kinesis.javadsl.KinesisSink;
+import akka.stream.alpakka.kinesis.javadsl.KinesisSource;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder;
 import com.amazonaws.services.kinesis.model.PutRecordsRequestEntry;
 import com.amazonaws.services.kinesis.model.PutRecordsResultEntry;
 import com.amazonaws.services.kinesis.model.Record;
-import com.amazonaws.services.kinesis.model.ShardIteratorType;
-import scala.concurrent.duration.FiniteDuration;
 
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
 
-public class Examples {
+public class KinesisSnippets {
 
   // #init-client
   final ActorSystem system = ActorSystem.create();
@@ -54,9 +53,12 @@ public class Examples {
       KinesisSource.basic(settings, amazonKinesisAsync);
   // #source-single
 
+  final ShardSettings shard2 =
+      ShardSettings.create("streamName", "shard-id-2", Duration.ofSeconds(1L), 500);
+
   // #source-list
   final Source<Record, NotUsed> two =
-      KinesisSource.basicMerge(Arrays.asList(settings), amazonKinesisAsync);
+      KinesisSource.basicMerge(Arrays.asList(settings, shard2), amazonKinesisAsync);
   // #source-list
 
   // #flow-settings
@@ -77,10 +79,10 @@ public class Examples {
 
   // #flow-sink
   final Flow<PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed> flow =
-      KinesisFlow.apply("streamName", flowSettings, amazonKinesisAsync);
+      KinesisFlow.create("streamName", flowSettings, amazonKinesisAsync);
 
   final Flow<PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed> defaultSettingsFlow =
-      KinesisFlow.apply("streamName", amazonKinesisAsync);
+      KinesisFlow.create("streamName", amazonKinesisAsync);
 
   final Flow<Pair<PutRecordsRequestEntry, String>, Pair<PutRecordsResultEntry, String>, NotUsed>
       flowWithStringContext =
@@ -91,10 +93,10 @@ public class Examples {
           KinesisFlow.withUserContext("streamName", flowSettings, amazonKinesisAsync);
 
   final Sink<PutRecordsRequestEntry, NotUsed> sink =
-      KinesisSink.apply("streamName", flowSettings, amazonKinesisAsync);
+      KinesisSink.create("streamName", flowSettings, amazonKinesisAsync);
 
   final Sink<PutRecordsRequestEntry, NotUsed> defaultSettingsSink =
-      KinesisSink.apply("streamName", amazonKinesisAsync);
+      KinesisSink.create("streamName", amazonKinesisAsync);
   // #flow-sink
 
 }

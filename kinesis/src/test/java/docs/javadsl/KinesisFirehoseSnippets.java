@@ -2,12 +2,14 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.kinesisfirehose.javadsl;
+package docs.javadsl;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.kinesisfirehose.KinesisFirehoseFlowSettings;
+import akka.stream.alpakka.kinesisfirehose.javadsl.KinesisFirehoseFlow;
+import akka.stream.alpakka.kinesisfirehose.javadsl.KinesisFirehoseSink;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import com.amazonaws.services.kinesisfirehose.AmazonKinesisFirehoseAsyncClientBuilder;
@@ -15,9 +17,8 @@ import com.amazonaws.services.kinesisfirehose.model.PutRecordBatchResponseEntry;
 import com.amazonaws.services.kinesisfirehose.model.Record;
 
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 
-public class Examples {
+public class KinesisFirehoseSnippets {
 
   // #init-client
   final ActorSystem system = ActorSystem.create();

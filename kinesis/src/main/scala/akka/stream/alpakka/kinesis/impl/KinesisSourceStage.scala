@@ -4,15 +4,12 @@
 
 package akka.stream.alpakka.kinesis.impl
 
-import java.util.concurrent.Future
-
 import akka.actor.ActorRef
 import akka.annotation.InternalApi
 import akka.stream.alpakka.kinesis.{ShardSettings, KinesisErrors => Errors}
 import akka.stream.stage.GraphStageLogic.StageActor
 import akka.stream.stage._
 import akka.stream.{Attributes, Outlet, SourceShape}
-import com.amazonaws.AmazonWebServiceRequest
 import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.kinesis.AmazonKinesisAsync
 import com.amazonaws.services.kinesis.model._
@@ -79,7 +76,9 @@ private[kinesis] class KinesisSourceStage(shardSettings: ShardSettings, amazonKi
           log.error(ex, "Failed to get a shard iterator for shard {}", shardId)
           failStage(new Errors.GetShardIteratorError(shardId, ex))
 
-        case (_, Pump) => ()
+        case (_, Pump) =>
+        case (_, msg) =>
+          throw new IllegalArgumentException(s"unexpected message $msg in state `ready`")
       }
 
       private def awaitingRecords(in: (ActorRef, Any)): Unit = in match {
@@ -103,7 +102,9 @@ private[kinesis] class KinesisSourceStage(shardSettings: ShardSettings, amazonKi
           log.error(ex, "Failed to fetch records from Kinesis for shard {}", shardId)
           failStage(new Errors.GetRecordsError(shardId, ex))
 
-        case (_, Pump) => ()
+        case (_, Pump) =>
+        case (_, msg) =>
+          throw new IllegalArgumentException(s"unexpected message $msg in state `ready`")
       }
 
       private def ready(in: (ActorRef, Any)): Unit = in match {
@@ -116,6 +117,9 @@ private[kinesis] class KinesisSourceStage(shardSettings: ShardSettings, amazonKi
             self.become(awaitingRecords)
             requestRecords()
           }
+
+        case (_, msg) =>
+          throw new IllegalArgumentException(s"unexpected message $msg in state `ready`")
       }
 
       override protected def onTimer(timerKey: Any): Unit = timerKey match {
