@@ -72,7 +72,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .map { tuple: Tuple =>
           val book: Book = tupleToBook(tuple)
           val doc: SolrInputDocument = bookToDoc(book)
-          IncomingUpsertMessage(doc)
+          WriteMessage.createUpsertMessage(doc)
         }
         .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
         .runWith(
@@ -128,7 +128,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .fromTupleStream(ts = stream)
         .map { tuple: Tuple =>
           val title = tuple.getString("title")
-          IncomingUpsertMessage(BookBean(title))
+          WriteMessage.createUpsertMessage(BookBean(title))
         }
         .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
         .runWith(
@@ -176,7 +176,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .fromTupleStream(ts = stream)
         .map { tuple: Tuple =>
           val book: Book = tupleToBook(tuple)
-          IncomingUpsertMessage(book)
+          WriteMessage.createUpsertMessage(book)
         }
         .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
         .runWith(
@@ -226,7 +226,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .fromTupleStream(ts = stream)
         .map { tuple: Tuple =>
           val book: Book = tupleToBook(tuple)
-          IncomingUpsertMessage(book)
+          WriteMessage.createUpsertMessage(book)
         }
         .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
         .via(
@@ -349,7 +349,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .map { tuple: Tuple =>
           val book: Book = tupleToBook(tuple)
           val doc: SolrInputDocument = bookToDoc(book)
-          IncomingUpsertMessage(doc)
+          WriteMessage.createUpsertMessage(doc)
         }
         .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
         .runWith(
@@ -410,7 +410,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .map { tuple: Tuple =>
           val book: Book = tupleToBook(tuple).copy(comment = "Written by good authors.")
           val doc: SolrInputDocument = bookToDoc(book)
-          IncomingUpsertMessage(doc)
+          WriteMessage.createUpsertMessage(doc)
         }
         .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
         .runWith(
@@ -485,7 +485,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .fromTupleStream(ts = stream)
         .map { tuple: Tuple =>
           val book: Book = tupleToBook(tuple)
-          IncomingUpsertMessage(book)
+          WriteMessage.createUpsertMessage(book)
         }
         .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
         .runWith(
@@ -622,7 +622,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .map { tuple: Tuple =>
           val book: Book = tupleToBook(tuple)
           val doc: SolrInputDocument = bookToDoc(book)
-          IncomingUpsertMessage(doc)
+          WriteMessage.createUpsertMessage(doc)
         }
         .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
         .runWith(
