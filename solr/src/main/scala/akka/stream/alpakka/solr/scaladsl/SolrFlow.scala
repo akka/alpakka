@@ -5,7 +5,8 @@
 package akka.stream.alpakka.solr.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.solr.{IncomingMessage, IncomingMessageResult, SolrFlowStage, SolrUpdateSettings}
+import akka.stream.alpakka.solr.impl.SolrFlowStage
+import akka.stream.alpakka.solr.{IncomingMessage, IncomingMessageResult, SolrUpdateSettings}
 import akka.stream.scaladsl.Flow
 import org.apache.solr.client.solrj.SolrClient
 import org.apache.solr.common.SolrInputDocument

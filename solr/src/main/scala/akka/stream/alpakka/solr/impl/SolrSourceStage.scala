@@ -2,8 +2,9 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.solr
+package akka.stream.alpakka.solr.impl
 
+import akka.annotation.InternalApi
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import akka.stream.{Attributes, Outlet, SourceShape}
 import org.apache.solr.client.solrj.io.Tuple
@@ -11,6 +12,10 @@ import org.apache.solr.client.solrj.io.stream.TupleStream
 
 import scala.util.control.NonFatal
 
+/**
+ * Internal API
+ */
+@InternalApi
 private[solr] final class SolrSourceStage(tupleStream: TupleStream) extends GraphStage[SourceShape[Tuple]] {
   val out: Outlet[Tuple] = Outlet("SolrSource.out")
   override val shape: SourceShape[Tuple] = SourceShape(out)
@@ -19,7 +24,7 @@ private[solr] final class SolrSourceStage(tupleStream: TupleStream) extends Grap
     new SolrSourceLogic(tupleStream, out, shape)
 }
 
-private[solr] final class SolrSourceLogic(
+final class SolrSourceLogic(
     tupleStream: TupleStream,
     out: Outlet[Tuple],
     shape: SourceShape[Tuple]

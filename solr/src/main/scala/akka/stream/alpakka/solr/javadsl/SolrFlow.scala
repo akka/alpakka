@@ -8,6 +8,7 @@ import java.util.function.Function
 import java.util.{List => JavaList}
 
 import akka.NotUsed
+import akka.stream.alpakka.solr.impl.SolrFlowStage
 import akka.stream.alpakka.solr.scaladsl.{SolrFlow => ScalaSolrFlow}
 import akka.stream.alpakka.solr.{IncomingMessage, IncomingMessageResult, SolrUpdateSettings}
 import akka.stream.javadsl
@@ -20,7 +21,7 @@ import scala.collection.JavaConverters._
 object SolrFlow {
 
   /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for [[SolrInputDocument]]
+   * Java API: creates a [[SolrFlowStage]] for [[SolrInputDocument]]
    * from [[IncomingMessage]] to sequences of [[IncomingMessageResult]].
    * @deprecated ("use the method documents to batch operation","0.20")
    */
@@ -39,7 +40,7 @@ object SolrFlow {
       .asJava
 
   /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for [[SolrInputDocument]]
+   * Java API: creates a [[SolrFlowStage]] for [[SolrInputDocument]]
    * from sequence of [[IncomingMessage]] to sequences of [[IncomingMessageResult]].
    */
   def documents(
@@ -62,7 +63,7 @@ object SolrFlow {
       .asJava
 
   /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for type `T` from [[IncomingMessage]] to sequences
+   * Java API: creates a [[SolrFlowStage]] for type `T` from [[IncomingMessage]] to sequences
    * of [[IncomingMessageResult]] with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
    * @deprecated ("use the method beans to batch operation","0.20")
    */
@@ -80,7 +81,7 @@ object SolrFlow {
       .asJava
 
   /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for type `T` from sequence of [Seq[IncomingMessage]] to sequences
+   * Java API: creates a [[SolrFlowStage]] for type `T` from sequence of [Seq[IncomingMessage]] to sequences
    * of [[IncomingMessageResult]] with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
    */
   def beans[T](
@@ -99,7 +100,7 @@ object SolrFlow {
       .asJava
 
   /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for type `T` from [[IncomingMessage]] to sequences
+   * Java API: creates a [[SolrFlowStage]] for type `T` from [[IncomingMessage]] to sequences
    * of [[IncomingMessageResult]] with `binder` of type 'T'.
    * @deprecated ("use the method typeds to batch operation","0.20")
    */
@@ -118,7 +119,7 @@ object SolrFlow {
       .asJava
 
   /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for type `T` from sequence of [[IncomingMessage]] to sequences
+   * Java API: creates a [[SolrFlowStage]] for type `T` from sequence of [[IncomingMessage]] to sequences
    * of [[IncomingMessageResult]] with `binder` of type 'T'.
    */
   def typeds[T](
@@ -138,7 +139,7 @@ object SolrFlow {
       .asJava
 
   /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for [[SolrInputDocument]]
+   * Java API: creates a [[SolrFlowStage]] for [[SolrInputDocument]]
    * from [[IncomingMessage]] to sequences of [[IncomingMessageResult]] with `passThrough` of type `C`.
    * @deprecated ("use the method documentsWithPassThrough to batch operation","0.20")
    */
@@ -155,7 +156,7 @@ object SolrFlow {
       .asJava
 
   /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for [[SolrInputDocument]] from [[IncomingMessage]]
+   * Java API: creates a [[SolrFlowStage]] for [[SolrInputDocument]] from [[IncomingMessage]]
    * to lists of [[IncomingMessageResult]] with `passThrough` of type `C`.
    */
   def documentsWithPassThrough[C](
@@ -176,7 +177,7 @@ object SolrFlow {
       .asJava
 
   /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for type `T` from [[IncomingMessage]] to sequences
+   * Java API: creates a [[SolrFlowStage]] for type `T` from [[IncomingMessage]] to sequences
    * of [[IncomingMessageResult]] with `passThrough` of type `C` and [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
    * @deprecated ("use the method beansWithPassThrough to batch operation","0.20")
    */
@@ -194,7 +195,7 @@ object SolrFlow {
       .asJava
 
   /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for type 'T' from sequence of [[IncomingMessage]]
+   * Java API: creates a [[SolrFlowStage]] for type 'T' from sequence of [[IncomingMessage]]
    * to lists of [[IncomingMessageResult]] with `passThrough` of type `C`
    * and [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]] for type 'T' .
    */
@@ -214,7 +215,7 @@ object SolrFlow {
       .asJava
 
   /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for type `T` from [[IncomingMessage]] to sequences
+   * Java API: creates a [[SolrFlowStage]] for type `T` from [[IncomingMessage]] to sequences
    * of [[IncomingMessageResult]] with `binder` of type 'T'.
    * @deprecated ("use the method typedsWithPassThrough to batch operation","0.20")
    */
@@ -233,7 +234,7 @@ object SolrFlow {
       .asJava
 
   /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for type 'T' from sequence of [[IncomingMessage]]
+   * Java API: creates a [[SolrFlowStage]] for type 'T' from sequence of [[IncomingMessage]]
    * to lists of [[IncomingMessageResult]] with `passThrough` of type `C` and `binder` of type `T`.
    */
   def typedsWithPassThrough[T, C](

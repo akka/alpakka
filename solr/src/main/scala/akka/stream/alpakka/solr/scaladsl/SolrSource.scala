@@ -5,7 +5,7 @@
 package akka.stream.alpakka.solr.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.solr.SolrSourceStage
+import akka.stream.alpakka.solr.impl.SolrSourceStage
 import akka.stream.scaladsl.Source
 import org.apache.solr.client.solrj.io.Tuple
 import org.apache.solr.client.solrj.io.stream.TupleStream
