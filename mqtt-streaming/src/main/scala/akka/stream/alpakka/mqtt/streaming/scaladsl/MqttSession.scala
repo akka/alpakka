@@ -202,7 +202,8 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
                                                                   Consumer.PubAckReceivedLocally(reply),
                                                                   reply)
                   Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
-                    case _: RemotePacketRouter.CannotRoute => ByteString.empty
+                    case e: RemotePacketRouter.CannotRoute =>
+                      ByteString.empty
                   }
                 case Command(cp: PubRec, _, _) =>
                   val reply = Promise[Consumer.ForwardPubRec.type]
@@ -513,7 +514,8 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
                                                                                Consumer.PubAckReceivedLocally(reply),
                                                                                reply)
                   Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
-                    case _: RemotePacketRouter.CannotRoute => ByteString.empty
+                    case _: RemotePacketRouter.CannotRoute =>
+                      ByteString.empty
                   }
                 case Command(cp: PubRec, _, _) =>
                   val reply = Promise[Consumer.ForwardPubRec.type]
