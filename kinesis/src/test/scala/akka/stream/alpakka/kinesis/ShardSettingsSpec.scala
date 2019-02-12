@@ -9,10 +9,8 @@ import java.time.Instant
 import com.amazonaws.services.kinesis.model.ShardIteratorType
 import org.scalatest.{Matchers, WordSpec}
 
-import scala.concurrent.duration._
-
 class ShardSettingsSpec extends WordSpec with Matchers {
-  val baseSettings = ShardSettings("name", "shardid", 1.second, 500)
+  val baseSettings = ShardSettings("name", "shardid")
   "ShardSettings" must {
     "require a timestamp for shard iterator type is AT_TIMESTAMP" in {
       a[IllegalArgumentException] should be thrownBy baseSettings

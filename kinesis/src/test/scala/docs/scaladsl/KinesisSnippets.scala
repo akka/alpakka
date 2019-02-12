@@ -5,7 +5,6 @@
 package docs.scaladsl
 
 import java.nio.ByteBuffer
-import java.time.Instant
 
 import akka.NotUsed
 import akka.actor.ActorSystem
@@ -33,7 +32,9 @@ object KinesisSnippets {
 
   //#source-settings
   val settings =
-    ShardSettings(streamName = "myStreamName", shardId = "shard-id", refreshInterval = 1.second, limit = 500)
+    ShardSettings(streamName = "myStreamName", shardId = "shard-id")
+      .withRefreshInterval(1.second)
+      .withLimit(500)
       .withShardIteratorType(ShardIteratorType.TRIM_HORIZON)
   //#source-settings
 
@@ -44,12 +45,9 @@ object KinesisSnippets {
 
   //#source-list
   val mergeSettings = List(
-    ShardSettings("myStreamName", "shard-id-1", refreshInterval = 1.second, limit = 500)
-      .withStartingSequenceNumber("sequence"),
-    ShardSettings("myStreamName", "shard-id-2", refreshInterval = 1.second, limit = 500)
-      .withAtTimestamp(Instant.now())
+    ShardSettings("myStreamName", "shard-id-1"),
+    ShardSettings("myStreamName", "shard-id-2")
   )
-
   val mergedSource: Source[Record, NotUsed] = KinesisSource.basicMerge(mergeSettings, amazonKinesisAsync)
   //#source-list
 

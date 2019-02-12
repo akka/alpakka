@@ -78,7 +78,7 @@ Java
 You have the choice of reading from a single shard, or reading from multiple shards. In the case of multiple shards the results of running a separate `GraphStage` for each shard will be merged together.
 
 @@@ warning
-The `GraphStage` associated with a shard will remain open until the graph is stopped, or a [GetRecords](http://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetRecords.html) result returns an empty shard iterator indicating that the shard has been closed. This means that if you wish to continue processing records after a merge or reshard, you will need to recreate the source with the results of a new [DescribeStream](http://docs.aws.amazon.com/kinesis/latest/APIReference/API_DescribeStream.html) request, which can be done by simply creating a new `KinesisSource`. You can read more about adapting to a reshard [here](http://docs.aws.amazon.com/streams/latest/dev/developing-consumers-with-sdk.html).
+The `GraphStage` associated with a shard will remain open until the graph is stopped, or a [GetRecords](http://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetRecords.html) result returns an empty shard iterator indicating that the shard has been closed. This means that if you wish to continue processing records after a merge or reshard, you will need to recreate the source with the results of a new [DescribeStream](http://docs.aws.amazon.com/kinesis/latest/APIReference/API_DescribeStream.html) request, which can be done by simply creating a new `KinesisSource`. You can read more about adapting to a reshard in the [AWS documentation](http://docs.aws.amazon.com/streams/latest/dev/developing-consumers-with-sdk.html).
 @@@
 
 For a single shard you simply provide the settings for a single shard.
@@ -110,7 +110,7 @@ publishes messages into a Kinesis stream using its partition key and message bod
 @@@ warning
 Batching has a drawback: message order cannot be guaranteed, as some records within a single batch may fail to be published. That also means that the Flow output may not match the same input order.
 
-More information can be found [here](http://docs.aws.amazon.com/streams/latest/dev/developing-producers-with-sdk.html#kinesis-using-sdk-java-putrecords) and [here](http://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecords.html).
+More information can be found in the [AWS documentation](http://docs.aws.amazon.com/streams/latest/dev/developing-producers-with-sdk.html#kinesis-using-sdk-java-putrecords) and the [AWS API reference](http://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecords.html).
 @@@
 
 In order to correlate the results with the original message, an optional user context object of arbitrary type can be associated with every message and will be returned with the corresponding result. This allows keeping track of which messages have been successfully sent to Kinesis even if the message order gets mixed up.
@@ -163,7 +163,7 @@ publishes messages into a Kinesis Firehose stream using its message body. It use
 @@@ warning
 Batching has a drawback: message order cannot be guaranteed, as some records within a single batch may fail to be published. That also means that the Flow output may not match the same input order.
 
-More information can be found [here](https://docs.aws.amazon.com/firehose/latest/APIReference/API_PutRecordBatch.html).
+More information can be found in the [AWS API reference](https://docs.aws.amazon.com/firehose/latest/APIReference/API_PutRecordBatch.html).
 @@@
 
 Publishing to a Kinesis Firehose stream requires an instance of `KinesisFirehoseFlowSettings`, although a default instance with sane values is available:

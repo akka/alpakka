@@ -20,9 +20,11 @@ import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder;
 import com.amazonaws.services.kinesis.model.PutRecordsRequestEntry;
 import com.amazonaws.services.kinesis.model.PutRecordsResultEntry;
 import com.amazonaws.services.kinesis.model.Record;
+import com.amazonaws.services.kinesis.model.ShardIteratorType;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.List;
 
 public class KinesisSnippets {
 
@@ -44,8 +46,9 @@ public class KinesisSnippets {
   // #source-settings
   final ShardSettings settings =
       ShardSettings.create("streamName", "shard-id")
-          .withRefreshInterval(Duration.ofSeconds(1L))
-          .withLimit(500);
+          .withRefreshInterval(Duration.ofSeconds(1))
+          .withLimit(500)
+          .withShardIteratorType(ShardIteratorType.TRIM_HORIZON);
   // #source-settings
 
   // #source-single
@@ -53,12 +56,12 @@ public class KinesisSnippets {
       KinesisSource.basic(settings, amazonKinesisAsync);
   // #source-single
 
-  final ShardSettings shard2 =
-      ShardSettings.create("streamName", "shard-id-2", Duration.ofSeconds(1L), 500);
-
   // #source-list
-  final Source<Record, NotUsed> two =
-      KinesisSource.basicMerge(Arrays.asList(settings, shard2), amazonKinesisAsync);
+  final List<ShardSettings> mergeSettings =
+      Arrays.asList(
+          ShardSettings.create("streamName", "shard-id-1"),
+          ShardSettings.create("streamName", "shard-id-2"));
+  final Source<Record, NotUsed> two = KinesisSource.basicMerge(mergeSettings, amazonKinesisAsync);
   // #source-list
 
   // #flow-settings
@@ -70,7 +73,7 @@ public class KinesisSnippets {
           .withMaxBytesPerSecond(1_000_000)
           .withMaxRecordsPerSecond(5)
           .withBackoffStrategyExponential()
-          .withRetryInitialTimeout(Duration.ofMillis(100L));
+          .withRetryInitialTimeout(Duration.ofMillis(100));
 
   final KinesisFlowSettings defaultFlowSettings = KinesisFlowSettings.create();
 

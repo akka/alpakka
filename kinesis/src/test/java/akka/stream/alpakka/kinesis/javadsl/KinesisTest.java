@@ -11,17 +11,15 @@ import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.kinesis.ShardSettings;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import akka.testkit.javadsl.TestKit;
 import com.amazonaws.handlers.AsyncHandler;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import com.amazonaws.services.kinesis.model.*;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.Ignore;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-import scala.concurrent.duration.FiniteDuration;
 
-import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -30,36 +28,26 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
 
 public class KinesisTest {
-  static ActorSystem system;
-  static ActorMaterializer materializer;
-  static ShardSettings settings;
-  static AmazonKinesisAsync amazonKinesisAsync;
-
-  public static Pair<ActorSystem, ActorMaterializer> setupMaterializer() {
-    final ActorSystem system = ActorSystem.create();
-    final ActorMaterializer materializer = ActorMaterializer.create(system);
-    return Pair.create(system, materializer);
-  }
-
-  public static Pair<ShardSettings, AmazonKinesisAsync> setupClient() {
-    final ShardSettings settings =
-        ShardSettings.create("my-stream", "shard-id", Duration.ofSeconds(1L), 500);
-    final AmazonKinesisAsync client = mock(AmazonKinesisAsync.class);
-    return Pair.create(settings, client);
-  }
+  private static ActorSystem system;
+  private static ActorMaterializer materializer;
+  private static ShardSettings settings;
+  private static AmazonKinesisAsync amazonKinesisAsync;
 
   @BeforeClass
   public static void setup() throws Exception {
     System.setProperty("aws.accessKeyId", "someKeyId");
     System.setProperty("aws.secretKey", "someSecretKey");
 
-    final Pair<ActorSystem, ActorMaterializer> sysmat = setupMaterializer();
-    system = sysmat.first();
-    materializer = sysmat.second();
+    system = ActorSystem.create();
+    materializer = ActorMaterializer.create(system);
 
-    final Pair<ShardSettings, AmazonKinesisAsync> setclient = setupClient();
-    settings = setclient.first();
-    amazonKinesisAsync = setclient.second();
+    settings = ShardSettings.create("my-stream", "shard-id");
+    amazonKinesisAsync = mock(AmazonKinesisAsync.class);
+  }
+
+  @AfterClass
+  public static void afterAll() {
+    TestKit.shutdownActorSystem(system);
   }
 
   //  @Ignore("This test appears to trigger a deadlock, see

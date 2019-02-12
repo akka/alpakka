@@ -121,21 +121,4 @@ object ShardSettings {
    */
   def create(streamName: String, shardId: String): ShardSettings = apply(streamName, shardId)
 
-  /**
-   * Create settings
-   */
-  def apply(streamName: String, shardId: String, refreshInterval: FiniteDuration, limit: Integer) =
-    new ShardSettings(streamName,
-                      shardId,
-                      ShardIteratorType.LATEST,
-                      startingSequenceNumber = None,
-                      atTimestamp = None,
-                      refreshInterval,
-                      limit)
-
-  /**
-   * Java API: Create settings
-   */
-  def create(streamName: String, shardId: String, refreshInterval: java.time.Duration, limit: Integer) =
-    apply(streamName, shardId, refreshInterval.asScala, limit)
 }

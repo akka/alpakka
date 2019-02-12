@@ -31,7 +31,7 @@ class KinesisSourceSpec extends WordSpecLike with Matchers with KinesisMock {
   "KinesisSource" must {
 
     val shardSettings =
-      ShardSettings("stream_name", "shard-id", 1.second, 500)
+      ShardSettings("stream_name", "shard-id")
         .withShardIteratorType(ShardIteratorType.TRIM_HORIZON)
 
     "poll for records" in assertAllStagesStopped {
