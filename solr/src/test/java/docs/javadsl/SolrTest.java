@@ -8,7 +8,8 @@ import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
-import akka.stream.alpakka.solr.*;
+import akka.stream.alpakka.solr.SolrUpdateSettings;
+import akka.stream.alpakka.solr.WriteMessage;
 import akka.stream.alpakka.solr.javadsl.SolrFlow;
 import akka.stream.alpakka.solr.javadsl.SolrSink;
 import akka.stream.alpakka.solr.javadsl.SolrSource;
@@ -37,14 +38,12 @@ import org.apache.solr.common.SolrInputDocument;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.duration.FiniteDuration;
 
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -119,7 +118,7 @@ public class SolrTest {
                 tuple -> {
                   Book book = tupleToBook.apply(tuple);
                   SolrInputDocument doc = bookToDoc.apply(book);
-                  return IncomingUpsertMessage.create(doc);
+                  return WriteMessage.createUpsertMessage(doc);
                 })
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(SolrSink.documents("collection2", settings, client), materializer);
@@ -173,7 +172,7 @@ public class SolrTest {
             .map(
                 tuple -> {
                   String title = tuple.getString("title");
-                  return IncomingUpsertMessage.create(new BookBean(title));
+                  return WriteMessage.createUpsertMessage(new BookBean(title));
                 })
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(SolrSink.beans("collection3", settings, client, BookBean.class), materializer);
@@ -213,7 +212,7 @@ public class SolrTest {
     SolrUpdateSettings settings = SolrUpdateSettings.create().withCommitWithin(5);
     CompletionStage<Done> f1 =
         SolrSource.fromTupleStream(stream)
-            .map(tuple -> IncomingUpsertMessage.create(tupleToBook.apply(tuple)))
+            .map(tuple -> WriteMessage.createUpsertMessage(tupleToBook.apply(tuple)))
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(
                 SolrSink.typeds("collection4", settings, bookToDoc, client, Book.class),
@@ -254,7 +253,7 @@ public class SolrTest {
     SolrUpdateSettings settings = SolrUpdateSettings.create().withCommitWithin(5);
     CompletionStage<Done> f1 =
         SolrSource.fromTupleStream(stream)
-            .map(tuple -> IncomingUpsertMessage.create(tupleToBook.apply(tuple)))
+            .map(tuple -> WriteMessage.createUpsertMessage(tupleToBook.apply(tuple)))
             .groupedWithin(5, Duration.ofMillis(10))
             .via(SolrFlow.typeds("collection5", settings, bookToDoc, client, Book.class))
             .runWith(Sink.ignore(), materializer);
@@ -308,7 +307,7 @@ public class SolrTest {
             kafkaMessage -> {
               Book book = kafkaMessage.book;
               // Transform message so that we can write to elastic
-              return IncomingUpsertMessage.create(book, kafkaMessage.offset);
+              return WriteMessage.createUpsertMessage(book).withPassThrough(kafkaMessage.offset);
             })
         .groupedWithin(5, Duration.ofMillis(10))
         .via(SolrFlow.typedsWithPassThrough("collection6", settings, bookToDoc, client, Book.class))
@@ -362,7 +361,7 @@ public class SolrTest {
                 tuple -> {
                   Book book = tupleToBook.apply(tuple);
                   SolrInputDocument doc = bookToDoc.apply(book);
-                  return IncomingUpsertMessage.create(doc);
+                  return WriteMessage.createUpsertMessage(doc);
                 })
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(SolrSink.documents("collection7", settings, client), materializer);
@@ -377,8 +376,7 @@ public class SolrTest {
         SolrSource.fromTupleStream(stream2)
             .map(
                 t ->
-                    IncomingDeleteMessageByIds.<SolrInputDocument>create(
-                        tupleToBook.apply(t).title))
+                    WriteMessage.<SolrInputDocument>createDeleteMessage(tupleToBook.apply(t).title))
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(SolrSink.documents("collection7", settings, client), materializer);
     // #delete-documents
@@ -413,7 +411,7 @@ public class SolrTest {
                 tuple -> {
                   Book book = new Book(tupleToBook.apply(tuple).title, "Written by good authors.");
                   SolrInputDocument doc = bookToDoc.apply(book);
-                  return IncomingUpsertMessage.create(doc);
+                  return WriteMessage.createUpsertMessage(doc);
                 })
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(SolrSink.documents("collection8", settings, client), materializer);
@@ -432,7 +430,8 @@ public class SolrTest {
                   Map<String, Object> m2 = new HashMap<>();
                   m2.put("set", (t.fields.get("comment") + " It's is a good book!!!"));
                   m1.put("comment", m2);
-                  return IncomingAtomicUpdateMessage.<SolrInputDocument>create(
+                  //                  return IncomingAtomicUpdateMessage.<SolrInputDocument>create(
+                  return WriteMessage.<SolrInputDocument>createUpdateMessage(
                       "title", t.fields.get("title").toString(), m1);
                 })
             .groupedWithin(5, Duration.ofMillis(10))
@@ -486,7 +485,7 @@ public class SolrTest {
                           "Written by good authors.",
                           "router-value");
                   SolrInputDocument doc = bookToDoc.apply(book);
-                  return IncomingUpsertMessage.create(doc);
+                  return WriteMessage.createUpsertMessage(doc);
                 })
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(SolrSink.documents("collection8-1", settings, client), materializer);
@@ -503,7 +502,7 @@ public class SolrTest {
                   Map<String, Object> m2 = new HashMap<>();
                   m2.put("set", (t.fields.get("comment") + " It's is a good book!!!"));
                   m1.put("comment", m2);
-                  return IncomingAtomicUpdateMessage.<SolrInputDocument>create(
+                  return WriteMessage.<SolrInputDocument>createUpdateMessage(
                       "title", t.fields.get("title").toString(), "router-value", m1);
                 })
             .groupedWithin(5, Duration.ofMillis(10))
@@ -553,7 +552,7 @@ public class SolrTest {
                 tuple -> {
                   Book book = tupleToBook.apply(tuple);
                   SolrInputDocument doc = bookToDoc.apply(book);
-                  return IncomingUpsertMessage.create(doc);
+                  return WriteMessage.createUpsertMessage(doc);
                 })
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(SolrSink.documents("collection9", settings, client), materializer);
@@ -568,7 +567,7 @@ public class SolrTest {
         SolrSource.fromTupleStream(stream2)
             .map(
                 t ->
-                    IncomingDeleteMessageByQuery.<SolrInputDocument>create(
+                    WriteMessage.<SolrInputDocument>createDeleteByQueryMessage(
                         "title:\"" + t.fields.get("title").toString() + "\""))
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(SolrSink.documents("collection9", settings, client), materializer);

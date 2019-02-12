@@ -298,7 +298,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
           println("title: " + book.title)
 
           // Transform message so that we can write to solr
-          IncomingUpsertMessage(book, kafkaMessage.offset)
+          WriteMessage.createUpsertMessage(book).withPassThrough(kafkaMessage.offset)
         }
         .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
         .via( // write to Solr
@@ -369,7 +369,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       val f2 = SolrSource
         .fromTupleStream(ts = stream2)
         .map { tuple: Tuple =>
-          IncomingDeleteMessageByIds[SolrInputDocument](tuple.fields.get("title").toString)
+          WriteMessage.createDeleteMessage[SolrInputDocument](tuple.fields.get("title").toString)
         }
         .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
         .runWith(
@@ -430,10 +430,9 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       val f2 = SolrSource
         .fromTupleStream(ts = stream2)
         .map { tuple: Tuple =>
-          IncomingAtomicUpdateMessage[SolrInputDocument](
+          WriteMessage.createUpdateMessage[SolrInputDocument](
             "title",
             tuple.fields.get("title").toString,
-            None,
             Map("comment" -> Map("set" -> (tuple.fields.get("comment") + " It is a good book!!!")))
           )
         }
@@ -505,7 +504,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       val f2 = SolrSource
         .fromTupleStream(ts = stream2)
         .map { tuple: Tuple =>
-          IncomingDeleteMessageByIds[Book](tuple.fields.get("title").toString)
+          WriteMessage.createDeleteMessage[Book](tuple.fields.get("title").toString)
         }
         .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
         .runWith(
@@ -546,7 +545,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .map { tuple: Tuple =>
           val book: Book =
             tupleToBook(tuple).copy(comment = "Written by good authors.", routerOpt = Some("router-value"))
-          IncomingUpsertMessage(book)
+          WriteMessage.createUpsertMessage(book)
         }
         .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
         .runWith(
@@ -566,11 +565,11 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       val f2 = SolrSource
         .fromTupleStream(ts = stream2)
         .map { tuple: Tuple =>
-          IncomingAtomicUpdateMessage[Book](
-            "title",
+          WriteMessage.createUpdateMessage[Book](
+            idField = "title",
             tuple.fields.get("title").toString,
-            Some("router-value"),
-            Map("comment" -> Map("set" -> (tuple.fields.get("comment") + " It is a good book!!!")))
+            routingFieldValue = Some("router-value"),
+            updates = Map("comment" -> Map("set" -> (tuple.fields.get("comment") + " It is a good book!!!")))
           )
         }
         .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
@@ -642,7 +641,9 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       val f2 = SolrSource
         .fromTupleStream(ts = stream2)
         .map { tuple: Tuple =>
-          IncomingDeleteMessageByQuery[SolrInputDocument]("title:\"" + tuple.fields.get("title").toString + "\"")
+          WriteMessage.createDeleteByQueryMessage[SolrInputDocument](
+            "title:\"" + tuple.fields.get("title").toString + "\""
+          )
         }
         .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
         .runWith(
