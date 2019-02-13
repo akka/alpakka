@@ -267,6 +267,10 @@ lazy val docs = project
       "extref.javaee-api.base_url" -> "https://docs.oracle.com/javaee/7/api/index.html?%s.html",
       "extref.paho-api.base_url" -> "https://www.eclipse.org/paho/files/javadoc/index.html?%s.html",
       "extref.slick.base_url" -> s"https://slick.lightbend.com/doc/${Dependencies.SlickVersion}/%s",
+      // Solr
+      "extref.solr.base_url" -> s"http://lucene.apache.org/solr/guide/${Dependencies.SolrVersionForDocs}/%s",
+      "javadoc.org.apache.solr.base_url" -> s"https://lucene.apache.org/solr/${Dependencies.SolrVersionForDocs}_0/solr-solrj/",
+      // Java
       "javadoc.base_url" -> "https://docs.oracle.com/javase/8/docs/api/",
       "javadoc.javax.jms.base_url" -> "https://docs.oracle.com/javaee/7/api/",
       "javadoc.com.couchbase.base_url" -> s"https://docs.couchbase.com/sdk-api/couchbase-java-client-${Dependencies.CouchbaseVersion}/",
