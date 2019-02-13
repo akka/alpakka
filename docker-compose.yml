@@ -182,3 +182,11 @@ services:
     environment:
       - "ORIENTDB_ROOT_PASSWORD=root"
     command: /orientdb/bin/server.sh -Dmemory.chunk.size=268435456
+  ibmmq:
+    image: ibmcom/mq:9.1.1.0
+    environment:
+      LICENSE: accept
+      MQ_QMGR_NAME: QM1
+    ports:
+      - "1414:1414"
+      - "9443:9443"
