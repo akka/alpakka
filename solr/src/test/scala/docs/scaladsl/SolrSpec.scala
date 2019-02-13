@@ -5,6 +5,7 @@
 package docs.scaladsl
 
 import java.io.File
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.{Arrays, Optional}
 
 import akka.actor.ActorSystem
@@ -39,10 +40,14 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
   implicit val commitExecutionContext: ExecutionContext = ExecutionContext.global
 
   implicit val materializer: Materializer = ActorMaterializer()
+
+  final val predefinedCollection = "collection1"
+
   //#init-client
   final val zookeeperPort = 9984
-  final val zkHost = s"127.0.0.1:$zookeeperPort/solr"
-  implicit val solrClient: CloudSolrClient = new CloudSolrClient.Builder(Arrays.asList(zkHost), Optional.empty()).build
+  final val zookeeperHost = s"127.0.0.1:$zookeeperPort/solr"
+  implicit val solrClient: CloudSolrClient =
+    new CloudSolrClient.Builder(Arrays.asList(zookeeperHost), Optional.empty()).build
 
   //#init-client
   //#define-class
@@ -67,9 +72,8 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
   "Un-typed Solr connector" should {
     "consume and publish SolrInputDocument" in {
       // Copy collection1 to collectionName through document stream
-      val collectionName = "collectionName"
-      createCollection(collectionName)
-      val stream = getTupleStream("collection1")
+      val collectionName = createCollection()
+      val stream = getTupleStream(predefinedCollection)
 
       //#run-document
       val copyCollection = SolrSource
@@ -114,10 +118,8 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
 
   "Typed Solr connector" should {
     "consume and publish documents as specific type using a bean" in {
-      // Copy collection1 to collection3 through bean stream
-      val collectionName = "collection3"
-      createCollection(collectionName)
-      val stream = getTupleStream("collection1")
+      val collectionName = createCollection()
+      val stream = getTupleStream(predefinedCollection)
 
       //#define-bean
       import org.apache.solr.client.solrj.beans.Field
@@ -166,9 +168,8 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
 
     "consume and publish documents as specific type with a binder" in {
       // Copy collection1 to collection4 through typed stream
-      val collectionName = "collection4"
-      createCollection(collectionName)
-      val stream = getTupleStream("collection1")
+      val collectionName = createCollection()
+      val stream = getTupleStream(predefinedCollection)
 
       //#run-typed
       val copyCollection = SolrSource
@@ -216,12 +217,10 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
 
   "SolrFlow" should {
     "store documents and pass status to downstream" in {
-      // Copy collection1 to collection5 through typed stream
-      val collectionName = "collection5"
-      createCollection(collectionName)
-      val stream = getTupleStream("collection1")
+      val collectionName = createCollection()
+      val stream = getTupleStream(predefinedCollection)
 
-      //#run-flow
+      // #typeds-flow
       val copyCollection = SolrSource
         .fromTupleStream(stream)
         .map { tuple: Tuple =>
@@ -243,7 +242,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
           solrClient.commit(collectionName)
           seq
         }(commitExecutionContext)
-      //#run-flow
+      // #typeds-flow
 
       val result1 = copyCollection.futureValue
 
@@ -270,8 +269,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
     }
 
     "kafka-example - store documents and pass responses with passThrough" in {
-      val collectionName = "collection6"
-      createCollection(collectionName)
+      val collectionName = createCollection()
 
       //#kafka-example
       // We're going to pretend we got messages from kafka.
@@ -337,10 +335,8 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
 
   "Un-typed Solr connector" should {
     "consume and delete documents" in {
-      // Copy collection1 to collection2 through document stream
-      val collectionName = "collection7"
-      createCollection(collectionName)
-      val stream = getTupleStream("collection1")
+      val collectionName = createCollection()
+      val stream = getTupleStream(predefinedCollection)
 
       val copyCollection = SolrSource
         .fromTupleStream(stream)
@@ -394,9 +390,8 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
 
     "consume and update atomically documents" in {
       // Copy collection1 to collection2 through document stream
-      val collectionName = "collection8"
-      createCollection(collectionName)
-      val stream = getTupleStream("collection1")
+      val collectionName = createCollection()
+      val stream = getTupleStream(predefinedCollection)
 
       val upsertCollection = SolrSource
         .fromTupleStream(stream)
@@ -471,9 +466,8 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
 
   "Solr connector" should {
     "consume and delete beans" in {
-      val collectionName = "collection9"
-      createCollection(collectionName)
-      val stream = getTupleStream("collection1")
+      val collectionName = createCollection()
+      val stream = getTupleStream(predefinedCollection)
 
       val copyCollection = SolrSource
         .fromTupleStream(stream)
@@ -530,10 +524,8 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
 
   "Solr connector" should {
     "consume and update atomically beans" in {
-      // Copy collection1 to collection2 through document stream
-      val collectionName = "collection10"
-      createCollection(collectionName, Some("router"))
-      val stream = getTupleStream("collection1")
+      val collectionName = createCollection(Some("router"))
+      val stream = getTupleStream(predefinedCollection)
 
       val copyCollection = SolrSource
         .fromTupleStream(stream)
@@ -562,12 +554,13 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
       val updateCollection = SolrSource
         .fromTupleStream(stream2)
         .map { tuple: Tuple =>
-          WriteMessage.createUpdateMessage[Book](
-            idField = "title",
-            tuple.fields.get("title").toString,
-            routingFieldValue = Some("router-value"),
-            updates = Map("comment" -> Map("set" -> (tuple.fields.get("comment") + " It is a good book!!!")))
-          )
+          WriteMessage
+            .createUpdateMessage[Book](
+              idField = "title",
+              tuple.fields.get("title").toString,
+              updates = Map("comment" -> Map("set" -> (tuple.fields.get("comment") + " It is a good book!!!")))
+            )
+            .withRoutingFieldValue("router-value")
         }
         .groupedWithin(5, 10.millis)
         .runWith(
@@ -609,9 +602,8 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
 
   "Un-typed Solr connector" should {
     "consume and delete documents by query" in {
-      val collectionName = "collection11"
-      createCollection(collectionName)
-      val stream = getTupleStream("collection1")
+      val collectionName = createCollection()
+      val stream = getTupleStream(predefinedCollection)
 
       val copyCollection = SolrSource
         .fromTupleStream(stream)
@@ -669,6 +661,17 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
 
   override def beforeAll(): Unit = {
     setupCluster()
+
+    //#solr-update-settings
+    import akka.stream.alpakka.solr.SolrUpdateSettings
+
+    val settings = SolrUpdateSettings().withCommitWithin(-1)
+    //#solr-update-settings
+
+    CollectionAdminRequest
+      .createCollection(predefinedCollection, "conf", 1, 1)
+      .process(solrClient)
+
     new UpdateRequest()
       .add("title", "Akka in Action")
       .add("title", "Programming in Scala")
@@ -677,7 +680,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
       .add("title", "Scala Puzzlers")
       .add("title", "Effective Akka")
       .add("title", "Akka Concurrency")
-      .commit(solrClient, "collection1")
+      .commit(solrClient, predefinedCollection)
   }
 
   override def afterAll(): Unit = {
@@ -712,20 +715,23 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
       .uploadConfig(confDir.toPath, "conf")
     solrClient.setIdField("router")
 
-    createCollection("collection1")
-
     assertTrue(!solrClient.getZkStateReader.getClusterState.getLiveNodes.isEmpty)
   }
 
-  private def createCollection(name: String, routerFieldOpt: Option[String] = None) =
+  private val number = new AtomicInteger(2)
+
+  private def createCollection(routerFieldOpt: Option[String] = None) = {
+    val name = s"scala-collection-${number.incrementAndGet()}"
     CollectionAdminRequest
       .createCollection(name, "conf", 1, 1)
       .setRouterField(routerFieldOpt.orNull)
       .process(solrClient)
+    name
+  }
 
   private def getTupleStream(collection: String): TupleStream = {
     //#tuple-stream
-    val factory = new StreamFactory().withCollectionZkHost(collection, zkHost)
+    val factory = new StreamFactory().withCollectionZkHost(collection, zookeeperHost)
     val solrClientCache = new SolrClientCache()
     val streamContext = new StreamContext()
     streamContext.setSolrClientCache(solrClientCache)
@@ -741,11 +747,4 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
     stream
   }
 
-  private def documentation: Unit = {
-    //#solr-update-settings
-    import akka.stream.alpakka.solr.SolrUpdateSettings
-
-    val settings = SolrUpdateSettings()
-    //#solr-update-settings
-  }
 }

@@ -28,32 +28,13 @@ object WriteMessage {
                      routingFieldValue = None,
                      updates = updates)
 
-  def createUpdateMessage[T](idField: String,
-                             idValue: String,
-                             routingFieldValue: Option[String],
-                             updates: Map[String, Map[String, Any]]): WriteMessage[T, NotUsed] =
-    new WriteMessage(AtomicUpdate,
-                     idField = Option(idField),
-                     idFieldValue = Option(idValue),
-                     routingFieldValue = routingFieldValue,
-                     updates = updates)
-
-  /**
-   * Java API
-   */
-  def createUpdateMessage[T](idField: String,
-                             idValue: String,
-                             routingFieldValue: String,
-                             updates: java.util.Map[String, java.util.Map[String, Object]]): WriteMessage[T, NotUsed] =
-    WriteMessage.createUpdateMessage(idField, idValue, Option(routingFieldValue), asScalaUpdates(updates))
-
   /**
    * Java API
    */
   def createUpdateMessage[T](idField: String,
                              idValue: String,
                              updates: java.util.Map[String, java.util.Map[String, Object]]): WriteMessage[T, NotUsed] =
-    WriteMessage.createUpdateMessage(idField, idValue, None, asScalaUpdates(updates))
+    WriteMessage.createUpdateMessage(idField, idValue, asScalaUpdates(updates))
 
   @InternalApi
   private[solr] def asScalaUpdates(
@@ -65,6 +46,7 @@ object WriteMessage {
     }.toMap
 }
 
+// Left for backwards compatibility, might become deprecated after 1.0
 object IncomingUpsertMessage {
   def apply[T](source: T): WriteMessage[T, NotUsed] =
     WriteMessage.createUpsertMessage(source)
@@ -81,6 +63,7 @@ object IncomingUpsertMessage {
     WriteMessage.createUpsertMessage(source).withPassThrough(passThrough)
 }
 
+// Left for backwards compatibility, might become deprecated after 1.0
 object IncomingDeleteMessageByIds {
   def apply[T](id: String): WriteMessage[T, NotUsed] =
     WriteMessage.createDeleteMessage(id)
@@ -97,6 +80,7 @@ object IncomingDeleteMessageByIds {
     WriteMessage.createDeleteMessage(id).withPassThrough(passThrough)
 }
 
+// Left for backwards compatibility, might become deprecated after 1.0
 object IncomingDeleteMessageByQuery {
   def apply[T](query: String): WriteMessage[T, NotUsed] =
     WriteMessage.createDeleteByQueryMessage(query)
@@ -113,19 +97,30 @@ object IncomingDeleteMessageByQuery {
     WriteMessage.createDeleteByQueryMessage(query).withPassThrough(passThrough)
 }
 
+// Left for backwards compatibility, might become deprecated after 1.0
 object IncomingAtomicUpdateMessage {
   def apply[T](idField: String,
                idValue: String,
                routingFieldValue: Option[String],
-               updates: Map[String, Map[String, Any]]): WriteMessage[T, NotUsed] =
-    WriteMessage.createUpdateMessage(idField, idValue, routingFieldValue, updates)
+               updates: Map[String, Map[String, Any]]): WriteMessage[T, NotUsed] = {
+    val msg = WriteMessage.createUpdateMessage[T](idField, idValue, updates)
+    routingFieldValue match {
+      case Some(r) => msg.withRoutingFieldValue(r)
+      case None => msg
+    }
+  }
 
   def apply[T, C](idField: String,
                   idValue: String,
                   routingFieldValue: Option[String],
                   updates: Map[String, Map[String, Any]],
-                  passThrough: C): WriteMessage[T, C] =
-    WriteMessage.createUpdateMessage(idField, idValue, routingFieldValue, updates).withPassThrough(passThrough)
+                  passThrough: C): WriteMessage[T, C] = {
+    val msg = WriteMessage.createUpdateMessage[T](idField, idValue, updates).withPassThrough(passThrough)
+    routingFieldValue match {
+      case Some(r) => msg.withRoutingFieldValue(r)
+      case None => msg
+    }
+  }
 
   /**
    * Java API
@@ -133,7 +128,7 @@ object IncomingAtomicUpdateMessage {
   def create[T](idField: String,
                 idValue: String,
                 updates: java.util.Map[String, java.util.Map[String, Object]]): WriteMessage[T, NotUsed] =
-    WriteMessage.createUpdateMessage(idField, idValue, None, WriteMessage.asScalaUpdates(updates))
+    WriteMessage.createUpdateMessage(idField, idValue, WriteMessage.asScalaUpdates(updates))
 
   /**
    * Java API
@@ -142,7 +137,7 @@ object IncomingAtomicUpdateMessage {
                 idValue: String,
                 routingFieldValue: String,
                 updates: java.util.Map[String, java.util.Map[String, Object]]): WriteMessage[T, NotUsed] =
-    WriteMessage.createUpdateMessage(idField, idValue, Option(routingFieldValue), WriteMessage.asScalaUpdates(updates))
+    apply(idField, idValue, Option(routingFieldValue), WriteMessage.asScalaUpdates(updates))
 
   /**
    * Java API
@@ -152,7 +147,7 @@ object IncomingAtomicUpdateMessage {
                    updates: java.util.Map[String, java.util.Map[String, Object]],
                    passThrough: C): WriteMessage[T, C] =
     WriteMessage
-      .createUpdateMessage(idField, idValue, None, WriteMessage.asScalaUpdates(updates))
+      .createUpdateMessage(idField, idValue, WriteMessage.asScalaUpdates(updates))
       .withPassThrough(passThrough)
 
   /**
@@ -163,8 +158,7 @@ object IncomingAtomicUpdateMessage {
                    routingFieldValue: String,
                    updates: java.util.Map[String, java.util.Map[String, Object]],
                    passThrough: C): WriteMessage[T, C] =
-    WriteMessage
-      .createUpdateMessage(idField, idValue, Option(routingFieldValue), WriteMessage.asScalaUpdates(updates))
+    apply(idField, idValue, Option(routingFieldValue), WriteMessage.asScalaUpdates(updates))
       .withPassThrough(passThrough)
 }
 

@@ -27,7 +27,7 @@ The table below shows direct dependencies of this module and the second tab show
 @@dependencies { projectId="solr" }
 
 
-## Set up client
+## Set up a Solr client
 
 Sources, Flows and Sinks provided by this connector need a prepared `org.apache.solr.client.solrj.SolrClient` (eg. `org.apache.solr.client.solrj.impl.CloudSolrClient`) to access to Solr.
 
@@ -52,17 +52,33 @@ Java
 
 ## Writing to Solr
 
-Alpakka Solr batches updates to Solr by sending all updates of the same operation at once to Solr. These batches are extracted from the elements within one collection sent to a Solr flow or sink. Updates of different types may be contained in a single collection sent, though. In case streams don't have natural batches of updates, you may use the `groupedWithin` operator to create count or time-based batches.
+Alpakka Solr batches updates to Solr by sending all updates of the same operation type at once to Solr. These batches are extracted from the elements within one collection sent to a Solr flow or sink. Updates of different types may be contained in a single collection sent, though. In case streams don't have natural batches of updates, you may use the `groupedWithin` operator to create count or time-based batches.
 
-## Configuration for updates
+Alpakka Solr offers three styles for writing to Apache Solr:
+
+1. Using `org.apache.solr.common.SolrInputDocument` (via `SolrSink.documents`, `SolrFlow.documents` and `SolrFlow.documentsWithPassThrough`)
+1. Annotated *Java Bean* classes supported by `org.apache.solr.client.solrj.beans.DocumentObjectBinder` (via `SolrSink.beans`, `SolrFlow.beans` and `SolrFlow.beansWithPassThrough`)
+1. Typed streams with document binders to translate to `SolrInputDocument` (via `SolrSink.typeds`, `SolrFlow.typeds` and `SolrFlow.typedsWithPassThrough`)
+
+In all variations the data is wrapped into `WriteMessage`s.
+
+
+### Committing and configuration for updates
 
 Data sent to Solr is not searchable until it has been committed to the index. These are the major options for handling commits:
 
 1. The Solr installation can be configured to use **auto-commit**.
 2. Specify **commit-within** in `SolrUpdateSettings` to trigger commits after every write through Alpakka Solr.
-3. Use explicit committing via the `SolrClient.commit` methods on stream completion as most examples show. As `commit` is a blocking operation, choose an appropriate execution context (preferably not `system.dispatcher`).
+3. Use explicit committing via the `SolrClient.commit` methods on stream completion as most examples show. As `commit` is a blocking operation, choose an appropriate execution context (preferably *not* `system.dispatcher`).
 
 Configuration of Solr committing is described in [UpdateHandlers in SolrConfig](http://lucene.apache.org/solr/guide/7_6/updatehandlers-in-solrconfig.html#commits).
+
+
+#### Available settings
+| Parameter           | Default | Description                                                                                            |
+| ------------------- | ------- | ------------------------------------------------------------------------------------------------------ | 
+| commitWithin        | -1      | Max time (in ms) before a commit will happen, -1 for explicit committing |
+
 
 Scala
 : @@snip [snip](/solr/src/test/scala/docs/scaladsl/SolrSpec.scala) { #solr-update-settings }
@@ -71,16 +87,12 @@ Java
 : @@snip [snip](/solr/src/test/java/docs/javadsl/SolrTest.java) { #solr-update-settings }
 
 
-| Parameter           | Default | Description                                                                                            |
-| ------------------- | ------- | ------------------------------------------------------------------------------------------------------ | 
-| commitWithin        | -1      | Max time (in ms) before a commit will happen, -1 for manual committing |
 
+### Writing `SolrInputDocument`s
 
+Use `SolrSink.document` to stream `SolrInputDocument` to Solr.
 
-Now we can stream messages to Solr by providing the `SolrClient` to the
-@scala[@scaladoc[SolrSink](akka.stream.alpakka.solr.scaladsl.SolrSink$).]
-@java[@scaladoc[SolrSink](akka.stream.alpakka.solr.javadsl.SolrSink$).]
-
+#### Defining mappings
 
 Scala
 : @@snip [snip](/solr/src/test/scala/docs/scaladsl/SolrSpec.scala) { #define-class }
@@ -88,10 +100,14 @@ Scala
 Java
 : @@snip [snip](/solr/src/test/java/docs/javadsl/SolrTest.java) { #define-class }
 
-### With document sink
 
-Use `SolrSink.document` to stream `SolrInputDocument` to Solr.
+#### Writing `SolrInputDocument`s
 
+Use `SolrSink.documents`, `SolrFlow.documents` or `SolrFlow.documentsWithPassThrough` to stream `SolrInputDocument`s to Solr.
+
+A `SolrClient` must be provided to
+@scala[@scaladoc[SolrSink](akka.stream.alpakka.solr.scaladsl.SolrSink$) implicitly.]
+@java[@scaladoc[SolrSink](akka.stream.alpakka.solr.javadsl.SolrSink$).]
 
 Scala
 : @@snip [snip](/solr/src/test/scala/docs/scaladsl/SolrSpec.scala) { #run-document }
@@ -99,7 +115,8 @@ Scala
 Java
 : @@snip [snip](/solr/src/test/java/docs/javadsl/SolrTest.java) { #run-document }
 
-### With bean sink
+
+### Writing Java beans
 
 Firstly, create a POJO.
 
@@ -109,8 +126,7 @@ Scala
 Java
 : @@snip [snip](/solr/src/test/java/docs/javadsl/SolrTest.java) { #define-bean }
 
-Use `SolrSink.bean` to stream POJOs to Solr.
-
+Use `SolrSink.beans`, `SolrFlow.beans` or `SolrFlow.beansWithPassThrough` to stream POJOs to Solr.
 
 Scala
 : @@snip [snip](/solr/src/test/scala/docs/scaladsl/SolrSpec.scala) { #run-bean }
@@ -118,10 +134,10 @@ Scala
 Java
 : @@snip [snip](/solr/src/test/java/docs/javadsl/SolrTest.java) { #run-bean }
 
-### With typed sink
 
-Use `SolrSink.typed` to stream messages with custom binding to Solr.
+### Writing arbitrary classes via custom binding
 
+Use `SolrSink.typeds`, `SolrFlow.typeds` or `SolrFlow.typedsWithPassThrough` to stream messages with custom binding to Solr.
 
 Scala
 : @@snip [snip](/solr/src/test/scala/docs/scaladsl/SolrSpec.scala) { #run-typed }
@@ -130,64 +146,25 @@ Java
 : @@snip [snip](/solr/src/test/java/docs/javadsl/SolrTest.java) { #run-typed }
 
 
-### Update atomically documents
-
-We can update atomically documents.
-
-Scala
-: @@snip [snip](/solr/src/test/scala/docs/scaladsl/SolrSpec.scala) { #update-atomically-documents }
-
-Java
-: @@snip [snip](/solr/src/test/java/docs/javadsl/SolrTest.java) { #update-atomically-documents }
-
-We can use typed and bean to update atomically.
-
-If a collection contains a router field, we have to use the IncomingAtomicUpdateMessage with the router field parameter.
-
-### Delete documents by ids
-
-We can delete documents by ids.
-
-Scala
-: @@snip [snip](/solr/src/test/scala/docs/scaladsl/SolrSpec.scala) { #delete-documents }
-
-Java
-: @@snip [snip](/solr/src/test/java/docs/javadsl/SolrTest.java) { #delete-documents }
-
-We can use typed and bean to delete.
-
-### Delete documents by query
-
-We can delete documents by query.
-
-Scala
-: @@snip [snip](/solr/src/test/scala/docs/scaladsl/SolrSpec.scala) { #delete-documents-query }
-
-Java
-: @@snip [snip](/solr/src/test/java/docs/javadsl/SolrTest.java) { #delete-documents-query }
-
-We can use typed and bean to delete.
-
-
-
-## Flow Usage
+#### Using a flow with custom binding
 
 You can also build flow stages with
 @scala[@scaladoc[SolrFlow](akka.stream.alpakka.solr.scaladsl.SolrFlow$).]
 @java[@scaladoc[SolrFlow](akka.stream.alpakka.solr.javadsl.SolrFlow$).]
-The API is similar to creating Sinks.
 
 Scala
-: @@snip [snip](/solr/src/test/scala/docs/scaladsl/SolrSpec.scala) { #run-flow }
+: @@snip [snip](/solr/src/test/scala/docs/scaladsl/SolrSpec.scala) { #typeds-flow }
 
 Java
-: @@snip [snip](/solr/src/test/java/docs/javadsl/SolrTest.java) { #run-flow }
+: @@snip [snip](/solr/src/test/java/docs/javadsl/SolrTest.java) { #typeds-flow }
 
-### Passing data through SolrFlow
 
-Use `SolrFlow.documentWithPassThrough`, `SolrFlow.beanWithPassThrough` or `SolrFlow.typedWithPassThrough`.
+#### Passing data through SolrFlow
 
-When streaming documents from Kafka, you might want to commit to Kafka **AFTER** the document has been written to Solr.
+All flow types (`documents`, `beans`, `typeds`) exist with pass-through support:
+Use `SolrFlow.documentsWithPassThrough`, `SolrFlow.beansWithPassThrough` or `SolrFlow.typedsWithPassThrough`.
+
+When streaming documents from Kafka, you might want to commit to Kafka **AFTER** the document has been written to Solr. This scenario uses implicit committing via the **commit within** setting.
 
 Scala
 : @@snip [snip](/solr/src/test/scala/docs/scaladsl/SolrSpec.scala) { #kafka-example }
@@ -196,18 +173,37 @@ Java
 : @@snip [snip](/solr/src/test/java/docs/javadsl/SolrTest.java) { #kafka-example }
 
 
-### Running the example code
 
-The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
+## Update documents
+
+With `WriteMessage.createUpdateMessage` documents can be updated atomically. All flow and sink types (`documents`, `beans`, `typeds`) support atomic updates.
 
 Scala
-:   ```
-    sbt
-    > solr/testOnly *.SolrSpec
-    ```
+: @@snip [snip](/solr/src/test/scala/docs/scaladsl/SolrSpec.scala) { #update-atomically-documents }
 
 Java
-:   ```
-    sbt
-    > solr/testOnly *.SolrTest
-    ```
+: @@snip [snip](/solr/src/test/java/docs/javadsl/SolrTest.java) { #update-atomically-documents }
+
+If a collection contains a router field, use the `WriteMessage.createUpdateMessage(...).withRoutingFieldValue(..)` to set the router field.
+
+
+## Delete documents by ids
+
+With `WriteMessage.createDeleteMessage(id)` documents may be deleted by ID. All flow and sink types (`documents`, `beans`, `typeds`) support deleting.
+
+Scala
+: @@snip [snip](/solr/src/test/scala/docs/scaladsl/SolrSpec.scala) { #delete-documents }
+
+Java
+: @@snip [snip](/solr/src/test/java/docs/javadsl/SolrTest.java) { #delete-documents }
+
+
+## Delete documents by query
+
+With `WriteMessage.createDeleteByQueryMessage(query)` documents matching a query may be deleted. All flow and sink types (`documents`, `beans`, `typeds`) support deleting.
+
+Scala
+: @@snip [snip](/solr/src/test/scala/docs/scaladsl/SolrSpec.scala) { #delete-documents-query }
+
+Java
+: @@snip [snip](/solr/src/test/java/docs/javadsl/SolrTest.java) { #delete-documents-query }

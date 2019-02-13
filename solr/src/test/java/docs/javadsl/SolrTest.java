@@ -8,7 +8,9 @@ import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
+// #solr-update-settings
 import akka.stream.alpakka.solr.SolrUpdateSettings;
+// #solr-update-settings
 import akka.stream.alpakka.solr.WriteMessage;
 import akka.stream.alpakka.solr.javadsl.SolrFlow;
 import akka.stream.alpakka.solr.javadsl.SolrSink;
@@ -46,6 +48,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -56,13 +59,14 @@ public class SolrTest {
   private static MiniSolrCloudCluster cluster;
   private static SolrClient solrClient;
   private static SolrClient cl;
-  private static ActorSystem system;
-  private static ActorMaterializer materializer;
+  private static ActorSystem system = ActorSystem.create();
+  private static ActorMaterializer materializer = ActorMaterializer.create(system);
   // #init-client
   private static final int zookeeperPort = 9984;
-  private static final String zkHost = "127.0.0.1:" + zookeeperPort + "/solr";
+  private static final String zookeeperHost = "127.0.0.1:" + zookeeperPort + "/solr";
   // #init-client
   private static ZkTestServer zkTestServer;
+  private static String predefinedCollection = "collection1";
 
   // #define-class
   public static class Book {
@@ -108,10 +112,8 @@ public class SolrTest {
 
   @Test
   public void solrInputDocumentStream() throws Exception {
-
-    String collectionName = "collection2";
-    createCollection(collectionName);
-    TupleStream stream = getTupleStream("collection1");
+    String collectionName = createCollection();
+    TupleStream stream = getTupleStream(predefinedCollection);
 
     // #run-document
     CompletionStage<UpdateResponse> copyCollection =
@@ -163,10 +165,8 @@ public class SolrTest {
 
   @Test
   public void beanStream() throws Exception {
-    // Copy collection1 to collection3 through bean stream
-    String collectionName = "collection3";
-    createCollection(collectionName);
-    TupleStream stream = getTupleStream("collection1");
+    String collectionName = createCollection();
+    TupleStream stream = getTupleStream(predefinedCollection);
 
     // #define-bean
     class BookBean {
@@ -229,9 +229,8 @@ public class SolrTest {
 
   @Test
   public void typedStream() throws Exception {
-    String collectionName = "collection4";
-    createCollection(collectionName);
-    TupleStream stream = getTupleStream("collection1");
+    String collectionName = createCollection();
+    TupleStream stream = getTupleStream(predefinedCollection);
 
     // #run-typed
     CompletionStage<UpdateResponse> copyCollection =
@@ -279,11 +278,10 @@ public class SolrTest {
 
   @Test
   public void flow() throws Exception {
-    String collectionName = "collection5";
-    createCollection(collectionName);
-    TupleStream stream = getTupleStream("collection1");
+    String collectionName = createCollection();
+    TupleStream stream = getTupleStream(predefinedCollection);
 
-    // #run-flow
+    // #typeds-flow
     CompletionStage<UpdateResponse> copyCollection =
         SolrSource.fromTupleStream(stream)
             .map(tuple -> WriteMessage.createUpsertMessage(tupleToBook.apply(tuple)))
@@ -301,7 +299,7 @@ public class SolrTest {
                     throw new IllegalStateException(e);
                   }
                 });
-    // #run-flow
+    // #typeds-flow
 
     resultOf(copyCollection);
 
@@ -329,8 +327,7 @@ public class SolrTest {
 
   @Test
   public void testKafkaExample() throws Exception {
-    String collectionName = "collection6";
-    createCollection(collectionName);
+    String collectionName = createCollection();
 
     // #kafka-example
     // We're going to pretend we got messages from kafka.
@@ -401,9 +398,8 @@ public class SolrTest {
 
   @Test
   public void deleteDocuments() throws Exception {
-    String collectionName = "collection7";
-    createCollection(collectionName);
-    TupleStream stream = getTupleStream("collection1");
+    String collectionName = createCollection();
+    TupleStream stream = getTupleStream(predefinedCollection);
 
     CompletionStage<UpdateResponse> copyCollection =
         SolrSource.fromTupleStream(stream)
@@ -470,9 +466,8 @@ public class SolrTest {
 
   @Test
   public void atomicUpdateDocuments() throws Exception {
-    String collectionName = "collection8";
-    createCollection(collectionName);
-    TupleStream stream = getTupleStream("collection1");
+    String collectionName = createCollection();
+    TupleStream stream = getTupleStream(predefinedCollection);
 
     CompletionStage<UpdateResponse> copyCollection =
         SolrSource.fromTupleStream(stream)
@@ -555,9 +550,8 @@ public class SolrTest {
 
   @Test
   public void atomicUpdateDocumentsWithRouter() throws Exception {
-    String collectionName = "collection8-1";
-    createCollection(collectionName, "router");
-    TupleStream stream = getTupleStream("collection1");
+    String collectionName = createCollection("router");
+    TupleStream stream = getTupleStream(predefinedCollection);
 
     CompletionStage<UpdateResponse> copyCollection =
         SolrSource.fromTupleStream(stream)
@@ -599,8 +593,8 @@ public class SolrTest {
                   m2.put("set", (comment + " It's is a good book!!!"));
                   Map<String, Map<String, Object>> updates = new HashMap<>();
                   updates.put("comment", m2);
-                  return WriteMessage.<SolrInputDocument>createUpdateMessage(
-                      "title", id, "router-value", updates);
+                  return WriteMessage.<SolrInputDocument>createUpdateMessage("title", id, updates)
+                      .withRoutingFieldValue("router-value");
                 })
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(
@@ -646,9 +640,8 @@ public class SolrTest {
 
   @Test
   public void deleteDocumentsByQuery() throws Exception {
-    String collectionName = "collection9";
-    createCollection(collectionName);
-    TupleStream stream = getTupleStream("collection1");
+    String collectionName = createCollection();
+    TupleStream stream = getTupleStream(predefinedCollection);
 
     CompletionStage<UpdateResponse> copyCollection =
         SolrSource.fromTupleStream(stream)
@@ -718,11 +711,11 @@ public class SolrTest {
   public static void setup() throws Exception {
     setupCluster();
 
-    // #init-mat
-    system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
-    // #init-mat
+    // #solr-update-settings
+    SolrUpdateSettings settings = SolrUpdateSettings.create().withCommitWithin(-1);
+    // #solr-update-settings
 
+    CollectionAdminRequest.createCollection(predefinedCollection, "conf", 1, 1).process(solrClient);
     new UpdateRequest()
         .add("title", "Akka in Action")
         .add("title", "Programming in Scala")
@@ -731,7 +724,7 @@ public class SolrTest {
         .add("title", "Scala Puzzlers")
         .add("title", "Effective Akka")
         .add("title", "Akka Concurrency")
-        .commit(solrClient, "collection1");
+        .commit(solrClient, predefinedCollection);
   }
 
   @AfterClass
@@ -791,35 +784,40 @@ public class SolrTest {
             JettyConfig.builder().setContext("/solr").build(),
             zkTestServer);
 
-    // #init-solrClient
-    CloudSolrClient client =
-        new CloudSolrClient.Builder(Arrays.asList(zkHost), Optional.empty()).build();
-    // #init-solrClient
-    SolrTest.solrClient = client;
+    // #init-client
 
-    ((ZkClientClusterStateProvider) client.getClusterStateProvider())
+    CloudSolrClient solrClient =
+        new CloudSolrClient.Builder(Arrays.asList(zookeeperHost), Optional.empty()).build();
+    // #init-client
+    SolrTest.solrClient = solrClient;
+
+    ((ZkClientClusterStateProvider) solrClient.getClusterStateProvider())
         .uploadConfig(confDir.toPath(), "conf");
 
-    client.setIdField("router");
-    createCollection("collection1");
+    solrClient.setIdField("router");
 
-    assertTrue(!client.getZkStateReader().getClusterState().getLiveNodes().isEmpty());
+    assertTrue(!solrClient.getZkStateReader().getClusterState().getLiveNodes().isEmpty());
   }
 
-  private static void createCollection(String name) throws IOException, SolrServerException {
+  private static AtomicInteger number = new AtomicInteger(2);
+
+  private static String createCollection() throws IOException, SolrServerException {
+    String name = "collection-" + number.incrementAndGet();
     CollectionAdminRequest.createCollection(name, "conf", 1, 1).process(solrClient);
+    return name;
   }
 
-  private static void createCollection(String name, String router)
-      throws IOException, SolrServerException {
+  private static String createCollection(String router) throws IOException, SolrServerException {
+    String name = "collection-" + number.incrementAndGet();
     CollectionAdminRequest.createCollection(name, "conf", 1, 1)
         .setRouterField(router)
         .process(solrClient);
+    return name;
   }
 
   private TupleStream getTupleStream(String collection) throws IOException {
     // #tuple-stream
-    StreamFactory factory = new StreamFactory().withCollectionZkHost(collection, zkHost);
+    StreamFactory factory = new StreamFactory().withCollectionZkHost(collection, zookeeperHost);
     SolrClientCache solrClientCache = new SolrClientCache();
     StreamContext streamContext = new StreamContext();
     streamContext.setSolrClientCache(solrClientCache);
@@ -846,11 +844,5 @@ public class SolrTest {
 
   protected <T> T resultOf(CompletionStage<T> stage, Duration timeout) throws Exception {
     return stage.toCompletableFuture().get(timeout.toMillis(), TimeUnit.MILLISECONDS);
-  }
-
-  private void documentation() {
-    // #solr-update-settings
-    SolrUpdateSettings settings = SolrUpdateSettings.create().withCommitWithin(-1);
-    // #solr-update-settings
   }
 }
