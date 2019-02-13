@@ -675,8 +675,10 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
     //#solr-update-settings
     import akka.stream.alpakka.solr.SolrUpdateSettings
 
-    val settings = SolrUpdateSettings().withCommitWithin(-1)
+    val settings = SolrUpdateSettings()
+      .withCommitWithin(-1)
     //#solr-update-settings
+    settings.toString shouldBe SolrUpdateSettings().toString
 
     CollectionAdminRequest
       .createCollection(predefinedCollection, "conf", 1, 1)
@@ -754,6 +756,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
     val source = SolrSource
       .fromTupleStream(stream)
     //#tuple-stream
+    source should not be null
     stream
   }
 

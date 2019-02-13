@@ -13,10 +13,13 @@ import org.apache.solr.common.SolrInputDocument
 import scala.collection.immutable
 import scala.concurrent.Future
 
+/**
+ * Scala API
+ */
 object SolrSink {
 
   /**
-   * Scala API: creates a [[SolrFlow]] to Solr for sequence of [[WriteMessage]] containing [[SolrInputDocument]].
+   * Write `SolrInputDocument`s to Solr.
    */
   def documents[T](collection: String, settings: SolrUpdateSettings)(
       implicit client: SolrClient
@@ -26,8 +29,8 @@ object SolrSink {
       .toMat(Sink.ignore)(Keep.right)
 
   /**
-   * Scala API: creates a [[SolrFlow]] to Solr for sequence of [[WriteMessage]] containing type `T`
-   * with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
+   * Write Java bean stream elements to Solr.
+   * The stream element classes must be annotated for use with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]] for conversion.
    */
   def beans[T](collection: String, settings: SolrUpdateSettings)(
       implicit client: SolrClient
@@ -37,7 +40,9 @@ object SolrSink {
       .toMat(Sink.ignore)(Keep.right)
 
   /**
-   * Scala API: creates a [[SolrFlow]] to Solr for sequence of [[WriteMessage]] containing type `T` with `binder` of type 'T'.
+   * Write stream elements to Solr.
+   *
+   * @param binder a conversion function to create `SolrInputDocument`s of the stream elements
    */
   def typeds[T](
       collection: String,

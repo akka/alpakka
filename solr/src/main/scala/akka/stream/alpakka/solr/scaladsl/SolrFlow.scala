@@ -13,31 +13,13 @@ import org.apache.solr.common.SolrInputDocument
 
 import scala.collection.immutable
 
+/**
+ * Scala API
+ */
 object SolrFlow {
 
   /**
-   * Scala API: creates a [[SolrFlowStage]] for [[SolrInputDocument]] from [[WriteMessage]] to sequences
-   * of [[WriteResult]].
-   *
-   * @deprecated ("use the method documents to batch operation","0.20")
-   */
-  def document(
-      collection: String,
-      settings: SolrUpdateSettings
-  )(
-      implicit client: SolrClient
-  ): Flow[WriteMessage[SolrInputDocument, NotUsed], immutable.Seq[WriteResult[SolrInputDocument, NotUsed]], NotUsed] =
-    Flow
-      .fromFunction[WriteMessage[SolrInputDocument, NotUsed], immutable.Seq[WriteMessage[SolrInputDocument, NotUsed]]](
-        t => immutable.Seq(t)
-      )
-      .via(
-        documents(collection, settings)(client)
-      )
-
-  /**
-   * Scala API: creates a [[SolrFlowStage]] for [[SolrInputDocument]] from sequences of [[WriteMessage]] to sequences
-   * of [[WriteResult]].
+   * Write `SolrInputDocument`s to Solr in a flow emitting `WriteResult`s containing the status.
    */
   def documents(
       collection: String,
@@ -57,28 +39,8 @@ object SolrFlow {
       )
 
   /**
-   * Scala API: creates a [[SolrFlowStage]] for type `T` from [[WriteMessage]] to sequence
-   * of [[WriteResult]] with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
-   *
-   * @deprecated ("use the method beans to batch operation","0.20")
-   */
-  def bean[T](
-      collection: String,
-      settings: SolrUpdateSettings
-  )(
-      implicit client: SolrClient
-  ): Flow[WriteMessage[T, NotUsed], immutable.Seq[WriteResult[T, NotUsed]], NotUsed] =
-    Flow
-      .fromFunction[WriteMessage[T, NotUsed], immutable.Seq[WriteMessage[T, NotUsed]]](
-        t => immutable.Seq(t)
-      )
-      .via(
-        beans[T](collection, settings)(client)
-      )
-
-  /**
-   * Scala API: creates a [[SolrFlowStage]] for type `T` from sequence of [[WriteMessage]] to sequences
-   * of [[WriteResult]] with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
+   * Write Java bean stream elements to Solr in a flow emitting `WriteResult`s containing the status.
+   * The stream element classes must be annotated for use with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]] for conversion.
    */
   def beans[T](
       collection: String,
@@ -92,34 +54,14 @@ object SolrFlow {
           collection,
           client,
           settings,
-          new DefaultSolrObjectBinder
+          new DefaultSolrObjectBinder(client)
         )
       )
 
   /**
-   * Scala API: creates a [[SolrFlowStage]] for type `T` from [[WriteMessage]] to sequence
-   * of [[WriteResult]] with `binder` of type 'T'.
+   * Write stream elements to Solr in a flow emitting `WriteResult`s containing the status.
    *
-   * @deprecated ("use the method typeds to batch operation","0.20")
-   */
-  def typed[T](
-      collection: String,
-      settings: SolrUpdateSettings,
-      binder: T => SolrInputDocument
-  )(
-      implicit client: SolrClient
-  ): Flow[WriteMessage[T, NotUsed], immutable.Seq[WriteResult[T, NotUsed]], NotUsed] =
-    Flow
-      .fromFunction[WriteMessage[T, NotUsed], immutable.Seq[WriteMessage[T, NotUsed]]](
-        t => immutable.Seq(t)
-      )
-      .via(
-        typeds[T](collection, settings, binder)(client)
-      )
-
-  /**
-   * Scala API: creates a [[SolrFlowStage]] for type `T` from sequence of [[WriteMessage]] to sequences
-   * of [[WriteResult]] with `binder` of type 'T'.
+   * @param binder a conversion function to create `SolrInputDocument`s of the stream elements
    */
   def typeds[T](
       collection: String,
@@ -139,40 +81,21 @@ object SolrFlow {
       )
 
   /**
-   * Scala API: creates a [[SolrFlowStage]] for [[SolrInputDocument]] from [[WriteMessage]] to sequences
-   * of [[WriteResult]] with `passThrough` of type `C`.
+   * Write `SolrInputDocument`s to Solr in a flow emitting `WriteResult`s containing the status.
    *
-   * @deprecated ("use the method documentsWithPassThrough to batch operation","0.20")
+   * @tparam PT pass-through type
    */
-  def documentWithPassThrough[C](
+  def documentsWithPassThrough[PT](
       collection: String,
       settings: SolrUpdateSettings
   )(
       implicit client: SolrClient
-  ): Flow[WriteMessage[SolrInputDocument, C], immutable.Seq[WriteResult[SolrInputDocument, C]], NotUsed] =
-    Flow
-      .fromFunction[WriteMessage[SolrInputDocument, C], immutable.Seq[WriteMessage[SolrInputDocument, C]]](
-        t => immutable.Seq(t)
-      )
-      .via(
-        documentsWithPassThrough[C](collection, settings)(client)
-      )
-
-  /**
-   * Scala API: creates a [[SolrFlowStage]] for [[SolrInputDocument]] from [[WriteMessage]]
-   * to lists of [[WriteResult]] with `passThrough` of type `C`.
-   */
-  def documentsWithPassThrough[C](
-      collection: String,
-      settings: SolrUpdateSettings
-  )(
-      implicit client: SolrClient
-  ): Flow[immutable.Seq[WriteMessage[SolrInputDocument, C]],
-          immutable.Seq[WriteResult[SolrInputDocument, C]],
+  ): Flow[immutable.Seq[WriteMessage[SolrInputDocument, PT]],
+          immutable.Seq[WriteResult[SolrInputDocument, PT]],
           NotUsed] =
     Flow
       .fromGraph(
-        new SolrFlowStage[SolrInputDocument, C](
+        new SolrFlowStage[SolrInputDocument, PT](
           collection,
           client,
           settings,
@@ -181,78 +104,39 @@ object SolrFlow {
       )
 
   /**
-   * Scala API: creates a [[SolrFlowStage]] for type `T` from [[WriteMessage]] to sequence
-   * of [[WriteResult]] with `passThrough` of type `C`
-   * with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
+   * Write Java bean stream elements to Solr in a flow emitting `WriteResult`s containing the status.
+   * The stream element classes must be annotated for use with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]] for conversion.
    *
-   * @deprecated ("use the method beansWithPassThrough to batch operation","0.20")
+   * @tparam PT pass-through type
    */
-  def beanWithPassThrough[T, C](
+  def beansWithPassThrough[T, PT](
       collection: String,
       settings: SolrUpdateSettings
-  )(
-      implicit client: SolrClient
-  ): Flow[WriteMessage[T, C], immutable.Seq[WriteResult[T, C]], NotUsed] =
-    Flow
-      .fromFunction[WriteMessage[T, C], immutable.Seq[WriteMessage[T, C]]](
-        t => immutable.Seq(t)
-      )
-      .via(
-        beansWithPassThrough(collection, settings)(client)
-      )
-
-  /**
-   * Scala API: creates a [[SolrFlowStage]] for type 'T' from [[WriteMessage]]
-   * to lists of [[WriteResult]] with `passThrough` of type `C`
-   * and [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]] for type 'T' .
-   */
-  def beansWithPassThrough[T, C](
-      collection: String,
-      settings: SolrUpdateSettings
-  )(implicit client: SolrClient): Flow[immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]], NotUsed] =
+  )(implicit client: SolrClient): Flow[immutable.Seq[WriteMessage[T, PT]], immutable.Seq[WriteResult[T, PT]], NotUsed] =
     Flow
       .fromGraph(
-        new SolrFlowStage[T, C](
+        new SolrFlowStage[T, PT](
           collection,
           client,
           settings,
-          new DefaultSolrObjectBinder
+          new DefaultSolrObjectBinder(client)
         )
       )
 
   /**
-   * Scala API: creates a [[SolrFlowStage]] for type `T` from [[WriteMessage]] to sequence
-   * of [[WriteResult]] with `passThrough` of type `C` and `binder` of type 'T'.
+   * Write stream elements to Solr in a flow emitting `WriteResult`s containing the status.
    *
-   * @deprecated ("use the method typedsWithPassThrough to batch operation","0.20")
+   * @param binder a conversion function to create `SolrInputDocument`s of the stream elements
+   * @tparam PT pass-through type
    */
-  def typedWithPassThrough[T, C](
+  def typedsWithPassThrough[T, PT](
       collection: String,
       settings: SolrUpdateSettings,
       binder: T => SolrInputDocument
-  )(
-      implicit client: SolrClient
-  ): Flow[WriteMessage[T, C], immutable.Seq[WriteResult[T, C]], NotUsed] =
-    Flow
-      .fromFunction[WriteMessage[T, C], immutable.Seq[WriteMessage[T, C]]](
-        t => immutable.Seq(t)
-      )
-      .via(
-        typedsWithPassThrough(collection, settings, binder)(client)
-      )
-
-  /**
-   * Scala API: creates a [[SolrFlowStage]] for type 'T' from [[WriteMessage]]
-   * to lists of [[WriteResult]] with `passThrough` of type `C` and `binder` of type `T`.
-   */
-  def typedsWithPassThrough[T, C](
-      collection: String,
-      settings: SolrUpdateSettings,
-      binder: T => SolrInputDocument
-  )(implicit client: SolrClient): Flow[immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]], NotUsed] =
+  )(implicit client: SolrClient): Flow[immutable.Seq[WriteMessage[T, PT]], immutable.Seq[WriteResult[T, PT]], NotUsed] =
     Flow
       .fromGraph(
-        new SolrFlowStage[T, C](
+        new SolrFlowStage[T, PT](
           collection,
           client,
           settings,
@@ -260,9 +144,9 @@ object SolrFlow {
         )
       )
 
-  private class DefaultSolrObjectBinder(implicit c: SolrClient) extends (Any => SolrInputDocument) {
+  private class DefaultSolrObjectBinder(solrClient: SolrClient) extends (Any => SolrInputDocument) {
     override def apply(v1: Any): SolrInputDocument =
-      c.getBinder.toSolrInputDocument(v1)
+      solrClient.getBinder.toSolrInputDocument(v1)
   }
 
 }
