@@ -35,7 +35,7 @@ object Dependencies {
       "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion % Test,
       "ch.qos.logback" % "logback-classic" % "1.2.3" % Test, // Eclipse Public License 1.0
       "org.scalatest" %% "scalatest" % "3.0.5" % Test, // ApacheV2
-      "io.github.sullis" %% "jms-testkit" % "0.2.0" % Test, // ApacheV2
+      "io.github.sullis" %% "jms-testkit" % "0.2.1" % Test, // ApacheV2
       "com.novocode" % "junit-interface" % "0.11" % Test, // BSD-style
       "junit" % "junit" % "4.12" % Test // Eclipse Public License 1.0
     )
