@@ -8,6 +8,7 @@ import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.{Arrays, Optional}
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.solr._
@@ -23,10 +24,11 @@ import org.apache.solr.client.solrj.request.{CollectionAdminRequest, UpdateReque
 import org.apache.solr.cloud.{MiniSolrCloudCluster, ZkTestServer}
 import org.apache.solr.common.SolrInputDocument
 import org.junit.Assert.assertTrue
+import scala.collection.immutable
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
 class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with ScalaFutures {
@@ -271,48 +273,56 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
     "kafka-example - store documents and pass responses with passThrough" in {
       val collectionName = createCollection()
 
-      //#kafka-example
-      // We're going to pretend we got messages from kafka.
-      // After we've written them to Solr, we want
-      // to commit the offset to Kafka
+      var committedOffsets = List[CommittableOffset]()
 
-      case class KafkaOffset(offset: Int)
-      case class KafkaMessage(book: Book, offset: KafkaOffset)
+      case class CommittableOffset(offset: Int) {
+        def commitScaladsl(): Future[Done] = {
+          committedOffsets = committedOffsets :+ this
+          Future.successful(Done)
+        }
+      }
+
+      case class CommittableOffsetBatch(offsets: immutable.Seq[CommittableOffset]) {
+        def commitScaladsl(): Future[Done] = {
+          committedOffsets = committedOffsets ++ offsets
+          Future.successful(Done)
+        }
+      }
+
+      case class CommittableMessage(book: Book, committableOffset: CommittableOffset)
 
       val messagesFromKafka = List(
-        KafkaMessage(Book("Book 1"), KafkaOffset(0)),
-        KafkaMessage(Book("Book 2"), KafkaOffset(1)),
-        KafkaMessage(Book("Book 3"), KafkaOffset(2))
+        CommittableMessage(Book("Book 1"), CommittableOffset(0)),
+        CommittableMessage(Book("Book 2"), CommittableOffset(1)),
+        CommittableMessage(Book("Book 3"), CommittableOffset(2))
       )
-
-      var committedOffsets = List[KafkaOffset]()
-
-      def commitToKafka(offset: KafkaOffset): Unit =
-        committedOffsets = committedOffsets :+ offset
-
-      val copyCollection = Source(messagesFromKafka)
-        .map { kafkaMessage: KafkaMessage =>
+      val kafkaConsumerSource = Source(messagesFromKafka)
+      //#kafka-example
+      // Note: This code mimics Alpakka Kafka APIs
+      val copyCollection = kafkaConsumerSource
+        .map { kafkaMessage: CommittableMessage =>
           val book = kafkaMessage.book
           // Transform message so that we can write to solr
-          WriteMessage.createUpsertMessage(book).withPassThrough(kafkaMessage.offset)
+          WriteMessage.createUpsertMessage(book).withPassThrough(kafkaMessage.committableOffset)
         }
         .groupedWithin(5, 10.millis)
         .via( // write to Solr
-          SolrFlow.typedsWithPassThrough[Book, KafkaOffset](
+          SolrFlow.typedsWithPassThrough[Book, CommittableOffset](
             collectionName,
             // use implicit commits to Solr
             SolrUpdateSettings().withCommitWithin(5),
             binder = bookToDoc
           )
-        )
+        ) // check status and collect Kafka offsets
         .map { messageResults =>
-          messageResults.foreach { result =>
+          val offsets = messageResults.map { result =>
             if (result.status != 0)
               throw new Exception("Failed to write message to Solr")
-            // Commit to kafka
-            commitToKafka(result.passThrough)
+            result.passThrough
           }
+          CommittableOffsetBatch(offsets)
         }
+        .mapAsync(1)(_.commitScaladsl())
         .runWith(Sink.ignore)
       //#kafka-example
 

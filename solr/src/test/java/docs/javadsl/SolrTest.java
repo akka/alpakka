@@ -46,6 +46,7 @@ import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -329,27 +330,23 @@ public class SolrTest {
   public void testKafkaExample() throws Exception {
     String collectionName = createCollection();
 
-    // #kafka-example
-    // We're going to pretend we got messages from kafka.
-    // After we've written them to Solr, we want
-    // to commit the offset to Kafka
-
-    List<KafkaMessage> messagesFromKafka =
+    List<CommittableMessage> messagesFromKafka =
         Arrays.asList(
-            new KafkaMessage(new Book("Book 1"), new KafkaOffset(0)),
-            new KafkaMessage(new Book("Book 2"), new KafkaOffset(1)),
-            new KafkaMessage(new Book("Book 3"), new KafkaOffset(2)));
+            new CommittableMessage(new Book("Book 1"), new CommittableOffset(0)),
+            new CommittableMessage(new Book("Book 2"), new CommittableOffset(1)),
+            new CommittableMessage(new Book("Book 3"), new CommittableOffset(2)));
 
-    final KafkaCommitter kafkaCommitter = new KafkaCommitter();
-
+    Source<CommittableMessage, NotUsed> kafkaConsumerSource = Source.from(messagesFromKafka);
+    // #kafka-example
+    // Note: This code mimics Alpakka Kafka APIs
     CompletionStage<Done> completion =
-        Source.from(messagesFromKafka) // Assume we get this from Kafka
+        kafkaConsumerSource // Assume we get this from Kafka
             .map(
                 kafkaMessage -> {
                   Book book = kafkaMessage.book;
                   // Transform message so that we can write to elastic
                   return WriteMessage.createUpsertMessage(book)
-                      .withPassThrough(kafkaMessage.offset);
+                      .withPassThrough(kafkaMessage.committableOffset);
                 })
             .groupedWithin(5, Duration.ofMillis(10))
             .via(
@@ -361,26 +358,31 @@ public class SolrTest {
                     solrClient,
                     Book.class))
             .map(
-                messageResults -> {
-                  messageResults
-                      .stream()
-                      .forEach(
-                          result -> {
-                            if (result.status() != 0) {
-                              throw new RuntimeException("Failed to write message to elastic");
-                            }
-                            // Commit to kafka
-                            kafkaCommitter.commit(result.passThrough());
-                          });
-                  return NotUsed.getInstance();
-                })
+                messageResults ->
+                    messageResults
+                        .stream()
+                        .map(
+                            result -> {
+                              if (result.status() != 0) {
+                                throw new RuntimeException("Failed to write message to Solr");
+                              }
+                              return result.passThrough();
+                            })
+                        .collect(Collectors.toList()))
+            .map(ConsumerMessage::createCommittableOffsetBatch)
+            .mapAsync(1, CommittableOffsetBatch::commitJavadsl)
             .runWith(Sink.ignore(), materializer);
     // #kafka-example
 
     resultOf(completion);
 
     // Make sure all messages was committed to kafka
-    assertEquals(Arrays.asList(0, 1, 2), kafkaCommitter.committedOffsets);
+    assertEquals(
+        Arrays.asList(0, 1, 2),
+        CommittableOffsetBatch.committedOffsets
+            .stream()
+            .map(o -> o.offset)
+            .collect(Collectors.toList()));
 
     TupleStream stream = getTupleStream(collectionName);
 
@@ -735,31 +737,43 @@ public class SolrTest {
     TestKit.shutdownActorSystem(system);
   }
 
-  static class KafkaCommitter {
-    List<Integer> committedOffsets = new ArrayList<>();
-
-    public KafkaCommitter() {}
-
-    void commit(KafkaOffset offset) {
-      committedOffsets.add(offset.offset);
-    }
-  }
-
-  static class KafkaOffset {
+  static class CommittableOffset {
     final int offset;
 
-    public KafkaOffset(int offset) {
+    public CommittableOffset(int offset) {
       this.offset = offset;
     }
   }
 
-  static class KafkaMessage {
-    final Book book;
-    final KafkaOffset offset;
+  static class CommittableOffsetBatch {
+    static List<CommittableOffset> committedOffsets = new ArrayList<>();
 
-    public KafkaMessage(Book book, KafkaOffset offset) {
+    private final List<CommittableOffset> offsets;
+
+    public CommittableOffsetBatch(List<CommittableOffset> offsets) {
+      this.offsets = offsets;
+    }
+
+    CompletionStage<Done> commitJavadsl() {
+      committedOffsets.addAll(offsets);
+      return CompletableFuture.completedFuture(Done.getInstance());
+    }
+  }
+
+  static class ConsumerMessage {
+
+    static CommittableOffsetBatch createCommittableOffsetBatch(List<CommittableOffset> offsets) {
+      return new CommittableOffsetBatch(offsets);
+    }
+  }
+
+  static class CommittableMessage {
+    final Book book;
+    final CommittableOffset committableOffset;
+
+    public CommittableMessage(Book book, CommittableOffset offset) {
       this.book = book;
-      this.offset = offset;
+      this.committableOffset = offset;
     }
   }
 
