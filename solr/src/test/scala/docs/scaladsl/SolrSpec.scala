@@ -6,7 +6,6 @@ package docs.scaladsl
 
 import java.io.File
 import java.util.{Arrays, Optional}
-import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
@@ -23,22 +22,27 @@ import org.apache.solr.client.solrj.request.{CollectionAdminRequest, UpdateReque
 import org.apache.solr.cloud.{MiniSolrCloudCluster, ZkTestServer}
 import org.apache.solr.common.SolrInputDocument
 import org.junit.Assert.assertTrue
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
-import scala.concurrent.Await
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
-class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
+class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with ScalaFutures {
+
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(5.seconds)
+
   private var cluster: MiniSolrCloudCluster = _
 
   private var zkTestServer: ZkTestServer = _
   implicit val system: ActorSystem = ActorSystem()
+  implicit val commitExecutionContext: ExecutionContext = ExecutionContext.global
 
   implicit val materializer: Materializer = ActorMaterializer()
   //#init-client
   final val zookeeperPort = 9984
   final val zkHost = s"127.0.0.1:$zookeeperPort/solr"
-  implicit val client: CloudSolrClient = new CloudSolrClient.Builder(Arrays.asList(zkHost), Optional.empty()).build
+  implicit val solrClient: CloudSolrClient = new CloudSolrClient.Builder(Arrays.asList(zkHost), Optional.empty()).build
 
   //#init-client
   //#define-class
@@ -62,42 +66,40 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
   "Un-typed Solr connector" should {
     "consume and publish SolrInputDocument" in {
-      // Copy collection1 to collection2 through document stream
-      createCollection("collection2") //create a new collection
+      // Copy collection1 to collectionName through document stream
+      val collectionName = "collectionName"
+      createCollection(collectionName)
       val stream = getTupleStream("collection1")
 
       //#run-document
-      val f1 = SolrSource
-        .fromTupleStream(ts = stream)
+      val copyCollection = SolrSource
+        .fromTupleStream(stream)
         .map { tuple: Tuple =>
           val book: Book = tupleToBook(tuple)
           val doc: SolrInputDocument = bookToDoc(book)
           WriteMessage.createUpsertMessage(doc)
         }
-        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
+        .groupedWithin(5, 10.millis)
         .runWith(
-          SolrSink.documents(
-            collection = "collection2",
-            settings = SolrUpdateSettings().withCommitWithin(5)
-          )
+          SolrSink.documents(collectionName, SolrUpdateSettings())
         )
+        // explicit commit when stream ended
+        .map { _ =>
+          solrClient.commit(collectionName)
+        }(commitExecutionContext)
       //#run-document
 
-      Await.result(f1, Duration.Inf)
+      copyCollection.futureValue
 
-      client.commit("collection2")
-
-      val stream2 = getTupleStream("collection2")
+      val stream2 = getTupleStream(collectionName)
 
       val res2 = SolrSource
-        .fromTupleStream(ts = stream2)
+        .fromTupleStream(stream2)
         .map(tupleToBook)
         .map(_.title)
         .runWith(Sink.seq)
 
-      val result = Await.result(res2, Duration.Inf)
-
-      result shouldEqual Seq(
+      res2.futureValue shouldEqual Seq(
         "Akka Concurrency",
         "Akka in Action",
         "Effective Akka",
@@ -113,7 +115,8 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
   "Typed Solr connector" should {
     "consume and publish documents as specific type using a bean" in {
       // Copy collection1 to collection3 through bean stream
-      createCollection("collection3") //create a new collection
+      val collectionName = "collection3"
+      createCollection(collectionName)
       val stream = getTupleStream("collection1")
 
       //#define-bean
@@ -124,36 +127,33 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       //#define-bean
 
       //#run-bean
-      val res1 = SolrSource
-        .fromTupleStream(ts = stream)
+      val copyCollection = SolrSource
+        .fromTupleStream(stream)
         .map { tuple: Tuple =>
           val title = tuple.getString("title")
           WriteMessage.createUpsertMessage(BookBean(title))
         }
-        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
+        .groupedWithin(5, 10.millis)
         .runWith(
-          SolrSink.beans[BookBean](
-            collection = "collection3",
-            settings = SolrUpdateSettings().withCommitWithin(5)
-          )
+          SolrSink.beans[BookBean](collectionName, SolrUpdateSettings())
         )
+        // explicit commit when stream ended
+        .map { _ =>
+          solrClient.commit(collectionName)
+        }(commitExecutionContext)
       //#run-bean
 
-      Await.result(res1, Duration.Inf)
+      copyCollection.futureValue
 
-      client.commit("collection3")
-
-      val stream2 = getTupleStream("collection3")
+      val stream2 = getTupleStream(collectionName)
 
       val res2 = SolrSource
-        .fromTupleStream(ts = stream2)
+        .fromTupleStream(stream2)
         .map(tupleToBook)
         .map(_.title)
         .runWith(Sink.seq)
 
-      val result = Await.result(res2, Duration.Inf)
-
-      result shouldEqual Seq(
+      res2.futureValue shouldEqual Seq(
         "Akka Concurrency",
         "Akka in Action",
         "Effective Akka",
@@ -163,47 +163,46 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         "Scala for Spark in Production"
       )
     }
-  }
 
-  "Typed Solr connector" should {
     "consume and publish documents as specific type with a binder" in {
       // Copy collection1 to collection4 through typed stream
-      createCollection("collection4") //create a new collection
+      val collectionName = "collection4"
+      createCollection(collectionName)
       val stream = getTupleStream("collection1")
 
       //#run-typed
-      val res1 = SolrSource
-        .fromTupleStream(ts = stream)
+      val copyCollection = SolrSource
+        .fromTupleStream(stream)
         .map { tuple: Tuple =>
           val book: Book = tupleToBook(tuple)
           WriteMessage.createUpsertMessage(book)
         }
-        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
+        .groupedWithin(5, 10.millis)
         .runWith(
           SolrSink
             .typeds[Book](
-              collection = "collection4",
-              settings = SolrUpdateSettings().withCommitWithin(5),
+              collectionName,
+              SolrUpdateSettings(),
               binder = bookToDoc
             )
         )
+        // explicit commit when stream ended
+        .map { _ =>
+          solrClient.commit(collectionName)
+        }(commitExecutionContext)
       //#run-typed
 
-      Await.result(res1, Duration.Inf)
+      copyCollection.futureValue
 
-      client.commit("collection4")
-
-      val stream2 = getTupleStream("collection4")
+      val stream2 = getTupleStream(collectionName)
 
       val res2 = SolrSource
-        .fromTupleStream(ts = stream2)
+        .fromTupleStream(stream2)
         .map(tupleToBook)
         .map(_.title)
         .runWith(Sink.seq)
 
-      val result = Await.result(res2, Duration.Inf)
-
-      result shouldEqual Seq(
+      res2.futureValue shouldEqual Seq(
         "Akka Concurrency",
         "Akka in Action",
         "Effective Akka",
@@ -218,46 +217,48 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
   "SolrFlow" should {
     "store documents and pass status to downstream" in {
       // Copy collection1 to collection5 through typed stream
-      createCollection("collection5") //create a new collection
+      val collectionName = "collection5"
+      createCollection(collectionName)
       val stream = getTupleStream("collection1")
 
       //#run-flow
-      val res1 = SolrSource
-        .fromTupleStream(ts = stream)
+      val copyCollection = SolrSource
+        .fromTupleStream(stream)
         .map { tuple: Tuple =>
           val book: Book = tupleToBook(tuple)
           WriteMessage.createUpsertMessage(book)
         }
-        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
+        .groupedWithin(5, 10.millis)
         .via(
           SolrFlow
             .typeds[Book](
-              collection = "collection5",
-              settings = SolrUpdateSettings().withCommitWithin(5),
+              collectionName,
+              SolrUpdateSettings(),
               binder = bookToDoc
             )
         )
         .runWith(Sink.seq)
+        // explicit commit when stream ended
+        .map { seq =>
+          solrClient.commit(collectionName)
+          seq
+        }(commitExecutionContext)
       //#run-flow
 
-      val result1 = Await.result(res1, Duration.Inf)
-
-      client.commit("collection5")
+      val result1 = copyCollection.futureValue
 
       // Assert no errors
       assert(result1.forall(_.exists(_.status == 0)))
 
-      val stream2 = getTupleStream("collection5")
+      val stream2 = getTupleStream(collectionName)
 
       val res2 = SolrSource
-        .fromTupleStream(ts = stream2)
+        .fromTupleStream(stream2)
         .map(tupleToBook)
         .map(_.title)
         .runWith(Sink.seq)
 
-      val result = Await.result(res2, Duration.Inf)
-
-      result shouldEqual Seq(
+      res2.futureValue shouldEqual Seq(
         "Akka Concurrency",
         "Akka in Action",
         "Effective Akka",
@@ -267,11 +268,10 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         "Scala for Spark in Production"
       )
     }
-  }
 
-  "SolrFlow" should {
     "kafka-example - store documents and pass responses with passThrough" in {
-      createCollection("collection6") //create new collection
+      val collectionName = "collection6"
+      createCollection(collectionName)
 
       //#kafka-example
       // We're going to pretend we got messages from kafka.
@@ -292,19 +292,18 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       def commitToKafka(offset: KafkaOffset): Unit =
         committedOffsets = committedOffsets :+ offset
 
-      val res1 = Source(messagesFromKafka)
+      val copyCollection = Source(messagesFromKafka)
         .map { kafkaMessage: KafkaMessage =>
           val book = kafkaMessage.book
-          println("title: " + book.title)
-
           // Transform message so that we can write to solr
           WriteMessage.createUpsertMessage(book).withPassThrough(kafkaMessage.offset)
         }
-        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
+        .groupedWithin(5, 10.millis)
         .via( // write to Solr
           SolrFlow.typedsWithPassThrough[Book, KafkaOffset](
-            collection = "collection6",
-            settings = SolrUpdateSettings().withCommitWithin(5),
+            collectionName,
+            // use implicit commits to Solr
+            SolrUpdateSettings().withCommitWithin(5),
             binder = bookToDoc
           )
         )
@@ -319,12 +318,12 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .runWith(Sink.ignore)
       //#kafka-example
 
-      Await.ready(res1, Duration.Inf)
+      copyCollection.futureValue
 
       // Make sure all messages was committed to kafka
       assert(List(0, 1, 2) == committedOffsets.map(_.offset))
 
-      val stream = getTupleStream("collection6")
+      val stream = getTupleStream(collectionName)
 
       val res2 = SolrSource
         .fromTupleStream(stream)
@@ -332,136 +331,132 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
         .map(_.title)
         .runWith(Sink.seq)
 
-      val result = Await.result(res2, Duration.Inf)
-
-      result.sorted shouldEqual messagesFromKafka.map(_.book.title).sorted
+      res2.futureValue.sorted shouldEqual messagesFromKafka.map(_.book.title).sorted
     }
   }
 
   "Un-typed Solr connector" should {
     "consume and delete documents" in {
       // Copy collection1 to collection2 through document stream
-      createCollection("collection7") //create a new collection
+      val collectionName = "collection7"
+      createCollection(collectionName)
       val stream = getTupleStream("collection1")
 
-      val f1 = SolrSource
-        .fromTupleStream(ts = stream)
+      val copyCollection = SolrSource
+        .fromTupleStream(stream)
         .map { tuple: Tuple =>
           val book: Book = tupleToBook(tuple)
           val doc: SolrInputDocument = bookToDoc(book)
           WriteMessage.createUpsertMessage(doc)
         }
-        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
+        .groupedWithin(5, 10.millis)
         .runWith(
-          SolrSink.documents(
-            collection = "collection7",
-            settings = SolrUpdateSettings().withCommitWithin(5)
-          )
+          SolrSink.documents(collectionName, SolrUpdateSettings())
         )
+        // explicit commit when stream ended
+        .map { _ =>
+          solrClient.commit(collectionName)
+        }(commitExecutionContext)
 
-      Await.result(f1, Duration.Inf)
+      copyCollection.futureValue
 
-      client.commit("collection7")
-
-      val stream2 = getTupleStream("collection7")
+      val stream2 = getTupleStream(collectionName)
 
       //#delete-documents
-      val f2 = SolrSource
-        .fromTupleStream(ts = stream2)
+      val deleteDocuments = SolrSource
+        .fromTupleStream(stream2)
         .map { tuple: Tuple =>
-          WriteMessage.createDeleteMessage[SolrInputDocument](tuple.fields.get("title").toString)
+          val id = tuple.fields.get("title").toString
+          WriteMessage.createDeleteMessage[SolrInputDocument](id)
         }
-        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
+        .groupedWithin(5, 10.millis)
         .runWith(
-          SolrSink.documents(
-            collection = "collection7",
-            settings = SolrUpdateSettings()
-          )
+          SolrSink.documents(collectionName, SolrUpdateSettings())
         )
+        // explicit commit when stream ended
+        .map { _ =>
+          solrClient.commit(collectionName)
+        }(commitExecutionContext)
       //#delete-documents
 
-      Await.result(f2, Duration.Inf)
+      deleteDocuments.futureValue
 
-      client.commit("collection7")
-
-      val stream3 = getTupleStream("collection7")
+      val stream3 = getTupleStream(collectionName)
 
       val res2 = SolrSource
-        .fromTupleStream(ts = stream3)
+        .fromTupleStream(stream3)
         .map(tupleToBook)
         .map(_.title)
         .runWith(Sink.seq)
 
-      val result = Await.result(res2, Duration.Inf)
-
-      result shouldEqual Seq.empty[String]
+      res2.futureValue shouldEqual Seq.empty[String]
     }
 
-  }
-
-  "Un-typed Solr connector" should {
     "consume and update atomically documents" in {
       // Copy collection1 to collection2 through document stream
-      createCollection("collection8") //create a new collection
+      val collectionName = "collection8"
+      createCollection(collectionName)
       val stream = getTupleStream("collection1")
 
-      val f1 = SolrSource
-        .fromTupleStream(ts = stream)
+      val upsertCollection = SolrSource
+        .fromTupleStream(stream)
         .map { tuple: Tuple =>
-          val book: Book = tupleToBook(tuple).copy(comment = "Written by good authors.")
+          val book: Book = tupleToBook(tuple)
+            .copy(comment = "Written by good authors.")
           val doc: SolrInputDocument = bookToDoc(book)
           WriteMessage.createUpsertMessage(doc)
         }
-        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
+        .groupedWithin(5, 10.millis)
         .runWith(
-          SolrSink.documents(
-            collection = "collection8",
-            settings = SolrUpdateSettings().withCommitWithin(5)
-          )
+          SolrSink.documents(collectionName, SolrUpdateSettings())
         )
+        // explicit commit when stream ended
+        .map { _ =>
+          solrClient.commit(collectionName)
+        }(commitExecutionContext)
 
-      Await.result(f1, Duration.Inf)
+      upsertCollection.futureValue
 
-      client.commit("collection8")
-
-      val stream2 = getTupleStream("collection8")
+      val stream2 = getTupleStream(collectionName)
 
       //#update-atomically-documents
-      val f2 = SolrSource
-        .fromTupleStream(ts = stream2)
+      val updateCollection = SolrSource
+        .fromTupleStream(stream2)
         .map { tuple: Tuple =>
+          val id = tuple.fields.get("title").toString
+          val comment = tuple.fields.get("comment").toString
           WriteMessage.createUpdateMessage[SolrInputDocument](
-            "title",
-            tuple.fields.get("title").toString,
-            Map("comment" -> Map("set" -> (tuple.fields.get("comment") + " It is a good book!!!")))
+            idField = "title",
+            idValue = id,
+            updates = Map(
+              "comment" ->
+              Map("set" -> (comment + " It is a good book!!!"))
+            )
           )
         }
-        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
+        .groupedWithin(5, 10.millis)
         .runWith(
-          SolrSink.documents(
-            collection = "collection8",
-            settings = SolrUpdateSettings()
-          )
+          SolrSink.documents(collectionName, SolrUpdateSettings())
         )
+        // explicit commit when stream ended
+        .map { _ =>
+          solrClient.commit(collectionName)
+        }(commitExecutionContext)
       //#update-atomically-documents
 
-      Await.result(f2, Duration.Inf)
+      updateCollection.futureValue
 
-      client.commit("collection8")
-
-      val stream3 = getTupleStream("collection8")
+      val stream3 = getTupleStream(collectionName)
 
       val res2 = SolrSource
-        .fromTupleStream(ts = stream3)
+        .fromTupleStream(stream3)
         .map(tupleToBook)
         .map { b =>
           b.title + ". " + b.comment
         }
         .runWith(Sink.seq)
 
-      val result = Await.result(res2, Duration.Inf)
-
-      result shouldEqual Seq(
+      res2.futureValue shouldEqual Seq(
         "Akka Concurrency. Written by good authors. It is a good book!!!",
         "Akka in Action. Written by good authors. It is a good book!!!",
         "Effective Akka. Written by good authors. It is a good book!!!",
@@ -476,60 +471,59 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
   "Solr connector" should {
     "consume and delete beans" in {
-      // Copy collection1 to collection2 through document stream
-      createCollection("collection9") //create a new collection
+      val collectionName = "collection9"
+      createCollection(collectionName)
       val stream = getTupleStream("collection1")
 
-      val f1 = SolrSource
-        .fromTupleStream(ts = stream)
+      val copyCollection = SolrSource
+        .fromTupleStream(stream)
         .map { tuple: Tuple =>
           val book: Book = tupleToBook(tuple)
           WriteMessage.createUpsertMessage(book)
         }
-        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
+        .groupedWithin(5, 10.millis)
         .runWith(
           SolrSink.typeds[Book](
-            collection = "collection9",
-            settings = SolrUpdateSettings().withCommitWithin(5),
+            collectionName,
+            SolrUpdateSettings(),
             binder = bookToDoc
           )
         )
+        // explicit commit when stream ended
+        .map { _ =>
+          solrClient.commit(collectionName)
+        }(commitExecutionContext)
 
-      Await.result(f1, Duration.Inf)
+      copyCollection.futureValue
 
-      client.commit("collection9")
+      val stream2 = getTupleStream(collectionName)
 
-      val stream2 = getTupleStream("collection9")
-
-      val f2 = SolrSource
-        .fromTupleStream(ts = stream2)
+      val deleteElements = SolrSource
+        .fromTupleStream(stream2)
         .map { tuple: Tuple =>
-          WriteMessage.createDeleteMessage[Book](tuple.fields.get("title").toString)
+          val title = tuple.fields.get("title").toString
+          WriteMessage.createDeleteMessage[Book](title)
         }
-        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
+        .groupedWithin(5, 10.millis)
         .runWith(
           SolrSink.typeds[Book](
-            collection = "collection9",
-            settings = SolrUpdateSettings(),
+            collectionName,
+            SolrUpdateSettings().withCommitWithin(5),
             binder = bookToDoc
           )
         )
 
-      Await.result(f2, Duration.Inf)
+      deleteElements.futureValue
 
-      client.commit("collection9")
-
-      val stream3 = getTupleStream("collection9")
+      val stream3 = getTupleStream(collectionName)
 
       val res2 = SolrSource
-        .fromTupleStream(ts = stream3)
+        .fromTupleStream(stream3)
         .map(tupleToBook)
         .map(_.title)
         .runWith(Sink.seq)
 
-      val result = Await.result(res2, Duration.Inf)
-
-      result shouldEqual Seq.empty[String]
+      res2.futureValue shouldEqual Seq.empty[String]
     }
 
   }
@@ -537,33 +531,36 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
   "Solr connector" should {
     "consume and update atomically beans" in {
       // Copy collection1 to collection2 through document stream
-      createCollection("collection10", Some("router")) //create a new collection
+      val collectionName = "collection10"
+      createCollection(collectionName, Some("router"))
       val stream = getTupleStream("collection1")
 
-      val f1 = SolrSource
-        .fromTupleStream(ts = stream)
+      val copyCollection = SolrSource
+        .fromTupleStream(stream)
         .map { tuple: Tuple =>
           val book: Book =
             tupleToBook(tuple).copy(comment = "Written by good authors.", routerOpt = Some("router-value"))
           WriteMessage.createUpsertMessage(book)
         }
-        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
+        .groupedWithin(5, 10.millis)
         .runWith(
           SolrSink.typeds[Book](
-            collection = "collection10",
-            settings = SolrUpdateSettings().withCommitWithin(5),
+            collectionName,
+            SolrUpdateSettings(),
             binder = bookToDoc
           )
         )
+        // explicit commit when stream ended
+        .map { _ =>
+          solrClient.commit(collectionName)
+        }(commitExecutionContext)
 
-      Await.result(f1, Duration.Inf)
+      copyCollection.futureValue
 
-      client.commit("collection10")
+      val stream2 = getTupleStream(collectionName)
 
-      val stream2 = getTupleStream("collection10")
-
-      val f2 = SolrSource
-        .fromTupleStream(ts = stream2)
+      val updateCollection = SolrSource
+        .fromTupleStream(stream2)
         .map { tuple: Tuple =>
           WriteMessage.createUpdateMessage[Book](
             idField = "title",
@@ -572,32 +569,32 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
             updates = Map("comment" -> Map("set" -> (tuple.fields.get("comment") + " It is a good book!!!")))
           )
         }
-        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
+        .groupedWithin(5, 10.millis)
         .runWith(
           SolrSink.typeds[Book](
-            collection = "collection10",
-            settings = SolrUpdateSettings().withCommitWithin(5),
+            collectionName,
+            SolrUpdateSettings(),
             binder = bookToDoc
           )
         )
+        // explicit commit when stream ended
+        .map { _ =>
+          solrClient.commit(collectionName)
+        }(commitExecutionContext)
 
-      Await.result(f2, Duration.Inf)
+      updateCollection.futureValue
 
-      client.commit("collection10")
-
-      val stream3 = getTupleStream("collection10")
+      val stream3 = getTupleStream(collectionName)
 
       val res2 = SolrSource
-        .fromTupleStream(ts = stream3)
+        .fromTupleStream(stream3)
         .map(tupleToBook)
         .map { b =>
           b.title + ". " + b.comment
         }
         .runWith(Sink.seq)
 
-      val result = Await.result(res2, Duration.Inf)
-
-      result shouldEqual Seq(
+      res2.futureValue shouldEqual Seq(
         "Akka Concurrency. Written by good authors. It is a good book!!!",
         "Akka in Action. Written by good authors. It is a good book!!!",
         "Effective Akka. Written by good authors. It is a good book!!!",
@@ -612,63 +609,60 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
   "Un-typed Solr connector" should {
     "consume and delete documents by query" in {
-      // Copy collection1 to collection2 through document stream
-      createCollection("collection11") //create a new collection
+      val collectionName = "collection11"
+      createCollection(collectionName)
       val stream = getTupleStream("collection1")
 
-      val f1 = SolrSource
-        .fromTupleStream(ts = stream)
+      val copyCollection = SolrSource
+        .fromTupleStream(stream)
         .map { tuple: Tuple =>
           val book: Book = tupleToBook(tuple)
           val doc: SolrInputDocument = bookToDoc(book)
           WriteMessage.createUpsertMessage(doc)
         }
-        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
+        .groupedWithin(5, 10.millis)
         .runWith(
-          SolrSink.documents(
-            collection = "collection11",
-            settings = SolrUpdateSettings().withCommitWithin(5)
-          )
+          SolrSink.documents(collectionName, SolrUpdateSettings())
         )
+        // explicit commit when stream ended
+        .map { _ =>
+          solrClient.commit(collectionName)
+        }(commitExecutionContext)
 
-      Await.result(f1, Duration.Inf)
+      copyCollection.futureValue
 
-      client.commit("collection11")
-
-      val stream2 = getTupleStream("collection11")
+      val stream2 = getTupleStream(collectionName)
 
       //#delete-documents-query
-      val f2 = SolrSource
-        .fromTupleStream(ts = stream2)
+      val deleteByQuery = SolrSource
+        .fromTupleStream(stream2)
         .map { tuple: Tuple =>
+          val title = tuple.fields.get("title").toString
           WriteMessage.createDeleteByQueryMessage[SolrInputDocument](
-            "title:\"" + tuple.fields.get("title").toString + "\""
+            s"""title:"$title" """
           )
         }
-        .groupedWithin(5, new FiniteDuration(10, TimeUnit.MILLISECONDS))
+        .groupedWithin(5, 10.millis)
         .runWith(
-          SolrSink.documents(
-            collection = "collection11",
-            settings = SolrUpdateSettings()
-          )
+          SolrSink.documents(collectionName, SolrUpdateSettings())
         )
+        // explicit commit when stream ended
+        .map { _ =>
+          solrClient.commit(collectionName)
+        }(commitExecutionContext)
       //#delete-documents-query
 
-      Await.result(f2, Duration.Inf)
+      deleteByQuery.futureValue
 
-      client.commit("collection11")
-
-      val stream3 = getTupleStream("collection11")
+      val stream3 = getTupleStream(collectionName)
 
       val res2 = SolrSource
-        .fromTupleStream(ts = stream3)
+        .fromTupleStream(stream3)
         .map(tupleToBook)
         .map(_.title)
         .runWith(Sink.seq)
 
-      val result = Await.result(res2, Duration.Inf)
-
-      result shouldEqual Seq.empty[String]
+      res2.futureValue shouldEqual Seq.empty[String]
     }
 
   }
@@ -683,11 +677,11 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       .add("title", "Scala Puzzlers")
       .add("title", "Effective Akka")
       .add("title", "Akka Concurrency")
-      .commit(client, "collection1")
+      .commit(solrClient, "collection1")
   }
 
   override def afterAll(): Unit = {
-    client.close()
+    solrClient.close()
     cluster.shutdown()
     zkTestServer.shutdown()
     TestKit.shutdownActorSystem(system)
@@ -713,21 +707,21 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       JettyConfig.builder.setContext("/solr").build,
       zkTestServer
     )
-    client.getClusterStateProvider
+    solrClient.getClusterStateProvider
       .asInstanceOf[ZkClientClusterStateProvider]
       .uploadConfig(confDir.toPath, "conf")
-    client.setIdField("router")
+    solrClient.setIdField("router")
 
     createCollection("collection1")
 
-    assertTrue(!client.getZkStateReader.getClusterState.getLiveNodes.isEmpty)
+    assertTrue(!solrClient.getZkStateReader.getClusterState.getLiveNodes.isEmpty)
   }
 
   private def createCollection(name: String, routerFieldOpt: Option[String] = None) =
     CollectionAdminRequest
       .createCollection(name, "conf", 1, 1)
       .setRouterField(routerFieldOpt.orNull)
-      .process(client)
+      .process(solrClient)
 
   private def getTupleStream(collection: String): TupleStream = {
     //#tuple-stream
@@ -740,16 +734,14 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       StreamExpressionParser.parse(s"""search($collection, q=*:*, fl="title,comment", sort="title asc")""")
     val stream: TupleStream = new CloudSolrStream(expression, factory)
     stream.setStreamContext(streamContext)
+
+    val source = SolrSource
+      .fromTupleStream(stream)
     //#tuple-stream
     stream
   }
 
   private def documentation: Unit = {
-    val stream: TupleStream = null
-    //#define-source
-    val source = SolrSource
-      .fromTupleStream(ts = stream)
-    //#define-source
     //#solr-update-settings
     import akka.stream.alpakka.solr.SolrUpdateSettings
 

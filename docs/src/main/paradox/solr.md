@@ -29,8 +29,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Set up client
 
-Sources, Flows and Sinks provided by this connector need a prepared `org.apache.solr.client.solrj.SolrClient` to
-access to Solr.
+Sources, Flows and Sinks provided by this connector need a prepared `org.apache.solr.client.solrj.SolrClient` (eg. `org.apache.solr.client.solrj.impl.CloudSolrClient`) to access to Solr.
 
 
 Scala
@@ -40,9 +39,9 @@ Java
 : @@snip [snip](/solr/src/test/java/docs/javadsl/SolrTest.java) { #init-client }
 
 
-## Source Usage
+## Reading from Solr
 
-Create a tuple stream.
+Create a tuple stream and use `SolrSource.fromTupleStream` (@scala[@scaladoc[API](akka.stream.alpakka.solr.scaladsl.SolrSource$)]@java[@scaladoc[API](akka.stream.alpakka.solr.javadsl.SolrSource$)]) to create a source.
 
 Scala
 : @@snip [snip](/solr/src/test/scala/docs/scaladsl/SolrSpec.scala) { #tuple-stream }
@@ -51,18 +50,32 @@ Java
 : @@snip [snip](/solr/src/test/java/docs/javadsl/SolrTest.java) { #tuple-stream }
 
 
-Use `SolrSource.create` to create 
-@scala[@scaladoc[SolrSource](akka.stream.alpakka.solr.scaladsl.SolrSource$).]
-@java[@scaladoc[SolrSource](akka.stream.alpakka.solr.javadsl.SolrSource$).]
+## Writing to Solr
 
+Alpakka Solr batches updates to Solr by sending all updates of the same operation at once to Solr. These batches are extracted from the elements within one collection sent to a Solr flow or sink. Updates of different types may be contained in a single collection sent, though. In case streams don't have natural batches of updates, you may use the `groupedWithin` operator to create count or time-based batches.
+
+## Configuration for updates
+
+Data sent to Solr is not searchable until it has been committed to the index. These are the major options for handling commits:
+
+1. The Solr installation can be configured to use **auto-commit**.
+2. Specify **commit-within** in `SolrUpdateSettings` to trigger commits after every write through Alpakka Solr.
+3. Use explicit committing via the `SolrClient.commit` methods on stream completion as most examples show. As `commit` is a blocking operation, choose an appropriate execution context (preferably not `system.dispatcher`).
+
+Configuration of Solr committing is described in [UpdateHandlers in SolrConfig](http://lucene.apache.org/solr/guide/7_6/updatehandlers-in-solrconfig.html#commits).
 
 Scala
-: @@snip [snip](/solr/src/test/scala/docs/scaladsl/SolrSpec.scala) { #define-source }
+: @@snip [snip](/solr/src/test/scala/docs/scaladsl/SolrSpec.scala) { #solr-update-settings }
 
 Java
-: @@snip [snip](/solr/src/test/java/docs/javadsl/SolrTest.java) { #define-source }
+: @@snip [snip](/solr/src/test/java/docs/javadsl/SolrTest.java) { #solr-update-settings }
 
-## Sink Usage
+
+| Parameter           | Default | Description                                                                                            |
+| ------------------- | ------- | ------------------------------------------------------------------------------------------------------ | 
+| commitWithin        | -1      | Max time (in ms) before a commit will happen, -1 for manual committing |
+
+
 
 Now we can stream messages to Solr by providing the `SolrClient` to the
 @scala[@scaladoc[SolrSink](akka.stream.alpakka.solr.scaladsl.SolrSink$).]
@@ -116,21 +129,6 @@ Scala
 Java
 : @@snip [snip](/solr/src/test/java/docs/javadsl/SolrTest.java) { #run-typed }
 
-### Configuration
-
-We can configure the sink by `SolrUpdateSettings`.
-
-
-Scala
-: @@snip [snip](/solr/src/test/scala/docs/scaladsl/SolrSpec.scala) { #solr-update-settings }
-
-Java
-: @@snip [snip](/solr/src/test/java/docs/javadsl/SolrTest.java) { #solr-update-settings }
-
-
-| Parameter           | Default | Description                                                                                            |
-| ------------------- | ------- | ------------------------------------------------------------------------------------------------------ | 
-| commitWithin        | -1      | Max time (in ms) before a commit will happen, -1 for manual committing |
 
 ### Update atomically documents
 
