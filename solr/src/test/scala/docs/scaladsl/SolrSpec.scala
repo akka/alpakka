@@ -10,10 +10,10 @@ import java.util.{Arrays, Optional}
 
 import akka.Done
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.solr._
 import akka.stream.alpakka.solr.scaladsl.{SolrFlow, SolrSink, SolrSource}
 import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
 import org.apache.solr.client.solrj.embedded.JettyConfig
 import org.apache.solr.client.solrj.impl.{CloudSolrClient, ZkClientClusterStateProvider}
@@ -24,14 +24,14 @@ import org.apache.solr.client.solrj.request.{CollectionAdminRequest, UpdateReque
 import org.apache.solr.cloud.{MiniSolrCloudCluster, ZkTestServer}
 import org.apache.solr.common.SolrInputDocument
 import org.junit.Assert.assertTrue
-import scala.collection.immutable
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.collection.immutable
 import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
 
-class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with ScalaFutures {
+class SolrSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(5.seconds)
 
@@ -71,7 +71,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
   }
   //#define-class
 
-  "Un-typed Solr connector" should {
+  "Alpakka Solr" should {
     "consume and publish SolrInputDocument" in {
       // Copy collection1 to collectionName through document stream
       val collectionName = createCollection()
@@ -116,9 +116,6 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
       )
     }
 
-  }
-
-  "Typed Solr connector" should {
     "consume and publish documents as specific type using a bean" in {
       val collectionName = createCollection()
       val stream = getTupleStream(predefinedCollection)
@@ -215,9 +212,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
         "Scala for Spark in Production"
       )
     }
-  }
 
-  "SolrFlow" should {
     "store documents and pass status to downstream" in {
       val collectionName = createCollection()
       val stream = getTupleStream(predefinedCollection)
@@ -270,7 +265,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
       )
     }
 
-    "kafka-example - store documents and pass responses with passThrough" in {
+    "store documents and pass responses with passThrough (Kafka example)" in {
       val collectionName = createCollection()
 
       var committedOffsets = List[CommittableOffset]()
@@ -341,9 +336,7 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
 
       res2.futureValue.sorted shouldEqual messagesFromKafka.map(_.book.title).sorted
     }
-  }
 
-  "Un-typed Solr connector" should {
     "consume and delete documents" in {
       val collectionName = createCollection()
       val stream = getTupleStream(predefinedCollection)
@@ -472,9 +465,6 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
       )
     }
 
-  }
-
-  "Solr connector" should {
     "consume and delete beans" in {
       val collectionName = createCollection()
       val stream = getTupleStream(predefinedCollection)
@@ -530,9 +520,6 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
       res2.futureValue shouldEqual Seq.empty[String]
     }
 
-  }
-
-  "Solr connector" should {
     "consume and update atomically beans" in {
       val collectionName = createCollection(Some("router"))
       val stream = getTupleStream(predefinedCollection)
@@ -608,9 +595,6 @@ class SolrSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with Sc
       )
     }
 
-  }
-
-  "Un-typed Solr connector" should {
     "consume and delete documents by query" in {
       val collectionName = createCollection()
       val stream = getTupleStream(predefinedCollection)
