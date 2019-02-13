@@ -91,7 +91,7 @@ class RequestStateSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       router ! LocalPacketRouter.Unregister(PacketId(2))
       router ! LocalPacketRouter.Unregister(PacketId(3))
       router ! LocalPacketRouter.Register(registrant.ref, reply4)
-      reply4.future.futureValue shouldBe LocalPacketRouter.Registered(PacketId(1))
+      reply4.future.futureValue shouldBe LocalPacketRouter.Registered(PacketId(4))
     }
 
     "route a packet" in {

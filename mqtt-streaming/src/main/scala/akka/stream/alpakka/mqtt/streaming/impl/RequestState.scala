@@ -338,6 +338,7 @@ import scala.util.{Failure, Success}
    */
   private val MinPacketId = PacketId(1)
   private val MaxPacketId = PacketId(0xffff)
+  private val MaxNrOfPacketId = MaxPacketId.underlying - MinPacketId.underlying
 
   // Requests
 
@@ -355,7 +356,7 @@ import scala.util.{Failure, Success}
    * Construct with the starting state
    */
   def apply[A]: Behavior[Request[A]] =
-    new LocalPacketRouter[A].main(Map.empty, MinPacketId)
+    new LocalPacketRouter[A].main(Map.empty, None)
 }
 
 /*
@@ -375,22 +376,25 @@ import scala.util.{Failure, Success}
 
   // Processing
 
-  def main(registrantsByPacketId: Map[PacketId, ActorRef[A]], nextPacketId: PacketId): Behavior[Request[A]] =
+  def main(registrantsByPacketId: Map[PacketId, ActorRef[A]], lastPacketId: Option[PacketId]): Behavior[Request[A]] =
     Behaviors.receiveMessage {
-      case Register(registrant: ActorRef[A], reply) if nextPacketId.underlying <= MaxPacketId.underlying =>
+      case Register(registrant: ActorRef[A], reply) if registrantsByPacketId.size < MaxNrOfPacketId =>
+        @tailrec
+        def step(id: PacketId): PacketId =
+          if (id.underlying == MaxPacketId.underlying)
+            step(MinPacketId)
+          else if (registrantsByPacketId.contains(id))
+            step(PacketId(id.underlying + 1))
+          else
+            id
+        val nextPacketId = step(lastPacketId.fold(MinPacketId)(l => PacketId(l.underlying + 1)))
         reply.success(Registered(nextPacketId))
-        main(registrantsByPacketId + (nextPacketId -> registrant), PacketId(nextPacketId.underlying + 1))
+        main(registrantsByPacketId + (nextPacketId -> registrant), Some(nextPacketId))
       case _: Register[A] =>
         Behaviors.same // We cannot allocate any more. This will eventually cause a timeout to occur on the requestor.
       case Unregister(packetId) =>
         val remainingPacketIds = registrantsByPacketId - packetId
-        val revisedNextPacketId = if (remainingPacketIds.nonEmpty) {
-          val maxPacketId = remainingPacketIds.keys.maxBy(_.underlying)
-          PacketId(maxPacketId.underlying + 1)
-        } else {
-          MinPacketId
-        }
-        main(remainingPacketIds, revisedNextPacketId)
+        main(remainingPacketIds, lastPacketId)
       case Route(packetId, event, failureReply) =>
         registrantsByPacketId.get(packetId) match {
           case Some(reply) => reply ! event
