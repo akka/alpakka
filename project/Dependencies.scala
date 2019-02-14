@@ -35,7 +35,6 @@ object Dependencies {
       "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion % Test,
       "ch.qos.logback" % "logback-classic" % "1.2.3" % Test, // Eclipse Public License 1.0
       "org.scalatest" %% "scalatest" % "3.0.5" % Test, // ApacheV2
-      "io.github.sullis" %% "jms-testkit" % "0.2.1" % Test, // ApacheV2
       "com.novocode" % "junit-interface" % "0.11" % Test, // BSD-style
       "junit" % "junit" % "4.12" % Test // Eclipse Public License 1.0
     )
@@ -242,6 +241,7 @@ object Dependencies {
       "com.ibm.mq" % "com.ibm.mq.allclient" % "9.1.1.0" % Test, // IBM International Program License Agreement https://public.dhe.ibm.com/ibmdl/export/pub/software/websphere/messaging/mqdev/maven/licenses/L-APIG-AZYF2E/LI_en.html
       "org.apache.activemq" % "activemq-broker" % "5.15.4" % Test, // ApacheV2
       "org.apache.activemq" % "activemq-client" % "5.15.4" % Test, // ApacheV2
+      "io.github.sullis" %% "jms-testkit" % "0.2.1" % Test, // ApacheV2
       "org.mockito" % "mockito-core" % "2.23.4" % Test // MIT
     ),
     // Having JBoss as a first resolver is a workaround for https://github.com/coursier/coursier/issues/200
