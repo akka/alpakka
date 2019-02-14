@@ -8,9 +8,9 @@ import akka.Done
 import akka.stream.alpakka.sns.IntegrationTestContext
 import akka.stream.alpakka.sns.scaladsl.SnsPublisher
 import akka.stream.scaladsl.{Sink, Source}
-import com.amazonaws.services.sns.model.PublishRequest
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FlatSpec, Matchers}
+import software.amazon.awssdk.services.sns.model.PublishRequest
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -35,7 +35,7 @@ class SnsPublisherSpec extends FlatSpec with Matchers with ScalaFutures with Int
     val published: Future[Done] =
       //#use-sink
       Source
-        .single(new PublishRequest().withMessage("message"))
+        .single(PublishRequest.builder().message("message").build())
         .runWith(SnsPublisher.publishSink(topicArn))
 
     //#use-sink
@@ -46,7 +46,7 @@ class SnsPublisherSpec extends FlatSpec with Matchers with ScalaFutures with Int
     val published: Future[Done] =
       //#use-sink
       Source
-        .single(new PublishRequest().withMessage("message").withTopicArn(topicArn))
+        .single(PublishRequest.builder().message("message").topicArn(topicArn).build())
         .runWith(SnsPublisher.publishSink())
     //#use-sink
     published.futureValue should be(Done)
@@ -58,7 +58,7 @@ class SnsPublisherSpec extends FlatSpec with Matchers with ScalaFutures with Int
       Source
         .single("message")
         .via(SnsPublisher.flow(topicArn))
-        .runWith(Sink.foreach(res => println(res.getMessageId)))
+        .runWith(Sink.foreach(res => println(res.messageId())))
 
     //#use-flow
     published.futureValue should be(Done)
@@ -68,9 +68,9 @@ class SnsPublisherSpec extends FlatSpec with Matchers with ScalaFutures with Int
     val published: Future[Done] =
       //#use-flow
       Source
-        .single(new PublishRequest().withMessage("message"))
+        .single(PublishRequest.builder().message("message").build())
         .via(SnsPublisher.publishFlow(topicArn))
-        .runWith(Sink.foreach(res => println(res.getMessageId)))
+        .runWith(Sink.foreach(res => println(res.messageId())))
 
     //#use-flow
     published.futureValue should be(Done)
@@ -80,9 +80,9 @@ class SnsPublisherSpec extends FlatSpec with Matchers with ScalaFutures with Int
     val published: Future[Done] =
       //#use-flow
       Source
-        .single(new PublishRequest().withMessage("message").withTopicArn(topicArn))
+        .single(PublishRequest.builder().message("message").topicArn(topicArn).build())
         .via(SnsPublisher.publishFlow())
-        .runWith(Sink.foreach(res => println(res.getMessageId)))
+        .runWith(Sink.foreach(res => println(res.messageId())))
     //#use-flow
     published.futureValue should be(Done)
   }
