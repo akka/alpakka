@@ -1,8 +1,9 @@
 # HBase
 
-A flow and a composite sink to write element in [HBase](http://hbase.apache.org).
+The connector provides flows and sinks to write elements to HBase database.
 
 HBase is a column family NoSQL Database backed by HDFS.
+For more information about HBase, please visit the [HBase documentation](http://hbase.apache.org).
 
 @@project-info{ projectId="hbase" }
 
@@ -21,96 +22,89 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Converters
 
-Build a converter and a tableSetting.
+Converters map the domain object to a list of HBase mutations (`Append`, `Delete`, `Increment`, `Put`).
 
-Converter will map the domain object to list of HBase mutations (`Append`, `Delete`, `Increment`, `Put`).
+### Put
 
-Here some examples:
+Scala
+:   @@snip [snip](/hbase/src/test/scala/docs/scaladsl/HBaseStageSpec.scala) { #create-converter-put }
 
-- A `Put` mutation:
+Java
+:   @@snip [snip](/hbase/src/test/java/docs/javadsl/HBaseStageTest.java) { #create-converter-put }
 
-scala
-:   @@snip [snip](/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #create-converter-put }
+### Append
 
-java
-:   @@snip [snip](/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #create-converter-put }
+Scala
+:   @@snip [snip](/hbase/src/test/scala/docs/scaladsl/HBaseStageSpec.scala) { #create-converter-append }
 
-- An `Append` mutation:
+Java
+:   @@snip [snip](/hbase/src/test/java/docs/javadsl/HBaseStageTest.java) { #create-converter-append }
 
-scala
-:   @@snip [snip](/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #create-converter-append }
+### Delete
 
-java
-:   @@snip [snip](/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #create-converter-append }
+Scala
+:   @@snip [snip](/hbase/src/test/scala/docs/scaladsl/HBaseStageSpec.scala) { #create-converter-delete }
 
-- A `Delete` mutation:
+Java
+:   @@snip [snip](/hbase/src/test/java/docs/javadsl/HBaseStageTest.java) { #create-converter-delete }
 
-scala
-:   @@snip [snip](/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #create-converter-delete }
+### Increment
 
-java
-:   @@snip [snip](/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #create-converter-delete }
+Scala
+:   @@snip [snip](/hbase/src/test/scala/docs/scaladsl/HBaseStageSpec.scala) { #create-converter-increment }
 
-- An `Increment` mutation:
+Java
+:   @@snip [snip](/hbase/src/test/java/docs/javadsl/HBaseStageTest.java) { #create-converter-increment }
 
-scala
-:   @@snip [snip](/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #create-converter-increment }
+### Complex and noop mutations
 
-java
-:   @@snip [snip](/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #create-converter-increment }
-
-
-To ignore an object just return an empty `List`, this will have no effect on HBase.
+To ignore an object return an empty `List` - this will have no effect on HBase.
 You can also combine mutations to perform complex business logic:
 
-scala
-:   @@snip [snip](/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #create-converter-complex }
+Scala
+:   @@snip [snip](/hbase/src/test/scala/docs/scaladsl/HBaseStageSpec.scala) { #create-converter-complex }
 
-java
-:   @@snip [snip](/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #create-converter-complex }
+Java
+:   @@snip [snip](/hbase/src/test/java/docs/javadsl/HBaseStageTest.java) { #create-converter-complex }
 
-Remember that if you returns a list of mutations they will be applied in the same order.
-The list of Mutations are not applied in an transaction, each mutation is independent.
+If you return a list of mutations they will be applied in the same order.
+The list of mutations are not applied in an transaction, each mutation is independent.
 
-Table will be created on demand.
+## Settings
 
-scala
-:   @@snip [snip](/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #create-settings }
+HBase combinators require @scaladoc[HTableSettings](akka.stream.alpakka.hbase.HTableSettings).
+If the table referenced in the settings does not exist, it will be created on demand.
 
-java
-:   @@snip [snip](/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #create-settings }
+Scala
+:   @@snip [snip](/hbase/src/test/scala/docs/scaladsl/HBaseStageSpec.scala) { #create-settings }
+
+Java
+:   @@snip [snip](/hbase/src/test/java/docs/javadsl/HBaseStageTest.java) { #create-settings }
 
 ## Flow
 
-scala
-: @@snip [snip](/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #flow }
+Scala
+: @@snip [snip](/hbase/src/test/scala/docs/scaladsl/HBaseStageSpec.scala) { #flow }
 
-java
-: @@snip [snip](/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #flow }
+Java
+: @@snip [snip](/hbase/src/test/java/docs/javadsl/HBaseStageTest.java) { #flow }
 
 
 ## Sink
 
-scala
-: @@snip [snip](/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #sink }
+Scala
+: @@snip [snip](/hbase/src/test/scala/docs/scaladsl/HBaseStageSpec.scala) { #sink }
 
-java
-: @@snip [snip](/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #sink }
+Java
+: @@snip [snip](/hbase/src/test/java/docs/javadsl/HBaseStageTest.java) { #sink }
 
-## HBase basic commands
+## HBase administration commands
 
-```
-$HBASE_HOME/bin/start-hbase.sh
-
-$HBASE_HOME/bin/ shell
+To manage HBase database, startup HBase shell (`$HBASE_HOME/bin/shell`), and run following commands:
 
 ```
-
-From the hbase shell:
-
-```
-list //list table
+list // list tables
 scan "person" // select * from person
-disable "person" //Disable table "person", before drop
+disable "person" // Disable table "person", before drop
 drop "person" 
 ```

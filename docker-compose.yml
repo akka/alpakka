@@ -106,6 +106,15 @@ services:
         python publisher.py alpakka create testTopic &&
         python subscriber.py alpakka create testTopic testSubscription
       "
+  hbase:
+    image: nerdammer/hbase:1.1.2
+    hostname: hbase
+    ports:
+      - 2181:2181
+      - 60000:60000
+      - 60010:60010
+      - 60020:60020
+      - 60030:60030
   ironauth:
     image: iron/auth
     ports:

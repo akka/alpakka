@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.hbase.javadsl;
+package docs.javadsl;
 
 import akka.Done;
 import akka.NotUsed;
@@ -11,6 +11,7 @@ import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.hbase.HTableSettings;
+import akka.stream.alpakka.hbase.javadsl.HTableStage;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
@@ -21,11 +22,7 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
@@ -33,11 +30,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
-/** Created by olivier.nouguier@gmail.com on 27/11/2016. */
-@Ignore
+import static org.junit.Assert.assertEquals;
+
 public class HBaseStageTest {
 
   private static ActorSystem system;
@@ -144,7 +142,7 @@ public class HBaseStageTest {
   // #create-converter-complex
 
   @Test
-  public void sink() throws InterruptedException, TimeoutException {
+  public void writeToSink() throws InterruptedException, TimeoutException, ExecutionException {
 
     // #create-settings
     HTableSettings<Person> tableSettings =
@@ -156,18 +154,18 @@ public class HBaseStageTest {
     // #create-settings
 
     // #sink
-    final Sink<Person, scala.concurrent.Future<Done>> sink = HTableStage.sink(tableSettings);
-    Future<Done> o =
+    final Sink<Person, CompletionStage<Done>> sink = HTableStage.sink(tableSettings);
+    CompletionStage<Done> o =
         Source.from(Arrays.asList(100, 101, 102, 103, 104))
             .map((i) -> new Person(i, String.format("name %d", i)))
             .runWith(sink, materializer);
     // #sink
 
-    Await.ready(o, Duration.Inf());
+    assertEquals(Done.getInstance(), o.toCompletableFuture().get(5, TimeUnit.SECONDS));
   }
 
   @Test
-  public void flow() throws ExecutionException, InterruptedException {
+  public void writeThroughFlow() throws ExecutionException, InterruptedException {
 
     HTableSettings<Person> tableSettings =
         HTableSettings.create(
@@ -186,7 +184,7 @@ public class HBaseStageTest {
             .run(materializer);
     // #flow
 
-    run.second().toCompletableFuture().get();
+    assertEquals(5, run.second().toCompletableFuture().get().size());
   }
 }
 
