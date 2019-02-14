@@ -10,8 +10,6 @@ import org.apache.activemq.ActiveMQConnection
 
 /**
  * a silly cached connection factory, not thread safe
- *
- * @param url
  */
 class CachedConnectionFactory(connFactory: ConnectionFactory) extends ConnectionFactory {
 
@@ -25,4 +23,11 @@ class CachedConnectionFactory(connFactory: ConnectionFactory) extends Connection
   }
 
   override def createConnection(s: String, s1: String): Connection = cachedConnection
+
+  // added in JMS 2.0
+  // see https://github.com/akka/alpakka/issues/1493
+  def createContext(x$1: Int): javax.jms.JMSContext = ???
+  def createContext(x$1: String, x$2: String, x$3: Int): javax.jms.JMSContext = ???
+  def createContext(x$1: String, x$2: String): javax.jms.JMSContext = ???
+  def createContext(): javax.jms.JMSContext = ???
 }
