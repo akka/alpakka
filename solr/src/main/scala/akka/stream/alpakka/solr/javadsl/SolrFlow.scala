@@ -5,121 +5,69 @@
 package akka.stream.alpakka.solr.javadsl
 
 import java.util.function.Function
-import java.util.{List => JavaList}
 
 import akka.NotUsed
-import akka.stream.alpakka.solr.scaladsl.{SolrFlow => ScalaSolrFlow}
-import akka.stream.alpakka.solr.{IncomingMessage, IncomingMessageResult, SolrUpdateSettings}
+import akka.stream.alpakka.solr.{scaladsl, SolrUpdateSettings, WriteMessage, WriteResult}
 import akka.stream.javadsl
 import akka.stream.scaladsl.Flow
 import org.apache.solr.client.solrj.SolrClient
 import org.apache.solr.common.SolrInputDocument
 
 import scala.collection.JavaConverters._
+import scala.collection.immutable
 
+/**
+ * Java API
+ */
 object SolrFlow {
 
   /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for [[SolrInputDocument]]
-   * from [[IncomingMessage]] to sequences of [[IncomingMessageResult]].
-   * @deprecated ("use the method documents to batch operation","0.20")
-   */
-  def document(
-      collection: String,
-      settings: SolrUpdateSettings,
-      client: SolrClient
-  ): javadsl.Flow[IncomingMessage[SolrInputDocument, NotUsed], JavaList[
-    IncomingMessageResult[SolrInputDocument, NotUsed]
-  ], NotUsed] =
-    ScalaSolrFlow
-      .document(collection, settings)(client)
-      .map {
-        _.asJava
-      }
-      .asJava
-
-  /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for [[SolrInputDocument]]
-   * from sequence of [[IncomingMessage]] to sequences of [[IncomingMessageResult]].
+   * Write `SolrInputDocument`s to Solr in a flow emitting `WriteResult`s containing the status.
    */
   def documents(
       collection: String,
       settings: SolrUpdateSettings,
       client: SolrClient
-  ): javadsl.Flow[JavaList[IncomingMessage[SolrInputDocument, NotUsed]], JavaList[
-    IncomingMessageResult[SolrInputDocument, NotUsed]
+  ): javadsl.Flow[java.util.List[WriteMessage[SolrInputDocument, NotUsed]], java.util.List[
+    WriteResult[SolrInputDocument, NotUsed]
   ], NotUsed] =
     Flow
-      .fromFunction[JavaList[IncomingMessage[SolrInputDocument, NotUsed]], Seq[IncomingMessage[SolrInputDocument,
-                                                                                               NotUsed]]](
-        _.asScala.toSeq
+      .fromFunction[java.util.List[WriteMessage[SolrInputDocument, NotUsed]],
+                    immutable.Seq[WriteMessage[SolrInputDocument, NotUsed]]](
+        _.asScala.toIndexedSeq
       )
       .via(
-        ScalaSolrFlow
+        scaladsl.SolrFlow
           .documents(collection, settings)(client)
       )
       .map(_.asJava)
       .asJava
 
   /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for type `T` from [[IncomingMessage]] to sequences
-   * of [[IncomingMessageResult]] with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
-   * @deprecated ("use the method beans to batch operation","0.20")
-   */
-  def bean[T](
-      collection: String,
-      settings: SolrUpdateSettings,
-      client: SolrClient,
-      clazz: Class[T]
-  ): javadsl.Flow[IncomingMessage[T, NotUsed], JavaList[IncomingMessageResult[T, NotUsed]], NotUsed] =
-    ScalaSolrFlow
-      .bean[T](collection, settings)(client)
-      .map {
-        _.asJava
-      }
-      .asJava
-
-  /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for type `T` from sequence of [Seq[IncomingMessage]] to sequences
-   * of [[IncomingMessageResult]] with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
+   * Write Java bean stream elements to Solr in a flow emitting `WriteResult`s containing the status.
+   * The stream element classes must be annotated for use with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]] for conversion.
    */
   def beans[T](
       collection: String,
       settings: SolrUpdateSettings,
       client: SolrClient,
       clazz: Class[T]
-  ): javadsl.Flow[JavaList[IncomingMessage[T, NotUsed]], JavaList[IncomingMessageResult[T, NotUsed]], NotUsed] =
+  ): javadsl.Flow[java.util.List[WriteMessage[T, NotUsed]], java.util.List[WriteResult[T, NotUsed]], NotUsed] =
     Flow
-      .fromFunction[JavaList[IncomingMessage[T, NotUsed]], Seq[IncomingMessage[T, NotUsed]]](_.asScala.toSeq)
+      .fromFunction[java.util.List[WriteMessage[T, NotUsed]], immutable.Seq[WriteMessage[T, NotUsed]]](
+        _.asScala.toIndexedSeq
+      )
       .via(
-        ScalaSolrFlow
+        scaladsl.SolrFlow
           .beans[T](collection, settings)(client)
       )
       .map(_.asJava)
       .asJava
 
   /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for type `T` from [[IncomingMessage]] to sequences
-   * of [[IncomingMessageResult]] with `binder` of type 'T'.
-   * @deprecated ("use the method typeds to batch operation","0.20")
-   */
-  def typed[T](
-      collection: String,
-      settings: SolrUpdateSettings,
-      binder: Function[T, SolrInputDocument],
-      client: SolrClient,
-      clazz: Class[T]
-  ): javadsl.Flow[IncomingMessage[T, NotUsed], JavaList[IncomingMessageResult[T, NotUsed]], NotUsed] =
-    ScalaSolrFlow
-      .typed[T](collection, settings, i => binder.apply(i))(client)
-      .map {
-        _.asJava
-      }
-      .asJava
-
-  /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for type `T` from sequence of [[IncomingMessage]] to sequences
-   * of [[IncomingMessageResult]] with `binder` of type 'T'.
+   * Write stream elements to Solr in a flow emitting `WriteResult`s containing the status.
+   *
+   * @param binder a conversion function to create `SolrInputDocument`s of the stream elements
    */
   def typeds[T](
       collection: String,
@@ -127,127 +75,80 @@ object SolrFlow {
       binder: Function[T, SolrInputDocument],
       client: SolrClient,
       clazz: Class[T]
-  ): javadsl.Flow[JavaList[IncomingMessage[T, NotUsed]], JavaList[IncomingMessageResult[T, NotUsed]], NotUsed] =
+  ): javadsl.Flow[java.util.List[WriteMessage[T, NotUsed]], java.util.List[WriteResult[T, NotUsed]], NotUsed] =
     Flow
-      .fromFunction[JavaList[IncomingMessage[T, NotUsed]], Seq[IncomingMessage[T, NotUsed]]](_.asScala.toSeq)
+      .fromFunction[java.util.List[WriteMessage[T, NotUsed]], immutable.Seq[WriteMessage[T, NotUsed]]](
+        _.asScala.toIndexedSeq
+      )
       .via(
-        ScalaSolrFlow
+        scaladsl.SolrFlow
           .typeds[T](collection, settings, i => binder.apply(i))(client)
       )
       .map(_.asJava)
       .asJava
 
   /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for [[SolrInputDocument]]
-   * from [[IncomingMessage]] to sequences of [[IncomingMessageResult]] with `passThrough` of type `C`.
-   * @deprecated ("use the method documentsWithPassThrough to batch operation","0.20")
+   * Write `SolrInputDocument`s to Solr in a flow emitting `WriteResult`s containing the status.
+   *
+   * @tparam PT pass-through type
    */
-  def documentWithPassThrough[C](
+  def documentsWithPassThrough[PT](
       collection: String,
       settings: SolrUpdateSettings,
       client: SolrClient
-  ): javadsl.Flow[IncomingMessage[SolrInputDocument, C], JavaList[IncomingMessageResult[SolrInputDocument, C]], NotUsed] =
-    ScalaSolrFlow
-      .documentWithPassThrough[C](collection, settings)(client)
-      .map {
-        _.asJava
-      }
-      .asJava
-
-  /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for [[SolrInputDocument]] from [[IncomingMessage]]
-   * to lists of [[IncomingMessageResult]] with `passThrough` of type `C`.
-   */
-  def documentsWithPassThrough[C](
-      collection: String,
-      settings: SolrUpdateSettings,
-      client: SolrClient
-  ): javadsl.Flow[JavaList[IncomingMessage[SolrInputDocument, C]], JavaList[IncomingMessageResult[SolrInputDocument,
-                                                                                                  C]], NotUsed] =
+  ): javadsl.Flow[java.util.List[WriteMessage[SolrInputDocument, PT]], java.util.List[WriteResult[SolrInputDocument,
+                                                                                                  PT]], NotUsed] =
     Flow
-      .fromFunction[JavaList[IncomingMessage[SolrInputDocument, C]], Seq[IncomingMessage[SolrInputDocument, C]]](
-        _.asScala.toSeq
+      .fromFunction[java.util.List[WriteMessage[SolrInputDocument, PT]], immutable.Seq[WriteMessage[SolrInputDocument,
+                                                                                                    PT]]](
+        _.asScala.toIndexedSeq
       )
       .via(
-        ScalaSolrFlow
+        scaladsl.SolrFlow
           .documentsWithPassThrough(collection, settings)(client)
       )
       .map(_.asJava)
       .asJava
 
   /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for type `T` from [[IncomingMessage]] to sequences
-   * of [[IncomingMessageResult]] with `passThrough` of type `C` and [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
-   * @deprecated ("use the method beansWithPassThrough to batch operation","0.20")
+   * Write Java bean stream elements to Solr in a flow emitting `WriteResult`s containing the status.
+   * The stream element classes must be annotated for use with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]] for conversion.
+   *
+   * @tparam PT pass-through type
    */
-  def beanWithPassThrough[T, C](
+  def beansWithPassThrough[T, PT](
       collection: String,
       settings: SolrUpdateSettings,
       client: SolrClient,
       clazz: Class[T]
-  ): javadsl.Flow[IncomingMessage[T, C], JavaList[IncomingMessageResult[T, C]], NotUsed] =
-    ScalaSolrFlow
-      .beanWithPassThrough[T, C](collection, settings)(client)
-      .map {
-        _.asJava
-      }
-      .asJava
-
-  /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for type 'T' from sequence of [[IncomingMessage]]
-   * to lists of [[IncomingMessageResult]] with `passThrough` of type `C`
-   * and [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]] for type 'T' .
-   */
-  def beansWithPassThrough[T, C](
-      collection: String,
-      settings: SolrUpdateSettings,
-      client: SolrClient,
-      clazz: Class[T]
-  ): javadsl.Flow[JavaList[IncomingMessage[T, C]], JavaList[IncomingMessageResult[T, C]], NotUsed] =
+  ): javadsl.Flow[java.util.List[WriteMessage[T, PT]], java.util.List[WriteResult[T, PT]], NotUsed] =
     Flow
-      .fromFunction[JavaList[IncomingMessage[T, C]], Seq[IncomingMessage[T, C]]](_.asScala.toSeq)
+      .fromFunction[java.util.List[WriteMessage[T, PT]], immutable.Seq[WriteMessage[T, PT]]](_.asScala.toIndexedSeq)
       .via(
-        ScalaSolrFlow
-          .beansWithPassThrough[T, C](collection, settings)(client)
+        scaladsl.SolrFlow
+          .beansWithPassThrough[T, PT](collection, settings)(client)
       )
       .map(_.asJava)
       .asJava
 
   /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for type `T` from [[IncomingMessage]] to sequences
-   * of [[IncomingMessageResult]] with `binder` of type 'T'.
-   * @deprecated ("use the method typedsWithPassThrough to batch operation","0.20")
+   * Write stream elements to Solr in a flow emitting `WriteResult`s containing the status.
+   *
+   * @param binder a conversion function to create `SolrInputDocument`s of the stream elements
+   * @tparam PT pass-through type
    */
-  def typedWithPassThrough[T, C](
+  def typedsWithPassThrough[T, PT](
       collection: String,
       settings: SolrUpdateSettings,
       binder: Function[T, SolrInputDocument],
       client: SolrClient,
       clazz: Class[T]
-  ): javadsl.Flow[IncomingMessage[T, C], JavaList[IncomingMessageResult[T, C]], NotUsed] =
-    ScalaSolrFlow
-      .typedWithPassThrough[T, C](collection, settings, i => binder.apply(i))(client)
-      .map {
-        _.asJava
-      }
-      .asJava
-
-  /**
-   * Java API: creates a [[akka.stream.alpakka.solr.SolrFlowStage]] for type 'T' from sequence of [[IncomingMessage]]
-   * to lists of [[IncomingMessageResult]] with `passThrough` of type `C` and `binder` of type `T`.
-   */
-  def typedsWithPassThrough[T, C](
-      collection: String,
-      settings: SolrUpdateSettings,
-      binder: Function[T, SolrInputDocument],
-      client: SolrClient,
-      clazz: Class[T]
-  ): javadsl.Flow[JavaList[IncomingMessage[T, C]], JavaList[IncomingMessageResult[T, C]], NotUsed] =
+  ): javadsl.Flow[java.util.List[WriteMessage[T, PT]], java.util.List[WriteResult[T, PT]], NotUsed] =
     Flow
-      .fromFunction[JavaList[IncomingMessage[T, C]], Seq[IncomingMessage[T, C]]](_.asScala.toSeq)
+      .fromFunction[java.util.List[WriteMessage[T, PT]], immutable.Seq[WriteMessage[T, PT]]](_.asScala.toIndexedSeq)
       .via(
-        ScalaSolrFlow
-          .typedsWithPassThrough[T, C](collection, settings, i => binder.apply(i))(client)
+        scaladsl.SolrFlow
+          .typedsWithPassThrough[T, PT](collection, settings, i => binder.apply(i))(client)
       )
       .map(_.asJava)
       .asJava
