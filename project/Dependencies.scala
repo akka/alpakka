@@ -83,6 +83,8 @@ object Dependencies {
     libraryDependencies ++= Seq(
       // https://mina.apache.org/ftpserver-project/downloads.html
       "org.apache.ftpserver" % "ftpserver-core" % "1.1.1", // ApacheV2
+      "org.apache.sshd" % "sshd-scp" % "2.1.0", // ApacheV2
+      "org.apache.sshd" % "sshd-sftp" % "2.1.0", // ApacheV2
       "com.google.jimfs" % "jimfs" % "1.1", // ApacheV2
       "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
       "com.typesafe.akka" %% "akka-http-xml" % AkkaHttpVersion,
