@@ -14,7 +14,7 @@ import scala.util.control.NonFatal
 private[hbase] class HBaseFlowStage[A](settings: HTableSettings[A]) extends GraphStage[FlowShape[A, A]] {
 
   override protected def initialAttributes: Attributes =
-    Attributes.name("HBaseFLow").and(ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher"))
+    super.initialAttributes and Attributes.name("HBaseFlow") and ActorAttributes.IODispatcher
 
   private val in = Inlet[A]("messages")
   private val out = Outlet[A]("result")

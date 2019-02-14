@@ -55,7 +55,7 @@ private[jms] final class JmsProducerStage[E <: JmsEnvelope[PassThrough], PassThr
   override def shape: FlowShape[E, E] = FlowShape.of(in, out)
 
   override protected def initialAttributes: Attributes =
-    ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher").and(Attributes.name("JmsProducer"))
+    super.initialAttributes and Attributes.name("JmsProducer") and ActorAttributes.IODispatcher
 
   override def createLogicAndMaterializedValue(
       inheritedAttributes: Attributes

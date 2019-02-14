@@ -17,7 +17,7 @@ private[geode] class GeodeFiniteSourceStage[V](cache: ClientCache, sql: String)
     extends GraphStageWithMaterializedValue[SourceShape[V], Future[Done]] {
 
   override protected def initialAttributes: Attributes =
-    Attributes.name("GeodeFiniteSource").and(ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher"))
+    super.initialAttributes and Attributes.name("GeodeFiniteSource") and ActorAttributes.IODispatcher
 
   val out = Outlet[V]("geode.finiteSource")
 

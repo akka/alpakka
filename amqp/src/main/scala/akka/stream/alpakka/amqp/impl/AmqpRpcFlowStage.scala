@@ -37,9 +37,7 @@ private[amqp] final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSiz
   override def shape: FlowShape[OutgoingMessage, CommittableIncomingMessage] = FlowShape.of(in, out)
 
   override protected def initialAttributes: Attributes =
-    Attributes
-      .name("AmqpRpcFlow")
-      .and(ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher"))
+    super.initialAttributes and Attributes.name("AmqpRpcFlow") and ActorAttributes.IODispatcher
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[String]) = {
     val promise = Promise[String]()

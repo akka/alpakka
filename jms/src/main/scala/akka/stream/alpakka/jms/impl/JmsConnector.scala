@@ -206,10 +206,10 @@ trait JmsConnector[S <: JmsSession] {
 
   protected def executionContext(attributes: Attributes): ExecutionContext = {
     val dispatcher = attributes.get[ActorAttributes.Dispatcher](
-      ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
+      ActorAttributes.IODispatcher
     ) match {
       case ActorAttributes.Dispatcher("") =>
-        ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
+        ActorAttributes.IODispatcher
       case d => d
     }
 

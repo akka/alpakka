@@ -20,7 +20,7 @@ private[jms] final class JmsBrowseStage(settings: JmsBrowseSettings, queue: Dest
   val shape = SourceShape(out)
 
   override protected def initialAttributes: Attributes =
-    ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher")
+    super.initialAttributes and Attributes.name("JmsBrowse") and ActorAttributes.IODispatcher
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with OutHandler {

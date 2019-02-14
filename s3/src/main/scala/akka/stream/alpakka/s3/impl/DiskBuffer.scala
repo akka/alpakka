@@ -46,7 +46,8 @@ import akka.annotation.InternalApi
   val out = Outlet[Chunk]("DiskBuffer.out")
   override val shape = FlowShape.of(in, out)
 
-  override def initialAttributes = ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher")
+  override def initialAttributes =
+    super.initialAttributes and Attributes.name("DiskBuffer") and ActorAttributes.IODispatcher
 
   override def createLogic(attr: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with OutHandler with InHandler {
