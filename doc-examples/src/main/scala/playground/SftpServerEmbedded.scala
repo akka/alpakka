@@ -21,7 +21,7 @@ import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory
 
 object SftpServerEmbedded {
 
-  val FtpRootDir = "/home"
+  val FtpRootDir = "/tmp/home"
   val hostname = "localhost"
 
   val resourcePath = "./doc-examples/src/main/resources"
