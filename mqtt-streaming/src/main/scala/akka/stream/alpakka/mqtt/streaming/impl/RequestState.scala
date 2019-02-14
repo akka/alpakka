@@ -336,8 +336,8 @@ import scala.util.{Failure, Success}
    * In case some brokers treat 0 as no packet id, we set our min to 1
    * e.g. https://renesasrulz.com/synergy/synergy_tech_notes/f/technical-bulletin-board-notification-postings/8998/mqtt-client-packet-identifier-is-0-by-default-which-causes-azure-iot-hub-to-reset-connection
    */
-  private val MinPacketId = PacketId(1)
-  private val MaxPacketId = PacketId(0xffff)
+  val MinPacketId = PacketId(1)
+  val MaxPacketId = PacketId(0xffff)
 
   // Requests
 
@@ -355,7 +355,33 @@ import scala.util.{Failure, Success}
    * Construct with the starting state
    */
   def apply[A]: Behavior[Request[A]] =
-    new LocalPacketRouter[A].main(Map.empty, MinPacketId)
+    new LocalPacketRouter[A].main(Map.empty, Some(MinPacketId), Vector.empty)
+
+  /**
+   * Find the next free packet id after the specified one.
+   */
+  def findNextPacketId[A](registrantsByPacketId: Map[PacketId, ActorRef[A]], after: PacketId): Option[PacketId] = {
+    @annotation.tailrec
+    def step(c: PacketId): Option[PacketId] = {
+      if (c.underlying == after.underlying) {
+        // this is a bug, given our guard for entry into `step` checks size. this
+        // means an illegal packet was stored in the map
+        throw new IllegalStateException("Cannot find a free packet id even though one is expected")
+      }
+
+      if (c.underlying <= MaxPacketId.underlying && !registrantsByPacketId.contains(c))
+        Some(c)
+      else if (c.underlying < MaxPacketId.underlying)
+        step(PacketId(c.underlying + 1))
+      else
+        step(MinPacketId)
+    }
+
+    if (registrantsByPacketId.size == (MaxPacketId.underlying - MinPacketId.underlying))
+      None
+    else
+      step(PacketId(after.underlying + 1))
+  }
 }
 
 /*
@@ -375,29 +401,53 @@ import scala.util.{Failure, Success}
 
   // Processing
 
-  def main(registrantsByPacketId: Map[PacketId, ActorRef[A]], nextPacketId: PacketId): Behavior[Request[A]] =
-    Behaviors.receiveMessage {
-      case Register(registrant: ActorRef[A], reply) if nextPacketId.underlying <= MaxPacketId.underlying =>
-        reply.success(Registered(nextPacketId))
-        main(registrantsByPacketId + (nextPacketId -> registrant), PacketId(nextPacketId.underlying + 1))
-      case _: Register[A] =>
-        Behaviors.same // We cannot allocate any more. This will eventually cause a timeout to occur on the requestor.
-      case Unregister(packetId) =>
-        val remainingPacketIds = registrantsByPacketId - packetId
-        val revisedNextPacketId = if (remainingPacketIds.nonEmpty) {
-          val maxPacketId = remainingPacketIds.keys.maxBy(_.underlying)
-          PacketId(maxPacketId.underlying + 1)
-        } else {
-          MinPacketId
-        }
-        main(remainingPacketIds, revisedNextPacketId)
-      case Route(packetId, event, failureReply) =>
-        registrantsByPacketId.get(packetId) match {
-          case Some(reply) => reply ! event
-          case None => failureReply.failure(CannotRoute(packetId))
-        }
-        Behaviors.same
-    }
+  def main(registrantsByPacketId: Map[PacketId, ActorRef[A]],
+           nextPacketId: Option[PacketId],
+           pendingRegistrations: Vector[Register[A]]): Behavior[Request[A]] =
+    Behaviors
+      .receive[Request[A]] {
+        case (_, register @ Register(registrant: ActorRef[A], reply)) =>
+          nextPacketId match {
+            case Some(currentPacketId) =>
+              reply.success(Registered(currentPacketId))
+
+              val nextRegistrations = registrantsByPacketId + (currentPacketId -> registrant)
+
+              main(
+                nextRegistrations,
+                findNextPacketId(nextRegistrations, currentPacketId),
+                pendingRegistrations
+              )
+
+            case None =>
+              // all packet ids are taken, so we'll wait until one is unregistered
+              // to continue
+
+              main(registrantsByPacketId, nextPacketId, pendingRegistrations :+ register)
+          }
+
+        case (context, Unregister(packetId)) =>
+          val remainingPacketIds = registrantsByPacketId - packetId
+
+          pendingRegistrations
+            .foreach(context.self.tell)
+
+          main(remainingPacketIds, Some(nextPacketId.getOrElse(packetId)), Vector.empty)
+
+        case (_, Route(packetId, event, failureReply)) =>
+          registrantsByPacketId.get(packetId) match {
+            case Some(reply) => reply ! event
+            case None => failureReply.failure(CannotRoute(packetId))
+          }
+          Behaviors.same
+      }
+      .receiveSignal {
+        case (_, PostStop) =>
+          pendingRegistrations
+            .foreach(_.reply.failure(new IllegalStateException("LocalPacketRouter was stopped")))
+
+          Behaviors.stopped
+      }
 }
 
 @InternalApi private[streaming] object RemotePacketRouter {

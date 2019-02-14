@@ -704,9 +704,12 @@ class MqttSessionSpec
       val connAckBytes = connAck.encode(ByteString.newBuilder).result()
 
       val publish = Publish("some-topic", ByteString("some-payload"))
-      val publishBytes = publish.encode(ByteString.newBuilder, Some(PacketId(1))).result()
-      val pubAck = PubAck(PacketId(1))
-      val pubAckBytes = pubAck.encode(ByteString.newBuilder).result()
+      val firstPublishBytes = publish.encode(ByteString.newBuilder, Some(PacketId(1))).result()
+      val secondPublishBytes = publish.encode(ByteString.newBuilder, Some(PacketId(2))).result()
+      val firstPubAck = PubAck(PacketId(1))
+      val firstPubAckBytes = firstPubAck.encode(ByteString.newBuilder).result()
+      val secondPubAck = PubAck(PacketId(2))
+      val secondPubAckBytes = secondPubAck.encode(ByteString.newBuilder).result()
 
       client.offer(Command(connect))
 
@@ -716,11 +719,11 @@ class MqttSessionSpec
       session ! Command(publish)
       session ! Command(publish)
 
-      server.expectMsg(publishBytes)
-      server.reply(pubAckBytes)
+      server.expectMsg(firstPublishBytes)
+      server.reply(firstPubAckBytes)
 
-      server.expectMsg(publishBytes)
-      server.reply(pubAckBytes)
+      server.expectMsg(secondPublishBytes)
+      server.reply(secondPubAckBytes)
     }
 
     "publish with a QoS of 1 and cause a retry given a timeout" in {

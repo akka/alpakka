@@ -52,6 +52,29 @@ class RequestStateSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
   }
 
   "local packet router" should {
+    "calculate the next packet id correctly" in {
+      LocalPacketRouter.findNextPacketId(
+        Map.empty,
+        PacketId(1)
+      ) shouldBe Some(PacketId(2))
+    }
+
+    "calculate the next packet id correctly, accounting for wrap around" in {
+      LocalPacketRouter.findNextPacketId(
+        Map.empty,
+        LocalPacketRouter.MaxPacketId
+      ) shouldBe Some(LocalPacketRouter.MinPacketId)
+    }
+
+    "calculate the next packet id correctly, accounting for used ids" in {
+      LocalPacketRouter.findNextPacketId(
+        Map(
+          PacketId(2) -> testKit.spawn(LocalPacketRouter[String])
+        ),
+        PacketId(1)
+      ) shouldBe Some(PacketId(3))
+    }
+
     "acquire a packet id" in {
       val registrant = testKit.createTestProbe[String]()
       val reply = Promise[LocalPacketRouter.Registered]()
@@ -71,7 +94,7 @@ class RequestStateSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       reply2.future.futureValue shouldBe LocalPacketRouter.Registered(PacketId(2))
     }
 
-    "acquire and release consecutive packet ids" in {
+    "acquire consecutive packet ids" in {
       val registrant = testKit.createTestProbe[String]()
       val reply1 = Promise[LocalPacketRouter.Registered]
       val reply2 = Promise[LocalPacketRouter.Registered]
@@ -91,7 +114,7 @@ class RequestStateSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       router ! LocalPacketRouter.Unregister(PacketId(2))
       router ! LocalPacketRouter.Unregister(PacketId(3))
       router ! LocalPacketRouter.Register(registrant.ref, reply4)
-      reply4.future.futureValue shouldBe LocalPacketRouter.Registered(PacketId(1))
+      reply4.future.futureValue shouldBe LocalPacketRouter.Registered(PacketId(4))
     }
 
     "route a packet" in {
