@@ -7,6 +7,7 @@ package akka.stream.alpakka.amqp.impl
 import akka.Done
 import akka.annotation.InternalApi
 import akka.stream.alpakka.amqp._
+import akka.stream.alpakka.amqp.impl.AmqpSourceStage.AutoAckedMessage
 import akka.stream.alpakka.amqp.scaladsl.CommittableIncomingMessage
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler, StageLogging}
 import akka.stream.{Attributes, Outlet, SourceShape}
@@ -22,6 +23,8 @@ private final case class AckArguments(deliveryTag: Long, multiple: Boolean, prom
 private final case class NackArguments(deliveryTag: Long, multiple: Boolean, requeue: Boolean, promise: Promise[Done])
 
 /**
+ * Internal API.
+ *
  * Connects to an AMQP server upon materialization and consumes messages from it emitting them
  * into the stream. Each materialized source will create one connection to the broker.
  * As soon as an `IncomingMessage` is sent downstream, an ack for it is sent to the broker.
@@ -44,7 +47,7 @@ private[amqp] final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSi
       override val settings: AmqpSourceSettings = stage.settings
 
       private val queue = mutable.Queue[CommittableIncomingMessage]()
-      private var finishWithOutstandingAcks = false
+      private var ackRequired = true
       private var unackedMessages = 0
 
       override def whenConnected(): Unit = {
@@ -80,8 +83,9 @@ private[amqp] final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSi
           override def handleDelivery(consumerTag: String,
                                       envelope: Envelope,
                                       properties: BasicProperties,
-                                      body: Array[Byte]): Unit =
-            consumerCallback.invoke(
+                                      body: Array[Byte]): Unit = {
+            val message = if (ackRequired) {
+
               new CommittableIncomingMessage {
                 override val message = IncomingMessage(ByteString(body), envelope, properties)
 
@@ -97,7 +101,9 @@ private[amqp] final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSi
                   promise.future
                 }
               }
-            )
+            } else new AutoAckedMessage(IncomingMessage(ByteString(body), envelope, properties))
+            consumerCallback.invoke(message)
+          }
 
           override def handleCancel(consumerTag: String): Unit =
             // non consumer initiated cancel, for example happens when the queue has been deleted.
@@ -136,7 +142,7 @@ private[amqp] final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSi
 
         settings match {
           case settings: NamedQueueSourceSettings =>
-            finishWithOutstandingAcks = !settings.ackRequired
+            ackRequired = settings.ackRequired
             setupNamedQueue(settings)
           case settings: TemporaryQueueSourceSettings =>
             setupTemporaryQueue(settings)
@@ -161,7 +167,7 @@ private[amqp] final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSi
             }
 
           override def onDownstreamFinish(): Unit =
-            if (finishWithOutstandingAcks || unackedMessages == 0) super.onDownstreamFinish()
+            if (unackedMessages == 0) super.onDownstreamFinish()
             else {
               setKeepGoing(true)
               log.debug("Awaiting {} acks before finishing.", unackedMessages)
@@ -171,8 +177,22 @@ private[amqp] final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSi
 
       def pushMessage(message: CommittableIncomingMessage): Unit = {
         push(out, message)
-        unackedMessages += 1
+        if (ackRequired) unackedMessages += 1
       }
     }
+
+}
+
+/**
+ * Internal API.
+ */
+@InternalApi
+private[amqp] object AmqpSourceStage {
+  private val SuccessfullyDone = Future.successful(Done)
+
+  final class AutoAckedMessage(override val message: IncomingMessage) extends CommittableIncomingMessage {
+    override def ack(multiple: Boolean): Future[Done] = SuccessfullyDone
+    override def nack(multiple: Boolean, requeue: Boolean): Future[Done] = SuccessfullyDone
+  }
 
 }
