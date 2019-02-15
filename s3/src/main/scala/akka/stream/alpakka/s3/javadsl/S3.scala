@@ -58,6 +58,7 @@ object S3 {
                method.asInstanceOf[ScalaHttpMethod],
                versionId = Option(versionId.orElse(null)),
                s3Headers = s3Headers.headers)
+      .map(v => v: HttpResponse)
       .asJava
 
   /**
