@@ -2,11 +2,12 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.kinesisfirehose.scaladsl
+package docs.scaladsl
 
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.alpakka.kinesisfirehose.KinesisFirehoseFlowSettings
+import akka.stream.alpakka.kinesisfirehose.scaladsl.{KinesisFirehoseFlow, KinesisFirehoseSink}
 import akka.stream.scaladsl.{Flow, Sink}
 import akka.stream.{ActorMaterializer, Materializer}
 import com.amazonaws.services.kinesisfirehose.AmazonKinesisFirehoseAsyncClientBuilder
@@ -14,7 +15,7 @@ import com.amazonaws.services.kinesisfirehose.model.{PutRecordBatchResponseEntry
 
 import scala.concurrent.duration._
 
-object Examples {
+object KinesisFirehoseSnippets {
 
   //#init-client
   implicit val system: ActorSystem = ActorSystem()
@@ -27,17 +28,17 @@ object Examples {
   //#init-client
 
   //#flow-settings
-  val flowSettings = KinesisFirehoseFlowSettings(
-    parallelism = 1,
-    maxBatchSize = 500,
-    maxRecordsPerSecond = 5000,
-    maxBytesPerSecond = 4000000,
-    maxRetries = 5,
-    backoffStrategy = KinesisFirehoseFlowSettings.Exponential,
-    retryInitialTimeout = 100.millis
-  )
+  val flowSettings = KinesisFirehoseFlowSettings
+    .create()
+    .withParallelism(1)
+    .withMaxBatchSize(500)
+    .withMaxRecordsPerSecond(5000)
+    .withMaxBytesPerSecond(4000000)
+    .withMaxRetries(5)
+    .withBackoffStrategy(KinesisFirehoseFlowSettings.Exponential)
+    .withRetryInitialTimeout(100.millis)
 
-  val defaultFlowSettings = KinesisFirehoseFlowSettings.defaultInstance
+  val defaultFlowSettings = KinesisFirehoseFlowSettings.Defaults
   //#flow-settings
 
   //#flow-sink

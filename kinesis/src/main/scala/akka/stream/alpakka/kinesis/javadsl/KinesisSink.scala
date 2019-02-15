@@ -12,12 +12,12 @@ import com.amazonaws.services.kinesis.model.PutRecordsRequestEntry
 
 object KinesisSink {
 
-  def apply(streamName: String, kinesisClient: AmazonKinesisAsync): Sink[PutRecordsRequestEntry, NotUsed] =
-    apply(streamName, KinesisFlowSettings.defaultInstance, kinesisClient)
+  def create(streamName: String, kinesisClient: AmazonKinesisAsync): Sink[PutRecordsRequestEntry, NotUsed] =
+    create(streamName, KinesisFlowSettings.Defaults, kinesisClient)
 
-  def apply(streamName: String,
-            settings: KinesisFlowSettings,
-            kinesisClient: AmazonKinesisAsync): Sink[PutRecordsRequestEntry, NotUsed] =
-    (scaladsl.KinesisSink.apply(streamName, settings)(kinesisClient)).asJava
+  def create(streamName: String,
+             settings: KinesisFlowSettings,
+             kinesisClient: AmazonKinesisAsync): Sink[PutRecordsRequestEntry, NotUsed] =
+    scaladsl.KinesisSink(streamName, settings)(kinesisClient).asJava
 
 }

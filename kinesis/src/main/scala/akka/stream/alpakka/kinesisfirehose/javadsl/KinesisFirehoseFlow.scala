@@ -14,7 +14,7 @@ object KinesisFirehoseFlow {
 
   def apply(streamName: String,
             kinesisClient: AmazonKinesisFirehoseAsync): Flow[Record, PutRecordBatchResponseEntry, NotUsed] =
-    apply(streamName, KinesisFirehoseFlowSettings.defaultInstance, kinesisClient)
+    apply(streamName, KinesisFirehoseFlowSettings.Defaults, kinesisClient)
 
   def apply(streamName: String,
             settings: KinesisFirehoseFlowSettings,
