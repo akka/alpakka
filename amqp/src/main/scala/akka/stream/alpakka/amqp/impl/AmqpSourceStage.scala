@@ -160,13 +160,12 @@ private[amqp] final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSi
               pushMessage(queue.dequeue())
             }
 
-          override def onDownstreamFinish(): Unit = {
+          override def onDownstreamFinish(): Unit =
             if (finishWithOutstandingAcks || unackedMessages == 0) super.onDownstreamFinish()
             else {
               setKeepGoing(true)
               log.debug("Awaiting {} acks before finishing.", unackedMessages)
             }
-          }
         }
       )
 

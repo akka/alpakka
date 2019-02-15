@@ -49,6 +49,10 @@ final class NamedQueueSourceSettings private (
   def withExclusive(exclusive: Boolean): NamedQueueSourceSettings =
     copy(exclusive = exclusive)
 
+  /**
+   * Ack/Nack is required as default. Setting this to false will configure AMQP's `autoAck` so that the
+   * server considers messages acknowledged once delivered.
+   */
   def withAckRequired(ackRequired: Boolean): NamedQueueSourceSettings =
     copy(ackRequired = ackRequired)
 
@@ -82,7 +86,16 @@ final class NamedQueueSourceSettings private (
     )
 
   override def toString: String =
-    s"NamedQueueSourceSettings(connectionProvider=$connectionProvider, queue=$queue, declarations=$declarations, noLocal=$noLocal, exclusive=$exclusive, ackRequired=$ackRequired, consumerTag=$consumerTag, arguments=$arguments)"
+    "NamedQueueSourceSettings(" +
+    s"connectionProvider=$connectionProvider, " +
+    s"queue=$queue, " +
+    s"declarations=$declarations, " +
+    s"noLocal=$noLocal, " +
+    s"exclusive=$exclusive, " +
+    s"ackRequired=$ackRequired, " +
+    s"consumerTag=$consumerTag, " +
+    s"arguments=$arguments" +
+    ")"
 }
 
 object NamedQueueSourceSettings {
@@ -121,7 +134,12 @@ final class TemporaryQueueSourceSettings private (
     new TemporaryQueueSourceSettings(connectionProvider, exchange, declarations = declarations, routingKey = routingKey)
 
   override def toString: String =
-    s"TemporaryQueueSourceSettings(connectionProvider=$connectionProvider, exchange=$exchange, declarations=$declarations, routingKey=$routingKey)"
+    "TemporaryQueueSourceSettings(" +
+    s"connectionProvider=$connectionProvider, " +
+    s"exchange=$exchange, " +
+    s"declarations=$declarations, " +
+    s"routingKey=$routingKey" +
+    ")"
 }
 
 object TemporaryQueueSourceSettings {
@@ -148,7 +166,10 @@ final class AmqpReplyToSinkSettings private (
     new AmqpReplyToSinkSettings(connectionProvider, failIfReplyToMissing)
 
   override def toString: String =
-    s"AmqpReplyToSinkSettings(connectionProvider=$connectionProvider, failIfReplyToMissing=$failIfReplyToMissing)"
+    "AmqpReplyToSinkSettings(" +
+    s"connectionProvider=$connectionProvider, " +
+    s"failIfReplyToMissing=$failIfReplyToMissing" +
+    ")"
 }
 
 object AmqpReplyToSinkSettings {
@@ -194,7 +215,12 @@ final class AmqpSinkSettings private (
     new AmqpSinkSettings(connectionProvider, exchange, routingKey, declarations)
 
   override def toString: String =
-    s"AmqpSinkSettings(connectionProvider=$connectionProvider, exchange=$exchange, routingKey=$routingKey, declarations=$declarations)"
+    "AmqpSinkSettings(" +
+    s"connectionProvider=$connectionProvider, " +
+    s"exchange=$exchange, " +
+    s"routingKey=$routingKey, " +
+    s"declarations=$declarations" +
+    ")"
 }
 
 object AmqpSinkSettings {
@@ -244,7 +270,13 @@ final class QueueDeclaration private (
     new QueueDeclaration(name, durable, exclusive, autoDelete, arguments)
 
   override def toString: String =
-    s"QueueDeclaration(name=$name, durable=$durable, exclusive=$exclusive, autoDelete=$autoDelete, arguments=$arguments)"
+    s"QueueDeclaration(" +
+    s"name=$name, " +
+    s"durable=$durable, " +
+    s"exclusive=$exclusive, " +
+    s"autoDelete=$autoDelete, " +
+    s"arguments=$arguments" +
+    ")"
 }
 
 object QueueDeclaration {
@@ -278,7 +310,12 @@ final class BindingDeclaration private (
     new BindingDeclaration(queue, exchange, routingKey, arguments)
 
   override def toString: String =
-    s"BindingDeclaration(queue=$queue, exchange=$exchange, routingKey=$routingKey, arguments=$arguments)"
+    "BindingDeclaration(" +
+    s"queue=$queue, " +
+    s"exchange=$exchange, " +
+    s"routingKey=$routingKey, " +
+    s"arguments=$arguments" +
+    ")"
 }
 
 object BindingDeclaration {
@@ -323,7 +360,14 @@ final class ExchangeDeclaration private (
     new ExchangeDeclaration(name, exchangeType, durable, autoDelete, internal, arguments)
 
   override def toString: String =
-    s"ExchangeDeclaration(name=$name, exchangeType=$exchangeType, durable=$durable, autoDelete=$autoDelete, internal=$internal, arguments=$arguments)"
+    "ExchangeDeclaration(" +
+    s"name=$name, " +
+    s"exchangeType=$exchangeType, " +
+    s"durable=$durable, " +
+    s"autoDelete=$autoDelete, " +
+    s"internal=$internal, " +
+    s"arguments=$arguments" +
+    ")"
 }
 
 object ExchangeDeclaration {
