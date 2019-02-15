@@ -11,6 +11,8 @@ import akka.stream.Materializer;
 import akka.stream.alpakka.avroparquet.javadsl.AvroParquetSink;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import akka.stream.testkit.javadsl.StreamTestKit;
+import akka.testkit.javadsl.TestKit;
 import com.google.common.collect.Lists;
 import org.apache.parquet.avro.AvroParquetReader;
 import org.apache.parquet.avro.AvroParquetWriter;
@@ -22,6 +24,7 @@ import org.junit.Before;
 import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -30,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.fail;
 
 // #init-writer
 import org.apache.parquet.hadoop.ParquetWriter;
@@ -51,7 +55,7 @@ public class AvroParquetSinkTest {
   private final List<GenericRecord> records = new ArrayList<>();
   private ActorSystem system;
   private Materializer materializer;
-  private String folder = "javaTestFolder";
+  private String folder = "target/javaTestFolder";
   private final String file = "./" + folder + "/test.parquet";
 
   @Before
@@ -108,9 +112,9 @@ public class AvroParquetSinkTest {
   }
 
   @After
-  public void tearDown() {
-    system = null;
-    materializer = null;
+  public void checkForStageLeaksAndDeleteCreatedFiles() {
+    StreamTestKit.assertAllStagesStopped(materializer);
+    TestKit.shutdownActorSystem(system);
     File index = new File(folder);
     index.deleteOnExit();
     String[] entries = index.list();
