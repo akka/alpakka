@@ -12,6 +12,7 @@ import akka.stream.alpakka.azure.storagequeue.*;
 import akka.stream.alpakka.azure.storagequeue.javadsl.*;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
 import com.microsoft.azure.storage.*;
 import com.microsoft.azure.storage.queue.*;
@@ -23,12 +24,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+
+import org.junit.*;
 import org.scalatest.junit.JUnitSuite;
 
 public class JavaDslTest extends JUnitSuite {
@@ -75,6 +72,11 @@ public class JavaDslTest extends JUnitSuite {
     if (queue != null) {
       queue.clear();
     }
+  }
+
+  @After
+  public void checkForStageLeaks() {
+    StreamTestKit.assertAllStagesStopped(materializer);
   }
 
   @Test
