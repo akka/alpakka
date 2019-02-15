@@ -213,20 +213,16 @@ object Dependencies {
   }
 
   val HadoopVersion = "3.1.1"
-  val Hdfs = {
-    val hadoopVersion = HadoopVersion
-    val catsVersion = "1.1.0"
-    Seq(
-      libraryDependencies ++= Seq(
-        "org.apache.hadoop" % "hadoop-client" % hadoopVersion, // ApacheV2
-        "org.typelevel" %% "cats-core" % catsVersion, // MIT,
-        //Test
-        "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion % Test classifier "tests", // ApacheV2
-        "org.apache.hadoop" % "hadoop-common" % hadoopVersion % Test classifier "tests", // ApacheV2
-        "org.apache.hadoop" % "hadoop-minicluster" % hadoopVersion % Test // ApacheV2
-      )
+  val Hdfs = Seq(
+    libraryDependencies ++= Seq(
+      "org.apache.hadoop" % "hadoop-client" % HadoopVersion exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2
+      "org.typelevel" %% "cats-core" % "1.6.0", // MIT,
+      "org.apache.hadoop" % "hadoop-hdfs" % HadoopVersion % Test classifier "tests" exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2
+      "org.apache.hadoop" % "hadoop-common" % HadoopVersion % Test classifier "tests" exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2
+      "org.apache.hadoop" % "hadoop-minicluster" % HadoopVersion % Test exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2
+      "org.slf4j" % "log4j-over-slf4j" % "1.7.25" % Test // MIT like: http://www.slf4j.org/license.html
     )
-  }
+  )
 
   val IronMq = Seq(
     libraryDependencies ++= Seq(
