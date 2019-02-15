@@ -8,7 +8,6 @@ import akka.NotUsed;
 import akka.stream.javadsl.Flow;
 import akka.util.ByteString;
 import scala.collection.JavaConverters;
-import scala.collection.immutable.List;
 
 import java.util.Collection;
 
@@ -35,7 +34,7 @@ public class CsvParsing {
       byte delimiter, byte quoteChar, byte escapeChar, int maximumLineLength) {
     return akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner(
             delimiter, quoteChar, escapeChar, maximumLineLength)
-        .<ByteString, List<ByteString>, NotUsed>asJava()
+        .asJava()
         .map(c -> JavaConverters.asJavaCollectionConverter(c).asJavaCollection())
         .mapMaterializedValue(m -> NotUsed.getInstance());
   }
