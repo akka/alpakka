@@ -282,21 +282,21 @@ class AmqpConnectorsSpec extends AmqpSpec {
       )
 
       val result1 = amqpSource
-        .named("result1")
         .mapAsync(1)(cm => cm.nack(requeue = false).map(_ => cm))
         .take(input.size)
         .runWith(Sink.seq)
 
       Await.ready(result1, 3.seconds)
 
-      val result2 = amqpSource
-        .named("result2")
+      val (sourceToSeq, result2) = amqpSource
+        .viaMat(KillSwitches.single)(Keep.right)
         .mapAsync(1)(cm => cm.ack().map(_ => cm))
         .take(input.size)
-        .runWith(Sink.seq)
+        .toMat(Sink.seq)(Keep.both)
+        .run()
 
       result2.isReadyWithin(1.second) shouldEqual false
-      Await.ready(result2, 3.seconds)
+      sourceToSeq.shutdown()
     }
 
     "publish via RPC and then consume through a simple queue again in the same JVM without autoAck" in assertAllStagesStopped {
@@ -401,10 +401,12 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val input = Vector("one", "two", "three", "four", "five")
       Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
 
-      val result = amqpSource.named("result").take(input.size).runWith(Sink.seq)
+      val result = amqpSource
+        .take(input.size)
+        .runWith(Sink.seq)
 
-      result.futureValue.map(_.message.bytes.utf8String) shouldEqual input
-      Await.result(result, 2.seconds)
+      val received = result.futureValue
+      received.map(_.message.bytes.utf8String) shouldEqual input
     }
   }
 }

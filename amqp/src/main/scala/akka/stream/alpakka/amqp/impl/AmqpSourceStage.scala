@@ -8,7 +8,7 @@ import akka.Done
 import akka.annotation.InternalApi
 import akka.stream.alpakka.amqp._
 import akka.stream.alpakka.amqp.scaladsl.CommittableIncomingMessage
-import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
+import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler, StageLogging}
 import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.util.ByteString
 import com.rabbitmq.client.AMQP.BasicProperties
@@ -32,18 +32,19 @@ private final case class NackArguments(deliveryTag: Long, multiple: Boolean, req
 private[amqp] final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
     extends GraphStage[SourceShape[CommittableIncomingMessage]] { stage =>
 
-  val out = Outlet[CommittableIncomingMessage]("AmqpSource.out")
+  private val out = Outlet[CommittableIncomingMessage]("AmqpSource.out")
 
   override val shape: SourceShape[CommittableIncomingMessage] = SourceShape.of(out)
 
   override protected def initialAttributes: Attributes = Attributes.name("AmqpSource")
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with AmqpConnectorLogic {
+    new GraphStageLogic(shape) with AmqpConnectorLogic with StageLogging {
 
-      override val settings = stage.settings
+      override val settings: AmqpSourceSettings = stage.settings
 
       private val queue = mutable.Queue[CommittableIncomingMessage]()
+      private var finishWithOutstandingAcks = false
       private var unackedMessages = 0
 
       override def whenConnected(): Unit = {
@@ -134,8 +135,11 @@ private[amqp] final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSi
         }
 
         settings match {
-          case settings: NamedQueueSourceSettings => setupNamedQueue(settings)
-          case settings: TemporaryQueueSourceSettings => setupTemporaryQueue(settings)
+          case settings: NamedQueueSourceSettings =>
+            finishWithOutstandingAcks = !settings.ackRequired
+            setupNamedQueue(settings)
+          case settings: TemporaryQueueSourceSettings =>
+            setupTemporaryQueue(settings)
         }
       }
 
@@ -157,8 +161,11 @@ private[amqp] final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSi
             }
 
           override def onDownstreamFinish(): Unit = {
-            setKeepGoing(true)
-            if (unackedMessages == 0) super.onDownstreamFinish()
+            if (finishWithOutstandingAcks || unackedMessages == 0) super.onDownstreamFinish()
+            else {
+              setKeepGoing(true)
+              log.debug("Awaiting {} acks before finishing.", unackedMessages)
+            }
           }
         }
       )
