@@ -141,7 +141,7 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
   javaAgents += Dependencies.GooglePubSubGrpcAlpnAgent % "test",
   // for the ExampleApp in the tests
   connectInput in run := true,
-  scalacOptions += "-P:silencer:pathFilters=src_managed"
+  Compile / compile / scalacOptions += "-P:silencer:pathFilters=src_managed"
 ).enablePlugins(AkkaGrpcPlugin, JavaAgent)
 
 lazy val googleFcm = alpakkaProject(
