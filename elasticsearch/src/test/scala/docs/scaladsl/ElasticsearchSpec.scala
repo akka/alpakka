@@ -553,12 +553,13 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   "ElasticsearchFlow" should {
     "handle multiple types of operations correctly" in {
       //#multiple-operations
-      // Create, update, upsert and delete documents in sink8/_doc
+      // Index, create, update, upsert and delete documents in sink8/_doc
       val requests = List[WriteMessage[Book, NotUsed]](
         WriteMessage.createIndexMessage(id = "00001", source = Book("Book 1")),
         WriteMessage.createUpsertMessage(id = "00002", source = Book("Book 2")),
         WriteMessage.createUpsertMessage(id = "00003", source = Book("Book 3")),
         WriteMessage.createUpdateMessage(id = "00004", source = Book("Book 4")),
+        WriteMessage.createCreateMessage(id = "00005", source = Book("Book 5")),
         WriteMessage.createDeleteMessage(id = "00002")
       )
 
@@ -579,7 +580,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       val error = result1.flatMap(_.flatMap(_.error))
       error.length shouldEqual 1
       error(0).parseJson.asJsObject.fields("reason").asInstanceOf[JsString].value shouldEqual
-      "[_doc][00004]: document missing"
+        "[_doc][00004]: document missing"
 
       // Assert docs in sink8/_doc
       val f3 = ElasticsearchSource(
@@ -588,8 +589,8 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         """{"match_all": {}}""",
         ElasticsearchSourceSettings.Default
       ).map { message =>
-          message.source
-        }
+        message.source
+      }
         .runWith(Sink.seq)
 
       val result3 = Await.result(f3, Duration.Inf)
@@ -597,8 +598,36 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       // Docs should contain both columns
       result3.sortBy(_.fields("title").compactPrint) shouldEqual Seq(
         JsObject("title" -> JsString("Book 1")),
-        JsObject("title" -> JsString("Book 3"))
+        JsObject("title" -> JsString("Book 3")),
+        JsObject("title" -> JsString("Book 5"))
       )
+    }
+  }
+
+  "ElasticsearchFlow" should {
+    "Create existing document should fail" in {
+      val requests = List[WriteMessage[Book, NotUsed]](
+        WriteMessage.createIndexMessage(id = "00001", source = Book("Book 1")),
+        WriteMessage.createCreateMessage(id = "00001", source = Book("Book 1"))
+      )
+
+      val f1 = Source(requests)
+        .via(
+          ElasticsearchFlow.create[Book](
+            "sink9",
+            "_doc"
+          )
+        )
+        .runWith(Sink.seq)
+
+      val result1 = Await.result(f1, Duration.Inf)
+      flush("sink9")
+
+      // Assert error
+      val error = result1.flatMap(_.flatMap(_.error))
+      error.length shouldEqual 1
+      error(0).parseJson.asJsObject.fields("reason").asInstanceOf[JsString].value shouldEqual
+        "[_doc][00001]: version conflict, document already exists (current version [1])"
     }
   }
 

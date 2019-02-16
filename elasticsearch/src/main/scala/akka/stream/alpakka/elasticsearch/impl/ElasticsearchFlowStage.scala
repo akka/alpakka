@@ -167,6 +167,16 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
                     }
                   ).flatten ++ additionalMetadata): _*
                 )
+              case Create =>
+                "create" -> JsObject(
+                  (Seq(
+                    Option("_index" -> JsString(indexNameToUse)),
+                    Option("_type" -> JsString(typeName)),
+                    message.id.map { id =>
+                      "_id" -> JsString(id)
+                    }
+                  ).flatten ++ additionalMetadata): _*
+                )
               case Update | Upsert =>
                 "update" -> JsObject(
                   (Seq(
@@ -218,7 +228,7 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
 
       private def messageToJsonString(message: WriteMessage[T, C]): String =
         message.operation match {
-          case Index =>
+          case Index | Create =>
             "\n" + writer.convert(message.source.get)
           case Upsert =>
             "\n" + JsObject(
