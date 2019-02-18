@@ -118,7 +118,8 @@ object Dependencies {
       "org.elasticsearch.client" % "elasticsearch-rest-client" % "6.3.1", // ApacheV2
       "io.spray" %% "spray-json" % "1.3.5", // ApacheV2
       "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.8", // ApacheV2
-      "org.codelibs" % "elasticsearch-cluster-runner" % "6.3.1.0" % Test // ApacheV2
+      "org.codelibs" % "elasticsearch-cluster-runner" % "6.3.1.0" % Test, // ApacheV2
+      "org.slf4j" % "jcl-over-slf4j" % "1.7.25" % Test,
     )
   )
 

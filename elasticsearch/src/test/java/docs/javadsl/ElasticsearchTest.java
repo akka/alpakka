@@ -15,6 +15,7 @@ import akka.stream.alpakka.elasticsearch.javadsl.*;
 // #init-client
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.entity.StringEntity;
@@ -24,6 +25,7 @@ import org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner;
 import org.elasticsearch.client.RestClient;
 import org.apache.http.HttpHost;
 // #init-client
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -92,6 +94,11 @@ public class ElasticsearchTest {
     runner.clean();
     client.close();
     TestKit.shutdownActorSystem(system);
+  }
+
+  @After
+  public void checkForStageLeaks() {
+    StreamTestKit.assertAllStagesStopped(materializer);
   }
 
   private static void flush(String indexName) throws IOException {
