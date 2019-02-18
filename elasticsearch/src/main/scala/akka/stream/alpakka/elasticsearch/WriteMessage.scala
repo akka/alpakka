@@ -22,6 +22,7 @@ private[elasticsearch] sealed abstract class Operation(val command: String)
 @InternalApi
 private[elasticsearch] object Operation {
   object Index extends Operation("index")
+  object Create extends Operation("create")
   object Update extends Operation("update")
   object Upsert extends Operation("update")
   object Delete extends Operation("delete")
@@ -109,6 +110,9 @@ object WriteMessage {
 
   def createIndexMessage[T](id: String, source: T): WriteMessage[T, NotUsed] =
     new WriteMessage(Index, id = Option(id), source = Option(source))
+
+  def createCreateMessage[T](id: String, source: T): WriteMessage[T, NotUsed] =
+    new WriteMessage(Create, id = Option(id), source = Option(source))
 
   def createUpdateMessage[T](id: String, source: T): WriteMessage[T, NotUsed] =
     new WriteMessage(Update, id = Option(id), source = Option(source))
