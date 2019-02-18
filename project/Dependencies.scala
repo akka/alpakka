@@ -82,6 +82,15 @@ object Dependencies {
     libraryDependencies ++= Seq()
   )
 
+  val compliance = Seq(
+    libraryDependencies ++= Seq(
+      "com.tngtech.archunit" % "archunit" % "0.10.2" % Test,
+      "org.slf4j" % "log4j-over-slf4j" % "1.7.25",
+      "org.slf4j" % "jcl-over-slf4j" % "1.7.25",
+      "ch.qos.logback" % "logback-classic" % "1.2.3" // Eclipse Public License 1.0
+    )
+  )
+
   val `Doc-examples` = Seq(
     libraryDependencies ++= Seq(
       // https://mina.apache.org/ftpserver-project/downloads.html

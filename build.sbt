@@ -46,6 +46,7 @@ lazy val alpakka = project
   .disablePlugins(MimaPlugin, SitePlugin)
   .aggregate(modules: _*)
   .aggregate(`doc-examples`)
+  .aggregate(compliance)
   .settings(
     onLoadMessage :=
       """
@@ -327,6 +328,20 @@ lazy val `doc-examples` = project
     // More projects are not available for Scala 2.13
     crossScalaVersions -= Dependencies.Scala213,
     Dependencies.`Doc-examples`
+  )
+
+lazy val compliance = project
+  .in(file("compliance"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .disablePlugins(BintrayPlugin, MimaPlugin, SitePlugin)
+  .dependsOn(
+    modules.map(p => classpathDependency(p)): _*
+  )
+  .settings(
+    name := s"akka-stream-alpakka-compliance",
+    publish / skip := true,
+    whitesourceIgnore := true,
+    Dependencies.compliance
   )
 
 def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sbt.Def.SettingsDefinition*): Project =
