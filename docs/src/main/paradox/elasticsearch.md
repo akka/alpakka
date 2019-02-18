@@ -73,7 +73,7 @@ In the above examples, `WriteMessage` is used as the input to `ElasticsearchSink
 | Message factory           | Description                                                                                          |
 | ---------------------- | ---------------------------------------------------------------------------------------------------- |
 | WriteMessage.createIndexMessage   | Create a new document. If `id` is specified and it already exists, do nothing.                       |
-| WriteMessage.createCreateMessage  | Create a new document. If `id` is already exists, an error will be raised.                           |
+| WriteMessage.createCreateMessage  | Create a new document. If `id` already exists, the `WriteResult` will contain an error.                  |
 | WriteMessage.createUpdateMessage  | Update an existing document. If there is no document with the specified `id`, do nothing.            |
 | WriteMessage.createUpsertMessage  | Update an existing document. If there is no document with the specified `id`, create a new document. |
 | WriteMessage.createDeleteMessage  | Delete an existing document. If there is no document with the specified `id`, do nothing.            |
