@@ -66,6 +66,12 @@ object Dependencies {
     )
   )
 
+  val ChronicleQueue = Seq(
+    libraryDependencies ++= Seq(
+      "net.openhft" % "chronicle-queue" % "5.17.9" // ApacheV2
+    )
+  )
+
   val Couchbase = Seq(
     libraryDependencies ++= Seq(
       "com.couchbase.client" % "java-client" % CouchbaseVersion, // ApacheV2
