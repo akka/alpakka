@@ -41,6 +41,11 @@ trait BaseSpec
 
   protected def stopServer(): Unit
 
+  /** For a few tests `assertAllStagesStopped` failed on Travis, this hook allows to inject a bit more patience
+   * for the check.
+   */
+  protected def extraWaitForStageShutdown(): Unit = ()
+
   after {
     cleanFiles()
   }

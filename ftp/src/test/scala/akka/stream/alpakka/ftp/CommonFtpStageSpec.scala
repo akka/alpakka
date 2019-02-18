@@ -42,6 +42,8 @@ final class RawKeySftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
 }
 
 final class KeyFileSftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
+  override protected def extraWaitForStageShutdown(): Unit = Thread.sleep(3 * 1000)
+
   override val settings = SftpSettings(
     InetAddress.getByName("localhost")
   ).withPort(getPort)
@@ -280,6 +282,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       startServer()
 
       result.status.failed.get shouldBe a[Exception]
+      extraWaitForStageShutdown()
     }
   }
 
@@ -295,6 +298,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       result shouldBe IOResult.createSuccessful(1)
 
       fileExists(FtpBaseSupport.FTP_ROOT_DIR, fileName) shouldBe false
+      extraWaitForStageShutdown()
     }
   }
 
@@ -312,6 +316,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
 
       fileExists(FtpBaseSupport.FTP_ROOT_DIR, fileName) shouldBe false
       fileExists(FtpBaseSupport.FTP_ROOT_DIR, fileName2) shouldBe true
+      extraWaitForStageShutdown()
     }
   }
 }
