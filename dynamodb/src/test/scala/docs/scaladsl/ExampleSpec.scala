@@ -12,6 +12,7 @@ import akka.stream.alpakka.dynamodb.{DynamoAttributes, DynamoClient, DynamoSetti
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.dynamodb.scaladsl._
 import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
 import com.amazonaws.services.dynamodbv2.model._
 import org.scalatest.concurrent.ScalaFutures
@@ -49,7 +50,7 @@ class ExampleSpec
       listTablesResult.futureValue
     }
 
-    "allow multiple requests - explicit types" in {
+    "allow multiple requests - explicit types" in assertAllStagesStopped {
       import akka.stream.alpakka.dynamodb.AwsOp._
       val source = Source
         .single[CreateTable](new CreateTableRequest().withTableName("testTable"))
@@ -63,7 +64,7 @@ class ExampleSpec
       streamCompletion.failed.futureValue shouldBe a[AmazonDynamoDBException]
     }
 
-    "allow multiple requests" in {
+    "allow multiple requests" in assertAllStagesStopped {
       //##flow
       import akka.stream.alpakka.dynamodb.AwsOp._
       val source: Source[String, NotUsed] = Source
@@ -75,7 +76,7 @@ class ExampleSpec
       streamCompletion.failed.futureValue shouldBe a[AmazonDynamoDBException]
     }
 
-    "allow multiple requests - single source" in {
+    "allow multiple requests - single source" in assertAllStagesStopped {
       import akka.stream.alpakka.dynamodb.AwsOp._
       val source: Source[lang.Long, NotUsed] = DynamoDb
         .source(new CreateTableRequest().withTableName("testTable")) // creating a source from a single req is common enough to warrant a utility function
@@ -86,7 +87,7 @@ class ExampleSpec
       streamCompletion.failed.futureValue shouldBe a[AmazonDynamoDBException]
     }
 
-    "provide a paginated requests example" in {
+    "provide a paginated requests example" in assertAllStagesStopped {
       //##paginated
       val scanPages: Source[ScanResult, NotUsed] =
         DynamoDb.source(new ScanRequest().withTableName("testTable"))
@@ -95,7 +96,7 @@ class ExampleSpec
       streamCompletion.failed.futureValue shouldBe a[AmazonDynamoDBException]
     }
 
-    "use client from attributes" in {
+    "use client from attributes" in assertAllStagesStopped {
       // #attributes
       val settings = DynamoSettings(system).withRegion("custom-region")
       val client = DynamoClient(settings)
