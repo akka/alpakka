@@ -13,8 +13,10 @@ import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.file.javadsl.LogRotatorSink;
 import akka.stream.javadsl.*;
+import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Test;
 
@@ -38,6 +40,11 @@ public class LogRotatorSinkTest {
   @AfterClass
   public static void afterAll() {
     TestKit.shutdownActorSystem(system);
+  }
+
+  @After
+  public void checkForStageLeaks() {
+    StreamTestKit.assertAllStagesStopped(materializer);
   }
 
   @Test
