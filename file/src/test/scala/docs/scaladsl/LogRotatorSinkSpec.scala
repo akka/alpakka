@@ -13,6 +13,7 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.alpakka.file.scaladsl.LogRotatorSink
 import akka.stream.scaladsl.{Compression, FileIO, Flow, Keep, Sink, Source}
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSource
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.testkit.TestKit
@@ -81,7 +82,7 @@ class LogRotatorSinkSpec
   val testByteStrings = TestLines.map(ByteString(_))
 
   "LogRotatorSink" must {
-    "work for size-based rotation " in {
+    "work for size-based rotation " in assertAllStagesStopped {
       // #size
       import akka.stream.alpakka.file.scaladsl.LogRotatorSink
 
@@ -110,7 +111,7 @@ class LogRotatorSinkSpec
       fileSizeCompletion.futureValue shouldBe Done
     }
 
-    "work for time-based rotation " in {
+    "work for time-based rotation " in assertAllStagesStopped {
       // #time
       val destinationDir = FileSystems.getDefault.getPath("/tmp")
       val formatter = DateTimeFormatter.ofPattern("'stream-'yyyy-MM-dd_HH'.log'")
@@ -155,7 +156,7 @@ class LogRotatorSinkSpec
 
     }
 
-    "write lines to a single file" in {
+    "write lines to a single file" in assertAllStagesStopped {
       var files = Seq.empty[Path]
       val triggerFunctionCreator = () => {
         var fileName: String = null
@@ -179,7 +180,7 @@ class LogRotatorSinkSpec
       contents should contain theSameElementsAs Seq(TestLines.mkString(""))
     }
 
-    "write lines to multiple files due to filesize" in {
+    "write lines to multiple files due to filesize" in assertAllStagesStopped {
       val (triggerFunctionCreator, files) = fileLengthTriggerCreator()
       val completion =
         Source(testByteStrings).runWith(LogRotatorSink(triggerFunctionCreator))
@@ -191,7 +192,7 @@ class LogRotatorSinkSpec
       contents should contain theSameElementsAs TestLines.sliding(2, 2).map(_.mkString("")).toList
     }
 
-    "write compressed lines to multiple targets" in {
+    "write compressed lines to multiple targets" in assertAllStagesStopped {
       val (triggerFunctionCreator, files) = fileLengthTriggerCreator()
       val source = Source(testByteStrings)
       // #sample
@@ -220,7 +221,7 @@ class LogRotatorSinkSpec
       uncompressed.futureValue should contain theSameElementsAs TestLines.sliding(2, 2).map(_.mkString("")).toList
     }
 
-    "upstream fail before first file creation" in {
+    "upstream fail before first file creation" in assertAllStagesStopped {
       val (triggerFunctionCreator, files) = fileLengthTriggerCreator()
       val (probe, completion) =
         TestSource.probe[ByteString].toMat(LogRotatorSink(triggerFunctionCreator))(Keep.both).run()
@@ -231,7 +232,7 @@ class LogRotatorSinkSpec
       files() shouldBe empty
     }
 
-    "upstream fail after first file creation" in {
+    "upstream fail after first file creation" in assertAllStagesStopped {
       val (triggerFunctionCreator, files) = fileLengthTriggerCreator()
       val (probe, completion) =
         TestSource.probe[ByteString].toMat(LogRotatorSink(triggerFunctionCreator))(Keep.both).run()
@@ -243,7 +244,8 @@ class LogRotatorSinkSpec
       files().size shouldBe 1
       readUpFilesAndSizesThenClean(files())
     }
-    "function fail on path creation" in {
+
+    "function fail on path creation" in assertAllStagesStopped {
       val ex = new Exception("my-exception")
       val triggerFunctionCreator = () => { (x: ByteString) =>
         {
@@ -256,7 +258,7 @@ class LogRotatorSinkSpec
       the[Exception] thrownBy Await.result(completion, 3.seconds) shouldBe ex
     }
 
-    "downstream fail on file write" in {
+    "downstream fail on file write" in assertAllStagesStopped {
       val path = Files.createTempFile(fs.getPath("/"), "test", ".log")
       val triggerFunctionCreator = () => { (x: ByteString) =>
         {
