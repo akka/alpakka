@@ -42,7 +42,7 @@ final class RawKeySftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
 }
 
 final class KeyFileSftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
-  override protected def extraWaitForStageShutdown(): Unit = Thread.sleep(3 * 1000)
+  override protected def extraWaitForStageShutdown(): Unit = Thread.sleep(10 * 1000)
 
   override val settings = SftpSettings(
     InetAddress.getByName("localhost")
