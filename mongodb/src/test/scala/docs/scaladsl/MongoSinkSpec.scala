@@ -42,18 +42,15 @@ class MongoSinkSpec
 
   private val client = MongoClients.create(s"mongodb://localhost:27017")
   private val db = client.getDatabase("MongoSinkSpec").withCodecRegistry(codecRegistry)
-  private val numbersColl = db.getCollection("numbersSink")
-
-  //#init-connection-codec
-  private val numbersObjectColl: MongoCollection[Number] =
+  private val numbersColl: MongoCollection[Number] =
     db.getCollection("numbersSink", classOf[Number]).withCodecRegistry(codecRegistry)
-  //#init-connection-codec
+  private val numbersDocumentColl = db.getCollection("numbersSink")
 
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 50.millis)
 
   override def afterEach(): Unit =
-    Source.fromPublisher(numbersColl.deleteMany(new Document())).runWith(Sink.head).futureValue
+    Source.fromPublisher(numbersDocumentColl.deleteMany(new Document())).runWith(Sink.head).futureValue
 
   override def afterAll(): Unit =
     system.terminate().futureValue
@@ -62,32 +59,31 @@ class MongoSinkSpec
 
   def insertTestRange(): Unit =
     Source
-      .fromPublisher(numbersColl.insertMany(testRange.map(i => Document.parse(s"""{"value":$i}""")).asJava))
+      .fromPublisher(numbersDocumentColl.insertMany(testRange.map(i => Document.parse(s"""{"value":$i}""")).asJava))
       .runWith(Sink.head)
       .futureValue
 
   "MongoSinkSpec" must {
 
     "save with insertOne" in assertAllStagesStopped {
-      // #insertOne
       val source = Source(testRange).map(i => Document.parse(s"""{"value":$i}"""))
-      val completion = source.runWith(MongoSink.insertOne(numbersColl))
-      // #insertOne
+      val completion = source.runWith(MongoSink.insertOne(numbersDocumentColl))
 
       completion.futureValue
 
-      val found = Source.fromPublisher(numbersColl.find()).runWith(Sink.seq).futureValue
+      val found = Source.fromPublisher(numbersDocumentColl.find()).runWith(Sink.seq).futureValue
 
       found.map(_.getInteger("value")) must contain theSameElementsAs testRange
     }
 
     "save with insertOne and codec support" in assertAllStagesStopped {
+      // #insert-one
       val testRangeObjects = testRange.map(Number(_))
       val source = Source(testRangeObjects)
+      source.runWith(MongoSink.insertOne(numbersColl)).futureValue
+      // #insert-one
 
-      source.runWith(MongoSink.insertOne[Number](numbersObjectColl)).futureValue
-
-      val found = Source.fromPublisher(numbersObjectColl.find()).runWith(Sink.seq).futureValue
+      val found = Source.fromPublisher(numbersColl.find()).runWith(Sink.seq).futureValue
 
       found must contain theSameElementsAs testRangeObjects
     }
@@ -95,23 +91,23 @@ class MongoSinkSpec
     "save with insertMany" in assertAllStagesStopped {
       val source = Source(testRange).map(i => Document.parse(s"""{"value":$i}"""))
 
-      source.grouped(2).runWith(MongoSink.insertMany(numbersColl)).futureValue
+      source.grouped(2).runWith(MongoSink.insertMany(numbersDocumentColl)).futureValue
 
-      val found = Source.fromPublisher(numbersColl.find()).runWith(Sink.seq).futureValue
+      val found = Source.fromPublisher(numbersDocumentColl.find()).runWith(Sink.seq).futureValue
 
       found.map(_.getInteger("value")) must contain theSameElementsAs testRange
     }
 
     "save with insertMany and codec support" in assertAllStagesStopped {
-      // #insertMany
+      // #insert-many
       val objects = testRange.map(Number(_))
       val source = Source(objects)
-      val completion = source.grouped(2).runWith(MongoSink.insertMany[Number](numbersObjectColl))
-      // #insertMany
+      val completion = source.grouped(2).runWith(MongoSink.insertMany[Number](numbersColl))
+      // #insert-many
 
       completion.futureValue
 
-      val found = Source.fromPublisher(numbersObjectColl.find()).runWith(Sink.seq).futureValue
+      val found = Source.fromPublisher(numbersColl.find()).runWith(Sink.seq).futureValue
 
       found must contain theSameElementsAs objects
     }
@@ -119,9 +115,9 @@ class MongoSinkSpec
     "save with insertMany with options" in assertAllStagesStopped {
       val source = Source(testRange).map(i => Document.parse(s"""{"value":$i}"""))
 
-      source.grouped(2).runWith(MongoSink.insertMany(numbersColl, new InsertManyOptions().ordered(false))).futureValue
+      source.grouped(2).runWith(MongoSink.insertMany(numbersDocumentColl, new InsertManyOptions().ordered(false))).futureValue
 
-      val found = Source.fromPublisher(numbersColl.find()).runWith(Sink.seq).futureValue
+      val found = Source.fromPublisher(numbersDocumentColl.find()).runWith(Sink.seq).futureValue
 
       found.map(_.getInteger("value")) must contain theSameElementsAs testRange
     }
@@ -132,10 +128,10 @@ class MongoSinkSpec
 
       source
         .grouped(2)
-        .runWith(MongoSink.insertMany[Number](numbersObjectColl, new InsertManyOptions().ordered(false)))
+        .runWith(MongoSink.insertMany[Number](numbersColl, new InsertManyOptions().ordered(false)))
         .futureValue
 
-      val found = Source.fromPublisher(numbersObjectColl.find()).runWith(Sink.seq).futureValue
+      val found = Source.fromPublisher(numbersColl.find()).runWith(Sink.seq).futureValue
 
       found must contain theSameElementsAs testRangeObjects
     }
@@ -143,16 +139,16 @@ class MongoSinkSpec
     "update with updateOne" in assertAllStagesStopped {
       insertTestRange()
 
-      // #updateOne
+      // #update-one
       val source = Source(testRange).map(
         i => DocumentUpdate(filter = Filters.eq("value", i), update = Updates.set("updateValue", i * -1))
       )
-      val completion = source.runWith(MongoSink.updateOne(numbersColl))
-      // #updateOne
+      val completion = source.runWith(MongoSink.updateOne(numbersDocumentColl))
+      // #update-one
 
       completion.futureValue
 
-      val found = Source.fromPublisher(numbersColl.find()).runWith(Sink.seq).futureValue
+      val found = Source.fromPublisher(numbersDocumentColl.find()).runWith(Sink.seq).futureValue
 
       found.map(doc => doc.getInteger("value") -> doc.getInteger("updateValue")) must contain theSameElementsAs testRange
         .map(i => i -> i * -1)
@@ -167,9 +163,9 @@ class MongoSinkSpec
           _ => DocumentUpdate(filter = Filters.gte("value", 0), update = Updates.set("updateValue", 0))
         )
 
-      source.runWith(MongoSink.updateMany(numbersColl)).futureValue
+      source.runWith(MongoSink.updateMany(numbersDocumentColl)).futureValue
 
-      val found = Source.fromPublisher(numbersColl.find()).runWith(Sink.seq).futureValue
+      val found = Source.fromPublisher(numbersDocumentColl.find()).runWith(Sink.seq).futureValue
 
       found.map(doc => doc.getInteger("value") -> doc.getInteger("updateValue")) must contain theSameElementsAs testRange
         .map(i => i -> 0)
@@ -178,14 +174,14 @@ class MongoSinkSpec
     "delete with deleteOne" in assertAllStagesStopped {
       insertTestRange()
 
-      // #deleteOne
+      // #delete-one
       val source = Source(testRange).map(i => Filters.eq("value", i))
-      val completion = source.runWith(MongoSink.deleteOne(numbersColl))
-      // #deleteOne
+      val completion = source.runWith(MongoSink.deleteOne(numbersDocumentColl))
+      // #delete-one
 
       completion.futureValue
 
-      val found = Source.fromPublisher(numbersColl.find()).runWith(Sink.seq).futureValue
+      val found = Source.fromPublisher(numbersDocumentColl.find()).runWith(Sink.seq).futureValue
 
       found mustBe empty
     }
@@ -195,9 +191,9 @@ class MongoSinkSpec
 
       val source = Source.single(0).map(_ => Filters.gte("value", 0))
 
-      source.runWith(MongoSink.deleteMany(numbersColl)).futureValue
+      source.runWith(MongoSink.deleteMany(numbersDocumentColl)).futureValue
 
-      val found = Source.fromPublisher(numbersColl.find()).runWith(Sink.seq).futureValue
+      val found = Source.fromPublisher(numbersDocumentColl.find()).runWith(Sink.seq).futureValue
 
       found mustBe empty
     }

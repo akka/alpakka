@@ -6,6 +6,7 @@ package docs.javadsl;
 
 import java.util.Objects;
 
+// #pojo
 public final class Number {
   private Integer _id;
 
@@ -25,6 +26,7 @@ public final class Number {
     return _id;
   }
 
+  // #pojo
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
@@ -44,4 +46,6 @@ public final class Number {
       "_id=" + _id +
       '}';
   }
+  // #pojo
 }
+// #pojo

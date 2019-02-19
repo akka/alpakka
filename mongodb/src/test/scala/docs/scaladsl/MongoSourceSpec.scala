@@ -38,29 +38,31 @@ class MongoSourceSpec
 
   java.util.logging.Logger.getLogger("org.mongodb.driver").setLevel(java.util.logging.Level.SEVERE)
 
-  // #macros-codecs
+  // #pojo
+  case class Number(_id: Int)
+  // #pojo
+
+  // #codecs
   import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
   import org.mongodb.scala.bson.codecs.Macros._
 
-  case class Number(_id: Int)
   val codecRegistry = fromRegistries(fromProviders(classOf[Number]), DEFAULT_CODEC_REGISTRY)
-  // #macros-codecs
+  // #codecs
 
   // #init-connection
   private val client = MongoClients.create("mongodb://localhost:27017")
   private val db = client.getDatabase("MongoSourceSpec")
-  private val numbersColl = db.getCollection("numbers")
+  private val numbersColl = db.getCollection("numbers", classOf[Number])
+    .withCodecRegistry(codecRegistry)
   // #init-connection
 
-  // #init-connection-codec
-  private val numbersObjectColl = db.getCollection("numbers").withCodecRegistry(codecRegistry)
-  // #init-connection-codec
+  private val numbersDocumentColl = db.getCollection("numbers")
 
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 50.millis)
 
   override def afterEach(): Unit =
-    Source.fromPublisher(numbersColl.deleteMany(new Document())).runWith(Sink.head).futureValue
+    Source.fromPublisher(numbersDocumentColl.deleteMany(new Document())).runWith(Sink.head).futureValue
 
   override def afterAll(): Unit =
     system.terminate().futureValue
@@ -68,7 +70,7 @@ class MongoSourceSpec
   private def seed() = {
     val numbers = 1 until 10
     Source
-      .fromPublisher(numbersColl.insertMany {
+      .fromPublisher(numbersDocumentColl.insertMany {
         numbers.map { number =>
           Document.parse(s"{_id:$number}")
         }.asJava
@@ -83,14 +85,10 @@ class MongoSourceSpec
     "stream the result of a simple Mongo query" in assertAllStagesStopped {
       val data: Seq[Int] = seed()
 
-      // #create-source
       val source: Source[Document, NotUsed] =
-        MongoSource(numbersColl.find())
-      //#create-source
+        MongoSource(numbersDocumentColl.find())
 
-      // #run-source
       val rows: Future[Seq[Document]] = source.runWith(Sink.seq)
-      // #run-source
 
       rows.futureValue.map(_.getInteger("_id")) must contain theSameElementsAs data
     }
@@ -98,21 +96,21 @@ class MongoSourceSpec
     "support codec registry to read case class objects" in assertAllStagesStopped {
       val data: Seq[Number] = seed().map(Number)
 
-      // #create-source-codec
+      // #create-source
       val source: Source[Number, NotUsed] =
-        MongoSource(numbersObjectColl.find(classOf[Number]))
-      // #create-source-codec
+        MongoSource(numbersColl.find(classOf[Number]))
+      // #create-source
 
-      // #run-source-codec
+      // #run-source
       val rows: Future[Seq[Number]] = source.runWith(Sink.seq)
-      //#run-source-codec
+      //#run-source
 
       rows.futureValue must contain theSameElementsAs data
     }
 
     "support multiple materializations" in assertAllStagesStopped {
       val data: Seq[Int] = seed()
-      val numbersObservable = numbersColl.find()
+      val numbersObservable = numbersDocumentColl.find()
 
       val source = MongoSource(numbersObservable)
 
@@ -121,7 +119,7 @@ class MongoSourceSpec
     }
 
     "stream the result of Mongo query that results in no data" in assertAllStagesStopped {
-      val numbersObservable = numbersColl.find()
+      val numbersObservable = numbersDocumentColl.find()
 
       val rows = MongoSource(numbersObservable).runWith(Sink.seq).futureValue
 
