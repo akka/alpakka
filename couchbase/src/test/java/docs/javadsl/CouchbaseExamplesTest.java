@@ -21,6 +21,7 @@ import akka.stream.alpakka.couchbase.testing.CouchbaseSupportClass;
 import akka.stream.alpakka.couchbase.testing.TestObject;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import akka.stream.testkit.javadsl.StreamTestKit;
 import com.couchbase.client.java.PersistTo;
 import com.couchbase.client.java.ReplicateTo;
 import com.couchbase.client.java.document.JsonDocument;
@@ -32,6 +33,7 @@ import com.couchbase.client.java.query.N1qlQuery;
 // #n1ql
 import com.couchbase.client.java.query.SimpleN1qlQuery;
 
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -87,6 +89,11 @@ public class CouchbaseExamplesTest {
   @AfterClass
   public static void afterAll() {
     support.afterAll();
+  }
+
+  @After
+  public void checkForStageLeaks() {
+    StreamTestKit.assertAllStagesStopped(materializer);
   }
 
   @Test
