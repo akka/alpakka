@@ -38,8 +38,8 @@ public class MongoSourceTest {
 
   private final MongoClient client;
   private final MongoDatabase db;
-  private final MongoCollection<Document> numbersColl;
-  private final MongoCollection<Number> numbersObjectColl;
+  private final MongoCollection<Document> numbersDocumentColl;
+  private final MongoCollection<Number> numbersColl;
 
   public MongoSourceTest() {
     // #init-mat
@@ -47,28 +47,28 @@ public class MongoSourceTest {
     mat = ActorMaterializer.create(system);
     // #init-mat
 
+    // #codecs
+    PojoCodecProvider codecProvider = PojoCodecProvider.builder().register(Number.class).build();
+    CodecRegistry codecRegistry = CodecRegistries.fromProviders(codecProvider, new ValueCodecProvider());
+    // #codecs
+
     // #init-connection
     client = MongoClients.create("mongodb://localhost:27017");
     db = client.getDatabase("MongoSourceTest");
-    numbersColl = db.getCollection("numbers");
+    numbersColl = db.getCollection("numbers", Number.class).withCodecRegistry(codecRegistry);
     // #init-connection
 
-    PojoCodecProvider codecProvider = PojoCodecProvider.builder().register(Number.class).build();
-    CodecRegistry codecRegistry = CodecRegistries.fromProviders(codecProvider, new ValueCodecProvider());
-
-    // #init-connection-codec
-    numbersObjectColl = db.getCollection("numbers", Number.class).withCodecRegistry(codecRegistry);
-    // #init-connection-codec
+    numbersDocumentColl = db.getCollection("numbers");
   }
 
   @Before
   public void cleanDb() throws Exception {
-    Source.fromPublisher(numbersColl.deleteMany(new Document())).runWith(Sink.head(), mat).toCompletableFuture().get(5, TimeUnit.SECONDS);
+    Source.fromPublisher(numbersDocumentColl.deleteMany(new Document())).runWith(Sink.head(), mat).toCompletableFuture().get(5, TimeUnit.SECONDS);
   }
 
   @After
   public void checkForLeaks() throws Exception {
-    Source.fromPublisher(numbersColl.deleteMany(new Document())).runWith(Sink.head(), mat).toCompletableFuture().get(5, TimeUnit.SECONDS);
+    Source.fromPublisher(numbersDocumentColl.deleteMany(new Document())).runWith(Sink.head(), mat).toCompletableFuture().get(5, TimeUnit.SECONDS);
     StreamTestKit.assertAllStagesStopped(mat);
   }
 
@@ -81,13 +81,8 @@ public class MongoSourceTest {
   public void streamTheResultOfASimpleMongoQuery() throws Exception {
     List<Integer> data = seed();
 
-    // #create-source
-    final Source<Document, NotUsed> source = MongoSource.create(numbersColl.find());
-    // #create-source
-
-    // #run-source
+    final Source<Document, NotUsed> source = MongoSource.create(numbersDocumentColl.find());
     final CompletionStage<List<Document>> rows = source.runWith(Sink.seq(), mat);
-    // #run-source
 
     assertEquals(data, rows.toCompletableFuture().get(5, TimeUnit.SECONDS).stream().map(n -> n.getInteger("_id")).collect(Collectors.toList()));
   }
@@ -96,13 +91,13 @@ public class MongoSourceTest {
   public void supportCodecRegistryToReadClassObjects() throws Exception {
     List<Number> data = seed().stream().map(Number::new).collect(Collectors.toList());
 
-    // #create-source-codec
-    final Source<Number, NotUsed> source = MongoSource.create(numbersObjectColl.find(Number.class));
-    // #create-source-codec
+    // #create-source
+    final Source<Number, NotUsed> source = MongoSource.create(numbersColl.find(Number.class));
+    // #create-source
 
-    // #run-source-codec
+    // #run-source
     final CompletionStage<List<Number>> rows = source.runWith(Sink.seq(), mat);
-    // #run-source-codec
+    // #run-source
 
     assertEquals(data, rows.toCompletableFuture().get(5, TimeUnit.SECONDS));
   }
@@ -111,7 +106,7 @@ public class MongoSourceTest {
   public void supportMultipleMaterializations() throws Exception {
     final List<Integer> data = seed();
 
-    final Source<Document, NotUsed> source = MongoSource.create(numbersColl.find());
+    final Source<Document, NotUsed> source = MongoSource.create(numbersDocumentColl.find());
 
     assertEquals(data, source.runWith(Sink.seq(), mat).toCompletableFuture().get(5, TimeUnit.SECONDS).stream().map(n -> n.getInteger("_id")).collect(Collectors.toList()));
     assertEquals(data, source.runWith(Sink.seq(), mat).toCompletableFuture().get(5, TimeUnit.SECONDS).stream().map(n -> n.getInteger("_id")).collect(Collectors.toList()));
@@ -119,7 +114,7 @@ public class MongoSourceTest {
 
   @Test
   public void streamTheResultOfMongoQueryThatResultsInNoData() throws Exception {
-    final Source<Document, NotUsed> source = MongoSource.create(numbersColl.find());
+    final Source<Document, NotUsed> source = MongoSource.create(numbersDocumentColl.find());
 
     assertEquals(true, source.runWith(Sink.seq(), mat).toCompletableFuture().get(5, TimeUnit.SECONDS).isEmpty());
   }
@@ -133,7 +128,7 @@ public class MongoSourceTest {
       Document.parse("{_id:" + i + "}")
     ).collect(Collectors.toList());
 
-    final CompletionStage<Success> completion = Source.fromPublisher(numbersColl.insertMany(documents)).runWith(Sink.head(), mat);
+    final CompletionStage<Success> completion = Source.fromPublisher(numbersDocumentColl.insertMany(documents)).runWith(Sink.head(), mat);
     completion.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     return numbers;
