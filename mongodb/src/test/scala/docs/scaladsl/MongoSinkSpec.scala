@@ -41,7 +41,7 @@ class MongoSinkSpec
     Source.fromPublisher(db.drop()).runWith(Sink.head).futureValue
 
   private val client = MongoClients.create(s"mongodb://localhost:27017")
-  private val db = client.getDatabase("alpakka-mongo").withCodecRegistry(codecRegistry)
+  private val db = client.getDatabase("MongoSinkSpec").withCodecRegistry(codecRegistry)
   private val numbersColl = db.getCollection("numbersSink")
 
   //#init-connection-codec
