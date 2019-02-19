@@ -71,7 +71,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
       "com.couchbase.client" % "java-client" % CouchbaseVersion, // ApacheV2
       "io.reactivex" % "rxjava-reactive-streams" % "1.2.1", //ApacheV2
-      "com.typesafe.play" %% "play-json" % "2.6.9" % Test, // MIT like: http://www.slf4j.org/license.html
+      "com.typesafe.play" %% "play-json" % "2.7.1" % Test, // MIT like: http://www.slf4j.org/license.html
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion % Test, // Apache V2
     )
   )
@@ -136,7 +136,7 @@ object Dependencies {
       "org.apache.parquet" % "parquet-avro" % "1.10.0", //Apache2
       "org.apache.hadoop" % "hadoop-client" % "3.1.0" % Test exclude ("log4j", "log4j"), //Apache2
       "org.apache.hadoop" % "hadoop-common" % "2.2.0" % Test exclude ("log4j", "log4j"), //Apache2
-      "org.specs2" %% "specs2-core" % "4.3.2" % Test, //MIT like: https://github.com/etorreborre/specs2/blob/master/LICENSE.txt
+      "org.specs2" %% "specs2-core" % "4.4.1" % Test, //MIT like: https://github.com/etorreborre/specs2/blob/master/LICENSE.txt
       "org.slf4j" % "log4j-over-slf4j" % "1.7.25" % Test, // MIT like: http://www.slf4j.org/license.html
     )
   )
