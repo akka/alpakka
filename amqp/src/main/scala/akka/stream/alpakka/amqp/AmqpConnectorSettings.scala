@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.amqp
 
-import akka.annotation.InternalApi
+import akka.annotation.{ApiMayChange, InternalApi}
 
 import scala.collection.immutable
 import scala.collection.JavaConverters._
@@ -53,6 +53,7 @@ final class NamedQueueSourceSettings private (
    * Ack/Nack is required as default. Setting this to false will configure AMQP's `autoAck` so that the
    * server considers messages acknowledged once delivered.
    */
+  @ApiMayChange //
   def withAckRequired(ackRequired: Boolean): NamedQueueSourceSettings =
     copy(ackRequired = ackRequired)
 

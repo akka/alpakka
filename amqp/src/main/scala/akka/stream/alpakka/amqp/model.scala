@@ -9,7 +9,7 @@ import akka.util.ByteString
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client.Envelope
 
-@ApiMayChange
+@ApiMayChange // https://github.com/akka/alpakka/issues/1513
 final class IncomingMessage private (
     val bytes: ByteString,
     val envelope: Envelope,
@@ -19,7 +19,7 @@ final class IncomingMessage private (
     s"IncomingMessage(bytes=$bytes, envelope=$envelope, properties=$properties)"
 }
 
-@ApiMayChange
+@ApiMayChange // https://github.com/akka/alpakka/issues/1513
 object IncomingMessage {
   def apply(bytes: ByteString, envelope: Envelope, properties: BasicProperties): IncomingMessage =
     new IncomingMessage(bytes, envelope, properties)
@@ -31,7 +31,7 @@ object IncomingMessage {
     IncomingMessage(bytes, envelope, properties)
 }
 
-@ApiMayChange
+@ApiMayChange // https://github.com/akka/alpakka/issues/1513
 final class OutgoingMessage private (val bytes: ByteString,
                                      val immediate: Boolean,
                                      val mandatory: Boolean,
@@ -51,7 +51,7 @@ final class OutgoingMessage private (val bytes: ByteString,
     s"OutgoingMessage(bytes=$bytes, immediate=$immediate, mandatory=$mandatory, properties=$properties, routingKey=$routingKey)"
 }
 
-@ApiMayChange
+@ApiMayChange // https://github.com/akka/alpakka/issues/1513
 object OutgoingMessage {
   def apply(bytes: ByteString, immediate: Boolean, mandatory: Boolean): OutgoingMessage =
     new OutgoingMessage(bytes, immediate, mandatory)
