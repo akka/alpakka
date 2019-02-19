@@ -2,12 +2,11 @@
  * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.mongodb
+package docs.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.mongodb.scaladsl.MongoSink
-import akka.stream.alpakka.mongodb.scaladsl.DocumentUpdate
+import akka.stream.alpakka.mongodb.scaladsl.{DocumentUpdate, MongoSink}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import com.mongodb.client.model.{Filters, InsertManyOptions, Updates}
@@ -19,8 +18,8 @@ import org.mongodb.scala.bson.codecs.Macros._
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
-import scala.concurrent.duration._
 import scala.collection.JavaConverters._
+import scala.concurrent.duration._
 
 class MongoSinkSpec
     extends WordSpec

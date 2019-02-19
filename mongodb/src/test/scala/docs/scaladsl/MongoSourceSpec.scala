@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.mongodb
+package docs.scaladsl
 
 import akka.NotUsed
 import akka.actor.ActorSystem
@@ -16,8 +16,8 @@ import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistr
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
-import scala.collection.immutable.Seq
 import scala.collection.JavaConverters._
+import scala.collection.immutable.Seq
 import scala.concurrent._
 import scala.concurrent.duration._
 
