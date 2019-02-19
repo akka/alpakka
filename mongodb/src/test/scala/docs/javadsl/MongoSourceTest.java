@@ -86,7 +86,7 @@ public class MongoSourceTest {
     // #create-source
 
     // #run-source
-    CompletionStage<List<Document>> rows = source.runWith(Sink.seq(), mat);
+    final CompletionStage<List<Document>> rows = source.runWith(Sink.seq(), mat);
     // #run-source
 
     assertEquals(data, rows.toCompletableFuture().get(5, TimeUnit.SECONDS).stream().map(n -> n.getInteger("_id")).collect(Collectors.toList()));
@@ -101,7 +101,7 @@ public class MongoSourceTest {
     // #create-source-codec
 
     // #run-source-codec
-    CompletionStage<List<Number>> rows = source.runWith(Sink.seq(), mat);
+    final CompletionStage<List<Number>> rows = source.runWith(Sink.seq(), mat);
     // #run-source-codec
 
     assertEquals(data, rows.toCompletableFuture().get(5, TimeUnit.SECONDS));
@@ -109,9 +109,9 @@ public class MongoSourceTest {
 
   @Test
   public void supportMultipleMaterializations() throws Exception {
-    List<Integer> data = seed();
+    final List<Integer> data = seed();
 
-    Source<Document, NotUsed> source = MongoSource.create(numbersColl.find());
+    final Source<Document, NotUsed> source = MongoSource.create(numbersColl.find());
 
     assertEquals(data, source.runWith(Sink.seq(), mat).toCompletableFuture().get(5, TimeUnit.SECONDS).stream().map(n -> n.getInteger("_id")).collect(Collectors.toList()));
     assertEquals(data, source.runWith(Sink.seq(), mat).toCompletableFuture().get(5, TimeUnit.SECONDS).stream().map(n -> n.getInteger("_id")).collect(Collectors.toList()));
@@ -119,7 +119,7 @@ public class MongoSourceTest {
 
   @Test
   public void streamTheResultOfMongoQueryThatResultsInNoData() throws Exception {
-    Source<Document, NotUsed> source = MongoSource.create(numbersColl.find());
+    final Source<Document, NotUsed> source = MongoSource.create(numbersColl.find());
 
     assertEquals(true, source.runWith(Sink.seq(), mat).toCompletableFuture().get(5, TimeUnit.SECONDS).isEmpty());
   }
@@ -129,11 +129,11 @@ public class MongoSourceTest {
       .boxed()
       .collect(Collectors.toList());
 
-    List<Document> documents = numbers.stream().map(i ->
+    final List<Document> documents = numbers.stream().map(i ->
       Document.parse("{_id:" + i + "}")
     ).collect(Collectors.toList());
 
-    CompletionStage<Success> completion = Source.fromPublisher(numbersColl.insertMany(documents)).runWith(Sink.head(), mat);
+    final CompletionStage<Success> completion = Source.fromPublisher(numbersColl.insertMany(documents)).runWith(Sink.head(), mat);
     completion.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     return numbers;
