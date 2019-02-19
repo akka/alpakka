@@ -5,7 +5,7 @@
 package akka.stream.alpakka.mongodb.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.mongodb.ObservableToPublisher
+import akka.stream.alpakka.mongodb.impl.ObservableToPublisher
 import akka.stream.scaladsl.Source
 import org.mongodb.scala.Observable
 

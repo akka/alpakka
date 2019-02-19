@@ -2,19 +2,18 @@
  * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.mongodb
+package akka.stream.alpakka.mongodb.impl
 
 import java.util.concurrent.atomic.AtomicBoolean
 
-import org.mongodb.{scala => mongoDB}
-import org.{reactivestreams => rxStreams}
+import com.mongodb.async.{client => mongoclient}
+import org.reactivestreams.{Publisher, Subscriber, Subscription}
 
-private[mongodb] final case class ObservableToPublisher[T](observable: mongoDB.Observable[T])
-    extends rxStreams.Publisher[T] {
-  def subscribe(subscriber: rxStreams.Subscriber[_ >: T]): Unit =
-    observable.subscribe(new mongoDB.Observer[T]() {
-      override def onSubscribe(subscription: mongoDB.Subscription): Unit =
-        subscriber.onSubscribe(new rxStreams.Subscription() {
+private[mongodb] final case class ObservableToPublisher[T](observable: mongoclient.Observable[T]) extends Publisher[T] {
+  def subscribe(subscriber: Subscriber[_ >: T]): Unit =
+    observable.subscribe(new mongoclient.Observer[T]() {
+      override def onSubscribe(subscription: mongoclient.Subscription): Unit =
+        subscriber.onSubscribe(new Subscription() {
           private final val cancelled: AtomicBoolean = new AtomicBoolean
 
           override def request(n: Long): Unit =
