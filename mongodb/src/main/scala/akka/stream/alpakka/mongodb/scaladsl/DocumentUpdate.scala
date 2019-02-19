@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.mongodb.scaladsl
 
-import org.mongodb.scala.bson.conversions.Bson
+import org.bson.conversions.Bson
 
 /**
  *

@@ -4,27 +4,23 @@
 
 package akka.stream.alpakka.mongodb
 
-import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.mongodb.scaladsl.MongoSink
 import akka.stream.alpakka.mongodb.scaladsl.DocumentUpdate
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
+import com.mongodb.client.model.{Filters, InsertManyOptions, Updates}
+import com.mongodb.reactivestreams.client.{MongoClients, MongoCollection}
+import org.bson.Document
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
-import org.mongodb.scala.{MongoClient, MongoCollection}
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 import org.mongodb.scala.bson.codecs.Macros._
-import org.mongodb.scala.model.Filters
-import org.mongodb.scala.model.Updates._
-import org.mongodb.scala.bson.collection.immutable.Document
-import org.mongodb.scala.bson.conversions.Bson
-import org.mongodb.scala.model.InsertManyOptions
-
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
-import scala.concurrent._
 import scala.concurrent.duration._
+import scala.collection.JavaConverters._
 
 class MongoSinkSpec
     extends WordSpec
@@ -40,200 +36,163 @@ class MongoSinkSpec
 
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()
-  import system.dispatcher
 
   override protected def beforeAll(): Unit =
-    Await.result(db.drop().toFuture(), 5.seconds)
+    Source.fromPublisher(db.drop()).runWith(Sink.head).futureValue
 
-  private val client = MongoClient(s"mongodb://localhost:27017")
+  private val client = MongoClients.create(s"mongodb://localhost:27017")
   private val db = client.getDatabase("alpakka-mongo").withCodecRegistry(codecRegistry)
   private val numbersColl = db.getCollection("numbersSink")
+
   //#init-connection-codec
-  private val numbersObjectColl: MongoCollection[Number] = db.getCollection("numbersSink")
+  private val numbersObjectColl: MongoCollection[Number] =
+    db.getCollection("numbersSink", classOf[Number]).withCodecRegistry(codecRegistry)
   //#init-connection-codec
 
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 50.millis)
 
   override def afterEach(): Unit =
-    Await.result(numbersColl.deleteMany(Document()).toFuture(), 5.seconds)
+    Source.fromPublisher(numbersColl.deleteMany(new Document())).runWith(Sink.head).futureValue
 
   override def afterAll(): Unit =
-    Await.result(system.terminate(), 5.seconds)
+    system.terminate().futureValue
 
   val testRange = 0 until 10
 
   def insertTestRange(): Unit =
-    numbersColl.insertMany(testRange.map(i => Document(s"""{"value":$i}"""))).toFuture().futureValue
+    Source
+      .fromPublisher(numbersColl.insertMany(testRange.map(i => Document.parse(s"""{"value":$i}""")).asJava))
+      .runWith(Sink.head)
+      .futureValue
 
   "MongoSinkSpec" must {
 
-    "save with insertOne" in {
-      val source = Source(testRange).map(i => Document(s"""{"value":$i}"""))
+    "save with insertOne" in assertAllStagesStopped {
+      // #insertOne
+      val source = Source(testRange).map(i => Document.parse(s"""{"value":$i}"""))
+      source.runWith(MongoSink.insertOne(numbersColl)).futureValue
+      // #insertOne
 
-      source.runWith(MongoSink.insertOne(2, numbersColl)).futureValue
-
-      val found = numbersColl.find().toFuture().futureValue
+      val found = Source.fromPublisher(numbersColl.find()).runWith(Sink.seq).futureValue
 
       found.map(_.getInteger("value")) must contain theSameElementsAs testRange
     }
 
-    "save with insertOne and codec support" in {
+    "save with insertOne and codec support" in assertAllStagesStopped {
       val testRangeObjects = testRange.map(Number(_))
       val source = Source(testRangeObjects)
 
-      source.runWith(MongoSink.insertOne[Number](2, numbersObjectColl)).futureValue
+      source.runWith(MongoSink.insertOne[Number](numbersObjectColl)).futureValue
 
-      val found = numbersObjectColl.find().toFuture().futureValue
+      val found = Source.fromPublisher(numbersObjectColl.find()).runWith(Sink.seq).futureValue
 
       found must contain theSameElementsAs testRangeObjects
     }
 
-    "save with insertMany" in {
-      val source = Source(testRange).map(i => Document(s"""{"value":$i}"""))
+    "save with insertMany" in assertAllStagesStopped {
+      val source = Source(testRange).map(i => Document.parse(s"""{"value":$i}"""))
 
-      source.grouped(2).runWith(MongoSink.insertMany(2, numbersColl)).futureValue
+      source.grouped(2).runWith(MongoSink.insertMany(numbersColl)).futureValue
 
-      val found = numbersColl.find().toFuture().futureValue
-
-      found.map(_.getInteger("value")) must contain theSameElementsAs testRange
-    }
-
-    "save with insertMany and codec support" in {
-      val testRangeObjects = testRange.map(Number(_))
-      val source = Source(testRangeObjects)
-
-      source.grouped(2).runWith(MongoSink.insertMany[Number](2, numbersObjectColl)).futureValue
-
-      val found = numbersObjectColl.find().toFuture().futureValue
-
-      found must contain theSameElementsAs testRangeObjects
-    }
-
-    "save with insertMany with options" in {
-      val source = Source(testRange).map(i => Document(s"""{"value":$i}"""))
-
-      source.grouped(2).runWith(MongoSink.insertMany(2, numbersColl, InsertManyOptions().ordered(false))).futureValue
-
-      val found = numbersColl.find().toFuture().futureValue
+      val found = Source.fromPublisher(numbersColl.find()).runWith(Sink.seq).futureValue
 
       found.map(_.getInteger("value")) must contain theSameElementsAs testRange
     }
 
-    "save with insertMany with options and codec support" in {
+    "save with insertMany and codec support" in assertAllStagesStopped {
+      // #insertMany
+      val objects = testRange.map(Number(_))
+      val source = Source(objects)
+      source.grouped(2).runWith(MongoSink.insertMany[Number](numbersObjectColl)).futureValue
+      // #insertMany
+
+      val found = Source.fromPublisher(numbersObjectColl.find()).runWith(Sink.seq).futureValue
+
+      found must contain theSameElementsAs objects
+    }
+
+    "save with insertMany with options" in assertAllStagesStopped {
+      val source = Source(testRange).map(i => Document.parse(s"""{"value":$i}"""))
+
+      source.grouped(2).runWith(MongoSink.insertMany(numbersColl, new InsertManyOptions().ordered(false))).futureValue
+
+      val found = Source.fromPublisher(numbersColl.find()).runWith(Sink.seq).futureValue
+
+      found.map(_.getInteger("value")) must contain theSameElementsAs testRange
+    }
+
+    "save with insertMany with options and codec support" in assertAllStagesStopped {
       val testRangeObjects = testRange.map(Number(_))
       val source = Source(testRangeObjects)
 
       source
         .grouped(2)
-        .runWith(MongoSink.insertMany[Number](2, numbersObjectColl, InsertManyOptions().ordered(false)))
+        .runWith(MongoSink.insertMany[Number](numbersObjectColl, new InsertManyOptions().ordered(false)))
         .futureValue
 
-      val found = numbersObjectColl.find().toFuture().futureValue
+      val found = Source.fromPublisher(numbersObjectColl.find()).runWith(Sink.seq).futureValue
 
       found must contain theSameElementsAs testRangeObjects
     }
 
-    "update with updateOne" in {
+    "update with updateOne" in assertAllStagesStopped {
       insertTestRange()
 
+      // #updateOne
       val source = Source(testRange).map(
-        i => DocumentUpdate(filter = Filters.equal("value", i), update = set("updateValue", i * -1))
+        i => DocumentUpdate(filter = Filters.eq("value", i), update = Updates.set("updateValue", i * -1))
       )
+      source.runWith(MongoSink.updateOne(numbersColl)).futureValue
+      // #updateOne
 
-      source.runWith(MongoSink.updateOne(2, numbersColl)).futureValue
-
-      val found = numbersColl.find().toFuture().futureValue
+      val found = Source.fromPublisher(numbersColl.find()).runWith(Sink.seq).futureValue
 
       found.map(doc => doc.getInteger("value") -> doc.getInteger("updateValue")) must contain theSameElementsAs testRange
         .map(i => i -> i * -1)
     }
 
-    "update with updateMany" in {
+    "update with updateMany" in assertAllStagesStopped {
       insertTestRange()
 
       val source = Source
         .single(0)
         .map(
-          _ => DocumentUpdate(filter = Filters.gte("value", 0), update = set("updateValue", 0))
+          _ => DocumentUpdate(filter = Filters.gte("value", 0), update = Updates.set("updateValue", 0))
         )
 
-      source.runWith(MongoSink.updateMany(2, numbersColl)).futureValue
+      source.runWith(MongoSink.updateMany(numbersColl)).futureValue
 
-      val found = numbersColl.find().toFuture().futureValue
+      val found = Source.fromPublisher(numbersColl.find()).runWith(Sink.seq).futureValue
 
       found.map(doc => doc.getInteger("value") -> doc.getInteger("updateValue")) must contain theSameElementsAs testRange
         .map(i => i -> 0)
     }
 
-    "delete with deleteOne" in {
+    "delete with deleteOne" in assertAllStagesStopped {
       insertTestRange()
 
-      val source = Source(testRange).map(i => Filters.equal("value", i))
+      // #deleteOne
+      val source = Source(testRange).map(i => Filters.eq("value", i))
+      source.runWith(MongoSink.deleteOne(numbersColl)).futureValue
+      // #deleteOne
 
-      source.runWith(MongoSink.deleteOne(2, numbersColl)).futureValue
-
-      val found = numbersColl.find().toFuture().futureValue
+      val found = Source.fromPublisher(numbersColl.find()).runWith(Sink.seq).futureValue
 
       found mustBe empty
     }
 
-    "delete with deleteMany" in {
+    "delete with deleteMany" in assertAllStagesStopped {
       insertTestRange()
 
       val source = Source.single(0).map(_ => Filters.gte("value", 0))
 
-      source.runWith(MongoSink.deleteMany(2, numbersColl)).futureValue
+      source.runWith(MongoSink.deleteMany(numbersColl)).futureValue
 
-      val found = numbersColl.find().toFuture().futureValue
+      val found = Source.fromPublisher(numbersColl.find()).runWith(Sink.seq).futureValue
 
       found mustBe empty
     }
   }
 
-  private class ParadoxSnippet1() {
-    //#insertOne
-    val source: Source[Document, NotUsed] = ???
-    source.runWith(MongoSink.insertOne(parallelism = 2, collection = numbersColl))
-    //#insertOne
-  }
-
-  private class ParadoxSnippetCodec1() {
-    //#insertOneCodec
-    val source: Source[Number, NotUsed] = ???
-    source.runWith(MongoSink.insertOne[Number](parallelism = 2, collection = numbersObjectColl))
-    //#insertOneCodec
-  }
-
-  private class ParadoxSnippet2() {
-    //#insertMany
-    val source: Source[Seq[Document], NotUsed] = ???
-    source.runWith(MongoSink.insertMany(parallelism = 2, collection = numbersColl))
-    //#insertMany
-  }
-
-  private class ParadoxSnippetCodec2() {
-    //#insertManyCodec
-    val source: Source[Seq[Number], NotUsed] = ???
-    source.runWith(MongoSink.insertMany[Number](parallelism = 2, collection = numbersObjectColl))
-    //#insertManyCodec
-  }
-
-  private class ParadoxSnippet3() {
-    //#updateOne
-    import org.mongodb.scala.model.{Filters, Updates}
-
-    val source: Source[DocumentUpdate, NotUsed] = Source
-      .single(DocumentUpdate(filter = Filters.eq("id", 1), update = Updates.set("updateValue", 0)))
-
-    source.runWith(MongoSink.updateOne(2, numbersColl))
-    //#updateOne
-  }
-
-  private class ParadoxSnippet4() {
-    //#deleteOne
-    val source: Source[Bson, NotUsed] = Source.single(Filters.eq("id", 1))
-    source.runWith(MongoSink.deleteOne(2, numbersColl))
-    //#deleteOne
-  }
 }

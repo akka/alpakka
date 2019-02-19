@@ -270,7 +270,8 @@ object Dependencies {
 
   val MongoDb = Seq(
     libraryDependencies ++= Seq(
-      "org.mongodb.scala" %% "mongo-scala-driver" % "2.4.2" // ApacheV2
+      "org.mongodb" % "mongodb-driver-reactivestreams" % "1.11.0", // ApacheV2
+      "org.mongodb.scala" %% "mongo-scala-bson" % "2.4.2" % "test" // ApacheV2
     )
   )
 
