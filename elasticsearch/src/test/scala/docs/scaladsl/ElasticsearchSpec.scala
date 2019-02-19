@@ -357,15 +357,10 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
       writeResults should have size 2
 
       // Assert retired documents
-      assert(
-        writeResults.filter(!_.success).toList == Seq(
-          MessageFactory.createWriteResult[JsValue, NotUsed](
-            WriteMessage.createIndexMessage("1", Map("subject" -> "Akka Concurrency").toJson),
-            Some(
-              """{"reason":"mapping set to strict, dynamic introduction of [subject] within [_doc] is not allowed","type":"strict_dynamic_mapping_exception"}"""
-            )
-          )
-        )
+      val failed = writeResults.filter(!_.success).head
+      failed.message shouldBe WriteMessage.createIndexMessage("1", Map("subject" -> "Akka Concurrency").toJson)
+      failed.errorReason shouldBe Some(
+        "mapping set to strict, dynamic introduction of [subject] within [_doc] is not allowed"
       )
 
       // Assert retried 5 times by looking duration
@@ -543,12 +538,9 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
       val results = writeResults.futureValue
       results should have size requests.size
       // Assert no errors except a missing document for a update request
-      val error = results.flatMap(_.error)
-      error should have size 1
-      error(0).parseJson.asJsObject
-        .fields("reason")
-        .asInstanceOf[JsString]
-        .value shouldEqual "[_doc][00004]: document missing"
+      val errorMessages = results.flatMap(_.errorReason)
+      errorMessages should have size 1
+      errorMessages(0) shouldEqual "[_doc][00004]: document missing"
       flush(indexName)
 
       // Assert docs in sink8/_doc
@@ -584,15 +576,15 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
             "_doc"
           )
         )
+        .mapConcat(identity)
         .runWith(Sink.seq)
 
       val results = writeResults.futureValue
       results should have size requests.size
       // Assert error
-      val error = results.flatMap(_.flatMap(_.error))
-      error should have size 1
-      error(0).parseJson.asJsObject.fields("reason").asInstanceOf[JsString].value shouldEqual
-      "[_doc][00001]: version conflict, document already exists (current version [1])"
+      val errorMessages = results.flatMap(_.errorReason)
+      errorMessages should have size 1
+      errorMessages(0) shouldEqual "[_doc][00001]: version conflict, document already exists (current version [1])"
     }
 
     "read and write document-version if configured to do so" in assertAllStagesStopped {

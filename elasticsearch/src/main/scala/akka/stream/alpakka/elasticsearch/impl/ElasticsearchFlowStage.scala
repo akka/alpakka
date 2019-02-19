@@ -42,6 +42,11 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
 
   private class StageLogic extends TimerGraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
 
+    private val typeNameTuple = "_type" -> JsString(typeName)
+    private val versionTypeTuple: Option[(String, JsString)] = settings.versionType.map { versionType =>
+      "version_type" -> JsString(versionType)
+    }
+
     private var upstreamFinished = false
     private var inflight = 0
 
@@ -134,65 +139,57 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
     private def sendBulkUpdateRequest(messages: immutable.Seq[WriteMessage[T, C]]): Unit = {
       val json = messages
         .map { message =>
-          val indexNameToUse: String = message.indexName.getOrElse(indexName)
-          val additionalMetadata = message.customMetadata.map { case (field, value) => field -> JsString(value) }
-
-          JsObject(message.operation match {
+          val sharedFields: Seq[(String, JsString)] = Seq(
+            "_index" -> JsString(message.indexName.getOrElse(indexName)),
+            typeNameTuple
+          ) ++ message.customMetadata.map { case (field, value) => field -> JsString(value) }
+          val tuple: (String, JsObject) = message.operation match {
             case Index =>
+              val fields = Seq(
+                message.version.map { version =>
+                  "_version" -> JsNumber(version)
+                },
+                versionTypeTuple,
+                message.id.map { id =>
+                  "_id" -> JsString(id)
+                }
+              ).flatten
               "index" -> JsObject(
-                (Seq(
-                  Option("_index" -> JsString(indexNameToUse)),
-                  Option("_type" -> JsString(typeName)),
-                  message.version.map { version =>
-                    "_version" -> JsNumber(version)
-                  },
-                  settings.versionType.map { versionType =>
-                    "version_type" -> JsString(versionType)
-                  },
-                  message.id.map { id =>
-                    "_id" -> JsString(id)
-                  }
-                ).flatten ++ additionalMetadata): _*
+                (sharedFields ++ fields): _*
               )
             case Create =>
+              val fields = Seq(
+                message.id.map { id =>
+                  "_id" -> JsString(id)
+                }
+              ).flatten
               "create" -> JsObject(
-                (Seq(
-                  Option("_index" -> JsString(indexNameToUse)),
-                  Option("_type" -> JsString(typeName)),
-                  message.id.map { id =>
-                    "_id" -> JsString(id)
-                  }
-                ).flatten ++ additionalMetadata): _*
+                (sharedFields ++ fields): _*
               )
             case Update | Upsert =>
+              val fields = Seq(
+                message.version.map { version =>
+                  "_version" -> JsNumber(version)
+                },
+                versionTypeTuple,
+                Option("_id" -> JsString(message.id.get))
+              ).flatten
               "update" -> JsObject(
-                (Seq(
-                  Option("_index" -> JsString(indexNameToUse)),
-                  Option("_type" -> JsString(typeName)),
-                  message.version.map { version =>
-                    "_version" -> JsNumber(version)
-                  },
-                  settings.versionType.map { versionType =>
-                    "version_type" -> JsString(versionType)
-                  },
-                  Option("_id" -> JsString(message.id.get))
-                ).flatten ++ additionalMetadata): _*
+                (sharedFields ++ fields): _*
               )
             case Delete =>
+              val fields = Seq(
+                message.version.map { version =>
+                  "_version" -> JsNumber(version)
+                },
+                versionTypeTuple,
+                Option("_id" -> JsString(message.id.get))
+              ).flatten
               "delete" -> JsObject(
-                (Seq(
-                  Option("_index" -> JsString(indexNameToUse)),
-                  Option("_type" -> JsString(typeName)),
-                  message.version.map { version =>
-                    "_version" -> JsNumber(version)
-                  },
-                  settings.versionType.map { versionType =>
-                    "version_type" -> JsString(versionType)
-                  },
-                  Option("_id" -> JsString(message.id.get))
-                ).flatten ++ additionalMetadata): _*
+                (sharedFields ++ fields): _*
               )
-          }).toString + messageToJsonString(message)
+          }
+          JsObject(tuple).compactPrint + messageToJsonString(message)
         }
         .mkString("", "\n", "\n")
 
