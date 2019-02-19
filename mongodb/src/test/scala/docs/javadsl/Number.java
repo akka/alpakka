@@ -21,6 +21,10 @@ public final class Number {
     this._id = _id;
   }
 
+  public Integer getId() {
+    return _id;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;

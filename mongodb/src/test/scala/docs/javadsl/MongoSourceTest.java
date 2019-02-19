@@ -49,7 +49,7 @@ public class MongoSourceTest {
 
     // #init-connection
     client = MongoClients.create("mongodb://localhost:27017");
-    db = client.getDatabase("alpakka-java-mongo");
+    db = client.getDatabase("MongoSourceTest");
     numbersColl = db.getCollection("numbers");
     // #init-connection
 

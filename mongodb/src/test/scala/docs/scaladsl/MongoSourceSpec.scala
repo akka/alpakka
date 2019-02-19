@@ -48,7 +48,7 @@ class MongoSourceSpec
 
   // #init-connection
   private val client = MongoClients.create("mongodb://localhost:27017")
-  private val db = client.getDatabase("alpakka-scala-mongo")
+  private val db = client.getDatabase("MongoSourceSpec")
   private val numbersColl = db.getCollection("numbers")
   // #init-connection
 
