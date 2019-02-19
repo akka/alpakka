@@ -56,11 +56,12 @@ object MongoFlow {
    */
   def insertMany[T](collection: MongoCollection[T],
                     options: InsertManyOptions): Flow[java.util.List[T], java.util.List[T], NotUsed] =
-    Flow
-      .create[java.util.List[T]]()
+    akka.stream.scaladsl
+      .Flow[java.util.List[T]]
       .map(_.asScala)
       .via(scaladsl.MongoFlow.insertMany(collection, options))
       .map(_.asJava)
+      .asJava
 
   /**
    * A [[akka.stream.javadsl.Flow Flow]] that will update documents as defined by a [[DocumentUpdate]].
@@ -90,7 +91,7 @@ object MongoFlow {
    * @param collection the mongo db collection to update.
    */
   def updateMany[T](
-      collection: MongoCollection[T],
+      collection: MongoCollection[T]
   ): Flow[DocumentUpdate, akka.japi.Pair[UpdateResult, DocumentUpdate], NotUsed] =
     updateMany(collection, DefaultUpdateOptions)
 
