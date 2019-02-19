@@ -9,15 +9,15 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.mongodb.scaladsl.MongoSource
 import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
+import com.mongodb.reactivestreams.client.MongoClients
+import org.bson.Document
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
-import org.mongodb.scala.MongoClient
-import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
-import org.mongodb.scala.bson.codecs.Macros._
-import org.mongodb.scala.bson.collection.immutable.Document
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.collection.immutable.Seq
+import scala.collection.JavaConverters._
 import scala.concurrent._
 import scala.concurrent.duration._
 
@@ -34,17 +34,20 @@ class MongoSourceSpec
   //#init-mat
 
   override protected def beforeAll(): Unit =
-    Await.result(db.drop().toFuture(), 5.seconds)
+    Source.fromPublisher(db.drop()).runWith(Sink.head).futureValue
 
   java.util.logging.Logger.getLogger("org.mongodb.driver").setLevel(java.util.logging.Level.SEVERE)
 
   // #macros-codecs
+  import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
+  import org.mongodb.scala.bson.codecs.Macros._
+
   case class Number(_id: Int)
   val codecRegistry = fromRegistries(fromProviders(classOf[Number]), DEFAULT_CODEC_REGISTRY)
   // #macros-codecs
 
   // #init-connection
-  private val client = MongoClient(s"mongodb://localhost:27017")
+  private val client = MongoClients.create(s"mongodb://localhost:27017")
   private val db = client.getDatabase("alpakka-mongo")
   private val numbersColl = db.getCollection("numbers")
   // #init-connection
@@ -57,24 +60,27 @@ class MongoSourceSpec
     PatienceConfig(timeout = 5.seconds, interval = 50.millis)
 
   override def afterEach(): Unit =
-    Await.result(numbersColl.deleteMany(Document()).toFuture(), 5.seconds)
+    Source.fromPublisher(numbersColl.deleteMany(new Document())).runWith(Sink.head).futureValue
 
   override def afterAll(): Unit =
-    Await.result(system.terminate(), 5.seconds)
+    system.terminate().futureValue
 
   private def seed() = {
     val numbers = 1 until 10
-    Await.result(numbersColl.insertMany {
-      numbers.map { number =>
-        Document(s"{_id:$number}")
-      }
-    }.toFuture, 5.seconds)
+    Source
+      .fromPublisher(numbersColl.insertMany {
+        numbers.map { number =>
+          Document.parse(s"{_id:$number}")
+        }.asJava
+      })
+      .runWith(Sink.head)
+      .futureValue
     numbers
   }
 
   "MongoSourceSpec" must {
 
-    "stream the result of a simple Mongo query" in {
+    "stream the result of a simple Mongo query" in assertAllStagesStopped {
       val data: Seq[Int] = seed()
 
       //#create-source
@@ -89,12 +95,12 @@ class MongoSourceSpec
       rows.futureValue.map(_.getInteger("_id")) must contain theSameElementsAs data
     }
 
-    "support codec registry to read case class objects" in {
+    "support codec registry to read case class objects" in assertAllStagesStopped {
       val data: Seq[Number] = seed().map(Number)
 
       //#create-source-codec
       val source: Source[Number, NotUsed] =
-        MongoSource[Number](numbersObjectColl.find())
+        MongoSource(numbersObjectColl.find(classOf[Number]))
       //#create-source-codec
 
       //#run-source-codec
@@ -104,7 +110,7 @@ class MongoSourceSpec
       rows.futureValue must contain theSameElementsAs data
     }
 
-    "support multiple materializations" in {
+    "support multiple materializations" in assertAllStagesStopped {
       val data: Seq[Int] = seed()
       val numbersObservable = numbersColl.find()
 
@@ -114,7 +120,7 @@ class MongoSourceSpec
       source.runWith(Sink.seq).futureValue.map(_.getInteger("_id")) must contain theSameElementsAs data
     }
 
-    "stream the result of Mongo query that results in no data" in {
+    "stream the result of Mongo query that results in no data" in assertAllStagesStopped {
       val numbersObservable = numbersColl.find()
 
       val rows = MongoSource(numbersObservable).runWith(Sink.seq).futureValue
