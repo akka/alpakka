@@ -14,7 +14,9 @@ import scala.compat.java8.OptionConverters._
  * INTERNAL API
  */
 @InternalApi
-private[elasticsearch] sealed abstract class Operation(val command: String)
+private[elasticsearch] sealed abstract class Operation(val command: String) {
+  override def toString: String = command
+}
 
 /**
  * INTERNAL API

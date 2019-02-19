@@ -4,6 +4,7 @@
 
 package docs.scaladsl
 
+import java.util.Collections
 import java.util.concurrent.TimeUnit
 
 import akka.{Done, NotUsed}
@@ -63,6 +64,13 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
     )
     runner.ensureYellow()
 
+    def register(indexName: String, title: String): Unit =
+      client.performRequest("POST",
+                            s"$indexName/_doc",
+                            Map[String, String]().asJava,
+                            new StringEntity(s"""{"title": "$title"}"""),
+                            new BasicHeader("Content-Type", "application/json"))
+
     register("source", "Akka in Action")
     register("source", "Programming in Scala")
     register("source", "Learning Scala")
@@ -86,8 +94,8 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
   private def createStrictMapping(indexName: String): Unit =
     client.performRequest(
       "PUT",
-      s"$indexName",
-      Map[String, String]().asJava,
+      indexName,
+      Collections.emptyMap[String, String],
       new StringEntity(s"""{
            |  "mappings": {
            |    "_doc": {
@@ -101,13 +109,6 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
          """.stripMargin),
       new BasicHeader("Content-Type", "application/json")
     )
-
-  private def register(indexName: String, title: String): Unit =
-    client.performRequest("POST",
-                          s"$indexName/_doc",
-                          Map[String, String]().asJava,
-                          new StringEntity(s"""{"title": "$title"}"""),
-                          new BasicHeader("Content-Type", "application/json"))
 
   private def documentation: Unit = {
     //#source-settings
@@ -321,9 +322,9 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
     }
 
     "retry a failed document and pass retried documents to downstream" in assertAllStagesStopped {
-      // Create strict mapping to prevent invalid documents
       val indexName = "sink5"
 
+      // Create strict mapping to prevent invalid documents
       createStrictMapping(indexName)
 
       val createBooks = Source(
@@ -343,18 +344,21 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
             indexName,
             "_doc",
             ElasticsearchWriteSettings()
-              .withRetryLogic(RetryAtFixedRate(5, 1.second))
+              .withRetryLogic(RetryAtFixedRate(5, 100.millis))
           )
         )
+        .mapConcat(identity)
         .runWith(Sink.seq)
 
       val start = System.currentTimeMillis()
       val writeResults = createBooks.futureValue
       val end = System.currentTimeMillis()
 
+      writeResults should have size 2
+
       // Assert retired documents
       assert(
-        writeResults.flatten.filter(!_.success).toList == Seq(
+        writeResults.filter(!_.success).toList == Seq(
           MessageFactory.createWriteResult[JsValue, NotUsed](
             WriteMessage.createIndexMessage("1", Map("subject" -> "Akka Concurrency").toJson),
             Some(
@@ -389,7 +393,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
         KafkaMessage(Book("Book 3"), KafkaOffset(2))
       )
 
-      var committedOffsets = List[KafkaOffset]()
+      var committedOffsets = Vector[KafkaOffset]()
 
       def commitToKafka(offset: KafkaOffset): Unit =
         committedOffsets = committedOffsets :+ offset
@@ -424,7 +428,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
       flush(indexName)
 
       // Make sure all messages was committed to kafka
-      assert(List(0, 1, 2) == committedOffsets.map(_.offset))
+      committedOffsets.map(_.offset) should contain theSameElementsAs Seq(0, 1, 2)
       readTitlesFrom(indexName).futureValue.toList should contain allElementsOf messagesFromKafka.map(_.book.title)
     }
 
@@ -490,7 +494,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
         indexName,
         "_doc",
         """{"match_all": {}}""",
-        ElasticsearchSourceSettings.Default
+        ElasticsearchSourceSettings()
       ).map { message =>
           message.source
         }
@@ -514,8 +518,8 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
     }
 
     "handle multiple types of operations correctly" in assertAllStagesStopped {
+      val indexName = "sink8"
       //#multiple-operations
-      // Index, create, update, upsert and delete documents in sink8/_doc
       val requests = List[WriteMessage[Book, NotUsed]](
         WriteMessage.createIndexMessage(id = "00001", source = Book("Book 1")),
         WriteMessage.createUpsertMessage(id = "00002", source = Book("Book 2")),
@@ -528,27 +532,31 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
       val writeResults = Source(requests)
         .via(
           ElasticsearchFlow.create[Book](
-            "sink8",
+            indexName,
             "_doc"
           )
         )
+        .mapConcat(identity)
         .runWith(Sink.seq)
       //#multiple-operations
 
+      val results = writeResults.futureValue
+      results should have size requests.size
       // Assert no errors except a missing document for a update request
-      val error = writeResults.futureValue.flatMap(_.flatMap(_.error))
-      flush("sink8")
-
-      error.length shouldEqual 1
-      error(0).parseJson.asJsObject.fields("reason").asInstanceOf[JsString].value shouldEqual
-      "[_doc][00004]: document missing"
+      val error = results.flatMap(_.error)
+      error should have size 1
+      error(0).parseJson.asJsObject
+        .fields("reason")
+        .asInstanceOf[JsString]
+        .value shouldEqual "[_doc][00004]: document missing"
+      flush(indexName)
 
       // Assert docs in sink8/_doc
       val readBooks = ElasticsearchSource(
-        "sink8",
+        indexName,
         "_doc",
         """{"match_all": {}}""",
-        ElasticsearchSourceSettings.Default
+        ElasticsearchSourceSettings()
       ).map { message =>
           message.source
         }
@@ -563,6 +571,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
     }
 
     "Create existing document should fail" in {
+      val indexName = "sink9"
       val requests = List[WriteMessage[Book, NotUsed]](
         WriteMessage.createIndexMessage(id = "00001", source = Book("Book 1")),
         WriteMessage.createCreateMessage(id = "00001", source = Book("Book 1"))
@@ -571,15 +580,17 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
       val writeResults = Source(requests)
         .via(
           ElasticsearchFlow.create[Book](
-            "sink9",
+            indexName,
             "_doc"
           )
         )
         .runWith(Sink.seq)
 
+      val results = writeResults.futureValue
+      results should have size requests.size
       // Assert error
-      val error = writeResults.futureValue.flatMap(_.flatMap(_.error))
-      error.length shouldEqual 1
+      val error = results.flatMap(_.flatMap(_.error))
+      error should have size 1
       error(0).parseJson.asJsObject.fields("reason").asInstanceOf[JsString].value shouldEqual
       "[_doc][00001]: version conflict, document already exists (current version [1])"
     }

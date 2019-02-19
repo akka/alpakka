@@ -6,13 +6,14 @@ package akka.stream.alpakka.elasticsearch.javadsl
 
 import akka.NotUsed
 import akka.stream.alpakka.elasticsearch._
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.elasticsearch.client.RestClient
 
 import scala.collection.JavaConverters._
 
 import akka.stream.alpakka.elasticsearch.impl
+import scala.concurrent.duration._
 
 /**
  * Java API to create Elasticsearch flows.
@@ -29,15 +30,16 @@ object ElasticsearchFlow {
       client: RestClient,
       objectMapper: ObjectMapper
   ): akka.stream.javadsl.Flow[WriteMessage[T, NotUsed], java.util.List[WriteResult[T, NotUsed]], NotUsed] =
-    Flow
-      .fromGraph(
+    scaladsl
+      .Flow[WriteMessage[T, NotUsed]]
+      .groupedWithin(settings.bufferSize, 10.millis)
+      .via(
         new impl.ElasticsearchFlowStage[T, NotUsed](indexName,
                                                     typeName,
                                                     client,
                                                     settings,
                                                     new JacksonWriter[T](objectMapper))
       )
-      .mapAsync(1)(identity)
       .map(x => x.asJava)
       .asJava
 
@@ -52,11 +54,12 @@ object ElasticsearchFlow {
       client: RestClient,
       objectMapper: ObjectMapper
   ): akka.stream.javadsl.Flow[WriteMessage[T, C], java.util.List[WriteResult[T, C]], NotUsed] =
-    Flow
-      .fromGraph(
+    scaladsl
+      .Flow[WriteMessage[T, C]]
+      .groupedWithin(settings.bufferSize, 10.millis)
+      .via(
         new impl.ElasticsearchFlowStage[T, C](indexName, typeName, client, settings, new JacksonWriter[T](objectMapper))
       )
-      .mapAsync(1)(identity)
       .map(x => x.asJava)
       .asJava
 
