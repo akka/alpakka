@@ -14,7 +14,7 @@ object Dependencies {
   val AwsSdk2Version = "2.3.9"
 
   val AkkaHttpVersion = "10.1.7"
-  
+
   val CouchbaseVersion = "2.7.2"
   val CouchbaseVersionForDocs = "2.7"
 
@@ -45,6 +45,18 @@ object Dependencies {
   val Amqp = Seq(
     libraryDependencies ++= Seq(
       "com.rabbitmq" % "amqp-client" % "5.3.0" // APLv2
+    )
+  )
+
+  val AwsShared = Seq(
+    libraryDependencies ++= Seq(
+      "software.amazon.awssdk" % "sagemakerruntime" % AwsSdk2Version // ApacheV2
+    )
+  )
+
+  val AwsSagemaker = Seq(
+    libraryDependencies ++= Seq(
+      "software.amazon.awssdk" % "sagemakerruntime" % AwsSdk2Version // ApacheV2
     )
   )
 

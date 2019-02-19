@@ -1,6 +1,8 @@
 lazy val modules: Seq[ProjectReference] = Seq(
   amqp,
   avroparquet,
+  awsShared,
+  awsSagemaker,
   awslambda,
   azureStorageQueue,
   cassandra,
@@ -85,6 +87,20 @@ lazy val awslambda = alpakkaProject("awslambda",
                                     Dependencies.AwsLambda,
                                     // For mockito https://github.com/akka/alpakka/issues/390
                                     parallelExecution in Test := false)
+
+lazy val awsShared = alpakkaProject(
+  "aws-shared",
+  "aws",
+  Dependencies.AwsShared,
+  parallelExecution in Test := false)
+
+lazy val awsSagemaker = alpakkaProject(
+  "aws-sagemaker",
+  "aws.sagemaker",
+  Dependencies.AwsSagemaker,
+  parallelExecution in Test := false)
+  .dependsOn(awsShared)
+
 
 lazy val azureStorageQueue = alpakkaProject("azure-storage-queue", "azure.storagequeue", Dependencies.AzureStorageQueue)
 
