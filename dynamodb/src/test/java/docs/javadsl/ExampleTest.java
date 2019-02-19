@@ -15,10 +15,12 @@ import akka.stream.alpakka.dynamodb.DynamoSettings;
 import akka.stream.alpakka.dynamodb.javadsl.DynamoDb;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import akka.stream.testkit.javadsl.StreamTestKit;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.dynamodbv2.model.*;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -50,6 +52,11 @@ public class ExampleTest {
   @AfterClass
   public static void tearDown() {
     system.terminate();
+  }
+
+  @After
+  public void checkForStageLeaks() {
+    StreamTestKit.assertAllStagesStopped(materializer);
   }
 
   @Test

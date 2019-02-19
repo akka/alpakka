@@ -8,6 +8,7 @@ package docs.javadsl;
 import akka.stream.IOResult;
 import akka.stream.alpakka.ftp.javadsl.Ftp;
 import akka.stream.javadsl.Compression;
+import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.util.ByteString;
 import java.util.concurrent.CompletionStage;
 // #storing
@@ -33,6 +34,7 @@ public class FtpWritingTest extends PlainFtpSupportImpl {
 
   @After
   public void afterEach() {
+    StreamTestKit.assertAllStagesStopped(getMaterializer());
     TestKit.shutdownActorSystem(getSystem());
   }
 

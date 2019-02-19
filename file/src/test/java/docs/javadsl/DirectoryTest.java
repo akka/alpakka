@@ -16,6 +16,7 @@ import java.nio.file.FileVisitOption;
 // #walk
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.TestKit;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
@@ -116,6 +117,7 @@ public class DirectoryTest {
   public void tearDown() throws Exception {
     fs.close();
     fs = null;
+    StreamTestKit.assertAllStagesStopped(materializer);
     TestKit.shutdownActorSystem(system, FiniteDuration.create(10, TimeUnit.SECONDS), true);
     system = null;
     materializer = null;

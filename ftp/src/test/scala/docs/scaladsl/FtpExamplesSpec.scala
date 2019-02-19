@@ -9,6 +9,7 @@ import java.net.InetAddress
 import akka.stream.Materializer
 import akka.stream.alpakka.ftp.{FtpBaseSupport, FtpSettings, PlainFtpSupportImpl}
 import akka.stream.scaladsl.Source
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
 import org.apache.commons.net.PrintCommandListener
 import org.apache.commons.net.ftp.FTPClient
@@ -54,7 +55,7 @@ class FtpExamplesSpec
   }
 
   "a file" should {
-    "be stored" in {
+    "be stored" in assertAllStagesStopped {
       //#storing
       import akka.stream.IOResult
       import akka.stream.alpakka.ftp.scaladsl.Ftp
@@ -74,7 +75,7 @@ class FtpExamplesSpec
 
     }
 
-    "be gzipped" in {
+    "be gzipped" in assertAllStagesStopped {
       import akka.stream.IOResult
       import akka.stream.alpakka.ftp.scaladsl.Ftp
       import akka.util.ByteString

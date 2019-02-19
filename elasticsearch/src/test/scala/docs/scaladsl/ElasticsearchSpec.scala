@@ -13,6 +13,7 @@ import akka.stream.alpakka.elasticsearch.scaladsl._
 import akka.stream.alpakka.elasticsearch.testkit.MessageFactory
 import akka.stream.alpakka.elasticsearch._
 import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
 import org.apache.http.entity.StringEntity
 import org.apache.http.message.BasicHeader
@@ -165,7 +166,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   }
 
   "Un-typed Elasticsearch connector" should {
-    "consume and publish Json documents" in {
+    "consume and publish Json documents" in assertAllStagesStopped {
       // Copy source/_doc to sink2/_doc through typed stream
       //#run-jsobject
       val f1 = ElasticsearchSource
@@ -186,7 +187,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         )
       //#run-jsobject
 
-      Await.result(f1, Duration.Inf)
+      Await.result(f1, 10.seconds)
 
       flush("sink2")
 
@@ -202,7 +203,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         }
         .runWith(Sink.seq)
 
-      val result = Await.result(f2, Duration.Inf)
+      val result = Await.result(f2, 10.seconds)
 
       result.sorted shouldEqual Seq(
         "Akka Concurrency",
@@ -217,7 +218,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   }
 
   "Typed Elasticsearch connector" should {
-    "consume and publish documents as specific type" in {
+    "consume and publish documents as specific type" in assertAllStagesStopped {
       // Copy source/_doc to sink2/_doc through typed stream
       //#run-typed
       val f1 = ElasticsearchSource
@@ -237,7 +238,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         )
       //#run-typed
 
-      Await.result(f1, Duration.Inf)
+      Await.result(f1, 10.seconds)
 
       flush("sink2")
 
@@ -253,7 +254,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         }
         .runWith(Sink.seq)
 
-      val result = Await.result(f2, Duration.Inf)
+      val result = Await.result(f2, 10.seconds)
 
       result.sorted shouldEqual Seq(
         "Akka Concurrency",
@@ -268,7 +269,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   }
 
   "ElasticsearchFlow" should {
-    "store documents and pass failed documents to downstream" in {
+    "store documents and pass failed documents to downstream" in assertAllStagesStopped {
       // Copy source/_doc to sink3/_doc through typed stream
       //#run-flow
       val f1 = ElasticsearchSource
@@ -289,7 +290,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         .runWith(Sink.seq)
       //#run-flow
 
-      val result1 = Await.result(f1, Duration.Inf)
+      val result1 = Await.result(f1, 10.seconds)
       flush("sink3")
 
       // Assert no errors
@@ -307,7 +308,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         }
         .runWith(Sink.seq)
 
-      val result2 = Await.result(f2, Duration.Inf)
+      val result2 = Await.result(f2, 10.seconds)
 
       result2.sorted shouldEqual Seq(
         "Akka Concurrency",
@@ -319,10 +320,8 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         "Scala for Spark in Production"
       )
     }
-  }
 
-  "ElasticsearchFlow" should {
-    "not post invalid encoded JSON" in {
+    "not post invalid encoded JSON" in assertAllStagesStopped {
 
       val books = Seq(
         "Akka in Action",
@@ -342,7 +341,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         )
         .runWith(Sink.seq)
 
-      val result1 = Await.result(f1, Duration.Inf)
+      val result1 = Await.result(f1, 10.seconds)
       flush("sink4")
 
       // Assert no error
@@ -360,17 +359,15 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         }
         .runWith(Sink.seq)
 
-      val result2 = Await.result(f2, Duration.Inf)
+      val result2 = Await.result(f2, 10.seconds)
 
       result2.sorted shouldEqual Seq(
         "Akka in Action",
         "Akka \u00DF Concurrency"
       )
     }
-  }
 
-  "ElasticsearchFlow" should {
-    "retry a failed documents and pass retired documents to downstream" in {
+    "retry a failed documents and pass retired documents to downstream" in assertAllStagesStopped {
       // Create strict mapping to prevent invalid documents
       createStrictMapping("sink5")
 
@@ -395,7 +392,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         .runWith(Sink.seq)
 
       val start = System.currentTimeMillis()
-      val result1 = Await.result(f1, Duration.Inf)
+      val result1 = Await.result(f1, 10.seconds)
       val end = System.currentTimeMillis()
 
       // Assert retired documents
@@ -427,16 +424,14 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         }
         .runWith(Sink.seq)
 
-      val result2 = Await.result(f2, Duration.Inf)
+      val result2 = Await.result(f2, 10.seconds)
 
       result2.sorted shouldEqual Seq(
         "Akka in Action"
       )
     }
-  }
 
-  "ElasticsearchFlow" should {
-    "kafka-example - store documents and pass Responses with passThrough" in {
+    "kafka-example - store documents and pass Responses with passThrough" in assertAllStagesStopped {
 
       //#kafka-example
       // We're going to pretend we got messages from kafka.
@@ -481,7 +476,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         }
         .runWith(Sink.seq)
 
-      Await.ready(f1, Duration.Inf)
+      Await.ready(f1, 10.seconds)
       //#kafka-example
       flush("sink6")
 
@@ -500,14 +495,12 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         }
         .runWith(Sink.seq)
 
-      val result2 = Await.result(f2, Duration.Inf).toList
+      val result2 = Await.result(f2, 10.seconds).toList
 
       result2.sorted shouldEqual messagesFromKafka.map(_.book.title).sorted
     }
-  }
 
-  "ElasticsearchFlow" should {
-    "store new documents using upsert method and partially update existing ones" in {
+    "store new documents using upsert method and partially update existing ones" in assertAllStagesStopped {
       val books = List(
         ("00001", Book("Book 1")),
         ("00002", Book("Book 2")),
@@ -527,7 +520,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         )
         .runWith(Sink.seq)
 
-      val result1 = Await.result(f1, Duration.Inf)
+      val result1 = Await.result(f1, 10.seconds)
       flush("sink7")
 
       // Assert no errors
@@ -562,7 +555,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         )
         .runWith(Sink.seq)
 
-      val result2 = Await.result(f2, Duration.Inf)
+      val result2 = Await.result(f2, 10.seconds)
       flush("sink7")
 
       // Assert no errors
@@ -579,7 +572,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         }
         .runWith(Sink.seq)
 
-      val result3 = Await.result(f3, Duration.Inf)
+      val result3 = Await.result(f3, 10.seconds)
 
       // Docs should contain both columns
       result3.sortBy(_.fields("title").compactPrint) shouldEqual Seq(
@@ -597,10 +590,8 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         )
       )
     }
-  }
 
-  "ElasticsearchFlow" should {
-    "handle multiple types of operations correctly" in {
+    "handle multiple types of operations correctly" in assertAllStagesStopped {
       //#multiple-operations
       // Index, create, update, upsert and delete documents in sink8/_doc
       val requests = List[WriteMessage[Book, NotUsed]](
@@ -622,7 +613,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         .runWith(Sink.seq)
       //#multiple-operations
 
-      val result1 = Await.result(f1, Duration.Inf)
+      val result1 = Await.result(f1, 10.seconds)
       flush("sink8")
 
       // Assert no errors except a missing document for a update request
@@ -642,7 +633,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       }
         .runWith(Sink.seq)
 
-      val result3 = Await.result(f3, Duration.Inf)
+      val result3 = Await.result(f3, 10.seconds)
 
       // Docs should contain both columns
       result3.sortBy(_.fields("title").compactPrint) shouldEqual Seq(
@@ -681,7 +672,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   }
 
   "ElasticsearchSource" should {
-    "read and write document-version if configured to do so" in {
+    "read and write document-version if configured to do so" in assertAllStagesStopped {
 
       case class VersionTestDoc(id: String, name: String, value: Int)
       implicit val formatVersionTestDoc: JsonFormat[VersionTestDoc] = jsonFormat3(VersionTestDoc)
@@ -709,7 +700,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         )
         .runWith(Sink.seq)
 
-      val result1 = Await.result(f1, Duration.Inf)
+      val result1 = Await.result(f1, 10.seconds)
       flush(indexName)
 
       // Assert no errors
@@ -745,7 +736,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         )
         .runWith(Sink.seq)
 
-      val result3 = Await.result(f3, Duration.Inf)
+      val result3 = Await.result(f3, 10.seconds)
       assert(result3.forall(!_.exists(_.success == false)))
 
       flush(indexName)
@@ -766,7 +757,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         }
         .runWith(Sink.ignore)
 
-      val result4 = Await.result(f4, Duration.Inf)
+      val result4 = Await.result(f4, 10.seconds)
 
       // Try to write document with old version - it should fail
 
@@ -785,12 +776,12 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         )
         .runWith(Sink.seq)
 
-      val result5 = Await.result(f5, Duration.Inf)
+      val result5 = Await.result(f5, 10.seconds)
       assert(result5(0)(0).success == false)
 
     }
 
-    "allow read and write using configured version type" in {
+    "allow read and write using configured version type" in assertAllStagesStopped {
 
       val indexName = "book-test-version-type"
       val typeName = "_doc"
@@ -814,7 +805,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         )
         .runWith(Sink.seq)
 
-      val insertResult = Await.result(f1, Duration.Inf).head.head
+      val insertResult = Await.result(f1, 10.seconds).head.head
       assert(insertResult.success)
 
       flush(indexName)
@@ -829,13 +820,13 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         )
         .runWith(Sink.head)
 
-      val message = Await.result(f2, Duration.Inf)
+      val message = Await.result(f2, 10.seconds)
       assert(message.version.contains(externalVersion))
     }
   }
 
   "Elasticsearch connector" should {
-    "Should use indexName supplied in message if present" in {
+    "Should use indexName supplied in message if present" in assertAllStagesStopped {
       // Copy source/_doc to sink2/_doc through typed stream
 
       //#custom-index-name-example
@@ -860,7 +851,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         )
       //#custom-index-name-example
 
-      Await.result(f1, Duration.Inf)
+      Await.result(f1, 10.seconds)
 
       flush(customIndexName)
 
@@ -876,7 +867,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         }
         .runWith(Sink.seq)
 
-      val result = Await.result(f2, Duration.Inf)
+      val result = Await.result(f2, 10.seconds)
 
       result.sorted shouldEqual Seq(
         "Akka Concurrency",
@@ -896,7 +887,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
             indexName = null,
             typeName = "_doc",
             query = """{"match_all": {}}"""
-        )
+          )
       }
     }
 
@@ -922,7 +913,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   }
 
   "ElasticsearchSource" should {
-    "should let you search without specifying typeName" in {
+    "should let you search without specifying typeName" in assertAllStagesStopped {
       val f1 = ElasticsearchSource
         .typed[Book](
           indexName = "source",
@@ -933,7 +924,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         .map(_.source.title)
         .runWith(Sink.seq)
 
-      val result = Await.result(f1, Duration.Inf).toList
+      val result = Await.result(f1, 10.seconds).toList
 
       result.sorted shouldEqual Seq(
         "Akka Concurrency",
@@ -948,7 +939,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   }
 
   "ElasticsearchSource" should {
-    "be able to use custom searchParams" in {
+    "be able to use custom searchParams" in assertAllStagesStopped {
 
       //#custom-search-params
       case class TestDoc(id: String, a: String, b: Option[String], c: String)
@@ -979,7 +970,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         )
         .runWith(Sink.seq)
 
-      val result1 = Await.result(f1, Duration.Inf)
+      val result1 = Await.result(f1, 10.seconds)
       flush(indexName)
 
       // Assert no errors
@@ -1003,7 +994,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
       //#custom-search-params
 
-      val result3 = Await.result(f3, Duration.Inf)
+      val result3 = Await.result(f3, 10.seconds)
       assert(result3.toList.sortBy(_.id) == docs.map(_.copy(b = None)))
 
     }
