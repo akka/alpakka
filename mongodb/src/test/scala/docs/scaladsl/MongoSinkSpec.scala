@@ -71,8 +71,10 @@ class MongoSinkSpec
     "save with insertOne" in assertAllStagesStopped {
       // #insertOne
       val source = Source(testRange).map(i => Document.parse(s"""{"value":$i}"""))
-      source.runWith(MongoSink.insertOne(numbersColl)).futureValue
+      val completion = source.runWith(MongoSink.insertOne(numbersColl))
       // #insertOne
+
+      completion.futureValue
 
       val found = Source.fromPublisher(numbersColl.find()).runWith(Sink.seq).futureValue
 
@@ -104,8 +106,10 @@ class MongoSinkSpec
       // #insertMany
       val objects = testRange.map(Number(_))
       val source = Source(objects)
-      source.grouped(2).runWith(MongoSink.insertMany[Number](numbersObjectColl)).futureValue
+      val completion = source.grouped(2).runWith(MongoSink.insertMany[Number](numbersObjectColl))
       // #insertMany
+
+      completion.futureValue
 
       val found = Source.fromPublisher(numbersObjectColl.find()).runWith(Sink.seq).futureValue
 
@@ -143,8 +147,10 @@ class MongoSinkSpec
       val source = Source(testRange).map(
         i => DocumentUpdate(filter = Filters.eq("value", i), update = Updates.set("updateValue", i * -1))
       )
-      source.runWith(MongoSink.updateOne(numbersColl)).futureValue
+      val completion = source.runWith(MongoSink.updateOne(numbersColl))
       // #updateOne
+
+      completion.futureValue
 
       val found = Source.fromPublisher(numbersColl.find()).runWith(Sink.seq).futureValue
 
@@ -174,8 +180,10 @@ class MongoSinkSpec
 
       // #deleteOne
       val source = Source(testRange).map(i => Filters.eq("value", i))
-      source.runWith(MongoSink.deleteOne(numbersColl)).futureValue
+      val completion = source.runWith(MongoSink.deleteOne(numbersColl))
       // #deleteOne
+
+      completion.futureValue
 
       val found = Source.fromPublisher(numbersColl.find()).runWith(Sink.seq).futureValue
 
