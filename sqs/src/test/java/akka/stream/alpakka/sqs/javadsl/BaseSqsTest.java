@@ -9,18 +9,19 @@ import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.testkit.javadsl.TestKit;
 // #init-client
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.services.sqs.AmazonSQSAsync;
-import com.amazonaws.services.sqs.AmazonSQSAsyncClientBuilder;
+
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.sqs.SqsAsyncClient;
 
 // #init-client
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
 
+import java.net.URI;
 import java.util.Random;
 
 public abstract class BaseSqsTest {
@@ -30,7 +31,7 @@ public abstract class BaseSqsTest {
 
   private boolean initialized = false;
   protected String sqsEndpoint = "http://localhost:9324";
-  protected AmazonSQSAsync sqsClient;
+  protected SqsAsyncClient sqsClient;
 
   @BeforeClass
   public static void setup() {
@@ -53,22 +54,28 @@ public abstract class BaseSqsTest {
     }
   }
 
-  private AmazonSQSAsync createAsyncClient(String sqsEndpoint) {
+  private SqsAsyncClient createAsyncClient(String sqsEndpoint) {
     // #init-client
-    AWSCredentialsProvider credentialsProvider =
-        new AWSStaticCredentialsProvider(new BasicAWSCredentials("x", "x"));
-    AmazonSQSAsync awsSqsClient =
-        AmazonSQSAsyncClientBuilder.standard()
-            .withCredentials(credentialsProvider)
-            .withEndpointConfiguration(
-                new AwsClientBuilder.EndpointConfiguration(sqsEndpoint, "eu-central-1"))
+    SqsAsyncClient sqsClient =
+        SqsAsyncClient.builder()
+            .credentialsProvider(
+                StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
+            .endpointOverride(URI.create(sqsEndpoint))
+            .region(Region.EU_CENTRAL_1)
             .build();
-    system.registerOnTermination(() -> awsSqsClient.shutdown());
+
+    system.registerOnTermination(() -> sqsClient.close());
     // #init-client
-    return awsSqsClient;
+    return sqsClient;
   }
 
-  protected String randomQueueUrl() {
-    return sqsClient.createQueue(String.format("queue-%s", new Random().nextInt())).getQueueUrl();
+  protected String randomQueueUrl() throws Exception {
+    return sqsClient
+        .createQueue(
+            CreateQueueRequest.builder()
+                .queueName(String.format("queue-%s", new Random().nextInt()))
+                .build())
+        .get()
+        .queueUrl();
   }
 }

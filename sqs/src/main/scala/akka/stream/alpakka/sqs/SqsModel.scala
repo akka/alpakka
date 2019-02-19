@@ -5,8 +5,7 @@
 package akka.stream.alpakka.sqs
 
 import akka.annotation.InternalApi
-import com.amazonaws.services.sqs.model.Message
-import com.amazonaws.{AmazonWebServiceResult, ResponseMetadata}
+import software.amazon.awssdk.services.sqs.model.{Message, SqsResponse}
 
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.FiniteDuration
@@ -90,6 +89,7 @@ object MessageAction {
   object ChangeMessageVisibility {
     def apply(message: Message, visibilityTimeout: Int): MessageAction =
       new ChangeMessageVisibility(message, visibilityTimeout)
+
     def apply(message: Message, visibilityTimeout: FiniteDuration): MessageAction =
       new ChangeMessageVisibility(message, visibilityTimeout.toSeconds.toInt)
   }
@@ -107,7 +107,7 @@ object MessageAction {
   /**
    * Java API: Change the visibility timeout of the message.
    *
-   * @param message the message to change
+   * @param message           the message to change
    * @param visibilityTimeout new timeout in seconds
    */
   def changeMessageVisibility(message: Message, visibilityTimeout: Int): MessageAction =
@@ -116,7 +116,7 @@ object MessageAction {
   /**
    * Java API: Change the visibility timeout of the message.
    *
-   * @param message the message to change
+   * @param message           the message to change
    * @param visibilityTimeout new timeout
    */
   def changeMessageVisibility(message: Message, visibilityTimeout: java.time.Duration): MessageAction =
@@ -126,6 +126,7 @@ object MessageAction {
 
 /**
  * Additional identifiers for FIFO messsages
+ *
  * @see [https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-additional-fifo-queue-identifiers.html]
  */
 final class FifoMessageIdentifiers @InternalApi private[sqs] (
@@ -159,44 +160,38 @@ final class FifoMessageIdentifiers @InternalApi private[sqs] (
 
 /**
  * Messages returned by a SqsFlow.
+ *
  * @param message the SQS message.
  */
-final class SqsPublishResult @InternalApi private[sqs] (
-    val metadata: AmazonWebServiceResult[ResponseMetadata],
-    val message: Message,
+final class SqsPublishResult[T <: SqsResponse] @InternalApi private[sqs] (
+    val metadata: T,
     val fifoMessageIdentifiers: Option[FifoMessageIdentifiers]
 ) {
 
   /** Java API */
-  def getMetadata: AmazonWebServiceResult[ResponseMetadata] = metadata
-
-  /** Java API */
-  def getMessage: Message = message
+  def getMetadata: T = metadata
 
   /** Java API */
   def getFifoMessageIdentifiers: java.util.Optional[FifoMessageIdentifiers] = fifoMessageIdentifiers.asJava
 
   override def toString =
-    s"""SqsPublishResult(metadata=$metadata, message=$message, fifoMessageIdentifiers=$fifoMessageIdentifiers)"""
+    s"""SqsPublishResult(metadata=$metadata, fifoMessageIdentifiers=$fifoMessageIdentifiers)"""
 
   override def equals(other: Any): Boolean = other match {
-    case that: SqsPublishResult =>
+    case that: SqsPublishResult[T] =>
       java.util.Objects.equals(this.metadata, that.metadata) &&
-      java.util.Objects.equals(this.message, that.message) &&
       java.util.Objects.equals(this.fifoMessageIdentifiers, that.fifoMessageIdentifiers)
     case _ => false
   }
 
-  override def hashCode(): Int = java.util.Objects.hash(metadata, message, fifoMessageIdentifiers)
+  override def hashCode(): Int = java.util.Objects.hash(metadata, fifoMessageIdentifiers)
 }
 
-final class SqsAckResult @InternalApi private[sqs] (
-    val metadata: Option[AmazonWebServiceResult[ResponseMetadata]],
-    val messageAction: MessageAction
-) {
+final class SqsAckResult[T <: SqsResponse] @InternalApi private[sqs] (val metadata: Option[T],
+                                                                      val messageAction: MessageAction) {
 
   /** Java API */
-  def getMetadata: java.util.Optional[AmazonWebServiceResult[ResponseMetadata]] = metadata.asJava
+  def getMetadata: java.util.Optional[T] = metadata.asJava
 
   /** Java API */
   def getMessageAction: MessageAction = messageAction
@@ -205,7 +200,7 @@ final class SqsAckResult @InternalApi private[sqs] (
     s"""SqsAckResult(metadata=$metadata,messageAction=$messageAction)"""
 
   override def equals(other: Any): Boolean = other match {
-    case that: SqsAckResult =>
+    case that: SqsAckResult[T] =>
       java.util.Objects.equals(this.metadata, that.metadata) &&
       java.util.Objects.equals(this.messageAction, that.messageAction)
     case _ => false
