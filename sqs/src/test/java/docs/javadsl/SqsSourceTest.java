@@ -10,33 +10,51 @@ import akka.stream.alpakka.sqs.SqsSourceSettings;
 import akka.stream.alpakka.sqs.javadsl.BaseSqsTest;
 import akka.stream.alpakka.sqs.javadsl.SqsSource;
 import akka.stream.javadsl.Sink;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.services.sqs.AmazonSQSAsync;
-import com.amazonaws.services.sqs.AmazonSQSAsyncClientBuilder;
-import com.amazonaws.services.sqs.model.Message;
+import com.github.matsluni.akkahttpspi.AkkaHttpClient;
 import org.junit.Test;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.sqs.SqsAsyncClient;
+import software.amazon.awssdk.services.sqs.model.Message;
+import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
+import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 
 public class SqsSourceTest extends BaseSqsTest {
+  static <T> CompletableFuture<List<T>> sequence(List<CompletableFuture<T>> com) {
+    return CompletableFuture.allOf(com.toArray(new CompletableFuture[com.size()]))
+        .thenApply(v -> com.stream().map(CompletableFuture::join).collect(Collectors.toList()));
+  }
 
   @Test
   public void streamFromQueue() throws Exception {
-
     final String queueUrl = randomQueueUrl();
-    for (int i = 0; i < 100; i++) {
-      sqsClient.sendMessage(queueUrl, "alpakka-" + i);
-    }
+
+    sequence(
+            IntStream.range(0, 100)
+                .boxed()
+                .map(
+                    i ->
+                        sqsClient.sendMessage(
+                            SendMessageRequest.builder()
+                                .queueUrl(queueUrl)
+                                .messageBody("alpakka-" + i)
+                                .build()))
+                .collect(Collectors.toList()))
+        .get();
 
     final CompletionStage<List<Message>> cs =
         // #run
@@ -44,12 +62,12 @@ public class SqsSourceTest extends BaseSqsTest {
                 queueUrl,
                 SqsSourceSettings.create()
                     .withCloseOnEmptyReceive(true)
-                    .withWaitTime(Duration.ofSeconds(1)),
+                    .withWaitTime(Duration.ofSeconds(0)),
                 sqsClient)
             .runWith(Sink.seq(), materializer);
     // #run
 
-    assertEquals(100, cs.toCompletableFuture().get(10, TimeUnit.SECONDS).size());
+    assertEquals(100, cs.toCompletableFuture().get(20, TimeUnit.SECONDS).size());
   }
 
   @Test
@@ -73,25 +91,29 @@ public class SqsSourceTest extends BaseSqsTest {
     final String queueUrl = randomQueueUrl();
 
     // #init-custom-client
-    AWSCredentialsProvider credentialsProvider =
-        new AWSStaticCredentialsProvider(new BasicAWSCredentials("x", "x"));
-
-    AmazonSQSAsync customSqsClient =
-        AmazonSQSAsyncClientBuilder.standard()
-            .withCredentials(credentialsProvider)
-            .withExecutorFactory(() -> Executors.newFixedThreadPool(10))
-            .withEndpointConfiguration(
-                new AwsClientBuilder.EndpointConfiguration(sqsEndpoint, "eu-central-1"))
+    final SqsAsyncClient customSqsClient =
+        SqsAsyncClient.builder()
+            .credentialsProvider(
+                StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
+            .endpointOverride(URI.create(sqsEndpoint))
+            .region(Region.US_WEST_2)
+            // NettyNioAsyncHttpClient.builder().maxConcurrency(100).build()
+            .httpClient(AkkaHttpClient.builder().build())
             .build();
+
+    system.registerOnTermination(() -> customSqsClient.close());
     // #init-custom-client
 
-    sqsClient.sendMessage(queueUrl, "alpakka");
+    customSqsClient
+        .sendMessage(SendMessageRequest.builder().queueUrl(queueUrl).messageBody("alpakka").build())
+        .get();
 
     final CompletionStage<String> cs =
-        SqsSource.create(queueUrl, SqsSourceSettings.create(), customSqsClient)
-            .map(Message::getBody)
+        SqsSource.create(
+                queueUrl, SqsSourceSettings.create().withWaitTimeSeconds(0), customSqsClient)
+            .map(Message::body)
             .runWith(Sink.head(), materializer);
 
-    assertEquals("alpakka", cs.toCompletableFuture().get(10, TimeUnit.SECONDS));
+    assertEquals("alpakka", cs.toCompletableFuture().get(20, TimeUnit.SECONDS));
   }
 }

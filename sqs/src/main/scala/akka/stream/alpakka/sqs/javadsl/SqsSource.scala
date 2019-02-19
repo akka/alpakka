@@ -6,10 +6,9 @@ package akka.stream.alpakka.sqs.javadsl
 
 import akka.NotUsed
 import akka.stream.alpakka.sqs.SqsSourceSettings
-import akka.stream.alpakka.sqs.impl.SqsSourceStage
 import akka.stream.javadsl.Source
-import com.amazonaws.services.sqs.AmazonSQSAsync
-import com.amazonaws.services.sqs.model.Message
+import software.amazon.awssdk.services.sqs.SqsAsyncClient
+import software.amazon.awssdk.services.sqs.model.Message
 
 /**
  * Java API to create SQS sources.
@@ -17,9 +16,9 @@ import com.amazonaws.services.sqs.model.Message
 object SqsSource {
 
   /**
-   * Creates a source for a SQS queue.
+   * creates a [[akka.stream.javadsl.Source Source]] for a SQS queue using [[software.amazon.awssdk.services.sqs.SqsAsyncClient SqsAsyncClient]]
    */
-  def create(queueUrl: String, settings: SqsSourceSettings, sqs: AmazonSQSAsync): Source[Message, NotUsed] =
-    Source.fromGraph(new SqsSourceStage(queueUrl, settings)(sqs))
+  def create(queueUrl: String, settings: SqsSourceSettings, sqs: SqsAsyncClient): Source[Message, NotUsed] =
+    akka.stream.alpakka.sqs.scaladsl.SqsSource(queueUrl, settings)(sqs).asJava
 
 }
