@@ -6,7 +6,8 @@ package docs.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.mongodb.scaladsl.{DocumentUpdate, MongoSink}
+import akka.stream.alpakka.mongodb.DocumentUpdate
+import akka.stream.alpakka.mongodb.scaladsl.MongoSink
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import com.mongodb.client.model.{Filters, InsertManyOptions, Updates}

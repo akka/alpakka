@@ -6,6 +6,7 @@ package akka.stream.alpakka.mongodb.scaladsl
 
 import akka.stream.scaladsl.{Flow, Source}
 import akka.NotUsed
+import akka.stream.alpakka.mongodb.DocumentUpdate
 import com.mongodb.client.model.{DeleteOptions, InsertManyOptions, InsertOneOptions, UpdateOptions}
 import com.mongodb.client.result.{DeleteResult, UpdateResult}
 import com.mongodb.reactivestreams.client.MongoCollection

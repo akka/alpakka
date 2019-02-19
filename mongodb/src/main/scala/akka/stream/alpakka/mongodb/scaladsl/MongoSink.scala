@@ -6,6 +6,7 @@ package akka.stream.alpakka.mongodb.scaladsl
 
 import akka.stream.scaladsl.{Keep, Sink}
 import akka.Done
+import akka.stream.alpakka.mongodb.DocumentUpdate
 import akka.stream.alpakka.mongodb.scaladsl.MongoFlow.{
   DefaultDeleteOptions,
   DefaultInsertManyOptions,
@@ -41,7 +42,7 @@ object MongoSink {
     MongoFlow.insertMany(collection, options).toMat(Sink.ignore)(Keep.right)
 
   /**
-   * A [[akka.stream.scaladsl.Sink Sink]] that will update documents as defined by a [[DocumentUpdate]].
+   * A [[akka.stream.scaladsl.Sink Sink]] that will update documents as defined by a [[akka.stream.alpakka.mongodb.DocumentUpdate]].
    *
    * @param collection the mongo db collection to update.
    * @param options options to apply to the operation

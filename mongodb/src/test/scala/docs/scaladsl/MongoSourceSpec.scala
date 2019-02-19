@@ -28,10 +28,10 @@ class MongoSourceSpec
     with BeforeAndAfterAll
     with MustMatchers {
 
-  //#init-mat
+  // #init-mat
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()
-  //#init-mat
+  // #init-mat
 
   override protected def beforeAll(): Unit =
     Source.fromPublisher(db.drop()).runWith(Sink.head).futureValue
@@ -47,8 +47,8 @@ class MongoSourceSpec
   // #macros-codecs
 
   // #init-connection
-  private val client = MongoClients.create(s"mongodb://localhost:27017")
-  private val db = client.getDatabase("alpakka-mongo")
+  private val client = MongoClients.create("mongodb://localhost:27017")
+  private val db = client.getDatabase("alpakka-scala-mongo")
   private val numbersColl = db.getCollection("numbers")
   // #init-connection
 
@@ -83,14 +83,14 @@ class MongoSourceSpec
     "stream the result of a simple Mongo query" in assertAllStagesStopped {
       val data: Seq[Int] = seed()
 
-      //#create-source
+      // #create-source
       val source: Source[Document, NotUsed] =
         MongoSource(numbersColl.find())
       //#create-source
 
-      //#run-source
+      // #run-source
       val rows: Future[Seq[Document]] = source.runWith(Sink.seq)
-      //#run-source
+      // #run-source
 
       rows.futureValue.map(_.getInteger("_id")) must contain theSameElementsAs data
     }
@@ -98,12 +98,12 @@ class MongoSourceSpec
     "support codec registry to read case class objects" in assertAllStagesStopped {
       val data: Seq[Number] = seed().map(Number)
 
-      //#create-source-codec
+      // #create-source-codec
       val source: Source[Number, NotUsed] =
         MongoSource(numbersObjectColl.find(classOf[Number]))
-      //#create-source-codec
+      // #create-source-codec
 
-      //#run-source-codec
+      // #run-source-codec
       val rows: Future[Seq[Number]] = source.runWith(Sink.seq)
       //#run-source-codec
 
