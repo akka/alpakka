@@ -10,10 +10,9 @@ import akka.stream.scaladsl
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.elasticsearch.client.RestClient
 
-import scala.collection.JavaConverters._
-
 import akka.stream.alpakka.elasticsearch.impl
-import scala.concurrent.duration._
+
+import scala.collection.immutable
 
 /**
  * Java API to create Elasticsearch flows.
@@ -21,7 +20,11 @@ import scala.concurrent.duration._
 object ElasticsearchFlow {
 
   /**
-   * Creates a [[akka.stream.javadsl.Flow]] for type `T` from [[WriteMessage]] to lists of [[WriteResult]].
+   * Create a flow to update Elasticsearch with [[akka.stream.alpakka.elasticsearch.WriteMessage WriteMessage]]s containing type `T`.
+   * The result status is port of the [[akka.stream.alpakka.elasticsearch.WriteResult WriteResult]] and must be checked for
+   * successful execution.
+   *
+   * Warning: When settings configure retrying, messages are emitted out-of-order when errors are detected.
    */
   def create[T](
       indexName: String,
@@ -29,10 +32,10 @@ object ElasticsearchFlow {
       settings: ElasticsearchWriteSettings,
       client: RestClient,
       objectMapper: ObjectMapper
-  ): akka.stream.javadsl.Flow[WriteMessage[T, NotUsed], java.util.List[WriteResult[T, NotUsed]], NotUsed] =
+  ): akka.stream.javadsl.Flow[WriteMessage[T, NotUsed], WriteResult[T, NotUsed], NotUsed] =
     scaladsl
       .Flow[WriteMessage[T, NotUsed]]
-      .groupedWithin(settings.bufferSize, 10.millis)
+      .batch(settings.bufferSize, immutable.Seq(_)) { case (seq, wm) => seq :+ wm }
       .via(
         new impl.ElasticsearchFlowStage[T, NotUsed](indexName,
                                                     typeName,
@@ -40,12 +43,16 @@ object ElasticsearchFlow {
                                                     settings,
                                                     new JacksonWriter[T](objectMapper))
       )
-      .map(x => x.asJava)
+      .mapConcat(identity)
       .asJava
 
   /**
-   * Creates a [[akka.stream.javadsl.Flow]] for type `T` from [[WriteMessage]] to lists of [[WriteResult]]
+   * Create a flow to update Elasticsearch with [[akka.stream.alpakka.elasticsearch.WriteMessage WriteMessage]]s containing type `T`
    * with `passThrough` of type `C`.
+   * The result status is port of the [[akka.stream.alpakka.elasticsearch.WriteResult WriteResult]] and must be checked for
+   * successful execution.
+   *
+   * Warning: When settings configure retrying, messages are emitted out-of-order when errors are detected.
    */
   def createWithPassThrough[T, C](
       indexName: String,
@@ -53,14 +60,14 @@ object ElasticsearchFlow {
       settings: ElasticsearchWriteSettings,
       client: RestClient,
       objectMapper: ObjectMapper
-  ): akka.stream.javadsl.Flow[WriteMessage[T, C], java.util.List[WriteResult[T, C]], NotUsed] =
+  ): akka.stream.javadsl.Flow[WriteMessage[T, C], WriteResult[T, C], NotUsed] =
     scaladsl
       .Flow[WriteMessage[T, C]]
-      .groupedWithin(settings.bufferSize, 10.millis)
+      .batch(settings.bufferSize, immutable.Seq(_)) { case (seq, wm) => seq :+ wm }
       .via(
         new impl.ElasticsearchFlowStage[T, C](indexName, typeName, client, settings, new JacksonWriter[T](objectMapper))
       )
-      .map(x => x.asJava)
+      .mapConcat(identity)
       .asJava
 
   private final class JacksonWriter[T](mapper: ObjectMapper) extends MessageWriter[T] {

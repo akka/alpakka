@@ -278,7 +278,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
       //#run-flow
 
       // Assert no errors
-      assert(copy.futureValue.forall(!_.exists(_.success == false)))
+      copy.futureValue.filter(!_.success) shouldBe empty
       flush(indexName)
 
       readTitlesFrom(indexName).futureValue.sorted shouldEqual Seq(
@@ -313,7 +313,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
         .runWith(Sink.seq)
 
       // Assert no error
-      assert(createBooks.futureValue.forall(!_.exists(_.success == false)))
+      createBooks.futureValue.filter(!_.success) shouldBe empty
       flush(indexName)
       readTitlesFrom(indexName).futureValue should contain allElementsOf Seq(
         "Akka in Action",
@@ -347,7 +347,6 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
               .withRetryLogic(RetryAtFixedRate(5, 100.millis))
           )
         )
-        .mapConcat(identity)
         .runWith(Sink.seq)
 
       val start = System.currentTimeMillis()
@@ -409,12 +408,10 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
             typeName = "_doc"
           )
         )
-        .map { messageResults =>
-          messageResults.foreach { result =>
-            if (!result.success) throw new Exception("Failed to write message to elastic")
-            // Commit to kafka
-            commitToKafka(result.message.passThrough)
-          }
+        .map { result =>
+          if (!result.success) throw new Exception("Failed to write message to elastic")
+          // Commit to kafka
+          commitToKafka(result.message.passThrough)
         }
         .runWith(Sink.ignore)
 
@@ -448,7 +445,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
         .runWith(Sink.seq)
 
       // Assert no errors
-      assert(createBooks.futureValue.forall(!_.exists(_.success == false)))
+      createBooks.futureValue.filter(!_.success) shouldBe 'empty
       flush(indexName)
 
       // Create a second dataset with matching indexes to test partial update
@@ -481,7 +478,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
         .runWith(Sink.seq)
 
       // Assert no errors
-      assert(upserts.futureValue.forall(!_.exists(_.success == false)))
+      upserts.futureValue.filter(!_.success) shouldBe 'empty
       flush(indexName)
 
       // Assert docs in sink7/_doc
@@ -531,7 +528,6 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
             "_doc"
           )
         )
-        .mapConcat(identity)
         .runWith(Sink.seq)
       //#multiple-operations
 
@@ -576,7 +572,6 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
             "_doc"
           )
         )
-        .mapConcat(identity)
         .runWith(Sink.seq)
 
       val results = writeResults.futureValue
@@ -616,7 +611,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
         .runWith(Sink.seq)
 
       // Assert no errors
-      assert(indexResults.futureValue.forall(!_.exists(_.success == false)))
+      indexResults.futureValue.filter(!_.success) shouldBe 'empty
       flush(indexName)
 
       // search for the documents and assert them being at version 1,
@@ -649,7 +644,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
         )
         .runWith(Sink.seq)
 
-      assert(updatedVersions.futureValue.forall(!_.exists(_.success == false)))
+      updatedVersions.futureValue.filter(!_.success) shouldBe 'empty
 
       flush(indexName)
       // Search again to assert that all documents are now on version 2
@@ -688,7 +683,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
         .runWith(Sink.seq)
 
       val result5 = illegalIndexWrites.futureValue
-      assert(result5(0)(0).success == false)
+      result5.head.success shouldBe false
     }
 
     "allow read and write using configured version type" in assertAllStagesStopped {
@@ -715,7 +710,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
         )
         .runWith(Sink.seq)
 
-      val insertResult = insertWrite.futureValue.head.head
+      val insertResult = insertWrite.futureValue.head
       assert(insertResult.success)
 
       flush(indexName)
@@ -858,7 +853,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
         )
         .runWith(Sink.seq)
 
-      assert(writes.futureValue.forall(!_.exists(_.success == false)))
+      writes.futureValue.filter(!_.success) shouldBe 'empty
       flush(indexName)
 
       //#custom-search-params
