@@ -18,7 +18,7 @@ import scala.concurrent.Future
 object ElasticsearchSink {
 
   /**
-   * Creates a [[akka.stream.scaladsl.Sink]] to Elasticsearch for [[WriteMessage]] containing type `T`.
+   * Create a sink to update Elasticsearch with [[akka.stream.alpakka.elasticsearch.WriteMessage WriteMessage]]s containing type `T`.
    */
   def create[T](indexName: String,
                 typeName: String,

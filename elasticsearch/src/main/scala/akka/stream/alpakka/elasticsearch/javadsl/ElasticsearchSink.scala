@@ -18,7 +18,7 @@ import org.elasticsearch.client.RestClient
 object ElasticsearchSink {
 
   /**
-   * Creates a [[akka.stream.javadsl.Sink]] to Elasticsearch for [[WriteMessage]] containing type `T`.
+   * Create a sink to update Elasticsearch with [[akka.stream.alpakka.elasticsearch.WriteMessage WriteMessage]]s containing type `T`.
    */
   def create[T](
       indexName: String,
@@ -29,6 +29,6 @@ object ElasticsearchSink {
   ): akka.stream.javadsl.Sink[WriteMessage[T, NotUsed], CompletionStage[Done]] =
     ElasticsearchFlow
       .create(indexName, typeName, settings, client, objectMapper)
-      .toMat(Sink.ignore[java.util.List[WriteResult[T, NotUsed]]], Keep.right[NotUsed, CompletionStage[Done]])
+      .toMat(Sink.ignore[WriteResult[T, NotUsed]], Keep.right[NotUsed, CompletionStage[Done]])
 
 }
