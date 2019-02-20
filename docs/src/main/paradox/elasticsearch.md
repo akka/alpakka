@@ -118,7 +118,7 @@ Java
 
 | Parameter           | Default | Description                                                                                            |
 | ------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
-| bufferSize          | 10      | Flow and Sink batche messages to bulk requests when back-pressure applies.                             |
+| bufferSize          | 10      | Flow and Sink batch messages to bulk requests when back-pressure applies.                             |
 | versionType         | None    | If set, `ElasticsearchSink` uses the chosen versionType to index documents. See [Version types](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#_version_types) for accepted settings. |
 | retryLogic | No retries | See below |
 
