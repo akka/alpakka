@@ -4,6 +4,7 @@ import sbt.plugins.JvmPlugin
 import org.scalafmt.sbt.ScalafmtPlugin.autoImport._
 import de.heikoseeberger.sbtheader._
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
+import com.lightbend.paradox.projectinfo.ParadoxProjectInfoPluginKeys._
 import Whitesource.whitesourceGroup
 
 object Common extends AutoPlugin {
@@ -23,6 +24,7 @@ object Common extends AutoPlugin {
                             "https://gitter.im/akka/dev",
                             url("https://github.com/akka/alpakka/graphs/contributors")),
     licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
+    projectInfoVersion := (if (isSnapshot.value) "snapshot" else version.value),
     whitesourceGroup := Whitesource.Group.Community,
     crossVersion := CrossVersion.binary,
     crossScalaVersions := Dependencies.ScalaVersions,
@@ -74,6 +76,6 @@ object Common extends AutoPlugin {
     // timeout.
     testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-F", "4"),
     scalafmtOnCompile := true,
-    headerLicense := Some(HeaderLicense.Custom("Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>"))
+    headerLicense := Some(HeaderLicense.Custom("Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>"))
   )
 }
