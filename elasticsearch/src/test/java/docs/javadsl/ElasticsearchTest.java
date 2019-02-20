@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -230,7 +231,7 @@ public class ElasticsearchTest {
   public void flow() throws Exception {
     // Copy source/book to sink3/book through JsObject stream
     // #run-flow
-    CompletionStage<List<List<WriteResult<Book, NotUsed>>>> f1 =
+    CompletionStage<List<WriteResult<Book, NotUsed>>> f1 =
         ElasticsearchSource.typed(
                 "source",
                 "_doc",
@@ -249,11 +250,11 @@ public class ElasticsearchTest {
             .runWith(Sink.seq(), materializer);
     // #run-flow
 
-    List<List<WriteResult<Book, NotUsed>>> result1 = f1.toCompletableFuture().get();
+    List<WriteResult<Book, NotUsed>> result1 = f1.toCompletableFuture().get();
     flush("sink3");
 
-    for (List<WriteResult<Book, NotUsed>> aResult1 : result1) {
-      assertEquals(true, aResult1.get(0).success());
+    for (WriteResult<Book, NotUsed> aResult1 : result1) {
+      assertEquals(true, aResult1.success());
     }
 
     // Assert docs in sink3/book
@@ -341,40 +342,35 @@ public class ElasticsearchTest {
 
     final KafkaCommitter kafkaCommitter = new KafkaCommitter();
 
-    Source.from(messagesFromKafka) // Assume we get this from Kafka
-        .map(
-            kafkaMessage -> {
-              Book book = kafkaMessage.book;
-              String id = book.title;
+    CompletionStage<Done> kafkaToEs =
+        Source.from(messagesFromKafka) // Assume we get this from Kafka
+            .map(
+                kafkaMessage -> {
+                  Book book = kafkaMessage.book;
+                  String id = book.title;
 
-              // Transform message so that we can write to elastic
-              return WriteMessage.createIndexMessage(id, book).withPassThrough(kafkaMessage.offset);
-            })
-        .via( // write to elastic
-            ElasticsearchFlow.createWithPassThrough(
-                "sink6",
-                "_doc",
-                ElasticsearchWriteSettings.create().withBufferSize(5),
-                client,
-                new ObjectMapper()))
-        .map(
-            messageResults -> {
-              messageResults
-                  .stream()
-                  .forEach(
-                      result -> {
-                        if (!result.success())
-                          throw new RuntimeException("Failed to write message to elastic");
-                        // Commit to kafka
-                        kafkaCommitter.commit(result.message().passThrough());
-                      });
-              return NotUsed.getInstance();
-            })
-        .runWith(Sink.seq(), materializer) // Run it
-        .toCompletableFuture()
-        .get(); // Wait for it to complete
-
+                  // Transform message so that we can write to elastic
+                  return WriteMessage.createIndexMessage(id, book)
+                      .withPassThrough(kafkaMessage.offset);
+                })
+            .via( // write to elastic
+                ElasticsearchFlow.createWithPassThrough(
+                    "sink6",
+                    "_doc",
+                    ElasticsearchWriteSettings.create().withBufferSize(5),
+                    client,
+                    new ObjectMapper()))
+            .map(
+                result -> {
+                  if (!result.success())
+                    throw new RuntimeException("Failed to write message to elastic");
+                  // Commit to kafka
+                  kafkaCommitter.commit(result.message().passThrough());
+                  return NotUsed.getInstance();
+                })
+            .runWith(Sink.ignore(), materializer);
     // #kafka-example
+    kafkaToEs.toCompletableFuture().get(5, TimeUnit.SECONDS); // Wait for it to complete
     flush("sink6");
 
     // Make sure all messages was committed to kafka
@@ -469,7 +465,6 @@ public class ElasticsearchTest {
             .runWith(Sink.seq(), materializer)
             .toCompletableFuture()
             .get()
-            .get(0)
             .get(0)
             .success();
 

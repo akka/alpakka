@@ -3,7 +3,7 @@
 <Configuration status="WARN">
     <Appenders>
         <File name="File1" fileName="target/elasticsearch-cluster.log">
-            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <PatternLayout pattern="%d{ISO8601} %-5level [%thread] [%logger{36}]  %msg%n"/>
         </File>
     </Appenders>
     <Loggers>
