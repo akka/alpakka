@@ -17,9 +17,7 @@ private[geode] class GeodeContinuousSourceStage[V](cache: ClientCache, name: Str
     extends GraphStageWithMaterializedValue[SourceShape[V], Future[Done]] {
 
   override protected def initialAttributes: Attributes =
-    Attributes
-      .name("GeodeContinuousSource")
-      .and(ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher"))
+    super.initialAttributes and Attributes.name("GeodeContinuousSource") and ActorAttributes.IODispatcher
 
   val out = Outlet[V](s"geode.continuousSource")
 
