@@ -10,12 +10,12 @@ before_install:
   # fetch full history for correct current and previous version detection
   - git fetch --unshallow
   # using jabba for custom jdk management
-  - curl -sL https://raw.githubusercontent.com/shyiko/jabba/0.11.0/install.sh | bash && . ~/.jabba/jabba.sh
-  - jabba install adopt@1.8.192-12
+  - curl -sL https://raw.githubusercontent.com/shyiko/jabba/0.11.2/install.sh | bash && . ~/.jabba/jabba.sh
+  - jabba install adopt@~1.8.202-08
 
 # default script for jobs, that do not have any specified
 script:
-  - jabba use ${JDK:=adopt@1.8.192-12}
+  - jabba use ${JDK:=adopt@~1.8.202-08}
   - java -version
   - ${PRE_CMD:=return 0} # do nothing if not set
   - sbt -jvm-opts .jvmopts-travis "$CMD"
