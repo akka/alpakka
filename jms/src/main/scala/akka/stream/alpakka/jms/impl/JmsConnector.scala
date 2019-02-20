@@ -205,15 +205,18 @@ trait JmsConnector[S <: JmsSession] {
   }
 
   protected def executionContext(attributes: Attributes): ExecutionContext = {
-    val dispatcher = attributes.get[ActorAttributes.Dispatcher](
-      ActorAttributes.IODispatcher
-    ) match {
+    val dispatcherId = (attributes.get[ActorAttributes.Dispatcher](ActorAttributes.IODispatcher) match {
       case ActorAttributes.Dispatcher("") =>
         ActorAttributes.IODispatcher
       case d => d
+    }) match {
+      case d @ ActorAttributes.IODispatcher =>
+        // this one is not a dispatcher id, but is a config path pointing to the dispatcher id
+        ActorMaterializerHelper.downcast(materializer).system.settings.config.getString(d.dispatcher)
+      case d => d.dispatcher
     }
 
-    ActorMaterializerHelper.downcast(materializer).system.dispatchers.lookup(dispatcher.dispatcher)
+    ActorMaterializerHelper.downcast(materializer).system.dispatchers.lookup(dispatcherId)
   }
 
   protected def createSession(connection: jms.Connection, createDestination: jms.Session => jms.Destination): S
