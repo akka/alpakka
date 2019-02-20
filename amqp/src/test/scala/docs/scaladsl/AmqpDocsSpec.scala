@@ -5,9 +5,11 @@
 package docs.scaladsl
 
 import akka.Done
+import akka.stream.KillSwitches
 import akka.stream.alpakka.amqp._
 import akka.stream.alpakka.amqp.scaladsl.{AmqpRpcFlow, AmqpSink, AmqpSource}
 import akka.stream.scaladsl.{Keep, Sink, Source}
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
 
@@ -26,7 +28,7 @@ class AmqpDocsSpec extends AmqpSpec {
 
     val connectionProvider = AmqpLocalConnectionProvider
 
-    "publish and consume elements through a simple queue again in the same JVM" in {
+    "publish and consume elements through a simple queue again in the same JVM" in assertAllStagesStopped {
 
       // use a list of host/port pairs where one is normally invalid, but
       // it should still work as expected,
@@ -65,7 +67,7 @@ class AmqpDocsSpec extends AmqpSpec {
       result.futureValue.map(_.bytes.utf8String) shouldEqual input
     }
 
-    "publish via RPC and then consume through a simple queue again in the same JVM" in {
+    "publish via RPC and then consume through a simple queue again in the same JVM" in assertAllStagesStopped {
 
       val queueName = "amqp-conn-it-spec-rpc-queue-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
@@ -95,14 +97,17 @@ class AmqpDocsSpec extends AmqpSpec {
         AmqpReplyToSinkSettings(connectionProvider)
       )
 
-      amqpSource
+      val sourceToSink = amqpSource
+        .viaMat(KillSwitches.single)(Keep.right)
         .map(b => OutgoingMessage(b.bytes.concat(ByteString("a")), false, false).withProperties(b.properties))
-        .runWith(amqpSink)
+        .to(amqpSink)
+        .run()
 
       probe.request(5).expectNextUnorderedN(input.map(s => ByteString(s.concat("a")))).expectComplete()
+      sourceToSink.shutdown()
     }
 
-    "pub-sub from one source with multiple sinks" in {
+    "pub-sub from one source with multiple sinks" in assertAllStagesStopped {
       // with pubsub we arrange one exchange which the sink writes to
       // and then one queue for each source which subscribes to the
       // exchange - all this described by the declarations
@@ -140,22 +145,32 @@ class AmqpDocsSpec extends AmqpSpec {
       //#create-exchange-source
 
       val completion = Promise[Done]
-      mergedSources.runWith(Sink.fold(Set.empty[Int]) {
-        case (seen, (branch, element)) =>
-          if (seen.size == fanoutSize) completion.trySuccess(Done)
-          seen + branch
-      })
+      val mergingFlow = mergedSources
+        .viaMat(KillSwitches.single)(Keep.right)
+        .to(Sink.fold(Set.empty[Int]) {
+          case (seen, (branch, element)) =>
+            if (seen.size == fanoutSize) completion.trySuccess(Done)
+            seen + branch
+        })
+        .run()
 
       system.scheduler.scheduleOnce(5.seconds)(
         completion.tryFailure(new Error("Did not get at least one element from every fanout branch"))
       )
 
-      Source.repeat("stuff").map(s => ByteString(s)).runWith(amqpSink)
+      val dataSender = Source
+        .repeat("stuff")
+        .viaMat(KillSwitches.single)(Keep.right)
+        .map(s => ByteString(s))
+        .to(amqpSink)
+        .run()
 
       completion.future.futureValue shouldBe Done
+      dataSender.shutdown()
+      mergingFlow.shutdown()
     }
 
-    "publish and consume elements through a simple queue again in the same JVM without autoAck" in {
+    "publish and consume elements through a simple queue again in the same JVM without autoAck" in assertAllStagesStopped {
       val queueName = "amqp-conn-it-spec-no-auto-ack-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
 
@@ -185,7 +200,7 @@ class AmqpDocsSpec extends AmqpSpec {
       result.futureValue.map(_.message.bytes.utf8String) shouldEqual input
     }
 
-    "republish message without autoAck if nack is sent" in {
+    "republish message without autoAck if nack is sent" in assertAllStagesStopped {
 
       val queueName = "amqp-conn-it-spec-no-auto-ack-nacked-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)

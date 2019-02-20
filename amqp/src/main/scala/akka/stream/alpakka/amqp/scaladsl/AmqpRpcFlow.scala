@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.amqp.scaladsl
 
+import akka.annotation.ApiMayChange
 import akka.dispatch.ExecutionContexts
 import akka.stream.alpakka.amqp._
 import akka.stream.scaladsl.{Flow, Keep}
@@ -35,6 +36,7 @@ object AmqpRpcFlow {
    * Convenience for "at-most once delivery" semantics. Each message is acked to RabbitMQ
    * before it is emitted downstream.
    */
+  @ApiMayChange // https://github.com/akka/alpakka/issues/1513
   def atMostOnceFlow(settings: AmqpSinkSettings,
                      bufferSize: Int,
                      repliesPerMessage: Int = 1): Flow[OutgoingMessage, IncomingMessage, Future[String]] =
@@ -52,6 +54,7 @@ object AmqpRpcFlow {
    *
    * Compared to auto-commit, this gives exact control over when a message is considered consumed.
    */
+  @ApiMayChange // https://github.com/akka/alpakka/issues/1513
   def committableFlow(settings: AmqpSinkSettings,
                       bufferSize: Int,
                       repliesPerMessage: Int = 1): Flow[OutgoingMessage, CommittableIncomingMessage, Future[String]] =

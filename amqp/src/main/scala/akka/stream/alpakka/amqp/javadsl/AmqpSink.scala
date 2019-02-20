@@ -8,6 +8,7 @@ import java.util.concurrent.CompletionStage
 
 import scala.compat.java8.FutureConverters._
 import akka.Done
+import akka.annotation.ApiMayChange
 import akka.stream.alpakka.amqp._
 import akka.util.ByteString
 
@@ -19,6 +20,7 @@ object AmqpSink {
    * This stage materializes to a CompletionStage<Done>, which can be used to know when the Sink completes, either normally
    * or because of an amqp failure
    */
+  @ApiMayChange // https://github.com/akka/alpakka/issues/1513
   def create(settings: AmqpSinkSettings): akka.stream.javadsl.Sink[OutgoingMessage, CompletionStage[Done]] =
     akka.stream.alpakka.amqp.scaladsl.AmqpSink(settings).mapMaterializedValue(f => f.toJava).asJava
 
@@ -32,6 +34,7 @@ object AmqpSink {
    * This stage materializes to a CompletionStage<Done>, which can be used to know when the Sink completes, either normally
    * or because of an amqp failure
    */
+  @ApiMayChange // https://github.com/akka/alpakka/issues/1513
   def createReplyTo(
       settings: AmqpReplyToSinkSettings
   ): akka.stream.javadsl.Sink[OutgoingMessage, CompletionStage[Done]] =

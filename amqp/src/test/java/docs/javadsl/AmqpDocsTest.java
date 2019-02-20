@@ -9,7 +9,9 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
+import akka.stream.KillSwitches;
 import akka.stream.Materializer;
+import akka.stream.UniqueKillSwitch;
 import akka.stream.alpakka.amqp.*;
 import akka.stream.alpakka.amqp.javadsl.AmqpRpcFlow;
 import akka.stream.alpakka.amqp.javadsl.AmqpSink;
@@ -20,14 +22,16 @@ import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.TestSubscriber;
+import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.stream.testkit.javadsl.TestSink;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.duration.Duration;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -51,6 +55,11 @@ public class AmqpDocsTest {
   @AfterClass
   public static void teardown() {
     TestKit.shutdownActorSystem(system);
+  }
+
+  @After
+  public void checkForStageLeaks() {
+    StreamTestKit.assertAllStagesStopped(materializer);
   }
 
   private AmqpConnectionProvider connectionProvider = AmqpLocalConnectionProvider.getInstance();
@@ -141,12 +150,16 @@ public class AmqpDocsTest {
     Sink<OutgoingMessage, CompletionStage<Done>> amqpSink =
         AmqpSink.createReplyTo(AmqpReplyToSinkSettings.create(connectionProvider));
 
-    amqpSource
-        .map(
-            b ->
-                OutgoingMessage.create(b.bytes().concat(ByteString.fromString("a")), false, false)
-                    .withProperties(b.properties()))
-        .runWith(amqpSink, materializer);
+    UniqueKillSwitch killSwitch =
+        amqpSource
+            .viaMat(KillSwitches.single(), Keep.right())
+            .map(
+                b ->
+                    OutgoingMessage.create(
+                            b.bytes().concat(ByteString.fromString("a")), false, false)
+                        .withProperties(b.properties()))
+            .to(amqpSink)
+            .run(materializer);
 
     result
         .second()
@@ -158,6 +171,8 @@ public class AmqpDocsTest {
             ByteString.fromString("foura"),
             ByteString.fromString("fivea"))
         .expectComplete();
+
+    killSwitch.shutdown();
   }
 
   @Test
@@ -177,12 +192,12 @@ public class AmqpDocsTest {
     // #create-exchange-sink
 
     // #create-exchange-source
-    final Integer fanoutSize = 4;
-    final Integer bufferSize = 1;
+    final int fanoutSize = 4;
+    final int bufferSize = 1;
 
     Source<Pair<Integer, String>, NotUsed> mergedSources = Source.empty();
-    for (Integer i = 0; i < fanoutSize; i++) {
-      final Integer fanoutBranch = i;
+    for (int i = 0; i < fanoutSize; i++) {
+      final int fanoutBranch = i;
       mergedSources =
           mergedSources.merge(
               AmqpSource.atMostOnceSource(
@@ -194,30 +209,40 @@ public class AmqpDocsTest {
     // #create-exchange-source
 
     final CompletableFuture<Done> completion = new CompletableFuture<>();
-    mergedSources.runWith(
-        Sink.fold(
-            new HashSet<Integer>(),
-            (seen, branchElem) -> {
-              if (seen.size() == fanoutSize) {
-                completion.complete(Done.getInstance());
-              }
-              seen.add(branchElem.first());
-              return seen;
-            }),
-        materializer);
+    UniqueKillSwitch mergingFlow =
+        mergedSources
+            .viaMat(KillSwitches.single(), Keep.right())
+            .to(
+                Sink.fold(
+                    new HashSet<Integer>(),
+                    (seen, branchElem) -> {
+                      if (seen.size() == fanoutSize) {
+                        completion.complete(Done.getInstance());
+                      }
+                      seen.add(branchElem.first());
+                      return seen;
+                    }))
+            .run(materializer);
 
     system
         .scheduler()
         .scheduleOnce(
-            Duration.create(5, TimeUnit.SECONDS),
+            Duration.ofSeconds(5),
             () ->
                 completion.completeExceptionally(
                     new Error("Did not get at least one element from every fanout branch")),
             system.dispatcher());
 
-    Source.repeat("stuff").map(ByteString::fromString).runWith(amqpSink, materializer);
+    UniqueKillSwitch repeatingFlow =
+        Source.repeat("stuff")
+            .viaMat(KillSwitches.single(), Keep.right())
+            .map(ByteString::fromString)
+            .to(amqpSink)
+            .run(materializer);
 
     assertEquals(Done.getInstance(), completion.get(10, TimeUnit.SECONDS));
+    mergingFlow.shutdown();
+    repeatingFlow.shutdown();
   }
 
   @Test
