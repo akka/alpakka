@@ -7,8 +7,10 @@ package akka.stream.alpakka.amqp.javadsl
 import java.util.concurrent.CompletionStage
 
 import akka.Done
+import akka.annotation.ApiMayChange
 import akka.stream.alpakka.amqp.IncomingMessage
 
+@ApiMayChange // https://github.com/akka/alpakka/issues/1513
 trait CommittableIncomingMessage {
   val message: IncomingMessage
   def ack(multiple: Boolean = false): CompletionStage[Done]

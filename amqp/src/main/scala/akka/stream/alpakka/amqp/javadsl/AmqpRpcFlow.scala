@@ -6,6 +6,7 @@ package akka.stream.alpakka.amqp.javadsl
 
 import java.util.concurrent.CompletionStage
 
+import akka.annotation.ApiMayChange
 import akka.stream.alpakka.amqp._
 import akka.stream.javadsl.Flow
 import akka.util.ByteString
@@ -36,6 +37,7 @@ object AmqpRpcFlow {
    * Convenience for "at-most once delivery" semantics. Each message is acked to RabbitMQ
    * before it is emitted downstream.
    */
+  @ApiMayChange // https://github.com/akka/alpakka/issues/1513
   def atMostOnceFlow(settings: AmqpSinkSettings,
                      bufferSize: Int): Flow[OutgoingMessage, IncomingMessage, CompletionStage[String]] =
     akka.stream.alpakka.amqp.scaladsl.AmqpRpcFlow
@@ -48,6 +50,7 @@ object AmqpRpcFlow {
    * Convenience for "at-most once delivery" semantics. Each message is acked to RabbitMQ
    * before it is emitted downstream.
    */
+  @ApiMayChange // https://github.com/akka/alpakka/issues/1513
   def atMostOnceFlow(settings: AmqpSinkSettings,
                      bufferSize: Int,
                      repliesPerMessage: Int): Flow[OutgoingMessage, IncomingMessage, CompletionStage[String]] =
@@ -67,6 +70,7 @@ object AmqpRpcFlow {
    *
    * Compared to auto-commit, this gives exact control over when a message is considered consumed.
    */
+  @ApiMayChange // https://github.com/akka/alpakka/issues/1513
   def committableFlow(
       settings: AmqpSinkSettings,
       bufferSize: Int,

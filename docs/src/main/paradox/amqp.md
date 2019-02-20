@@ -32,6 +32,12 @@ There are several types of @scaladoc[AmqpConnectionProvider](akka.stream.alpakka
 
 ## Sending messages
 
+@@@warning
+
+The Alpakka AMQP API is likely to change a bit in future releases, as discussed in @github[#1513](#1513).
+
+@@@
+
 First define a queue name and the declaration of the queue that the messages will be sent to.
 
 Scala
@@ -61,6 +67,12 @@ Java
 : @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #run-sink }
 
 ## Receiving messages
+
+@@@warning
+
+The Alpakka AMQP API is likely to change a bit in future releases, as discussed in @github[#1513](#1513).
+
+@@@
 
 Create a source using the same queue declaration as before.
 

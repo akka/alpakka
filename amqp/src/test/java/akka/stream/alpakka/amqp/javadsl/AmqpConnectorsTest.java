@@ -9,17 +9,21 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
+import akka.stream.KillSwitches;
 import akka.stream.Materializer;
+import akka.stream.UniqueKillSwitch;
 import akka.stream.alpakka.amqp.*;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.TestSubscriber;
+import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.stream.testkit.javadsl.TestSink;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import com.rabbitmq.client.AuthenticationFailureException;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -36,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /** Needs a local running AMQP server on the default port with no password. */
 public class AmqpConnectorsTest {
@@ -54,11 +59,12 @@ public class AmqpConnectorsTest {
     TestKit.shutdownActorSystem(system);
   }
 
-  private AmqpConnectionProvider connectionProvider = AmqpLocalConnectionProvider.getInstance();
-
-  public void publishAndConsume() throws Exception {
-    // see AmqpDocsTest
+  @After
+  public void checkForStageLeaks() {
+    StreamTestKit.assertAllStagesStopped(materializer);
   }
+
+  private AmqpConnectionProvider connectionProvider = AmqpLocalConnectionProvider.getInstance();
 
   @Test(expected = ConnectException.class)
   public void throwIfCanNotConnect() throws Throwable {
@@ -116,18 +122,6 @@ public class AmqpConnectorsTest {
     // m.bytes().utf8String()).collect(Collectors.toList()));
   }
 
-  public void publishAndConsumeRpc() throws Exception {
-    // see AmqpDocsTest
-  }
-
-  public void publishFanoutAndConsume() throws Exception {
-    // see AmqpDocsTest
-  }
-
-  public void publishAndConsumeWithoutAutoAck() throws Exception {
-    // see AmqpDocsTest
-  }
-
   @Test
   public void publishAndConsumeRpcWithoutAutoAck() throws Exception {
 
@@ -163,9 +157,13 @@ public class AmqpConnectorsTest {
                 .withDeclaration(queueDeclaration),
             1);
 
-    amqpSource
-        .map(b -> OutgoingMessage.create(b.bytes(), false, false).withProperties(b.properties()))
-        .runWith(amqpSink, materializer);
+    UniqueKillSwitch sourceToSink =
+        amqpSource
+            .viaMat(KillSwitches.single(), Keep.right())
+            .map(
+                b -> OutgoingMessage.create(b.bytes(), false, false).withProperties(b.properties()))
+            .to(amqpSink)
+            .run(materializer);
 
     List<IncomingMessage> probeResult =
         JavaConverters.seqAsJavaListConverter(
@@ -173,11 +171,7 @@ public class AmqpConnectorsTest {
             .asJava();
     assertEquals(
         probeResult.stream().map(s -> s.bytes().utf8String()).collect(Collectors.toList()), input);
-  }
-
-  @Test
-  public void republishMessageWithoutAutoAckIfNacked() throws Exception {
-    // see AmqpDocsTest
+    sourceToSink.shutdown();
   }
 
   @Test
@@ -208,19 +202,18 @@ public class AmqpConnectorsTest {
     final CompletionStage<List<CommittableIncomingMessage>> result =
         amqpSource.take(input.size()).runWith(Sink.seq(), materializer);
 
-    result
-        .toCompletableFuture()
-        .get(3, TimeUnit.SECONDS)
-        .stream()
-        .map(
-            cm -> {
-              try {
-                cm.ack(false).toCompletableFuture().get(3, TimeUnit.SECONDS);
-              } catch (Exception e) {
-                assertEquals(e.getMessage(), false, true);
-              }
-              return true;
-            });
+    List<CommittableIncomingMessage> committableMessages =
+        result.toCompletableFuture().get(3, TimeUnit.SECONDS);
+
+    assertEquals(input.size(), committableMessages.size());
+    committableMessages.forEach(
+        cm -> {
+          try {
+            cm.ack(false).toCompletableFuture().get(3, TimeUnit.SECONDS);
+          } catch (Exception e) {
+            fail(e.getMessage());
+          }
+        });
   }
 
   @Test
