@@ -26,9 +26,7 @@ private[amqp] final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings
   override def shape: SinkShape[OutgoingMessage] = SinkShape.of(in)
 
   override protected def initialAttributes: Attributes =
-    Attributes
-      .name("AmqpReplyToSink")
-      .and(ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher"))
+    super.initialAttributes and Attributes.name("AmqpReplyToSink") and ActorAttributes.IODispatcher
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
     val promise = Promise[Done]()
