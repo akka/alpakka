@@ -23,7 +23,7 @@ class ChronicleQueueSink[T](val queue: PersistentQueue[T], onPushCallback: () =>
   def this(persistDir: File)(implicit serializer: ChronicleQueueSerializer[T], system: ActorSystem) =
     this(new PersistentQueue[T](persistDir))
 
-  private[stream] val in = Inlet[T]("PersistentBuffer.in")
+  private[stream] val in = Inlet[T]("ChronicleQueue.in")
   override val shape: SinkShape[T] = SinkShape.of(in)
 
   protected val queueCloserActor = system.actorOf(Props(classOf[PersistentQueueCloserActor[T]], queue))

@@ -91,7 +91,7 @@ lazy val azureStorageQueue = alpakkaProject("azure-storage-queue", "azure.storag
 
 lazy val cassandra = alpakkaProject("cassandra", "cassandra", Dependencies.Cassandra)
 
-lazy val chronicleQueue = alpakkaProject("chronicle-queue", "chronicle.queue", Dependencies.ChronicleQueue)
+lazy val chronicleQueue = alpakkaProject("chronicle-queue", "chronicle.queue", Dependencies.ChronicleQueue, javaOptions in Test += "-ea")
 
 lazy val couchbase =
   alpakkaProject("couchbase", "couchbase", Dependencies.Couchbase, parallelExecution in Test := false)

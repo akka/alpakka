@@ -39,8 +39,8 @@ abstract class ChronicleQueueBase[T, S](
   def this(persistDir: File)(implicit serializer: ChronicleQueueSerializer[T], system: ActorSystem) =
     this(new PersistentQueue[T](persistDir))
 
-  private[stream] val in = Inlet[T]("PersistentBuffer.in")
-  private[stream] val out = Outlet[S]("PersistentBuffer.out")
+  private[stream] val in = Inlet[T]("ChronicleQueue.in")
+  private[stream] val out = Outlet[S]("ChronicleQueue.out")
   val shape: FlowShape[T, S] = FlowShape.of(in, out)
   val defaultOutputPort = 0
   @volatile protected var upstreamFailed = false

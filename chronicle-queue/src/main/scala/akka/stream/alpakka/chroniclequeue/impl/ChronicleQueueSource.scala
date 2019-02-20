@@ -29,7 +29,7 @@ class ChronicleQueueSource[T](val queue: PersistentQueue[T])(
   def this(persistDir: File)(implicit serializer: ChronicleQueueSerializer[T], system: ActorSystem) =
     this(new PersistentQueue[T](persistDir))
 
-  private val out = Outlet[T]("PersistentBuffer.out")
+  private val out = Outlet[T]("ChronicleQueue.out")
   override val shape: SourceShape[T] = SourceShape.of(out)
 
   val defaultOutputPort = 0

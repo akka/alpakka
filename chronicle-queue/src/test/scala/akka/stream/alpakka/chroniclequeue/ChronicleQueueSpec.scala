@@ -41,11 +41,10 @@ import Timeouts._
 object ChronicleQueueSpec {
   val testConfig = ConfigFactory.parseString("""
       |akka.actor.default-dispatcher {
-      |  executor = "thread-pool-executor"
-      |  thread-pool-executor {
-      |    core-pool-size-min = 1
-      |    core-pool-size-factor = 2.0
-      |    core-pool-size-max = 10
+      |  executor = "affinity-pool-executor"
+      |  affinity-pool-executor {
+      |    parallelism-min = 1
+      |    parallelism-max = 2
       |  }
       |}
     """.stripMargin)
