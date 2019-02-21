@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.javadsl;
@@ -10,9 +10,7 @@ import java.util.Objects;
 public final class Number {
   private Integer _id;
 
-  public Number() {
-
-  }
+  public Number() {}
 
   public Number(Integer _id) {
     this._id = _id;
@@ -42,9 +40,7 @@ public final class Number {
 
   @Override
   public String toString() {
-    return "Number{" +
-      "_id=" + _id +
-      '}';
+    return "Number{" + "_id=" + _id + '}';
   }
   // #pojo
 }

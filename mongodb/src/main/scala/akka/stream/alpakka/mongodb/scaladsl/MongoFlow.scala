@@ -6,6 +6,7 @@ package akka.stream.alpakka.mongodb.scaladsl
 
 import akka.stream.scaladsl.{Flow, Source}
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.stream.alpakka.mongodb.DocumentUpdate
 import com.mongodb.client.model.{DeleteOptions, InsertManyOptions, InsertOneOptions, UpdateOptions}
 import com.mongodb.client.result.{DeleteResult, UpdateResult}
@@ -16,10 +17,17 @@ import scala.collection.JavaConverters._
 
 object MongoFlow {
 
-  val DefaultInsertOneOptions = new InsertOneOptions()
-  val DefaultInsertManyOptions = new InsertManyOptions()
-  val DefaultUpdateOptions = new UpdateOptions()
-  val DefaultDeleteOptions = new DeleteOptions()
+  /** Internal Api */
+  @InternalApi private[mongodb] val DefaultInsertOneOptions = new InsertOneOptions()
+
+  /** Internal Api */
+  @InternalApi private[mongodb] val DefaultInsertManyOptions = new InsertManyOptions()
+
+  /** Internal Api */
+  @InternalApi private[mongodb] val DefaultUpdateOptions = new UpdateOptions()
+
+  /** Internal Api */
+  @InternalApi private[mongodb] val DefaultDeleteOptions = new DeleteOptions()
 
   /**
    * A [[akka.stream.scaladsl.Flow Flow]] that will insert documents into a collection.
