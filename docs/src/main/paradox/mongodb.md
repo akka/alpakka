@@ -49,8 +49,8 @@ Scala
 Java
 : @@snip [snip](/mongodb/src/test/java/docs/javadsl/MongoSourceTest.java) { #codecs }
 
-Sources provided by this connector need a prepared collection to communicate with MongoDB server.
-To get a reference to collection, lets initialize a MongoDB connection and access the database.
+Sources provided by this connector need a prepared collection to communicate with the MongoDB server.
+To get a reference to a collection, let's initialize a MongoDB connection and access the database.
 
 Scala
 : @@snip [snip](/mongodb/src/test/scala/docs/scaladsl/MongoSourceSpec.scala) { #init-connection }
