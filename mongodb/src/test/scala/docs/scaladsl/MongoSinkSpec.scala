@@ -115,7 +115,10 @@ class MongoSinkSpec
     "save with insertMany with options" in assertAllStagesStopped {
       val source = Source(testRange).map(i => Document.parse(s"""{"value":$i}"""))
 
-      source.grouped(2).runWith(MongoSink.insertMany(numbersDocumentColl, new InsertManyOptions().ordered(false))).futureValue
+      source
+        .grouped(2)
+        .runWith(MongoSink.insertMany(numbersDocumentColl, new InsertManyOptions().ordered(false)))
+        .futureValue
 
       val found = Source.fromPublisher(numbersDocumentColl.find()).runWith(Sink.seq).futureValue
 

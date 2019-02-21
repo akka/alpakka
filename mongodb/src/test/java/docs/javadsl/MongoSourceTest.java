@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.javadsl;
@@ -49,7 +49,8 @@ public class MongoSourceTest {
 
     // #codecs
     PojoCodecProvider codecProvider = PojoCodecProvider.builder().register(Number.class).build();
-    CodecRegistry codecRegistry = CodecRegistries.fromProviders(codecProvider, new ValueCodecProvider());
+    CodecRegistry codecRegistry =
+        CodecRegistries.fromProviders(codecProvider, new ValueCodecProvider());
     // #codecs
 
     // #init-connection
@@ -63,12 +64,18 @@ public class MongoSourceTest {
 
   @Before
   public void cleanDb() throws Exception {
-    Source.fromPublisher(numbersDocumentColl.deleteMany(new Document())).runWith(Sink.head(), mat).toCompletableFuture().get(5, TimeUnit.SECONDS);
+    Source.fromPublisher(numbersDocumentColl.deleteMany(new Document()))
+        .runWith(Sink.head(), mat)
+        .toCompletableFuture()
+        .get(5, TimeUnit.SECONDS);
   }
 
   @After
   public void checkForLeaks() throws Exception {
-    Source.fromPublisher(numbersDocumentColl.deleteMany(new Document())).runWith(Sink.head(), mat).toCompletableFuture().get(5, TimeUnit.SECONDS);
+    Source.fromPublisher(numbersDocumentColl.deleteMany(new Document()))
+        .runWith(Sink.head(), mat)
+        .toCompletableFuture()
+        .get(5, TimeUnit.SECONDS);
     StreamTestKit.assertAllStagesStopped(mat);
   }
 
@@ -84,7 +91,13 @@ public class MongoSourceTest {
     final Source<Document, NotUsed> source = MongoSource.create(numbersDocumentColl.find());
     final CompletionStage<List<Document>> rows = source.runWith(Sink.seq(), mat);
 
-    assertEquals(data, rows.toCompletableFuture().get(5, TimeUnit.SECONDS).stream().map(n -> n.getInteger("_id")).collect(Collectors.toList()));
+    assertEquals(
+        data,
+        rows.toCompletableFuture()
+            .get(5, TimeUnit.SECONDS)
+            .stream()
+            .map(n -> n.getInteger("_id"))
+            .collect(Collectors.toList()));
   }
 
   @Test
@@ -108,30 +121,45 @@ public class MongoSourceTest {
 
     final Source<Document, NotUsed> source = MongoSource.create(numbersDocumentColl.find());
 
-    assertEquals(data, source.runWith(Sink.seq(), mat).toCompletableFuture().get(5, TimeUnit.SECONDS).stream().map(n -> n.getInteger("_id")).collect(Collectors.toList()));
-    assertEquals(data, source.runWith(Sink.seq(), mat).toCompletableFuture().get(5, TimeUnit.SECONDS).stream().map(n -> n.getInteger("_id")).collect(Collectors.toList()));
+    assertEquals(
+        data,
+        source
+            .runWith(Sink.seq(), mat)
+            .toCompletableFuture()
+            .get(5, TimeUnit.SECONDS)
+            .stream()
+            .map(n -> n.getInteger("_id"))
+            .collect(Collectors.toList()));
+    assertEquals(
+        data,
+        source
+            .runWith(Sink.seq(), mat)
+            .toCompletableFuture()
+            .get(5, TimeUnit.SECONDS)
+            .stream()
+            .map(n -> n.getInteger("_id"))
+            .collect(Collectors.toList()));
   }
 
   @Test
   public void streamTheResultOfMongoQueryThatResultsInNoData() throws Exception {
     final Source<Document, NotUsed> source = MongoSource.create(numbersDocumentColl.find());
 
-    assertEquals(true, source.runWith(Sink.seq(), mat).toCompletableFuture().get(5, TimeUnit.SECONDS).isEmpty());
+    assertEquals(
+        true,
+        source.runWith(Sink.seq(), mat).toCompletableFuture().get(5, TimeUnit.SECONDS).isEmpty());
   }
 
   private List<Integer> seed() throws Exception {
-    final List<Integer> numbers = IntStream.range(1, 10)
-      .boxed()
-      .collect(Collectors.toList());
+    final List<Integer> numbers = IntStream.range(1, 10).boxed().collect(Collectors.toList());
 
-    final List<Document> documents = numbers.stream().map(i ->
-      Document.parse("{_id:" + i + "}")
-    ).collect(Collectors.toList());
+    final List<Document> documents =
+        numbers.stream().map(i -> Document.parse("{_id:" + i + "}")).collect(Collectors.toList());
 
-    final CompletionStage<Success> completion = Source.fromPublisher(numbersDocumentColl.insertMany(documents)).runWith(Sink.head(), mat);
+    final CompletionStage<Success> completion =
+        Source.fromPublisher(numbersDocumentColl.insertMany(documents)).runWith(Sink.head(), mat);
     completion.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     return numbers;
   }
-
 }
