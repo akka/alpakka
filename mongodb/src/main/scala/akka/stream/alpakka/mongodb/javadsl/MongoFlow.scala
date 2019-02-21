@@ -41,7 +41,7 @@ object MongoFlow {
     scaladsl.MongoFlow.insertOne(collection, options).asJava
 
   /**
-   * A [[akka.stream.javadsl.Flow Flow]] that will insert batches documents into a collection.
+   * A [[akka.stream.javadsl.Flow Flow]] that will insert batches of documents into a collection.
    *
    * @param collection mongo db collection to insert to.
    */
@@ -49,7 +49,7 @@ object MongoFlow {
     insertMany(collection, DefaultInsertManyOptions)
 
   /**
-   * A [[akka.stream.javadsl.Flow Flow]] that will insert batches documents into a collection.
+   * A [[akka.stream.javadsl.Flow Flow]] that will insert batches of documents into a collection.
    *
    * @param collection mongo db collection to insert to.
    * @param options options to apply to the operation
