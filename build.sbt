@@ -269,6 +269,7 @@ lazy val docs = project
       "javadoc.com.amazonaws.base_url" -> "https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/",
       // Eclipse Paho client for MQTT
       "javadoc.org.eclipse.paho.client.mqttv3.base_url" -> "http://www.eclipse.org/paho/files/javadoc/",
+      "javadoc.org.bson.codecs.configuration.base_url" -> "http://mongodb.github.io/mongo-java-driver/3.7/javadoc/",
       "scaladoc.scala.base_url" -> s"http://www.scala-lang.org/api/current/",
       "scaladoc.akka.base_url" -> s"http://doc.akka.io/api/akka/${Dependencies.AkkaVersion}",
       "scaladoc.akka.http.base_url" -> s"https://doc.akka.io/api/akka-http/${Dependencies.AkkaHttpVersion}/",
