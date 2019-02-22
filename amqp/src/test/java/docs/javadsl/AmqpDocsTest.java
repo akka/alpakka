@@ -83,7 +83,12 @@ public class AmqpDocsTest {
             AmqpSinkSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
                 .withDeclaration(queueDeclaration));
+
+    final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
+    CompletionStage<Done> writing =
+        Source.from(input).map(ByteString::fromString).runWith(amqpSink, materializer);
     // #create-sink
+    writing.toCompletableFuture().get(3, TimeUnit.SECONDS);
 
     // #create-source
     final Integer bufferSize = 10;
@@ -92,17 +97,10 @@ public class AmqpDocsTest {
             NamedQueueSourceSettings.create(connectionProvider, queueName)
                 .withDeclaration(queueDeclaration),
             bufferSize);
-    // #create-source
 
-    // #run-sink
-    final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
-    Source.from(input).map(ByteString::fromString).runWith(amqpSink, materializer);
-    // #run-sink
-
-    // #run-source
     final CompletionStage<List<IncomingMessage>> result =
         amqpSource.take(input.size()).runWith(Sink.seq(), materializer);
-    // #run-source
+    // #create-source
 
     assertEquals(
         input,
@@ -120,15 +118,6 @@ public class AmqpDocsTest {
     final String queueName = "amqp-conn-it-test-rpc-queue-" + System.currentTimeMillis();
     final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
 
-    // #create-rpc-flow
-    final Flow<ByteString, ByteString, CompletionStage<String>> ampqRpcFlow =
-        AmqpRpcFlow.createSimple(
-            AmqpSinkSettings.create(connectionProvider)
-                .withRoutingKey(queueName)
-                .withDeclaration(queueDeclaration),
-            1);
-    // #create-rpc-flow
-
     final Integer bufferSize = 10;
     final Source<IncomingMessage, NotUsed> amqpSource =
         AmqpSource.atMostOnceSource(
@@ -137,14 +126,22 @@ public class AmqpDocsTest {
             bufferSize);
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
-    // #run-rpc-flow
+
+    // #create-rpc-flow
+    final Flow<ByteString, ByteString, CompletionStage<String>> ampqRpcFlow =
+        AmqpRpcFlow.createSimple(
+            AmqpSinkSettings.create(connectionProvider)
+                .withRoutingKey(queueName)
+                .withDeclaration(queueDeclaration),
+            1);
+
     Pair<CompletionStage<String>, TestSubscriber.Probe<ByteString>> result =
         Source.from(input)
             .map(ByteString::fromString)
             .viaMat(ampqRpcFlow, Keep.right())
             .toMat(TestSink.probe(system), Keep.both())
             .run(materializer);
-    // #run-rpc-flow
+    // #create-rpc-flow
     result.first().toCompletableFuture().get(3, TimeUnit.SECONDS);
 
     Sink<OutgoingMessage, CompletionStage<Done>> amqpSink =
@@ -245,6 +242,11 @@ public class AmqpDocsTest {
     repeatingFlow.shutdown();
   }
 
+  private CompletionStage<CommittableIncomingMessage> businessLogic(
+      CommittableIncomingMessage msg) {
+    return CompletableFuture.completedFuture(msg);
+  }
+
   @Test
   public void publishAndConsumeWithoutAutoAck() throws Exception {
     final String queueName = "amqp-conn-it-test-no-auto-ack-" + System.currentTimeMillis();
@@ -256,6 +258,9 @@ public class AmqpDocsTest {
                 .withRoutingKey(queueName)
                 .withDeclaration(queueDeclaration));
 
+    final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
+    Source.from(input).map(ByteString::fromString).runWith(amqpSink, materializer);
+
     // #create-source-withoutautoack
     final Integer bufferSize = 10;
     final Source<CommittableIncomingMessage, NotUsed> amqpSource =
@@ -263,18 +268,14 @@ public class AmqpDocsTest {
             NamedQueueSourceSettings.create(connectionProvider, queueName)
                 .withDeclaration(queueDeclaration),
             bufferSize);
-    // #create-source-withoutautoack
 
-    final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
-    Source.from(input).map(ByteString::fromString).runWith(amqpSink, materializer);
-
-    // #run-source-withoutautoack
     final CompletionStage<List<IncomingMessage>> result =
         amqpSource
+            .mapAsync(1, this::businessLogic)
             .mapAsync(1, cm -> cm.ack(false).thenApply(unused -> cm.message()))
             .take(input.size())
             .runWith(Sink.seq(), materializer);
-    // #run-source-withoutautoack
+    // #create-source-withoutautoack
 
     assertEquals(
         input,
@@ -314,8 +315,10 @@ public class AmqpDocsTest {
     // #run-source-withoutautoack-and-nack
     final CompletionStage<List<CommittableIncomingMessage>> result1 =
         amqpSource
+            .mapAsync(1, this::businessLogic)
             .take(input.size())
-            .mapAsync(1, cm -> cm.nack(false, true).thenApply(unused -> cm))
+            .mapAsync(
+                1, cm -> cm.nack(/* multiple */ false, /* requeue */ true).thenApply(unused -> cm))
             .runWith(Sink.seq(), materializer);
     // #run-source-withoutautoack-and-nack
 

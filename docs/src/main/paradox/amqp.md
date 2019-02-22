@@ -50,21 +50,16 @@ Here we used @scaladoc[QueueDeclaration](akka.stream.alpakka.amqp.QueueDeclarati
 
 Create a sink, that accepts and forwards @scaladoc[ByteString](akka.util.ByteString)s to the AMQP server.
 
+@scaladoc[AmqpSink](akka.stream.alpakka.amqp.AmqpSink$) is a collection of factory methods that facilitates creation of sinks. Here we created a *simple* sink, which means that we are able to pass `ByteString`s to the sink instead of wrapping data into @scaladoc[OutgoingMessage](akka.stream.alpakka.amqp.OutgoingMessage)s.
+
+Last step is to @extref[materialize](akka-docs:scala/stream/stream-flows-and-basics) and run the sink we have created.
+
 Scala
 : @@snip [snip](/amqp/src/test/scala/docs/scaladsl/AmqpDocsSpec.scala) { #create-sink }
 
 Java
 : @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #create-sink }
 
-@scaladoc[AmqpSink](akka.stream.alpakka.amqp.AmqpSink$) is a collection of factory methods that facilitates creation of sinks. Here we created a *simple* sink, which means that we are able to pass `ByteString`s to the sink instead of wrapping data into @scaladoc[OutgoingMessage](akka.stream.alpakka.amqp.OutgoingMessage)s.
-
-Last step is to @extref[materialize](akka-docs:scala/stream/stream-flows-and-basics) and run the sink we have created.
-
-Scala
-: @@snip [snip](/amqp/src/test/scala/docs/scaladsl/AmqpDocsSpec.scala) { #run-sink }
-
-Java
-: @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #run-sink }
 
 ## Receiving messages
 
@@ -76,21 +71,16 @@ The Alpakka AMQP API is likely to change a bit in future releases, as discussed 
 
 Create a source using the same queue declaration as before.
 
+The `bufferSize` parameter controls the maximum number of messages to prefetch from the AMQP server.
+
+Run the source and take the same amount of messages as we previously sent to it.
+
+
 Scala
 : @@snip [snip](/amqp/src/test/scala/docs/scaladsl/AmqpDocsSpec.scala) { #create-source }
 
 Java
 : @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #create-source }
-
-The `bufferSize` parameter controls the maximum number of messages to prefetch from the AMQP server.
-
-Run the source and take the same amount of messages as we previously sent to it.
-
-Scala
-: @@snip [snip](/amqp/src/test/scala/docs/scaladsl/AmqpDocsSpec.scala) { #run-source }
-
-Java
-: @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #run-source }
 
 This is how you send and receive message from AMQP server using this connector.
 
@@ -135,32 +125,18 @@ Java
 : @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #create-rpc-flow }
 
 
-Scala
-: @@snip [snip](/amqp/src/test/scala/docs/scaladsl/AmqpDocsSpec.scala) { #run-rpc-flow }
-
-Java
-: @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #run-rpc-flow }
-
-
 ## Acknowledging messages downstream
 
-Create a committable sink which returns 
+Committable sources return @scaladoc[CommittableIncomingMessage](akka.stream.alpakka.amqp.CommittableIncomingMessage) which wraps the @scaladoc[IncomingMessage](akka.stream.alpakka.amqp.IncomingMessage) and exposes the methods ack and nack.
+
+Use ack to acknowledge the message back to RabbitMQ. Ack takes an optional boolean parameter `multiple` indicating whether you are acknowledging the individual message or all the messages up to it.
+
 
 Scala
 : @@snip [snip](/amqp/src/test/scala/docs/scaladsl/AmqpDocsSpec.scala) { #create-source-withoutautoack }
 
 Java
 : @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #create-source-withoutautoack }
-
-Committable sources return @scaladoc[CommittableIncomingMessage](akka.stream.alpakka.amqp.CommittableIncomingMessage) which wraps the @scaladoc[IncomingMessage](akka.stream.alpakka.amqp.IncomingMessage) and exposes the methods ack and nack.
-
-Use ack to acknowledge the message back to RabbitMQ. Ack takes an optional boolean parameter `multiple` indicating whether you are acknowledging the individual message or all the messages up to it.
-
-Scala
-: @@snip [snip](/amqp/src/test/scala/docs/scaladsl/AmqpDocsSpec.scala) { #run-source-withoutautoack }
-
-Java
-: @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #run-source-withoutautoack }
 
 Use nack to reject a message. Apart from the `multiple` argument, nack takes another optional boolean parameter indicating whether the item should be requeued or not.
 

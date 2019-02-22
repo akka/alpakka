@@ -4,17 +4,18 @@
 
 package docs.scaladsl
 
-import akka.Done
+import akka.{Done, NotUsed}
 import akka.stream.KillSwitches
 import akka.stream.alpakka.amqp._
-import akka.stream.alpakka.amqp.scaladsl.{AmqpRpcFlow, AmqpSink, AmqpSource}
+import akka.stream.alpakka.amqp.scaladsl.{AmqpRpcFlow, AmqpSink, AmqpSource, CommittableIncomingMessage}
 import akka.stream.scaladsl.{Keep, Sink, Source}
+import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Promise}
+import scala.concurrent.{Await, Future, Promise}
 import scala.collection.immutable
 
 /**
@@ -41,28 +42,33 @@ class AmqpDocsSpec extends AmqpSpec {
       //#queue-declaration
 
       //#create-sink
-      val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(connectionProvider)
-          .withRoutingKey(queueName)
-          .withDeclaration(queueDeclaration)
-      )
-      //#create-sink
+      val amqpSink: Sink[ByteString, Future[Done]] =
+        AmqpSink.simple(
+          AmqpSinkSettings(connectionProvider)
+            .withRoutingKey(queueName)
+            .withDeclaration(queueDeclaration)
+        )
 
-      //#create-source
-      val amqpSource = AmqpSource.atMostOnceSource(
-        NamedQueueSourceSettings(connectionProvider, queueName).withDeclaration(queueDeclaration),
-        bufferSize = 10
-      )
-      //#create-source
-
-      //#run-sink
       val input = Vector("one", "two", "three", "four", "five")
-      Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
-      //#run-sink
+      val writing: Future[Done] =
+        Source(input)
+          .map(s => ByteString(s))
+          .runWith(amqpSink)
+      //#create-sink
+      writing.futureValue shouldEqual Done
 
-      //#run-source
-      val result = amqpSource.take(input.size).runWith(Sink.seq)
-      //#run-source
+      //#create-source
+      val amqpSource: Source[IncomingMessage, NotUsed] =
+        AmqpSource.atMostOnceSource(
+          NamedQueueSourceSettings(connectionProvider, queueName).withDeclaration(queueDeclaration),
+          bufferSize = 10
+        )
+
+      val result: Future[immutable.Seq[IncomingMessage]] =
+        amqpSource
+          .take(input.size)
+          .runWith(Sink.seq)
+      //#create-source
 
       result.futureValue.map(_.bytes.utf8String) shouldEqual input
     }
@@ -72,25 +78,24 @@ class AmqpDocsSpec extends AmqpSpec {
       val queueName = "amqp-conn-it-spec-rpc-queue-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
 
-      //#create-rpc-flow
-      val amqpRpcFlow = AmqpRpcFlow.simple(
-        AmqpSinkSettings(connectionProvider).withRoutingKey(queueName).withDeclaration(queueDeclaration)
-      )
-      //#create-rpc-flow
-
       val amqpSource = AmqpSource.atMostOnceSource(
         NamedQueueSourceSettings(connectionProvider, queueName),
         bufferSize = 1
       )
 
       val input = Vector("one", "two", "three", "four", "five")
-      //#run-rpc-flow
-      val (rpcQueueF, probe) = Source(input)
+
+      //#create-rpc-flow
+      val amqpRpcFlow = AmqpRpcFlow.simple(
+        AmqpSinkSettings(connectionProvider).withRoutingKey(queueName).withDeclaration(queueDeclaration)
+      )
+
+      val (rpcQueueF: Future[String], probe: TestSubscriber.Probe[ByteString]) = Source(input)
         .map(s => ByteString(s))
         .viaMat(amqpRpcFlow)(Keep.right)
         .toMat(TestSink.probe)(Keep.both)
         .run
-      //#run-rpc-flow
+      //#create-rpc-flow
       rpcQueueF.futureValue
 
       val amqpSink = AmqpSink.replyTo(
@@ -180,22 +185,23 @@ class AmqpDocsSpec extends AmqpSpec {
           .withDeclaration(queueDeclaration)
       )
 
+      val input = Vector("one", "two", "three", "four", "five")
+      Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
+
+      val businessLogic: CommittableIncomingMessage => Future[CommittableIncomingMessage] = Future.successful(_)
+
       //#create-source-withoutautoack
       val amqpSource = AmqpSource.committableSource(
         NamedQueueSourceSettings(connectionProvider, queueName).withDeclaration(queueDeclaration),
         bufferSize = 10
       )
-      //#create-source-withoutautoack
 
-      val input = Vector("one", "two", "three", "four", "five")
-      Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
-
-      //#run-source-withoutautoack
-      val result = amqpSource
+      val result: Future[immutable.Seq[CommittableIncomingMessage]] = amqpSource
+        .mapAsync(1)(businessLogic)
         .mapAsync(1)(cm => cm.ack().map(_ => cm))
         .take(input.size)
         .runWith(Sink.seq)
-      //#run-source-withoutautoack
+      //#create-source-withoutautoack
 
       result.futureValue.map(_.message.bytes.utf8String) shouldEqual input
     }
@@ -222,7 +228,7 @@ class AmqpDocsSpec extends AmqpSpec {
       //#run-source-withoutautoack-and-nack
       val result1 = amqpSource
         .take(input.size)
-        .mapAsync(1)(cm => cm.nack().map(_ => cm))
+        .mapAsync(1)(cm => cm.nack(multiple = false, requeue = true).map(_ => cm))
         .runWith(Sink.seq)
       //#run-source-withoutautoack-and-nack
 
