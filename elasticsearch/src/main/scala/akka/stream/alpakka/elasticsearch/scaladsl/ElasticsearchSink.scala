@@ -23,8 +23,8 @@ object ElasticsearchSink {
   def create[T](indexName: String,
                 typeName: String,
                 settings: ElasticsearchWriteSettings = ElasticsearchWriteSettings.Default)(
-      implicit client: RestClient,
-      writer: JsonWriter[T]
+      implicit elasticsearchClient: RestClient,
+      sprayJsonWriter: JsonWriter[T]
   ): Sink[WriteMessage[T, NotUsed], Future[Done]] =
     ElasticsearchFlow.create[T](indexName, typeName, settings).toMat(Sink.ignore)(Keep.right)
 
