@@ -29,9 +29,9 @@ Java
 ### Example: Rotate data stream over to multiple compressed files on SFTP server
 
 - generate data stream with changing contents over time (1),
-- function that tracks last element and outputs a new path when contents in the stream change
+- function that tracks last element and outputs a new path when contents in the stream change (2),
 - prepare SFTP credentials and settings (3),
-- compress ByteStrings (4),
+- compress ByteStrings (4)
 
 Scala
 : @@snip [snip](/doc-examples/src/main/scala/ftpsamples/RotateLogsToFtp.scala) { #sample }
