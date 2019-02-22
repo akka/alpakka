@@ -20,14 +20,14 @@ import org.apache.http.entity.StringEntity
 import org.apache.http.message.BasicHeader
 import org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.{BeforeAndAfterAll, Inspectors, Matchers, WordSpec}
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
+class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with Inspectors {
 
   private implicit val patience = PatienceConfig(10.seconds)
 
@@ -290,6 +290,40 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
         "Scala Puzzlers",
         "Scala for Spark in Production"
       )
+    }
+
+    "pass through data in `withContext`" in assertAllStagesStopped {
+      val books = immutable.Seq(
+        "Akka in Action",
+        "Alpakka Patterns"
+      )
+
+      val indexName = "sink3-1"
+      val createBooks = Source(books).zipWithIndex
+        .map {
+          case (book, index) =>
+            (WriteMessage.createIndexMessage(index.toString, Book(book)), book)
+        }
+        .via(
+          ElasticsearchFlow.createWithContext(indexName, "_doc")
+        )
+        .runWith(Sink.seq)
+
+      forAll(createBooks.futureValue) {
+        case (writeMessage, title) =>
+          val book = writeMessage.message.source
+          book.map(_.title) should contain(title)
+      }
+    }
+
+    "fail on using `withContext` with retries" in assertAllStagesStopped {
+      intercept[IllegalArgumentException] {
+        ElasticsearchFlow.createWithContext[Book, String](
+          "shouldFail",
+          "_doc",
+          ElasticsearchWriteSettings().withRetryLogic(RetryAtFixedRate(2, 1.seconds))
+        )
+      }
     }
 
     "not post invalid encoded JSON" in assertAllStagesStopped {
