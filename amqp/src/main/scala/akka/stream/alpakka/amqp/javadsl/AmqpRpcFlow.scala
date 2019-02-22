@@ -23,7 +23,7 @@ object AmqpRpcFlow {
    *
    * @param repliesPerMessage The number of responses that should be expected for each message placed on the queue.
    */
-  def createSimple(settings: AmqpSinkSettings,
+  def createSimple(settings: AmqpWriteSettings,
                    repliesPerMessage: Int): Flow[ByteString, ByteString, CompletionStage[String]] =
     akka.stream.alpakka.amqp.scaladsl.AmqpRpcFlow
       .simple(settings, repliesPerMessage)
@@ -35,7 +35,7 @@ object AmqpRpcFlow {
    * Convenience for "at-most once delivery" semantics. Each message is acked to RabbitMQ
    * before its read result is emitted downstream.
    */
-  def atMostOnceFlow(settings: AmqpSinkSettings,
+  def atMostOnceFlow(settings: AmqpWriteSettings,
                      bufferSize: Int): Flow[WriteMessage, ReadResult, CompletionStage[String]] =
     akka.stream.alpakka.amqp.scaladsl.AmqpRpcFlow
       .atMostOnceFlow(settings, bufferSize)
@@ -47,7 +47,7 @@ object AmqpRpcFlow {
    * Convenience for "at-most once delivery" semantics. Each message is acked to RabbitMQ
    * before its read result is emitted downstream.
    */
-  def atMostOnceFlow(settings: AmqpSinkSettings,
+  def atMostOnceFlow(settings: AmqpWriteSettings,
                      bufferSize: Int,
                      repliesPerMessage: Int): Flow[WriteMessage, ReadResult, CompletionStage[String]] =
     akka.stream.alpakka.amqp.scaladsl.AmqpRpcFlow
@@ -67,7 +67,7 @@ object AmqpRpcFlow {
    * Compared to auto-commit, this gives exact control over when a message is considered consumed.
    */
   def committableFlow(
-      settings: AmqpSinkSettings,
+      settings: AmqpWriteSettings,
       bufferSize: Int,
       repliesPerMessage: Int = 1
   ): Flow[WriteMessage, CommittableReadResult, CompletionStage[String]] =

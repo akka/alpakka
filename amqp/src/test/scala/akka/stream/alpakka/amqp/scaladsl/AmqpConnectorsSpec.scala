@@ -38,7 +38,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val queueDeclaration = QueueDeclaration(queueName)
 
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
       )
@@ -58,7 +58,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val queueDeclaration = QueueDeclaration(queueName)
 
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
       )
@@ -73,7 +73,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val queueDeclaration = QueueDeclaration(queueName)
 
       val amqpRpcFlow = AmqpRpcFlow.simple(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration),
         2
@@ -116,7 +116,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
       Source
         .empty[ByteString]
-        .via(AmqpRpcFlow.simple(AmqpSinkSettings(connectionProvider)))
+        .via(AmqpRpcFlow.simple(AmqpWriteSettings(connectionProvider)))
         .runWith(TestSink.probe)
         .ensureSubscription()
         .expectComplete()
@@ -152,7 +152,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val queueName = "amqp-conn-it-spec-work-queues-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
       )
@@ -192,7 +192,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       )
 
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
       )
@@ -242,7 +242,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val queueDeclaration = QueueDeclaration(queueName)
 
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(connectionSettings)
+        AmqpWriteSettings(connectionSettings)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
       )
@@ -269,7 +269,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val queueDeclaration = QueueDeclaration(queueName)
 
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
       )
@@ -307,7 +307,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val input = Vector("one", "two", "three", "four", "five")
 
       val amqpRpcFlow = AmqpRpcFlow.committableFlow(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration),
         bufferSize = 10
@@ -350,7 +350,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val bindingDeclaration = BindingDeclaration(queueName, exchangeName).withRoutingKey(getRoutingKey("*"))
 
       val amqpSink = AmqpSink(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withExchange(exchangeName)
           .withDeclarations(immutable.Seq(exchangeDeclaration, queueDeclaration, bindingDeclaration))
       )
@@ -385,7 +385,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val queueDeclaration = QueueDeclaration(queueName)
 
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
       )
