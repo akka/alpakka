@@ -25,6 +25,8 @@ class AmqpDocsSpec extends AmqpSpec {
 
   override implicit val patienceConfig = PatienceConfig(10.seconds)
 
+  val businessLogic: CommittableReadResult => Future[CommittableReadResult] = Future.successful(_)
+
   "The AMQP Connectors" should {
 
     val connectionProvider = AmqpLocalConnectionProvider
@@ -60,7 +62,9 @@ class AmqpDocsSpec extends AmqpSpec {
       //#create-source
       val amqpSource: Source[ReadResult, NotUsed] =
         AmqpSource.atMostOnceSource(
-          NamedQueueSourceSettings(connectionProvider, queueName).withDeclaration(queueDeclaration),
+          NamedQueueSourceSettings(connectionProvider, queueName)
+            .withDeclaration(queueDeclaration)
+            .withAckRequired(false),
           bufferSize = 10
         )
 
@@ -188,22 +192,21 @@ class AmqpDocsSpec extends AmqpSpec {
       val input = Vector("one", "two", "three", "four", "five")
       Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
 
-      val businessLogic: CommittableReadResult => Future[CommittableReadResult] = Future.successful(_)
-
       //#create-source-withoutautoack
       val amqpSource = AmqpSource.committableSource(
-        NamedQueueSourceSettings(connectionProvider, queueName).withDeclaration(queueDeclaration),
+        NamedQueueSourceSettings(connectionProvider, queueName)
+          .withDeclaration(queueDeclaration),
         bufferSize = 10
       )
 
-      val result: Future[immutable.Seq[CommittableReadResult]] = amqpSource
+      val result: Future[immutable.Seq[ReadResult]] = amqpSource
         .mapAsync(1)(businessLogic)
-        .mapAsync(1)(cm => cm.ack().map(_ => cm))
+        .mapAsync(1)(cm => cm.ack().map(_ => cm.message))
         .take(input.size)
         .runWith(Sink.seq)
       //#create-source-withoutautoack
 
-      result.futureValue.map(_.message.bytes.utf8String) shouldEqual input
+      result.futureValue.map(_.bytes.utf8String) shouldEqual input
     }
 
     "republish message without autoAck if nack is sent" in assertAllStagesStopped {
@@ -225,14 +228,16 @@ class AmqpDocsSpec extends AmqpSpec {
         bufferSize = 10
       )
 
-      //#run-source-withoutautoack-and-nack
-      val result1 = amqpSource
-        .take(input.size)
-        .mapAsync(1)(cm => cm.nack(multiple = false, requeue = true).map(_ => cm))
-        .runWith(Sink.seq)
-      //#run-source-withoutautoack-and-nack
+      //#create-source-withoutautoack
 
-      Await.ready(result1, 3.seconds)
+      val nackedResults: Future[immutable.Seq[ReadResult]] = amqpSource
+        .mapAsync(1)(businessLogic)
+        .take(input.size)
+        .mapAsync(1)(cm => cm.nack(multiple = false, requeue = true).map(_ => cm.message))
+        .runWith(Sink.seq)
+      //#create-source-withoutautoack
+
+      Await.ready(nackedResults, 3.seconds)
 
       val result2 = amqpSource
         .mapAsync(1)(cm => cm.ack().map(_ => cm))
