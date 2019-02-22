@@ -7,8 +7,8 @@ package akka.stream.alpakka.amqp.impl
 import akka.Done
 import akka.annotation.InternalApi
 import akka.stream.alpakka.amqp._
-import akka.stream.alpakka.amqp.impl.AmqpSourceStage.AutoAckedMessage
-import akka.stream.alpakka.amqp.scaladsl.CommittableIncomingMessage
+import akka.stream.alpakka.amqp.impl.AmqpSourceStage.AutoAckedReadResult
+import akka.stream.alpakka.amqp.scaladsl.CommittableReadResult
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler, StageLogging}
 import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.util.ByteString
@@ -27,17 +27,16 @@ private final case class NackArguments(deliveryTag: Long, multiple: Boolean, req
  *
  * Connects to an AMQP server upon materialization and consumes messages from it emitting them
  * into the stream. Each materialized source will create one connection to the broker.
- * As soon as an `IncomingMessage` is sent downstream, an ack for it is sent to the broker.
  *
  * @param bufferSize The max number of elements to prefetch and buffer at any given time.
  */
 @InternalApi
 private[amqp] final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
-    extends GraphStage[SourceShape[CommittableIncomingMessage]] { stage =>
+    extends GraphStage[SourceShape[CommittableReadResult]] { stage =>
 
-  private val out = Outlet[CommittableIncomingMessage]("AmqpSource.out")
+  private val out = Outlet[CommittableReadResult]("AmqpSource.out")
 
-  override val shape: SourceShape[CommittableIncomingMessage] = SourceShape.of(out)
+  override val shape: SourceShape[CommittableReadResult] = SourceShape.of(out)
 
   override protected def initialAttributes: Attributes = Attributes.name("AmqpSource")
 
@@ -46,7 +45,7 @@ private[amqp] final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSi
 
       override val settings: AmqpSourceSettings = stage.settings
 
-      private val queue = mutable.Queue[CommittableIncomingMessage]()
+      private val queue = mutable.Queue[CommittableReadResult]()
       private var ackRequired = true
       private var unackedMessages = 0
 
@@ -86,8 +85,8 @@ private[amqp] final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSi
                                       body: Array[Byte]): Unit = {
             val message = if (ackRequired) {
 
-              new CommittableIncomingMessage {
-                override val message = IncomingMessage(ByteString(body), envelope, properties)
+              new CommittableReadResult {
+                override val message = ReadResult(ByteString(body), envelope, properties)
 
                 override def ack(multiple: Boolean): Future[Done] = {
                   val promise = Promise[Done]()
@@ -101,7 +100,7 @@ private[amqp] final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSi
                   promise.future
                 }
               }
-            } else new AutoAckedMessage(IncomingMessage(ByteString(body), envelope, properties))
+            } else new AutoAckedReadResult(ReadResult(ByteString(body), envelope, properties))
             consumerCallback.invoke(message)
           }
 
@@ -149,7 +148,7 @@ private[amqp] final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSi
         }
       }
 
-      def handleDelivery(message: CommittableIncomingMessage): Unit =
+      def handleDelivery(message: CommittableReadResult): Unit =
         if (isAvailable(out)) {
           pushMessage(message)
         } else if (queue.size + 1 > bufferSize) {
@@ -175,7 +174,7 @@ private[amqp] final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSi
         }
       )
 
-      def pushMessage(message: CommittableIncomingMessage): Unit = {
+      def pushMessage(message: CommittableReadResult): Unit = {
         push(out, message)
         if (ackRequired) unackedMessages += 1
       }
@@ -190,7 +189,7 @@ private[amqp] final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSi
 private[amqp] object AmqpSourceStage {
   private val SuccessfullyDone = Future.successful(Done)
 
-  final class AutoAckedMessage(override val message: IncomingMessage) extends CommittableIncomingMessage {
+  final class AutoAckedReadResult(override val message: ReadResult) extends CommittableReadResult {
     override def ack(multiple: Boolean): Future[Done] = SuccessfullyDone
     override def nack(multiple: Boolean, requeue: Boolean): Future[Done] = SuccessfullyDone
   }

@@ -32,12 +32,6 @@ There are several types of @scaladoc[AmqpConnectionProvider](akka.stream.alpakka
 
 ## Sending messages
 
-@@@warning
-
-The Alpakka AMQP API is likely to change a bit in future releases, as discussed in @github[#1513](#1513).
-
-@@@
-
 First define a queue name and the declaration of the queue that the messages will be sent to.
 
 Scala
@@ -50,7 +44,7 @@ Here we used @scaladoc[QueueDeclaration](akka.stream.alpakka.amqp.QueueDeclarati
 
 Create a sink, that accepts and forwards @scaladoc[ByteString](akka.util.ByteString)s to the AMQP server.
 
-@scaladoc[AmqpSink](akka.stream.alpakka.amqp.AmqpSink$) is a collection of factory methods that facilitates creation of sinks. Here we created a *simple* sink, which means that we are able to pass `ByteString`s to the sink instead of wrapping data into @scaladoc[OutgoingMessage](akka.stream.alpakka.amqp.OutgoingMessage)s.
+@scaladoc[AmqpSink](akka.stream.alpakka.amqp.AmqpSink$) is a collection of factory methods that facilitates creation of sinks. Here we created a *simple* sink, which means that we are able to pass `ByteString`s to the sink instead of wrapping data into @scaladoc[WriteMessage](akka.stream.alpakka.amqp.WriteMessage)s.
 
 Last step is to @extref[materialize](akka-docs:scala/stream/stream-flows-and-basics) and run the sink we have created.
 
@@ -62,12 +56,6 @@ Java
 
 
 ## Receiving messages
-
-@@@warning
-
-The Alpakka AMQP API is likely to change a bit in future releases, as discussed in @github[#1513](#1513).
-
-@@@
 
 Create a source using the same queue declaration as before.
 
@@ -86,7 +74,7 @@ This is how you send and receive message from AMQP server using this connector.
 
 ## Using Pub/Sub
 
-Instead of sending messages directly to queues, it is possible to send messages to an exchange and then provide instructions to AMQP server what to do with incoming messages to the exchange. We are going to use the *fanout* type of the exchange, which enables message broadcasting to multiple consumers. We are going to do that by using an exchange declaration for the sink and all of the sources.
+Instead of sending messages directly to queues, it is possible to send messages to an exchange and then provide instructions to the AMQP server what to do with incoming messages. We are going to use the *fanout* type of the exchange, which enables message broadcasting to multiple consumers. We are going to do that by using an exchange declaration for the sink and all of the sources.
 
 Scala
 : @@snip [snip](/amqp/src/test/scala/docs/scaladsl/AmqpDocsSpec.scala) { #exchange-declaration }
@@ -127,10 +115,9 @@ Java
 
 ## Acknowledging messages downstream
 
-Committable sources return @scaladoc[CommittableIncomingMessage](akka.stream.alpakka.amqp.CommittableIncomingMessage) which wraps the @scaladoc[IncomingMessage](akka.stream.alpakka.amqp.IncomingMessage) and exposes the methods ack and nack.
+Committable sources return @scala[@scaladoc[CommittableReadResult](akka.stream.alpakka.amqp.scaladsl.CommittableReadResult)]@java[@scaladoc[CommittableReadResult](akka.stream.alpakka.amqp.javadsl.CommittableReadResult)] which wraps the @scaladoc[ReadResult](akka.stream.alpakka.amqp.ReadResult) and exposes the methods `ack` and `nack`.
 
-Use ack to acknowledge the message back to RabbitMQ. Ack takes an optional boolean parameter `multiple` indicating whether you are acknowledging the individual message or all the messages up to it.
-
+Use ack to acknowledge the message back to RabbitMQ. `ack` takes an optional boolean parameter `multiple` indicating whether you are acknowledging the individual message or all the messages up to it.
 
 Scala
 : @@snip [snip](/amqp/src/test/scala/docs/scaladsl/AmqpDocsSpec.scala) { #create-source-withoutautoack }
@@ -138,7 +125,7 @@ Scala
 Java
 : @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #create-source-withoutautoack }
 
-Use nack to reject a message. Apart from the `multiple` argument, nack takes another optional boolean parameter indicating whether the item should be requeued or not.
+Use `nack` to reject a message. Apart from the `multiple` argument, `nack` takes another optional boolean parameter indicating whether the item should be requeued or not.
 
 Scala
 : @@snip [snip](/amqp/src/test/scala/docs/scaladsl/AmqpDocsSpec.scala) { #run-source-withoutautoack-and-nack }
