@@ -155,7 +155,12 @@ object TemporaryQueueSourceSettings {
 
 final class AmqpPublishConfirmConfiguration private (
     val confirmTimeout: Long
-)
+) {
+  override def toString: String =
+    "AmqpPublishConfirmConfiguration(" +
+    s"confirmTimeout=$confirmTimeout" +
+    ")"
+}
 
 object AmqpPublishConfirmConfiguration {
   def apply(confirmTimeout: Long): AmqpPublishConfirmConfiguration =
@@ -181,7 +186,7 @@ final class AmqpReplyToSinkSettings private (
   def withFailIfReplyToMissing(failIfReplyToMissing: Boolean): AmqpReplyToSinkSettings =
     copy(failIfReplyToMissing = failIfReplyToMissing)
 
-  def withPublishConfirms(confirmTimeout: Long = 1000): AmqpReplyToSinkSettings =
+  def withPublishConfirms(confirmTimeout: Long): AmqpReplyToSinkSettings =
     copy(publishConfirm = Some(AmqpPublishConfirmConfiguration(confirmTimeout)))
 
   private def copy(connectionProvider: AmqpConnectionProvider = connectionProvider,
@@ -192,7 +197,8 @@ final class AmqpReplyToSinkSettings private (
   override def toString: String =
     "AmqpReplyToSinkSettings(" +
     s"connectionProvider=$connectionProvider, " +
-    s"failIfReplyToMissing=$failIfReplyToMissing" +
+    s"failIfReplyToMissing=$failIfReplyToMissing, " +
+    s"publishConfirm=$publishConfirm" +
     ")"
 }
 

@@ -127,7 +127,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val queueName = "amqp-conn-it-spec-publish-with-confirms-queue-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
 
-      val amqpPublishFlow = AmqpPublishFlow.simple[String](
+      val amqpPublishFlow = AmqpFlow.simple[String](
         AmqpSinkSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
@@ -152,7 +152,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val exchangeName = "amqp-conn-it-spec-publish-with-confirms-exchange-" + System.currentTimeMillis()
       val routingKey = "amqp-conn-it-spec-publish-with-confirms-rk-" + System.currentTimeMillis()
 
-      val amqpPublishFlow = AmqpPublishFlow[String](
+      val amqpPublishFlow = AmqpFlow[String](
         AmqpSinkSettings(connectionProvider)
           .withRoutingKey(routingKey)
           .withExchange(exchangeName)
@@ -177,7 +177,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
       Source
         .empty[(OutgoingMessage, String)]
-        .via(AmqpPublishFlow(AmqpSinkSettings(connectionProvider)))
+        .via(AmqpFlow(AmqpSinkSettings(connectionProvider)))
         .runWith(TestSink.probe)
         .ensureSubscription()
         .expectComplete()

@@ -181,11 +181,11 @@ public class AmqpDocsTest {
 
     // #create-publish-flow
     final Flow<Pair<ByteString, String>, String, CompletionStage<Done>> amqpPublishFlow =
-        AmqpPublishFlow.createSimple(
+        AmqpFlow.createSimple(
             AmqpWriteSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
                 .withDeclaration(queueDeclaration)
-                .withPublishConfirm(1000));
+                .withPublishConfirms(1000));
     // #create-publish-flow
 
     // #run-publish-flow
@@ -200,7 +200,9 @@ public class AmqpDocsTest {
 
     List<String> probeResult =
         JavaConverters.seqAsJavaListConverter(
-                result.second().toStrict(scala.concurrent.duration.Duration.create(3, TimeUnit.SECONDS)))
+                result
+                    .second()
+                    .toStrict(scala.concurrent.duration.Duration.create(3, TimeUnit.SECONDS)))
             .asJava();
     assertEquals(probeResult, input.stream().map(s -> "passThrough").collect(Collectors.toList()));
   }

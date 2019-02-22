@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.amqp.javadsl
@@ -15,21 +15,20 @@ import akka.util.ByteString
 
 import scala.compat.java8.FutureConverters._
 
-object AmqpPublishFlow {
+object AmqpFlow {
 
   /**
-   * Java API: Creates an [[AmqpPublishFlow]] that accepts (ByteString, passthrough) elements.
+   * Java API: Creates an [[AmqpFlow]] that accepts (ByteString, passthrough) elements.
    *
    * This stage materializes to a CompletionStage<Done>, which can be used to know when the Flow completes, either normally
    * or because of an amqp failure
    */
   def createSimple[O](settings: AmqpSinkSettings): Flow[Pair[ByteString, O], O, CompletionStage[Done]] =
     Flow
-      .fromFunction(new Function[Pair[ByteString, O], (ByteString, O)] {
-        override def apply(pair: Pair[ByteString, O]): (ByteString, O) = pair.toScala
-      })
+      .of[Pair[ByteString, O]](classOf[Pair[ByteString, O]])
+      .map(_.toScala)
       .viaMat[O, CompletionStage[Done], CompletionStage[Done]](
-        scaladsl.AmqpPublishFlow
+        scaladsl.AmqpFlow
           .simple[O](settings)
           .mapMaterializedValue(f => f.toJava)
           .asJava
@@ -38,19 +37,18 @@ object AmqpPublishFlow {
       )
 
   /**
-   * Java API: Creates an [[AmqpPublishFlow]] that accepts ([[OutgoingMessage]], passthrough) elements.
+   * Java API: Creates an [[AmqpFlow]] that accepts ([[OutgoingMessage]], passthrough) elements.
    *
    * This stage materializes to a CompletionStage<Done>, which can be used to know when the Flow completes, either normally
    * or because of an amqp failure
    */
   def create[O](settings: AmqpSinkSettings): Flow[Pair[OutgoingMessage, O], O, CompletionStage[Done]] =
     Flow
-      .fromFunction(new Function[Pair[OutgoingMessage, O], (OutgoingMessage, O)] {
-        override def apply(pair: Pair[OutgoingMessage, O]): (OutgoingMessage, O) = pair.toScala
-      })
+      .of[Pair[OutgoingMessage, O]](classOf[Pair[OutgoingMessage, O]])
+      .map(_.toScala)
       .viaMat[O, CompletionStage[Done], CompletionStage[Done]](
         scaladsl
-          .AmqpPublishFlow[O](settings)
+          .AmqpFlow[O](settings)
           .mapMaterializedValue(f => f.toJava)
           .asJava
           .asInstanceOf[Flow[(OutgoingMessage, O), O, CompletionStage[Done]]],

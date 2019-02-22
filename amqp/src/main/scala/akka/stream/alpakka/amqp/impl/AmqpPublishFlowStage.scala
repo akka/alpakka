@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.amqp.impl
@@ -28,7 +28,7 @@ private[amqp] final class AmqpPublishFlowStage[O](settings: AmqpSinkSettings)
 
   override protected def initialAttributes: Attributes =
     Attributes
-      .name("AmqpPublishConfirmFlow")
+      .name("AmqpPublishFlowStage")
       .and(ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher"))
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {

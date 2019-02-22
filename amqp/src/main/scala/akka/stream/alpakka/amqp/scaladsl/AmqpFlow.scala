@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.amqp.scaladsl
@@ -12,10 +12,10 @@ import akka.util.ByteString
 
 import scala.concurrent.Future
 
-object AmqpPublishFlow {
+object AmqpFlow {
 
   /**
-   * Scala API: Creates an [[AmqpPublishFlow]] that accepts (ByteString, passthrough) elements.
+   * Scala API: Creates an [[AmqpFlow]] that accepts (ByteString, passthrough) elements.
    *
    * This stage materializes to a `Future[Done]`, which can be used to know when the Flow completes, either normally
    * or because of an amqp failure

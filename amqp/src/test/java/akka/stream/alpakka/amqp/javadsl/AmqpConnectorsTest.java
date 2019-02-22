@@ -183,7 +183,7 @@ public class AmqpConnectorsTest {
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
 
     final Flow<Pair<ByteString, String>, String, CompletionStage<Done>> amqpPublishFlow =
-        AmqpPublishFlow.createSimple(
+        AmqpFlow.createSimple(
             AmqpSinkSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
                 .withDeclaration(queueDeclaration)
