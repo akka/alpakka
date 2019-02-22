@@ -341,5 +341,9 @@ public class AmqpDocsTest {
             .stream()
             .map(m -> m.message().bytes().utf8String())
             .collect(Collectors.toList()));
+
+    // See https://github.com/akka/akka/issues/26410
+    // extra wait before assertAllStagesStopped kicks in
+    Thread.sleep(3 * 1000);
   }
 }
