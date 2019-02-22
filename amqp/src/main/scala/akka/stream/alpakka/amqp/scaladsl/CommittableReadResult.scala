@@ -6,13 +6,13 @@ package akka.stream.alpakka.amqp.scaladsl
 
 import akka.Done
 import akka.annotation.ApiMayChange
-import akka.stream.alpakka.amqp.IncomingMessage
+import akka.stream.alpakka.amqp.ReadResult
 
 import scala.concurrent.Future
 
 @ApiMayChange // https://github.com/akka/alpakka/issues/1513
-trait CommittableIncomingMessage {
-  val message: IncomingMessage
+trait CommittableReadResult {
+  val message: ReadResult
   def ack(multiple: Boolean = false): Future[Done]
   def nack(multiple: Boolean = false, requeue: Boolean = true): Future[Done]
 }

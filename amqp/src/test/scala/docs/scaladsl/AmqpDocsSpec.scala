@@ -7,7 +7,7 @@ package docs.scaladsl
 import akka.{Done, NotUsed}
 import akka.stream.KillSwitches
 import akka.stream.alpakka.amqp._
-import akka.stream.alpakka.amqp.scaladsl.{AmqpRpcFlow, AmqpSink, AmqpSource, CommittableIncomingMessage}
+import akka.stream.alpakka.amqp.scaladsl.{AmqpRpcFlow, AmqpSink, AmqpSource, CommittableReadResult}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
@@ -58,13 +58,13 @@ class AmqpDocsSpec extends AmqpSpec {
       writing.futureValue shouldEqual Done
 
       //#create-source
-      val amqpSource: Source[IncomingMessage, NotUsed] =
+      val amqpSource: Source[ReadResult, NotUsed] =
         AmqpSource.atMostOnceSource(
           NamedQueueSourceSettings(connectionProvider, queueName).withDeclaration(queueDeclaration),
           bufferSize = 10
         )
 
-      val result: Future[immutable.Seq[IncomingMessage]] =
+      val result: Future[immutable.Seq[ReadResult]] =
         amqpSource
           .take(input.size)
           .runWith(Sink.seq)
@@ -104,7 +104,7 @@ class AmqpDocsSpec extends AmqpSpec {
 
       val sourceToSink = amqpSource
         .viaMat(KillSwitches.single)(Keep.right)
-        .map(b => OutgoingMessage(b.bytes.concat(ByteString("a")), false, false).withProperties(b.properties))
+        .map(b => WriteMessage(b.bytes.concat(ByteString("a"))).withProperties(b.properties))
         .to(amqpSink)
         .run()
 
@@ -188,7 +188,7 @@ class AmqpDocsSpec extends AmqpSpec {
       val input = Vector("one", "two", "three", "four", "five")
       Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
 
-      val businessLogic: CommittableIncomingMessage => Future[CommittableIncomingMessage] = Future.successful(_)
+      val businessLogic: CommittableReadResult => Future[CommittableReadResult] = Future.successful(_)
 
       //#create-source-withoutautoack
       val amqpSource = AmqpSource.committableSource(
@@ -196,7 +196,7 @@ class AmqpDocsSpec extends AmqpSpec {
         bufferSize = 10
       )
 
-      val result: Future[immutable.Seq[CommittableIncomingMessage]] = amqpSource
+      val result: Future[immutable.Seq[CommittableReadResult]] = amqpSource
         .mapAsync(1)(businessLogic)
         .mapAsync(1)(cm => cm.ack().map(_ => cm))
         .take(input.size)

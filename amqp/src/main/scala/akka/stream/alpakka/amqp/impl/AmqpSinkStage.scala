@@ -6,23 +6,23 @@ package akka.stream.alpakka.amqp.impl
 
 import akka.Done
 import akka.annotation.InternalApi
-import akka.stream.alpakka.amqp.{AmqpSinkSettings, OutgoingMessage}
+import akka.stream.alpakka.amqp.{AmqpSinkSettings, WriteMessage}
 import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, InHandler}
 import akka.stream.{ActorAttributes, Attributes, Inlet, SinkShape}
 
 import scala.concurrent.{Future, Promise}
 
 /**
- * Connects to an AMQP server upon materialization and sends incoming messages to the server.
+ * Connects to an AMQP server upon materialization and sends write messages to the server.
  * Each materialized sink will create one connection to the broker.
  */
 @InternalApi
 private[amqp] final class AmqpSinkStage(settings: AmqpSinkSettings)
-    extends GraphStageWithMaterializedValue[SinkShape[OutgoingMessage], Future[Done]] { stage =>
+    extends GraphStageWithMaterializedValue[SinkShape[WriteMessage], Future[Done]] { stage =>
 
-  val in = Inlet[OutgoingMessage]("AmqpSink.in")
+  val in = Inlet[WriteMessage]("AmqpSink.in")
 
-  override def shape: SinkShape[OutgoingMessage] = SinkShape.of(in)
+  override def shape: SinkShape[WriteMessage] = SinkShape.of(in)
 
   override protected def initialAttributes: Attributes =
     super.initialAttributes and Attributes.name("AmqpSink") and ActorAttributes.IODispatcher

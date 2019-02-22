@@ -6,7 +6,6 @@ package akka.stream.alpakka.amqp.javadsl
 
 import java.util.concurrent.CompletionStage
 
-import akka.annotation.ApiMayChange
 import akka.stream.alpakka.amqp._
 import akka.stream.javadsl.Flow
 import akka.util.ByteString
@@ -20,10 +19,9 @@ object AmqpRpcFlow {
    * Create an [[https://www.rabbitmq.com/tutorials/tutorial-six-java.html RPC style flow]] for processing and communicating
    * over a rabbitmq message bus. This will create a private queue, and add the reply-to header to messages sent out.
    *
-   * This stage materializes to a CompletionStage<String>, which is the name of the private exclusive queue used for RPC communication.
+   * This stage materializes to a `CompletionStage<String>`, which is the name of the private exclusive queue used for RPC communication.
    *
-   * @param repliesPerMessage The number of responses that should be expected for each message placed on the queue. This
-   *                            can be overridden per message by including `expectedReplies` in the the header of the [[OutgoingMessage]]
+   * @param repliesPerMessage The number of responses that should be expected for each message placed on the queue.
    */
   def createSimple(settings: AmqpSinkSettings,
                    repliesPerMessage: Int): Flow[ByteString, ByteString, CompletionStage[String]] =
@@ -35,11 +33,10 @@ object AmqpRpcFlow {
   /**
    * Java API:
    * Convenience for "at-most once delivery" semantics. Each message is acked to RabbitMQ
-   * before it is emitted downstream.
+   * before its read result is emitted downstream.
    */
-  @ApiMayChange // https://github.com/akka/alpakka/issues/1513
   def atMostOnceFlow(settings: AmqpSinkSettings,
-                     bufferSize: Int): Flow[OutgoingMessage, IncomingMessage, CompletionStage[String]] =
+                     bufferSize: Int): Flow[WriteMessage, ReadResult, CompletionStage[String]] =
     akka.stream.alpakka.amqp.scaladsl.AmqpRpcFlow
       .atMostOnceFlow(settings, bufferSize)
       .mapMaterializedValue(f => f.toJava)
@@ -48,12 +45,11 @@ object AmqpRpcFlow {
   /**
    * Java API:
    * Convenience for "at-most once delivery" semantics. Each message is acked to RabbitMQ
-   * before it is emitted downstream.
+   * before its read result is emitted downstream.
    */
-  @ApiMayChange // https://github.com/akka/alpakka/issues/1513
   def atMostOnceFlow(settings: AmqpSinkSettings,
                      bufferSize: Int,
-                     repliesPerMessage: Int): Flow[OutgoingMessage, IncomingMessage, CompletionStage[String]] =
+                     repliesPerMessage: Int): Flow[WriteMessage, ReadResult, CompletionStage[String]] =
     akka.stream.alpakka.amqp.scaladsl.AmqpRpcFlow
       .atMostOnceFlow(settings, bufferSize, repliesPerMessage)
       .mapMaterializedValue(f => f.toJava)
@@ -70,16 +66,15 @@ object AmqpRpcFlow {
    *
    * Compared to auto-commit, this gives exact control over when a message is considered consumed.
    */
-  @ApiMayChange // https://github.com/akka/alpakka/issues/1513
   def committableFlow(
       settings: AmqpSinkSettings,
       bufferSize: Int,
       repliesPerMessage: Int = 1
-  ): Flow[OutgoingMessage, CommittableIncomingMessage, CompletionStage[String]] =
+  ): Flow[WriteMessage, CommittableReadResult, CompletionStage[String]] =
     akka.stream.alpakka.amqp.scaladsl.AmqpRpcFlow
       .committableFlow(settings, bufferSize, repliesPerMessage)
       .mapMaterializedValue(f => f.toJava)
-      .map(cm => cm.asJava)
+      .map(cm => new CommittableReadResult(cm))
       .asJava
 
 }

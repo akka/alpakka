@@ -8,7 +8,7 @@ import akka.NotUsed
 import akka.annotation.ApiMayChange
 import akka.dispatch.ExecutionContexts
 import akka.stream.alpakka.amqp.impl
-import akka.stream.alpakka.amqp.{AmqpSourceSettings, IncomingMessage}
+import akka.stream.alpakka.amqp.{AmqpSourceSettings, ReadResult}
 import akka.stream.scaladsl.Source
 
 object AmqpSource {
@@ -19,7 +19,7 @@ object AmqpSource {
    * before it is emitted downstream.
    */
   @ApiMayChange // https://github.com/akka/alpakka/issues/1513
-  def atMostOnceSource(settings: AmqpSourceSettings, bufferSize: Int): Source[IncomingMessage, NotUsed] =
+  def atMostOnceSource(settings: AmqpSourceSettings, bufferSize: Int): Source[ReadResult, NotUsed] =
     committableSource(settings, bufferSize)
       .mapAsync(1)(cm => cm.ack().map(_ => cm.message))
 
@@ -35,7 +35,7 @@ object AmqpSource {
    * Compared to auto-commit, this gives exact control over when a message is considered consumed.
    */
   @ApiMayChange // https://github.com/akka/alpakka/issues/1513
-  def committableSource(settings: AmqpSourceSettings, bufferSize: Int): Source[CommittableIncomingMessage, NotUsed] =
+  def committableSource(settings: AmqpSourceSettings, bufferSize: Int): Source[CommittableReadResult, NotUsed] =
     Source.fromGraph(new impl.AmqpSourceStage(settings, bufferSize))
 
 }
