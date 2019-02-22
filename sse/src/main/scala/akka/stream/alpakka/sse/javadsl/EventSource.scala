@@ -76,11 +76,13 @@ object EventSource {
              lastEventId: Optional[String],
              mat: Materializer): Source[ServerSentEvent, NotUsed] = {
     val eventSource =
-      scaladsl.EventSource(
-        uri.asScala,
-        send(_).toScala.map(_.asInstanceOf[SHttpResponse])(mat.executionContext),
-        lastEventId.asScala
-      )(mat)
+      scaladsl
+        .EventSource(
+          uri.asScala,
+          send(_).toScala.map(_.asInstanceOf[SHttpResponse])(mat.executionContext),
+          lastEventId.asScala
+        )(mat)
+        .map(v => v: ServerSentEvent)
     eventSource.asJava
   }
 }

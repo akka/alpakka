@@ -54,7 +54,7 @@ class MqttSessionSpec
               .clientSessionFlow(session)
               .join(pipeToServer)
           )
-          .toMat(Sink.collection)(Keep.both)
+          .toMat(Sink.seq)(Keep.both)
           .run()
 
       val connect = Connect("some-client-id", ConnectFlags.None)
@@ -919,7 +919,7 @@ class MqttSessionSpec
             case Right(Event(PingResp, None)) => false
             case _ => true
           }
-          .toMat(Sink.collection)(Keep.both)
+          .toMat(Sink.seq)(Keep.both)
           .run()
 
       val connect = Connect("some-client-id", ConnectFlags.None)
@@ -1043,7 +1043,7 @@ class MqttSessionSpec
             case Right(Event(cp: Unsubscribe, _)) if cp.topicFilters == unsubscribe.topicFilters =>
               unsubscribeReceived.success(Done)
           })
-          .toMat(Sink.collection)(Keep.both)
+          .toMat(Sink.seq)(Keep.both)
           .run()
 
       val connectBytes = connect.encode(ByteString.newBuilder).result()
@@ -1211,7 +1211,7 @@ class MqttSessionSpec
             case Right(Event(cp: Unsubscribe, _)) if cp.topicFilters == unsubscribe.topicFilters =>
               unsubscribeReceived.success(Done)
           })
-          .toMat(Sink.collection)(Keep.both)
+          .toMat(Sink.seq)(Keep.both)
           .run()
 
       val connectBytes = connect.encode(ByteString.newBuilder).result()
@@ -1284,7 +1284,7 @@ class MqttSessionSpec
             case Right(Event(`connect`, _)) => connectReceived.success(Done)
             case _ =>
           })
-          .toMat(Sink.collection)(Keep.both)
+          .toMat(Sink.seq)(Keep.both)
           .run()
 
       val connectBytes = connect.encode(ByteString.newBuilder).result()
@@ -1564,7 +1564,7 @@ class MqttSessionSpec
             case Right(Event(_: Publish, _)) =>
               publishReceived.success(Done)
           })
-          .toMat(Sink.collection)(Keep.left)
+          .toMat(Sink.seq)(Keep.left)
           .run()
 
       val connectBytes = connect.encode(ByteString.newBuilder).result()
@@ -1650,7 +1650,7 @@ class MqttSessionSpec
             case Right(Event(`disconnect`, _)) =>
               disconnectReceived.success(Done)
           })
-          .toMat(Sink.collection)(Keep.left)
+          .toMat(Sink.seq)(Keep.left)
           .run()
 
       val connectBytes = connect.encode(ByteString.newBuilder).result()
@@ -1713,7 +1713,7 @@ class MqttSessionSpec
             case Right(Event(_: PubAck, _)) =>
               pubAckReceived.success(Done)
           })
-          .toMat(Sink.collection)(Keep.left)
+          .toMat(Sink.seq)(Keep.left)
           .run()
 
       client2Connection.offer(connectBytes)
