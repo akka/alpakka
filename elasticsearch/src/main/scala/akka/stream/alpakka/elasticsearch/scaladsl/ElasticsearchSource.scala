@@ -25,7 +25,7 @@ object ElasticsearchSource {
             typeName: String,
             query: String,
             settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings.Default)(
-      implicit client: RestClient
+      implicit elasticsearchClient: RestClient
   ): Source[ReadResult[JsObject], NotUsed] = create(indexName, typeName, query, settings)
 
   /**
@@ -41,7 +41,7 @@ object ElasticsearchSource {
             typeName: Option[String],
             searchParams: Map[String, String],
             settings: ElasticsearchSourceSettings)(
-      implicit client: RestClient
+      implicit elasticsearchClient: RestClient
   ): Source[ReadResult[JsObject], NotUsed] = create(indexName, typeName, searchParams, settings)
 
   /**
@@ -52,7 +52,7 @@ object ElasticsearchSource {
              typeName: String,
              query: String,
              settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings.Default)(
-      implicit client: RestClient
+      implicit elasticsearchClient: RestClient
   ): Source[ReadResult[JsObject], NotUsed] =
     create(indexName, Option(typeName), query, settings)
 
@@ -61,7 +61,7 @@ object ElasticsearchSource {
    * of Spray's [[spray.json.JsObject]].
    */
   def create(indexName: String, typeName: Option[String], query: String, settings: ElasticsearchSourceSettings)(
-      implicit client: RestClient
+      implicit elasticsearchClient: RestClient
   ): Source[ReadResult[JsObject], NotUsed] =
     create(indexName, typeName, Map("query" -> query), settings)
 
@@ -77,14 +77,14 @@ object ElasticsearchSource {
              typeName: Option[String],
              searchParams: Map[String, String],
              settings: ElasticsearchSourceSettings)(
-      implicit client: RestClient
+      implicit elasticsearchClient: RestClient
   ): Source[ReadResult[JsObject], NotUsed] =
     Source.fromGraph(
       new impl.ElasticsearchSourceStage(
         indexName,
         typeName,
         searchParams,
-        client,
+        elasticsearchClient,
         settings,
         new SprayJsonReader[JsObject]()(DefaultJsonProtocol.RootJsObjectFormat)
       )
@@ -98,7 +98,7 @@ object ElasticsearchSource {
                typeName: String,
                query: String,
                settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings.Default)(
-      implicit client: RestClient,
+      implicit elasticsearchClient: RestClient,
       reader: JsonReader[T]
   ): Source[ReadResult[T], NotUsed] =
     typed(indexName, Option(typeName), query, settings)
@@ -108,8 +108,8 @@ object ElasticsearchSource {
    * converted by Spray's [[spray.json.JsonReader]]
    */
   def typed[T](indexName: String, typeName: Option[String], query: String, settings: ElasticsearchSourceSettings)(
-      implicit client: RestClient,
-      reader: JsonReader[T]
+      implicit elasticsearchClient: RestClient,
+      sprayJsonReader: JsonReader[T]
   ): Source[ReadResult[T], NotUsed] =
     typed(indexName, typeName, Map("query" -> query), settings)
 
@@ -125,16 +125,16 @@ object ElasticsearchSource {
                typeName: Option[String],
                searchParams: Map[String, String],
                settings: ElasticsearchSourceSettings)(
-      implicit client: RestClient,
-      reader: JsonReader[T]
+      implicit elasticsearchClient: RestClient,
+      sprayJsonReader: JsonReader[T]
   ): Source[ReadResult[T], NotUsed] =
     Source.fromGraph(
       new impl.ElasticsearchSourceStage(indexName,
                                         typeName,
                                         searchParams,
-                                        client,
+                                        elasticsearchClient,
                                         settings,
-                                        new SprayJsonReader[T]()(reader))
+                                        new SprayJsonReader[T]()(sprayJsonReader))
     )
 
   private final class SprayJsonReader[T](implicit reader: JsonReader[T]) extends impl.MessageReader[T] {
