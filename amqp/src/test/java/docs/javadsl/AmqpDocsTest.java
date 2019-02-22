@@ -185,7 +185,8 @@ public class AmqpDocsTest {
             AmqpWriteSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
                 .withDeclaration(queueDeclaration)
-                .withPublishConfirms(1000));
+                .withPublishConfirm(
+                    scala.concurrent.duration.Duration.create(1, TimeUnit.SECONDS)));
     // #create-publish-flow
 
     // #run-publish-flow

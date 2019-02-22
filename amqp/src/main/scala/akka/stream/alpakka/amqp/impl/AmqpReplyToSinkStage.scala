@@ -82,7 +82,7 @@ private[amqp] final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings
 
               settings.publishConfirm match {
                 case Some(AmqpPublishConfirmConfiguration(confirmTimeout)) =>
-                  Try(channel.waitForConfirmsOrDie(confirmTimeout)) match {
+                  Try(channel.waitForConfirmsOrDie(confirmTimeout.toMillis)) match {
                     case Success(_) => tryPull(in)
                     case Failure(e) => onFailure(e)
                   }

@@ -8,6 +8,7 @@ import akka.annotation.InternalApi
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * Internal API
@@ -154,7 +155,7 @@ object TemporaryQueueSourceSettings {
 }
 
 final class AmqpPublishConfirmConfiguration private (
-    val confirmTimeout: Long
+    val confirmTimeout: FiniteDuration
 ) {
   override def toString: String =
     "AmqpPublishConfirmConfiguration(" +
@@ -163,16 +164,16 @@ final class AmqpPublishConfirmConfiguration private (
 }
 
 object AmqpPublishConfirmConfiguration {
-  def apply(confirmTimeout: Long): AmqpPublishConfirmConfiguration =
+  def apply(confirmTimeout: FiniteDuration): AmqpPublishConfirmConfiguration =
     new AmqpPublishConfirmConfiguration(confirmTimeout)
 
-  def unapply(settings: AmqpPublishConfirmConfiguration): Option[Long] =
+  def unapply(settings: AmqpPublishConfirmConfiguration): Option[FiniteDuration] =
     Some(settings.confirmTimeout)
 
   /**
    * Java API
    */
-  def create(confirmTimeout: Long): AmqpPublishConfirmConfiguration =
+  def create(confirmTimeout: FiniteDuration): AmqpPublishConfirmConfiguration =
     new AmqpPublishConfirmConfiguration(confirmTimeout)
 }
 
@@ -186,7 +187,7 @@ final class AmqpReplyToSinkSettings private (
   def withFailIfReplyToMissing(failIfReplyToMissing: Boolean): AmqpReplyToSinkSettings =
     copy(failIfReplyToMissing = failIfReplyToMissing)
 
-  def withPublishConfirms(confirmTimeout: Long): AmqpReplyToSinkSettings =
+  def withPublishConfirm(confirmTimeout: FiniteDuration): AmqpReplyToSinkSettings =
     copy(publishConfirm = Some(AmqpPublishConfirmConfiguration(confirmTimeout)))
 
   private def copy(connectionProvider: AmqpConnectionProvider = connectionProvider,
@@ -233,7 +234,7 @@ final class AmqpWriteSettings private (
   def withDeclarations(declarations: immutable.Seq[Declaration]): AmqpWriteSettings =
     copy(declarations = declarations)
 
-  def withPublishConfirms(confirmTimeout: Long): AmqpWriteSettings =
+  def withPublishConfirm(confirmTimeout: FiniteDuration): AmqpWriteSettings =
     copy(publishConfirm = Some(AmqpPublishConfirmConfiguration(confirmTimeout)))
 
   /**

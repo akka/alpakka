@@ -25,7 +25,7 @@ object AmqpFlow {
    */
   def createSimple[O](settings: AmqpSinkSettings): Flow[Pair[ByteString, O], O, CompletionStage[Done]] =
     Flow
-      .of[Pair[ByteString, O]](classOf[Pair[ByteString, O]])
+      .of(classOf[Pair[ByteString, O]])
       .map(_.toScala)
       .viaMat[O, CompletionStage[Done], CompletionStage[Done]](
         scaladsl.AmqpFlow
@@ -44,7 +44,7 @@ object AmqpFlow {
    */
   def create[O](settings: AmqpSinkSettings): Flow[Pair[OutgoingMessage, O], O, CompletionStage[Done]] =
     Flow
-      .of[Pair[OutgoingMessage, O]](classOf[Pair[OutgoingMessage, O]])
+      .of(classOf[Pair[OutgoingMessage, O]])
       .map(_.toScala)
       .viaMat[O, CompletionStage[Done], CompletionStage[Done]](
         scaladsl

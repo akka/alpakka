@@ -77,7 +77,7 @@ private[amqp] final class AmqpPublishFlowStage[O](settings: AmqpSinkSettings)
 
             settings.publishConfirm match {
               case Some(AmqpPublishConfirmConfiguration(confirmTimeout)) =>
-                Try(channel.waitForConfirmsOrDie(confirmTimeout)) match {
+                Try(channel.waitForConfirmsOrDie(confirmTimeout.toMillis)) match {
                   case Success(_) => push(out, passthrough)
                   case Failure(e) => fail(out, e)
                 }

@@ -29,6 +29,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.collection.JavaConverters;
 import scala.concurrent.duration.Duration;
+import scala.concurrent.duration.FiniteDuration;
 
 import java.net.ConnectException;
 import java.util.Arrays;
@@ -187,7 +188,7 @@ public class AmqpConnectorsTest {
             AmqpSinkSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
                 .withDeclaration(queueDeclaration)
-                .withPublishConfirm(1000));
+                .withPublishConfirm(Duration.create(1, TimeUnit.SECONDS)));
 
     Pair<CompletionStage<Done>, TestSubscriber.Probe<String>> result =
         Source.from(input)

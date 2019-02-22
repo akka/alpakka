@@ -7,11 +7,7 @@ package docs.scaladsl
 import akka.{Done, NotUsed}
 import akka.stream.KillSwitches
 import akka.stream.alpakka.amqp._
-<<<<<<< HEAD
 import akka.stream.alpakka.amqp.scaladsl._
-=======
-import akka.stream.alpakka.amqp.scaladsl.{AmqpFlow, AmqpRpcFlow, AmqpSink, AmqpSource}
->>>>>>> refactored following review
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
@@ -129,7 +125,7 @@ class AmqpDocsSpec extends AmqpSpec {
         AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
-          .withPublishConfirms(confirmTimeout = 1000)
+          .withPublishConfirm(confirmTimeout = FiniteDuration(1, SECONDS))
       )
       //#create-publish-flow
 
