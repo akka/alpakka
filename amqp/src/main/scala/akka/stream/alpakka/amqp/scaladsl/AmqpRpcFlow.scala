@@ -36,7 +36,6 @@ object AmqpRpcFlow {
    * Convenience for "at-most once delivery" semantics. Each message is acked to RabbitMQ
    * before it is emitted downstream.
    */
-  @ApiMayChange // https://github.com/akka/alpakka/issues/1513
   def atMostOnceFlow(settings: AmqpWriteSettings,
                      bufferSize: Int,
                      repliesPerMessage: Int = 1): Flow[WriteMessage, ReadResult, Future[String]] =
@@ -54,7 +53,6 @@ object AmqpRpcFlow {
    *
    * Compared to auto-commit, this gives exact control over when a message is considered consumed.
    */
-  @ApiMayChange // https://github.com/akka/alpakka/issues/1513
   def committableFlow(settings: AmqpWriteSettings,
                       bufferSize: Int,
                       repliesPerMessage: Int = 1): Flow[WriteMessage, CommittableReadResult, Future[String]] =
