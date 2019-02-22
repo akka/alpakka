@@ -5,22 +5,35 @@
 package ftpsamples
 
 import java.net.InetAddress
-import java.nio.file.{Path, Paths}
+import java.nio.file.{Files, Path}
 
-import akka.stream.alpakka.file.scaladsl.LogRotatorSink
-import akka.stream.alpakka.ftp.{FtpCredentials, SftpIdentity, SftpSettings}
+import akka.stream.alpakka.file.scaladsl.{Directory, LogRotatorSink}
 import akka.stream.alpakka.ftp.scaladsl.Sftp
+import akka.stream.alpakka.ftp.{FtpCredentials, SftpIdentity, SftpSettings}
 import akka.stream.scaladsl.{Compression, Flow, Keep, Source}
 import akka.util.ByteString
-import playground.ActorSystemAvailable
-
-import scala.util.{Failure, Success}
+import org.apache.mina.util.AvailablePortFinder
+import playground.filesystem.FileSystemMock
+import playground.{ActorSystemAvailable, SftpServerEmbedded}
 
 object RotateLogsToFtp extends ActorSystemAvailable with App {
 
+  private val ftpFileSystem = new FileSystemMock().fileSystem
+  private val privateKeyPassphrase = SftpServerEmbedded.clientPrivateKeyPassphrase
+  private val pathToIdentityFile = SftpServerEmbedded.clientPrivateKeyFile
+  private val username = "username"
+  private val password = username
+  private val hostname = "localhost"
+  val port = AvailablePortFinder.getNextAvailable(21000)
+
+  val home: Path = ftpFileSystem.getPath(SftpServerEmbedded.FtpRootDir).resolve("tmp")
+  if (!Files.exists(home)) Files.createDirectories(home)
+
+  SftpServerEmbedded.start(ftpFileSystem, port)
+
   // #sample
   val data = ('a' to 'd') // (1)
-    .flatMap(letter => Seq.fill(10)(ByteString(letter.toString * 100)))
+    .flatMap(letter => Seq.fill(10)(ByteString(letter.toString * 10000)))
 
   // (2)
   val rotator = () => {
@@ -30,30 +43,41 @@ object RotateLogsToFtp extends ActorSystemAvailable with App {
         bs.head.toChar match {
           case char if char != last =>
             last = char
-            Some(Paths.get(s"log-$char.z"))
+            Some(s"log-$char.z")
           case _ => None
         }
       }
   }
 
   // (3)
-  val identity = SftpIdentity.createFileSftpIdentity("<path_to_identity_file>")
-  val credentials = FtpCredentials.create("username", "")
-  val settings = SftpSettings(InetAddress.getByName("hostname"))
+  val identity = SftpIdentity.createFileSftpIdentity(pathToIdentityFile, privateKeyPassphrase)
+  val credentials = FtpCredentials.create(username, password)
+  val settings = SftpSettings(InetAddress.getByName(hostname))
+    .withPort(port)
     .withSftpIdentity(identity)
     .withStrictHostKeyChecking(false)
     .withCredentials(credentials)
 
-  val sink = (path: Path) =>
+  val sink = (path: String) =>
     Flow[ByteString]
-      .via(Compression.gzip) // (4s)
-      .toMat(Sftp.toPath(s"tmp/${path.getFileName.toString}", settings))(Keep.right)
+      .via(Compression.gzip) // (4)
+      .toMat(Sftp.toPath(s"tmp/$path", settings))(Keep.right)
 
   val completion = Source(data).runWith(LogRotatorSink.withSinkFactory(rotator, sink))
   // #sample
 
-  completion.onComplete {
-    case Success(_) => println("Done")
-    case Failure(f) => println(f.getMessage)
-  }
+  completion
+    .flatMap { _ =>
+      Directory
+        .ls(home)
+        .runForeach(f => println(f))
+    }
+    .recover {
+      case f =>
+        f.printStackTrace()
+    }
+    .onComplete { _ =>
+      SftpServerEmbedded.stopServer()
+      terminateActorSystem()
+    }
 }
