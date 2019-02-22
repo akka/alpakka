@@ -95,7 +95,8 @@ public class AmqpDocsTest {
     final Source<ReadResult, NotUsed> amqpSource =
         AmqpSource.atMostOnceSource(
             NamedQueueSourceSettings.create(connectionProvider, queueName)
-                .withDeclaration(queueDeclaration),
+                .withDeclaration(queueDeclaration)
+                .withAckRequired(false),
             bufferSize);
 
     final CompletionStage<List<ReadResult>> result =
@@ -270,7 +271,7 @@ public class AmqpDocsTest {
     final CompletionStage<List<ReadResult>> result =
         amqpSource
             .mapAsync(1, this::businessLogic)
-            .mapAsync(1, cm -> cm.ack().thenApply(unused -> cm.message()))
+            .mapAsync(1, cm -> cm.ack(/* multiple */ false).thenApply(unused -> cm.message()))
             .take(input.size())
             .runWith(Sink.seq(), materializer);
     // #create-source-withoutautoack
@@ -310,17 +311,21 @@ public class AmqpDocsTest {
                 .withDeclaration(queueDeclaration),
             bufferSize);
 
-    // #run-source-withoutautoack-and-nack
-    final CompletionStage<List<CommittableReadResult>> result1 =
+    // #create-source-withoutautoack
+
+    final CompletionStage<List<ReadResult>> nackedResults =
         amqpSource
             .mapAsync(1, this::businessLogic)
             .take(input.size())
             .mapAsync(
-                1, cm -> cm.nack(/* multiple */ false, /* requeue */ true).thenApply(unused -> cm))
+                1,
+                cm ->
+                    cm.nack(/* multiple */ false, /* requeue */ true)
+                        .thenApply(unused -> cm.message()))
             .runWith(Sink.seq(), materializer);
-    // #run-source-withoutautoack-and-nack
+    // #create-source-withoutautoack
 
-    result1.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    nackedResults.toCompletableFuture().get(3, TimeUnit.SECONDS);
 
     final CompletionStage<List<CommittableReadResult>> result2 =
         amqpSource

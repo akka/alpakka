@@ -117,38 +117,12 @@ Java
 
 Committable sources return @scala[@scaladoc[CommittableReadResult](akka.stream.alpakka.amqp.scaladsl.CommittableReadResult)]@java[@scaladoc[CommittableReadResult](akka.stream.alpakka.amqp.javadsl.CommittableReadResult)] which wraps the @scaladoc[ReadResult](akka.stream.alpakka.amqp.ReadResult) and exposes the methods `ack` and `nack`.
 
-Use ack to acknowledge the message back to RabbitMQ. `ack` takes an optional boolean parameter `multiple` indicating whether you are acknowledging the individual message or all the messages up to it.
+Use `ack` to acknowledge the message back to RabbitMQ. `ack` takes an optional boolean parameter `multiple` indicating whether you are acknowledging the individual message or all the messages up to it.
+
+Use `nack` to reject a message. Apart from the `multiple` argument, `nack` takes another optional boolean parameter indicating whether the item should be requeued or not.
 
 Scala
 : @@snip [snip](/amqp/src/test/scala/docs/scaladsl/AmqpDocsSpec.scala) { #create-source-withoutautoack }
 
 Java
 : @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #create-source-withoutautoack }
-
-Use `nack` to reject a message. Apart from the `multiple` argument, `nack` takes another optional boolean parameter indicating whether the item should be requeued or not.
-
-Scala
-: @@snip [snip](/amqp/src/test/scala/docs/scaladsl/AmqpDocsSpec.scala) { #run-source-withoutautoack-and-nack }
-
-Java
-: @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #run-source-withoutautoack-and-nack }
-
-## Running the example code
-
-The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
-
-> Test code requires AMQP server running in the background. You can start one quickly using docker:
->
-> `docker-compose up amqp`
-
-Scala
-:   ```
-    sbt
-    > amqp/testOnly *.AmqpConnectorsSpec
-    ```
-
-Java
-:   ```
-    sbt
-    > amqp/testOnly *.AmqpConnectorsTest
-    ```
