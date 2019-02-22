@@ -77,7 +77,7 @@ public class AmqpConnectorsTest {
 
     final Sink<ByteString, CompletionStage<Done>> amqpSink =
         AmqpSink.createSimple(
-            AmqpSinkSettings.create(connectionProvider)
+            AmqpWriteSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
                 .withDeclaration(queueDeclaration));
 
@@ -105,7 +105,7 @@ public class AmqpConnectorsTest {
 
     final Sink<ByteString, CompletionStage<Done>> amqpSink =
         AmqpSink.createSimple(
-            AmqpSinkSettings.create(connectionProvider)
+            AmqpWriteSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
                 .withDeclaration(queueDeclaration));
 
@@ -132,7 +132,7 @@ public class AmqpConnectorsTest {
 
     final Flow<WriteMessage, CommittableReadResult, CompletionStage<String>> ampqRpcFlow =
         AmqpRpcFlow.committableFlow(
-            AmqpSinkSettings.create(connectionProvider)
+            AmqpWriteSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
                 .withDeclaration(queueDeclaration),
             10,
@@ -180,7 +180,7 @@ public class AmqpConnectorsTest {
 
     final Sink<ByteString, CompletionStage<Done>> amqpSink =
         AmqpSink.createSimple(
-            AmqpSinkSettings.create(connectionProvider)
+            AmqpWriteSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
                 .withDeclaration(queueDeclaration));
 
@@ -227,7 +227,7 @@ public class AmqpConnectorsTest {
 
     final Sink<WriteMessage, CompletionStage<Done>> amqpSink =
         AmqpSink.create(
-            AmqpSinkSettings.create(connectionProvider)
+            AmqpWriteSettings.create(connectionProvider)
                 .withExchange(exchangeName)
                 .withDeclarations(
                     Arrays.asList(exchangeDeclaration, queueDeclaration, bindingDeclaration)));

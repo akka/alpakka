@@ -25,7 +25,7 @@ object AmqpRpcFlow {
    * @param repliesPerMessage The number of responses that should be expected for each message placed on the queue. This
    *                            can be overridden per message by including `expectedReplies` in the the header of the [[WriteMessage]]
    */
-  def simple(settings: AmqpSinkSettings, repliesPerMessage: Int = 1): Flow[ByteString, ByteString, Future[String]] =
+  def simple(settings: AmqpWriteSettings, repliesPerMessage: Int = 1): Flow[ByteString, ByteString, Future[String]] =
     Flow[ByteString]
       .map(bytes => WriteMessage(bytes))
       .viaMat(atMostOnceFlow(settings, 1, repliesPerMessage))(Keep.right)
@@ -37,7 +37,7 @@ object AmqpRpcFlow {
    * before it is emitted downstream.
    */
   @ApiMayChange // https://github.com/akka/alpakka/issues/1513
-  def atMostOnceFlow(settings: AmqpSinkSettings,
+  def atMostOnceFlow(settings: AmqpWriteSettings,
                      bufferSize: Int,
                      repliesPerMessage: Int = 1): Flow[WriteMessage, ReadResult, Future[String]] =
     committableFlow(settings, bufferSize, repliesPerMessage)
@@ -55,7 +55,7 @@ object AmqpRpcFlow {
    * Compared to auto-commit, this gives exact control over when a message is considered consumed.
    */
   @ApiMayChange // https://github.com/akka/alpakka/issues/1513
-  def committableFlow(settings: AmqpSinkSettings,
+  def committableFlow(settings: AmqpWriteSettings,
                       bufferSize: Int,
                       repliesPerMessage: Int = 1): Flow[WriteMessage, CommittableReadResult, Future[String]] =
     Flow.fromGraph(new impl.AmqpRpcFlowStage(settings, bufferSize, repliesPerMessage))

@@ -184,36 +184,36 @@ object AmqpReplyToSinkSettings {
     AmqpReplyToSinkSettings(connectionProvider)
 }
 
-final class AmqpSinkSettings private (
+final class AmqpWriteSettings private (
     val connectionProvider: AmqpConnectionProvider,
     val exchange: Option[String] = None,
     val routingKey: Option[String] = None,
     val declarations: immutable.Seq[Declaration] = Nil
 ) extends AmqpConnectorSettings {
 
-  def withExchange(exchange: String): AmqpSinkSettings =
+  def withExchange(exchange: String): AmqpWriteSettings =
     copy(exchange = Some(exchange))
 
-  def withRoutingKey(routingKey: String): AmqpSinkSettings =
+  def withRoutingKey(routingKey: String): AmqpWriteSettings =
     copy(routingKey = Some(routingKey))
 
-  def withDeclaration(declaration: Declaration): AmqpSinkSettings =
+  def withDeclaration(declaration: Declaration): AmqpWriteSettings =
     copy(declarations = immutable.Seq(declaration))
 
-  def withDeclarations(declarations: immutable.Seq[Declaration]): AmqpSinkSettings =
+  def withDeclarations(declarations: immutable.Seq[Declaration]): AmqpWriteSettings =
     copy(declarations = declarations)
 
   /**
    * Java API
    */
-  def withDeclarations(declarations: java.util.List[Declaration]): AmqpSinkSettings =
+  def withDeclarations(declarations: java.util.List[Declaration]): AmqpWriteSettings =
     copy(declarations = declarations.asScala.toIndexedSeq)
 
   private def copy(connectionProvider: AmqpConnectionProvider = connectionProvider,
                    exchange: Option[String] = exchange,
                    routingKey: Option[String] = routingKey,
                    declarations: immutable.Seq[Declaration] = declarations) =
-    new AmqpSinkSettings(connectionProvider, exchange, routingKey, declarations)
+    new AmqpWriteSettings(connectionProvider, exchange, routingKey, declarations)
 
   override def toString: String =
     "AmqpSinkSettings(" +
@@ -224,15 +224,15 @@ final class AmqpSinkSettings private (
     ")"
 }
 
-object AmqpSinkSettings {
-  def apply(connectionProvider: AmqpConnectionProvider): AmqpSinkSettings =
-    new AmqpSinkSettings(connectionProvider)
+object AmqpWriteSettings {
+  def apply(connectionProvider: AmqpConnectionProvider): AmqpWriteSettings =
+    new AmqpWriteSettings(connectionProvider)
 
   /**
    * Java API
    */
-  def create(connectionProvider: AmqpConnectionProvider): AmqpSinkSettings =
-    AmqpSinkSettings(connectionProvider)
+  def create(connectionProvider: AmqpConnectionProvider): AmqpWriteSettings =
+    AmqpWriteSettings(connectionProvider)
 }
 
 sealed trait Declaration

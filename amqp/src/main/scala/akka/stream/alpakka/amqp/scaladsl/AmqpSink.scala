@@ -20,7 +20,7 @@ object AmqpSink {
    * This stage materializes to a `Future[Done]`, which can be used to know when the Sink completes, either normally
    * or because of an amqp failure
    */
-  def simple(settings: AmqpSinkSettings): Sink[ByteString, Future[Done]] =
+  def simple(settings: AmqpWriteSettings): Sink[ByteString, Future[Done]] =
     apply(settings).contramap[ByteString](bytes => WriteMessage(bytes))
 
   /**
@@ -48,7 +48,7 @@ object AmqpSink {
    * or because of an amqp failure
    */
   @ApiMayChange // https://github.com/akka/alpakka/issues/1513
-  def apply(settings: AmqpSinkSettings): Sink[WriteMessage, Future[Done]] =
+  def apply(settings: AmqpWriteSettings): Sink[WriteMessage, Future[Done]] =
     Sink.fromGraph(new impl.AmqpSinkStage(settings))
 
 }

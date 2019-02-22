@@ -44,7 +44,7 @@ class AmqpDocsSpec extends AmqpSpec {
       //#create-sink
       val amqpSink: Sink[ByteString, Future[Done]] =
         AmqpSink.simple(
-          AmqpSinkSettings(connectionProvider)
+          AmqpWriteSettings(connectionProvider)
             .withRoutingKey(queueName)
             .withDeclaration(queueDeclaration)
         )
@@ -87,7 +87,7 @@ class AmqpDocsSpec extends AmqpSpec {
 
       //#create-rpc-flow
       val amqpRpcFlow = AmqpRpcFlow.simple(
-        AmqpSinkSettings(connectionProvider).withRoutingKey(queueName).withDeclaration(queueDeclaration)
+        AmqpWriteSettings(connectionProvider).withRoutingKey(queueName).withDeclaration(queueDeclaration)
       )
 
       val (rpcQueueF: Future[String], probe: TestSubscriber.Probe[ByteString]) = Source(input)
@@ -124,7 +124,7 @@ class AmqpDocsSpec extends AmqpSpec {
 
       //#create-exchange-sink
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withExchange(exchangeName)
           .withDeclaration(exchangeDeclaration)
       )
@@ -180,7 +180,7 @@ class AmqpDocsSpec extends AmqpSpec {
       val queueDeclaration = QueueDeclaration(queueName)
 
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
       )
@@ -212,7 +212,7 @@ class AmqpDocsSpec extends AmqpSpec {
       val queueDeclaration = QueueDeclaration(queueName)
 
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
       )

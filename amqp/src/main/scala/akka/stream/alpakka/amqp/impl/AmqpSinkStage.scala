@@ -6,7 +6,7 @@ package akka.stream.alpakka.amqp.impl
 
 import akka.Done
 import akka.annotation.InternalApi
-import akka.stream.alpakka.amqp.{AmqpSinkSettings, WriteMessage}
+import akka.stream.alpakka.amqp.{AmqpWriteSettings, WriteMessage}
 import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, InHandler}
 import akka.stream.{ActorAttributes, Attributes, Inlet, SinkShape}
 
@@ -17,7 +17,7 @@ import scala.concurrent.{Future, Promise}
  * Each materialized sink will create one connection to the broker.
  */
 @InternalApi
-private[amqp] final class AmqpSinkStage(settings: AmqpSinkSettings)
+private[amqp] final class AmqpSinkStage(settings: AmqpWriteSettings)
     extends GraphStageWithMaterializedValue[SinkShape[WriteMessage], Future[Done]] { stage =>
 
   val in = Inlet[WriteMessage]("AmqpSink.in")
