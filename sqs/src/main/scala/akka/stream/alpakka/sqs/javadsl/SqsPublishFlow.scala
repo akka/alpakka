@@ -58,9 +58,7 @@ object SqsPublishFlow {
       queueUrl: String,
       settings: SqsPublishBatchSettings,
       sqsClient: SqsAsyncClient
-  ): Flow[java.lang.Iterable[SendMessageRequest],
-          java.lang.Iterable[SqsPublishResult[SendMessageBatchResponse]],
-          NotUsed] =
+  ): Flow[java.lang.Iterable[SendMessageRequest], java.util.List[SqsPublishResult[SendMessageBatchResponse]], NotUsed] =
     SFlow[java.lang.Iterable[SendMessageRequest]]
       .map(_.asScala)
       .via(akka.stream.alpakka.sqs.scaladsl.SqsPublishFlow.batch(queueUrl, settings)(sqsClient))
