@@ -11,7 +11,7 @@ object Dependencies {
   }
 
   val AwsSdkVersion = "1.11.476"
-  val AwsSdk2Version = "2.3.9"
+  val AwsSdk2Version = "2.4.14"
   val AkkaHttpVersion = "10.1.7"
   
   val CouchbaseVersion = "2.7.2"
