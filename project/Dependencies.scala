@@ -3,7 +3,9 @@ import Keys._
 
 object Dependencies {
 
-  val ScalaVersions = Seq("2.12.7", "2.11.12")
+  val Scala212 = "2.12.7"
+  val Scala213 = "2.13.0-M5"
+  val ScalaVersions = Seq(Scala212, "2.11.12", Scala213)
 
   val AkkaVersion = sys.env.get("AKKA_SERIES") match {
     case Some("2.4") => sys.error("Akka 2.4 is not supported anymore")
@@ -174,7 +176,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-      "com.pauldijou" %% "jwt-core" % "2.1.0", //ApacheV2
+      "com.pauldijou" %% "jwt-core" % "2.1.0", // ApacheV2
       "org.mockito" % "mockito-core" % "2.23.4" % Test, // MIT
       "com.github.tomakehurst" % "wiremock" % "2.18.0" % Test // ApacheV2
     )
@@ -194,7 +196,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-      "com.pauldijou" %% "jwt-core" % "2.1.0", //ApacheV2
+      "com.pauldijou" %% "jwt-core" % "2.1.0", // ApacheV2
       "org.mockito" % "mockito-core" % "2.23.4" % Test // MIT
     )
   )

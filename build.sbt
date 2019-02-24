@@ -72,7 +72,8 @@ lazy val alpakka = project
       (ScalaUnidoc / unidoc / fullClasspath).value
         .filterNot(_.data.getAbsolutePath.contains("protobuf-java-2.5.0.jar"))
     },
-    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(`doc-examples`)
+    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(`doc-examples`),
+    crossScalaVersions := List() // workaround for https://github.com/sbt/sbt/issues/3465
   )
 
 lazy val amqp = alpakkaProject("amqp", "amqp", Dependencies.Amqp)
@@ -141,7 +142,8 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
   javaAgents += Dependencies.GooglePubSubGrpcAlpnAgent % "test",
   // for the ExampleApp in the tests
   connectInput in run := true,
-  Compile / compile / scalacOptions += "-P:silencer:pathFilters=src_managed"
+  Compile / compile / scalacOptions += "-P:silencer:pathFilters=src_managed",
+  crossScalaVersions -= Dependencies.Scala213
 ).enablePlugins(AkkaGrpcPlugin, JavaAgent)
 
 lazy val googleFcm = alpakkaProject(
@@ -155,7 +157,11 @@ lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, fork in Te
 
 lazy val hdfs = alpakkaProject("hdfs", "hdfs", Dependencies.Hdfs, parallelExecution in Test := false)
 
-lazy val ironmq = alpakkaProject("ironmq", "ironmq", Dependencies.IronMq, fork in Test := true)
+lazy val ironmq = alpakkaProject("ironmq",
+                                 "ironmq",
+                                 Dependencies.IronMq,
+                                 fork in Test := true,
+                                 crossScalaVersions -= Dependencies.Scala213)
 
 lazy val jms = alpakkaProject("jms", "jms", Dependencies.Jms, parallelExecution in Test := false)
 
@@ -169,7 +175,8 @@ lazy val kinesis = alpakkaProject("kinesis",
 
 lazy val kudu = alpakkaProject("kudu", "kudu", Dependencies.Kudu, fork in Test := false)
 
-lazy val mongodb = alpakkaProject("mongodb", "mongodb", Dependencies.MongoDb)
+lazy val mongodb =
+  alpakkaProject("mongodb", "mongodb", Dependencies.MongoDb, crossScalaVersions -= Dependencies.Scala213)
 
 lazy val mqtt = alpakkaProject("mqtt", "mqtt", Dependencies.Mqtt)
 
@@ -193,21 +200,27 @@ lazy val springWeb = alpakkaProject("spring-web", "spring.web", Dependencies.Spr
 
 lazy val simpleCodecs = alpakkaProject("simple-codecs", "simplecodecs")
 
-lazy val slick = alpakkaProject("slick", "slick", Dependencies.Slick)
+lazy val slick = alpakkaProject("slick", "slick", Dependencies.Slick, crossScalaVersions -= Dependencies.Scala213)
 
-lazy val sns = alpakkaProject("sns",
-                              "aws.sns",
-                              Dependencies.Sns,
-                              // For mockito https://github.com/akka/alpakka/issues/390
-                              parallelExecution in Test := false)
+lazy val sns = alpakkaProject(
+  "sns",
+  "aws.sns",
+  Dependencies.Sns,
+  // For mockito https://github.com/akka/alpakka/issues/390
+  parallelExecution in Test := false,
+  crossScalaVersions -= Dependencies.Scala213
+)
 
 lazy val solr = alpakkaProject("solr", "solr", Dependencies.Solr, parallelExecution in Test := false)
 
-lazy val sqs = alpakkaProject("sqs",
-                              "aws.sqs",
-                              Dependencies.Sqs,
-                              // For mockito https://github.com/akka/alpakka/issues/390
-                              parallelExecution in Test := false)
+lazy val sqs = alpakkaProject(
+  "sqs",
+  "aws.sqs",
+  Dependencies.Sqs,
+  // For mockito https://github.com/akka/alpakka/issues/390
+  parallelExecution in Test := false,
+  crossScalaVersions -= Dependencies.Scala213
+)
 
 lazy val sse = alpakkaProject("sse", "sse", Dependencies.Sse)
 
@@ -297,6 +310,7 @@ lazy val `doc-examples` = project
     name := s"akka-stream-alpakka-doc-examples",
     publish / skip := true,
     whitesourceIgnore := true,
+    crossScalaVersions -= Dependencies.Scala213,
     Dependencies.`Doc-examples`
   )
 
