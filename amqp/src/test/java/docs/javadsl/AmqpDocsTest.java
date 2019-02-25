@@ -315,8 +315,8 @@ public class AmqpDocsTest {
 
     final CompletionStage<List<ReadResult>> nackedResults =
         amqpSource
-            .mapAsync(1, this::businessLogic)
             .take(input.size())
+            .mapAsync(1, this::businessLogic)
             .mapAsync(
                 1,
                 cm ->
@@ -329,21 +329,21 @@ public class AmqpDocsTest {
 
     final CompletionStage<List<CommittableReadResult>> result2 =
         amqpSource
-            .mapAsync(1, cm -> cm.ack().thenApply(unused -> cm))
             .take(input.size())
+            .mapAsync(1, cm -> cm.ack().thenApply(unused -> cm))
             .runWith(Sink.seq(), materializer);
 
     assertEquals(
         input,
         result2
             .toCompletableFuture()
-            .get(3, TimeUnit.SECONDS)
+            .get(10, TimeUnit.SECONDS)
             .stream()
             .map(m -> m.message().bytes().utf8String())
             .collect(Collectors.toList()));
 
     // See https://github.com/akka/akka/issues/26410
     // extra wait before assertAllStagesStopped kicks in
-    Thread.sleep(3 * 1000);
+    Thread.sleep(6 * 1000);
   }
 }
