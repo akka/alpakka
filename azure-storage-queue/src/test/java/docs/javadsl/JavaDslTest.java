@@ -26,9 +26,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import org.junit.*;
-import org.scalatest.junit.JUnitSuite;
 
-public class JavaDslTest extends JUnitSuite {
+public class JavaDslTest {
   private static ActorSystem system;
   private static ActorMaterializer materializer;
   private static final String storageConnectionString = System.getenv("AZURE_CONNECTION_STRING");
