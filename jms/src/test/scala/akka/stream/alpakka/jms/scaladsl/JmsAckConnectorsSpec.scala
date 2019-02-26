@@ -14,7 +14,7 @@ import javax.jms.{JMSException, TextMessage}
 import org.scalatest.Inspectors._
 
 import scala.annotation.tailrec
-import scala.collection.{mutable, SortedSet}
+import scala.collection.mutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
@@ -280,7 +280,7 @@ class JmsAckConnectorsSpec extends JmsSpec {
 
       killSwitch2.shutdown()
 
-      resultList.to[SortedSet] should contain theSameElementsAs numsIn.map(_.toString)
+      resultList.toSet should contain theSameElementsAs numsIn.map(_.toString)
     }
 
     "ensure no message loss when aborting a stream" in withServer() { server =>
@@ -360,7 +360,7 @@ class JmsAckConnectorsSpec extends JmsSpec {
       implicit val _ = Ordering.by { s: String =>
         s.toInt
       }
-      resultList.to[SortedSet] should contain theSameElementsAs numsIn.map(_.toString)
+      resultList.toSet should contain theSameElementsAs numsIn.map(_.toString)
     }
 
     "shutdown when waiting to acknowledge messages" in withServer() { server =>
