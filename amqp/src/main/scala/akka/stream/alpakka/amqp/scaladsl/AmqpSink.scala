@@ -5,7 +5,6 @@
 package akka.stream.alpakka.amqp.scaladsl
 
 import akka.Done
-import akka.annotation.ApiMayChange
 import akka.stream.alpakka.amqp._
 import akka.stream.scaladsl.Sink
 import akka.util.ByteString
@@ -20,8 +19,8 @@ object AmqpSink {
    * This stage materializes to a `Future[Done]`, which can be used to know when the Sink completes, either normally
    * or because of an amqp failure
    */
-  def simple(settings: AmqpSinkSettings): Sink[ByteString, Future[Done]] =
-    apply(settings).contramap[ByteString](bytes => OutgoingMessage(bytes, false, false))
+  def simple(settings: AmqpWriteSettings): Sink[ByteString, Future[Done]] =
+    apply(settings).contramap[ByteString](bytes => WriteMessage(bytes))
 
   /**
    * Scala API:
@@ -33,8 +32,7 @@ object AmqpSink {
    * This stage materializes to a `Future[Done]`, which can be used to know when the Sink completes, either normally
    * or because of an amqp failure
    */
-  @ApiMayChange // https://github.com/akka/alpakka/issues/1513
-  def replyTo(settings: AmqpReplyToSinkSettings): Sink[OutgoingMessage, Future[Done]] =
+  def replyTo(settings: AmqpReplyToSinkSettings): Sink[WriteMessage, Future[Done]] =
     Sink.fromGraph(new impl.AmqpReplyToSinkStage(settings))
 
   /**
@@ -47,8 +45,7 @@ object AmqpSink {
    * This stage materializes to a Future[Done], which can be used to know when the Sink completes, either normally
    * or because of an amqp failure
    */
-  @ApiMayChange // https://github.com/akka/alpakka/issues/1513
-  def apply(settings: AmqpSinkSettings): Sink[OutgoingMessage, Future[Done]] =
+  def apply(settings: AmqpWriteSettings): Sink[WriteMessage, Future[Done]] =
     Sink.fromGraph(new impl.AmqpSinkStage(settings))
 
 }

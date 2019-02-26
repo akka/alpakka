@@ -4,7 +4,6 @@
 
 package akka.stream.alpakka.amqp.scaladsl
 
-import akka.annotation.ApiMayChange
 import akka.dispatch.ExecutionContexts
 import akka.stream.alpakka.amqp._
 import akka.stream.scaladsl.{Flow, Keep}
@@ -13,7 +12,6 @@ import akka.util.ByteString
 import scala.concurrent.Future
 
 object AmqpRpcFlow {
-  private implicit val executionContext = ExecutionContexts.sameThreadExecutionContext
 
   /**
    * Scala API:
@@ -23,11 +21,11 @@ object AmqpRpcFlow {
    * This stage materializes to a Future[String], which is the name of the private exclusive queue used for RPC communication.
    *
    * @param repliesPerMessage The number of responses that should be expected for each message placed on the queue. This
-   *                            can be overridden per message by including `expectedReplies` in the the header of the [[OutgoingMessage]]
+   *                            can be overridden per message by including `expectedReplies` in the the header of the [[WriteMessage]]
    */
-  def simple(settings: AmqpSinkSettings, repliesPerMessage: Int = 1): Flow[ByteString, ByteString, Future[String]] =
+  def simple(settings: AmqpWriteSettings, repliesPerMessage: Int = 1): Flow[ByteString, ByteString, Future[String]] =
     Flow[ByteString]
-      .map(bytes => OutgoingMessage(bytes, false, false))
+      .map(bytes => WriteMessage(bytes))
       .viaMat(atMostOnceFlow(settings, 1, repliesPerMessage))(Keep.right)
       .map(_.bytes)
 
@@ -36,12 +34,13 @@ object AmqpRpcFlow {
    * Convenience for "at-most once delivery" semantics. Each message is acked to RabbitMQ
    * before it is emitted downstream.
    */
-  @ApiMayChange // https://github.com/akka/alpakka/issues/1513
-  def atMostOnceFlow(settings: AmqpSinkSettings,
+  def atMostOnceFlow(settings: AmqpWriteSettings,
                      bufferSize: Int,
-                     repliesPerMessage: Int = 1): Flow[OutgoingMessage, IncomingMessage, Future[String]] =
+                     repliesPerMessage: Int = 1): Flow[WriteMessage, ReadResult, Future[String]] =
     committableFlow(settings, bufferSize, repliesPerMessage)
-      .mapAsync(1)(cm => cm.ack().map(_ => cm.message))
+      .mapAsync(1) { cm =>
+        cm.ack().map(_ => cm.message)(ExecutionContexts.sameThreadExecutionContext)
+      }
 
   /**
    * Scala API:
@@ -54,10 +53,9 @@ object AmqpRpcFlow {
    *
    * Compared to auto-commit, this gives exact control over when a message is considered consumed.
    */
-  @ApiMayChange // https://github.com/akka/alpakka/issues/1513
-  def committableFlow(settings: AmqpSinkSettings,
+  def committableFlow(settings: AmqpWriteSettings,
                       bufferSize: Int,
-                      repliesPerMessage: Int = 1): Flow[OutgoingMessage, CommittableIncomingMessage, Future[String]] =
+                      repliesPerMessage: Int = 1): Flow[WriteMessage, CommittableReadResult, Future[String]] =
     Flow.fromGraph(new impl.AmqpRpcFlowStage(settings, bufferSize, repliesPerMessage))
 
 }

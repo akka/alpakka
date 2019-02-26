@@ -5,8 +5,7 @@
 package akka.stream.alpakka.amqp.javadsl
 
 import akka.NotUsed
-import akka.annotation.ApiMayChange
-import akka.stream.alpakka.amqp.{AmqpSourceSettings, IncomingMessage}
+import akka.stream.alpakka.amqp.{AmqpSourceSettings, ReadResult}
 import akka.stream.javadsl.Source
 
 object AmqpSource {
@@ -15,8 +14,7 @@ object AmqpSource {
    * Java API: Convenience for "at-most once delivery" semantics. Each message is acked to RabbitMQ
    * before it is emitted downstream.
    */
-  @ApiMayChange // https://github.com/akka/alpakka/issues/1513
-  def atMostOnceSource(settings: AmqpSourceSettings, bufferSize: Int): Source[IncomingMessage, NotUsed] =
+  def atMostOnceSource(settings: AmqpSourceSettings, bufferSize: Int): Source[ReadResult, NotUsed] =
     akka.stream.alpakka.amqp.scaladsl.AmqpSource
       .atMostOnceSource(settings, bufferSize)
       .asJava
@@ -32,11 +30,10 @@ object AmqpSource {
    *
    * Compared to auto-commit, this gives exact control over when a message is considered consumed.
    */
-  @ApiMayChange // https://github.com/akka/alpakka/issues/1513
-  def committableSource(settings: AmqpSourceSettings, bufferSize: Int): Source[CommittableIncomingMessage, NotUsed] =
+  def committableSource(settings: AmqpSourceSettings, bufferSize: Int): Source[CommittableReadResult, NotUsed] =
     akka.stream.alpakka.amqp.scaladsl.AmqpSource
       .committableSource(settings, bufferSize)
-      .map(cm => cm.asJava)
+      .map(cm => new CommittableReadResult(cm))
       .asJava
 
 }
