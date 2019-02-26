@@ -39,12 +39,12 @@ object XmlParsing {
    * through.
    */
   def subslice(path: java.util.Collection[String]): akka.stream.javadsl.Flow[ParseEvent, ParseEvent, NotUsed] =
-    xml.scaladsl.XmlParsing.subslice(path.asScala.map(identity)(collection.breakOut)).asJava
+    xml.scaladsl.XmlParsing.subslice(path.asScala.toIndexedSeq).asJava
 
   /**
    * A Flow that transforms a stream of XML ParseEvents. This stage pushes elements of a certain path in
    * the XML document as org.w3c.dom.Element.
    */
   def subtree(path: java.util.Collection[String]): akka.stream.javadsl.Flow[ParseEvent, Element, NotUsed] =
-    xml.scaladsl.XmlParsing.subtree(path.asScala.map(identity)(collection.breakOut)).asJava
+    xml.scaladsl.XmlParsing.subtree(path.asScala.toIndexedSeq).asJava
 }

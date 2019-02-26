@@ -48,6 +48,11 @@ private class MapOverTraversable[A, K, V](source: Traversable[A], fKey: A => K, 
 
   override def iterator: Iterator[(K, V)] = source.toIterator.map(a => (fKey(a), fValue(a)))
 
+  def remove(key: K): scala.collection.immutable.Map[K, V] =
+    throw new UnsupportedOperationException("Convert to map from iterator to support removing elements.")
+
+  override def updated[V1 >: V](key: K, value: V1): scala.collection.immutable.Map[K, V1] =
+    throw new UnsupportedOperationException("Convert to map from iterator to support updating elements.")
 }
 
 final case class Namespace(uri: String, prefix: Option[String] = None) {
