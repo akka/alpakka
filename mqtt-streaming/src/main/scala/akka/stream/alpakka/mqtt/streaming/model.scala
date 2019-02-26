@@ -365,7 +365,7 @@ final case class Subscribe @InternalApi private[streaming] (packetId: PacketId,
    * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
    */
   def this(topicFilters: java.util.List[AkkaPair[String, Integer]]) =
-    this(PacketId(0), topicFilters.asScala.map(v => v.first -> ControlPacketFlags(v.second)))
+    this(PacketId(0), topicFilters.asScala.toIndexedSeq.map(v => v.first -> ControlPacketFlags(v.second)))
 
   /**
    * A convenience for subscribing to a single topic with at-least-once semantics
@@ -388,7 +388,7 @@ final case class SubAck(packetId: PacketId, returnCodes: Seq[ControlPacketFlags]
    * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
    */
   def this(packetId: PacketId, returnCodes: java.util.List[Integer]) =
-    this(packetId, returnCodes.asScala.map(v => ControlPacketFlags(v)))
+    this(packetId, returnCodes.asScala.toIndexedSeq.map(v => ControlPacketFlags(v)))
 }
 
 object Unsubscribe {
@@ -428,7 +428,7 @@ final case class Unsubscribe @InternalApi private[streaming] (packetId: PacketId
    * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
    */
   def this(topicFilters: java.util.List[String]) =
-    this(PacketId(0), topicFilters.asScala)
+    this(PacketId(0), topicFilters.asScala.toIndexedSeq)
 
   /**
    * A convenience for unsubscribing from a single topic
