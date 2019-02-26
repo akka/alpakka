@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 // ORIGINAL LICENCE
@@ -22,9 +22,6 @@ package akka.stream.alpakka.chroniclequeue.scaladsl
 
 import java.io.File
 
-import scala.util.Try
-
-import com.typesafe.config.ConfigException.BadValue
 import com.typesafe.config.Config
 import net.openhft.chronicle.queue.{RollCycle, RollCycles}
 import net.openhft.chronicle.wire.WireType
@@ -34,32 +31,17 @@ object ChronicleQueueConfig {
   val defaultWireType: WireType = WireType.BINARY
   val defaultBlockSize: Long = 64L << 20
   val defaultOutputPort: Int = 1
-  val defaultCommitOrderPolicy = Lenient
+  val defaultStrictCommitOrder = false
 
   def from(config: Config): ChronicleQueueConfig = {
     val persistDir = new File(config.getString("persist-dir"))
-    val cycle = Try(config.getString("roll-cycle")).toOption
-      .map { s =>
-        RollCycles.valueOf(s.toUpperCase)
-      }
-      .getOrElse(defaultCycle)
-    val wireType = Try(config.getString("wire-type")).toOption
-      .map { s =>
-        WireType.valueOf(s.toUpperCase)
-      }
-      .getOrElse(defaultWireType)
-    val blockSize = Try(config.getMemorySize("block-size")).toOption.map(_.toBytes).getOrElse(defaultBlockSize)
-    val indexSpacing =
-      Try(config.getMemorySize("index-spacing")).toOption.map(_.toBytes.toInt).getOrElse(cycle.defaultIndexSpacing)
-    val indexCount = Try(config.getInt("index-count")).toOption.getOrElse(cycle.defaultIndexCount)
-    val outputPorts = Try(config.getInt("output-ports")).toOption.getOrElse(defaultOutputPort)
-    val commitOrder = Try(config.getString("commit-order-policy")).toOption
-      .map { s =>
-        if (s == "strict") Strict
-        else if (s == "lenient") Lenient
-        else throw new BadValue("commit-order-policy", "Allowed values: strict or lenient")
-      }
-      .getOrElse(defaultCommitOrderPolicy)
+    val cycle = RollCycles.valueOf(config.getString("roll-cycle").toUpperCase)
+    val wireType = WireType.valueOf(config.getString("wire-type").toUpperCase)
+    val blockSize = config.getMemorySize("block-size").toBytes
+    val indexSpacing = config.getMemorySize("index-spacing").toBytes.toInt
+    val indexCount = config.getInt("index-count")
+    val outputPorts = config.getInt("output-ports")
+    val commitOrder = config.getBoolean("strict-commit-order")
     ChronicleQueueConfig(
       persistDir,
       cycle,
@@ -68,7 +50,7 @@ object ChronicleQueueConfig {
       indexSpacing,
       indexCount,
       outputPorts = outputPorts,
-      commitOrderPolicy = commitOrder
+      strictCommitOrder = commitOrder
     )
   }
 }
@@ -83,9 +65,5 @@ case class ChronicleQueueConfig(
     isBuffered: Boolean = false,
     epoch: Long = 0L,
     outputPorts: Int = ChronicleQueueConfig.defaultOutputPort,
-    commitOrderPolicy: CommitOrderPolicy = ChronicleQueueConfig.defaultCommitOrderPolicy
+    strictCommitOrder: Boolean = ChronicleQueueConfig.defaultStrictCommitOrder
 )
-
-sealed trait CommitOrderPolicy
-object Strict extends CommitOrderPolicy
-object Lenient extends CommitOrderPolicy

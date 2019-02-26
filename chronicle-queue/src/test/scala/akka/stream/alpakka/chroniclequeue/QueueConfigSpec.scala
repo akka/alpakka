@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 // ORIGINAL LICENCE
@@ -20,7 +20,7 @@
  */
 package akka.stream.alpakka.chroniclequeue
 
-import com.typesafe.config.{ConfigException, ConfigFactory}
+import com.typesafe.config.ConfigFactory
 import net.openhft.chronicle.queue.RollCycles
 import net.openhft.chronicle.wire.WireType
 import org.scalatest.{FlatSpec, Matchers}
@@ -37,9 +37,10 @@ class QueueConfigSpec extends FlatSpec with Matchers {
         | roll-cycle = xlarge_daily
         | wire-type = compressed_binary
         | block-size = 80m
+        | index-count = 131072
         | index-spacing = 8k
         | output-ports = 3
-        | commit-order-policy = strict
+        | strict-commit-order = true
       """.stripMargin
     val config = ConfigFactory.parseString(configText)
     val queueConfig = ChronicleQueueConfig.from(config)
@@ -52,7 +53,7 @@ class QueueConfigSpec extends FlatSpec with Matchers {
     queueConfig.isBuffered shouldBe false
     queueConfig.epoch shouldBe 0L
     queueConfig.outputPorts shouldBe 3
-    queueConfig.commitOrderPolicy shouldBe Strict
+    queueConfig.strictCommitOrder shouldBe true
   }
 
   it should "properly assume default configurations" in {
@@ -61,7 +62,8 @@ class QueueConfigSpec extends FlatSpec with Matchers {
       """
         | persist-dir = /tmp/myQueue
       """.stripMargin
-    val config = ConfigFactory.parseString(configText)
+    val config =
+      ConfigFactory.parseString(configText).withFallback(ConfigFactory.load().getConfig("alpakka.chroniclequeue"))
     val queueConfig = ChronicleQueueConfig.from(config)
     queueConfig.persistDir.getAbsolutePath shouldBe "/tmp/myQueue"
     queueConfig.rollCycle shouldBe RollCycles.DAILY
@@ -72,7 +74,7 @@ class QueueConfigSpec extends FlatSpec with Matchers {
     queueConfig.isBuffered shouldBe false
     queueConfig.epoch shouldBe 0L
     queueConfig.outputPorts shouldBe 1
-    queueConfig.commitOrderPolicy shouldBe Lenient
+    queueConfig.strictCommitOrder shouldBe false
   }
 
   it should "set commit order policy to lenient" in {
@@ -82,27 +84,13 @@ class QueueConfigSpec extends FlatSpec with Matchers {
         | roll-cycle = xlarge_daily
         | wire-type = compressed_binary
         | block-size = 80m
+        | index-count = 131072
         | index-spacing = 8k
         | output-ports = 3
-        | commit-order-policy = lenient
+        | strict-commit-order = false
       """.stripMargin
     val config = ConfigFactory.parseString(configText)
     val queueConfig = ChronicleQueueConfig.from(config)
-    queueConfig.commitOrderPolicy shouldBe Lenient
-  }
-
-  it should "throw BadValue exception when commit-order-policy is set to an invalid value" in {
-    val configText =
-      """
-        | persist-dir = /tmp/myQueue
-        | roll-cycle = xlarge_daily
-        | wire-type = compressed_binary
-        | block-size = 80m
-        | index-spacing = 8k
-        | output-ports = 3
-        | commit-order-policy = invalid
-      """.stripMargin
-    val config = ConfigFactory.parseString(configText)
-    a[ConfigException.BadValue] should be thrownBy ChronicleQueueConfig.from(config)
+    queueConfig.strictCommitOrder shouldBe false
   }
 }

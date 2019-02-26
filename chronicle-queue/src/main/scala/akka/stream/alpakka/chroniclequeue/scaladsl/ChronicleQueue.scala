@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 // ORIGINAL LICENCE
@@ -40,6 +40,8 @@ import akka.stream.alpakka.chroniclequeue.impl._
  *
  * '''Cancels when''' downstream cancels
  *
+ * Type T is the type of events consumed/emitted where a [[akka.stream.alpakka.chroniclequeue.scaladsl.ChronicleQueueSerializer]] is provided.
+ *
  */
 class ChronicleQueue[T](queue: PersistentQueue[T], onPushCallback: () => Unit)(
     implicit serializer: ChronicleQueueSerializer[T],
@@ -61,12 +63,11 @@ class ChronicleQueue[T](queue: PersistentQueue[T], onPushCallback: () => Unit)(
   def this(persistDir: File, indexName: String)(implicit serializer: ChronicleQueueSerializer[T], system: ActorSystem) =
     this(new PersistentQueue[T](persistDir, indexName = indexName))
 
-  def withOnPushCallback(onPushCallback: () => Unit) = new ChronicleQueue[T](queue, onPushCallback)
+  protected[akka] def withOnPushCallback(onPushCallback: () => Unit) = new ChronicleQueue[T](queue, onPushCallback)
 
-  def withOnCommitCallback(onCommitCallback: () => Unit) =
+  protected[akka] def withOnCommitCallback(onCommitCallback: () => Unit) =
     new ChronicleQueue[T](queue.withOnCommitCallback(i => onCommitCallback()), onPushCallback)
 
-  // verify ... should be ok ...
   override protected def autoCommit(index: Long) = queue.commit(defaultOutputPort, index)
 
   override protected def elementOut(e: Event[T]): T = e.entry

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.chroniclequeue
@@ -11,8 +11,8 @@ import akka.util.ByteString
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Seconds, Span}
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import org.scalatest.concurrent.ScalaFutures._
 
-import scala.concurrent.Await
 import scala.reflect._
 
 import akka.stream.alpakka.chroniclequeue.scaladsl._
@@ -29,19 +29,18 @@ abstract class ChronicleQueueSourceSinkSpec[T: ClassTag, Q <: impl.ChronicleQueu
   implicit val mat = ActorMaterializer()
   implicit val serializer = ChronicleQueueSerializer[T]()
   implicit override val patienceConfig = PatienceConfig(timeout = Span(3, Seconds)) // extend eventually timeout for CI
-  import SourceSinkSpecUtil._
+  import SourceSinkSpecDefaults._
 
   val transform = Flow[Int].map(createElement)
 
-  override def afterAll =
-    Await.ready(system.terminate(), awaitMax)
+  override def afterAll = system.terminate().futureValue(awaitMax)
 
   def createElement(n: Int): T
 
   def format(element: T): String
 
   it should s"source and sink a stream of $elementCount elements" in {
-    val util = new SourceSinkSpecUtil[T, T]
+    val util = new SourceSinkSpecBase[T, T]
     import util._
     //#create-sink
     val sinkCQ = ChronicleQueue.sink[T](config)
@@ -54,13 +53,13 @@ abstract class ChronicleQueueSourceSinkSpec[T: ClassTag, Q <: impl.ChronicleQueu
 
     in.via(transform).runWith(sinkCQ)
 
-    val count = Await.result(countFuture, awaitMax)
+    val count = countFuture.futureValue(awaitMax)
     count shouldBe elementCount
     clean()
   }
 
   it should s"source and sink a stream of $elementCount elements using GraphDSL and custom config" in {
-    val util = new SourceSinkSpecUtil[T, T]
+    val util = new SourceSinkSpecBase[T, T]
     import util._
     val sinkCQ = ChronicleQueue.sink[T](config)
     val sourceCQ = ChronicleQueue.source[T](config, "source.idx")
@@ -82,7 +81,7 @@ abstract class ChronicleQueueSourceSinkSpec[T: ClassTag, Q <: impl.ChronicleQueu
     val countFuture = streamGraph2.run()
     streamGraph1.run()
 
-    val count = Await.result(countFuture, awaitMax)
+    val count = countFuture.futureValue(awaitMax)
     count shouldBe elementCount
     clean()
   }

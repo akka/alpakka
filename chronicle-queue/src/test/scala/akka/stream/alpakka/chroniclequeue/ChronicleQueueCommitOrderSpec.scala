@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 // ORIGINAL LICENCE
@@ -26,8 +26,7 @@ import akka.stream.{ActorMaterializer, ClosedShape}
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
-
-import scala.concurrent.Await
+import org.scalatest.concurrent.ScalaFutures._
 
 import akka.stream.alpakka.chroniclequeue.impl.{CommitOrderException, Event}
 import akka.stream.alpakka.chroniclequeue.scaladsl._
@@ -38,16 +37,15 @@ class ChronicleQueueCommitOrderSpec extends FlatSpec with Matchers with BeforeAn
   implicit val system = ActorSystem("ChronicleQueueCommitOrderSpec", ChronicleQueueSpec.testConfig)
   implicit val mat = ActorMaterializer()
   implicit val serializer = ChronicleQueueSerializer[Int]()
-  import StreamSpecUtil._
+  import StreamSpecDefaults._
 
-  override def afterAll =
-    Await.ready(system.terminate(), awaitMax)
+  override def afterAll = system.terminate().futureValue(awaitMax)
 
-  it should "fail when an out of order commit is attempted and commit-order-policy = strict" in {
-    val util = new StreamSpecUtil[Int, Event[Int]]
+  it should "fail when an out of order commit is attempted and strict-commit-order = true" in {
+    val util = new StreamSpecBase[Int, Event[Int]]
     import util._
     val buffer =
-      ChronicleQueueAtLeastOnce[Int](ConfigFactory.parseString("commit-order-policy = strict").withFallback(config))
+      ChronicleQueueAtLeastOnce[Int](ConfigFactory.parseString("strict-commit-order = true").withFallback(config))
     val commit = buffer.commit[Int]
 
     val streamGraph = RunnableGraph.fromGraph(GraphDSL.create(flowCounter) { implicit builder => sink =>
@@ -56,15 +54,15 @@ class ChronicleQueueCommitOrderSpec extends FlatSpec with Matchers with BeforeAn
       ClosedShape
     })
     val sinkF = streamGraph.run()
-    Await.result(sinkF.failed, awaitMax) shouldBe an[CommitOrderException]
+    sinkF.failed.futureValue(awaitMax) shouldBe an[CommitOrderException]
     clean()
   }
 
-  it should "not fail when an out of order commit is attempted and commit-order-policy = lenient" in {
-    val util = new StreamSpecUtil[Int, Event[Int]]
+  it should "not fail when an out of order commit is attempted and strict-commit-order = false" in {
+    val util = new StreamSpecBase[Int, Event[Int]]
     import util._
     val buffer =
-      ChronicleQueueAtLeastOnce[Int](ConfigFactory.parseString("commit-order-policy = lenient").withFallback(config))
+      ChronicleQueueAtLeastOnce[Int](ConfigFactory.parseString("strict-commit-order = false").withFallback(config))
     val commit = buffer.commit[Int]
 
     val streamGraph = RunnableGraph.fromGraph(GraphDSL.create(flowCounter) { implicit builder => sink =>
@@ -74,7 +72,7 @@ class ChronicleQueueCommitOrderSpec extends FlatSpec with Matchers with BeforeAn
     })
 
     val countFuture = streamGraph.run()
-    val count = Await.result(countFuture, awaitMax)
+    val count = countFuture.futureValue(awaitMax)
     count shouldBe elementCount - 1
     eventually { buffer.queue shouldBe 'closed }
 

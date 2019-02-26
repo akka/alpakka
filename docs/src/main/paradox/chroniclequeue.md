@@ -1,6 +1,6 @@
 # OpenHFT Chronicle-Queue
 
-The Chronicle Queue allows you to use Akka Streams Source, Sink and Flows backed by the persistent off-heap Chronicle queue.
+The [Chronicle Queue](https://github.com/OpenHFT/Chronicle-Queue) allows you to use Akka Streams Source, Sink and Flows backed by the persistent off-heap Chronicle queue.
 
 @@project-info{ projectId="chronicle-queue" }
 

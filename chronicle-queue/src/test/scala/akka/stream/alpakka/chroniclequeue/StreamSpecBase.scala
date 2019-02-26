@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 // ORIGINAL LICENCE
@@ -36,7 +36,7 @@ import scala.util.Random
 
 import akka.stream.alpakka.chroniclequeue.impl.Event
 
-object StreamSpecUtil {
+object StreamSpecDefaults {
   val elementCount = 100000
   val failTestAt = elementCount * 3 / 10
   val elementsAfterFail = 100
@@ -45,20 +45,22 @@ object StreamSpecUtil {
   val burstSize = 500
 }
 
-class StreamSpecUtil[T, S](outputPort: Int = 1) {
+class StreamSpecBase[T, S](outputPort: Int = 1) {
+  import StreamSpecDefaults._
 
-  import StreamSpecUtil._
   val outputPorts = outputPort
   val tempPath: File = Files.createTempDirectory("persistent_queue").toFile
   val totalProcessed = elementCount + elementsAfterFail
 
-  val config = ConfigFactory.parseMap {
-    Map(
-      "persist-dir" -> s"${tempPath.getAbsolutePath}",
-      "output-ports" -> s"$outputPorts",
-      "roll-cycle" -> "TEST_SECONDLY".toLowerCase()
-    ).asJava
-  }
+  val config = ConfigFactory
+    .parseMap {
+      Map(
+        "persist-dir" -> s"${tempPath.getAbsolutePath}",
+        "output-ports" -> s"$outputPorts",
+        "roll-cycle" -> "TEST_SECONDLY".toLowerCase()
+      ).asJava
+    }
+    .withFallback(ConfigFactory.load().getConfig("alpakka.chroniclequeue"))
 
   val in = Source(1 to elementCount)
   lazy val atomicCounter = Vector.tabulate(outputPorts)(_ => new AtomicInteger(0))
@@ -85,23 +87,26 @@ class StreamSpecUtil[T, S](outputPort: Int = 1) {
   }
 }
 
-object SourceSinkSpecUtil {
+object SourceSinkSpecDefaults {
   val elementCount = 100000
+  val elementsAfterFail = 100
 }
 
-class SourceSinkSpecUtil[T, S](outputPort: Int = 1) extends StreamSpecUtil[T, S](outputPort) {
-  import SourceSinkSpecUtil._
+class SourceSinkSpecBase[T, S](outputPort: Int = 1) extends StreamSpecBase[T, S](outputPort) {
+  import SourceSinkSpecDefaults._
 
-  override val config = ConfigFactory.parseMap {
-    Map(
-      "persist-dir" -> s"${tempPath.getAbsolutePath}",
-      "output-ports" -> s"$outputPorts",
-      "roll-cycle" -> "TEST_SECONDLY".toLowerCase(),
-      "commit-order-policy" -> "strict"
-    ).asJava
-  }
+  override val config = ConfigFactory
+    .parseMap {
+      Map(
+        "persist-dir" -> s"${tempPath.getAbsolutePath}",
+        "output-ports" -> s"$outputPorts",
+        "roll-cycle" -> "TEST_SECONDLY".toLowerCase(),
+        "strict-commit-order" -> true
+      ).asJava
+    }
+    .withFallback(ConfigFactory.load().getConfig("alpakka.chroniclequeue"))
 
-  override val totalProcessed = elementCount + StreamSpecUtil.elementsAfterFail
+  override val totalProcessed = elementCount + elementsAfterFail
   override val in = Source(1 to elementCount)
   override lazy val random = Random.nextInt(elementCount - minRandom - 1) + minRandom
 

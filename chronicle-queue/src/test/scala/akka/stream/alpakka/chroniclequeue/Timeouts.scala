@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 // ORIGINAL LICENCE
@@ -24,9 +24,13 @@ import akka.util.Timeout
 
 import scala.concurrent.duration._
 
+import org.scalatest.concurrent.PatienceConfiguration
+import org.scalatest.time._
+
 object Timeouts {
 
   implicit val askTimeout = Timeout(30.seconds)
 
-  val awaitMax = 60.seconds
+  val awaitMax = PatienceConfiguration.Timeout(Span(60, Seconds))
+
 }

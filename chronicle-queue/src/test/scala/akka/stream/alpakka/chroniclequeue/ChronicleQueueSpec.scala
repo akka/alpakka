@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 // ORIGINAL LICENCE
@@ -31,8 +31,9 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Seconds, Span}
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import org.scalatest.concurrent.ScalaFutures._
 
-import scala.concurrent.{Await, Promise}
+import scala.concurrent.Promise
 import scala.reflect._
 
 import akka.stream.alpakka.chroniclequeue.scaladsl._
@@ -60,20 +61,19 @@ abstract class ChronicleQueueSpec[T: ClassTag, Q <: impl.ChronicleQueueSerialize
   implicit val mat = ActorMaterializer()
   implicit val serializer = ChronicleQueueSerializer[T]()
   implicit override val patienceConfig = PatienceConfig(timeout = Span(3, Seconds)) // extend eventually timeout for CI
-  import StreamSpecUtil._
+  import StreamSpecDefaults._
   import system.dispatcher
 
   val transform = Flow[Int].map(createElement)
 
-  override def afterAll =
-    Await.ready(system.terminate(), awaitMax)
+  override def afterAll = system.terminate().futureValue(awaitMax)
 
   def createElement(n: Int): T
 
   def format(element: T): String
 
   it should s"buffer a stream of $elementCount elements" in {
-    val util = new StreamSpecUtil[T, T]
+    val util = new StreamSpecBase[T, T]
     import util._
     //#create-buffer
     val buffer = ChronicleQueue[T](config)
@@ -82,14 +82,14 @@ abstract class ChronicleQueueSpec[T: ClassTag, Q <: impl.ChronicleQueueSerialize
     //#use-buffer
     val countFuture = in.via(transform).via(buffer.async).runWith(flowCounter)
     //#use-buffer
-    val count = Await.result(countFuture, awaitMax)
+    val count = countFuture.futureValue(awaitMax)
     count shouldBe elementCount
     eventually { buffer.queue shouldBe 'closed }
     clean()
   }
 
   it should s"buffer a stream of $elementCount elements using GraphDSL and custom config" in {
-    val util = new StreamSpecUtil[T, T]
+    val util = new StreamSpecBase[T, T]
     import util._
     val buffer = ChronicleQueue[T](config)
     val streamGraph = RunnableGraph.fromGraph(GraphDSL.create(flowCounter) { implicit builder => sink =>
@@ -98,7 +98,7 @@ abstract class ChronicleQueueSpec[T: ClassTag, Q <: impl.ChronicleQueueSerialize
       ClosedShape
     })
     val countFuture = streamGraph.run()
-    val count = Await.result(countFuture, awaitMax)
+    val count = countFuture.futureValue(awaitMax)
     count shouldBe elementCount
     eventually { buffer.queue shouldBe 'closed }
     clean()
@@ -106,7 +106,7 @@ abstract class ChronicleQueueSpec[T: ClassTag, Q <: impl.ChronicleQueueSerialize
 
   it should "buffer for a throttled stream" in {
     var t1, t2 = Long.MinValue
-    val util = new StreamSpecUtil[T, T]
+    val util = new StreamSpecBase[T, T]
     import util._
     val buffer = ChronicleQueue[T](config)
     val t0 = System.nanoTime
@@ -131,12 +131,10 @@ abstract class ChronicleQueueSpec[T: ClassTag, Q <: impl.ChronicleQueueSerialize
         ClosedShape
     })
     val (countF, totalF) = streamGraph.run()
-    val count = Await.result(countF, awaitMax)
-    val totalProcessed = Await.result(totalF, awaitMax)
+    val count = countF.futureValue(awaitMax)
+    val totalProcessed = totalF.futureValue(awaitMax)
     eventually { buffer.queue shouldBe 'closed }
 
-    println("Time difference (ms): " + (t1 - t2) / 1000000d)
-    println(s"Total count $count vs total processed $totalProcessed")
     count shouldBe elementCount
     totalProcessed shouldBe elementCount
     t1 should be > t2 // Give 6 seconds difference. In fact, it should be closer to 9 seconds.
@@ -144,7 +142,7 @@ abstract class ChronicleQueueSpec[T: ClassTag, Q <: impl.ChronicleQueueSerialize
   }
 
   it should "recover from unexpected stream shutdown" in {
-    implicit val util = new StreamSpecUtil[T, T]
+    implicit val util = new StreamSpecBase[T, T]
     import util._
 
     val mat = ActorMaterializer()
@@ -178,18 +176,17 @@ abstract class ChronicleQueueSpec[T: ClassTag, Q <: impl.ChronicleQueueSerialize
       ClosedShape
     })
     val sinkF = graph.run()(mat)
-    Await.result(shutdownF, awaitMax)
-    Await.result(sinkF.failed, awaitMax) shouldBe an[AbruptTerminationException]
+    shutdownF.futureValue(awaitMax)
+    sinkF.failed.futureValue(awaitMax) shouldBe an[AbruptTerminationException]
 
     val restartFrom = commitCount.get()
-    println(s"Restart from count $restartFrom")
 
     resumeGraphAndDoAssertion(pBufferInCount.get, restartFrom)
     clean()
   }
 
   it should "recover from downstream failure" in {
-    implicit val util = new StreamSpecUtil[T, T]
+    implicit val util = new StreamSpecBase[T, T]
     import util._
 
     val mat = ActorMaterializer()
@@ -212,15 +209,14 @@ abstract class ChronicleQueueSpec[T: ClassTag, Q <: impl.ChronicleQueueSerialize
       ClosedShape
     })
     val sinkF = graph.run()(mat)
-    Await.result(sinkF.failed, awaitMax) shouldBe an[NumberFormatException]
+    sinkF.failed.futureValue(awaitMax) shouldBe an[NumberFormatException]
     val restartFrom = outCount.get()
-    println(s"Restart from count $restartFrom")
     resumeGraphAndDoAssertion(inCounter.get, restartFrom)
     clean()
   }
 
   it should "recover from upstream failure" in {
-    implicit val util = new StreamSpecUtil[T, T]
+    implicit val util = new StreamSpecBase[T, T]
     import util._
     val mat = ActorMaterializer()
     val recordCount = new AtomicInteger(0)
@@ -241,13 +237,13 @@ abstract class ChronicleQueueSpec[T: ClassTag, Q <: impl.ChronicleQueueSerialize
       ClosedShape
     })
     val countF = graph.run()(mat)
-    Await.result(countF, awaitMax)
+    countF.futureValue(awaitMax)
     eventually { buffer.queue shouldBe 'closed }
     resumeGraphAndDoAssertion(recordCount.get, failTestAt)
     clean()
   }
 
-  private def resumeGraphAndDoAssertion(beforeShutDown: Long, restartFrom: Int)(implicit util: StreamSpecUtil[T, T]) = {
+  private def resumeGraphAndDoAssertion(beforeShutDown: Long, restartFrom: Int)(implicit util: StreamSpecBase[T, T]) = {
     import util._
     val buffer = ChronicleQueue[T](config)
     val graph = RunnableGraph.fromGraph(GraphDSL.create(flowCounter, head)((_, _)) {
@@ -259,20 +255,15 @@ abstract class ChronicleQueueSpec[T: ClassTag, Q <: impl.ChronicleQueueSerialize
         ClosedShape
     })
     val (countF, firstF) = graph.run()(ActorMaterializer())
-    val afterRecovery = Await.result(countF, awaitMax)
-    val first = Await.result(firstF, awaitMax)
+    val afterRecovery = countF.futureValue(awaitMax)
+    val first = firstF.futureValue(awaitMax)
     eventually { buffer.queue shouldBe 'closed }
-    println(s"First record processed after shutdown => ${format(first)}")
     assertions(beforeShutDown, afterRecovery, totalProcessed)
   }
 
   private def assertions(beforeShutDown: Long, afterRecovery: Long, totalRecords: Long) = {
-    println(s"Last record processed before shutdown => $beforeShutDown")
-    println(s"Records processed after recovery => $afterRecovery")
     val processedRecords = beforeShutDown + afterRecovery
     val lostRecords = totalRecords - processedRecords
-    println(s"Total records lost due to unexpected shutdown => $lostRecords")
-    println(s"Total records processed => $processedRecords")
     processedRecords should be >= totalRecords
   }
 }

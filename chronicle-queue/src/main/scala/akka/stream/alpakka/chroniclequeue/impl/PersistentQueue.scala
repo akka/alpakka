@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 // ORIGINAL LICENCE
@@ -181,18 +181,17 @@ class PersistentQueue[T](config: scaladsl.ChronicleQueueConfig,
         cycle(outputPortId) = newCycle
         lastCommitIndex(outputPortId) = index
       } else {
-        config.commitOrderPolicy match {
-          case scaladsl.Lenient =>
-            logger.info(
-              s"Missing or out of order commits.  previous: ${lastCommitIndex(outputPortId)} latest: $index cycle: ${cycle(outputPortId)}"
-            )
-            lastCommitIndex(outputPortId) = index
-          case scaladsl.Strict =>
-            val msg =
-              s"Missing or out of order commits.  previous: ${lastCommitIndex(outputPortId)} latest: $index cycle: ${cycle(outputPortId)}"
-            logger.error(msg)
-            // Not closing the queue here as `Supervision.Decider` might resume the stream.
-            throw new CommitOrderException(msg, lastCommitIndex(outputPortId), index, cycle(outputPortId))
+        if (config.strictCommitOrder) {
+          val msg =
+            s"Missing or out of order commits.  previous: ${lastCommitIndex(outputPortId)} latest: $index cycle: ${cycle(outputPortId)}"
+          logger.error(msg)
+          // Not closing the queue here as `Supervision.Decider` might resume the stream.
+          throw new CommitOrderException(msg, lastCommitIndex(outputPortId), index, cycle(outputPortId))
+        } else {
+          logger.info(
+            s"Missing or out of order commits.  previous: ${lastCommitIndex(outputPortId)} latest: $index cycle: ${cycle(outputPortId)}"
+          )
+          lastCommitIndex(outputPortId) = index
         }
       }
     }
