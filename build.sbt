@@ -116,11 +116,25 @@ lazy val ftp = alpakkaProject(
   parallelExecution in Test := false,
   fork in Test := true,
   // To avoid potential blocking in machines with low entropy (default is `/dev/random`)
-  javaOptions in Test += "-Djava.security.egd=file:/dev/./urandom"
+  javaOptions in Test += "-Djava.security.egd=file:/dev/./urandom",
+  crossScalaVersions -= Dependencies.Scala213
 )
 
 lazy val geode =
-  alpakkaProject("geode", "geode", Dependencies.Geode, fork in Test := true, parallelExecution in Test := false)
+  alpakkaProject(
+    "geode",
+    "geode",
+    Dependencies.Geode,
+    fork in Test := true,
+    parallelExecution in Test := false,
+    unmanagedSourceDirectories in Compile ++= {
+      val sourceDir = (sourceDirectory in Compile).value
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, n)) if n >= 12 => Seq(sourceDir / "scala-2.12+")
+        case _ => Seq.empty
+      }
+    },
+  )
 
 lazy val googleCloudPubSub = alpakkaProject(
   "google-cloud-pub-sub",
