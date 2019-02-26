@@ -94,7 +94,7 @@ lazy val cassandra = alpakkaProject("cassandra", "cassandra", Dependencies.Cassa
 lazy val couchbase =
   alpakkaProject("couchbase", "couchbase", Dependencies.Couchbase, parallelExecution in Test := false)
 
-lazy val csv = alpakkaProject("csv", "csv", Dependencies.Csv)
+lazy val csv = alpakkaProject("csv", "csv", Dependencies.Csv, crossScalaVersions -= Dependencies.Scala213)
 
 lazy val dynamodb = alpakkaProject("dynamodb", "aws.dynamodb", Dependencies.DynamoDB)
 
