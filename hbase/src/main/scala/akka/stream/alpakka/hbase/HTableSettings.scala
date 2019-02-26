@@ -30,7 +30,7 @@ final class HTableSettings[T] private (val conf: Configuration,
    * Java Api
    */
   def withColumnFamilies(columnFamilies: java.util.List[String]): HTableSettings[T] =
-    copy(columnFamilies = columnFamilies.asScala.to[immutable.Seq])
+    copy(columnFamilies = columnFamilies.asScala.toIndexedSeq)
 
   def withConverter(converter: T => immutable.Seq[Mutation]): HTableSettings[T] =
     copy(converter = converter)
@@ -39,7 +39,7 @@ final class HTableSettings[T] private (val conf: Configuration,
    * Java Api
    */
   def withConverter(converter: java.util.function.Function[T, java.util.List[Mutation]]): HTableSettings[T] =
-    copy(converter = converter.asScala(_).asScala.to[immutable.Seq])
+    copy(converter = converter.asScala(_).asScala.toIndexedSeq)
 
   override def toString: String =
     "HTableSettings(" +
@@ -76,8 +76,5 @@ object HTableSettings {
                 tableName: TableName,
                 columnFamilies: java.util.List[String],
                 converter: java.util.function.Function[T, java.util.List[Mutation]]): HTableSettings[T] =
-    HTableSettings(conf,
-                   tableName,
-                   columnFamilies.asScala.to[immutable.Seq],
-                   converter.asScala(_).asScala.to[immutable.Seq])
+    HTableSettings(conf, tableName, columnFamilies.asScala.toIndexedSeq, converter.asScala(_).asScala.toIndexedSeq)
 }
