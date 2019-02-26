@@ -38,7 +38,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val queueDeclaration = QueueDeclaration(queueName)
 
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
       )
@@ -58,7 +58,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val queueDeclaration = QueueDeclaration(queueName)
 
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
       )
@@ -73,7 +73,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val queueDeclaration = QueueDeclaration(queueName)
 
       val amqpRpcFlow = AmqpRpcFlow.simple(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration),
         2
@@ -97,8 +97,8 @@ class AmqpConnectorsSpec extends AmqpSpec {
         .viaMat(KillSwitches.single)(Keep.right)
         .mapConcat { b =>
           List(
-            OutgoingMessage(b.bytes.concat(ByteString("a")), false, false).withProperties(b.properties),
-            OutgoingMessage(b.bytes.concat(ByteString("aa")), false, false).withProperties(b.properties)
+            WriteMessage(b.bytes.concat(ByteString("a"))).withProperties(b.properties),
+            WriteMessage(b.bytes.concat(ByteString("aa"))).withProperties(b.properties)
           )
         }
         .to(amqpSink)
@@ -116,7 +116,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
       Source
         .empty[ByteString]
-        .via(AmqpRpcFlow.simple(AmqpSinkSettings(connectionProvider)))
+        .via(AmqpRpcFlow.simple(AmqpWriteSettings(connectionProvider)))
         .runWith(TestSink.probe)
         .ensureSubscription()
         .expectComplete()
@@ -125,7 +125,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
     "handle missing reply-to header correctly" in assertAllStagesStopped {
 
-      val outgoingMessage = OutgoingMessage(ByteString.empty, false, false)
+      val outgoingMessage = WriteMessage(ByteString.empty)
 
       Source
         .single(outgoingMessage)
@@ -152,7 +152,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val queueName = "amqp-conn-it-spec-work-queues-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
       )
@@ -163,7 +163,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val mergedSources = Source.fromGraph(GraphDSL.create() { implicit b =>
         import GraphDSL.Implicits._
         val count = 3
-        val merge = b.add(Merge[IncomingMessage](count))
+        val merge = b.add(Merge[ReadResult](count))
         for (n <- 0 until count) {
           val source = b.add(
             AmqpSource.atMostOnceSource(
@@ -192,13 +192,13 @@ class AmqpConnectorsSpec extends AmqpSpec {
       )
 
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
       )
 
       val publisher = TestPublisher.probe[ByteString]()
-      val subscriber = TestSubscriber.probe[IncomingMessage]()
+      val subscriber = TestSubscriber.probe[ReadResult]()
       amqpSink.addAttributes(Attributes.inputBuffer(1, 1)).runWith(Source.fromPublisher(publisher))
       amqpSource.addAttributes(Attributes.inputBuffer(1, 1)).runWith(Sink.fromSubscriber(subscriber))
 
@@ -242,7 +242,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val queueDeclaration = QueueDeclaration(queueName)
 
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(connectionSettings)
+        AmqpWriteSettings(connectionSettings)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
       )
@@ -269,7 +269,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val queueDeclaration = QueueDeclaration(queueName)
 
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
       )
@@ -307,7 +307,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val input = Vector("one", "two", "three", "four", "five")
 
       val amqpRpcFlow = AmqpRpcFlow.committableFlow(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration),
         bufferSize = 10
@@ -315,7 +315,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val (rpcQueueF, probe) =
         Source(input)
           .map(s => ByteString(s))
-          .map(bytes => OutgoingMessage(bytes, false, false))
+          .map(bytes => WriteMessage(bytes))
           .viaMat(amqpRpcFlow)(Keep.right)
           .mapAsync(1)(cm => cm.ack().map(_ => cm.message))
           .toMat(TestSink.probe)(Keep.both)
@@ -332,7 +332,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       )
       val sourceToSink = amqpSource
         .viaMat(KillSwitches.single)(Keep.right)
-        .map(b => OutgoingMessage(b.bytes, false, false).withProperties(b.properties))
+        .map(b => WriteMessage(b.bytes).withProperties(b.properties))
         .to(amqpSink)
         .run()
 
@@ -350,7 +350,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val bindingDeclaration = BindingDeclaration(queueName, exchangeName).withRoutingKey(getRoutingKey("*"))
 
       val amqpSink = AmqpSink(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withExchange(exchangeName)
           .withDeclarations(immutable.Seq(exchangeDeclaration, queueDeclaration, bindingDeclaration))
       )
@@ -364,7 +364,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val input = Vector("one", "two", "three", "four", "five")
       val routingKeys = input.map(s => getRoutingKey(s))
       Source(input)
-        .map(s => OutgoingMessage(ByteString(s), false, false).withRoutingKey(getRoutingKey(s)))
+        .map(s => WriteMessage(ByteString(s)).withRoutingKey(getRoutingKey(s)))
         .runWith(amqpSink)
         .futureValue shouldEqual Done
 
@@ -385,7 +385,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val queueDeclaration = QueueDeclaration(queueName)
 
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
       )
