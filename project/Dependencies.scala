@@ -15,7 +15,7 @@ object Dependencies {
   val AwsSdkVersion = "1.11.476"
   val AwsSdk2Version = "2.4.14"
   val AkkaHttpVersion = "10.1.7"
-  
+
   val CouchbaseVersion = "2.7.2"
   val CouchbaseVersionForDocs = "2.7"
 
@@ -73,7 +73,7 @@ object Dependencies {
       "com.couchbase.client" % "java-client" % CouchbaseVersion, // ApacheV2
       "io.reactivex" % "rxjava-reactive-streams" % "1.2.1", //ApacheV2
       "com.typesafe.play" %% "play-json" % "2.7.1" % Test, // MIT like: http://www.slf4j.org/license.html
-      "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion % Test, // Apache V2
+      "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion % Test // Apache V2
     )
   )
 
@@ -140,7 +140,7 @@ object Dependencies {
       "org.apache.hadoop" % "hadoop-client" % "3.1.0" % Test exclude ("log4j", "log4j"), //Apache2
       "org.apache.hadoop" % "hadoop-common" % "2.2.0" % Test exclude ("log4j", "log4j"), //Apache2
       "org.specs2" %% "specs2-core" % "4.4.1" % Test, //MIT like: https://github.com/etorreborre/specs2/blob/master/LICENSE.txt
-      "org.slf4j" % "log4j-over-slf4j" % "1.7.25" % Test, // MIT like: http://www.slf4j.org/license.html
+      "org.slf4j" % "log4j-over-slf4j" % "1.7.25" % Test // MIT like: http://www.slf4j.org/license.html
     )
   )
 
@@ -326,7 +326,6 @@ object Dependencies {
         "org.springframework" % "spring-context" % SpringVersion,
         "org.springframework.boot" % "spring-boot-autoconfigure" % SpringBootVersion, // TODO should this be provided?
         "org.springframework.boot" % "spring-boot-configuration-processor" % SpringBootVersion % Optional,
-
         // for examples
         "org.springframework.boot" % "spring-boot-starter-web" % SpringBootVersion % Test
       )
@@ -344,8 +343,13 @@ object Dependencies {
 
   val Sns = Seq(
     libraryDependencies ++= Seq(
-      "com.github.matsluni" %% "aws-spi-akka-http" % "0.0.4" excludeAll ExclusionRule(organization = "com.typesafe.akka"), // ApacheV2
-      "software.amazon.awssdk" % "sns" % AwsSdk2Version excludeAll(ExclusionRule(organization = "software.amazon.awssdk", name = "netty-nio-client"), ExclusionRule(organization = "io.netty")), // ApacheV2
+      "com.github.matsluni" %% "aws-spi-akka-http" % "0.0.4" excludeAll ExclusionRule(
+        organization = "com.typesafe.akka"
+      ), // ApacheV2
+      "software.amazon.awssdk" % "sns" % AwsSdk2Version excludeAll (ExclusionRule(
+        organization = "software.amazon.awssdk",
+        name = "netty-nio-client"
+      ), ExclusionRule(organization = "io.netty")), // ApacheV2
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
       "org.mockito" % "mockito-core" % "2.23.4" % Test // MIT
     )
@@ -359,7 +363,7 @@ object Dependencies {
     Seq(
       libraryDependencies ++= Seq(
         "org.apache.solr" % "solr-solrj" % SolrjVersion, // ApacheV2
-        "org.apache.solr" % "solr-test-framework" % SolrjVersion % Test exclude("org.apache.logging.log4j", "log4j-slf4j-impl"), // ApacheV2
+        "org.apache.solr" % "solr-test-framework" % SolrjVersion % Test exclude ("org.apache.logging.log4j", "log4j-slf4j-impl"), // ApacheV2
         "org.slf4j" % "log4j-over-slf4j" % slf4jVersion % Test // MIT like: http://www.slf4j.org/license.html
       ),
       resolvers += ("restlet" at "https://maven.restlet.com")
@@ -368,8 +372,13 @@ object Dependencies {
 
   val Sqs = Seq(
     libraryDependencies ++= Seq(
-      "com.github.matsluni" %% "aws-spi-akka-http" % "0.0.4" excludeAll ExclusionRule(organization = "com.typesafe.akka"), // ApacheV2
-      "software.amazon.awssdk" % "sqs" % AwsSdk2Version excludeAll(ExclusionRule(organization = "software.amazon.awssdk", name = "netty-nio-client"), ExclusionRule(organization = "io.netty")), // ApacheV2
+      "com.github.matsluni" %% "aws-spi-akka-http" % "0.0.4" excludeAll ExclusionRule(
+        organization = "com.typesafe.akka"
+      ), // ApacheV2
+      "software.amazon.awssdk" % "sqs" % AwsSdk2Version excludeAll (ExclusionRule(
+        organization = "software.amazon.awssdk",
+        name = "netty-nio-client"
+      ), ExclusionRule(organization = "io.netty")), // ApacheV2
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
       "org.mockito" % "mockito-core" % "2.23.4" % Test, // MIT
       "org.mockito" % "mockito-inline" % "2.23.4" % Test // MIT
