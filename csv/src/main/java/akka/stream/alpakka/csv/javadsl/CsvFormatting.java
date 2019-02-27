@@ -77,7 +77,7 @@ public class CsvFormatting {
         akka.stream.alpakka.csv.scaladsl.CsvFormatting.format(
             delimiter, quoteChar, escapeChar, endOfLine, qs, charset, byteOrderMarkScala);
     return Flow.<T>create()
-        .map(c -> JavaConverters.collectionAsScalaIterable(c).toList())
+        .map(c -> JavaConverters.collectionAsScalaIterableConverter(c).asScala().toList())
         .via(formattingFlow);
   }
 }

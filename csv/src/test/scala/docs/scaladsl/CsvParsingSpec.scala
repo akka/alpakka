@@ -165,10 +165,10 @@ class CsvParsingSpec extends CsvSpec {
           .fromPath(Paths.get("csv/src/test/resources/correctness.csv"))
           .via(CsvParsing.lineScanner())
           .via(CsvToMap.toMap())
-          .map(_.mapValues(_.utf8String).toMap)
+          .map(_.mapValues(_.utf8String).toIndexedSeq)
           .runWith(Sink.seq)
       val res = fut.futureValue
-      res(0) should be(
+      res(0) should contain allElementsOf (
         Map(
           "Year" -> "1997",
           "Make" -> "Ford",
@@ -177,7 +177,7 @@ class CsvParsingSpec extends CsvSpec {
           "Price" -> "3000.00"
         )
       )
-      res(1) should be(
+      res(1) should contain allElementsOf (
         Map(
           "Year" -> "1999",
           "Make" -> "Chevy",
@@ -186,7 +186,7 @@ class CsvParsingSpec extends CsvSpec {
           "Price" -> "4900.00"
         )
       )
-      res(2) should be(
+      res(2) should contain allElementsOf (
         Map(
           "Year" -> "1996",
           "Make" -> "Jeep",
@@ -196,7 +196,7 @@ class CsvParsingSpec extends CsvSpec {
           "Price" -> "4799.00"
         )
       )
-      res(3) should be(
+      res(3) should contain allElementsOf (
         Map(
           "Year" -> "1999",
           "Make" -> "Chevy",
@@ -205,7 +205,7 @@ class CsvParsingSpec extends CsvSpec {
           "Price" -> "5000.00"
         )
       )
-      res(4) should be(
+      res(4) should contain allElementsOf (
         Map(
           "Year" -> "",
           "Make" -> "",
