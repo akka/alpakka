@@ -18,9 +18,9 @@ import scala.collection.JavaConverters._
 final class MetaHeaders private (val metaHeaders: Map[String, String]) {
 
   @InternalApi private[s3] def headers: Seq[HttpHeader] =
-    metaHeaders.map { header =>
+    metaHeaders.toIndexedSeq.map { header =>
       RawHeader(s"x-amz-meta-${header._1}", header._2)
-    }(collection.breakOut)
+    }
 
   def withMetaHeaders(metaHeaders: Map[String, String]) = new MetaHeaders(
     metaHeaders = metaHeaders
@@ -60,15 +60,15 @@ final class S3Headers private (val cannedAcl: Option[CannedAcl] = None,
                                val serverSideEncryption: Option[ServerSideEncryption] = None) {
 
   @InternalApi private[s3] val headers: Seq[HttpHeader] =
-  cannedAcl.to[Seq].map(_.header) ++
-  metaHeaders.to[Seq].flatMap(_.headers) ++
-  storageClass.to[Seq].map(_.header) ++
+  cannedAcl.toIndexedSeq.map(_.header) ++
+  metaHeaders.toIndexedSeq.flatMap(_.headers) ++
+  storageClass.toIndexedSeq.map(_.header) ++
   customHeaders.map { header =>
     RawHeader(header._1, header._2)
   }
 
   @InternalApi private[s3] def headersFor(request: S3Request) =
-    headers ++ serverSideEncryption.to[Seq].flatMap(_.headersFor(request))
+    headers ++ serverSideEncryption.toIndexedSeq.flatMap(_.headersFor(request))
 
   def withCannedAcl(cannedAcl: CannedAcl) = copy(cannedAcl = Some(cannedAcl))
   def withMetaHeaders(metaHeaders: MetaHeaders) = copy(metaHeaders = Some(metaHeaders))

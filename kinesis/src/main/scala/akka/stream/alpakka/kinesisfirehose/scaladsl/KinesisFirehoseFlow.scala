@@ -13,7 +13,7 @@ import com.amazonaws.services.kinesisfirehose.AmazonKinesisFirehoseAsync
 import com.amazonaws.services.kinesisfirehose.model.{PutRecordBatchResponseEntry, Record}
 
 import scala.collection.JavaConverters._
-import scala.collection.immutable.{Iterable, Queue}
+import scala.collection.immutable.Queue
 import scala.concurrent.duration._
 
 object KinesisFirehoseFlow {
@@ -33,7 +33,7 @@ object KinesisFirehoseFlow {
         )
       )
       .mapAsync(settings.parallelism)(identity)
-      .mapConcat(_.getRequestResponses.asScala.to[Iterable])
+      .mapConcat(_.getRequestResponses.asScala.toIndexedSeq)
       .filter(_.getErrorCode == null)
 
   private def getByteSize(record: Record): Int = record.getData.position

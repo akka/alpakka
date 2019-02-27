@@ -85,9 +85,9 @@ class ItemSpec extends TestKit(ActorSystem("ItemSpec")) with AsyncWordSpecLike w
     "9) get two items in a transaction" ignore assertAllStagesStopped {
       DynamoDb.single(transactGetItemsRequest).map { results =>
         results.getResponses.size shouldBe 2
-        val Seq(a, b) = results.getResponses.asScala
-        a.getItem.get(sortCol) shouldEqual N(0)
-        b.getItem.get(sortCol) shouldEqual N(1)
+        val responses = results.getResponses.asScala
+        responses.head.getItem.get(sortCol) shouldEqual N(0)
+        responses.last.getItem.get(sortCol) shouldEqual N(1)
       }
     }
 

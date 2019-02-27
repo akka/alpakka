@@ -28,7 +28,7 @@ object Common extends AutoPlugin {
     whitesourceGroup := Whitesource.Group.Community,
     crossVersion := CrossVersion.binary,
     crossScalaVersions := Dependencies.ScalaVersions,
-    scalaVersion := crossScalaVersions.value.head,
+    scalaVersion := Dependencies.Scala212,
     scalacOptions ++= Seq(
       "-encoding",
       "UTF-8",
@@ -37,11 +37,14 @@ object Common extends AutoPlugin {
       "-deprecation",
       //"-Xfatal-warnings",
       "-Xlint",
-      "-Yno-adapted-args",
       "-Ywarn-dead-code",
       "-Xfuture",
       "-target:jvm-1.8"
     ),
+    scalacOptions ++= (scalaVersion.value match {
+      case Dependencies.Scala213 => Seq.empty[String]
+      case _ => Seq("-Yno-adapted-args")
+    }),
     Compile / doc / scalacOptions := scalacOptions.value ++ Seq(
       "-doc-title",
       "Alpakka",
