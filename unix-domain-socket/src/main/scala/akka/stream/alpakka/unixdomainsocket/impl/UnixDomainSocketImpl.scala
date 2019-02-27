@@ -10,6 +10,7 @@ import java.nio.channels.{SelectionKey, Selector}
 
 import akka.actor.{Cancellable, CoordinatedShutdown, ExtendedActorSystem, Extension}
 import akka.annotation.InternalApi
+import akka.event.LoggingAdapter
 import akka.stream._
 import akka.stream.alpakka.unixdomainsocket.scaladsl
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
@@ -72,7 +73,7 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
    * no other thread ready to consume a receive buffer, then there is no registration for a read
    * operation.
    */
-  private def nioEventLoop(sel: Selector)(implicit ec: ExecutionContext): Unit =
+  private def nioEventLoop(sel: Selector, log: LoggingAdapter)(implicit ec: ExecutionContext): Unit =
     while (sel.isOpen) {
       val nrOfKeysSelected = sel.select()
       if (sel.isOpen) {
@@ -80,6 +81,33 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
         val keys = if (keySelectable) sel.selectedKeys().iterator() else sel.keys().iterator()
         while (keys.hasNext) {
           val key = keys.next()
+
+          if (log.isDebugEnabled) {
+            val interestInfo = if (keySelectable) {
+              val interestSet = key.asInstanceOf[SelectionKey].interestOps()
+
+              val isInterestedInAccept = (interestSet & SelectionKey.OP_ACCEPT) != 0
+              val isInterestedInConnect = (interestSet & SelectionKey.OP_CONNECT) != 0
+              val isInterestedInRead = (interestSet & SelectionKey.OP_READ) != 0
+              val isInterestedInWrite = (interestSet & SelectionKey.OP_WRITE) != 0
+
+              f" (accept=$isInterestedInAccept%5s connect=$isInterestedInConnect%5s read=$isInterestedInRead%5s write=$isInterestedInWrite%5s)"
+            } else {
+              ""
+            }
+
+            log.debug(
+              f"""ch=${key.channel().hashCode()}%10d
+                | at=${key.attachment().hashCode()}%10d
+                | selectable=$keySelectable%5s
+                | acceptable=${key.isAcceptable}%5s
+                | connectable=${key.isConnectable}%5s
+                | readable=${key.isReadable}%5s
+                | writable=${key.isWritable}%5s
+                | $interestInfo""".stripMargin.replaceAll("\n", "")
+            )
+          }
+
           if (key != null) { // Observed as sometimes being null via sel.keys().iterator()
             if (keySelectable && (key.isAcceptable || key.isConnectable)) {
               val newConnectionOp = key.attachment().asInstanceOf[(Selector, SelectionKey) => Unit]
@@ -95,16 +123,19 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
                     val written =
                       try {
                         channel.write(buffer)
-                        true
                       } catch {
                         case e: IOException =>
                           key.cancel()
                           key.channel.close()
                           sent.failure(e)
-                          false
+                          -1
                       }
 
-                    if (written && buffer.remaining == 0) {
+                    val remaining = buffer.remaining
+
+                    log.debug("written: {} remaining: {}", written, remaining)
+
+                    if (written >= 0 && remaining == 0) {
                       sendReceiveContext.send = SendAvailable(buffer)
                       key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE)
                       sent.success(Done)
@@ -115,9 +146,11 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
                   case ShutdownRequested if key.isValid && !sendReceiveContext.isOutputShutdown =>
                     try {
                       if (sendReceiveContext.isInputShutdown) {
+                        log.debug("Write-side is shutting down")
                         key.cancel()
                         key.channel.close()
                       } else {
+                        log.debug("Write-side is shutting down further output")
                         sendReceiveContext.isOutputShutdown = true
                         key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE)
                         key.channel.asInstanceOf[UnixSocketChannel].shutdownOutput()
@@ -128,6 +161,7 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
                     }
                   case ShutdownRequested =>
                   case CloseRequested =>
+                    log.debug("Write-side is shutting down unconditionally")
                     key.cancel()
                     key.channel.close()
                 }
@@ -137,7 +171,7 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
 
                     val channel = key.channel.asInstanceOf[UnixSocketChannel]
 
-                    val n =
+                    val read =
                       try {
                         channel.read(buffer)
                       } catch {
@@ -145,7 +179,9 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
                         case _: IOException => -1
                       }
 
-                    if (n >= 0) {
+                    log.debug("read: {}", read)
+
+                    if (read >= 0) {
                       buffer.flip()
                       val pendingResult = queue.offer(ByteString(buffer))
                       pendingResult.onComplete(_ => sel.wakeup())
@@ -155,9 +191,13 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
                       queue.complete()
                       try {
                         if (!sendReceiveContext.halfClose || sendReceiveContext.isOutputShutdown) {
-                          key.cancel()
-                          key.channel().close()
+                          queue.watchCompletion().onComplete { _ =>
+                            log.debug("Read-side is shutting down")
+                            key.cancel()
+                            key.channel().close()
+                          }
                         } else {
+                          log.debug("Read-side is shutting down further input")
                           sendReceiveContext.isInputShutdown = true
                           channel.shutdownInput()
                         }
@@ -166,18 +206,18 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
                         case _: IOException =>
                       }
                     }
-
+                  case _: ReceiveAvailable =>
                   case PendingReceiveAck(receiveQueue, receiveBuffer, pendingResult) if pendingResult.isCompleted =>
                     pendingResult.value.get match {
                       case Success(QueueOfferResult.Enqueued) =>
                         key.interestOps(key.interestOps() | SelectionKey.OP_READ)
                         sendReceiveContext.receive = ReceiveAvailable(receiveQueue, receiveBuffer)
-                      case _ =>
+                      case e =>
+                        log.debug("Read-side is shutting down due to {}", e)
                         receiveQueue.complete()
                         key.cancel()
                         key.channel.close()
                     }
-                  case _: ReceiveAvailable =>
                   case _: PendingReceiveAck =>
                 }
               case _: ((Selector, SelectionKey) => Unit) @unchecked =>
@@ -251,9 +291,9 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
 
     val sendSink = Sink.fromGraph(
       Flow[ByteString]
-        .expand { bytes =>
+        .mapConcat { bytes =>
           if (bytes.size <= sendBufferSize) {
-            Iterator.single(bytes)
+            Vector(bytes)
           } else {
             @annotation.tailrec
             def splitToBufferSize(bytes: ByteString, acc: Vector[ByteString]): Vector[ByteString] =
@@ -263,7 +303,7 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
               } else {
                 acc
               }
-            splitToBufferSize(bytes, Vector.empty).toIterator
+            splitToBufferSize(bytes, Vector.empty)
           }
         }
         .mapAsync(1) { bytes =>
@@ -273,7 +313,7 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
           sendBuffer.clear()
           val copied = bytes.copyToBuffer(sendBuffer)
           sendBuffer.flip()
-          require(copied == bytes.size) // It is an error to exceed our buffer size given the above expand
+          require(copied == bytes.size) // It is an error to exceed our buffer size given the above mapConcat
           sendReceiveContext.send = SendRequested(sendBuffer, sent)
           sel.wakeup()
           sent.future.map(_ => bytes)
@@ -312,10 +352,7 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
 
   private val sel = NativeSelectorProvider.getInstance.openSelector
 
-  private val ioThread = new Thread(new Runnable {
-    override def run(): Unit =
-      nioEventLoop(sel)
-  }, "unix-domain-socket-io")
+  private val ioThread = new Thread(() => nioEventLoop(sel, system.log), "unix-domain-socket-io")
   ioThread.start()
 
   CoordinatedShutdown(system).addTask(CoordinatedShutdown.PhaseServiceStop, "stopUnixDomainSocket") { () =>
