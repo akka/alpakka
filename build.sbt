@@ -268,7 +268,7 @@ lazy val docs = project
     ),
     Paradox / siteSubdirName := s"docs/alpakka/${if (isSnapshot.value) "snapshot" else version.value}",
     Paradox / sourceDirectory := sourceDirectory.value / "main" / "paradox",
-    Paradox / paradoxProperties ++= Map(
+    paradoxProperties ++= Map(
       "project.url" -> "https://doc.akka.io/docs/alpakka/current/",
       "akka.version" -> Dependencies.AkkaVersion,
       "akka-http.version" -> Dependencies.AkkaHttpVersion,
@@ -308,7 +308,7 @@ lazy val docs = project
         s"$docsHost/api/alpakka/${if (isSnapshot.value) "snapshot" else version.value}/"
       }
     ),
-    Paradox / paradoxGroups := Map("Language" -> Seq("Java", "Scala")),
+    paradoxGroups := Map("Language" -> Seq("Java", "Scala")),
     resolvers += Resolver.jcenterRepo,
     publishRsyncArtifact := makeSite.value -> "www/",
     publishRsyncHost := "akkarepo@gustav.akka.io"
