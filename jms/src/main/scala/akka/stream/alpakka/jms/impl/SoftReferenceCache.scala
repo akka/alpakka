@@ -36,5 +36,5 @@ private final class SoftReferenceCache[K, V <: AnyRef] {
   }
 
   private def purgeCache(): Unit =
-    cache --= cache.collect { case (key, ref) if ref.get.isEmpty => key }.to[Vector]
+    cache --= cache.collect { case (key, ref) if ref.get.isEmpty => key }.toVector
 }

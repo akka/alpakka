@@ -177,6 +177,7 @@ private[kinesisfirehose] object KinesisFirehoseFlowStage {
                 result.getRequestResponses.asScala
                   .zip(request.getRecords.asScala)
                   .filter(_._1.getErrorCode != null)
+                  .toIndexedSeq
               )
             } else {
               retryRecordsCallback(Nil)

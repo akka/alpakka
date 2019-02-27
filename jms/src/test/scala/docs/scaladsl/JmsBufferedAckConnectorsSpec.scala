@@ -16,7 +16,7 @@ import javax.jms.{JMSException, TextMessage}
 import org.scalatest.Inspectors._
 
 import scala.annotation.tailrec
-import scala.collection.{immutable, mutable, SortedSet}
+import scala.collection.{immutable, mutable}
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
@@ -287,7 +287,7 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
       implicit val _ = Ordering.by { s: String =>
         s.toInt
       }
-      resultList.to[SortedSet] should contain theSameElementsAs numsIn.map(_.toString)
+      resultList.toSet should contain theSameElementsAs numsIn.map(_.toString)
     }
 
     "ensure no message loss when aborting a stream" in withConnectionFactory() { connectionFactory =>
@@ -372,7 +372,7 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
       implicit val _ = Ordering.by { s: String =>
         s.toInt
       }
-      resultList.to[SortedSet] should contain theSameElementsAs numsIn.map(_.toString)
+      resultList.toSet should contain theSameElementsAs numsIn.map(_.toString)
     }
   }
 }

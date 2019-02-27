@@ -97,7 +97,7 @@ import akka.util.ByteString
       versionId: Option[String],
       sse: Option[ServerSideEncryption]
   ): Source[Option[(Source[ByteString, NotUsed], ObjectMetadata)], NotUsed] = {
-    val s3Headers = sse.to[Seq].flatMap(_.headersFor(GetObject))
+    val s3Headers = sse.toIndexedSeq.flatMap(_.headersFor(GetObject))
 
     Setup.source { implicit mat => _ =>
       request(s3Location, rangeOption = range, versionId = versionId, s3Headers = s3Headers)
@@ -158,7 +158,7 @@ import akka.util.ByteString
     Setup
       .source { implicit mat => _ =>
         import mat.executionContext
-        val s3Headers = sse.to[Seq].flatMap(_.headersFor(HeadObject))
+        val s3Headers = sse.toIndexedSeq.flatMap(_.headersFor(HeadObject))
         request(S3Location(bucket, key), HttpMethods.HEAD, versionId = versionId, s3Headers = s3Headers).flatMapConcat {
           case HttpResponse(OK, headers, entity, _) =>
             Source.fromFuture {
@@ -354,7 +354,7 @@ import akka.util.ByteString
     implicit val sys = mat.system
     implicit val conf = resolveSettings()
 
-    val headers = sse.to[Seq].flatMap(_.headersFor(UploadPart))
+    val headers = sse.toIndexedSeq.flatMap(_.headersFor(UploadPart))
 
     Source
       .fromFuture(
@@ -395,7 +395,7 @@ import akka.util.ByteString
     val requestInfo: Source[(MultipartUpload, Int), NotUsed] =
       initiateUpload(s3Location, contentType, s3Headers.headersFor(InitiateMultipartUpload))
 
-    val headers = s3Headers.serverSideEncryption.to[Seq].flatMap(_.headersFor(UploadPart))
+    val headers = s3Headers.serverSideEncryption.toIndexedSeq.flatMap(_.headersFor(UploadPart))
 
     Setup
       .flow { mat => implicit attr =>
@@ -580,7 +580,7 @@ import akka.util.ByteString
     val requestInfo: Source[(MultipartUpload, Int), NotUsed] =
       initiateUpload(location, contentType, s3Headers.headersFor(InitiateMultipartUpload))
 
-    val headers = s3Headers.serverSideEncryption.to[Seq].flatMap(_.headersFor(CopyPart))
+    val headers = s3Headers.serverSideEncryption.toIndexedSeq.flatMap(_.headersFor(CopyPart))
 
     Setup
       .source { mat => implicit attr =>
