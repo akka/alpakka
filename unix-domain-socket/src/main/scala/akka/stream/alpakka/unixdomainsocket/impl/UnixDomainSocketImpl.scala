@@ -352,7 +352,10 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
 
   private val sel = NativeSelectorProvider.getInstance.openSelector
 
-  private val ioThread = new Thread(() => nioEventLoop(sel, system.log), "unix-domain-socket-io")
+  private val ioThread = new Thread(new Runnable {
+    override def run(): Unit =
+      nioEventLoop(sel, system.log)
+  }, "unix-domain-socket-io")
   ioThread.start()
 
   CoordinatedShutdown(system).addTask(CoordinatedShutdown.PhaseServiceStop, "stopUnixDomainSocket") { () =>
