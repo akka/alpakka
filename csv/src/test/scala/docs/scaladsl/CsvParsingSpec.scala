@@ -165,7 +165,7 @@ class CsvParsingSpec extends CsvSpec {
           .fromPath(Paths.get("csv/src/test/resources/correctness.csv"))
           .via(CsvParsing.lineScanner())
           .via(CsvToMap.toMap())
-          .map(_.mapValues(_.utf8String))
+          .map(_.mapValues(_.utf8String).toMap)
           .runWith(Sink.seq)
       val res = fut.futureValue
       res(0) should be(
