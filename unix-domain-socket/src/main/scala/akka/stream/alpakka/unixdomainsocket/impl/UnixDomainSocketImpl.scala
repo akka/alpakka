@@ -82,33 +82,33 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
         while (keys.hasNext) {
           val key = keys.next()
 
-          if (log.isDebugEnabled) {
-            val interestInfo = if (keySelectable) {
-              val interestSet = key.asInstanceOf[SelectionKey].interestOps()
+          if (key != null) { // Observed as sometimes being null via sel.keys().iterator()
+            if (log.isDebugEnabled) {
+              val interestInfo = if (keySelectable) {
+                val interestSet = key.asInstanceOf[SelectionKey].interestOps()
 
-              val isInterestedInAccept = (interestSet & SelectionKey.OP_ACCEPT) != 0
-              val isInterestedInConnect = (interestSet & SelectionKey.OP_CONNECT) != 0
-              val isInterestedInRead = (interestSet & SelectionKey.OP_READ) != 0
-              val isInterestedInWrite = (interestSet & SelectionKey.OP_WRITE) != 0
+                val isInterestedInAccept = (interestSet & SelectionKey.OP_ACCEPT) != 0
+                val isInterestedInConnect = (interestSet & SelectionKey.OP_CONNECT) != 0
+                val isInterestedInRead = (interestSet & SelectionKey.OP_READ) != 0
+                val isInterestedInWrite = (interestSet & SelectionKey.OP_WRITE) != 0
 
-              f"(accept=$isInterestedInAccept%5s connect=$isInterestedInConnect%5s read=$isInterestedInRead%5s write=$isInterestedInWrite%5s)"
-            } else {
-              ""
+                f"(accept=$isInterestedInAccept%5s connect=$isInterestedInConnect%5s read=$isInterestedInRead%5s write=$isInterestedInWrite%5s)"
+              } else {
+                ""
+              }
+
+              log.debug(
+                f"""ch=${key.channel().hashCode()}%10d
+                   | at=${Option(key.attachment()).fold(0)(_.hashCode())}%10d
+                   | selectable=$keySelectable%5s
+                   | acceptable=${key.isAcceptable}%5s
+                   | connectable=${key.isConnectable}%5s
+                   | readable=${key.isReadable}%5s
+                   | writable=${key.isWritable}%5s
+                   | $interestInfo""".stripMargin.replaceAll("\n", "")
+              )
             }
 
-            log.debug(
-              f"""ch=${key.channel().hashCode()}%10d
-                | at=${Option(key.attachment()).fold(0)(_.hashCode())}%10d
-                | selectable=$keySelectable%5s
-                | acceptable=${key.isAcceptable}%5s
-                | connectable=${key.isConnectable}%5s
-                | readable=${key.isReadable}%5s
-                | writable=${key.isWritable}%5s
-                | $interestInfo""".stripMargin.replaceAll("\n", "")
-            )
-          }
-
-          if (key != null) { // Observed as sometimes being null via sel.keys().iterator()
             if (keySelectable && (key.isAcceptable || key.isConnectable)) {
               val newConnectionOp = key.attachment().asInstanceOf[(Selector, SelectionKey) => Unit]
               newConnectionOp(sel, key)
