@@ -34,6 +34,7 @@ class DynamoSettingsSpec extends WordSpecLike with Matchers {
       settings.host should be("host")
       settings.port should be(443)
       settings.parallelism should be(4)
+      settings.maxOpenRequests should be(None)
       settings.credentialsProvider shouldBe a[AWSStaticCredentialsProvider]
     }
 
@@ -45,8 +46,24 @@ class DynamoSettingsSpec extends WordSpecLike with Matchers {
       settings.host should be("localhost")
       settings.port should be(8001)
       settings.parallelism should be(4)
+      settings.maxOpenRequests should be(None)
       settings.credentialsProvider shouldBe a[DefaultAWSCredentialsProviderChain]
       Await.result(system.terminate(), 1.second)
+    }
+
+    "read optional value for maxOpenRequests" in {
+      val config = ConfigFactory.parseString("""
+          |region = "eu-west-1"
+          |host = "localhost"
+          |port = 443
+          |tls = true
+          |parallelism = 32
+          |maxOpenRequests = 64
+        """.stripMargin)
+
+      val settings = DynamoSettings(config)
+      settings.maxOpenRequests shouldBe Some(64)
+      settings.withoutMaxOpenRequests.maxOpenRequests shouldBe None
     }
 
     "use the DefaultAWSCredentialsProviderChain if the config defines an incomplete akka.stream.alpakka.dynamodb.credentials" in {
