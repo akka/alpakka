@@ -91,14 +91,14 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
               val isInterestedInRead = (interestSet & SelectionKey.OP_READ) != 0
               val isInterestedInWrite = (interestSet & SelectionKey.OP_WRITE) != 0
 
-              f" (accept=$isInterestedInAccept%5s connect=$isInterestedInConnect%5s read=$isInterestedInRead%5s write=$isInterestedInWrite%5s)"
+              f"(accept=$isInterestedInAccept%5s connect=$isInterestedInConnect%5s read=$isInterestedInRead%5s write=$isInterestedInWrite%5s)"
             } else {
               ""
             }
 
             log.debug(
               f"""ch=${key.channel().hashCode()}%10d
-                | at=${key.attachment().hashCode()}%10d
+                | at=${Option(key.attachment()).fold(0)(_.hashCode())}%10d
                 | selectable=$keySelectable%5s
                 | acceptable=${key.isAcceptable}%5s
                 | connectable=${key.isConnectable}%5s
