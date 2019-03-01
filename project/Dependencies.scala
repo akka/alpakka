@@ -93,7 +93,7 @@ object Dependencies {
       "com.typesafe.akka" %% "akka-http-xml" % AkkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
       // https://github.com/akka/alpakka-kafka/releases
-      "com.typesafe.akka" %% "akka-stream-kafka" % "1.0-RC2",
+      "com.typesafe.akka" %% "akka-stream-kafka" % "1.0",
       // https://github.com/manub/scalatest-embedded-kafka/tags
       "net.manub" %% "scalatest-embedded-kafka" % "1.1.0", // MIT
       // https://github.com/javaee/javax.jms
