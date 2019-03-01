@@ -16,6 +16,7 @@ import org.scalatest.{Matchers, WordSpecLike}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import java.util.Optional
 
 class DynamoSettingsSpec extends WordSpecLike with Matchers {
 
@@ -62,10 +63,16 @@ class DynamoSettingsSpec extends WordSpecLike with Matchers {
         """.stripMargin)
 
       val settings = DynamoSettings(config)
-      settings.maxOpenRequests shouldBe Some(64)
 
+      // Test Scala API
+      settings.maxOpenRequests shouldBe Some(64)
       settings.withMaxOpenRequests(None).maxOpenRequests shouldBe None
       settings.withMaxOpenRequests(Some(32)).maxOpenRequests shouldBe Some(32)
+
+      // Test Java API
+      settings.getMaxOpenRequests shouldBe Optional.of(64)
+      settings.withMaxOpenRequests(Optional.empty[Int]).getMaxOpenRequests shouldBe Optional.empty[Int]
+      settings.withMaxOpenRequests(Optional.of(32)).getMaxOpenRequests shouldBe Optional.of(32)
     }
 
     "use the DefaultAWSCredentialsProviderChain if the config defines an incomplete akka.stream.alpakka.dynamodb.credentials" in {

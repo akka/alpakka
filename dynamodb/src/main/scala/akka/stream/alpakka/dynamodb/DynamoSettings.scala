@@ -31,9 +31,11 @@ final class DynamoSettings private (
     if (value == tls) this else copy(tls = value)
   def withParallelism(value: Int): DynamoSettings = copy(parallelism = value)
   def withMaxOpenRequests(value: Option[Int]): DynamoSettings = copy(maxOpenRequests = value)
-  def withMaxOpenRequests(value: Optional[Int]): DynamoSettings = copy(maxOpenRequests = value.asScala)
   def withCredentialsProvider(value: com.amazonaws.auth.AWSCredentialsProvider): DynamoSettings =
     copy(credentialsProvider = value)
+
+  /** Java Api */
+  def withMaxOpenRequests(value: Optional[Int]): DynamoSettings = copy(maxOpenRequests = value.asScala)
 
   /** Java Api */
   def getMaxOpenRequests(): Optional[Int] = maxOpenRequests.asJava
