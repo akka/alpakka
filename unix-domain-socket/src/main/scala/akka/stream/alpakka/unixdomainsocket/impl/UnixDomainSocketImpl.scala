@@ -6,13 +6,13 @@ package akka.stream.alpakka.unixdomainsocket.impl
 
 import java.io.{File, IOException}
 import java.nio.ByteBuffer
-import java.nio.channels.{SelectionKey, Selector}
+import java.nio.channels._
 
-import akka.actor.{Cancellable, CoordinatedShutdown, ExtendedActorSystem, Extension}
+import akka.actor._
 import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.alpakka.unixdomainsocket.scaladsl
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
+import akka.stream.scaladsl._
 import akka.util.ByteString
 import akka.{Done, NotUsed}
 import jnr.enxio.channels.NativeSelectorProvider
@@ -21,7 +21,7 @@ import jnr.unixsocket.{UnixServerSocketChannel, UnixSocketAddress, UnixSocketCha
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success, Try}
+import scala.util._
 
 /**
  * INTERNAL API
@@ -395,39 +395,51 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
       connectTimeout: Duration = Duration.Inf
   ): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
 
-    val channel = UnixSocketChannel.open()
-    channel.configureBlocking(false)
-    val connectionFinished = Promise[Done]
-    val cancellable =
-      connectTimeout match {
-        case d: FiniteDuration =>
-          Some(system.scheduler.scheduleOnce(d, new Runnable {
-            override def run(): Unit =
-              channel.close()
-          }))
-        case _ =>
-          None
-      }
-    val (context, connectionFlow) = sendReceiveStructures(sel, receiveBufferSize, sendBufferSize, halfClose)
-    val registeredKey =
-      channel
-        .register(sel, SelectionKey.OP_CONNECT, connectKey(remoteAddress, connectionFinished, cancellable, context) _)
-    val connection = Try(channel.connect(remoteAddress))
-    connection.failed.foreach(e => connectionFinished.tryFailure(e))
+    val connect: () => (Flow[ByteString, ByteString, Any], Future[Done]) = () => {
+      val p = Promise[Done]
+      val f = p.future
 
-    connectionFlow
-      .merge(Source.fromFuture(connectionFinished.future.map(_ => ByteString.empty)))
-      .filter(_.nonEmpty) // We merge above so that we can get connection failures - we're not interested in the empty bytes though
-      .mapMaterializedValue { _ =>
-        connection match {
-          case Success(_) =>
-            connectionFinished.future
-              .map(_ => OutgoingConnection(remoteAddress, localAddress.getOrElse(new UnixSocketAddress(""))))
-          case Failure(e) =>
-            registeredKey.cancel()
-            channel.close()
-            Future.failed(e)
+      val (context, connectionFlow) = sendReceiveStructures(sel, receiveBufferSize, sendBufferSize, halfClose)
+      val ch = UnixSocketChannel.open()
+
+      val cancellable =
+        connectTimeout match {
+          case d: FiniteDuration =>
+            Some(system.scheduler.scheduleOnce(d, new Runnable {
+              override def run(): Unit =
+                ch.close()
+            }))
+          case _ =>
+            None
         }
+
+      val key = ch
+        .configureBlocking(false)
+        .register(sel, SelectionKey.OP_CONNECT, connectKey(remoteAddress, p, cancellable, context) _)
+
+      f.failed.foreach { _ =>
+        key.cancel()
+        ch.close()
+      }
+
+      try { ch.connect(remoteAddress) } catch {
+        case NonFatal(e) => p.tryFailure(e)
+      }
+
+      (connectionFlow, f)
+
+    }
+
+    val graph = new WrappedFlowStageWithMaterializedValue[ByteString, ByteString, Future[Done]](
+      connect,
+      Inlet("OutgoingUnixDomainSocket.in"),
+      Outlet("OutgoingUnixDomainSocket.out")
+    )
+
+    Flow
+      .fromGraph(graph)
+      .mapMaterializedValue {
+        _.map(_ => OutgoingConnection(remoteAddress, localAddress.getOrElse(new UnixSocketAddress(""))))
       }
   }
 }

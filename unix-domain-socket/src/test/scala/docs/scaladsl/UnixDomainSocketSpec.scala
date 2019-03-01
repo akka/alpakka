@@ -11,7 +11,7 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.unixdomainsocket.scaladsl.UnixDomainSocket
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl._
 import akka.testkit._
 import akka.util.ByteString
 import jnr.unixsocket.UnixSocketAddress
@@ -72,19 +72,15 @@ class UnixDomainSocketSpec
 
       val sendBytes = ByteString("Hello")
 
-      val binding =
-        UnixDomainSocket().bindAndHandle(Flow[ByteString]
-                                           .delay(5.seconds)
-                                           .map(identity),
-                                         file)
+      val binding = UnixDomainSocket().bindAndHandle(Flow[ByteString].map(identity), file)
 
       binding.flatMap { connection =>
         Source
           .single(sendBytes)
           .via(UnixDomainSocket().outgoingConnection(new UnixSocketAddress(file), halfClose = false))
-          .runWith(Sink.headOption)
-          .flatMap {
-            case e if e.isEmpty => connection.unbind().map(_ => succeed)
+          .runWith(Sink.head)
+          .flatMap { _ =>
+            connection.unbind().map(_ => succeed)
           }
       }
     }
@@ -109,9 +105,9 @@ class UnixDomainSocketSpec
           .tick(0.seconds, 1.second, sendBytes)
           .takeWhile(_ => !receiving.isCompleted)
           .via(UnixDomainSocket().outgoingConnection(file))
-          .runWith(Sink.headOption)
-          .flatMap {
-            case e if e.nonEmpty => connection.unbind().map(_ => succeed)
+          .runWith(Sink.head)
+          .flatMap { _ =>
+            connection.unbind().map(_ => succeed)
           }
       }
     }
@@ -129,12 +125,35 @@ class UnixDomainSocketSpec
       val connection =
         Source
           .single(ByteString("hi"))
-          .via(UnixDomainSocket().outgoingConnection(new File("/thisshouldnotexist")))
-          .runWith(Sink.head)
+          .viaMat(UnixDomainSocket().outgoingConnection(new File("/thisshouldnotexist")))(Keep.right)
+          .to(Sink.ignore)
+          .run()
 
       connection.failed.map {
         case _: IOException => succeed
       }
     }
+
+    "be able to materialize outgoing connection flow more than once" in {
+      @inline def materialize(flow: Flow[ByteString, ByteString, Any]) =
+        Source.single(ByteString("Hello")).via(flow).runWith(Sink.head)
+
+      val file = Files.createTempFile("UnixDomainSocketSpec4", ".sock").toFile
+      file.delete()
+      file.deleteOnExit()
+
+      val binding: Future[UnixDomainSocket.ServerBinding] =
+        UnixDomainSocket().bindAndHandle(Flow.fromFunction(identity), file, halfClose = true)
+
+      val flow = UnixDomainSocket().outgoingConnection(file)
+
+      binding.flatMap { bound =>
+        Future
+          .sequence(List(materialize(flow), materialize(flow)))
+          .flatMap(r => bound.unbind.map(_ => succeed).recover { case _ => succeed })
+      }
+
+    }
+
   }
 }
