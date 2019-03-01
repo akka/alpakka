@@ -51,19 +51,21 @@ class DynamoSettingsSpec extends WordSpecLike with Matchers {
       Await.result(system.terminate(), 1.second)
     }
 
-    "read optional value for maxOpenRequests" in {
+    "allow configuring optional maxOpenRequests" in {
       val config = ConfigFactory.parseString("""
           |region = "eu-west-1"
           |host = "localhost"
           |port = 443
           |tls = true
           |parallelism = 32
-          |maxOpenRequests = 64
+          |max-open-requests = 64
         """.stripMargin)
 
       val settings = DynamoSettings(config)
       settings.maxOpenRequests shouldBe Some(64)
-      settings.withoutMaxOpenRequests.maxOpenRequests shouldBe None
+
+      settings.withMaxOpenRequests(None).maxOpenRequests shouldBe None
+      settings.withMaxOpenRequests(Some(32)).maxOpenRequests shouldBe Some(32)
     }
 
     "use the DefaultAWSCredentialsProviderChain if the config defines an incomplete akka.stream.alpakka.dynamodb.credentials" in {

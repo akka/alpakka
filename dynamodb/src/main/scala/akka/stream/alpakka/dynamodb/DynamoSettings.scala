@@ -7,6 +7,8 @@ package akka.stream.alpakka.dynamodb
 import akka.actor.ActorSystem
 import com.amazonaws.auth._
 import com.typesafe.config.Config
+import java.util.Optional
+import scala.compat.java8.OptionConverters._
 
 final class DynamoSettings private (
     val region: String,
@@ -28,10 +30,13 @@ final class DynamoSettings private (
   def withTls(value: Boolean): DynamoSettings =
     if (value == tls) this else copy(tls = value)
   def withParallelism(value: Int): DynamoSettings = copy(parallelism = value)
-  def withMaxOpenRequests(value: Int): DynamoSettings = copy(maxOpenRequests = Option(value))
-  def withoutMaxOpenRequests(): DynamoSettings = copy(maxOpenRequests = None)
+  def withMaxOpenRequests(value: Option[Int]): DynamoSettings = copy(maxOpenRequests = value)
+  def withMaxOpenRequests(value: Optional[Int]): DynamoSettings = copy(maxOpenRequests = value.asScala)
   def withCredentialsProvider(value: com.amazonaws.auth.AWSCredentialsProvider): DynamoSettings =
     copy(credentialsProvider = value)
+
+  /** Java Api */
+  def getMaxOpenRequests(): Optional[Int] = maxOpenRequests.asJava
 
   private def copy(
       region: String = region,
@@ -75,7 +80,9 @@ object DynamoSettings {
     val port = c.getInt("port")
     val tls = c.getBoolean("tls")
     val parallelism = c.getInt("parallelism")
-    val maxOpenRequests = if (c.hasPath("maxOpenRequests")) Option(c.getInt("maxOpenRequests")) else None
+    val maxOpenRequests = if (c.hasPath("max-open-requests")) {
+      Option(c.getInt("max-open-requests"))
+    } else None
 
     val awsCredentialsProvider = {
       if (c.hasPath("credentials.access-key-id") &&
