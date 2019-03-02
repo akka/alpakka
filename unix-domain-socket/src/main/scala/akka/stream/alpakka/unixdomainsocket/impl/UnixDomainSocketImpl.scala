@@ -126,7 +126,9 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
                       } catch {
                         case e: IOException =>
                           key.cancel()
-                          key.channel.close()
+                          try {
+                            key.channel.close()
+                          } catch { case _: IOException => }
                           sent.failure(e)
                           -1
                       }
@@ -163,7 +165,9 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
                   case CloseRequested =>
                     log.debug("Write-side is shutting down unconditionally")
                     key.cancel()
-                    key.channel.close()
+                    try {
+                      key.channel.close()
+                    } catch { case _: IOException => }
                 }
                 sendReceiveContext.receive match {
                   case ReceiveAvailable(queue, buffer) if keySelectable && key.isReadable =>
@@ -194,7 +198,9 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
                           queue.watchCompletion().onComplete { _ =>
                             log.debug("Read-side is shutting down")
                             key.cancel()
-                            key.channel().close()
+                            try {
+                              key.channel().close()
+                            } catch { case _: IOException => }
                           }
                         } else {
                           log.debug("Read-side is shutting down further input")
@@ -216,7 +222,9 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
                         log.debug("Read-side is shutting down due to {}", e)
                         receiveQueue.complete()
                         key.cancel()
-                        key.channel.close()
+                        try {
+                          key.channel.close()
+                        } catch { case _: IOException => }
                     }
                   case _: PendingReceiveAck =>
                 }
@@ -237,12 +245,12 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
   )(sel: Selector, key: SelectionKey)(implicit mat: ActorMaterializer, ec: ExecutionContext): Unit = {
 
     val acceptingChannel = key.channel().asInstanceOf[UnixServerSocketChannel]
-    val acceptedChannel = acceptingChannel.accept()
+    val acceptedChannel = try { acceptingChannel.accept() } catch { case _: IOException => null }
 
     if (acceptedChannel != null) {
       acceptedChannel.configureBlocking(false)
       val (context, connectionFlow) = sendReceiveStructures(sel, receiveBufferSize, sendBufferSize, halfClose)
-      acceptedChannel.register(sel, SelectionKey.OP_READ, context)
+      try { acceptedChannel.register(sel, SelectionKey.OP_READ, context) } catch { case _: IOException => }
       incomingConnectionQueue.offer(
         IncomingConnection(localAddress, acceptingChannel.getRemoteSocketAddress, connectionFlow)
       )
