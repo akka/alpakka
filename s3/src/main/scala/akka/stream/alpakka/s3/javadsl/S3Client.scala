@@ -302,6 +302,27 @@ final class S3Client(s3Settings: S3Settings, system: ActorSystem, mat: Materiali
       .toJava
 
   /**
+    * Deletes all keys under the specified bucket
+    *
+    * @param bucket
+    * @return A [[java.util.concurrent.CompletionStage CompletionStage]] of [[java.lang.Void]]
+    */
+  def deleteObjectsByPrefix(bucket: String): CompletionStage[Done] = deleteObjectsByPrefix(bucket, Optional.empty())
+
+  /**
+    * Deletes all keys which have the given prefix under the specified bucket
+    *
+    * @param bucket
+    * @param prefix
+    * @return A [[java.util.concurrent.CompletionStage CompletionStage]] of [[java.lang.Void]]
+    */
+  def deleteObjectsByPrefix(bucket: String, prefix: Optional[String]): CompletionStage[Done] =
+    impl
+      .deleteObjectsByPrefix(bucket, Option(prefix.orElse(null)))
+      .map(_ => Done.getInstance())(mat.executionContext)
+      .toJava
+
+  /**
    * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
    *
    * @param bucket the s3 bucket name

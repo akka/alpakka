@@ -234,15 +234,23 @@ final class S3Client(val s3Settings: S3Settings)(implicit system: ActorSystem, m
     impl.getObjectMetadata(bucket, key, versionId, sse)
 
   /**
-   * Deletes a S3 Object
-   *
-   * @param bucket the s3 bucket name
-   * @param key the s3 object key
-   * @param versionId optional version idof the object
-   * @return A [[scala.concurrent.Future Future]] of [[akka.Done]]
-   */
+    *
+    * @param bucket
+    * @param key
+    * @param versionId
+    * @return
+    */
   def deleteObject(bucket: String, key: String, versionId: Option[String] = None): Future[Done] =
     impl.deleteObject(S3Location(bucket, key), versionId)
+
+  /**
+    * Deletes all keys which have the given prefix under the specified bucket
+    * @param bucket
+    * @param prefix
+    * @return
+    */
+  def deleteObjectsByPrefix(bucket: String, prefix: Option[String]): Future[Done] =
+    impl.deleteObjectsByPrefix(bucket, prefix)
 
   /**
    * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
