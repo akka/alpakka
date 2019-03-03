@@ -1,14 +1,19 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.jms.impl
+
 import akka.annotation.InternalApi
 
 import scala.collection.mutable
 import scala.ref.SoftReference
 
-@InternalApi private[jms] class SoftReferenceCache[K, V <: AnyRef] {
+/**
+ * Internal API.
+ */
+@InternalApi
+private final class SoftReferenceCache[K, V <: AnyRef] {
 
   private val cache = mutable.HashMap[K, SoftReference[V]]()
 
@@ -31,5 +36,5 @@ import scala.ref.SoftReference
   }
 
   private def purgeCache(): Unit =
-    cache --= cache.collect { case (key, ref) if ref.get.isEmpty => key }.to[Vector]
+    cache --= cache.collect { case (key, ref) if ref.get.isEmpty => key }.toVector
 }

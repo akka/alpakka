@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.hdfs
@@ -7,7 +7,6 @@ package akka.stream.alpakka.hdfs
 import java.util.function.BiFunction
 
 import akka.NotUsed
-import akka.stream.alpakka.hdfs.HdfsWritingSettings._
 import akka.stream.alpakka.hdfs.impl.HdfsFlowLogic
 import akka.stream.alpakka.hdfs.impl.strategy.DefaultRotationStrategy._
 import akka.stream.alpakka.hdfs.impl.strategy.DefaultSyncStrategy._
@@ -17,17 +16,38 @@ import org.apache.hadoop.fs.Path
 
 import scala.concurrent.duration.FiniteDuration
 
-final case class HdfsWritingSettings(
-    overwrite: Boolean = true,
-    newLine: Boolean = false,
-    lineSeparator: String = System.getProperty("line.separator"),
-    pathGenerator: FilePathGenerator = DefaultFilePathGenerator
+final class HdfsWritingSettings private (
+    val overwrite: Boolean,
+    val newLine: Boolean,
+    val lineSeparator: String,
+    val pathGenerator: FilePathGenerator
 ) {
   private[hdfs] val newLineByteArray = ByteString(lineSeparator).toArray
-  def withOverwrite(overwrite: Boolean): HdfsWritingSettings = copy(overwrite = overwrite)
-  def withNewLine(newLine: Boolean): HdfsWritingSettings = copy(newLine = newLine)
-  def withLineSeparator(lineSeparator: String): HdfsWritingSettings = copy(lineSeparator = lineSeparator)
-  def withPathGenerator(generator: FilePathGenerator): HdfsWritingSettings = copy(pathGenerator = generator)
+
+  def withOverwrite(value: Boolean): HdfsWritingSettings = if (overwrite == value) this else copy(overwrite = value)
+  def withNewLine(value: Boolean): HdfsWritingSettings = if (newLine == value) this else copy(newLine = value)
+  def withLineSeparator(value: String): HdfsWritingSettings = copy(lineSeparator = value)
+  def withPathGenerator(value: FilePathGenerator): HdfsWritingSettings = copy(pathGenerator = value)
+
+  private def copy(
+      overwrite: Boolean = overwrite,
+      newLine: Boolean = newLine,
+      lineSeparator: String = lineSeparator,
+      pathGenerator: FilePathGenerator = pathGenerator
+  ): HdfsWritingSettings = new HdfsWritingSettings(
+    overwrite = overwrite,
+    newLine = newLine,
+    lineSeparator = lineSeparator,
+    pathGenerator = pathGenerator
+  )
+
+  override def toString =
+    "HdfsWritingSettings(" +
+    s"overwrite=$overwrite," +
+    s"newLine=$newLine," +
+    s"lineSeparator=$lineSeparator," +
+    s"pathGenerator=$pathGenerator" +
+    ")"
 }
 
 object HdfsWritingSettings {
@@ -35,11 +55,18 @@ object HdfsWritingSettings {
   private val DefaultFilePathGenerator: FilePathGenerator =
     FilePathGenerator((rc: Long, _: Long) => s"/tmp/alpakka/$rc")
 
-  /**
-   * Java API
-   */
-  def create(): HdfsWritingSettings =
-    HdfsWritingSettings()
+  val default = new HdfsWritingSettings(
+    overwrite = true,
+    newLine = false,
+    lineSeparator = System.getProperty("line.separator"),
+    pathGenerator = DefaultFilePathGenerator
+  )
+
+  /** Scala API */
+  def apply(): HdfsWritingSettings = default
+
+  /** Java API */
+  def create(): HdfsWritingSettings = default
 }
 
 final case class HdfsWriteMessage[T, P](source: T, passThrough: P)

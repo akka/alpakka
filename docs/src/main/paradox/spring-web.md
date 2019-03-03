@@ -9,9 +9,7 @@ detaching these types from RS and allows for a painless migration to [`java.util
 
 This Alpakka module makes it possible to directly return a `Source` in your Spring Web endpoints.
 
-### Reported issues
-
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Aspring-web)
+@@project-info{ projectId="spring-web" }
 
 
 ## Artifacts
@@ -21,6 +19,11 @@ This Alpakka module makes it possible to directly return a `Source` in your Spri
   artifact=akka-stream-alpakka-spring-web_$scala.binary.version$
   version=$project.version$
 }
+
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="spring-web" }
+
 
 ## Usage
 

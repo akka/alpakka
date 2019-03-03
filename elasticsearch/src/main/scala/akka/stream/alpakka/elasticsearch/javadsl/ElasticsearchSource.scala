@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.elasticsearch.javadsl
@@ -29,8 +29,8 @@ object ElasticsearchSource {
              typeName: String,
              query: String,
              settings: ElasticsearchSourceSettings,
-             client: RestClient): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
-    create(indexName, typeName, query, settings, client, new ObjectMapper())
+             elasticsearchClient: RestClient): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
+    create(indexName, typeName, query, settings, elasticsearchClient, new ObjectMapper())
 
   /**
    * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[ReadResult]]s of [[java.util.Map]].
@@ -40,14 +40,14 @@ object ElasticsearchSource {
              typeName: String,
              query: String,
              settings: ElasticsearchSourceSettings,
-             client: RestClient,
+             elasticsearchClient: RestClient,
              objectMapper: ObjectMapper): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
     Source.fromGraph(
       new impl.ElasticsearchSourceStage(
         indexName,
         Option(typeName),
         Map("query" -> query),
-        client,
+        elasticsearchClient,
         settings,
         new JacksonReader[java.util.Map[String, Object]](objectMapper, classOf[java.util.Map[String, Object]])
       )
@@ -67,14 +67,14 @@ object ElasticsearchSource {
              typeName: String,
              searchParams: JMap[String, String],
              settings: ElasticsearchSourceSettings,
-             client: RestClient,
+             elasticsearchClient: RestClient,
              objectMapper: ObjectMapper): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
     Source.fromGraph(
       new impl.ElasticsearchSourceStage(
         indexName,
         Option(typeName),
         searchParams.asScala.toMap,
-        client,
+        elasticsearchClient,
         settings,
         new JacksonReader[java.util.Map[String, Object]](objectMapper, classOf[java.util.Map[String, Object]])
       )
@@ -88,9 +88,9 @@ object ElasticsearchSource {
                typeName: String,
                query: String,
                settings: ElasticsearchSourceSettings,
-               client: RestClient,
+               elasticsearchClient: RestClient,
                clazz: Class[T]): Source[ReadResult[T], NotUsed] =
-    typed[T](indexName, typeName, query, settings, client, clazz, new ObjectMapper())
+    typed[T](indexName, typeName, query, settings, elasticsearchClient, clazz, new ObjectMapper())
 
   /**
    * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[ReadResult]]s of type `T`.
@@ -100,7 +100,7 @@ object ElasticsearchSource {
                typeName: String,
                query: String,
                settings: ElasticsearchSourceSettings,
-               client: RestClient,
+               elasticsearchClient: RestClient,
                clazz: Class[T],
                objectMapper: ObjectMapper): Source[ReadResult[T], NotUsed] =
     Source.fromGraph(
@@ -108,7 +108,7 @@ object ElasticsearchSource {
         indexName,
         Option(typeName),
         Map("query" -> query),
-        client,
+        elasticsearchClient,
         settings,
         new JacksonReader[T](objectMapper, clazz)
       )
@@ -128,7 +128,7 @@ object ElasticsearchSource {
                typeName: String,
                searchParams: JMap[String, String],
                settings: ElasticsearchSourceSettings,
-               client: RestClient,
+               elasticsearchClient: RestClient,
                clazz: Class[T],
                objectMapper: ObjectMapper): Source[ReadResult[T], NotUsed] =
     Source.fromGraph(
@@ -136,7 +136,7 @@ object ElasticsearchSource {
         indexName,
         Option(typeName),
         searchParams.asScala.toMap,
-        client,
+        elasticsearchClient,
         settings,
         new JacksonReader[T](objectMapper, clazz)
       )

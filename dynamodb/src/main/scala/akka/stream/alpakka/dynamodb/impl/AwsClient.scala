@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.dynamodb.impl
@@ -55,6 +55,8 @@ private[dynamodb] trait AwsClient[S <: AwsClientSettings] {
   protected val defaultContentType: ContentType
   protected val errorResponseHandler: HttpResponseHandler[AmazonServiceException]
 
+  protected def url: String = s"https://${settings.host}/"
+
   private val requestId = new AtomicInteger()
   private val credentials = settings.credentialsProvider
 
@@ -75,13 +77,11 @@ private[dynamodb] trait AwsClient[S <: AwsClientSettings] {
     case HttpMethodName.PATCH => HttpMethods.PATCH
   }
 
-  private val url = s"https://${settings.host}/"
-
   private val signableUrl = Uri(url)
 
   private val uri = new java.net.URI(url)
 
-  private val decider: Supervision.Decider = { case _ => Supervision.Stop }
+  private val decider: Supervision.Decider = _ => Supervision.Stop
 
   def flow[Op <: AwsOp]: Flow[Op, Op#B, NotUsed] =
     Flow[Op]
@@ -89,7 +89,7 @@ private[dynamodb] trait AwsClient[S <: AwsClientSettings] {
       .via(connection)
       .mapAsync(settings.parallelism) {
         case (Success(response), i) => toAwsResult(response, i)
-        case (Failure(ex), i) => Future.failed(ex)
+        case (Failure(ex), _) => Future.failed(ex)
       }
       .withAttributes(ActorAttributes.supervisionStrategy(decider))
       .map(_.asInstanceOf[Op#B])
@@ -105,10 +105,10 @@ private[dynamodb] trait AwsClient[S <: AwsClientSettings] {
     val body = read(original.getContent)
 
     val tokenHeader: List[headers.RawHeader] = {
-      credentials.getCredentials() match {
-        case sessionCredentials: auth.AWSSessionCredentials =>
+      credentials.getCredentials match {
+        case _: auth.AWSSessionCredentials =>
           Some(headers.RawHeader("x-amz-security-token", amzHeaders.get("X-Amz-Security-Token")))
-        case other =>
+        case _ =>
           None
       }
     }.toList

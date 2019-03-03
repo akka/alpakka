@@ -51,4 +51,8 @@
 
     <field name="_version_" type="long" indexed="true" stored="true"/>
     <field name="title" type="string" docValues="true" multiValued="false" indexed="true" stored="true"/>
+    <field name="router" type="string" docValues="false" multiValued="false" indexed="false" stored="false"/>
+    <field name="comment" type="string" docValues="true" multiValued="false" indexed="false" stored="true"/>
+
+    <uniqueKey>title</uniqueKey>
 </schema>

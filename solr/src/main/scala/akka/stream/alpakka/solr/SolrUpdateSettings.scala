@@ -1,36 +1,38 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.solr
 
-import scala.concurrent.duration.{FiniteDuration, _}
-
-//#solr-update-settings
-final case class SolrUpdateSettings(
-    bufferSize: Int = 10,
-    retryInterval: FiniteDuration = 5000.millis,
-    maxRetry: Int = 100,
-    commitWithin: Int = -1
+final class SolrUpdateSettings private (
+    val commitWithin: Int
 ) {
-  def withBufferSize(bufferSize: Int): SolrUpdateSettings =
-    copy(bufferSize = bufferSize)
 
-  def withRetryInterval(retryInterval: FiniteDuration): SolrUpdateSettings =
-    copy(retryInterval = retryInterval)
+  /**
+   * Set max time (in ms) before a commit will happen
+   */
+  def withCommitWithin(value: Int): SolrUpdateSettings = copy(commitWithin = value)
 
-  def withMaxRetry(maxRetry: Int): SolrUpdateSettings =
-    copy(maxRetry = maxRetry)
+  private def copy(
+      commitWithin: Int = commitWithin
+  ): SolrUpdateSettings = new SolrUpdateSettings(
+    commitWithin = commitWithin
+  )
 
-  def withCommitWithin(commitWithin: Int): SolrUpdateSettings =
-    copy(commitWithin = commitWithin)
+  override def toString =
+    "SolrUpdateSettings(" +
+    s"commitWithin=$commitWithin" +
+    ")"
 }
-//#solr-update-settings
 
 object SolrUpdateSettings {
 
-  /**
-   * Java API
-   */
-  def create(): SolrUpdateSettings = SolrUpdateSettings()
+  val Defaults = new SolrUpdateSettings(-1)
+
+  /** Scala API */
+  def apply(): SolrUpdateSettings = Defaults
+
+  /** Java API */
+  def create(): SolrUpdateSettings = Defaults
+
 }

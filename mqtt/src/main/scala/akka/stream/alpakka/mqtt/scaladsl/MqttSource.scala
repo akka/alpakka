@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.mqtt.scaladsl
@@ -18,24 +18,13 @@ import scala.concurrent.Future
 object MqttSource {
 
   /**
-   * Create a source subscribing to MQTT messages.
-   *
-   * The materialized value completes on successful connection to the MQTT broker.
-   *
-   * @param bufferSize max number of messages read from MQTT before back-pressure applies
-   */
-  @deprecated("use atMostOnce instead", "0.15")
-  def apply(settings: MqttSourceSettings, bufferSize: Int): Source[MqttMessage, Future[Done]] =
-    atMostOnce(settings.connectionSettings, MqttSubscriptions(settings.subscriptions), bufferSize)
-
-  /**
    * Create a source subscribing to MQTT messages (without a commit handle).
    *
    * The materialized value completes on successful connection to the MQTT broker.
    *
    * @param bufferSize max number of messages read from MQTT before back-pressure applies
    */
-  @deprecated("use atMostOnce with MqttConnectionSettings and MqttSubscriptions instead", "0.21")
+  @deprecated("use atMostOnce with MqttConnectionSettings and MqttSubscriptions instead", "1.0-M1")
   def atMostOnce(settings: MqttSourceSettings, bufferSize: Int): Source[MqttMessage, Future[Done]] =
     atMostOnce(settings.connectionSettings, MqttSubscriptions(settings.subscriptions), bufferSize)
 
@@ -61,7 +50,7 @@ object MqttSource {
    *
    * @param bufferSize max number of messages read from MQTT before back-pressure applies
    */
-  @deprecated("use atLeastOnce with MqttConnectionSettings and MqttSubscriptions instead", "0.21")
+  @deprecated("use atLeastOnce with MqttConnectionSettings and MqttSubscriptions instead", "1.0-M1")
   def atLeastOnce(settings: MqttSourceSettings, bufferSize: Int): Source[MqttMessageWithAck, Future[Done]] =
     atLeastOnce(settings.connectionSettings, MqttSubscriptions(settings.subscriptions), bufferSize)
 

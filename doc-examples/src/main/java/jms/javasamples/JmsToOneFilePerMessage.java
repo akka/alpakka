@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package jms.javasamples;
@@ -14,6 +14,7 @@ import akka.stream.Materializer;
 import akka.stream.alpakka.jms.JmsConsumerSettings;
 import akka.stream.alpakka.jms.JmsProducerSettings;
 import akka.stream.alpakka.jms.javadsl.JmsConsumer;
+import akka.stream.alpakka.jms.javadsl.JmsConsumerControl;
 import akka.stream.alpakka.jms.javadsl.JmsProducer;
 import akka.stream.javadsl.FileIO;
 import akka.stream.javadsl.Keep;
@@ -44,7 +45,8 @@ public class JmsToOneFilePerMessage {
 
   private void enqueue(ConnectionFactory connectionFactory, String... msgs) {
     Sink<String, ?> jmsSink =
-        JmsProducer.textSink(JmsProducerSettings.create(connectionFactory).withQueue("test"));
+        JmsProducer.textSink(
+            JmsProducerSettings.create(system, connectionFactory).withQueue("test"));
     Source.from(Arrays.asList(msgs)).runWith(jmsSink, materializer);
   }
 
@@ -56,12 +58,12 @@ public class JmsToOneFilePerMessage {
     enqueue(connectionFactory, "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
     // #sample
 
-    Source<String, KillSwitch> jmsConsumer = // (1)
+    Source<String, JmsConsumerControl> jmsConsumer = // (1)
         JmsConsumer.textSource(
-            JmsConsumerSettings.create(connectionFactory).withBufferSize(10).withQueue("test"));
+            JmsConsumerSettings.create(system, connectionFactory).withQueue("test"));
 
     int parallelism = 5;
-    Pair<KillSwitch, CompletionStage<Done>> pair =
+    Pair<JmsConsumerControl, CompletionStage<Done>> pair =
         jmsConsumer // : String
             .map(ByteString::fromString) // : ByteString             (2)
             .zipWithIndex() // : Pair<ByteString, Long> (3)

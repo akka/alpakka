@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.mqtt.javadsl
@@ -28,7 +28,7 @@ sealed trait MqttMessageWithAck {
   /**
    * @deprecated use commit instead, since 0.21
    */
-  @deprecated("use ack() instead", "0.21")
+  @deprecated("use ack() instead", "1.0-M1")
   @java.lang.Deprecated
   def messageArrivedComplete(): CompletionStage[Done] = ack()
 

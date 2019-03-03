@@ -1,22 +1,27 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.s3.scaladsl
 
 import akka.actor.ActorSystem
-import akka.stream.alpakka.s3.impl.ServerSideEncryption
+import akka.stream.alpakka.s3.S3Settings
+import akka.stream.alpakka.s3.headers.ServerSideEncryption
+import akka.stream.alpakka.s3.impl.S3Stream
 import akka.stream.alpakka.s3.scaladsl.S3WireMockBase._
 import akka.testkit.TestKit
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
-import com.github.tomakehurst.wiremock.matching.EqualToPattern
+import com.github.tomakehurst.wiremock.matching.{ContainsPattern, EqualToPattern}
+import com.github.tomakehurst.wiremock.stubbing.Scenario
+import com.typesafe.config.ConfigFactory
 
 abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockServer) extends TestKit(_system) {
 
-  def this(mock: WireMockServer) = this(ActorSystem(getCallerName(getClass)), mock)
+  def this(mock: WireMockServer) =
+    this(ActorSystem(getCallerName(getClass), config(mock.port()).withFallback(ConfigFactory.load())), mock)
   def this() = this(initServer())
 
   val mock = new WireMock("localhost", _wireMockServer.port())
@@ -69,14 +74,32 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
 
   val sseCustomerKey = "key"
   val sseCustomerMd5Key = "md5"
-  val sseCustomerKeys = ServerSideEncryption.CustomerKeys(sseCustomerKey, Some(sseCustomerMd5Key))
+  val sseCustomerKeys = ServerSideEncryption.customerKeys(sseCustomerKey).withMd5(sseCustomerMd5Key)
 
   def mockDownload(): Unit =
     mock
       .register(
         get(urlEqualTo(s"/$bucketKey")).willReturn(
-          aResponse().withStatus(200).withHeader("ETag", """"fba9dede5f27731c9771645a39863328"""").withBody(body)
+          aResponse()
+            .withStatus(200)
+            .withHeader("ETag", """"fba9dede5f27731c9771645a39863328"""")
+            .withHeader("Content-Length", body.length.toString)
+            .withBody(body)
         )
+      )
+
+  def mockDownload(region: String): Unit =
+    mock
+      .register(
+        get(urlEqualTo(s"/$bucketKey"))
+          .withHeader("Authorization", new ContainsPattern(region))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("ETag", """"fba9dede5f27731c9771645a39863328"""")
+              .withHeader("Content-Length", body.length.toString)
+              .withBody(body)
+          )
       )
 
   def mockDownloadSSEC(): Unit =
@@ -110,11 +133,14 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
           )
       )
 
-  def mockHead(): Unit =
+  def mockHead(contentLength: Long): Unit =
     mock
       .register(
         head(urlEqualTo(s"/$bucketKey")).willReturn(
-          aResponse().withStatus(200).withHeader("ETag", s""""$etag"""").withHeader("Content-Length", "8")
+          aResponse()
+            .withStatus(200)
+            .withHeader("ETag", s""""$etag"""")
+            .withHeader("Content-Length", contentLength.toString)
         )
       )
 
@@ -272,6 +298,79 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
     )
   }
 
+  def mockUploadWithInternalError(expectedBody: String): Unit = {
+    mock
+      .register(
+        post(urlEqualTo(s"/$bucketKey?uploads"))
+          .inScenario("InternalError")
+          .whenScenarioStateIs(Scenario.STARTED)
+          .willReturn(
+            aResponse()
+              .withStatus(500)
+              .withHeader("x-amz-id-2", "Uuag1LuByRx9e6j5Onimru9pO4ZVKnJ2Qz7/C1NPcfTWAtRPfTaOFg==")
+              .withHeader("x-amz-request-id", "656c76696e6727732072657175657374")
+              .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
+                         |<Error>
+                         |  <Code>InternalError</Code>
+                         |  <Message>We encountered an internal error. Please try again.</Message>
+                         |  <Resource>$bucket/$bucketKey</Resource>
+                         |  <RequestId>4442587FB7D0A2F9</RequestId>
+                         |</Error>""".stripMargin)
+          )
+          .willSetStateTo("Recover")
+      )
+    mock
+      .register(
+        post(urlEqualTo(s"/$bucketKey?uploads"))
+          .inScenario("InternalError")
+          .whenScenarioStateIs("Recover")
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("x-amz-id-2", "Uuag1LuByRx9e6j5Onimru9pO4ZVKnJ2Qz7/C1NPcfTWAtRPfTaOFg==")
+              .withHeader("x-amz-request-id", "656c76696e6727732072657175657374")
+              .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
+                         |<InitiateMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                         |  <Bucket>$bucket</Bucket>
+                         |  <Key>$bucketKey</Key>
+                         |  <UploadId>$uploadId</UploadId>
+                         |</InitiateMultipartUploadResult>""".stripMargin)
+          )
+      )
+
+    mock.register(
+      put(urlEqualTo(s"/$bucketKey?partNumber=1&uploadId=$uploadId"))
+        .withRequestBody(matching(expectedBody))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("x-amz-id-2", "Zn8bf8aEFQ+kBnGPBc/JaAf9SoWM68QDPS9+SyFwkIZOHUG2BiRLZi5oXw4cOCEt")
+            .withHeader("x-amz-request-id", "5A37448A37622243")
+            .withHeader("ETag", "\"" + etag + "\"")
+        )
+    )
+
+    mock.register(
+      post(urlEqualTo(s"/$bucketKey?uploadId=$uploadId"))
+        .withRequestBody(containing("CompleteMultipartUpload"))
+        .withRequestBody(containing(etag))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/xml; charset=UTF-8")
+            .withHeader("x-amz-id-2", "Zn8bf8aEFQ+kBnGPBc/JaAf9SoWM68QDPS9+SyFwkIZOHUG2BiRLZi5oXw4cOCEt")
+            .withHeader("x-amz-request-id", "5A37448A3762224333")
+            .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
+                         |<CompleteMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                         |  <Location>$url</Location>
+                         |  <Bucket>$bucket</Bucket>
+                         |  <Key>$bucketKey</Key>
+                         |  <ETag>"$etag"</ETag>
+                         |</CompleteMultipartUploadResult>""".stripMargin)
+        )
+    )
+  }
+
   def mockUploadSSE(): Unit = {
     mock
       .register(
@@ -330,6 +429,7 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
   }
 
   def mockCopy(): Unit = mockCopy(body.length)
+  def mockCopyMinChunkSize(): Unit = mockCopy(S3Stream.MinChunkSize)
   def mockCopy(expectedContentLength: Int): Unit = {
     mock.register(
       head(urlEqualTo(s"/$bucketKey"))
@@ -667,4 +767,26 @@ private object S3WireMockBase {
     server.start()
     server
   }
+
+  private def config(proxyPort: Int) = ConfigFactory.parseString(s"""
+    |${S3Settings.ConfigPath} {
+    |  proxy {
+    |    host = localhost
+    |    port = $proxyPort
+    |    secure = false
+    |  }
+    |  aws {
+    |    credentials {
+    |      provider = static
+    |      access-key-id = my-AWS-access-key-ID
+    |      secret-access-key = my-AWS-password
+    |    }
+    |    region {
+    |      provider = static
+    |      default-region = "us-east-1"
+    |    }
+    |  }
+    |  path-style-access = false
+    |}
+    """.stripMargin)
 }

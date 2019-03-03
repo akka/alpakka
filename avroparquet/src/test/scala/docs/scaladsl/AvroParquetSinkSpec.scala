@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit
 import akka.Done
 import akka.stream.alpakka.avroparquet.scaladsl.AvroParquetSink
 import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import org.apache.parquet.avro.AvroParquetReader
 import org.specs2.mutable.Specification
 import org.specs2.specification.AfterAll
@@ -25,11 +26,11 @@ import org.apache.parquet.hadoop.util.HadoopInputFile
 import org.apache.parquet.avro.{AvroParquetWriter, AvroReadSupport}
 //#init-writer
 
-class AvroParquetSinkSpec extends Specification with AfterAll with AbstractAvroParquet {
+class AvroParquetSinkSpec extends Specification with AbstractAvroParquet with AfterAll {
 
   "ParquetSing Sink" should {
 
-    "create new Parquet file" in {
+    "create new Parquet file" in assertAllStagesStopped {
       val docs = List[Document](Document("id1", "sdaada"), Document("id1", "sdaada"), Document("id3", " fvrfecefedfww"))
 
       val source = Source.fromIterator(() => docs.iterator)

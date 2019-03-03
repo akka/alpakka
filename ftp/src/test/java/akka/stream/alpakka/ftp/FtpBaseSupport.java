@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.ftp;
@@ -14,11 +14,12 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 
-abstract class FtpBaseSupport implements FtpSupport, AkkaSupport {
+public abstract class FtpBaseSupport implements FtpSupport, AkkaSupport {
 
   private static final int BASE_PORT = 21000;
   private static final int DEFAULT_NUM_FILES = 30;
-  protected static final String FTP_ROOT_DIR = "/home";
+  public static final String hostname = "localhost";
+  public static final String FTP_ROOT_DIR = "/home";
 
   private File usersFile;
   private FileSystem fileSystem;
@@ -132,19 +133,19 @@ abstract class FtpBaseSupport implements FtpSupport, AkkaSupport {
     return materializer;
   }
 
-  File getUsersFile() {
+  protected File getUsersFile() {
     return usersFile;
   }
 
-  FileSystem getFileSystem() {
+  protected FileSystem getFileSystem() {
     return fileSystem;
   }
 
-  void setFileSystem(FileSystem fileSystem) {
+  protected void setFileSystem(FileSystem fileSystem) {
     this.fileSystem = fileSystem;
   }
 
-  Integer getPort() {
+  protected Integer getPort() {
     return port;
   }
 

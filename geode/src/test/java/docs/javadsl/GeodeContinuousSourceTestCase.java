@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.javadsl;
@@ -7,7 +7,7 @@ package docs.javadsl;
 import akka.Done;
 import akka.NotUsed;
 import akka.japi.Pair;
-import akka.stream.alpakka.geode.javadsl.ReactiveGeodeWithPoolSubscription;
+import akka.stream.alpakka.geode.javadsl.GeodeWithPoolSubscription;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
@@ -25,24 +25,24 @@ public class GeodeContinuousSourceTestCase extends GeodeBaseTestCase {
   @Test
   public void continuousSourceTest() throws ExecutionException, InterruptedException {
 
-    ReactiveGeodeWithPoolSubscription reactiveGeode = createReactiveGeodeWithPoolSubscription();
+    GeodeWithPoolSubscription geode = createGeodeWithPoolSubscription();
 
     // #continuousQuery
     CompletionStage<Done> fut =
-        reactiveGeode
+        geode
             .continuousQuery("test", "select * from /persons", new PersonPdxSerializer())
             .runForeach(
                 p -> {
                   LOGGER.debug(p.toString());
                   if (p.getId() == 120) {
-                    reactiveGeode.closeContinuousQuery("test");
+                    geode.closeContinuousQuery("test");
                   }
                 },
                 materializer);
     // #continuousQuery
 
     Flow<Person, Person, NotUsed> flow =
-        reactiveGeode.flow(personRegionSettings, new PersonPdxSerializer());
+        geode.flow(personRegionSettings, new PersonPdxSerializer());
 
     Pair<NotUsed, CompletionStage<List<Person>>> run =
         Source.from(Arrays.asList(120))
@@ -55,6 +55,6 @@ public class GeodeContinuousSourceTestCase extends GeodeBaseTestCase {
 
     fut.toCompletableFuture().get();
 
-    reactiveGeode.close();
+    geode.close();
   }
 }

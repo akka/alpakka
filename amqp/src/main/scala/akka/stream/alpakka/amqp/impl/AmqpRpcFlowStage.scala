@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.amqp.impl
@@ -10,7 +10,7 @@ import akka.Done
 import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.alpakka.amqp._
-import akka.stream.alpakka.amqp.scaladsl.CommittableIncomingMessage
+import akka.stream.alpakka.amqp.scaladsl.CommittableReadResult
 import akka.stream.stage._
 import akka.util.ByteString
 import com.rabbitmq.client.AMQP.BasicProperties
@@ -21,25 +21,23 @@ import scala.concurrent.{Future, Promise}
 import scala.util.Success
 
 /**
- * This stage materializes to a Future[String], which is the name of the private exclusive queue used for RPC communication
+ * This stage materializes to a `Future[String]`, which is the name of the private exclusive queue used for RPC communication
  *
  * @param responsesPerMessage The number of responses that should be expected for each message placed on the queue. This
- *                            can be overridden per message by including `expectedReplies` in the the header of the [[OutgoingMessage]]
+ *                            can be overridden per message by including `expectedReplies` in the the header of the [[akka.stream.alpakka.amqp.WriteMessage]]
  */
 @InternalApi
-private[amqp] final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSize: Int, responsesPerMessage: Int = 1)
-    extends GraphStageWithMaterializedValue[FlowShape[OutgoingMessage, CommittableIncomingMessage], Future[String]] {
+private[amqp] final class AmqpRpcFlowStage(settings: AmqpWriteSettings, bufferSize: Int, responsesPerMessage: Int = 1)
+    extends GraphStageWithMaterializedValue[FlowShape[WriteMessage, CommittableReadResult], Future[String]] {
   stage =>
 
-  val in = Inlet[OutgoingMessage]("AmqpRpcFlow.in")
-  val out = Outlet[CommittableIncomingMessage]("AmqpRpcFlow.out")
+  val in = Inlet[WriteMessage]("AmqpRpcFlow.in")
+  val out = Outlet[CommittableReadResult]("AmqpRpcFlow.out")
 
-  override def shape: FlowShape[OutgoingMessage, CommittableIncomingMessage] = FlowShape.of(in, out)
+  override def shape: FlowShape[WriteMessage, CommittableReadResult] = FlowShape.of(in, out)
 
   override protected def initialAttributes: Attributes =
-    Attributes
-      .name("AmqpRpcFlow")
-      .and(ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher"))
+    super.initialAttributes and Attributes.name("AmqpRpcFlow") and ActorAttributes.IODispatcher
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[String]) = {
     val promise = Promise[String]()
@@ -48,7 +46,7 @@ private[amqp] final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSiz
       override val settings = stage.settings
       private val exchange = settings.exchange.getOrElse("")
       private val routingKey = settings.routingKey.getOrElse("")
-      private val queue = mutable.Queue[CommittableIncomingMessage]()
+      private val queue = mutable.Queue[CommittableReadResult]()
       private var queueName: String = _
       private var unackedMessages = 0
       private var outstandingMessages = 0
@@ -93,8 +91,8 @@ private[amqp] final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSiz
                                       properties: BasicProperties,
                                       body: Array[Byte]): Unit =
             consumerCallback.invoke(
-              new CommittableIncomingMessage {
-                override val message = IncomingMessage(ByteString(body), envelope, properties)
+              new CommittableReadResult {
+                override val message = ReadResult(ByteString(body), envelope, properties)
 
                 override def ack(multiple: Boolean): Future[Done] = {
                   val promise = Promise[Done]()
@@ -141,7 +139,7 @@ private[amqp] final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSiz
         promise.success(queueName)
       }
 
-      def handleDelivery(message: CommittableIncomingMessage): Unit =
+      def handleDelivery(message: CommittableReadResult): Unit =
         if (isAvailable(out)) {
           pushMessage(message)
         } else if (queue.size + 1 > bufferSize) {
@@ -165,7 +163,7 @@ private[amqp] final class AmqpRpcFlowStage(settings: AmqpSinkSettings, bufferSiz
         }
       )
 
-      def pushMessage(message: CommittableIncomingMessage): Unit = {
+      def pushMessage(message: CommittableReadResult): Unit = {
         push(out, message)
         unackedMessages += 1
         outstandingMessages -= 1

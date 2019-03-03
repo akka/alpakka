@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.sqs.javadsl
@@ -7,9 +7,9 @@ package akka.stream.alpakka.sqs.javadsl
 import java.util.concurrent.CompletionStage
 
 import akka.Done
-import akka.stream.alpakka.sqs.{scaladsl, MessageActionPair, SqsAckSinkSettings}
+import akka.stream.alpakka.sqs.{MessageAction, SqsAckGroupedSettings, SqsAckSettings}
 import akka.stream.javadsl.Sink
-import com.amazonaws.services.sqs.AmazonSQSAsync
+import software.amazon.awssdk.services.sqs.SqsAsyncClient
 
 import scala.compat.java8.FutureConverters.FutureOps
 
@@ -19,18 +19,24 @@ import scala.compat.java8.FutureConverters.FutureOps
 object SqsAckSink {
 
   /**
-   * Creates a sink for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]].
+   * creates a [[akka.stream.javadsl.Sink Sink]] for ack a single SQS message at a time using an [[software.amazon.awssdk.services.sqs.SqsAsyncClient]].
    */
   def create(queueUrl: String,
-             settings: SqsAckSinkSettings,
-             sqsClient: AmazonSQSAsync): Sink[MessageActionPair, CompletionStage[Done]] =
-    scaladsl.SqsAckSink.apply(queueUrl, settings)(sqsClient).mapMaterializedValue(_.toJava).asJava
+             settings: SqsAckSettings,
+             sqsClient: SqsAsyncClient): Sink[MessageAction, CompletionStage[Done]] =
+    akka.stream.alpakka.sqs.scaladsl.SqsAckSink
+      .apply(queueUrl, settings)(sqsClient)
+      .mapMaterializedValue(_.toJava)
+      .asJava
 
   /**
-   * Creates a sink for a SQS queue using an
-   * [[com.amazonaws.services.sqs.AmazonSQSAsync]] with default settings.
+   * creates a [[akka.stream.javadsl.Sink Sink]] for ack grouped SQS messages using an [[software.amazon.awssdk.services.sqs.SqsAsyncClient]].
    */
-  def create(queueUrl: String, sqsClient: AmazonSQSAsync): Sink[MessageActionPair, CompletionStage[Done]] =
-    create(queueUrl, SqsAckSinkSettings.Defaults, sqsClient)
-
+  def createGrouped(queueUrl: String,
+                    settings: SqsAckGroupedSettings,
+                    sqsClient: SqsAsyncClient): Sink[MessageAction, CompletionStage[Done]] =
+    akka.stream.alpakka.sqs.scaladsl.SqsAckSink
+      .grouped(queueUrl, settings)(sqsClient)
+      .mapMaterializedValue(_.toJava)
+      .asJava
 }

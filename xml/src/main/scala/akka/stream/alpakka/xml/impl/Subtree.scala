@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.xml.impl
@@ -25,7 +25,7 @@ import scala.collection.immutable
 
   private def createElement(start: StartElement): Element = {
     val element = start.namespace match {
-      case Some(ns) => doc.createElementNS(start.localName, ns)
+      case Some(ns) => doc.createElementNS(ns, start.localName)
       case None => doc.createElement(start.localName)
     }
     start.attributes.foreach {

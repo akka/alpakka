@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.amqp
@@ -44,7 +44,9 @@ final class AmqpUriConnectionProvider private (val uri: String) extends AmqpConn
   }
 
   override def toString: String =
-    s"AmqpUriConnectionProvider(uri=$uri)"
+    "AmqpUriConnectionProvider(" +
+    s"uri=$uri" +
+    ")"
 }
 
 object AmqpUriConnectionProvider {
@@ -67,8 +69,8 @@ final class AmqpDetailsConnectionProvider private (
     val handshakeTimeout: Option[Int] = None,
     val shutdownTimeout: Option[Int] = None,
     val networkRecoveryInterval: Option[Int] = None,
-    val automaticRecoveryEnabled: Option[Boolean] = None,
-    val topologyRecoveryEnabled: Option[Boolean] = None,
+    val automaticRecoveryEnabled: Boolean = false,
+    val topologyRecoveryEnabled: Boolean = false,
     val exceptionHandler: Option[ExceptionHandler] = None,
     val connectionName: Option[String] = None
 ) extends AmqpConnectionProvider {
@@ -107,10 +109,10 @@ final class AmqpDetailsConnectionProvider private (
     copy(networkRecoveryInterval = Option(networkRecoveryInterval))
 
   def withAutomaticRecoveryEnabled(automaticRecoveryEnabled: Boolean): AmqpDetailsConnectionProvider =
-    copy(automaticRecoveryEnabled = Option(automaticRecoveryEnabled))
+    copy(automaticRecoveryEnabled = automaticRecoveryEnabled)
 
   def withTopologyRecoveryEnabled(topologyRecoveryEnabled: Boolean): AmqpDetailsConnectionProvider =
-    copy(topologyRecoveryEnabled = Option(topologyRecoveryEnabled))
+    copy(topologyRecoveryEnabled = topologyRecoveryEnabled)
 
   def withExceptionHandler(exceptionHandler: ExceptionHandler): AmqpDetailsConnectionProvider =
     copy(exceptionHandler = Option(exceptionHandler))
@@ -142,8 +144,8 @@ final class AmqpDetailsConnectionProvider private (
     handshakeTimeout.foreach(factory.setHandshakeTimeout)
     shutdownTimeout.foreach(factory.setShutdownTimeout)
     networkRecoveryInterval.foreach(factory.setNetworkRecoveryInterval)
-    automaticRecoveryEnabled.foreach(factory.setAutomaticRecoveryEnabled)
-    topologyRecoveryEnabled.foreach(factory.setTopologyRecoveryEnabled)
+    factory.setAutomaticRecoveryEnabled(automaticRecoveryEnabled)
+    factory.setTopologyRecoveryEnabled(topologyRecoveryEnabled)
     exceptionHandler.foreach(factory.setExceptionHandler)
 
     factory.newConnection(hostAndPortList.map(hp => new Address(hp._1, hp._2)).asJava, connectionName.orNull)
@@ -158,8 +160,8 @@ final class AmqpDetailsConnectionProvider private (
                    handshakeTimeout: Option[Int] = handshakeTimeout,
                    shutdownTimeout: Option[Int] = shutdownTimeout,
                    networkRecoveryInterval: Option[Int] = networkRecoveryInterval,
-                   automaticRecoveryEnabled: Option[Boolean] = automaticRecoveryEnabled,
-                   topologyRecoveryEnabled: Option[Boolean] = topologyRecoveryEnabled,
+                   automaticRecoveryEnabled: Boolean = automaticRecoveryEnabled,
+                   topologyRecoveryEnabled: Boolean = topologyRecoveryEnabled,
                    exceptionHandler: Option[ExceptionHandler] = exceptionHandler,
                    connectionName: Option[String] = connectionName): AmqpDetailsConnectionProvider =
     new AmqpDetailsConnectionProvider(
@@ -179,7 +181,21 @@ final class AmqpDetailsConnectionProvider private (
     )
 
   override def toString: String =
-    s"AmqpDetailsConnectionProvider(hostAndPortList=$hostAndPortList, credentials=$credentials, virtualHost=$virtualHost, sslConfiguration=$sslConfiguration, requestedHeartbeat=$requestedHeartbeat, connectionTimeout=$connectionTimeout, handshakeTimeout=$handshakeTimeout, shutdownTimeout=$shutdownTimeout, networkRecoveryInterval=$networkRecoveryInterval, automaticRecoveryEnabled=$automaticRecoveryEnabled, topologyRecoveryEnabled=$topologyRecoveryEnabled, exceptionHandler=$exceptionHandler, connectionName=$connectionName)"
+    "AmqpDetailsConnectionProvider(" +
+    s"hostAndPortList=$hostAndPortList, " +
+    s"credentials=$credentials, " +
+    s"virtualHost=$virtualHost, " +
+    s"sslConfiguration=$sslConfiguration, " +
+    s"requestedHeartbeat=$requestedHeartbeat, " +
+    s"connectionTimeout=$connectionTimeout, " +
+    s"handshakeTimeout=$handshakeTimeout, " +
+    s"shutdownTimeout=$shutdownTimeout, " +
+    s"networkRecoveryInterval=$networkRecoveryInterval, " +
+    s"automaticRecoveryEnabled=$automaticRecoveryEnabled, " +
+    s"topologyRecoveryEnabled=$topologyRecoveryEnabled, " +
+    s"exceptionHandler=$exceptionHandler, " +
+    s"connectionName=$connectionName" +
+    ")"
 }
 
 object AmqpDetailsConnectionProvider {
@@ -224,7 +240,7 @@ final class AmqpSSLConfiguration private (val protocol: Option[String] = None,
     copy(protocol = Some(protocol), trustManager = Some(trustManager))
 
   def withSSLContext(context: Option[javax.net.ssl.SSLContext]): AmqpSSLConfiguration =
-    copy(protocol = protocol)
+    copy(context = context)
 
   private def copy(protocol: Option[String] = protocol,
                    trustManager: Option[TrustManager] = trustManager,
@@ -242,16 +258,27 @@ final class AmqpSSLConfiguration private (val protocol: Option[String] = None,
     }
 }
 
-/**
- * Java API
- */
 object AmqpSSLConfiguration {
 
+  def apply(protocol: String): AmqpSSLConfiguration = new AmqpSSLConfiguration(Some(protocol))
+  def apply(protocol: String, trustManager: TrustManager): AmqpSSLConfiguration =
+    new AmqpSSLConfiguration(Some(protocol), Some(trustManager))
+  def apply(context: SSLContext): AmqpSSLConfiguration = new AmqpSSLConfiguration(context = Some(context))
+
+  /**
+   * Java API
+   */
   def create(protocol: String): AmqpSSLConfiguration = new AmqpSSLConfiguration(Some(protocol))
 
+  /**
+   * Java API
+   */
   def create(protocol: String, trustManager: TrustManager): AmqpSSLConfiguration =
     new AmqpSSLConfiguration(Some(protocol), Some(trustManager))
 
+  /**
+   * Java API
+   */
   def create(context: SSLContext): AmqpSSLConfiguration = new AmqpSSLConfiguration(context = Some(context))
 }
 
@@ -296,11 +323,14 @@ final class AmqpConnectionFactoryConnectionProvider private (val factory: Connec
     factory.newConnection(hostAndPortList.map(hp => new Address(hp._1, hp._2)).asJava)
   }
 
-  private def copy(hostAndPorts: immutable.Seq[(String, Int)] = hostAndPorts) =
+  private def copy(hostAndPorts: immutable.Seq[(String, Int)]) =
     new AmqpConnectionFactoryConnectionProvider(factory, hostAndPorts)
 
   override def toString: String =
-    s"AmqpConnectionFactoryConnectionProvider(factory=$factory, hostAndPorts=$hostAndPorts)"
+    "AmqpConnectionFactoryConnectionProvider(" +
+    s"factory=$factory, " +
+    s"hostAndPorts=$hostAndPorts" +
+    ")"
 }
 
 object AmqpConnectionFactoryConnectionProvider {
@@ -372,11 +402,14 @@ final class AmqpCachedConnectionProvider private (val provider: AmqpConnectionPr
     case Closing => release(connection)
   }
 
-  private def copy(automaticRelease: Boolean = automaticRelease): AmqpCachedConnectionProvider =
+  private def copy(automaticRelease: Boolean): AmqpCachedConnectionProvider =
     new AmqpCachedConnectionProvider(provider, automaticRelease)
 
   override def toString: String =
-    s"AmqpCachedConnectionProvider(provider=$provider, automaticRelease=$automaticRelease)"
+    "AmqpCachedConnectionProvider(" +
+    s"provider=$provider, " +
+    s"automaticRelease=$automaticRelease" +
+    ")"
 }
 
 object AmqpCachedConnectionProvider {

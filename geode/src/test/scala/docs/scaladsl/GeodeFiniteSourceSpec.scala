@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.scaladsl
 
-import akka.stream.alpakka.geode.scaladsl.ReactiveGeode
+import akka.stream.alpakka.geode.scaladsl.Geode
 import akka.stream.scaladsl.Sink
 import org.slf4j.LoggerFactory
 
@@ -19,32 +19,32 @@ class GeodeFiniteSourceSpec extends GeodeBaseSpec {
   "Geode finite source" should {
     it { geodeSettings =>
       "retrieves finite elements from geode" in {
-
-        val reactiveGeode = new ReactiveGeode(geodeSettings)
-
         //#query
+        val geode = new Geode(geodeSettings)
+        system.registerOnTermination(geode.close())
+
         val source =
-          reactiveGeode
+          geode
             .query[Person](s"select * from /persons order by id")
             .runWith(Sink.foreach(e => log.debug(s"$e")))
         //#query
         Await.ready(source, 10 seconds)
 
         val animals =
-          reactiveGeode
+          geode
             .query[Animal](s"select * from /animals order by id")
             .runWith(Sink.foreach(e => log.debug(s"$e")))
 
         Await.ready(animals, 10 seconds)
 
         val complexes =
-          reactiveGeode
+          geode
             .query[Complex](s"select * from /complexes order by id")
             .runWith(Sink.foreach(e => log.debug(s"$e")))
 
         Await.ready(complexes, 10 seconds)
 
-        reactiveGeode.close()
+        geode.close()
       }
     }
   }

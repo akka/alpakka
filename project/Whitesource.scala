@@ -5,6 +5,22 @@ import sbtwhitesource._
 import scala.sys.process.Process
 
 object Whitesource extends AutoPlugin {
+
+  sealed trait Group {
+    def section: String
+  }
+  object Group {
+    case object Community extends Group {
+      override val section = ""
+    }
+    case object Supported extends Group {
+      override val section = "supported-"
+    }
+  }
+
+  val whitesourceGroup: SettingKey[Group] =
+    settingKey[Group]("adds to the Whitesource project name to select a group per module")
+
   override def requires = WhiteSourcePlugin
 
   override def trigger = allRequirements
@@ -15,7 +31,9 @@ object Whitesource extends AutoPlugin {
     // do not change the value of whitesourceProduct
     whitesourceProduct := "Lightbend Reactive Platform",
     whitesourceAggregateProjectName := {
-      (moduleName in LocalRootProject).value + "-" + (
+      (moduleName in LocalRootProject).value + "-" +
+      whitesourceGroup.value.section +
+      (
         if (isSnapshot.value)
           if (describe(baseDirectory.value) contains "master") "master"
           else "adhoc"

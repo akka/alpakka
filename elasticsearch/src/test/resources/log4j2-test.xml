@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Elasticsearch cluster uses internal Log4j2 APIs, so it can't be replaced with just Slf4j. -->
+<Configuration status="WARN">
+    <Appenders>
+        <File name="File1" fileName="target/elasticsearch-cluster.log">
+            <PatternLayout pattern="%d{ISO8601} %-5level [%thread] [%logger{36}]  %msg%n"/>
+        </File>
+    </Appenders>
+    <Loggers>
+        <Root level="info">
+            <AppenderRef ref="File1"/>
+        </Root>
+    </Loggers>
+</Configuration>

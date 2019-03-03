@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.solr.javadsl
@@ -7,55 +7,61 @@ package akka.stream.alpakka.solr.javadsl
 import java.util.concurrent.CompletionStage
 import java.util.function.Function
 
-import akka.stream.alpakka.solr.{IncomingMessage, IncomingMessageResult, SolrUpdateSettings}
+import akka.stream.alpakka.solr.{SolrUpdateSettings, WriteMessage, WriteResult}
 import akka.stream.javadsl
 import akka.stream.javadsl.Sink
 import akka.{Done, NotUsed}
 import org.apache.solr.client.solrj.SolrClient
 import org.apache.solr.common.SolrInputDocument
+import java.util.{List => JavaList}
 
+/**
+ * Java API
+ */
 object SolrSink {
 
   /**
-   * Java API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing [[SolrInputDocument]].
+   * Write `SolrInputDocument`s to Solr.
    */
-  def document(
+  def documents(
       collection: String,
       settings: SolrUpdateSettings,
       client: SolrClient
-  ): javadsl.Sink[IncomingMessage[SolrInputDocument, NotUsed], CompletionStage[Done]] =
+  ): javadsl.Sink[JavaList[WriteMessage[SolrInputDocument, NotUsed]], CompletionStage[Done]] =
     SolrFlow
-      .document(collection, settings, client)
-      .toMat(javadsl.Sink.ignore[java.util.List[IncomingMessageResult[SolrInputDocument, NotUsed]]],
+      .documents(collection, settings, client)
+      .toMat(javadsl.Sink.ignore[java.util.List[WriteResult[SolrInputDocument, NotUsed]]],
              javadsl.Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
-   * Java API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing type `T`
-   * with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
+   * Write Java bean stream elements to Solr.
+   * The stream element classes must be annotated for use with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]] for conversion.
    */
-  def bean[T](
+  def beans[T](
       collection: String,
       settings: SolrUpdateSettings,
       client: SolrClient,
       clazz: Class[T]
-  ): Sink[IncomingMessage[T, NotUsed], CompletionStage[Done]] =
+  ): Sink[JavaList[WriteMessage[T, NotUsed]], CompletionStage[Done]] =
     SolrFlow
-      .bean[T](collection, settings, client, clazz)
-      .toMat(javadsl.Sink.ignore[java.util.List[IncomingMessageResult[T, NotUsed]]],
+      .beans[T](collection, settings, client, clazz)
+      .toMat(javadsl.Sink.ignore[java.util.List[WriteResult[T, NotUsed]]],
              javadsl.Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
-   * Java API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing type `T` with `binder` of type 'T'.
+   * Write stream elements to Solr.
+   *
+   * @param binder a conversion function to create `SolrInputDocument`s of the stream elements
    */
-  def typed[T](
+  def typeds[T](
       collection: String,
       settings: SolrUpdateSettings,
       binder: Function[T, SolrInputDocument],
       client: SolrClient,
       clazz: Class[T]
-  ): javadsl.Sink[IncomingMessage[T, NotUsed], CompletionStage[Done]] =
+  ): javadsl.Sink[JavaList[WriteMessage[T, NotUsed]], CompletionStage[Done]] =
     SolrFlow
-      .typed[T](collection, settings, binder, client, clazz)
-      .toMat(javadsl.Sink.ignore[java.util.List[IncomingMessageResult[T, NotUsed]]],
+      .typeds[T](collection, settings, binder, client, clazz)
+      .toMat(javadsl.Sink.ignore[java.util.List[WriteResult[T, NotUsed]]],
              javadsl.Keep.right[NotUsed, CompletionStage[Done]])
 }

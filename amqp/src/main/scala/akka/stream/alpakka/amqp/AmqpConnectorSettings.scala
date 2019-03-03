@@ -1,13 +1,13 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.amqp
 
 import akka.annotation.InternalApi
 
-import scala.collection.immutable
 import scala.collection.JavaConverters._
+import scala.collection.immutable
 
 /**
  * Internal API
@@ -49,6 +49,10 @@ final class NamedQueueSourceSettings private (
   def withExclusive(exclusive: Boolean): NamedQueueSourceSettings =
     copy(exclusive = exclusive)
 
+  /**
+   * Ack/Nack is required as default. Setting this to false will configure AMQP's `autoAck` so that the
+   * server considers messages acknowledged once delivered.
+   */
   def withAckRequired(ackRequired: Boolean): NamedQueueSourceSettings =
     copy(ackRequired = ackRequired)
 
@@ -82,7 +86,16 @@ final class NamedQueueSourceSettings private (
     )
 
   override def toString: String =
-    s"NamedQueueSourceSettings(connectionProvider=$connectionProvider, queue=$queue, declarations=$declarations, noLocal=$noLocal, exclusive=$exclusive, ackRequired=$ackRequired, consumerTag=$consumerTag, arguments=$arguments)"
+    "NamedQueueSourceSettings(" +
+    s"connectionProvider=$connectionProvider, " +
+    s"queue=$queue, " +
+    s"declarations=$declarations, " +
+    s"noLocal=$noLocal, " +
+    s"exclusive=$exclusive, " +
+    s"ackRequired=$ackRequired, " +
+    s"consumerTag=$consumerTag, " +
+    s"arguments=$arguments" +
+    ")"
 }
 
 object NamedQueueSourceSettings {
@@ -121,7 +134,12 @@ final class TemporaryQueueSourceSettings private (
     new TemporaryQueueSourceSettings(connectionProvider, exchange, declarations = declarations, routingKey = routingKey)
 
   override def toString: String =
-    s"TemporaryQueueSourceSettings(connectionProvider=$connectionProvider, exchange=$exchange, declarations=$declarations, routingKey=$routingKey)"
+    "TemporaryQueueSourceSettings(" +
+    s"connectionProvider=$connectionProvider, " +
+    s"exchange=$exchange, " +
+    s"declarations=$declarations, " +
+    s"routingKey=$routingKey" +
+    ")"
 }
 
 object TemporaryQueueSourceSettings {
@@ -144,12 +162,14 @@ final class AmqpReplyToSinkSettings private (
   def withFailIfReplyToMissing(failIfReplyToMissing: Boolean): AmqpReplyToSinkSettings =
     copy(failIfReplyToMissing = failIfReplyToMissing)
 
-  private def copy(connectionProvider: AmqpConnectionProvider = connectionProvider,
-                   failIfReplyToMissing: Boolean = failIfReplyToMissing) =
+  private def copy(connectionProvider: AmqpConnectionProvider = connectionProvider, failIfReplyToMissing: Boolean) =
     new AmqpReplyToSinkSettings(connectionProvider, failIfReplyToMissing)
 
   override def toString: String =
-    s"AmqpReplyToSinkSettings(connectionProvider=$connectionProvider, failIfReplyToMissing=$failIfReplyToMissing)"
+    "AmqpReplyToSinkSettings(" +
+    s"connectionProvider=$connectionProvider, " +
+    s"failIfReplyToMissing=$failIfReplyToMissing" +
+    ")"
 }
 
 object AmqpReplyToSinkSettings {
@@ -163,50 +183,55 @@ object AmqpReplyToSinkSettings {
     AmqpReplyToSinkSettings(connectionProvider)
 }
 
-final class AmqpSinkSettings private (
+final class AmqpWriteSettings private (
     val connectionProvider: AmqpConnectionProvider,
     val exchange: Option[String] = None,
     val routingKey: Option[String] = None,
     val declarations: immutable.Seq[Declaration] = Nil
 ) extends AmqpConnectorSettings {
 
-  def withExchange(exchange: String): AmqpSinkSettings =
+  def withExchange(exchange: String): AmqpWriteSettings =
     copy(exchange = Some(exchange))
 
-  def withRoutingKey(routingKey: String): AmqpSinkSettings =
+  def withRoutingKey(routingKey: String): AmqpWriteSettings =
     copy(routingKey = Some(routingKey))
 
-  def withDeclaration(declaration: Declaration): AmqpSinkSettings =
+  def withDeclaration(declaration: Declaration): AmqpWriteSettings =
     copy(declarations = immutable.Seq(declaration))
 
-  def withDeclarations(declarations: immutable.Seq[Declaration]): AmqpSinkSettings =
+  def withDeclarations(declarations: immutable.Seq[Declaration]): AmqpWriteSettings =
     copy(declarations = declarations)
 
   /**
    * Java API
    */
-  def withDeclarations(declarations: java.util.List[Declaration]): AmqpSinkSettings =
+  def withDeclarations(declarations: java.util.List[Declaration]): AmqpWriteSettings =
     copy(declarations = declarations.asScala.toIndexedSeq)
 
   private def copy(connectionProvider: AmqpConnectionProvider = connectionProvider,
                    exchange: Option[String] = exchange,
                    routingKey: Option[String] = routingKey,
                    declarations: immutable.Seq[Declaration] = declarations) =
-    new AmqpSinkSettings(connectionProvider, exchange, routingKey, declarations)
+    new AmqpWriteSettings(connectionProvider, exchange, routingKey, declarations)
 
   override def toString: String =
-    s"AmqpSinkSettings(connectionProvider=$connectionProvider, exchange=$exchange, routingKey=$routingKey, declarations=$declarations)"
+    "AmqpSinkSettings(" +
+    s"connectionProvider=$connectionProvider, " +
+    s"exchange=$exchange, " +
+    s"routingKey=$routingKey, " +
+    s"declarations=$declarations" +
+    ")"
 }
 
-object AmqpSinkSettings {
-  def apply(connectionProvider: AmqpConnectionProvider): AmqpSinkSettings =
-    new AmqpSinkSettings(connectionProvider)
+object AmqpWriteSettings {
+  def apply(connectionProvider: AmqpConnectionProvider): AmqpWriteSettings =
+    new AmqpWriteSettings(connectionProvider)
 
   /**
    * Java API
    */
-  def create(connectionProvider: AmqpConnectionProvider): AmqpSinkSettings =
-    AmqpSinkSettings(connectionProvider)
+  def create(connectionProvider: AmqpConnectionProvider): AmqpWriteSettings =
+    AmqpWriteSettings(connectionProvider)
 }
 
 sealed trait Declaration
@@ -245,7 +270,13 @@ final class QueueDeclaration private (
     new QueueDeclaration(name, durable, exclusive, autoDelete, arguments)
 
   override def toString: String =
-    s"QueueDeclaration(name=$name, durable=$durable, exclusive=$exclusive, autoDelete=$autoDelete, arguments=$arguments)"
+    s"QueueDeclaration(" +
+    s"name=$name, " +
+    s"durable=$durable, " +
+    s"exclusive=$exclusive, " +
+    s"autoDelete=$autoDelete, " +
+    s"arguments=$arguments" +
+    ")"
 }
 
 object QueueDeclaration {
@@ -279,7 +310,12 @@ final class BindingDeclaration private (
     new BindingDeclaration(queue, exchange, routingKey, arguments)
 
   override def toString: String =
-    s"BindingDeclaration(queue=$queue, exchange=$exchange, routingKey=$routingKey, arguments=$arguments)"
+    "BindingDeclaration(" +
+    s"queue=$queue, " +
+    s"exchange=$exchange, " +
+    s"routingKey=$routingKey, " +
+    s"arguments=$arguments" +
+    ")"
 }
 
 object BindingDeclaration {
@@ -324,7 +360,14 @@ final class ExchangeDeclaration private (
     new ExchangeDeclaration(name, exchangeType, durable, autoDelete, internal, arguments)
 
   override def toString: String =
-    s"ExchangeDeclaration(name=$name, exchangeType=$exchangeType, durable=$durable, autoDelete=$autoDelete, internal=$internal, arguments=$arguments)"
+    "ExchangeDeclaration(" +
+    s"name=$name, " +
+    s"exchangeType=$exchangeType, " +
+    s"durable=$durable, " +
+    s"autoDelete=$autoDelete, " +
+    s"internal=$internal, " +
+    s"arguments=$arguments" +
+    ")"
 }
 
 object ExchangeDeclaration {

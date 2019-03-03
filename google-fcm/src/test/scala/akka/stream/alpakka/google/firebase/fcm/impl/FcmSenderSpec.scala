@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.google.firebase.fcm.impl
@@ -8,9 +8,10 @@ import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ConnectionPoolSettings
+import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.{HttpExt, HttpsConnectionContext}
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.google.firebase.fcm.FcmFlowModels.{FcmErrorResponse, FcmSend, FcmSuccessResponse}
+import akka.stream.alpakka.google.firebase.fcm.{FcmErrorResponse, FcmSuccessResponse}
 import akka.stream.alpakka.google.firebase.fcm.FcmNotification
 import akka.testkit.TestKit
 import org.mockito.ArgumentCaptor
@@ -30,6 +31,8 @@ class FcmSenderSpec
     with ScalaFutures
     with MockitoSugar
     with BeforeAndAfterAll {
+
+  import FcmJsonSupport._
 
   override def afterAll: Unit =
     TestKit.shutdownActorSystem(system)
@@ -64,7 +67,7 @@ class FcmSenderSpec
                                  any[ConnectionPoolSettings](),
                                  any[LoggingAdapter]())
       val request: HttpRequest = captor.getValue
-      request.entity shouldBe HttpEntity(ContentTypes.`application/json`, """{"validate_only":false,"message":{}}""")
+      Unmarshal(request.entity).to[FcmSend].futureValue shouldBe FcmSend(false, FcmNotification.empty)
       request.uri.toString shouldBe "https://fcm.googleapis.com/v1/projects/projectId/messages:send"
       request.headers.size shouldBe 1
       request.headers.head should matchPattern { case HttpHeader("authorization", "Bearer token") => }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -198,7 +198,8 @@ object SlickFlowWithPassThroughExample extends App {
       )
       .log("nr-of-updated-rows")
       .mapAsync(1) { // in correct order
-        kafkaMessage => kafkaMessage.offset.commit // commit kafka messages
+        kafkaMessage =>
+          kafkaMessage.offset.commit // commit kafka messages
       }
       .runWith(Sink.ignore)
   //#flowWithPassThrough-example

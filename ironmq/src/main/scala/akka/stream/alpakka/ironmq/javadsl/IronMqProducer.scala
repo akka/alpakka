@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.ironmq.javadsl
 
 import java.util.concurrent.CompletionStage
 
+import akka.japi.Pair
 import akka.{Done, NotUsed}
 import akka.stream.alpakka.ironmq._
 import akka.stream.javadsl.{Flow, Sink}
@@ -18,47 +19,54 @@ object IronMqProducer {
 
   import FutureConverters._
 
-  def producerFlow(queueName: String, settings: IronMqSettings): Flow[PushMessage, Message.Id, NotUsed] =
-    ScalaIronMqProducer.producerFlow(Queue.Name(queueName), settings).asJava
+  def flow(queueName: String, settings: IronMqSettings): Flow[PushMessage, String, NotUsed] =
+    ScalaIronMqProducer
+      .flow(queueName, settings)
+      .asJava
+      // To make Message.Id a String
+      .asInstanceOf[Flow[PushMessage, String, NotUsed]]
 
-  def producerSink(queueName: String, settings: IronMqSettings): Sink[PushMessage, CompletionStage[Done]] =
-    ScalaIronMqProducer.producerSink(Queue.Name(queueName), settings).mapMaterializedValue(_.toJava).asJava
+  def sink(queueName: String, settings: IronMqSettings): Sink[PushMessage, CompletionStage[Done]] =
+    ScalaIronMqProducer.sink(queueName, settings).mapMaterializedValue(_.toJava).asJava
 
-  def atLeastOnceProducerFlow[C1 <: Committable](
+  def atLeastOnceFlow[C1 <: Committable](
       queueName: String,
       settings: IronMqSettings
-  ): Flow[CommittablePushMessage[C1], Message.Id, NotUsed] =
+  ): Flow[CommittablePushMessage[C1], String, NotUsed] =
     ScalaFlow[CommittablePushMessage[C1]]
       .map { cm =>
         cm.message -> cm.toCommit.asScala
       }
-      .via(ScalaIronMqProducer.atLeastOnceProducerFlow(Queue.Name(queueName), settings))
+      .via(ScalaIronMqProducer.atLeastOnceFlow(queueName, settings))
       .asJava
+      // To make Message.Id a String
+      .asInstanceOf[Flow[CommittablePushMessage[C1], String, NotUsed]]
 
-  def atLeastOnceProducerSink[C1 <: Committable](queueName: String,
-                                                 settings: IronMqSettings): Sink[CommittablePushMessage[C1], NotUsed] =
+  def atLeastOnceSink[C1 <: Committable](queueName: String,
+                                         settings: IronMqSettings): Sink[CommittablePushMessage[C1], NotUsed] =
     ScalaFlow[CommittablePushMessage[C1]]
       .map { cm =>
         cm.message -> cm.toCommit.asScala
       }
-      .to(ScalaIronMqProducer.atLeastOnceProducerSink(Queue.Name(queueName), settings))
+      .to(ScalaIronMqProducer.atLeastOnceSink(queueName, settings))
       .asJava
 
-  def atLeastOnceProducerFlow[ToCommit, CommitResult, CommitMat](
+  def atLeastOnceFlow[ToCommit, CommitResult, CommitMat](
       queueName: String,
       settings: IronMqSettings,
       commitFlow: Flow[ToCommit, CommitResult, CommitMat]
-  ): Flow[CommittablePushMessage[ToCommit], (Message.Id, CommitResult), CommitMat] =
+  ): Flow[CommittablePushMessage[ToCommit], Pair[String, CommitResult], CommitMat] =
     ScalaFlow[CommittablePushMessage[ToCommit]]
       .map { cm =>
         cm.message -> cm.toCommit
       }
-      .viaMat(ScalaIronMqProducer.atLeastOnceProducerFlow(Queue.Name(queueName), settings, commitFlow.asScala))(
+      .viaMat(ScalaIronMqProducer.atLeastOnceFlow(queueName, settings, commitFlow.asScala))(
         Keep.right
       )
+      .map(p => Pair(p._1.asInstanceOf[String], p._2))
       .asJava
 
-  def atLeastOnceProducerSink[ToCommit, CommitResult, CommitMat](
+  def atLeastOnceSink[ToCommit, CommitResult, CommitMat](
       queueName: String,
       settings: IronMqSettings,
       commitFlow: Flow[ToCommit, CommitResult, CommitMat]
@@ -67,7 +75,7 @@ object IronMqProducer {
       .map { cm =>
         cm.message -> cm.toCommit
       }
-      .toMat(ScalaIronMqProducer.atLeastOnceProducerSink(Queue.Name(queueName), settings, commitFlow.asScala))(
+      .toMat(ScalaIronMqProducer.atLeastOnceSink(queueName, settings, commitFlow.asScala))(
         Keep.right
       )
       .asJava
@@ -75,3 +83,15 @@ object IronMqProducer {
 }
 
 case class CommittablePushMessage[ToCommit](message: PushMessage, toCommit: ToCommit)
+
+object CommittablePushMessage {
+
+  def create[ToCommit](message: PushMessage, toCommit: ToCommit): CommittablePushMessage[ToCommit] =
+    CommittablePushMessage(message, toCommit)
+
+  def create[ToCommit](messageBody: String, toCommit: ToCommit): CommittablePushMessage[ToCommit] =
+    CommittablePushMessage(PushMessage(messageBody), toCommit)
+
+  def create(committableMessage: CommittableMessage): CommittablePushMessage[CommittableMessage] =
+    CommittablePushMessage(PushMessage(committableMessage.message.body), committableMessage)
+}

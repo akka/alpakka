@@ -1,49 +1,56 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.solr.scaladsl
 
-import akka.stream.alpakka.solr.{IncomingMessage, SolrUpdateSettings}
+import akka.stream.alpakka.solr.{SolrUpdateSettings, WriteMessage}
 import akka.stream.scaladsl.{Keep, Sink}
 import akka.{Done, NotUsed}
 import org.apache.solr.client.solrj.SolrClient
 import org.apache.solr.common.SolrInputDocument
 
+import scala.collection.immutable
 import scala.concurrent.Future
 
+/**
+ * Scala API
+ */
 object SolrSink {
 
   /**
-   * Scala API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing [[SolrInputDocument]].
+   * Write `SolrInputDocument`s to Solr.
    */
-  def document[T](collection: String, settings: SolrUpdateSettings)(
+  def documents[T](collection: String, settings: SolrUpdateSettings)(
       implicit client: SolrClient
-  ): Sink[IncomingMessage[SolrInputDocument, NotUsed], Future[Done]] =
+  ): Sink[immutable.Seq[WriteMessage[SolrInputDocument, NotUsed]], Future[Done]] =
     SolrFlow
-      .document(collection, settings)
+      .documents(collection, settings)
       .toMat(Sink.ignore)(Keep.right)
 
   /**
-   * Scala API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing type `T`
-   * with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
+   * Write Java bean stream elements to Solr.
+   * The stream element classes must be annotated for use with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]] for conversion.
    */
-  def bean[T](collection: String, settings: SolrUpdateSettings)(
+  def beans[T](collection: String, settings: SolrUpdateSettings)(
       implicit client: SolrClient
-  ): Sink[IncomingMessage[T, NotUsed], Future[Done]] =
+  ): Sink[immutable.Seq[WriteMessage[T, NotUsed]], Future[Done]] =
     SolrFlow
-      .bean[T](collection, settings)
+      .beans[T](collection, settings)
       .toMat(Sink.ignore)(Keep.right)
 
   /**
-   * Scala API: creates a [[SolrFlow] to Solr for [[IncomingMessage]] containing type `T` with `binder` of type 'T'.
+   * Write stream elements to Solr.
+   *
+   * @param binder a conversion function to create `SolrInputDocument`s of the stream elements
    */
-  def typed[T](
+  def typeds[T](
       collection: String,
       settings: SolrUpdateSettings,
       binder: T => SolrInputDocument
-  )(implicit client: SolrClient): Sink[IncomingMessage[T, NotUsed], Future[Done]] =
+  )(implicit client: SolrClient): Sink[immutable.Seq[WriteMessage[T, NotUsed]], Future[Done]] =
     SolrFlow
-      .typed[T](collection, settings, binder)
+      .typeds[T](collection, settings, binder)
       .toMat(Sink.ignore)(Keep.right)
+
 }

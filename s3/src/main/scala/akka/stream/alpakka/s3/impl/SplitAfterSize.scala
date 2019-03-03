@@ -1,9 +1,10 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.s3.impl
 
+import akka.annotation.InternalApi
 import akka.stream.scaladsl.SubFlow
 import akka.stream.stage.GraphStage
 import akka.util.ByteString
@@ -17,9 +18,11 @@ import akka.stream.stage.InHandler
 import akka.stream.scaladsl.Flow
 
 /**
+ * Internal Api
+ *
  * Splits up a byte stream source into sub-flows of a minimum size. Does not attempt to create chunks of an exact size.
  */
-private[alpakka] object SplitAfterSize {
+@InternalApi private[impl] object SplitAfterSize {
   def apply[I, M](minChunkSize: Long)(in: Flow[I, ByteString, M]): SubFlow[ByteString, M, in.Repr, in.Closed] =
     in.via(insertMarkers(minChunkSize)).splitWhen(_ == NewStream).collect { case bs: ByteString => bs }
 

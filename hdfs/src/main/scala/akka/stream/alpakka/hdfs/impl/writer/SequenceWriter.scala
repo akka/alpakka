@@ -1,9 +1,10 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.hdfs.impl.writer
 
+import akka.annotation.InternalApi
 import akka.stream.alpakka.hdfs.FilePathGenerator
 import akka.stream.alpakka.hdfs.impl.writer.HdfsWriter._
 import org.apache.hadoop.fs.{FileSystem, Path}
@@ -11,7 +12,10 @@ import org.apache.hadoop.io.SequenceFile.{CompressionType, Writer}
 import org.apache.hadoop.io.compress.CompressionCodec
 import org.apache.hadoop.io.{SequenceFile, Writable}
 
-@akka.annotation.InternalApi
+/**
+ * Internal API
+ */
+@InternalApi
 private[writer] final case class SequenceWriter[K <: Writable, V <: Writable](
     fs: FileSystem,
     writerOptions: Seq[Writer.Option],
@@ -41,6 +45,10 @@ private[writer] final case class SequenceWriter[K <: Writable, V <: Writable](
 
 }
 
+/**
+ * Internal API
+ */
+@InternalApi
 private[hdfs] object SequenceWriter {
   def apply[K <: Writable, V <: Writable](
       fs: FileSystem,

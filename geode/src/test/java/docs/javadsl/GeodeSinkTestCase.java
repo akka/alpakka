@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.javadsl;
 
 import akka.Done;
 import akka.NotUsed;
-import akka.stream.alpakka.geode.javadsl.ReactiveGeode;
+import akka.stream.alpakka.geode.javadsl.Geode;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.RunnableGraph;
 import akka.stream.javadsl.Sink;
@@ -21,10 +21,10 @@ public class GeodeSinkTestCase extends GeodeBaseTestCase {
   @Test
   public void sinkTest() throws ExecutionException, InterruptedException {
 
-    ReactiveGeode reactiveGeode = createReactiveGeode();
+    Geode geode = createGeodeClient();
 
     Sink<Person, CompletionStage<Done>> sink =
-        reactiveGeode.sink(personRegionSettings, new PersonPdxSerializer());
+        geode.sink(personRegionSettings, new PersonPdxSerializer());
 
     Source<Person, NotUsed> source = buildPersonsSource(100, 101, 103, 104, 105);
 
@@ -34,19 +34,19 @@ public class GeodeSinkTestCase extends GeodeBaseTestCase {
 
     stage.toCompletableFuture().get();
 
-    reactiveGeode.close();
+    geode.close();
   }
 
   @Test
   public void sinkAnimalTest() throws ExecutionException, InterruptedException {
 
-    ReactiveGeode reactiveGeode = createReactiveGeode();
+    Geode geode = createGeodeClient();
 
     Source<Animal, NotUsed> source = buildAnimalsSource(100, 101, 103, 104, 105);
 
     // #sink
     Sink<Animal, CompletionStage<Done>> sink =
-        reactiveGeode.sink(animalRegionSettings, new AnimalPdxSerializer());
+        geode.sink(animalRegionSettings, new AnimalPdxSerializer());
 
     RunnableGraph<CompletionStage<Done>> runnableGraph = source.toMat(sink, Keep.right());
     // #sink
@@ -55,6 +55,6 @@ public class GeodeSinkTestCase extends GeodeBaseTestCase {
 
     stage.toCompletableFuture().get();
 
-    reactiveGeode.close();
+    geode.close();
   }
 }

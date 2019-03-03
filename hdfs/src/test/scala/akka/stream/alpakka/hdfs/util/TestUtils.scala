@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.hdfs.util
@@ -196,10 +196,10 @@ object JavaTestUtils extends TestUtils {
     assertEquals(getFiles(fs).size(), logs.size())
 
   def readLogs(fs: FileSystem, logs: Sequence[RotationMessage]): Sequence[String] =
-    ScalaTestUtils.readLogs(fs, logs.asScala).asJava
+    ScalaTestUtils.readLogs(fs, logs.asScala.toIndexedSeq).asJava
 
   def readLogsWithFlatten(fs: FileSystem, logs: Sequence[RotationMessage]): Sequence[Char] =
-    ScalaTestUtils.readLogsWithFlatten(fs, logs.asScala).asJava
+    ScalaTestUtils.readLogsWithFlatten(fs, logs.asScala.toIndexedSeq).asJava
 
   def generateFakeContentWithPartitions(count: Double, bytes: Long, partition: Int): Sequence[ByteString] =
     ScalaTestUtils.generateFakeContentWithPartitions(count, bytes, partition).asJava
@@ -209,8 +209,9 @@ object JavaTestUtils extends TestUtils {
                           logs: Sequence[RotationMessage],
                           codec: CompressionCodec): Assertion = {
     val pureContent: String = content.asScala.map(_.utf8String).mkString
-    val contentFromHdfsWithCodec: String = ScalaTestUtils.readLogsWithCodec(fs, logs.asScala, codec).mkString
-    val contentFromHdfs: String = ScalaTestUtils.readLogs(fs, logs.asScala).mkString
+    val contentFromHdfsWithCodec: String =
+      ScalaTestUtils.readLogsWithCodec(fs, logs.asScala.toIndexedSeq, codec).mkString
+    val contentFromHdfs: String = ScalaTestUtils.readLogs(fs, logs.asScala.toIndexedSeq).mkString
     assertNotEquals(contentFromHdfs, pureContent)
     assertEquals(contentFromHdfsWithCodec, pureContent)
   }
@@ -225,7 +226,7 @@ object JavaTestUtils extends TestUtils {
     ScalaTestUtils.generateFakeContentForSequence(count, bytes).map { case (k, v) => akka.japi.Pair(k, v) }.asJava
 
   def readLogsWithCodec(fs: FileSystem, logs: Sequence[RotationMessage], codec: CompressionCodec): Sequence[String] =
-    ScalaTestUtils.readLogsWithCodec(fs, logs.asScala, codec).asJava
+    ScalaTestUtils.readLogsWithCodec(fs, logs.asScala.toIndexedSeq, codec).asJava
 
   def verifyFlattenContent(fs: FileSystem, logs: Sequence[RotationMessage], content: Sequence[ByteString]): Unit =
     assertArrayEquals(readLogsWithFlatten(fs, logs).toArray, content.asScala.flatMap(_.utf8String).asJava.toArray)

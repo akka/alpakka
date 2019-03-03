@@ -1,87 +1,164 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.ironmq
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
-import akka.stream.alpakka.ironmq.ConfigIronMqSettings.ConfigConsumerSettings
 import akka.stream.alpakka.ironmq.IronMqSettings.ConsumerSettings
 import com.typesafe.config.Config
 
 import scala.concurrent.duration.FiniteDuration
+import akka.util.JavaDurationConverters._
 
 /**
  * IronMQ settings. To a detailed documentation please refer to the reference.conf.
  */
-abstract class IronMqSettings {
+final class IronMqSettings private (
+    val endpoint: akka.http.scaladsl.model.Uri,
+    val projectId: String,
+    val token: String,
+    val consumerSettings: ConsumerSettings
+) {
 
-  /**
-   * The IronMq endpoint. It is available on the IronMQ project page and change based on availability zone and region.
-   */
-  def endpoint: Uri
+  /** The IronMq endpoint. It is available on the IronMQ project page and change based on availability zone and region. */
+  def withEndpoint(value: akka.http.scaladsl.model.Uri): IronMqSettings = copy(endpoint = value)
 
-  /**
-   * The IronMq project id, it is available on the IronMQ hud.
-   */
-  def projectId: String
+  /** The IronMq project id, it is available on the IronMQ hud. */
+  def withProjectId(value: String): IronMqSettings = copy(projectId = value)
 
-  /**
-   * The IronMq authentication token, it is available on the IronMQ hud.
-   */
-  def token: String
+  /** The IronMq authentication token, it is available on the IronMQ hud. */
+  def withToken(value: String): IronMqSettings = copy(token = value)
 
-  /**
-   * The IronMq consumer settings.
-   */
-  def consumerSettings: ConsumerSettings
+  /** The IronMq consumer settings. */
+  def withConsumerSettings(value: ConsumerSettings): IronMqSettings = copy(consumerSettings = value)
+
+  private def copy(
+      endpoint: akka.http.scaladsl.model.Uri = endpoint,
+      projectId: String = projectId,
+      token: String = token,
+      consumerSettings: ConsumerSettings = consumerSettings
+  ): IronMqSettings = new IronMqSettings(
+    endpoint = endpoint,
+    projectId = projectId,
+    token = token,
+    consumerSettings = consumerSettings
+  )
+
+  override def toString =
+    "IronMqSettings(" +
+    s"endpoint=$endpoint," +
+    s"projectId=$projectId," +
+    s"token=$token," +
+    s"consumerSettings=$consumerSettings" +
+    ")"
 }
 
 object IronMqSettings {
 
-  trait ConsumerSettings {
+  val ConfigPath = "alpakka.ironmq"
 
-    /**
-     * The buffer size limit where a new batch of message will be consumed from the queue.
-     */
-    def bufferMinSize: Int
+  final class ConsumerSettings private (
+      val bufferMinSize: Int,
+      val bufferMaxSize: Int,
+      val fetchInterval: scala.concurrent.duration.FiniteDuration,
+      val pollTimeout: scala.concurrent.duration.FiniteDuration,
+      val reservationTimeout: scala.concurrent.duration.FiniteDuration
+  ) {
 
-    /**
-     * The maximum number of buffered messages.
-     */
-    def bufferMaxSize: Int
+    /** The buffer size limit where a new batch of message will be consumed from the queue. */
+    def withBufferMinSize(value: Int): ConsumerSettings = copy(bufferMinSize = value)
 
-    /**
-     * The interval of time between each poll loop.
-     */
-    def fetchInterval: FiniteDuration
+    /** The maximum number of buffered messages. */
+    def withBufferMaxSize(value: Int): ConsumerSettings = copy(bufferMaxSize = value)
 
-    /**
+    /** Scala API: The interval of time between each poll loop. */
+    def withFetchInterval(value: scala.concurrent.duration.FiniteDuration): ConsumerSettings =
+      copy(fetchInterval = value)
+
+    /** Java API: The interval of time between each poll loop. */
+    def withFetchInterval(value: java.time.Duration): ConsumerSettings = copy(fetchInterval = value.asScala)
+
+    /** Scala API:
      * The amount of time the consumer will wait for the messages to be available on the queue. The IronMQ time unit is
      * the second so any other value is approximated to the second.
      */
-    def pollTimeout: FiniteDuration
+    def withPollTimeout(value: scala.concurrent.duration.FiniteDuration): ConsumerSettings = copy(pollTimeout = value)
 
-    /**
+    /** Java API:
+     * The amount of time the consumer will wait for the messages to be available on the queue. The IronMQ time unit is
+     * the second so any other value is approximated to the second.
+     */
+    def withPollTimeout(value: java.time.Duration): ConsumerSettings = copy(pollTimeout = value.asScala)
+
+    /** Scala API:
      * The amount of time the consumer will reserve the message from. It should be higher that the time needed to
      * process the message otherwise the same message will be processed multiple times. Again the IronMq time unit is
      * the second.
      */
-    def reservationTimeout: FiniteDuration
+    def withReservationTimeout(value: scala.concurrent.duration.FiniteDuration): ConsumerSettings =
+      copy(reservationTimeout = value)
+
+    /** Java API:
+     * The amount of time the consumer will reserve the message from. It should be higher that the time needed to
+     * process the message otherwise the same message will be processed multiple times. Again the IronMq time unit is
+     * the second.
+     */
+    def withReservationTimeout(value: java.time.Duration): ConsumerSettings = copy(reservationTimeout = value.asScala)
+
+    private def copy(
+        bufferMinSize: Int = bufferMinSize,
+        bufferMaxSize: Int = bufferMaxSize,
+        fetchInterval: scala.concurrent.duration.FiniteDuration = fetchInterval,
+        pollTimeout: scala.concurrent.duration.FiniteDuration = pollTimeout,
+        reservationTimeout: scala.concurrent.duration.FiniteDuration = reservationTimeout
+    ): ConsumerSettings = new ConsumerSettings(
+      bufferMinSize = bufferMinSize,
+      bufferMaxSize = bufferMaxSize,
+      fetchInterval = fetchInterval,
+      pollTimeout = pollTimeout,
+      reservationTimeout = reservationTimeout
+    )
+
+    override def toString =
+      "ConsumerSettings(" +
+      s"bufferMinSize=$bufferMinSize," +
+      s"bufferMaxSize=$bufferMaxSize," +
+      s"fetchInterval=${fetchInterval.toCoarsest}," +
+      s"pollTimeout=${pollTimeout.toCoarsest}," +
+      s"reservationTimeout=${reservationTimeout.toCoarsest}" +
+      ")"
+  }
+
+  object ConsumerSettings {
+    def apply(config: Config): ConsumerSettings = {
+      val bufferMinSize: Int = config.getInt("buffer-min-size")
+      val bufferMaxSize: Int = config.getInt("buffer-max-size")
+      val fetchInterval: FiniteDuration = config.getDuration("fetch-interval").asScala
+      val pollTimeout: FiniteDuration = config.getDuration("poll-timeout").asScala
+      val reservationTimeout: FiniteDuration = config.getDuration("reservation-timeout").asScala
+      new ConsumerSettings(bufferMinSize, bufferMaxSize, fetchInterval, pollTimeout, reservationTimeout)
+    }
   }
 
   /**
    * Will create a [[IronMqSettings]] from a config.
    */
-  def apply(config: Config): IronMqSettings =
-    new ConfigIronMqSettings(config)
+  def apply(config: Config): IronMqSettings = {
+    val endpoint: Uri = config.getString("endpoint")
+    val projectId: String = config.getString("credentials.project-id")
+    val token: String = config.getString("credentials.token")
+
+    val consumerSettings: ConsumerSettings = ConsumerSettings(config.getConfig("consumer"))
+    new IronMqSettings(endpoint, projectId, token, consumerSettings)
+  }
 
   /**
-   * Will create a [[IronMqSettings]] from a ActorSystem using the default config path `akka.stream.alpakka.ironmq`.
+   * Will create a [[IronMqSettings]] from a ActorSystem using the default config path `alpakka.ironmq`.
    */
   def apply()(implicit as: ActorSystem): IronMqSettings =
-    apply(as.settings.config.getConfig("akka.stream.alpakka.ironmq"))
+    apply(as.settings.config.getConfig(ConfigPath))
 
   /**
    * Java API.
@@ -92,24 +169,4 @@ object IronMqSettings {
    * Java API.
    */
   def create(as: ActorSystem): IronMqSettings = apply()(as)
-}
-
-object ConfigIronMqSettings {
-
-  class ConfigConsumerSettings(config: Config) extends ConsumerSettings {
-    override val bufferMinSize: Int = config.getInt("buffer-min-size")
-    override val bufferMaxSize: Int = config.getInt("buffer-max-size")
-    override val fetchInterval: FiniteDuration = config.getDuration("fetch-interval").asScala
-    override val pollTimeout: FiniteDuration = config.getDuration("poll-timeout").asScala
-    override val reservationTimeout: FiniteDuration = config.getDuration("reservation-timeout").asScala
-  }
-
-}
-
-class ConfigIronMqSettings(config: Config) extends IronMqSettings {
-  override val endpoint: Uri = config.getString("endpoint")
-  override val projectId: String = config.getString("credentials.project-id")
-  override val token: String = config.getString("credentials.token")
-
-  override def consumerSettings: ConsumerSettings = new ConfigConsumerSettings(config.getConfig("consumer"))
 }

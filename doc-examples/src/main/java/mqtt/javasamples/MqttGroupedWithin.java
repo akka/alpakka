@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package mqtt.javasamples;
@@ -114,12 +114,13 @@ public class MqttGroupedWithin {
 
     final String topic = "coffee/level";
 
-    MqttSubscriptions subscriptions =
-        MqttSubscriptions.create(topic, MqttQoS.atLeastOnce()); // (2)
+    MqttSubscriptions subscriptions = MqttSubscriptions.create(topic, MqttQoS.atLeastOnce()); // (2)
 
     Source<MqttMessage, CompletionStage<Done>> restartingMqttSource =
         wrapWithAsRestartSource( // (3)
-            () -> MqttSource.atMostOnce(connectionSettings.withClientId("coffee-control"), subscriptions, 8));
+            () ->
+                MqttSource.atMostOnce(
+                    connectionSettings.withClientId("coffee-control"), subscriptions, 8));
 
     Pair<Pair<CompletionStage<Done>, UniqueKillSwitch>, CompletionStage<Done>> completions =
         restartingMqttSource

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.amqp.scaladsl
@@ -11,6 +11,7 @@ import akka.stream._
 import akka.stream.alpakka.amqp._
 import akka.stream.scaladsl.{GraphDSL, Keep, Merge, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.{TestPublisher, TestSubscriber}
 import akka.util.ByteString
 import com.rabbitmq.client.AuthenticationFailureException
@@ -30,16 +31,14 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
     val connectionProvider = AmqpLocalConnectionProvider
 
-    // see AmqpDocsSpec "publish and consume elements through a simple queue again in the same JVM"
-
-    "connection should fail to wrong broker" in {
+    "connection should fail to wrong broker" in assertAllStagesStopped {
       val connectionProvider = AmqpDetailsConnectionProvider("localhost", 5673)
 
       val queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
 
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
       )
@@ -49,7 +48,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       result.failed.futureValue shouldBe an[ConnectException]
     }
 
-    "connection should fail with wrong credentials" in {
+    "connection should fail with wrong credentials" in assertAllStagesStopped {
       val connectionProvider =
         AmqpDetailsConnectionProvider("invalid", 5673)
           .withHostsAndPorts(immutable.Seq("localhost" -> 5672))
@@ -59,7 +58,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val queueDeclaration = QueueDeclaration(queueName)
 
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
       )
@@ -69,14 +68,12 @@ class AmqpConnectorsSpec extends AmqpSpec {
       result.failed.futureValue shouldBe an[AuthenticationFailureException]
     }
 
-    // see AmqpDocsSpec "publish via RPC and then consume through a simple queue again in the same JVM"
-
-    "publish via RPC which expects 2 responses per message and then consume through a simple queue again in the same JVM" in {
+    "publish via RPC which expects 2 responses per message and then consume through a simple queue again in the same JVM" in assertAllStagesStopped {
       val queueName = "amqp-conn-it-spec-rpc-queue-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
 
       val amqpRpcFlow = AmqpRpcFlow.simple(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration),
         2
@@ -96,35 +93,39 @@ class AmqpConnectorsSpec extends AmqpSpec {
         AmqpReplyToSinkSettings(connectionProvider)
       )
 
-      amqpSource
+      val sourceToSink = amqpSource
+        .viaMat(KillSwitches.single)(Keep.right)
         .mapConcat { b =>
           List(
-            OutgoingMessage(b.bytes.concat(ByteString("a")), false, false).withProperties(b.properties),
-            OutgoingMessage(b.bytes.concat(ByteString("aa")), false, false).withProperties(b.properties)
+            WriteMessage(b.bytes.concat(ByteString("a"))).withProperties(b.properties),
+            WriteMessage(b.bytes.concat(ByteString("aa"))).withProperties(b.properties)
           )
         }
-        .runWith(amqpSink)
+        .to(amqpSink)
+        .run()
 
       probe
         .request(10)
         .expectNextUnorderedN(input.flatMap(s => List(ByteString(s.concat("a")), ByteString(s.concat("aa")))))
         .expectComplete()
+
+      sourceToSink.shutdown()
     }
 
-    "correctly close a AmqpRpcFlow when stream is closed without passing any elements" in {
+    "correctly close a AmqpRpcFlow when stream is closed without passing any elements" in assertAllStagesStopped {
 
       Source
         .empty[ByteString]
-        .via(AmqpRpcFlow.simple(AmqpSinkSettings(connectionProvider)))
+        .via(AmqpRpcFlow.simple(AmqpWriteSettings(connectionProvider)))
         .runWith(TestSink.probe)
         .ensureSubscription()
         .expectComplete()
 
     }
 
-    "handle missing reply-to header correctly" in {
+    "handle missing reply-to header correctly" in assertAllStagesStopped {
 
-      val outgoingMessage = OutgoingMessage(ByteString.empty, false, false)
+      val outgoingMessage = WriteMessage(ByteString.empty)
 
       Source
         .single(outgoingMessage)
@@ -147,11 +148,11 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
     }
 
-    "publish from one source and consume elements with multiple sinks" in {
+    "publish from one source and consume elements with multiple sinks" in assertAllStagesStopped {
       val queueName = "amqp-conn-it-spec-work-queues-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
       )
@@ -162,7 +163,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val mergedSources = Source.fromGraph(GraphDSL.create() { implicit b =>
         import GraphDSL.Implicits._
         val count = 3
-        val merge = b.add(Merge[IncomingMessage](count))
+        val merge = b.add(Merge[ReadResult](count))
         for (n <- 0 until count) {
           val source = b.add(
             AmqpSource.atMostOnceSource(
@@ -182,7 +183,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       result.futureValue.sorted shouldEqual input.sorted
     }
 
-    "not fail on a fast producer and a slow consumer" in {
+    "not fail on a fast producer and a slow consumer" in assertAllStagesStopped {
       val queueName = "amqp-conn-it-spec-simple-queue-2-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
       val amqpSource = AmqpSource.atMostOnceSource(
@@ -191,13 +192,13 @@ class AmqpConnectorsSpec extends AmqpSpec {
       )
 
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
       )
 
       val publisher = TestPublisher.probe[ByteString]()
-      val subscriber = TestSubscriber.probe[IncomingMessage]()
+      val subscriber = TestSubscriber.probe[ReadResult]()
       amqpSink.addAttributes(Attributes.inputBuffer(1, 1)).runWith(Source.fromPublisher(publisher))
       amqpSource.addAttributes(Attributes.inputBuffer(1, 1)).runWith(Sink.fromSubscriber(subscriber))
 
@@ -234,20 +235,14 @@ class AmqpConnectorsSpec extends AmqpSpec {
       succeed
     }
 
-    // see AmqpDocsSpec "pub-sub from one source with multiple sinks"
-
-    // see AmqpDocsSpec "publish and consume elements through a simple queue again in the same JVM without autoAck"
-
-    // "republish message without autoAck if nack is sent"
-
-    "keep connection open if downstream closes and there are pending acks" in {
+    "keep connection open if downstream closes and there are pending acks" in assertAllStagesStopped {
       val connectionSettings = AmqpDetailsConnectionProvider("localhost", 5672)
 
       val queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
 
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(connectionSettings)
+        AmqpWriteSettings(connectionSettings)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
       )
@@ -269,12 +264,12 @@ class AmqpConnectorsSpec extends AmqpSpec {
       })
     }
 
-    "not republish message without autoAck(false) if nack is sent" in {
+    "not republish message without autoAck(false) if nack is sent" in assertAllStagesStopped {
       val queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
 
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
       )
@@ -293,15 +288,18 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
       Await.ready(result1, 3.seconds)
 
-      val result2 = amqpSource
+      val (sourceToSeq, result2) = amqpSource
+        .viaMat(KillSwitches.single)(Keep.right)
         .mapAsync(1)(cm => cm.ack().map(_ => cm))
         .take(input.size)
-        .runWith(Sink.seq)
+        .toMat(Sink.seq)(Keep.both)
+        .run()
 
       result2.isReadyWithin(1.second) shouldEqual false
+      sourceToSeq.shutdown()
     }
 
-    "publish via RPC and then consume through a simple queue again in the same JVM without autoAck" in {
+    "publish via RPC and then consume through a simple queue again in the same JVM without autoAck" in assertAllStagesStopped {
 
       val queueName = "amqp-conn-it-spec-rpc-queue-" + System.currentTimeMillis()
       val queueDeclaration = QueueDeclaration(queueName)
@@ -309,7 +307,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val input = Vector("one", "two", "three", "four", "five")
 
       val amqpRpcFlow = AmqpRpcFlow.committableFlow(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration),
         bufferSize = 10
@@ -317,7 +315,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val (rpcQueueF, probe) =
         Source(input)
           .map(s => ByteString(s))
-          .map(bytes => OutgoingMessage(bytes, false, false))
+          .map(bytes => WriteMessage(bytes))
           .viaMat(amqpRpcFlow)(Keep.right)
           .mapAsync(1)(cm => cm.ack().map(_ => cm.message))
           .toMat(TestSink.probe)(Keep.both)
@@ -332,14 +330,17 @@ class AmqpConnectorsSpec extends AmqpSpec {
         NamedQueueSourceSettings(connectionProvider, queueName),
         bufferSize = 1
       )
-      amqpSource
-        .map(b => OutgoingMessage(b.bytes, false, false).withProperties(b.properties))
-        .runWith(amqpSink)
+      val sourceToSink = amqpSource
+        .viaMat(KillSwitches.single)(Keep.right)
+        .map(b => WriteMessage(b.bytes).withProperties(b.properties))
+        .to(amqpSink)
+        .run()
 
       probe.toStrict(3.second).map(_.bytes.utf8String) shouldEqual input
+      sourceToSink.shutdown()
     }
 
-    "set routing key per message and consume them in the same JVM" in {
+    "set routing key per message and consume them in the same JVM" in assertAllStagesStopped {
       def getRoutingKey(s: String) = s"key.${s}"
 
       val exchangeName = "amqp.topic." + System.currentTimeMillis()
@@ -349,7 +350,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val bindingDeclaration = BindingDeclaration(queueName, exchangeName).withRoutingKey(getRoutingKey("*"))
 
       val amqpSink = AmqpSink(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withExchange(exchangeName)
           .withDeclarations(immutable.Seq(exchangeDeclaration, queueDeclaration, bindingDeclaration))
       )
@@ -363,7 +364,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val input = Vector("one", "two", "three", "four", "five")
       val routingKeys = input.map(s => getRoutingKey(s))
       Source(input)
-        .map(s => OutgoingMessage(ByteString(s), false, false).withRoutingKey(getRoutingKey(s)))
+        .map(s => WriteMessage(ByteString(s)).withRoutingKey(getRoutingKey(s)))
         .runWith(amqpSink)
         .futureValue shouldEqual Done
 
@@ -376,7 +377,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       result.map(_.bytes.utf8String) shouldEqual input
     }
 
-    "declare connection that does not require server acks" in {
+    "declare connection that does not require server acks" in assertAllStagesStopped {
       val connectionProvider =
         AmqpDetailsConnectionProvider("localhost", 5672)
 
@@ -384,7 +385,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val queueDeclaration = QueueDeclaration(queueName)
 
       val amqpSink = AmqpSink.simple(
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
       )
@@ -400,9 +401,12 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val input = Vector("one", "two", "three", "four", "five")
       Source(input).map(s => ByteString(s)).runWith(amqpSink).futureValue shouldEqual Done
 
-      val result = amqpSource.take(input.size).runWith(Sink.seq)
+      val result = amqpSource
+        .take(input.size)
+        .runWith(Sink.seq)
 
-      result.futureValue.map(_.message.bytes.utf8String) shouldEqual input
+      val received = result.futureValue
+      received.map(_.message.bytes.utf8String) shouldEqual input
     }
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.javadsl;
@@ -14,6 +14,7 @@ import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.TestSubscriber;
+import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.TestKit;
 import akka.util.ByteString;
 import com.google.common.jimfs.Configuration;
@@ -116,6 +117,7 @@ public class FileTailSourceTest {
   public void tearDown() throws Exception {
     fs.close();
     fs = null;
+    StreamTestKit.assertAllStagesStopped(materializer);
     TestKit.shutdownActorSystem(system, FiniteDuration.create(10, TimeUnit.SECONDS), true);
     system = null;
     materializer = null;

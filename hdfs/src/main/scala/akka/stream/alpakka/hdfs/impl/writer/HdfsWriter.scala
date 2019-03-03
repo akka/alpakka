@@ -1,18 +1,18 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.hdfs.impl.writer
 
+import akka.annotation.InternalApi
 import akka.stream.alpakka.hdfs.FilePathGenerator
 import akka.stream.alpakka.hdfs.impl.writer.HdfsWriter._
-import akka.util.ByteString
 import org.apache.hadoop.fs.{FileSystem, Path}
 
 /**
  * Internal API
  */
-@akka.annotation.InternalApi
+@InternalApi
 private[hdfs] trait HdfsWriter[W, I] {
 
   protected lazy val output: W = create(fs, temp)
@@ -43,6 +43,10 @@ private[hdfs] trait HdfsWriter[W, I] {
 
 }
 
+/**
+ * Internal API
+ */
+@InternalApi
 private[writer] object HdfsWriter {
 
   def createTargetPath(generator: FilePathGenerator, c: Long): Path =

@@ -3,4 +3,3 @@
 -Xmx1g
 -Xss6M
 -XX:+CMSClassUnloadingEnabled
--XX:+UseConcMarkSweepGC

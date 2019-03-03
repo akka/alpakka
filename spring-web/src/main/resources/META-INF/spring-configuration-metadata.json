@@ -1,0 +1,21 @@
+{  
+    "properties":[  
+       {  
+          "name":"akka.stream.alpakka.spring.web.actorSystemName",
+          "type":"java.lang.String",
+          "description":"Set the ActorSystem name",
+          "defaultValue":"SpringWebAkkaStreamsSystem"
+       }
+    ],
+    "hints":[  
+       {  
+          "name":"akka.stream.alpakka.spring.web.actorSystemName",
+          "values":[  
+             {  
+                "value":"SpringWebAkkaStreamsSystem",
+                "description":"Common Name."
+             }
+          ]
+       }
+    ]
+ }

@@ -1,15 +1,20 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.google.firebase.fcm.impl
 
+import akka.annotation.InternalApi
 import akka.stream.Materializer
 import akka.stream.alpakka.google.firebase.fcm.impl.GoogleTokenApi.AccessTokenExpiry
 
 import scala.concurrent.Future
 
-private[google] class GoogleSession(clientEmail: String, privateKey: String, tokenApi: GoogleTokenApi) {
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private class GoogleSession(clientEmail: String, privateKey: String, tokenApi: GoogleTokenApi) {
   protected var maybeAccessToken: Option[Future[AccessTokenExpiry]] = None
 
   private def getNewToken()(implicit materializer: Materializer): Future[AccessTokenExpiry] = {

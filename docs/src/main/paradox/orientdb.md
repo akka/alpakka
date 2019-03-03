@@ -11,6 +11,9 @@ For more information about OrientDB please visit the [official documentation](ht
 The Alpakka OrientDB connector provides Akka Stream sources and sinks for OrientDB.
 
 
+@@project-info{ projectId="orientdb" }
+
+
 ## Artifacts
 
 @@dependency [sbt,Maven,Gradle] {
@@ -19,38 +22,31 @@ The Alpakka OrientDB connector provides Akka Stream sources and sinks for Orient
   version=$project.version$
 }
 
-## Usage
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
 
-Sources, Flows and Sinks provided by this connector need dbUrl & credentials to access to OrientDB.
+@@dependencies { projectId="orientdb" }
 
-Scala
-: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDBSpec.scala) { #init-settings }
+## Database connection
 
-Java
-: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #init-settings }
-
-We will also need an @scaladoc[ActorSystem](akka.actor.ActorSystem) and an @scaladoc[ActorMaterializer](akka.stream.ActorMaterializer).
+Sources, Flows and Sinks provided by this connector need a `OPartitionedDatabasePool` to access to OrientDB. It is your responsibility to close the database connection eg. at actor system termination. **This API has become deprecated in OrientDB, please suggest a Pull Request to use the latest APIs instead.**
 
 Scala
-: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDBSpec.scala) { #init-mat }
+: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDbSpec.scala) { #init-settings }
 
 Java
-: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #init-mat }
+: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDbTest.java) { #init-settings }
 
-This is all preparation that we are going to need.
 
-## ODocument message
+## Reading `ODocument` from OrientDB
 
-Now we can stream messages which contain OrientDB's `ODocument` (in Scala or Java)
-from or to OrientDB by providing the `ODatabaseDocumentTx` to the
-@scaladoc[OrientDBSource](akka.stream.alpakka.orientdb.scaladsl.OrientDBSource$) or the
-@scaladoc[OrientDBSink](akka.stream.alpakka.orientdb.scaladsl.OrientDBSink$).
+Now we can stream messages which contain OrientDB's `ODocument` (in Scala or Java) from or to OrientDB by providing the `ODatabaseDocumentTx` to the
+@scala[@scaladoc[OrientDBSource](akka.stream.alpakka.orientdb.scaladsl.OrientDBSource$)]@java[@scaladoc[OrientDBSink](akka.stream.alpakka.orientdb.scaladsl.OrientDBSink$)].
 
 Scala
-: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDBSpec.scala) { #run-odocument }
+: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDbSpec.scala) { #run-odocument }
 
 Java
-: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #run-odocument }
+: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDbTest.java) { #run-odocument }
 
 
 ## Typed messages
@@ -58,84 +54,53 @@ Java
 Also, it's possible to stream messages which contains any classes. 
 
 Java
-: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #define-class }
+: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDbTest.java) { #define-class }
 
 
-Use `OrientDBSource.typed` and `OrientDBSink.typed` to create source and sink instead.
+Use `OrientDbSource.typed` and `OrientDbSink.typed` to create source and sink instead.
+
+Scala
+: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDbSpec.scala) { #run-typed }
 
 Java
-: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #run-typed }
+: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDbTest.java) { #run-typed }
 
 
-## Configuration
+## Source configuration
 
-We can configure the source by `OrientDBSourceSettings`.
+We can configure the source by `OrientDbSourceSettings`.
 
-Scala (source)
-: @@snip [snip](/orientdb/src/main/scala/akka/stream/alpakka/orientdb/OrientDBSourceSettings.scala) { #source-settings }
+Scala
+: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDbSpec.scala) { #source-settings }
 
-| Parameter        | Default | Description                                                                                                              |
-| ---------------- | ------- | ------------------------------------------------------------------------------------------------------------------------ |
-| maxPartitionSize |         | `OrientDBSource` and `OrientDBSink` uses this for initializing DB Connections. |
-| maxPoolSize      |    -1   | `OrientDBSource` and `OrientDBSink` uses this for initializing DB Connections. |
-| skip             |         | `OrientDBSource` uses this property to fetch data from the DB. |
-| limit            |         | `OrientDBSource` uses this property to fetch data from the DB. |
-| dbUrl            |         | url to the OrientDB database. |
-| username         |         | username to connect to OrientDB. |
-| password         |         | password to connect to OrientDB. | 
+Java
+: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDbTest.java) { #source-settings }
 
-Also, we can configure the sink by `OrientDBUpdateSettings`.
 
-Scala (sink)
-: @@snip [snip](/orientdb/src/main/scala/akka/stream/alpakka/orientdb/OrientDBUpdateSettings.scala) { #sink-settings }
+| Parameter        | Default | Description |
+| ---------------- | ------- | ------------------------------------------- |
+| skip             |   0     | Rows skipped in the beginning of the result. |
+| limit            |    10   | Result items fetched per query. |
 
-| Parameter           | Default | Description                                                                                            |
-| ------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
-| maxPartitionSize |         | `OrientDBSource` and `OrientDBSink` uses this for initializing DB Connections. |
-| maxPoolSize      |    -1   | `OrientDBSource` and `OrientDBSink` uses this for initializing DB Connections. |
-| maxRetry         |     1   | `OrientDBSink` uses this for retrying write operations to OrientDB. |
-| retryInterval    |  5000   | `OrientDBSink` uses this for retrying write operations to OrientDB. |
-| bufferSize       |         | `OrientDBSink` uses this for retrieving data from DB. |
-| dbUrl            |         | url to the OrientDB database. |
-| username         |         | username to connect to OrientDB. |
-| password         |         | password to connect to OrientDB. | 
 
-## Using OrientDB as a Flow
+
+## Writing to OrientDB
 
 You can also build flow stages. The API is similar to creating Sinks.
 
-Scala (flow)
-: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDBSpec.scala) { #run-flow }
+Scala
+: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDbSpec.scala) { #run-flow }
 
-Java (flow)
-: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #run-flow }
+Java
+: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDbTest.java) { #run-flow }
+
 
 ### Passing data through OrientDBFlow
 
 When streaming documents from Kafka, you might want to commit to Kafka **AFTER** the document has been written to OrientDB.
 
 Scala
-: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDBSpec.scala) { #kafka-example }
+: @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDbSpec.scala) { #kafka-example }
 
 Java
-: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDBTest.java) { #kafka-example } 
-
-## Running the example code
-
-The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
-
-  > Test code requires OrientDB server running in the background. You can start one quickly using docker:
-  >		  
-  > `docker run --rm -p 2424:2424 orientdb:latest`
-
-Scala
-:   ```
-    sbt
-    > orientdb/testOnly *.OrientDBSpec
-    ```
-
-Java
-:   ```
-    sbt
-    > orientdb/testOnly *.OrientDBTest
-    ```
+: @@snip [snip](/orientdb/src/test/java/docs/javadsl/OrientDbTest.java) { #kafka-example } 

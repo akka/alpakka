@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -8,13 +8,14 @@ import java.util.concurrent.TimeUnit
 
 import akka.stream.alpakka.avroparquet.scaladsl.{AvroParquetSink, AvroParquetSource}
 import akka.stream.scaladsl.{Keep, Source}
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSink
 import akka.{Done, NotUsed}
-
 import org.apache.parquet.avro.AvroParquetWriter
 import org.apache.parquet.hadoop.ParquetWriter
 import org.specs2.mutable.Specification
 import org.specs2.specification.{AfterAll, BeforeAll}
+
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
@@ -28,12 +29,11 @@ import org.apache.parquet.hadoop.ParquetReader
 import org.apache.parquet.avro.AvroReadSupport
 //#init-reader
 
-
-class AvroParquetSourceSpec extends Specification with AbstractAvroParquet with AfterAll with BeforeAll {
+class AvroParquetSourceSpec extends Specification with AbstractAvroParquet with BeforeAll with AfterAll {
 
   "AvroParquetSource" should {
 
-    "read from parquet file" in {
+    "read from parquet file" in assertAllStagesStopped {
 
       //#init-reader
       val file = folder + "/test.parquet"

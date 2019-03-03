@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.csv.impl
@@ -334,6 +334,9 @@ import akka.util.{ByteString, ByteStringBuilder}
 
         case AfterCr =>
           byte match {
+            case CR =>
+              state = AfterCr
+              pos += 1
             case LF =>
               state = LineEnd
               pos += 1

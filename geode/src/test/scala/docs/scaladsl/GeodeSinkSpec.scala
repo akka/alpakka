@@ -1,63 +1,62 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.scaladsl
 
-import akka.stream.alpakka.geode.scaladsl.{PoolSubscription, ReactiveGeode}
+import akka.Done
+import akka.stream.alpakka.geode.RegionSettings
+import akka.stream.alpakka.geode.scaladsl.{Geode, PoolSubscription}
+import akka.stream.scaladsl.Sink
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
-import scala.language.postfixOps
 
 class GeodeSinkSpec extends GeodeBaseSpec {
 
-  "Reactive geode sink" should {
+  "Geode sink" should {
     it { geodeSettings =>
       "stores persons in geode" in {
 
-        val reactiveGeode = new ReactiveGeode(geodeSettings) with PoolSubscription
+        val geode = new Geode(geodeSettings) with PoolSubscription
 
         val source = buildPersonsSource(30 to 40)
 
-        val sink = reactiveGeode.sink(personsRegionSettings)
+        val sink = geode.sink(personsRegionSettings)
         val fut = source.runWith(sink)
 
-        Await.ready(fut, 5 seconds)
+        Await.ready(fut, 5.seconds)
 
-        reactiveGeode.close()
+        geode.close()
       }
 
-      "stores animals in geode" in {
+      "store animals in geode" in {
 
-        val reactiveGeode = new ReactiveGeode(geodeSettings) with PoolSubscription
+        val geode = new Geode(geodeSettings) with PoolSubscription
 
         val source = buildAnimalsSource(1 to 40)
 
         //#sink
-        val sink = reactiveGeode.sink(animalsRegionSettings)
+        val animalsRegionSettings: RegionSettings[Int, Animal] =
+          RegionSettings("animals", (a: Animal) => a.id)
 
-        val fut = source.runWith(sink)
+        val sink: Sink[Animal, Future[Done]] =
+          geode.sink(animalsRegionSettings)
+
+        val fut: Future[Done] = source.runWith(sink)
         //#sink
-        Await.ready(fut, 10 seconds)
+        Await.ready(fut, 10.seconds)
 
-        reactiveGeode.close()
+        geode.close()
       }
 
-      "stores complex in geode" in {
-
-        val reactiveGeode = new ReactiveGeode(geodeSettings) with PoolSubscription
-
+      "store complex in geode" in {
+        val geode = new Geode(geodeSettings) with PoolSubscription
         val source = buildComplexesSource(1 to 40)
-
-        //#sink
-        val sink = reactiveGeode.sink(complexesRegionSettings)
-
+        val sink = geode.sink(complexesRegionSettings)
         val fut = source.runWith(sink)
-        //#sink
-        Await.ready(fut, 10 seconds)
-
-        reactiveGeode.close()
+        Await.ready(fut, 10.seconds)
+        geode.close()
       }
 
     }

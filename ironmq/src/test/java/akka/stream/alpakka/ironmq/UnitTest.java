@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.ironmq;
@@ -7,6 +7,7 @@ package akka.stream.alpakka.ironmq;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+import akka.stream.alpakka.ironmq.impl.IronMqClient;
 import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -34,7 +35,7 @@ public abstract class UnitTest {
     materializer = ActorMaterializer.create(system);
     ironMqClient =
         new IronMqClient(
-            IronMqSettings.create(config.getConfig("akka.stream.alpakka.ironmq")),
+            IronMqSettings.create(config.getConfig(IronMqSettings.ConfigPath())),
             system,
             materializer);
   }
@@ -47,8 +48,7 @@ public abstract class UnitTest {
 
   protected Config initConfig() {
     String projectId = "project-" + System.currentTimeMillis();
-    return ConfigFactory.parseString(
-            "akka.stream.alpakka.ironmq.credentials.project-id = " + projectId)
+    return ConfigFactory.parseString("alpakka.ironmq.credentials.project-id = " + projectId)
         .withFallback(ConfigFactory.load());
   }
 
@@ -69,11 +69,11 @@ public abstract class UnitTest {
     return ironMqClient;
   }
 
-  protected Queue givenQueue() {
+  protected String givenQueue() {
     return givenQueue("test-" + UUID.randomUUID());
   }
 
-  protected Queue givenQueue(String name) {
+  protected String givenQueue(String name) {
     try {
       return toJava(ironMqClient.createQueue(name, system.dispatcher()))
           .toCompletableFuture()

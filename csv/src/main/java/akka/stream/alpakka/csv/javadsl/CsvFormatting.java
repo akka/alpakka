@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.csv.javadsl;
@@ -10,7 +10,7 @@ import akka.stream.javadsl.Flow;
 import akka.util.ByteString;
 import scala.Option;
 import scala.Some;
-import scala.collection.JavaConversions;
+import scala.collection.JavaConverters;
 import scala.collection.immutable.List;
 
 import java.nio.charset.Charset;
@@ -77,7 +77,7 @@ public class CsvFormatting {
         akka.stream.alpakka.csv.scaladsl.CsvFormatting.format(
             delimiter, quoteChar, escapeChar, endOfLine, qs, charset, byteOrderMarkScala);
     return Flow.<T>create()
-        .map(c -> JavaConversions.collectionAsScalaIterable(c).toList())
+        .map(c -> JavaConverters.collectionAsScalaIterableConverter(c).asScala().toList())
         .via(formattingFlow);
   }
 }

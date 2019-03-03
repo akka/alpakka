@@ -1,15 +1,12 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.xml
 
 import java.util.Optional
 
-import akka.stream.alpakka.ParseEventMarker
-
 import scala.collection.JavaConverters._
-import scala.collection.immutable.DefaultMap
 import scala.compat.java8.OptionConverters._
 
 /**
@@ -42,14 +39,6 @@ case object EndDocument extends ParseEvent {
    * Java API
    */
   def getInstance(): EndDocument.type = this
-}
-
-private class MapOverTraversable[A, K, V](source: Traversable[A], fKey: A => K, fValue: A => V)
-    extends DefaultMap[K, V] {
-  override def get(key: K): Option[V] = source.find(a => fKey(a) == key).map(fValue)
-
-  override def iterator: Iterator[(K, V)] = source.toIterator.map(a => (fKey(a), fValue(a)))
-
 }
 
 final case class Namespace(uri: String, prefix: Option[String] = None) {
@@ -104,7 +93,7 @@ final case class StartElement(localName: String,
   val marker = ParseEventMarker.XMLStartElement
 
   val attributes: Map[String, String] =
-    new MapOverTraversable[Attribute, String, String](attributesList, _.name, _.value)
+    attributesList.map(attr => attr.name -> attr.value).toMap
 
   /** Java API */
   def getAttributes(): java.util.Map[String, String] = attributes.asJava

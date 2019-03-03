@@ -1,12 +1,10 @@
-# Files
+# File
 
 The File connectors provide additional connectors for filesystems complementing
 the sources and sinks for files already included in core Akka Streams
 (which can be found in @java[@javadoc[akka.stream.javadsl.FileIO](akka.stream.javadsl.FileIO$)]@scala[@scaladoc[akka.stream.scaladsl.FileIO](akka.stream.scaladsl.FileIO$)]).
 
-### Reported issues
-
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Afile)
+@@project-info{ projectId="file" }
 
 ## Artifacts
 
@@ -15,6 +13,11 @@ the sources and sinks for files already included in core Akka Streams
   artifact=akka-stream-alpakka-file_$scala.binary.version$
   version=$project.version$
 }
+
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="file" }
+
 
 ## Writing to and reading from files
 
@@ -80,13 +83,13 @@ Java
 The @scala[@scaladoc[LogRotatatorSink](akka.stream.alpakka.file.scaladsl.LogRotatorSink$)]
  @java[@scaladoc[LogRotatatorSink](akka.stream.alpakka.file.javadsl.LogRotatorSink$)] will create and 
  write to multiple files.  
-This sink will takes a function as parameter which returns a
+This sink takes a creator as parameter which returns a
  @scala[`Bytestring => Option[Path]` function]@java[`Function<ByteString, Optional<Path>>`]. If the generated function returns a path
  the sink will rotate the file output to this new path and the actual `ByteString` will be
   written to this new file too.
  With this approach the user can define a custom stateful file generation implementation.
 
-A small snippet for the usage
+This example usage shows the built-in target file creation and a custom sink factory which is required to use @scala[@scaladoc[Compression](akka.stream.scaladsl.Compression$)]@java[@scaladoc[Compression](akka.stream.javadsl.Compression$)] for the target files.
 
 Scala
 : @@snip [snip](/file/src/test/scala/docs/scaladsl/LogRotatorSinkSpec.scala) { #sample }
@@ -110,39 +113,6 @@ Scala
 Java
 : @@snip [snip](/file/src/test/java/docs/javadsl/LogRotatorSinkTest.java) { #time }
 
-### Running the example code
+### Example: content-based rotation with compression to SFTP file
 
-Both the samples are contained in standalone runnable mains, they can be run
- from `sbt` like this:
-
-Scala
-:   &#9;
-
-    ```
-    sbt
-
-    // tail source
-    > file/Test/runMain akka.stream.alpakka.file.scaladsl.FileTailSourceSpec /some/path/toa/file
-
-    // or directory changes
-    > file/Test/runMain akka.stream.alpakka.file.scaladsl.DirectoryChangesSourceSpec /some/directory/path
-
-    // File rotator
-    > file/Test/runMain akka.stream.alpakka.file.scaladsl.LogRotatorSinkTest
-    ```
-
-Java
-:   &#9;
-
-    ```
-    sbt
-
-    // tail source
-    > file/Test/runMain docs.javadsl.FileTailSourceTest /some/path/toa/file
-
-    // or directory changes
-    > file/Test/runMain docs.javadsl.DirectoryChangesSourceTest /some/directory/path
-
-    // File rotator
-    > file/Test/runMain docs.javadsl.LogRotatorSinkTest
-    ```
+This example can be found in the @ref:[self-contained example documentation section](examples/ftp-samples.md#example-rotate-data-stream-over-to-multiple-compressed-files-on-sftp-server).

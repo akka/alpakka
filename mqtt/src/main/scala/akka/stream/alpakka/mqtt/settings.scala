@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.mqtt
@@ -137,7 +137,7 @@ object MqttSubscriptions {
  * @param subscriptions the mapping between a topic name and a [[MqttQoS]].
  * @deprecated use MqttConnectionSettings and MqttSubscriptions instead
  */
-@deprecated("use MqttConnectionSettings and MqttSubscriptions instead", "0.21")
+@deprecated("use MqttConnectionSettings and MqttSubscriptions instead", "1.0-M1")
 @java.lang.Deprecated
 final case class MqttSourceSettings(
     connectionSettings: MqttConnectionSettings,
@@ -151,7 +151,7 @@ final case class MqttSourceSettings(
 /**
  * @deprecated use MqttConnectionSettings and MqttSubscriptions instead
  */
-@deprecated("use MqttConnectionSettings and MqttSubscriptions instead", "0.21")
+@deprecated("use MqttConnectionSettings and MqttSubscriptions instead", "1.0-M1")
 @java.lang.Deprecated
 object MqttSourceSettings {
 
@@ -160,11 +160,17 @@ object MqttSourceSettings {
    *
    * @deprecated use MqttConnectionSettings and MqttSubscriptions instead
    */
-  @deprecated("use MqttConnectionSettings and MqttSubscriptions instead", "0.21")
+  @deprecated("use MqttConnectionSettings and MqttSubscriptions instead", "1.0-M1")
   @java.lang.Deprecated
   def create(connectionSettings: MqttConnectionSettings) =
     MqttSourceSettings(connectionSettings)
 }
+
+private[mqtt] final case class MqttOfflinePersistenceSettings(
+    bufferSize: Int = 5000,
+    deleteOldestMessage: Boolean = false,
+    persistBuffer: Boolean = true
+)
 
 /**
  * Connection settings passed to the underlying Paho client.
@@ -187,7 +193,9 @@ final class MqttConnectionSettings private (val broker: String,
                                             val mqttVersion: Int,
                                             val serverUris: immutable.Seq[String],
                                             val sslHostnameVerifier: Option[javax.net.ssl.HostnameVerifier],
-                                            val sslProperties: Map[String, String]) {
+                                            val sslProperties: Map[String, String],
+                                            val offlinePersistenceSettings: Option[MqttOfflinePersistenceSettings] =
+                                              None) {
 
   def withBroker(value: String): MqttConnectionSettings = copy(broker = value)
   def withClientId(clientId: String): MqttConnectionSettings = copy(clientId = clientId)
@@ -262,6 +270,14 @@ final class MqttConnectionSettings private (val broker: String,
   def withSslProperties(value: java.util.Map[String, String]): MqttConnectionSettings =
     copy(sslProperties = value.asScala.toMap)
 
+  def withOfflinePersistenceSettings(bufferSize: Int = 5000,
+                                     deleteOldestMessage: Boolean = false,
+                                     persistBuffer: Boolean = true): MqttConnectionSettings =
+    copy(
+      offlinePersistenceSettings =
+        Option(MqttOfflinePersistenceSettings(bufferSize, deleteOldestMessage, persistBuffer))
+    )
+
   /**
    * @deprecated use with [[java.time.Duration]] instead
    */
@@ -290,23 +306,26 @@ final class MqttConnectionSettings private (val broker: String,
   def withDisconnectTimeout(disconnectTimeout: Int, unit: TimeUnit): MqttConnectionSettings =
     copy(disconnectTimeout = FiniteDuration(disconnectTimeout, unit))
 
-  private def copy(broker: String = broker,
-                   clientId: String = clientId,
-                   persistence: org.eclipse.paho.client.mqttv3.MqttClientPersistence = persistence,
-                   auth: Option[(String, String)] = auth,
-                   socketFactory: Option[javax.net.ssl.SSLSocketFactory] = socketFactory,
-                   cleanSession: Boolean = cleanSession,
-                   will: Option[MqttMessage] = will,
-                   automaticReconnect: Boolean = automaticReconnect,
-                   keepAliveInterval: FiniteDuration = keepAliveInterval,
-                   connectionTimeout: FiniteDuration = connectionTimeout,
-                   disconnectQuiesceTimeout: FiniteDuration = disconnectQuiesceTimeout,
-                   disconnectTimeout: FiniteDuration = disconnectTimeout,
-                   maxInFlight: Int = maxInFlight,
-                   mqttVersion: Int = mqttVersion,
-                   serverUris: immutable.Seq[String] = serverUris,
-                   sslHostnameVerifier: Option[javax.net.ssl.HostnameVerifier] = sslHostnameVerifier,
-                   sslProperties: Map[String, java.lang.String] = sslProperties): MqttConnectionSettings =
+  private def copy(
+      broker: String = broker,
+      clientId: String = clientId,
+      persistence: org.eclipse.paho.client.mqttv3.MqttClientPersistence = persistence,
+      auth: Option[(String, String)] = auth,
+      socketFactory: Option[javax.net.ssl.SSLSocketFactory] = socketFactory,
+      cleanSession: Boolean = cleanSession,
+      will: Option[MqttMessage] = will,
+      automaticReconnect: Boolean = automaticReconnect,
+      keepAliveInterval: FiniteDuration = keepAliveInterval,
+      connectionTimeout: FiniteDuration = connectionTimeout,
+      disconnectQuiesceTimeout: FiniteDuration = disconnectQuiesceTimeout,
+      disconnectTimeout: FiniteDuration = disconnectTimeout,
+      maxInFlight: Int = maxInFlight,
+      mqttVersion: Int = mqttVersion,
+      serverUris: immutable.Seq[String] = serverUris,
+      sslHostnameVerifier: Option[javax.net.ssl.HostnameVerifier] = sslHostnameVerifier,
+      sslProperties: Map[String, java.lang.String] = sslProperties,
+      offlinePersistenceSettings: Option[MqttOfflinePersistenceSettings] = offlinePersistenceSettings
+  ): MqttConnectionSettings =
     new MqttConnectionSettings(
       broker = broker,
       clientId = clientId,
@@ -324,13 +343,14 @@ final class MqttConnectionSettings private (val broker: String,
       mqttVersion = mqttVersion,
       serverUris = serverUris,
       sslHostnameVerifier = sslHostnameVerifier,
-      sslProperties = sslProperties
+      sslProperties = sslProperties,
+      offlinePersistenceSettings = offlinePersistenceSettings
     )
 
   override def toString =
     s"""MqttConnectionSettings(broker=$broker,clientId=$clientId,persistence=$persistence,auth(username)=${auth.map(
       _._1
-    )},socketFactory=$socketFactory,cleanSession=$cleanSession,will=$will,automaticReconnect=$automaticReconnect,keepAliveInterval=$keepAliveInterval,connectionTimeout=$connectionTimeout,disconnectQuiesceTimeout=$disconnectQuiesceTimeout,disconnectTimeout=$disconnectTimeout,maxInFlight=$maxInFlight,mqttVersion=$mqttVersion,serverUris=$serverUris,sslHostnameVerifier=$sslHostnameVerifier,sslProperties=$sslProperties)"""
+    )},socketFactory=$socketFactory,cleanSession=$cleanSession,will=$will,automaticReconnect=$automaticReconnect,keepAliveInterval=$keepAliveInterval,connectionTimeout=$connectionTimeout,disconnectQuiesceTimeout=$disconnectQuiesceTimeout,disconnectTimeout=$disconnectTimeout,maxInFlight=$maxInFlight,mqttVersion=$mqttVersion,serverUris=$serverUris,sslHostnameVerifier=$sslHostnameVerifier,sslProperties=$sslProperties,offlinePersistenceSettings=$offlinePersistenceSettings)"""
 }
 
 /**
@@ -363,7 +383,8 @@ object MqttConnectionSettings {
       mqttVersion = MqttConnectOptions.MQTT_VERSION_3_1_1,
       serverUris = immutable.Seq.empty,
       sslHostnameVerifier = None,
-      sslProperties = Map.empty
+      sslProperties = Map.empty,
+      offlinePersistenceSettings = None
     )
 
   /** Java API */

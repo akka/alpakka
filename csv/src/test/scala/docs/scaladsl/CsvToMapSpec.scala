@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets
 import akka.NotUsed
 import akka.stream.alpakka.csv.scaladsl.{CsvParsing, CsvToMap}
 import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.util.ByteString
 
 class CsvToMapSpec extends CsvSpec {
@@ -39,7 +40,7 @@ class CsvToMapSpec extends CsvSpec {
   }
 
   "CSV to Map" should {
-    "parse header line and data line into map" in {
+    "parse header line and data line into map" in assertAllStagesStopped {
       // #header-line
       import akka.stream.alpakka.csv.scaladsl.{CsvParsing, CsvToMap}
 
@@ -70,7 +71,7 @@ class CsvToMapSpec extends CsvSpec {
       // #header-line
     }
 
-    "be OK with fewer header columns than data" in {
+    "be OK with fewer header columns than data" in assertAllStagesStopped {
       val future =
         Source
           .single(ByteString("""eins,zwei
@@ -82,7 +83,7 @@ class CsvToMapSpec extends CsvSpec {
       future.futureValue should be(Map("eins" -> ByteString("1"), "zwei" -> ByteString("2")))
     }
 
-    "be OK with more header columns than data" in {
+    "be OK with more header columns than data" in assertAllStagesStopped {
       val future =
         Source
           .single(ByteString("""eins,zwei,drei,vier
@@ -96,7 +97,7 @@ class CsvToMapSpec extends CsvSpec {
       )
     }
 
-    "parse header line and decode data line" in {
+    "parse header line and decode data line" in assertAllStagesStopped {
       val future =
         // format: off
       // #header-line
@@ -124,7 +125,7 @@ class CsvToMapSpec extends CsvSpec {
       // #header-line
     }
 
-    "use column names and data line into map" in {
+    "use column names and data line into map" in assertAllStagesStopped {
       // #column-names
       import akka.stream.alpakka.csv.scaladsl.{CsvParsing, CsvToMap}
 
@@ -155,7 +156,7 @@ class CsvToMapSpec extends CsvSpec {
       // #column-names
     }
 
-    "use column names and decode data line into map" in {
+    "use column names and decode data line into map" in assertAllStagesStopped {
       val future =
         // format: off
       // #column-names

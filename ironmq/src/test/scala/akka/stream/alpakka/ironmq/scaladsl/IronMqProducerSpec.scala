@@ -1,17 +1,18 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.ironmq.scaladsl
 
 import akka.dispatch.ExecutionContexts
-import akka.stream.alpakka.ironmq.{AkkaStreamFixture, IronMqFixture, IronMqSettings, PushMessage, UnitSpec}
+import akka.stream.alpakka.ironmq.{IronMqSettings, IronMqSpec, PushMessage}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.{Done, NotUsed}
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class IronMqProducerSpec extends UnitSpec with IronMqFixture with AkkaStreamFixture {
+class IronMqProducerSpec extends IronMqSpec {
 
   import IronMqProducer._
 
@@ -20,18 +21,18 @@ class IronMqProducerSpec extends UnitSpec with IronMqFixture with AkkaStreamFixt
   implicit val ec: ExecutionContext = ExecutionContexts.global()
 
   "producerSink" should {
-    "publish messages on IronMq" in {
+    "publish messages on IronMq" in assertAllStagesStopped {
 
       val queue = givenQueue()
       val settings = IronMqSettings()
 
       val expectedMessagesBodies = List("test-1", "test-2")
 
-      val done = Source(expectedMessagesBodies).map(PushMessage(_)).runWith(producerSink(queue.name, settings))
+      val done = Source(expectedMessagesBodies).map(PushMessage(_)).runWith(sink(queue, settings))
 
       whenReady(done) { _ =>
         ironMqClient
-          .pullMessages(queue.name, 20)
+          .pullMessages(queue, 20)
           .futureValue
           .map(_.body)
           .toSeq should contain theSameElementsInOrderAs expectedMessagesBodies
@@ -42,15 +43,15 @@ class IronMqProducerSpec extends UnitSpec with IronMqFixture with AkkaStreamFixt
   }
 
   "producerFlow" should {
-    "return published messages' ids" in {
+    "return published messages' ids" in assertAllStagesStopped {
 
       val queue = givenQueue()
       val settings = IronMqSettings()
 
-      val messageIds = messages.take(10).via(producerFlow(queue.name, settings)).runWith(Sink.seq).futureValue
+      val messageIds = messages.take(10).via(flow(queue, settings)).runWith(Sink.seq).futureValue
 
       ironMqClient
-        .pullMessages(queue.name, 10)
+        .pullMessages(queue, 10)
         .futureValue
         .map(_.messageId)
         .toSeq should contain theSameElementsInOrderAs messageIds
@@ -59,7 +60,7 @@ class IronMqProducerSpec extends UnitSpec with IronMqFixture with AkkaStreamFixt
   }
 
   "atLeastOnceProducerFlow" should {
-    "commit the committables" in {
+    "commit the committables" in assertAllStagesStopped {
 
       val queue = givenQueue()
       val settings = IronMqSettings()
@@ -73,7 +74,7 @@ class IronMqProducerSpec extends UnitSpec with IronMqFixture with AkkaStreamFixt
       whenReady(
         messages
           .zip(Source(committables))
-          .via(atLeastOnceProducerFlow(queue.name, settings, Flow[Committable].mapAsync(1)(_.commit())))
+          .via(atLeastOnceFlow(queue, settings, Flow[Committable].mapAsync(1)(_.commit())))
           .runWith(Sink.ignore)
       ) { _ =>
         committables.forall(_.committed) shouldBe true

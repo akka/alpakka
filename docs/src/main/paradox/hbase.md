@@ -1,14 +1,11 @@
 # HBase
 
-A flow and a composite sink to write element in [HBase](http://hbase.apache.org).
+The connector provides flows and sinks to write elements to HBase database.
 
 HBase is a column family NoSQL Database backed by HDFS.
+For more information about HBase, please visit the [HBase documentation](http://hbase.apache.org).
 
-### Reported issues
-
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Ahbase)
-
-# Usage
+@@project-info{ projectId="hbase" }
 
 ## Artifacts
 
@@ -18,96 +15,96 @@ HBase is a column family NoSQL Database backed by HDFS.
   version=$project.version$
 }
 
-Build a converter and a tableSetting.
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
 
-Converter will map the domain object to list of HBase mutations (`Append`, `Delete`, `Increment`, `Put`).
-
-Here some examples:
-
-- A `Put` mutation:
-
-scala
-:   @@snip [snip](/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #create-converter-put }
-
-java
-:   @@snip [snip](/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #create-converter-put }
-
-- An `Append` mutation:
-
-scala
-:   @@snip [snip](/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #create-converter-append }
-
-java
-:   @@snip [snip](/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #create-converter-append }
-
-- A `Delete` mutation:
-
-scala
-:   @@snip [snip](/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #create-converter-delete }
-
-java
-:   @@snip [snip](/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #create-converter-delete }
-
-- An `Increment` mutation:
-
-scala
-:   @@snip [snip](/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #create-converter-increment }
-
-java
-:   @@snip [snip](/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #create-converter-increment }
+@@dependencies { projectId="hbase" }
 
 
-To ignore an object just return an empty `List`, this will have no effect on HBase.
+## Converters
+
+Converters map the domain object to a list of HBase mutations (`Append`, `Delete`, `Increment`, `Put`).
+
+### Put
+
+Scala
+:   @@snip [snip](/hbase/src/test/scala/docs/scaladsl/HBaseStageSpec.scala) { #create-converter-put }
+
+Java
+:   @@snip [snip](/hbase/src/test/java/docs/javadsl/HBaseStageTest.java) { #create-converter-put }
+
+### Append
+
+Scala
+:   @@snip [snip](/hbase/src/test/scala/docs/scaladsl/HBaseStageSpec.scala) { #create-converter-append }
+
+Java
+:   @@snip [snip](/hbase/src/test/java/docs/javadsl/HBaseStageTest.java) { #create-converter-append }
+
+### Delete
+
+Scala
+:   @@snip [snip](/hbase/src/test/scala/docs/scaladsl/HBaseStageSpec.scala) { #create-converter-delete }
+
+Java
+:   @@snip [snip](/hbase/src/test/java/docs/javadsl/HBaseStageTest.java) { #create-converter-delete }
+
+### Increment
+
+Scala
+:   @@snip [snip](/hbase/src/test/scala/docs/scaladsl/HBaseStageSpec.scala) { #create-converter-increment }
+
+Java
+:   @@snip [snip](/hbase/src/test/java/docs/javadsl/HBaseStageTest.java) { #create-converter-increment }
+
+### Complex and noop mutations
+
+To ignore an object return an empty `List` - this will have no effect on HBase.
 You can also combine mutations to perform complex business logic:
 
-scala
-:   @@snip [snip](/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #create-converter-complex }
+Scala
+:   @@snip [snip](/hbase/src/test/scala/docs/scaladsl/HBaseStageSpec.scala) { #create-converter-complex }
 
-java
-:   @@snip [snip](/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #create-converter-complex }
+Java
+:   @@snip [snip](/hbase/src/test/java/docs/javadsl/HBaseStageTest.java) { #create-converter-complex }
 
-Remember that if you returns a list of mutations they will be applied in the same order.
-The list of Mutations are not applied in an transaction, each mutation is independent.
+If you return a list of mutations they will be applied in the same order.
+The list of mutations are not applied in an transaction, each mutation is independent.
 
-Table will be created on demand.
+## Settings
 
-scala
-:   @@snip [snip](/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #create-settings }
+HBase combinators require @scaladoc[HTableSettings](akka.stream.alpakka.hbase.HTableSettings).
+If the table referenced in the settings does not exist, it will be created on demand.
 
-java
-:   @@snip [snip](/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #create-settings }
+Scala
+:   @@snip [snip](/hbase/src/test/scala/docs/scaladsl/HBaseStageSpec.scala) { #create-settings }
 
-### Flow usage 
+Java
+:   @@snip [snip](/hbase/src/test/java/docs/javadsl/HBaseStageTest.java) { #create-settings }
 
-scala
-: @@snip [snip](/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #flow }
+## Flow
 
-java
-: @@snip [snip](/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #flow }
+Scala
+: @@snip [snip](/hbase/src/test/scala/docs/scaladsl/HBaseStageSpec.scala) { #flow }
+
+Java
+: @@snip [snip](/hbase/src/test/java/docs/javadsl/HBaseStageTest.java) { #flow }
 
 
-### Sink usage
+## Sink
 
-scala
-: @@snip [snip](/hbase/src/test/scala/akka/stream/alpakka/hbase/scaladsl/HBaseStageSpec.scala) { #sink }
+Scala
+: @@snip [snip](/hbase/src/test/scala/docs/scaladsl/HBaseStageSpec.scala) { #sink }
 
-java
-: @@snip [snip](/hbase/src/test/java/akka/stream/alpakka/hbase/javadsl/HBaseStageTest.java) { #sink }
+Java
+: @@snip [snip](/hbase/src/test/java/docs/javadsl/HBaseStageTest.java) { #sink }
 
-## HBase basic command:
+## HBase administration commands
 
-```
-$HBASE_HOME/bin/start-hbase.sh
-
-$HBASE_HOME/bin/ shell
-
-```
-
-From the hbase shell:
+To manage HBase database, startup HBase shell (`$HBASE_HOME/bin/shell`), and run following commands:
 
 ```
-list //list table
+list // list tables
 scan "person" // select * from person
-disable "person" //Disable table "person", before drop
+disable "person" // Disable table "person", before drop
 drop "person" 
 ```

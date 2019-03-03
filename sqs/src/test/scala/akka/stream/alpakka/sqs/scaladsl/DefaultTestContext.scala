@@ -1,50 +1,62 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.sqs.scaladsl
 
-import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, Materializer}
-import com.amazonaws.services.sqs.AmazonSQSAsync
-import com.amazonaws.services.sqs.model.CreateQueueRequest
-import org.elasticmq.rest.sqs.{SQSLimits, SQSRestServer, SQSRestServerBuilder}
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Suite, Tag}
+import java.net.URI
 
+import akka.actor.ActorSystem
+import akka.stream.alpakka.sqs.SqsSourceSettings
+import akka.stream.{ActorMaterializer, Materializer}
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.time._
+import org.scalatest.{BeforeAndAfterAll, Suite, Tag}
+import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.sqs.SqsAsyncClient
+import software.amazon.awssdk.services.sqs.model.CreateQueueRequest
+
+import scala.collection.JavaConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Random
 
-trait DefaultTestContext extends BeforeAndAfterAll with BeforeAndAfterEach with ScalaFutures { this: Suite =>
+trait DefaultTestContext extends BeforeAndAfterAll with ScalaFutures { this: Suite =>
 
   //#init-mat
   implicit val system: ActorSystem = ActorSystem()
   implicit val mat: Materializer = ActorMaterializer()
   //#init-mat
 
-  var sqsServer: SQSRestServer = _
-  def sqsAddress = sqsServer.waitUntilStarted().localAddress
-  def sqsEndpoint: String =
-    s"http://${sqsAddress.getHostName}:${sqsAddress.getPort}"
+  // endpoint of the elasticmq docker container
+  val sqsEndpoint: String = "http://localhost:9324"
 
   object Integration extends Tag("akka.stream.alpakka.sqs.scaladsl.Integration")
 
-  def sqsClient = createAsyncClient(sqsEndpoint)
+  implicit val pc = PatienceConfig(scaled(Span(10, Seconds)), scaled(Span(20, Millis)))
 
-  def randomQueueUrl(): String = sqsClient.createQueue(s"queue-${Random.nextInt}").getQueueUrl
+  lazy val sqsClient = createAsyncClient(sqsEndpoint)
 
-  val fifoQueueRequest = new CreateQueueRequest(s"queue-${Random.nextInt}.fifo")
-    .addAttributesEntry("FifoQueue", "true")
-    .addAttributesEntry("ContentBasedDeduplication", "true")
+  //ElasticMQ has a bug: when you set wait time seconds > 0,
+  //sometimes the server does not return any message and blocks the 20 seconds, even if a message arrives later.
+  //this helps the tests to become a little less intermittent. =)
+  val sqsSourceSettings = SqsSourceSettings.Defaults.withWaitTimeSeconds(0)
 
-  def randomFifoQueueUrl(): String = sqsClient.createQueue(fifoQueueRequest).getQueueUrl
+  def randomQueueUrl(): String =
+    sqsClient
+      .createQueue(CreateQueueRequest.builder().queueName(s"queue-${Random.nextInt}").build())
+      .get()
+      .queueUrl()
 
-  override protected def beforeEach(): Unit =
-    sqsServer = SQSRestServerBuilder.withActorSystem(system).withSQSLimits(SQSLimits.Relaxed).withDynamicPort().start()
+  val fifoQueueRequest =
+    CreateQueueRequest
+      .builder()
+      .queueName(s"queue-${Random.nextInt}.fifo")
+      .attributesWithStrings(Map("FifoQueue" -> "true", "ContentBasedDeduplication" -> "true").asJava)
+      .build()
 
-  override protected def afterEach(): Unit =
-    sqsServer.stopAndWait()
+  def randomFifoQueueUrl(): String = sqsClient.createQueue(fifoQueueRequest).get().queueUrl()
 
   override protected def afterAll(): Unit =
     try {
@@ -53,19 +65,16 @@ trait DefaultTestContext extends BeforeAndAfterAll with BeforeAndAfterEach with 
       super.afterAll()
     }
 
-  def createAsyncClient(sqsEndpoint: String): AmazonSQSAsync = {
+  def createAsyncClient(sqsEndpoint: String): SqsAsyncClient = {
     //#init-client
-    import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
-    import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
-    import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClientBuilder}
-
-    val credentialsProvider = new AWSStaticCredentialsProvider(new BasicAWSCredentials("x", "x"))
-    implicit val awsSqsClient: AmazonSQSAsync = AmazonSQSAsyncClientBuilder
-      .standard()
-      .withCredentials(credentialsProvider)
-      .withEndpointConfiguration(new EndpointConfiguration(sqsEndpoint, "eu-central-1"))
+    implicit val awsSqsClient = SqsAsyncClient
+      .builder()
+      .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
+      .endpointOverride(URI.create(sqsEndpoint))
+      .region(Region.EU_CENTRAL_1)
       .build()
-    system.registerOnTermination(awsSqsClient.shutdown())
+
+    system.registerOnTermination(awsSqsClient.close())
     //#init-client
     awsSqsClient
   }

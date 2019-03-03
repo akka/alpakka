@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -10,6 +10,7 @@ import akka.stream.alpakka.azure.storagequeue.DeleteOrUpdateMessage.{Delete, Upd
 import akka.stream.alpakka.azure.storagequeue._
 import akka.stream.alpakka.azure.storagequeue.scaladsl._
 import akka.stream.scaladsl._
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit._
 import com.microsoft.azure.storage._
 import com.microsoft.azure.storage.queue._
@@ -62,7 +63,7 @@ class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with 
   def assertCannotGetMessageFromQueue =
     assert(queue.peekMessage() == null)
 
-  "AzureQueueSource" should "be able to retrieve messages" in {
+  "AzureQueueSource" should "be able to retrieve messages" in assertAllStagesStopped {
     val msgs = (1 to 10).map(_ => queueTestMsg)
     msgs.foreach(m => queue.addMessage(m))
 
@@ -74,7 +75,7 @@ class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with 
       )
   }
 
-  it should "observe retrieveRetryTimeout and retrieve messages queued later" in {
+  it should "observe retrieveRetryTimeout and retrieve messages queued later" in assertAllStagesStopped {
     val msgs = (1 to 10).map(_ => queueTestMsg)
 
     val futureAssertion =
@@ -91,7 +92,7 @@ class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with 
     futureAssertion
   }
 
-  it should "observe batchSize and not pull too many message in from the CouldQueue into the buffer" in {
+  it should "observe batchSize and not pull too many message in from the CouldQueue into the buffer" in assertAllStagesStopped {
     val msgs = (1 to 20).map(_ => queueTestMsg)
     msgs.foreach(m => queue.addMessage(m))
 
@@ -103,7 +104,7 @@ class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with 
     assert(queue.retrieveMessage() != null, "There should be a 11th message on queue")
   }
 
-  "AzureQueueSink" should "be able to queue messages" in {
+  "AzureQueueSink" should "be able to queue messages" in assertAllStagesStopped {
     val msgs = (1 to 10).map(_ => queueTestMsg)
     Await.result(Source(msgs).runWith(AzureQueueSink(queueFactory)), timeout)
 
@@ -112,7 +113,7 @@ class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with 
 
   }
 
-  "AzureQueueWithTimeoutsSinks" should "be able to queue messages" in {
+  "AzureQueueWithTimeoutsSinks" should "be able to queue messages" in assertAllStagesStopped {
     val msgs = (1 to 10).map(_ => (queueTestMsg, 0, 0))
     Await.result(Source(msgs).runWith(AzureQueueWithTimeoutsSink(queueFactory)), timeout)
 
@@ -120,14 +121,14 @@ class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with 
     assert(msgs.map(_._1.getMessageContentAsString).toSet == dequeuedMsgs.map(_.getMessageContentAsString).toSet)
   }
 
-  it should "observe initalTimeout" in {
+  it should "observe initalTimeout" in assertAllStagesStopped {
     val msgs = (1 to 10).map(_ => (queueTestMsg, 0, 120))
     Await.result(Source(msgs).runWith(AzureQueueWithTimeoutsSink(queueFactory)), timeout)
 
     assertCannotGetMessageFromQueue
   }
 
-  "AzureQueueDeleteSink" should "be able to delete messages" in {
+  "AzureQueueDeleteSink" should "be able to delete messages" in assertAllStagesStopped {
     // When queuing 10 messages
     val msgs = (1 to 10).map(_ => queueTestMsg)
     msgs.foreach(m => queue.addMessage(m))
@@ -138,14 +139,14 @@ class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with 
     assertCannotGetMessageFromQueue
   }
 
-  it should "fail for messages not on the queue" in {
+  it should "fail for messages not on the queue" in assertAllStagesStopped {
     val msgs = (1 to 10).map(_ => queueTestMsg)
     assertThrows[java.lang.IllegalArgumentException] {
       Await.result(Source(msgs).runWith(AzureQueueDeleteSink(queueFactory)), timeout)
     }
   }
 
-  "AzureQueueDeleteOrUpdateSink" should "be able to update visibility timeout" in {
+  "AzureQueueDeleteOrUpdateSink" should "be able to update visibility timeout" in assertAllStagesStopped {
     // Queue 10 messages
     val msgs = (1 to 10).map(_ => queueTestMsg)
     msgs.foreach(m => queue.addMessage(m))
@@ -163,7 +164,7 @@ class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with 
     assertCannotGetMessageFromQueue
   }
 
-  it should "be able to delete messages" in {
+  it should "be able to delete messages" in assertAllStagesStopped {
     // Queue 10 messages
     val msgs = (1 to 10).map(_ => queueTestMsg)
     msgs.foreach(m => queue.addMessage(m))

@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.sqs.javadsl
 
 import akka.NotUsed
-import akka.stream.alpakka.sqs.{SqsSourceSettings, SqsSourceStage}
+import akka.stream.alpakka.sqs.SqsSourceSettings
 import akka.stream.javadsl.Source
-import com.amazonaws.services.sqs.AmazonSQSAsync
-import com.amazonaws.services.sqs.model.Message
+import software.amazon.awssdk.services.sqs.SqsAsyncClient
+import software.amazon.awssdk.services.sqs.model.Message
 
 /**
  * Java API to create SQS sources.
@@ -16,14 +16,9 @@ import com.amazonaws.services.sqs.model.Message
 object SqsSource {
 
   /**
-   * Creates a source for a SQS queue.
+   * creates a [[akka.stream.javadsl.Source Source]] for a SQS queue using [[software.amazon.awssdk.services.sqs.SqsAsyncClient SqsAsyncClient]]
    */
-  def create(queueUrl: String, settings: SqsSourceSettings, sqs: AmazonSQSAsync): Source[Message, NotUsed] =
-    Source.fromGraph(new SqsSourceStage(queueUrl, settings)(sqs))
+  def create(queueUrl: String, settings: SqsSourceSettings, sqs: SqsAsyncClient): Source[Message, NotUsed] =
+    akka.stream.alpakka.sqs.scaladsl.SqsSource(queueUrl, settings)(sqs).asJava
 
-  /**
-   * Creates a source for a SQS queue with default settings.
-   */
-  def create(queueUrl: String, sqs: AmazonSQSAsync): Source[Message, NotUsed] =
-    Source.fromGraph(new SqsSourceStage(queueUrl, SqsSourceSettings.Defaults)(sqs))
 }

@@ -3,10 +3,7 @@
 XML parsing module offers Flows for parsing, processing and writing XML documents.
 
 
-### Reported issues
-
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Axml)
-
+@@project-info{ projectId="xml" }
 
 ## Artifacts
 
@@ -15,6 +12,11 @@ XML parsing module offers Flows for parsing, processing and writing XML document
   artifact=akka-stream-alpakka-xml_$scala.binary.version$
   version=$project.version$
 }
+
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="xml" }
+
 
 ## XML parsing
 

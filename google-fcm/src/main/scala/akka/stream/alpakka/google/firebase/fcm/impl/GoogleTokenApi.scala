@@ -1,9 +1,10 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.google.firebase.fcm.impl
 
+import akka.annotation.InternalApi
 import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.model.{FormData, HttpMethods, HttpRequest}
 import akka.http.scaladsl.unmarshalling.Unmarshal
@@ -13,7 +14,13 @@ import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim, JwtTime}
 
 import scala.concurrent.Future
 
-private[google] class GoogleTokenApi(http: => HttpExt) extends FcmJsonSupport {
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[fcm] class GoogleTokenApi(http: => HttpExt) {
+  import FcmJsonSupport._
+
   protected val encodingAlgorithm: JwtAlgorithm.RS256.type = JwtAlgorithm.RS256
 
   private val googleTokenUrl = "https://www.googleapis.com/oauth2/v4/token"
@@ -52,7 +59,11 @@ private[google] class GoogleTokenApi(http: => HttpExt) extends FcmJsonSupport {
   }
 }
 
-object GoogleTokenApi {
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[fcm] object GoogleTokenApi {
   case class AccessTokenExpiry(accessToken: String, expiresAt: Long)
   case class OAuthResponse(access_token: String, token_type: String, expires_in: Int)
 }

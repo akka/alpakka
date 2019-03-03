@@ -26,6 +26,16 @@ Scala
 Java
 : @@snip [snip](/doc-examples/src/main/java/ftpsamples/FtpToFileExample.java) { #sample }
 
+### Example: Rotate data stream over to multiple compressed files on SFTP server
+
+- generate data stream with changing contents over time (1),
+- function that tracks last element and outputs a new path when contents in the stream change (2),
+- prepare SFTP credentials and settings (3),
+- compress ByteStrings (4)
+
+Scala
+: @@snip [snip](/doc-examples/src/main/scala/ftpsamples/RotateLogsToFtp.scala) { #sample }
+
 ### Running the example code
 
 This example is contained in a stand-alone runnable main, it can be run
@@ -36,6 +46,7 @@ Scala
 :   ```
     sbt
     > doc-examples/runMain ftpsamples.FtpToFile
+    > doc-examples/runMain ftpsamples.RotateLogsToFtp
     ```
 
 Java

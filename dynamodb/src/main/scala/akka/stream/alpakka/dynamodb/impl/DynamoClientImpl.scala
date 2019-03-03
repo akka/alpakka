@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.dynamodb.impl
@@ -43,4 +43,5 @@ private[dynamodb] class DynamoClientImpl(
       Http().cachedHostConnectionPool[AwsRequestMetadata](settings.host, settings.port, settings = poolSettings)
   }
 
+  override protected def url: String = if (settings.tls) s"https://${settings.host}/" else s"http://${settings.host}/"
 }

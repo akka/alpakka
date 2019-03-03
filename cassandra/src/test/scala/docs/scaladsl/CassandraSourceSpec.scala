@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -9,6 +9,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.alpakka.cassandra.CassandraBatchSettings
 import akka.stream.alpakka.cassandra.scaladsl.{CassandraFlow, CassandraSink, CassandraSource}
 import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import com.datastax.driver.core.{Cluster, PreparedStatement, SimpleStatement}
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
@@ -94,7 +95,7 @@ class CassandraSourceSpec
 
   "CassandraSourceSpec" must {
 
-    "stream the result of a Cassandra statement with one page" in {
+    "stream the result of a Cassandra statement with one page" in assertAllStagesStopped {
       val data = populate()
       val stmt = new SimpleStatement(s"SELECT * FROM $keyspaceName.test").setFetchSize(200)
 
@@ -117,7 +118,7 @@ class CassandraSourceSpec
       rows.futureValue.map(_.getInt("id")) must contain theSameElementsAs data
     }
 
-    "support multiple materializations" in {
+    "support multiple materializations" in assertAllStagesStopped {
       val data = populate()
       val stmt = new SimpleStatement(s"SELECT * FROM $keyspaceName.test")
 
@@ -127,7 +128,7 @@ class CassandraSourceSpec
       source.runWith(Sink.seq).futureValue.map(_.getInt("id")) must contain theSameElementsAs data
     }
 
-    "stream the result of Cassandra statement that results in no data" in {
+    "stream the result of Cassandra statement that results in no data" in assertAllStagesStopped {
       val stmt = new SimpleStatement(s"SELECT * FROM $keyspaceName.test")
 
       val rows = CassandraSource(stmt).runWith(Sink.seq).futureValue
@@ -135,7 +136,7 @@ class CassandraSourceSpec
       rows mustBe empty
     }
 
-    "write to the table using the flow and emit the elements in order" in {
+    "write to the table using the flow and emit the elements in order" in assertAllStagesStopped {
       val source = Source(0 to 10).map(i => i: Integer)
 
       //#prepared-statement-flow
@@ -159,7 +160,7 @@ class CassandraSourceSpec
       found.toSet mustBe (0 to 10).toSet
     }
 
-    "write to the table using the batching flow emitting the elements in any order" in {
+    "write to the table using the batching flow emitting the elements in any order" in assertAllStagesStopped {
       val source = Source(0 to 100).map(i => ToInsert(i % 2, i))
 
       //#prepared-statement-batching-flow
@@ -192,7 +193,7 @@ class CassandraSourceSpec
       found.toSet mustBe (0 to 100).toSet
     }
 
-    "write to the table using the sink" in {
+    "write to the table using the sink" in assertAllStagesStopped {
       val source = Source(0 to 10).map(i => i: Integer)
 
       //#prepared-statement

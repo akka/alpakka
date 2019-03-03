@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.scaladsl
 
 import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
-import akka.stream.alpakka.kudu.KuduTableSettings
+import akka.stream.alpakka.kudu.{KuduAttributes, KuduTableSettings}
 import akka.stream.alpakka.kudu.scaladsl.KuduTable
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
@@ -33,13 +33,7 @@ class KuduTableSpec
 
   override def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 
-  val kuduMasterAddress = "localhost:7051"
-
   //#configure
-  // Kudu Client
-  implicit val kuduClient = new KuduClient.KuduClientBuilder(kuduMasterAddress).build
-  system.registerOnTermination(kuduClient.shutdown())
-
   // Kudu Schema
   val cols = List(new ColumnSchema.ColumnSchemaBuilder("key", Type.INT32).key(true).build,
                   new ColumnSchema.ColumnSchemaBuilder("value", Type.STRING).build)
@@ -87,6 +81,26 @@ class KuduTableSpec
         .via(flow)
         .runWith(Sink.fold(0)((a, d) => a + d.id))
       //#flow
+
+      f.futureValue should be(155)
+    }
+
+    "custom client" in {
+      // #attributes
+      val masterAddress = "localhost:7051"
+      val client = new KuduClient.KuduClientBuilder(masterAddress).build
+      system.registerOnTermination(client.shutdown())
+
+      val flow: Flow[Person, Person, NotUsed] =
+        KuduTable
+          .flow(kuduTableSettings.withTableName("Flow"))
+          .withAttributes(KuduAttributes.client(client))
+      // #attributes
+
+      val f = Source(11 to 20)
+        .map(i => Person(i, s"zozo_$i"))
+        .via(flow)
+        .runWith(Sink.fold(0)((a, d) => a + d.id))
 
       f.futureValue should be(155)
     }

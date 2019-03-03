@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.javadsl;
@@ -7,9 +7,9 @@ package docs.javadsl;
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+import akka.stream.alpakka.kudu.KuduAttributes;
 import akka.stream.alpakka.kudu.KuduTableSettings;
 import akka.stream.alpakka.kudu.javadsl.KuduTable;
 import akka.stream.javadsl.Flow;
@@ -38,13 +38,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 public class KuduTableTest {
-  private static final String kuduMasterAddresses = "127.0.0.1:7051";
-
   private static ActorSystem system;
   private static Materializer materializer;
   private static Schema schema;
 
-  private static KuduClient kuduClient;
   private static KuduTableSettings<Person> tableSettings;
 
   @BeforeClass
@@ -53,17 +50,6 @@ public class KuduTableTest {
     materializer = ActorMaterializer.create(system);
 
     // #configure
-    // Kudu Client
-    kuduClient = new KuduClient.KuduClientBuilder(kuduMasterAddresses).build();
-    system.registerOnTermination(
-        () -> {
-          try {
-            kuduClient.shutdown();
-          } catch (KuduException e) {
-            e.printStackTrace();
-          }
-        });
-
     // Kudu Schema
     List<ColumnSchema> columns = new ArrayList<>(2);
     columns.add(new ColumnSchema.ColumnSchemaBuilder("key", Type.INT32).key(true).build());
@@ -100,7 +86,7 @@ public class KuduTableTest {
   public void sink() throws Exception {
     // #sink
     final Sink<Person, CompletionStage<Done>> sink =
-        KuduTable.sink(tableSettings.withTableName("Sink"), kuduClient);
+        KuduTable.sink(tableSettings.withTableName("Sink"));
 
     CompletionStage<Done> o =
         Source.from(Arrays.asList(100, 101, 102, 103, 104))
@@ -113,8 +99,7 @@ public class KuduTableTest {
   @Test
   public void flow() throws Exception {
     // #flow
-    Flow<Person, Person, NotUsed> flow =
-        KuduTable.flow(tableSettings.withTableName("Flow"), kuduClient);
+    Flow<Person, Person, NotUsed> flow = KuduTable.flow(tableSettings.withTableName("Flow"));
 
     CompletionStage<List<Person>> run =
         Source.from(Arrays.asList(200, 201, 202, 203, 204))
@@ -123,6 +108,35 @@ public class KuduTableTest {
             .toMat(Sink.seq(), Keep.right())
             .run(materializer);
     // #flow
+    assertEquals(5, run.toCompletableFuture().get(5, TimeUnit.SECONDS).size());
+  }
+
+  @Test
+  public void customClient() throws Exception {
+    // #attributes
+    final String masterAddress = "localhost:7051";
+    final KuduClient client = new KuduClient.KuduClientBuilder(masterAddress).build();
+    system.registerOnTermination(
+        () -> {
+          try {
+            client.shutdown();
+          } catch (KuduException e) {
+            e.printStackTrace();
+          }
+        });
+
+    final Flow<Person, Person, NotUsed> flow =
+        KuduTable.flow(tableSettings.withTableName("Flow"))
+            .withAttributes(KuduAttributes.client(client));
+    // #attributes
+
+    CompletionStage<List<Person>> run =
+        Source.from(Arrays.asList(200, 201, 202, 203, 204))
+            .map((i) -> new Person(i, String.format("name_%d", i)))
+            .via(flow)
+            .toMat(Sink.seq(), Keep.right())
+            .run(materializer);
+
     assertEquals(5, run.toCompletableFuture().get(5, TimeUnit.SECONDS).size());
   }
 }

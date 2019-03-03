@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.javadsl;
 
 import akka.Done;
-import akka.stream.alpakka.geode.javadsl.ReactiveGeode;
+import akka.stream.alpakka.geode.javadsl.Geode;
 import org.junit.Test;
 
 import java.util.concurrent.CompletionStage;
@@ -16,11 +16,11 @@ public class GeodeFiniteSourceTestCase extends GeodeBaseTestCase {
   @Test
   public void finiteSourceTest() throws ExecutionException, InterruptedException {
 
-    ReactiveGeode reactiveGeode = createReactiveGeode();
+    Geode geode = createGeodeClient();
 
     // #query
     CompletionStage<Done> personsDone =
-        reactiveGeode
+        geode
             .query("select * from /persons", new PersonPdxSerializer())
             .runForeach(
                 p -> {
@@ -32,7 +32,7 @@ public class GeodeFiniteSourceTestCase extends GeodeBaseTestCase {
     personsDone.toCompletableFuture().get();
 
     CompletionStage<Done> animalsDone =
-        reactiveGeode
+        geode
             .query("select * from /animals", new AnimalPdxSerializer())
             .runForeach(
                 p -> {
@@ -41,6 +41,6 @@ public class GeodeFiniteSourceTestCase extends GeodeBaseTestCase {
                 materializer);
 
     animalsDone.toCompletableFuture().get();
-    reactiveGeode.close();
+    geode.close();
   }
 }

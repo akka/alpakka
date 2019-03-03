@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.javadsl;
@@ -10,8 +10,8 @@ import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.geode.GeodeSettings;
 import akka.stream.alpakka.geode.RegionSettings;
-import akka.stream.alpakka.geode.javadsl.ReactiveGeode;
-import akka.stream.alpakka.geode.javadsl.ReactiveGeodeWithPoolSubscription;
+import akka.stream.alpakka.geode.javadsl.Geode;
+import akka.stream.alpakka.geode.javadsl.GeodeWithPoolSubscription;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
@@ -22,8 +22,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Date;
-
-import static scala.compat.java8.JFunction.func;
 
 public class GeodeBaseTestCase {
 
@@ -39,10 +37,10 @@ public class GeodeBaseTestCase {
   }
 
   // #region
-  protected RegionSettings<Integer, Person> personRegionSettings =
-      RegionSettings.create("persons", func(Person::getId));
-  protected RegionSettings<Integer, Animal> animalRegionSettings =
-      RegionSettings.create("animals", func(Animal::getId));
+  protected final RegionSettings<Integer, Person> personRegionSettings =
+      RegionSettings.create("persons", Person::getId);
+  protected final RegionSettings<Integer, Animal> animalRegionSettings =
+      RegionSettings.create("animals", Animal::getId);
   // #region
 
   @BeforeClass
@@ -61,20 +59,23 @@ public class GeodeBaseTestCase {
         .map((i) -> new Animal(i, String.format("Animal Java %d", i), 1));
   }
 
-  protected ReactiveGeode createReactiveGeode() {
+  protected Geode createGeodeClient() {
+    String hostname = this.geodeDockerHostname;
     // #connection
     GeodeSettings settings =
-        GeodeSettings.create(geodeDockerHostname, 10334)
-            .withConfiguration(func(c -> c.setPoolIdleTimeout(10)));
-    return new ReactiveGeode(settings);
+        GeodeSettings.create(hostname, 10334).withConfiguration(c -> c.setPoolIdleTimeout(10));
+    Geode geode = new Geode(settings);
+    system.registerOnTermination(() -> geode.close());
     // #connection
+    return geode;
   }
 
-  protected ReactiveGeodeWithPoolSubscription createReactiveGeodeWithPoolSubscription() {
+  protected GeodeWithPoolSubscription createGeodeWithPoolSubscription() {
     GeodeSettings settings = GeodeSettings.create(geodeDockerHostname, 10334);
     // #connection-with-pool
-    return new ReactiveGeodeWithPoolSubscription(settings);
+    GeodeWithPoolSubscription geode = new GeodeWithPoolSubscription(settings);
     // #connection-with-pool
+    return geode;
   }
 
   @AfterClass

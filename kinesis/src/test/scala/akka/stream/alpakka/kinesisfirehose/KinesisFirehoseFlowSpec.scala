@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.kinesisfirehose
@@ -9,6 +9,7 @@ import java.util.concurrent.CompletableFuture
 import akka.stream.alpakka.kinesisfirehose.KinesisFirehoseErrors.{ErrorPublishingRecords, FailurePublishingRecords}
 import akka.stream.alpakka.kinesisfirehose.scaladsl.KinesisFirehoseFlow
 import akka.stream.scaladsl.Keep
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.{TestSink, TestSource}
 import akka.util.ByteString
 import com.amazonaws.handlers.AsyncHandler
@@ -21,86 +22,97 @@ import org.scalatest.{Matchers, WordSpecLike}
 
 import scala.collection.JavaConverters._
 
-class KinesisFirehoseFlowSpec extends WordSpecLike with Matchers with DefaultTestContext {
+class KinesisFirehoseFlowSpec extends WordSpecLike with Matchers with KinesisFirehoseMock {
 
   "KinesisFirehoseFlow" must {
 
-    "publish records" in new DefaultSettings with KinesisFirehoseFlowProbe with WithPutRecordsSuccess {
-      sourceProbe.sendNext(record)
-      sourceProbe.sendNext(record)
-      sourceProbe.sendNext(record)
-      sourceProbe.sendNext(record)
-      sourceProbe.sendNext(record)
+    "publish records" in assertAllStagesStopped {
+      new DefaultSettings with KinesisFirehoseFlowProbe with WithPutRecordsSuccess {
+        sourceProbe.sendNext(record)
+        sourceProbe.sendNext(record)
+        sourceProbe.sendNext(record)
+        sourceProbe.sendNext(record)
+        sourceProbe.sendNext(record)
 
-      sinkProbe.requestNext() shouldBe publishedRecord
-      sinkProbe.requestNext() shouldBe publishedRecord
-      sinkProbe.requestNext() shouldBe publishedRecord
-      sinkProbe.requestNext() shouldBe publishedRecord
-      sinkProbe.requestNext() shouldBe publishedRecord
+        sinkProbe.requestNext() shouldBe publishedRecord
+        sinkProbe.requestNext() shouldBe publishedRecord
+        sinkProbe.requestNext() shouldBe publishedRecord
+        sinkProbe.requestNext() shouldBe publishedRecord
+        sinkProbe.requestNext() shouldBe publishedRecord
 
-      sourceProbe.sendComplete()
-      sinkProbe.expectComplete()
+        sourceProbe.sendComplete()
+        sinkProbe.expectComplete()
+      }
     }
-    "publish records with retries" in new DefaultSettings with KinesisFirehoseFlowProbe {
-      when(amazonKinesisFirehoseAsync.putRecordBatchAsync(any(), any()))
-        .thenAnswer(new Answer[AnyRef] {
-          override def answer(invocation: InvocationOnMock) = {
-            val request = invocation
-              .getArgument[PutRecordBatchRequest](0)
-            val result = new PutRecordBatchResult()
-              .withFailedPutCount(request.getRecords.size())
-              .withRequestResponses(
-                request.getRecords.asScala
-                  .map(_ => failingRecord)
-                  .asJava
-              )
-            invocation
-              .getArgument[AsyncHandler[PutRecordBatchRequest, PutRecordBatchResult]](1)
-              .onSuccess(request, result)
-            CompletableFuture.completedFuture(result)
-          }
-        })
-        .thenAnswer(new Answer[AnyRef] {
-          override def answer(invocation: InvocationOnMock) = {
-            val request = invocation
-              .getArgument[PutRecordBatchRequest](0)
-            val result = new PutRecordBatchResult()
-              .withFailedPutCount(0)
-              .withRequestResponses(request.getRecords.asScala.map(_ => publishedRecord).asJava)
-            invocation
-              .getArgument[AsyncHandler[PutRecordBatchRequest, PutRecordBatchResult]](1)
-              .onSuccess(request, result)
-            CompletableFuture.completedFuture(result)
-          }
-        })
 
-      sourceProbe.sendNext(record)
+    "publish records with retries" in assertAllStagesStopped {
+      new DefaultSettings with KinesisFirehoseFlowProbe {
+        when(amazonKinesisFirehoseAsync.putRecordBatchAsync(any(), any()))
+          .thenAnswer(new Answer[AnyRef] {
+            override def answer(invocation: InvocationOnMock) = {
+              val request = invocation
+                .getArgument[PutRecordBatchRequest](0)
+              val result = new PutRecordBatchResult()
+                .withFailedPutCount(request.getRecords.size())
+                .withRequestResponses(
+                  request.getRecords.asScala
+                    .map(_ => failingRecord)
+                    .asJava
+                )
+              invocation
+                .getArgument[AsyncHandler[PutRecordBatchRequest, PutRecordBatchResult]](1)
+                .onSuccess(request, result)
+              CompletableFuture.completedFuture(result)
+            }
+          })
+          .thenAnswer(new Answer[AnyRef] {
+            override def answer(invocation: InvocationOnMock) = {
+              val request = invocation
+                .getArgument[PutRecordBatchRequest](0)
+              val result = new PutRecordBatchResult()
+                .withFailedPutCount(0)
+                .withRequestResponses(request.getRecords.asScala.map(_ => publishedRecord).asJava)
+              invocation
+                .getArgument[AsyncHandler[PutRecordBatchRequest, PutRecordBatchResult]](1)
+                .onSuccess(request, result)
+              CompletableFuture.completedFuture(result)
+            }
+          })
 
-      sinkProbe.requestNext(settings.retryInitialTimeout * 2) shouldBe publishedRecord
+        sourceProbe.sendNext(record)
 
-      sourceProbe.sendComplete()
-      sinkProbe.expectComplete()
+        sinkProbe.requestNext(settings.retryInitialTimeout * 2) shouldBe publishedRecord
+
+        sourceProbe.sendComplete()
+        sinkProbe.expectComplete()
+      }
     }
-    "fail after trying to publish records with no retires" in new NoRetries with KinesisFirehoseFlowProbe
-    with WithPutRecordsWithPartialErrors {
-      sourceProbe.sendNext(record)
 
-      sinkProbe.request(1)
-      sinkProbe.expectError(ErrorPublishingRecords(1, Seq(failingRecord)))
+    "fail after trying to publish records with no retires" in assertAllStagesStopped {
+      new NoRetries with KinesisFirehoseFlowProbe with WithPutRecordsWithPartialErrors {
+        sourceProbe.sendNext(record)
+
+        sinkProbe.request(1)
+        sinkProbe.expectError(ErrorPublishingRecords(1, Seq(failingRecord)))
+      }
     }
-    "fail after trying to publish records with several retries" in new DefaultSettings with KinesisFirehoseFlowProbe
-    with WithPutRecordsWithPartialErrors {
-      sourceProbe.sendNext(record)
 
-      sinkProbe.request(1)
-      sinkProbe.expectError(ErrorPublishingRecords(settings.maxRetries + 1, Seq(failingRecord)))
+    "fail after trying to publish records with several retries" in assertAllStagesStopped {
+      new DefaultSettings with KinesisFirehoseFlowProbe with WithPutRecordsWithPartialErrors {
+        sourceProbe.sendNext(record)
+
+        sinkProbe.request(1)
+        sinkProbe.expectError(ErrorPublishingRecords(settings.maxRetries + 1, Seq(failingRecord)))
+      }
     }
-    "fails when request returns an error" in new DefaultSettings with KinesisFirehoseFlowProbe
-    with WithPutRecordsFailure {
-      sourceProbe.sendNext(record)
 
-      sinkProbe.request(1)
-      sinkProbe.expectError(FailurePublishingRecords(requestError))
+    "fails when request returns an error" in assertAllStagesStopped {
+      new DefaultSettings with KinesisFirehoseFlowProbe with WithPutRecordsFailure {
+        sourceProbe.sendNext(record)
+
+        sinkProbe.request(1)
+        sinkProbe.expectError(FailurePublishingRecords(requestError))
+      }
     }
   }
 
@@ -108,10 +120,10 @@ class KinesisFirehoseFlowSpec extends WordSpecLike with Matchers with DefaultTes
     val settings: KinesisFirehoseFlowSettings
   }
   trait DefaultSettings extends Settings {
-    val settings = KinesisFirehoseFlowSettings.defaultInstance.copy(maxRetries = 1)
+    val settings = KinesisFirehoseFlowSettings.Defaults.withMaxRetries(1)
   }
   trait NoRetries extends Settings {
-    val settings = KinesisFirehoseFlowSettings.defaultInstance.copy(maxRetries = 0)
+    val settings = KinesisFirehoseFlowSettings.Defaults.withMaxRetries(0)
   }
 
   trait KinesisFirehoseFlowProbe { self: Settings =>

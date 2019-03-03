@@ -2,9 +2,7 @@
 
 The AWS DynamoDB connector provides a flow for streaming DynamoDB requests. For more information about DynamoDB please visit the [official documentation](https://aws.amazon.com/dynamodb/).
 
-### Reported issues
-
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Adynamodb)
+@@project-info{ projectId="dynamodb" }
 
 ## Artifacts
 
@@ -14,39 +12,26 @@ The AWS DynamoDB connector provides a flow for streaming DynamoDB requests. For 
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="dynamodb" }
+
+
 ## Setup
 
-This connector will uses the [default credential provider chain](http://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html) 
-provided by the [DynamoDB Java SDK](http://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/basics.html) to retrieve credentials.
+Factories provided in the @scaladoc[DynamoDb](akka.stream.alpakka.dynamodb.scaladsl.DynamoDb$) will use the client managed by the extension. The managed client will be created using the configuration resolved from `reference.conf` and with overrides from `application.conf`.
 
-If you wish to use static credentials they can be defined in the config
-
-Define Static Credentials in `application.conf`
+Example `application.conf`
 : @@snip [snip](/dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/DynamoSettingsSpec.scala) { #static-creds }
 
-You may attach any type of `AWSCredentialsProvider` programmatically via the `withCredentialsProvider` method in @scaladoc[DynamoSettings](akka.stream.alpakka.dynamodb.DynamoSettings$).
+`reference.conf`
+: @@snip [snip](/dynamodb/src/main/resources/reference.conf)
 
-Scala
-: @@snip [snip](/dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/DynamoSettingsSpec.scala) { #credentials-provider } 
-
-Java
-: @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #credentials-provider } 
-
-
-Before you can construct the client, you need an @scaladoc[ActorSystem](akka.actor.ActorSystem), and @scaladoc[ActorMaterializer](akka.stream.ActorMaterializer).
-
-You can then create the client with a settings object.
-
-Scala
-: @@snip [snip](/dynamodb/src/test/scala/docs/scaladsl/ExampleSpec.scala) { #client-construct }
-
-Java
-: @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #client-construct }
-
+If the credentials are not set in the configuration, connector will use the [default credential provider chain](http://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html) provided by the [DynamoDB Java SDK](http://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/basics.html) to retrieve credentials.
 
 ## Usage
 
-We can now send requests to DynamoDB across the connection.
+For simple operations you can issue a single request, and get back the result in a @scala[`Future`]@java[`CompletionStage`].
 
 Scala
 : @@snip [snip](/dynamodb/src/test/scala/docs/scaladsl/ExampleSpec.scala) { #simple-request }
@@ -54,7 +39,7 @@ Scala
 Java
 : @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #simple-request }
 
-You can also use a Flow to execute your DynamoDB call:
+You can also get the response to a request as an element emitted from a Flow:
 
 Scala
 : @@snip [snip](/dynamodb/src/test/scala/docs/scaladsl/ExampleSpec.scala) { #flow }
@@ -63,7 +48,7 @@ Java
 : @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #flow }
 
 Some DynamoDB operations, such as Query and Scan, are paginated by nature.
-You can get a stream of all result pages:
+This is how you can get a stream of all result pages:
 
 Scala
 : @@snip [snip](/dynamodb/src/test/scala/docs/scaladsl/ExampleSpec.scala) { #paginated }
@@ -71,7 +56,16 @@ Scala
 Java
 : @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #paginated }
 
-### Running the example code
+A custom configured client can be used by attaching it as an attribute to the stream:
+
+Scala
+: @@snip [snip](/dynamodb/src/test/scala/docs/scaladsl/ExampleSpec.scala) { #attributes }
+
+Java
+: @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #attributes }
+
+
+## Running the example code
 
 The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
 

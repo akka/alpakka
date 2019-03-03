@@ -1,10 +1,9 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.scaladsl
 
-import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.stream._
 import akka.stream.alpakka.mqtt._
@@ -13,6 +12,7 @@ import akka.stream.scaladsl._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestKit
 import akka.util.ByteString
+import akka.{Done, NotUsed}
 import javax.net.ssl.SSLContext
 import org.eclipse.paho.client.mqttv3.MqttException
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
@@ -97,6 +97,23 @@ class MqttSourceSpec
       //#ssl-settings
       connectionSettings.toString should include("ssl://localhost:1885")
       connectionSettings.toString should include("auth(username)=Some(mqttUser)")
+    }
+
+    "allow MQTT buffering offline support persistence" in {
+      //#OfflinePersistenceSettings
+      val bufferedConnectionSettings = MqttConnectionSettings(
+        "ssl://localhost:1885",
+        "ssl-client",
+        new MemoryPersistence
+      ).withOfflinePersistenceSettings(
+        bufferSize = 1234,
+        deleteOldestMessage = true,
+        persistBuffer = false
+      )
+
+      bufferedConnectionSettings.toString should include(
+        "offlinePersistenceSettings=Some(MqttOfflinePersistenceSettings(1234,true,false))"
+      )
     }
   }
 
@@ -420,6 +437,83 @@ class MqttSourceSpec
 
       val elem = source2.runWith(Sink.head)
       elem.futureValue shouldBe MqttMessage(willTopic, ByteString("ohi"))
+    }
+
+    "support buffering message on disconnect" in {
+      import system.dispatcher
+
+      val msg = MqttMessage(topic1, ByteString("ohi"))
+
+      val sharedKillSwitch = KillSwitches.shared("buffered-test-kill-switch")
+
+      // Create a proxy on an available port so it can be shut down
+      val (proxyBinding, connection) = Tcp().bind("localhost", 0).toMat(Sink.head)(Keep.both).run()
+      val proxyPort = proxyBinding.futureValue.localAddress.getPort
+      connection.map { c =>
+        c.handleWith(
+          Tcp()
+            .outgoingConnection("localhost", 1883)
+            .via(sharedKillSwitch.flow)
+        )
+      }
+      Await.ready(proxyBinding, timeout)
+
+      val (killSwitch, probe) = MqttSource
+        .atMostOnce(
+          sourceSettings
+            .withCleanSession(false)
+            .withBroker(s"tcp://localhost:$proxyPort")
+            .withOfflinePersistenceSettings(bufferSize = 1234, deleteOldestMessage = false, persistBuffer = true),
+          MqttSubscriptions(topic1, MqttQoS.AtLeastOnce),
+          8
+        )
+        .via(sharedKillSwitch.flow)
+        .toMat(TestSink.probe)(Keep.both)
+        .run()
+      Await.ready(killSwitch, timeout)
+
+      Source.single(msg).runWith(MqttSink(sinkSettings, MqttQoS.AtLeastOnce))
+      try {
+        probe.requestNext()
+      } catch {
+        case e: Exception =>
+          log.debug(s"Ignoring $e", e)
+      }
+      // Kill the proxy and stream
+      sharedKillSwitch.shutdown()
+
+      // Send message with connection and stream down
+      Source.single(msg).runWith(MqttSink(sinkSettings, MqttQoS.AtLeastOnce))
+
+      // Restart the proxy
+      val (proxyBinding2, connection2) = Tcp().bind("localhost", proxyPort).toMat(Sink.head)(Keep.both).run()
+      val proxyKs2 = connection2.map { c =>
+        c.handleWith(
+          Tcp()
+            .outgoingConnection("localhost", 1883)
+            .viaMat(KillSwitches.single)(Keep.right)
+        )
+      }
+      Await.ready(proxyBinding2, timeout)
+
+      // Rebuild MQTT connection to broker
+      val (subscribed, probe2) = MqttSource
+        .atMostOnce(
+          sourceSettings
+            .withCleanSession(false)
+            .withBroker(s"tcp://localhost:$proxyPort")
+            .withOfflinePersistenceSettings(bufferSize = 1234, deleteOldestMessage = false, persistBuffer = true),
+          MqttSubscriptions(topic1, MqttQoS.AtLeastOnce),
+          8
+        )
+        .toMat(TestSink.probe)(Keep.both)
+        .run()
+
+      // Ensure that the connection made it all the way to the server by waiting until it receives a message
+      Await.ready(subscribed, timeout)
+
+      probe2.requestNext(5.seconds) shouldBe msg
+      Await.result(proxyKs2, timeout).shutdown()
     }
   }
 }

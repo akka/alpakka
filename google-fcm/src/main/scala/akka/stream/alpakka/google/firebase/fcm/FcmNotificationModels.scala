@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.google.firebase.fcm
@@ -70,7 +70,6 @@ object FcmNotificationModels {
     def apply(builder: ConditionBuilder): Condition =
       Condition(builder.toConditionText)
   }
-
 }
 
 case class FcmNotification(
@@ -96,7 +95,8 @@ case class FcmNotification(
     case Topic(t) => this.copy(token = None, topic = Option(t), condition = None)
     case Condition(t) => this.copy(token = None, topic = None, condition = Option(t))
   }
-  def isSendable = (token.isDefined ^ topic.isDefined ^ condition.isDefined) && !(token.isDefined && topic.isDefined)
+  def isSendable: Boolean =
+    (token.isDefined ^ topic.isDefined ^ condition.isDefined) && !(token.isDefined && topic.isDefined)
 }
 
 object FcmNotification {
@@ -107,4 +107,21 @@ object FcmNotification {
   def apply(title: String, body: String, target: NotificationTarget): FcmNotification =
     empty.withBasicNotification(title, body).withTarget(target)
   def basic(title: String, body: String, target: NotificationTarget) = FcmNotification(title, body, target)
+}
+
+sealed trait FcmResponse {
+  def isFailure: Boolean
+  def isSuccess: Boolean
+}
+
+final case class FcmSuccessResponse(name: String) extends FcmResponse {
+  val isFailure = false
+  val isSuccess = true
+  def getName: String = name
+}
+
+final case class FcmErrorResponse(rawError: String) extends FcmResponse {
+  val isFailure = true
+  val isSuccess = false
+  def getRawError: String = rawError
 }

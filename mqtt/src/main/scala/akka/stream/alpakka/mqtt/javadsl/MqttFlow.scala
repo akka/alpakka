@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.mqtt.javadsl
@@ -28,7 +28,7 @@ object MqttFlow {
    * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    * @deprecated use atMostOnce() instead
    */
-  @deprecated("use atMostOnce instead", "0.21")
+  @deprecated("use atMostOnce instead", "1.0-M1")
   @java.lang.Deprecated
   def create(sourceSettings: MqttSourceSettings,
              bufferSize: Int,
@@ -47,7 +47,7 @@ object MqttFlow {
    * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    * @deprecated use atMostOnce() instead
    */
-  @deprecated("use atMostOnce with MqttConnectionSettings and MqttSubscriptions instead", "0.21")
+  @deprecated("use atMostOnce with MqttConnectionSettings and MqttSubscriptions instead", "1.0-M1")
   @java.lang.Deprecated
   def atMostOnce(settings: MqttSourceSettings,
                  bufferSize: Int,
@@ -80,7 +80,7 @@ object MqttFlow {
    * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    * @deprecated use atLeastOnce with MqttConnectionSettings and MqttSubscriptions instead
    */
-  @deprecated("use atLeastOnce with MqttConnectionSettings and MqttSubscriptions instead", "0.21")
+  @deprecated("use atLeastOnce with MqttConnectionSettings and MqttSubscriptions instead", "1.0-M1")
   @java.lang.Deprecated
   def atLeastOnce(
       settings: MqttSourceSettings,

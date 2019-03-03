@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.ftp;
@@ -14,7 +14,7 @@ import org.apache.ftpserver.listener.ListenerFactory;
 import org.apache.ftpserver.usermanager.ClearTextPasswordEncryptor;
 import org.apache.ftpserver.usermanager.PropertiesUserManagerFactory;
 
-abstract class PlainFtpSupportImpl extends FtpSupportImpl {
+public abstract class PlainFtpSupportImpl extends FtpSupportImpl {
 
   private static final int MAX_LOGINS = 1000;
   static final String DEFAULT_LISTENER = "default";

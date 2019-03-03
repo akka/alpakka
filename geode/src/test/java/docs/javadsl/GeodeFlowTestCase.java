@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.javadsl;
 
 import akka.NotUsed;
-import akka.stream.alpakka.geode.javadsl.ReactiveGeode;
+import akka.stream.alpakka.geode.javadsl.Geode;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
@@ -21,13 +21,13 @@ public class GeodeFlowTestCase extends GeodeBaseTestCase {
   @Test
   public void flow() throws ExecutionException, InterruptedException {
 
-    ReactiveGeode reactiveGeode = createReactiveGeode();
+    Geode geode = createGeodeClient();
 
     Source<Person, NotUsed> source = buildPersonsSource(110, 111, 113, 114, 115);
 
     // #flow
     Flow<Person, Person, NotUsed> flow =
-        reactiveGeode.flow(personRegionSettings, new PersonPdxSerializer());
+        geode.flow(personRegionSettings, new PersonPdxSerializer());
 
     CompletionStage<List<Person>> run =
         source.via(flow).toMat(Sink.seq(), Keep.right()).run(materializer);
@@ -35,6 +35,6 @@ public class GeodeFlowTestCase extends GeodeBaseTestCase {
 
     run.toCompletableFuture().get();
 
-    reactiveGeode.close();
+    geode.close();
   }
 }

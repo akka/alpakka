@@ -1,17 +1,16 @@
-# Google Firebase Cloud Messaging
+# Google FCM
 
-The google firebase cloud messaging connector provides a way to send notifications https://firebase.google.com/docs/cloud-messaging/ .
+@@@ note { title="Google Firebase Cloud Messaging" }
 
-@@@ warning { title='Early state' }
-The whole FCM server implementation doc is a bit unclear. 
-This connector is build from scratch following the documentation.
-So the error parsing, the condition builder, the apns object and some other object/case class
-could (and possibly will) be improved.
+Google Firebase Cloud Messaging (FCM) is a cross-platform messaging solution that lets you reliably deliver messages at no cost.
+
+Using FCM, you can notify a client app that new email or other data is available to sync. You can send notification messages to drive user re-engagement and retention. For use cases such as instant messaging, a message can transfer a payload of up to 4KB to a client app.
+
 @@@
 
-### Reported issues
+The Alpakka Google Firebase Cloud Messaging connector provides a way to send notifications with [Firebase Cloud Messaging](https://firebase.google.com/docs/cloud-messaging/).
 
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Agoogle-fcm)
+@@project-info{ projectId="google-fcm" }
 
 ## Artifacts
 
@@ -21,33 +20,20 @@ could (and possibly will) be improved.
   version=$project.version$
 }
 
-## Usage
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
 
-Possibly needed imports for the following codes.
-
-Scala
-: @@snip [snip](/google-fcm/src/test/scala/akka/stream/alpakka/google/firebase/fcm/scaladsl/Examples.scala) { #imports }
-
-Java
-: @@snip [snip](/google-fcm/src/test/java/akka/stream/alpakka/google/firebase/fcm/javadsl/Examples.java) { #imports }
+@@dependencies { projectId="google-fcm" }
 
 
-Prepare the actor system and materializer.
-
-Scala
-: @@snip [snip](/google-fcm/src/test/scala/akka/stream/alpakka/google/firebase/fcm/scaladsl/Examples.scala) { #init-mat }
-
-Java
-: @@snip [snip](/google-fcm/src/test/java/akka/stream/alpakka/google/firebase/fcm/javadsl/Examples.java) { #init-mat }
-
+## Settings
 
 Prepare your credentials for access to FCM.
 
 Scala
-: @@snip [snip](/google-fcm/src/test/scala/akka/stream/alpakka/google/firebase/fcm/scaladsl/Examples.scala) { #init-credentials }
+: @@snip [snip](/google-fcm/src/test/scala/docs/scaladsl/FcmExamples.scala) { #init-credentials }
 
 Java
-: @@snip [snip](/google-fcm/src/test/java/akka/stream/alpakka/google/firebase/fcm/javadsl/Examples.java) { #init-credentials }
+: @@snip [snip](/google-fcm/src/test/java/docs/javadsl/FcmExamples.java) { #init-credentials }
 
 The last two parameters in the above example are the predefined values. 
 You can send test notifications [(so called validate only).](https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages/send)
@@ -55,35 +41,39 @@ And you can set the number of maximum concurrent connections.
 There is a limitation in the docs; from one IP you can have maximum 1k pending connections, 
 and you may need to configure `akka.http.host-connection-pool.max-open-requests` in your application.conf.
 
+
+## Sending notifications
+
 To send a notification message create your notification object, and send it!
 
 Scala
-: @@snip [snip](/google-fcm/src/test/scala/akka/stream/alpakka/google/firebase/fcm/scaladsl/Examples.scala) { #simple-send }
+: @@snip [snip](/google-fcm/src/test/scala/docs/scaladsl/FcmExamples.scala) { #imports #asFlow-send }
 
 Java
-: @@snip [snip](/google-fcm/src/test/java/akka/stream/alpakka/google/firebase/fcm/javadsl/Examples.java) { #simple-send }
-
-With fire and forget you will just send messages and ignore all the errors.
-This is not so healthy in general so you can use the send instead.
-
-Scala
-: @@snip [snip](/google-fcm/src/test/scala/akka/stream/alpakka/google/firebase/fcm/scaladsl/Examples.scala) { #asFlow-send }
-
-Java
-: @@snip [snip](/google-fcm/src/test/java/akka/stream/alpakka/google/firebase/fcm/javadsl/Examples.java) { #asFlow-send }
+: @@snip [snip](/google-fcm/src/test/java/docs/javadsl/FcmExamples.java) { #imports #asFlow-send }
 
 With this type of send you can get responses from the server.
-These responses can be @scaladoc[positive](akka.stream.alpakka.google.firebase.fcm.FcmFlowModels.FcmSuccessResponse) or @scaladoc[negative](akka.stream.alpakka.google.firebase.fcm.FcmFlowModels.FcmErrorResponse). 
+These responses can be @scaladoc[`FcmSuccessResponse`](akka.stream.alpakka.google.firebase.fcm.FcmFlowModels.FcmSuccessResponse) or @scaladoc[`FcmErrorResponse`](akka.stream.alpakka.google.firebase.fcm.FcmFlowModels.FcmErrorResponse). 
 You can choose what you want to do with this information, but keep in mind
-if you try to resend the failed messages you will need to implement exponential backoff too!
+if you try to resend the failed messages you will need to use exponential backoff! (see [Akka docs `RestartFlow.onFailuresWithBackoff`](https://doc.akka.io/docs/akka/current/stream/operators/RestartFlow/onFailuresWithBackoff.html))
+
+If you don't care if the notification was sent successfully, you may use `fireAndForget`.
+
+Scala
+: @@snip [snip](/google-fcm/src/test/scala/docs/scaladsl/FcmExamples.scala) { #imports #simple-send }
+
+Java
+: @@snip [snip](/google-fcm/src/test/java/docs/javadsl/FcmExamples.java) { #imports #simple-send }
+
+With fire and forget you will just send messages and ignore all the errors.
 
 To help the integration and error handling or logging, there is a variation of the flow where you can send data beside your notification.
 
 Scala
-: @@snip [snip](/google-fcm/src/test/scala/akka/stream/alpakka/google/firebase/fcm/scaladsl/Examples.scala) { #withData-send }
+: @@snip [snip](/google-fcm/src/test/scala/docs/scaladsl/FcmExamples.scala) { #imports #withData-send }
 
 Java
-: @@snip [snip](/google-fcm/src/test/java/akka/stream/alpakka/google/firebase/fcm/javadsl/Examples.java) { #withData-send }
+: @@snip [snip](/google-fcm/src/test/java/docs/javadsl/FcmExamples.java) { #imports #withData-send }
 
 Here I send a simple string, but you could use any type.
 
@@ -94,13 +84,9 @@ It can be done by hand, or using some builder method.
 If you build your notification from scratch with options (and not with the provided builders), worth to check isSendable before sending.
 
 Scala
-: @@snip [snip](/google-fcm/src/test/scala/akka/stream/alpakka/google/firebase/fcm/scaladsl/Examples.scala) { #noti-create }
+: @@snip [snip](/google-fcm/src/test/scala/docs/scaladsl/FcmExamples.scala) { #noti-create }
 
 There is a condition builder too.
 
 Scala
-: @@snip [snip](/google-fcm/src/test/scala/akka/stream/alpakka/google/firebase/fcm/scaladsl/Examples.scala) { #condition-builder }
-
-## Running the examples
-
-To run the example code you will need to configure a project and notifications in google firebase and provide your own credentials.
+: @@snip [snip](/google-fcm/src/test/scala/docs/scaladsl/FcmExamples.scala) { #condition-builder }

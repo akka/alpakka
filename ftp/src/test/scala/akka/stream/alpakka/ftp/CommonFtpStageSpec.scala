@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.ftp
@@ -17,6 +17,7 @@ import java.nio.file.attribute.PosixFilePermission
 import java.nio.file.{Files, Paths}
 import java.net.InetAddress
 
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import org.scalatest.concurrent.Eventually
 
 final class FtpStageSpec extends BaseFtpSpec with CommonFtpStageSpec
@@ -41,6 +42,8 @@ final class RawKeySftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
 }
 
 final class KeyFileSftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
+  override protected def extraWaitForStageShutdown(): Unit = Thread.sleep(10 * 1000)
+
   override val settings = SftpSettings(
     InetAddress.getByName("localhost")
   ).withPort(getPort)
@@ -71,7 +74,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
     PatienceConfig(timeout = Span(30, Seconds), interval = Span(600, Millis))
 
   "FtpBrowserSource" should {
-    "list all files from root" in {
+    "list all files from root" in assertAllStagesStopped {
       val basePath = ""
       generateFiles(30, 10, basePath)
       val probe =
@@ -80,7 +83,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       probe.expectComplete()
     }
 
-    "list all files from non-root" in {
+    "list all files from non-root" in assertAllStagesStopped {
       val basePath = "/foo"
       generateFiles(30, 10, basePath)
       val probe =
@@ -89,7 +92,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       probe.expectComplete()
     }
 
-    "list only first level from base path" in {
+    "list only first level from base path" in assertAllStagesStopped {
       val basePath = "/foo"
       generateFiles(30, 10, basePath)
       val probe =
@@ -99,7 +102,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
 
     }
 
-    "list only go into second page" in {
+    "list only go into second page" in assertAllStagesStopped {
       val basePath = "/foo"
       generateFiles(30, 10, basePath)
       val probe =
@@ -109,7 +112,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
 
     }
 
-    "list all files in sparse directory tree" in {
+    "list all files in sparse directory tree" in assertAllStagesStopped {
       val deepDir = "/foo/bar/baz/foobar"
       val basePath = "/"
       generateFiles(1, -1, deepDir)
@@ -119,7 +122,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       probe.expectComplete()
     }
 
-    "retrieve relevant file attributes" in {
+    "retrieve relevant file attributes" in assertAllStagesStopped {
       val fileName = "sample"
       val basePath = "/"
 
@@ -143,7 +146,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
   }
 
   "FtpIOSource" should {
-    "retrieve a file from path as a stream of bytes" in {
+    "retrieve a file from path as a stream of bytes" in assertAllStagesStopped {
       val fileName = "sample_io"
       putFileOnFtp(FtpBaseSupport.FTP_ROOT_DIR, fileName)
       val (result, probe) =
@@ -154,7 +157,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       result.futureValue shouldBe IOResult.createSuccessful(expectedNumOfBytes)
     }
 
-    "retrieve a bigger file (~2 MB) from path as a stream of bytes" in {
+    "retrieve a bigger file (~2 MB) from path as a stream of bytes" in assertAllStagesStopped {
       val fileName = "sample_bigger_file"
       val fileContents = new Array[Byte](2000020)
       Random.nextBytes(fileContents)
@@ -168,7 +171,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
   }
 
   "FtpBrowserSource & FtpIOSource" should {
-    "work together retrieving a list of files" in {
+    "work together retrieving a list of files" in assertAllStagesStopped {
       val basePath = ""
       val numOfFiles = 10
       generateFiles(numOfFiles, numOfFiles, basePath)
@@ -189,7 +192,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
     val fileName = "sample_io"
 
     "no file is already present at the target location" should {
-      "create a new file from the provided stream of bytes regardless of the append mode" in {
+      "create a new file from the provided stream of bytes regardless of the append mode" in assertAllStagesStopped {
         List(true, false).foreach { mode ⇒
           val result = Source.single(ByteString(getLoremIpsum)).runWith(storeToPath(s"/$fileName", mode)).futureValue
 
@@ -207,7 +210,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       val reversedLoremIpsum = getLoremIpsum.reverse
       val expectedNumOfBytes = reversedLoremIpsum.length
 
-      "overwrite it when not in append mode" in {
+      "overwrite it when not in append mode" in assertAllStagesStopped {
         putFileOnFtp(FtpBaseSupport.FTP_ROOT_DIR, fileName)
 
         val result =
@@ -219,7 +222,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
         storedContents shouldBe reversedLoremIpsum.getBytes
       }
 
-      "append to its contents when in append mode" in {
+      "append to its contents when in append mode" in assertAllStagesStopped {
         putFileOnFtp(FtpBaseSupport.FTP_ROOT_DIR, fileName)
 
         val result =
@@ -235,7 +238,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
   }
 
   it should {
-    "write a bigger file (~2 MB) to a path from a stream of bytes" in {
+    "write a bigger file (~2 MB) to a path from a stream of bytes" in assertAllStagesStopped {
       val fileName = "sample_bigger_file"
       val fileContents = new Array[Byte](2000020)
       Random.nextBytes(fileContents)
@@ -253,7 +256,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       storedContents shouldBe fileContents
     }
 
-    "fail and report the exception in the result status if upstream fails" in {
+    "fail and report the exception in the result status if upstream fails" in assertAllStagesStopped {
       val fileName = "sample_io_upstream"
       val brokenSource = Source(10.to(0, -1)).map(x ⇒ ByteString(10 / x))
 
@@ -262,7 +265,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       result.status.failed.get shouldBe a[ArithmeticException]
     }
 
-    "fail and report the exception in the result status if connection fails" in {
+    "fail and report the exception in the result status if connection fails" in assertAllStagesStopped {
       def waitForUploadToStart(fileName: String) =
         eventually {
           noException should be thrownBy getFtpFileContents(FtpBaseSupport.FTP_ROOT_DIR, fileName)
@@ -279,11 +282,12 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       startServer()
 
       result.status.failed.get shouldBe a[Exception]
+      extraWaitForStageShutdown()
     }
   }
 
   "FtpRemoveSink" should {
-    "remove a file" in {
+    "remove a file" in assertAllStagesStopped {
       val fileName = "sample_io"
       putFileOnFtp(FtpBaseSupport.FTP_ROOT_DIR, fileName)
 
@@ -294,11 +298,12 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       result shouldBe IOResult.createSuccessful(1)
 
       fileExists(FtpBaseSupport.FTP_ROOT_DIR, fileName) shouldBe false
+      extraWaitForStageShutdown()
     }
   }
 
   "FtpMoveSink" should {
-    "move a file" in {
+    "move a file" in assertAllStagesStopped {
       val fileName = "sample_io"
       val fileName2 = "sample_io2"
       putFileOnFtp(FtpBaseSupport.FTP_ROOT_DIR, fileName)
@@ -311,6 +316,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
 
       fileExists(FtpBaseSupport.FTP_ROOT_DIR, fileName) shouldBe false
       fileExists(FtpBaseSupport.FTP_ROOT_DIR, fileName2) shouldBe true
+      extraWaitForStageShutdown()
     }
   }
 }

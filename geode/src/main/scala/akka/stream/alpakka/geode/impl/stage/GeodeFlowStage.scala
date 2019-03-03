@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.geode.impl.stage
@@ -16,7 +16,7 @@ private[geode] class GeodeFlowStage[K, T <: AnyRef](cache: ClientCache, settings
     extends GraphStage[FlowShape[T, T]] {
 
   override protected def initialAttributes: Attributes =
-    Attributes.name("GeodeFLow").and(ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher"))
+    super.initialAttributes and Attributes.name("GeodeFlow") and ActorAttributes.IODispatcher
 
   private val in = Inlet[T]("geode.in")
   private val out = Outlet[T]("geode.out")

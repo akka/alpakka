@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -9,6 +9,7 @@ import java.nio.file.Paths
 import akka.NotUsed
 import akka.stream.alpakka.csv.scaladsl.{CsvParsing, CsvToMap}
 import akka.stream.scaladsl.{FileIO, Flow, Keep, Sink, Source}
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.{TestSink, TestSource}
 import akka.util.ByteString
 
@@ -33,7 +34,7 @@ class CsvParsingSpec extends CsvSpec {
   }
 
   "CSV parsing" should {
-    "parse one line" in {
+    "parse one line" in assertAllStagesStopped {
       // #line-scanner
       import akka.stream.alpakka.csv.scaladsl.CsvParsing
 
@@ -53,7 +54,7 @@ class CsvParsingSpec extends CsvSpec {
       // #line-scanner
     }
 
-    "parse one line and map to String" in {
+    "parse one line and map to String" in assertAllStagesStopped {
       // #line-scanner-string
       import akka.stream.alpakka.csv.scaladsl.CsvParsing
 
@@ -74,7 +75,7 @@ class CsvParsingSpec extends CsvSpec {
       // #line-scanner-string
     }
 
-    "parse two lines" in {
+    "parse two lines" in assertAllStagesStopped {
       val fut =
         Source.single(ByteString("eins,zwei,drei\nuno,dos,tres\n")).via(CsvParsing.lineScanner()).runWith(Sink.seq)
       val res = fut.futureValue
@@ -82,7 +83,7 @@ class CsvParsingSpec extends CsvSpec {
       res(1) should be(List(ByteString("uno"), ByteString("dos"), ByteString("tres")))
     }
 
-    "parse two lines even witouth line end" in {
+    "parse two lines even witouth line end" in assertAllStagesStopped {
       val fut =
         Source.single(ByteString("eins,zwei,drei\nuno,dos,tres")).via(CsvParsing.lineScanner()).runWith(Sink.seq)
       val res = fut.futureValue
@@ -90,7 +91,7 @@ class CsvParsingSpec extends CsvSpec {
       res(1) should be(List(ByteString("uno"), ByteString("dos"), ByteString("tres")))
     }
 
-    "parse semicolon lines" in {
+    "parse semicolon lines" in assertAllStagesStopped {
       val fut =
         Source
           .single(ByteString("""eins;zwei;drei
@@ -105,7 +106,7 @@ class CsvParsingSpec extends CsvSpec {
       res(1) should be(List("ein”s", "zw ei", "dr\\ei"))
     }
 
-    "parse chunks successfully" in {
+    "parse chunks successfully" in assertAllStagesStopped {
       val input = Seq(
         "eins,zw",
         "ei,drei\nuno",
@@ -117,7 +118,7 @@ class CsvParsingSpec extends CsvSpec {
       res(1) should be(List("uno", "dos", "tres"))
     }
 
-    "emit completion even without new line at end" in {
+    "emit completion even without new line at end" in assertAllStagesStopped {
       val (source, sink) = TestSource
         .probe[ByteString]
         .via(CsvParsing.lineScanner())
@@ -134,7 +135,7 @@ class CsvParsingSpec extends CsvSpec {
       sink.expectComplete()
     }
 
-    "parse Apple Numbers exported file" in {
+    "parse Apple Numbers exported file" in assertAllStagesStopped {
       val fut =
         FileIO
           .fromPath(Paths.get("csv/src/test/resources/numbers-utf-8.csv"))
@@ -146,7 +147,7 @@ class CsvParsingSpec extends CsvSpec {
       res(1) should be(List("\"", "\\\\;", "a\"\nb\"\"c", "", "", "", ""))
     }
 
-    "parse Google Docs exported file" in {
+    "parse Google Docs exported file" in assertAllStagesStopped {
       val fut =
         FileIO
           .fromPath(Paths.get("csv/src/test/resources/google-docs.csv"))
@@ -158,16 +159,16 @@ class CsvParsingSpec extends CsvSpec {
       res(1) should be(List("\"", "\\\\,", "a\"\nb\"\"c"))
     }
 
-    "parse uniVocity correctness test" in { // see https://github.com/uniVocity/csv-parsers-comparison
+    "parse uniVocity correctness test" in assertAllStagesStopped { // see https://github.com/uniVocity/csv-parsers-comparison
       val fut =
         FileIO
           .fromPath(Paths.get("csv/src/test/resources/correctness.csv"))
           .via(CsvParsing.lineScanner())
           .via(CsvToMap.toMap())
-          .map(_.mapValues(_.utf8String))
+          .map(_.mapValues(_.utf8String).toIndexedSeq)
           .runWith(Sink.seq)
       val res = fut.futureValue
-      res(0) should be(
+      res(0) should contain allElementsOf (
         Map(
           "Year" -> "1997",
           "Make" -> "Ford",
@@ -176,7 +177,7 @@ class CsvParsingSpec extends CsvSpec {
           "Price" -> "3000.00"
         )
       )
-      res(1) should be(
+      res(1) should contain allElementsOf (
         Map(
           "Year" -> "1999",
           "Make" -> "Chevy",
@@ -185,7 +186,7 @@ class CsvParsingSpec extends CsvSpec {
           "Price" -> "4900.00"
         )
       )
-      res(2) should be(
+      res(2) should contain allElementsOf (
         Map(
           "Year" -> "1996",
           "Make" -> "Jeep",
@@ -195,7 +196,7 @@ class CsvParsingSpec extends CsvSpec {
           "Price" -> "4799.00"
         )
       )
-      res(3) should be(
+      res(3) should contain allElementsOf (
         Map(
           "Year" -> "1999",
           "Make" -> "Chevy",
@@ -204,7 +205,7 @@ class CsvParsingSpec extends CsvSpec {
           "Price" -> "5000.00"
         )
       )
-      res(4) should be(
+      res(4) should contain allElementsOf (
         Map(
           "Year" -> "",
           "Make" -> "",

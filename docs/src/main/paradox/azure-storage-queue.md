@@ -4,11 +4,9 @@ The Azure Storage Queue connector provides an Akka Stream Source and Sinks for A
 
 Azure Storage Queue is a queuing service similar to Amazon's SQS. It is designed mostly for long-running and non-time-critical tasks. For more information on Azure Storage Queue see the [Azure docs](https://azure.microsoft.com/en-us/services/storage/queues/).
 
-### Reported issues
+@@project-info{ projectId="azure-storage-queue" }
 
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Aazure-storage-queue)
-
-### Artifacts
+## Artifacts
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
@@ -16,10 +14,12 @@ Azure Storage Queue is a queuing service similar to Amazon's SQS. It is designed
   version=$project.version$
 }
 
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
 
-## Example usage
+@@dependencies { projectId="azure-storage-queue" }
 
-#### Init Azure Storage API
+
+## Init Azure Storage API
 
 ```scala
 import com.microsoft.azure.storage._
@@ -31,9 +31,11 @@ val queueFactory = () => { // Since azure storage JDK is not guaranteed to be th
   queueClient.getQueueReference("myQueue")
 }
 ```
+
 For more details, see [Microsoft Azure Storage Docs](https://docs.microsoft.com/en-us/azure/storage/storage-java-how-to-use-queue-storage).
 
-#### Queuing a message
+## Queuing a message
+
 ```scala
 import one.aleph.akkzure.queue._
 import one.aleph.akkzure.queue.scaladsl._
@@ -44,7 +46,8 @@ val message = new CloudQueueMessage("Hello Azure")
 Source.single(message).runWith(AzureQueueSink(queueFactory))
 ```
 
-#### Processing and deleting messages
+## Processing and deleting messages
+
 ```scala
 AzureQueueSource(queueFactory).take(10)
 .map({ msg: CloudQueueMessage =>

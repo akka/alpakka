@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.kinesisfirehose.javadsl
@@ -14,7 +14,7 @@ object KinesisFirehoseFlow {
 
   def apply(streamName: String,
             kinesisClient: AmazonKinesisFirehoseAsync): Flow[Record, PutRecordBatchResponseEntry, NotUsed] =
-    apply(streamName, KinesisFirehoseFlowSettings.defaultInstance, kinesisClient)
+    apply(streamName, KinesisFirehoseFlowSettings.Defaults, kinesisClient)
 
   def apply(streamName: String,
             settings: KinesisFirehoseFlowSettings,

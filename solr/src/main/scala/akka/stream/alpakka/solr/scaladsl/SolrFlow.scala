@@ -1,27 +1,33 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.solr.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.solr.{IncomingMessage, IncomingMessageResult, SolrFlowStage, SolrUpdateSettings}
+import akka.stream.alpakka.solr.impl.SolrFlowStage
+import akka.stream.alpakka.solr.{SolrUpdateSettings, WriteMessage, WriteResult}
 import akka.stream.scaladsl.Flow
 import org.apache.solr.client.solrj.SolrClient
 import org.apache.solr.common.SolrInputDocument
 
+import scala.collection.immutable
+
+/**
+ * Scala API
+ */
 object SolrFlow {
 
   /**
-   * Scala API: creates a [[SolrFlowStage]] for [[SolrInputDocument]] from [[IncomingMessage]] to sequences
-   * of [[IncomingMessageResult]].
+   * Write `SolrInputDocument`s to Solr in a flow emitting `WriteResult`s containing the status.
    */
-  def document(
+  def documents(
       collection: String,
       settings: SolrUpdateSettings
-  )(implicit client: SolrClient): Flow[IncomingMessage[SolrInputDocument, NotUsed], Seq[
-    IncomingMessageResult[SolrInputDocument, NotUsed]
-  ], NotUsed] =
+  )(
+      implicit client: SolrClient
+  ): Flow[immutable.Seq[WriteMessage[SolrInputDocument, NotUsed]], immutable.Seq[WriteResult[SolrInputDocument,
+                                                                                             NotUsed]], NotUsed] =
     Flow
       .fromGraph(
         new SolrFlowStage[SolrInputDocument, NotUsed](
@@ -31,36 +37,39 @@ object SolrFlow {
           identity
         )
       )
-      .mapAsync(1)(identity)
 
   /**
-   * Scala API: creates a [[SolrFlowStage]] for type `T` from [[IncomingMessage]] to sequences
-   * of [[IncomingMessageResult]] with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]].
+   * Write Java bean stream elements to Solr in a flow emitting `WriteResult`s containing the status.
+   * The stream element classes must be annotated for use with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]] for conversion.
    */
-  def bean[T](
+  def beans[T](
       collection: String,
       settings: SolrUpdateSettings
-  )(implicit client: SolrClient): Flow[IncomingMessage[T, NotUsed], Seq[IncomingMessageResult[T, NotUsed]], NotUsed] =
+  )(
+      implicit client: SolrClient
+  ): Flow[immutable.Seq[WriteMessage[T, NotUsed]], immutable.Seq[WriteResult[T, NotUsed]], NotUsed] =
     Flow
       .fromGraph(
         new SolrFlowStage[T, NotUsed](
           collection,
           client,
           settings,
-          new DefaultSolrObjectBinder
+          new DefaultSolrObjectBinder(client)
         )
       )
-      .mapAsync(1)(identity)
 
   /**
-   * Scala API: creates a [[SolrFlowStage]] for type `T` from [[IncomingMessage]] to sequences
-   * of [[IncomingMessageResult]] with `binder` of type 'T'.
+   * Write stream elements to Solr in a flow emitting `WriteResult`s containing the status.
+   *
+   * @param binder a conversion function to create `SolrInputDocument`s of the stream elements
    */
-  def typed[T](
+  def typeds[T](
       collection: String,
       settings: SolrUpdateSettings,
       binder: T => SolrInputDocument
-  )(implicit client: SolrClient): Flow[IncomingMessage[T, NotUsed], Seq[IncomingMessageResult[T, NotUsed]], NotUsed] =
+  )(
+      implicit client: SolrClient
+  ): Flow[immutable.Seq[WriteMessage[T, NotUsed]], immutable.Seq[WriteResult[T, NotUsed]], NotUsed] =
     Flow
       .fromGraph(
         new SolrFlowStage[T, NotUsed](
@@ -70,72 +79,74 @@ object SolrFlow {
           binder
         )
       )
-      .mapAsync(1)(identity)
 
   /**
-   * Scala API: creates a [[SolrFlowStage]] for [[SolrInputDocument]] from [[IncomingMessage]]
-   * to lists of [[IncomingMessageResult]] with `passThrough` of type `C`.
+   * Write `SolrInputDocument`s to Solr in a flow emitting `WriteResult`s containing the status.
+   *
+   * @tparam PT pass-through type
    */
-  def documentWithPassThrough[C](
+  def documentsWithPassThrough[PT](
       collection: String,
       settings: SolrUpdateSettings
   )(
       implicit client: SolrClient
-  ): Flow[IncomingMessage[SolrInputDocument, C], Seq[IncomingMessageResult[SolrInputDocument, C]], NotUsed] =
+  ): Flow[immutable.Seq[WriteMessage[SolrInputDocument, PT]],
+          immutable.Seq[WriteResult[SolrInputDocument, PT]],
+          NotUsed] =
     Flow
       .fromGraph(
-        new SolrFlowStage[SolrInputDocument, C](
+        new SolrFlowStage[SolrInputDocument, PT](
           collection,
           client,
           settings,
           identity
         )
       )
-      .mapAsync(1)(identity)
 
   /**
-   * Scala API: creates a [[SolrFlowStage]] for type 'T' from [[IncomingMessage]]
-   * to lists of [[IncomingMessageResult]] with `passThrough` of type `C`
-   * and [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]] for type 'T' .
+   * Write Java bean stream elements to Solr in a flow emitting `WriteResult`s containing the status.
+   * The stream element classes must be annotated for use with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]] for conversion.
+   *
+   * @tparam PT pass-through type
    */
-  def beanWithPassThrough[T, C](
+  def beansWithPassThrough[T, PT](
       collection: String,
       settings: SolrUpdateSettings
-  )(implicit client: SolrClient): Flow[IncomingMessage[T, C], Seq[IncomingMessageResult[T, C]], NotUsed] =
+  )(implicit client: SolrClient): Flow[immutable.Seq[WriteMessage[T, PT]], immutable.Seq[WriteResult[T, PT]], NotUsed] =
     Flow
       .fromGraph(
-        new SolrFlowStage[T, C](
+        new SolrFlowStage[T, PT](
           collection,
           client,
           settings,
-          new DefaultSolrObjectBinder
+          new DefaultSolrObjectBinder(client)
         )
       )
-      .mapAsync(1)(identity)
 
   /**
-   * Scala API: creates a [[SolrFlowStage]] for type 'T' from [[IncomingMessage]]
-   * to lists of [[IncomingMessageResult]] with `passThrough` of type `C` and `binder` of type `T`.
+   * Write stream elements to Solr in a flow emitting `WriteResult`s containing the status.
+   *
+   * @param binder a conversion function to create `SolrInputDocument`s of the stream elements
+   * @tparam PT pass-through type
    */
-  def typedWithPassThrough[T, C](
+  def typedsWithPassThrough[T, PT](
       collection: String,
       settings: SolrUpdateSettings,
       binder: T => SolrInputDocument
-  )(implicit client: SolrClient): Flow[IncomingMessage[T, C], Seq[IncomingMessageResult[T, C]], NotUsed] =
+  )(implicit client: SolrClient): Flow[immutable.Seq[WriteMessage[T, PT]], immutable.Seq[WriteResult[T, PT]], NotUsed] =
     Flow
       .fromGraph(
-        new SolrFlowStage[T, C](
+        new SolrFlowStage[T, PT](
           collection,
           client,
           settings,
           binder
         )
       )
-      .mapAsync(1)(identity)
 
-  private class DefaultSolrObjectBinder(implicit c: SolrClient) extends (Any => SolrInputDocument) {
+  private class DefaultSolrObjectBinder(solrClient: SolrClient) extends (Any => SolrInputDocument) {
     override def apply(v1: Any): SolrInputDocument =
-      c.getBinder.toSolrInputDocument(v1)
+      solrClient.getBinder.toSolrInputDocument(v1)
   }
 
 }

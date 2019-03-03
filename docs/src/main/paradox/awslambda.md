@@ -4,10 +4,7 @@ The AWS Lambda Connector provides Akka Flow for AWS Lambda integration.
 
 For more information about AWS Lambda please visit the [AWS lambda documentation](https://aws.amazon.com/documentation/lambda/).
 
-### Reported issues
-
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Aaws-lambda)
-
+@@project-info{ projectId="awslambda" }
 
 ## Artifacts
 
@@ -17,9 +14,13 @@ For more information about AWS Lambda please visit the [AWS lambda documentation
   version=$project.version$
 }
 
-## Usage
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
 
-Flow provided by this connector need a prepared `AWSLambdaAsyncClient` to be able to invoke lambda functions.
+@@dependencies { projectId="awslambda" }
+
+## Sending messages
+
+Flow provided by this connector needs a prepared `AWSLambdaAsyncClient` to be able to invoke lambda functions.
 
 Scala
 : @@snip (/awslambda/src/test/scala/docs/scaladsl/Examples.scala) { #init-client }
@@ -37,8 +38,6 @@ Java
 
 This is all preparation that we are going to need.
 
-### Flow messages to AWS Lambda
-
 Now we can stream AWS Java SDK Lambda `InvokeRequest` to AWS Lambda functions
 @scaladoc[AwsLambdaFlow](akka.stream.alpakka.awslambda.scaladsl.AwsLambdaFlow$) factory.
 
@@ -48,7 +47,7 @@ Scala
 Java
 : @@snip (/awslambda/src/test/java/docs/javadsl/Examples.java) { #run }
 
-#### AwsLambdaFlow configuration
+## AwsLambdaFlow configuration
 
 Options:
 

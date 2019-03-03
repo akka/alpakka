@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.kinesis
@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import akka.stream.alpakka.kinesis.scaladsl.KinesisSource
 import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.util.ByteString
 import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.kinesis.model._
@@ -21,7 +22,7 @@ import org.scalatest.{Matchers, WordSpecLike}
 
 import scala.concurrent.duration._
 
-class KinesisSourceSpec extends WordSpecLike with Matchers with DefaultTestContext {
+class KinesisSourceSpec extends WordSpecLike with Matchers with KinesisMock {
 
   implicit class recordToString(r: Record) {
     def utf8String: String = ByteString(r.getData).utf8String
@@ -30,107 +31,122 @@ class KinesisSourceSpec extends WordSpecLike with Matchers with DefaultTestConte
   "KinesisSource" must {
 
     val shardSettings =
-      ShardSettings("stream_name", "shard-id", ShardIteratorType.TRIM_HORIZON, None, None, 1.second, 500)
+      ShardSettings("stream_name", "shard-id")
+        .withShardIteratorType(ShardIteratorType.TRIM_HORIZON)
 
-    "poll for records" in new KinesisSpecContext with WithGetShardIteratorSuccess with WithGetRecordsSuccess {
-      override def shards: util.List[Shard] = util.Arrays.asList(new Shard().withShardId("id"))
+    "poll for records" in assertAllStagesStopped {
+      new KinesisSpecContext with WithGetShardIteratorSuccess with WithGetRecordsSuccess {
+        override def shards: util.List[Shard] = util.Arrays.asList(new Shard().withShardId("id"))
 
-      override def records = util.Arrays.asList(
-        new Record().withData(ByteString("1").toByteBuffer),
-        new Record().withData(ByteString("2").toByteBuffer)
-      )
+        override def records = util.Arrays.asList(
+          new Record().withData(ByteString("1").toByteBuffer),
+          new Record().withData(ByteString("2").toByteBuffer)
+        )
 
-      val probe = KinesisSource.basic(shardSettings, amazonKinesisAsync).runWith(TestSink.probe)
+        val probe = KinesisSource.basic(shardSettings, amazonKinesisAsync).runWith(TestSink.probe)
 
-      probe.requestNext.utf8String shouldEqual "1"
-      probe.requestNext.utf8String shouldEqual "2"
-      probe.requestNext.utf8String shouldEqual "1"
-      probe.requestNext.utf8String shouldEqual "2"
+        probe.requestNext.utf8String shouldEqual "1"
+        probe.requestNext.utf8String shouldEqual "2"
+        probe.requestNext.utf8String shouldEqual "1"
+        probe.requestNext.utf8String shouldEqual "2"
+        probe.cancel()
+      }
     }
 
-    "poll for records with mutliple requests" in new KinesisSpecContext with WithGetShardIteratorSuccess
-    with WithGetRecordsSuccess {
-      override def shards: util.List[Shard] = util.Arrays.asList(new Shard().withShardId("id"))
+    "poll for records with mutliple requests" in assertAllStagesStopped {
+      new KinesisSpecContext with WithGetShardIteratorSuccess with WithGetRecordsSuccess {
+        override def shards: util.List[Shard] = util.Arrays.asList(new Shard().withShardId("id"))
 
-      override def records = util.Arrays.asList(
-        new Record().withData(ByteString("1").toByteBuffer),
-        new Record().withData(ByteString("2").toByteBuffer)
-      )
+        override def records = util.Arrays.asList(
+          new Record().withData(ByteString("1").toByteBuffer),
+          new Record().withData(ByteString("2").toByteBuffer)
+        )
 
-      val probe = KinesisSource.basic(shardSettings, amazonKinesisAsync).runWith(TestSink.probe)
+        val probe = KinesisSource.basic(shardSettings, amazonKinesisAsync).runWith(TestSink.probe)
 
-      probe.request(2)
-      probe.expectNext().utf8String shouldEqual "1"
-      probe.expectNext().utf8String shouldEqual "2"
-      probe.expectNoMessage(1.second)
+        probe.request(2)
+        probe.expectNext().utf8String shouldEqual "1"
+        probe.expectNext().utf8String shouldEqual "2"
+        probe.expectNoMessage(1.second)
+        probe.cancel()
+      }
     }
 
-    "wait for request before passing downstream" in new KinesisSpecContext with WithGetShardIteratorSuccess
-    with WithGetRecordsSuccess {
-      override def shards: util.List[Shard] = util.Arrays.asList(new Shard().withShardId("id"))
+    "wait for request before passing downstream" in assertAllStagesStopped {
+      new KinesisSpecContext with WithGetShardIteratorSuccess with WithGetRecordsSuccess {
+        override def shards: util.List[Shard] = util.Arrays.asList(new Shard().withShardId("id"))
 
-      override def records = util.Arrays.asList(
-        new Record().withData(ByteString("1").toByteBuffer),
-        new Record().withData(ByteString("2").toByteBuffer),
-        new Record().withData(ByteString("3").toByteBuffer),
-        new Record().withData(ByteString("4").toByteBuffer),
-        new Record().withData(ByteString("5").toByteBuffer),
-        new Record().withData(ByteString("6").toByteBuffer)
-      )
+        override def records = util.Arrays.asList(
+          new Record().withData(ByteString("1").toByteBuffer),
+          new Record().withData(ByteString("2").toByteBuffer),
+          new Record().withData(ByteString("3").toByteBuffer),
+          new Record().withData(ByteString("4").toByteBuffer),
+          new Record().withData(ByteString("5").toByteBuffer),
+          new Record().withData(ByteString("6").toByteBuffer)
+        )
 
-      val probe = KinesisSource.basic(shardSettings, amazonKinesisAsync).runWith(TestSink.probe)
+        val probe = KinesisSource.basic(shardSettings, amazonKinesisAsync).runWith(TestSink.probe)
 
-      probe.request(1)
-      probe.expectNext().utf8String shouldEqual "1"
-      probe.expectNoMessage(1.second)
-      probe.requestNext().utf8String shouldEqual "2"
-      probe.requestNext().utf8String shouldEqual "3"
-      probe.requestNext().utf8String shouldEqual "4"
-      probe.requestNext().utf8String shouldEqual "5"
-      probe.requestNext().utf8String shouldEqual "6"
-      probe.requestNext().utf8String shouldEqual "1"
-
+        probe.request(1)
+        probe.expectNext().utf8String shouldEqual "1"
+        probe.expectNoMessage(1.second)
+        probe.requestNext().utf8String shouldEqual "2"
+        probe.requestNext().utf8String shouldEqual "3"
+        probe.requestNext().utf8String shouldEqual "4"
+        probe.requestNext().utf8String shouldEqual "5"
+        probe.requestNext().utf8String shouldEqual "6"
+        probe.requestNext().utf8String shouldEqual "1"
+        probe.cancel()
+      }
     }
 
-    "merge multiple shards" in new KinesisSpecContext with WithGetShardIteratorSuccess with WithGetRecordsSuccess {
-      val mergeSettings = List(
-        shardSettings.copy(shardId = "0"),
-        shardSettings.copy(shardId = "1")
-      )
+    "merge multiple shards" in assertAllStagesStopped {
+      new KinesisSpecContext with WithGetShardIteratorSuccess with WithGetRecordsSuccess {
+        val mergeSettings = List(
+          shardSettings.withShardId("0"),
+          shardSettings.withShardId("1")
+        )
 
-      override def shards: util.List[Shard] =
-        util.Arrays.asList(new Shard().withShardId("1"), new Shard().withShardId("2"))
+        override def shards: util.List[Shard] =
+          util.Arrays.asList(new Shard().withShardId("1"), new Shard().withShardId("2"))
 
-      override def records = util.Arrays.asList(
-        new Record().withData(ByteString("1").toByteBuffer),
-        new Record().withData(ByteString("2").toByteBuffer),
-        new Record().withData(ByteString("3").toByteBuffer)
-      )
+        override def records = util.Arrays.asList(
+          new Record().withData(ByteString("1").toByteBuffer),
+          new Record().withData(ByteString("2").toByteBuffer),
+          new Record().withData(ByteString("3").toByteBuffer)
+        )
 
-      val probe = KinesisSource.basicMerge(mergeSettings, amazonKinesisAsync).map(_.utf8String).runWith(TestSink.probe)
+        val probe =
+          KinesisSource.basicMerge(mergeSettings, amazonKinesisAsync).map(_.utf8String).runWith(TestSink.probe)
 
-      probe.request(6)
-      probe.expectNextUnordered("1", "1", "2", "2", "3", "3")
+        probe.request(6)
+        probe.expectNextUnordered("1", "1", "2", "2", "3", "3")
+        probe.cancel()
+      }
     }
 
-    "complete stage when next shard iterator is null" in new KinesisSpecContext with WithGetShardIteratorSuccess
-    with WithGetRecordsSuccess {
-      override def records = util.Arrays.asList(new Record().withData(ByteString("1").toByteBuffer))
+    "complete stage when next shard iterator is null" in assertAllStagesStopped {
+      new KinesisSpecContext with WithGetShardIteratorSuccess with WithGetRecordsSuccess {
+        override def records = util.Arrays.asList(new Record().withData(ByteString("1").toByteBuffer))
 
-      val probe = KinesisSource.basic(shardSettings, amazonKinesisAsync).runWith(TestSink.probe)
+        val probe = KinesisSource.basic(shardSettings, amazonKinesisAsync).runWith(TestSink.probe)
 
-      probe.requestNext.utf8String shouldEqual "1"
-      nextShardIterator.set(null)
-      probe.request(1)
-      probe.expectNext()
-      probe.expectComplete()
+        probe.requestNext.utf8String shouldEqual "1"
+        nextShardIterator.set(null)
+        probe.request(1)
+        probe.expectNext()
+        probe.expectComplete()
+        probe.cancel()
+      }
     }
 
-    "fail with error when GetStreamRequest fails" in new KinesisSpecContext with WithGetShardIteratorSuccess
-    with WithGetRecordsFailure {
-      val probe = KinesisSource.basic(shardSettings, amazonKinesisAsync).runWith(TestSink.probe)
-      probe.request(1)
-      probe.expectError() shouldBe an[KinesisErrors.GetRecordsError.type]
+    "fail with error when GetStreamRequest fails" in assertAllStagesStopped {
+      new KinesisSpecContext with WithGetShardIteratorSuccess with WithGetRecordsFailure {
+        val probe = KinesisSource.basic(shardSettings, amazonKinesisAsync).runWith(TestSink.probe)
+        probe.request(1)
+        probe.expectError() shouldBe an[KinesisErrors.GetRecordsError]
+        probe.cancel()
+      }
     }
   }
 

@@ -18,10 +18,7 @@ is parsed into frames:
 ```
 
 
-### Reported issues
-
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Arecordio)
-
+@@project-info{ projectId="simple-codecs" }
 
 ## Artifacts
 
@@ -30,6 +27,11 @@ is parsed into frames:
   artifact=akka-stream-alpakka-simple-codecs_$scala.binary.version$
   version=$project.version$
 }
+
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="simple-codecs" }
+
 
 ## Usage
 

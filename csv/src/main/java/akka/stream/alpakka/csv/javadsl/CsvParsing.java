@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.csv.javadsl;
@@ -8,7 +8,6 @@ import akka.NotUsed;
 import akka.stream.javadsl.Flow;
 import akka.util.ByteString;
 import scala.collection.JavaConverters;
-import scala.collection.immutable.List;
 
 import java.util.Collection;
 
@@ -36,11 +35,7 @@ public class CsvParsing {
     return akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner(
             delimiter, quoteChar, escapeChar, maximumLineLength)
         .asJava()
-        .map(
-            c -> {
-              List<ByteString> c1 = (List<ByteString>) c;
-              return JavaConverters.asJavaCollectionConverter(c1).asJavaCollection();
-            })
+        .map(c -> JavaConverters.asJavaCollectionConverter(c).asJavaCollection())
         .mapMaterializedValue(m -> NotUsed.getInstance());
   }
 }

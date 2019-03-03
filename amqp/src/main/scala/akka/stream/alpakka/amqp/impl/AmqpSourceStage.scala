@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.amqp.impl
@@ -7,8 +7,9 @@ package akka.stream.alpakka.amqp.impl
 import akka.Done
 import akka.annotation.InternalApi
 import akka.stream.alpakka.amqp._
-import akka.stream.alpakka.amqp.scaladsl.CommittableIncomingMessage
-import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
+import akka.stream.alpakka.amqp.impl.AmqpSourceStage.AutoAckedReadResult
+import akka.stream.alpakka.amqp.scaladsl.CommittableReadResult
+import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler, StageLogging}
 import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.util.ByteString
 import com.rabbitmq.client.AMQP.BasicProperties
@@ -22,28 +23,30 @@ private final case class AckArguments(deliveryTag: Long, multiple: Boolean, prom
 private final case class NackArguments(deliveryTag: Long, multiple: Boolean, requeue: Boolean, promise: Promise[Done])
 
 /**
+ * Internal API.
+ *
  * Connects to an AMQP server upon materialization and consumes messages from it emitting them
  * into the stream. Each materialized source will create one connection to the broker.
- * As soon as an `IncomingMessage` is sent downstream, an ack for it is sent to the broker.
  *
  * @param bufferSize The max number of elements to prefetch and buffer at any given time.
  */
 @InternalApi
 private[amqp] final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSize: Int)
-    extends GraphStage[SourceShape[CommittableIncomingMessage]] { stage =>
+    extends GraphStage[SourceShape[CommittableReadResult]] { stage =>
 
-  val out = Outlet[CommittableIncomingMessage]("AmqpSource.out")
+  private val out = Outlet[CommittableReadResult]("AmqpSource.out")
 
-  override val shape: SourceShape[CommittableIncomingMessage] = SourceShape.of(out)
+  override val shape: SourceShape[CommittableReadResult] = SourceShape.of(out)
 
   override protected def initialAttributes: Attributes = Attributes.name("AmqpSource")
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with AmqpConnectorLogic {
+    new GraphStageLogic(shape) with AmqpConnectorLogic with StageLogging {
 
-      override val settings = stage.settings
+      override val settings: AmqpSourceSettings = stage.settings
 
-      private val queue = mutable.Queue[CommittableIncomingMessage]()
+      private val queue = mutable.Queue[CommittableReadResult]()
+      private var ackRequired = true
       private var unackedMessages = 0
 
       override def whenConnected(): Unit = {
@@ -79,10 +82,11 @@ private[amqp] final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSi
           override def handleDelivery(consumerTag: String,
                                       envelope: Envelope,
                                       properties: BasicProperties,
-                                      body: Array[Byte]): Unit =
-            consumerCallback.invoke(
-              new CommittableIncomingMessage {
-                override val message = IncomingMessage(ByteString(body), envelope, properties)
+                                      body: Array[Byte]): Unit = {
+            val message = if (ackRequired) {
+
+              new CommittableReadResult {
+                override val message = ReadResult(ByteString(body), envelope, properties)
 
                 override def ack(multiple: Boolean): Future[Done] = {
                   val promise = Promise[Done]()
@@ -96,7 +100,9 @@ private[amqp] final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSi
                   promise.future
                 }
               }
-            )
+            } else new AutoAckedReadResult(ReadResult(ByteString(body), envelope, properties))
+            consumerCallback.invoke(message)
+          }
 
           override def handleCancel(consumerTag: String): Unit =
             // non consumer initiated cancel, for example happens when the queue has been deleted.
@@ -134,12 +140,15 @@ private[amqp] final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSi
         }
 
         settings match {
-          case settings: NamedQueueSourceSettings => setupNamedQueue(settings)
-          case settings: TemporaryQueueSourceSettings => setupTemporaryQueue(settings)
+          case settings: NamedQueueSourceSettings =>
+            ackRequired = settings.ackRequired
+            setupNamedQueue(settings)
+          case settings: TemporaryQueueSourceSettings =>
+            setupTemporaryQueue(settings)
         }
       }
 
-      def handleDelivery(message: CommittableIncomingMessage): Unit =
+      def handleDelivery(message: CommittableReadResult): Unit =
         if (isAvailable(out)) {
           pushMessage(message)
         } else if (queue.size + 1 > bufferSize) {
@@ -156,17 +165,33 @@ private[amqp] final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSi
               pushMessage(queue.dequeue())
             }
 
-          override def onDownstreamFinish(): Unit = {
-            setKeepGoing(true)
+          override def onDownstreamFinish(): Unit =
             if (unackedMessages == 0) super.onDownstreamFinish()
-          }
+            else {
+              setKeepGoing(true)
+              log.debug("Awaiting {} acks before finishing.", unackedMessages)
+            }
         }
       )
 
-      def pushMessage(message: CommittableIncomingMessage): Unit = {
+      def pushMessage(message: CommittableReadResult): Unit = {
         push(out, message)
-        unackedMessages += 1
+        if (ackRequired) unackedMessages += 1
       }
     }
+
+}
+
+/**
+ * Internal API.
+ */
+@InternalApi
+private[amqp] object AmqpSourceStage {
+  private val SuccessfullyDone = Future.successful(Done)
+
+  final class AutoAckedReadResult(override val message: ReadResult) extends CommittableReadResult {
+    override def ack(multiple: Boolean): Future[Done] = SuccessfullyDone
+    override def nack(multiple: Boolean, requeue: Boolean): Future[Done] = SuccessfullyDone
+  }
 
 }

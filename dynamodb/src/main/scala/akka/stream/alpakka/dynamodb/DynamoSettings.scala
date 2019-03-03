@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.dynamodb
@@ -52,11 +52,13 @@ final class DynamoSettings private (
 
 object DynamoSettings {
 
+  val ConfigPath = "akka.stream.alpakka.dynamodb"
+
   /**
    * Scala API: Creates [[DynamoSettings]] from the [[com.typesafe.config.Config Config]] attached to an [[akka.actor.ActorSystem]].
    */
   def apply(system: ActorSystem): DynamoSettings =
-    apply(system.settings.config.getConfig("akka.stream.alpakka.dynamodb"))
+    apply(system.settings.config.getConfig(ConfigPath))
 
   /**
    * Scala API: Creates [[DynamoSettings]] from a [[com.typesafe.config.Config Config]]. This config is expected to have

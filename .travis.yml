@@ -1,6 +1,5 @@
 language: scala
 sudo: false
-jdk: oraclejdk8
 
 services:
   - docker
@@ -8,9 +7,16 @@ services:
 before_install:
   # make comparing to origin/master work
   - git remote set-branches --add origin master && git fetch
+  # fetch full history for correct current and previous version detection
+  - git fetch --unshallow
+  # using jabba for custom jdk management
+  - curl -sL https://raw.githubusercontent.com/shyiko/jabba/0.11.2/install.sh | bash && . ~/.jabba/jabba.sh
+  - jabba install adopt@~1.8.202-08
 
 # default script for jobs, that do not have any specified
 script:
+  - jabba use ${JDK:=adopt@~1.8.202-08}
+  - java -version
   - ${PRE_CMD:=return 0} # do nothing if not set
   - sbt -jvm-opts .jvmopts-travis "$CMD"
 
@@ -18,12 +24,17 @@ jobs:
   include:
     - stage: check
       script: sbt scalafmtCheck || { echo "[error] Unformatted code found. Please run 'Test/compile' and commit the reformatted code."; false; }
-      name: "Code style check"
+      name: "Code style check (fixed with `sbt Test/compile`)"
     - script: sbt scalafmtSbtCheck || { echo "[error] Unformatted sbt code found. Please run 'scalafmtSbt' and commit the reformatted code."; false; }
-      name: "Build code style check"
-    - env: CMD="Test/compile"
+      name: "Build code style check (fixed with `sbt scalafmtSbt`)"
+    - env: CMD="++2.11.12 Test/compile"
+      name: "Compile all tests (with Scala 2.11)"
+    - env: CMD="++2.13.0-M5 Test/compile"
+      name: "Compile all tests (with Scala 2.13)"
     - env: CMD="unidoc"
-    - env: CMD="docs/paradox"
+      name: "Create all API docs"
+    - env: CMD="docs/Paradox/paradox"
+      name: "Create site with Paradox"
 
     - stage: test
       env:
@@ -35,6 +46,9 @@ jobs:
     - env:
       - PRE_CMD="docker-compose up -d cassandra"
       - CMD=+cassandra/testChanged
+    - env:
+      - PRE_CMD="docker-compose up -d couchbase_prep"
+      - CMD=+couchbase/testChanged
     - env: CMD=+csv/testChanged
     - env:
       - PRE_CMD="docker-compose up -d dynamodb"
@@ -46,13 +60,20 @@ jobs:
       - PRE_CMD="docker-compose up -d geode"
       - CMD=+geode/testChanged
     - env: CMD=+google-cloud-pub-sub/testChanged
+    - env:
+      - PRE_CMD="docker-compose up -d gcloud-pubsub-emulator_prep"
+      - CMD=+google-cloud-pub-sub-grpc/testChanged
     - env: CMD=+google-fcm/testChanged
-    - env: CMD=+hbase/testChanged
+    - env:
+      - PRE_CMD="docker-compose up -d hbase"
+      - CMD=+hbase/testChanged
     - env: CMD=+hdfs/testChanged
     - env:
       - PRE_CMD="docker-compose up -d ironauth ironmq"
       - CMD=+ironmq/testChanged
-    - env: CMD=+jms/testChanged
+    - env:
+      - PRE_CMD="docker-compose up -d ibmmq"
+      - CMD=+jms/testChanged
     - env: CMD=+json-streaming/testChanged
     - env: CMD=+kinesis/testChanged
     - env:
@@ -65,10 +86,15 @@ jobs:
       - PRE_CMD="docker-compose up -d mqtt"
       - CMD=+mqtt/testChanged
     - env:
+      - PRE_CMD="docker-compose up -d mqtt"
+      - CMD=+mqtt-streaming/testChanged
+    - env:
       - PRE_CMD="docker-compose up -d orientdb"
       - CMD=+orientdb/testChanged
     - env: CMD=+reference/testChanged
-    - env: CMD=+s3/testChanged
+    - env:
+      - PRE_CMD="docker-compose up -d minio_prep"
+      - CMD=+s3/testChanged
     - env: CMD=+spring-web/testChanged
     - env: CMD=+simple-codecs/testChanged
     - env: CMD=+slick/testChanged
@@ -76,7 +102,9 @@ jobs:
       - PRE_CMD="docker-compose up -d amazonsns"
       - CMD=+sns/testChanged
     - env: CMD=+solr/testChanged
-    - env: CMD=+sqs/testChanged
+    - env:
+      - PRE_CMD="docker-compose up -d elasticmq"
+      - CMD=+sqs/testChanged
     - env: CMD=+sse/testChanged
     - env: CMD=+text/testChanged
     - env: CMD=+udp/testChanged
@@ -84,13 +112,17 @@ jobs:
     - env: CMD=+xml/testChanged
 
     - stage: whitesource
-      script: sbt whitesourceCheckPolicies whitesourceUpdate
+      script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt whitesourceCheckPolicies whitesourceUpdate
 
     - stage: publish
-      script: sbt -jvm-opts .jvmopts-travis +publish
-
-    - stage: techhub-ping
-      script: curl -I https://ci.lightbend.com/job/techhub-publisher/build?token=$TECH_HUB_TOKEN
+      env: CMD="++2.11.12 publish"
+      name: "Publish artifacts for Scala 2.11.12"
+    - env: CMD="++2.12.7 publish"
+      name: "Publish artifacts for Scala 2.12.7"
+    - env: CMD="++2.13.0-M5 publish"
+      name: "Publish artifacts for Scala 2.13.0-M5"
+    - script: openssl aes-256-cbc -K $encrypted_bbf1dc4f2a07_key -iv $encrypted_bbf1dc4f2a07_iv -in .travis/travis_alpakka_rsa.enc -out .travis/id_rsa -d && eval "$(ssh-agent -s)" && chmod 600 .travis/id_rsa && ssh-add .travis/id_rsa && sbt -jvm-opts .jvmopts-travis docs/publishRsync
+      name: "Publish API and reference documentation"
 
 stages:
   # runs on master commits and PRs
@@ -109,10 +141,6 @@ stages:
   - name: publish
     if: repo = akka/alpakka AND ( ( branch = master AND type = push ) OR tag =~ ^v )
 
-  # runs on main repo version-tagged commits
-  - name: techhub-ping
-    if: repo = akka/alpakka AND tag =~ ^v
-
 after_failure:
   - docker-compose logs
   - find . -name "*.log" -exec ./scripts/cat-log.sh {} \;
@@ -125,7 +153,13 @@ cache:
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot
+    - $HOME/.jabba/jdk
   timeout: 900
+
+addons:
+  hosts:
+    # to run tests locally, these hostnames need to resolve to localhost IP
+    - hbase
 
 env:
   global:

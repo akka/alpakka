@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.google.firebase.fcm.impl
@@ -9,18 +9,19 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
-import akka.stream.alpakka.google.firebase.fcm.FcmFlowModels.{
-  FcmErrorResponse,
-  FcmResponse,
-  FcmSend,
-  FcmSuccessResponse
-}
+import akka.stream.alpakka.google.firebase.fcm.{FcmErrorResponse, FcmResponse, FcmSuccessResponse}
+import akka.annotation.InternalApi
 import spray.json._
 
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
 
-private[fcm] class FcmSender extends FcmJsonSupport {
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[fcm] class FcmSender {
+  import FcmJsonSupport._
 
   def send(projectId: String, token: String, http: HttpExt, fcmSend: FcmSend)(
       implicit materializer: Materializer

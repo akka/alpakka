@@ -1,10 +1,15 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.hdfs.impl.strategy
 
-@akka.annotation.InternalApi
+import akka.annotation.InternalApi
+
+/**
+ * Internal API
+ */
+@InternalApi
 private[hdfs] trait Strategy {
   type S <: Strategy
   def should(): Boolean

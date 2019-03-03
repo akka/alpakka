@@ -8,6 +8,9 @@ If you know about more relevant resources: Please send a Pull Request to add the
 
 ## 2018
 
+[Backoff and Retry Error-Handling for Akka Streams](https://blog.colinbreck.com/backoff-and-retry-error-handling-for-akka-streams/)
+blog by Colin Breck, October 2018
+
 [Pakk Your Alpakka: Reactive Streams Integrations For AWS, Azure, & Google Cloud](https://www.lightbend.com/blog/pakk-your-alpakka-reactive-streams-integrations-for-aws-azure-google-cloud)
 Webinar by Enno Runne, Alpakka Team @ Lightbend, August 2018
 

@@ -8,6 +8,8 @@
         </encoder>
     </appender>
 
+    <logger name="akka.http" level="info"/>
+
     <root level="debug">
         <appender-ref ref="FILE" />
     </root>

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.s3.scaladsl
@@ -7,11 +7,12 @@ package akka.stream.alpakka.s3.scaladsl
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
+import org.scalatest._
 
 trait S3ClientIntegrationSpec
     extends FlatSpecLike
     with BeforeAndAfterAll
+    with BeforeAndAfterEach
     with Matchers
     with ScalaFutures
     with IntegrationPatience {

@@ -1,19 +1,24 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.javadsl;
 
 import akka.Done;
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.function.Creator;
 import akka.japi.function.Function;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.file.javadsl.LogRotatorSink;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
+import akka.stream.javadsl.*;
+import akka.stream.testkit.javadsl.StreamTestKit;
+import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Test;
 
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -23,15 +28,29 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.assertEquals;
 
 public class LogRotatorSinkTest {
 
-  public static void main(String... args) {
-    final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
+  private static final ActorSystem system = ActorSystem.create();
+  private static final Materializer materializer = ActorMaterializer.create(system);
 
+  @AfterClass
+  public static void afterAll() {
+    TestKit.shutdownActorSystem(system);
+  }
+
+  @After
+  public void checkForStageLeaks() {
+    StreamTestKit.assertAllStagesStopped(materializer);
+  }
+
+  @Test
+  public void sizeBased() throws Exception {
     // #size
-    Creator<Function<ByteString, Optional<Path>>> sizeBasedPathGenerator =
+    Creator<Function<ByteString, Optional<Path>>> sizeBasedTriggerCreator =
         () -> {
           long max = 10 * 1024 * 1024;
           final long[] size = new long[] {max};
@@ -48,14 +67,24 @@ public class LogRotatorSinkTest {
         };
 
     Sink<ByteString, CompletionStage<Done>> sizeRotatorSink =
-        LogRotatorSink.createFromFunction(sizeBasedPathGenerator);
+        LogRotatorSink.createFromFunction(sizeBasedTriggerCreator);
     // #size
+    CompletionStage<Done> fileSizeCompletion =
+        Source.from(Arrays.asList("test1", "test2", "test3", "test4", "test5", "test6"))
+            .map(ByteString::fromString)
+            .runWith(sizeRotatorSink, materializer);
 
+    assertEquals(
+        Done.getInstance(), fileSizeCompletion.toCompletableFuture().get(2, TimeUnit.SECONDS));
+  }
+
+  @Test
+  public void timeBased() throws Exception {
     // #time
     final Path destinationDir = FileSystems.getDefault().getPath("/tmp");
     final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("'stream-'yyyy-MM-dd_HH'.log'");
 
-    Creator<Function<ByteString, Optional<Path>>> timeBasedPathCreator =
+    Creator<Function<ByteString, Optional<Path>>> timeBasedTriggerCreator =
         () -> {
           final String[] currentFileName = new String[] {null};
           return (element) -> {
@@ -69,26 +98,51 @@ public class LogRotatorSinkTest {
           };
         };
 
-    Sink<ByteString, CompletionStage<Done>> timeBaseSink =
-        LogRotatorSink.createFromFunction(timeBasedPathCreator);
+    Sink<ByteString, CompletionStage<Done>> timeBasedSink =
+        LogRotatorSink.createFromFunction(timeBasedTriggerCreator);
     // #time
+
+    CompletionStage<Done> fileSizeCompletion =
+        Source.from(Arrays.asList("test1", "test2", "test3", "test4", "test5", "test6"))
+            .map(ByteString::fromString)
+            .runWith(timeBasedSink, materializer);
+
+    assertEquals(
+        Done.getInstance(), fileSizeCompletion.toCompletableFuture().get(2, TimeUnit.SECONDS));
 
     /*
     // #sample
     import akka.stream.alpakka.file.javadsl.LogRotatorSink;
 
-    Creator<Function<ByteString, Optional<Path>>> pathGeneratorCreator = ...;
+    Creator<Function<ByteString, Optional<Path>>> triggerFunctionCreator = ...;
 
     // #sample
     */
-    Creator<Function<ByteString, Optional<Path>>> pathGeneratorCreator = timeBasedPathCreator;
+    Creator<Function<ByteString, Optional<Path>>> triggerFunctionCreator = timeBasedTriggerCreator;
+
+    Source<ByteString, NotUsed> source =
+        Source.from(Arrays.asList("test1", "test2", "test3", "test4", "test5", "test6"))
+            .map(ByteString::fromString);
     // #sample
     CompletionStage<Done> completion =
         Source.from(Arrays.asList("test1", "test2", "test3", "test4", "test5", "test6"))
             .map(ByteString::fromString)
-            .runWith(LogRotatorSink.createFromFunction(pathGeneratorCreator), materializer);
+            .runWith(LogRotatorSink.createFromFunction(triggerFunctionCreator), materializer);
+
+    // GZip compressing the data written
+    CompletionStage<Done> compressedCompletion =
+        source.runWith(
+            LogRotatorSink.withSinkFactory(
+                triggerFunctionCreator,
+                path ->
+                    Flow.of(ByteString.class)
+                        .via(Compression.gzip())
+                        .toMat(FileIO.toPath(path), Keep.right())),
+            materializer);
     // #sample
 
-    completion.thenRun(() -> system.terminate());
+    assertEquals(Done.getInstance(), completion.toCompletableFuture().get(2, TimeUnit.SECONDS));
+    assertEquals(
+        Done.getInstance(), compressedCompletion.toCompletableFuture().get(2, TimeUnit.SECONDS));
   }
 }

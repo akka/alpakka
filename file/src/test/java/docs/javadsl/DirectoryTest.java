@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.javadsl;
@@ -16,13 +16,13 @@ import java.nio.file.FileVisitOption;
 // #walk
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.TestKit;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.nio.file.FileSystem;
@@ -116,6 +116,7 @@ public class DirectoryTest {
   public void tearDown() throws Exception {
     fs.close();
     fs = null;
+    StreamTestKit.assertAllStagesStopped(materializer);
     TestKit.shutdownActorSystem(system, FiniteDuration.create(10, TimeUnit.SECONDS), true);
     system = null;
     materializer = null;

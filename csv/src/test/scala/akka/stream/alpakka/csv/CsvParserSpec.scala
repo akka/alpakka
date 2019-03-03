@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.csv
@@ -57,6 +57,11 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
 
     "parse an empty line with CR, LF into a single column" in {
       expectInOut("\r\n", List(""))
+    }
+
+    "parse an empty line with CR, CR, LF into a single column" in {
+      // https://github.com/akka/alpakka/issues/987
+      expectInOut("\r\r\n", List(""))
     }
 
     "parse UTF-8 chars unchanged" in {
@@ -236,6 +241,18 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
     "detect line ending correctly if input is split between CR & LF" in {
       val parser = new CsvParser(delimiter = ',', quoteChar = '"', escapeChar = '\\', maximumLineLength)
       parser.offer(ByteString("A,D\r"))
+      parser.poll(requireLineEnd = true) should be('empty)
+      parser.offer(ByteString("\nB,E\r\n"))
+      parser.poll(requireLineEnd = true).value.map(_.utf8String) should be(List("A", "D"))
+      parser.poll(requireLineEnd = true).value.map(_.utf8String) should be(List("B", "E"))
+      parser.poll(requireLineEnd = true) should be('empty)
+    }
+
+    "detect line ending correctly if input is split between CR, CR & LF" in {
+      val parser = new CsvParser(delimiter = ',', quoteChar = '"', escapeChar = '\\', maximumLineLength)
+      parser.offer(ByteString("A,D\r"))
+      parser.poll(requireLineEnd = true) should be('empty)
+      parser.offer(ByteString("\r"))
       parser.poll(requireLineEnd = true) should be('empty)
       parser.offer(ByteString("\nB,E\r\n"))
       parser.poll(requireLineEnd = true).value.map(_.utf8String) should be(List("A", "D"))

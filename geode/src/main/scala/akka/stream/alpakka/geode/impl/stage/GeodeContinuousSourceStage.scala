@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.geode.impl.stage
@@ -13,13 +13,11 @@ import org.apache.geode.cache.client.ClientCache
 import scala.concurrent.{Future, Promise}
 
 @InternalApi
-private[geode] class GeodeContinuousSourceStage[V](cache: ClientCache, name: Symbol, sql: String)
+private[geode] class GeodeContinuousSourceStage[V](cache: ClientCache, name: String, sql: String)
     extends GraphStageWithMaterializedValue[SourceShape[V], Future[Done]] {
 
   override protected def initialAttributes: Attributes =
-    Attributes
-      .name("GeodeContinuousSource")
-      .and(ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher"))
+    super.initialAttributes and Attributes.name("GeodeContinuousSource") and ActorAttributes.IODispatcher
 
   val out = Outlet[V](s"geode.continuousSource")
 

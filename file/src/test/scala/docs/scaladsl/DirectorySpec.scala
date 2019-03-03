@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -10,6 +10,7 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
 import com.google.common.jimfs.{Configuration, Jimfs}
 import org.scalatest.concurrent.ScalaFutures
@@ -25,7 +26,7 @@ class DirectorySpec
   private val fs = Jimfs.newFileSystem(Configuration.forCurrentPlatform.toBuilder.build)
   private implicit val mat = ActorMaterializer()
 
-  "The directory source factory" should {
+  "The directory source factory" should assertAllStagesStopped {
     "list files" in {
       val dir = fs.getPath("listfiles")
       Files.createDirectories(dir)

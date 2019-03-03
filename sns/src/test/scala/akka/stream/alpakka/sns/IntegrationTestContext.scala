@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.sns
@@ -9,14 +9,15 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
-import com.amazonaws.services.sns.{AmazonSNSAsync, AmazonSNSAsyncClientBuilder}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Suite}
+import org.scalatest.{BeforeAndAfterAll, Suite}
+import software.amazon.awssdk.services.sns.SnsAsyncClient
+import software.amazon.awssdk.services.sns.model.CreateTopicRequest
 
 import scala.concurrent.duration.FiniteDuration
-import scala.util.Random
 
-trait IntegrationTestContext extends BeforeAndAfterAll with ScalaFutures { this: Suite =>
+trait IntegrationTestContext extends BeforeAndAfterAll with ScalaFutures {
+  this: Suite =>
 
   //#init-system
   implicit val system: ActorSystem = ActorSystem()
@@ -25,12 +26,16 @@ trait IntegrationTestContext extends BeforeAndAfterAll with ScalaFutures { this:
 
   def snsEndpoint: String = s"http://localhost:4100"
 
-  implicit var snsClient: AmazonSNSAsync = _
+  implicit var snsClient: SnsAsyncClient = _
   var topicArn: String = _
 
   private val topicNumber = new AtomicInteger()
 
-  def createTopic(): String = snsClient.createTopic(s"alpakka-topic-${topicNumber.incrementAndGet()}").getTopicArn
+  def createTopic(): String =
+    snsClient
+      .createTopic(CreateTopicRequest.builder().name(s"alpakka-topic-${topicNumber.incrementAndGet()}").build())
+      .get()
+      .topicArn()
 
   override protected def beforeAll(): Unit = {
     snsClient = createAsyncClient(snsEndpoint)
@@ -39,18 +44,24 @@ trait IntegrationTestContext extends BeforeAndAfterAll with ScalaFutures { this:
 
   override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 
-  def createAsyncClient(endEndpoint: String): AmazonSNSAsync = {
+  def createAsyncClient(endEndpoint: String): SnsAsyncClient = {
     //#init-client
-    import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
-    import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
+    import java.net.URI
 
-    val credentialsProvider = new AWSStaticCredentialsProvider(new BasicAWSCredentials("x", "x"))
-    implicit val awsSnsClient: AmazonSNSAsync = AmazonSNSAsyncClientBuilder
-      .standard()
-      .withCredentials(credentialsProvider)
-      .withEndpointConfiguration(new EndpointConfiguration(endEndpoint, "eu-central-1"))
-      .build()
-    system.registerOnTermination(awsSnsClient.shutdown())
+    import software.amazon.awssdk.services.sns.SnsAsyncClient
+    import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
+    import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
+    import software.amazon.awssdk.regions.Region
+
+    implicit val awsSnsClient: SnsAsyncClient =
+      SnsAsyncClient
+        .builder()
+        .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
+        .endpointOverride(URI.create(endEndpoint))
+        .region(Region.EU_CENTRAL_1)
+        .build()
+
+    system.registerOnTermination(awsSnsClient.close())
     //#init-client
     awsSnsClient
   }

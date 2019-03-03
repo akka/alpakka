@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.elasticsearch.impl
@@ -49,6 +49,7 @@ private[elasticsearch] final class ElasticsearchSourceStage[T](indexName: String
                                                                settings: ElasticsearchSourceSettings,
                                                                reader: MessageReader[T])
     extends GraphStage[SourceShape[ReadResult[T]]] {
+  require(indexName != null, "You must define an index name")
 
   val out: Outlet[ReadResult[T]] = Outlet("ElasticsearchSource.out")
   override val shape: SourceShape[ReadResult[T]] = SourceShape(out)
@@ -123,7 +124,7 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](indexName: String
         client.performRequestAsync(
           "POST",
           endpoint,
-          Map("scroll" -> "5m", "sort" -> "_doc").asJava,
+          Map("scroll" -> settings.scroll, "sort" -> "_doc").asJava,
           new StringEntity(searchBody),
           this,
           new BasicHeader("Content-Type", "application/json")
@@ -135,7 +136,7 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](indexName: String
           "POST",
           s"/_search/scroll",
           Map[String, String]().asJava,
-          new StringEntity(Map("scroll" -> "5m", "scroll_id" -> scrollId).toJson.toString),
+          new StringEntity(Map("scroll" -> settings.scroll, "scroll_id" -> scrollId).toJson.toString),
           this,
           new BasicHeader("Content-Type", "application/json")
         )

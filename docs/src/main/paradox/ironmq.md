@@ -6,9 +6,7 @@ IronMQ is a simple point-to-point queue, but it is possible to implement a fan-o
 queue and set other queue as subscribers. More information about that could be found on
 [IronMQ documentation](https://www.iron.io/ironmq-fan-out-support/)
 
-### Reported issues
-
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Aironmq)
+@@project-info{ projectId="ironmq" }
 
 ## Artifacts
 
@@ -18,58 +16,79 @@ queue and set other queue as subscribers. More information about that could be f
   version=$project.version$
 }
 
-## Usage
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
 
-IronMQ can be used either in cloud or on-premise. Either way you need a authentication token and a project ID. These can
-be set in the Typesafe config:
+@@dependencies { projectId="ironmq" }
+
+## Consumer
+
+IronMQ can be used either in cloud or on-premise. Either way you need a authentication token and a project ID. These can be set in the `application.conf` file.
 
 @@snip [snip](/ironmq/src/main/resources/reference.conf)
 
-### Consumer
-
-The consumer is poll based one. It will poll every `n` milliseconds, waiting for `m` milliseconds to consume new messages and
-will push them to the downstream. All These parameters are configurable by the Typesafe config.
+The consumer is poll-based. It will poll every `fetch-interval` milliseconds, waiting for `poll-timeout` milliseconds to consume new messages and will push those downstream.
 
 It supports both at-most-once and at-least-once semantics. In the first case the messages are deleted straight away after
-been fetched. In the latter case the messages piggy back a Committable object that should be used to commit the message.
+been fetched. In the latter case the messages piggy back a `Committable` object that should be used to commit the message.
 Committing the message will cause the message to be deleted from the queue.
 
-The consumer could be instantiated using the @scaladoc[IronMqConsumer](akka.stream.alpakka.ironmq.scaladsl.IronMqConsumer$).
-It provides methods to obtain either a `Source[Message, NotUsed]` or `Source[CommittableMessage, NotUsed]`. The first is
-for at-most-one semantic, the latter for at-least-once semantic.
+### At most once
 
-### Producer
+The consumer source is instantiated using the @scala[@scaladoc[IronMqConsumer](akka.stream.alpakka.ironmq.scaladsl.IronMqConsumer$)]@java[@scaladoc[IronMqConsumer](akka.stream.alpakka.ironmq.javadsl.IronMqConsumer$)].
+
+Scala
+: @@snip [snip](/ironmq/src/test/scala/docs/scaladsl/IronMqDocsSpec.scala) { #atMostOnce }
+
+Java
+: @@snip [snip](/ironmq/src/test/java/docs/javadsl/IronMqDocsTest.java) { #imports #atMostOnce }
+
+### At least once
+
+To ensure at-least-once semantics, `CommittableMessage`s need to be committed after successful processing which will delete the message from IronMQ.
+
+Scala
+: @@snip [snip](/ironmq/src/test/scala/docs/scaladsl/IronMqDocsSpec.scala) { #atLeastOnce }
+
+Java
+: @@snip [snip](/ironmq/src/test/java/docs/javadsl/IronMqDocsTest.java) { #imports #atLeastOnce }
+
+
+
+## Producer
+
 The producer is very trivial at this time, it does not provide any batching mechanism, but sends messages to IronMq as
 soon as they arrive to the stage.
 
-The producer could be instantiated using the @scaladoc[IronMqProducer](akka.stream.alpakka.ironmq.scaladsl.IronMqProducer$).
-It provides methods to obtain either a `Flow[PushMessage, Messages.Id, NotUsed]` or a `Sink[PushMessage, NotUsed]`.
+The producer is instantiated using the @scala[@scaladoc[IronMqProducer](akka.stream.alpakka.ironmq.scaladsl.IronMqProducer$)]@java[@scaladoc[IronMqProducer](akka.stream.alpakka.ironmq.javadsl.IronMqProducer$)].
+It provides methods to obtain either a @scala[`Flow[PushMessage, Messages.Id, NotUsed]`]@java[`Flow<PushMessage, Messages.Id, NotUsed>`] or a @scala[`Sink[PushMessage, NotUsed]`]@java`Sink<PushMessage, NotUsed>`].
 
-The @scaladoc[PushMessage](akka.stream.alpakka.ironmq.PushMessage) allows to specify the delay per individual message. The
-message expiration is set a queue level. The @scaladoc[IronMqClient](akka.stream.alpakka.ironmq.IronMqClient) does not
-still have all the features to create and update these settings on a queue.
 
-If you are using the producer `Flow` The returned @scaladoc[Messages.Ids](akka.stream.alpakka.ironmq.Messages$$Id) will
-contain the ID of the pushed message, that can be used to manipulate the message.
+### Flow
 
-For each `PushMessage` from the upstream you will have exactly one `Message.Id` in downstream in the same order. Regardless
-if the producer will implement a batch mechanism in the future.
+The @scaladoc[PushMessage](akka.stream.alpakka.ironmq.PushMessage) allows to specify the delay per individual message. The message expiration is set a queue level.
 
-The producer also provides a Committable aware Flow/Sink as `Flow[(PushMessage, ToCommit), (Message.Id, CommitResult), CommitMat]`.
-It can be used to consume a Flow from an IronMQ consumer or any other source that provides a commit mechanism.
-
-> Test code requires IronMQ running in the background. You can start it quickly using docker:
->
-> `docker-compose up ironauth ironmq`
+When using the `Flow` the returned @scala[@scaladoc[Messages.Ids](akka.stream.alpakka.ironmq.Messages$$Id)]@java[`String`] contains the ID of the pushed message, that can be used to manipulate the message. For each `PushMessage` from the upstream you will have exactly one @scala[`Message.Id`]@java[`String`] in downstream in the same order.
 
 Scala
-:   ```
-    sbt
-    > ironmq/testOnly *Spec
-    ```
+: @@snip [snip](/ironmq/src/test/scala/docs/scaladsl/IronMqDocsSpec.scala) { #flow }
 
 Java
-:   ```
-    sbt
-    > ironmq/testOnly *Test
-    ```
+: @@snip [snip](/ironmq/src/test/java/docs/javadsl/IronMqDocsTest.java) { #imports #flow }
+
+The producer also provides a committable aware Flow/Sink as @scala[`Flow[(PushMessage, Committable), Message.Id, NotUsed]`]@java[`Flow<CommittablePushMessage<Committable>, String, NotUsed>`].
+It can be used to consume a Flow from an IronMQ consumer or any other source that provides a commit mechanism.
+
+Scala
+: @@snip [snip](/ironmq/src/test/scala/docs/scaladsl/IronMqDocsSpec.scala) { #atLeastOnceFlow }
+
+Java
+: @@snip [snip](/ironmq/src/test/java/docs/javadsl/IronMqDocsTest.java) { #imports #atLeastOnceFlow }
+
+
+### Sink
+
+Scala
+: @@snip [snip](/ironmq/src/test/scala/docs/scaladsl/IronMqDocsSpec.scala) { #sink }
+
+Java
+: @@snip [snip](/ironmq/src/test/java/docs/javadsl/IronMqDocsTest.java) { #imports #sink }

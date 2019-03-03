@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.ftp
@@ -66,7 +66,7 @@ final class FtpSettings private (
     val credentials: FtpCredentials,
     val binary: Boolean,
     val passiveMode: Boolean,
-    val configureConnection: org.apache.commons.net.ftp.FTPClient => Unit
+    val configureConnection: FTPClient => Unit
 ) extends FtpFileSettings {
 
   def withHost(value: java.net.InetAddress): FtpSettings = copy(host = value)
@@ -154,7 +154,7 @@ final class FtpsSettings private (
     val credentials: FtpCredentials,
     val binary: Boolean,
     val passiveMode: Boolean,
-    val configureConnection: org.apache.commons.net.ftp.FTPSClient => Unit
+    val configureConnection: FTPSClient => Unit
 ) extends FtpFileSettings {
 
   def withHost(value: java.net.InetAddress): FtpsSettings = copy(host = value)

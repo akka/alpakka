@@ -1,14 +1,13 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.googlecloud.pubsub.scaladsl
 
-import java.security.PrivateKey
-
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.pubsub._
+import akka.stream.alpakka.googlecloud.pubsub.impl._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.{Done, NotUsed}
 
@@ -16,27 +15,16 @@ import scala.collection.immutable
 import scala.concurrent.Future
 
 object GooglePubSub extends GooglePubSub {
-  private[pubsub] override val httpApi = HttpApi
-  @akka.annotation.InternalApi
-  private[pubsub] def getSession(clientEmail: String, privateKey: PrivateKey): Session =
-    new Session(clientEmail, privateKey)
+  private[pubsub] override val httpApi = PubSubApi
 }
 
 protected[pubsub] trait GooglePubSub {
-  private[pubsub] def httpApi: HttpApi
-
-  @akka.annotation.InternalApi
-  private[pubsub] def getSession(clientEmail: String, privateKey: PrivateKey): Session
+  private[pubsub] def httpApi: PubSubApi
 
   /**
    * Creates a flow to that publish messages to a topic and emits the message ids
    */
-  def publish(projectId: String,
-              apiKey: String,
-              clientEmail: String,
-              privateKey: PrivateKey,
-              topic: String,
-              parallelism: Int = 1)(
+  def publish(topic: String, config: PubSubConfig, parallelism: Int = 1)(
       implicit actorSystem: ActorSystem,
       materializer: Materializer
   ): Flow[PublishRequest, immutable.Seq[String], NotUsed] = {
@@ -44,59 +32,52 @@ protected[pubsub] trait GooglePubSub {
 
     if (httpApi.isEmulated) {
       Flow[PublishRequest].mapAsyncUnordered(parallelism) { request =>
-        httpApi.publish(projectId, topic, maybeAccessToken = None, apiKey, request)
+        httpApi.publish(config.projectId, topic, maybeAccessToken = None, request)
       }
     } else {
-      val session = getSession(clientEmail, privateKey)
-
       Flow[PublishRequest].mapAsyncUnordered(parallelism) { request =>
-        session.getToken().flatMap { accessToken =>
-          httpApi.publish(projectId, topic, Some(accessToken), apiKey, request)
+        config.session.getToken().flatMap { accessToken =>
+          httpApi.publish(config.projectId, topic, Some(accessToken), request)
         }
       }
     }
   }
 
-  def subscribe(projectId: String, apiKey: String, clientEmail: String, privateKey: PrivateKey, subscription: String)(
+  def subscribe(subscription: String, config: PubSubConfig)(
       implicit actorSystem: ActorSystem
-  ): Source[ReceivedMessage, NotUsed] = {
-    val session = getSession(clientEmail, privateKey)
+  ): Source[ReceivedMessage, NotUsed] =
     Source.fromGraph(
-      new GooglePubSubSource(projectId = projectId,
-                             apiKey = apiKey,
-                             session = session,
-                             subscription = subscription,
-                             httpApi = httpApi)
+      new GooglePubSubSource(
+        projectId = config.projectId,
+        session = config.session,
+        subscription = subscription,
+        returnImmediately = config.pullReturnImmediately,
+        maxMessages = config.pullMaxMessagesPerInternalBatch,
+        httpApi = httpApi
+      )
     )
-  }
 
   def acknowledge(
-      projectId: String,
-      apiKey: String,
-      clientEmail: String,
-      privateKey: PrivateKey,
       subscription: String,
+      config: PubSubConfig,
       parallelism: Int = 1
   )(implicit actorSystem: ActorSystem, materializer: Materializer): Sink[AcknowledgeRequest, Future[Done]] = {
     import materializer.executionContext
 
     (if (httpApi.isEmulated) {
        Flow[AcknowledgeRequest].mapAsyncUnordered(parallelism) { ackReq =>
-         httpApi.acknowledge(project = projectId,
+         httpApi.acknowledge(project = config.projectId,
                              subscription = subscription,
                              maybeAccessToken = None,
-                             apiKey = apiKey,
                              request = ackReq)
        }
      } else {
-       val session = getSession(clientEmail, privateKey)
        Flow[AcknowledgeRequest]
          .mapAsyncUnordered(parallelism) { ackReq =>
-           session.getToken().flatMap { accessToken =>
-             httpApi.acknowledge(project = projectId,
+           config.session.getToken().flatMap { accessToken =>
+             httpApi.acknowledge(project = config.projectId,
                                  subscription = subscription,
                                  maybeAccessToken = Some(accessToken),
-                                 apiKey = apiKey,
                                  request = ackReq)
            }
          }

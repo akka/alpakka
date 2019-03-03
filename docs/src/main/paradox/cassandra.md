@@ -4,9 +4,7 @@ The Cassandra connector allows you to read and write to Cassandra. You can query
 
 Unlogged batches are also supported. 
 
-### Reported issues
-
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Acassandra)
+@@project-info{ projectId="cassandra" }
 
 ## Artifacts
 
@@ -16,7 +14,12 @@ Unlogged batches are also supported.
   version=$project.version$
 }
 
-## Usage
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="cassandra" }
+
+
+## Source
 
 Sources provided by this connector need a prepared session to communicate with Cassandra cluster. First, let's initialize a Cassandra session.
 
@@ -33,10 +36,6 @@ Scala
 
 Java
 : @@snip [snip](/cassandra/src/test/java/docs/javadsl/CassandraSourceTest.java) { #init-mat }
-
-This is all preparation that we are going to need.
-
-### Source Usage
 
 Let's create a Cassandra statement with a query that we want to execute.
 
@@ -56,7 +55,7 @@ Java
 
 Here we used a basic sink to complete the stream by collecting all of the stream elements to a collection. The power of streams comes from building larger data pipelines which leverage backpressure to ensure efficient flow control. Feel free to edit the example code and build @extref[more advanced stream topologies](akka-docs:scala/stream/stream-introduction).
 
-### Flow with passthrough Usage
+## Flow with passthrough
 
 Let's create a Cassandra Prepared statement with a query that we want to execute.
 
@@ -82,7 +81,7 @@ Scala
 Java
 : @@snip [snip](/cassandra/src/test/java/docs/javadsl/CassandraSourceTest.java) { #run-flow }
 
-### Flow with passthrough and unlogged batching Usage
+## Flow with passthrough and unlogged batching
 
 Use this when most of the elements in the stream share the same partition key. 
 
@@ -134,7 +133,7 @@ Java
 : @@snip [snip](/cassandra/src/test/java/docs/javadsl/CassandraSourceTest.java) { #run-batching-flow }
 
 
-### Sink Usage
+## Sink
 
 Let's create a Cassandra Prepared statement with a query that we want to execute.
 
@@ -161,7 +160,7 @@ Java
 : @@snip [snip](/cassandra/src/test/java/docs/javadsl/CassandraSourceTest.java) { #run-sink }
 
 
-### Running the example code
+## Running the example code
 
 The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
 

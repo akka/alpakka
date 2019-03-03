@@ -4,11 +4,15 @@
 
 This connector provides an implementation of a Unix Domain Socket with interfaces modelled on the conventional `Tcp` Akka Streams class. The connector uses JNI and so there are no native dependencies.
 
+The binding and connecting APIs are extremely similar to the `Tcp` Akka Streams class. `UnixDomainSocket` is generally substitutable for `Tcp` except that the `SocketAddress` is different (Unix Domain Sockets requires a `java.io.File` as opposed to a host and port). Please read the following for details:
+
+* [Scala user reference for `Tcp`](https://doc.akka.io/docs/akka/current/stream/stream-io.html?language=scala)
+* [Java user reference for `Tcp`](https://doc.akka.io/docs/akka/current/stream/stream-io.html?language=java)
+
+
 > Note that Unix Domain Sockets, as the name implies, do not apply to Windows.
 
-### Reported issues
-
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Aunix-domain-socket)
+@@project-info{ projectId="unix-domain-socket" }
 
 
 ## Artifacts
@@ -19,14 +23,11 @@ This connector provides an implementation of a Unix Domain Socket with interface
   version=$project.version$
 }
 
-## Usage
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
 
-The binding and connecting APIs are extremely similar to the `Tcp` Akka Streams class. `UnixDomainSocket` is generally substitutable for `Tcp` except that the `SocketAddress` is different (Unix Domain Sockets requires a `java.io.File` as opposed to a host and port). Please read the following for details:
+@@dependencies { projectId="unix-domain-socket" }
 
-* [Scala user reference for `Tcp`](https://doc.akka.io/docs/akka/current/stream/stream-io.html?language=scala)
-* [Java user reference for `Tcp`](https://doc.akka.io/docs/akka/current/stream/stream-io.html?language=java)
-
-### Binding to a file
+## Binding to a file
 
 Scala
 : @@snip [snip](/unix-domain-socket/src/test/scala/docs/scaladsl/UnixDomainSocketSpec.scala) { #binding }
@@ -34,7 +35,7 @@ Scala
 Java
 : @@snip [snip](/unix-domain-socket/src/test/java/docs/javadsl/UnixDomainSocketTest.java) { #binding }
 
-### Connecting to a file
+## Connecting to a file
 
 Scala
 : @@snip [snip](/unix-domain-socket/src/test/scala/docs/scaladsl/UnixDomainSocketSpec.scala) { #outgoingConnection }

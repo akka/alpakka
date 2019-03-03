@@ -18,20 +18,57 @@ services:
     image: cassandra:3.0.15
     ports:
       - "9042:9042"
-  orientdb:
-    image: orientdb:3.0.4
+  couchbase:
+    image: couchbase:community-5.1.1
     ports:
-      - "2424:2424"
-    environment:
-      - "ORIENTDB_ROOT_PASSWORD=root"
-    command: /orientdb/bin/server.sh -Dmemory.chunk.size=268435456
+      - "8091-8094:8091-8094"
+      - "11210:11210"
+  couchbase_prep:
+    image: couchbase:community-5.1.1
+    links:
+      - "couchbase"
+    entrypoint: ""
+    command: >
+      bash -c "
+        echo 'waiting until couchbase is up'
+        until `curl --output /dev/null --silent --head --fail http://couchbase:8091`; do
+            printf '.'
+            sleep 2
+        done
+        couchbase-cli cluster-init -c couchbase \
+          --cluster-username Administrator --cluster-password password \
+          --cluster-ramsize 300 \
+          --cluster-index-ramsize 256 \
+          --services data,index,query,fts
+        couchbase-cli bucket-create -c couchbase \
+          -u Administrator -p password \
+          --bucket akka \
+          --bucket-type couchbase \
+          --bucket-ramsize 100 \
+          --bucket-replica 1 \
+          --wait
+        couchbase-cli bucket-create -c couchbase \
+          -u Administrator -p password \
+          --bucket akkaquery \
+          --bucket-type couchbase \
+          --bucket-ramsize 100 \
+          --bucket-replica 1 \
+          --wait
+        sleep 2 # just wait a tiny bit more after creating the bucket
+        echo 'CREATE PRIMARY INDEX ON akkaquery USING GSI;' | \
+          cbq -c Administrator:password -e http://couchbase:8093
+      "
+  elasticmq:
+    image: softwaremill/elasticmq:0.14.6
+    ports:
+      - "9324:9324"
   dynamodb:
     image: deangiberson/aws-dynamodb-local
     ports:
       - "8001:8000"
   geode:
     container_name: geode
-    image: apachegeode/geode:1.6.0
+    image: apachegeode/geode:1.8.0
     hostname: geode
     mem_limit: 2g
     expose:
@@ -49,6 +86,43 @@ services:
     volumes:
       - ./geode/scripts/:/scripts/
     command: /scripts/geode.sh
+  gcloud-pubsub-emulator:
+    image: bigtruedata/gcloud-pubsub-emulator
+    ports:
+      - "8538:8538"
+    command: start --host-port=0.0.0.0:8538 --data-dir=/data
+  gcloud-pubsub-emulator_prep:
+    image: martynas/gcloud-pubsub-client
+    links:
+      - "gcloud-pubsub-emulator"
+    environment:
+      - "PUBSUB_PROJECT_ID=alpakka"
+      - "PUBSUB_EMULATOR_HOST=gcloud-pubsub-emulator:8538"
+    entrypoint: ""
+    command: >
+      bash -c "
+        python publisher.py alpakka create simpleTopic &&
+        python subscriber.py alpakka create simpleTopic simpleSubscription
+        python publisher.py alpakka create testTopic &&
+        python subscriber.py alpakka create testTopic testSubscription
+      "
+  hbase:
+    image: nerdammer/hbase:1.1.2
+    hostname: hbase
+    ports:
+      - 2181:2181
+      - 60000:60000
+      - 60010:60010
+      - 60020:60020
+      - 60030:60030
+  ibmmq:
+    image: ibmcom/mq:9.1.1.0
+    environment:
+      LICENSE: accept
+      MQ_QMGR_NAME: QM1
+    ports:
+      - "1414:1414"
+      - "9443:9443"
   ironauth:
     image: iron/auth
     ports:
@@ -61,16 +135,6 @@ services:
       - "AUTH_HOST=http://ironauth:8090"
     ports:
       - "8080:8080"
-  mongo:
-    image: mongo
-    ports:
-      - "27017:27017"
-  mqtt:
-    image: toke/mosquitto
-    ports:
-      - "1883:1883"
-    volumes:
-      - ./mqtt/src/test/travis:/mqtt/config/conf.d
   kudu-master-data:
     image: kunickiaj/kudu
     volumes:
@@ -97,3 +161,41 @@ services:
     command: tserver
     links:
       - kudu-master
+  minio:
+    image: minio/minio
+    ports:
+      - "9000:9000"
+    environment:
+      - "MINIO_ACCESS_KEY=TESTKEY"
+      - "MINIO_SECRET_KEY=TESTSECRET"
+    command: server /data
+  minio_prep:
+    image: mesosphere/aws-cli
+    links:
+      - "minio"
+    environment:
+      - "AWS_ACCESS_KEY_ID=TESTKEY"
+      - "AWS_SECRET_ACCESS_KEY=TESTSECRET"
+    entrypoint: ""
+    command: >
+      sh -c "
+        aws --endpoint-url http://minio:9000 s3api create-bucket --bucket my.test.frankfurt
+        aws --endpoint-url http://minio:9000 s3api create-bucket --bucket my-test-us-east-1
+      "
+  mongo:
+    image: mongo
+    ports:
+      - "27017:27017"
+  mqtt:
+    image: toke/mosquitto
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mqtt/src/test/travis:/mqtt/config/conf.d
+  orientdb:
+    image: orientdb:3.0.13
+    ports:
+      - "2424:2424"
+    environment:
+      - "ORIENTDB_ROOT_PASSWORD=root"
+    command: /orientdb/bin/server.sh -Dmemory.chunk.size=268435456

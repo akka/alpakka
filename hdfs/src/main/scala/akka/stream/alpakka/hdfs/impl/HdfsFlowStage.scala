@@ -1,10 +1,11 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.hdfs.impl
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.stream._
 import akka.stream.alpakka.hdfs._
@@ -18,7 +19,7 @@ import scala.concurrent.duration.FiniteDuration
 /**
  * Internal API
  */
-@akka.annotation.InternalApi
+@InternalApi
 private[hdfs] final class HdfsFlowStage[W, I, C](
     ss: SyncStrategy,
     rs: RotationStrategy,
@@ -41,7 +42,7 @@ private[hdfs] final class HdfsFlowStage[W, I, C](
 /**
  * Internal API
  */
-@akka.annotation.InternalApi
+@InternalApi
 private[hdfs] final class HdfsFlowLogic[W, I, C](
     initialSyncStrategy: SyncStrategy,
     initialRotationStrategy: RotationStrategy,
@@ -191,6 +192,10 @@ private[hdfs] final class HdfsFlowLogic[W, I, C](
 
 }
 
+/**
+ * Internal API
+ */
+@InternalApi
 private object HdfsFlowLogic {
 
   type FlowStep[W, I, A] = State[FlowState[W, I], A]

@@ -1,39 +1,32 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.javadsl;
 
-import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+// #header-line #column-names
 import akka.stream.alpakka.csv.javadsl.CsvParsing;
 import akka.stream.alpakka.csv.javadsl.CsvToMap;
+// #header-line #column-names
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-// #header-line
-
-// #header-line
-
-// #column-names
-
-// #column-names
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -66,6 +59,7 @@ public class CsvToMapTest {
   public void parsedLineShouldBecomeMapKeys() throws Exception {
     CompletionStage<Map<String, ByteString>> completionStage =
         // #header-line
+
         // values as ByteString
         Source.single(ByteString.fromString("eins,zwei,drei\n1,2,3"))
             .via(CsvParsing.lineScanner())
@@ -105,6 +99,7 @@ public class CsvToMapTest {
   public void givenHeadersShouldBecomeMapKeys() throws Exception {
     CompletionStage<Map<String, ByteString>> completionStage =
         // #column-names
+
         // values as ByteString
         Source.single(ByteString.fromString("1,2,3"))
             .via(CsvParsing.lineScanner())
@@ -149,5 +144,10 @@ public class CsvToMapTest {
   @AfterClass
   public static void teardown() throws Exception {
     TestKit.shutdownActorSystem(system);
+  }
+
+  @After
+  public void checkForStageLeaks() {
+    StreamTestKit.assertAllStagesStopped(materializer);
   }
 }

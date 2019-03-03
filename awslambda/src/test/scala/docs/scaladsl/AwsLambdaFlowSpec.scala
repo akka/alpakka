@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -11,6 +11,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.alpakka.awslambda.scaladsl.AwsLambdaFlow
 import akka.stream.scaladsl.{Keep, Sink}
 import akka.stream.testkit.scaladsl.TestSource
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
 import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.lambda.AWSLambdaAsyncClient
@@ -56,7 +57,7 @@ class AwsLambdaFlowSpec
     val invokeResult = new InvokeResult()
     val lambdaFlow = AwsLambdaFlow(1)
 
-    "call a single invoke request" in {
+    "call a single invoke request" in assertAllStagesStopped {
 
       when(
         awsLambdaClient.invokeAsync(mockitoEq(invokeRequest), mockitoAny[AsyncHandler[InvokeRequest, InvokeResult]]())
@@ -77,7 +78,7 @@ class AwsLambdaFlowSpec
 
     }
 
-    "call with exception" in {
+    "call with exception" in assertAllStagesStopped {
 
       when(
         awsLambdaClient.invokeAsync(mockitoAny[InvokeRequest](),

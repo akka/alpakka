@@ -7,6 +7,12 @@
         </encoder>
     </appender>
 
+    <logger name="akka" level="info"/>
+    <logger name="akka.stream.alpakka" level="debug"/>
+    <logger name="org.apache.http" level="info"/>
+    <logger name="org.apache.http.impl" level="info"/>
+    <logger name="org.elasticsearch.client" level="info"/>
+
     <root level="debug">
         <appender-ref ref="FILE" />
     </root>

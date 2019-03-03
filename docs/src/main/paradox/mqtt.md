@@ -8,11 +8,15 @@ Further information on [mqtt.org](https://mqtt.org/).
 
 @@@ 
 
+@@@ note { title="Streaming Differences" }
+
+Alpakka contains @ref[another MQTT connector](mqtt-streaming.md) which is _not_ based on the Eclipse Paho client, unlike this one. Please refer to the other connector where the differences are expanded on.
+
+@@@
+
 The Alpakka MQTT connector provides an Akka Stream source, sink and flow to connect to MQTT brokers. It is based on the [Eclipse Paho Java client](https://www.eclipse.org/paho/clients/java/).
 
-### Reported issues
-
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Amqtt)
+@@project-info{ projectId="mqtt" }
 
 ## Artifacts
 
@@ -21,6 +25,11 @@ The Alpakka MQTT connector provides an Akka Stream source, sink and flow to conn
   artifact=akka-stream-alpakka-mqtt_$scala.binary.version$
   version=$project.version$
 }
+
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="mqtt" }
+
 
 ## Settings
 
@@ -98,7 +107,7 @@ Java
 
 ## Publishing to MQTT
 
-To publish messages to the MQTT server create a sink be specifying `MqttConnectionSettings` ([API](akka.stream.alpakka.mqtt.MqttConnectionSettings$)) and a default Quality of Service-level.
+To publish messages to the MQTT server create a sink be specifying `MqttConnectionSettings` (@scaladoc[API](akka.stream.alpakka.mqtt.MqttConnectionSettings$)) and a default Quality of Service-level.
 
 Scala
 : @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttSourceSpec.scala) { #run-sink }

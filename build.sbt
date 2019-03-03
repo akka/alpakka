@@ -4,6 +4,7 @@ lazy val modules: Seq[ProjectReference] = Seq(
   awslambda,
   azureStorageQueue,
   cassandra,
+  couchbase,
   csv,
   dynamodb,
   elasticsearch,
@@ -11,6 +12,7 @@ lazy val modules: Seq[ProjectReference] = Seq(
   ftp,
   geode,
   googleCloudPubSub,
+  googleCloudPubSubGrpc,
   googleFcm,
   hbase,
   hdfs,
@@ -21,6 +23,7 @@ lazy val modules: Seq[ProjectReference] = Seq(
   kudu,
   mongodb,
   mqtt,
+  mqttStreaming,
   orientdb,
   reference,
   s3,
@@ -39,8 +42,8 @@ lazy val modules: Seq[ProjectReference] = Seq(
 
 lazy val alpakka = project
   .in(file("."))
-  .enablePlugins(PublishUnidoc)
-  .disablePlugins(MimaPlugin)
+  .enablePlugins(ScalaUnidocPlugin)
+  .disablePlugins(MimaPlugin, SitePlugin)
   .aggregate(modules: _*)
   .aggregate(`doc-examples`)
   .settings(
@@ -50,19 +53,27 @@ lazy val alpakka = project
         |
         |Useful sbt tasks:
         |
-        |  docs/Local/paradox - builds documentation with locally
-        |    linked Scala API docs, which can be found at
-        |    docs/target/paradox/site/local
+        |  docs/previewSite - builds Paradox and Scaladoc documentation,
+        |    starts a webserver and opens a new browser window
         |
         |  test - runs all the tests for all of the connectors.
-        |   Make sure to run `docker-compose up` first.
+        |    Make sure to run `docker-compose up` first.
         |
         |  mqtt/testOnly *.MqttSourceSpec - runs a single test
         |
         |  mimaReportBinaryIssues - checks whether this current API
         |    is binary compatible with the released version
       """.stripMargin,
-    mimaPreviousArtifacts := previousStableVersion.value.map(organization.value %% name.value % _).toSet
+    // unidoc combines sources and jars from all connectors and that
+    // includes two incompatible versions of protobuf. Depending on the
+    // classpath order that might lead to scaladoc compilation errors.
+    // Therefore the older version is exlcuded here.
+    ScalaUnidoc / unidoc / fullClasspath := {
+      (ScalaUnidoc / unidoc / fullClasspath).value
+        .filterNot(_.data.getAbsolutePath.contains("protobuf-java-2.5.0.jar"))
+    },
+    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(`doc-examples`),
+    crossScalaVersions := List() // workaround for https://github.com/sbt/sbt/issues/3465
   )
 
 lazy val amqp = alpakkaProject("amqp", "amqp", Dependencies.Amqp)
@@ -79,6 +90,9 @@ lazy val awslambda = alpakkaProject("awslambda",
 lazy val azureStorageQueue = alpakkaProject("azure-storage-queue", "azure.storagequeue", Dependencies.AzureStorageQueue)
 
 lazy val cassandra = alpakkaProject("cassandra", "cassandra", Dependencies.Cassandra)
+
+lazy val couchbase =
+  alpakkaProject("couchbase", "couchbase", Dependencies.Couchbase, parallelExecution in Test := false)
 
 lazy val csv = alpakkaProject("csv", "csv", Dependencies.Csv)
 
@@ -102,11 +116,25 @@ lazy val ftp = alpakkaProject(
   parallelExecution in Test := false,
   fork in Test := true,
   // To avoid potential blocking in machines with low entropy (default is `/dev/random`)
-  javaOptions in Test += "-Djava.security.egd=file:/dev/./urandom"
+  javaOptions in Test += "-Djava.security.egd=file:/dev/./urandom",
+  crossScalaVersions -= Dependencies.Scala213
 )
 
 lazy val geode =
-  alpakkaProject("geode", "geode", Dependencies.Geode, fork in Test := true, parallelExecution in Test := false)
+  alpakkaProject(
+    "geode",
+    "geode",
+    Dependencies.Geode,
+    fork in Test := true,
+    parallelExecution in Test := false,
+    unmanagedSourceDirectories in Compile ++= {
+      val sourceDir = (sourceDirectory in Compile).value
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, n)) if n >= 12 => Seq(sourceDir / "scala-2.12+")
+        case _ => Seq.empty
+      }
+    },
+  )
 
 lazy val googleCloudPubSub = alpakkaProject(
   "google-cloud-pub-sub",
@@ -117,6 +145,20 @@ lazy val googleCloudPubSub = alpakkaProject(
   // For mockito https://github.com/akka/alpakka/issues/390
   parallelExecution in Test := false
 )
+
+lazy val googleCloudPubSubGrpc = alpakkaProject(
+  "google-cloud-pub-sub-grpc",
+  "google.cloud.pubsub.grpc",
+  Dependencies.GooglePubSubGrpc,
+  akkaGrpcCodeGeneratorSettings ~= { _.filterNot(_ == "flat_package") },
+  akkaGrpcGeneratedSources := Seq(AkkaGrpc.Client),
+  akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala, AkkaGrpc.Java),
+  javaAgents += Dependencies.GooglePubSubGrpcAlpnAgent % "test",
+  // for the ExampleApp in the tests
+  connectInput in run := true,
+  Compile / compile / scalacOptions += "-P:silencer:pathFilters=src_managed",
+  crossScalaVersions -= Dependencies.Scala213
+).enablePlugins(AkkaGrpcPlugin, JavaAgent)
 
 lazy val googleFcm = alpakkaProject(
   "google-fcm",
@@ -129,7 +171,11 @@ lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, fork in Te
 
 lazy val hdfs = alpakkaProject("hdfs", "hdfs", Dependencies.Hdfs, parallelExecution in Test := false)
 
-lazy val ironmq = alpakkaProject("ironmq", "ironmq", Dependencies.IronMq)
+lazy val ironmq = alpakkaProject("ironmq",
+                                 "ironmq",
+                                 Dependencies.IronMq,
+                                 fork in Test := true,
+                                 crossScalaVersions -= Dependencies.Scala213)
 
 lazy val jms = alpakkaProject("jms", "jms", Dependencies.Jms, parallelExecution in Test := false)
 
@@ -143,9 +189,15 @@ lazy val kinesis = alpakkaProject("kinesis",
 
 lazy val kudu = alpakkaProject("kudu", "kudu", Dependencies.Kudu, fork in Test := false)
 
-lazy val mongodb = alpakkaProject("mongodb", "mongodb", Dependencies.MongoDb)
+lazy val mongodb =
+  alpakkaProject("mongodb", "mongodb", Dependencies.MongoDb, crossScalaVersions -= Dependencies.Scala213)
 
 lazy val mqtt = alpakkaProject("mqtt", "mqtt", Dependencies.Mqtt)
+
+lazy val mqttStreaming = alpakkaProject("mqtt-streaming", "mqttStreaming", Dependencies.MqttStreaming)
+lazy val mqttStreamingBench = alpakkaProject("mqtt-streaming-bench", "mqttStreamingBench", Seq.empty)
+  .enablePlugins(JmhPlugin)
+  .dependsOn(mqtt, mqttStreaming)
 
 lazy val orientdb = alpakkaProject("orientdb",
                                    "orientdb",
@@ -162,21 +214,27 @@ lazy val springWeb = alpakkaProject("spring-web", "spring.web", Dependencies.Spr
 
 lazy val simpleCodecs = alpakkaProject("simple-codecs", "simplecodecs")
 
-lazy val slick = alpakkaProject("slick", "slick", Dependencies.Slick)
+lazy val slick = alpakkaProject("slick", "slick", Dependencies.Slick, crossScalaVersions -= Dependencies.Scala213)
 
-lazy val sns = alpakkaProject("sns",
-                              "aws.sns",
-                              Dependencies.Sns,
-                              // For mockito https://github.com/akka/alpakka/issues/390
-                              parallelExecution in Test := false)
+lazy val sns = alpakkaProject(
+  "sns",
+  "aws.sns",
+  Dependencies.Sns,
+  // For mockito https://github.com/akka/alpakka/issues/390
+  parallelExecution in Test := false,
+  crossScalaVersions -= Dependencies.Scala213
+)
 
 lazy val solr = alpakkaProject("solr", "solr", Dependencies.Solr, parallelExecution in Test := false)
 
-lazy val sqs = alpakkaProject("sqs",
-                              "aws.sqs",
-                              Dependencies.Sqs,
-                              // For mockito https://github.com/akka/alpakka/issues/390
-                              parallelExecution in Test := false)
+lazy val sqs = alpakkaProject(
+  "sqs",
+  "aws.sqs",
+  Dependencies.Sqs,
+  // For mockito https://github.com/akka/alpakka/issues/390
+  parallelExecution in Test := false,
+  crossScalaVersions -= Dependencies.Scala213
+)
 
 lazy val sse = alpakkaProject("sse", "sse", Dependencies.Sse)
 
@@ -196,58 +254,99 @@ lazy val unixdomainsocket = alpakkaProject(
 lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml)
 
 lazy val docs = project
-  .enablePlugins(AkkaParadoxPlugin)
+  .enablePlugins(AkkaParadoxPlugin, ParadoxSitePlugin, PreprocessPlugin, PublishRsyncPlugin)
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .settings(
     name := "Alpakka",
     publish / skip := true,
-    paradoxProperties ++= Map(
-      "project.url" -> "https://developer.lightbend.com/docs/alpakka/current/",
+    whitesourceIgnore := true,
+    makeSite := makeSite.dependsOn(LocalRootProject / ScalaUnidoc / doc).value,
+    Preprocess / siteSubdirName := s"api/alpakka/${if (isSnapshot.value) "snapshot" else version.value}",
+    Preprocess / sourceDirectory := (LocalRootProject / ScalaUnidoc / unidoc / target).value,
+    Preprocess / preprocessRules := Seq(
+      ("\\.java\\.scala".r, _ => ".java")
+    ),
+    Paradox / siteSubdirName := s"docs/alpakka/${if (isSnapshot.value) "snapshot" else version.value}",
+    Paradox / sourceDirectory := sourceDirectory.value / "main" / "paradox",
+    Paradox / paradoxProperties ++= Map(
+      "project.url" -> "https://doc.akka.io/docs/alpakka/current/",
       "akka.version" -> Dependencies.AkkaVersion,
       "akka-http.version" -> Dependencies.AkkaHttpVersion,
+      "couchbase.version" -> Dependencies.CouchbaseVersion,
+      "hadoop.version" -> Dependencies.HadoopVersion,
       "extref.akka-docs.base_url" -> s"http://doc.akka.io/docs/akka/${Dependencies.AkkaVersion}/%s",
       "extref.akka-http-docs.base_url" -> s"http://doc.akka.io/docs/akka-http/${Dependencies.AkkaHttpVersion}/%s",
+      "extref.couchbase.base_url" -> s"https://docs.couchbase.com/java-sdk/${Dependencies.CouchbaseVersionForDocs}/%s",
       "extref.java-api.base_url" -> "https://docs.oracle.com/javase/8/docs/api/index.html?%s.html",
-      "extref.geode.base_url" -> "https://geode.apache.org/docs/guide/16/%s",
+      "extref.geode.base_url" -> s"https://geode.apache.org/docs/guide/${Dependencies.GeodeVersionForDocs}/%s",
       "extref.javaee-api.base_url" -> "https://docs.oracle.com/javaee/7/api/index.html?%s.html",
       "extref.paho-api.base_url" -> "https://www.eclipse.org/paho/files/javadoc/index.html?%s.html",
       "extref.slick.base_url" -> s"https://slick.lightbend.com/doc/${Dependencies.SlickVersion}/%s",
+      // Solr
+      "extref.solr.base_url" -> s"http://lucene.apache.org/solr/guide/${Dependencies.SolrVersionForDocs}/%s",
+      "javadoc.org.apache.solr.base_url" -> s"https://lucene.apache.org/solr/${Dependencies.SolrVersionForDocs}_0/solr-solrj/",
+      // Java
       "javadoc.base_url" -> "https://docs.oracle.com/javase/8/docs/api/",
       "javadoc.javax.jms.base_url" -> "https://docs.oracle.com/javaee/7/api/",
+      "javadoc.com.couchbase.base_url" -> s"https://docs.couchbase.com/sdk-api/couchbase-java-client-${Dependencies.CouchbaseVersion}/",
       "javadoc.org.apache.kudu.base_url" -> s"https://kudu.apache.org/releases/${Dependencies.KuduVersion}/apidocs/",
       "javadoc.akka.base_url" -> s"http://doc.akka.io/japi/akka/${Dependencies.AkkaVersion}/",
       "javadoc.akka.http.base_url" -> s"http://doc.akka.io/japi/akka-http/${Dependencies.AkkaHttpVersion}/",
       "javadoc.org.apache.hadoop.base_url" -> s"https://hadoop.apache.org/docs/r${Dependencies.HadoopVersion}/api/",
+      "javadoc.com.amazonaws.base_url" -> "https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/",
       // Eclipse Paho client for MQTT
       "javadoc.org.eclipse.paho.client.mqttv3.base_url" -> "http://www.eclipse.org/paho/files/javadoc/",
+      "javadoc.org.bson.codecs.configuration.base_url" -> "http://mongodb.github.io/mongo-java-driver/3.7/javadoc/",
       "scaladoc.scala.base_url" -> s"http://www.scala-lang.org/api/current/",
       "scaladoc.akka.base_url" -> s"http://doc.akka.io/api/akka/${Dependencies.AkkaVersion}",
       "scaladoc.akka.http.base_url" -> s"https://doc.akka.io/api/akka-http/${Dependencies.AkkaHttpVersion}/",
-      "scaladoc.akka.stream.alpakka.base_url" -> s"http://developer.lightbend.com/docs/api/alpakka/${version.value}"
+      "scaladoc.akka.stream.alpakka.base_url" -> {
+        val docsHost = sys.env
+          .get("CI")
+          .map(_ => "https://doc.akka.io")
+          .getOrElse(s"http://localhost:${(previewSite / previewFixedPort).value}")
+        s"$docsHost/api/alpakka/${if (isSnapshot.value) "snapshot" else version.value}/"
+      }
     ),
+    Paradox / paradoxGroups := Map("Language" -> Seq("Java", "Scala")),
     resolvers += Resolver.jcenterRepo,
-    paradoxGroups := Map("Language" -> Seq("Java", "Scala")),
-    paradoxLocalApiKey := "scaladoc.akka.stream.alpakka.base_url",
-    paradoxLocalApiDir := (alpakka / Compile / sbtunidoc.BaseUnidocPlugin.autoImport.unidoc).value.head,
+    publishRsyncArtifact := makeSite.value -> "www/",
+    publishRsyncHost := "akkarepo@gustav.akka.io"
   )
 
 lazy val `doc-examples` = project
   .enablePlugins(AutomateHeaderPlugin)
-  .disablePlugins(BintrayPlugin, MimaPlugin)
+  .disablePlugins(BintrayPlugin, MimaPlugin, SitePlugin)
   .dependsOn(
     modules.map(p => classpathDependency(p)): _*
   )
   .settings(
     name := s"akka-stream-alpakka-doc-examples",
     publish / skip := true,
+    whitesourceIgnore := true,
+    crossScalaVersions -= Dependencies.Scala213,
     Dependencies.`Doc-examples`
   )
 
 def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sbt.Def.SettingsDefinition*): Project =
   Project(id = projectId, base = file(projectId))
     .enablePlugins(AutomateHeaderPlugin)
+    .disablePlugins(SitePlugin)
     .settings(
       name := s"akka-stream-alpakka-$projectId",
-      AutomaticModuleName.settings(s"akka.stream.alpakka.$moduleName")
+      AutomaticModuleName.settings(s"akka.stream.alpakka.$moduleName"),
+      mimaPreviousArtifacts := Set(
+        organization.value %% name.value % previousStableVersion.value
+          .getOrElse(throw new Error("Unable to determine previous version"))
+      )
     )
     .settings(additionalSettings: _*)
+
+Global / onLoad := (Global / onLoad).value.andThen { s =>
+  val v = version.value
+  if (dynverGitDescribeOutput.value.hasNoTags)
+    throw new MessageOnlyException(
+      s"Failed to derive version from git tags. Maybe run `git fetch --unshallow`? Derived version: $v"
+    )
+  s
+}

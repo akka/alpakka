@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 /*
@@ -90,10 +90,10 @@ public class ReferenceTest {
 
     Assert.assertEquals(Collections.singletonList(ByteString.fromString("one")), msg.getData());
 
-    final Integer expected = 100;
+    final OptionalInt expected = OptionalInt.of(100);
     Assert.assertEquals(expected, msg.getBytesRead());
 
-    Assert.assertNull(msg.getBytesReadFailure());
+    Assert.assertEquals(Optional.empty(), msg.getBytesReadFailure());
   }
 
   @Test

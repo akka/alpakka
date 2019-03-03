@@ -9,9 +9,7 @@ source with a certain character set, which may not be usable with other flows
 or sinks. For example may CSV data arrive in UTF-16 encoding, but the Alpakka CSV
 parser does only support UTF-8.
 
-### Reported issues
-
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Atext)
+@@project-info{ projectId="text" }
 
 
 ## Artifacts
@@ -21,6 +19,11 @@ parser does only support UTF-8.
   artifact=akka-stream-alpakka-text_$scala.binary.version$
   version=$project.version$
 }
+
+
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="text" }
 
 
 ## Text transcoding

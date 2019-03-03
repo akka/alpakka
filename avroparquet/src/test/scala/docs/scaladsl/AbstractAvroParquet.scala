@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -7,6 +7,7 @@ import java.io.File
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.testkit.TestKit
 import org.apache.avro.Schema
 import org.apache.avro.generic.{GenericRecord, GenericRecordBuilder}
 import org.apache.hadoop.conf.Configuration
@@ -33,11 +34,11 @@ trait AbstractAvroParquet {
   val folder: String = "./" + Random.alphanumeric.take(8).mkString("")
 
   def afterAll(): Unit = {
-    import scala.reflect.io.Directory
+    TestKit.shutdownActorSystem(system)
 
+    import scala.reflect.io.Directory
     val directory = new Directory(new File(folder))
     directory.deleteRecursively()
-
   }
 
   def docToRecord(document: Document): GenericRecord =

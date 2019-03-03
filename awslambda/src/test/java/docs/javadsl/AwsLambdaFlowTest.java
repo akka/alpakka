@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.javadsl;
@@ -11,11 +11,13 @@ import akka.stream.alpakka.awslambda.javadsl.AwsLambdaFlow;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
 import com.amazonaws.handlers.AsyncHandler;
 import com.amazonaws.services.lambda.AWSLambdaAsyncClient;
 import com.amazonaws.services.lambda.model.InvokeRequest;
 import com.amazonaws.services.lambda.model.InvokeResult;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -47,6 +49,11 @@ public class AwsLambdaFlowTest {
   @AfterClass
   public static void teardown() {
     TestKit.shutdownActorSystem(system);
+  }
+
+  @After
+  public void checkForStageLeaks() {
+    StreamTestKit.assertAllStagesStopped(materializer);
   }
 
   @Test

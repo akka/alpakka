@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.amqp.scaladsl
@@ -14,7 +14,7 @@ import akka.stream.alpakka.amqp.{
   AmqpCachedConnectionProvider,
   AmqpConnectionFactoryConnectionProvider,
   AmqpProxyConnection,
-  AmqpSinkSettings,
+  AmqpWriteSettings,
   QueueDeclaration
 }
 import akka.stream.scaladsl.Source
@@ -78,7 +78,7 @@ class AmqpGraphStageLogicConnectionShutdownSpec
     val queueDeclaration = QueueDeclaration(queueName)
 
     val amqpSink = AmqpSink.simple(
-      AmqpSinkSettings(reusableConnectionProvider)
+      AmqpWriteSettings(reusableConnectionProvider)
         .withRoutingKey(queueName)
         .withDeclaration(queueDeclaration)
     )

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.javadsl;
@@ -16,6 +16,7 @@ import akka.stream.alpakka.file.javadsl.DirectoryChangesSource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.TestSubscriber;
+import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.TestKit;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
@@ -128,6 +129,7 @@ public class DirectoryChangesSourceTest {
 
   @After
   public void tearDown() throws Exception {
+    StreamTestKit.assertAllStagesStopped(materializer);
     TestKit.shutdownActorSystem(system, FiniteDuration.apply(3, TimeUnit.SECONDS), true);
     fs.close();
   }

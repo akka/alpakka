@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.mqtt.scaladsl
@@ -26,7 +26,7 @@ object MqttFlow {
    * @param bufferSize max number of messages read from MQTT before back-pressure applies
    * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    */
-  @deprecated("use atMostOnce instead", "0.21")
+  @deprecated("use atMostOnce instead", "1.0-M1")
   def apply(sourceSettings: MqttSourceSettings,
             bufferSize: Int,
             defaultQos: MqttQoS): Flow[MqttMessage, MqttMessage, Future[Done]] =
@@ -43,7 +43,7 @@ object MqttFlow {
    * @param bufferSize max number of messages read from MQTT before back-pressure applies
    * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    */
-  @deprecated("use atMostOnce with MqttConnectionSettings and MqttSubscriptions instead", "0.21")
+  @deprecated("use atMostOnce with MqttConnectionSettings and MqttSubscriptions instead", "1.0-M1")
   def atMostOnce(sourceSettings: MqttSourceSettings,
                  bufferSize: Int,
                  defaultQos: MqttQoS): Flow[MqttMessage, MqttMessage, Future[Done]] =
@@ -79,7 +79,7 @@ object MqttFlow {
    * @param bufferSize max number of messages read from MQTT before back-pressure applies
    * @param defaultQos Quality of service level applied for messages not specifying a message specific value
    */
-  @deprecated("use atMostOnce with MqttConnectionSettings and MqttSubscriptions instead", "0.21")
+  @deprecated("use atMostOnce with MqttConnectionSettings and MqttSubscriptions instead", "1.0-M1")
   def atLeastOnce(sourceSettings: MqttSourceSettings,
                   bufferSize: Int,
                   defaultQos: MqttQoS): Flow[MqttMessage, MqttMessageWithAck, Future[Done]] =

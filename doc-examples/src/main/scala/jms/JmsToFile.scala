@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package jms
@@ -7,10 +7,10 @@ package jms
 // #sample
 import java.nio.file.Paths
 
+import akka.stream.IOResult
 import akka.stream.alpakka.jms.JmsConsumerSettings
-import akka.stream.alpakka.jms.scaladsl.JmsConsumer
+import akka.stream.alpakka.jms.scaladsl.{JmsConsumer, JmsConsumerControl}
 import akka.stream.scaladsl.{FileIO, Keep, Sink, Source}
-import akka.stream.{IOResult, KillSwitch}
 import akka.util.ByteString
 
 import scala.concurrent.Future
@@ -28,15 +28,15 @@ object JmsToFile extends JmsSampleBase with App {
   // format: off
   // #sample
 
-  val jmsSource: Source[String, KillSwitch] =        // (1)
+  val jmsSource: Source[String, JmsConsumerControl] =        // (1)
     JmsConsumer.textSource(
-      JmsConsumerSettings(connectionFactory).withBufferSize(10).withQueue("test")
+      JmsConsumerSettings(actorSystem, connectionFactory).withBufferSize(10).withQueue("test")
     )
 
   val fileSink: Sink[ByteString, Future[IOResult]] = // (2)
     FileIO.toPath(Paths.get("target/out.txt"))
 
-  val (runningSource, finished): (KillSwitch, Future[IOResult]) =
+  val (runningSource, finished): (JmsConsumerControl, Future[IOResult]) =
                                                      // stream element type
     jmsSource                                        //: String
       .map(ByteString(_))                            //: ByteString    (3)

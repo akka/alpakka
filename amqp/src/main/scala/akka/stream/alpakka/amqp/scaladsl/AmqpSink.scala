@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.amqp.scaladsl
@@ -19,8 +19,8 @@ object AmqpSink {
    * This stage materializes to a `Future[Done]`, which can be used to know when the Sink completes, either normally
    * or because of an amqp failure
    */
-  def simple(settings: AmqpSinkSettings): Sink[ByteString, Future[Done]] =
-    apply(settings).contramap[ByteString](bytes => OutgoingMessage(bytes, false, false))
+  def simple(settings: AmqpWriteSettings): Sink[ByteString, Future[Done]] =
+    apply(settings).contramap[ByteString](bytes => WriteMessage(bytes))
 
   /**
    * Scala API:
@@ -32,7 +32,7 @@ object AmqpSink {
    * This stage materializes to a `Future[Done]`, which can be used to know when the Sink completes, either normally
    * or because of an amqp failure
    */
-  def replyTo(settings: AmqpReplyToSinkSettings): Sink[OutgoingMessage, Future[Done]] =
+  def replyTo(settings: AmqpReplyToSinkSettings): Sink[WriteMessage, Future[Done]] =
     Sink.fromGraph(new impl.AmqpReplyToSinkStage(settings))
 
   /**
@@ -45,7 +45,7 @@ object AmqpSink {
    * This stage materializes to a Future[Done], which can be used to know when the Sink completes, either normally
    * or because of an amqp failure
    */
-  def apply(settings: AmqpSinkSettings): Sink[OutgoingMessage, Future[Done]] =
+  def apply(settings: AmqpWriteSettings): Sink[WriteMessage, Future[Done]] =
     Sink.fromGraph(new impl.AmqpSinkStage(settings))
 
 }

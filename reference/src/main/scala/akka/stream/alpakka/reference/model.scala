@@ -1,16 +1,18 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.reference
+
+import java.util.{Optional, OptionalInt}
 
 import akka.annotation.InternalApi
 import akka.util.ByteString
 
 import scala.collection.immutable
 import scala.collection.JavaConverters._
-
-import scala.util.{Failure, Success, Try}
+import scala.compat.java8.OptionConverters._
+import scala.util.{Success, Try}
 
 /**
  * Use "Read" in message data types to signify that the message was read from outside.
@@ -38,22 +40,20 @@ final class ReferenceReadResult @InternalApi private[reference] (
    * If the model class is scala.util.Try, then two getters should be created.
    * One for getting the value, and another for getting the exception.
    *
-   * Should return null if the Try contains a Failure.
+   * Return bytes read wrapped in OptionalInt if the Try contains a value,
+   * otherwise return empty Optional.
    */
-  def getBytesRead(): Integer = bytesRead match {
-    case Success(bytesRead) => bytesRead
-    case Failure(_) => null
-  }
+  def getBytesRead(): OptionalInt =
+    bytesRead.toOption.asPrimitive
 
   /**
    * Java API
    *
-   * Return the exception if the Try contains a Failure, otherwise return a null.
+   * Return the exception wrapped in Optional if the Try contains a Failure,
+   * otherwise return empty Optional.
    */
-  def getBytesReadFailure(): Throwable = bytesRead match {
-    case Success(_) => null
-    case Failure(ex) => ex
-  }
+  def getBytesReadFailure(): Optional[Throwable] =
+    bytesRead.failed.toOption.asJava
 
   override def toString: String =
     s"ReferenceReadMessage(data=$data, bytesRead=$bytesRead)"
@@ -105,7 +105,9 @@ final class ReferenceWriteMessage private (
    * Java getter needs to return Java Long classes which is converted from Scala Long.
    */
   def getMetrics(): java.util.Map[String, java.lang.Long] =
-    metrics.mapValues(java.lang.Long.valueOf).asJava
+    metrics.map {
+      case (key, value) => key -> java.lang.Long.valueOf(value)
+    }.asJava
 
   private def copy(data: immutable.Seq[ByteString] = data, metrics: Map[String, Long] = metrics) =
     new ReferenceWriteMessage(data, metrics)
@@ -142,7 +144,9 @@ final class ReferenceWriteResult @InternalApi private[reference] (val message: R
    * Java getter needs to return Java Long classes which is converted from Scala Long.
    */
   def getMetrics(): java.util.Map[String, java.lang.Long] =
-    metrics.mapValues(java.lang.Long.valueOf).asJava
+    metrics.map {
+      case (key, value) => key -> java.lang.Long.valueOf(value)
+    }.asJava
 
   /** Java API */
   def getStatus: Int = status

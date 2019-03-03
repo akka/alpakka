@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.stream.alpakka.avroparquet.scaladsl.AvroParquetFlow
 import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.{Done, NotUsed}
 import org.apache.avro.generic.GenericRecord
 import org.apache.hadoop.conf.Configuration
@@ -16,16 +17,17 @@ import org.apache.parquet.avro.{AvroParquetReader, AvroParquetWriter, AvroReadSu
 import org.apache.parquet.hadoop.ParquetWriter
 import org.apache.parquet.hadoop.util.HadoopInputFile
 import org.specs2.mutable.Specification
+import org.specs2.specification.AfterAll
 
 import scala.collection.mutable
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-class AvroParquetFlowSpec extends Specification with AbstractAvroParquet {
+class AvroParquetFlowSpec extends Specification with AbstractAvroParquet with AfterAll {
 
   "AvroParquet" should {
 
-    "insert records in parquet as part of Flow stage" in {
+    "insert records in parquet as part of Flow stage" in assertAllStagesStopped {
 
       val docs = List[Document](Document("id1", "sdaada"), Document("id1", "sdaada"), Document("id3", " fvrfecefedfww"))
 

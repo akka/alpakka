@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.geode.scaladsl.{PoolSubscription, ReactiveGeode}
+import akka.stream.alpakka.geode.scaladsl.{Geode, PoolSubscription}
 import akka.stream.scaladsl.{Flow, Sink}
 import org.slf4j.LoggerFactory
 
@@ -22,19 +22,20 @@ class GeodeContinuousSourceSpec extends GeodeBaseSpec {
       "retrieves continuously elements from geode" in {
 
         //#connection-with-pool
-        val reactiveGeode = new ReactiveGeode(geodeSettings) with PoolSubscription
+        val geode = new Geode(geodeSettings) with PoolSubscription
+        system.registerOnTermination(geode.close())
         //#connection-with-pool
 
-        val flow: Flow[Person, Person, NotUsed] = reactiveGeode.flow(personsRegionSettings)
+        val flow: Flow[Person, Person, NotUsed] = geode.flow(personsRegionSettings)
 
         //#continuousQuery
         val source =
-          reactiveGeode
+          geode
             .continuousQuery[Person]('test, s"select * from /persons")
             .runWith(Sink.fold(0) { (c, p) =>
               log.debug(s"$p $c")
               if (c == 19) {
-                reactiveGeode.closeContinuousQuery('test).foreach { _ =>
+                geode.closeContinuousQuery('test).foreach { _ =>
                   log.debug("test cQuery is closed")
                 }
 
@@ -50,8 +51,7 @@ class GeodeContinuousSourceSpec extends GeodeBaseSpec {
         Await.result(f, 10 seconds)
 
         Await.result(source, 5 seconds)
-
-        reactiveGeode.close()
+        geode.close()
       }
     }
   }

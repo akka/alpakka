@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.mqtt.impl
@@ -31,6 +31,8 @@ import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
+import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions
+import akka.stream.alpakka.mqtt.MqttOfflinePersistenceSettings
 
 /**
  * INTERNAL API
@@ -96,11 +98,32 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
         case Failure(ex) => failStageWith(ex)
       }
 
-      private val mqttClient = new MqttAsyncClient(
+      private def createPahoBufferOptions(settings: MqttOfflinePersistenceSettings): DisconnectedBufferOptions = {
+
+        val disconnectedBufferOptions = new DisconnectedBufferOptions()
+
+        disconnectedBufferOptions.setBufferEnabled(true)
+        disconnectedBufferOptions.setBufferSize(settings.bufferSize)
+        disconnectedBufferOptions.setDeleteOldestMessages(settings.deleteOldestMessage)
+        disconnectedBufferOptions.setPersistBuffer(settings.persistBuffer)
+
+        disconnectedBufferOptions
+      }
+
+      private val client = new MqttAsyncClient(
         connectionSettings.broker,
         connectionSettings.clientId,
         connectionSettings.persistence
       )
+
+      private def mqttClient =
+        connectionSettings.offlinePersistenceSettings match {
+          case Some(bufferOpts) =>
+            client.setBufferOpts(createPahoBufferOptions(bufferOpts))
+
+            client
+          case _ => client
+        }
 
       private val commitCallback: AsyncCallback[CommitCallbackArguments] =
         getAsyncCallback[CommitCallbackArguments](

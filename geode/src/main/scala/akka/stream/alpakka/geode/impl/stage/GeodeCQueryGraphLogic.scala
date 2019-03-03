@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.geode.impl.stage
@@ -20,7 +20,7 @@ import scala.util.Try
 @InternalApi
 private[geode] abstract class GeodeCQueryGraphLogic[V](val shape: SourceShape[V],
                                                        val clientCache: ClientCache,
-                                                       val queryName: Symbol,
+                                                       val queryName: String,
                                                        val sql: String)
     extends GeodeSourceStageLogic[V](shape, clientCache)
     with StageLogging {
@@ -56,7 +56,7 @@ private[geode] abstract class GeodeCQueryGraphLogic[V](val shape: SourceShape[V]
 
     val cqa = cqf.create()
 
-    query = qs.newCq(queryName.name, sql, cqa)
+    query = qs.newCq(queryName, sql, cqa)
 
     buildInitialResulsIterator(query)
 

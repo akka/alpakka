@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.s3.impl
@@ -24,7 +24,11 @@ import akka.stream.stage.OutHandler
 import akka.util.ByteString
 import java.nio.file.Path
 
+import akka.annotation.InternalApi
+
 /**
+ * Internal Api
+ *
  * Buffers the complete incoming stream into a file, which can then be read several times afterwards.
  *
  * The stage waits for the incoming stream to complete. After that, it emits a single Chunk item on its output. The Chunk
@@ -33,7 +37,7 @@ import java.nio.file.Path
  * @param maxMaterializations Number of expected materializations for the completed chunk. After this, the temp file is deleted.
  * @param maxSize Maximum size on disk to buffer
  */
-private[alpakka] final class DiskBuffer(maxMaterializations: Int, maxSize: Int, tempPath: Option[Path])
+@InternalApi private[impl] final class DiskBuffer(maxMaterializations: Int, maxSize: Int, tempPath: Option[Path])
     extends GraphStage[FlowShape[ByteString, Chunk]] {
   require(maxMaterializations > 0, "maxMaterializations should be at least 1")
   require(maxSize > 0, "maximumSize should be at least 1")
@@ -42,7 +46,8 @@ private[alpakka] final class DiskBuffer(maxMaterializations: Int, maxSize: Int, 
   val out = Outlet[Chunk]("DiskBuffer.out")
   override val shape = FlowShape.of(in, out)
 
-  override def initialAttributes = ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher")
+  override def initialAttributes =
+    super.initialAttributes and Attributes.name("DiskBuffer") and ActorAttributes.IODispatcher
 
   override def createLogic(attr: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with OutHandler with InHandler {

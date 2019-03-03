@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package jms
@@ -18,7 +18,7 @@ class JmsSampleBase extends ActorSystemAvailable {
   def enqueue(connectionFactory: ConnectionFactory)(msgs: String*): Unit = {
     val jmsSink: Sink[String, Future[Done]] =
       JmsProducer.textSink(
-        JmsProducerSettings(connectionFactory).withQueue("test")
+        JmsProducerSettings(actorSystem, connectionFactory).withQueue("test")
       )
     Source(msgs.toList).runWith(jmsSink)
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.kinesis.javadsl
@@ -13,20 +13,22 @@ import com.amazonaws.services.kinesis.model.{PutRecordsRequestEntry, PutRecordsR
 
 object KinesisFlow {
 
-  def apply(streamName: String,
-            kinesisClient: AmazonKinesisAsync): Flow[PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed] =
-    apply(streamName, KinesisFlowSettings.defaultInstance, kinesisClient)
+  def create(streamName: String,
+             kinesisClient: AmazonKinesisAsync): Flow[PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed] =
+    create(streamName, KinesisFlowSettings.Defaults, kinesisClient)
 
-  def apply(streamName: String,
-            settings: KinesisFlowSettings,
-            kinesisClient: AmazonKinesisAsync): Flow[PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed] =
-    (scaladsl.KinesisFlow.apply(streamName, settings)(kinesisClient)).asJava
+  def create(streamName: String,
+             settings: KinesisFlowSettings,
+             kinesisClient: AmazonKinesisAsync): Flow[PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed] =
+    scaladsl.KinesisFlow
+      .apply(streamName, settings)(kinesisClient)
+      .asJava
 
   def withUserContext[T](
       streamName: String,
       kinesisClient: AmazonKinesisAsync
   ): Flow[Pair[PutRecordsRequestEntry, T], Pair[PutRecordsResultEntry, T], NotUsed] =
-    withUserContext(streamName, KinesisFlowSettings.defaultInstance, kinesisClient)
+    withUserContext(streamName, KinesisFlowSettings.Defaults, kinesisClient)
 
   def withUserContext[T](
       streamName: String,
@@ -37,6 +39,6 @@ object KinesisFlow {
       .Flow[Pair[PutRecordsRequestEntry, T]]
       .map(_.toScala)
       .via(scaladsl.KinesisFlow.withUserContext[T](streamName, settings)(kinesisClient))
-      .map({ case (res, ctx) => Pair.create(res, ctx) })
+      .map { case (res, ctx) => Pair.create(res, ctx) }
       .asJava
 }

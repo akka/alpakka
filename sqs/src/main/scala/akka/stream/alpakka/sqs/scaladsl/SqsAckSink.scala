@@ -1,13 +1,13 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.sqs.scaladsl
 
 import akka.Done
-import akka.stream.alpakka.sqs.{MessageActionPair, SqsAckSinkSettings}
+import akka.stream.alpakka.sqs.{MessageAction, SqsAckGroupedSettings, SqsAckSettings}
 import akka.stream.scaladsl.{Keep, Sink}
-import com.amazonaws.services.sqs.AmazonSQSAsync
+import software.amazon.awssdk.services.sqs.SqsAsyncClient
 
 import scala.concurrent.Future
 
@@ -17,11 +17,18 @@ import scala.concurrent.Future
 object SqsAckSink {
 
   /**
-   * Creates a sink for a SQS queue using an [[com.amazonaws.services.sqs.AmazonSQSAsync]].
+   * creates a [[akka.stream.scaladsl.Sink Sink]] for ack a single SQS message at a time using an [[software.amazon.awssdk.services.sqs.SqsAsyncClient]].
    */
-  def apply(queueUrl: String, settings: SqsAckSinkSettings = SqsAckSinkSettings.Defaults)(
-      implicit sqsClient: AmazonSQSAsync
-  ): Sink[MessageActionPair, Future[Done]] =
+  def apply(queueUrl: String, settings: SqsAckSettings = SqsAckSettings.Defaults)(
+      implicit sqsClient: SqsAsyncClient
+  ): Sink[MessageAction, Future[Done]] =
     SqsAckFlow.apply(queueUrl, settings).toMat(Sink.ignore)(Keep.right)
 
+  /**
+   * creates a [[akka.stream.scaladsl.Sink Sink]] for ack grouped SQS messages using an [[software.amazon.awssdk.services.sqs.SqsAsyncClient]].
+   */
+  def grouped(queueUrl: String, settings: SqsAckGroupedSettings = SqsAckGroupedSettings.Defaults)(
+      implicit sqsClient: SqsAsyncClient
+  ): Sink[MessageAction, Future[Done]] =
+    SqsAckFlow.grouped(queueUrl, settings).toMat(Sink.ignore)(Keep.right)
 }

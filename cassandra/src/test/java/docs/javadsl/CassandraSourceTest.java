@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.javadsl;
@@ -12,6 +12,7 @@ import akka.stream.alpakka.cassandra.javadsl.CassandraSink;
 import akka.stream.alpakka.cassandra.javadsl.CassandraSource;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Source;
+import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
 import com.datastax.driver.core.*;
 import org.junit.After;
@@ -96,6 +97,7 @@ public class CassandraSourceTest {
   @After
   public void cleanUp() {
     session.execute("truncate akka_stream_java_test.test");
+    StreamTestKit.assertAllStagesStopped(materializer);
   }
 
   @Test

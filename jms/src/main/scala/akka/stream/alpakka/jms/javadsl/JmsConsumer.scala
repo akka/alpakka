@@ -1,79 +1,94 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.jms.javadsl
 
 import javax.jms.Message
-
 import akka.NotUsed
-import akka.stream.KillSwitch
 import akka.stream.alpakka.jms._
+import akka.stream.javadsl.Source
 
-import scala.collection.JavaConversions
+import scala.collection.JavaConverters._
 
+/**
+ * Factory methods to create JMS consumers.
+ */
 object JmsConsumer {
 
   /**
-   * Java API: Creates an [[JmsConsumer]] for [[javax.jms.Message]]
+   * Creates a source emitting [[javax.jms.Message]] instances, and materializes a
+   * control instance to shut down the consumer.
    */
-  def create(settings: JmsConsumerSettings): akka.stream.javadsl.Source[Message, KillSwitch] =
-    akka.stream.javadsl.Source.fromGraph(new JmsConsumerStage(settings))
+  def create(settings: JmsConsumerSettings): akka.stream.javadsl.Source[Message, JmsConsumerControl] =
+    akka.stream.alpakka.jms.scaladsl.JmsConsumer.apply(settings).mapMaterializedValue(toConsumerControl).asJava
 
   /**
-   * Java API: Creates an [[JmsConsumer]] for texts
+   * Creates a source emitting Strings, and materializes a
+   * control instance to shut down the consumer.
    */
-  def textSource(settings: JmsConsumerSettings): akka.stream.javadsl.Source[String, KillSwitch] =
-    akka.stream.alpakka.jms.scaladsl.JmsConsumer.textSource(settings).asJava
+  def textSource(settings: JmsConsumerSettings): akka.stream.javadsl.Source[String, JmsConsumerControl] =
+    akka.stream.alpakka.jms.scaladsl.JmsConsumer.textSource(settings).mapMaterializedValue(toConsumerControl).asJava
 
   /**
-   * Java API: Creates an [[JmsConsumer]] for byte arrays
+   * Creates a source emitting byte arrays, and materializes a
+   * control instance to shut down the consumer.
    */
-  def bytesSource(settings: JmsConsumerSettings): akka.stream.javadsl.Source[Array[Byte], KillSwitch] =
-    akka.stream.alpakka.jms.scaladsl.JmsConsumer.bytesSource(settings).asJava
+  def bytesSource(settings: JmsConsumerSettings): akka.stream.javadsl.Source[Array[Byte], JmsConsumerControl] =
+    akka.stream.alpakka.jms.scaladsl.JmsConsumer.bytesSource(settings).mapMaterializedValue(toConsumerControl).asJava
 
   /**
-   * Java API: Creates an [[JmsConsumer]] for Maps with primitive data types
+   * Creates a source emitting maps, and materializes a
+   * control instance to shut down the consumer.
    */
   def mapSource(
       settings: JmsConsumerSettings
-  ): akka.stream.javadsl.Source[java.util.Map[String, Any], KillSwitch] =
+  ): akka.stream.javadsl.Source[java.util.Map[String, Any], JmsConsumerControl] =
     akka.stream.alpakka.jms.scaladsl.JmsConsumer
       .mapSource(settings)
-      .map(scalaMap => JavaConversions.mapAsJavaMap(scalaMap))
+      .map(_.asJava)
+      .mapMaterializedValue(toConsumerControl)
       .asJava
 
   /**
-   * Java API: Creates an [[JmsConsumer]] for serializable objects
+   * Creates a source emitting de-serialized objects, and materializes a
+   * control instance to shut down the consumer.
    */
   def objectSource(
       settings: JmsConsumerSettings
-  ): akka.stream.javadsl.Source[java.io.Serializable, KillSwitch] =
-    akka.stream.alpakka.jms.scaladsl.JmsConsumer.objectSource(settings).asJava
+  ): akka.stream.javadsl.Source[java.io.Serializable, JmsConsumerControl] =
+    akka.stream.alpakka.jms.scaladsl.JmsConsumer.objectSource(settings).mapMaterializedValue(toConsumerControl).asJava
 
   /**
-   * Java API: Creates a [[JmsConsumer]] of envelopes containing messages. It requires explicit acknowledgements
-   * on the envelopes. The acknowledgements must be called on the envelope and not on the message inside.
-   *
-   * @param settings The settings for the ack source.
-   * @return Source for JMS messages in an AckEnvelope.
+   * Creates a source emitting [[akka.stream.alpakka.jms.AckEnvelope AckEnvelope]] instances, and materializes a
+   * control instance to shut down the consumer.
+   * It requires explicit acknowledgements on the envelopes. The acknowledgements must be called on the envelope and not on the message inside.
    */
-  def ackSource(settings: JmsConsumerSettings): akka.stream.javadsl.Source[AckEnvelope, KillSwitch] =
-    akka.stream.javadsl.Source.fromGraph(new JmsAckSourceStage(settings))
+  def ackSource(settings: JmsConsumerSettings): akka.stream.javadsl.Source[AckEnvelope, JmsConsumerControl] =
+    akka.stream.alpakka.jms.scaladsl.JmsConsumer.ackSource(settings).mapMaterializedValue(toConsumerControl).asJava
 
   /**
-   * Java API: Creates a [[JmsConsumer]] of envelopes containing messages. It requires explicit
-   * commit or rollback on the envelope.
-   *
-   * @param settings The settings for the tx source
-   * @return Source of the JMS messages in a TxEnvelope
+   * Creates a source emitting [[akka.stream.alpakka.jms.TxEnvelope TxEnvelope]] instances, and materializes a
+   * control instance to shut down the consumer.
+   * It requires explicit committing or rollback on the envelopes.
    */
-  def txSource(settings: JmsConsumerSettings): akka.stream.javadsl.Source[TxEnvelope, KillSwitch] =
-    akka.stream.javadsl.Source.fromGraph(new JmsTxSourceStage(settings))
+  def txSource(settings: JmsConsumerSettings): akka.stream.javadsl.Source[TxEnvelope, JmsConsumerControl] =
+    akka.stream.alpakka.jms.scaladsl.JmsConsumer.txSource(settings).mapMaterializedValue(toConsumerControl).asJava
 
   /**
-   * Java API: Creates a [[JmsConsumer]] for browsing messages non-destructively
+   * Creates a source browsing a JMS destination (which does not consume the messages)
+   * and emitting [[javax.jms.Message]] instances.
    */
   def browse(settings: JmsBrowseSettings): akka.stream.javadsl.Source[Message, NotUsed] =
-    akka.stream.javadsl.Source.fromGraph(new JmsBrowseStage(settings))
+    akka.stream.alpakka.jms.scaladsl.JmsConsumer.browse(settings).asJava
+
+  private def toConsumerControl(scalaControl: scaladsl.JmsConsumerControl) = new JmsConsumerControl {
+
+    override def connectorState(): Source[JmsConnectorState, NotUsed] =
+      scalaControl.connectorState.map(_.asJava).asJava
+
+    override def shutdown(): Unit = scalaControl.shutdown()
+
+    override def abort(ex: Throwable): Unit = scalaControl.abort(ex)
+  }
 }

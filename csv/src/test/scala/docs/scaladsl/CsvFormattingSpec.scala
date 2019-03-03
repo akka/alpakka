@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets
 
 import akka.stream.alpakka.csv.scaladsl.{ByteOrderMark, CsvFormatting, CsvQuotingStyle}
 import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.util.ByteString
 
 import scala.collection.immutable
@@ -35,7 +36,7 @@ class CsvFormattingSpec extends CsvSpec {
   }
 
   "CSV Formatting" should {
-    "format simple value" in {
+    "format simple value" in assertAllStagesStopped {
       // #formatting
       import akka.stream.alpakka.csv.scaladsl.CsvFormatting
 
@@ -52,7 +53,7 @@ class CsvFormattingSpec extends CsvSpec {
       fut.futureValue should be(ByteString("eins,zwei,drei\r\n"))
     }
 
-    "include Byte Order Mark" in {
+    "include Byte Order Mark" in assertAllStagesStopped {
       // #formatting-bom
       import akka.stream.alpakka.csv.scaladsl.CsvFormatting
 

@@ -57,6 +57,10 @@ The JSON reading module offers a flow, which allows to stream specific parts of 
 In this particular example, only the `rows` array is interesting for the application, more specifically
 even: only the `doc` inside each element of the array.
 
+
+@@project-info{ projectId="json-streaming" }
+
+
 ### Artifacts
 
 @@dependency [sbt,Maven,Gradle] {
@@ -64,6 +68,11 @@ even: only the `doc` inside each element of the array.
   artifact=akka-stream-alpakka-json-streaming_$scala.binary.version$
   version=$project.version$
 }
+
+The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
+
+@@dependencies { projectId="json-streaming" }
+
 
 ### Example
 
