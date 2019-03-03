@@ -129,6 +129,27 @@ object S3 {
       .asJava
 
   /**
+    * Deletes all keys under the specified bucket
+    *
+    * @param bucket the s3 bucket name
+    * @return A [[akka.stream.javadsl.Source Source]] that will emit [[java.lang.Void]] when operation is completed
+    */
+  def deleteObjectsByPrefix(bucket: String): Source[Done, NotUsed] = deleteObjectsByPrefix(bucket, Optional.empty())
+
+  /**
+    * Deletes all keys which have the given prefix under the specified bucket
+    *
+    * @param bucket the s3 bucket name
+    * @param prefix optional s3 objects prefix
+    * @return A [[akka.stream.javadsl.Source Source]] that will emit [[java.lang.Void]] when operation is completed
+    */
+  def deleteObjectsByPrefix(bucket: String, prefix: Optional[String]): Source[Done, NotUsed] =
+    S3Stream
+      .deleteObjectsByPrefix(bucket, Option(prefix.orElse(null)))
+      .map(_ => Done.getInstance())
+      .asJava
+
+  /**
    * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
    *
    * @param bucket the s3 bucket name

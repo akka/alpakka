@@ -336,9 +336,9 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
 
     val results = for {
-      upload1 <- source.runWith(defaultRegionClient.multipartUpload(defaultRegionBucket, sourceKey1))
-      upload2 <- source.runWith(defaultRegionClient.multipartUpload(defaultRegionBucket, sourceKey2))
-      upload3 <- source.runWith(defaultRegionClient.multipartUpload(defaultRegionBucket, sourceKey3))
+      upload1 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey1)).runWith(Sink.head)
+      upload2 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey2)).runWith(Sink.head)
+      upload3 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey3)).runWith(Sink.head)
     } yield (upload1, upload2, upload3)
 
     whenReady(results) {
@@ -350,11 +350,11 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
         upload3.bucket shouldEqual defaultRegionBucket
         upload3.key shouldEqual sourceKey3
 
-        defaultRegionClient.deleteObjectsByPrefix(defaultRegionBucket, Some("original")).futureValue shouldEqual akka.Done
+        S3.deleteObjectsByPrefix(defaultRegionBucket, Some("original")).runWith(Sink.head).futureValue shouldEqual akka.Done
         val numOfKeysForPrefix =
-          defaultRegionClient.listBucket(defaultRegionBucket, Some("original")).runFold(0)((result, _) => result + 1)
+          S3.listBucket(defaultRegionBucket, Some("original")).runFold(0)((result, _) => result + 1)
         numOfKeysForPrefix shouldEqual 0
-        defaultRegionClient.deleteObject(defaultRegionBucket, sourceKey3).futureValue shouldEqual akka.Done
+        S3.deleteObject(defaultRegionBucket, sourceKey3).runWith(Sink.head).futureValue shouldEqual akka.Done
     }
   }
 
@@ -364,8 +364,8 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
 
     val results = for {
-      upload1 <- source.runWith(defaultRegionClient.multipartUpload(defaultRegionBucket, sourceKey1))
-      upload2 <- source.runWith(defaultRegionClient.multipartUpload(defaultRegionBucket, sourceKey2))
+      upload1 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey1)).runWith(Sink.head)
+      upload2 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey2)).runWith(Sink.head)
     } yield (upload1, upload2)
 
     whenReady(results) {
@@ -375,9 +375,9 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
         upload2.bucket shouldEqual defaultRegionBucket
         upload2.key shouldEqual sourceKey2
 
-        defaultRegionClient.deleteObjectsByPrefix(defaultRegionBucket, prefix = None).futureValue shouldEqual akka.Done
+        S3.deleteObjectsByPrefix(defaultRegionBucket, prefix = None).runWith(Sink.head).futureValue shouldEqual akka.Done
         val numOfKeysForPrefix =
-          defaultRegionClient.listBucket(defaultRegionBucket, None).runFold(0)((result, _) => result + 1)
+          S3.listBucket(defaultRegionBucket, None).runFold(0)((result, _) => result + 1)
         numOfKeysForPrefix shouldEqual 0
     }
   }
