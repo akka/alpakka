@@ -12,6 +12,8 @@ import akka.stream.alpakka.s3.impl._
 import akka.stream.scaladsl.{RunnableGraph, Sink, Source}
 import akka.util.ByteString
 
+import scala.concurrent.Future
+
 /**
  * Factory of S3 operations.
  */
@@ -126,7 +128,7 @@ object S3 {
    * @param cannedAcl a [[CannedAcl]], defaults to [[CannedAcl.Private]]
    * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
    * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
-   * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts [[ByteString]]'s and materializes to a [[akka.stream.scaladsl.Source]] of [[MultipartUploadResult]]
+   * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts [[ByteString]]'s and materializes to a [[scala.concurrent.Future Future]] of [[MultipartUploadResult]]
    */
   def multipartUpload(
       bucket: String,
@@ -137,7 +139,7 @@ object S3 {
       chunkSize: Int = MinChunkSize,
       chunkingParallelism: Int = 4,
       sse: Option[ServerSideEncryption] = None
-  ): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] = {
+  ): Sink[ByteString, Future[MultipartUploadResult]] = {
     val s3Headers = S3Headers().withCannedAcl(cannedAcl).withMetaHeaders(metaHeaders)
     S3Stream
       .multipartUpload(
@@ -158,7 +160,7 @@ object S3 {
    * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
    * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
    * @param s3Headers any headers you want to add
-   * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[akka.stream.scaladsl.Source]] of [[MultipartUploadResult]]
+   * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[scala.concurrent.Future Future]] of [[MultipartUploadResult]]
    */
   def multipartUploadWithHeaders(
       bucket: String,
@@ -167,7 +169,7 @@ object S3 {
       chunkSize: Int = MinChunkSize,
       chunkingParallelism: Int = 4,
       s3Headers: S3Headers = S3Headers()
-  ): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
+  ): Sink[ByteString, Future[MultipartUploadResult]] =
     S3Stream
       .multipartUpload(
         S3Location(bucket, key),
@@ -190,7 +192,7 @@ object S3 {
    * @param sse an optional server side encryption key
    * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
    * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
-   * @return a runnable graph which upon materialization will return a source containing the results of the copy operation.
+   * @return a runnable graph which upon materialization will return a [[scala.concurrent.Future Future ]] containing the results of the copy operation.
    */
   def multipartCopy(
       sourceBucket: String,
@@ -202,7 +204,7 @@ object S3 {
       s3Headers: S3Headers = S3Headers(),
       chunkSize: Int = MinChunkSize,
       chunkingParallelism: Int = 4
-  ): RunnableGraph[Source[MultipartUploadResult, NotUsed]] =
+  ): RunnableGraph[Future[MultipartUploadResult]] =
     S3Stream
       .multipartCopy(
         S3Location(sourceBucket, sourceKey),

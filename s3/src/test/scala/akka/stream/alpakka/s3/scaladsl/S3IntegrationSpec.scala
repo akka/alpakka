@@ -143,7 +143,6 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
         .runWith(
           S3.multipartUpload(defaultRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
         )
-        .runWith(Sink.head)
 
     val multipartUploadResult = Await.ready(result, 90.seconds).futureValue
     multipartUploadResult.bucket shouldBe defaultRegionBucket
@@ -179,7 +178,6 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
         .runWith(
           S3.multipartUpload(defaultRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
         )
-        .runWith(Sink.head)
       download <- S3.download(defaultRegionBucket, objectKey).runWith(Sink.head).flatMap {
         case Some((downloadSource, _)) =>
           downloadSource
@@ -207,7 +205,6 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
         .runWith(
           S3.multipartUpload(defaultRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
         )
-        .runWith(Sink.head)
       download <- S3.download(defaultRegionBucket, objectKey).runWith(Sink.head).flatMap {
         case Some((downloadSource, _)) =>
           downloadSource
@@ -236,7 +233,6 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
           S3.multipartUpload(otherRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
             .withAttributes(S3Attributes.settings(otherRegionSettings))
         )
-        .runWith(Sink.head)
       download <- S3
         .download(otherRegionBucket, objectKey)
         .withAttributes(S3Attributes.settings(otherRegionSettings))
@@ -273,7 +269,6 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
           S3.multipartUpload(otherRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
             .withAttributes(S3Attributes.settings(otherRegionSettings))
         )
-        .runWith(Sink.head)
       download <- S3
         .download(otherRegionBucket, objectKey)
         .withAttributes(S3Attributes.settings(otherRegionSettings))
@@ -305,8 +300,8 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
 
     val results = for {
-      upload <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey)).runWith(Sink.head)
-      copy <- S3.multipartCopy(defaultRegionBucket, sourceKey, defaultRegionBucket, targetKey).run().runWith(Sink.head)
+      upload <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey))
+      copy <- S3.multipartCopy(defaultRegionBucket, sourceKey, defaultRegionBucket, targetKey).run()
       download <- S3.download(defaultRegionBucket, targetKey).runWith(Sink.head).flatMap {
         case Some((downloadSource, _)) =>
           downloadSource
