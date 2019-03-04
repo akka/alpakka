@@ -198,7 +198,8 @@ import akka.util.ByteString
   def deleteObjectsByPrefix(bucket: String, prefix: Option[String]): Source[Done, NotUsed] =
     listBucket(bucket, prefix)
       .flatMapConcat(
-        listBucketResultContents => deleteObject(S3Location(bucket, listBucketResultContents.key), versionId = None)
+        listBucketResultContents =>
+          deleteObject(S3Location(bucket, listBucketResultContents.key), versionId = None)
       )
 
   def putObject(s3Location: S3Location,

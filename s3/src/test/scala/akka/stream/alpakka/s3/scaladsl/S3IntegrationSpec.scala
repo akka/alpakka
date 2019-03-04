@@ -351,10 +351,10 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
         upload3.key shouldEqual sourceKey3
 
         S3.deleteObjectsByPrefix(defaultRegionBucket, Some("original"))
-          .runWith(Sink.head)
+          .runWith(Sink.ignore)
           .futureValue shouldEqual akka.Done
         val numOfKeysForPrefix =
-          S3.listBucket(defaultRegionBucket, Some("original")).runFold(0)((result, _) => result + 1)
+          S3.listBucket(defaultRegionBucket, Some("original")).runFold(0)((result, _) => result + 1).futureValue
         numOfKeysForPrefix shouldEqual 0
         S3.deleteObject(defaultRegionBucket, sourceKey3).runWith(Sink.head).futureValue shouldEqual akka.Done
     }
@@ -378,10 +378,10 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
         upload2.key shouldEqual sourceKey2
 
         S3.deleteObjectsByPrefix(defaultRegionBucket, prefix = None)
-          .runWith(Sink.head)
+          .runWith(Sink.ignore)
           .futureValue shouldEqual akka.Done
         val numOfKeysForPrefix =
-          S3.listBucket(defaultRegionBucket, None).runFold(0)((result, _) => result + 1)
+          S3.listBucket(defaultRegionBucket, None).runFold(0)((result, _) => result + 1).futureValue
         numOfKeysForPrefix shouldEqual 0
     }
   }
