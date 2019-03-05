@@ -380,60 +380,65 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
                      backlog: Int = 128,
                      halfClose: Boolean = false): Source[IncomingConnection, Future[ServerBinding]] = {
 
-    val (incomingConnectionQueue, incomingConnectionSource) =
-      Source
-        .queue[IncomingConnection](2, OverflowStrategy.backpressure)
-        .prefixAndTail(0)
-        .map {
-          case (_, source) =>
-            source
-              .watchTermination() { (mat, done) =>
-                done
-                  .andThen {
-                    case _ =>
-                      try {
-                        file.delete()
-                      } catch {
-                        case NonFatal(_) =>
-                      }
-                  }
-                mat
-              }
-        }
-        .toMat(Sink.head)(Keep.both)
-        .run()
+    val bind = { () =>
+      val (incomingConnectionQueue, incomingConnectionSource) =
+        Source
+          .queue[IncomingConnection](2, OverflowStrategy.backpressure)
+          .prefixAndTail(0)
+          .map {
+            case (_, source) =>
+              source
+                .watchTermination() { (mat, done) =>
+                  done
+                    .andThen {
+                      case _ =>
+                        try {
+                          file.delete()
+                        } catch {
+                          case NonFatal(_) =>
+                        }
+                    }
+                  mat
+                }
+          }
+          .toMat(Sink.head)(Keep.both)
+          .run()
 
-    val serverBinding = Promise[ServerBinding]
+      val serverBinding = Promise[ServerBinding]
 
-    val channel = UnixServerSocketChannel.open()
-    channel.configureBlocking(false)
-    val address = new UnixSocketAddress(file)
-    val registeredKey =
-      channel.register(sel,
-                       SelectionKey.OP_ACCEPT,
-                       acceptKey(address, incomingConnectionQueue, halfClose, receiveBufferSize, sendBufferSize) _)
-    try {
-      channel.socket().bind(address, backlog)
-      sel.wakeup()
-      serverBinding.success(
-        ServerBinding(address) { () =>
+      val channel = UnixServerSocketChannel.open()
+      channel.configureBlocking(false)
+      val address = new UnixSocketAddress(file)
+      val registeredKey =
+        channel.register(sel,
+                         SelectionKey.OP_ACCEPT,
+                         acceptKey(address, incomingConnectionQueue, halfClose, receiveBufferSize, sendBufferSize) _)
+      try {
+        channel.socket().bind(address, backlog)
+        sel.wakeup()
+        serverBinding.success(
+          ServerBinding(address) { () =>
+            registeredKey.cancel()
+            channel.close()
+            incomingConnectionQueue.complete()
+            incomingConnectionQueue.watchCompletion().map(_ => ())
+          }
+        )
+      } catch {
+        case NonFatal(e) =>
           registeredKey.cancel()
           channel.close()
-          incomingConnectionQueue.complete()
-          incomingConnectionQueue.watchCompletion().map(_ => ())
-        }
-      )
-    } catch {
-      case NonFatal(e) =>
-        registeredKey.cancel()
-        channel.close()
-        incomingConnectionQueue.fail(e)
-        serverBinding.failure(e)
+          incomingConnectionQueue.fail(e)
+          serverBinding.failure(e)
+      }
+
+      Source
+        .fromFutureSource(incomingConnectionSource)
+        .mapMaterializedValue(_ => serverBinding.future)
+
     }
 
-    Source
-      .fromFutureSource(incomingConnectionSource)
-      .mapMaterializedValue(_ => serverBinding.future)
+    Source.lazily(bind).mapMaterializedValue(_.flatMap(identity))
   }
 
   protected def outgoingConnection(
@@ -443,39 +448,45 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
       connectTimeout: Duration = Duration.Inf
   ): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
 
-    val channel = UnixSocketChannel.open()
-    channel.configureBlocking(false)
-    val connectionFinished = Promise[Done]
-    val cancellable =
-      connectTimeout match {
-        case d: FiniteDuration =>
-          Some(system.scheduler.scheduleOnce(d, new Runnable {
-            override def run(): Unit =
-              channel.close()
-          }))
-        case _ =>
-          None
-      }
-    val (context, connectionFlow) = sendReceiveStructures(sel, receiveBufferSize, sendBufferSize, halfClose)
-    val registeredKey =
-      channel
-        .register(sel, SelectionKey.OP_CONNECT, connectKey(remoteAddress, connectionFinished, cancellable, context) _)
-    val connection = Try(channel.connect(remoteAddress))
-    connection.failed.foreach(e => connectionFinished.tryFailure(e))
-
-    connectionFlow
-      .merge(Source.fromFuture(connectionFinished.future.map(_ => ByteString.empty)))
-      .filter(_.nonEmpty) // We merge above so that we can get connection failures - we're not interested in the empty bytes though
-      .mapMaterializedValue { _ =>
-        connection match {
-          case Success(_) =>
-            connectionFinished.future
-              .map(_ => OutgoingConnection(remoteAddress, localAddress.getOrElse(new UnixSocketAddress(""))))
-          case Failure(e) =>
-            registeredKey.cancel()
-            channel.close()
-            Future.failed(e)
+    val connect = { () =>
+      val channel = UnixSocketChannel.open()
+      channel.configureBlocking(false)
+      val connectionFinished = Promise[Done]
+      val cancellable =
+        connectTimeout match {
+          case d: FiniteDuration =>
+            Some(system.scheduler.scheduleOnce(d, new Runnable {
+              override def run(): Unit =
+                channel.close()
+            }))
+          case _ =>
+            None
         }
-      }
+      val (context, connectionFlow) = sendReceiveStructures(sel, receiveBufferSize, sendBufferSize, halfClose)
+      val registeredKey =
+        channel
+          .register(sel, SelectionKey.OP_CONNECT, connectKey(remoteAddress, connectionFinished, cancellable, context) _)
+      val connection = Try(channel.connect(remoteAddress))
+      connection.failed.foreach(e => connectionFinished.tryFailure(e))
+
+      Future.successful(
+        connectionFlow
+          .merge(Source.fromFuture(connectionFinished.future.map(_ => ByteString.empty)))
+          .filter(_.nonEmpty) // We merge above so that we can get connection failures - we're not interested in the empty bytes though
+          .mapMaterializedValue { _ =>
+            connection match {
+              case Success(_) =>
+                connectionFinished.future
+                  .map(_ => OutgoingConnection(remoteAddress, localAddress.getOrElse(new UnixSocketAddress(""))))
+              case Failure(e) =>
+                registeredKey.cancel()
+                channel.close()
+                Future.failed(e)
+            }
+          }
+      )
+    }
+
+    Flow.lazyInitAsync(connect).mapMaterializedValue(_.flatMap(_.get))
   }
 }
