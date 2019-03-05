@@ -185,7 +185,7 @@ public class AmqpConnectorsTest {
 
     final Flow<Pair<ByteString, String>, String, CompletionStage<Done>> amqpPublishFlow =
         AmqpFlow.createSimple(
-            AmqpSinkSettings.create(connectionProvider)
+            AmqpWriteSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
                 .withDeclaration(queueDeclaration)
                 .withPublishConfirm(Duration.create(1, TimeUnit.SECONDS)));

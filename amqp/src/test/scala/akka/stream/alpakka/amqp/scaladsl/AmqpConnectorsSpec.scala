@@ -8,7 +8,7 @@ import java.net.ConnectException
 
 import akka.Done
 import akka.stream._
-import akka.stream.alpakka.amqp.{OutgoingMessage, _}
+import akka.stream.alpakka.amqp._
 import akka.stream.scaladsl.{GraphDSL, Keep, Merge, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
@@ -128,7 +128,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val queueDeclaration = QueueDeclaration(queueName)
 
       val amqpPublishFlow = AmqpFlow.simple[String](
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
           .withPublishConfirm(confirmTimeout = FiniteDuration(1, SECONDS))
@@ -153,7 +153,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val routingKey = "amqp-conn-it-spec-publish-with-confirms-rk-" + System.currentTimeMillis()
 
       val amqpPublishFlow = AmqpFlow[String](
-        AmqpSinkSettings(connectionProvider)
+        AmqpWriteSettings(connectionProvider)
           .withRoutingKey(routingKey)
           .withExchange(exchangeName)
           .withPublishConfirm(confirmTimeout = FiniteDuration(1, SECONDS))
@@ -163,7 +163,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
       val (_, probe) =
         Source(input)
         // We set mandatory to make sure that the confirm fails
-          .map(s => (OutgoingMessage(ByteString(s), immediate = false, mandatory = true), s"$s-something"))
+          .map(s => (WriteMessage(ByteString(s), immediate = false, mandatory = true), s"$s-something"))
           .viaMat(amqpPublishFlow)(Keep.right)
           .toMat(TestSink.probe)(Keep.both)
           .run
@@ -176,8 +176,8 @@ class AmqpConnectorsSpec extends AmqpSpec {
     "correctly close a AmqpPublishFlow when stream is closed without passing any elements" in {
 
       Source
-        .empty[(OutgoingMessage, String)]
-        .via(AmqpFlow(AmqpSinkSettings(connectionProvider)))
+        .empty[(WriteMessage, String)]
+        .via(AmqpFlow(AmqpWriteSettings(connectionProvider)))
         .runWith(TestSink.probe)
         .ensureSubscription()
         .expectComplete()

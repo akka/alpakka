@@ -6,7 +6,7 @@ package akka.stream.alpakka.amqp.impl
 
 import akka.Done
 import akka.annotation.InternalApi
-import akka.stream.alpakka.amqp.{AmqpPublishConfirmConfiguration, AmqpSinkSettings, OutgoingMessage}
+import akka.stream.alpakka.amqp.{AmqpPublishConfirmConfiguration, AmqpWriteSettings, WriteMessage}
 import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler}
 import akka.stream._
 
@@ -18,13 +18,13 @@ import scala.util.{Failure, Success, Try}
  * Each materialized flow will create one connection to the broker.
  */
 @InternalApi
-private[amqp] final class AmqpPublishFlowStage[O](settings: AmqpSinkSettings)
-    extends GraphStageWithMaterializedValue[FlowShape[(OutgoingMessage, O), O], Future[Done]] { stage =>
+private[amqp] final class AmqpPublishFlowStage[O](settings: AmqpWriteSettings)
+    extends GraphStageWithMaterializedValue[FlowShape[(WriteMessage, O), O], Future[Done]] { stage =>
 
-  val in = Inlet[(OutgoingMessage, O)]("AmqpPublishConfirmFlow.in")
+  val in = Inlet[(WriteMessage, O)]("AmqpPublishConfirmFlow.in")
   val out = Outlet[O]("AmqpPublishConfirmFlow.out")
 
-  override def shape: FlowShape[(OutgoingMessage, O), O] = FlowShape.of(in, out)
+  override def shape: FlowShape[(WriteMessage, O), O] = FlowShape.of(in, out)
 
   override protected def initialAttributes: Attributes =
     Attributes
