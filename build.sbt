@@ -36,6 +36,7 @@ lazy val modules: Seq[ProjectReference] = Seq(
   solr,
   sqs,
   sse,
+  stdinStdout,
   text,
   udp,
   unixdomainsocket,
@@ -251,6 +252,8 @@ lazy val sqs = alpakkaProject(
 )
 
 lazy val sse = alpakkaProject("sse", "sse", Dependencies.Sse)
+
+lazy val stdinStdout = alpakkaProject("stdin-stdout", "stdinStdout")
 
 lazy val text = alpakkaProject("text", "text")
 
