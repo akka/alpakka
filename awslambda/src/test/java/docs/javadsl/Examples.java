@@ -11,13 +11,12 @@ import akka.stream.alpakka.awslambda.javadsl.AwsLambdaFlow;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.lambda.AWSLambdaAsync;
-import com.amazonaws.services.lambda.AWSLambdaAsyncClient;
-import com.amazonaws.services.lambda.AWSLambdaAsyncClientBuilder;
-import com.amazonaws.services.lambda.model.InvokeRequest;
-import com.amazonaws.services.lambda.model.InvokeResult;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.services.lambda.LambdaAsyncClient;
+import software.amazon.awssdk.services.lambda.model.InvokeRequest;
+import software.amazon.awssdk.services.lambda.model.InvokeResponse;
+import software.amazon.awssdk.core.SdkBytes;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -31,18 +30,21 @@ public class Examples {
   // #init-mat
 
   // #init-client
-  BasicAWSCredentials credentials = new BasicAWSCredentials("x", "x");
-  AWSLambdaAsync awsLambdaClient =
-      AWSLambdaAsyncClientBuilder.standard()
-          .withCredentials(new AWSStaticCredentialsProvider(credentials))
+  AwsBasicCredentials credentials = AwsBasicCredentials.create("x", "x");
+  LambdaAsyncClient awsLambdaClient =
+      LambdaAsyncClient.builder()
+          .credentialsProvider(StaticCredentialsProvider.create(credentials))
           .build();
   // #init-client
 
   // #run
   InvokeRequest request =
-      new InvokeRequest().withFunctionName("lambda-function-name").withPayload("test-payload");
-  Flow<InvokeRequest, InvokeResult, NotUsed> flow = AwsLambdaFlow.create(awsLambdaClient, 1);
-  final CompletionStage<List<InvokeResult>> stage =
+      InvokeRequest.builder()
+          .functionName("lambda-function-name")
+          .payload(SdkBytes.fromUtf8String("test-payload"))
+          .build();
+  Flow<InvokeRequest, InvokeResponse, NotUsed> flow = AwsLambdaFlow.create(awsLambdaClient, 1);
+  final CompletionStage<List<InvokeResponse>> stage =
       Source.single(request).via(flow).runWith(Sink.seq(), materializer);
   // #run
 }
