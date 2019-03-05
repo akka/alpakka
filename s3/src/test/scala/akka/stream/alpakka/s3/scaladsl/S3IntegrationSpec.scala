@@ -328,6 +328,63 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
         S3.deleteObject(defaultRegionBucket, targetKey).runWith(Sink.head).futureValue shouldEqual akka.Done
     }
   }
+
+  it should "upload 2 files with common prefix, 1 with different prefix and delete by prefix" in {
+    val sourceKey1 = "original/file1.txt"
+    val sourceKey2 = "original/file2.txt"
+    val sourceKey3 = "uploaded/file3.txt"
+    val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
+
+    val results = for {
+      upload1 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey1)).runWith(Sink.head)
+      upload2 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey2)).runWith(Sink.head)
+      upload3 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey3)).runWith(Sink.head)
+    } yield (upload1, upload2, upload3)
+
+    whenReady(results) {
+      case (upload1, upload2, upload3) =>
+        upload1.bucket shouldEqual defaultRegionBucket
+        upload1.key shouldEqual sourceKey1
+        upload2.bucket shouldEqual defaultRegionBucket
+        upload2.key shouldEqual sourceKey2
+        upload3.bucket shouldEqual defaultRegionBucket
+        upload3.key shouldEqual sourceKey3
+
+        S3.deleteObjectsByPrefix(defaultRegionBucket, Some("original"))
+          .runWith(Sink.ignore)
+          .futureValue shouldEqual akka.Done
+        val numOfKeysForPrefix =
+          S3.listBucket(defaultRegionBucket, Some("original")).runFold(0)((result, _) => result + 1).futureValue
+        numOfKeysForPrefix shouldEqual 0
+        S3.deleteObject(defaultRegionBucket, sourceKey3).runWith(Sink.head).futureValue shouldEqual akka.Done
+    }
+  }
+
+  it should "upload 2 files, delete all files in bucket" in {
+    val sourceKey1 = "original/file1.txt"
+    val sourceKey2 = "original/file2.txt"
+    val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
+
+    val results = for {
+      upload1 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey1)).runWith(Sink.head)
+      upload2 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey2)).runWith(Sink.head)
+    } yield (upload1, upload2)
+
+    whenReady(results) {
+      case (upload1, upload2) =>
+        upload1.bucket shouldEqual defaultRegionBucket
+        upload1.key shouldEqual sourceKey1
+        upload2.bucket shouldEqual defaultRegionBucket
+        upload2.key shouldEqual sourceKey2
+
+        S3.deleteObjectsByPrefix(defaultRegionBucket, prefix = None)
+          .runWith(Sink.ignore)
+          .futureValue shouldEqual akka.Done
+        val numOfKeysForPrefix =
+          S3.listBucket(defaultRegionBucket, None).runFold(0)((result, _) => result + 1).futureValue
+        numOfKeysForPrefix shouldEqual 0
+    }
+  }
 }
 
 /*
