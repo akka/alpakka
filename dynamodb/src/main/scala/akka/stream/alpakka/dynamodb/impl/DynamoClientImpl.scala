@@ -36,7 +36,7 @@ private[dynamodb] class DynamoClientImpl(
   override protected val connection: AwsConnect = {
     val poolSettings = ConnectionPoolSettings(system)
       .withMaxConnections(settings.parallelism)
-      .withMaxOpenRequests(settings.parallelism)
+      .withMaxOpenRequests(settings.maxOpenRequests.getOrElse(settings.parallelism))
     if (settings.tls)
       Http().cachedHostConnectionPoolHttps[AwsRequestMetadata](settings.host, settings = poolSettings)
     else

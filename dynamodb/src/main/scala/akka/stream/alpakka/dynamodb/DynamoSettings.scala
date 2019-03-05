@@ -7,6 +7,8 @@ package akka.stream.alpakka.dynamodb
 import akka.actor.ActorSystem
 import com.amazonaws.auth._
 import com.typesafe.config.Config
+import java.util.Optional
+import scala.compat.java8.OptionConverters._
 
 final class DynamoSettings private (
     val region: String,
@@ -14,6 +16,7 @@ final class DynamoSettings private (
     val port: Int,
     val tls: Boolean,
     val parallelism: Int,
+    val maxOpenRequests: Option[Int],
     val credentialsProvider: com.amazonaws.auth.AWSCredentialsProvider
 ) extends AwsClientSettings {
 
@@ -27,8 +30,15 @@ final class DynamoSettings private (
   def withTls(value: Boolean): DynamoSettings =
     if (value == tls) this else copy(tls = value)
   def withParallelism(value: Int): DynamoSettings = copy(parallelism = value)
+  def withMaxOpenRequests(value: Option[Int]): DynamoSettings = copy(maxOpenRequests = value)
   def withCredentialsProvider(value: com.amazonaws.auth.AWSCredentialsProvider): DynamoSettings =
     copy(credentialsProvider = value)
+
+  /** Java Api */
+  def withMaxOpenRequests(value: Optional[Int]): DynamoSettings = copy(maxOpenRequests = value.asScala)
+
+  /** Java Api */
+  def getMaxOpenRequests(): Optional[Int] = maxOpenRequests.asJava
 
   private def copy(
       region: String = region,
@@ -36,6 +46,7 @@ final class DynamoSettings private (
       port: Int = port,
       tls: Boolean = tls,
       parallelism: Int = parallelism,
+      maxOpenRequests: Option[Int] = maxOpenRequests,
       credentialsProvider: com.amazonaws.auth.AWSCredentialsProvider = credentialsProvider
   ): DynamoSettings = new DynamoSettings(
     region = region,
@@ -43,11 +54,12 @@ final class DynamoSettings private (
     port = port,
     tls = tls,
     parallelism = parallelism,
+    maxOpenRequests = maxOpenRequests,
     credentialsProvider = credentialsProvider
   )
 
   override def toString =
-    s"""DynamoSettings(region=$region,host=$host,port=$port,parallelism=$parallelism,credentialsProvider=$credentialsProvider)"""
+    s"""DynamoSettings(region=$region,host=$host,port=$port,parallelism=$parallelism,maxOpenRequests=$maxOpenRequests,credentialsProvider=$credentialsProvider)"""
 }
 
 object DynamoSettings {
@@ -70,6 +82,10 @@ object DynamoSettings {
     val port = c.getInt("port")
     val tls = c.getBoolean("tls")
     val parallelism = c.getInt("parallelism")
+    val maxOpenRequests = if (c.hasPath("max-open-requests")) {
+      Option(c.getInt("max-open-requests"))
+    } else None
+
     val awsCredentialsProvider = {
       if (c.hasPath("credentials.access-key-id") &&
           c.hasPath("credentials.secret-key-id")) {
@@ -84,6 +100,7 @@ object DynamoSettings {
       port,
       tls,
       parallelism,
+      maxOpenRequests,
       awsCredentialsProvider
     )
   }
@@ -109,6 +126,7 @@ object DynamoSettings {
     port = 443,
     tls = true,
     parallelism = 4,
+    maxOpenRequests = None,
     new DefaultAWSCredentialsProviderChain()
   )
 
