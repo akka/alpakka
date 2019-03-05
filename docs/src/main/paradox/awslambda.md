@@ -20,7 +20,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Sending messages
 
-Flow provided by this connector needs a prepared `AWSLambdaAsyncClient` to be able to invoke lambda functions.
+Flow provided by this connector needs a prepared `LambdaAsyncClient` to be able to invoke lambda functions.
 
 Scala
 : @@snip (/awslambda/src/test/scala/docs/scaladsl/Examples.scala) { #init-client }
@@ -51,8 +51,5 @@ Java
 
 Options:
 
- - `parallelism` - Number of parallel executions. Should be less or equal to number of threads in ExecutorService for AWSLambdaAsyncClient
+ - `parallelism` - Number of parallel executions. Should be less or equal to number of threads in ExecutorService for LambdaAsyncClient 
 
-@@@ warning
-AWSLambdaAsyncClient uses blocking http client for Lambda function invocation, make sure that there is enough threads for execution in AWSLambdaAsyncClient.
-@@@
