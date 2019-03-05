@@ -16,6 +16,7 @@ import org.scalatest.{Matchers, WordSpecLike}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import java.util.Optional
 
 class DynamoSettingsSpec extends WordSpecLike with Matchers {
 
@@ -34,6 +35,7 @@ class DynamoSettingsSpec extends WordSpecLike with Matchers {
       settings.host should be("host")
       settings.port should be(443)
       settings.parallelism should be(4)
+      settings.maxOpenRequests should be(None)
       settings.credentialsProvider shouldBe a[AWSStaticCredentialsProvider]
     }
 
@@ -45,8 +47,32 @@ class DynamoSettingsSpec extends WordSpecLike with Matchers {
       settings.host should be("localhost")
       settings.port should be(8001)
       settings.parallelism should be(4)
+      settings.maxOpenRequests should be(None)
       settings.credentialsProvider shouldBe a[DefaultAWSCredentialsProviderChain]
       Await.result(system.terminate(), 1.second)
+    }
+
+    "allow configuring optional maxOpenRequests" in {
+      val config = ConfigFactory.parseString("""
+          |region = "eu-west-1"
+          |host = "localhost"
+          |port = 443
+          |tls = true
+          |parallelism = 32
+          |max-open-requests = 64
+        """.stripMargin)
+
+      val settings = DynamoSettings(config)
+
+      // Test Scala API
+      settings.maxOpenRequests shouldBe Some(64)
+      settings.withMaxOpenRequests(None).maxOpenRequests shouldBe None
+      settings.withMaxOpenRequests(Some(32)).maxOpenRequests shouldBe Some(32)
+
+      // Test Java API
+      settings.getMaxOpenRequests shouldBe Optional.of(64)
+      settings.withMaxOpenRequests(Optional.empty[Int]).getMaxOpenRequests shouldBe Optional.empty[Int]
+      settings.withMaxOpenRequests(Optional.of(32)).getMaxOpenRequests shouldBe Optional.of(32)
     }
 
     "use the DefaultAWSCredentialsProviderChain if the config defines an incomplete akka.stream.alpakka.dynamodb.credentials" in {

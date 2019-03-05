@@ -100,7 +100,7 @@ public class ExampleTest {
         tableArnSource.runWith(Sink.seq(), materializer);
     try {
       List<String> strings = streamCompletion.toCompletableFuture().get(5, TimeUnit.SECONDS);
-      fail("expeced missing schema");
+      fail("expected missing schema");
     } catch (ExecutionException expected) {
       // expected
     }
@@ -116,7 +116,7 @@ public class ExampleTest {
         scanPages.runWith(Sink.seq(), materializer);
     try {
       List<ScanResult> strings = streamCompletion.toCompletableFuture().get(1, TimeUnit.SECONDS);
-      fail("expeced missing schema");
+      fail("expected missing schema");
     } catch (ExecutionException expected) {
       // expected
     }
