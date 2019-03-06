@@ -9,6 +9,7 @@ import akka.actor.ActorSystem
 import akka.stream.alpakka.mqtt.streaming._
 import akka.stream.alpakka.mqtt.streaming.scaladsl.{ActorMqttClientSession, ActorMqttServerSession, Mqtt}
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Sink, Source, Tcp}
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream._
 import akka.testkit.TestKit
 import akka.util.ByteString
@@ -33,7 +34,7 @@ class MqttFlowSpec
     TestKit.shutdownActorSystem(system)
 
   "mqtt client flow" should {
-    "establish a bidirectional connection and subscribe to a topic" in {
+    "establish a bidirectional connection and subscribe to a topic" in assertAllStagesStopped {
       val clientId = "source-spec/flow"
       val topic = "source-spec/topic1"
 
@@ -71,11 +72,18 @@ class MqttFlowSpec
         case Publish(_, `topic`, _, bytes) => bytes shouldBe ByteString("ohi")
         case e => fail("Unexpected event: " + e)
       }
+
+      //#run-streaming-flow
+
+      // for shutting down properly
+      commands.complete()
+      session.shutdown()
+      //#run-streaming-flow
     }
   }
 
   "mqtt server flow" should {
-    "receive a bidirectional connection and a subscription to a topic" in {
+    "receive a bidirectional connection and a subscription to a topic" in assertAllStagesStopped {
       val clientId = "flow-spec/flow"
       val topic = "source-spec/topic1"
       val host = "localhost"
@@ -124,7 +132,10 @@ class MqttFlowSpec
       //#create-streaming-bind-flow
 
       //#run-streaming-bind-flow
-      val bound = bindSource.toMat(Sink.ignore)(Keep.left).run()
+      val (bound, server) = bindSource
+        .viaMat(KillSwitches.single)(Keep.both)
+        .to(Sink.ignore)
+        .run()
       //#run-streaming-bind-flow
 
       bound.futureValue.localAddress.getPort shouldBe port
@@ -152,6 +163,12 @@ class MqttFlowSpec
         case Publish(_, `topic`, _, bytes) => bytes shouldBe ByteString("ohi")
         case e => fail("Unexpected event: " + e)
       }
+      //#run-streaming-bind-flow
+
+      // for shutting down properly
+      server.shutdown()
+      session.shutdown()
+      //#run-streaming-bind-flow
     }
   }
 }

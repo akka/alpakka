@@ -10,8 +10,10 @@ import akka.actor.ActorSystem;
 import akka.japi.JavaPartialFunction;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
+import akka.stream.KillSwitches;
 import akka.stream.Materializer;
 import akka.stream.OverflowStrategy;
+import akka.stream.UniqueKillSwitch;
 import akka.stream.alpakka.mqtt.streaming.Command;
 import akka.stream.alpakka.mqtt.streaming.ConnAck;
 import akka.stream.alpakka.mqtt.streaming.ConnAckFlags;
@@ -39,8 +41,10 @@ import akka.stream.javadsl.Source;
 import akka.stream.javadsl.SourceQueueWithComplete;
 import akka.stream.javadsl.Tcp;
 import akka.stream.javadsl.BroadcastHub;
+import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -82,6 +86,11 @@ public class MqttFlowTest {
   @AfterClass
   public static void teardown() {
     TestKit.shutdownActorSystem(system);
+  }
+
+  @After
+  public void assertStageStopping() {
+    StreamTestKit.assertAllStagesStopped(materializer);
   }
 
   @Test
@@ -132,6 +141,13 @@ public class MqttFlowTest {
     Publish publishEvent = event.toCompletableFuture().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
     assertEquals(publishEvent.topicName(), topic);
     assertEquals(publishEvent.payload(), ByteString.fromString("ohi"));
+
+    // #run-streaming-flow
+
+    // for shutting down properly
+    commands.complete();
+    session.shutdown();
+    // #run-streaming-flow
   }
 
   @Test
@@ -217,8 +233,11 @@ public class MqttFlowTest {
     // #create-streaming-bind-flow
 
     // #run-streaming-bind-flow
-    CompletionStage<Tcp.ServerBinding> bound =
-        bindSource.toMat(Sink.ignore(), Keep.left()).run(materializer);
+    Pair<CompletionStage<Tcp.ServerBinding>, UniqueKillSwitch> bindingAndSwitch =
+        bindSource.viaMat(KillSwitches.single(), Keep.both()).to(Sink.ignore()).run(materializer);
+
+    CompletionStage<Tcp.ServerBinding> bound = bindingAndSwitch.first();
+    UniqueKillSwitch server = bindingAndSwitch.second();
     // #run-streaming-bind-flow
 
     bound.toCompletableFuture().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
@@ -260,5 +279,12 @@ public class MqttFlowTest {
     Publish publish = event.toCompletableFuture().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
     assertEquals(publish.topicName(), topic);
     assertEquals(publish.payload(), ByteString.fromString("ohi"));
+
+    // #run-streaming-bind-flow
+
+    // for shutting down properly
+    server.shutdown();
+    session.shutdown();
+    // #run-streaming-bind-flow
   }
 }
