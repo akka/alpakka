@@ -146,7 +146,7 @@ public class MqttFlowTest {
 
     // for shutting down properly
     commands.complete();
-    session.shutdown();
+    commands.watchCompletion().thenAccept(done -> session.shutdown());
     // #run-streaming-flow
   }
 
@@ -284,7 +284,7 @@ public class MqttFlowTest {
 
     // for shutting down properly
     server.shutdown();
-    session.shutdown();
+    commands.watchCompletion().thenAccept(done -> session.shutdown());
     // #run-streaming-bind-flow
   }
 }

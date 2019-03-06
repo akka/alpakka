@@ -16,7 +16,7 @@ import akka.util.ByteString
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
-import scala.concurrent.Promise
+import scala.concurrent.{ExecutionContext, Promise}
 import scala.concurrent.duration._
 
 class MqttFlowSpec
@@ -29,6 +29,7 @@ class MqttFlowSpec
   private implicit val defaultPatience: PatienceConfig = PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
   private implicit val mat: Materializer = ActorMaterializer()
+  private implicit val dispatcherExecutionContext: ExecutionContext = system.dispatcher
 
   override def afterAll(): Unit =
     TestKit.shutdownActorSystem(system)
@@ -77,7 +78,7 @@ class MqttFlowSpec
 
       // for shutting down properly
       commands.complete()
-      session.shutdown()
+      commands.watchCompletion().foreach(_ => session.shutdown())
       //#run-streaming-flow
     }
   }
@@ -167,7 +168,7 @@ class MqttFlowSpec
 
       // for shutting down properly
       server.shutdown()
-      session.shutdown()
+      commands.watchCompletion().foreach(_ => session.shutdown())
       //#run-streaming-bind-flow
     }
   }
