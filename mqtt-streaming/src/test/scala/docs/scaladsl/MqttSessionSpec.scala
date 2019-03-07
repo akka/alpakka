@@ -1379,7 +1379,7 @@ class MqttSessionSpec
       server.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "close when no ping request received" ignore { // assertAllStagesStopped { // https://github.com/akka/akka/issues/17997#issuecomment-429670321
+    "close when no ping request received" ignore { // assertAllStagesStopped { // https://github.com/akka/alpakka/issues/1563
       val session = ActorMqttServerSession(settings)
 
       val client = TestProbe()
