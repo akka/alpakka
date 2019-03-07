@@ -6,6 +6,7 @@ package docs.scaladsl
 
 import java.io.{File, IOException}
 import java.nio.file.Files
+import java.util.concurrent.TimeUnit
 
 import akka.Done
 import akka.actor.ActorSystem
@@ -133,6 +134,30 @@ class UnixDomainSocketSpec
       }
     }
 
+    "be able to materialize outgoing connection flow more than once" in {
+      def materialize(flow: Flow[ByteString, ByteString, _]): Future[Done] =
+        Source.single(ByteString("Hello")).via(flow).runWith(Sink.ignore)
+
+      val file = dir.resolve("sock5").toFile
+
+      val receivedLatch = new java.util.concurrent.CountDownLatch(2)
+
+      val serverSideFlow = Flow[ByteString]
+        .buffer(1, OverflowStrategy.backpressure)
+        .wireTap(_ => receivedLatch.countDown())
+
+      val _ = UnixDomainSocket().bindAndHandle(serverSideFlow, file)
+
+      val connection = UnixDomainSocket().outgoingConnection(file)
+
+      materialize(connection)
+      materialize(connection)
+
+      receivedLatch.await(5, TimeUnit.SECONDS)
+
+      succeed
+    }
+
     "not be able to bind to a non-existent file" in {
       val binding =
         UnixDomainSocket().bindAndHandle(Flow.fromFunction(identity), new File("/thisshouldnotexist"))
@@ -153,5 +178,6 @@ class UnixDomainSocketSpec
         case _: IOException => succeed
       }
     }
+
   }
 }
