@@ -8,7 +8,7 @@ import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.stream.alpakka.mqtt.streaming._
 import akka.stream.alpakka.mqtt.streaming.scaladsl.{ActorMqttClientSession, ActorMqttServerSession, Mqtt}
-import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Sink, Source, Tcp}
+import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Sink, Source, SourceQueueWithComplete, Tcp}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream._
 import akka.testkit.TestKit
@@ -16,7 +16,7 @@ import akka.util.ByteString
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
-import scala.concurrent.{ExecutionContext, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
 
 class MqttFlowSpec
@@ -52,7 +52,7 @@ class MqttFlowSpec
       //#create-streaming-flow
 
       //#run-streaming-flow
-      val (commands, events) =
+      val (commands: SourceQueueWithComplete[Command[Nothing]], events: Future[Publish]) =
         Source
           .queue(2, OverflowStrategy.fail)
           .via(mqttFlow)
@@ -96,7 +96,7 @@ class MqttFlowSpec
 
       val maxConnections = 1
 
-      val bindSource =
+      val bindSource: Source[Either[MqttCodec.DecodeError, Event[Nothing]], Future[Tcp.ServerBinding]] =
         Tcp()
           .bind(host, port)
           .flatMapMerge(
@@ -133,7 +133,7 @@ class MqttFlowSpec
       //#create-streaming-bind-flow
 
       //#run-streaming-bind-flow
-      val (bound, server) = bindSource
+      val (bound: Future[Tcp.ServerBinding], server: UniqueKillSwitch) = bindSource
         .viaMat(KillSwitches.single)(Keep.both)
         .to(Sink.ignore)
         .run()
@@ -168,8 +168,9 @@ class MqttFlowSpec
 
       // for shutting down properly
       server.shutdown()
-      commands.watchCompletion().foreach(_ => session.shutdown())
+      session.shutdown()
       //#run-streaming-bind-flow
+      commands.watchCompletion().foreach(_ => clientSession.shutdown())
     }
   }
 }
