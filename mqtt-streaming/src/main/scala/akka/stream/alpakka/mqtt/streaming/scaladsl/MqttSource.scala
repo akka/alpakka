@@ -44,9 +44,15 @@ object MqttSource {
         }
         val subscribed = Promise[Done]()
 
+        val initCommands = immutable.Seq(
+          Command(Connect(clientId, ConnectFlags.CleanSession)),
+          Command(Subscribe(subscriptions))
+        )
+
         val (commands: SourceQueueWithComplete[Command[Nothing]], subscription: Source[Event[Nothing], NotUsed]) =
           Source
             .queue[Command[Nothing]](10, OverflowStrategy.fail)
+            .prepend(Source(initCommands))
             .via(mqttFlow)
             .log("source received")
             .map {
@@ -63,9 +69,6 @@ object MqttSource {
             }
             .toMat(BroadcastHub.sink)(Keep.both)
             .run()
-
-        commands.offer(Command(Connect(clientId, ConnectFlags.CleanSession)))
-        commands.offer(Command(Subscribe(subscriptions)))
 
         val publishSource: Source[Publish, Future[Done]] = subscription
           .collect {
