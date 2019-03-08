@@ -48,7 +48,10 @@ class MqttSourceSpec
       val mqttClientSession: MqttClientSession = ActorMqttClientSession(settings)
 
       val (subscribed, received) = MqttSource
-        .atMostOnce(mqttClientSession, clientId, List(topic -> ControlPacketFlags.QoSAtLeastOnceDelivery))
+        .atMostOnce(mqttClientSession,
+                    new MqttRestartSettings(),
+                    clientId,
+                    List(topic -> ControlPacketFlags.QoSAtLeastOnceDelivery))
         .log("received", p => p.payload.utf8String)
         .take(input.size)
         .toMat(Sink.seq)(Keep.both)

@@ -10,14 +10,23 @@ import akka.event.{Logging, LoggingAdapter}
 import akka.stream.OverflowStrategy
 import akka.stream.alpakka.mqtt.streaming.impl.Setup
 import akka.stream.alpakka.mqtt.streaming._
-import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Source, SourceQueueWithComplete, Tcp}
+import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, RestartFlow, Source, SourceQueueWithComplete, Tcp}
 
 import scala.collection.immutable
 import scala.concurrent.{Future, Promise}
+import scala.concurrent.duration._
+
+final class MqttRestartSettings(
+    val minBackoff: FiniteDuration = 2.seconds,
+    val maxBackoff: FiniteDuration = 2.minutes,
+    val randomFactor: Double = 0.42d,
+    val maxRestarts: Int = -1
+)
 
 object MqttSource {
 
   def atMostOnce(mqttClientSession: MqttClientSession,
+                 restartSettings: MqttRestartSettings,
                  clientId: String,
                  subscriptions: immutable.Seq[(String, ControlPacketFlags)]): Source[Publish, Future[Done]] =
     Setup
@@ -25,11 +34,14 @@ object MqttSource {
         implicit val system: ActorSystem = materializer.system
         implicit val logging: LoggingAdapter = Logging.getLogger(system, this)
 
-        val mqttFlow: Flow[Command[Nothing], Either[MqttCodec.DecodeError, Event[Nothing]], NotUsed] =
-          Mqtt
-            .clientSessionFlow(mqttClientSession)
-            .join(Tcp(system).outgoingConnection("localhost", 1883))
-
+        val mqttFlow: Flow[Command[Nothing], Either[MqttCodec.DecodeError, Event[Nothing]], NotUsed] = {
+          import restartSettings._
+          RestartFlow.onFailuresWithBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts) { () =>
+            Mqtt
+              .clientSessionFlow(mqttClientSession)
+              .join(Tcp(system).outgoingConnection("localhost", 1883))
+          }
+        }
         val subscribed = Promise[Done]()
 
         val (commands: SourceQueueWithComplete[Command[Nothing]], subscription: Source[Event[Nothing], NotUsed]) =
