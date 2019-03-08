@@ -38,14 +38,17 @@ class MqttSourceSpec
 
   "mqtt source" should {
     "receive subscribed messages" in assertAllStagesStopped {
-      val clientId = "source-spec/flow1"
+      val clientId = "streaming/source-spec/flow1"
+      val clientId2 = "streaming/source-spec/sender"
       val topic = "source-spec/topic1"
 
       val settings = MqttSessionSettings()
       val input = Vector("one", "two", "three", "four", "five")
 
+      val mqttClientSession: MqttClientSession = ActorMqttClientSession(settings)
+
       val (subscribed, received) = MqttSource
-        .atMostOnce(settings, clientId, List(topic -> ControlPacketFlags.QoSAtLeastOnceDelivery))
+        .atMostOnce(mqttClientSession, clientId, List(topic -> ControlPacketFlags.QoSAtLeastOnceDelivery))
         .log("received", p => p.payload.utf8String)
         .take(input.size)
         .toMat(Sink.seq)(Keep.both)
@@ -67,7 +70,7 @@ class MqttSourceSpec
           .to(Sink.ignore)
           .run()
 
-      commands.offer(Command(Connect(clientId + "_2", ConnectFlags.CleanSession)))
+      commands.offer(Command(Connect(clientId2, ConnectFlags.CleanSession)))
       for {
         data <- input
       } session ! Command(
@@ -77,7 +80,10 @@ class MqttSourceSpec
       received.futureValue.map(_.payload.utf8String) should contain theSameElementsAs input
 
       commands.complete()
-      commands.watchCompletion().foreach(_ => session.shutdown())
+      commands.watchCompletion().foreach { _ =>
+        session.shutdown()
+        mqttClientSession.shutdown()
+      }
     }
   }
 

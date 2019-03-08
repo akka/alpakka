@@ -17,7 +17,7 @@ import scala.concurrent.{Future, Promise}
 
 object MqttSource {
 
-  def atMostOnce(settings: MqttSessionSettings,
+  def atMostOnce(mqttClientSession: MqttClientSession,
                  clientId: String,
                  subscriptions: immutable.Seq[(String, ControlPacketFlags)]): Source[Publish, Future[Done]] =
     Setup
@@ -25,7 +25,6 @@ object MqttSource {
         implicit val system: ActorSystem = materializer.system
         implicit val logging: LoggingAdapter = Logging.getLogger(system, this)
 
-        val mqttClientSession = ActorMqttClientSession(settings)
         val mqttFlow: Flow[Command[Nothing], Either[MqttCodec.DecodeError, Event[Nothing]], NotUsed] =
           Mqtt
             .clientSessionFlow(mqttClientSession)
@@ -58,8 +57,7 @@ object MqttSource {
 
         val publishSource: Source[Publish, Future[Done]] = subscription
           .collect {
-            case Event(publish @ Publish(flags, _, Some(packetId), _), _)
-                if flags.contains(ControlPacketFlags.RETAIN) =>
+            case Event(publish @ Publish(flags, _, Some(packetId), _), _) =>
               commands.offer(Command(PubAck(packetId)))
               publish
             case Event(publish: Publish, _) =>
@@ -69,9 +67,8 @@ object MqttSource {
           .watchTermination() {
             case (publishSourceCompletion, completion) =>
               completion.foreach { _ =>
-                // shut down the client flow and session
+                // shut down the client flow
                 commands.complete()
-                commands.watchCompletion().foreach(_ => mqttClientSession.shutdown())(system.dispatcher)
               }(system.dispatcher)
               publishSourceCompletion
           }
