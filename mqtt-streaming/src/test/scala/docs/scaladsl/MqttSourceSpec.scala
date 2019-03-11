@@ -5,7 +5,6 @@
 package docs.scaladsl
 
 import java.time.LocalTime
-import java.util.UUID
 
 import akka.Done
 import akka.actor.ActorSystem
@@ -44,10 +43,11 @@ class MqttSourceSpec
   override def afterAll(): Unit =
     TestKit.shutdownActorSystem(system)
 
-  "mqtt source" should {
+  "At-most-once" should {
     "receive subscribed messages" in assertAllStagesStopped {
-      val clientId = s"streaming/source-spec/${UUID.randomUUID()}"
-      val topic = TopicPrefix + "1"
+      val testId = "1"
+      val clientId = s"streaming/source-spec/$testId"
+      val topic = TopicPrefix + testId
 
       val sessionSettings = MqttSessionSettings()
       val time = LocalTime.now().toString
@@ -79,8 +79,9 @@ class MqttSourceSpec
     }
 
     "receive subscribed messages only once (AtMostOnceDelivery)" in assertAllStagesStopped {
-      val clientId = s"streaming/source-spec/12"
-      val topic = TopicPrefix + "2"
+      val testId = "2"
+      val clientId = s"streaming/source-spec/$testId"
+      val topic = TopicPrefix + testId
 
       val sessionSettings = MqttSessionSettings()
       val time = LocalTime.now().toString
@@ -119,8 +120,9 @@ class MqttSourceSpec
     }
 
     "receive subscribed messages only once (AtLeastOnceDelivery)" in assertAllStagesStopped {
-      val clientId = s"streaming/source-spec/14"
-      val topic = TopicPrefix + "3"
+      val testId = "3"
+      val clientId = s"streaming/source-spec/$testId"
+      val topic = TopicPrefix + testId
 
       val sessionSettings = MqttSessionSettings()
       val time = LocalTime.now().toString
@@ -159,6 +161,55 @@ class MqttSourceSpec
     }
   }
 
+  "At-least-once" should {
+    "receive subscribed messages" in assertAllStagesStopped {
+      val testId = "4"
+      val clientId = s"streaming/source-spec/$testId"
+      val topic = TopicPrefix + testId
+
+      val sessionSettings = MqttSessionSettings()
+      val time = LocalTime.now().toString
+      val input = Vector("one-" + time, "two-" + time, "three-" + time, "four-" + time, "five-" + time)
+
+      val mqttClientSession: MqttClientSession = ActorMqttClientSession(sessionSettings)
+
+      var queue: immutable.Seq[Publish] = Vector[Publish]()
+
+      val (subscribed, switch) = MqttSource
+        .atLeastOnce(mqttClientSession,
+                     mqttConnectionSettings,
+                     new MqttRestartSettings(),
+                     clientId,
+                     List(topic -> ControlPacketFlags.QoSAtLeastOnceDelivery))
+        .log("client received", p => p._1.payload.utf8String)
+        .map {
+          case in @ (publish, _) =>
+            queue = queue ++ Vector(publish)
+            in
+        }
+        .mapAsync(1) {
+          case (_, commitHandle) =>
+            commitHandle.ack()
+        }
+        .viaMat(KillSwitches.single)(Keep.both)
+        .toMat(Sink.ignore)(Keep.left)
+        .run()
+
+      subscribed.futureValue shouldBe Done
+      val publishFlow = publish(topic, ControlPacketFlags.QoSAtLeastOnceDelivery, input)
+
+      sleepToReceiveAll()
+      switch.shutdown()
+
+      queue.map(_.payload.utf8String) should contain theSameElementsAs input
+
+      publishFlow.complete()
+      publishFlow.watchCompletion().foreach { _ =>
+        mqttClientSession.shutdown()
+      }
+    }
+
+  }
   private def sleepToReceiveAll(): Unit =
     sleep(2.seconds, "to make sure we don't get more than expected")
 
@@ -168,11 +219,11 @@ class MqttSourceSpec
   }
 
   private def publish(topic: String, delivery: ControlPacketFlags, input: Vector[String]) = {
-    val clientId2 = s"streaming/source-spec/sender-${UUID.randomUUID()}"
+    val senderClientId = s"streaming/source-spec/sender"
     val sendSettings = MqttSessionSettings()
     val session = ActorMqttClientSession(sendSettings)
     val initialCommands = immutable.Seq(
-      Command(Connect(clientId2, ConnectFlags.CleanSession))
+      Command(Connect(senderClientId, ConnectFlags.CleanSession))
     )
     val commands =
       Source
