@@ -42,18 +42,15 @@ public class S3Test extends S3WireMockBase {
     // #upload
     final Source<ByteString, NotUsed> file = Source.single(ByteString.fromString(body()));
 
-    final Sink<ByteString, Source<MultipartUploadResult, NotUsed>> sink =
+    final Sink<ByteString, CompletionStage<MultipartUploadResult>> sink =
         S3.multipartUpload(bucket(), bucketKey());
 
-    final Source<MultipartUploadResult, NotUsed> resultCompletionStage =
+    final CompletionStage<MultipartUploadResult> resultCompletionStage =
         file.runWith(sink, materializer);
     // #upload
 
     MultipartUploadResult result =
-        resultCompletionStage
-            .runWith(Sink.head(), materializer)
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS);
+        resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     assertEquals(
         MultipartUploadResult.create(
@@ -66,21 +63,18 @@ public class S3Test extends S3WireMockBase {
 
     mockUploadSSE();
 
-    final Sink<ByteString, Source<MultipartUploadResult, NotUsed>> sink =
+    final Sink<ByteString, CompletionStage<MultipartUploadResult>> sink =
         S3.multipartUpload(
             bucket(),
             bucketKey(),
             ContentTypes.APPLICATION_OCTET_STREAM,
             S3Headers.create().withServerSideEncryption(sseCustomerKeys()));
 
-    final Source<MultipartUploadResult, NotUsed> resultCompletionStage =
+    final CompletionStage<MultipartUploadResult> resultCompletionStage =
         Source.single(ByteString.fromString(body())).runWith(sink, materializer);
 
     MultipartUploadResult result =
-        resultCompletionStage
-            .runWith(Sink.head(), materializer)
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS);
+        resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     assertEquals(
         MultipartUploadResult.create(
@@ -346,15 +340,12 @@ public class S3Test extends S3WireMockBase {
     String targetBucket = targetBucket();
     String targetKey = targetBucketKey();
     // #multipart-copy
-    final Source<MultipartUploadResult, NotUsed> resultCompletionStage =
+    final CompletionStage<MultipartUploadResult> resultCompletionStage =
         S3.multipartCopy(bucket, sourceKey, targetBucket, targetKey).run(materializer);
     // #multipart-copy
 
     final MultipartUploadResult result =
-        resultCompletionStage
-            .runWith(Sink.head(), materializer)
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS);
+        resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     assertEquals(
         result,
@@ -373,7 +364,7 @@ public class S3Test extends S3WireMockBase {
 
     // #multipart-copy-with-source-version
     String sourceVersionId = "3/L4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo";
-    final Source<MultipartUploadResult, NotUsed> resultCompletionStage =
+    final CompletionStage<MultipartUploadResult> resultCompletionStage =
         S3.multipartCopy(
                 bucket,
                 sourceKey,
@@ -385,10 +376,7 @@ public class S3Test extends S3WireMockBase {
     // #multipart-copy-with-source-version
 
     final MultipartUploadResult result =
-        resultCompletionStage
-            .runWith(Sink.head(), materializer)
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS);
+        resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     assertEquals(
         result,
@@ -404,14 +392,11 @@ public class S3Test extends S3WireMockBase {
   public void copyUploadWithContentLengthEqualToChunkSize() throws Exception {
     mockCopy(5242880);
 
-    final Source<MultipartUploadResult, NotUsed> resultCompletionStage =
+    final CompletionStage<MultipartUploadResult> resultCompletionStage =
         S3.multipartCopy(bucket(), bucketKey(), targetBucket(), targetBucketKey())
             .run(materializer);
     final MultipartUploadResult result =
-        resultCompletionStage
-            .runWith(Sink.head(), materializer)
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS);
+        resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     assertEquals(
         result,
@@ -423,14 +408,11 @@ public class S3Test extends S3WireMockBase {
   public void copyUploadWithContentLengthGreaterThenChunkSize() throws Exception {
     mockCopyMulti();
 
-    final Source<MultipartUploadResult, NotUsed> resultCompletionStage =
+    final CompletionStage<MultipartUploadResult> resultCompletionStage =
         S3.multipartCopy(bucket(), bucketKey(), targetBucket(), targetBucketKey())
             .run(materializer);
     final MultipartUploadResult result =
-        resultCompletionStage
-            .runWith(Sink.head(), materializer)
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS);
+        resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     assertEquals(
         result,
@@ -442,14 +424,11 @@ public class S3Test extends S3WireMockBase {
   public void copyUploadEmptyFile() throws Exception {
     mockCopy(0);
 
-    final Source<MultipartUploadResult, NotUsed> resultCompletionStage =
+    final CompletionStage<MultipartUploadResult> resultCompletionStage =
         S3.multipartCopy(bucket(), bucketKey(), targetBucket(), targetBucketKey())
             .run(materializer);
     final MultipartUploadResult result =
-        resultCompletionStage
-            .runWith(Sink.head(), materializer)
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS);
+        resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     assertEquals(
         result,
@@ -465,7 +444,7 @@ public class S3Test extends S3WireMockBase {
     final CustomerKeys keys =
         ServerSideEncryption.customerKeys(sseCustomerKey()).withMd5(sseCustomerMd5Key());
 
-    final Source<MultipartUploadResult, NotUsed> resultCompletionStage =
+    final CompletionStage<MultipartUploadResult> resultCompletionStage =
         S3.multipartCopy(
                 bucket(),
                 bucketKey(),
@@ -476,10 +455,7 @@ public class S3Test extends S3WireMockBase {
     // #multipart-copy-sse
 
     final MultipartUploadResult result =
-        resultCompletionStage
-            .runWith(Sink.head(), materializer)
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS);
+        resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     assertEquals(
         result,
@@ -491,7 +467,7 @@ public class S3Test extends S3WireMockBase {
   public void copyUploadWithCustomHeader() throws Exception {
     mockCopy();
 
-    final Source<MultipartUploadResult, NotUsed> resultCompletionStage =
+    final CompletionStage<MultipartUploadResult> resultCompletionStage =
         S3.multipartCopy(
                 bucket(),
                 bucketKey(),
@@ -501,10 +477,7 @@ public class S3Test extends S3WireMockBase {
             .run(materializer);
 
     final MultipartUploadResult result =
-        resultCompletionStage
-            .runWith(Sink.head(), materializer)
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS);
+        resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     assertEquals(
         result,
