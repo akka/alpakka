@@ -61,6 +61,8 @@ flow is established.
 We filter the events received as there will be ACKs to our connect, subscribe and publish. The collected event
 is the publication to the topic we just subscribed to.
 
+To shut down the flow after use, the command queue `commands` is completed and after its completion the `session` is shut down.
+
 ## Flow through a server session
 
 The following code illustrates how to establish an MQTT server session and join it with a TCP binding:
@@ -85,18 +87,4 @@ Scala
 Java
 : @@snip [snip](/mqtt-streaming/src/test/java/docs/javadsl/MqttFlowTest.java) { #run-streaming-bind-flow }
 
-## Running the example code
-
-The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
-
-Scala
-:   ```
-    sbt
-    > mqtt-streaming/testOnly *.MqttFlowSpec
-    ```
-
-Java
-:   ```
-    sbt
-    > mqtt-streaming/testOnly *.MqttFlowTest
-    ```
+To shut down the server after use, the server flow is shut down via a `KillSwitch` and the `session` is shut down.
