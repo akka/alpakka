@@ -55,12 +55,16 @@ object ControlPacketFlags {
   val ReservedSubscribe = ControlPacketFlags(1 << 1)
   val ReservedUnsubscribe = ControlPacketFlags(1 << 1)
   val ReservedUnsubAck = ControlPacketFlags(1 << 1)
+
+  /** "If the DUP flag is set to 1, it indicates that this might be re-delivery of an earlier attempt to send the Packet." */
   val DUP = ControlPacketFlags(1 << 3)
   val QoSAtMostOnceDelivery = ControlPacketFlags(0)
   val QoSAtLeastOnceDelivery = ControlPacketFlags(1 << 1)
   val QoSExactlyOnceDelivery = ControlPacketFlags(2 << 1)
   val QoSReserved = ControlPacketFlags(3 << 1)
   val QoSFailure = ControlPacketFlags(1 << 7)
+
+  /** "If the RETAIN flag is set to 1, in a PUBLISH Packet sent by a Client to a Server, the Server MUST store the Application Message and its QoS." */
   val RETAIN = ControlPacketFlags(1)
 }
 

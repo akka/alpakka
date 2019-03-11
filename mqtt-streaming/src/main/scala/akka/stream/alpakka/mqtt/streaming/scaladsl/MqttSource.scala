@@ -16,6 +16,11 @@ import scala.collection.immutable
 import scala.concurrent.{Future, Promise}
 import scala.concurrent.duration._
 
+final class MqttConnectionSettings(
+    val host: String = "localhost",
+    val port: Int = 1883
+)
+
 final class MqttRestartSettings(
     val minBackoff: FiniteDuration = 2.seconds,
     val maxBackoff: FiniteDuration = 2.minutes,
@@ -26,6 +31,7 @@ final class MqttRestartSettings(
 object MqttSource {
 
   def atMostOnce(mqttClientSession: MqttClientSession,
+                 connectionSettings: MqttConnectionSettings,
                  restartSettings: MqttRestartSettings,
                  clientId: String,
                  subscriptions: immutable.Seq[(String, ControlPacketFlags)]): Source[Publish, Future[Done]] =
@@ -39,7 +45,7 @@ object MqttSource {
           RestartFlow.onFailuresWithBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts) { () =>
             Mqtt
               .clientSessionFlow(mqttClientSession)
-              .join(Tcp(system).outgoingConnection("localhost", 1883))
+              .join(Tcp(system).outgoingConnection(connectionSettings.host, connectionSettings.port))
           }
         }
         val subscribed = Promise[Done]()
@@ -53,14 +59,12 @@ object MqttSource {
           Source
             .queue[Command[Nothing]](10, OverflowStrategy.fail)
             .prepend(Source(initCommands))
+            .log("sending")
             .via(mqttFlow)
             .log("source received")
             .map {
               case Left(decodeError) =>
                 throw new RuntimeException(decodeError.toString)
-// TODO anything we should do if no ConnAck arrives "in time"?
-//            case Right(event @ Event(_: ConnAck, _)) =>
-//              event
               case Right(event @ Event(_: SubAck, _)) =>
                 subscribed.trySuccess(Done)
                 event
@@ -71,8 +75,9 @@ object MqttSource {
             .run()
 
         val publishSource: Source[Publish, Future[Done]] = subscription
+          .log("publishSource")
           .collect {
-            case Event(publish @ Publish(flags, _, Some(packetId), _), _) =>
+            case Event(publish @ Publish(_, _, Some(packetId), _), _) =>
               commands.offer(Command(PubAck(packetId)))
               publish
             case Event(publish: Publish, _) =>

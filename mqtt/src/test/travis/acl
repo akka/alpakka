@@ -17,6 +17,13 @@ topic flow-test/topic-ack
 topic typed-flow-spec/topic1
 topic untyped-flow-spec/topic1
 
+topic streaming/source/topic/1
+topic streaming/source/topic/2
+topic streaming/source/topic/3
+topic streaming/source/topic/4
+topic streaming/source/topic/5
+topic streaming/source/topic/6
+
 user username1
 topic source-spec/secure-topic1
 topic source-spec/secure-topic2
