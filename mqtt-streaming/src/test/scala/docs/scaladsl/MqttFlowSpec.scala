@@ -8,14 +8,15 @@ import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.stream.alpakka.mqtt.streaming._
 import akka.stream.alpakka.mqtt.streaming.scaladsl.{ActorMqttClientSession, ActorMqttServerSession, Mqtt}
-import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Sink, Source, Tcp}
+import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Sink, Source, SourceQueueWithComplete, Tcp}
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream._
 import akka.testkit.TestKit
 import akka.util.ByteString
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
-import scala.concurrent.Promise
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
 
 class MqttFlowSpec
@@ -28,12 +29,13 @@ class MqttFlowSpec
   private implicit val defaultPatience: PatienceConfig = PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
   private implicit val mat: Materializer = ActorMaterializer()
+  private implicit val dispatcherExecutionContext: ExecutionContext = system.dispatcher
 
   override def afterAll(): Unit =
     TestKit.shutdownActorSystem(system)
 
   "mqtt client flow" should {
-    "establish a bidirectional connection and subscribe to a topic" in {
+    "establish a bidirectional connection and subscribe to a topic" in assertAllStagesStopped {
       val clientId = "source-spec/flow"
       val topic = "source-spec/topic1"
 
@@ -50,7 +52,7 @@ class MqttFlowSpec
       //#create-streaming-flow
 
       //#run-streaming-flow
-      val (commands, events) =
+      val (commands: SourceQueueWithComplete[Command[Nothing]], events: Future[Publish]) =
         Source
           .queue(2, OverflowStrategy.fail)
           .via(mqttFlow)
@@ -71,11 +73,18 @@ class MqttFlowSpec
         case Publish(_, `topic`, _, bytes) => bytes shouldBe ByteString("ohi")
         case e => fail("Unexpected event: " + e)
       }
+
+      //#run-streaming-flow
+
+      // for shutting down properly
+      commands.complete()
+      commands.watchCompletion().foreach(_ => session.shutdown())
+      //#run-streaming-flow
     }
   }
 
   "mqtt server flow" should {
-    "receive a bidirectional connection and a subscription to a topic" in {
+    "receive a bidirectional connection and a subscription to a topic" in assertAllStagesStopped {
       val clientId = "flow-spec/flow"
       val topic = "source-spec/topic1"
       val host = "localhost"
@@ -87,7 +96,7 @@ class MqttFlowSpec
 
       val maxConnections = 1
 
-      val bindSource =
+      val bindSource: Source[Either[MqttCodec.DecodeError, Event[Nothing]], Future[Tcp.ServerBinding]] =
         Tcp()
           .bind(host, port)
           .flatMapMerge(
@@ -124,7 +133,10 @@ class MqttFlowSpec
       //#create-streaming-bind-flow
 
       //#run-streaming-bind-flow
-      val bound = bindSource.toMat(Sink.ignore)(Keep.left).run()
+      val (bound: Future[Tcp.ServerBinding], server: UniqueKillSwitch) = bindSource
+        .viaMat(KillSwitches.single)(Keep.both)
+        .to(Sink.ignore)
+        .run()
       //#run-streaming-bind-flow
 
       bound.futureValue.localAddress.getPort shouldBe port
@@ -152,6 +164,13 @@ class MqttFlowSpec
         case Publish(_, `topic`, _, bytes) => bytes shouldBe ByteString("ohi")
         case e => fail("Unexpected event: " + e)
       }
+      //#run-streaming-bind-flow
+
+      // for shutting down properly
+      server.shutdown()
+      session.shutdown()
+      //#run-streaming-bind-flow
+      commands.watchCompletion().foreach(_ => clientSession.shutdown())
     }
   }
 }
