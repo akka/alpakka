@@ -331,9 +331,9 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
 
     val results = for {
-      upload1 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey1)).runWith(Sink.head)
-      upload2 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey2)).runWith(Sink.head)
-      upload3 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey3)).runWith(Sink.head)
+      upload1 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey1))
+      upload2 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey2))
+      upload3 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey3))
     } yield (upload1, upload2, upload3)
 
     whenReady(results) {
@@ -361,8 +361,8 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
 
     val results = for {
-      upload1 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey1)).runWith(Sink.head)
-      upload2 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey2)).runWith(Sink.head)
+      upload1 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey1))
+      upload2 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey2))
     } yield (upload1, upload2)
 
     whenReady(results) {
