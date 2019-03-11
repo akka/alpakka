@@ -5,6 +5,7 @@
 package akka.stream.alpakka.cassandra.scaladsl
 
 import akka.NotUsed
+import akka.annotation.ApiMayChange
 import akka.dispatch.ExecutionContexts
 import akka.stream.FlowShape
 import akka.stream.alpakka.cassandra.CassandraBatchSettings
@@ -17,6 +18,7 @@ import scala.collection.JavaConverters._
 /**
  * Scala API to create Cassandra flows.
  */
+@ApiMayChange // https://github.com/akka/alpakka/issues/1213
 object CassandraFlow {
   def createWithPassThrough[T](
       parallelism: Int,
