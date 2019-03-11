@@ -29,7 +29,7 @@ We want Akka and Alpakka to strive in a welcoming and open atmosphere and expect
 
 [![alpakka]][alpakka-scaladex] Feel free to tag your project with *akka-streams* keyword in Scaladex for easier discoverability.
 
-[alpakka]: https://index.scala-lang.org/count.svg?q=topics:akka-streams&subject=akka-streams&style=flat-square
+[alpakka]: https://index.scala-lang.org/count.svg?q=topics:akka-streams&amp;subject=akka-streams&amp;style=flat-square
 
 [alpakka-scaladex]: https://index.scala-lang.org/search?q=topics:akka-streams
 
