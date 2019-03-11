@@ -19,6 +19,14 @@ The table below shows direct dependencies of this module and the second tab show
 @@dependencies { projectId="cassandra" }
 
 
+@@@warning { title="API may change" }
+
+We intend to bring in the Cassandra client part of [Akka Persistence Cassandra](https://github.com/akka/akka-persistence-cassandra/) to Alpakka. This will mean changes to this API.
+
+See @github[issue #1213](#1213)
+
+@@@
+
 ## Source
 
 Sources provided by this connector need a prepared session to communicate with Cassandra cluster. First, let's initialize a Cassandra session.
