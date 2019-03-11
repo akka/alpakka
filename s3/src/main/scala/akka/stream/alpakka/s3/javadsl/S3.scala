@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.s3.javadsl
 import java.util.Optional
+import java.util.concurrent.CompletionStage
 
 import akka.japi.{Pair => JPair}
 import akka.{Done, NotUsed}
@@ -18,6 +19,7 @@ import akka.stream.javadsl.{RunnableGraph, Sink, Source}
 import akka.util.ByteString
 
 import scala.compat.java8.OptionConverters._
+import scala.compat.java8.FutureConverters._
 
 /**
  * Java API
@@ -322,15 +324,15 @@ object S3 {
    * @param key the s3 object key
    * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
    * @param s3Headers any headers you want to add
-   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[akka.stream.javadsl.Source Source]] of [[MultipartUploadResult]]
+   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[ava.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
    */
   def multipartUpload(bucket: String,
                       key: String,
                       contentType: ContentType,
-                      s3Headers: S3Headers): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
+                      s3Headers: S3Headers): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
     S3Stream
       .multipartUpload(S3Location(bucket, key), contentType.asInstanceOf[ScalaContentType], s3Headers)
-      .mapMaterializedValue(_.asJava)
+      .mapMaterializedValue(_.toJava)
       .asJava
 
   /**
@@ -339,11 +341,11 @@ object S3 {
    * @param bucket the s3 bucket name
    * @param key the s3 object key
    * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
-   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[akka.stream.javadsl.Source Source]] of [[MultipartUploadResult]]
+   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
    */
   def multipartUpload(bucket: String,
                       key: String,
-                      contentType: ContentType): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
+                      contentType: ContentType): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
     multipartUpload(bucket, key, contentType, S3Headers().withCannedAcl(CannedAcl.Private))
 
   /**
@@ -351,9 +353,9 @@ object S3 {
    *
    * @param bucket the s3 bucket name
    * @param key the s3 object key
-   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[akka.stream.javadsl.Source Source]] of [[MultipartUploadResult]]
+   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[ava.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
    */
-  def multipartUpload(bucket: String, key: String): Sink[ByteString, Source[MultipartUploadResult, NotUsed]] =
+  def multipartUpload(bucket: String, key: String): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
     multipartUpload(bucket, key, ContentTypes.APPLICATION_OCTET_STREAM)
 
   /**
@@ -366,7 +368,7 @@ object S3 {
    * @param sourceVersionId version id of source object, if the versioning is enabled in source bucket
    * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
    * @param s3Headers any headers you want to add
-   * @return a [[akka.stream.javadsl.Source Source]] containing the [[akka.stream.alpakka.s3.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
+   * @return the [[akka.stream.alpakka.s3.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
    */
   def multipartCopy(sourceBucket: String,
                     sourceKey: String,
@@ -374,7 +376,7 @@ object S3 {
                     targetKey: String,
                     sourceVersionId: Optional[String],
                     contentType: ContentType,
-                    s3Headers: S3Headers): RunnableGraph[Source[MultipartUploadResult, NotUsed]] =
+                    s3Headers: S3Headers): RunnableGraph[CompletionStage[MultipartUploadResult]] =
     RunnableGraph
       .fromGraph {
         S3Stream
@@ -386,7 +388,7 @@ object S3 {
             s3Headers
           )
       }
-      .mapMaterializedValue(func(_.asJava))
+      .mapMaterializedValue(func(_.toJava))
 
   /**
    * Copy a S3 Object by making multiple requests.
@@ -397,14 +399,14 @@ object S3 {
    * @param targetKey the target s3 key
    * @param sourceVersionId version id of source object, if the versioning is enabled in source bucket
    * @param s3Headers any headers you want to add
-   * @return a [[akka.stream.javadsl.Source Source]] containing the [[akka.stream.alpakka.s3.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
+   * @return the [[akka.stream.alpakka.s3.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
    */
   def multipartCopy(sourceBucket: String,
                     sourceKey: String,
                     targetBucket: String,
                     targetKey: String,
                     sourceVersionId: Optional[String],
-                    s3Headers: S3Headers): RunnableGraph[Source[MultipartUploadResult, NotUsed]] =
+                    s3Headers: S3Headers): RunnableGraph[CompletionStage[MultipartUploadResult]] =
     multipartCopy(sourceBucket,
                   sourceKey,
                   targetBucket,
@@ -422,14 +424,14 @@ object S3 {
    * @param targetKey the target s3 key
    * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
    * @param s3Headers any headers you want to add
-   * @return a [[akka.stream.javadsl.Source Source]] containing the [[akka.stream.alpakka.s3.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
+   * @return the [[akka.stream.alpakka.s3.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
    */
   def multipartCopy(sourceBucket: String,
                     sourceKey: String,
                     targetBucket: String,
                     targetKey: String,
                     contentType: ContentType,
-                    s3Headers: S3Headers): RunnableGraph[Source[MultipartUploadResult, NotUsed]] =
+                    s3Headers: S3Headers): RunnableGraph[CompletionStage[MultipartUploadResult]] =
     multipartCopy(sourceBucket, sourceKey, targetBucket, targetKey, Optional.empty(), contentType, s3Headers)
 
   /**
@@ -440,13 +442,13 @@ object S3 {
    * @param targetBucket the target s3 bucket name
    * @param targetKey the target s3 key
    * @param s3Headers any headers you want to add
-   * @return a [[akka.stream.javadsl.Source Source]] containing the [[akka.stream.alpakka.s3.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
+   * @return the [[akka.stream.alpakka.s3.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
    */
   def multipartCopy(sourceBucket: String,
                     sourceKey: String,
                     targetBucket: String,
                     targetKey: String,
-                    s3Headers: S3Headers): RunnableGraph[Source[MultipartUploadResult, NotUsed]] =
+                    s3Headers: S3Headers): RunnableGraph[CompletionStage[MultipartUploadResult]] =
     multipartCopy(sourceBucket, sourceKey, targetBucket, targetKey, ContentTypes.APPLICATION_OCTET_STREAM, s3Headers)
 
   /**
@@ -456,12 +458,12 @@ object S3 {
    * @param sourceKey the source s3 key
    * @param targetBucket the target s3 bucket name
    * @param targetKey the target s3 key
-   * @return a [[akka.stream.javadsl.Source Source]] containing the [[akka.stream.alpakka.s3.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
+   * @return the [[akka.stream.alpakka.s3.MultipartUploadResult MultipartUploadResult]] of the uploaded S3 Object
    */
   def multipartCopy(sourceBucket: String,
                     sourceKey: String,
                     targetBucket: String,
-                    targetKey: String): RunnableGraph[Source[MultipartUploadResult, NotUsed]] =
+                    targetKey: String): RunnableGraph[CompletionStage[MultipartUploadResult]] =
     multipartCopy(sourceBucket, sourceKey, targetBucket, targetKey, ContentTypes.APPLICATION_OCTET_STREAM, S3Headers())
 
   private def func[T, R](f: T => R) = new akka.japi.function.Function[T, R] {
