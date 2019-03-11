@@ -4,9 +4,13 @@
 
 package akka.stream.alpakka.s3.scaladsl
 
+import java.util.concurrent.TimeUnit
+
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes
 import akka.stream.ActorMaterializer
+import akka.stream.alpakka.s3.BucketAccess.{AccessGranted, NotExists}
 import akka.stream.alpakka.s3._
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.util.ByteString
@@ -393,6 +397,73 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
         numOfKeysForPrefix shouldEqual 0
     }
   }
+
+  it should "make a bucket with given name" in {
+    val bucketName = "samplebucket1"
+
+    val request: Future[Done] = S3
+      .makeBucket(bucketName)
+
+    whenReady(request) { value =>
+      value shouldEqual Done
+
+      deleteBucketAfterTest(bucketName)
+    }
+  }
+
+  it should "throw an exception while creating a bucket with the same name" in {
+    assertThrows[S3Exception] {
+      val result: Future[Done] = S3.makeBucket(defaultRegionBucket)
+
+      Await.result(result, Duration(1, TimeUnit.MINUTES))
+    }
+  }
+
+  it should "create and delete bucket with a given name" in {
+    val bucketName = "samplebucket3"
+
+    val makeRequest: Source[Done, NotUsed] = S3.makeBucketSource(bucketName)
+    val deleteRequest: Source[Done, NotUsed] = S3.deleteBucketSource(bucketName)
+
+    val request = for {
+      make <- makeRequest.runWith(Sink.ignore)
+      delete <- deleteRequest.runWith(Sink.ignore)
+    } yield (make, delete)
+
+    val response = Await.result(request, Duration(1, TimeUnit.MINUTES))
+    response should equal((Done, Done))
+  }
+
+  it should "throw an exception while deleting bucket that doesn't exist" in {
+    val bucketName = "samplebucket4"
+
+    assertThrows[S3Exception] {
+      val result: Future[Done] = S3.deleteBucket(bucketName)
+
+      Await.result(result, Duration(1, TimeUnit.MINUTES))
+    }
+  }
+
+  it should "check if bucket exists" in {
+    val checkIfBucketExits: Future[BucketAccess] = S3.checkIfBucketExists(defaultRegionBucket)
+
+    whenReady(checkIfBucketExits) { bucketState =>
+      bucketState should equal(AccessGranted)
+    }
+  }
+
+  it should "check for non-existing bucket" in {
+    val bucketName = "samplebucket6"
+
+    val request: Future[BucketAccess] = S3.checkIfBucketExists(bucketName)
+
+    whenReady(request) { response =>
+      response should equal(NotExists)
+    }
+  }
+
+  private def deleteBucketAfterTest(bucketName: String): Unit =
+    Await.result(S3.deleteBucket(bucketName), Duration(1, TimeUnit.MINUTES))
 }
 
 /*

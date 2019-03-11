@@ -459,3 +459,23 @@ final class ObjectMetadata private (
 object ObjectMetadata {
   def apply(metadata: Seq[HttpHeader]) = new ObjectMetadata(metadata)
 }
+
+/**
+ * While checking for bucket access those responses are available
+ * 1) AccessDenied - User does have permission to perform ListBucket operation, so bucket exits
+ * 2) AccessGranted - User doesn't have rights to perform ListBucket but bucket exits
+ * 3) NotExists - Bucket doesn't exit
+ *
+ * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketHEAD.html
+ */
+sealed class BucketAccess
+
+object BucketAccess {
+  case object AccessDenied extends BucketAccess
+  case object AccessGranted extends BucketAccess
+  case object NotExists extends BucketAccess
+
+  val accessDenied: BucketAccess = AccessDenied
+  val accessGranted: BucketAccess = AccessGranted
+  val notExists: BucketAccess = NotExists
+}
