@@ -266,7 +266,6 @@ lazy val docs = project
     ),
     Paradox / siteSubdirName := s"docs/alpakka/${if (isSnapshot.value) "snapshot" else version.value}",
     Paradox / sourceDirectory := sourceDirectory.value / "main" / "paradox",
-    Paradox / paradoxTheme / sourceDirectory := (Compile / paradoxTheme / sourceDirectory).value,
     Paradox / paradoxProperties ++= Map(
       "akka.version" -> Dependencies.AkkaVersion,
       "akka-http.version" -> Dependencies.AkkaHttpVersion,
