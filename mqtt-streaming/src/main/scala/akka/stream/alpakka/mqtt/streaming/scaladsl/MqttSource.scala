@@ -12,15 +12,23 @@ import akka.stream.OverflowStrategy
 import akka.stream.alpakka.mqtt.streaming.impl.Setup
 import akka.stream.alpakka.mqtt.streaming._
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, RestartFlow, Source, SourceQueueWithComplete, Tcp}
+import akka.util.ByteString
 
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
 
-final class MqttConnectionSettings(
+trait MqttConnectionSettings {
+  def connectionFlow()(implicit system: ActorSystem): Flow[ByteString, ByteString, _]
+}
+
+final class MqttTcpConnectionSettings(
     val host: String = "localhost",
     val port: Int = 1883
-)
+) extends MqttConnectionSettings {
+  def connectionFlow()(implicit system: ActorSystem): Flow[ByteString, ByteString, _] =
+    Tcp(system).outgoingConnection(host, port)
+}
 
 final class MqttRestartSettings(
     val minBackoff: FiniteDuration = 2.seconds,
@@ -31,11 +39,13 @@ final class MqttRestartSettings(
 
 object MqttSource {
 
-  def atMostOnce(mqttClientSession: MqttClientSession,
-                 connectionSettings: MqttConnectionSettings,
-                 restartSettings: MqttRestartSettings,
-                 clientId: String,
-                 subscriptions: immutable.Seq[(String, ControlPacketFlags)]): Source[Publish, Future[Done]] =
+  def atMostOnce(
+      mqttClientSession: MqttClientSession,
+      connectionSettings: MqttConnectionSettings,
+      restartSettings: MqttRestartSettings,
+      clientId: String,
+      subscriptions: immutable.Seq[(String, ControlPacketFlags)]
+  ): Source[Publish, Future[immutable.Seq[(String, ControlPacketFlags)]]] =
     Setup
       .source { implicit materializer => implicit attributes =>
         implicit val system: ActorSystem = materializer.system
@@ -46,10 +56,10 @@ object MqttSource {
           RestartFlow.onFailuresWithBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts) { () =>
             Mqtt
               .clientSessionFlow(mqttClientSession)
-              .join(Tcp(system).outgoingConnection(connectionSettings.host, connectionSettings.port))
+              .join(connectionSettings.connectionFlow())
           }
         }
-        val subscribed = Promise[Done]()
+        val subscribed = Promise[immutable.Seq[(String, ControlPacketFlags)]]()
 
         val initCommands = immutable.Seq(
           Command(Connect(clientId, ConnectFlags.CleanSession)),
@@ -66,8 +76,9 @@ object MqttSource {
             .map {
               case Left(decodeError) =>
                 throw new RuntimeException(decodeError.toString)
-              case Right(event @ Event(_: SubAck, _)) =>
-                subscribed.trySuccess(Done)
+              case Right(event @ Event(s: SubAck, _)) =>
+                val subscriptionAnswer = subscriptions.map(_._1).zip(s.returnCodes)
+                subscribed.trySuccess(subscriptionAnswer)
                 event
               case Right(event) =>
                 event
@@ -75,7 +86,7 @@ object MqttSource {
             .toMat(BroadcastHub.sink)(Keep.both)
             .run()
 
-        val publishSource: Source[Publish, Future[Done]] = subscription
+        val publishSource: Source[Publish, Future[immutable.Seq[(String, ControlPacketFlags)]]] = subscription
           .log("publishSource")
           .collect {
             case Event(publish @ Publish(_, _, Some(packetId), _), _) =>
@@ -109,7 +120,7 @@ object MqttSource {
       restartSettings: MqttRestartSettings,
       clientId: String,
       subscriptions: immutable.Seq[(String, ControlPacketFlags)]
-  ): Source[(Publish, CommitHandle), Future[Done]] =
+  ): Source[(Publish, CommitHandle), Future[immutable.Seq[(String, ControlPacketFlags)]]] =
     Setup
       .source { implicit materializer => implicit attributes =>
         implicit val system: ActorSystem = materializer.system
@@ -120,10 +131,10 @@ object MqttSource {
           RestartFlow.onFailuresWithBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts) { () =>
             Mqtt
               .clientSessionFlow(mqttClientSession)
-              .join(Tcp(system).outgoingConnection(connectionSettings.host, connectionSettings.port))
+              .join(connectionSettings.connectionFlow())
           }
         }
-        val subscribed = Promise[Done]()
+        val subscribed = Promise[immutable.Seq[(String, ControlPacketFlags)]]()
 
         val initCommands = immutable.Seq(
           Command(Connect(clientId, ConnectFlags.CleanSession)),
@@ -140,8 +151,9 @@ object MqttSource {
             .map {
               case Left(decodeError) =>
                 throw new RuntimeException(decodeError.toString)
-              case Right(event @ Event(_: SubAck, _)) =>
-                subscribed.trySuccess(Done)
+              case Right(event @ Event(s: SubAck, _)) =>
+                val subscriptionAnswer = subscriptions.map(_._1).zip(s.returnCodes)
+                subscribed.trySuccess(subscriptionAnswer)
                 event
               case Right(event) =>
                 event
@@ -149,28 +161,29 @@ object MqttSource {
             .toMat(BroadcastHub.sink)(Keep.both)
             .run()
 
-        val publishSource: Source[(Publish, CommitHandle), Future[Done]] = subscription
-          .log("publishSource")
-          .collect {
-            case Event(publish @ Publish(_, _, Some(packetId), _), _) =>
-              (publish,
-               new CommitHandle(
-                 commands
-                   .offer(Command(PubAck(packetId)))
-                   .map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)
-               ))
-            case Event(publish: Publish, _) =>
-              throw new RuntimeException("Received Publish without packetId in at-least-once mode")
-          }
-          .mapMaterializedValue(_ => subscribed.future)
-          .watchTermination() {
-            case (publishSourceCompletion, completion) =>
-              completion.foreach { _ =>
-                // shut down the client flow
-                commands.complete()
-              }(system.dispatcher)
-              publishSourceCompletion
-          }
+        val publishSource: Source[(Publish, CommitHandle), Future[immutable.Seq[(String, ControlPacketFlags)]]] =
+          subscription
+            .log("publishSource")
+            .collect {
+              case Event(publish @ Publish(_, _, Some(packetId), _), _) =>
+                (publish,
+                 new CommitHandle(
+                   commands
+                     .offer(Command(PubAck(packetId)))
+                     .map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)
+                 ))
+              case Event(publish: Publish, _) =>
+                throw new RuntimeException("Received Publish without packetId in at-least-once mode")
+            }
+            .mapMaterializedValue(_ => subscribed.future)
+            .watchTermination() {
+              case (publishSourceCompletion, completion) =>
+                completion.foreach { _ =>
+                  // shut down the client flow
+                  commands.complete()
+                }(system.dispatcher)
+                publishSourceCompletion
+            }
         publishSource
       }
       .mapMaterializedValue(_.flatten)
