@@ -29,6 +29,7 @@ object MqttSessionSettings {
  * Configuration settings for client and server usage.
  */
 final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
+                                         val clientSendBufferSize: Int = 10,
                                          val clientTerminationWatcherBufferSize: Int = 100,
                                          val commandParallelism: Int = 50,
                                          val eventParallelism: Int = 10,
@@ -51,6 +52,13 @@ final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
           s"maxPacketSize of $maxPacketSize must be positive and less than ${1 << 28}")
 
   import akka.util.JavaDurationConverters._
+
+  /**
+   * Just for clients - the number of commands that can be buffered while connected to a server. Defaults
+   * to 10. Any commands received beyond this will apply backpressure.
+   */
+  def withClientSendBufferSize(clientSendBufferSize: Int): MqttSessionSettings =
+    copy(clientSendBufferSize = clientSendBufferSize)
 
   /**
    * The maximum size of a packet that is allowed to be decoded. Defaults to 4k.
@@ -224,12 +232,13 @@ final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
 
   /**
    * Just for servers - the number of commands that can be buffered while connected to a client. Defaults
-   * to 100. Any commands received beyond this will be dropped.
+   * to 100. Any commands received beyond this will apply backpressure.
    */
   def withServerSendBufferSize(serverSendBufferSize: Int): MqttSessionSettings =
     copy(serverSendBufferSize = serverSendBufferSize)
 
   private def copy(maxPacketSize: Int = maxPacketSize,
+                   clientSendBufferSize: Int = clientSendBufferSize,
                    clientTerminationWatcherBufferSize: Int = clientTerminationWatcherBufferSize,
                    commandParallelism: Int = commandParallelism,
                    eventParallelism: Int = eventParallelism,
@@ -245,6 +254,7 @@ final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
                    serverSendBufferSize: Int = serverSendBufferSize) =
     new MqttSessionSettings(
       maxPacketSize,
+      clientSendBufferSize,
       clientTerminationWatcherBufferSize,
       commandParallelism,
       eventParallelism,

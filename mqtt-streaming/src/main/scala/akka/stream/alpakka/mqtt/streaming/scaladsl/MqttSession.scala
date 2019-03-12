@@ -395,7 +395,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
 
   private val (terminations, terminationsSource) = Source
     .queue[ServerConnector.ClientSessionTerminated](settings.clientTerminationWatcherBufferSize,
-                                                    OverflowStrategy.dropNew)
+                                                    OverflowStrategy.backpressure)
     .toMat(BroadcastHub.sink)(Keep.both)
     .run()
 
