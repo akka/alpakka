@@ -18,16 +18,23 @@ import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
 
-trait MqttConnectionSettings {
+trait MqttTransportSettings {
   def connectionFlow()(implicit system: ActorSystem): Flow[ByteString, ByteString, _]
 }
 
-final class MqttTcpConnectionSettings(
+final class MqttTcpTransportSettings(
     val host: String = "localhost",
     val port: Int = 1883
-) extends MqttConnectionSettings {
+) extends MqttTransportSettings {
   def connectionFlow()(implicit system: ActorSystem): Flow[ByteString, ByteString, _] =
     Tcp(system).outgoingConnection(host, port)
+}
+
+final class MqttConnectionSettings(
+    val clientId: String,
+    val connectFlags: ConnectFlags = ConnectFlags.CleanSession
+) {
+  def createControlPacket: Connect = Connect(clientId, connectFlags)
 }
 
 final class MqttRestartSettings(
@@ -41,7 +48,7 @@ object MqttSource {
 
   def atMostOnce(
       mqttClientSession: MqttClientSession,
-      connectionSettings: MqttConnectionSettings,
+      transportSettings: MqttTransportSettings,
       restartSettings: MqttRestartSettings,
       clientId: String,
       subscriptions: immutable.Seq[(String, ControlPacketFlags)]
@@ -56,7 +63,7 @@ object MqttSource {
           RestartFlow.onFailuresWithBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts) { () =>
             Mqtt
               .clientSessionFlow(mqttClientSession)
-              .join(connectionSettings.connectionFlow())
+              .join(transportSettings.connectionFlow())
           }
         }
         val subscribed = Promise[immutable.Seq[(String, ControlPacketFlags)]]()
@@ -108,7 +115,7 @@ object MqttSource {
       }
       .mapMaterializedValue(_.flatten)
 
-  final class CommitHandle(sendAck: => Future[Done]) {
+  final class MqttAckHandle(sendAck: => Future[Done]) {
 
     def ack(): Future[Done] = sendAck
 
@@ -116,11 +123,11 @@ object MqttSource {
 
   def atLeastOnce(
       mqttClientSession: MqttClientSession,
-      connectionSettings: MqttConnectionSettings,
+      transportSettings: MqttTransportSettings,
       restartSettings: MqttRestartSettings,
-      clientId: String,
-      subscriptions: immutable.Seq[(String, ControlPacketFlags)]
-  ): Source[(Publish, CommitHandle), Future[immutable.Seq[(String, ControlPacketFlags)]]] =
+      connectionSettings: MqttConnectionSettings,
+      subscriptions: immutable.Seq[(String, ControlPacketFlags)],
+  ): Source[(Publish, MqttAckHandle), Future[immutable.Seq[(String, ControlPacketFlags)]]] =
     Setup
       .source { implicit materializer => implicit attributes =>
         implicit val system: ActorSystem = materializer.system
@@ -131,13 +138,13 @@ object MqttSource {
           RestartFlow.onFailuresWithBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts) { () =>
             Mqtt
               .clientSessionFlow(mqttClientSession)
-              .join(connectionSettings.connectionFlow())
+              .join(transportSettings.connectionFlow())
           }
         }
         val subscribed = Promise[immutable.Seq[(String, ControlPacketFlags)]]()
 
         val initCommands = immutable.Seq(
-          Command(Connect(clientId, ConnectFlags.CleanSession)),
+          Command(Connect(connectionSettings.clientId, connectionSettings.connectFlags)),
           Command(Subscribe(subscriptions))
         )
 
@@ -161,13 +168,13 @@ object MqttSource {
             .toMat(BroadcastHub.sink)(Keep.both)
             .run()
 
-        val publishSource: Source[(Publish, CommitHandle), Future[immutable.Seq[(String, ControlPacketFlags)]]] =
+        val publishSource: Source[(Publish, MqttAckHandle), Future[immutable.Seq[(String, ControlPacketFlags)]]] =
           subscription
             .log("publishSource")
             .collect {
               case Event(publish @ Publish(_, _, Some(packetId), _), _) =>
                 (publish,
-                 new CommitHandle(
+                 new MqttAckHandle(
                    commands
                      .offer(Command(PubAck(packetId)))
                      .map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)
