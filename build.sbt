@@ -65,12 +65,13 @@ lazy val alpakka = project
         |    is binary compatible with the released version
       """.stripMargin,
     // unidoc combines sources and jars from all connectors and that
-    // includes two incompatible versions of protobuf. Depending on the
+    // might include some incompatible ones. Depending on the
     // classpath order that might lead to scaladoc compilation errors.
-    // Therefore the older version is exlcuded here.
+    // Therefore some versions are exlcuded here.
     ScalaUnidoc / unidoc / fullClasspath := {
       (ScalaUnidoc / unidoc / fullClasspath).value
         .filterNot(_.data.getAbsolutePath.contains("protobuf-java-2.5.0.jar"))
+	.filterNot(_.data.getAbsolutePath.contains("guava-26.0-android.jar"))
     },
     ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(`doc-examples`),
     crossScalaVersions := List() // workaround for https://github.com/sbt/sbt/issues/3465
