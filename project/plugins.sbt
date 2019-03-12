@@ -10,7 +10,10 @@ addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "2.1.0")
 addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.4")
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.3.0")
 addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.13")
-addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "1.3.3-2m")
+// has following PRs merged in:
+// * https://github.com/sbt/sbt-site/pull/141
+// * https://github.com/sbt/sbt-site/pull/139
+addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "1.3.2+24-b76fdbbe")
 addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.2")
 addSbtPlugin("com.lightbend.sbt" % "sbt-java-formatter" % "0.4.1")
 addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "0.4")
