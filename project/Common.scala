@@ -1,4 +1,4 @@
-import sbt._
+import sbt.{Def, _}
 import sbt.Keys._
 import sbt.plugins.JvmPlugin
 import org.scalafmt.sbt.ScalafmtPlugin.autoImport._
@@ -13,18 +13,20 @@ object Common extends AutoPlugin {
 
   override def requires = JvmPlugin && HeaderPlugin
 
-  override lazy val projectSettings =
-  Dependencies.Common ++ Seq(
+  override def globalSettings = Seq(
     organization := "com.lightbend.akka",
     organizationName := "Lightbend Inc.",
     homepage := Some(url("https://doc.akka.io/docs/alpakka/current/")),
     scmInfo := Some(ScmInfo(url("https://github.com/akka/alpakka"), "git@github.com:akka/alpakka.git")),
     developers += Developer("contributors",
-                            "Contributors",
-                            "https://gitter.im/akka/dev",
-                            url("https://github.com/akka/alpakka/graphs/contributors")),
+      "Contributors",
+      "https://gitter.im/akka/dev",
+      url("https://github.com/akka/alpakka/graphs/contributors")),
     licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
     description := "Alpakka is a Reactive Enterprise Integration library for Java and Scala, based on Reactive Streams and Akka.",
+  )
+
+  override lazy val projectSettings = Dependencies.Common ++ Seq(
     projectInfoVersion := (if (isSnapshot.value) "snapshot" else version.value),
     whitesourceGroup := Whitesource.Group.Community,
     crossVersion := CrossVersion.binary,

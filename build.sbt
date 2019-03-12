@@ -268,8 +268,6 @@ lazy val docs = project
     Paradox / sourceDirectory := sourceDirectory.value / "main" / "paradox",
     Paradox / paradoxTheme / sourceDirectory := (Compile / paradoxTheme / sourceDirectory).value,
     Paradox / paradoxProperties ++= Map(
-      "project.url" -> "https://doc.akka.io/docs/alpakka/current/",
-      "canonical.base_url" -> "https://doc.akka.io/docs/alpakka/current",
       "akka.version" -> Dependencies.AkkaVersion,
       "akka-http.version" -> Dependencies.AkkaHttpVersion,
       "couchbase.version" -> Dependencies.CouchbaseVersion,
