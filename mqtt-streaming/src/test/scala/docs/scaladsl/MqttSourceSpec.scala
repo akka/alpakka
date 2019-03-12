@@ -24,7 +24,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
 class MqttSourceSpec
-    extends TestKit(ActorSystem("MqttFlowSpec"))
+    extends TestKit(ActorSystem("MqttSourceSpec"))
     with WordSpecLike
     with Matchers
     with BeforeAndAfterAll
@@ -57,7 +57,11 @@ class MqttSourceSpec
 
       val subscriptions = List(topic -> ControlPacketFlags.QoSAtLeastOnceDelivery)
       val (subscribed, received) = MqttSource
-        .atMostOnce(mqttClientSession, transportSettings, new MqttRestartSettings(), clientId, subscriptions)
+        .atMostOnce(mqttClientSession,
+                    transportSettings,
+                    new MqttRestartSettings(),
+                    new MqttConnectionSettings(clientId),
+                    subscriptions)
         .log("client received", p => p.payload.utf8String)
         .take(input.size)
         .toMat(Sink.seq)(Keep.both)
@@ -88,7 +92,11 @@ class MqttSourceSpec
 
       val subscriptions = List(topic -> ControlPacketFlags.QoSAtLeastOnceDelivery)
       val ((subscribed, switch), received) = MqttSource
-        .atMostOnce(mqttClientSession, transportSettings, new MqttRestartSettings(), clientId, subscriptions)
+        .atMostOnce(mqttClientSession,
+                    transportSettings,
+                    new MqttRestartSettings(),
+                    new MqttConnectionSettings(clientId),
+                    subscriptions)
         .log("client received", p => p.payload.utf8String)
         .viaMat(KillSwitches.single)(Keep.both)
         .toMat(Sink.seq)(Keep.both)
@@ -126,7 +134,11 @@ class MqttSourceSpec
 
       val subscriptions = List(topic -> ControlPacketFlags.QoSAtLeastOnceDelivery)
       val ((subscribed, switch), received) = MqttSource
-        .atMostOnce(mqttClientSession, transportSettings, new MqttRestartSettings(), clientId, subscriptions)
+        .atMostOnce(mqttClientSession,
+                    transportSettings,
+                    new MqttRestartSettings(),
+                    new MqttConnectionSettings(clientId),
+                    subscriptions)
         .log("client received", p => p.payload.utf8String)
         .viaMat(KillSwitches.single)(Keep.both)
         .toMat(Sink.seq)(Keep.both)
