@@ -321,6 +321,9 @@ lazy val `doc-examples` = project
     name := s"akka-stream-alpakka-doc-examples",
     publish / skip := true,
     whitesourceIgnore := true,
+    // Google Cloud Pub/Sub gRPC is not available for Scala 2.11
+    crossScalaVersions -= Dependencies.Scala211,
+    // More projects are not available for Scala 2.13
     crossScalaVersions -= Dependencies.Scala213,
     Dependencies.`Doc-examples`
   )
