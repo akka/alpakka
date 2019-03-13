@@ -65,12 +65,13 @@ lazy val alpakka = project
         |    is binary compatible with the released version
       """.stripMargin,
     // unidoc combines sources and jars from all connectors and that
-    // includes two incompatible versions of protobuf. Depending on the
+    // might include some incompatible ones. Depending on the
     // classpath order that might lead to scaladoc compilation errors.
-    // Therefore the older version is exlcuded here.
+    // Therefore some versions are exlcuded here.
     ScalaUnidoc / unidoc / fullClasspath := {
       (ScalaUnidoc / unidoc / fullClasspath).value
         .filterNot(_.data.getAbsolutePath.contains("protobuf-java-2.5.0.jar"))
+        .filterNot(_.data.getAbsolutePath.contains("guava-26.0-android.jar"))
     },
     ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(`doc-examples`),
     crossScalaVersions := List() // workaround for https://github.com/sbt/sbt/issues/3465
@@ -157,7 +158,7 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
   // for the ExampleApp in the tests
   connectInput in run := true,
   Compile / compile / scalacOptions += "-P:silencer:pathFilters=src_managed",
-  crossScalaVersions -= Dependencies.Scala213
+  crossScalaVersions --= Seq(Dependencies.Scala211, Dependencies.Scala213)
 ).enablePlugins(AkkaGrpcPlugin, JavaAgent)
 
 lazy val googleFcm = alpakkaProject(
@@ -321,6 +322,9 @@ lazy val `doc-examples` = project
     name := s"akka-stream-alpakka-doc-examples",
     publish / skip := true,
     whitesourceIgnore := true,
+    // Google Cloud Pub/Sub gRPC is not available for Scala 2.11
+    crossScalaVersions -= Dependencies.Scala211,
+    // More projects are not available for Scala 2.13
     crossScalaVersions -= Dependencies.Scala213,
     Dependencies.`Doc-examples`
   )
