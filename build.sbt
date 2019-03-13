@@ -71,7 +71,7 @@ lazy val alpakka = project
     ScalaUnidoc / unidoc / fullClasspath := {
       (ScalaUnidoc / unidoc / fullClasspath).value
         .filterNot(_.data.getAbsolutePath.contains("protobuf-java-2.5.0.jar"))
-	.filterNot(_.data.getAbsolutePath.contains("guava-26.0-android.jar"))
+        .filterNot(_.data.getAbsolutePath.contains("guava-26.0-android.jar"))
     },
     ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(`doc-examples`),
     crossScalaVersions := List() // workaround for https://github.com/sbt/sbt/issues/3465
