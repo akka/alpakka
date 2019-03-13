@@ -57,6 +57,7 @@ class MqttSessionSpec
               .clientSessionFlow(session, ByteString("1"))
               .join(pipeToServer)
           )
+          .take(3)
           .toMat(Sink.seq)(Keep.both)
           .run()
 
@@ -90,9 +91,8 @@ class MqttSessionSpec
       server.expectMsg(publishBytes)
       server.reply(pubAckBytes)
 
-      client.complete()
-
       result.futureValue shouldBe List(Right(Event(connAck)), Right(Event(subAck)), Right(Event(pubAck)))
+      client.complete()
       client.watchCompletion().foreach(_ => session.shutdown())
     }
 
