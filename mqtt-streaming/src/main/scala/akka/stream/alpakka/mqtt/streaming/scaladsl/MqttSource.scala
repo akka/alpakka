@@ -5,44 +5,18 @@
 package akka.stream.alpakka.mqtt.streaming.scaladsl
 
 import akka.actor.ActorSystem
+import akka.annotation.ApiMayChange
 import akka.dispatch.ExecutionContexts
-import akka.{Done, NotUsed}
-import akka.stream.{Materializer, OverflowStrategy}
-import akka.stream.alpakka.mqtt.streaming.impl.Setup
 import akka.stream.alpakka.mqtt.streaming._
-import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, RestartFlow, Source, SourceQueueWithComplete, Tcp}
-import akka.util.ByteString
+import akka.stream.alpakka.mqtt.streaming.impl.Setup
+import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, RestartFlow, Source, SourceQueueWithComplete}
+import akka.stream.{Materializer, OverflowStrategy}
+import akka.{Done, NotUsed}
 
 import scala.collection.immutable
 import scala.concurrent.{Future, Promise}
-import scala.concurrent.duration._
 
-trait MqttTransportSettings {
-  def connectionFlow()(implicit system: ActorSystem): Flow[ByteString, ByteString, _]
-}
-
-final class MqttTcpTransportSettings(
-    val host: String = "localhost",
-    val port: Int = 1883
-) extends MqttTransportSettings {
-  def connectionFlow()(implicit system: ActorSystem): Flow[ByteString, ByteString, _] =
-    Tcp(system).outgoingConnection(host, port)
-}
-
-final class MqttConnectionSettings(
-    val clientId: String,
-    val connectFlags: ConnectFlags = ConnectFlags.CleanSession
-) {
-  def createControlPacket: Connect = Connect(clientId, connectFlags)
-}
-
-final class MqttRestartSettings(
-    val minBackoff: FiniteDuration = 2.seconds,
-    val maxBackoff: FiniteDuration = 2.minutes,
-    val randomFactor: Double = 0.42d,
-    val maxRestarts: Int = -1
-)
-
+@ApiMayChange
 object MqttSource {
 
   def atMostOnce(
@@ -121,7 +95,7 @@ object MqttSource {
       }
       .mapMaterializedValue(_.flatten)
 
-  def constructInternals[Out](
+  private def constructInternals[Out](
       mqttClientSession: MqttClientSession,
       transportSettings: MqttTransportSettings,
       restartSettings: MqttRestartSettings,
@@ -146,7 +120,7 @@ object MqttSource {
 
     val (commands: SourceQueueWithComplete[Command[Nothing]], subscription: Source[Event[Nothing], NotUsed]) =
       Source
-        .queue[Command[Nothing]](10, OverflowStrategy.fail)
+        .queue[Command[Nothing]](connectionSettings.bufferSize, OverflowStrategy.backpressure)
         .prepend(Source(initCommands))
         .via(mqttFlow)
         .map {
