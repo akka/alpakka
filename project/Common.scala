@@ -1,4 +1,4 @@
-import sbt.{Def, _}
+import sbt._
 import sbt.Keys._
 import sbt.plugins.JvmPlugin
 import org.scalafmt.sbt.ScalafmtPlugin.autoImport._
