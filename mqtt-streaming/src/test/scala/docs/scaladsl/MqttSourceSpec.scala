@@ -38,7 +38,7 @@ class MqttSourceSpec
   private implicit val ec: ExecutionContext = system.dispatcher
   private implicit val logging: LoggingAdapter = Logging.getLogger(system, this)
 
-  val transportSettings = new MqttTcpTransportSettings()
+  val transportSettings = MqttTcpTransportSettings("localhost")
 
   override def afterAll(): Unit =
     TestKit.shutdownActorSystem(system)
@@ -59,8 +59,8 @@ class MqttSourceSpec
       val (subscribed, received) = MqttSource
         .atMostOnce(mqttClientSession,
                     transportSettings,
-                    new MqttRestartSettings(),
-                    new MqttConnectionSettings(clientId),
+                    MqttRestartSettings(),
+                    MqttConnectionSettings(clientId),
                     subscriptions)
         .log("client received", p => p.payload.utf8String)
         .take(input.size)
@@ -94,8 +94,8 @@ class MqttSourceSpec
       val ((subscribed, switch), received) = MqttSource
         .atMostOnce(mqttClientSession,
                     transportSettings,
-                    new MqttRestartSettings(),
-                    new MqttConnectionSettings(clientId),
+                    MqttRestartSettings(),
+                    MqttConnectionSettings(clientId),
                     subscriptions)
         .log("client received", p => p.payload.utf8String)
         .viaMat(KillSwitches.single)(Keep.both)
@@ -136,8 +136,8 @@ class MqttSourceSpec
       val ((subscribed, switch), received) = MqttSource
         .atMostOnce(mqttClientSession,
                     transportSettings,
-                    new MqttRestartSettings(),
-                    new MqttConnectionSettings(clientId),
+                    MqttRestartSettings(),
+                    MqttConnectionSettings(clientId),
                     subscriptions)
         .log("client received", p => p.payload.utf8String)
         .viaMat(KillSwitches.single)(Keep.both)
@@ -182,8 +182,8 @@ class MqttSourceSpec
       val (subscribed, switch) = MqttSource
         .atLeastOnce(mqttClientSession,
                      transportSettings,
-                     new MqttRestartSettings(),
-                     new MqttConnectionSettings(clientId),
+                     MqttRestartSettings(),
+                     MqttConnectionSettings(clientId),
                      subscriptions)
         .log("client received", p => p._1.payload.utf8String)
         .map {
@@ -231,8 +231,8 @@ class MqttSourceSpec
         val (switch, received) = MqttSource
           .atLeastOnce(mqttClientSession,
                        transportSettings,
-                       new MqttRestartSettings(),
-                       new MqttConnectionSettings(clientId, ConnectFlags.None),
+                       MqttRestartSettings(),
+                       MqttConnectionSettings(clientId).withConnectFlags(ConnectFlags.None),
                        subscriptions)
           .zipWithIndex
           .mapAsync(1) {
@@ -257,8 +257,8 @@ class MqttSourceSpec
         val (switch, received) = MqttSource
           .atLeastOnce(mqttClientSession,
                        transportSettings,
-                       new MqttRestartSettings(),
-                       new MqttConnectionSettings(clientId, ConnectFlags.None),
+                       MqttRestartSettings(),
+                       MqttConnectionSettings(clientId).withConnectFlags(ConnectFlags.None),
                        subscriptions)
           .mapAsync(1) {
             case (publish, ackHandle) =>
