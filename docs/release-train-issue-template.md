@@ -37,9 +37,9 @@ Key links:
 ### Cutting the release
 
 - [ ] Make sure there are no stray staging repos on [Sonatype](https://oss.sonatype.org/#stagingRepositories)
-- [ ] Wait until [master build finished](https://travis-ci.org/akka/alpakka/builds/) after merging the release notes 
+- [ ] Wait until [master build finished](https://travis-ci.com/akka/alpakka/builds/) after merging the release notes
 - [ ] Create a [new release](https://github.com/akka/alpakka/releases/new) with the next tag version `v$ALPAKKA_VERSION$`, title and release description linking to announcement, release notes and milestone
-- [ ] Check that Travis CI release build has executed successfully (Travis will start a [CI build](https://travis-ci.org/akka/alpakka/builds) for the new tag and publish artifacts to Bintray and documentation to Gustav)
+- [ ] Check that Travis CI release build has executed successfully (Travis will start a [CI build](https://travis-ci.com/akka/alpakka/builds) for the new tag and publish artifacts to Bintray and documentation to Gustav)
 - [ ] Go to [Bintray](https://bintray.com/akka/maven/alpakka) and select the just released version
 - [ ] Go to the Maven Central tab, check the *Close and release repository when done* checkbox and sync with Sonatype (using your Sonatype TOKEN key and password)
 
