@@ -6,22 +6,24 @@ package docs.scaladsl
 
 import java.time.LocalTime
 
-import akka.Done
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.event.{Logging, LoggingAdapter}
 import akka.stream._
+// #imports
 import akka.stream.alpakka.mqtt.streaming._
 import akka.stream.alpakka.mqtt.streaming.scaladsl._
-import akka.stream.scaladsl.{Keep, Sink, Source, SourceQueueWithComplete, Tcp}
-import akka.testkit.TestKit
+// #imports
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete, Tcp}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
+import akka.testkit.TestKit
 import akka.util.ByteString
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.collection.immutable
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
 
 class MqttSourceSpec
     extends TestKit(ActorSystem("MqttSourceSpec"))
@@ -49,11 +51,10 @@ class MqttSourceSpec
       val clientId = s"streaming/source-spec/$testId"
       val topic = TopicPrefix + testId
 
-      val sessionSettings = MqttSessionSettings()
       val time = LocalTime.now().toString
       val input = Vector("one-" + time, "two-" + time, "three-" + time, "four-" + time, "five-" + time)
 
-      val mqttClientSession: MqttClientSession = ActorMqttClientSession(sessionSettings)
+      val mqttClientSession: MqttClientSession = ActorMqttClientSession(MqttSessionSettings())
 
       val subscriptions = MqttSubscriptions(topic, ControlPacketFlags.QoSAtLeastOnceDelivery)
       val (subscribed, received) = MqttSource
@@ -62,7 +63,6 @@ class MqttSourceSpec
                     MqttRestartSettings(),
                     MqttConnectionSettings(clientId),
                     subscriptions)
-        .log("client received", p => p.payload.utf8String)
         .take(input.size)
         .toMat(Sink.seq)(Keep.both)
         .run()
@@ -84,11 +84,10 @@ class MqttSourceSpec
       val clientId = s"streaming/source-spec/$testId"
       val topic = TopicPrefix + testId
 
-      val sessionSettings = MqttSessionSettings()
       val time = LocalTime.now().toString
       val input = Vector("one-" + time, "two-" + time, "three-" + time, "four-" + time, "five-" + time)
 
-      val mqttClientSession: MqttClientSession = ActorMqttClientSession(sessionSettings)
+      val mqttClientSession: MqttClientSession = ActorMqttClientSession(MqttSessionSettings())
 
       val subscriptions = MqttSubscriptions.atLeastOnce(topic)
       val ((subscribed, switch), received) = MqttSource
@@ -97,7 +96,6 @@ class MqttSourceSpec
                     MqttRestartSettings(),
                     MqttConnectionSettings(clientId),
                     subscriptions)
-        .log("client received", p => p.payload.utf8String)
         .viaMat(KillSwitches.single)(Keep.both)
         .toMat(Sink.seq)(Keep.both)
         .run()
@@ -170,47 +168,66 @@ class MqttSourceSpec
       val clientId = s"streaming/source-spec/$testId"
       val topic = TopicPrefix + testId
 
-      val sessionSettings = MqttSessionSettings()
       val time = LocalTime.now().toString
       val input = Vector("one-" + time, "two-" + time, "three-" + time, "four-" + time, "five-" + time)
 
-      val mqttClientSession: MqttClientSession = ActorMqttClientSession(sessionSettings)
-
       var queue: immutable.Seq[Publish] = Vector[Publish]()
 
+      // #at-least-once
+
+      val businessLogic: Flow[(Publish, MqttAckHandle), (Publish, MqttAckHandle), NotUsed] = // ???
+        // #at-least-once
+        Flow[(Publish, MqttAckHandle)]
+          .map {
+            case in @ (publish, _) =>
+              queue = queue ++ Vector(publish)
+              in
+          }
+
+      // #at-least-once
+
+      val mqttClientSession: MqttClientSession = ActorMqttClientSession(MqttSessionSettings())
+      val transportSettings = MqttTcpTransportSettings("localhost")
       val subscriptions = MqttSubscriptions.atLeastOnce(topic)
-      val (subscribed, switch) = MqttSource
+
+      val stream = MqttSource
         .atLeastOnce(mqttClientSession,
                      transportSettings,
                      MqttRestartSettings(),
                      MqttConnectionSettings(clientId),
                      subscriptions)
-        .log("client received", p => p._1.payload.utf8String)
-        .map {
-          case in @ (publish, _) =>
-            queue = queue ++ Vector(publish)
-            in
-        }
+        .via(businessLogic)
         .mapAsync(1) {
           case (_, ackHandle) =>
             ackHandle.ack()
         }
         .viaMat(KillSwitches.single)(Keep.both)
-        .toMat(Sink.ignore)(Keep.left)
+        .toMat(Sink.ignore)(Keep.both)
         .run()
+
+      val ((subscribed: Future[immutable.Seq[(String, ControlPacketFlags)]], switch: UniqueKillSwitch),
+           streamCompletion: Future[Done]) = stream
+      // #at-least-once
 
       subscribed.futureValue should contain theSameElementsInOrderAs subscriptions.subscriptions.toList
       val publishFlow = publish(topic, ControlPacketFlags.QoSAtLeastOnceDelivery, input)
 
       sleepToReceiveAll()
+      // #at-least-once
+
+      // stop the subscription
       switch.shutdown()
+      // #at-least-once
 
       queue.map(_.payload.utf8String) should contain theSameElementsAs input
 
       publishFlow.complete()
-      publishFlow.watchCompletion().foreach { _ =>
+      // #at-least-once
+
+      streamCompletion.foreach { _ =>
         mqttClientSession.shutdown()
       }
+      // #at-least-once
     }
 
     "receive unacked messages later (when not using CleanSession)" in assertAllStagesStopped {

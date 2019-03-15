@@ -13,20 +13,33 @@ import akka.stream.scaladsl.Source
 import scala.collection.immutable
 import scala.concurrent.Future
 
+@ApiMayChange
 trait MqttAckHandle {
 
+  /** Acknowledge received data. */
   def ack(): Future[Done]
 }
 
-final class MqttAckHandleScala @InternalApi private[scaladsl] (sendAck: () => Future[Done]) extends MqttAckHandle {
+/**
+ * Internal API
+ */
+@InternalApi
+final class MqttAckHandleScala private[scaladsl] (sendAck: () => Future[Done]) extends MqttAckHandle {
 
   def ack(): Future[Done] = sendAck.apply()
 
 }
 
+/**
+ * Scala API
+ */
 @ApiMayChange
 object MqttSource {
 
+  /**
+   * High-level API to subscribe to MQTT topics with at-most-once semantics.
+   */
+  @ApiMayChange
   def atMostOnce(
       mqttClientSession: MqttClientSession,
       transportSettings: MqttTransportSettings,
@@ -42,6 +55,11 @@ object MqttSource {
       subscriptions
     )
 
+  /**
+   * High-level API to subscribe to MQTT topics with at-least-once semantics.
+   * The second value in the emitted pairs offers the `ack()` method to acknowledge received packages to MQTT.
+   */
+  @ApiMayChange
   def atLeastOnce(
       mqttClientSession: MqttClientSession,
       transportSettings: MqttTransportSettings,

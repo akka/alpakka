@@ -56,23 +56,30 @@ object MqttTcpTransportSettings {
 }
 
 /**
- * Create a `Connect` packet for high-level APIs.
+ * Create a `Connect` packet for the high-level APIs.
  * [[MqttConnectionSettings]] offers the most applicable implementation.
  */
 @ApiMayChange
 trait MqttConnectPacket {
+
+  /** Packet sent to connect to MQTT broker. */
   def controlPacket: Connect
+
+  /** Controls how many `Commands` are accepted internally before back-pressure applies, affects acknowledging. */
+  def bufferSize: Int
 }
 
 @ApiMayChange
 final class MqttConnectionSettings private (
     val clientId: String,
     val connectFlags: ConnectFlags,
-    val bufferSize: Int
+    override val bufferSize: Int
 ) extends MqttConnectPacket {
 
   def withClientId(value: String): MqttConnectionSettings = copy(clientId = value)
   def withConnectFlags(value: ConnectFlags): MqttConnectionSettings = copy(connectFlags = value)
+
+  /** Controls how many `Commands` are accepted internally before back-pressure applies, affects acknowledging. */
   def withBufferSize(value: Int): MqttConnectionSettings = copy(bufferSize = value)
 
   private def copy(
@@ -210,6 +217,7 @@ final class MqttSubscriptions private (
 /**
  * The mapping of topics to subscribe to and their control flags (including Quality of Service) per topic.
  */
+@ApiMayChange
 object MqttSubscriptions {
 
   /** Scala API */

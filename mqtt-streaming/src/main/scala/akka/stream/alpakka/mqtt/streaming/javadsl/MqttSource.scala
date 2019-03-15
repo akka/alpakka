@@ -23,10 +23,16 @@ import scala.concurrent.Future
  * Java API:
  * Handle to send acknowledge for received Publish messages.
  */
+@ApiMayChange
 trait MqttAckHandle {
+
+  /** Acknowledge received data. */
   def ack(): CompletionStage[Done]
 }
 
+/**
+ * Internal API
+ */
 @InternalApi
 final class MqttAckHandleJava private[javadsl] (sendAck: () => Future[Done]) extends MqttAckHandle {
 
@@ -34,9 +40,16 @@ final class MqttAckHandleJava private[javadsl] (sendAck: () => Future[Done]) ext
 
 }
 
+/**
+ * Java API
+ */
 @ApiMayChange
 object MqttSource {
 
+  /**
+   * High-level API to subscribe to MQTT topics with at-most-once semantics.
+   */
+  @ApiMayChange
   def atMostOnce(
       mqttClientSession: MqttClientSession,
       transportSettings: MqttTransportSettings,
@@ -54,6 +67,11 @@ object MqttSource {
       )
       .mapMaterializedValue(matValueToJava)
 
+  /**
+   * High-level API to subscribe to MQTT topics with at-least-once semantics.
+   * The second value in the emitted pairs offers the `ack()` method to acknowledge received packages to MQTT.
+   */
+  @ApiMayChange
   def atLeastOnce(
       mqttClientSession: MqttClientSession,
       transportSettings: MqttTransportSettings,

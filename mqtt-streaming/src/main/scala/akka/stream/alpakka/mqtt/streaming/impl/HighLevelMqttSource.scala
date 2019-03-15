@@ -16,6 +16,9 @@ import akka.{Done, NotUsed}
 import scala.collection.immutable
 import scala.concurrent.{Future, Promise}
 
+/**
+ * Internal API
+ */
 @InternalApi
 private[streaming] object HighLevelMqttSource {
 
@@ -37,13 +40,12 @@ private[streaming] object HighLevelMqttSource {
           publish
       }
 
-    apply(mqttClientSession,
-          transportSettings,
-          restartSettings,
-          connectionSettings,
-          subscriptions,
-          sendAcknowledge,
-          bufferSize = 10)
+    createOnMaterialization[Out](mqttClientSession,
+                                 transportSettings,
+                                 restartSettings,
+                                 connectionSettings,
+                                 subscriptions,
+                                 sendAcknowledge)
   }
 
   def atLeastOnce[Out](
@@ -66,16 +68,15 @@ private[streaming] object HighLevelMqttSource {
           throw new RuntimeException(s"Received Publish without packetId in at-least-once mode: $publish")
       }
 
-    apply(mqttClientSession,
-          transportSettings,
-          restartSettings,
-          connectionSettings,
-          subscriptions,
-          createAckHandle,
-          bufferSize = 10)
+    createOnMaterialization[Out](mqttClientSession,
+                                 transportSettings,
+                                 restartSettings,
+                                 connectionSettings,
+                                 subscriptions,
+                                 createAckHandle)
   }
 
-  private def apply[Out](
+  private def createOnMaterialization[Out](
       mqttClientSession: MqttClientSession,
       transportSettings: MqttTransportSettings,
       restartSettings: MqttRestartSettings,
@@ -83,8 +84,7 @@ private[streaming] object HighLevelMqttSource {
       subscriptions: MqttSubscribe,
       createAckHandle: SourceQueueWithComplete[
         Command[Nothing]
-      ] => PartialFunction[Event[Nothing], Out],
-      bufferSize: Int
+      ] => PartialFunction[Event[Nothing], Out]
   ) =
     Setup
       .source { implicit materializer => implicit attributes =>
@@ -94,7 +94,6 @@ private[streaming] object HighLevelMqttSource {
                                 transportSettings,
                                 restartSettings,
                                 connectionSettings,
-                                bufferSize = 10,
                                 subscriptions,
                                 createAckHandle)
       }
@@ -105,7 +104,6 @@ private[streaming] object HighLevelMqttSource {
       transport: MqttTransportSettings,
       restartSettings: MqttRestartSettings,
       connect: MqttConnectPacket,
-      bufferSize: Int,
       subscribe: MqttSubscribe,
       acknowledgeAndOut: SourceQueueWithComplete[Command[Nothing]] => PartialFunction[Event[Nothing], Out]
   )(implicit system: ActorSystem, materializer: Materializer) = {
@@ -127,7 +125,7 @@ private[streaming] object HighLevelMqttSource {
 
     val (commands: SourceQueueWithComplete[Command[Nothing]], subscription: Source[Event[Nothing], NotUsed]) =
       Source
-        .queue[Command[Nothing]](bufferSize, OverflowStrategy.backpressure)
+        .queue[Command[Nothing]](connect.bufferSize, OverflowStrategy.backpressure)
         .prepend(Source(initCommands))
         .via(mqttFlow)
         .map {
