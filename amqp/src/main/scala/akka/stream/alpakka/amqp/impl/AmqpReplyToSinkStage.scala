@@ -30,8 +30,7 @@ private[amqp] final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
     val promise = Promise[Done]()
-    (new GraphStageLogic(shape) with AmqpConnectorLogic {
-      override val settings = stage.settings
+    (new AmqpConnectorLogic(shape, settings) {
 
       override def whenConnected(): Unit = pull(in)
 

@@ -29,8 +29,8 @@ private[amqp] final class AmqpSinkStage(settings: AmqpWriteSettings)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
     val promise = Promise[Done]()
-    (new GraphStageLogic(shape) with AmqpConnectorLogic {
-      override val settings = stage.settings
+    (new AmqpConnectorLogic(shape, settings) {
+
       private val exchange = settings.exchange.getOrElse("")
       private val routingKey = settings.routingKey.getOrElse("")
 

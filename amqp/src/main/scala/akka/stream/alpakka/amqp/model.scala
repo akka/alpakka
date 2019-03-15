@@ -82,3 +82,13 @@ object WriteMessage {
   def create(bytes: ByteString, immediate: Boolean, mandatory: Boolean): WriteMessage =
     WriteMessage(bytes, immediate, mandatory)
 }
+
+sealed trait ConfirmMessage
+
+object ConfirmMessage {
+
+  final case class Ack(deliveryTag: Long, multiple: Boolean) extends ConfirmMessage
+
+  final case class Nack(deliveryTag: Long, multiple: Boolean) extends ConfirmMessage
+
+}

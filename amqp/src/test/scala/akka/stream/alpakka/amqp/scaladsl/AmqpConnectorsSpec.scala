@@ -10,7 +10,7 @@ import akka.Done
 import akka.stream._
 import akka.stream.alpakka.amqp._
 import akka.stream.scaladsl.{GraphDSL, Keep, Merge, Sink, Source}
-import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.scaladsl.{TestSink, TestSource}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.{TestPublisher, TestSubscriber}
 import akka.util.ByteString
@@ -407,6 +407,38 @@ class AmqpConnectorsSpec extends AmqpSpec {
 
       val received = result.futureValue
       received.map(_.message.bytes.utf8String) shouldEqual input
+    }
+
+    "publish with confirm" in assertAllStagesStopped {
+      val connectionProvider = AmqpDetailsConnectionProvider("localhost", 5672)
+
+      val exchangeName = "amqp.topic." + System.currentTimeMillis()
+      val queueName = "amqp-conn-it-spec-simple-queue-" + System.currentTimeMillis()
+      val exchangeDeclaration = ExchangeDeclaration(exchangeName, "topic")
+      val queueDeclaration = QueueDeclaration(queueName)
+      val bindingDeclaration = BindingDeclaration(queueName, exchangeName).withRoutingKey("key.*")
+
+      val flow = AmqpConfirmFlow(
+        AmqpWriteSettings(connectionProvider)
+          .withExchange(exchangeName)
+          .withDeclarations(immutable.Seq(exchangeDeclaration, queueDeclaration, bindingDeclaration))
+      )
+
+      val (pub, sub) = TestSource
+        .probe[WriteMessage]
+        .via(flow)
+        .toMat(TestSink.probe[ConfirmMessage])(Keep.both)
+        .run()
+
+      sub.request(3)
+      pub.sendNext(WriteMessage(ByteString("a")))
+      pub.sendNext(WriteMessage(ByteString("b")))
+      pub.sendNext(WriteMessage(ByteString("c")))
+
+      sub.expectNextUnordered(ConfirmMessage.Ack(1, multiple = false),
+                              ConfirmMessage.Ack(2, multiple = false),
+                              ConfirmMessage.Ack(3, multiple = false))
+      sub.cancel()
     }
   }
 }

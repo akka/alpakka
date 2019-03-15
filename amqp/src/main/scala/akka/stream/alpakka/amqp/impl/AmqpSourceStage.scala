@@ -41,9 +41,7 @@ private[amqp] final class AmqpSourceStage(settings: AmqpSourceSettings, bufferSi
   override protected def initialAttributes: Attributes = Attributes.name("AmqpSource")
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with AmqpConnectorLogic with StageLogging {
-
-      override val settings: AmqpSourceSettings = stage.settings
+    new AmqpConnectorLogic(shape, settings) with StageLogging {
 
       private val queue = mutable.Queue[CommittableReadResult]()
       private var ackRequired = true

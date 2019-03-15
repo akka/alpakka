@@ -41,9 +41,8 @@ private[amqp] final class AmqpRpcFlowStage(settings: AmqpWriteSettings, bufferSi
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[String]) = {
     val promise = Promise[String]()
-    (new GraphStageLogic(shape) with AmqpConnectorLogic {
+    (new AmqpConnectorLogic(shape, settings) {
 
-      override val settings = stage.settings
       private val exchange = settings.exchange.getOrElse("")
       private val routingKey = settings.routingKey.getOrElse("")
       private val queue = mutable.Queue[CommittableReadResult]()

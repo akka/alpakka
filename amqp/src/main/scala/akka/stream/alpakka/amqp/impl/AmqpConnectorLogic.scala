@@ -4,13 +4,15 @@
 
 package akka.stream.alpakka.amqp.impl
 
+import akka.stream.Shape
 import akka.stream.alpakka.amqp.{AmqpConnectorSettings, BindingDeclaration, ExchangeDeclaration, QueueDeclaration}
 import akka.stream.stage.{AsyncCallback, GraphStageLogic}
 import com.rabbitmq.client._
 
 import scala.util.control.NonFatal
 
-private trait AmqpConnectorLogic { this: GraphStageLogic =>
+private abstract class AmqpConnectorLogic(shape: Shape, settings: AmqpConnectorSettings)
+    extends GraphStageLogic(shape) {
 
   private var connection: Connection = _
   protected var channel: Channel = _
@@ -20,7 +22,6 @@ private trait AmqpConnectorLogic { this: GraphStageLogic =>
     override def shutdownCompleted(cause: ShutdownSignalException): Unit = shutdownCallback.invoke(cause)
   }
 
-  def settings: AmqpConnectorSettings
   def whenConnected(): Unit
   def onFailure(ex: Throwable): Unit = failStage(ex)
 
