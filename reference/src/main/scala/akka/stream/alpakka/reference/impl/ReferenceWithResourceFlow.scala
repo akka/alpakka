@@ -9,6 +9,7 @@ import akka.event.Logging
 import akka.stream.alpakka.reference.{ReferenceWriteMessage, ReferenceWriteResult, Resource}
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
+import akka.util.ByteString
 
 /**
  * INTERNAL API
@@ -35,7 +36,8 @@ import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
     new InHandler {
       override def onPush(): Unit = {
         val writeMessage = grab(in)
-        push(out, new ReferenceWriteResult(writeMessage, writeMessage.metrics, 200))
+        val data = writeMessage.data.map(_ ++ ByteString(s" ${resource.settings.msg}"))
+        push(out, new ReferenceWriteResult(writeMessage.withData(data), writeMessage.metrics, 200))
       }
     }
   )
