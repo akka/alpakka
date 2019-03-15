@@ -21,16 +21,6 @@ trait MqttAckHandle {
 }
 
 /**
- * Internal API
- */
-@InternalApi
-final class MqttAckHandleScala private[scaladsl] (sendAck: () => Future[Done]) extends MqttAckHandle {
-
-  def ack(): Future[Done] = sendAck.apply()
-
-}
-
-/**
  * Scala API
  */
 @ApiMayChange
@@ -76,7 +66,17 @@ object MqttSource {
       createOut
     )
 
+  /**
+   * Internal API
+   */
+  @InternalApi
+  private final class MqttAckHandleImpl(sendAck: () => Future[Done]) extends MqttAckHandle {
+
+    def ack(): Future[Done] = sendAck.apply()
+
+  }
+
   private def createOut(publish: Publish, ackHandle: () => Future[Done]): (Publish, MqttAckHandle) =
-    (publish, new MqttAckHandleScala(ackHandle))
+    (publish, new MqttAckHandleImpl(ackHandle))
 
 }

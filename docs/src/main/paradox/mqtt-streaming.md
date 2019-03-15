@@ -68,6 +68,9 @@ The high-level @scala[@scaladoc[`MqttSource`](akka.stream.alpakka.mqtt.streaming
 Scala
 : @@snip [snip](/mqtt-streaming/src/test/scala/docs/scaladsl/MqttSourceSpec.scala) { #imports #at-least-once }
 
+Java
+: @@snip [snip](/mqtt-streaming/src/test/java/docs/javadsl/MqttSourceTest.java) { #imports #at-least-once }
+
 
 ## Flow through a client session
 

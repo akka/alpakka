@@ -12,7 +12,7 @@ import akka.dispatch.ExecutionContexts
 import akka.japi.Pair
 import akka.stream.alpakka.mqtt.streaming._
 import akka.stream.alpakka.mqtt.streaming.impl.HighLevelMqttSource
-import akka.stream.scaladsl.Source
+import akka.stream.javadsl.Source
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
@@ -28,16 +28,6 @@ trait MqttAckHandle {
 
   /** Acknowledge received data. */
   def ack(): CompletionStage[Done]
-}
-
-/**
- * Internal API
- */
-@InternalApi
-final class MqttAckHandleJava private[javadsl] (sendAck: () => Future[Done]) extends MqttAckHandle {
-
-  def ack(): CompletionStage[Done] = sendAck.apply().toJava
-
 }
 
 /**
@@ -66,6 +56,7 @@ object MqttSource {
         subscriptions
       )
       .mapMaterializedValue(matValueToJava)
+      .asJava
 
   /**
    * High-level API to subscribe to MQTT topics with at-least-once semantics.
@@ -89,15 +80,26 @@ object MqttSource {
         createOut
       )
       .mapMaterializedValue(matValueToJava)
+      .asJava
 
   private def matValueToJava(f: Future[immutable.Seq[(String, ControlPacketFlags)]]) =
     f.map {
       _.map {
-        case (t, f) => Pair.create(t, f)
+        case (topic, flags) => Pair.create(topic, flags)
       }.asJava
     }(ExecutionContexts.sameThreadExecutionContext).toJava
 
+  /**
+   * Internal API
+   */
+  @InternalApi
+  private final class MqttAckHandleImpl(sendAck: () => Future[Done]) extends MqttAckHandle {
+
+    def ack(): CompletionStage[Done] = sendAck.apply().toJava
+
+  }
+
   private def createOut(publish: Publish, ackHandle: () => Future[Done]): Pair[Publish, MqttAckHandle] =
-    Pair.create(publish, new MqttAckHandleJava(ackHandle))
+    Pair.create(publish, new MqttAckHandleImpl(ackHandle))
 
 }

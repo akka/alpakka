@@ -24,6 +24,13 @@ topic streaming/source/topic/4
 topic streaming/source/topic/5
 topic streaming/source/topic/6
 
+topic streaming/source-test/topic/1
+topic streaming/source-test/topic/2
+topic streaming/source-test/topic/3
+topic streaming/source-test/topic/4
+topic streaming/source-test/topic/5
+topic streaming/source-test/topic/6
+
 user username1
 topic source-spec/secure-topic1
 topic source-spec/secure-topic2

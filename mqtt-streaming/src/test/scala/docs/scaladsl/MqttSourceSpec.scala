@@ -14,7 +14,7 @@ import akka.stream._
 import akka.stream.alpakka.mqtt.streaming._
 import akka.stream.alpakka.mqtt.streaming.scaladsl._
 // #imports
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete, Tcp}
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
 import akka.util.ByteString
@@ -45,6 +45,8 @@ class MqttSourceSpec
   override def afterAll(): Unit =
     TestKit.shutdownActorSystem(system)
 
+  import MqttSourceSpec._
+
   "At-most-once" should {
     "receive subscribed messages" in assertAllStagesStopped {
       val testId = "1"
@@ -69,7 +71,7 @@ class MqttSourceSpec
 
       subscribed.futureValue should contain theSameElementsInOrderAs subscriptions.subscriptions.toList
 
-      val publishFlow = publish(topic, ControlPacketFlags.QoSAtMostOnceDelivery, input)
+      val publishFlow = publish(topic, ControlPacketFlags.QoSAtMostOnceDelivery, transportSettings, input)
 
       received.futureValue.map(_.payload.utf8String) should contain theSameElementsAs input
 
@@ -102,7 +104,7 @@ class MqttSourceSpec
 
       subscribed.futureValue should contain theSameElementsInOrderAs subscriptions.subscriptions.toList
 
-      val publishFlow = publish(topic, ControlPacketFlags.QoSAtMostOnceDelivery, input)
+      val publishFlow = publish(topic, ControlPacketFlags.QoSAtMostOnceDelivery, transportSettings, input)
 
       sleepToReceiveAll()
       switch.shutdown()
@@ -144,7 +146,7 @@ class MqttSourceSpec
 
       subscribed.futureValue should contain theSameElementsInOrderAs subscriptions.subscriptions.toList
 
-      val publishFlow = publish(topic, ControlPacketFlags.QoSAtLeastOnceDelivery, input)
+      val publishFlow = publish(topic, ControlPacketFlags.QoSAtLeastOnceDelivery, transportSettings, input)
 
       sleepToReceiveAll()
       switch.shutdown()
@@ -210,7 +212,7 @@ class MqttSourceSpec
       // #at-least-once
 
       subscribed.futureValue should contain theSameElementsInOrderAs subscriptions.subscriptions.toList
-      val publishFlow = publish(topic, ControlPacketFlags.QoSAtLeastOnceDelivery, input)
+      val publishFlow = publish(topic, ControlPacketFlags.QoSAtLeastOnceDelivery, transportSettings, input)
 
       sleepToReceiveAll()
       // #at-least-once
@@ -262,7 +264,7 @@ class MqttSourceSpec
           .toMat(Sink.seq)(Keep.both)
           .run()
 
-        val publishFlow = publish(topic, ControlPacketFlags.QoSAtLeastOnceDelivery, input)
+        val publishFlow = publish(topic, ControlPacketFlags.QoSAtLeastOnceDelivery, transportSettings, input)
         sleepToReceiveAll()
         switch.shutdown()
         publishFlow.complete()
@@ -307,7 +309,17 @@ class MqttSourceSpec
     Thread.sleep(d.toMillis)
   }
 
-  private def publish(topic: String, delivery: ControlPacketFlags, input: Vector[String]) = {
+}
+
+object MqttSourceSpec {
+  def publish(
+      topic: String,
+      delivery: ControlPacketFlags,
+      transportSettings: MqttTransportSettings,
+      input: immutable.Seq[String]
+  )(implicit mat: Materializer,
+    system: ActorSystem,
+    ec: ExecutionContext): SourceQueueWithComplete[Command[Nothing]] = {
     val senderClientId = s"streaming/source-spec/sender"
     val sendSettings = MqttSessionSettings()
     val session = ActorMqttClientSession(sendSettings)
@@ -321,7 +333,7 @@ class MqttSourceSpec
         .via(
           Mqtt
             .clientSessionFlow(session)
-            .join(Tcp().outgoingConnection(transportSettings.host, transportSettings.port))
+            .join(transportSettings.connectionFlow())
         )
         .log("sender response")
         .to(Sink.ignore)
