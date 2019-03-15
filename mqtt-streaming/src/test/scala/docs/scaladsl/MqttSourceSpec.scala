@@ -55,7 +55,7 @@ class MqttSourceSpec
 
       val mqttClientSession: MqttClientSession = ActorMqttClientSession(sessionSettings)
 
-      val subscriptions = List(topic -> ControlPacketFlags.QoSAtLeastOnceDelivery)
+      val subscriptions = MqttSubscriptions(topic, ControlPacketFlags.QoSAtLeastOnceDelivery)
       val (subscribed, received) = MqttSource
         .atMostOnce(mqttClientSession,
                     transportSettings,
@@ -67,7 +67,7 @@ class MqttSourceSpec
         .toMat(Sink.seq)(Keep.both)
         .run()
 
-      subscribed.futureValue should contain theSameElementsInOrderAs subscriptions
+      subscribed.futureValue should contain theSameElementsInOrderAs subscriptions.subscriptions.toList
 
       val publishFlow = publish(topic, ControlPacketFlags.QoSAtMostOnceDelivery, input)
 
@@ -90,7 +90,7 @@ class MqttSourceSpec
 
       val mqttClientSession: MqttClientSession = ActorMqttClientSession(sessionSettings)
 
-      val subscriptions = List(topic -> ControlPacketFlags.QoSAtLeastOnceDelivery)
+      val subscriptions = MqttSubscriptions.atLeastOnce(topic)
       val ((subscribed, switch), received) = MqttSource
         .atMostOnce(mqttClientSession,
                     transportSettings,
@@ -102,7 +102,7 @@ class MqttSourceSpec
         .toMat(Sink.seq)(Keep.both)
         .run()
 
-      subscribed.futureValue should contain theSameElementsInOrderAs subscriptions
+      subscribed.futureValue should contain theSameElementsInOrderAs subscriptions.subscriptions.toList
 
       val publishFlow = publish(topic, ControlPacketFlags.QoSAtMostOnceDelivery, input)
 
@@ -132,7 +132,7 @@ class MqttSourceSpec
 
       val mqttClientSession: MqttClientSession = ActorMqttClientSession(sessionSettings)
 
-      val subscriptions = List(topic -> ControlPacketFlags.QoSAtLeastOnceDelivery)
+      val subscriptions = MqttSubscriptions.atLeastOnce(topic)
       val ((subscribed, switch), received) = MqttSource
         .atMostOnce(mqttClientSession,
                     transportSettings,
@@ -144,7 +144,7 @@ class MqttSourceSpec
         .toMat(Sink.seq)(Keep.both)
         .run()
 
-      subscribed.futureValue should contain theSameElementsInOrderAs subscriptions
+      subscribed.futureValue should contain theSameElementsInOrderAs subscriptions.subscriptions.toList
 
       val publishFlow = publish(topic, ControlPacketFlags.QoSAtLeastOnceDelivery, input)
 
@@ -178,7 +178,7 @@ class MqttSourceSpec
 
       var queue: immutable.Seq[Publish] = Vector[Publish]()
 
-      val subscriptions = List(topic -> ControlPacketFlags.QoSAtLeastOnceDelivery)
+      val subscriptions = MqttSubscriptions.atLeastOnce(topic)
       val (subscribed, switch) = MqttSource
         .atLeastOnce(mqttClientSession,
                      transportSettings,
@@ -199,7 +199,7 @@ class MqttSourceSpec
         .toMat(Sink.ignore)(Keep.left)
         .run()
 
-      subscribed.futureValue should contain theSameElementsInOrderAs subscriptions
+      subscribed.futureValue should contain theSameElementsInOrderAs subscriptions.subscriptions.toList
       val publishFlow = publish(topic, ControlPacketFlags.QoSAtLeastOnceDelivery, input)
 
       sleepToReceiveAll()
@@ -227,7 +227,7 @@ class MqttSourceSpec
 
       // read first elements
       val publishFlow: SourceQueueWithComplete[Command[Nothing]] = {
-        val subscriptions = List(topic -> ControlPacketFlags.QoSAtLeastOnceDelivery)
+        val subscriptions = MqttSubscriptions.atLeastOnce(topic)
         val (switch, received) = MqttSource
           .atLeastOnce(mqttClientSession,
                        transportSettings,
@@ -253,7 +253,7 @@ class MqttSourceSpec
       }
       // read elements that where not acked
       {
-        val subscriptions = List(topic -> ControlPacketFlags.QoSAtLeastOnceDelivery)
+        val subscriptions = MqttSubscriptions.atLeastOnce(topic)
         val (switch, received) = MqttSource
           .atLeastOnce(mqttClientSession,
                        transportSettings,

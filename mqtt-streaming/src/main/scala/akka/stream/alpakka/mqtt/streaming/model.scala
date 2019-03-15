@@ -16,6 +16,7 @@ import akka.util.{ByteIterator, ByteString, ByteStringBuilder}
 
 import scala.annotation.tailrec
 import scala.concurrent.duration._
+import scala.collection.immutable
 import scala.collection.JavaConverters._
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.{ExecutionContext, Promise}
@@ -337,7 +338,7 @@ object Subscribe {
    * 3.8 SUBSCRIBE - Subscribe to topics
    * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
    */
-  def apply(topicFilters: Seq[(String, ControlPacketFlags)]): Subscribe =
+  def apply(topicFilters: immutable.Seq[(String, ControlPacketFlags)]): Subscribe =
     new Subscribe(topicFilters)
 
   /**
@@ -352,14 +353,14 @@ object Subscribe {
  * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
 final case class Subscribe @InternalApi private[streaming] (packetId: PacketId,
-                                                            topicFilters: Seq[(String, ControlPacketFlags)])
+                                                            topicFilters: immutable.Seq[(String, ControlPacketFlags)])
     extends ControlPacket(ControlPacketType.SUBSCRIBE, ControlPacketFlags.ReservedSubscribe) {
 
   /**
    * 3.8 SUBSCRIBE - Subscribe to topics
    * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
    */
-  def this(topicFilters: Seq[(String, ControlPacketFlags)]) =
+  def this(topicFilters: immutable.Seq[(String, ControlPacketFlags)]) =
     this(PacketId(0), topicFilters)
 
   /**
@@ -382,7 +383,7 @@ final case class Subscribe @InternalApi private[streaming] (packetId: PacketId,
  * 3.9 SUBACK – Subscribe acknowledgement
  * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
-final case class SubAck(packetId: PacketId, returnCodes: Seq[ControlPacketFlags])
+final case class SubAck(packetId: PacketId, returnCodes: immutable.Seq[ControlPacketFlags])
     extends ControlPacket(ControlPacketType.SUBACK, ControlPacketFlags.ReservedGeneral) {
 
   /**
@@ -401,7 +402,7 @@ object Unsubscribe {
    * 3.10 UNSUBSCRIBE – Unsubscribe from topics
    * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
    */
-  def apply(topicFilters: Seq[String]): Unsubscribe =
+  def apply(topicFilters: immutable.Seq[String]): Unsubscribe =
     new Unsubscribe(topicFilters)
 
   /**
@@ -415,14 +416,14 @@ object Unsubscribe {
  * 3.10 UNSUBSCRIBE – Unsubscribe from topics
  * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
-final case class Unsubscribe @InternalApi private[streaming] (packetId: PacketId, topicFilters: Seq[String])
+final case class Unsubscribe @InternalApi private[streaming] (packetId: PacketId, topicFilters: immutable.Seq[String])
     extends ControlPacket(ControlPacketType.UNSUBSCRIBE, ControlPacketFlags.ReservedUnsubscribe) {
 
   /**
    * 3.10 UNSUBSCRIBE – Unsubscribe from topics
    * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
    */
-  def this(topicFilters: Seq[String]) =
+  def this(topicFilters: immutable.Seq[String]) =
     this(PacketId(0), topicFilters)
 
   /**
@@ -550,7 +551,7 @@ object MqttCodec {
    * Something is wrong with the subscribe message
    */
   final case class BadSubscribeMessage(packetId: PacketId,
-                                       topicFilters: Seq[(Either[DecodeError, String], ControlPacketFlags)])
+                                       topicFilters: immutable.Seq[(Either[DecodeError, String], ControlPacketFlags)])
       extends DecodeError
 
   /**
@@ -558,12 +559,13 @@ object MqttCodec {
    * @deprecated this message was never able to be returned - always use [[SubAck]] to test subscribed QoS, since 1.1.1
    */
   @deprecated("this message was never able to be returned - always use [[SubAck]] to test subscribed QoS", "1.1.1")
-  final case class BadSubAckMessage(packetId: PacketId, returnCodes: Seq[ControlPacketFlags]) extends DecodeError
+  final case class BadSubAckMessage(packetId: PacketId, returnCodes: immutable.Seq[ControlPacketFlags])
+      extends DecodeError
 
   /**
    * Something is wrong with the unsubscribe message
    */
-  final case class BadUnsubscribeMessage(packetId: PacketId, topicFilters: Seq[Either[DecodeError, String]])
+  final case class BadUnsubscribeMessage(packetId: PacketId, topicFilters: immutable.Seq[Either[DecodeError, String]])
       extends DecodeError
 
   /**

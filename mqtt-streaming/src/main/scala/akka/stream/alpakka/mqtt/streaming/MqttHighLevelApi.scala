@@ -10,6 +10,7 @@ import akka.stream.scaladsl.{Flow, Tcp}
 import akka.util.ByteString
 import akka.util.JavaDurationConverters._
 
+import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 
 @ApiMayChange
@@ -54,12 +55,21 @@ object MqttTcpTransportSettings {
   def create(host: String, port: Int): MqttTcpTransportSettings = apply(host, port)
 }
 
+/**
+ * Create a `Connect` packet for high-level APIs.
+ * [[MqttConnectionSettings]] offers the most applicable implementation.
+ */
+@ApiMayChange
+trait MqttConnectPacket {
+  def controlPacket: Connect
+}
+
 @ApiMayChange
 final class MqttConnectionSettings private (
     val clientId: String,
     val connectFlags: ConnectFlags,
     val bufferSize: Int
-) {
+) extends MqttConnectPacket {
 
   def withClientId(value: String): MqttConnectionSettings = copy(clientId = value)
   def withConnectFlags(value: ConnectFlags): MqttConnectionSettings = copy(connectFlags = value)
@@ -75,7 +85,7 @@ final class MqttConnectionSettings private (
     bufferSize = bufferSize
   )
 
-  def createControlPacket: Connect = Connect(clientId, connectFlags)
+  override def controlPacket: Connect = Connect(clientId, connectFlags)
 
   override def toString =
     "MqttConnectionSettings(" +
@@ -96,6 +106,10 @@ object MqttConnectionSettings {
   def create(clientId: String): MqttConnectionSettings = apply(clientId)
 }
 
+/**
+ * Configuration for connection restarting in high-level API.
+ * See [[akka.stream.scaladsl.RestartFlow]] for settings.
+ */
 @ApiMayChange
 final class MqttRestartSettings private (
     val minBackoff: scala.concurrent.duration.FiniteDuration,
@@ -154,5 +168,71 @@ object MqttRestartSettings {
 
   /** Java API */
   def create(): MqttRestartSettings = Defaults
+
+}
+
+/**
+ * Create a `Subscribe` packet for high-level APIs.
+ * [[MqttSubscriptions]] is the most applicable implementation.
+ */
+@ApiMayChange
+trait MqttSubscribe {
+  def controlPacket: Subscribe
+}
+
+/**
+ * The mapping of topics to subscribe to and their control flags (including Quality of Service) per topic.
+ */
+@ApiMayChange
+final class MqttSubscriptions private (
+    val subscriptions: Map[String, ControlPacketFlags]
+) extends MqttSubscribe {
+
+  /** Scala API */
+  def withSubscriptions(subscriptions: Map[String, ControlPacketFlags]): MqttSubscriptions =
+    new MqttSubscriptions(subscriptions)
+
+  /** Java API */
+  def withSubscriptions(subscriptions: java.util.Map[String, ControlPacketFlags]): MqttSubscriptions =
+    new MqttSubscriptions(subscriptions.asScala.toMap)
+
+  /** Add this subscription to the map of subscriptions configured already. */
+  def addSubscription(topic: String, qos: ControlPacketFlags): MqttSubscriptions =
+    new MqttSubscriptions(this.subscriptions.updated(topic, qos))
+
+  def addAtLeastOnce(topic: String): MqttSubscriptions =
+    new MqttSubscriptions(subscriptions.updated(topic, ControlPacketFlags.QoSAtLeastOnceDelivery))
+
+  def controlPacket: Subscribe = Subscribe(subscriptions.toList)
+
+}
+
+/**
+ * The mapping of topics to subscribe to and their control flags (including Quality of Service) per topic.
+ */
+object MqttSubscriptions {
+
+  /** Scala API */
+  def apply(subscriptions: Map[String, ControlPacketFlags]): MqttSubscriptions =
+    new MqttSubscriptions(subscriptions)
+
+  /** Scala API */
+  def apply(topic: String, qos: ControlPacketFlags): MqttSubscriptions =
+    new MqttSubscriptions(Map(topic -> qos))
+
+  /** Scala API */
+  def apply(subscription: (String, ControlPacketFlags)): MqttSubscriptions =
+    new MqttSubscriptions(Map(subscription))
+
+  /** Java API */
+  def create(subscriptions: java.util.List[akka.japi.Pair[String, ControlPacketFlags]]): MqttSubscriptions =
+    new MqttSubscriptions(subscriptions.asScala.map(_.toScala).toMap)
+
+  /** Java API */
+  def create(topic: String, qos: ControlPacketFlags): MqttSubscriptions =
+    new MqttSubscriptions(Map(topic -> qos))
+
+  def atLeastOnce(topic: String): MqttSubscriptions =
+    new MqttSubscriptions(Map(topic -> ControlPacketFlags.QoSAtLeastOnceDelivery))
 
 }
