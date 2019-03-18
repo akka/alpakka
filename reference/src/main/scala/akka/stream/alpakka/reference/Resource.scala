@@ -38,7 +38,7 @@ object Resource {
 }
 
 /**
- * Settings required for the Resource should be extracted to a separate clas.
+ * Settings required for the Resource should be extracted to a separate class.
  */
 final class ResourceSettings private (val msg: String) {
   override def toString: String =
