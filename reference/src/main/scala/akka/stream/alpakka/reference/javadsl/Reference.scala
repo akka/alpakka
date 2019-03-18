@@ -7,7 +7,7 @@ package akka.stream.alpakka.reference.javadsl
 import java.util.concurrent.{CompletionStage, Executor}
 
 import akka.{Done, NotUsed}
-import akka.stream.alpakka.reference
+import akka.stream.alpakka.reference.scaladsl
 import akka.stream.alpakka.reference.{ReferenceReadResult, ReferenceWriteMessage, ReferenceWriteResult, SourceSettings}
 import akka.stream.javadsl.{Flow, Source}
 
@@ -22,19 +22,24 @@ object Reference {
    */
   def source(settings: SourceSettings): Source[ReferenceReadResult, CompletionStage[Done]] = {
     import scala.compat.java8.FutureConverters._
-    reference.scaladsl.Reference.source(settings).mapMaterializedValue(_.toJava).asJava
+    scaladsl.Reference.source(settings).mapMaterializedValue(_.toJava).asJava
   }
 
   /**
    * Only convert the flow type, as the materialized value type is the same between Java and Scala.
    */
   def flow(): Flow[ReferenceWriteMessage, ReferenceWriteResult, NotUsed] =
-    reference.scaladsl.Reference.flow().asJava
+    scaladsl.Reference.flow().asJava
 
   /**
    * In Java API take Executor as parameter if the operator needs to perform asynchronous tasks.
    */
   def flowAsyncMapped(ex: Executor): Flow[ReferenceWriteMessage, ReferenceWriteResult, NotUsed] =
-    reference.scaladsl.Reference.flowAsyncMapped()(ExecutionContext.fromExecutor(ex)).asJava
+    scaladsl.Reference.flowAsyncMapped()(ExecutionContext.fromExecutor(ex)).asJava
 
+  /**
+   * An implementation of a flow that needs access to materializer or attributes during materialization.
+   */
+  def flowWithResource(): Flow[ReferenceWriteMessage, ReferenceWriteResult, NotUsed] =
+    scaladsl.Reference.flowWithResource().asJava
 }

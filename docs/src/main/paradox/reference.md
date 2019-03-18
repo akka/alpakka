@@ -52,19 +52,3 @@ Scala
 
 Java
 : @@snip [snip](/reference/src/test/java/docs/javadsl/ReferenceTest.java) { #flow }
-
-## Running the example code
-
-The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
-
-Scala
-:   ```
-    sbt
-    > reference/testOnly *.ReferenceSpec
-    ```
-    
-Java
-:   ```
-    sbt
-    > reference/testOnly *.ReferenceTest
-    ```
