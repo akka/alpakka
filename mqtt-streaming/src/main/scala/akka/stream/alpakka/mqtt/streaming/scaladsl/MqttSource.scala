@@ -55,7 +55,7 @@ object MqttSource {
       transportSettings: MqttTransportSettings,
       restartSettings: MqttRestartSettings,
       connectionSettings: MqttConnectionSettings,
-      subscriptions: MqttSubscribe,
+      subscriptions: MqttSubscribe
   ): Source[(Publish, MqttAckHandle), Future[immutable.Seq[(String, ControlPacketFlags)]]] =
     HighLevelMqttSource.atLeastOnce(
       mqttClientSession,

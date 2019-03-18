@@ -97,7 +97,7 @@ private[streaming] object HighLevelMqttSource {
                                 subscriptions,
                                 createAckHandle)
       }
-      .mapMaterializedValue(_.flatten)
+      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.sameThreadExecutionContext))
 
   private def constructInternals[Out](
       mqttClientSession: MqttClientSession,

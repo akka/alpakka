@@ -7,7 +7,6 @@ package docs.javadsl;
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.dispatch.ExecutionContexts;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.japi.Pair;
@@ -23,7 +22,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.ExecutionContext;
 
 import java.time.LocalTime;
 import java.util.*;
@@ -35,7 +33,6 @@ import static org.junit.Assert.assertThat;
 
 public class MqttSourceTest {
 
-  private static int TIMEOUT_SECONDS = 5;
   private final String topicPrefix = "streaming/source-test/topic/";
   private final String time = LocalTime.now().toString();
   private final List<String> input =
