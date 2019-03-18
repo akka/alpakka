@@ -4,6 +4,7 @@
 
 package docs.javadsl;
 
+import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.dispatch.ExecutionContexts;
@@ -89,7 +90,7 @@ public class MqttSourceTest {
 
     Pair<
             Pair<CompletionStage<List<Pair<String, ControlPacketFlags>>>, UniqueKillSwitch>,
-            CompletionStage<List<String>>>
+            CompletionStage<Done>>
         stream =
             MqttSource.atLeastOnce(
                     mqttClientSession,
@@ -106,19 +107,18 @@ public class MqttSourceTest {
                       return ackHandle.ack().thenApply(done -> pair.first());
                     })
                 .viaMat(KillSwitches.single(), Keep.both())
-                .map(pulish -> pulish.payload().utf8String())
-                .toMat(Sink.seq(), Keep.both())
+                .toMat(Sink.ignore(), Keep.both())
                 .run(materializer);
 
     CompletionStage<List<Pair<String, ControlPacketFlags>>> subscribed = stream.first().first();
     UniqueKillSwitch killSwitch = stream.first().second();
-    CompletionStage<List<String>> streamCompletion = stream.second();
+    CompletionStage<Done> streamCompletion = stream.second();
     // #at-least-once
 
     SourceQueueWithComplete<Command<Object>> publishFlow =
         publish(
             topic,
-            ControlPacketFlags.QoSExactlyOnceDelivery(),
+            ControlPacketFlags.QoSAtLeastOnceDelivery(),
             transportSettings,
             input,
             system,
@@ -130,9 +130,6 @@ public class MqttSourceTest {
     // stop the subscription
     killSwitch.shutdown();
     // #at-least-once
-
-    assertThat(
-        streamCompletion.toCompletableFuture().get(TIMEOUT_SECONDS, TimeUnit.SECONDS), is(input));
 
     assertThat(
         received.stream().map(p -> p.payload().utf8String()).collect(Collectors.toList()),
