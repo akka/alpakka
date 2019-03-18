@@ -4,43 +4,33 @@
 
 package docs.javadsl;
 
-import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.dispatch.ExecutionContexts;
+import akka.event.Logging;
+import akka.event.LoggingAdapter;
 import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
-import akka.stream.KillSwitches;
-import akka.stream.Materializer;
-import akka.stream.UniqueKillSwitch;
+import akka.stream.*;
 // #imports
 import akka.stream.alpakka.mqtt.streaming.*;
-import akka.stream.alpakka.mqtt.streaming.javadsl.ActorMqttClientSession;
-import akka.stream.alpakka.mqtt.streaming.javadsl.MqttAckHandle;
-import akka.stream.alpakka.mqtt.streaming.javadsl.MqttClientSession;
-import akka.stream.alpakka.mqtt.streaming.javadsl.MqttSource;
+import akka.stream.alpakka.mqtt.streaming.javadsl.*;
 // #imports
-import akka.stream.javadsl.Flow;
-import akka.stream.javadsl.Keep;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.SourceQueueWithComplete;
+import akka.stream.javadsl.*;
 import akka.testkit.javadsl.TestKit;
-import docs.scaladsl.MqttSourceSpec;
+import akka.util.ByteString;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.collection.JavaConverters;
 import scala.concurrent.ExecutionContext;
 
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeoutException;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 public class MqttSourceTest {
 
@@ -52,8 +42,7 @@ public class MqttSourceTest {
 
   private static ActorSystem system;
   private static Materializer materializer;
-  private ExecutionContext executionContext =
-      ExecutionContexts.fromExecutor(Executors.newSingleThreadExecutor());
+  private final LoggingAdapter logger = Logging.getLogger(system, this);
 
   @BeforeClass
   public static void setup() {
@@ -100,7 +89,7 @@ public class MqttSourceTest {
 
     Pair<
             Pair<CompletionStage<List<Pair<String, ControlPacketFlags>>>, UniqueKillSwitch>,
-            CompletionStage<Done>>
+            CompletionStage<List<String>>>
         stream =
             MqttSource.atLeastOnce(
                     mqttClientSession,
@@ -108,33 +97,32 @@ public class MqttSourceTest {
                     MqttRestartSettings.create(),
                     MqttConnectionSettings.create(clientId),
                     subscriptions)
+                .log("start", logger)
                 .via(businessLogic)
                 .mapAsync(
                     1,
                     pair -> {
                       MqttAckHandle ackHandle = pair.second();
-                      return ackHandle.ack();
+                      return ackHandle.ack().thenApply(done -> pair.first());
                     })
                 .viaMat(KillSwitches.single(), Keep.both())
-                .toMat(Sink.ignore(), Keep.both())
+                .map(pulish -> pulish.payload().utf8String())
+                .toMat(Sink.seq(), Keep.both())
                 .run(materializer);
 
     CompletionStage<List<Pair<String, ControlPacketFlags>>> subscribed = stream.first().first();
     UniqueKillSwitch killSwitch = stream.first().second();
-    CompletionStage<Done> streamCompletion = stream.second();
+    CompletionStage<List<String>> streamCompletion = stream.second();
     // #at-least-once
 
-    SourceQueueWithComplete<Command<?>> publishFlow =
-        //        // TODO remove hack
-        new akka.stream.impl.SourceQueueAdapter(
-            MqttSourceSpec.publish(
-                topic,
-                ControlPacketFlags.QoSExactlyOnceDelivery(),
-                transportSettings,
-                JavaConverters.asScalaBuffer(input).toList(),
-                materializer,
-                system,
-                executionContext));
+    SourceQueueWithComplete<Command<Object>> publishFlow =
+        publish(
+            topic,
+            ControlPacketFlags.QoSExactlyOnceDelivery(),
+            transportSettings,
+            input,
+            system,
+            materializer);
 
     Thread.sleep(2 * 1000);
     // #at-least-once
@@ -143,15 +131,51 @@ public class MqttSourceTest {
     killSwitch.shutdown();
     // #at-least-once
 
-    // TODO this assert fails
-    //    assertThat(
-    //        received.stream().map(p -> p.payload().utf8String()).collect(Collectors.toList()),
-    //        is(input));
+    assertThat(
+        streamCompletion.toCompletableFuture().get(TIMEOUT_SECONDS, TimeUnit.SECONDS), is(input));
+
+    assertThat(
+        received.stream().map(p -> p.payload().utf8String()).collect(Collectors.toList()),
+        is(input));
 
     publishFlow.complete();
     // #at-least-once
 
     streamCompletion.thenAccept(done -> mqttClientSession.shutdown());
     // #at-least-once
+  }
+
+  private static SourceQueueWithComplete<Command<Object>> publish(
+      String topic,
+      int controlPacketFlags,
+      MqttTransportSettings transportSettings,
+      Collection<String> input,
+      ActorSystem actorSystem,
+      Materializer materializer) {
+    String clientId = "streaming/source-test/sender";
+    MqttClientSession session =
+        new ActorMqttClientSession(MqttSessionSettings.create(), materializer, actorSystem);
+
+    Flow<Command<Object>, DecodeErrorOrEvent<Object>, NotUsed> join =
+        Mqtt.clientSessionFlow(session)
+            .join(transportSettings.connectionFlow(actorSystem).asJava());
+    SourceQueueWithComplete<Command<Object>> commands =
+        Source.<Command<Object>>queue(10, OverflowStrategy.fail())
+            .prepend(
+                Source.from(
+                    Collections.singletonList(
+                        new Command<>(new Connect(clientId, ConnectFlags.CleanSession())))))
+            .via(join)
+            .to(Sink.ignore())
+            .run(materializer);
+    input.forEach(
+        d -> {
+          session.tell(
+              new Command<>(new Publish(controlPacketFlags, topic, ByteString.fromString(d))));
+        });
+
+    commands.watchCompletion().thenAccept(done -> session.shutdown());
+
+    return commands;
   }
 }
