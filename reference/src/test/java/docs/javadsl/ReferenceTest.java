@@ -26,6 +26,7 @@ import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /** Append "Test" to every Java test suite. */
@@ -48,7 +49,7 @@ public class ReferenceTest {
   public void setUp() {}
 
   @Test
-  public void settingsCompilationTest() {
+  public void compileSettings() {
     final Authentication.Provided providedAuth =
         Authentication.createProvided().withVerifierPredicate(c -> true);
 
@@ -61,7 +62,7 @@ public class ReferenceTest {
   }
 
   @Test
-  public void sourceCompilationTest() {
+  public void compileSource() {
     // #source
     final SourceSettings settings = SourceSettings.create(clientId);
 
@@ -70,7 +71,7 @@ public class ReferenceTest {
   }
 
   @Test
-  public void flowCompilationTest() {
+  public void compileFlow() {
     // #flow
     final Flow<ReferenceWriteMessage, ReferenceWriteResult, NotUsed> flow = Reference.flow();
     // #flow
@@ -81,12 +82,12 @@ public class ReferenceTest {
   }
 
   @Test
-  public void testSource() throws Exception {
+  public void runSource() throws Exception {
     final Source<ReferenceReadResult, CompletionStage<Done>> source =
         Reference.source(SourceSettings.create(clientId));
 
     final CompletionStage<ReferenceReadResult> stage = source.runWith(Sink.head(), mat);
-    final ReferenceReadResult msg = stage.toCompletableFuture().get();
+    final ReferenceReadResult msg = stage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     Assert.assertEquals(Collections.singletonList(ByteString.fromString("one")), msg.getData());
 
@@ -97,7 +98,7 @@ public class ReferenceTest {
   }
 
   @Test
-  public void testFlow() throws Exception {
+  public void runFlow() throws Exception {
     final Flow<ReferenceWriteMessage, ReferenceWriteResult, NotUsed> flow = Reference.flow();
 
     Map<String, Long> metrics =
@@ -123,11 +124,10 @@ public class ReferenceTest {
 
     final CompletionStage<List<ReferenceWriteResult>> stage =
         source.via(flow).runWith(Sink.seq(), mat);
-    final List<ReferenceWriteResult> result = stage.toCompletableFuture().get();
+    final List<ReferenceWriteResult> result = stage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     final List<ByteString> bytes =
-        result
-            .stream()
+        result.stream()
             .flatMap(m -> m.getMessage().getData().stream())
             .collect(Collectors.toList());
 
@@ -141,6 +141,48 @@ public class ReferenceTest {
 
     final long actual = result.stream().findFirst().get().getMetrics().get("total");
     Assert.assertEquals(50L, actual);
+  }
+
+  @Test
+  public void resolveResourceFromApplicationConfig() throws Exception {
+    final List<ReferenceWriteResult> result =
+        Source.single(
+                ReferenceWriteMessage.create()
+                    .withData(Collections.singletonList(ByteString.fromString("one"))))
+            .via(Reference.flowWithResource())
+            .runWith(Sink.seq(), mat)
+            .toCompletableFuture()
+            .get(5, TimeUnit.SECONDS);
+
+    Assert.assertEquals(
+        Collections.singletonList("one default msg"),
+        result.stream()
+            .flatMap(m -> m.getMessage().getData().stream())
+            .map(ByteString::utf8String)
+            .collect(Collectors.toList()));
+  }
+
+  @Test
+  public void useResourceFromAttributes() throws Exception {
+    final List<ReferenceWriteResult> result =
+        Source.single(
+                ReferenceWriteMessage.create()
+                    .withData(Collections.singletonList(ByteString.fromString("one"))))
+            .via(
+                Reference.flowWithResource()
+                    .withAttributes(
+                        ReferenceAttributes.resource(
+                            Resource.create(ResourceSettings.create("attributes msg")))))
+            .runWith(Sink.seq(), mat)
+            .toCompletableFuture()
+            .get(5, TimeUnit.SECONDS);
+
+    Assert.assertEquals(
+        Collections.singletonList("one attributes msg"),
+        result.stream()
+            .flatMap(m -> m.getMessage().getData().stream())
+            .map(ByteString::utf8String)
+            .collect(Collectors.toList()));
   }
 
   /** Called after every test. */

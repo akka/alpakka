@@ -113,6 +113,26 @@ class ReferenceSpec extends WordSpec with BeforeAndAfterAll with ScalaFutures wi
       result.head.metrics.get("total") should contain(50L)
     }
 
+    "resolve resource from application config" in {
+      val result = Source
+        .single(ReferenceWriteMessage().withData(immutable.Seq(ByteString("one"))))
+        .via(Reference.flowWithResource())
+        .runWith(Sink.seq)
+
+      result.futureValue.flatMap(_.message.data).map(_.utf8String) shouldBe Seq("one default msg")
+    }
+
+    "use resource from attributes" in {
+      val resource = Resource(ResourceSettings("attributes msg"))
+
+      val result = Source
+        .single(ReferenceWriteMessage().withData(immutable.Seq(ByteString("one"))))
+        .via(Reference.flowWithResource().withAttributes(ReferenceAttributes.resource(resource)))
+        .runWith(Sink.seq)
+
+      result.futureValue.flatMap(_.message.data).map(_.utf8String) shouldBe Seq("one attributes msg")
+    }
+
   }
 
   override def afterAll() =
