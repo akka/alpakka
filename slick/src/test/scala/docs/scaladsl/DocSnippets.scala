@@ -107,7 +107,7 @@ object SlickSinkExample extends App {
   val done: Future[Done] =
     Source(users)
       .runWith(
-        // add an optional first argument to specify the parallism factor (Int)
+        // add an optional first argument to specify the parallelism factor (Int)
         Slick.sink(user => sqlu"INSERT INTO ALPAKKA_SLICK_SCALADSL_TEST_USERS VALUES(${user.id}, ${user.name})")
       )
   //#sink-example
@@ -140,7 +140,7 @@ object SlickFlowExample extends App {
   val done: Future[Done] =
     Source(users)
       .via(
-        // add an optional first argument to specify the parallism factor (Int)
+        // add an optional first argument to specify the parallelism factor (Int)
         Slick.flow(user => sqlu"INSERT INTO ALPAKKA_SLICK_SCALADSL_TEST_USERS VALUES(${user.id}, ${user.name})")
       )
       .log("nr-of-updated-rows")
@@ -186,7 +186,7 @@ object SlickFlowWithPassThroughExample extends App {
   val done: Future[Done] =
     Source(messagesFromKafka)
       .via(
-        // add an optional first argument to specify the parallism factor (Int)
+        // add an optional first argument to specify the parallelism factor (Int)
         Slick.flowWithPassThrough { kafkaMessage =>
           val user = kafkaMessage.msg
           (sqlu"INSERT INTO ALPAKKA_SLICK_SCALADSL_TEST_USERS VALUES(${user.id}, ${user.name})")
