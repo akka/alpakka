@@ -193,61 +193,67 @@ import scala.util.{Failure, Success}
   private val ConsumerNamePrefix = "consumer-"
   private val ProducerNamePrefix = "producer-"
 
-  def disconnected(data: Disconnected)(implicit mat: Materializer): Behavior[Event] = Behaviors.receivePartial {
-    case (context, ConnectReceivedLocally(connect, connectData, remote)) =>
-      val (queue, source) = Source
-        .queue[ForwardConnectCommand](1, OverflowStrategy.dropHead)
-        .toMat(BroadcastHub.sink)(Keep.both)
-        .run()
-      remote.success(source)
+  def disconnected(data: Disconnected)(implicit mat: Materializer): Behavior[Event] =
+    Behaviors
+      .receivePartial[Event] {
+        case (context, ConnectReceivedLocally(connect, connectData, remote)) =>
+          val (queue, source) = Source
+            .queue[ForwardConnectCommand](1, OverflowStrategy.dropHead)
+            .toMat(BroadcastHub.sink)(Keep.both)
+            .run()
+          remote.success(source)
 
-      queue.offer(ForwardConnect)
-      data.stash.foreach(context.self.tell)
+          queue.offer(ForwardConnect)
+          data.stash.foreach(context.self.tell)
 
-      if (connect.connectFlags.contains(ConnectFlags.CleanSession)) {
-        context.children.foreach(context.stop)
-        serverConnect(
-          ConnectReceived(
-            connect,
-            connectData,
-            queue,
-            Vector.empty,
-            Map.empty,
-            Map.empty,
-            Vector.empty,
-            Vector.empty,
-            data.consumerPacketRouter,
-            data.producerPacketRouter,
-            data.subscriberPacketRouter,
-            data.unsubscriberPacketRouter,
-            data.settings
-          )
-        )
-      } else {
-        serverConnect(
-          ConnectReceived(
-            connect,
-            connectData,
-            queue,
-            Vector.empty,
-            data.activeConsumers,
-            data.activeProducers,
-            data.pendingLocalPublications,
-            data.pendingRemotePublications,
-            data.consumerPacketRouter,
-            data.producerPacketRouter,
-            data.subscriberPacketRouter,
-            data.unsubscriberPacketRouter,
-            data.settings
-          )
-        )
+          if (connect.connectFlags.contains(ConnectFlags.CleanSession)) {
+            context.children.foreach(context.stop)
+            serverConnect(
+              ConnectReceived(
+                connect,
+                connectData,
+                queue,
+                Vector.empty,
+                Map.empty,
+                Map.empty,
+                Vector.empty,
+                Vector.empty,
+                data.consumerPacketRouter,
+                data.producerPacketRouter,
+                data.subscriberPacketRouter,
+                data.unsubscriberPacketRouter,
+                data.settings
+              )
+            )
+          } else {
+            serverConnect(
+              ConnectReceived(
+                connect,
+                connectData,
+                queue,
+                Vector.empty,
+                data.activeConsumers,
+                data.activeProducers,
+                data.pendingLocalPublications,
+                data.pendingRemotePublications,
+                data.consumerPacketRouter,
+                data.producerPacketRouter,
+                data.subscriberPacketRouter,
+                data.unsubscriberPacketRouter,
+                data.settings
+              )
+            )
 
+          }
+        case (_, ConnectionLost) =>
+          Behavior.same
+        case (_, e) =>
+          disconnected(data.copy(stash = data.stash :+ e))
       }
-    case (_, ConnectionLost) =>
-      Behavior.same
-    case (_, e) =>
-      disconnected(data.copy(stash = data.stash :+ e))
-  }
+      .receiveSignal {
+        case (_, _: Terminated) =>
+          Behaviors.same
+      }
 
   def disconnect(context: ActorContext[Event], remote: SourceQueueWithComplete[ForwardConnectCommand], data: Data)(
       implicit mat: Materializer
@@ -319,6 +325,8 @@ import scala.util.{Failure, Success}
             serverConnect(data.copy(stash = data.stash :+ e))
         }
         .receiveSignal {
+          case (_, _: Terminated) =>
+            Behaviors.same
           case (_, PostStop) =>
             data.remote.complete()
             Behaviors.same
