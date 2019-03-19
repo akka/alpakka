@@ -207,6 +207,9 @@ final class MqttSubscriptions private (
   def addSubscription(topic: String, qos: ControlPacketFlags): MqttSubscriptions =
     new MqttSubscriptions(this.subscriptions.updated(topic, qos))
 
+  def addAtMostOnce(topic: String): MqttSubscriptions =
+    new MqttSubscriptions(subscriptions.updated(topic, ControlPacketFlags.QoSAtMostOnceDelivery))
+
   def addAtLeastOnce(topic: String): MqttSubscriptions =
     new MqttSubscriptions(subscriptions.updated(topic, ControlPacketFlags.QoSAtLeastOnceDelivery))
 
@@ -239,6 +242,9 @@ object MqttSubscriptions {
   /** Java API */
   def create(topic: String, qos: ControlPacketFlags): MqttSubscriptions =
     new MqttSubscriptions(Map(topic -> qos))
+
+  def atMostOnce(topic: String): MqttSubscriptions =
+    new MqttSubscriptions(Map(topic -> ControlPacketFlags.QoSAtMostOnceDelivery))
 
   def atLeastOnce(topic: String): MqttSubscriptions =
     new MqttSubscriptions(Map(topic -> ControlPacketFlags.QoSAtLeastOnceDelivery))

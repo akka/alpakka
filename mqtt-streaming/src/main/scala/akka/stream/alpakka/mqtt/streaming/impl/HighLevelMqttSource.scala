@@ -117,10 +117,10 @@ private[streaming] object HighLevelMqttSource {
     }
     val subscribed = Promise[immutable.Seq[(String, ControlPacketFlags)]]()
 
-    val subsribePacket = subscribe.controlPacket
+    val subscribePacket = subscribe.controlPacket
     val initCommands = immutable.Seq(
       Command(connect.controlPacket),
-      Command(subsribePacket)
+      Command(subscribePacket)
     )
 
     val (commands: SourceQueueWithComplete[Command[Nothing]], subscription: Source[Event[Nothing], NotUsed]) =
@@ -132,7 +132,7 @@ private[streaming] object HighLevelMqttSource {
           case Left(decodeError) =>
             throw new RuntimeException(decodeError.toString)
           case Right(event @ Event(s: SubAck, _)) =>
-            val subscriptionAnswer = subsribePacket.topicFilters.map(_._1).zip(s.returnCodes)
+            val subscriptionAnswer = subscribePacket.topicFilters.map(_._1).zip(s.returnCodes)
             subscribed.trySuccess(subscriptionAnswer)
             event
           case Right(event) =>
