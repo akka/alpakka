@@ -207,8 +207,7 @@ public class MqttFlowTest {
                                 JavaConverters.asJavaCollectionConverter(subscribe.topicFilters())
                                     .asJavaCollection();
                             List<Integer> flags =
-                                topicFilters
-                                    .stream()
+                                topicFilters.stream()
                                     .map(x -> x._2().underlying())
                                     .collect(Collectors.toList());
                             queue.offer(
