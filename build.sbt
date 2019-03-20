@@ -196,8 +196,9 @@ lazy val mongodb =
 lazy val mqtt = alpakkaProject("mqtt", "mqtt", Dependencies.Mqtt)
 
 lazy val mqttStreaming = alpakkaProject("mqtt-streaming", "mqttStreaming", Dependencies.MqttStreaming)
-lazy val mqttStreamingBench = alpakkaProject("mqtt-streaming-bench", "mqttStreamingBench", Seq.empty)
+lazy val mqttStreamingBench = alpakkaProject("mqtt-streaming-bench", "mqttStreamingBench", publish / skip := true)
   .enablePlugins(JmhPlugin)
+  .disablePlugins(BintrayPlugin, MimaPlugin)
   .dependsOn(mqtt, mqttStreaming)
 
 lazy val orientdb = alpakkaProject("orientdb",
@@ -207,7 +208,7 @@ lazy val orientdb = alpakkaProject("orientdb",
                                    parallelExecution in Test := false)
 
 lazy val reference = alpakkaProject("reference", "reference", Dependencies.Reference, publish / skip := true)
-  .disablePlugins(BintrayPlugin)
+  .disablePlugins(BintrayPlugin, MimaPlugin)
 
 lazy val s3 = alpakkaProject("s3", "aws.s3", Dependencies.S3)
 

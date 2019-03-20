@@ -35,6 +35,8 @@ jobs:
       name: "Create all API docs"
     - env: CMD="docs/Paradox/paradox"
       name: "Create site with Paradox"
+    - env: CMD="mimaReportBinaryIssues"
+      name: "Check binary compatibility"
 
     - stage: test
       env:
