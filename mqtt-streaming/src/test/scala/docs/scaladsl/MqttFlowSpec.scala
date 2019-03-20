@@ -47,7 +47,7 @@ class MqttFlowSpec
 
       val mqttFlow: Flow[Command[Nothing], Either[MqttCodec.DecodeError, Event[Nothing]], NotUsed] =
         Mqtt
-          .clientSessionFlow(session)
+          .clientSessionFlow(session, ByteString("1"))
           .join(connection)
       //#create-streaming-flow
 
@@ -143,7 +143,7 @@ class MqttFlowSpec
 
       val clientSession = ActorMqttClientSession(settings)
       val connection = Tcp().outgoingConnection(host, port)
-      val mqttFlow = Mqtt.clientSessionFlow(clientSession).join(connection)
+      val mqttFlow = Mqtt.clientSessionFlow(clientSession, ByteString("1")).join(connection)
       val (commands, events) =
         Source
           .queue(2, OverflowStrategy.fail)
