@@ -257,6 +257,10 @@ import scala.util.{Failure, Success}
               )
             )
           } else {
+            data.activeProducers.values.foreach { producer =>
+              producer ! Producer.ReceiveConnect
+            }
+
             serverConnect(
               ConnectReceived(
                 connectionId,
@@ -411,7 +415,8 @@ import scala.util.{Failure, Success}
               if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
             local.success(Consumer.ForwardPublish)
             serverConnected(data, resetPingReqTimer = false)
-          case (context, prfr @ PublishReceivedFromRemote(_, publish @ Publish(_, topicName, Some(packetId), _), local)) =>
+          case (context,
+                prfr @ PublishReceivedFromRemote(_, publish @ Publish(_, topicName, Some(packetId), _), local)) =>
             data.activeConsumers.get(topicName) match {
               case None =>
                 val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName + "-" + context.children.size)

@@ -152,7 +152,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
 
   private val pingReqBytes = PingReq.encode(ByteString.newBuilder).result()
 
-  override def commandFlow[A](connectionId: ByteString): CommandFlow[A] =
+  private[streaming] override def commandFlow[A](connectionId: ByteString): CommandFlow[A] =
     Flow
       .lazyInitAsync { () =>
         val killSwitch = KillSwitches.shared("command-kill-switch-" + clientSessionId)
@@ -249,7 +249,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
       }
       .mapMaterializedValue(_ => NotUsed)
 
-  override def eventFlow[A](connectionId: ByteString): EventFlow[A] =
+  private[streaming] override def eventFlow[A](connectionId: ByteString): EventFlow[A] =
     Flow[ByteString]
       .watch(clientConnector.toUntyped)
       .watchTermination() {

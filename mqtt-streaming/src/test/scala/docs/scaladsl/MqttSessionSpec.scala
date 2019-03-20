@@ -871,6 +871,75 @@ class MqttSessionSpec
       client.watchCompletion().foreach(_ => session.shutdown())
     }
 
+    "publish with a QoS of 1 and cause a retry given a reconnect" in {
+      val session = ActorMqttClientSession(settings.withProducerPubAckRecTimeout(0.millis))
+
+      val server = TestProbe()
+      val pipeToServer = Flow[ByteString].mapAsync(1)(msg => server.ref.ask(msg).mapTo[ByteString])
+
+      val connect = Connect("some-client-id", ConnectFlags.None)
+      val connectBytes = connect.encode(ByteString.newBuilder).result()
+      val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
+      val connAckBytes = connAck.encode(ByteString.newBuilder).result()
+
+      val publish = Publish("some-topic", ByteString("some-payload"))
+      val publishBytes = publish.encode(ByteString.newBuilder, Some(PacketId(1))).result()
+      val publishDup = publish.copy(flags = publish.flags | ControlPacketFlags.DUP)
+      val publishDupBytes = publishDup.encode(ByteString.newBuilder, Some(PacketId(1))).result()
+      val pubAck = PubAck(PacketId(1))
+      val pubAckBytes = pubAck.encode(ByteString.newBuilder).result()
+
+      val firstClient =
+        Source
+          .queue(1, OverflowStrategy.fail)
+          .via(
+            Mqtt
+              .clientSessionFlow(session, ByteString("1"))
+              .join(pipeToServer)
+          )
+          .toMat(Sink.ignore)(Keep.left)
+          .run()
+
+      firstClient.offer(Command(connect))
+
+      server.expectMsg(connectBytes)
+      server.reply(connAckBytes)
+
+      session ! Command(publish)
+
+      server.expectMsg(publishBytes)
+
+      server.reply(connAckBytes)
+
+      firstClient.complete()
+
+      val secondClient =
+        Source
+          .queue(1, OverflowStrategy.fail)
+          .via(
+            Mqtt
+              .clientSessionFlow(session, ByteString("2"))
+              .join(pipeToServer)
+          )
+          .toMat(Sink.ignore)(Keep.left)
+          .run()
+
+      secondClient.offer(Command(connect))
+
+      server.expectMsg(connectBytes)
+      server.reply(connAckBytes)
+
+      server.expectMsg(publishDupBytes)
+      server.reply(pubAckBytes)
+
+      secondClient.complete()
+
+      for {
+        _ <- firstClient.watchCompletion()
+        _ <- secondClient.watchCompletion()
+      } yield session.shutdown()
+    }
+
     "publish with QoS 2 and carry through an object to pubComp" in assertAllStagesStopped {
       val session = ActorMqttClientSession(settings)
 
