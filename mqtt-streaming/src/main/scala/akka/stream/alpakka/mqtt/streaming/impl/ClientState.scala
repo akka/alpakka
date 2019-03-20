@@ -10,7 +10,7 @@ import akka.actor.typed.{ActorRef, Behavior, ChildFailed, PostStop, Terminated}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.annotation.InternalApi
 import akka.stream.{Materializer, OverflowStrategy}
-import akka.stream.scaladsl.{BroadcastHub, Keep, Sink, Source, SourceQueueWithComplete}
+import akka.stream.scaladsl.{BroadcastHub, Keep, Source, SourceQueueWithComplete}
 import akka.util.ByteString
 
 import scala.concurrent.Promise
@@ -198,7 +198,7 @@ import scala.util.{Failure, Success}
                                               local: Promise[ForwardPingResp.type])
       extends Event(connectionId)
 
-  final case class ReceivedProducerPublishingCommand(command: Source[Producer.ForwardPublishingCommand, NotUsed])
+  final case class ReceivedProducerPublishingCommand(command: Producer.ForwardPublishingCommand)
       extends Event(ByteString.empty)
 
   final case class UnsubscribeReceivedLocally(override val connectionId: ByteString,
@@ -466,8 +466,11 @@ import scala.util.{Failure, Success}
             val producerName = ActorName.mkName(ProducerNamePrefix + publish.topicName + "-" + context.children.size)
             if (!data.activeProducers.contains(publish.topicName)) {
               val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]
-              import context.executionContext
-              reply.future.foreach(command => context.self ! ReceivedProducerPublishingCommand(command))
+
+              Source
+                .fromFutureSource(reply.future)
+                .runForeach(msg => context.self ! ReceivedProducerPublishingCommand(msg))
+
               val producer =
                 context.spawn(Producer(publish, publishData, reply, data.producerPacketRouter, data.settings),
                               producerName)
@@ -487,8 +490,11 @@ import scala.util.{Failure, Success}
               val prl = data.pendingLocalPublications(i)._2
               val producerName = ActorName.mkName(ProducerNamePrefix + topicName + "-" + context.children.size)
               val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]
-              import context.executionContext
-              reply.future.foreach(command => context.self ! ReceivedProducerPublishingCommand(command))
+
+              Source
+                .fromFutureSource(reply.future)
+                .runForeach(msg => context.self ! ReceivedProducerPublishingCommand(msg))
+
               val producer = context.spawn(
                 Producer(prl.publish, prl.publishData, reply, data.producerPacketRouter, data.settings),
                 producerName
@@ -507,11 +513,11 @@ import scala.util.{Failure, Success}
             } else {
               serverConnected(data.copy(activeProducers = data.activeProducers - topicName))
             }
-          case (_, ReceivedProducerPublishingCommand(command)) =>
-            command.runWith(Sink.foreach {
-              case Producer.ForwardPublish(publish, packetId) => data.remote.offer(ForwardPublish(publish, packetId))
-              case Producer.ForwardPubRel(_, packetId) => data.remote.offer(ForwardPubRel(packetId))
-            })
+          case (_, ReceivedProducerPublishingCommand(Producer.ForwardPublish(publish, packetId))) =>
+            data.remote.offer(ForwardPublish(publish, packetId))
+            Behaviors.same
+          case (_, ReceivedProducerPublishingCommand(Producer.ForwardPubRel(_, packetId))) =>
+            data.remote.offer(ForwardPubRel(packetId))
             Behaviors.same
           case (context, SendPingReqTimeout(_)) if data.pendingPingResp =>
             data.remote.fail(PingFailed)
