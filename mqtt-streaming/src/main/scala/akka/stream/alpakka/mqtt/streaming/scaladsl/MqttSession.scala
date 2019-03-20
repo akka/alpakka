@@ -68,12 +68,12 @@ abstract class MqttClientSession extends MqttSession {
   /**
    * @return a flow for commands to be sent to the session
    */
-  private[streaming] def commandFlow[A]: CommandFlow[A]
+  private[streaming] def commandFlow[A](connectionId: ByteString): CommandFlow[A]
 
   /**
    * @return a flow for events to be emitted by the session
    */
-  private[streaming] def eventFlow[A]: EventFlow[A]
+  private[streaming] def eventFlow[A](connectionId: ByteString): EventFlow[A]
 }
 
 object ActorMqttClientSession {
@@ -152,7 +152,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
 
   private val pingReqBytes = PingReq.encode(ByteString.newBuilder).result()
 
-  override def commandFlow[A]: CommandFlow[A] =
+  override def commandFlow[A](connectionId: ByteString): CommandFlow[A] =
     Flow
       .lazyInitAsync { () =>
         val killSwitch = KillSwitches.shared("command-kill-switch-" + clientSessionId)
@@ -165,7 +165,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
                 terminated.onComplete {
                   case Failure(_: WatchedActorTerminatedException) =>
                   case _ =>
-                    clientConnector ! ClientConnector.ConnectionLost
+                    clientConnector ! ClientConnector.ConnectionLost(connectionId)
                 }
                 NotUsed
             }
@@ -174,7 +174,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
               settings.commandParallelism, {
                 case Command(cp: Connect, _, carry) =>
                   val reply = Promise[Source[ClientConnector.ForwardConnectCommand, NotUsed]]
-                  clientConnector ! ClientConnector.ConnectReceivedLocally(cp, carry, reply)
+                  clientConnector ! ClientConnector.ConnectReceivedLocally(connectionId, cp, carry, reply)
                   Source.fromFutureSource(
                     reply.future.map(_.map {
                       case ClientConnector.ForwardConnect => cp.encode(ByteString.newBuilder).result()
@@ -225,19 +225,19 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
                   }
                 case Command(cp: Subscribe, _, carry) =>
                   val reply = Promise[Subscriber.ForwardSubscribe]
-                  clientConnector ! ClientConnector.SubscribeReceivedLocally(cp, carry, reply)
+                  clientConnector ! ClientConnector.SubscribeReceivedLocally(connectionId, cp, carry, reply)
                   Source.fromFuture(
                     reply.future.map(command => cp.encode(ByteString.newBuilder, command.packetId).result())
                   )
                 case Command(cp: Unsubscribe, _, carry) =>
                   val reply = Promise[Unsubscriber.ForwardUnsubscribe]
-                  clientConnector ! ClientConnector.UnsubscribeReceivedLocally(cp, carry, reply)
+                  clientConnector ! ClientConnector.UnsubscribeReceivedLocally(connectionId, cp, carry, reply)
                   Source.fromFuture(
                     reply.future.map(command => cp.encode(ByteString.newBuilder, command.packetId).result())
                   )
                 case Command(cp: Disconnect.type, _, _) =>
                   val reply = Promise[ClientConnector.ForwardDisconnect.type]
-                  clientConnector ! ClientConnector.DisconnectReceivedLocally(reply)
+                  clientConnector ! ClientConnector.DisconnectReceivedLocally(connectionId, reply)
                   Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result()))
                 case c: Command[A] => throw new IllegalStateException(c + " is not a client command")
               }
@@ -249,7 +249,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
       }
       .mapMaterializedValue(_ => NotUsed)
 
-  override def eventFlow[A]: EventFlow[A] =
+  override def eventFlow[A](connectionId: ByteString): EventFlow[A] =
     Flow[ByteString]
       .watch(clientConnector.toUntyped)
       .watchTermination() {
@@ -257,17 +257,18 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
           terminated.onComplete {
             case Failure(_: WatchedActorTerminatedException) =>
             case _ =>
-              clientConnector ! ClientConnector.ConnectionLost
+              clientConnector ! ClientConnector.ConnectionLost(connectionId)
           }
           NotUsed
       }
       .via(new MqttFrameStage(settings.maxPacketSize))
       .map(_.iterator.decodeControlPacket(settings.maxPacketSize))
+      .async
       .log("client-events")
       .mapAsync[Either[MqttCodec.DecodeError, Event[A]]](settings.eventParallelism) {
         case Right(cp: ConnAck) =>
           val reply = Promise[ClientConnector.ForwardConnAck]
-          clientConnector ! ClientConnector.ConnAckReceivedFromRemote(cp, reply)
+          clientConnector ! ClientConnector.ConnAckReceivedFromRemote(connectionId, cp, reply)
           reply.future.map {
             case ClientConnector.ForwardConnAck(carry: Option[A] @unchecked) => Right(Event(cp, carry))
           }
@@ -289,7 +290,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
           }
         case Right(cp: Publish) =>
           val reply = Promise[Consumer.ForwardPublish.type]
-          clientConnector ! ClientConnector.PublishReceivedFromRemote(cp, reply)
+          clientConnector ! ClientConnector.PublishReceivedFromRemote(connectionId, cp, reply)
           reply.future.map(_ => Right(Event(cp)))
         case Right(cp: PubAck) =>
           val reply = Promise[Producer.ForwardPubAck]
@@ -318,7 +319,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
           }
         case Right(PingResp) =>
           val reply = Promise[ClientConnector.ForwardPingResp.type]
-          clientConnector ! ClientConnector.PingRespReceivedFromRemote(reply)
+          clientConnector ! ClientConnector.PingRespReceivedFromRemote(connectionId, reply)
           reply.future.map(_ => Right(Event(PingResp)))
         case Right(cp) => Future.failed(new IllegalStateException(cp + " is not a client event"))
         case Left(de) => Future.successful(Left(de))

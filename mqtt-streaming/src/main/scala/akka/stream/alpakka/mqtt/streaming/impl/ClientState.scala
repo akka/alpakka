@@ -11,6 +11,7 @@ import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.annotation.InternalApi
 import akka.stream.{Materializer, OverflowStrategy}
 import akka.stream.scaladsl.{BroadcastHub, Keep, Sink, Source, SourceQueueWithComplete}
+import akka.util.ByteString
 
 import scala.concurrent.Promise
 import scala.concurrent.duration.FiniteDuration
@@ -98,6 +99,7 @@ import scala.util.{Failure, Success}
         settings
       )
   final case class ConnectReceived(
+      connectionId: ByteString,
       connect: Connect,
       connectData: ConnectData,
       remote: SourceQueueWithComplete[ForwardConnectCommand],
@@ -124,6 +126,7 @@ import scala.util.{Failure, Success}
         settings
       )
   final case class ConnAckReceived(
+      connectionId: ByteString,
       connectFlags: ConnectFlags,
       keepAlive: FiniteDuration,
       pendingPingResp: Boolean,
@@ -151,32 +154,58 @@ import scala.util.{Failure, Success}
         settings
       )
 
-  sealed abstract class Event
-  final case class ConnectReceivedLocally(connect: Connect,
+  sealed abstract class Event(val connectionId: ByteString)
+
+  final case class ConnectReceivedLocally(override val connectionId: ByteString,
+                                          connect: Connect,
                                           connectData: ConnectData,
                                           remote: Promise[Source[ForwardConnectCommand, NotUsed]])
-      extends Event
-  final case class ConnAckReceivedFromRemote(connAck: ConnAck, local: Promise[ForwardConnAck]) extends Event
-  case object ReceiveConnAckTimeout extends Event
-  case object ConnectionLost extends Event
-  final case class DisconnectReceivedLocally(remote: Promise[ForwardDisconnect.type]) extends Event
-  final case class SubscribeReceivedLocally(subscribe: Subscribe,
+      extends Event(connectionId)
+  final case class ConnAckReceivedFromRemote(override val connectionId: ByteString,
+                                             connAck: ConnAck,
+                                             local: Promise[ForwardConnAck])
+      extends Event(connectionId)
+
+  case class ReceiveConnAckTimeout(override val connectionId: ByteString) extends Event(connectionId)
+
+  case class ConnectionLost(override val connectionId: ByteString) extends Event(connectionId)
+
+  final case class DisconnectReceivedLocally(override val connectionId: ByteString,
+                                             remote: Promise[ForwardDisconnect.type])
+      extends Event(connectionId)
+
+  final case class SubscribeReceivedLocally(override val connectionId: ByteString,
+                                            subscribe: Subscribe,
                                             subscribeData: Subscriber.SubscribeData,
                                             remote: Promise[Subscriber.ForwardSubscribe])
-      extends Event
-  final case class PublishReceivedFromRemote(publish: Publish, local: Promise[Consumer.ForwardPublish.type])
-      extends Event
-  final case class ConsumerFree(topicName: String) extends Event
-  final case class PublishReceivedLocally(publish: Publish, publishData: Producer.PublishData) extends Event
-  final case class ProducerFree(topicName: String) extends Event
-  case object SendPingReqTimeout extends Event
-  final case class PingRespReceivedFromRemote(local: Promise[ForwardPingResp.type]) extends Event
+      extends Event(connectionId)
+
+  final case class PublishReceivedFromRemote(override val connectionId: ByteString,
+                                             publish: Publish,
+                                             local: Promise[Consumer.ForwardPublish.type])
+      extends Event(connectionId)
+
+  final case class ConsumerFree(topicName: String) extends Event(ByteString.empty)
+
+  final case class PublishReceivedLocally(publish: Publish, publishData: Producer.PublishData)
+      extends Event(ByteString.empty)
+
+  final case class ProducerFree(topicName: String) extends Event(ByteString.empty)
+
+  case class SendPingReqTimeout(override val connectionId: ByteString) extends Event(connectionId)
+
+  final case class PingRespReceivedFromRemote(override val connectionId: ByteString,
+                                              local: Promise[ForwardPingResp.type])
+      extends Event(connectionId)
+
   final case class ReceivedProducerPublishingCommand(command: Source[Producer.ForwardPublishingCommand, NotUsed])
-      extends Event
-  final case class UnsubscribeReceivedLocally(unsubscribe: Unsubscribe,
+      extends Event(ByteString.empty)
+
+  final case class UnsubscribeReceivedLocally(override val connectionId: ByteString,
+                                              unsubscribe: Unsubscribe,
                                               unsubscribeData: Unsubscriber.UnsubscribeData,
                                               remote: Promise[Unsubscriber.ForwardUnsubscribe])
-      extends Event
+      extends Event(connectionId)
 
   sealed abstract class Command
   sealed abstract class ForwardConnectCommand
@@ -196,11 +225,12 @@ import scala.util.{Failure, Success}
   def disconnected(data: Disconnected)(implicit mat: Materializer): Behavior[Event] =
     Behaviors
       .receivePartial[Event] {
-        case (context, ConnectReceivedLocally(connect, connectData, remote)) =>
+        case (context, ConnectReceivedLocally(connectionId, connect, connectData, remote)) =>
           val (queue, source) = Source
             .queue[ForwardConnectCommand](1, OverflowStrategy.dropHead)
             .toMat(BroadcastHub.sink)(Keep.both)
             .run()
+
           remote.success(source)
 
           queue.offer(ForwardConnect)
@@ -210,6 +240,7 @@ import scala.util.{Failure, Success}
             context.children.foreach(context.stop)
             serverConnect(
               ConnectReceived(
+                connectionId,
                 connect,
                 connectData,
                 queue,
@@ -228,6 +259,7 @@ import scala.util.{Failure, Success}
           } else {
             serverConnect(
               ConnectReceived(
+                connectionId,
                 connect,
                 connectData,
                 queue,
@@ -245,7 +277,7 @@ import scala.util.{Failure, Success}
             )
 
           }
-        case (_, ConnectionLost) =>
+        case (_, ConnectionLost(_)) =>
           Behavior.same
         case (_, e) =>
           disconnected(data.copy(stash = data.stash :+ e))
@@ -283,17 +315,25 @@ import scala.util.{Failure, Success}
 
     timer =>
       if (!timer.isTimerActive(ReceiveConnAck))
-        timer.startSingleTimer(ReceiveConnAck, ReceiveConnAckTimeout, data.settings.receiveConnAckTimeout)
-
+        timer.startSingleTimer(ReceiveConnAck,
+                               ReceiveConnAckTimeout(data.connectionId),
+                               data.settings.receiveConnAckTimeout)
       Behaviors
         .receivePartial[Event] {
-          case (context, ConnAckReceivedFromRemote(connAck, local))
+          case (context, connect @ ConnectReceivedLocally(connectionId, _, _, _))
+              if connectionId != data.connectionId =>
+            context.self ! connect
+            disconnect(context, data.remote, data)
+          case (_, event) if event.connectionId.nonEmpty && event.connectionId != data.connectionId =>
+            Behaviors.same
+          case (context, ConnAckReceivedFromRemote(_, connAck, local))
               if connAck.returnCode.contains(ConnAckReturnCode.ConnectionAccepted) =>
             local.success(ForwardConnAck(data.connectData))
             data.stash.foreach(context.self.tell)
             timer.cancel(ReceiveConnAck)
             serverConnected(
               ConnAckReceived(
+                data.connectionId,
                 data.connect.connectFlags,
                 data.connect.keepAlive,
                 pendingPingResp = false,
@@ -310,15 +350,15 @@ import scala.util.{Failure, Success}
                 data.settings
               )
             )
-          case (context, ConnAckReceivedFromRemote(_, local)) =>
+          case (context, ConnAckReceivedFromRemote(_, _, local)) =>
             local.success(ForwardConnAck(data.connectData))
             timer.cancel(ReceiveConnAck)
             disconnect(context, data.remote, data)
-          case (context, ReceiveConnAckTimeout) =>
+          case (context, ReceiveConnAckTimeout(_)) =>
             data.remote.fail(ConnectFailed)
             timer.cancel(ReceiveConnAck)
             disconnect(context, data.remote, data)
-          case (context, ConnectionLost) =>
+          case (context, ConnectionLost(_)) =>
             timer.cancel(ReceiveConnAck)
             disconnect(context, data.remote, data)
           case (_, e) =>
@@ -339,33 +379,39 @@ import scala.util.{Failure, Success}
     Behaviors.withTimers { timer =>
       val SendPingreq = "send-pingreq"
       if (resetPingReqTimer && data.keepAlive.toMillis > 0)
-        timer.startSingleTimer(SendPingreq, SendPingReqTimeout, data.keepAlive)
+        timer.startSingleTimer(SendPingreq, SendPingReqTimeout(data.connectionId), data.keepAlive)
 
       Behaviors
         .receivePartial[Event] {
-          case (context, ConnectionLost) =>
+          case (context, connect @ ConnectReceivedLocally(connectionId, _, _, _))
+              if connectionId != data.connectionId =>
+            context.self ! connect
+            disconnect(context, data.remote, data)
+          case (_, event) if event.connectionId.nonEmpty && event.connectionId != data.connectionId =>
+            Behaviors.same
+          case (context, ConnectionLost(_)) =>
             timer.cancel(SendPingreq)
             disconnect(context, data.remote, data)
-          case (context, DisconnectReceivedLocally(remote)) =>
+          case (context, DisconnectReceivedLocally(_, remote)) =>
             remote.success(ForwardDisconnect)
             timer.cancel(SendPingreq)
             disconnect(context, data.remote, data)
-          case (context, SubscribeReceivedLocally(_, subscribeData, remote)) =>
+          case (context, SubscribeReceivedLocally(_, _, subscribeData, remote)) =>
             context.watch(
               context.spawnAnonymous(Subscriber(subscribeData, remote, data.subscriberPacketRouter, data.settings))
             )
             serverConnected(data)
-          case (context, UnsubscribeReceivedLocally(_, unsubscribeData, remote)) =>
+          case (context, UnsubscribeReceivedLocally(_, _, unsubscribeData, remote)) =>
             context.watch(
               context
                 .spawnAnonymous(Unsubscriber(unsubscribeData, remote, data.unsubscriberPacketRouter, data.settings))
             )
             serverConnected(data)
-          case (_, PublishReceivedFromRemote(publish, local))
+          case (_, PublishReceivedFromRemote(_, publish, local))
               if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
             local.success(Consumer.ForwardPublish)
             serverConnected(data, resetPingReqTimer = false)
-          case (context, prfr @ PublishReceivedFromRemote(publish @ Publish(_, topicName, Some(packetId), _), local)) =>
+          case (context, prfr @ PublishReceivedFromRemote(_, publish @ Publish(_, topicName, Some(packetId), _), local)) =>
             data.activeConsumers.get(topicName) match {
               case None =>
                 val consumerName = ActorName.mkName(ConsumerNamePrefix + topicName + "-" + context.children.size)
@@ -467,14 +513,14 @@ import scala.util.{Failure, Success}
               case Producer.ForwardPubRel(_, packetId) => data.remote.offer(ForwardPubRel(packetId))
             })
             Behaviors.same
-          case (context, SendPingReqTimeout) if data.pendingPingResp =>
+          case (context, SendPingReqTimeout(_)) if data.pendingPingResp =>
             data.remote.fail(PingFailed)
             timer.cancel(SendPingreq)
             disconnect(context, data.remote, data)
-          case (_, SendPingReqTimeout) =>
+          case (_, SendPingReqTimeout(_)) =>
             data.remote.offer(ForwardPingReq)
             serverConnected(data.copy(pendingPingResp = true))
-          case (_, PingRespReceivedFromRemote(local)) =>
+          case (_, PingRespReceivedFromRemote(_, local)) =>
             local.success(ForwardPingResp)
             serverConnected(data.copy(pendingPingResp = false))
         }
