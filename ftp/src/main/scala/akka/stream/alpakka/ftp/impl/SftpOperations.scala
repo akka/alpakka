@@ -104,7 +104,7 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
 
   def storeFileOutputStream(name: String, handler: Handler, append: Boolean): Try[OutputStream] = Try {
     import OpenMode._
-    val openModes = Set(WRITE, CREAT) ++ (if (append) Set(APPEND) else Set())
+    val openModes = Set(WRITE, CREAT) ++ (if (append) Set(APPEND) else Set(TRUNC))
     val remoteFile = handler.open(name, openModes.asJava)
     val os = new remoteFile.RemoteFileOutputStream() {
 
