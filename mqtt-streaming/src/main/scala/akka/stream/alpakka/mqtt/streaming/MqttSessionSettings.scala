@@ -34,8 +34,8 @@ final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
                                          val eventParallelism: Int = 10,
                                          val receiveConnectTimeout: FiniteDuration = 5.minutes,
                                          val receiveConnAckTimeout: FiniteDuration = 30.seconds,
-                                         val producerPubAckRecTimeout: FiniteDuration = 15.seconds,
-                                         val producerPubCompTimeout: FiniteDuration = 15.seconds,
+                                         val producerPubAckRecTimeout: FiniteDuration = 0.seconds,
+                                         val producerPubCompTimeout: FiniteDuration = 0.seconds,
                                          val consumerPubAckRecTimeout: FiniteDuration = 30.seconds,
                                          val consumerPubCompTimeout: FiniteDuration = 30.seconds,
                                          val consumerPubRelTimeout: FiniteDuration = 30.seconds,
@@ -105,7 +105,7 @@ final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
 
   /**
    * For producers of PUBLISH, the amount of time to wait to ack/receive a QoS 1/2 publish before retrying with
-   * the DUP flag set. Defaults to 15 seconds.
+   * the DUP flag set. Defaults to 0 seconds, which means republishing only occurs on reconnect.
    */
   def withProducerPubAckRecTimeout(producerPubAckRecTimeout: FiniteDuration): MqttSessionSettings =
     copy(producerPubAckRecTimeout = producerPubAckRecTimeout)
@@ -114,14 +114,14 @@ final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
    * JAVA API
    *
    * For producers of PUBLISH, the amount of time to wait to ack/receive a QoS 1/2 publish before retrying with
-   * the DUP flag set. Defaults to 15 seconds.
+   * the DUP flag set. Defaults to 0 seconds, which means republishing only occurs on reconnect.
    */
   def withProducerPubAckRecTimeout(producerPubAckRecTimeout: Duration): MqttSessionSettings =
     copy(producerPubAckRecTimeout = producerPubAckRecTimeout.asScala)
 
   /**
    * For producers of PUBLISH, the amount of time to wait for a server to complete a QoS 2 publish before retrying
-   * with another PUBREL. Defaults to 15 seconds.
+   * with another PUBREL. Defaults to 0 seconds, which means republishing only occurs on reconnect.
    */
   def withProducerPubCompTimeout(producerPubCompTimeout: FiniteDuration): MqttSessionSettings =
     copy(producerPubCompTimeout = producerPubCompTimeout)
@@ -130,7 +130,7 @@ final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
    * JAVA API
    *
    * For producers of PUBLISH, the amount of time to wait for a server to complete a QoS 2 publish before retrying
-   * with another PUBREL. Defaults to 15 seconds.
+   * with another PUBREL. Defaults to 0 seconds, which means republishing only occurs on reconnect.
    */
   def withProducerPubCompTimeout(producerPubCompTimeout: Duration): MqttSessionSettings =
     copy(producerPubCompTimeout = producerPubCompTimeout.asScala)
