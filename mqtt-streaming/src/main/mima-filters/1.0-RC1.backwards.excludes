@@ -1,2 +1,10 @@
 # Allow changes to impl
 ProblemFilters.exclude[Problem]("akka.stream.alpakka.mqtt.streaming.impl.*")
+# PR #1595
+# https://github.com/akka/alpakka/pull/1595
+# private[streaming]
+ProblemFilters.exclude[MissingMethodProblem]("akka.stream.alpakka.mqtt.streaming.scaladsl.MqttClientSession.commandFlow")
+ProblemFilters.exclude[MissingMethodProblem]("akka.stream.alpakka.mqtt.streaming.scaladsl.ActorMqttClientSession.commandFlow")
+# private[streaming]
+ProblemFilters.exclude[MissingMethodProblem]("akka.stream.alpakka.mqtt.streaming.scaladsl.MqttClientSession.eventFlow")
+ProblemFilters.exclude[MissingMethodProblem]("akka.stream.alpakka.mqtt.streaming.scaladsl.ActorMqttClientSession.eventFlow")
