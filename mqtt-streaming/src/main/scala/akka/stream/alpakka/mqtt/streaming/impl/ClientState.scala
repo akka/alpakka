@@ -334,10 +334,10 @@ import scala.util.{Failure, Success}
 
   }
 
-  def serverConnected(data: ConnAckReceived)(implicit mat: Materializer): Behavior[Event] = Behaviors.withTimers {
-    timer =>
+  def serverConnected(data: ConnAckReceived, setTimer: Boolean = true)(implicit mat: Materializer): Behavior[Event] =
+    Behaviors.withTimers { timer =>
       val SendPingreq = "send-pingreq"
-      if (data.keepAlive.toMillis > 0)
+      if (setTimer && data.keepAlive.toMillis > 0)
         timer.startSingleTimer(SendPingreq, SendPingReqTimeout, data.keepAlive)
 
       Behaviors
@@ -363,7 +363,7 @@ import scala.util.{Failure, Success}
           case (_, PublishReceivedFromRemote(publish, local))
               if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
             local.success(Consumer.ForwardPublish)
-            serverConnected(data)
+            serverConnected(data, setTimer = false)
           case (context, prfr @ PublishReceivedFromRemote(publish @ Publish(_, topicName, Some(packetId), _), local)) =>
             data.activeConsumers.get(topicName) match {
               case None =>
@@ -372,13 +372,15 @@ import scala.util.{Failure, Success}
                   context.spawn(Consumer(publish, None, packetId, local, data.consumerPacketRouter, data.settings),
                                 consumerName)
                 context.watchWith(consumer, ConsumerFree(publish.topicName))
-                serverConnected(data.copy(activeConsumers = data.activeConsumers + (publish.topicName -> consumer)))
+                serverConnected(data.copy(activeConsumers = data.activeConsumers + (publish.topicName -> consumer)),
+                                setTimer = false)
               case Some(consumer) if publish.flags.contains(ControlPacketFlags.DUP) =>
                 consumer ! Consumer.DupPublishReceivedFromRemote(local)
-                serverConnected(data)
+                serverConnected(data, setTimer = false)
               case Some(_) =>
                 serverConnected(
-                  data.copy(pendingRemotePublications = data.pendingRemotePublications :+ (publish.topicName -> prfr))
+                  data.copy(pendingRemotePublications = data.pendingRemotePublications :+ (publish.topicName -> prfr)),
+                  setTimer = false
                 )
             }
           case (context, ConsumerFree(topicName)) =>
@@ -488,7 +490,7 @@ import scala.util.{Failure, Success}
             data.remote.complete()
             Behaviors.same
         }
-  }
+    }
 }
 
 /*
