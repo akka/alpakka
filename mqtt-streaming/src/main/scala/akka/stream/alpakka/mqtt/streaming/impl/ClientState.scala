@@ -334,10 +334,11 @@ import scala.util.{Failure, Success}
 
   }
 
-  def serverConnected(data: ConnAckReceived, setTimer: Boolean = true)(implicit mat: Materializer): Behavior[Event] =
+  def serverConnected(data: ConnAckReceived,
+                      resetPingReqTimer: Boolean = true)(implicit mat: Materializer): Behavior[Event] =
     Behaviors.withTimers { timer =>
       val SendPingreq = "send-pingreq"
-      if (setTimer && data.keepAlive.toMillis > 0)
+      if (resetPingReqTimer && data.keepAlive.toMillis > 0)
         timer.startSingleTimer(SendPingreq, SendPingReqTimeout, data.keepAlive)
 
       Behaviors
@@ -363,7 +364,7 @@ import scala.util.{Failure, Success}
           case (_, PublishReceivedFromRemote(publish, local))
               if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 =>
             local.success(Consumer.ForwardPublish)
-            serverConnected(data, setTimer = false)
+            serverConnected(data, resetPingReqTimer = false)
           case (context, prfr @ PublishReceivedFromRemote(publish @ Publish(_, topicName, Some(packetId), _), local)) =>
             data.activeConsumers.get(topicName) match {
               case None =>
@@ -373,14 +374,14 @@ import scala.util.{Failure, Success}
                                 consumerName)
                 context.watchWith(consumer, ConsumerFree(publish.topicName))
                 serverConnected(data.copy(activeConsumers = data.activeConsumers + (publish.topicName -> consumer)),
-                                setTimer = false)
+                                resetPingReqTimer = false)
               case Some(consumer) if publish.flags.contains(ControlPacketFlags.DUP) =>
                 consumer ! Consumer.DupPublishReceivedFromRemote(local)
-                serverConnected(data, setTimer = false)
+                serverConnected(data, resetPingReqTimer = false)
               case Some(_) =>
                 serverConnected(
                   data.copy(pendingRemotePublications = data.pendingRemotePublications :+ (publish.topicName -> prfr)),
-                  setTimer = false
+                  resetPingReqTimer = false
                 )
             }
           case (context, ConsumerFree(topicName)) =>
