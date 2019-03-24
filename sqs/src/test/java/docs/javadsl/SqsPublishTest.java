@@ -281,12 +281,12 @@ public class SqsPublishTest extends BaseSqsTest {
       messagesToSend.add(SendMessageRequest.builder().messageBody("Message - " + i).build());
     }
 
-    CompletionStage<List<SqsPublishResult<SendMessageBatchResponse>>> stage =
+    CompletionStage<List<SqsPublishResult<SendMessageBatchResultEntry>>> stage =
         Source.from(messagesToSend)
             .via(SqsPublishFlow.grouped(queueUrl, SqsPublishGroupedSettings.create(), sqsClient))
             .runWith(Sink.seq(), materializer);
 
-    List<SqsPublishResult<SendMessageBatchResponse>> result =
+    List<SqsPublishResult<SendMessageBatchResultEntry>> result =
         stage.toCompletableFuture().get(10, TimeUnit.SECONDS);
     assertEquals(10, result.size());
 
@@ -310,13 +310,13 @@ public class SqsPublishTest extends BaseSqsTest {
     }
     Iterable<SendMessageRequest> it = messagesToSend;
 
-    CompletionStage<List<SqsPublishResult<SendMessageBatchResponse>>> stage =
+    CompletionStage<List<SqsPublishResult<SendMessageBatchResultEntry>>> stage =
         Source.single(it)
             .via(SqsPublishFlow.batch(queueUrl, SqsPublishBatchSettings.create(), sqsClient))
             .mapConcat(x -> x)
             .runWith(Sink.seq(), materializer);
 
-    List<SqsPublishResult<SendMessageBatchResponse>> result = new ArrayList<>();
+    List<SqsPublishResult<SendMessageBatchResultEntry>> result = new ArrayList<>();
 
     result.addAll(stage.toCompletableFuture().get(1, TimeUnit.SECONDS));
     assertEquals(10, result.size());

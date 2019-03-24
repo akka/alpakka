@@ -4,8 +4,9 @@
 
 package akka.stream.alpakka.sqs
 
-import akka.annotation.{ApiMayChange, InternalApi}
-import software.amazon.awssdk.services.sqs.model.{Message, SqsResponse}
+import akka.annotation.InternalApi
+import software.amazon.awssdk.core.SdkPojo
+import software.amazon.awssdk.services.sqs.model.{Message, SqsResponseMetadata}
 
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.FiniteDuration
@@ -125,72 +126,50 @@ object MessageAction {
 }
 
 /**
- * Additional identifiers for FIFO messsages
- *
- * @see [https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-additional-fifo-queue-identifiers.html]
- */
-final class FifoMessageIdentifiers @InternalApi private[sqs] (
-    val sequenceNumber: String,
-    val messageGroupId: String,
-    val messageDeduplicationId: Option[String]
-) {
-
-  /** Java API */
-  def getSequenceNumber: String = sequenceNumber
-
-  /** Java API */
-  def getMessageGroupId: String = messageGroupId
-
-  /** Java API */
-  def getMessageDeduplicationId: java.util.Optional[String] = messageDeduplicationId.asJava
-
-  override def toString: String =
-    s"FifoMessageIdentifiers(sequenceNumber=$sequenceNumber, messageGroupId=$messageGroupId, messageDeduplicationId=$messageDeduplicationId)"
-
-  override def equals(other: Any): Boolean = other match {
-    case that: FifoMessageIdentifiers =>
-      java.util.Objects.equals(this.sequenceNumber, that.sequenceNumber) &&
-      java.util.Objects.equals(this.messageGroupId, that.messageGroupId) &&
-      java.util.Objects.equals(this.messageDeduplicationId, that.messageDeduplicationId)
-    case _ => false
-  }
-
-  override def hashCode(): Int = java.util.Objects.hash(sequenceNumber, messageGroupId, messageDeduplicationId)
-}
-
-/**
  * Messages returned by a SqsFlow.
  *
  * @param message the SQS message.
  */
-@ApiMayChange
-final class SqsPublishResult[T <: SqsResponse] @InternalApi private[sqs] (
-    val metadata: T,
-    val fifoMessageIdentifiers: Option[FifoMessageIdentifiers]
+final class SqsPublishResult[T <: SdkPojo] @InternalApi private[sqs] (
+    val responseMetadata: SqsResponseMetadata,
+    val metadata: T
 ) {
+
+  /** Java API */
+  def getResponseMetadata: SqsResponseMetadata = responseMetadata
 
   /** Java API */
   def getMetadata: T = metadata
 
-  /** Java API */
-  def getFifoMessageIdentifiers: java.util.Optional[FifoMessageIdentifiers] = fifoMessageIdentifiers.asJava
-
   override def toString =
-    s"""SqsPublishResult(metadata=$metadata, fifoMessageIdentifiers=$fifoMessageIdentifiers)"""
+    s"""SqsPublishResult(responseMetadata=$responseMetadata, metadata=$metadata)"""
 
   override def equals(other: Any): Boolean = other match {
     case that: SqsPublishResult[T] =>
-      java.util.Objects.equals(this.metadata, that.metadata) &&
-      java.util.Objects.equals(this.fifoMessageIdentifiers, that.fifoMessageIdentifiers)
+      java.util.Objects.equals(this.responseMetadata, that.responseMetadata) &&
+      java.util.Objects.equals(this.metadata, that.metadata)
     case _ => false
   }
 
-  override def hashCode(): Int = java.util.Objects.hash(metadata, fifoMessageIdentifiers)
+  override def hashCode(): Int = java.util.Objects.hash(responseMetadata, metadata)
 }
 
-@ApiMayChange
-final class SqsAckResult[T <: SqsResponse] @InternalApi private[sqs] (val metadata: Option[T],
-                                                                      val messageAction: MessageAction) {
+final class SqsAckResult[T <: SdkPojo] @InternalApi private[sqs] (
+    val responseMetadata: Option[SqsResponseMetadata],
+    val metadata: Option[T],
+    val messageAction: MessageAction
+) {
+
+  def this(responseMetadata: SqsResponseMetadata, metadata: T, messageAction: MessageAction) = {
+    this(Some(responseMetadata), Some(metadata), messageAction)
+  }
+
+  def this(messageAction: MessageAction) = {
+    this(None, None, messageAction)
+  }
+
+  /** Java API */
+  def getResponseMetadata: java.util.Optional[SqsResponseMetadata] = responseMetadata.asJava
 
   /** Java API */
   def getMetadata: java.util.Optional[T] = metadata.asJava
@@ -199,10 +178,11 @@ final class SqsAckResult[T <: SqsResponse] @InternalApi private[sqs] (val metada
   def getMessageAction: MessageAction = messageAction
 
   override def toString =
-    s"""SqsAckResult(metadata=$metadata,messageAction=$messageAction)"""
+    s"""SqsAckResult(responseMetadata=$responseMetadata,metadata=$metadata,messageAction=$messageAction)"""
 
   override def equals(other: Any): Boolean = other match {
     case that: SqsAckResult[T] =>
+      java.util.Objects.equals(this.responseMetadata, that.responseMetadata) &&
       java.util.Objects.equals(this.metadata, that.metadata) &&
       java.util.Objects.equals(this.messageAction, that.messageAction)
     case _ => false

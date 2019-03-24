@@ -14,6 +14,7 @@ import akka.stream.javadsl.Source;
 import akka.stream.javadsl.Sink;
 import org.junit.Test;
 import scala.Option;
+import software.amazon.awssdk.core.SdkPojo;
 import software.amazon.awssdk.services.sqs.SqsAsyncClient;
 import software.amazon.awssdk.services.sqs.model.*;
 
@@ -99,7 +100,7 @@ public class SqsAckTest extends BaseSqsTest {
     List<Message> messages = createMessages();
     Source<Message, NotUsed> source = Source.fromIterator(messages::iterator);
 
-    CompletionStage<List<SqsAckResult<SqsResponse>>> stage =
+    CompletionStage<List<SqsAckResult<SdkPojo>>> stage =
         // #flow-ack
         source
             .map(m -> MessageAction.delete(m))
@@ -107,7 +108,7 @@ public class SqsAckTest extends BaseSqsTest {
             .runWith(Sink.seq(), materializer);
     // #flow-ack
 
-    List<SqsAckResult<SqsResponse>> result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    List<SqsAckResult<SdkPojo>> result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
     assertEquals(10, result.size());
     for (int i = 0; i < 10; i++) {
       SqsAckResult r = result.get(i);
@@ -149,7 +150,7 @@ public class SqsAckTest extends BaseSqsTest {
     List<Message> messages = createMessages();
     Source<Message, NotUsed> source = Source.fromIterator(messages::iterator);
 
-    CompletionStage<List<SqsAckResult<SqsResponse>>> stage =
+    CompletionStage<List<SqsAckResult<SdkPojo>>> stage =
         // #ignore
         source
             .map(m -> MessageAction.ignore(m))
@@ -157,7 +158,7 @@ public class SqsAckTest extends BaseSqsTest {
             .runWith(Sink.seq(), materializer);
     // #ignore
 
-    List<SqsAckResult<SqsResponse>> result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    List<SqsAckResult<SdkPojo>> result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
     assertEquals(10, result.size());
     for (int i = 0; i < 10; i++) {
       SqsAckResult r = result.get(i);
@@ -180,7 +181,7 @@ public class SqsAckTest extends BaseSqsTest {
     List<Message> messages = createMessages();
     Source<Message, NotUsed> source = Source.fromIterator(messages::iterator);
 
-    CompletionStage<List<SqsAckResult<SqsResponse>>> stage =
+    CompletionStage<List<SqsAckResult<SdkPojo>>> stage =
         //  #batch-ack
         source
             .map(m -> MessageAction.delete(m))
@@ -189,7 +190,7 @@ public class SqsAckTest extends BaseSqsTest {
 
     // #batch-ack
 
-    List<SqsAckResult<SqsResponse>> result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    List<SqsAckResult<SdkPojo>> result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
     assertEquals(10, result.size());
     for (int i = 0; i < 10; i++) {
       SqsAckResult r = result.get(i);
@@ -214,7 +215,7 @@ public class SqsAckTest extends BaseSqsTest {
     List<Message> messages = createMessages();
     Source<Message, NotUsed> source = Source.fromIterator(messages::iterator);
 
-    CompletionStage<List<SqsAckResult<SqsResponse>>> stage =
+    CompletionStage<List<SqsAckResult<SdkPojo>>> stage =
         // #batch-requeue
         source
             .map(m -> MessageAction.changeMessageVisibility(m, 5))
@@ -222,7 +223,7 @@ public class SqsAckTest extends BaseSqsTest {
             .runWith(Sink.seq(), materializer);
     // #batch-requeue
 
-    List<SqsAckResult<SqsResponse>> result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    List<SqsAckResult<SdkPojo>> result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
     assertEquals(10, result.size());
     for (int i = 0; i < 10; i++) {
       SqsAckResult r = result.get(i);
@@ -244,7 +245,7 @@ public class SqsAckTest extends BaseSqsTest {
     List<Message> messages = createMessages();
     Source<Message, NotUsed> source = Source.fromIterator(messages::iterator);
 
-    CompletionStage<List<SqsAckResult<SqsResponse>>> stage =
+    CompletionStage<List<SqsAckResult<SdkPojo>>> stage =
         // #batch-ignore
         source
             .map(m -> MessageAction.ignore(m))
@@ -252,7 +253,7 @@ public class SqsAckTest extends BaseSqsTest {
             .runWith(Sink.seq(), materializer);
     // #batch-ignore
 
-    List<SqsAckResult<SqsResponse>> result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    List<SqsAckResult<SdkPojo>> result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
     assertEquals(10, result.size());
     for (int i = 0; i < 10; i++) {
       SqsAckResult r = result.get(i);

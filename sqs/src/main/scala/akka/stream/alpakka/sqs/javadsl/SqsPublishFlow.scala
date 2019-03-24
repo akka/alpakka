@@ -15,7 +15,7 @@ import akka.stream.alpakka.sqs.{
 import akka.stream.javadsl.Flow
 import akka.stream.scaladsl.{Flow => SFlow}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import software.amazon.awssdk.services.sqs.model.{SendMessageBatchResponse, SendMessageRequest, SendMessageResponse}
+import software.amazon.awssdk.services.sqs.model.{SendMessageBatchResultEntry, SendMessageRequest, SendMessageResponse}
 
 import scala.collection.JavaConverters._
 
@@ -48,7 +48,7 @@ object SqsPublishFlow {
       queueUrl: String,
       settings: SqsPublishGroupedSettings,
       sqsClient: SqsAsyncClient
-  ): Flow[SendMessageRequest, SqsPublishResult[SendMessageBatchResponse], NotUsed] =
+  ): Flow[SendMessageRequest, SqsPublishResult[SendMessageBatchResultEntry], NotUsed] =
     akka.stream.alpakka.sqs.scaladsl.SqsPublishFlow
       .grouped(queueUrl, settings)(sqsClient)
       .asJava
@@ -60,7 +60,9 @@ object SqsPublishFlow {
       queueUrl: String,
       settings: SqsPublishBatchSettings,
       sqsClient: SqsAsyncClient
-  ): Flow[java.lang.Iterable[SendMessageRequest], java.util.List[SqsPublishResult[SendMessageBatchResponse]], NotUsed] =
+  ): Flow[java.lang.Iterable[SendMessageRequest],
+          java.util.List[SqsPublishResult[SendMessageBatchResultEntry]],
+          NotUsed] =
     SFlow[java.lang.Iterable[SendMessageRequest]]
       .map(_.asScala)
       .via(akka.stream.alpakka.sqs.scaladsl.SqsPublishFlow.batch(queueUrl, settings)(sqsClient))

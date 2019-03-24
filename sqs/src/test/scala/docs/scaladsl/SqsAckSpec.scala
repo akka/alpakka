@@ -13,7 +13,7 @@ import akka.stream.alpakka.sqs.scaladsl._
 import akka.stream.scaladsl.{Sink, Source}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{spy, times, verify, when}
-import org.scalatest.mockito.MockitoSugar.mock
+import org.scalatestplus.mockito.MockitoSugar.mock
 import org.scalatest.{FlatSpec, Matchers}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model._

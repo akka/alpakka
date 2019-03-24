@@ -4,8 +4,11 @@
 
 package akka.stream.alpakka.sqs
 
+import java.util.Collections
+
 import org.scalatest.{FlatSpec, Matchers}
-import software.amazon.awssdk.services.sqs.model.{Message, SendMessageResponse}
+import software.amazon.awssdk.awscore.AwsResponseMetadata
+import software.amazon.awssdk.services.sqs.model.{Message, SendMessageResponse, SqsResponseMetadata}
 
 class SqsModelSpec extends FlatSpec with Matchers {
 
@@ -45,78 +48,32 @@ class SqsModelSpec extends FlatSpec with Matchers {
     MessageAction.ChangeMessageVisibility(msg, 0)
   }
 
-  "FifoMessageIdentifiers" should "implement proper equality" in {
-    val sequenceNumber = "sequence-number"
-    val otherSequenceNumber = "other-sequence-number"
+  trait Fixture {
+    private object TestResponseMetadata extends AwsResponseMetadata(Collections.emptyMap[String, String]())
 
-    val messageGroupId = "group-id"
-    val otherMessageGroupId = "other-group-id"
-
-    val messageDeduplicationId = Option.empty[String]
-    val otherMessageDeduplicationId = Some("deduplication-id")
-
-    new FifoMessageIdentifiers(
-      sequenceNumber,
-      messageGroupId,
-      messageDeduplicationId
-    ) shouldBe new FifoMessageIdentifiers(
-      sequenceNumber,
-      messageGroupId,
-      messageDeduplicationId
-    )
-
-    new FifoMessageIdentifiers(
-      sequenceNumber,
-      messageGroupId,
-      messageDeduplicationId
-    ) should not be new FifoMessageIdentifiers(
-      otherSequenceNumber,
-      messageGroupId,
-      messageDeduplicationId
-    )
-
-    new FifoMessageIdentifiers(
-      sequenceNumber,
-      messageGroupId,
-      messageDeduplicationId
-    ) should not be new FifoMessageIdentifiers(
-      sequenceNumber,
-      otherMessageGroupId,
-      messageDeduplicationId
-    )
-
-    new FifoMessageIdentifiers(
-      sequenceNumber,
-      messageGroupId,
-      messageDeduplicationId
-    ) should not be new FifoMessageIdentifiers(
-      sequenceNumber,
-      messageGroupId,
-      otherMessageDeduplicationId
-    )
-  }
-
-  "SqsPublishResult" should "implement proper equality" in {
+    val responseMetadata = SqsResponseMetadata.create(TestResponseMetadata)
+    val otherResponseMetadata = SqsResponseMetadata.create(TestResponseMetadata)
     val metadata = SendMessageResponse.builder().build()
     val otherMetadata = SendMessageResponse.builder().messageId("other-id").build()
-
-    val fifoIdentifiers = Option.empty[FifoMessageIdentifiers]
-    val otherFifoIdentifiers = Some(new FifoMessageIdentifiers("sequence-number", "group-id", None))
-
-    new SqsPublishResult(metadata, fifoIdentifiers) shouldBe new SqsPublishResult(metadata, fifoIdentifiers)
-    new SqsPublishResult(otherMetadata, fifoIdentifiers) should not be new SqsPublishResult(metadata, fifoIdentifiers)
-    new SqsPublishResult(metadata, otherFifoIdentifiers) should not be new SqsPublishResult(metadata, fifoIdentifiers)
   }
 
-  "SqsAckResult" should "implement proper equality" in {
-    val metadata = Some(SendMessageResponse.builder().build())
-    val otherMetadata = Some(SendMessageResponse.builder().messageId("other-id").build())
+  "SqsPublishResult" should "implement proper equality" in new Fixture {
+    val reference = new SqsPublishResult(responseMetadata, metadata)
 
+    new SqsPublishResult(responseMetadata, metadata) shouldBe reference
+    new SqsPublishResult(otherResponseMetadata, metadata) should not be reference
+    new SqsPublishResult(responseMetadata, otherMetadata) should not be reference
+  }
+
+  "SqsAckResult" should "implement proper equality" in new Fixture {
     val messageAction = MessageAction.Ignore(msg)
     val otherMessageAction = MessageAction.Ignore(otherMsg)
 
-    new SqsAckResult(metadata, messageAction) shouldBe new SqsAckResult(metadata, messageAction)
-    new SqsAckResult(otherMetadata, messageAction) should not be new SqsAckResult(metadata, messageAction)
-    new SqsAckResult(metadata, otherMessageAction) should not be new SqsAckResult(metadata, messageAction)
+    val reference = new SqsAckResult(responseMetadata, metadata, messageAction)
+
+    new SqsAckResult(responseMetadata, metadata, messageAction) shouldBe reference
+    new SqsAckResult(otherResponseMetadata, metadata, messageAction) should not be reference
+    new SqsAckResult(responseMetadata, otherMetadata, messageAction) should not be reference
+    new SqsAckResult(responseMetadata, metadata, otherMessageAction) should not be reference
   }
 }
