@@ -24,10 +24,10 @@ All the AMQP connectors are configured using a @scaladoc[AmqpConnectionProvider]
 
 There are several types of @scaladoc[AmqpConnectionProvider](akka.stream.alpakka.amqp.AmqpConnectionProvider):
 
-* @scaladoc[AmqpLocalConnectionProvider](akka.stream.alpakka.amqp.AmqpLocalConnectionProvider) which connects to the default localhost. It creates a new connection for each stage.
-* @scaladoc[AmqpUriConnectionProvider](akka.stream.alpakka.amqp.AmqpUriConnectionProvider) which connects to the given AMQP URI. It creates a new connection for each stage.
-* @scaladoc[AmqpDetailsConnectionProvider](akka.stream.alpakka.amqp.AmqpDetailsConnectionProvider) which supports more fine-grained configuration. It creates a new connection for each stage.
-* @scaladoc[AmqpConnectionFactoryConnectionProvider](akka.stream.alpakka.amqp.AmqpConnectionFactoryConnectionProvider) which takes a raw [ConnectionFactory](https://www.rabbitmq.com/releases/rabbitmq-java-client/current-javadoc/com/rabbitmq/client/ConnectionFactory.html). It creates a new connection for each stage.
+* @scaladoc[AmqpLocalConnectionProvider](akka.stream.alpakka.amqp.AmqpLocalConnectionProvider$) which connects to the default localhost. It creates a new connection for each stage.
+* @scaladoc[AmqpUriConnectionProvider](akka.stream.alpakka.amqp.AmqpUriConnectionProvider$) which connects to the given AMQP URI. It creates a new connection for each stage.
+* @scaladoc[AmqpDetailsConnectionProvider](akka.stream.alpakka.amqp.AmqpDetailsConnectionProvider$) which supports more fine-grained configuration. It creates a new connection for each stage.
+* @scaladoc[AmqpConnectionFactoryConnectionProvider](akka.stream.alpakka.amqp.AmqpConnectionFactoryConnectionProvider$) which takes a raw [ConnectionFactory](https://rabbitmq.github.io/rabbitmq-java-client/api/current/com/rabbitmq/client/ConnectionFactory.html). It creates a new connection for each stage.
 * @scaladoc[AmqpCachedConnectionProvider](akka.stream.alpakka.amqp.AmqpCachedConnectionProvider) which receive any other provider as parameter and caches the connection it provides to be used in all stages. By default it closes the connection whenever the last stage using the provider stops. Optionally, it takes `automaticRelease` boolean parameter so the connection is not automatically release and the user have to release it explicitly.
 
 ## Sending messages
@@ -44,9 +44,9 @@ Here we used @scaladoc[QueueDeclaration](akka.stream.alpakka.amqp.QueueDeclarati
 
 Create a sink, that accepts and forwards @scaladoc[ByteString](akka.util.ByteString)s to the AMQP server.
 
-@scaladoc[AmqpSink](akka.stream.alpakka.amqp.AmqpSink$) is a collection of factory methods that facilitates creation of sinks. Here we created a *simple* sink, which means that we are able to pass `ByteString`s to the sink instead of wrapping data into @scaladoc[WriteMessage](akka.stream.alpakka.amqp.WriteMessage)s.
+@scala[@scaladoc[AmqpSink](akka.stream.alpakka.amqp.scaladsl.AmqpSink$)]@java[@scaladoc[AmqpSink](akka.stream.alpakka.amqp.javadsl.AmqpSink$)] is a collection of factory methods that facilitates creation of sinks. Here we created a *simple* sink, which means that we are able to pass `ByteString`s to the sink instead of wrapping data into @scaladoc[WriteMessage](akka.stream.alpakka.amqp.WriteMessage)s.
 
-Last step is to @extref[materialize](akka-docs:scala/stream/stream-flows-and-basics) and run the sink we have created.
+Last step is to @extref[materialize](akka-docs:stream/stream-flows-and-basics.scala) and run the sink we have created.
 
 Scala
 : @@snip [snip](/amqp/src/test/scala/docs/scaladsl/AmqpDocsSpec.scala) { #create-sink }
@@ -90,7 +90,7 @@ Scala
 Java
 : @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #create-exchange-sink }
 
-For the source, we are going to create multiple sources and merge them using @extref[Akka Streams API](akka-docs:scala/stream/stages-overview).
+For the source, we are going to create multiple sources and merge them using @extref[Akka Streams operators](akka-docs:stream/operators/index.html).
 
 Scala
 : @@snip [snip](/amqp/src/test/scala/docs/scaladsl/AmqpDocsSpec.scala) { #create-exchange-source }
