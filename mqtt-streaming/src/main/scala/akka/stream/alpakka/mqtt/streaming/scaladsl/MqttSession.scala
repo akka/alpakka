@@ -263,7 +263,6 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
       }
       .via(new MqttFrameStage(settings.maxPacketSize))
       .map(_.iterator.decodeControlPacket(settings.maxPacketSize))
-      .async
       .log("client-events")
       .mapAsync[Either[MqttCodec.DecodeError, Event[A]]](settings.eventParallelism) {
         case Right(cp: ConnAck) =>
