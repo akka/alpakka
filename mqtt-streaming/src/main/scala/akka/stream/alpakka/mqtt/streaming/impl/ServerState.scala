@@ -390,6 +390,9 @@ import scala.util.{Failure, Success}
             data.stash.foreach(context.self.tell)
             timer.cancel(ReceiveConnAck)
 
+            data.activeProducers.values
+              .foreach(_ ! Producer.ReceiveConnect)
+
             clientConnected(
               ConnAckReplied(
                 data.connect,

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.mqtt.streaming
@@ -107,7 +107,7 @@ class MqttPerf {
       .fromGraph(clientSource)
       .via(
         Mqtt
-          .clientSessionFlow(clientSession)
+          .clientSessionFlow(clientSession, ByteString("1"))
           .join(Tcp().outgoingConnection(host, port))
       )
       .wireTap(Sink.foreach[Either[DecodeError, Event[_]]] {
