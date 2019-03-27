@@ -40,7 +40,7 @@ Java
 ## Reading `ODocument` from OrientDB
 
 Now we can stream messages which contain OrientDB's `ODocument` (in Scala or Java) from or to OrientDB by providing the `ODatabaseDocumentTx` to the
-@scala[@scaladoc[OrientDBSource](akka.stream.alpakka.orientdb.scaladsl.OrientDBSource$)]@java[@scaladoc[OrientDBSink](akka.stream.alpakka.orientdb.scaladsl.OrientDBSink$)].
+@scala[@scaladoc[OrientDbSource](akka.stream.alpakka.orientdb.scaladsl.OrientDbSource$)]@java[@scaladoc[OrientDbSource](akka.stream.alpakka.orientdb.javadsl.OrientDbSource$)].
 
 Scala
 : @@snip [snip](/orientdb/src/test/scala/docs/scaladsl/OrientDbSpec.scala) { #run-odocument }
