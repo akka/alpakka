@@ -38,7 +38,7 @@ The created @javadoc[ConnectionFactory](javax.jms.ConnectionFactory) is then use
 
 ### A `JmsMessage` sub-type sink
 
-Use a case class with the subtype of @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage$) to wrap the messages you want to send and optionally set message specific properties or headers.
+Use a case class with the subtype of @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage) to wrap the messages you want to send and optionally set message specific properties or headers.
 @java[@scaladoc[JmsProducer](akka.stream.alpakka.jms.javadsl.JmsProducer$)]@scala[@scaladoc[JmsProducer](akka.stream.alpakka.jms.scaladsl.JmsProducer$)] contains factory methods to facilitate the creation of sinks according to the message type.
 
 Scala
@@ -50,7 +50,7 @@ Java
 
 #### Setting JMS message properties
 
-For every @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage$) you can set JMS message properties.
+For every @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage) you can set JMS message properties.
 
 Scala
 : @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-messages-with-properties }
@@ -60,7 +60,7 @@ Java
 
 
 #### Setting JMS message header attributes
-For every @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage$) you can set also JMS message headers.
+For every @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage) you can set also JMS message headers.
 
 Scala
 : @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-messages-with-headers }

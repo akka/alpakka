@@ -26,7 +26,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 Give a brief description of the usage of this connector. If you want to mention a
 class name, make sure to link to the API docs:
-@scaladoc[ReferenceReadMessage](akka.stream.alpakka.reference.ReferenceReadMessage).
+@scaladoc[ReferenceReadResult](akka.stream.alpakka.reference.ReferenceReadResult).
 
 If any of the API classes are different between Scala and Java, link to both API docs:
 @scala[@scaladoc[Reference](akka.stream.alpakka.reference.scaladsl.Reference$)]

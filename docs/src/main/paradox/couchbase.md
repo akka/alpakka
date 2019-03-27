@@ -38,7 +38,7 @@ Alpakka Couchbase offers both Akka Streams APIs and a more direct API to access 
 * `CouchbaseSessionRegistry` (@scaladoc[API](akka.stream.alpakka.couchbase.CouchbaseSessionRegistry$)) is an Akka extension to keep track and share `CouchbaseSession`s within an `ActorSystem`
 * `CouchbaseSource` (@scala[@scaladoc[API](akka.stream.alpakka.couchbase.scaladsl.CouchbaseSource$)]@java[@scaladoc[API](akka.stream.alpakka.couchbase.javadsl.CouchbaseSource$)]), `CouchbaseFlow` (@scala[@scaladoc[API](akka.stream.alpakka.couchbase.scaladsl.CouchbaseFlow$)]@java[@scaladoc[API](akka.stream.alpakka.couchbase.javadsl.CouchbaseFlow$)]), and `CouchbaseSink` (@scala[@scaladoc[API](akka.stream.alpakka.couchbase.scaladsl.CouchbaseSink$)]@java[@scaladoc[API](akka.stream.alpakka.couchbase.javadsl.CouchbaseSink$)]) offer factory methods to create Akka Stream operators
 
-All operations use the `CouchbaseSession` internally. A session is configured with `CouchbaseSessionSettings` (@scaladoc[API](akka.stream.alpakka.couchbase..CouchbaseSettings$)) and a Couchbase bucket name. The Akka Stream factory methods create and access the corresponding session instance behind the scenes.
+All operations use the `CouchbaseSession` internally. A session is configured with `CouchbaseSessionSettings` (@scaladoc[API](akka.stream.alpakka.couchbase.CouchbaseSessionSettings$)) and a Couchbase bucket name. The Akka Stream factory methods create and access the corresponding session instance behind the scenes.
 
 # Reading from Couchbase in Akka Streams
 

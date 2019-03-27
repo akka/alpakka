@@ -60,14 +60,14 @@ The producer is very trivial at this time, it does not provide any batching mech
 soon as they arrive to the stage.
 
 The producer is instantiated using the @scala[@scaladoc[IronMqProducer](akka.stream.alpakka.ironmq.scaladsl.IronMqProducer$)]@java[@scaladoc[IronMqProducer](akka.stream.alpakka.ironmq.javadsl.IronMqProducer$)].
-It provides methods to obtain either a @scala[`Flow[PushMessage, Messages.Id, NotUsed]`]@java[`Flow<PushMessage, Messages.Id, NotUsed>`] or a @scala[`Sink[PushMessage, NotUsed]`]@java`Sink<PushMessage, NotUsed>`].
+It provides methods to obtain either a @scala[`Flow[PushMessage, Messages.Id, NotUsed]`]@java[`Flow<PushMessage, Messages.Id, NotUsed>`] or a @scala[`Sink[PushMessage, NotUsed]`]@java[`Sink<PushMessage, NotUsed>`].
 
 
 ### Flow
 
 The @scaladoc[PushMessage](akka.stream.alpakka.ironmq.PushMessage) allows to specify the delay per individual message. The message expiration is set a queue level.
 
-When using the `Flow` the returned @scala[@scaladoc[Messages.Ids](akka.stream.alpakka.ironmq.Messages$$Id)]@java[`String`] contains the ID of the pushed message, that can be used to manipulate the message. For each `PushMessage` from the upstream you will have exactly one @scala[`Message.Id`]@java[`String`] in downstream in the same order.
+When using the `Flow` the returned @scala[@scaladoc[Messages.Ids](akka.stream.alpakka.ironmq.Message$$Id)]@java[`String`] contains the ID of the pushed message, that can be used to manipulate the message. For each `PushMessage` from the upstream you will have exactly one @scala[`Message.Id`]@java[`String`] in downstream in the same order.
 
 Scala
 : @@snip [snip](/ironmq/src/test/scala/docs/scaladsl/IronMqDocsSpec.scala) { #flow }
