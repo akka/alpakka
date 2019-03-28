@@ -414,6 +414,9 @@ import scala.util.{Failure, Success}
             throw ClientConnectionFailed
           case (_, ClientConnection.ConnectionLost) =>
             throw ClientConnectionFailed
+          case (_, PublishReceivedLocally(publish, _))
+              if !data.publishers.exists(Topics.filter(_, publish.topicName)) =>
+            Behaviors.same
           case (_, e) =>
             clientConnect(data.copy(stash = data.stash :+ e))
         }
@@ -732,6 +735,9 @@ import scala.util.{Failure, Success}
             throw ClientConnectionFailed
           case (_, ConnectionLost) =>
             Behavior.same // We know... we are disconnected...
+          case (_, PublishReceivedLocally(publish, _))
+              if !data.publishers.exists(Topics.filter(_, publish.topicName)) =>
+            Behaviors.same
           case (_, e) =>
             clientDisconnected(data.copy(stash = data.stash :+ e))
         }
