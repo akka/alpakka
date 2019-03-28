@@ -494,12 +494,18 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
                                                                                 cp.packetId,
                                                                                 Publisher.SubAckReceivedLocally(reply),
                                                                                 reply)
+
+                  reply.future.onComplete { result =>
+                    completed
+                      .foreach(_.complete(result.map(_ => Done)))
+                  }
+
                   Source
                     .fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result()))
                     .recover {
                       case _: RemotePacketRouter.CannotRoute => ByteString.empty
                     }
-                    .wireTap(_ => completed.foreach(_.success(Done)))
+
                 case Command(cp: UnsubAck, _, _) =>
                   val reply = Promise[Unpublisher.ForwardUnsubAck.type]
                   unpublisherPacketRouter ! RemotePacketRouter
