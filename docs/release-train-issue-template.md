@@ -45,16 +45,18 @@ Key links:
 
 ### Check availability
 
+- [ ] Check [API](https://doc.akka.io/api/alpakka/$ALPAKKA_VERSION$/) documentation 
+- [ ] Check [reference](https://doc.akka.io/docs/alpakka/$ALPAKKA_VERSION$/) documentation
 - [ ] Check the release on [Maven central](http://central.maven.org/maven2/com/lightbend/akka/akka-stream-alpakka-xml_2.12/$ALPAKKA_VERSION$/)
-- [ ] Check [API](https://doc.akka.io/api/alpakka/$ALPAKKA_VERSION$/) and [reference]
-  (https://doc.akka.io/docs/alpakka/$ALPAKKA_VERSION$/) documentation
 
 ### When everything is on maven central
-  - [ ] Log into `gustav.akka.io` as `akkarepo` and update the `current` links on `repo.akka.io` to point to the latest version with
-     ```
-     ln -nsf $ALPAKKA_VERSION$ www/docs/alpakka/current
-     ln -nsf $ALPAKKA_VERSION$ www/api/alpakka/current
-     ```
+  - [ ] Log into `gustav.akka.io` as `akkarepo` 
+    - [ ] update the `current` links on `repo.akka.io` to point to the latest version with
+         ```
+         ln -nsf $ALPAKKA_VERSION$ www/docs/alpakka/current
+         ln -nsf $ALPAKKA_VERSION$ www/api/alpakka/current
+         ```
+    - [ ] check changes and commit the new version to the local git repository
 
 ### Announcements
 
@@ -62,6 +64,7 @@ Key links:
 - [ ] Send a release notification to [Lightbend discuss](https://discuss.akka.io)
 - [ ] Tweet using the akkateam account (or ask someone to) about the new release
 - [ ] Announce on [Gitter akka/akka](https://gitter.im/akka/akka)
+- [ ] Announce internally
 
 ### Afterwards
 
