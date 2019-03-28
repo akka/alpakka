@@ -45,7 +45,7 @@ Key links:
 
 ### Check availability
 
-- [ ] Check [API](https://doc.akka.io/api/alpakka/$ALPAKKA_VERSION$/) 
+- [ ] Check [API](https://doc.akka.io/api/alpakka/$ALPAKKA_VERSION$/) documentation 
 - [ ] Check [reference](https://doc.akka.io/docs/alpakka/$ALPAKKA_VERSION$/) documentation
 - [ ] Check the release on [Maven central](http://central.maven.org/maven2/com/lightbend/akka/akka-stream-alpakka-xml_2.12/$ALPAKKA_VERSION$/)
 
