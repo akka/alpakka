@@ -16,6 +16,7 @@ object Common extends AutoPlugin {
   override def globalSettings = Seq(
     organization := "com.lightbend.akka",
     organizationName := "Lightbend Inc.",
+    organizationHomepage := Some(url("https://www.lightbend.com/")),
     homepage := Some(url("https://doc.akka.io/docs/alpakka/current/")),
     apiURL := Some(url(s"https://doc.akka.io/api/alpakka/${version.value}")),
     scmInfo := Some(ScmInfo(url("https://github.com/akka/alpakka"), "git@github.com:akka/alpakka.git")),
