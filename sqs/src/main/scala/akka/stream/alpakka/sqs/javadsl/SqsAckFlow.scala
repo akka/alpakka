@@ -10,6 +10,7 @@ import akka.stream.alpakka.sqs._
 import akka.stream.javadsl.Flow
 import software.amazon.awssdk.core.SdkPojo
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
+import software.amazon.awssdk.services.sqs.model.SqsResponse
 
 /**
  * Java API to create acknowledging SQS flows.
@@ -22,7 +23,7 @@ object SqsAckFlow {
    */
   def create(queueUrl: String,
              settings: SqsAckSettings,
-             sqsClient: SqsAsyncClient): Flow[MessageAction, SqsAckResult[SdkPojo], NotUsed] =
+             sqsClient: SqsAsyncClient): Flow[MessageAction, SqsAckResult[SqsResponse], NotUsed] =
     akka.stream.alpakka.sqs.scaladsl.SqsAckFlow.apply(queueUrl, settings)(sqsClient).asJava
 
   /**

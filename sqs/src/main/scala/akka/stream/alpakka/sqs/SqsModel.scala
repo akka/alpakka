@@ -126,11 +126,13 @@ object MessageAction {
 }
 
 /**
- * Messages returned by a SqsFlow.
+ * Messages returned by a SqsPublishFlow.
  *
- * @param message the SQS message.
+ * @param responseMetadata the SQS response metadata (AWS request ID, ...)
+ * @param metadata the SQS result metadata.
+ *                 This is either the SQS response itself or the SQS result entry in case of batching
  */
-final class SqsPublishResult[T <: SdkPojo] @InternalApi private[sqs] (
+final class SqsPublishResult[+T <: SdkPojo] @InternalApi private[sqs] (
     val responseMetadata: SqsResponseMetadata,
     val metadata: T
 ) {
@@ -154,7 +156,15 @@ final class SqsPublishResult[T <: SdkPojo] @InternalApi private[sqs] (
   override def hashCode(): Int = java.util.Objects.hash(responseMetadata, metadata)
 }
 
-final class SqsAckResult[T <: SdkPojo] @InternalApi private[sqs] (
+/**
+ * Messages returned by a SqsAckFlow.
+ *
+ * @param responseMetadata the SQS response metadata (AWS request ID, ...)
+ * @param metadata the SQS result metadata.
+ *                 This is either the SQS response itself or the SQS result entry in case of batching
+ * @param messageAction the action processed by the SqsAckFlow
+ */
+final class SqsAckResult[+T <: SdkPojo] @InternalApi private[sqs] (
     val responseMetadata: Option[SqsResponseMetadata],
     val metadata: Option[T],
     val messageAction: MessageAction
@@ -172,7 +182,7 @@ final class SqsAckResult[T <: SdkPojo] @InternalApi private[sqs] (
   def getResponseMetadata: java.util.Optional[SqsResponseMetadata] = responseMetadata.asJava
 
   /** Java API */
-  def getMetadata: java.util.Optional[T] = metadata.asJava
+  def getMetadata: java.util.Optional[_ <: T] = metadata.asJava
 
   /** Java API */
   def getMessageAction: MessageAction = messageAction

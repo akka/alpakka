@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -72,13 +74,14 @@ public class SqsAckTest extends BaseSqsTest {
   @Test
   public void testAcknowledge() throws Exception {
     final String queueUrl = "none";
+    List<Message> messages = createMessages();
+    DeleteMessageResponse response = DeleteMessageResponse.builder().build();
+
     SqsAsyncClient awsClient = mock(SqsAsyncClient.class);
     when(awsClient.deleteMessage(any(DeleteMessageRequest.class)))
-        .thenReturn(CompletableFuture.completedFuture(DeleteMessageResponse.builder().build()));
+        .thenReturn(CompletableFuture.completedFuture(response));
 
-    List<Message> messages = createMessages();
     Source<Message, NotUsed> source = Source.fromIterator(messages::iterator);
-
     CompletionStage<Done> done =
         // #ack
         source
@@ -93,14 +96,15 @@ public class SqsAckTest extends BaseSqsTest {
   @Test
   public void testAcknowledgeViaFlow() throws Exception {
     final String queueUrl = "none";
+    List<Message> messages = createMessages();
+    DeleteMessageResponse response = DeleteMessageResponse.builder().build();
+
     SqsAsyncClient awsClient = mock(SqsAsyncClient.class);
     when(awsClient.deleteMessage(any(DeleteMessageRequest.class)))
-        .thenReturn(CompletableFuture.completedFuture(DeleteMessageResponse.builder().build()));
+        .thenReturn(CompletableFuture.completedFuture(response));
 
-    List<Message> messages = createMessages();
     Source<Message, NotUsed> source = Source.fromIterator(messages::iterator);
-
-    CompletionStage<List<SqsAckResult<SdkPojo>>> stage =
+    CompletionStage<List<SqsAckResult<SqsResponse>>> stage =
         // #flow-ack
         source
             .map(m -> MessageAction.delete(m))
@@ -108,11 +112,13 @@ public class SqsAckTest extends BaseSqsTest {
             .runWith(Sink.seq(), materializer);
     // #flow-ack
 
-    List<SqsAckResult<SdkPojo>> result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    List<SqsAckResult<SqsResponse>> result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
     assertEquals(10, result.size());
     for (int i = 0; i < 10; i++) {
       SqsAckResult r = result.get(i);
       Message m = messages.get(i);
+
+      assertEquals(Option.apply(response), r.metadata());
       assertEquals(MessageAction.delete(m), r.messageAction());
     }
 
@@ -122,14 +128,14 @@ public class SqsAckTest extends BaseSqsTest {
   @Test
   public void testChangeMessageVisibility() throws Exception {
     final String queueUrl = "none";
+    List<Message> messages = createMessages();
+    ChangeMessageVisibilityResponse response = ChangeMessageVisibilityResponse.builder().build();
+
     SqsAsyncClient awsClient = mock(SqsAsyncClient.class);
     when(awsClient.changeMessageVisibility(any(ChangeMessageVisibilityRequest.class)))
-        .thenReturn(
-            CompletableFuture.completedFuture(ChangeMessageVisibilityResponse.builder().build()));
+        .thenReturn(CompletableFuture.completedFuture(response));
 
-    List<Message> messages = createMessages();
     Source<Message, NotUsed> source = Source.fromIterator(messages::iterator);
-
     CompletionStage<Done> done =
         // #requeue
         source
@@ -145,12 +151,12 @@ public class SqsAckTest extends BaseSqsTest {
   @Test
   public void testIgnore() throws Exception {
     final String queueUrl = "none";
+    List<Message> messages = createMessages();
+
     SqsAsyncClient awsClient = mock(SqsAsyncClient.class);
 
-    List<Message> messages = createMessages();
     Source<Message, NotUsed> source = Source.fromIterator(messages::iterator);
-
-    CompletionStage<List<SqsAckResult<SdkPojo>>> stage =
+    CompletionStage<List<SqsAckResult<SqsResponse>>> stage =
         // #ignore
         source
             .map(m -> MessageAction.ignore(m))
@@ -158,7 +164,7 @@ public class SqsAckTest extends BaseSqsTest {
             .runWith(Sink.seq(), materializer);
     // #ignore
 
-    List<SqsAckResult<SdkPojo>> result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    List<SqsAckResult<SqsResponse>> result = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
     assertEquals(10, result.size());
     for (int i = 0; i < 10; i++) {
       SqsAckResult r = result.get(i);
@@ -172,15 +178,19 @@ public class SqsAckTest extends BaseSqsTest {
   @Test
   public void testBatchAcknowledge() throws Exception {
     final String queueUrl = "none";
+    List<Message> messages = createMessages();
+    List<DeleteMessageBatchResultEntry> entries =
+        IntStream.range(0, messages.size())
+            .mapToObj(i -> DeleteMessageBatchResultEntry.builder().id(Integer.toString(i)).build())
+            .collect(Collectors.toList());
+    DeleteMessageBatchResponse response =
+        DeleteMessageBatchResponse.builder().successful(entries).build();
 
     SqsAsyncClient awsClient = mock(SqsAsyncClient.class);
-    final DeleteMessageBatchResponse response = DeleteMessageBatchResponse.builder().build();
     when(awsClient.deleteMessageBatch(any(DeleteMessageBatchRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(response));
 
-    List<Message> messages = createMessages();
     Source<Message, NotUsed> source = Source.fromIterator(messages::iterator);
-
     CompletionStage<List<SqsAckResult<SdkPojo>>> stage =
         //  #batch-ack
         source
@@ -195,8 +205,9 @@ public class SqsAckTest extends BaseSqsTest {
     for (int i = 0; i < 10; i++) {
       SqsAckResult r = result.get(i);
       Message m = messages.get(i);
+      DeleteMessageBatchResultEntry metadata = entries.get(i);
 
-      assertEquals(Option.apply(response), r.metadata());
+      assertEquals(Option.apply(metadata), r.metadata());
       assertEquals(MessageAction.delete(m), r.messageAction());
     }
 
@@ -206,15 +217,23 @@ public class SqsAckTest extends BaseSqsTest {
   @Test
   public void testBatchChangeMessageVisibility() throws Exception {
     final String queueUrl = "none";
+    List<Message> messages = createMessages();
+    List<ChangeMessageVisibilityBatchResultEntry> entries =
+        IntStream.range(0, messages.size())
+            .mapToObj(
+                i ->
+                    ChangeMessageVisibilityBatchResultEntry.builder()
+                        .id(Integer.toString(i))
+                        .build())
+            .collect(Collectors.toList());
+    ChangeMessageVisibilityBatchResponse response =
+        ChangeMessageVisibilityBatchResponse.builder().successful(entries).build();
+
     SqsAsyncClient awsClient = mock(SqsAsyncClient.class);
-    final ChangeMessageVisibilityBatchResponse response =
-        ChangeMessageVisibilityBatchResponse.builder().build();
     when(awsClient.changeMessageVisibilityBatch(any(ChangeMessageVisibilityBatchRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(response));
 
-    List<Message> messages = createMessages();
     Source<Message, NotUsed> source = Source.fromIterator(messages::iterator);
-
     CompletionStage<List<SqsAckResult<SdkPojo>>> stage =
         // #batch-requeue
         source
@@ -228,8 +247,9 @@ public class SqsAckTest extends BaseSqsTest {
     for (int i = 0; i < 10; i++) {
       SqsAckResult r = result.get(i);
       Message m = messages.get(i);
+      ChangeMessageVisibilityBatchResultEntry metadata = entries.get(i);
 
-      assertEquals(Option.apply(response), r.metadata());
+      assertEquals(Option.apply(metadata), r.metadata());
       assertEquals(MessageAction.changeMessageVisibility(m, 5), r.messageAction());
     }
 
@@ -240,11 +260,11 @@ public class SqsAckTest extends BaseSqsTest {
   @Test
   public void testBatchIgnore() throws Exception {
     final String queueUrl = "none";
+    List<Message> messages = createMessages();
+
     SqsAsyncClient awsClient = mock(SqsAsyncClient.class);
 
-    List<Message> messages = createMessages();
     Source<Message, NotUsed> source = Source.fromIterator(messages::iterator);
-
     CompletionStage<List<SqsAckResult<SdkPojo>>> stage =
         // #batch-ignore
         source
