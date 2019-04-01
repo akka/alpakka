@@ -6,7 +6,7 @@ package akka.stream.alpakka.sqs
 
 import akka.annotation.InternalApi
 import software.amazon.awssdk.core.SdkPojo
-import software.amazon.awssdk.services.sqs.model.{Message, SqsResponseMetadata}
+import software.amazon.awssdk.services.sqs.model.{Message, SendMessageRequest, SqsResponseMetadata}
 
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.FiniteDuration
@@ -131,10 +131,12 @@ object MessageAction {
  * @param responseMetadata the SQS response metadata (AWS request ID, ...)
  * @param metadata the SQS result metadata.
  *                 This is either the SQS response itself or the SQS result entry in case of batching
+ * @param request the SQS send message request
  */
 final class SqsPublishResult[+T <: SdkPojo] @InternalApi private[sqs] (
     val responseMetadata: SqsResponseMetadata,
-    val metadata: T
+    val metadata: T,
+    val request: SendMessageRequest
 ) {
 
   /** Java API */
@@ -143,8 +145,11 @@ final class SqsPublishResult[+T <: SdkPojo] @InternalApi private[sqs] (
   /** Java API */
   def getMetadata: T = metadata
 
+  /** Java API */
+  def getRequest: SendMessageRequest = request
+
   override def toString =
-    s"""SqsPublishResult(responseMetadata=$responseMetadata, metadata=$metadata)"""
+    s"""SqsPublishResult(responseMetadata=$responseMetadata,metadata=$metadata,request=$request)"""
 
   override def equals(other: Any): Boolean = other match {
     case that: SqsPublishResult[T] =>

@@ -7,6 +7,7 @@ package akka.stream.alpakka.sqs.scaladsl
 import java.util.concurrent.CompletionException
 
 import akka.NotUsed
+import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 import akka.stream.alpakka.sqs.{SqsBatchException, SqsPublishResult, _}
 import akka.stream.scaladsl.{Flow, Source}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
@@ -50,8 +51,9 @@ object SqsPublishFlow {
         sqsClient
           .sendMessage(req)
           .toScala
+          .map(req -> _)(sameThreadExecutionContext)
       }
-      .map(response => new SqsPublishResult(response.responseMetadata(), response))
+      .map { case (request, response) => new SqsPublishResult(response.responseMetadata(), response, request) }
 
   /**
    * creates a [[akka.stream.scaladsl.Flow Flow]] that groups messages and publishes them in batches to a SQS queue using an [[software.amazon.awssdk.services.sqs.SqsAsyncClient SqsAsyncClient]]
@@ -86,34 +88,34 @@ object SqsPublishFlow {
               .build()
         }
 
-        SendMessageBatchRequest
+        requests -> SendMessageBatchRequest
           .builder()
           .queueUrl(queueUrl)
           .entries(entries.toList.asJava)
           .build()
       }
-      .mapAsync(settings.concurrentRequests) { req =>
-        sqsClient
-          .sendMessageBatch(req)
-          .toScala
-      }
-      .map {
-        case response if response.failed().isEmpty =>
-          val responseMetadata = response.responseMetadata()
-          response
-            .successful()
-            .asScala
-            .map { metadata =>
-              new SqsPublishResult(responseMetadata, metadata)
-            }
-            .toList
-        case response =>
-          val nrOfFailedMessages = response.failed().size()
-          val numberOfMessages = nrOfFailedMessages + response.successful().size()
-          throw new SqsBatchException(
-            numberOfMessages,
-            s"Some messages are failed to send. $nrOfFailedMessages of $numberOfMessages messages are failed"
-          )
+      .mapAsync(settings.concurrentRequests) {
+        case (requests, batchRequest) =>
+          sqsClient
+            .sendMessageBatch(batchRequest)
+            .toScala
+            .map {
+              case response if response.failed().isEmpty =>
+                val responseMetadata = response.responseMetadata()
+                val metadataEntries = response.successful().asScala.map(e => e.id.toInt -> e).toMap
+                requests.zipWithIndex.map {
+                  case (r, i) =>
+                    val metadata = metadataEntries(i)
+                    new SqsPublishResult(responseMetadata, metadata, r)
+                }.toList
+              case response =>
+                val numberOfMessages = batchRequest.entries().size()
+                val nrOfFailedMessages = response.failed().size()
+                throw new SqsBatchException(
+                  numberOfMessages,
+                  s"Some messages are failed to send. $nrOfFailedMessages of $numberOfMessages messages are failed"
+                )
+            }(sameThreadExecutionContext)
       }
       .recoverWithRetries(1, {
         case e: CompletionException =>

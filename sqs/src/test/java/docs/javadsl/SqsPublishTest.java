@@ -289,6 +289,13 @@ public class SqsPublishTest extends BaseSqsTest {
     List<SqsPublishResult<SendMessageBatchResultEntry>> result =
         stage.toCompletableFuture().get(10, TimeUnit.SECONDS);
     assertEquals(10, result.size());
+    for (int i = 0; i < 10; i++) {
+      SqsPublishResult<SendMessageBatchResultEntry> r = result.get(i);
+      SendMessageRequest req = messagesToSend.get(i);
+
+      assertEquals(req, r.request());
+      assertEquals(toMd5(req.messageBody()), r.metadata().md5OfMessageBody());
+    }
 
     List<Message> messagesFirstBatch =
         sqsClient
@@ -320,6 +327,13 @@ public class SqsPublishTest extends BaseSqsTest {
 
     result.addAll(stage.toCompletableFuture().get(1, TimeUnit.SECONDS));
     assertEquals(10, result.size());
+    for (int i = 0; i < 10; i++) {
+      SqsPublishResult<SendMessageBatchResultEntry> r = result.get(i);
+      SendMessageRequest req = messagesToSend.get(i);
+
+      assertEquals(req, r.request());
+      assertEquals(toMd5(req.messageBody()), r.metadata().md5OfMessageBody());
+    }
 
     List<Message> messagesFirstBatch =
         sqsClient
@@ -357,7 +371,7 @@ public class SqsPublishTest extends BaseSqsTest {
 
   private String toMd5(String s) throws Exception {
     MessageDigest m = MessageDigest.getInstance("MD5");
-    m.update(s.getBytes(), 0, s.length());
-    return new BigInteger(1, m.digest()).toString(16);
+    BigInteger bigInt = new BigInteger(1, m.digest(s.getBytes()));
+    return String.format("%032x", bigInt);
   }
 }

@@ -8,7 +8,7 @@ import java.util.Collections
 
 import org.scalatest.{FlatSpec, Matchers}
 import software.amazon.awssdk.awscore.AwsResponseMetadata
-import software.amazon.awssdk.services.sqs.model.{Message, SendMessageResponse, SqsResponseMetadata}
+import software.amazon.awssdk.services.sqs.model.{Message, SendMessageRequest, SendMessageResponse, SqsResponseMetadata}
 
 class SqsModelSpec extends FlatSpec with Matchers {
 
@@ -58,11 +58,15 @@ class SqsModelSpec extends FlatSpec with Matchers {
   }
 
   "SqsPublishResult" should "implement proper equality" in new Fixture {
-    val reference = new SqsPublishResult(responseMetadata, metadata)
+    val request = SendMessageRequest.builder().build()
+    val otherRequest = SendMessageRequest.builder().messageBody("other-body").build()
 
-    new SqsPublishResult(responseMetadata, metadata) shouldBe reference
-    new SqsPublishResult(otherResponseMetadata, metadata) should not be reference
-    new SqsPublishResult(responseMetadata, otherMetadata) should not be reference
+    val reference = new SqsPublishResult(responseMetadata, metadata, request)
+
+    new SqsPublishResult(responseMetadata, metadata, request) shouldBe reference
+    new SqsPublishResult(otherResponseMetadata, metadata, request) should not be reference
+    new SqsPublishResult(responseMetadata, otherMetadata, request) should not be reference
+    new SqsPublishResult(responseMetadata, otherMetadata, otherRequest) should not be reference
   }
 
   "SqsAckResult" should "implement proper equality" in new Fixture {
