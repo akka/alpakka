@@ -4,7 +4,11 @@
 
 package akka.stream.alpakka.sqs.testkit
 import akka.stream.alpakka.sqs.SqsAckResult.{SqsChangeMessageVisibilityResult, SqsDeleteResult, SqsIgnoreResult}
-import akka.stream.alpakka.sqs.SqsAckResultEntry.{SqsChangeMessageVisibilityResultEntry, SqsDeleteResultEntry, SqsIgnoreResultEntry}
+import akka.stream.alpakka.sqs.SqsAckResultEntry.{
+  SqsChangeMessageVisibilityResultEntry,
+  SqsDeleteResultEntry,
+  SqsIgnoreResultEntry
+}
 import akka.stream.alpakka.sqs.{MessageAction, SqsPublishResult, SqsPublishResultEntry, SqsResult}
 import software.amazon.awssdk.services.sqs.model._
 
