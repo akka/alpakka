@@ -39,7 +39,7 @@ For non-anonymous connection, please provide an instance of @scaladoc[NonAnonFtp
 
 For connection using a private key, please provide an instance of @scaladoc[SftpIdentity](akka.stream.alpakka.ftp.SftpIdentity) to @scaladoc[SftpSettings](akka.stream.alpakka.ftp.SftpSettings).
 
-In order to use a custom SSH client for SFTP please provide an instance of @scaladoc[SSHClient](net.schmizz.sshj.SSHClient).
+In order to use a custom SSH client for SFTP please provide an instance of [SSHClient](https://static.javadoc.io/com.hierynomus/sshj/0.26.0/net/schmizz/sshj/SSHClient.html).
 
 Scala
 : @@snip [snip](/ftp/src/test/scala/docs/scaladsl/scalaExamples.scala) { #configure-custom-ssh-client }
