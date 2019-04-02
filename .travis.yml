@@ -5,17 +5,15 @@ services:
   - docker
 
 before_install:
-  # make comparing to origin/master work
-  - git remote set-branches --add origin master && git fetch
-  # fetch full history for correct current and previous version detection
-  - git fetch --unshallow
+  # make comparing to origin/master work and fetch full history for correct current and previous version detection
+  - git remote set-branches --add origin master && git fetch --unshallow
   # using jabba for custom jdk management
   - curl -sL https://raw.githubusercontent.com/shyiko/jabba/0.11.2/install.sh | bash && . ~/.jabba/jabba.sh
   - jabba install adopt@~1.8.202-08
 
 # default script for jobs, that do not have any specified
 script:
-  - ./scripts/buildChanged.sh ${DIR:=.} "${JDK:=adopt@~1.8.202-08}" "$CMD"
+  - ./scripts/buildChanged.sh ${DIR:=.} "${JDK:=adopt@~1.8.202-08}" "${PRE_CMD:=echo NOOP}" "$CMD"
 
 jobs:
   include:
@@ -74,59 +72,102 @@ jobs:
       - DIR=ftp
       - CMD=+ftp/testChanged
     - env:
+      - DIR=geode
       - PRE_CMD="docker-compose up -d geode"
       - CMD=+geode/testChanged
-    - env: CMD=+google-cloud-pub-sub/testChanged
     - env:
+      - DIR=google-cloud-pub-sub
+      - CMD=+google-cloud-pub-sub/testChanged
+    - env:
+      - DIR=google-cloud-pub-sub-grpc
       - PRE_CMD="docker-compose up -d gcloud-pubsub-emulator_prep"
       - CMD=+google-cloud-pub-sub-grpc/testChanged
-    - env: CMD=+google-fcm/testChanged
     - env:
+      - DIR=google-fcm
+      - CMD=+google-fcm/testChanged
+    - env:
+      - DIR=hbase
       - PRE_CMD="docker-compose up -d hbase"
       - CMD=+hbase/testChanged
-    - env: CMD=+hdfs/testChanged
     - env:
+      - DIR=hdfs
+      - CMD=+hdfs/testChanged
+    - env:
+      - DIR=ironmq
       - PRE_CMD="docker-compose up -d ironauth ironmq"
       - CMD=+ironmq/testChanged
     - env:
+      - DIR=jms
       - PRE_CMD="docker-compose up -d ibmmq"
       - CMD=+jms/testChanged
-    - env: CMD=+json-streaming/testChanged
-    - env: CMD=+kinesis/testChanged
     - env:
+      - DIR=json-streaming
+      - CMD=+json-streaming/testChanged
+    - env:
+      - DIR=kinesis
+      - CMD=+kinesis/testChanged
+    - env:
+      - DIR=kudu
       - PRE_CMD="docker-compose up -d kudu-master-data kudu-tserver-data kudu-master kudu-tserver"
       - CMD=+kudu/testChanged
     - env:
+      - DIR=mongodb
       - PRE_CMD="docker-compose up -d mongo"
       - CMD=+mongodb/testChanged
     - env:
+      - DIR=mqtt
       - PRE_CMD="docker-compose up -d mqtt"
       - CMD=+mqtt/testChanged
     - env:
+      - DIR=mqtt-streaming
       - PRE_CMD="docker-compose up -d mqtt"
       - CMD=+mqtt-streaming/testChanged
     - env:
+      - DIR=orientdb
       - PRE_CMD="docker-compose up -d orientdb"
       - CMD=+orientdb/testChanged
-    - env: CMD=+reference/testChanged
     - env:
+      - DIR=reference
+      - CMD=+reference/testChanged
+    - env:
+      - DIR=s3
       - PRE_CMD="docker-compose up -d minio_prep"
       - CMD=+s3/testChanged
-    - env: CMD=+spring-web/testChanged
-    - env: CMD=+simple-codecs/testChanged
-    - env: CMD=+slick/testChanged
     - env:
+      - DIR=spring-web
+      - CMD=+spring-web/testChanged
+    - env:
+      - DIR=simple-codecs
+      - CMD=+simple-codecs/testChanged
+    - env:
+      - DIR=slick
+      - CMD=+slick/testChanged
+    - env:
+      - DIR=sns
       - PRE_CMD="docker-compose up -d amazonsns"
       - CMD=+sns/testChanged
-    - env: CMD=+solr/testChanged
     - env:
+      - DIR=solr
+      - CMD=+solr/testChanged
+    - env:
+      - DIR=sqs
       - PRE_CMD="docker-compose up -d elasticmq"
       - CMD=+sqs/testChanged
-    - env: CMD=+sse/testChanged
-    - env: CMD=+text/testChanged
-    - env: CMD=+udp/testChanged
-    - env: CMD=+unix-domain-socket/testChanged
-    - env: CMD=+xml/testChanged
+    - env:
+      - DIR=sse
+      - CMD=+sse/testChanged
+    - env:
+      - DIR=text
+      - CMD=+text/testChanged
+    - env:
+      - DIR=udp
+      - CMD=+udp/testChanged
+    - env:
+      - DIR=unix-domain-socket
+      - CMD=+unix-domain-socket/testChanged
+    - env:
+      - DIR=xml
+      - CMD=+xml/testChanged
 
     - stage: whitesource
       script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt whitesourceCheckPolicies whitesourceUpdate
