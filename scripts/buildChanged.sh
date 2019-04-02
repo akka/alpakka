@@ -10,6 +10,10 @@ git diff origin/master --exit-code --quiet $DIR
 if [ $? -eq 1 ]
 then
   echo "Changes in ${DIR}"
+  # using jabba for custom jdk management
+  curl -sL https://raw.githubusercontent.com/shyiko/jabba/0.11.2/install.sh | bash
+  . ~/.jabba/jabba.sh
+  ./jabba install ${JDK}
   ./jabba use ${JDK}
   java -version
   $PRE_CMD
