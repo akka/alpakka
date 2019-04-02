@@ -13,8 +13,8 @@ then
   # using jabba for custom jdk management
   curl -sL https://raw.githubusercontent.com/shyiko/jabba/0.11.2/install.sh | bash
   . ~/.jabba/jabba.sh
-  ./jabba install ${JDK}
-  ./jabba use ${JDK}
+  jabba install ${JDK}
+  jabba use ${JDK}
   java -version
   $PRE_CMD
   sbt -jvm-opts .jvmopts-travis "$CMD"
