@@ -15,10 +15,7 @@ before_install:
 
 # default script for jobs, that do not have any specified
 script:
-  - jabba use ${JDK:=adopt@~1.8.202-08}
-  - java -version
-  - ${PRE_CMD:=return 0} # do nothing if not set
-  - sbt -jvm-opts .jvmopts-travis "$CMD"
+  - ./scripts/buildChanged.sh ${DIR:=.} "${JDK:=adopt@~1.8.202-08}" "$CMD"
 
 jobs:
   include:
@@ -40,24 +37,42 @@ jobs:
 
     - stage: test
       env:
+      - DIR=amqp
       - PRE_CMD="docker-compose up -d amqp"
       - CMD=+amqp/testChanged
-    - env: CMD=+avroparquet/testChanged
-    - env: CMD=+awslambda/testChanged
-    - env: CMD=+azure-storage-queue/testChanged
     - env:
+      - DIR=avroparquet
+      - CMD=+avroparquet/testChanged
+    - env:
+      - DIR=awslambda
+      - CMD=+awslambda/testChanged
+    - env:
+      - DIR=azure-storage-queue
+      - CMD=+azure-storage-queue/testChanged
+    - env:
+      - DIR=cassandra
       - PRE_CMD="docker-compose up -d cassandra"
       - CMD=+cassandra/testChanged
     - env:
+      - DIR=couchbase
       - PRE_CMD="docker-compose up -d couchbase_prep"
       - CMD=+couchbase/testChanged
-    - env: CMD=+csv/testChanged
     - env:
+      - DIR=csv
+      - CMD=+csv/testChanged
+    - env:
+      - DIR=dynamodb
       - PRE_CMD="docker-compose up -d dynamodb"
       - CMD=+dynamodb/testChanged
-    - env: CMD=+elasticsearch/testChanged
-    - env: CMD=+file/testChanged
-    - env: CMD=+ftp/testChanged
+    - env:
+      - DIR=elasticsearch
+      - CMD=+elasticsearch/testChanged
+    - env:
+      - DIR=file
+      - CMD=+file/testChanged
+    - env:
+      - DIR=ftp
+      - CMD=+ftp/testChanged
     - env:
       - PRE_CMD="docker-compose up -d geode"
       - CMD=+geode/testChanged
