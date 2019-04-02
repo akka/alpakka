@@ -5,7 +5,7 @@ JDK=$2
 PRE_CMD=$3
 CMD=$4
 
-git diff origin/master --exit-code --quiet $DIR
+git diff origin/master --exit-code --quiet $DIR build.sbt project/ .travis.yml
 
 if [ $? -eq 1 ]
 then
