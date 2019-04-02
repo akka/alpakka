@@ -86,7 +86,7 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
   def listFiles(handler: Handler): immutable.Seq[FtpFile] = listFiles(".", handler)
 
   def retrieveFileInputStream(name: String, handler: Handler): Try[InputStream] = Try {
-    val remoteFile = handler.open(name, Set(OpenMode.READ).asJava)
+    val remoteFile = handler.open(name, java.util.EnumSet.of(OpenMode.READ))
     val is = new remoteFile.RemoteFileInputStream() {
 
       override def close(): Unit =
@@ -104,8 +104,9 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
 
   def storeFileOutputStream(name: String, handler: Handler, append: Boolean): Try[OutputStream] = Try {
     import OpenMode._
-    val openModes = Set(WRITE, CREAT) ++ (if (append) Set(APPEND) else Set(TRUNC))
-    val remoteFile = handler.open(name, openModes.asJava)
+    val openModes =
+      if (append) java.util.EnumSet.of(WRITE, CREAT, APPEND) else java.util.EnumSet.of(WRITE, CREAT, TRUNC)
+    val remoteFile = handler.open(name, openModes)
     val os = new remoteFile.RemoteFileOutputStream() {
 
       override def close(): Unit = {
