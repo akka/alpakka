@@ -207,6 +207,8 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
 
     input.foreach(m => sqsClient.sendMessage(m).get())
 
+    Thread.sleep(1000) // to let messages arrive (even on Travis)
+
     val future =
       //#run
       SqsSource(
@@ -245,7 +247,7 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
 
     sqsClient.sendMessage(sendMessageRequest).get()
 
-    val future = SqsSource(queueUrl, sqsSourceSettings.withVisibilityTimeout(5.seconds))
+    val future = SqsSource(queueUrl, sqsSourceSettings.withVisibilityTimeout(10.seconds))
       .takeWithin(500.milliseconds)
       .runWith(Sink.seq)
 

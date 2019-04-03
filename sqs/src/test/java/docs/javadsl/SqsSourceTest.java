@@ -56,6 +56,8 @@ public class SqsSourceTest extends BaseSqsTest {
                 .collect(Collectors.toList()))
         .get();
 
+    Thread.sleep(1000) // to let messages arrive (even on Travis)
+
     final CompletionStage<List<Message>> cs =
         // #run
         SqsSource.create(
