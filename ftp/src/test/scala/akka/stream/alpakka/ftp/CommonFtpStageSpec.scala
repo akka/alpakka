@@ -263,6 +263,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       val result = brokenSource.runWith(storeToPath(s"/$fileName", append = false)).futureValue
 
       result.status.failed.get shouldBe a[ArithmeticException]
+      extraWaitForStageShutdown()
     }
 
     "fail and report the exception in the result status if connection fails" in assertAllStagesStopped {
