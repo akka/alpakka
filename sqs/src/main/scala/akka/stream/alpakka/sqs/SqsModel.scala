@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.sqs
 
-import akka.annotation.InternalApi
+import akka.annotation.{ApiMayChange, InternalApi}
 import software.amazon.awssdk.services.sqs.model.{Message, SqsResponse}
 
 import scala.compat.java8.OptionConverters._
@@ -163,6 +163,7 @@ final class FifoMessageIdentifiers @InternalApi private[sqs] (
  *
  * @param message the SQS message.
  */
+@ApiMayChange
 final class SqsPublishResult[T <: SqsResponse] @InternalApi private[sqs] (
     val metadata: T,
     val fifoMessageIdentifiers: Option[FifoMessageIdentifiers]
@@ -187,6 +188,7 @@ final class SqsPublishResult[T <: SqsResponse] @InternalApi private[sqs] (
   override def hashCode(): Int = java.util.Objects.hash(metadata, fifoMessageIdentifiers)
 }
 
+@ApiMayChange
 final class SqsAckResult[T <: SqsResponse] @InternalApi private[sqs] (val metadata: Option[T],
                                                                       val messageAction: MessageAction) {
 

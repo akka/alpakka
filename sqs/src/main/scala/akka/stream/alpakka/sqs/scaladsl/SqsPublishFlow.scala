@@ -7,6 +7,7 @@ package akka.stream.alpakka.sqs.scaladsl
 import java.util.concurrent.CompletionException
 
 import akka.NotUsed
+import akka.annotation.ApiMayChange
 import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 import akka.stream.alpakka.sqs.{SqsBatchException, SqsPublishResult, _}
 import akka.stream.scaladsl.{Flow, Source}
@@ -20,6 +21,7 @@ import scala.concurrent.Future
 /**
  * Scala API to create publishing SQS flows.
  */
+@ApiMayChange
 object SqsPublishFlow {
 
   /**
