@@ -6,7 +6,12 @@ package akka.stream.alpakka.sqs.javadsl
 
 import akka.NotUsed
 import akka.annotation.ApiMayChange
-import akka.stream.alpakka.sqs.{SqsPublishBatchSettings, SqsPublishGroupedSettings, SqsPublishResult, SqsPublishSettings}
+import akka.stream.alpakka.sqs.{
+  SqsPublishBatchSettings,
+  SqsPublishGroupedSettings,
+  SqsPublishResult,
+  SqsPublishSettings
+}
 import akka.stream.javadsl.Flow
 import akka.stream.scaladsl.{Flow => SFlow}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
