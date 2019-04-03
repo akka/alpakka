@@ -7,6 +7,7 @@ package akka.stream.alpakka.sqs.scaladsl
 import java.util.concurrent.CompletionException
 
 import akka.NotUsed
+import akka.annotation.ApiMayChange
 import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 import akka.stream.FlowShape
 import akka.stream.alpakka.sqs.MessageAction.{ChangeMessageVisibility, Delete}
@@ -23,6 +24,7 @@ import scala.concurrent.Future
 /**
  * Scala API to create acknowledging SQS flows.
  */
+@ApiMayChange
 object SqsAckFlow {
 
   /**
