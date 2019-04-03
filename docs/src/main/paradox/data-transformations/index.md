@@ -7,7 +7,7 @@
 * [JSON](json.md)
 * [Compression](compression.md)
 * [Comma Separated Files - CSV](csv.md)
-* [RecordIO Framing](recordio.md)
+* [RecordIO Framing](simple-codecs.md)
 * [Text and charsets](text.md)
 * [Extensible Markup Language - XML](xml.md)
 

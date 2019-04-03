@@ -1,2 +1,2 @@
 # This file can be used for redirects like:
-# RedirectMatch 301 ^(.*)/common/de-coding.html$ $1/common/encoding.html
+RedirectMatch 301 ^/docs/alpakka/([^/]+)/data-transformations/recordio.html https://doc.akka.io/docs/alpakka/$1/data-transformations/simple-codecs.html

@@ -1,3 +1,5 @@
+import Whitesource.whitesourceGroup
+
 lazy val modules: Seq[ProjectReference] = Seq(
   amqp,
   avroparquet,
@@ -93,9 +95,9 @@ lazy val azureStorageQueue = alpakkaProject("azure-storage-queue", "azure.storag
 lazy val cassandra = alpakkaProject("cassandra", "cassandra", Dependencies.Cassandra)
 
 lazy val couchbase =
-  alpakkaProject("couchbase", "couchbase", Dependencies.Couchbase, parallelExecution in Test := false)
+  alpakkaProject("couchbase", "couchbase", Dependencies.Couchbase, parallelExecution in Test := false, whitesourceGroup := Whitesource.Group.Supported)
 
-lazy val csv = alpakkaProject("csv", "csv", Dependencies.Csv)
+lazy val csv = alpakkaProject("csv", "csv", Dependencies.Csv, whitesourceGroup := Whitesource.Group.Supported)
 
 lazy val dynamodb = alpakkaProject("dynamodb", "aws.dynamodb", Dependencies.DynamoDB)
 
