@@ -187,7 +187,15 @@ object Dependencies {
     libraryDependencies ++= Seq(
       "com.google.api.grpc" % "grpc-google-cloud-pubsub-v1" % "0.12.0" % "protobuf", // ApacheV2
       "io.grpc" % "grpc-auth" % "1.16.1", // ApacheV2
-      "com.google.auth" % "google-auth-library-oauth2-http" % "0.10.0" // BSD 3-clause
+      "com.google.auth" % "google-auth-library-oauth2-http" % "0.10.0", // BSD 3-clause
+      // overwrites version 1.3 from
+      // com.google.auth:google-auth-library-oauth2-http:0.10.0
+      //   | +-com.google.auth:google-auth-library-credentials:0.10.0
+      //   | | +-com.google.http-client:google-http-client:1.19.0
+      //   | |   +-org.apache.httpcomponents:httpclient:4.0.1
+      //   | |     +-commons-codec:commons-codec:1.3
+      // 1.3 started failing our license check for no obvious reasons /Enno 2019-04-04
+      "commons-codec" % "commons-codec" % "1.12" // ApacheV2
     ) ++ Silencer
   )
 
