@@ -45,7 +45,7 @@ object Mqtt {
    * @param session the MQTT client session to use
    * @return the bidirectional flow
    */
-  @deprecated("Provide a connectionId instead", "1.0-RC21")
+  @deprecated("Provide a connectionId instead", "1.0.0")
   def clientSessionFlow[A](
       session: MqttClientSession
   ): BidiFlow[Command[A], ByteString, ByteString, Either[MqttCodec.DecodeError, Event[A]], NotUsed] =
