@@ -201,8 +201,14 @@ lazy val mongodb =
 
 lazy val mqtt = alpakkaProject("mqtt", "mqtt", Dependencies.Mqtt)
 
-lazy val mqttStreaming = alpakkaProject("mqtt-streaming", "mqttStreaming", Dependencies.MqttStreaming)
-lazy val mqttStreamingBench = alpakkaProject("mqtt-streaming-bench", "mqttStreamingBench", publish / skip := true)
+lazy val mqttStreaming = alpakkaProject("mqtt-streaming",
+                                        "mqttStreaming",
+                                        Dependencies.MqttStreaming,
+                                        crossScalaVersions -= Dependencies.Scala211)
+lazy val mqttStreamingBench = alpakkaProject("mqtt-streaming-bench",
+                                             "mqttStreamingBench",
+                                             publish / skip := true,
+                                             crossScalaVersions -= Dependencies.Scala211)
   .enablePlugins(JmhPlugin)
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .dependsOn(mqtt, mqttStreaming)
