@@ -823,6 +823,7 @@ import scala.util.{Failure, Success}
         )
       case UnobtainablePacketId =>
         data.local.failure(SubscribeFailed)
+        data.subscribed.failure(SubscribeFailed)
         throw SubscribeFailed
     }
 
@@ -838,6 +839,7 @@ import scala.util.{Failure, Success}
           data.subscribed.success(remote)
           Behaviors.stopped
         case ReceiveSubAckTimeout =>
+          data.subscribed.failure(SubscribeFailed)
           throw SubscribeFailed
       }
       .receiveSignal {
@@ -920,6 +922,7 @@ import scala.util.{Failure, Success}
         )
       case UnobtainablePacketId =>
         data.local.failure(UnsubscribeFailed)
+        data.unsubscribed.failure(UnsubscribeFailed)
         throw UnsubscribeFailed
     }
   }
@@ -935,6 +938,7 @@ import scala.util.{Failure, Success}
           data.unsubscribed.success(Done)
           Behaviors.stopped
         case ReceiveUnsubAckTimeout =>
+          data.unsubscribed.failure(UnsubscribeFailed)
           throw UnsubscribeFailed
       }
       .receiveSignal {
