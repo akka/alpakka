@@ -43,6 +43,8 @@ trait BaseSpec
 
   /** For a few tests `assertAllStagesStopped` failed on Travis, this hook allows to inject a bit more patience
    * for the check.
+   *
+   * Can be removed after upgrade to Akka 2.5.22 https://github.com/akka/akka/issues/26410
    */
   protected def extraWaitForStageShutdown(): Unit = ()
 
