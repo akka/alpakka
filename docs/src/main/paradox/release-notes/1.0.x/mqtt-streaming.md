@@ -34,7 +34,9 @@
 
 * mqtt-streaming: Prefer wrapping instead of reissuing packet ids [#1489](https://github.com/akka/alpakka/pull/1489)  
 
-* Parallel subscriptions/unsubscriptions and SubAck notifications [#1480](https://github.com/akka/alpakka/pull/1480)  
+* Parallel subscriptions/unsubscriptions and SubAck notifications [#1480](https://github.com/akka/alpakka/pull/1480)
+
+* Only publish for Scala 2.12 and 2.13 [#1613](https://github.com/akka/alpakka/issues/1631)  
 
 [*closed in 1.0.0*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.0.0+label%3Ap%3Amqtt-streaming)
 [*closed in 1.0-RC1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.0-RC1+label%3Ap%3Amqtt-streaming)
