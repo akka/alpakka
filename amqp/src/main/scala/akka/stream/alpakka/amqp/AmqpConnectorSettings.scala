@@ -4,7 +4,10 @@
 
 package akka.stream.alpakka.amqp
 
+import java.time.Duration
+
 import akka.annotation.InternalApi
+import akka.util.JavaDurationConverters._
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
@@ -159,7 +162,7 @@ final class AmqpPublishConfirmConfiguration private (
 ) {
   override def toString: String =
     "AmqpPublishConfirmConfiguration(" +
-    s"confirmTimeout=$confirmTimeout" +
+    s"confirmTimeout=${confirmTimeout.toCoarsest}" +
     ")"
 }
 
@@ -167,14 +170,11 @@ object AmqpPublishConfirmConfiguration {
   def apply(confirmTimeout: FiniteDuration): AmqpPublishConfirmConfiguration =
     new AmqpPublishConfirmConfiguration(confirmTimeout)
 
-  def unapply(settings: AmqpPublishConfirmConfiguration): Option[FiniteDuration] =
-    Some(settings.confirmTimeout)
-
   /**
    * Java API
    */
-  def create(confirmTimeout: FiniteDuration): AmqpPublishConfirmConfiguration =
-    new AmqpPublishConfirmConfiguration(confirmTimeout)
+  def create(confirmTimeout: Duration): AmqpPublishConfirmConfiguration =
+    new AmqpPublishConfirmConfiguration(confirmTimeout.asScala)
 }
 
 final class AmqpReplyToSinkSettings private (
@@ -189,6 +189,12 @@ final class AmqpReplyToSinkSettings private (
 
   def withPublishConfirm(confirmTimeout: FiniteDuration): AmqpReplyToSinkSettings =
     copy(publishConfirm = Some(AmqpPublishConfirmConfiguration(confirmTimeout)))
+
+  /**
+   * Java API
+   */
+  def withPublishConfirm(confirmTimeout: Duration): AmqpReplyToSinkSettings =
+    copy(publishConfirm = Some(AmqpPublishConfirmConfiguration.create(confirmTimeout)))
 
   private def copy(connectionProvider: AmqpConnectionProvider = connectionProvider,
                    failIfReplyToMissing: Boolean = failIfReplyToMissing,
@@ -243,6 +249,9 @@ final class AmqpWriteSettings private (
   def withDeclarations(declarations: java.util.List[Declaration]): AmqpWriteSettings =
     copy(declarations = declarations.asScala.toIndexedSeq)
 
+  def withPublishConfirm(confirmTimeout: Duration): AmqpWriteSettings =
+    copy(publishConfirm = Some(AmqpPublishConfirmConfiguration.create(confirmTimeout)))
+
   private def copy(connectionProvider: AmqpConnectionProvider = connectionProvider,
                    exchange: Option[String] = exchange,
                    routingKey: Option[String] = routingKey,
@@ -251,11 +260,12 @@ final class AmqpWriteSettings private (
     new AmqpWriteSettings(connectionProvider, exchange, routingKey, declarations, publishConfirm)
 
   override def toString: String =
-    "AmqpSinkSettings(" +
+    "AmqpWriteSettings(" +
     s"connectionProvider=$connectionProvider, " +
     s"exchange=$exchange, " +
     s"routingKey=$routingKey, " +
     s"declarations=$declarations" +
+    s"publishConfirm=$publishConfirm" +
     ")"
 }
 

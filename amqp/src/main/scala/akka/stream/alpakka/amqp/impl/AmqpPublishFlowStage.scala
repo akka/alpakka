@@ -6,7 +6,7 @@ package akka.stream.alpakka.amqp.impl
 
 import akka.Done
 import akka.annotation.InternalApi
-import akka.stream.alpakka.amqp.{AmqpPublishConfirmConfiguration, AmqpWriteSettings, WriteMessage}
+import akka.stream.alpakka.amqp.{AmqpWriteSettings, WriteMessage}
 import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler}
 import akka.stream._
 
@@ -29,7 +29,7 @@ private[amqp] final class AmqpPublishFlowStage[O](settings: AmqpWriteSettings)
   override protected def initialAttributes: Attributes =
     Attributes
       .name("AmqpPublishFlowStage")
-      .and(ActorAttributes.dispatcher("akka.stream.default-blocking-io-dispatcher"))
+      .and(ActorAttributes.IODispatcher)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
     val promise = Promise[Done]()
@@ -76,8 +76,8 @@ private[amqp] final class AmqpPublishFlowStage[O](settings: AmqpWriteSettings)
             )
 
             settings.publishConfirm match {
-              case Some(AmqpPublishConfirmConfiguration(confirmTimeout)) =>
-                Try(channel.waitForConfirmsOrDie(confirmTimeout.toMillis)) match {
+              case Some(publishConfirmConf) =>
+                Try(channel.waitForConfirmsOrDie(publishConfirmConf.confirmTimeout.toMillis)) match {
                   case Success(_) => push(out, passthrough)
                   case Failure(e) => fail(out, e)
                 }

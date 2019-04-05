@@ -59,7 +59,7 @@ Java
 
 #### With a Flow
 
-Create a flow, that accepts a Tuple2 of @scaladoc[ByteString](akka.util.ByteString) and a PassThrough element (a String in the example). The @scaladoc[ByteString](akka.util.ByteString) will be forwarded to the AMQP server, and the PassThrough element passed downstream.
+Create a flow, that accepts a @scala[tuple]@java[`akka.japi.Pair`] of @scaladoc[ByteString](akka.util.ByteString) and a PassThrough element (a String in the example). The @scaladoc[ByteString](akka.util.ByteString) will be forwarded to the AMQP server, and the PassThrough element passed downstream.
 
 Scala
 : @@snip [snip](/amqp/src/test/scala/docs/scaladsl/AmqpDocsSpec.scala) { #create-publish-flow }
@@ -67,7 +67,7 @@ Scala
 Java
 : @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #create-publish-flow }
 
-Note: in This example, we activate AMQP's publish confirms so that only truly published elements pass this stage. This is completely optional.
+Note: in This example, we activate AMQP's publish confirms so that only truly published elements pass this stage and backpressure applies via the AMQP broker. This is completely optional.
 
 Scala
 : @@snip [snip](/amqp/src/test/scala/docs/scaladsl/AmqpDocsSpec.scala) { #run-publish-flow }
