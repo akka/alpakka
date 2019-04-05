@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.stdinout.scaladsl
@@ -14,7 +14,7 @@ import akka.stream.alpakka.stdinout.{impl, StdinSourceReader, StdinSourceReaderI
 object StdinSource {
 
   /**
-   *Creates a [[akka.stream.scaladsl.Source]] from standard inout that streams Strings.
+   * Creates a [[akka.stream.scaladsl.Source]] from standard input that streams String values.
    * Alias of [[create()]].
    * @param reader A control object for reading of Strings, configurable largely for testing, it's unlikely users
    *               need to change this from the default [[akka.stream.alpakka.stdinout.StdinSourceReaderIo]] value

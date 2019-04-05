@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.stdinout.impl
 
 import akka.annotation.InternalApi
-import akka.stream._
+import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.stream.alpakka.stdinout.StdinSourceReader
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler, StageLogging}
 
@@ -39,6 +39,7 @@ private[stdinout] final class StdinSourceStageLogic(val shape: SourceShape[Strin
     new OutHandler {
       override def onPull(): Unit = {
         log.debug("StdinSource has been pulled")
+
         val stringFromReader: Try[Option[String]] = reader.read()
         log.debug(s"StdinSource has read message from reader of: $stringFromReader")
 
