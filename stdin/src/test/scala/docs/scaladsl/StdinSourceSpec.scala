@@ -7,11 +7,11 @@ package docs.scaladsl
 import java.util.NoSuchElementException
 
 import akka.actor.ActorSystem
-import akka.stream.alpakka.stdinout.StdinSourceReader
+import akka.stream.alpakka.stdin.StdinSourceReader
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.scaladsl.Sink
-import akka.stream.alpakka.stdinout.scaladsl.StdinSource
-import akka.stream.alpakka.stdinout.testkit.ReaderFactory
+import akka.stream.alpakka.stdin.scaladsl.StdinSource
+import akka.stream.alpakka.stdin.testkit.ReaderFactory
 import akka.testkit.TestKit
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Inside, Matchers, WordSpec}

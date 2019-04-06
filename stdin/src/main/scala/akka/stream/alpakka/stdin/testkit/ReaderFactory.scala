@@ -2,10 +2,10 @@
  * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.stdinout.testkit
+package akka.stream.alpakka.stdin.testkit
 
 import akka.annotation.ApiMayChange
-import akka.stream.alpakka.stdinout.{StdinSourceReader, StdinSourceReaderFromList, StdinSourceReaderThrowsException}
+import akka.stream.alpakka.stdin.{StdinSourceReader, StdinSourceReaderFromList, StdinSourceReaderThrowsException}
 
 object ReaderFactory {
 

@@ -2,11 +2,11 @@
  * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.stdinout.impl
+package akka.stream.alpakka.stdin.impl
 
 import akka.annotation.InternalApi
 import akka.stream.{Attributes, Outlet, SourceShape}
-import akka.stream.alpakka.stdinout.StdinSourceReader
+import akka.stream.alpakka.stdin.StdinSourceReader
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler, StageLogging}
 
 import scala.util.{Failure, Success, Try}
@@ -15,7 +15,7 @@ import scala.util.{Failure, Success, Try}
  * INTERNAL API
  */
 @InternalApi
-private[stdinout] final class StdinSource(reader: StdinSourceReader) extends GraphStage[SourceShape[String]] {
+private[stdin] final class StdinSource(reader: StdinSourceReader) extends GraphStage[SourceShape[String]] {
 
   val out: Outlet[String] = Outlet("StdinSource")
   override val shape: SourceShape[String] = SourceShape(out)
@@ -28,7 +28,7 @@ private[stdinout] final class StdinSource(reader: StdinSourceReader) extends Gra
  * INTERNAL API
  */
 @InternalApi
-private[stdinout] final class StdinSourceStageLogic(val shape: SourceShape[String], reader: StdinSourceReader)
+private[stdin] final class StdinSourceStageLogic(val shape: SourceShape[String], reader: StdinSourceReader)
     extends GraphStageLogic(shape)
     with StageLogging {
 

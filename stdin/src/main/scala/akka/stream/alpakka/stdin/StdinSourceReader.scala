@@ -2,29 +2,28 @@
  * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.stdinout
+package akka.stream.alpakka.stdin
 
 import akka.annotation.InternalApi
 
 import scala.util.{Failure, Success, Try}
 
 /**
- * Used to wrap scala.io.StdIn.readLine() call used by a StdinSource internally. Primary purpose is to
- *  enable unit testing of the module.
+ * Used to wrap scala.io.StdIn.readLine() call used by a StdinSource internally. The primary purpose of this trait
+ * is to aid unit testing of the stdin module. Cases where users (e.g. not Alpakka developers) would need
+ *  to work with this aren't anticipated.
  */
 sealed trait StdinSourceReader {
   def read(): Try[Option[String]]
 }
 
 /**
- * The unsafe IO reader that is the default for StdinSources. Part of the public API as it is defaulted
- * to in the Source builders, but cases where users (not developers) would need to work with this aren't
- * anticipated.
+ * The deafult unsafe IO reader for StdinSource Sources.
  */
 object StdinSourceReaderIo extends StdinSourceReader {
 
   /**
-   * Alias for [[scala.io.StdIn.readLine()]].
+   * Wrapper for [[scala.io.StdIn.readLine()]].
    * @return A String entered to standard input.
    */
   def read(): Try[Option[String]] = Try(Some(scala.io.StdIn.readLine()))
@@ -37,7 +36,7 @@ object StdinSourceReaderIo extends StdinSourceReader {
  * @param messages A list of messages to be returned consecutively by calls to [[read()]].
  */
 @InternalApi
-private[stdinout] final class StdinSourceReaderFromList(messages: List[String]) extends StdinSourceReader {
+private[stdin] final class StdinSourceReaderFromList(messages: List[String]) extends StdinSourceReader {
 
   private var msgStack: List[String] = messages
 
@@ -52,7 +51,7 @@ private[stdinout] final class StdinSourceReaderFromList(messages: List[String]) 
  * but instances for testing can be constructed using [[testkit.ReaderFactory]].
  */
 @InternalApi
-private[stdinout] final class StdinSourceReaderThrowsException() extends StdinSourceReader {
+private[stdin] final class StdinSourceReaderThrowsException() extends StdinSourceReader {
 
   def read(): Try[Option[String]] = Failure { new java.util.NoSuchElementException("example reader failure") }
 }
