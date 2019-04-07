@@ -66,7 +66,7 @@ class SqsModelSpec extends FlatSpec with Matchers {
     new SqsPublishResult(responseMetadata, metadata, request) shouldBe reference
     new SqsPublishResult(otherResponseMetadata, metadata, request) should not be reference
     new SqsPublishResult(responseMetadata, otherMetadata, request) should not be reference
-    new SqsPublishResult(responseMetadata, otherMetadata, otherRequest) should not be reference
+    new SqsPublishResult(responseMetadata, metadata, otherRequest) should not be reference
   }
 
   "SqsAckResult" should "implement proper equality" in new Fixture {

@@ -154,7 +154,8 @@ final class SqsPublishResult[+T <: SdkPojo] @InternalApi private[sqs] (
   override def equals(other: Any): Boolean = other match {
     case that: SqsPublishResult[T] =>
       java.util.Objects.equals(this.responseMetadata, that.responseMetadata) &&
-      java.util.Objects.equals(this.metadata, that.metadata)
+      java.util.Objects.equals(this.metadata, that.metadata) &&
+      java.util.Objects.equals(this.request, that.request)
     case _ => false
   }
 
@@ -175,11 +176,11 @@ final class SqsAckResult[+T <: SdkPojo] @InternalApi private[sqs] (
     val messageAction: MessageAction
 ) {
 
-  def this(responseMetadata: SqsResponseMetadata, metadata: T, messageAction: MessageAction) = {
+  @InternalApi private[sqs] def this(responseMetadata: SqsResponseMetadata, metadata: T, messageAction: MessageAction) = {
     this(Some(responseMetadata), Some(metadata), messageAction)
   }
 
-  def this(messageAction: MessageAction) = {
+  @InternalApi private[sqs] def this(messageAction: MessageAction) = {
     this(None, None, messageAction)
   }
 
