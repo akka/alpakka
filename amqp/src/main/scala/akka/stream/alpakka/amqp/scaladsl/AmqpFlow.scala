@@ -4,13 +4,11 @@
 
 package akka.stream.alpakka.amqp.scaladsl
 
-import akka.Done
+import akka.NotUsed
 import akka.stream.alpakka.amqp.{AmqpWriteSettings, WriteMessage}
 import akka.stream.alpakka.amqp.impl.AmqpPublishFlowStage
 import akka.stream.scaladsl.{Flow, Keep}
 import akka.util.ByteString
-
-import scala.concurrent.Future
 
 object AmqpFlow {
 
@@ -20,7 +18,7 @@ object AmqpFlow {
    * This stage materializes to a `Future[Done]`, which can be used to know when the Flow completes, either normally
    * or because of an amqp failure
    */
-  def simple[O](settings: AmqpWriteSettings): Flow[(ByteString, O), O, Future[Done]] =
+  def simple[O](settings: AmqpWriteSettings): Flow[(ByteString, O), O, NotUsed] =
     Flow[(ByteString, O)]
       .map { case (s, passthrough) => (WriteMessage(s, false, false), passthrough) }
       .viaMat(apply[O](settings))(Keep.right)
@@ -35,6 +33,6 @@ object AmqpFlow {
    * This stage materializes to a Future[Done], which can be used to know when the Flow completes, either normally
    * or because of an amqp failure
    */
-  def apply[O](settings: AmqpWriteSettings): Flow[(WriteMessage, O), O, Future[Done]] =
+  def apply[O](settings: AmqpWriteSettings): Flow[(WriteMessage, O), O, NotUsed] =
     Flow.fromGraph(new AmqpPublishFlowStage[O](settings))
 }

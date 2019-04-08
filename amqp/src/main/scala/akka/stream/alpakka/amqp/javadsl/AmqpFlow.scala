@@ -4,16 +4,12 @@
 
 package akka.stream.alpakka.amqp.javadsl
 
-import java.util.concurrent.CompletionStage
-
-import akka.Done
+import akka.NotUsed
 import akka.japi.Pair
 import akka.japi.function.Function
 import akka.stream.alpakka.amqp._
 import akka.stream.javadsl.{Flow, Keep}
 import akka.util.ByteString
-
-import scala.compat.java8.FutureConverters._
 
 object AmqpFlow {
 
@@ -23,17 +19,16 @@ object AmqpFlow {
    * This stage materializes to a CompletionStage<Done>, which can be used to know when the Flow completes, either normally
    * or because of an amqp failure
    */
-  def createSimple[O](settings: AmqpWriteSettings): Flow[Pair[ByteString, O], O, CompletionStage[Done]] =
+  def createSimple[O](settings: AmqpWriteSettings): Flow[Pair[ByteString, O], O, NotUsed] =
     Flow
       .fromFunction(new Function[Pair[ByteString, O], (ByteString, O)] {
         override def apply(pair: Pair[ByteString, O]): (ByteString, O) = pair.toScala
       })
-      .viaMat[O, CompletionStage[Done], CompletionStage[Done]](
+      .viaMat[O, NotUsed, NotUsed](
         scaladsl.AmqpFlow
           .simple[O](settings)
-          .mapMaterializedValue(f => f.toJava)
           .asJava
-          .asInstanceOf[Flow[(ByteString, O), O, CompletionStage[Done]]],
+          .asInstanceOf[Flow[(ByteString, O), O, NotUsed]],
         Keep.right
       )
 
@@ -43,17 +38,16 @@ object AmqpFlow {
    * This stage materializes to a CompletionStage<Done>, which can be used to know when the Flow completes, either normally
    * or because of an amqp failure
    */
-  def create[O](settings: AmqpWriteSettings): Flow[Pair[WriteMessage, O], O, CompletionStage[Done]] =
+  def create[O](settings: AmqpWriteSettings): Flow[Pair[WriteMessage, O], O, NotUsed] =
     Flow
       .fromFunction(new Function[Pair[WriteMessage, O], (WriteMessage, O)] {
         override def apply(pair: Pair[WriteMessage, O]): (WriteMessage, O) = pair.toScala
       })
-      .viaMat[O, CompletionStage[Done], CompletionStage[Done]](
+      .viaMat[O, NotUsed, NotUsed](
         scaladsl
           .AmqpFlow[O](settings)
-          .mapMaterializedValue(f => f.toJava)
           .asJava
-          .asInstanceOf[Flow[(WriteMessage, O), O, CompletionStage[Done]]],
+          .asInstanceOf[Flow[(WriteMessage, O), O, NotUsed]],
         Keep.right
       )
 }

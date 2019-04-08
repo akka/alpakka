@@ -4,13 +4,11 @@
 
 package akka.stream.alpakka.amqp.impl
 
-import akka.Done
 import akka.annotation.InternalApi
 import akka.stream.alpakka.amqp.{AmqpWriteSettings, WriteMessage}
-import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler}
+import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.stream._
 
-import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -19,7 +17,7 @@ import scala.util.{Failure, Success, Try}
  */
 @InternalApi
 private[amqp] final class AmqpPublishFlowStage[O](settings: AmqpWriteSettings)
-    extends GraphStageWithMaterializedValue[FlowShape[(WriteMessage, O), O], Future[Done]] { stage =>
+    extends GraphStage[FlowShape[(WriteMessage, O), O]] { stage =>
 
   val in = Inlet[(WriteMessage, O)]("AmqpPublishConfirmFlow.in")
   val out = Outlet[O]("AmqpPublishConfirmFlow.out")
@@ -31,9 +29,8 @@ private[amqp] final class AmqpPublishFlowStage[O](settings: AmqpWriteSettings)
       .name("AmqpPublishFlowStage")
       .and(ActorAttributes.IODispatcher)
 
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
-    val promise = Promise[Done]()
-    (new GraphStageLogic(shape) with AmqpConnectorLogic {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new GraphStageLogic(shape) with AmqpConnectorLogic {
       override val settings = stage.settings
       private val exchange = settings.exchange.getOrElse("")
       private val routingKey = settings.routingKey.getOrElse("")
@@ -53,17 +50,6 @@ private[amqp] final class AmqpPublishFlowStage[O](settings: AmqpWriteSettings)
       setHandler(
         in,
         new InHandler {
-
-          override def onUpstreamFailure(ex: Throwable): Unit = {
-            promise.failure(ex)
-            super.onUpstreamFailure(ex)
-          }
-
-          override def onUpstreamFinish(): Unit = {
-            promise.success(Done)
-            super.onUpstreamFinish()
-          }
-
           override def onPush(): Unit = {
             val (elem, passthrough) = grab(in)
             channel.basicPublish(
@@ -86,19 +72,7 @@ private[amqp] final class AmqpPublishFlowStage[O](settings: AmqpWriteSettings)
           }
         }
       )
-
-      override def postStop(): Unit = {
-        promise.tryFailure(new RuntimeException("stage stopped unexpectedly"))
-        super.postStop()
-      }
-
-      override def onFailure(ex: Throwable): Unit = {
-        promise.tryFailure(ex)
-        super.onFailure(ex)
-      }
-
-    }, promise.future)
-  }
+    }
 
   override def toString: String = "AmqpPublishConfirmFlow"
 }

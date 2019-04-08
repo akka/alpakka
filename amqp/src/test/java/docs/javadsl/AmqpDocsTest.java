@@ -180,7 +180,7 @@ public class AmqpDocsTest {
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
 
     // #create-publish-flow
-    final Flow<Pair<ByteString, String>, String, CompletionStage<Done>> amqpPublishFlow =
+    final Flow<Pair<ByteString, String>, String, NotUsed> amqpPublishFlow =
         AmqpFlow.createSimple(
             AmqpWriteSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
@@ -189,20 +189,18 @@ public class AmqpDocsTest {
     // #create-publish-flow
 
     // #run-publish-flow
-    Pair<CompletionStage<Done>, TestSubscriber.Probe<String>> result =
+    TestSubscriber.Probe<String> result =
         Source.from(input)
             .map(ByteString::fromString)
             .map(bytes -> new Pair<>(bytes, "passThrough"))
             .viaMat(amqpPublishFlow, Keep.right())
-            .toMat(TestSink.probe(system), Keep.both())
+            .toMat(TestSink.probe(system), Keep.right())
             .run(materializer);
     // #run-publish-flow
 
     List<String> probeResult =
         JavaConverters.seqAsJavaListConverter(
-                result
-                    .second()
-                    .toStrict(scala.concurrent.duration.Duration.create(3, TimeUnit.SECONDS)))
+                result.toStrict(scala.concurrent.duration.Duration.create(3, TimeUnit.SECONDS)))
             .asJava();
     assertEquals(probeResult, input.stream().map(s -> "passThrough").collect(Collectors.toList()));
   }

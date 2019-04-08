@@ -131,11 +131,11 @@ class AmqpDocsSpec extends AmqpSpec {
 
       val input = Vector("one", "two", "three", "four", "five")
       //#run-publish-flow
-      val (_, probe) =
+      val probe =
         Source(input)
           .map(s => (ByteString(s), s"$s-passThrough"))
           .viaMat(amqpPublishFlow)(Keep.right)
-          .toMat(TestSink.probe)(Keep.both)
+          .toMat(TestSink.probe)(Keep.right)
           .run
       //#run-publish-flow
 

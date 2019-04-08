@@ -183,24 +183,23 @@ public class AmqpConnectorsTest {
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
 
-    final Flow<Pair<ByteString, String>, String, CompletionStage<Done>> amqpPublishFlow =
+    final Flow<Pair<ByteString, String>, String, NotUsed> amqpPublishFlow =
         AmqpFlow.createSimple(
             AmqpWriteSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
                 .withDeclaration(queueDeclaration)
                 .withPublishConfirm(Duration.create(1, TimeUnit.SECONDS)));
 
-    Pair<CompletionStage<Done>, TestSubscriber.Probe<String>> result =
+    TestSubscriber.Probe<String> result =
         Source.from(input)
             .map(ByteString::fromString)
             .map(bytes -> new Pair<>(bytes, "something"))
             .viaMat(amqpPublishFlow, Keep.right())
-            .toMat(TestSink.probe(system), Keep.both())
+            .toMat(TestSink.probe(system), Keep.right())
             .run(materializer);
 
     List<String> probeResult =
-        JavaConverters.seqAsJavaListConverter(
-                result.second().toStrict(Duration.create(3, TimeUnit.SECONDS)))
+        JavaConverters.seqAsJavaListConverter(result.toStrict(Duration.create(3, TimeUnit.SECONDS)))
             .asJava();
     assertEquals(probeResult, input.stream().map(s -> "something").collect(Collectors.toList()));
   }
