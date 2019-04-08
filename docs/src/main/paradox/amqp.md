@@ -46,7 +46,7 @@ Create a sink, that accepts and forwards @scaladoc[ByteString](akka.util.ByteStr
 
 @scala[@scaladoc[AmqpSink](akka.stream.alpakka.amqp.scaladsl.AmqpSink$)]@java[@scaladoc[AmqpSink](akka.stream.alpakka.amqp.javadsl.AmqpSink$)] is a collection of factory methods that facilitates creation of sinks. Here we created a *simple* sink, which means that we are able to pass `ByteString`s to the sink instead of wrapping data into @scaladoc[WriteMessage](akka.stream.alpakka.amqp.WriteMessage)s.
 
-Last step is to @extref[materialize](akka-docs:stream/stream-flows-and-basics.scala) and run the sink we have created.
+Last step is to @extref[materialize](akka-docs:stream/stream-flows-and-basics.html) and run the sink we have created.
 
 Scala
 : @@snip [snip](/amqp/src/test/scala/docs/scaladsl/AmqpDocsSpec.scala) { #create-sink }
