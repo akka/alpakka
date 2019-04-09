@@ -68,6 +68,99 @@ object Proxy {
     apply(host, port, scheme)
 }
 
+final class ForwardProxyCredentials private (val username: String, val password: String) {
+
+  /** Java API */
+  def getUsername : String = username
+
+  /** Java API */
+  def getPassword : String = password
+
+  def withUsername(username : String) = copy(username = username)
+  def withPassword(password : String) = copy(password = password)
+
+  private def copy(username : String = username, password: String = password) =
+    new ForwardProxyCredentials(username, password)
+
+  override def toString =
+    "ForwardProxyCredentials(" +
+    s"username=$username," +
+    s"password=$password" +
+    ")"
+
+  override def equals(other: Any): Boolean = other match {
+    case that: ForwardProxyCredentials =>
+      Objects.equals(this.username, that.username) &&
+      Objects.equals(this.password, that.password)
+    case _ => false
+  }
+
+  override def hashCode(): Int =
+    Objects.hash(username, password)
+
+}
+
+object ForwardProxyCredentials {
+
+  /** Scala API */
+  def apply(username: String, password: String): ForwardProxyCredentials =
+    new ForwardProxyCredentials(username, password)
+
+  /** Java API */
+  def create(username: String, password: String): ForwardProxyCredentials =
+    apply(username, password)
+
+}
+
+final class ForwardProxy private (val host: String, val port: Int, val credentials: Option[ForwardProxyCredentials]) {
+
+  /** Java API */
+  def getHost : String = host
+
+  /** Java API */
+  def getPort : Int = port
+
+  /** Java API */
+  def getCredentials : Option[ForwardProxyCredentials] = credentials
+
+  def withHost(host : String) = copy(host = host)
+  def withPort(port : Int) = copy(port = port)
+  def withCredentials(credentials: ForwardProxyCredentials) = copy(credentials = Option(credentials))
+
+  private def copy(host : String = host, port : Int = port, credentials: Option[ForwardProxyCredentials] = credentials) =
+    new ForwardProxy(host, port, credentials)
+
+  override def toString =
+    "ForwardProxy(" +
+    s"host=$host," +
+    s"port=$port," +
+    s"credentials=$credentials"
+  ")"
+
+  override def equals(other: Any): Boolean = other match {
+    case that: ForwardProxy =>
+      Objects.equals(this.host, that.host) &&
+      Objects.equals(this.port, that.port) &&
+      Objects.equals(this.credentials, that.credentials)
+    case _ => false
+  }
+
+  override def hashCode(): Int =
+    Objects.hash(host, port, credentials)
+}
+
+object ForwardProxy {
+
+  /** Scala API */
+  def apply(host: String, port: Int, credentials: Option[ForwardProxyCredentials]) =
+    new ForwardProxy(host, port, credentials)
+
+  /** Java API */
+  def create(host: String, port: Int, credentials: Option[ForwardProxyCredentials]) =
+    apply(host, port, credentials)
+
+}
+
 sealed abstract class ApiVersion
 object ApiVersion {
   sealed abstract class ListBucketVersion1 extends ApiVersion
@@ -90,7 +183,8 @@ final class S3Settings private (
     val s3RegionProvider: AwsRegionProvider,
     val pathStyleAccess: Boolean,
     val endpointUrl: Option[String],
-    val listBucketApiVersion: ApiVersion
+    val listBucketApiVersion: ApiVersion,
+    val forwardProxy: Option[ForwardProxy]
 ) {
 
   /** Java API */
@@ -114,6 +208,9 @@ final class S3Settings private (
   /** Java API */
   def getListBucketApiVersion: ApiVersion = listBucketApiVersion
 
+  /** Java API */
+  def getForwardProxy: java.util.Optional[ForwardProxy] = forwardProxy.asJava
+
   def withBufferType(value: BufferType): S3Settings = copy(bufferType = value)
   def withProxy(value: Proxy): S3Settings = copy(proxy = Option(value))
   def withCredentialsProvider(value: AWSCredentialsProvider): S3Settings =
@@ -124,6 +221,8 @@ final class S3Settings private (
   def withEndpointUrl(value: String): S3Settings = copy(endpointUrl = Option(value))
   def withListBucketApiVersion(value: ApiVersion): S3Settings =
     copy(listBucketApiVersion = value)
+  def withForwardProxy(value: ForwardProxy): S3Settings =
+    copy(forwardProxy = Option(value))
 
   private def copy(
       bufferType: BufferType = bufferType,
@@ -132,7 +231,8 @@ final class S3Settings private (
       s3RegionProvider: AwsRegionProvider = s3RegionProvider,
       pathStyleAccess: Boolean = pathStyleAccess,
       endpointUrl: Option[String] = endpointUrl,
-      listBucketApiVersion: ApiVersion = listBucketApiVersion
+      listBucketApiVersion: ApiVersion = listBucketApiVersion,
+      forwardProxy: Option[ForwardProxy] = forwardProxy
   ): S3Settings = new S3Settings(
     bufferType = bufferType,
     proxy = proxy,
@@ -140,7 +240,8 @@ final class S3Settings private (
     s3RegionProvider = s3RegionProvider,
     pathStyleAccess = pathStyleAccess,
     endpointUrl = endpointUrl,
-    listBucketApiVersion = listBucketApiVersion
+    listBucketApiVersion = listBucketApiVersion,
+    forwardProxy = forwardProxy
   )
 
   override def toString =
@@ -152,7 +253,8 @@ final class S3Settings private (
     s"pathStyleAccess=$pathStyleAccess," +
     s"endpointUrl=$endpointUrl," +
     s"listBucketApiVersion=$listBucketApiVersion" +
-    ")"
+    s"forwardProxy=$forwardProxy"
+  ")"
 
   override def equals(other: Any): Boolean = other match {
     case that: S3Settings =>
@@ -162,7 +264,8 @@ final class S3Settings private (
       Objects.equals(this.s3RegionProvider, that.s3RegionProvider) &&
       Objects.equals(this.pathStyleAccess, that.pathStyleAccess) &&
       Objects.equals(this.endpointUrl, that.endpointUrl) &&
-      Objects.equals(this.listBucketApiVersion, that.listBucketApiVersion)
+      Objects.equals(this.listBucketApiVersion, that.listBucketApiVersion) &&
+      Objects.equals(this.forwardProxy, that.forwardProxy)
     case _ => false
   }
 
@@ -173,7 +276,8 @@ final class S3Settings private (
                  s3RegionProvider,
                  Boolean.box(pathStyleAccess),
                  endpointUrl,
-                 listBucketApiVersion)
+                 listBucketApiVersion,
+                 forwardProxy)
 }
 
 object S3Settings {
@@ -276,7 +380,8 @@ object S3Settings {
       s3RegionProvider = regionProvider,
       pathStyleAccess = pathStyleAccess,
       endpointUrl = endpointUrl,
-      listBucketApiVersion = apiVersion
+      listBucketApiVersion = apiVersion,
+      forwardProxy = None // TODO: load from config, see akka.http.client.proxy from https://doc.akka.io/docs/akka-http/current/client-side/client-transport.html
     )
   }
 
@@ -293,7 +398,8 @@ object S3Settings {
       s3RegionProvider: AwsRegionProvider,
       pathStyleAccess: Boolean,
       endpointUrl: Option[String],
-      listBucketApiVersion: ApiVersion
+      listBucketApiVersion: ApiVersion,
+      forwardProxy: Option[ForwardProxy]
   ): S3Settings = new S3Settings(
     bufferType,
     proxy,
@@ -301,7 +407,8 @@ object S3Settings {
     s3RegionProvider,
     pathStyleAccess,
     endpointUrl,
-    listBucketApiVersion
+    listBucketApiVersion,
+    forwardProxy
   )
 
   /** Java API */
@@ -312,7 +419,8 @@ object S3Settings {
       s3RegionProvider: AwsRegionProvider,
       pathStyleAccess: Boolean,
       endpointUrl: java.util.Optional[String],
-      listBucketApiVersion: ApiVersion
+      listBucketApiVersion: ApiVersion,
+      forwardProxy: java.util.Optional[ForwardProxy]
   ): S3Settings = apply(
     bufferType,
     proxy.asScala,
@@ -320,7 +428,8 @@ object S3Settings {
     s3RegionProvider,
     pathStyleAccess,
     endpointUrl.asScala,
-    listBucketApiVersion
+    listBucketApiVersion,
+    forwardProxy.asScala
   )
 
   /**

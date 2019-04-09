@@ -54,7 +54,8 @@ class S3StreamSpec(_system: ActorSystem)
                  regionProvider,
                  false,
                  None,
-                 ApiVersion.ListBucketVersion2)
+                 ApiVersion.ListBucketVersion2,
+                 None)
 
     val result: HttpRequest = S3Stream invokePrivate requestHeaders(getDownloadRequest(location), None)
     result.headers.size shouldBe 1
@@ -85,7 +86,8 @@ class S3StreamSpec(_system: ActorSystem)
                  regionProvider,
                  false,
                  None,
-                 ApiVersion.ListBucketVersion2)
+                 ApiVersion.ListBucketVersion2,
+                 None)
 
     val result: HttpRequest = S3Stream invokePrivate requestHeaders(getDownloadRequest(location), Some(range))
     result.headers.size shouldBe 2
