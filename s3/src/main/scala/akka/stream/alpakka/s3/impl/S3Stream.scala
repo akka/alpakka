@@ -5,6 +5,7 @@
 package akka.stream.alpakka.s3.impl
 
 import java.time.{Instant, LocalDate, ZoneOffset}
+import java.net.InetSocketAddress
 
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
@@ -14,10 +15,17 @@ import scala.collection.immutable.Seq
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 import akka.{Done, NotUsed}
-import akka.http.scaladsl.Http
+import akka.http.scaladsl.{ClientTransport, Http}
 import akka.http.scaladsl.model.StatusCodes.{NoContent, NotFound, OK}
-import akka.http.scaladsl.model.headers.{`Content-Length`, `Content-Type`, ByteRange, CustomHeader}
+import akka.http.scaladsl.model.headers.{
+  `Content-Length`,
+  `Content-Type`,
+  BasicHttpCredentials,
+  ByteRange,
+  CustomHeader
+}
 import akka.http.scaladsl.model.{headers => http, _}
+import akka.http.scaladsl.settings.{ClientConnectionSettings, ConnectionPoolSettings}
 import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
 import akka.stream.alpakka.s3.BucketAccess.{AccessDenied, AccessGranted, NotExists}
 import akka.stream.{ActorMaterializer, Attributes, Materializer}
@@ -528,6 +536,26 @@ import akka.util.ByteString
       new DiskBuffer(2, chunkSize * 2, d.path)
   }
 
+  private def poolSettings(implicit settings: S3Settings, system: ActorSystem) =
+    settings.forwardProxy.map(proxy => {
+      val address = InetSocketAddress.createUnresolved(proxy.host, proxy.port)
+      val transport = proxy.credentials.fold(ClientTransport.httpsProxy(address))(
+        c => ClientTransport.httpsProxy(address, BasicHttpCredentials(c.username, c.password))
+      )
+
+      ConnectionPoolSettings(system)
+        .withConnectionSettings(
+          ClientConnectionSettings(system)
+            .withTransport(transport)
+        )
+    })
+
+  private def singleRequest(req: HttpRequest)(implicit settings: S3Settings, system: ActorSystem) =
+    poolSettings.fold(Http().singleRequest(req))(s => Http().singleRequest(req, settings = s))
+
+  private def superPool[T](implicit settings: S3Settings, sys: ActorSystem) =
+    poolSettings.fold(Http().superPool[T]())(s => Http().superPool[T](settings = s))
+
   private def chunkAndRequest(
       s3Location: S3Location,
       contentType: ContentType,
@@ -542,12 +570,13 @@ import akka.util.ByteString
 
     // The individual upload part requests are processed here
     Setup
-      .flow { implicit mat => _ =>
+      .flow { implicit mat => implicit attr =>
         import mat.executionContext
         implicit val sys = mat.system
+        implicit val conf = resolveSettings()
 
         requestFlow
-          .via(Http().superPool[(MultipartUpload, Int)]())
+          .via(superPool[(MultipartUpload, Int)])
           .mapAsync(parallelism) {
             case (Success(r), (upload, index)) =>
               if (r.status.isFailure()) {
@@ -640,7 +669,7 @@ import akka.util.ByteString
 
     Signer
       .signedRequest(request, signingKey)
-      .mapAsync(parallelism = 1)(req => Http().singleRequest(req))
+      .mapAsync(parallelism = 1)(req => singleRequest(req))
       .flatMapConcat {
         case HttpResponse(status, _, _, _) if (retries > 0) && (500 to 599 contains status.intValue()) =>
           signAndRequest(request, retries - 1)
@@ -712,12 +741,13 @@ import akka.util.ByteString
   private def processUploadCopyPartRequests(
       requests: Source[(HttpRequest, MultipartCopy), NotUsed]
   )(parallelism: Int) =
-    Setup.source { implicit mat => _ =>
+    Setup.source { implicit mat => implicit attr =>
       import mat.executionContext
       implicit val sys = mat.system
+      implicit val settings = resolveSettings()
 
       requests
-        .via(Http().superPool[MultipartCopy]())
+        .via(superPool[MultipartCopy](settings, sys))
         .map {
           case (Success(r), multipartCopy) =>
             val entity = r.entity
