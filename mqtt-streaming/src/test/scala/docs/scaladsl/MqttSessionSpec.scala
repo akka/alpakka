@@ -1516,6 +1516,8 @@ class MqttSessionSpec
     }
 
     "close when no ping request received" in assertAllStagesStopped {
+      // A longer patience config implicit is provided since minimum client's keep alive time is 1 second, so default
+      // 150 millis is not enough for the ping request timeout to be triggered and verify the stream fails as expected.
       implicit val patienceConfig = PatienceConfig(scaled(Span(3000, Millis)), scaled(Span(15, Millis)))
 
       val session = ActorMqttServerSession(settings)
