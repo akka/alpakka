@@ -103,8 +103,8 @@ objects by calling [GetRecords](http://docs.aws.amazon.com/kinesis/latest/APIRef
 ### Kinesis Put via Flow or as Sink
 
 The 
-@scala[@scaladoc[KinesisFlow](akka.stream.alpakka.kinesis.scaladsl.KinesisFlow) (or @scaladoc[KinesisSink](akka.stream.alpakka.kinesis.scaladsl.KinesisSink))] 
-@java[@scaladoc[KinesisFlow](akka.stream.alpakka.kinesis.javadsl.KinesisFlow) (or @scaladoc[KinesisSink](akka.stream.alpakka.kinesis.javadsl.KinesisSink))] 
+@scala[@scaladoc[KinesisFlow](akka.stream.alpakka.kinesis.scaladsl.KinesisFlow$) (or @scaladoc[KinesisSink](akka.stream.alpakka.kinesis.scaladsl.KinesisSink$))] 
+@java[@scaladoc[KinesisFlow](akka.stream.alpakka.kinesis.javadsl.KinesisFlow$) (or @scaladoc[KinesisSink](akka.stream.alpakka.kinesis.javadsl.KinesisSink$))] 
 publishes messages into a Kinesis stream using its partition key and message body. It uses dynamic size batches, can perform several requests in parallel and retries failed records. These features are necessary to achieve the best possible write throughput to the stream. The Flow outputs the result of publishing each record.
 
 @@@ warning
@@ -156,8 +156,8 @@ Java
 ### Kinesis Put via Flow or as Sink
 
 The
-@scala[@scaladoc[KinesisFirehoseFlow](akka.stream.alpakka.kinesisfirehose.scaladsl.KinesisFirehoseFlow) (or @scaladoc[KinesisFirehoseSink](akka.stream.alpakka.kinesisfirehose.scaladsl.KinesisFirehoseSink))]
-@java[@scaladoc[KinesisFirehoseFlow](akka.stream.alpakka.kinesisfirehose.javadsl.KinesisFirehoseFlow) (or @scaladoc[KinesisFirehoseSink](akka.stream.alpakka.kinesisfirehose.javadsl.KinesisFirehoseSink))]
+@scala[@scaladoc[KinesisFirehoseFlow](akka.stream.alpakka.kinesisfirehose.scaladsl.KinesisFirehoseFlow$) (or @scaladoc[KinesisFirehoseSink](akka.stream.alpakka.kinesisfirehose.scaladsl.KinesisFirehoseSink$))]
+@java[@scaladoc[KinesisFirehoseFlow](akka.stream.alpakka.kinesisfirehose.javadsl.KinesisFirehoseFlow$) (or @scaladoc[KinesisFirehoseSink](akka.stream.alpakka.kinesisfirehose.javadsl.KinesisFirehoseSink$))]
 publishes messages into a Kinesis Firehose stream using its message body. It uses dynamic size batches, can perform several requests in parallel and retries failed records. These features are necessary to achieve the best possible write throughput to the stream. The Flow outputs the result of publishing each record.
 
 @@@ warning

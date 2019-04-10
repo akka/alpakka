@@ -107,7 +107,7 @@ public class MqttFlowTest {
         Tcp.get(system).outgoingConnection("localhost", 1883);
 
     Flow<Command<Object>, DecodeErrorOrEvent<Object>, NotUsed> mqttFlow =
-        Mqtt.clientSessionFlow(session).join(connection);
+        Mqtt.clientSessionFlow(session, ByteString.fromString("1")).join(connection);
     // #create-streaming-flow
 
     // #run-streaming-flow
@@ -207,8 +207,7 @@ public class MqttFlowTest {
                                 JavaConverters.asJavaCollectionConverter(subscribe.topicFilters())
                                     .asJavaCollection();
                             List<Integer> flags =
-                                topicFilters
-                                    .stream()
+                                topicFilters.stream()
                                     .map(x -> x._2().underlying())
                                     .collect(Collectors.toList());
                             queue.offer(
@@ -248,7 +247,7 @@ public class MqttFlowTest {
     MqttClientSession clientSession = new ActorMqttClientSession(settings, materializer, system);
 
     Flow<Command<Object>, DecodeErrorOrEvent<Object>, NotUsed> mqttFlow =
-        Mqtt.clientSessionFlow(clientSession).join(connection);
+        Mqtt.clientSessionFlow(clientSession, ByteString.fromString("1")).join(connection);
 
     Pair<SourceQueueWithComplete<Command<Object>>, CompletionStage<Publish>> run =
         Source.<Command<Object>>queue(3, OverflowStrategy.fail())

@@ -6,23 +6,21 @@ package akka.stream.alpakka.sqs.scaladsl
 
 import java.net.URI
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Terminated}
 import akka.stream.alpakka.sqs.SqsSourceSettings
 import akka.stream.{ActorMaterializer, Materializer}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time._
-import org.scalatest.{BeforeAndAfterAll, Suite, Tag}
+import org.scalatest.{BeforeAndAfterAll, Matchers, Suite, Tag}
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.CreateQueueRequest
 
 import scala.collection.JavaConverters._
-import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Random
 
-trait DefaultTestContext extends BeforeAndAfterAll with ScalaFutures { this: Suite =>
+trait DefaultTestContext extends Matchers with BeforeAndAfterAll with ScalaFutures { this: Suite =>
 
   //#init-mat
   implicit val system: ActorSystem = ActorSystem()
@@ -34,7 +32,7 @@ trait DefaultTestContext extends BeforeAndAfterAll with ScalaFutures { this: Sui
 
   object Integration extends Tag("akka.stream.alpakka.sqs.scaladsl.Integration")
 
-  implicit val pc = PatienceConfig(scaled(Span(10, Seconds)), scaled(Span(20, Millis)))
+  implicit val pc: PatienceConfig = PatienceConfig(10.seconds, 20.millis)
 
   lazy val sqsClient = createAsyncClient(sqsEndpoint)
 
@@ -60,7 +58,7 @@ trait DefaultTestContext extends BeforeAndAfterAll with ScalaFutures { this: Sui
 
   override protected def afterAll(): Unit =
     try {
-      Await.ready(system.terminate(), 5.seconds)
+      system.terminate().futureValue shouldBe a[Terminated]
     } finally {
       super.afterAll()
     }

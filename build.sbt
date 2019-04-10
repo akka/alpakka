@@ -1,3 +1,5 @@
+import Whitesource.whitesourceGroup
+
 lazy val modules: Seq[ProjectReference] = Seq(
   amqp,
   avroparquet,
@@ -71,7 +73,7 @@ lazy val alpakka = project
     ScalaUnidoc / unidoc / fullClasspath := {
       (ScalaUnidoc / unidoc / fullClasspath).value
         .filterNot(_.data.getAbsolutePath.contains("protobuf-java-2.5.0.jar"))
-        .filterNot(_.data.getAbsolutePath.contains("guava-26.0-android.jar"))
+        .filterNot(_.data.getAbsolutePath.contains("guava-27.1-android.jar"))
     },
     ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(`doc-examples`),
     crossScalaVersions := List() // workaround for https://github.com/sbt/sbt/issues/3465
@@ -93,9 +95,13 @@ lazy val azureStorageQueue = alpakkaProject("azure-storage-queue", "azure.storag
 lazy val cassandra = alpakkaProject("cassandra", "cassandra", Dependencies.Cassandra)
 
 lazy val couchbase =
-  alpakkaProject("couchbase", "couchbase", Dependencies.Couchbase, parallelExecution in Test := false)
+  alpakkaProject("couchbase",
+                 "couchbase",
+                 Dependencies.Couchbase,
+                 parallelExecution in Test := false,
+                 whitesourceGroup := Whitesource.Group.Supported)
 
-lazy val csv = alpakkaProject("csv", "csv", Dependencies.Csv)
+lazy val csv = alpakkaProject("csv", "csv", Dependencies.Csv, whitesourceGroup := Whitesource.Group.Supported)
 
 lazy val dynamodb = alpakkaProject("dynamodb", "aws.dynamodb", Dependencies.DynamoDB)
 
@@ -195,9 +201,16 @@ lazy val mongodb =
 
 lazy val mqtt = alpakkaProject("mqtt", "mqtt", Dependencies.Mqtt)
 
-lazy val mqttStreaming = alpakkaProject("mqtt-streaming", "mqttStreaming", Dependencies.MqttStreaming)
-lazy val mqttStreamingBench = alpakkaProject("mqtt-streaming-bench", "mqttStreamingBench", Seq.empty)
+lazy val mqttStreaming = alpakkaProject("mqtt-streaming",
+                                        "mqttStreaming",
+                                        Dependencies.MqttStreaming,
+                                        crossScalaVersions -= Dependencies.Scala211)
+lazy val mqttStreamingBench = alpakkaProject("mqtt-streaming-bench",
+                                             "mqttStreamingBench",
+                                             publish / skip := true,
+                                             crossScalaVersions -= Dependencies.Scala211)
   .enablePlugins(JmhPlugin)
+  .disablePlugins(BintrayPlugin, MimaPlugin)
   .dependsOn(mqtt, mqttStreaming)
 
 lazy val orientdb = alpakkaProject("orientdb",
@@ -207,7 +220,7 @@ lazy val orientdb = alpakkaProject("orientdb",
                                    parallelExecution in Test := false)
 
 lazy val reference = alpakkaProject("reference", "reference", Dependencies.Reference, publish / skip := true)
-  .disablePlugins(BintrayPlugin)
+  .disablePlugins(BintrayPlugin, MimaPlugin)
 
 lazy val s3 = alpakkaProject("s3", "aws.s3", Dependencies.S3)
 
@@ -267,7 +280,6 @@ lazy val docs = project
     Paradox / siteSubdirName := s"docs/alpakka/${if (isSnapshot.value) "snapshot" else version.value}",
     Paradox / sourceDirectory := sourceDirectory.value / "main",
     Paradox / paradoxProperties ++= Map(
-      "project.url" -> "https://doc.akka.io/docs/alpakka/current/",
       "akka.version" -> Dependencies.AkkaVersion,
       "akka-http.version" -> Dependencies.AkkaHttpVersion,
       "couchbase.version" -> Dependencies.CouchbaseVersion,

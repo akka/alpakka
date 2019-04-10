@@ -65,6 +65,7 @@ import scala.util.{Failure, Success}
   final case class PubRecReceivedFromRemote(local: Promise[ForwardPubRec]) extends Event
   case object ReceivePubCompTimeout extends Event
   final case class PubCompReceivedFromRemote(local: Promise[ForwardPubComp]) extends Event
+  case object ReceiveConnect extends Event
 
   sealed abstract class Command
   sealed abstract class ForwardPublishingCommand extends Command
@@ -116,7 +117,8 @@ import scala.util.{Failure, Success}
   def publishUnacknowledged(data: Publishing)(implicit mat: Materializer): Behavior[Event] = Behaviors.withTimers {
     val ReceivePubackrec = "producer-receive-pubackrec"
     timer =>
-      timer.startSingleTimer(ReceivePubackrec, ReceivePubAckRecTimeout, data.settings.producerPubAckRecTimeout)
+      if (data.settings.producerPubAckRecTimeout.toNanos > 0L)
+        timer.startSingleTimer(ReceivePubackrec, ReceivePubAckRecTimeout, data.settings.producerPubAckRecTimeout)
 
       Behaviors
         .receiveMessagePartial[Event] {
@@ -129,7 +131,7 @@ import scala.util.{Failure, Success}
             local.success(ForwardPubRec(data.publishData))
             timer.cancel(ReceivePubackrec)
             publishAcknowledged(data)
-          case ReceivePubAckRecTimeout =>
+          case ReceivePubAckRecTimeout | ReceiveConnect =>
             data.remote.offer(
               ForwardPublish(data.publish.copy(flags = data.publish.flags | ControlPacketFlags.DUP),
                              Some(data.packetId))
@@ -147,7 +149,8 @@ import scala.util.{Failure, Success}
   def publishAcknowledged(data: Publishing)(implicit mat: Materializer): Behavior[Event] = Behaviors.withTimers {
     val ReceivePubrel = "producer-receive-pubrel"
     timer =>
-      timer.startSingleTimer(ReceivePubrel, ReceivePubCompTimeout, data.settings.producerPubCompTimeout)
+      if (data.settings.producerPubCompTimeout.toNanos > 0L)
+        timer.startSingleTimer(ReceivePubrel, ReceivePubCompTimeout, data.settings.producerPubCompTimeout)
 
       data.remote.offer(ForwardPubRel(data.publish, data.packetId))
 
@@ -156,7 +159,7 @@ import scala.util.{Failure, Success}
           case PubCompReceivedFromRemote(local) =>
             local.success(ForwardPubComp(data.publishData))
             Behaviors.stopped
-          case ReceivePubCompTimeout =>
+          case ReceivePubCompTimeout | ReceiveConnect =>
             data.remote.offer(ForwardPubRel(data.publish, data.packetId))
             publishAcknowledged(data)
         }

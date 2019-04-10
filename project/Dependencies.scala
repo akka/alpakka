@@ -14,7 +14,7 @@ object Dependencies {
   }
 
   val AwsSdkVersion = "1.11.476"
-  val AwsSdk2Version = "2.5.0"
+  val AwsSdk2Version = "2.5.20"
   val AkkaHttpVersion = "10.1.7"
 
   val CouchbaseVersion = "2.7.2"
@@ -38,7 +38,7 @@ object Dependencies {
       "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,
       "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion % Test,
       "ch.qos.logback" % "logback-classic" % "1.2.3" % Test, // Eclipse Public License 1.0
-      "org.scalatest" %% "scalatest" % "3.0.6" % Test, // ApacheV2
+      "org.scalatest" %% "scalatest" % "3.0.7" % Test, // ApacheV2
       "com.novocode" % "junit-interface" % "0.11" % Test, // BSD-style
       "junit" % "junit" % "4.12" % Test // Eclipse Public License 1.0
     )
@@ -187,7 +187,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
       "com.google.api.grpc" % "grpc-google-cloud-pubsub-v1" % "0.12.0" % "protobuf", // ApacheV2
       "io.grpc" % "grpc-auth" % "1.16.1", // ApacheV2
-      "com.google.auth" % "google-auth-library-oauth2-http" % "0.10.0" // BSD 3-clause
+      "com.google.auth" % "google-auth-library-oauth2-http" % "0.15.0" // BSD 3-clause
     ) ++ Silencer
   )
 

@@ -85,7 +85,9 @@ import akka.util.ByteString
   import HttpRequests._
   import Marshalling._
 
-  val MinChunkSize = 5242880 //in bytes
+  val MinChunkSize: Int = 5 * 1024 * 1024 //in bytes
+  val MaxChunkSize: Int = 10 * 1024 * 1024 //in bytes
+
   // def because tokens can expire
   def signingKey(implicit settings: S3Settings) = SigningKey(
     settings.credentialsProvider,
@@ -395,7 +397,7 @@ import akka.util.ByteString
 
     assert(
       chunkSize >= MinChunkSize,
-      "Chunk size must be at least 5242880B. See http://docs.aws.amazon.com/AmazonS3/latest/API/mpUploadUploadPart.html"
+      s"Chunk size must be at least 5 MB = $MinChunkSize bytes (was $chunkSize bytes). See http://docs.aws.amazon.com/AmazonS3/latest/API/mpUploadUploadPart.html"
     )
 
     // First step of the multi part upload process is made.
@@ -410,7 +412,7 @@ import akka.util.ByteString
         implicit val sys = mat.system
         implicit val conf = resolveSettings()
 
-        SplitAfterSize(chunkSize)(atLeastOneByteString)
+        SplitAfterSize(chunkSize, MaxChunkSize)(atLeastOneByteString)
           .via(getChunkBuffer(chunkSize)) //creates the chunks
           .concatSubstreams
           .zipWith(requestInfo) {
