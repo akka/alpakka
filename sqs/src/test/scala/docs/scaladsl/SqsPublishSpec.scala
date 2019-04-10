@@ -39,7 +39,7 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
           .maxNumberOfMessages(maxNumberOfMessages)
           .build()
 
-      awsSqsClient.receiveMessage(request).get().messages().asScala
+      awsSqsClient.receiveMessage(request).get().messages().asScala.toSeq
     }
   }
 

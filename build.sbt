@@ -235,8 +235,7 @@ lazy val sns = alpakkaProject(
   "aws.sns",
   Dependencies.Sns,
   // For mockito https://github.com/akka/alpakka/issues/390
-  parallelExecution in Test := false,
-  crossScalaVersions -= Dependencies.Scala213
+  parallelExecution in Test := false
 )
 
 lazy val solr = alpakkaProject("solr", "solr", Dependencies.Solr, parallelExecution in Test := false)
@@ -246,8 +245,7 @@ lazy val sqs = alpakkaProject(
   "aws.sqs",
   Dependencies.Sqs,
   // For mockito https://github.com/akka/alpakka/issues/390
-  parallelExecution in Test := false,
-  crossScalaVersions -= Dependencies.Scala213
+  parallelExecution in Test := false
 )
 
 lazy val sse = alpakkaProject("sse", "sse", Dependencies.Sse)

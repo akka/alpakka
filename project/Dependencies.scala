@@ -344,7 +344,7 @@ object Dependencies {
 
   val Sns = Seq(
     libraryDependencies ++= Seq(
-      "com.github.matsluni" %% "aws-spi-akka-http" % "0.0.4" excludeAll ExclusionRule(
+      "com.github.matsluni" %% "aws-spi-akka-http" % "0.0.5" excludeAll ExclusionRule(
         organization = "com.typesafe.akka"
       ), // ApacheV2
       "software.amazon.awssdk" % "sns" % AwsSdk2Version excludeAll (ExclusionRule(
@@ -373,7 +373,7 @@ object Dependencies {
 
   val Sqs = Seq(
     libraryDependencies ++= Seq(
-      "com.github.matsluni" %% "aws-spi-akka-http" % "0.0.4" excludeAll ExclusionRule(
+      "com.github.matsluni" %% "aws-spi-akka-http" % "0.0.5" excludeAll ExclusionRule(
         organization = "com.typesafe.akka"
       ), // ApacheV2
       "software.amazon.awssdk" % "sqs" % AwsSdk2Version excludeAll (ExclusionRule(
