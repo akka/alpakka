@@ -108,6 +108,8 @@ object Dependencies {
       "io.netty" % "netty-all" % "4.1.29.Final", // ApacheV2
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.9.8",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.9.8",
+      "org.testcontainers" % "kafka" % "1.11.1",
+      "org.testcontainers" % "elasticsearch" % "1.11.1",
       "org.slf4j" % "log4j-over-slf4j" % "1.7.25",
       "org.slf4j" % "jcl-over-slf4j" % "1.7.25",
       "ch.qos.logback" % "logback-classic" % "1.2.3" // Eclipse Public License 1.0
