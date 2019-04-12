@@ -11,6 +11,7 @@ import akka.{Done, NotUsed}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior, ChildFailed, PostStop, Terminated}
 import akka.annotation.InternalApi
+import akka.stream.alpakka.mqtt.streaming.impl.ServerConnector.PingFailed
 import akka.stream.{Materializer, OverflowStrategy}
 import akka.stream.scaladsl.{BroadcastHub, Keep, Source, SourceQueueWithComplete}
 import akka.util.ByteString
@@ -619,7 +620,7 @@ import scala.util.{Failure, Success}
             local.success(ForwardPingReq)
             clientConnected(data)
           case (context, ReceivePingReqTimeout) =>
-            data.remote.fail(PingFailed)
+            data.remote.fail(ServerConnector.PingFailed)
             timer.cancel(ReceivePingreq)
             disconnect(context, data.remote, data)
           case (context, DisconnectReceivedFromRemote(local)) =>

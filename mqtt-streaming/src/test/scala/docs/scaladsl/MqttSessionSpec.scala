@@ -21,6 +21,7 @@ import akka.testkit._
 import akka.util.{ByteString, Timeout}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.time.{Millis, Span}
 
 import scala.concurrent.{ExecutionContext, Promise}
 import scala.concurrent.duration._
@@ -1514,7 +1515,11 @@ class MqttSessionSpec
       server.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "close when no ping request received" ignore { // assertAllStagesStopped { // https://github.com/akka/alpakka/issues/1563
+    "close when no ping request received" in assertAllStagesStopped {
+      // A longer patience config implicit is provided since minimum client's keep alive time is 1 second, so default
+      // 150 millis is not enough for the ping request timeout to be triggered and verify the stream fails as expected.
+      implicit val patienceConfig = PatienceConfig(scaled(Span(3000, Millis)), scaled(Span(15, Millis)))
+
       val session = ActorMqttServerSession(settings)
 
       val client = TestProbe()
