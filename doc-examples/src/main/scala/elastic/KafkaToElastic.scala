@@ -4,23 +4,19 @@
 
 package elastic
 
+// #imports
 import akka.actor.ActorSystem
 import akka.kafka._
 import akka.kafka.scaladsl.{Committer, Consumer, Producer}
-import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.elasticsearch.WriteMessage
 import akka.stream.alpakka.elasticsearch.scaladsl.{ElasticsearchFlow, ElasticsearchSource}
 import akka.stream.scaladsl.{Keep, Sink, Source}
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.{Done, NotUsed}
 import org.apache.http.HttpHost
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.apache.kafka.common.serialization.{
-  IntegerDeserializer,
-  IntegerSerializer,
-  StringDeserializer,
-  StringSerializer
-}
+import org.apache.kafka.common.serialization._
 import org.elasticsearch.client.RestClient
 import org.slf4j.LoggerFactory
 import org.testcontainers.containers.KafkaContainer
@@ -31,6 +27,7 @@ import spray.json._
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
+// #imports
 
 object KafkaToElastic extends App {
 
@@ -53,16 +50,22 @@ object KafkaToElastic extends App {
   val topic = "movies-to-elasticsearch"
   private val groupId = "docs-group"
 
+  // #es-setup
+
+  // Type in Elasticsearch (2)
   case class Movie(id: Int, title: String)
 
+  // Spray JSON conversion setup (3)
   implicit val movieFormat: JsonFormat[Movie] = jsonFormat2(Movie)
 
+  // Elasticsearch client setup (4)
   implicit val elasticsearchClient: RestClient =
     RestClient
       .builder(HttpHost.create(elasticsearchAddress))
       .build()
 
   val indexName = "movies"
+  // #es-setup
 
   private def writeToKafka(movies: immutable.Iterable[Movie]) = {
     val kafkaProducerSettings = ProducerSettings(actorSystem, new IntegerSerializer, new StringSerializer)
@@ -79,36 +82,42 @@ object KafkaToElastic extends App {
   }
 
   private def readFromKafkaWriteToElasticsearch() = {
+    // #kafka-setup
+
+    // configure Kafka consumer (1)
     val kafkaConsumerSettings = ConsumerSettings(actorSystem, new IntegerDeserializer, new StringDeserializer)
       .withBootstrapServers(kafkaBootstrapServers)
       .withGroupId(groupId)
       .withProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
       .withStopTimeout(5.seconds)
+    // #kafka-setup
+
+    // #flow
 
     val control: Consumer.DrainingControl[Done] = Consumer
-      .committableSource(kafkaConsumerSettings, Subscriptions.topics(topic))
-      .startContextPropagation(_.committableOffset)
+      .committableSource(kafkaConsumerSettings, Subscriptions.topics(topic)) // (5)
+      .startContextPropagation(_.committableOffset) // (6)
       .map(_.record)
-      .map { consumerRecord =>
+      .map { consumerRecord => // (7)
         val movie = consumerRecord.value().parseJson.convertTo[Movie]
         WriteMessage.createUpsertMessage(movie.id.toString, movie)
       }
-      .via(ElasticsearchFlow.createWithContext(indexName, "_doc"))
-      .map { writeResult =>
+      .via(ElasticsearchFlow.createWithContext(indexName, "_doc")) // (8)
+      .map { writeResult => // (9)
         writeResult.error.foreach { errorJson =>
           throw new RuntimeException(s"Elasticsearch update failed ${writeResult.errorReason.getOrElse(errorJson)}")
         }
         NotUsed
       }
-      .endContextPropagation
+      .endContextPropagation // (10)
       .map {
         case (_, committableOffset) =>
           committableOffset
       }
-      .toMat(Committer.sink(CommitterSettings(actorSystem)))(Keep.both)
-      .mapMaterializedValue(Consumer.DrainingControl.apply)
+      .toMat(Committer.sink(CommitterSettings(actorSystem)))(Keep.both) // (11)
+      .mapMaterializedValue(Consumer.DrainingControl.apply) // (12)
       .run()
-
+    // #flow
     control
   }
 
