@@ -16,6 +16,7 @@ object Dependencies {
   val AwsSdkVersion = "1.11.476"
   val AwsSdk2Version = "2.5.20"
   val AkkaHttpVersion = "10.1.7"
+  val mockitoVersion = "2.27.0"
 
   val CouchbaseVersion = "2.7.2"
   val CouchbaseVersionForDocs = "2.7"
@@ -53,7 +54,7 @@ object Dependencies {
   val AwsLambda = Seq(
     libraryDependencies ++= Seq(
       "software.amazon.awssdk" % "lambda" % AwsSdk2Version, // ApacheV2
-      "org.mockito" % "mockito-core" % "2.23.4" % Test // MIT
+      "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
     )
   )
 
@@ -178,7 +179,7 @@ object Dependencies {
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
       "com.pauldijou" %% "jwt-core" % "2.1.0", // ApacheV2
-      "org.mockito" % "mockito-core" % "2.23.4" % Test, // MIT
+      "org.mockito" % "mockito-core" % mockitoVersion % Test, // MIT
       "com.github.tomakehurst" % "wiremock" % "2.18.0" % Test // ApacheV2
     )
   )
@@ -198,7 +199,7 @@ object Dependencies {
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
       "com.pauldijou" %% "jwt-core" % "2.1.0", // ApacheV2
-      "org.mockito" % "mockito-core" % "2.23.4" % Test // MIT
+      "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
     )
   )
 
@@ -245,7 +246,7 @@ object Dependencies {
       "org.apache.activemq" % "activemq-broker" % "5.15.4" % Test, // ApacheV2
       "org.apache.activemq" % "activemq-client" % "5.15.4" % Test, // ApacheV2
       "io.github.sullis" %% "jms-testkit" % "0.2.1" % Test, // ApacheV2
-      "org.mockito" % "mockito-core" % "2.23.4" % Test // MIT
+      "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
     ),
     // Having JBoss as a first resolver is a workaround for https://github.com/coursier/coursier/issues/200
     externalResolvers := ("jboss" at "http://repository.jboss.org/nexus/content/groups/public") +: externalResolvers.value
@@ -261,7 +262,7 @@ object Dependencies {
   val Kinesis = Seq(
     libraryDependencies ++= Seq(
       "com.amazonaws" % "aws-java-sdk-kinesis" % AwsSdkVersion, // ApacheV2
-      "org.mockito" % "mockito-core" % "2.23.4" % Test // MIT
+      "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
     )
   )
 
@@ -352,7 +353,7 @@ object Dependencies {
         name = "netty-nio-client"
       ), ExclusionRule(organization = "io.netty")), // ApacheV2
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
-      "org.mockito" % "mockito-core" % "2.23.4" % Test // MIT
+      "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
     )
   )
 
@@ -381,8 +382,8 @@ object Dependencies {
         name = "netty-nio-client"
       ), ExclusionRule(organization = "io.netty")), // ApacheV2
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
-      "org.mockito" % "mockito-core" % "2.23.4" % Test, // MIT
-      "org.mockito" % "mockito-inline" % "2.23.4" % Test // MIT
+      "org.mockito" % "mockito-core" % mockitoVersion % Test, // MIT
+      "org.mockito" % "mockito-inline" % mockitoVersion % Test // MIT
     )
   )
 
