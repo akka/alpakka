@@ -1,6 +1,6 @@
 # HBase
 
-The connector provides flows and sinks to write elements to HBase database.
+The connector provides sources, flows and sinks to interact with HBase database.
 
 HBase is a column family NoSQL Database backed by HDFS.
 For more information about HBase, please visit the [HBase documentation](http://hbase.apache.org).
@@ -81,6 +81,14 @@ Scala
 Java
 :   @@snip [snip](/hbase/src/test/java/docs/javadsl/HBaseStageTest.java) { #create-settings }
 
+## Source
+
+Scala
+: @@snip [snip](/hbase/src/test/scala/docs/scaladsl/HBaseStageSpec.scala) { #source }
+
+Java
+: @@snip [snip](/hbase/src/test/java/docs/javadsl/HBaseStageTest.java) { #source }
+
 ## Flow
 
 Scala
@@ -106,5 +114,5 @@ To manage HBase database, startup HBase shell (`$HBASE_HOME/bin/shell`), and run
 list // list tables
 scan "person" // select * from person
 disable "person" // Disable table "person", before drop
-drop "person" 
+drop "person"
 ```

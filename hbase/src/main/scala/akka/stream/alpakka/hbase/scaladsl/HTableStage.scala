@@ -5,9 +5,10 @@
 package akka.stream.alpakka.hbase.scaladsl
 
 import akka.stream.alpakka.hbase.HTableSettings
-import akka.stream.alpakka.hbase.impl.HBaseFlowStage
-import akka.stream.scaladsl.{Flow, Keep, Sink}
+import akka.stream.alpakka.hbase.impl.{HBaseFlowStage, HBaseSourceStage}
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.{Done, NotUsed}
+import org.apache.hadoop.hbase.client.{Result, Scan}
 
 import scala.concurrent.Future
 
@@ -26,5 +27,11 @@ object HTableStage {
    */
   def flow[A](settings: HTableSettings[A]): Flow[A, A, NotUsed] =
     Flow.fromGraph(new HBaseFlowStage[A](settings))
+
+  /**
+   * Reads an element from HBase.
+   */
+  def source[A](scan: Scan, settings: HTableSettings[A]): Source[Result, NotUsed] =
+    Source.fromGraph(new HBaseSourceStage[A](scan, settings))
 
 }

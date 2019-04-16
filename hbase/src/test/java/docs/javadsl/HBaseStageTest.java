@@ -186,6 +186,33 @@ public class HBaseStageTest {
 
     assertEquals(5, run.second().toCompletableFuture().get().size());
   }
+
+  @Test
+  public void readFromSource()
+      throws InterruptedException, TimeoutException, ExecutionException,
+          UnsupportedEncodingException {
+
+    HTableSettings<Person> tableSettings =
+        HTableSettings.create(
+            HBaseConfiguration.create(),
+            TableName.valueOf("person1"),
+            Collections.singletonList("info"),
+            hBaseConverter);
+
+    final Sink<Person, CompletionStage<Done>> sink = HTableStage.sink(tableSettings);
+    CompletionStage<Done> o =
+        Source.from(Arrays.asList(new Person(300, "name 300"))).runWith(sink, materializer);
+    assertEquals(Done.getInstance(), o.toCompletableFuture().get(5, TimeUnit.SECONDS));
+
+    // #source
+    Scan scan = new Scan(new Get("id_300".getBytes("UTF-8")));
+
+    CompletionStage<List<Result>> f =
+        HTableStage.source(scan, tableSettings).runWith(Sink.seq(), materializer);
+    // #source
+
+    assertEquals(1, f.toCompletableFuture().get().size());
+  }
 }
 
 class Person {
