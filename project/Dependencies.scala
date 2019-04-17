@@ -221,8 +221,8 @@ object Dependencies {
   )
 
   val HBase = {
-    val hbaseVersion = "1.2.6.1"
-    val hadoopVersion = "2.5.2"
+    val hbaseVersion = "1.4.9"
+    val hadoopVersion = "2.7.4"
     Seq(
       libraryDependencies ++= Seq(
           // for some reason version 2.2.3U1 started to get picked which was not accepted by Whitesource)

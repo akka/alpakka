@@ -123,14 +123,14 @@ services:
         python subscriber.py alpakka create testTopic testSubscription
       "
   hbase:
-    image: nerdammer/hbase:1.1.2
+    image: harisekhon/hbase:1.4
     hostname: hbase
     ports:
       - 2181:2181
-      - 60000:60000
-      - 60010:60010
-      - 60020:60020
-      - 60030:60030
+      - 16000:16000
+      - 16010:16010
+      - 16201:16201
+      - 16301:16301
   ibmmq:
     image: ibmcom/mq:9.1.1.0
     environment:
