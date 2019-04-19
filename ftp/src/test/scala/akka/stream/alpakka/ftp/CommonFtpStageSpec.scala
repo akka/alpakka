@@ -78,7 +78,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       val basePath = ""
       generateFiles(30, 10, basePath)
       val probe =
-        listFiles(basePath).toMat(TestSink.probe)(Keep.right).run()
+        listFiles(basePath).filter(_.isFile).toMat(TestSink.probe)(Keep.right).run()
       probe.request(40).expectNextN(30)
       probe.expectComplete()
     }
@@ -87,7 +87,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       val basePath = "/foo"
       generateFiles(30, 10, basePath)
       val probe =
-        listFiles(basePath).toMat(TestSink.probe)(Keep.right).run()
+        listFiles(basePath).filter(_.isFile).toMat(TestSink.probe)(Keep.right).run()
       probe.request(40).expectNextN(30)
       probe.expectComplete()
     }
@@ -97,7 +97,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       generateFiles(30, 10, basePath)
       val probe =
         listFilesWithFilter(basePath, f => false).toMat(TestSink.probe)(Keep.right).run()
-      probe.request(40).expectNextN(12)
+      probe.request(40).expectNextN(12) // 9 files, 3 directories
       probe.expectComplete()
 
     }
@@ -107,18 +107,18 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       generateFiles(30, 10, basePath)
       val probe =
         listFilesWithFilter(basePath, f => f.name.contains("1")).toMat(TestSink.probe)(Keep.right).run()
-      probe.request(40).expectNextN(21)
+      probe.request(40).expectNextN(22) // 9 files in root, 3 directories, 10 files in dir_1
       probe.expectComplete()
 
     }
 
     "list all files in sparse directory tree" in assertAllStagesStopped {
       val deepDir = "/foo/bar/baz/foobar"
-      val basePath = "/"
+      val basePath = ""
       generateFiles(1, -1, deepDir)
       val probe =
         listFiles(basePath).toMat(TestSink.probe)(Keep.right).run()
-      probe.request(2).expectNextN(1)
+      probe.request(10).expectNextN(5) // foo, bar, baz, foobar, and sample_1 = 5 files
       probe.expectComplete()
     }
 
@@ -176,6 +176,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       val numOfFiles = 10
       generateFiles(numOfFiles, numOfFiles, basePath)
       val probe = listFiles(basePath)
+        .filter(_.isFile)
         .mapAsyncUnordered(1)(file => retrieveFromPath(file.path).to(Sink.ignore).run())
         .toMat(TestSink.probe)(Keep.right)
         .run()

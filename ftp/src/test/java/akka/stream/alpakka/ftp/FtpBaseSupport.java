@@ -58,6 +58,12 @@ public abstract class FtpBaseSupport implements FtpSupport, AkkaSupport {
             rootDir,
             new SimpleFileVisitor<Path>() {
               @Override
+              public FileVisitResult postVisitDirectory(Path dir, IOException exc)
+                  throws IOException {
+                if (dir != rootDir) Files.delete(dir);
+                return FileVisitResult.CONTINUE;
+              }
+              @Override
               public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
                   throws IOException {
                 Files.deleteIfExists(file);
