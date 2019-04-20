@@ -4,18 +4,18 @@
 
 package docs.scaladsl
 
-import java.io.{File, IOException}
-import java.nio.file.Files
+import java.io.IOException
+import java.nio.file.{Files, Paths}
 import java.util.concurrent.TimeUnit
 
 import akka.Done
 import akka.actor.ActorSystem
+import akka.stream.alpakka.unixdomainsocket.UnixSocketAddress
 import akka.stream.{ActorMaterializer, OverflowStrategy}
 import akka.stream.alpakka.unixdomainsocket.scaladsl.UnixDomainSocket
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.testkit._
 import akka.util.ByteString
-import jnr.unixsocket.UnixSocketAddress
 import org.scalatest._
 
 import scala.concurrent.{Future, Promise}
@@ -37,9 +37,9 @@ class UnixDomainSocketSpec
   "A Unix Domain Socket" should {
     "receive some bytes" in {
       //#binding
-      val file: java.io.File = // ...
+      val path: java.nio.file.Path = // ...
         //#binding
-        dir.resolve("sock1").toFile
+        dir.resolve("sock1")
 
       val received = Promise[ByteString]
 
@@ -49,7 +49,7 @@ class UnixDomainSocketSpec
 
       //#binding
       val binding: Future[UnixDomainSocket.ServerBinding] =
-        UnixDomainSocket().bindAndHandle(serverSideFlow, file)
+        UnixDomainSocket().bindAndHandle(serverSideFlow, path)
       //#binding
 
       //#outgoingConnection
@@ -57,7 +57,7 @@ class UnixDomainSocketSpec
         val sendBytes = ByteString("Hello")
         Source
           .single(sendBytes)
-          .via(UnixDomainSocket().outgoingConnection(file))
+          .via(UnixDomainSocket().outgoingConnection(path))
           .runWith(Sink.ignore)
         //#outgoingConnection
         received.future.map(receiveBytes => assert(receiveBytes == sendBytes))
@@ -69,17 +69,17 @@ class UnixDomainSocketSpec
     "send and receive more ten times the size of a buffer" ignore {
       val BufferSizeBytes = 64 * 1024
 
-      val file = dir.resolve("sock2").toFile
+      val path = dir.resolve("sock2")
 
       val binding: Future[UnixDomainSocket.ServerBinding] =
-        UnixDomainSocket().bindAndHandle(Flow.fromFunction(identity), file, halfClose = true)
+        UnixDomainSocket().bindAndHandle(Flow.fromFunction(identity), path, halfClose = true)
 
       binding.flatMap { connection =>
         val sendBytes = ByteString(Array.ofDim[Byte](BufferSizeBytes * 10))
         val result: Future[ByteString] =
           Source
             .single(sendBytes)
-            .via(UnixDomainSocket().outgoingConnection(file))
+            .via(UnixDomainSocket().outgoingConnection(path))
             .runWith(Sink.fold(ByteString.empty) { case (acc, b) => acc ++ b })
         result
           .map(receiveBytes => assert(receiveBytes == sendBytes))
@@ -91,17 +91,17 @@ class UnixDomainSocketSpec
     }
 
     "allow the client to close the connection" in {
-      val file = dir.resolve("sock3").toFile
+      val path = dir.resolve("sock3")
 
       val sendBytes = ByteString("Hello")
 
       val binding =
-        UnixDomainSocket().bindAndHandle(Flow[ByteString].delay(5.seconds), file)
+        UnixDomainSocket().bindAndHandle(Flow[ByteString].delay(5.seconds), path)
 
       binding.flatMap { connection =>
         Source
           .single(sendBytes)
-          .via(UnixDomainSocket().outgoingConnection(new UnixSocketAddress(file), halfClose = false))
+          .via(UnixDomainSocket().outgoingConnection(UnixSocketAddress(path), halfClose = false))
           .runWith(Sink.headOption)
           .flatMap {
             case e if e.isEmpty => connection.unbind().map(_ => succeed)
@@ -110,7 +110,7 @@ class UnixDomainSocketSpec
     }
 
     "close the server once the client is also closed" in {
-      val file = dir.resolve("sock4").toFile
+      val path = dir.resolve("sock4")
 
       val sendBytes = ByteString("Hello")
       val receiving = Promise[Done]
@@ -118,7 +118,7 @@ class UnixDomainSocketSpec
       val binding =
         UnixDomainSocket().bindAndHandle(
           Flow.fromFunction[ByteString, ByteString](identity).wireTap(_ => receiving.success(Done)).delay(1.second),
-          file,
+          path,
           halfClose = true
         )
 
@@ -126,7 +126,7 @@ class UnixDomainSocketSpec
         Source
           .tick(0.seconds, 1.second, sendBytes)
           .takeWhile(_ => !receiving.isCompleted)
-          .via(UnixDomainSocket().outgoingConnection(file))
+          .via(UnixDomainSocket().outgoingConnection(path))
           .runWith(Sink.headOption)
           .flatMap {
             case e if e.nonEmpty => connection.unbind().map(_ => succeed)
@@ -138,7 +138,7 @@ class UnixDomainSocketSpec
       def materialize(flow: Flow[ByteString, ByteString, _]): Future[Done] =
         Source.single(ByteString("Hello")).via(flow).runWith(Sink.ignore)
 
-      val file = dir.resolve("sock5").toFile
+      val path = dir.resolve("sock5")
 
       val receivedLatch = new java.util.concurrent.CountDownLatch(2)
 
@@ -146,9 +146,9 @@ class UnixDomainSocketSpec
         .buffer(1, OverflowStrategy.backpressure)
         .wireTap(_ => receivedLatch.countDown())
 
-      val _ = UnixDomainSocket().bindAndHandle(serverSideFlow, file)
+      val _ = UnixDomainSocket().bindAndHandle(serverSideFlow, path)
 
-      val connection = UnixDomainSocket().outgoingConnection(file)
+      val connection = UnixDomainSocket().outgoingConnection(path)
 
       materialize(connection)
       materialize(connection)
@@ -160,7 +160,7 @@ class UnixDomainSocketSpec
 
     "not be able to bind to a non-existent file" in {
       val binding =
-        UnixDomainSocket().bindAndHandle(Flow.fromFunction(identity), new File("/thisshouldnotexist"))
+        UnixDomainSocket().bindAndHandle(Flow.fromFunction(identity), Paths.get("/thisshouldnotexist"))
 
       binding.failed.map {
         case _: IOException => succeed
@@ -171,7 +171,7 @@ class UnixDomainSocketSpec
       val connection =
         Source
           .single(ByteString("hi"))
-          .via(UnixDomainSocket().outgoingConnection(new File("/thisshouldnotexist")))
+          .via(UnixDomainSocket().outgoingConnection(Paths.get("/thisshouldnotexist")))
           .runWith(Sink.head)
 
       connection.failed.map {

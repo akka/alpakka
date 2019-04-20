@@ -2,9 +2,10 @@
  * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.unixdomainsocket.scaladsl
+package akka.stream.alpakka.unixdomainsocket
+package scaladsl
 
-import java.io.File
+import java.nio.file.Path
 
 import akka.NotUsed
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
@@ -12,7 +13,6 @@ import akka.stream._
 import akka.stream.alpakka.unixdomainsocket.impl.UnixDomainSocketImpl
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.util.ByteString
-import jnr.unixsocket.UnixSocketAddress
 
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
@@ -77,7 +77,7 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends UnixDomainSock
    *
    * TODO: Support idleTimeout as per Tcp.
    *
-   * @param file      The file to listen on
+   * @param path      The file path to listen on
    * @param backlog   Controls the size of the connection backlog
    * @param halfClose
    *                  Controls whether the connection is kept open even after writing has been completed to the accepted
@@ -89,10 +89,10 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends UnixDomainSock
    *                  independently whether the client is still attempting to write. This setting is recommended
    *                  for servers, and therefore it is the default setting.
    */
-  override def bind(file: File,
+  override def bind(path: Path,
                     backlog: Int = 128,
                     halfClose: Boolean = false): Source[IncomingConnection, Future[ServerBinding]] =
-    super.bind(file, backlog, halfClose)
+    super.bind(path, backlog, halfClose)
 
   /**
    * Creates a [[UnixDomainSocket.ServerBinding]] instance which represents a prospective Unix Socket server binding on the given `endpoint`
@@ -105,7 +105,7 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends UnixDomainSock
    * TODO: Support idleTimeout as per Tcp.
    *
    * @param handler   A Flow that represents the server logic
-   * @param file      The file to listen on
+   * @param path      The path to listen on
    * @param backlog   Controls the size of the connection backlog
    * @param halfClose
    *                  Controls whether the connection is kept open even after writing has been completed to the accepted
@@ -118,10 +118,10 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends UnixDomainSock
    *                  for servers, and therefore it is the default setting.
    */
   def bindAndHandle(handler: Flow[ByteString, ByteString, _],
-                    file: File,
+                    path: Path,
                     backlog: Int = 128,
                     halfClose: Boolean = false): Future[ServerBinding] =
-    bind(file, backlog, halfClose)
+    bind(path, backlog, halfClose)
       .to(Sink.foreach { conn: IncomingConnection ⇒
         conn.flow.join(handler).run()
       })
@@ -164,6 +164,6 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends UnixDomainSock
    * to achieve application level chunks you have to introduce explicit framing in your streams,
    * for example using the [[akka.stream.scaladsl.Framing]] stages.
    */
-  def outgoingConnection(file: File): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
-    super.outgoingConnection(new UnixSocketAddress(file))
+  def outgoingConnection(path: Path): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
+    super.outgoingConnection(UnixSocketAddress(path))
 }

@@ -2,35 +2,42 @@
  * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.unixdomainsocket.impl
+package akka.stream.alpakka.unixdomainsocket
+package impl
 
-import java.io.{File, IOException}
+import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.channels.{SelectionKey, Selector}
+import java.nio.file.{Path, Paths}
 
 import akka.actor.{Cancellable, CoordinatedShutdown, ExtendedActorSystem, Extension}
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.stream._
-import akka.stream.alpakka.unixdomainsocket.scaladsl
+import akka.stream.alpakka.unixdomainsocket.impl.nio.{
+  UnixServerSocketChannel,
+  UnixSocketChannel,
+  UnixSocketSelectorProvider
+}
+import akka.stream.alpakka.unixdomainsocket.scaladsl.UnixDomainSocket.{
+  IncomingConnection,
+  OutgoingConnection,
+  ServerBinding
+}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
-import jnr.enxio.channels.NativeSelectorProvider
-import jnr.unixsocket.{UnixServerSocketChannel, UnixSocketAddress, UnixSocketChannel}
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success, Try}
+import scala.util.Success
 
 /**
  * INTERNAL API
  */
 @InternalApi
 private[unixdomainsocket] object UnixDomainSocketImpl {
-
-  import scaladsl.UnixDomainSocket._
 
   private sealed abstract class ReceiveContext(
       val queue: SourceQueueWithComplete[ByteString],
@@ -245,14 +252,13 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
   )(sel: Selector, key: SelectionKey)(implicit mat: ActorMaterializer, ec: ExecutionContext): Unit = {
 
     val acceptingChannel = key.channel().asInstanceOf[UnixServerSocketChannel]
-    val acceptedChannel = try { acceptingChannel.accept() } catch { case _: IOException => null }
+    val acceptedChannel = try { acceptingChannel.acceptNonBlocked() } catch { case _: IOException => null }
 
     if (acceptedChannel != null) {
-      acceptedChannel.configureBlocking(false)
       val (context, connectionFlow) = sendReceiveStructures(sel, receiveBufferSize, sendBufferSize, halfClose)
       try { acceptedChannel.register(sel, SelectionKey.OP_READ, context) } catch { case _: IOException => }
       incomingConnectionQueue.offer(
-        IncomingConnection(localAddress, acceptingChannel.getRemoteSocketAddress, connectionFlow)
+        IncomingConnection(localAddress, acceptedChannel.getRemoteAddress, connectionFlow)
       )
     }
   }
@@ -290,12 +296,12 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
         .run()
     val sendReceiveContext =
       new SendReceiveContext(
-        SendAvailable(ByteBuffer.allocate(sendBufferSize)),
-        ReceiveAvailable(receiveQueue, ByteBuffer.allocate(receiveBufferSize)),
+        SendAvailable(ByteBuffer.allocateDirect(sendBufferSize)),
+        ReceiveAvailable(receiveQueue, ByteBuffer.allocateDirect(receiveBufferSize)),
         halfClose = halfClose,
         isOutputShutdown = false,
         isInputShutdown = false
-      ) // FIXME: No need for the costly allocation of direct buffers yet given https://github.com/jnr/jnr-unixsocket/pull/49
+      )
 
     val sendSink = Sink.fromGraph(
       Flow[ByteString]
@@ -352,13 +358,12 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
 @InternalApi
 private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedActorSystem) extends Extension {
 
-  import scaladsl.UnixDomainSocket._
   import UnixDomainSocketImpl._
 
   private implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
   import system.dispatcher
 
-  private val sel = NativeSelectorProvider.getInstance.openSelector
+  private val sel = UnixSocketSelectorProvider.openSelector()
 
   private val ioThread = new Thread(new Runnable {
     override def run(): Unit =
@@ -376,7 +381,7 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
   private val sendBufferSize: Int =
     system.settings.config.getBytes("akka.stream.alpakka.unix-domain-socket.send-buffer-size").toInt
 
-  protected def bind(file: File,
+  protected def bind(path: Path,
                      backlog: Int = 128,
                      halfClose: Boolean = false): Source[IncomingConnection, Future[ServerBinding]] = {
 
@@ -393,7 +398,7 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
                     .andThen {
                       case _ =>
                         try {
-                          file.delete()
+                          path.toFile.delete()
                         } catch {
                           case NonFatal(_) =>
                         }
@@ -404,38 +409,26 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
           .toMat(Sink.head)(Keep.both)
           .run()
 
-      val serverBinding = Promise[ServerBinding]
-
-      val channel = UnixServerSocketChannel.open()
-      channel.configureBlocking(false)
-      val address = new UnixSocketAddress(file)
+      val address = UnixSocketAddress(path)
+      val channel = UnixSocketSelectorProvider.bindAndListenNonBlocked(address, backlog)
       val registeredKey =
         channel.register(sel,
                          SelectionKey.OP_ACCEPT,
                          acceptKey(address, incomingConnectionQueue, halfClose, receiveBufferSize, sendBufferSize) _)
-      try {
-        channel.socket().bind(address, backlog)
-        sel.wakeup()
-        serverBinding.success(
-          ServerBinding(address) { () =>
-            registeredKey.cancel()
-            channel.close()
-            incomingConnectionQueue.complete()
-            incomingConnectionQueue.watchCompletion().map(_ => ())
-          }
-        )
-      } catch {
-        case NonFatal(e) =>
-          registeredKey.cancel()
-          channel.close()
-          incomingConnectionQueue.fail(e)
-          serverBinding.failure(e)
-      }
 
       Source
         .fromFutureSource(incomingConnectionSource)
-        .mapMaterializedValue(_ => serverBinding.future)
-
+        .mapMaterializedValue(
+          _ =>
+            Future.successful(
+              ServerBinding(address) { () =>
+                registeredKey.cancel()
+                channel.close()
+                incomingConnectionQueue.complete()
+                incomingConnectionQueue.watchCompletion().map(_ => ())
+              }
+          )
+        )
     }
 
     Source.lazily(bind).mapMaterializedValue(_.flatMap(identity))
@@ -449,8 +442,7 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
   ): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
 
     val connect = { () =>
-      val channel = UnixSocketChannel.open()
-      channel.configureBlocking(false)
+      val channel = UnixSocketSelectorProvider.connectNonBlocked(remoteAddress)
       val connectionFinished = Promise[Done]
       val cancellable =
         connectTimeout match {
@@ -463,26 +455,16 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
             None
         }
       val (context, connectionFlow) = sendReceiveStructures(sel, receiveBufferSize, sendBufferSize, halfClose)
-      val registeredKey =
-        channel
-          .register(sel, SelectionKey.OP_CONNECT, connectKey(remoteAddress, connectionFinished, cancellable, context) _)
-      val connection = Try(channel.connect(remoteAddress))
-      connection.failed.foreach(e => connectionFinished.tryFailure(e))
+      channel
+        .register(sel, SelectionKey.OP_CONNECT, connectKey(remoteAddress, connectionFinished, cancellable, context) _)
 
       Future.successful(
         connectionFlow
           .merge(Source.fromFuture(connectionFinished.future.map(_ => ByteString.empty)))
           .filter(_.nonEmpty) // We merge above so that we can get connection failures - we're not interested in the empty bytes though
           .mapMaterializedValue { _ =>
-            connection match {
-              case Success(_) =>
-                connectionFinished.future
-                  .map(_ => OutgoingConnection(remoteAddress, localAddress.getOrElse(new UnixSocketAddress(""))))
-              case Failure(e) =>
-                registeredKey.cancel()
-                channel.close()
-                Future.failed(e)
-            }
+            connectionFinished.future
+              .map(_ => OutgoingConnection(remoteAddress, localAddress.getOrElse(UnixSocketAddress(Paths.get("")))))
           }
       )
     }
