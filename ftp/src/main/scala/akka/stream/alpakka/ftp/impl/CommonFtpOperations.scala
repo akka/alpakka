@@ -23,7 +23,7 @@ private[ftp] trait CommonFtpOperations {
   type Handler = FTPClient
 
   def listFiles(basePath: String, handler: Handler): immutable.Seq[FtpFile] = {
-    val path = if (!basePath.isEmpty && basePath.head != '/') s"/$basePath" else basePath
+    val path = if (!basePath.isEmpty && basePath.head != '/') s"/$basePath" else if (basePath == "/") "" else basePath
     handler
       .listFiles(path)
       .collect {
