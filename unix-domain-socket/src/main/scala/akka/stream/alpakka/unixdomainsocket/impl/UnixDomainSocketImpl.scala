@@ -258,7 +258,7 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
       val (context, connectionFlow) = sendReceiveStructures(sel, receiveBufferSize, sendBufferSize, halfClose)
       try { acceptedChannel.register(sel, SelectionKey.OP_READ, context) } catch { case _: IOException => }
       incomingConnectionQueue.offer(
-        IncomingConnection(localAddress, acceptedChannel.getRemoteAddress, connectionFlow)
+        IncomingConnection(localAddress, UnixSocketAddress(Paths.get("")), connectionFlow)
       )
     }
   }
@@ -272,8 +272,6 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
     cancellable.foreach(_.cancel())
     try {
       connectingChannel.register(sel, SelectionKey.OP_READ, sendReceiveContext)
-      val finishExpected = connectingChannel.finishConnect()
-      require(finishExpected, "Internal error - our call to connection finish wasn't expected.")
       connectionFinished.trySuccess(Done)
     } catch {
       case NonFatal(e) =>

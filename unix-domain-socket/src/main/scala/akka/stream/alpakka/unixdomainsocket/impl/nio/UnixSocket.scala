@@ -49,7 +49,12 @@ private[unixdomainsocket] final class UnixSocket(private val fd: Int) {
 
   def connect(address: UnixSocketAddress): Unit = {
     val sockAddr = new NGUnixDomainSocketLibrary.SockaddrUn(address.toString)
-    tryIo(NGUnixDomainSocketLibrary.connect(fd, sockAddr, sockAddr.size))
+    try {
+      NGUnixDomainSocketLibrary.connect(fd, sockAddr, sockAddr.size)
+    } catch {
+      case e: LastErrorException if e.getErrorCode == NGUnixDomainSocketLibrary.EINPROGRESS => ()
+      case e: LastErrorException => throw new IOException(e)
+    }
   }
 
   def bind(address: UnixSocketAddress): Unit = {
@@ -87,4 +92,10 @@ private[unixdomainsocket] final class UnixSocket(private val fd: Int) {
         .fcntl(fd, NGUnixDomainSocketLibrary.F_SETFL, status | (if (block) NGUnixDomainSocketLibrary.O_NONBLOCK else 0))
     )
   }
+
+  def shutdownInput(): Unit =
+    tryIo(NGUnixDomainSocketLibrary.shutdown(fd, NGUnixDomainSocketLibrary.SHUT_RD))
+
+  def shutdownOutput(): Unit =
+    tryIo(NGUnixDomainSocketLibrary.shutdown(fd, NGUnixDomainSocketLibrary.SHUT_WR))
 }

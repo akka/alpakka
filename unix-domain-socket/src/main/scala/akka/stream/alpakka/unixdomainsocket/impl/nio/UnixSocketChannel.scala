@@ -9,7 +9,6 @@ import java.nio.channels._
 import java.nio.channels.spi.{AbstractSelectableChannel, SelectorProvider}
 
 import akka.annotation.InternalApi
-import akka.stream.alpakka.unixdomainsocket.UnixSocketAddress
 
 /**
  * INTERNAL API
@@ -25,7 +24,8 @@ private[unixdomainsocket] final class UnixSocketChannel(provider: SelectorProvid
   override def implConfigureBlocking(block: Boolean): Unit =
     socket.setBlocking(block)
 
-  override def validOps(): Int = ???
+  override def validOps(): Int =
+    SelectionKey.OP_READ | SelectionKey.OP_WRITE | SelectionKey.OP_CONNECT
 
   override def read(dst: ByteBuffer): Int =
     socket.read(dst)
@@ -33,11 +33,9 @@ private[unixdomainsocket] final class UnixSocketChannel(provider: SelectorProvid
   override def write(src: ByteBuffer): Int =
     socket.write(src)
 
-  def finishConnect(): Boolean = ???
+  def shutdownInput(): Unit =
+    socket.shutdownInput()
 
-  def getRemoteAddress: UnixSocketAddress = ???
-
-  def shutdownInput(): Unit = ???
-
-  def shutdownOutput(): Unit = ???
+  def shutdownOutput(): Unit =
+    socket.shutdownOutput()
 }

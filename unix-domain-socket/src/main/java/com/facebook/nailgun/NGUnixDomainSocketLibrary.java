@@ -50,7 +50,11 @@ public class NGUnixDomainSocketLibrary {
   public static final int F_GETFL = 3;
   public static final int F_SETFL = 4;
 
+  // Added
   public static final int O_NONBLOCK = 0x0004;
+
+  // Added
+  public static final int EINPROGRESS = 115;
 
   // Utility class, do not instantiate.
   private NGUnixDomainSocketLibrary() {}
@@ -158,5 +162,6 @@ public class NGUnixDomainSocketLibrary {
 
   public static native int unlink(String socketFile);
 
+  // Added
   public static native int fcntl(int fd, int cmd, int data) throws LastErrorException;
 }

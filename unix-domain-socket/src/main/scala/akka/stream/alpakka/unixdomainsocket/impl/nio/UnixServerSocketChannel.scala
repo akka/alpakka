@@ -5,6 +5,7 @@
 package akka.stream.alpakka.unixdomainsocket
 package impl.nio
 
+import java.nio.channels.SelectionKey
 import java.nio.channels.spi.{AbstractSelectableChannel, SelectorProvider}
 
 import akka.annotation.InternalApi
@@ -23,7 +24,8 @@ private[unixdomainsocket] final class UnixServerSocketChannel(provider: Selector
   override def implConfigureBlocking(block: Boolean): Unit =
     socket.setBlocking(block)
 
-  override def validOps(): Int = ???
+  override def validOps(): Int =
+    SelectionKey.OP_ACCEPT
 
   def acceptNonBlocked(): UnixSocketChannel = {
     val acceptedSocket = socket.accept()
