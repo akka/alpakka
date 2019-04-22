@@ -15,7 +15,7 @@ addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.14")
 addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "1.3.2+24-b76fdbbe")
 addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.2")
 addSbtPlugin("com.lightbend.sbt" % "sbt-java-formatter" % "0.4.4")
-addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "0.6.0")
+addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "0.6.1")
 addSbtPlugin("com.lightbend.sbt" % "sbt-javaagent" % "0.1.4")
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.3.4")
 // depend directly on the patched version see https://github.com/akka/alpakka/issues/1388
