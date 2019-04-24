@@ -88,11 +88,12 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
    *
    *                       Calling [ls(basePath,connectionSettings,f=>false)] will emit only the files and folder in
    *                       non-recursive fashion
+   * @param emitTraversedDirectories whether to include entered directories in the stream
    *
    * @return A [[akka.stream.scaladsl.Source Source]] of [[FtpFile]]s
    */
-  def ls(basePath: String, connectionSettings: S, branchSelector: FtpFile => Boolean): Source[FtpFile, NotUsed] =
-    Source.fromGraph(createBrowserGraph(basePath, connectionSettings, branchSelector))
+  def ls(basePath: String, connectionSettings: S, branchSelector: FtpFile => Boolean, emitTraversedDirectories: Boolean = false): Source[FtpFile, NotUsed] =
+    Source.fromGraph(createBrowserGraph(basePath, connectionSettings, branchSelector, emitTraversedDirectories))
 
   /**
    * Scala API: creates a [[akka.stream.scaladsl.Source Source]] of [[akka.util.ByteString ByteString]] from some file path.

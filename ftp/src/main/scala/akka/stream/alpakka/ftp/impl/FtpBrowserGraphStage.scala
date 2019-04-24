@@ -32,6 +32,8 @@ private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings] exte
 
   val branchSelector: FtpFile => Boolean = (f) => true
 
+  val emitTraversedDirectories: Boolean
+
   override def initialAttributes: Attributes =
     super.initialAttributes and Attributes.name(name) and IODispatcher
 
@@ -82,7 +84,7 @@ private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings] exte
       private[this] def fillBuffer(): Unit = buffer match {
         case head +: tail if head.isDirectory && branchSelector(head) =>
           buffer = getFilesFromPath(head.path) ++ tail
-          traversed = traversed :+ head
+          if (emitTraversedDirectories) traversed = traversed :+ head
           fillBuffer()
         case _ => // do nothing
       }

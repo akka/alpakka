@@ -49,7 +49,7 @@ interface CommonFtpStageTest extends FtpSupport, AkkaSupport {
     // putting test files on the server
     generateFiles(numFiles, pageSize, basePath);
 
-    Source<FtpFile, NotUsed> source = getBrowserSource(basePath).filter(p -> p.isFile());
+    Source<FtpFile, NotUsed> source = getBrowserSource(basePath);
 
     Pair<NotUsed, TestSubscriber.Probe<FtpFile>> pairResult =
         source.toMat(TestSink.probe(system), Keep.both()).run(materializer);
