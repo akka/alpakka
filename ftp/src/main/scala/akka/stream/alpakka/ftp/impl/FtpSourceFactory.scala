@@ -33,6 +33,13 @@ private[ftp] trait FtpSourceFactory[FtpClient] { self =>
   protected[this] def createBrowserGraph(
       _basePath: String,
       _connectionSettings: S,
+      _branchSelector: FtpFile => Boolean
+  )(implicit _ftpLike: FtpLike[FtpClient, S]): FtpBrowserGraphStage[FtpClient, S] =
+    createBrowserGraph(_basePath, _connectionSettings, _branchSelector, _emitTraversedDirectories = false)
+
+  protected[this] def createBrowserGraph(
+      _basePath: String,
+      _connectionSettings: S,
       _branchSelector: FtpFile => Boolean,
       _emitTraversedDirectories: Boolean
   )(implicit _ftpLike: FtpLike[FtpClient, S]): FtpBrowserGraphStage[FtpClient, S] =
@@ -43,7 +50,7 @@ private[ftp] trait FtpSourceFactory[FtpClient] { self =>
       val ftpClient: () => FtpClient = self.ftpClient
       val ftpLike: FtpLike[FtpClient, S] = _ftpLike
       override val branchSelector: (FtpFile) => Boolean = _branchSelector
-      val emitTraversedDirectories: Boolean = _emitTraversedDirectories
+      override val emitTraversedDirectories: Boolean = _emitTraversedDirectories
     }
 
   protected[this] def createIOSource(

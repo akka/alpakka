@@ -32,7 +32,7 @@ private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings] exte
 
   val branchSelector: FtpFile => Boolean = (f) => true
 
-  val emitTraversedDirectories: Boolean
+  def emitTraversedDirectories: Boolean = false
 
   override def initialAttributes: Attributes =
     super.initialAttributes and Attributes.name(name) and IODispatcher

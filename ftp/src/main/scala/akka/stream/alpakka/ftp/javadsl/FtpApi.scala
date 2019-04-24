@@ -95,7 +95,36 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
       basePath: String,
       connectionSettings: S
   ): Source[FtpFile, NotUsed] =
-    ScalaSource.fromGraph(createBrowserGraph(basePath, connectionSettings, f => true, false)).asJava
+    ScalaSource
+      .fromGraph(
+        createBrowserGraph(basePath, connectionSettings, f => true, _emitTraversedDirectories = false)
+      )
+      .asJava
+
+  /**
+   * Java API: creates a [[akka.stream.javadsl.Source Source]] of [[FtpFile]]s from a base path.
+   *
+   * @param basePath Base path from which traverse the remote file server
+   * @param connectionSettings connection settings
+   * @param branchSelector a predicate for pruning the tree. Takes a remote folder and return true
+   *                       if you want to enter that remote folder.
+   *                       Default behaviour is full recursive which is equivalent with calling this function
+   *                       with [[ls(basePath,connectionSettings,f->true)]].
+   *
+   *                       Calling [[ls(basePath,connectionSettings,f->false)]] will emit only the files and folder in
+   *                       non-recursive fashion
+   *
+   * @return A [[akka.stream.javadsl.Source Source]] of [[FtpFile]]s
+   */
+  def ls(basePath: String, connectionSettings: S, branchSelector: Predicate[FtpFile]): Source[FtpFile, NotUsed] =
+    Source.fromGraph(
+      createBrowserGraph(
+        basePath,
+        connectionSettings,
+        asScalaFromPredicate(branchSelector),
+        _emitTraversedDirectories = false
+      )
+    )
 
   /**
    * Java API: creates a [[akka.stream.javadsl.Source Source]] of [[FtpFile]]s from a base path.
@@ -116,7 +145,7 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
   def ls(basePath: String,
          connectionSettings: S,
          branchSelector: Predicate[FtpFile],
-         emitTraversedDirectories: Boolean = false): Source[FtpFile, NotUsed] =
+         emitTraversedDirectories: Boolean): Source[FtpFile, NotUsed] =
     Source.fromGraph(
       createBrowserGraph(basePath, connectionSettings, asScalaFromPredicate(branchSelector), emitTraversedDirectories)
     )
