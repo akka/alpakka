@@ -23,7 +23,9 @@ trait BaseSftpSpec extends SftpSupportImpl with BaseSpec {
   protected def listFiles(basePath: String): Source[FtpFile, NotUsed] =
     Sftp.ls(basePath, settings)
 
-  protected def listFilesWithFilter(basePath: String, branchSelector: FtpFile => Boolean, emitTraversedDirectories: Boolean): Source[FtpFile, NotUsed] =
+  protected def listFilesWithFilter(basePath: String,
+                                    branchSelector: FtpFile => Boolean,
+                                    emitTraversedDirectories: Boolean): Source[FtpFile, NotUsed] =
     Sftp.ls(basePath, settings, branchSelector, emitTraversedDirectories)
 
   protected def retrieveFromPath(path: String): Source[ByteString, Future[IOResult]] =

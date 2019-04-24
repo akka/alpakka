@@ -127,7 +127,9 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       val basePath = ""
       generateFiles(1, -1, deepDir)
       val probe =
-        listFilesWithFilter(basePath, _ => true, emitTraversedDirectories = true).toMat(TestSink.probe)(Keep.right).run()
+        listFilesWithFilter(basePath, _ => true, emitTraversedDirectories = true)
+          .toMat(TestSink.probe)(Keep.right)
+          .run()
       probe.request(10).expectNextN(5) // foo, bar, baz, foobar, and sample_1 = 5 files
       probe.expectComplete()
     }

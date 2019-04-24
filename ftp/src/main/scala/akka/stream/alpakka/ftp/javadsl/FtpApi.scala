@@ -113,8 +113,13 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
    *
    * @return A [[akka.stream.javadsl.Source Source]] of [[FtpFile]]s
    */
-  def ls(basePath: String, connectionSettings: S, branchSelector: Predicate[FtpFile], emitTraversedDirectories: Boolean = false): Source[FtpFile, NotUsed] =
-    Source.fromGraph(createBrowserGraph(basePath, connectionSettings, asScalaFromPredicate(branchSelector), emitTraversedDirectories))
+  def ls(basePath: String,
+         connectionSettings: S,
+         branchSelector: Predicate[FtpFile],
+         emitTraversedDirectories: Boolean = false): Source[FtpFile, NotUsed] =
+    Source.fromGraph(
+      createBrowserGraph(basePath, connectionSettings, asScalaFromPredicate(branchSelector), emitTraversedDirectories)
+    )
 
   /**
    * Java API: creates a [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]] from some file path.

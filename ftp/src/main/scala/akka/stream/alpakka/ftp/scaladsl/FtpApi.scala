@@ -92,7 +92,10 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
    *
    * @return A [[akka.stream.scaladsl.Source Source]] of [[FtpFile]]s
    */
-  def ls(basePath: String, connectionSettings: S, branchSelector: FtpFile => Boolean, emitTraversedDirectories: Boolean = false): Source[FtpFile, NotUsed] =
+  def ls(basePath: String,
+         connectionSettings: S,
+         branchSelector: FtpFile => Boolean,
+         emitTraversedDirectories: Boolean = false): Source[FtpFile, NotUsed] =
     Source.fromGraph(createBrowserGraph(basePath, connectionSettings, branchSelector, emitTraversedDirectories))
 
   /**
