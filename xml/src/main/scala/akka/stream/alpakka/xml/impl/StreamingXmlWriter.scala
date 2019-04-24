@@ -97,5 +97,14 @@ import javax.xml.stream.XMLOutputFactory
       }
 
       override def onPull(): Unit = pull(in)
+
+      override def onUpstreamFinish(): Unit = {
+        output.flush()
+        val finalData = byteStringBuilder.result().compact
+        if (finalData.length != 0) {
+          emit(out, finalData)
+        }
+        super.onUpstreamFinish()
+      }
     }
 }
