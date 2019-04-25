@@ -164,8 +164,8 @@ object Dependencies {
       )
   )
 
-  val GeodeVersion = "1.8.0"
-  val GeodeVersionForDocs = "18"
+  val GeodeVersion = "1.9.0"
+  val GeodeVersionForDocs = "19"
 
   val Geode = {
     val slf4jVersion = "1.7.25"
