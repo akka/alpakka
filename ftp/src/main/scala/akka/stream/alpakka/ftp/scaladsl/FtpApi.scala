@@ -92,7 +92,31 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
    * @return A [[akka.stream.scaladsl.Source Source]] of [[FtpFile]]s
    */
   def ls(basePath: String, connectionSettings: S, branchSelector: FtpFile => Boolean): Source[FtpFile, NotUsed] =
-    Source.fromGraph(createBrowserGraph(basePath, connectionSettings, branchSelector))
+    Source.fromGraph(
+      createBrowserGraph(basePath, connectionSettings, branchSelector, _emitTraversedDirectories = false)
+    )
+
+  /**
+   * Scala API: creates a [[akka.stream.scaladsl.Source Source]] of [[FtpFile]]s from a base path.
+   *
+   * @param basePath Base path from which traverse the remote file server
+   * @param connectionSettings connection settings
+   * @param branchSelector a function for pruning the tree. Takes a remote folder and return true
+   *                       if you want to enter that remote folder.
+   *                       Default behaviour is fully recursive which is equivalent with calling this function
+   *                       with [ls(basePath,connectionSettings,f=>true)].
+   *
+   *                       Calling [ls(basePath,connectionSettings,f=>false)] will emit only the files and folder in
+   *                       non-recursive fashion
+   * @param emitTraversedDirectories whether to include entered directories in the stream
+   *
+   * @return A [[akka.stream.scaladsl.Source Source]] of [[FtpFile]]s
+   */
+  def ls(basePath: String,
+         connectionSettings: S,
+         branchSelector: FtpFile => Boolean,
+         emitTraversedDirectories: Boolean): Source[FtpFile, NotUsed] =
+    Source.fromGraph(createBrowserGraph(basePath, connectionSettings, branchSelector, emitTraversedDirectories))
 
   /**
    * Scala API: creates a [[akka.stream.scaladsl.Source Source]] of [[akka.util.ByteString ByteString]] from some file path.

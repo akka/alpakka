@@ -32,6 +32,8 @@ private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings] exte
 
   val branchSelector: FtpFile => Boolean = (f) => true
 
+  def emitTraversedDirectories: Boolean = false
+
   override def initialAttributes: Attributes =
     super.initialAttributes and Attributes.name(name) and IODispatcher
 
@@ -40,16 +42,24 @@ private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings] exte
 
       private[this] var buffer: Seq[FtpFile] = Seq.empty[FtpFile]
 
+      private[this] var traversed: Seq[FtpFile] = Seq.empty[FtpFile]
+
       setHandler(
         out,
         new OutHandler {
           def onPull(): Unit = {
             fillBuffer()
-            buffer match {
+            traversed match {
               case head +: tail =>
-                buffer = tail
+                traversed = tail
                 push(out, head)
-              case _ => complete(out)
+              case _ =>
+                buffer match {
+                  case head +: tail =>
+                    buffer = tail
+                    push(out, head)
+                  case _ => complete(out)
+                }
             }
           } // end of onPull
 
@@ -72,10 +82,10 @@ private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings] exte
 
       @scala.annotation.tailrec
       private[this] def fillBuffer(): Unit = buffer match {
-        case head +: tail if (head.isDirectory && branchSelector(head)) => {
+        case head +: tail if head.isDirectory && branchSelector(head) =>
           buffer = getFilesFromPath(head.path) ++ tail
+          if (emitTraversedDirectories) traversed = traversed :+ head
           fillBuffer()
-        }
         case _ => // do nothing
       }
 

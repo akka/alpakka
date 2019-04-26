@@ -27,7 +27,9 @@ trait BaseSpec
 
   protected def listFiles(basePath: String): Source[FtpFile, NotUsed]
 
-  protected def listFilesWithFilter(basePath: String, branchSelector: FtpFile => Boolean): Source[FtpFile, NotUsed]
+  protected def listFilesWithFilter(basePath: String,
+                                    branchSelector: FtpFile => Boolean,
+                                    emitTraversedDirectories: Boolean = false): Source[FtpFile, NotUsed]
 
   protected def retrieveFromPath(path: String): Source[ByteString, Future[IOResult]]
 
