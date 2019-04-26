@@ -15,31 +15,31 @@ import java.net.InetAddress;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-public class FtpStageTest extends PlainFtpSupportImpl implements CommonFtpStageTest {
+public class FtpStageTest extends BaseFtpSupport implements CommonStageTest {
 
   @Test
   public void listFiles() throws Exception {
-    CommonFtpStageTest.super.listFiles();
+    CommonStageTest.super.listFiles();
   }
 
   @Test
   public void fromPath() throws Exception {
-    CommonFtpStageTest.super.fromPath();
+    CommonStageTest.super.fromPath();
   }
 
   @Test
   public void toPath() throws Exception {
-    CommonFtpStageTest.super.toPath();
+    CommonStageTest.super.toPath();
   }
 
   @Test
   public void remove() throws Exception {
-    CommonFtpStageTest.super.remove();
+    CommonStageTest.super.remove();
   }
 
   @Test
   public void move() throws Exception {
-    CommonFtpStageTest.super.move();
+    CommonStageTest.super.move();
   }
 
   public Source<FtpFile, NotUsed> getBrowserSource(String basePath) throws Exception {
@@ -64,12 +64,11 @@ public class FtpStageTest extends PlainFtpSupportImpl implements CommonFtpStageT
   }
 
   private FtpSettings settings() throws Exception {
-    final FtpSettings settings =
-        FtpSettings.create(InetAddress.getByName("localhost"))
-            .withPort(getPort())
-            .withCredentials(FtpCredentials.anonymous())
-            .withBinary(false)
-            .withPassiveMode(true);
-    return settings;
+    return FtpSettings.create(InetAddress.getByName(HOSTNAME))
+        .withPort(PORT)
+        .withCredentials(CREDENTIALS)
+        .withBinary(false)
+        .withPassiveMode(true);
   }
+
 }

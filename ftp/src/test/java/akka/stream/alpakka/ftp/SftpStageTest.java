@@ -16,43 +16,43 @@ import java.net.InetAddress;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-public class SftpStageTest extends SftpSupportImpl implements CommonFtpStageTest {
+public class SftpStageTest extends BaseSftpSupport implements CommonStageTest {
 
   @Test
   public void listFiles() throws Exception {
-    CommonFtpStageTest.super.listFiles();
+    CommonStageTest.super.listFiles();
   }
 
   @Test
   public void fromPath() throws Exception {
-    CommonFtpStageTest.super.fromPath();
+    CommonStageTest.super.fromPath();
   }
 
   @Test
   public void toPath() throws Exception {
-    CommonFtpStageTest.super.toPath();
+    CommonStageTest.super.toPath();
   }
 
   @Test
   public void remove() throws Exception {
-    CommonFtpStageTest.super.remove();
+    CommonStageTest.super.remove();
   }
 
   @Test
   public void move() throws Exception {
-    CommonFtpStageTest.super.move();
+    CommonStageTest.super.move();
   }
 
   public Source<FtpFile, NotUsed> getBrowserSource(String basePath) throws Exception {
-    return Sftp.ls(basePath, settings());
+    return Sftp.ls(ROOT_PATH + basePath, settings());
   }
 
   public Source<ByteString, CompletionStage<IOResult>> getIOSource(String path) throws Exception {
-    return Sftp.fromPath(path, settings());
+    return Sftp.fromPath(ROOT_PATH + path, settings());
   }
 
   public Sink<ByteString, CompletionStage<IOResult>> getIOSink(String path) throws Exception {
-    return Sftp.toPath(path, settings());
+    return Sftp.toPath(ROOT_PATH + path, settings());
   }
 
   public Sink<FtpFile, CompletionStage<IOResult>> getRemoveSink() throws Exception {
@@ -61,15 +61,13 @@ public class SftpStageTest extends SftpSupportImpl implements CommonFtpStageTest
 
   public Sink<FtpFile, CompletionStage<IOResult>> getMoveSink(
       Function<FtpFile, String> destinationPath) throws Exception {
-    return Sftp.move(destinationPath, settings());
+    return Sftp.move(f -> ROOT_PATH + destinationPath.apply(f), settings());
   }
 
   private SftpSettings settings() throws Exception {
-    final SftpSettings settings =
-        SftpSettings.create(InetAddress.getByName("localhost"))
-            .withPort(getPort())
-            .withCredentials(FtpCredentials.anonymous())
-            .withStrictHostKeyChecking(false);
-    return settings;
+    return SftpSettings.create(InetAddress.getByName(HOSTNAME))
+        .withPort(PORT)
+        .withCredentials(CREDENTIALS)
+        .withStrictHostKeyChecking(false);
   }
 }

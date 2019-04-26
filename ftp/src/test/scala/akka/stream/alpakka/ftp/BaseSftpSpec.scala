@@ -13,30 +13,33 @@ import akka.util.ByteString
 
 import scala.concurrent.Future
 
-trait BaseSftpSpec extends SftpSupportImpl with BaseSpec {
+trait BaseSftpSpec extends BaseSftpSupport with BaseSpec {
 
   val settings = SftpSettings(
-    InetAddress.getByName("localhost")
-  ).withPort(getPort)
+    InetAddress.getByName(HOSTNAME)
+  ).withPort(PORT)
+    .withCredentials(FtpCredentials.create("username", "userpass"))
     .withStrictHostKeyChecking(false)
 
   protected def listFiles(basePath: String): Source[FtpFile, NotUsed] =
-    Sftp.ls(basePath, settings)
+    Sftp.ls(ROOT_PATH + basePath, settings)
 
   protected def listFilesWithFilter(basePath: String,
                                     branchSelector: FtpFile => Boolean,
                                     emitTraversedDirectories: Boolean): Source[FtpFile, NotUsed] =
-    Sftp.ls(basePath, settings, branchSelector, emitTraversedDirectories)
+    Sftp.ls(ROOT_PATH + basePath, settings, branchSelector, emitTraversedDirectories)
 
-  protected def retrieveFromPath(path: String): Source[ByteString, Future[IOResult]] =
-    Sftp.fromPath(path, settings)
+  protected def retrieveFromPath(path: String, fromRoot: Boolean = false): Source[ByteString, Future[IOResult]] = {
+    val finalPath = if (fromRoot) path else ROOT_PATH + path
+    Sftp.fromPath(finalPath, settings)
+  }
 
   protected def storeToPath(path: String, append: Boolean): Sink[ByteString, Future[IOResult]] =
-    Sftp.toPath(path, settings, append)
+    Sftp.toPath(ROOT_PATH + path, settings, append)
 
   protected def remove(): Sink[FtpFile, Future[IOResult]] =
     Sftp.remove(settings)
 
   protected def move(destinationPath: FtpFile => String): Sink[FtpFile, Future[IOResult]] =
-    Sftp.move(destinationPath, settings)
+    Sftp.move(file => ROOT_PATH + destinationPath(file), settings)
 }

@@ -23,7 +23,7 @@ trait BaseSpec
     with IntegrationPatience
     with Inside
     with AkkaSupport
-    with FtpSupport {
+    with BaseSupport {
 
   protected def listFiles(basePath: String): Source[FtpFile, NotUsed]
 
@@ -31,17 +31,13 @@ trait BaseSpec
                                     branchSelector: FtpFile => Boolean,
                                     emitTraversedDirectories: Boolean = false): Source[FtpFile, NotUsed]
 
-  protected def retrieveFromPath(path: String): Source[ByteString, Future[IOResult]]
+  protected def retrieveFromPath(path: String, fromRoot: Boolean = false): Source[ByteString, Future[IOResult]]
 
   protected def storeToPath(path: String, append: Boolean): Sink[ByteString, Future[IOResult]]
 
   protected def remove(): Sink[FtpFile, Future[IOResult]]
 
   protected def move(destinationPath: FtpFile => String): Sink[FtpFile, Future[IOResult]]
-
-  protected def startServer(): Unit
-
-  protected def stopServer(): Unit
 
   /** For a few tests `assertAllStagesStopped` failed on Travis, this hook allows to inject a bit more patience
    * for the check.
@@ -54,13 +50,7 @@ trait BaseSpec
     cleanFiles()
   }
 
-  override protected def beforeAll() = {
-    super.beforeAll()
-    startServer()
-  }
-
   override protected def afterAll() = {
-    stopServer()
     Await.ready(getSystem.terminate(), 42.seconds)
     super.afterAll()
   }
