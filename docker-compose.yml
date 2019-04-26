@@ -66,6 +66,21 @@ services:
     image: deangiberson/aws-dynamodb-local
     ports:
       - "8001:8000"
+  ftp:
+    image: stilliard/pure-ftpd:latest
+    ports:
+      - "21000:21"
+      - "30000-30009:30000-30009"
+    volumes:
+      - ./ftp/target/home:/home/username/
+      - ./ftp/target/passwd:/etc/pure-ftpd/passwd
+      - ./ftp/src/test/resources/ftpd/:/etc/ssl/private/
+    environment:
+      PUBLICHOST: "localhost"
+      FTP_USER_NAME: username
+      FTP_USER_PASS: userpass
+      FTP_USER_HOME: /home/username
+      ADDED_FLAGS: "--tls=1"
   geode:
     container_name: geode
     image: apachegeode/geode:1.8.0
@@ -199,3 +214,14 @@ services:
     environment:
       - "ORIENTDB_ROOT_PASSWORD=root"
     command: /orientdb/bin/server.sh -Dmemory.chunk.size=268435456
+  sftp:
+    image: atmoz/sftp
+    volumes:
+      - ./ftp/target/home:/home/username/upload
+      - ./ftp/src/test/resources/id_rsa.pub:/home/username/.ssh/keys/id_rsa.pub:ro
+      - ./ftp/src/test/resources/sftpd/ssh_host_ed25519_key:/tmp/ssh_host_ed25519_key
+      - ./ftp/src/test/resources/sftpd/ssh_host_rsa_key:/tmp/ssh_host_rsa_key
+      - ./ftp/src/test/resources/sftpd/init.sh:/etc/sftp.d/init.sh
+    ports:
+      - "2222:22"
+    command: username:userpass
