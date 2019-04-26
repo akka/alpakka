@@ -51,7 +51,6 @@ public class KinesisSnippets {
     // #init-client
 
     // #source-settings
-
     final ShardSettings settings =
         ShardSettings.create("streamName", "shard-id")
             .withRefreshInterval(Duration.ofSeconds(1))
