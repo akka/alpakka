@@ -85,7 +85,8 @@ public abstract class BaseSupportImpl implements BaseSupport, AkkaSupport {
         parent.mkdirs();
       }
       Path path = getRootDir().resolve(relativePath);
-      Files.write(path, fileContents);
+      path.toFile().createNewFile();
+      Files.write(path, fileContents, StandardOpenOption.SYNC);
     } catch (Throwable t) {
       throw new RuntimeException(t);
     }

@@ -194,10 +194,10 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
   }
 
   "FTPIOSink" when {
-    val fileName = "sample_io"
 
     "no file is already present at the target location" should {
       "create a new file from the provided stream of bytes regardless of the append mode" in assertAllStagesStopped {
+        val fileName = "sample_io_1"
         List(true, false).foreach { mode ⇒
           val result = Source.single(ByteString(getDefaultContent)).runWith(storeToPath(s"/$fileName", mode)).futureValue
 
@@ -218,9 +218,8 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       val expectedNumOfBytes = reversedLoremIpsum.length
 
       "overwrite it when not in append mode" in assertAllStagesStopped {
+        val fileName = "sample_io_2"
         putFileOnFtp(fileName)
-
-        Thread.sleep(500) // FIXME
 
         val result =
           Source.single(ByteString(reversedLoremIpsum)).runWith(storeToPath(s"/$fileName", append = false)).futureValue
@@ -235,9 +234,8 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       }
 
       "append to its contents when in append mode" in assertAllStagesStopped {
+        val fileName = "sample_io_3"
         putFileOnFtp(fileName)
-
-        Thread.sleep(500) // FIXME
 
         val result =
           Source.single(ByteString(reversedLoremIpsum)).runWith(storeToPath(s"/$fileName", append = true)).futureValue
