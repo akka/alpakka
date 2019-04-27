@@ -17,12 +17,7 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Seconds, Span}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
-class FtpExamplesSpec
-    extends BaseFtpSupport
-    with WordSpecLike
-    with Matchers
-    with BeforeAndAfterAll
-    with ScalaFutures {
+class FtpExamplesSpec extends BaseFtpSupport with WordSpecLike with Matchers with BeforeAndAfterAll with ScalaFutures {
 
   implicit val materializer: Materializer = getMaterializer
 

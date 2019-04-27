@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package akka.stream.alpakka.ftp;
 
 import java.nio.file.Path;
@@ -14,5 +18,4 @@ public class BaseFtpSupport extends BaseSupportImpl {
   public Path getRootDir() {
     return ROOT_DIR;
   }
-
 }

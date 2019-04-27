@@ -15,7 +15,8 @@ public class BaseSftpSupport extends BaseSupportImpl {
   final String HOSTNAME = "localhost";
   final int PORT = 2222;
   final FtpCredentials CREDENTIALS = FtpCredentials.create("username", "userpass");
-  // Issue: the root folder of the sftp server is not writable so tests must happen inside a sub-folder
+  // Issue: the root folder of the sftp server is not writable so tests must happen inside a
+  // sub-folder
   final String ROOT_PATH = "upload/";
 
   public static final byte[] CLIENT_PRIVATE_KEY_PASSPHRASE =
@@ -41,5 +42,4 @@ public class BaseSftpSupport extends BaseSupportImpl {
   public Path getRootDir() {
     return ROOT_DIR;
   }
-
 }

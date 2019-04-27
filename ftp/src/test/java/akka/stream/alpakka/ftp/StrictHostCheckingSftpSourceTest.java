@@ -51,8 +51,7 @@ public class StrictHostCheckingSftpSourceTest extends BaseSftpSupport implements
   private SftpSettings settings() throws Exception {
     return SftpSettings.create(InetAddress.getByName(HOSTNAME))
         .withPort(PORT)
-        .withCredentials(
-            FtpCredentials.create("username", "wrong password"))
+        .withCredentials(FtpCredentials.create("username", "wrong password"))
         .withStrictHostKeyChecking(true) // strictHostKeyChecking
         .withKnownHosts(getKnownHostsFile().getPath())
         .withSftpIdentity(

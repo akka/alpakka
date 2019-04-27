@@ -33,26 +33,27 @@ public abstract class BaseSupportImpl implements BaseSupport, AkkaSupport {
 
   abstract Path getRootDir();
 
-  @Override @After
+  @Override
+  @After
   public void cleanFiles() {
     try {
       Files.walkFileTree(
-        getRootDir(),
-        new SimpleFileVisitor<Path>() {
-          @Override
-          public FileVisitResult postVisitDirectory(Path dir, IOException exc)
-              throws IOException {
-            if (!dir.equals(getRootDir())) Files.delete(dir);
-            return FileVisitResult.CONTINUE;
-          }
+          getRootDir(),
+          new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException exc)
+                throws IOException {
+              if (!dir.equals(getRootDir())) Files.delete(dir);
+              return FileVisitResult.CONTINUE;
+            }
 
-          @Override
-          public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-              throws IOException {
-            Files.deleteIfExists(file);
-            return FileVisitResult.CONTINUE;
-          }
-        });
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                throws IOException {
+              Files.deleteIfExists(file);
+              return FileVisitResult.CONTINUE;
+            }
+          });
     } catch (Throwable t) {
       t.printStackTrace();
     }
@@ -125,5 +126,4 @@ public abstract class BaseSupportImpl implements BaseSupport, AkkaSupport {
   public Materializer getMaterializer() {
     return materializer;
   }
-
 }

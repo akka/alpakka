@@ -70,5 +70,4 @@ public class FtpStageTest extends BaseFtpSupport implements CommonStageTest {
         .withBinary(false)
         .withPassiveMode(true);
   }
-
 }

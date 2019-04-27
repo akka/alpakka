@@ -53,8 +53,7 @@ public class RawKeySftpSourceTest extends BaseSftpSupport implements CommonStage
   private SftpSettings settings() throws Exception {
     return SftpSettings.create(InetAddress.getByName(HOSTNAME))
         .withPort(PORT)
-        .withCredentials(
-            FtpCredentials.create("username", "wrong password"))
+        .withCredentials(FtpCredentials.create("username", "wrong password"))
         .withStrictHostKeyChecking(false) // strictHostKeyChecking
         .withSftpIdentity(
             SftpIdentity.createRawSftpIdentity(

@@ -51,11 +51,10 @@ public class KeyFileSftpSourceTest extends BaseSftpSupport implements CommonStag
   private SftpSettings settings() throws Exception {
     return SftpSettings.create(InetAddress.getByName(HOSTNAME))
         .withPort(PORT)
-        .withCredentials(
-          FtpCredentials.create("username", "wrong password"))
+        .withCredentials(FtpCredentials.create("username", "wrong password"))
         .withStrictHostKeyChecking(false) // strictHostKeyChecking
         .withSftpIdentity(
-          SftpIdentity.createFileSftpIdentity(
-            getClientPrivateKeyFile().getPath(), CLIENT_PRIVATE_KEY_PASSPHRASE));
+            SftpIdentity.createFileSftpIdentity(
+                getClientPrivateKeyFile().getPath(), CLIENT_PRIVATE_KEY_PASSPHRASE));
   }
 }

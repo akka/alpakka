@@ -19,5 +19,4 @@ interface BaseSupport {
   boolean fileExists(String filePath);
 
   String getDefaultContent();
-
 }
