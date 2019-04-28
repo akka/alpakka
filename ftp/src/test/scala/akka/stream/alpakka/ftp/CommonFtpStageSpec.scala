@@ -199,7 +199,8 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       "create a new file from the provided stream of bytes regardless of the append mode" in assertAllStagesStopped {
         val fileName = "sample_io_1"
         List(true, false).foreach { mode ⇒
-          val result = Source.single(ByteString(getDefaultContent)).runWith(storeToPath(s"/$fileName", mode)).futureValue
+          val result =
+            Source.single(ByteString(getDefaultContent)).runWith(storeToPath(s"/$fileName", mode)).futureValue
 
           val expectedNumOfBytes = getDefaultContent.getBytes().length
           result shouldBe IOResult.createSuccessful(expectedNumOfBytes)
@@ -248,6 +249,10 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
         }
       }
     }
+
+  }
+
+  it should {
 
     "write a bigger file (~2 MB) to a path from a stream of bytes" in assertAllStagesStopped {
       val fileName = "sample_bigger_file"

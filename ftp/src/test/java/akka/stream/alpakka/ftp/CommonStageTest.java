@@ -17,6 +17,7 @@ import akka.stream.testkit.javadsl.TestSink;
 import akka.util.ByteString;
 import org.junit.Assert;
 
+import java.time.Instant;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -59,7 +60,7 @@ interface CommonStageTest extends BaseSupport, AkkaSupport {
   }
 
   default void fromPath() throws Exception {
-    String fileName = "sample_io";
+    String fileName = "sample_io_" + Instant.now().getNano();
     putFileOnFtp(fileName);
 
     final ActorSystem system = getSystem();
@@ -78,7 +79,7 @@ interface CommonStageTest extends BaseSupport, AkkaSupport {
   }
 
   default void toPath() throws Exception {
-    String fileName = "sample_io";
+    String fileName = "sample_io_" + Instant.now().getNano();
 
     final Materializer materializer = getMaterializer();
 
@@ -98,7 +99,7 @@ interface CommonStageTest extends BaseSupport, AkkaSupport {
   }
 
   default void remove() throws Exception {
-    final String fileName = "sample_io";
+    final String fileName = "sample_io_" + Instant.now().getNano();
     putFileOnFtp(fileName);
 
     final Materializer materializer = getMaterializer();

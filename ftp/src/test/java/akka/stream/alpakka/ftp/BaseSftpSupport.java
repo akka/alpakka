@@ -11,7 +11,7 @@ import java.nio.file.Paths;
 
 public class BaseSftpSupport extends BaseSupportImpl {
 
-  private final Path ROOT_DIR = Paths.get("ftp/target/home");
+  private final Path ROOT_DIR = Paths.get("target/home");
   final String HOSTNAME = "localhost";
   final int PORT = 2222;
   final FtpCredentials CREDENTIALS = FtpCredentials.create("username", "userpass");
