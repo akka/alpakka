@@ -78,4 +78,7 @@ private[ftp] trait CommonFtpOperations {
 
   def remove(path: String, handler: Handler): Unit =
     handler.deleteFile(path)
+
+  def completePendingCommand(handler: Handler): Boolean =
+    handler.completePendingCommand()
 }
