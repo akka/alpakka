@@ -286,11 +286,11 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       extraWaitForStageShutdown()
     }
 
-    /*"fail and report the exception in the result status if connection fails" in { // TODO Fails too often on Travis: assertAllStagesStopped {
+    "fail and report the exception in the result status if connection fails" ignore { // TODO Fails too often on Travis: assertAllStagesStopped {
       def waitForUploadToStart(fileName: String) =
         eventually {
-          noException should be thrownBy getFtpFileContents(ROOT_DIR, fileName)
-          getFtpFileContents(ROOT_DIR, fileName).length shouldBe >(0)
+          noException should be thrownBy getFtpFileContents(fileName)
+          getFtpFileContents(fileName).length shouldBe >(0)
         }
 
       val fileName = "sample_io_connection"
@@ -298,12 +298,12 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
 
       val future = infiniteSource.runWith(storeToPath(s"/$fileName", append = false))
       waitForUploadToStart(fileName)
-      stopServer()
+      // stopServer()
       val result = future.futureValue
-      startServer()
+      // startServer()
 
       result.status.failed.get shouldBe a[Exception]
-    }*/
+    }
   }
 
   "FtpRemoveSink" should {
