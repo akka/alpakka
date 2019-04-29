@@ -358,13 +358,15 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
   private implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
   import system.dispatcher
 
-  private val sel = NativeSelectorProvider.getInstance.openSelector
-
-  private val ioThread = new Thread(new Runnable {
-    override def run(): Unit =
-      nioEventLoop(sel, system.log)
-  }, "unix-domain-socket-io")
-  ioThread.start()
+  private lazy val sel = {
+    val s = NativeSelectorProvider.getInstance.openSelector
+    val ioThread = new Thread(new Runnable {
+      override def run(): Unit =
+        nioEventLoop(s, system.log)
+    }, "unix-domain-socket-io")
+    ioThread.start()
+    s
+  }
 
   CoordinatedShutdown(system).addTask(CoordinatedShutdown.PhaseServiceStop, "stopUnixDomainSocket") { () =>
     sel.close() // Not much else that we can do
