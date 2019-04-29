@@ -7,6 +7,7 @@ package akka.stream.alpakka.ftp
 import java.net.InetAddress
 import java.nio.file.attribute.PosixFilePermission
 import java.nio.file.{Files, Paths}
+import java.time.Instant
 
 import akka.stream.IOResult
 import BaseSftpSupport.{CLIENT_PRIVATE_KEY_PASSPHRASE => ClientPrivateKeyPassphrase}
@@ -152,7 +153,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
 
   "FtpIOSource" should {
     "retrieve a file from path as a stream of bytes" in assertAllStagesStopped {
-      val fileName = "sample_io"
+      val fileName = "sample_io_" + Instant.now().getNano
       putFileOnFtp(fileName)
       val (result, probe) =
         retrieveFromPath(s"/$fileName").toMat(TestSink.probe)(Keep.both).run()
@@ -163,7 +164,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
     }
 
     "retrieve a bigger file (~2 MB) from path as a stream of bytes" in assertAllStagesStopped {
-      val fileName = "sample_bigger_file"
+      val fileName = "sample_bigger_file_" + Instant.now().getNano
       val fileContents = new Array[Byte](2000020)
       Random.nextBytes(fileContents)
       putFileOnFtpWithContents(fileName, fileContents)
@@ -197,7 +198,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
 
     "no file is already present at the target location" should {
       "create a new file from the provided stream of bytes regardless of the append mode" in assertAllStagesStopped {
-        val fileName = "sample_io_1"
+        val fileName = "sample_io_" + Instant.now().getNano
         List(true, false).foreach { mode ⇒
           val result =
             Source.single(ByteString(getDefaultContent)).runWith(storeToPath(s"/$fileName", mode)).futureValue
@@ -219,7 +220,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       val expectedNumOfBytes = reversedLoremIpsum.length
 
       "overwrite it when not in append mode" in assertAllStagesStopped {
-        val fileName = "sample_io_2"
+        val fileName = "sample_io_" + Instant.now().getNano
         putFileOnFtp(fileName)
 
         val result =
@@ -235,7 +236,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       }
 
       "append to its contents when in append mode" in assertAllStagesStopped {
-        val fileName = "sample_io_3"
+        val fileName = "sample_io_" + Instant.now().getNano
         putFileOnFtp(fileName)
 
         val result =
@@ -255,7 +256,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
   it should {
 
     "write a bigger file (~2 MB) to a path from a stream of bytes" in assertAllStagesStopped {
-      val fileName = "sample_bigger_file"
+      val fileName = "sample_bigger_file_" + Instant.now().getNano
       val fileContents = new Array[Byte](2000020)
       Random.nextBytes(fileContents)
 
@@ -270,12 +271,13 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
 
       eventually {
         val storedContents = getFtpFileContents(fileName)
+        storedContents.length shouldBe fileContents.length
         storedContents shouldBe fileContents
       }
     }
 
     "fail and report the exception in the result status if upstream fails" in assertAllStagesStopped {
-      val fileName = "sample_io_upstream"
+      val fileName = "sample_io_upstream_" + Instant.now().getNano
       val brokenSource = Source(10.to(0, -1)).map(x ⇒ ByteString(10 / x))
 
       val result = brokenSource.runWith(storeToPath(s"/$fileName", append = false)).futureValue
@@ -306,7 +308,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
 
   "FtpRemoveSink" should {
     "remove a file" in { // TODO Fails too often on Travis: assertAllStagesStopped {
-      val fileName = "sample_io"
+      val fileName = "sample_io_" + Instant.now().getNano
       putFileOnFtp(fileName)
 
       val source = listFiles("/")
@@ -315,15 +317,17 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
 
       result shouldBe IOResult.createSuccessful(1)
 
-      fileExists(fileName) shouldBe false
+      eventually {
+        fileExists(fileName) shouldBe false
+      }
       extraWaitForStageShutdown()
     }
   }
 
   "FtpMoveSink" should {
     "move a file" in { // TODO Fails too often on Travis: assertAllStagesStopped {
-      val fileName = "sample_io"
-      val fileName2 = "sample_io2"
+      val fileName = "sample_io_" + Instant.now().getNano
+      val fileName2 = "sample_io2_" + Instant.now().getNano
       putFileOnFtp(fileName)
 
       val source = listFiles("/")
@@ -332,8 +336,10 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
 
       result shouldBe IOResult.createSuccessful(1)
 
-      fileExists(fileName) shouldBe false
-      fileExists(fileName2) shouldBe true
+      eventually {
+        fileExists(fileName) shouldBe false
+        fileExists(fileName2) shouldBe true
+      }
       extraWaitForStageShutdown()
     }
   }

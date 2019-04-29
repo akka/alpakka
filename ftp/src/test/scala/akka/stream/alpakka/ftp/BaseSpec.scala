@@ -9,13 +9,24 @@ import akka.stream.IOResult
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, Inside, Matchers, WordSpecLike}
+import org.scalatest.{
+  Args,
+  BeforeAndAfter,
+  BeforeAndAfterAll,
+  Inside,
+  Matchers,
+  Status,
+  TestSuite,
+  TestSuiteMixin,
+  WordSpecLike
+}
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
 trait BaseSpec
-    extends WordSpecLike
+    extends TestSuiteMixin
+    with WordSpecLike
     with Matchers
     with BeforeAndAfter
     with BeforeAndAfterAll
@@ -23,7 +34,7 @@ trait BaseSpec
     with IntegrationPatience
     with Inside
     with AkkaSupport
-    with BaseSupport {
+    with BaseSupport { this: TestSuite =>
 
   protected def listFiles(basePath: String): Source[FtpFile, NotUsed]
 
@@ -53,5 +64,16 @@ trait BaseSpec
   override protected def afterAll() = {
     Await.ready(getSystem.terminate(), 42.seconds)
     super.afterAll()
+  }
+
+  // Allows to run tests n times in a row with a command line argument, useful for debugging sporadic failures
+  // e.g. ftp/testOnly *.FtpsStageSpec -- -Dtimes=20
+  // https://gist.github.com/dwickern/6ba9c5c505d2325d3737ace059302922
+  protected abstract override def runTest(testName: String, args: Args): Status = {
+    def run0(times: Int): Status = {
+      val status = super.runTest(testName, args)
+      if (times <= 1) status else status.thenRun(run0(times - 1))
+    }
+    run0(args.configMap.getWithDefault("times", "1").toInt)
   }
 }
