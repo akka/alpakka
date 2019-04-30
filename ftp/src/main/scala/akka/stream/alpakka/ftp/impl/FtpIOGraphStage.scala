@@ -87,6 +87,12 @@ private[ftp] trait FtpIOSourceStage[FtpClient, S <: RemoteFileSettings]
           isOpt.foreach { os =>
             try {
               os.close()
+              ftpLike match {
+                case cfo: CommonFtpOperations =>
+                  if (!cfo.completePendingCommand(handler.get.asInstanceOf[cfo.Handler]))
+                    throw new IOException("File transfer failed.")
+                case _ =>
+              }
             } catch {
               case e: IOException =>
                 matFailure(e)
@@ -184,6 +190,12 @@ private[ftp] trait FtpIOSinkStage[FtpClient, S <: RemoteFileSettings]
           osOpt.foreach { os =>
             try {
               os.close()
+              ftpLike match {
+                case cfo: CommonFtpOperations =>
+                  if (!cfo.completePendingCommand(handler.get.asInstanceOf[cfo.Handler]))
+                    throw new IOException("File transfer failed.")
+                case _ =>
+              }
             } catch {
               case e: IOException =>
                 matFailure(e)

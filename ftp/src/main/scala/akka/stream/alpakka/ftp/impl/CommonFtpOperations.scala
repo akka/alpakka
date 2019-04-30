@@ -7,6 +7,7 @@ package akka.stream.alpakka.ftp.impl
 import java.io.{IOException, InputStream, OutputStream}
 import java.nio.file.Paths
 import java.nio.file.attribute.PosixFilePermission
+import java.util.TimeZone
 
 import akka.annotation.InternalApi
 import akka.stream.alpakka.ftp.FtpFile
@@ -28,6 +29,8 @@ private[ftp] trait CommonFtpOperations {
       .listFiles(path)
       .collect {
         case file: FTPFile if file.getName != "." && file.getName != ".." =>
+          val calendar = file.getTimestamp
+          calendar.setTimeZone(TimeZone.getTimeZone("UTC"))
           FtpFile(
             file.getName,
             if (java.io.File.separatorChar == '\\')
@@ -36,7 +39,7 @@ private[ftp] trait CommonFtpOperations {
               Paths.get(s"$path/${file.getName}").normalize.toString,
             file.isDirectory,
             file.getSize,
-            file.getTimestamp.getTimeInMillis,
+            calendar.getTimeInMillis,
             getPosixFilePermissions(file)
           )
       }
@@ -75,4 +78,7 @@ private[ftp] trait CommonFtpOperations {
 
   def remove(path: String, handler: Handler): Unit =
     handler.deleteFile(path)
+
+  def completePendingCommand(handler: Handler): Boolean =
+    handler.completePendingCommand()
 }

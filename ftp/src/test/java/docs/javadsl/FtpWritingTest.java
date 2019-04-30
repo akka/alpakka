@@ -15,8 +15,7 @@ import java.util.concurrent.CompletionStage;
 import java.io.PrintWriter;
 import java.net.InetAddress;
 import akka.stream.alpakka.ftp.FtpSettings;
-import akka.stream.alpakka.ftp.PlainFtpSupportImpl;
-import akka.stream.alpakka.ftp.FtpBaseSupport;
+import akka.stream.alpakka.ftp.BaseFtpSupport;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
@@ -30,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.is;
 
-public class FtpWritingTest extends PlainFtpSupportImpl {
+public class FtpWritingTest extends BaseFtpSupport {
 
   @After
   public void afterEach() {
@@ -41,8 +40,9 @@ public class FtpWritingTest extends PlainFtpSupportImpl {
   FtpSettings ftpSettings() throws Exception {
     // #create-settings
     FtpSettings ftpSettings =
-        FtpSettings.create(InetAddress.getByName(hostname))
-            .withPort(getPort())
+        FtpSettings.create(InetAddress.getByName(HOSTNAME))
+            .withPort(PORT)
+            .withCredentials(CREDENTIALS)
             .withBinary(true)
             .withPassiveMode(true)
             // only useful for debugging
@@ -68,7 +68,7 @@ public class FtpWritingTest extends PlainFtpSupportImpl {
 
     IOResult ioResult = result.toCompletableFuture().get(5, TimeUnit.SECONDS);
     assertThat(ioResult, is(IOResult.createSuccessful(25)));
-    assertTrue(fileExists(FtpBaseSupport.FTP_ROOT_DIR, "file.txt"));
+    assertTrue(fileExists("file.txt"));
   }
 
   @Test
@@ -86,6 +86,6 @@ public class FtpWritingTest extends PlainFtpSupportImpl {
 
     IOResult ioResult = result.toCompletableFuture().get(5, TimeUnit.SECONDS);
     assertThat(ioResult, is(IOResult.createSuccessful(50)));
-    assertTrue(fileExists(FtpBaseSupport.FTP_ROOT_DIR, "file.txt.gz"));
+    assertTrue(fileExists("file.txt.gz"));
   }
 }
