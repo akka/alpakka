@@ -17,16 +17,16 @@ import java.nio.file.Paths;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-public class RawKeySftpSourceTest extends BaseSftpSupport implements CommonStageTest {
+public class RawKeySftpSourceTest extends BaseSftpSupport implements CommonFtpStageTest {
 
   @Test
   public void listFiles() throws Exception {
-    CommonStageTest.super.listFiles();
+    CommonFtpStageTest.super.listFiles();
   }
 
   @Test
   public void fromPath() throws Exception {
-    CommonStageTest.super.fromPath();
+    CommonFtpStageTest.super.fromPath();
   }
 
   public Source<FtpFile, NotUsed> getBrowserSource(String basePath) throws Exception {

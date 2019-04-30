@@ -15,16 +15,16 @@ import java.net.InetAddress;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-public class KeyFileSftpSourceTest extends BaseSftpSupport implements CommonStageTest {
+public class KeyFileSftpSourceTest extends BaseSftpSupport implements CommonFtpStageTest {
 
   @Test
   public void listFiles() throws Exception {
-    CommonStageTest.super.listFiles();
+    CommonFtpStageTest.super.listFiles();
   }
 
   @Test
   public void fromPath() throws Exception {
-    CommonStageTest.super.fromPath();
+    CommonFtpStageTest.super.fromPath();
   }
 
   public Source<FtpFile, NotUsed> getBrowserSource(String basePath) throws Exception {

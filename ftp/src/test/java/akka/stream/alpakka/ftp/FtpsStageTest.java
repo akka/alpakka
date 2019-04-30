@@ -15,31 +15,31 @@ import java.net.InetAddress;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-public class FtpsStageTest extends BaseFtpSupport implements CommonStageTest {
+public class FtpsStageTest extends BaseFtpSupport implements CommonFtpStageTest {
 
   @Test
   public void listFiles() throws Exception {
-    CommonStageTest.super.listFiles();
+    CommonFtpStageTest.super.listFiles();
   }
 
   @Test
   public void fromPath() throws Exception {
-    CommonStageTest.super.fromPath();
+    CommonFtpStageTest.super.fromPath();
   }
 
   @Test
   public void toPath() throws Exception {
-    CommonStageTest.super.toPath();
+    CommonFtpStageTest.super.toPath();
   }
 
   @Test
   public void remove() throws Exception {
-    CommonStageTest.super.remove();
+    CommonFtpStageTest.super.remove();
   }
 
   @Test
   public void move() throws Exception {
-    CommonStageTest.super.move();
+    CommonFtpStageTest.super.move();
   }
 
   public Source<FtpFile, NotUsed> getBrowserSource(String basePath) throws Exception {

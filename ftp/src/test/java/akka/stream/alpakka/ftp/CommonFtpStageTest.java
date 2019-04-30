@@ -25,7 +25,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-interface CommonStageTest extends BaseSupport, AkkaSupport {
+interface CommonFtpStageTest extends BaseSupport, AkkaSupport {
 
   Source<FtpFile, NotUsed> getBrowserSource(String basePath) throws Exception;
 
