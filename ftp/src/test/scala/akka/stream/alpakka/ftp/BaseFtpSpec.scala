@@ -12,11 +12,12 @@ import akka.util.ByteString
 import scala.concurrent.Future
 import java.net.InetAddress
 
-trait BaseFtpSpec extends PlainFtpSupportImpl with BaseSpec {
+trait BaseFtpSpec extends BaseFtpSupport with BaseSpec {
 
   val settings = FtpSettings(
-    InetAddress.getByName("localhost")
-  ).withPort(getPort)
+    InetAddress.getByName(HOSTNAME)
+  ).withPort(PORT)
+    .withCredentials(CREDENTIALS)
     .withBinary(true)
     .withPassiveMode(true)
 
@@ -28,7 +29,7 @@ trait BaseFtpSpec extends PlainFtpSupportImpl with BaseSpec {
                                     emitTraversedDirectories: Boolean = false): Source[FtpFile, NotUsed] =
     Ftp.ls(basePath, settings, branchSelector, emitTraversedDirectories)
 
-  protected def retrieveFromPath(path: String): Source[ByteString, Future[IOResult]] =
+  protected def retrieveFromPath(path: String, fromRoot: Boolean = false): Source[ByteString, Future[IOResult]] =
     Ftp.fromPath(path, settings)
 
   protected def storeToPath(path: String, append: Boolean): Sink[ByteString, Future[IOResult]] =
