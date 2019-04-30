@@ -79,6 +79,8 @@ services:
       FTP_USER_NAME: username
       FTP_USER_PASS: userpass
       FTP_USER_HOME: /home/username
+      FTP_USER_UID: 2000
+      FTP_USER_GID: 2000
       ADDED_FLAGS: "--tls=1"
   geode:
     container_name: geode
@@ -223,4 +225,4 @@ services:
       - ./ftp/src/test/resources/sftpd/init.sh:/etc/sftp.d/init.sh
     ports:
       - "2222:22"
-    command: username:userpass
+    command: username:userpass:2000:2000
