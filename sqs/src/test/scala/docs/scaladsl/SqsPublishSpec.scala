@@ -179,7 +179,8 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
     //#flow
 
     val result = future.futureValue
-    result.metadata.md5OfMessageBody() shouldBe md5HashString("alpakka")
+    result.result
+    result.result.md5OfMessageBody() shouldBe md5HashString("alpakka")
 
     receiveMessage().body() shouldBe "alpakka"
   }
@@ -195,7 +196,7 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
     //#flow
 
     val result = future.futureValue
-    result.metadata.md5OfMessageBody() shouldBe md5HashString("alpakka")
+    result.result.md5OfMessageBody() shouldBe md5HashString("alpakka")
 
     receiveMessage().body() shouldBe "alpakka"
   }
@@ -222,8 +223,8 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
         .runWith(Sink.head)
 
     val result = future.futureValue
-    result.metadata.md5OfMessageBody() shouldBe md5HashString("alpakka")
-    result.metadata.sequenceNumber() should not be empty
+    result.result.md5OfMessageBody() shouldBe md5HashString("alpakka")
+    result.result.sequenceNumber() should not be empty
 
     receiveMessage().body() shouldBe "alpakka"
   }
@@ -253,8 +254,8 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     future.futureValue.flatten.zipWithIndex.foreach {
       case (result, i) =>
-        result.metadata.md5OfMessageBody() shouldBe md5HashString(s"Message $i")
-        result.metadata.sequenceNumber() should not be empty
+        result.result.md5OfMessageBody() shouldBe md5HashString(s"Message $i")
+        result.result.sequenceNumber() should not be empty
     }
 
     receiveMessages(10) should have size 10

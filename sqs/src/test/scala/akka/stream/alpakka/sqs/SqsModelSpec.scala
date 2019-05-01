@@ -4,20 +4,25 @@
 
 package akka.stream.alpakka.sqs
 
-import java.util.Collections
-
+import akka.stream.alpakka.sqs.SqsAckResult._
+import akka.stream.alpakka.sqs.SqsAckResultEntry._
 import org.scalatest.{FlatSpec, Matchers}
-import software.amazon.awssdk.awscore.AwsResponseMetadata
-import software.amazon.awssdk.services.sqs.model.{Message, SendMessageRequest, SendMessageResponse, SqsResponseMetadata}
+import software.amazon.awssdk.awscore.DefaultAwsResponseMetadata
+import software.amazon.awssdk.services.sqs.model._
 
 class SqsModelSpec extends FlatSpec with Matchers {
 
   val msg = Message.builder().build()
   val otherMsg = Message.builder().body("other-body").build()
+  val responseMetadata = SqsResponseMetadata.create(DefaultAwsResponseMetadata.create(java.util.Collections.emptyMap()))
+  val otherResponseMetadata =
+    SqsResponseMetadata.create(DefaultAwsResponseMetadata.create(java.util.Collections.singletonMap("k", "v")))
 
   "MessageAction.Delete" should "implement proper equality" in {
     MessageAction.Delete(msg) shouldBe MessageAction.Delete(msg)
     MessageAction.Delete(msg) should not be MessageAction.Delete(otherMsg)
+    MessageAction.Delete(msg) should not be MessageAction.Ignore(otherMsg)
+    MessageAction.Delete(msg) should not be MessageAction.ChangeMessageVisibility(otherMsg, 10)
   }
 
   "MessageAction.Ignore" should "implement proper equality" in {
@@ -48,36 +53,84 @@ class SqsModelSpec extends FlatSpec with Matchers {
     MessageAction.ChangeMessageVisibility(msg, 0)
   }
 
-  trait Fixture {
-    private object TestResponseMetadata extends AwsResponseMetadata(Collections.emptyMap[String, String]())
+  "SqsPublishResult" should "implement proper equality" in {
+    val request = SendMessageRequest.builder().messageBody(msg.body()).build()
+    val otherRequest = SendMessageRequest.builder().messageBody(otherMsg.body()).build()
 
-    val responseMetadata = SqsResponseMetadata.create(TestResponseMetadata)
-    val otherResponseMetadata = SqsResponseMetadata.create(TestResponseMetadata)
-    val metadata = SendMessageResponse.builder().build()
-    val otherMetadata = SendMessageResponse.builder().messageId("other-id").build()
+    val response = SendMessageResponse.builder().build()
+    val otherResponse = SendMessageResponse.builder().messageId("1").build()
+
+    val reference = new PublishResult(request, response)
+
+    new PublishResult(request, response) shouldBe reference
+    new PublishResult(otherRequest, response) should not be reference
+    new PublishResult(request, otherResponse) should not be reference
   }
 
-  "SqsPublishResult" should "implement proper equality" in new Fixture {
-    val request = SendMessageRequest.builder().build()
-    val otherRequest = SendMessageRequest.builder().messageBody("other-body").build()
+  "SqsPublishBatchResultEntry" should "implement proper equality" in {
+    val request = SendMessageRequest.builder().messageBody(msg.body()).build()
+    val otherRequest = SendMessageRequest.builder().messageBody(otherMsg.body()).build()
 
-    val reference = new SqsPublishResult(responseMetadata, metadata, request)
+    val batchResultEntry = SendMessageBatchResultEntry.builder().build()
+    val otherBatchResultEntry = SendMessageBatchResultEntry.builder().md5OfMessageBody("1234").build()
 
-    new SqsPublishResult(responseMetadata, metadata, request) shouldBe reference
-    new SqsPublishResult(otherResponseMetadata, metadata, request) should not be reference
-    new SqsPublishResult(responseMetadata, otherMetadata, request) should not be reference
-    new SqsPublishResult(responseMetadata, metadata, otherRequest) should not be reference
+    val reference = new PublishResultEntry(request, batchResultEntry, responseMetadata)
+
+    new PublishResultEntry(request, batchResultEntry, responseMetadata) shouldBe reference
+    new PublishResultEntry(otherRequest, batchResultEntry, responseMetadata) should not be reference
+    new PublishResultEntry(request, otherBatchResultEntry, responseMetadata) should not be reference
   }
 
-  "SqsAckResult" should "implement proper equality" in new Fixture {
-    val messageAction = MessageAction.Ignore(msg)
-    val otherMessageAction = MessageAction.Ignore(otherMsg)
+  "DeleteResult" should "implement proper equality" in {
+    val messageAction = MessageAction.Delete(msg)
+    val otherMessageAction = MessageAction.Delete(otherMsg)
 
-    val reference = new SqsAckResult(responseMetadata, metadata, messageAction)
+    val response = DeleteMessageResponse.builder().build() // there is only one possible response
 
-    new SqsAckResult(responseMetadata, metadata, messageAction) shouldBe reference
-    new SqsAckResult(otherResponseMetadata, metadata, messageAction) should not be reference
-    new SqsAckResult(responseMetadata, otherMetadata, messageAction) should not be reference
-    new SqsAckResult(responseMetadata, metadata, otherMessageAction) should not be reference
+    val reference = new DeleteResult(messageAction, response)
+
+    new DeleteResult(messageAction, response) shouldBe reference
+    new DeleteResult(otherMessageAction, response) should not be reference
+  }
+
+  "ChangeMessageVisibilityResult" should "implement proper equality" in {
+    val messageAction = MessageAction.ChangeMessageVisibility(msg, 1)
+    val otherMessageAction = MessageAction.ChangeMessageVisibility(otherMsg, 2)
+
+    val response = ChangeMessageVisibilityResponse.builder().build() // there is only one possible response
+
+    val reference = new ChangeMessageVisibilityResult(messageAction, response)
+
+    new ChangeMessageVisibilityResult(messageAction, response) shouldBe reference
+    new ChangeMessageVisibilityResult(otherMessageAction, response) should not be reference
+  }
+
+  "DeleteResultEntry" should "implement proper equality" in {
+    val messageAction = MessageAction.Delete(msg)
+    val otherMessageAction = MessageAction.Delete(otherMsg)
+
+    val result = DeleteMessageBatchResultEntry.builder().build()
+    val otherResult = DeleteMessageBatchResultEntry.builder().id("1").build()
+
+    val reference = new DeleteResultEntry(messageAction, result, responseMetadata)
+
+    new DeleteResultEntry(messageAction, result, responseMetadata) shouldBe reference
+    new DeleteResultEntry(otherMessageAction, result, responseMetadata) should not be reference
+    new DeleteResultEntry(messageAction, otherResult, responseMetadata) should not be reference
+  }
+
+  "ChangeMessageVisibilityResultEntry" should "implement proper equality" in {
+    val messageAction = MessageAction.ChangeMessageVisibility(msg, 1)
+    val otherMessageAction = MessageAction.ChangeMessageVisibility(otherMsg, 2)
+
+    val result = ChangeMessageVisibilityBatchResultEntry.builder().build()
+    val otherResult = ChangeMessageVisibilityBatchResultEntry.builder().id("1").build()
+
+    val reference = new ChangeMessageVisibilityResultEntry(messageAction, result, responseMetadata)
+
+    new ChangeMessageVisibilityResultEntry(messageAction, result, responseMetadata) shouldBe reference
+    new ChangeMessageVisibilityResultEntry(messageAction, result, otherResponseMetadata) shouldBe reference // responseMetadata does not count in equality
+    new ChangeMessageVisibilityResultEntry(otherMessageAction, result, responseMetadata) should not be reference
+    new ChangeMessageVisibilityResultEntry(messageAction, otherResult, responseMetadata) should not be reference
   }
 }

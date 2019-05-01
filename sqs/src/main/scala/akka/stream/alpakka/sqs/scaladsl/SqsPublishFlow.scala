@@ -8,7 +8,7 @@ import java.util.concurrent.CompletionException
 
 import akka.NotUsed
 import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
-import akka.stream.alpakka.sqs.{SqsBatchException, SqsPublishResult, _}
+import akka.stream.alpakka.sqs.{SqsBatchException, _}
 import akka.stream.scaladsl.{Flow, Source}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model._
@@ -27,7 +27,7 @@ object SqsPublishFlow {
    */
   def apply(queueUrl: String, settings: SqsPublishSettings)(
       implicit sqsClient: SqsAsyncClient
-  ): Flow[SendMessageRequest, SqsPublishResult[SendMessageResponse], NotUsed] =
+  ): Flow[SendMessageRequest, PublishResult, NotUsed] =
     Flow
       .fromFunction((r: SendMessageRequest) => r.toBuilder.queueUrl(queueUrl).build())
       .via(apply(settings))
@@ -37,7 +37,7 @@ object SqsPublishFlow {
    */
   def apply(queueUrl: String)(
       implicit sqsClient: SqsAsyncClient
-  ): Flow[SendMessageRequest, SqsPublishResult[SendMessageResponse], NotUsed] =
+  ): Flow[SendMessageRequest, PublishResult, NotUsed] =
     apply(queueUrl, SqsPublishSettings.Defaults)
 
   /**
@@ -45,7 +45,7 @@ object SqsPublishFlow {
    */
   def apply(settings: SqsPublishSettings = SqsPublishSettings.Defaults)(
       implicit sqsClient: SqsAsyncClient
-  ): Flow[SendMessageRequest, SqsPublishResult[SendMessageResponse], NotUsed] =
+  ): Flow[SendMessageRequest, PublishResult, NotUsed] =
     Flow[SendMessageRequest]
       .mapAsync(settings.maxInFlight) { req =>
         sqsClient
@@ -53,7 +53,7 @@ object SqsPublishFlow {
           .toScala
           .map(req -> _)(sameThreadExecutionContext)
       }
-      .map { case (request, response) => new SqsPublishResult(response.responseMetadata(), response, request) }
+      .map { case (request, response) => new PublishResult(request, response) }
 
   /**
    * creates a [[akka.stream.scaladsl.Flow Flow]] that groups messages and publishes them in batches to a SQS queue using an [[software.amazon.awssdk.services.sqs.SqsAsyncClient SqsAsyncClient]]
@@ -62,7 +62,7 @@ object SqsPublishFlow {
    */
   def grouped(queueUrl: String, settings: SqsPublishGroupedSettings = SqsPublishGroupedSettings.Defaults)(
       implicit sqsClient: SqsAsyncClient
-  ): Flow[SendMessageRequest, SqsPublishResult[SendMessageBatchResultEntry], NotUsed] =
+  ): Flow[SendMessageRequest, PublishResultEntry, NotUsed] =
     Flow[SendMessageRequest]
       .groupedWithin(settings.maxBatchSize, settings.maxBatchWait)
       .via(batch(queueUrl, SqsPublishBatchSettings.create().withConcurrentRequests(settings.concurrentRequests)))
@@ -73,7 +73,7 @@ object SqsPublishFlow {
    */
   def batch(queueUrl: String, settings: SqsPublishBatchSettings = SqsPublishBatchSettings.Defaults)(
       implicit sqsClient: SqsAsyncClient
-  ): Flow[Iterable[SendMessageRequest], List[SqsPublishResult[SendMessageBatchResultEntry]], NotUsed] =
+  ): Flow[Iterable[SendMessageRequest], List[PublishResultEntry], NotUsed] =
     Flow[Iterable[SendMessageRequest]]
       .map { requests =>
         val entries = requests.zipWithIndex.map {
@@ -102,11 +102,11 @@ object SqsPublishFlow {
             .map {
               case response if response.failed().isEmpty =>
                 val responseMetadata = response.responseMetadata()
-                val metadataEntries = response.successful().asScala.map(e => e.id.toInt -> e).toMap
+                val resultEntries = response.successful().asScala.map(e => e.id.toInt -> e).toMap
                 requests.zipWithIndex.map {
                   case (r, i) =>
-                    val metadata = metadataEntries(i)
-                    new SqsPublishResult(responseMetadata, metadata, r)
+                    val result = resultEntries(i)
+                    new PublishResultEntry(r, result, responseMetadata)
                 }.toList
               case response =>
                 val numberOfMessages = batchRequest.entries().size()

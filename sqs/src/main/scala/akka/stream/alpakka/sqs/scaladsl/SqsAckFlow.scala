@@ -10,10 +10,11 @@ import akka.NotUsed
 import akka.annotation.ApiMayChange
 import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 import akka.stream.FlowShape
-import akka.stream.alpakka.sqs.MessageAction.{ChangeMessageVisibility, Delete}
+import akka.stream.alpakka.sqs.MessageAction._
+import akka.stream.alpakka.sqs.SqsAckResult._
+import akka.stream.alpakka.sqs.SqsAckResultEntry._
 import akka.stream.alpakka.sqs._
 import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Partition}
-import software.amazon.awssdk.core.SdkPojo
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model._
 
@@ -33,7 +34,7 @@ object SqsAckFlow {
    */
   def apply(queueUrl: String, settings: SqsAckSettings = SqsAckSettings.Defaults)(
       implicit sqsClient: SqsAsyncClient
-  ): Flow[MessageAction, SqsAckResult[SqsResponse], NotUsed] =
+  ): Flow[MessageAction, SqsAckResult, NotUsed] =
     Flow[MessageAction]
       .mapAsync(settings.maxInFlight) {
         case messageAction: MessageAction.Delete =>
@@ -47,9 +48,7 @@ object SqsAckFlow {
           sqsClient
             .deleteMessage(request)
             .toScala
-            .map(resp => new SqsAckResult(resp.responseMetadata(), resp, messageAction))(
-              sameThreadExecutionContext
-            )
+            .map(resp => Some(new DeleteResult(messageAction, resp)))(sameThreadExecutionContext)
 
         case messageAction: MessageAction.ChangeMessageVisibility =>
           val request =
@@ -63,12 +62,15 @@ object SqsAckFlow {
           sqsClient
             .changeMessageVisibility(request)
             .toScala
-            .map(resp => new SqsAckResult(resp.responseMetadata(), resp, messageAction))(
+            .map(resp => Some(new ChangeMessageVisibilityResult(messageAction, resp)))(
               sameThreadExecutionContext
             )
 
-        case messageAction: MessageAction.Ignore =>
-          Future.successful(new SqsAckResult(messageAction))
+        case _: MessageAction.Ignore =>
+          Future.successful(None)
+      }
+      .collect {
+        case Some(ack) => ack
       }
 
   /**
@@ -76,7 +78,7 @@ object SqsAckFlow {
    */
   def grouped(queueUrl: String, settings: SqsAckGroupedSettings = SqsAckGroupedSettings.Defaults)(
       implicit sqsClient: SqsAsyncClient
-  ): Flow[MessageAction, SqsAckResult[SdkPojo], NotUsed] =
+  ): Flow[MessageAction, SqsAckResultEntry, NotUsed] =
     Flow.fromGraph(
       GraphDSL.create() { implicit builder =>
         import GraphDSL.Implicits._
@@ -84,17 +86,18 @@ object SqsAckFlow {
         val p = builder.add(Partition[MessageAction](3, {
           case _: Delete => 0
           case _: ChangeMessageVisibility => 1
-          case _: MessageAction.Ignore => 2
+          case _: Ignore => 2
         }))
 
-        val merge = builder.add(Merge[SqsAckResult[SdkPojo]](3))
+        val merge = builder.add(Merge[SqsAckResultEntry](3))
 
         val mapDelete = Flow[MessageAction].collectType[Delete]
         val mapChangeMessageVisibility = Flow[MessageAction].collectType[ChangeMessageVisibility]
+        val mapChangeIgnore = Flow[MessageAction].collectType[Ignore]
 
         p.out(0) ~> mapDelete ~> groupedDelete(queueUrl, settings) ~> merge
         p.out(1) ~> mapChangeMessageVisibility ~> groupedChangeMessageVisibility(queueUrl, settings) ~> merge
-        p.out(2) ~> Flow[MessageAction].map(x => new SqsAckResult(x)) ~> merge
+        p.out(2) ~> mapChangeIgnore ~> Flow[Ignore].collect[SqsAckResultEntry](PartialFunction.empty) ~> merge
 
         FlowShape(p.in, merge.out)
       }
@@ -102,7 +105,7 @@ object SqsAckFlow {
 
   private def groupedDelete(queueUrl: String, settings: SqsAckGroupedSettings)(
       implicit sqsClient: SqsAsyncClient
-  ): Flow[MessageAction.Delete, SqsAckResult[DeleteMessageBatchResultEntry], NotUsed] =
+  ): Flow[MessageAction.Delete, DeleteResultEntry, NotUsed] =
     Flow[MessageAction.Delete]
       .groupedWithin(settings.maxBatchSize, settings.maxBatchWait)
       .map { actions =>
@@ -129,11 +132,11 @@ object SqsAckFlow {
             .map {
               case response if response.failed().isEmpty =>
                 val responseMetadata = response.responseMetadata()
-                val metadataEntries = response.successful().asScala.map(e => e.id.toInt -> e).toMap
+                val resultEntries = response.successful().asScala.map(e => e.id.toInt -> e).toMap
                 actions.zipWithIndex.map {
                   case (a, i) =>
-                    val metadata = metadataEntries(i)
-                    new SqsAckResult(responseMetadata, metadata, a)
+                    val result = resultEntries(i)
+                    new DeleteResultEntry(a, result, responseMetadata)
                 }
               case resp =>
                 val numberOfMessages = request.entries().size()
@@ -154,7 +157,7 @@ object SqsAckFlow {
 
   private def groupedChangeMessageVisibility(queueUrl: String, settings: SqsAckGroupedSettings)(
       implicit sqsClient: SqsAsyncClient
-  ): Flow[MessageAction.ChangeMessageVisibility, SqsAckResult[ChangeMessageVisibilityBatchResultEntry], NotUsed] =
+  ): Flow[MessageAction.ChangeMessageVisibility, ChangeMessageVisibilityResultEntry, NotUsed] =
     Flow[MessageAction.ChangeMessageVisibility]
       .groupedWithin(settings.maxBatchSize, settings.maxBatchWait)
       .map { actions =>
@@ -182,11 +185,11 @@ object SqsAckFlow {
             .map {
               case response if response.failed().isEmpty =>
                 val responseMetadata = response.responseMetadata()
-                val metadataEntries = response.successful().asScala.map(e => e.id.toInt -> e).toMap
+                val resultEntries = response.successful().asScala.map(e => e.id.toInt -> e).toMap
                 actions.zipWithIndex.map {
                   case (a, i) =>
-                    val metadata = metadataEntries(i)
-                    new SqsAckResult(responseMetadata, metadata, a)
+                    val result = resultEntries(i)
+                    new ChangeMessageVisibilityResultEntry(a, result, responseMetadata)
                 }
               case resp =>
                 val numberOfMessages = request.entries().size()
