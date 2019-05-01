@@ -103,6 +103,11 @@ lazy val couchbase =
 
 lazy val csv = alpakkaProject("csv", "csv", Dependencies.Csv, whitesourceGroup := Whitesource.Group.Supported)
 
+lazy val csvBench = alpakkaProject("csv-bench", "csvBench", publish / skip := true)
+  .dependsOn(csv)
+  .enablePlugins(JmhPlugin)
+  .disablePlugins(BintrayPlugin, MimaPlugin)
+
 lazy val dynamodb = alpakkaProject("dynamodb", "aws.dynamodb", Dependencies.DynamoDB)
 
 lazy val elasticsearch = alpakkaProject(
