@@ -163,6 +163,18 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       result.futureValue shouldBe IOResult.createSuccessful(expectedNumOfBytes)
     }
 
+    "retrieve a file from path and offset as a stream of bytes" in assertAllStagesStopped {
+      val fileName = "sample_io_" + Instant.now().getNano
+      val offset = 10L
+      putFileOnFtp(fileName)
+      val (result, probe) =
+        retrieveFromPathWithOffset(s"/$fileName", offset).toMat(TestSink.probe)(Keep.both).run()
+      probe.request(100).expectNextOrComplete()
+
+      val expectedNumOfBytes = getDefaultContent.getBytes().length - offset
+      result.futureValue shouldBe IOResult.createSuccessful(expectedNumOfBytes)
+    }
+
     "retrieve a bigger file (~2 MB) from path as a stream of bytes" in assertAllStagesStopped {
       val fileName = "sample_bigger_file_" + Instant.now().getNano
       val fileContents = new Array[Byte](2000020)
@@ -172,6 +184,19 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       probe.request(1000).expectNextOrComplete()
 
       val expectedNumOfBytes = fileContents.length
+      result.futureValue shouldBe IOResult.createSuccessful(expectedNumOfBytes)
+    }
+
+    "retrieve a bigger file (~2 MB) from path and offset as a stream of bytes" in assertAllStagesStopped {
+      val fileName = "sample_bigger_file_" + Instant.now().getNano
+      val fileContents = new Array[Byte](2000020)
+      val offset = 1000010L
+      Random.nextBytes(fileContents)
+      putFileOnFtpWithContents(fileName, fileContents)
+      val (result, probe) = retrieveFromPathWithOffset(s"/$fileName", offset).toMat(TestSink.probe)(Keep.both).run()
+      probe.request(1000).expectNextOrComplete()
+
+      val expectedNumOfBytes = fileContents.length - offset
       result.futureValue shouldBe IOResult.createSuccessful(expectedNumOfBytes)
     }
   }

@@ -15,7 +15,8 @@ import java.net.InetAddress;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-public class StrictHostCheckingSftpSourceTest extends BaseSftpSupport implements CommonFtpStageTest {
+public class StrictHostCheckingSftpSourceTest extends BaseSftpSupport
+    implements CommonFtpStageTest {
 
   @Test
   public void listFiles() throws Exception {
