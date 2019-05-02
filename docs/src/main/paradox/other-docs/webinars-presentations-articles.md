@@ -6,7 +6,17 @@ If you know about more relevant resources: Please send a Pull Request to add the
 
 @@@
 
+
+## 2019
+
+[Just Right Parallelism in Akka Streams](http://jesseyates.com/2019/04/07/just-right-parallelism-in-akka-streams.html)
+blog by Jesse Yates, April 2019
+
+
 ## 2018
+
+[From overnight to always-on](https://www.youtube.com/watch?v=Ab_GLQk4OLE&list=PLKKQHTLcxDVYw23SBLzqcbWkhX-cCUTr0&index=37&t=0s)
+presentation at [Reactive Summit](https://www.reactivesummit.org/) by Enno Runne, October 2018
 
 [Backoff and Retry Error-Handling for Akka Streams](https://blog.colinbreck.com/backoff-and-retry-error-handling-for-akka-streams/)
 blog by Colin Breck, October 2018
