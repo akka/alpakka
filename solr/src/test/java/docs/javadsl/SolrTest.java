@@ -359,8 +359,7 @@ public class SolrTest {
                     Book.class))
             .map(
                 messageResults ->
-                    messageResults
-                        .stream()
+                    messageResults.stream()
                         .map(
                             result -> {
                               if (result.status() != 0) {
@@ -379,8 +378,7 @@ public class SolrTest {
     // Make sure all messages was committed to kafka
     assertEquals(
         Arrays.asList(0, 1, 2),
-        CommittableOffsetBatch.committedOffsets
-            .stream()
+        CommittableOffsetBatch.committedOffsets.stream()
             .map(o -> o.offset)
             .collect(Collectors.toList()));
 
@@ -707,6 +705,58 @@ public class SolrTest {
     List<String> result = new ArrayList<>(resultOf(res3));
     List<String> expect = Collections.emptyList();
     assertEquals(expect, result);
+  }
+
+  @Test
+  public void testKafkaExamplePT() throws Exception {
+    String collectionName = createCollection();
+
+    List<CommittableOffset> messagesFromKafka =
+        Arrays.asList(new CommittableOffset(0), new CommittableOffset(1), new CommittableOffset(2));
+
+    CommittableOffsetBatch.committedOffsets.clear();
+
+    Source<CommittableOffset, NotUsed> kafkaConsumerSource = Source.from(messagesFromKafka);
+    // #kafka-example-PT
+    // Note: This code mimics Alpakka Kafka APIs
+    CompletionStage<Done> completion =
+        kafkaConsumerSource // Assume we get this from Kafka
+            .map(
+                kafkaMessage -> {
+                  // Transform message so that we can write to elastic
+                  return WriteMessage.createPassThrough(kafkaMessage);
+                })
+            .groupedWithin(5, Duration.ofMillis(10))
+            .via(
+                SolrFlow.passThrough(
+                    collectionName,
+                    // use implicit commits to Solr
+                    SolrUpdateSettings.create().withCommitWithin(5),
+                    solrClient))
+            .map(
+                messageResults ->
+                    messageResults.stream()
+                        .map(
+                            result -> {
+                              if (result.status() != 0) {
+                                throw new RuntimeException("Failed to write message to Solr");
+                              }
+                              return result.passThrough();
+                            })
+                        .collect(Collectors.toList()))
+            .map(ConsumerMessage::createCommittableOffsetBatch)
+            .mapAsync(1, CommittableOffsetBatch::commitJavadsl)
+            .runWith(Sink.ignore(), materializer);
+    // #kafka-example-PT
+
+    resultOf(completion);
+
+    // Make sure all messages was committed to kafka
+    assertEquals(
+        Arrays.asList(0, 1, 2),
+        CommittableOffsetBatch.committedOffsets.stream()
+            .map(o -> o.offset)
+            .collect(Collectors.toList()));
   }
 
   @BeforeClass
