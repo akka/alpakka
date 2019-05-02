@@ -6,6 +6,7 @@ package docs.javadsl;
 
 import akka.Done;
 import akka.NotUsed;
+import akka.japi.pf.PFBuilder;
 import akka.stream.alpakka.sqs.*;
 import akka.stream.alpakka.sqs.javadsl.BaseSqsTest;
 import akka.stream.alpakka.sqs.javadsl.SqsAckFlow;
@@ -14,12 +15,13 @@ import akka.stream.javadsl.Source;
 import akka.stream.javadsl.Sink;
 import org.junit.Test;
 import scala.Option;
-import software.amazon.awssdk.core.SdkPojo;
+import scala.PartialFunction;
 import software.amazon.awssdk.services.sqs.SqsAsyncClient;
 import software.amazon.awssdk.services.sqs.model.*;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -289,5 +291,50 @@ public class SqsAckTest extends BaseSqsTest {
       assertEquals(messageAction, r.messageAction());
       assertEquals(NotUsed.getInstance(), r.result());
     }
+  }
+
+  @Test
+  public void testBatchFailure() throws Exception {
+    final String queueUrl = "none";
+    SqsAsyncClient awsClient = mock(SqsAsyncClient.class);
+
+    List<Message> messages = createMessages();
+    List<BatchResultErrorEntry> failedEntries =
+            Collections.singletonList(BatchResultErrorEntry.builder().id("0").build());
+    List<DeleteMessageBatchResultEntry> successfulEntries =
+            IntStream.range(1, messages.size())
+                    .mapToObj(i -> DeleteMessageBatchResultEntry.builder().id(Integer.toString(i)).build())
+                    .collect(Collectors.toList());
+    DeleteMessageBatchResponse response =
+            DeleteMessageBatchResponse.builder().failed(failedEntries).successful(successfulEntries).build();
+    when(awsClient.deleteMessageBatch(any(DeleteMessageBatchRequest.class)))
+            .thenReturn(CompletableFuture.completedFuture(response));
+
+
+    Source<Message, NotUsed> source = Source.fromIterator(messages::iterator);
+    PartialFunction<Throwable, Source<SqsAckResultEntry, NotUsed>> stop =
+            new PFBuilder().match(SqsBatchException.class, ex -> Source.empty(SqsAckResultEntry.class)).build();
+
+    CompletionStage<List<SqsAckResultEntry>> stage =
+    source
+      .map(m -> MessageAction.delete(m))
+      .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings.create(), awsClient))
+      .recoverWith(stop)
+      .runWith(Sink.seq(), materializer);
+
+    List<SqsAckResultEntry> results = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    assertEquals(9, results.size());
+    for (int i = 0; i < 9; i++) {
+      SqsAckResultEntry r = results.get(i);
+      Message m = messages.get(i);
+
+      MessageAction messageAction = MessageAction.delete(m);
+      DeleteMessageBatchResultEntry result = successfulEntries.get(i);
+
+      assertEquals(messageAction, r.messageAction());
+      assertEquals(result, r.result());
+    }
+
+    verify(awsClient, times(1)).deleteMessageBatch(any(DeleteMessageBatchRequest.class));
   }
 }
