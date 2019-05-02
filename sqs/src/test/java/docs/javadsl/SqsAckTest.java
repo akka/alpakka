@@ -182,6 +182,7 @@ public class SqsAckTest extends BaseSqsTest {
   @Test
   public void testBatchAcknowledge() throws Exception {
     final String queueUrl = "none";
+    SqsAsyncClient awsClient = mock(SqsAsyncClient.class);
     List<Message> messages = createMessages();
     List<DeleteMessageBatchResultEntry> entries =
         IntStream.range(0, messages.size())
@@ -190,7 +191,6 @@ public class SqsAckTest extends BaseSqsTest {
     DeleteMessageBatchResponse response =
         DeleteMessageBatchResponse.builder().successful(entries).build();
 
-    SqsAsyncClient awsClient = mock(SqsAsyncClient.class);
     when(awsClient.deleteMessageBatch(any(DeleteMessageBatchRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(response));
 
@@ -300,16 +300,18 @@ public class SqsAckTest extends BaseSqsTest {
 
     List<Message> messages = createMessages();
     List<BatchResultErrorEntry> failedEntries =
-            Collections.singletonList(BatchResultErrorEntry.builder().id("0").build());
+        Collections.singletonList(BatchResultErrorEntry.builder().id("0").build());
     List<DeleteMessageBatchResultEntry> successfulEntries =
-            IntStream.range(1, messages.size())
-                    .mapToObj(i -> DeleteMessageBatchResultEntry.builder().id(Integer.toString(i)).build())
-                    .collect(Collectors.toList());
+        IntStream.range(1, messages.size())
+            .mapToObj(i -> DeleteMessageBatchResultEntry.builder().id(Integer.toString(i)).build())
+            .collect(Collectors.toList());
     DeleteMessageBatchResponse response =
-            DeleteMessageBatchResponse.builder().failed(failedEntries).successful(successfulEntries).build();
+        DeleteMessageBatchResponse.builder()
+            .failed(failedEntries)
+            .successful(successfulEntries)
+            .build();
     when(awsClient.deleteMessageBatch(any(DeleteMessageBatchRequest.class)))
-            .thenReturn(CompletableFuture.completedFuture(response));
-
+        .thenReturn(CompletableFuture.completedFuture(response));
 
     Source<Message, NotUsed> source = Source.fromIterator(messages::iterator);
     PartialFunction<Throwable, Source<SqsAckResultEntry, NotUsed>> stop =
@@ -326,7 +328,7 @@ public class SqsAckTest extends BaseSqsTest {
     assertEquals(9, results.size());
     for (int i = 0; i < 9; i++) {
       SqsAckResultEntry r = results.get(i);
-      Message m = messages.get(i);
+      Message m = messages.get(i + 1);
 
       MessageAction messageAction = MessageAction.delete(m);
       DeleteMessageBatchResultEntry result = successfulEntries.get(i);

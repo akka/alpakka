@@ -262,7 +262,8 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
       .via(SqsAckFlow.grouped("queue", SqsAckGroupedSettings.Defaults))
       .runWith(Sink.ignore)
 
-    future.failed.futureValue shouldBe a[SqsBatchException]
+    // an exception will be thrown in case of successful future
+    future.failed.futureValue
   }
 
   it should "fail if the client invocation failed" in {

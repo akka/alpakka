@@ -4,8 +4,6 @@
 
 package akka.stream.alpakka.sqs.scaladsl
 
-import java.util.concurrent.CompletionException
-
 import akka.NotUsed
 import akka.annotation.ApiMayChange
 import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
@@ -19,9 +17,9 @@ import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model._
 
 import scala.collection.JavaConverters._
-import scala.collection.immutable
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 /**
  * Scala API to create acknowledging SQS flows.
@@ -103,7 +101,7 @@ object SqsAckFlow {
   ): Flow[MessageAction.Delete, SqsDeleteResultEntry, NotUsed] =
     Flow[MessageAction.Delete]
       .groupedWithin(settings.maxBatchSize, settings.maxBatchWait)
-      .map { actions =>
+      .mapAsync(settings.concurrentRequests) { actions =>
         val entries = actions.zipWithIndex.map {
           case (a, i) =>
             DeleteMessageBatchRequestEntry
@@ -113,49 +111,39 @@ object SqsAckFlow {
               .build()
         }
 
-        actions -> DeleteMessageBatchRequest
+        val request = DeleteMessageBatchRequest
           .builder()
           .queueUrl(queueUrl)
           .entries(entries.asJava)
           .build()
+
+        sqsClient
+          .deleteMessageBatch(request)
+          .toScala
+          .map(response => actions -> response)(sameThreadExecutionContext)
       }
-      .mapAsync(settings.concurrentRequests) {
-        case (actions: immutable.Seq[Delete], request) =>
-          sqsClient
-            .deleteMessageBatch(request)
-            .toScala
-            .map {
-              case response if response.failed().isEmpty =>
-                val responseMetadata = response.responseMetadata()
-                val resultEntries = response.successful().asScala.map(e => e.id.toInt -> e).toMap
-                actions.zipWithIndex.map {
-                  case (a, i) =>
-                    val result = resultEntries(i)
-                    new SqsDeleteResultEntry(a, result, responseMetadata)
-                }
-              case resp =>
-                val numberOfMessages = request.entries().size()
-                val nrOfFailedMessages = resp.failed().size()
-                throw new SqsBatchException(
-                  numberOfMessages,
-                  s"Some messages are failed to delete. $nrOfFailedMessages of $numberOfMessages messages are failed"
-                )
-            }(sameThreadExecutionContext)
-            .recoverWith {
-              case e: CompletionException =>
-                Future.failed(new SqsBatchException(request.entries().size(), e.getMessage, e.getCause))
-              case e =>
-                Future.failed(new SqsBatchException(request.entries().size(), e.getMessage, e))
-            }(sameThreadExecutionContext)
+      .mapConcat {
+        case (actions, response) =>
+          val responseMetadata = response.responseMetadata()
+          val idToAction = actions.zipWithIndex.map(_.swap).toMap
+          val successful = response
+            .successful()
+            .asScala
+            .map(e => Success(new SqsDeleteResultEntry(idToAction(e.id.toInt), e, responseMetadata)))
+          val failed = response
+            .failed()
+            .asScala
+            .map(e => Failure(new SqsBatchException(actions.size, e.message)))
+
+          Stream(successful ++ failed: _*).map(_.get)
       }
-      .mapConcat(identity)
 
   private def groupedChangeMessageVisibility(queueUrl: String, settings: SqsAckGroupedSettings)(
       implicit sqsClient: SqsAsyncClient
   ): Flow[MessageAction.ChangeMessageVisibility, SqsChangeMessageVisibilityResultEntry, NotUsed] =
     Flow[MessageAction.ChangeMessageVisibility]
       .groupedWithin(settings.maxBatchSize, settings.maxBatchWait)
-      .map { actions =>
+      .mapAsync(settings.concurrentRequests) { actions =>
         val entries = actions.zipWithIndex.map {
           case (a, i) =>
             ChangeMessageVisibilityBatchRequestEntry
@@ -166,40 +154,30 @@ object SqsAckFlow {
               .build()
         }
 
-        actions -> ChangeMessageVisibilityBatchRequest
+        val request = ChangeMessageVisibilityBatchRequest
           .builder()
           .queueUrl(queueUrl)
           .entries(entries.asJava)
           .build()
+
+        sqsClient
+          .changeMessageVisibilityBatch(request)
+          .toScala
+          .map(response => actions -> response)(sameThreadExecutionContext)
       }
-      .mapAsync(settings.concurrentRequests) {
-        case (actions, request) =>
-          sqsClient
-            .changeMessageVisibilityBatch(request)
-            .toScala
-            .map {
-              case response if response.failed().isEmpty =>
-                val responseMetadata = response.responseMetadata()
-                val resultEntries = response.successful().asScala.map(e => e.id.toInt -> e).toMap
-                actions.zipWithIndex.map {
-                  case (a, i) =>
-                    val result = resultEntries(i)
-                    new SqsChangeMessageVisibilityResultEntry(a, result, responseMetadata)
-                }
-              case resp =>
-                val numberOfMessages = request.entries().size()
-                val nrOfFailedMessages = resp.failed().size()
-                throw new SqsBatchException(
-                  numberOfMessages,
-                  s"Some messages are failed to change visibility. $nrOfFailedMessages of $numberOfMessages messages are failed"
-                )
-            }(sameThreadExecutionContext)
-            .recoverWith {
-              case e: CompletionException =>
-                Future.failed(new SqsBatchException(request.entries().size(), e.getMessage, e.getCause))
-              case e =>
-                Future.failed(new SqsBatchException(request.entries().size(), e.getMessage, e))
-            }(sameThreadExecutionContext)
+      .mapConcat {
+        case (actions, response) =>
+          val responseMetadata = response.responseMetadata()
+          val idToAction = actions.zipWithIndex.map(_.swap).toMap
+          val successful = response
+            .successful()
+            .asScala
+            .map(e => Success(new SqsChangeMessageVisibilityResultEntry(idToAction(e.id.toInt), e, responseMetadata)))
+          val failed = response
+            .failed()
+            .asScala
+            .map(e => Failure(new SqsBatchException(actions.size, e.message)))
+
+          Stream(successful ++ failed: _*).map(_.get)
       }
-      .mapConcat(identity)
 }

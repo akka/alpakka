@@ -4,18 +4,18 @@
 
 package akka.stream.alpakka.sqs.scaladsl
 
-import java.util.concurrent.CompletionException
-
 import akka.NotUsed
 import akka.annotation.ApiMayChange
 import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
-import akka.stream.alpakka.sqs.{SqsBatchException, _}
-import akka.stream.scaladsl.{Flow, Source}
+import akka.stream.alpakka.sqs._
+import akka.stream.scaladsl.Flow
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model._
 
 import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters._
+import scala.util.Try
+import scala.util.{Failure, Success}
 
 /**
  * Scala API to create publishing SQS flows.
@@ -76,7 +76,7 @@ object SqsPublishFlow {
       implicit sqsClient: SqsAsyncClient
   ): Flow[Iterable[SendMessageRequest], List[SqsPublishResultEntry], NotUsed] =
     Flow[Iterable[SendMessageRequest]]
-      .map { requests =>
+      .mapAsync(settings.concurrentRequests) { requests =>
         val entries = requests.zipWithIndex.map {
           case (r, i) =>
             SendMessageBatchRequestEntry
@@ -89,41 +89,34 @@ object SqsPublishFlow {
               .build()
         }
 
-        requests -> SendMessageBatchRequest
+        val request = SendMessageBatchRequest
           .builder()
           .queueUrl(queueUrl)
           .entries(entries.toList.asJava)
           .build()
+
+        sqsClient
+          .sendMessageBatch(request)
+          .toScala
+          .map(response => requests -> response)(sameThreadExecutionContext)
       }
-      .mapAsync(settings.concurrentRequests) {
-        case (requests, batchRequest) =>
-          sqsClient
-            .sendMessageBatch(batchRequest)
-            .toScala
-            .map {
-              case response if response.failed().isEmpty =>
-                val responseMetadata = response.responseMetadata()
-                val resultEntries = response.successful().asScala.map(e => e.id.toInt -> e).toMap
-                requests.zipWithIndex.map {
-                  case (r, i) =>
-                    val result = resultEntries(i)
-                    new SqsPublishResultEntry(r, result, responseMetadata)
-                }.toList
-              case response =>
-                val numberOfMessages = batchRequest.entries().size()
-                val nrOfFailedMessages = response.failed().size()
-                throw new SqsBatchException(
-                  numberOfMessages,
-                  s"Some messages are failed to send. $nrOfFailedMessages of $numberOfMessages messages are failed"
-                )
-            }(sameThreadExecutionContext)
+      .mapConcat {
+        case (requests, response) =>
+          val responseMetadata = response.responseMetadata()
+          val idToRequest = requests.zipWithIndex.map(_.swap).toMap
+          val successful = response
+            .successful()
+            .asScala
+            .map { e =>
+              Success(new SqsPublishResultEntry(idToRequest(e.id.toInt), e, responseMetadata))
+            }
+            .toList
+          val failed = response
+            .failed()
+            .asScala
+            .map { e =>
+              Failure(new SqsBatchException(requests.size, e.message()))
+            }.toList
+          Stream(successful, failed).map(_.map(_.get))
       }
-      .recoverWithRetries(1, {
-        case e: CompletionException =>
-          Source.failed(e.getCause)
-        case e: SqsBatchException =>
-          Source.failed(e)
-        case e =>
-          Source.failed(e)
-      })
 }
