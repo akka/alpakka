@@ -19,7 +19,7 @@ import com.couchbase.client.java.document.json.JsonObject
 import com.couchbase.client.java.document.{Document, JsonDocument}
 import com.couchbase.client.java.query.util.IndexInfo
 import com.couchbase.client.java.query.{N1qlQuery, Statement}
-import com.couchbase.client.java.{AsyncBucket, Bucket}
+import com.couchbase.client.java.{AsyncBucket, AsyncCluster, Bucket}
 
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.ExecutionContext
@@ -39,14 +39,39 @@ object CouchbaseSession {
              bucketName: String,
              executor: Executor): CompletionStage[CouchbaseSession] =
     ScalaDslCouchbaseSession
-      .apply(settings, bucketName)(executor match {
-        case ec: ExecutionContext => ec
-        case _ => ExecutionContext.fromExecutor(executor)
-      })
+      .apply(settings, bucketName)(executionContext(executor))
       .map(new CouchbaseSessionJavaAdapter(_).asInstanceOf[CouchbaseSession])(
         ExecutionContexts.sameThreadExecutionContext
       )
       .toJava
+
+  /**
+   * Create a session against the given bucket. The life-cycle of the `client` is the user's responsibility.
+   */
+  def create(client: CompletionStage[AsyncCluster],
+             bucketName: String,
+             executor: Executor): CompletionStage[CouchbaseSession] =
+    ScalaDslCouchbaseSession
+      .apply(client.toScala, bucketName)(executionContext(executor))
+      .map(new CouchbaseSessionJavaAdapter(_).asInstanceOf[CouchbaseSession])(
+        ExecutionContexts.sameThreadExecutionContext
+      )
+      .toJava
+
+  /**
+   * Connects to a Couchbase cluster by creating an `AsyncCluster`.
+   * The life-cycle of it is the user's responsibility.
+   */
+  def createClient(settings: CouchbaseSessionSettings, executor: Executor): CompletionStage[AsyncCluster] =
+    ScalaDslCouchbaseSession
+      .createClusterClient(settings)(executionContext(executor))
+      .toJava
+
+  private def executionContext(executor: Executor): ExecutionContext =
+    executor match {
+      case ec: ExecutionContext => ec
+      case _ => ExecutionContext.fromExecutor(executor)
+    }
 
   /**
    * Create a session against the given bucket. You are responsible for managing the lifecycle of the couchbase client

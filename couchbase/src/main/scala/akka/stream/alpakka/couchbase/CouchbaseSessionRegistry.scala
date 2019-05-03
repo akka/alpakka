@@ -8,7 +8,7 @@ import java.util.concurrent.CompletionStage
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
-import akka.event.Logging
+import akka.stream.alpakka.couchbase.impl.CouchbaseClusterRegistry
 import akka.stream.alpakka.couchbase.javadsl.{CouchbaseSession => JCouchbaseSession}
 import akka.stream.alpakka.couchbase.scaladsl.CouchbaseSession
 
@@ -40,7 +40,7 @@ final class CouchbaseSessionRegistry(system: ExtendedActorSystem) extends Extens
 
   import CouchbaseSessionRegistry._
 
-  private val log = Logging(system, classOf[CouchbaseSessionRegistry])
+  private val clusterRegistry = new CouchbaseClusterRegistry(system)
 
   private val sessions = new AtomicReference(Map.empty[SessionKey, Future[CouchbaseSession]])
 
@@ -75,18 +75,9 @@ final class CouchbaseSessionRegistry(system: ExtendedActorSystem) extends Extens
     val oldSessions = sessions.get()
     val newSessions = oldSessions.updated(key, promise.future)
     if (sessions.compareAndSet(oldSessions, newSessions)) {
-      // we won cas, initialize session
-      def nodesAsString = key.settings.nodes.mkString("\"", "\", \"", "\"")
-      log.info("Starting Couchbase session for nodes [{}]", nodesAsString)
-      promise.completeWith(CouchbaseSession(key.settings, key.bucketName)(system.dispatcher))
-      val future = promise.future
-      system.registerOnTermination {
-        future.foreach { session =>
-          session.close()
-          log.info("Shutting down couchbase session for nodes [{}]", nodesAsString)
-        }(system.dispatcher)
-      }
-      future
+      val cluster = clusterRegistry.clusterFor(key.settings)
+      promise.completeWith(CouchbaseSession(cluster, key.bucketName)(system.dispatcher))
+      promise.future
     } else {
       // we lost cas (could be concurrent call for some other key though), retry
       startSession(key)

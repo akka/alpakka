@@ -169,7 +169,7 @@ Java
 
 ## Manage bucket life-cycle
 
-For full control a `CouchbaseSession` may be created from a Couchbase `Bucket`:
+For full control a `CouchbaseSession` may be created from a Couchbase `Bucket`. See @extref:[Scalability and Concurrency](couchbase:managing-connections.html#concurrency) in the Couchbase documentation for details.
 
 Scala
 : @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseSessionExamplesSpec.scala) { #fromBucket }
