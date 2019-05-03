@@ -4,10 +4,12 @@
 
 package docs.scaladsl
 
-import akka.stream.alpakka.couchbase.scaladsl.CouchbaseSource
+import akka.stream.alpakka.couchbase.scaladsl.{CouchbaseSession, CouchbaseSource}
 import akka.stream.alpakka.couchbase.testing.CouchbaseSupport
-import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit._
+import com.couchbase.client.java.auth.PasswordAuthenticator
+import com.couchbase.client.java.{Bucket, CouchbaseCluster}
 import com.couchbase.client.java.document.json.JsonObject
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
@@ -37,6 +39,27 @@ class CouchbaseSourceSpec
           .fromStatement(sessionSettings, select("*").from(i(queryBucketName)).limit(10), bucketName)
           .runWith(Sink.seq)
       // #statement
+
+      resultAsFuture.futureValue.length shouldEqual 4
+    }
+
+    // TODO implement overload in CouchbaseSource?
+    "allow explicit bucket creation" in assertAllStagesStopped {
+      import com.couchbase.client.java.query.Select.select
+      import com.couchbase.client.java.query.dsl.Expression._
+
+      val cluster: CouchbaseCluster = CouchbaseCluster.create("localhost")
+      cluster.authenticate(new PasswordAuthenticator("Administrator", "password"))
+      val bucket: Bucket = cluster.openBucket("akka")
+      val session: CouchbaseSession = CouchbaseSession(bucket)
+      actorSystem.registerOnTermination {
+        cluster.disconnect()
+      }
+
+      val resultAsFuture: Future[Seq[JsonObject]] =
+        session
+          .streamedQuery(select("*").from(i(queryBucketName)).limit(10))
+          .runWith(Sink.seq)
 
       resultAsFuture.futureValue.length shouldEqual 4
     }

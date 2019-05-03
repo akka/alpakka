@@ -32,7 +32,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 # Overview
 
-Alpakka Couchbase offers both Akka Streams APIs and a more direct API to access Couchbase:
+Alpakka Couchbase offers both @ref:[Akka Streams APIs](#reading-from-couchbase-in-akka-streams) and a more @ref:[direct API](#using-couchbasesession-directly) to access Couchbase:
 
 * `CouchbaseSession` (@scala[@scaladoc[API](akka.stream.alpakka.couchbase.scaladsl.CouchbaseSession)]@java[@scaladoc[API](akka.stream.alpakka.couchbase.javadsl.CouchbaseSession)]) offers a direct API for one-off operations
 * `CouchbaseSessionRegistry` (@scaladoc[API](akka.stream.alpakka.couchbase.CouchbaseSessionRegistry$)) is an Akka extension to keep track and share `CouchbaseSession`s within an `ActorSystem`
@@ -144,6 +144,20 @@ Java
 
 # Using `CouchbaseSession` directly
 
+## Access via registry
+
+The `CouchbaseSesionRegistry` is an Akka extension to manage the life-cycle of Couchbase sessions. All underlying instances are closed upon actor system termination.
+
+When accessing more than one Couchbase cluster, the `CouchbaseEnvironment` should be shared by setting a single instance for the different `CouchbaseSessionSettings`.
+
+Scala
+: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseSessionExamplesSpec.scala) { #registry }
+
+Java
+: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #registry }
+
+
+## Manage session life-cycle
 Use `CouchbaseSessionSettings` to get an instance of `CouchbaseSession`. These settings may be specified in `application.conf` and complemented in code. Furthermore a session requires the bucket name and needs an `ExecutionContext` as the creation is asynchronous.
 
 Scala
@@ -153,7 +167,9 @@ Java
 : @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #session }
 
 
-Alternatively a `CouchbaseSession` may be created from a Couchbase `Bucket`:
+## Manage bucket life-cycle
+
+For full control a `CouchbaseSession` may be created from a Couchbase `Bucket`:
 
 Scala
 : @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseSessionExamplesSpec.scala) { #fromBucket }
