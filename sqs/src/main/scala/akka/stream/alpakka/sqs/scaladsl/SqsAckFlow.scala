@@ -130,12 +130,18 @@ object SqsAckFlow {
             .successful()
             .asScala
             .map(e => Success(new SqsDeleteResultEntry(idToAction(e.id.toInt), e, responseMetadata)))
+            .toList
           val failed = response
             .failed()
             .asScala
             .map(e => Failure(new SqsBatchException(actions.size, e.message)))
+            .toList
 
-          Stream(successful ++ failed: _*).map(_.get)
+          successful ++ failed
+      }
+      .map {
+        case Success(result) => result
+        case Failure(e) => throw e
       }
 
   private def groupedChangeMessageVisibility(queueUrl: String, settings: SqsAckGroupedSettings)(
@@ -173,11 +179,17 @@ object SqsAckFlow {
             .successful()
             .asScala
             .map(e => Success(new SqsChangeMessageVisibilityResultEntry(idToAction(e.id.toInt), e, responseMetadata)))
+            .toList
           val failed = response
             .failed()
             .asScala
             .map(e => Failure(new SqsBatchException(actions.size, e.message)))
+            .toList
 
-          Stream(successful ++ failed: _*).map(_.get)
+          successful ++ failed
+      }
+      .map {
+        case Success(result) => result
+        case Failure(e) => throw e
       }
 }
