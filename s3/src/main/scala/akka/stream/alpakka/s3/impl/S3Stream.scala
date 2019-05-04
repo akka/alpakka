@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.s3.impl
 
-import java.time.{Instant, LocalDate}
+import java.time.{Instant, LocalDate, ZoneOffset}
 
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
@@ -91,7 +91,7 @@ import akka.util.ByteString
   // def because tokens can expire
   def signingKey(implicit settings: S3Settings) = SigningKey(
     settings.credentialsProvider,
-    CredentialScope(LocalDate.now(), settings.s3RegionProvider.getRegion, "s3")
+    CredentialScope(LocalDate.now(ZoneOffset.UTC), settings.s3RegionProvider.getRegion, "s3")
   )
 
   def download(
