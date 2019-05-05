@@ -24,7 +24,7 @@ private[influxdb] final class InfluxDBSourceStage[T](clazz: Class[T],
                                                      settings: InfluxDBSettings,
                                                      influxDB: InfluxDB,
                                                      query: Query)
-  extends GraphStage[SourceShape[T]] {
+    extends GraphStage[SourceShape[T]] {
 
   val out: Outlet[T] = Outlet("InfluxDB.out")
   override val shape = SourceShape(out)
@@ -117,13 +117,12 @@ private[influxdb] final class InfluxDBSourceRawLogic(query: Query,
     }
   }
 
-  override def onPull(): Unit = {
+  override def onPull(): Unit =
     if (dataRetrieved.isEmpty) {
       completeStage()
     } else {
       emit(outlet, dataRetrieved.get)
       dataRetrieved = Option.empty
     }
-  }
 
 }

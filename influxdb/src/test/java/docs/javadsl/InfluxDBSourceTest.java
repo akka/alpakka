@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package docs.javadsl;
 
 import java.util.List;
@@ -30,74 +34,71 @@ import static docs.javadsl.TestUtils.setupConnection;
 
 public class InfluxDBSourceTest {
 
-    private static ActorSystem system;
-    private static Materializer materializer;
-    private static InfluxDB influxDB;
+  private static ActorSystem system;
+  private static Materializer materializer;
+  private static InfluxDB influxDB;
 
-    private static Pair<ActorSystem, Materializer> setupMaterializer() {
-        // #init-mat
-        final ActorSystem system = ActorSystem.create();
-        final Materializer materializer = ActorMaterializer.create(system);
-        // #init-mat
-        return Pair.create(system, materializer);
-    }
+  private static Pair<ActorSystem, Materializer> setupMaterializer() {
+    // #init-mat
+    final ActorSystem system = ActorSystem.create();
+    final Materializer materializer = ActorMaterializer.create(system);
+    // #init-mat
+    return Pair.create(system, materializer);
+  }
 
-    @BeforeClass
-    public static void setupDatabase() {
-        final Pair<ActorSystem, Materializer> sysmat = setupMaterializer();
-        system = sysmat.first();
-        materializer = sysmat.second();
+  @BeforeClass
+  public static void setupDatabase() {
+    final Pair<ActorSystem, Materializer> sysmat = setupMaterializer();
+    system = sysmat.first();
+    materializer = sysmat.second();
 
-        influxDB = setupConnection();
-    }
+    influxDB = setupConnection();
+  }
 
-    @AfterClass
-    public static void teardown() {
-        dropDatabase(influxDB);
-        TestKit.shutdownActorSystem(system);
-    }
+  @AfterClass
+  public static void teardown() {
+    dropDatabase(influxDB);
+    TestKit.shutdownActorSystem(system);
+  }
 
-    @Before
-    public void setUp() throws Exception {
-        populateDatabase(influxDB);
-    }
+  @Before
+  public void setUp() throws Exception {
+    populateDatabase(influxDB);
+  }
 
-    @After
-    public void cleanUp() {
-        cleanDatabase(influxDB);
-        StreamTestKit.assertAllStagesStopped(materializer);
-    }
+  @After
+  public void cleanUp() {
+    cleanDatabase(influxDB);
+    StreamTestKit.assertAllStagesStopped(materializer);
+  }
 
-    @Test
-    public void streamQueryResult() throws Exception {
-        Query query = new Query("SELECT*FROM cpu", DATABASE_NAME);
+  @Test
+  public void streamQueryResult() throws Exception {
+    Query query = new Query("SELECT*FROM cpu", DATABASE_NAME);
 
-        CompletionStage<List<Cpu>> rows = InfluxDBSource.typed(Cpu.class, InfluxDBSettings.Default(), influxDB, query)
-                .runWith(Sink.seq(),materializer);
+    CompletionStage<List<Cpu>> rows =
+        InfluxDBSource.typed(Cpu.class, InfluxDBSettings.Default(), influxDB, query)
+            .runWith(Sink.seq(), materializer);
 
-        List<Cpu> cpus = rows.toCompletableFuture().get();
+    List<Cpu> cpus = rows.toCompletableFuture().get();
 
-        Assert.assertEquals(2,cpus.size());
-    }
+    Assert.assertEquals(2, cpus.size());
+  }
 
-    @Test
-    public void streamRawQueryResult() throws Exception {
-        Query query = new Query("SELECT*FROM cpu", DATABASE_NAME);
+  @Test
+  public void streamRawQueryResult() throws Exception {
+    Query query = new Query("SELECT*FROM cpu", DATABASE_NAME);
 
-        CompletionStage<List<QueryResult>> completionStage = InfluxDBSource.create(influxDB, query)
-                      .runWith(Sink.seq(), materializer);
+    CompletionStage<List<QueryResult>> completionStage =
+        InfluxDBSource.create(influxDB, query).runWith(Sink.seq(), materializer);
 
-        List<QueryResult> queryResults = completionStage.toCompletableFuture().get();
-        QueryResult queryResult = queryResults.get(0);
+    List<QueryResult> queryResults = completionStage.toCompletableFuture().get();
+    QueryResult queryResult = queryResults.get(0);
 
-        Assert.assertFalse(queryResult.hasError());
+    Assert.assertFalse(queryResult.hasError());
 
-        final int resultSize = queryResult.getResults()
-                                          .get(0).getSeries()
-                                          .get(0).getValues()
-                                          .size();
+    final int resultSize = queryResult.getResults().get(0).getSeries().get(0).getValues().size();
 
-        Assert.assertEquals(2, resultSize);
-    }
-
+    Assert.assertEquals(2, resultSize);
+  }
 }
