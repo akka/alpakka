@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package akka.stream.alpakka.influxdb.impl
 
 import java.util.concurrent.TimeUnit
@@ -19,8 +23,8 @@ import scala.collection.JavaConverters._
 private[influxdb] final class InfluxDBSourceStage[T](clazz: Class[T],
                                                      settings: InfluxDBSettings,
                                                      influxDB: InfluxDB,
-                                                     query: Query,
-) extends GraphStage[SourceShape[T]] {
+                                                     query: Query)
+  extends GraphStage[SourceShape[T]] {
 
   val out: Outlet[T] = Outlet("InfluxDB.out")
   override val shape = SourceShape(out)
@@ -62,7 +66,7 @@ private[influxdb] final class InfluxDBSourceLogic[T](clazz: Class[T],
     if (dataRetrieved.isEmpty)
       completeStage()
     else {
-      var queryResult = dataRetrieved.get
+      val queryResult = dataRetrieved.get
       for {
         result <- queryResult.getResults.asScala
         series <- result.getSeries.asScala
@@ -113,12 +117,13 @@ private[influxdb] final class InfluxDBSourceRawLogic(query: Query,
     }
   }
 
-  override def onPull(): Unit =
+  override def onPull(): Unit = {
     if (dataRetrieved.isEmpty) {
       completeStage()
     } else {
       emit(outlet, dataRetrieved.get)
       dataRetrieved = Option.empty
     }
+  }
 
 }
