@@ -12,8 +12,6 @@ import org.influxdb.impl.InfluxDBResultMapperHelper
 
 import scala.collection.JavaConverters._
 
-
-
 /**
  * INTERNAL API
  */
@@ -22,7 +20,7 @@ private[influxdb] final class InfluxDBSourceStage[T](clazz: Class[T],
                                                      settings: InfluxDBSettings,
                                                      influxDB: InfluxDB,
                                                      query: Query,
-                                                    ) extends GraphStage[SourceShape[T]] {
+) extends GraphStage[SourceShape[T]] {
 
   val out: Outlet[T] = Outlet("InfluxDB.out")
   override val shape = SourceShape(out)
@@ -33,8 +31,8 @@ private[influxdb] final class InfluxDBSourceStage[T](clazz: Class[T],
 }
 
 /**
-  * INTERNAL API
-  */
+ * INTERNAL API
+ */
 @InternalApi
 private[influxdb] final class InfluxDBSourceLogic[T](clazz: Class[T],
                                                      settings: InfluxDBSettings,
@@ -42,7 +40,7 @@ private[influxdb] final class InfluxDBSourceLogic[T](clazz: Class[T],
                                                      query: Query,
                                                      outlet: Outlet[T],
                                                      shape: SourceShape[T])
-  extends GraphStageLogic(shape)
+    extends GraphStageLogic(shape)
     with OutHandler {
 
   setHandler(outlet, this)
@@ -55,12 +53,12 @@ private[influxdb] final class InfluxDBSourceLogic[T](clazz: Class[T],
     resultMapperHelper.cacheClassFields(clazz)
 
     val queryResult = influxDB.query(query)
-    if(!queryResult.hasError) {
+    if (!queryResult.hasError) {
       dataRetrieved = Option(queryResult)
     }
   }
 
-  override def onPull(): Unit = {
+  override def onPull(): Unit =
     if (dataRetrieved.isEmpty)
       completeStage()
     else {
@@ -68,13 +66,13 @@ private[influxdb] final class InfluxDBSourceLogic[T](clazz: Class[T],
       for {
         result <- queryResult.getResults.asScala
         series <- result.getSeries.asScala
-      } (
-        emitMultiple(outlet, resultMapperHelper.parseSeriesAs(clazz, series, settings.precision).asScala.toIterator)
+      }(
+        emitMultiple(outlet,
+                     resultMapperHelper.parseSeriesAs(clazz, series, settings.precision).asScala.toIterator)
       )
 
       dataRetrieved = Option.empty
     }
-  }
 
 }
 
@@ -82,9 +80,8 @@ private[influxdb] final class InfluxDBSourceLogic[T](clazz: Class[T],
  * INTERNAL API
  */
 @InternalApi
-private[influxdb] final class InfluxDBRawSourceStage(query: Query,
-                                                     influxDB: InfluxDB
-                                                    ) extends GraphStage[SourceShape[QueryResult]] {
+private[influxdb] final class InfluxDBRawSourceStage(query: Query, influxDB: InfluxDB)
+    extends GraphStage[SourceShape[QueryResult]] {
 
   val out: Outlet[QueryResult] = Outlet("InfluxDB.out")
   override val shape = SourceShape(out)
@@ -95,14 +92,14 @@ private[influxdb] final class InfluxDBRawSourceStage(query: Query,
 }
 
 /**
-  * INTERNAL API
-  */
+ * INTERNAL API
+ */
 @InternalApi
 private[influxdb] final class InfluxDBSourceRawLogic(query: Query,
                                                      influxDB: InfluxDB,
                                                      outlet: Outlet[QueryResult],
                                                      shape: SourceShape[QueryResult])
-  extends GraphStageLogic(shape)
+    extends GraphStageLogic(shape)
     with OutHandler {
 
   setHandler(outlet, this)
@@ -111,20 +108,17 @@ private[influxdb] final class InfluxDBSourceRawLogic(query: Query,
 
   override def preStart(): Unit = {
     val queryResult = influxDB.query(query)
-    if(!queryResult.hasError) {
+    if (!queryResult.hasError) {
       dataRetrieved = Option(queryResult)
     }
   }
 
-  override def onPull(): Unit = {
-    if(dataRetrieved.isEmpty) {
+  override def onPull(): Unit =
+    if (dataRetrieved.isEmpty) {
       completeStage()
     } else {
-      emit(outlet,dataRetrieved.get)
+      emit(outlet, dataRetrieved.get)
       dataRetrieved = Option.empty
     }
-  }
 
 }
-
-

@@ -21,11 +21,7 @@ object InfluxDBSource {
   /**
    * Java API: creates an  [[InfluxDBSourceStage]] of elements of `T` from `query`.
    */
-  def typed[T](clazz: Class[T],
-               settings: InfluxDBSettings,
-               influxDB: InfluxDB,
-               query: Query
-              ): Source[T, NotUsed] =
+  def typed[T](clazz: Class[T], settings: InfluxDBSettings, influxDB: InfluxDB, query: Query): Source[T, NotUsed] =
     Source.fromGraph(
       new InfluxDBSourceStage[T](
         clazz,
@@ -34,6 +30,5 @@ object InfluxDBSource {
         query
       )
     )
-
 
 }

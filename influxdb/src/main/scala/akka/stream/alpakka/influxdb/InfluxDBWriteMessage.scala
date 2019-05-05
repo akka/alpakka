@@ -18,5 +18,4 @@ object InfluxDBWriteMessage {
 
 final case class InfluxDBWriteMessage[T, C](point: T, passThrough: C)
 
-final case class InfluxDBWriteResult[T,C](writeMessage : InfluxDBWriteMessage[T,C], error: Option[String])
-
+final case class InfluxDBWriteResult[T, C](writeMessage: InfluxDBWriteMessage[T, C], error: Option[String])
