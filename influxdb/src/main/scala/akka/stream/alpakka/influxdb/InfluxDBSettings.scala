@@ -1,29 +1,28 @@
 package akka.stream.alpakka.influxdb
 
-import org.influxdb.InfluxDBFactory
+import java.util.concurrent.TimeUnit
 
-final class InfluxDBSettings private (
-val host: String,
-val port: Int,
-val parallelism: Int,
-) extends InfluxDBClientSettings {
+import scala.concurrent.duration.TimeUnit
 
-  require(host.nonEmpty, "A host name must be provided.")
-  require(port > -1, "A port number must be provided.")
+object InfluxDBSettings {
+  val Default = new InfluxDBSettings(batchSize= 10, TimeUnit.MILLISECONDS)
 
-  def withHost(value: String): InfluxDBSettings = copy(host = value)
-  def withPort(value: Int): InfluxDBSettings = copy(port = value)
-  def withParallelism(value: Int): InfluxDBSettings = copy(parallelism = value)
+  def apply(): InfluxDBSettings = Default
+
+}
+
+final class InfluxDBSettings private(
+val batchSize: Int, val precision: TimeUnit
+) {
+
+  def withBatchSize(value: Int): InfluxDBSettings = copy(batchSize = value)
 
   private def copy(
-      host: String = host,
-      port: Int = port,
-      parallelism: Int = parallelism
+      batchSize: Int = batchSize,
+      precision: TimeUnit = precision
   ): InfluxDBSettings = new InfluxDBSettings(
-    host = host,
-    port = port,
-    parallelism = parallelism,
+    batchSize = batchSize,
+    precision = precision
   )
-
 
 }
