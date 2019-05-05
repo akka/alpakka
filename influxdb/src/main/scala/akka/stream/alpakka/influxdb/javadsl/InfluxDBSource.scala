@@ -1,14 +1,11 @@
 package akka.stream.alpakka.influxdb.javadsl
 
-import java.util.concurrent.TimeUnit
-
 import akka.NotUsed
+import akka.stream.alpakka.influxdb.InfluxDBSettings
 import akka.stream.javadsl.Source
 import org.influxdb.InfluxDB
-import org.influxdb.dto.Query
-import akka.stream.alpakka.influxdb.impl.InfluxDBSourceStage
-import akka.stream.alpakka.influxdb.impl
-import org.influxdb.impl.InfluxDBResultMapperHelper
+import org.influxdb.dto.{Query, QueryResult}
+import akka.stream.alpakka.influxdb.impl.{InfluxDBRawSourceStage, InfluxDBSourceStage}
 
 /**
  * Java API to create InfluxDB sources.
@@ -16,24 +13,27 @@ import org.influxdb.impl.InfluxDBResultMapperHelper
 object InfluxDBSource {
 
   /**
-   * Java API: creates a [[InfluxDBSourceStage]] from a given statement.
+   * Java API: creates an [[InfluxDBRawSourceStage]] from a given statement.
    */
-  def create[T](query: Query, influxDB: InfluxDB,clazz: Class[T]): Source[T, NotUsed] =
-    akka.stream.javadsl.Source.fromGraph(new InfluxDBSourceStage[T](query, influxDB,new RowReaderImpl[T](clazz)))
+  def create(influxDB: InfluxDB, query: Query): Source[QueryResult, NotUsed] =
+    Source.fromGraph(new InfluxDBRawSourceStage(query, influxDB))
 
-  private final class RowReaderImpl[T](clazz: Class[T]) extends impl.RowReader[T] {
+  /**
+   * Java API: creates an  [[InfluxDBSourceStage]] of elements of `T` from `query`.
+   */
+  def typed[T](clazz: Class[T],
+               settings: InfluxDBSettings,
+               influxDB: InfluxDB,
+               query: Query
+              ): Source[T, NotUsed] =
+    Source.fromGraph(
+      new InfluxDBSourceStage[T](
+        clazz,
+        settings,
+        influxDB,
+        query
+      )
+    )
 
-    val mapperHelper = init()
-
-    def init(): InfluxDBResultMapperHelper = {
-      val resultMapperHelper = new InfluxDBResultMapperHelper
-      resultMapperHelper.cacheClassFields(classOf[T])
-      resultMapperHelper
-    }
-
-    override def convert(column: java.util.List[String],row: java.util.List[AnyRef]): T = {
-      mapperHelper.parseRowAs(classOf[T],column,row,TimeUnit.MILLISECONDS)
-    }
-  }
 
 }
