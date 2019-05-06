@@ -24,16 +24,18 @@ final private[couchbase] class CouchbaseClusterRegistry(system: ActorSystem) {
 
   private val log = Logging(system, classOf[CouchbaseClusterRegistry])
 
+  private val blockingDispatcher = system.dispatchers.lookup("akka.actor.default-blocking-io-dispatcher")
+
   private val clusters = new AtomicReference(Map.empty[CouchbaseSessionSettings, Future[AsyncCluster]])
 
   def clusterFor(settings: CouchbaseSessionSettings): Future[AsyncCluster] =
     clusters.get.get(settings) match {
       case Some(futureSession) => futureSession
-      case _ => startSession(settings)
+      case _ => createClusterClient(settings)
     }
 
   @tailrec
-  private def startSession(settings: CouchbaseSessionSettings): Future[AsyncCluster] = {
+  private def createClusterClient(settings: CouchbaseSessionSettings): Future[AsyncCluster] = {
     val promise = Promise[AsyncCluster]()
     val oldClusters = clusters.get()
     val newClusters = oldClusters.updated(settings, promise.future)
@@ -41,7 +43,10 @@ final private[couchbase] class CouchbaseClusterRegistry(system: ActorSystem) {
       // we won cas, initialize session
       def nodesAsString = settings.nodes.mkString("\"", "\", \"", "\"")
       log.info("Starting Couchbase client for nodes [{}]", nodesAsString)
-      promise.completeWith(CouchbaseSession.createClusterClient(settings)(system.dispatcher))
+      promise.completeWith(
+        CouchbaseSession
+          .createClusterClient(settings)(blockingDispatcher)
+      )
       val future = promise.future
       system.registerOnTermination {
         future.foreach { cluster =>
@@ -53,7 +58,7 @@ final private[couchbase] class CouchbaseClusterRegistry(system: ActorSystem) {
       future
     } else {
       // we lost cas (could be concurrent call for some other settings though), retry
-      startSession(settings)
+      createClusterClient(settings)
     }
   }
 

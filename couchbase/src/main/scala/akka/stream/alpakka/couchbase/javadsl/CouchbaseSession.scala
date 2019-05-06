@@ -40,20 +40,18 @@ object CouchbaseSession {
              executor: Executor): CompletionStage[CouchbaseSession] =
     ScalaDslCouchbaseSession
       .apply(settings, bucketName)(executionContext(executor))
-      .map(new CouchbaseSessionJavaAdapter(_).asInstanceOf[CouchbaseSession])(
+      .map(new CouchbaseSessionJavaAdapter(_): CouchbaseSession)(
         ExecutionContexts.sameThreadExecutionContext
       )
       .toJava
 
   /**
-   * Create a session against the given bucket. The life-cycle of the `client` is the user's responsibility.
+   * Create a given bucket using a pre-existing cluster client, allowing for it to be shared among
+   * multiple `CouchbaseSession`s. The cluster client's life-cycle is the user's responsibility.
    */
-  def create(client: CompletionStage[AsyncCluster],
-             bucketName: String,
-             executor: Executor): CompletionStage[CouchbaseSession] =
-    ScalaDslCouchbaseSession
-      .apply(client.toScala, bucketName)(executionContext(executor))
-      .map(new CouchbaseSessionJavaAdapter(_).asInstanceOf[CouchbaseSession])(
+  def create(client: AsyncCluster, bucketName: String, executor: Executor): CompletionStage[CouchbaseSession] =
+    ScalaDslCouchbaseSession(client, bucketName)(executionContext(executor))
+      .map(new CouchbaseSessionJavaAdapter(_): CouchbaseSession)(
         ExecutionContexts.sameThreadExecutionContext
       )
       .toJava
@@ -236,7 +234,7 @@ abstract class CouchbaseSession {
    * @return a [[java.util.concurrent.CompletionStage]] of `true` if the index was/will be effectively created, `false`
    *      if the index existed and ignoreIfExist` is true. Completion of the `CompletionStage` does not guarantee the index
    *      is online and ready to be used.
-   */
+    **/
   def createIndex(indexName: String, ignoreIfExist: Boolean, fields: AnyRef*): CompletionStage[Boolean]
 
   /**

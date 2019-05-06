@@ -6,7 +6,7 @@ package docs.scaladsl
 
 import akka.stream.alpakka.couchbase.scaladsl.{CouchbaseSession, CouchbaseSource}
 import akka.stream.alpakka.couchbase.testing.CouchbaseSupport
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.Sink
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import com.couchbase.client.java.auth.PasswordAuthenticator
 import com.couchbase.client.java.{Bucket, CouchbaseCluster}
