@@ -24,26 +24,28 @@ class InfluxDBSourceSpec
     with BeforeAndAfterAll
     with ScalaFutures {
 
+  val databaseName = "InfluxDBSourceSpec"
+
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()
 
   implicit var influxDB: InfluxDB = _
 
   override protected def beforeAll(): Unit =
-    influxDB = setupConnection()
+    influxDB = setupConnection(databaseName)
 
   override protected def afterAll(): Unit =
     TestKit.shutdownActorSystem(system)
 
   override def beforeEach(): Unit =
-    populateDatabase(influxDB)
+    populateDatabase(influxDB, classOf[InfluxDBSourceCpu])
 
   override def afterEach() =
-    cleanDatabase(influxDB)
+    cleanDatabase(influxDB, databaseName)
 
   "support source" in assertAllStagesStopped {
     // #run-typed
-    val query = new Query("SELECT*FROM cpu", DATABASE_NAME);
+    val query = new Query("SELECT*FROM cpu", databaseName);
 
     val influxDBResult = InfluxDBSource(influxDB, query).runWith(Sink.seq)
     val resultToAssert = influxDBResult.futureValue.head
