@@ -61,7 +61,6 @@ private[influxdb] class InfluxDBFlowStage[T, C](
       messages.foreach {
         case InfluxDBWriteMessage(point: Point, _) => {
           influxDB.write(point)
-          println(point.toString)
         }
         case InfluxDBWriteMessage(others: AnyRef, _) =>
           failStage(new RuntimeException(s"unexpected type Point or annotated with Measurement required"))
