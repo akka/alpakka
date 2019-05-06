@@ -8,12 +8,14 @@ import java.util.concurrent.CompletionStage
 import java.util.function.BiFunction
 
 import akka.Done
+import akka.annotation.ApiMayChange
 import akka.stream.alpakka.cassandra.scaladsl.{CassandraSink => ScalaCSink}
 import akka.stream.javadsl.Sink
 import com.datastax.driver.core.{BoundStatement, PreparedStatement, Session}
 
 import scala.compat.java8.FutureConverters._
 
+@ApiMayChange // https://github.com/akka/alpakka/issues/1213
 object CassandraSink {
 
   def create[T](parallelism: Int,

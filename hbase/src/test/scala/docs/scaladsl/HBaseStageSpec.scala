@@ -119,6 +119,21 @@ class HBaseStageSpec
 
       f.futureValue shouldBe 155
     }
+
+    "scan entries from a source" in {
+      val create = Source(List(Person(100, "scan_100"))).runWith(HTableStage.sink(tableSettings))
+      create.futureValue shouldBe Done
+
+      //#source
+      val scan = new Scan(new Get(Bytes.toBytes("id_100")))
+
+      val f = HTableStage
+        .source(scan, tableSettings)
+        .runWith(Sink.seq)
+      //#source
+
+      f.futureValue.size shouldBe 1
+    }
   }
 
   override def afterAll(): Unit =

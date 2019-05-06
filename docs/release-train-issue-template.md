@@ -37,24 +37,26 @@ Key links:
 ### Cutting the release
 
 - [ ] Make sure there are no stray staging repos on [Sonatype](https://oss.sonatype.org/#stagingRepositories)
-- [ ] Wait until [master build finished](https://travis-ci.org/akka/alpakka/builds/) after merging the release notes 
+- [ ] Wait until [master build finished](https://travis-ci.com/akka/alpakka/builds/) after merging the release notes
 - [ ] Create a [new release](https://github.com/akka/alpakka/releases/new) with the next tag version `v$ALPAKKA_VERSION$`, title and release description linking to announcement, release notes and milestone
-- [ ] Check that Travis CI release build has executed successfully (Travis will start a [CI build](https://travis-ci.org/akka/alpakka/builds) for the new tag and publish artifacts to Bintray and documentation to Gustav)
+- [ ] Check that Travis CI release build has executed successfully (Travis will start a [CI build](https://travis-ci.com/akka/alpakka/builds) for the new tag and publish artifacts to Bintray and documentation to Gustav)
 - [ ] Go to [Bintray](https://bintray.com/akka/maven/alpakka) and select the just released version
 - [ ] Go to the Maven Central tab, check the *Close and release repository when done* checkbox and sync with Sonatype (using your Sonatype TOKEN key and password)
 
 ### Check availability
 
+- [ ] Check [API](https://doc.akka.io/api/alpakka/$ALPAKKA_VERSION$/) documentation 
+- [ ] Check [reference](https://doc.akka.io/docs/alpakka/$ALPAKKA_VERSION$/) documentation
 - [ ] Check the release on [Maven central](http://central.maven.org/maven2/com/lightbend/akka/akka-stream-alpakka-xml_2.12/$ALPAKKA_VERSION$/)
-- [ ] Check [API](https://doc.akka.io/api/alpakka/$ALPAKKA_VERSION$/) and [reference]
-  (https://doc.akka.io/docs/alpakka/$ALPAKKA_VERSION$/) documentation
 
 ### When everything is on maven central
-  - [ ] Log into `gustav.akka.io` as `akkarepo` and update the `current` links on `repo.akka.io` to point to the latest version with
-     ```
-     ln -nsf $ALPAKKA_VERSION$ www/docs/alpakka/current
-     ln -nsf $ALPAKKA_VERSION$ www/api/alpakka/current
-     ```
+  - [ ] Log into `gustav.akka.io` as `akkarepo` 
+    - [ ] update the `current` links on `repo.akka.io` to point to the latest version with
+         ```
+         ln -nsf $ALPAKKA_VERSION$ www/docs/alpakka/current
+         ln -nsf $ALPAKKA_VERSION$ www/api/alpakka/current
+         ```
+    - [ ] check changes and commit the new version to the local git repository
 
 ### Announcements
 
@@ -62,6 +64,7 @@ Key links:
 - [ ] Send a release notification to [Lightbend discuss](https://discuss.akka.io)
 - [ ] Tweet using the akkateam account (or ask someone to) about the new release
 - [ ] Announce on [Gitter akka/akka](https://gitter.im/akka/akka)
+- [ ] Announce internally
 
 ### Afterwards
 

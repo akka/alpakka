@@ -5,6 +5,7 @@
 package akka.stream.alpakka.sqs.javadsl
 
 import akka.NotUsed
+import akka.annotation.ApiMayChange
 import akka.stream.alpakka.sqs.{
   SqsPublishBatchSettings,
   SqsPublishGroupedSettings,
@@ -21,6 +22,7 @@ import scala.collection.JavaConverters._
 /**
  * Java API to create SQS flows.
  */
+@ApiMayChange
 object SqsPublishFlow {
 
   /**

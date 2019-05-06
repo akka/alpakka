@@ -18,7 +18,7 @@ Java
 ### Restarting of the source
 
 The MQTT source gets wrapped by a `RestartSource` to mitigate the 
-@ref:[Paho initial connections problem](../mqtt.md#setup).
+@ref:[Paho initial connections problem](../mqtt.md#settings).
 
 Java
 : @@snip [snip](/doc-examples/src/main/java/mqtt/javasamples/MqttGroupedWithin.java) { #restarting }

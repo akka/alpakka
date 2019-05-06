@@ -4,9 +4,11 @@
 
 package akka.stream.alpakka.reference.scaladsl
 
+import akka.actor.ActorSystem
+import akka.stream.Attributes
 import akka.{Done, NotUsed}
-import akka.stream.alpakka.reference.impl.{ReferenceFlow, ReferenceSource}
-import akka.stream.alpakka.reference.{ReferenceReadResult, ReferenceWriteMessage, ReferenceWriteResult, SourceSettings}
+import akka.stream.alpakka.reference.impl.{ReferenceFlow, ReferenceSource, ReferenceWithResourceFlow, Setup}
+import akka.stream.alpakka.reference._
 import akka.stream.scaladsl.{Flow, Source}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -33,4 +35,18 @@ object Reference {
    */
   def flowAsyncMapped()(implicit ec: ExecutionContext): Flow[ReferenceWriteMessage, ReferenceWriteResult, NotUsed] =
     flow().mapAsync(parallelism = 4)(m => Future { m })
+
+  /**
+   * An implementation of a flow that needs access to materializer or attributes during materialization.
+   */
+  def flowWithResource(): Flow[ReferenceWriteMessage, ReferenceWriteResult, NotUsed] =
+    Setup
+      .flow { mat => implicit attr =>
+        implicit val sys = mat.system
+        Flow.fromGraph(new ReferenceWithResourceFlow(resolveResource()))
+      }
+      .mapMaterializedValue(_ => NotUsed)
+
+  private def resolveResource()(implicit sys: ActorSystem, attr: Attributes) =
+    attr.get[ReferenceResourceValue].map(_.resource).getOrElse(ResourceExt().resource)
 }

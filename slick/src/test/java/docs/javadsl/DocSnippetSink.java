@@ -37,7 +37,7 @@ public class DocSnippetSink {
             .runWith(
                 Slick.<User>sink(
                     session,
-                    // add an optional second argument to specify the parallism factor (int)
+                    // add an optional second argument to specify the parallelism factor (int)
                     (user) ->
                         "INSERT INTO ALPAKKA_SLICK_JAVADSL_TEST_USERS VALUES ("
                             + user.id

@@ -13,7 +13,6 @@ import akka.util.ByteString
 import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest._
 
 import scala.concurrent.{Await, Future}
@@ -29,8 +28,7 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
   implicit val materializer = ActorMaterializer()
   implicit val ec = materializer.executionContext
 
-  implicit val defaultPatience =
-    PatienceConfig(timeout = Span(5, Seconds), interval = Span(30, Millis))
+  implicit val defaultPatience: PatienceConfig = PatienceConfig(90.seconds, 30.millis)
 
   val defaultRegionBucket = "my-test-us-east-1"
 
@@ -167,6 +165,21 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
   it should "delete with real credentials" in {
     val delete = S3.deleteObject(defaultRegionBucket, objectKey).runWith(Sink.head)
     delete.futureValue shouldEqual akka.Done
+  }
+
+  it should "upload huge multipart with real credentials" in {
+    val objectKey = "huge"
+    val hugeString = "0123456789abcdef" * 64 * 1024 * 11
+    val result =
+      Source
+        .single(ByteString(hugeString))
+        .runWith(
+          S3.multipartUpload(defaultRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
+        )
+
+    val multipartUploadResult = result.futureValue
+    multipartUploadResult.bucket shouldBe defaultRegionBucket
+    multipartUploadResult.key shouldBe objectKey
   }
 
   it should "upload, download and delete with spaces in the key" in {
@@ -331,9 +344,9 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
 
     val results = for {
-      upload1 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey1)).runWith(Sink.head)
-      upload2 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey2)).runWith(Sink.head)
-      upload3 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey3)).runWith(Sink.head)
+      upload1 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey1))
+      upload2 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey2))
+      upload3 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey3))
     } yield (upload1, upload2, upload3)
 
     whenReady(results) {
@@ -361,8 +374,8 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
 
     val results = for {
-      upload1 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey1)).runWith(Sink.head)
-      upload2 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey2)).runWith(Sink.head)
+      upload1 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey1))
+      upload2 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey2))
     } yield (upload1, upload2)
 
     whenReady(results) {

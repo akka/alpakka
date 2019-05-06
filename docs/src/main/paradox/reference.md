@@ -26,7 +26,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 Give a brief description of the usage of this connector. If you want to mention a
 class name, make sure to link to the API docs:
-@scaladoc[ReferenceReadMessage](akka.stream.alpakka.reference.ReferenceReadMessage).
+@scaladoc[ReferenceReadResult](akka.stream.alpakka.reference.ReferenceReadResult).
 
 If any of the API classes are different between Scala and Java, link to both API docs:
 @scala[@scaladoc[Reference](akka.stream.alpakka.reference.scaladsl.Reference$)]
@@ -52,19 +52,3 @@ Scala
 
 Java
 : @@snip [snip](/reference/src/test/java/docs/javadsl/ReferenceTest.java) { #flow }
-
-## Running the example code
-
-The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
-
-Scala
-:   ```
-    sbt
-    > reference/testOnly *.ReferenceSpec
-    ```
-    
-Java
-:   ```
-    sbt
-    > reference/testOnly *.ReferenceTest
-    ```

@@ -8,6 +8,7 @@ import java.util.function.BiFunction
 import java.util.function.Function
 
 import akka.NotUsed
+import akka.annotation.ApiMayChange
 import akka.stream.alpakka.cassandra.CassandraBatchSettings
 import com.datastax.driver.core.{BoundStatement, PreparedStatement, Session}
 import akka.stream.alpakka.cassandra.scaladsl.{CassandraFlow => ScalaCFlow}
@@ -15,6 +16,7 @@ import akka.stream.javadsl.Flow
 
 import scala.concurrent.ExecutionContext
 
+@ApiMayChange // https://github.com/akka/alpakka/issues/1213
 object CassandraFlow {
   def createWithPassThrough[T](parallelism: Int,
                                statement: PreparedStatement,

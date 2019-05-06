@@ -10,6 +10,7 @@ target/
 .project
 .settings
 .tmpBin/
+tmp/
 *.sublime-project
 /bin/
 ext-lib-src/

@@ -15,13 +15,15 @@ import akka.stream.alpakka.mqtt.streaming.scaladsl.{
   MqttServerSession
 }
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Sink, Source, SourceQueueWithComplete}
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.{ActorMaterializer, Materializer, OverflowStrategy, WatchedActorTerminatedException}
 import akka.testkit._
 import akka.util.{ByteString, Timeout}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.time.{Millis, Span}
 
-import scala.concurrent.Promise
+import scala.concurrent.{ExecutionContext, Promise}
 import scala.concurrent.duration._
 
 class MqttSessionSpec
@@ -32,6 +34,7 @@ class MqttSessionSpec
     with Matchers {
 
   implicit val mat: Materializer = ActorMaterializer()
+  implicit val executionContext: ExecutionContext = system.dispatcher
   implicit val timeout: Timeout = Timeout(3.seconds.dilated)
 
   val settings = MqttSessionSettings()
@@ -40,7 +43,7 @@ class MqttSessionSpec
 
   "MQTT client connector" should {
 
-    "flow through a client session" in {
+    "flow through a client session" in assertAllStagesStopped {
       val session = ActorMqttClientSession(settings)
 
       val server = TestProbe()
@@ -51,7 +54,7 @@ class MqttSessionSpec
           .queue(1, OverflowStrategy.fail)
           .via(
             Mqtt
-              .clientSessionFlow(session)
+              .clientSessionFlow(session, ByteString("1"))
               .join(pipeToServer)
           )
           .toMat(Sink.seq)(Keep.both)
@@ -90,9 +93,10 @@ class MqttSessionSpec
       client.complete()
 
       result.futureValue shouldBe List(Right(Event(connAck)), Right(Event(subAck)), Right(Event(pubAck)))
+      client.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "Connect and carry through an object to ConnAck" in {
+    "Connect and carry through an object to ConnAck" in assertAllStagesStopped {
       val session = ActorMqttClientSession(settings)
 
       val server = TestProbe()
@@ -106,7 +110,7 @@ class MqttSessionSpec
           .queue[Command[String]](1, OverflowStrategy.fail)
           .via(
             Mqtt
-              .clientSessionFlow(session)
+              .clientSessionFlow(session, ByteString("1"))
               .join(pipeToServer)
           )
           .toMat(Sink.head)(Keep.both)
@@ -122,9 +126,11 @@ class MqttSessionSpec
       server.reply(connAckBytes)
 
       result.futureValue shouldBe Right(Event(connAck, Some(carry)))
+      client.complete()
+      client.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "Connect and stash any subsequent messages" in {
+    "Connect and stash any subsequent messages" in assertAllStagesStopped {
       val session = ActorMqttClientSession(settings)
 
       val server = TestProbe()
@@ -135,10 +141,10 @@ class MqttSessionSpec
 
       val (client, result) =
         Source
-          .queue[Command[String]](1, OverflowStrategy.fail)
+          .queue[Command[String]](2, OverflowStrategy.fail)
           .via(
             Mqtt
-              .clientSessionFlow(session)
+              .clientSessionFlow(session, ByteString("1"))
               .join(pipeToServer)
           )
           .drop(1)
@@ -163,9 +169,11 @@ class MqttSessionSpec
       server.reply(subAckBytes)
 
       result.futureValue shouldBe Right(Event(subAck))
+      client.complete()
+      client.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "Connect and fail given no ack" in {
+    "Connect and fail given no ack" in assertAllStagesStopped {
       val session = ActorMqttClientSession(settings.withReceiveConnAckTimeout(0.seconds))
 
       val server = TestProbe()
@@ -178,7 +186,7 @@ class MqttSessionSpec
           .queue[Command[String]](1, OverflowStrategy.fail)
           .via(
             Mqtt
-              .clientSessionFlow(session)
+              .clientSessionFlow(session, ByteString("1"))
               .join(pipeToServer)
           )
           .toMat(Sink.ignore)(Keep.both)
@@ -187,9 +195,11 @@ class MqttSessionSpec
       client.offer(Command(connect))
 
       result.failed.futureValue shouldBe an[ActorMqttClientSession.ConnectFailed.type]
+      client.complete()
+      client.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "Connect successfully, subscribe and fail given no ack" in {
+    "Connect successfully, subscribe and fail given no ack" in assertAllStagesStopped {
       val session = ActorMqttClientSession(settings.withReceiveSubAckTimeout(0.seconds))
 
       val server = TestProbe()
@@ -203,7 +213,7 @@ class MqttSessionSpec
           .queue[Command[String]](1, OverflowStrategy.fail)
           .via(
             Mqtt
-              .clientSessionFlow(session)
+              .clientSessionFlow(session, ByteString("1"))
               .join(pipeToServer)
           )
           .toMat(Sink.ignore)(Keep.both)
@@ -221,9 +231,11 @@ class MqttSessionSpec
       client.offer(Command(subscribe))
 
       result.failed.futureValue shouldBe an[ActorMqttClientSession.SubscribeFailed.type]
+      client.complete()
+      client.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "disconnect when connected" in {
+    "disconnect when connected" in assertAllStagesStopped {
       val session = ActorMqttClientSession(settings)
 
       val server = TestProbe()
@@ -236,7 +248,7 @@ class MqttSessionSpec
         .queue(1, OverflowStrategy.fail)
         .via(
           Mqtt
-            .clientSessionFlow(session)
+            .clientSessionFlow(session, ByteString("1"))
             .join(pipeToServer)
         )
         .toMat(Sink.ignore)(Keep.both)
@@ -258,9 +270,11 @@ class MqttSessionSpec
       server.expectMsg(disconnectBytes)
 
       result.futureValue shouldBe Done
+      client.complete()
+      client.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "disconnect when connection lost" in {
+    "disconnect when connection lost" in assertAllStagesStopped {
       val session = ActorMqttClientSession(settings)
 
       val server = TestProbe()
@@ -272,7 +286,7 @@ class MqttSessionSpec
         .queue(1, OverflowStrategy.fail)
         .via(
           Mqtt
-            .clientSessionFlow(session)
+            .clientSessionFlow(session, ByteString("1"))
             .join(pipeToServer)
         )
         .toMat(Sink.ignore)(Keep.both)
@@ -287,9 +301,10 @@ class MqttSessionSpec
       client.complete()
 
       result.futureValue shouldBe Done
+      client.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "disconnect when connection lost while subscribing" in {
+    "disconnect when connection lost while subscribing" in assertAllStagesStopped {
       val session = ActorMqttClientSession(settings)
 
       val server = TestProbe()
@@ -300,10 +315,10 @@ class MqttSessionSpec
 
       val (client, result) =
         Source
-          .queue[Command[String]](1, OverflowStrategy.fail)
+          .queue[Command[String]](2, OverflowStrategy.fail)
           .via(
             Mqtt
-              .clientSessionFlow(session)
+              .clientSessionFlow(session, ByteString("1"))
               .join(pipeToServer)
           )
           .toMat(Sink.ignore)(Keep.both)
@@ -326,9 +341,75 @@ class MqttSessionSpec
       client.complete()
 
       result.futureValue shouldBe Done
+      client.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "receive a QoS 0 publication from a subscribed topic" in {
+    "correctly handle a new client connection" in assertAllStagesStopped {
+      val session = ActorMqttClientSession(settings)
+
+      val server = TestProbe()
+      val pipeToServer = Flow[ByteString].mapAsync(1)(msg => server.ref.ask(msg).mapTo[ByteString])
+
+      val connect = Connect("some-client-id", ConnectFlags.None)
+      val carry = "some-carry"
+
+      val connectBytes = connect.encode(ByteString.newBuilder).result()
+      val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
+      val connAckBytes = connAck.encode(ByteString.newBuilder).result()
+
+      val (firstClient, firstResult) =
+        Source
+          .queue[Command[String]](1, OverflowStrategy.fail)
+          .via(
+            Mqtt
+              .clientSessionFlow(session, ByteString("1"))
+              .join(pipeToServer)
+          )
+          .toMat(Sink.head)(Keep.both)
+          .run()
+
+      firstClient.offer(Command(connect, carry))
+
+      server.expectMsg(connectBytes)
+      server.reply(connAckBytes)
+
+      firstResult.futureValue shouldBe Right(Event(connAck, Some(carry)))
+
+      // we explicitly don't wait, as we want to test a race condition
+      // where the new connection is established before the session
+      // knows the first has finished/failed
+
+      firstClient.complete()
+
+      val (secondClient, secondResult) =
+        Source
+          .queue[Command[String]](1, OverflowStrategy.fail)
+          .via(
+            Mqtt
+              .clientSessionFlow(session, ByteString("2"))
+              .join(pipeToServer)
+          )
+          .toMat(Sink.head)(Keep.both)
+          .run()
+
+      secondClient.offer(Command(connect, carry))
+
+      server.expectMsg(connectBytes)
+      server.reply(connAckBytes)
+
+      secondResult.futureValue shouldBe Right(Event(connAck, Some(carry)))
+
+      secondClient.complete()
+
+      for {
+        _ <- firstClient.watchCompletion()
+        _ <- secondClient.watchCompletion()
+      } yield {
+        session.shutdown()
+      }
+    }
+
+    "receive a QoS 0 publication from a subscribed topic" in assertAllStagesStopped {
       val session = ActorMqttClientSession(settings)
 
       val server = TestProbe()
@@ -340,7 +421,7 @@ class MqttSessionSpec
         .queue(1, OverflowStrategy.fail)
         .via(
           Mqtt
-            .clientSessionFlow(session)
+            .clientSessionFlow(session, ByteString("1"))
             .join(pipeToServer)
         )
         .drop(2)
@@ -370,9 +451,11 @@ class MqttSessionSpec
       server.reply(subAckBytes ++ publishBytes)
 
       result.futureValue shouldBe Right(Event(publish))
+      client.complete()
+      client.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "receive a QoS 1 publication from a subscribed topic and ack it" in {
+    "receive a QoS 1 publication from a subscribed topic and ack it" in assertAllStagesStopped {
       val session = ActorMqttClientSession(settings)
 
       val server = TestProbe()
@@ -386,7 +469,7 @@ class MqttSessionSpec
         .queue(1, OverflowStrategy.fail)
         .via(
           Mqtt
-            .clientSessionFlow(session)
+            .clientSessionFlow(session, ByteString("1"))
             .join(pipeToServer)
         )
         .collect {
@@ -425,9 +508,11 @@ class MqttSessionSpec
       client.offer(Command(pubAck))
 
       server.expectMsg(pubAckBytes)
+      client.complete()
+      client.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "receive a QoS 1 publication from a subscribed topic and ack it and then ack it again - the stream should ignore" in {
+    "receive a QoS 1 publication from a subscribed topic and ack it and then ack it again - the stream should ignore" in assertAllStagesStopped {
       val session = ActorMqttClientSession(settings)
 
       val server = TestProbe()
@@ -441,7 +526,7 @@ class MqttSessionSpec
         .queue(1, OverflowStrategy.fail)
         .via(
           Mqtt
-            .clientSessionFlow(session)
+            .clientSessionFlow(session, ByteString("1"))
             .join(pipeToServer)
         )
         .collect {
@@ -487,9 +572,10 @@ class MqttSessionSpec
 
       client.complete()
       result.futureValue shouldBe Done
+      client.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "receive a QoS 1 publication with DUP indicated from a unsubscribed topic - simulates a reconnect" in {
+    "receive a QoS 1 publication with DUP indicated from a unsubscribed topic - simulates a reconnect" in assertAllStagesStopped {
       val session = ActorMqttClientSession(settings)
 
       val server = TestProbe()
@@ -503,7 +589,7 @@ class MqttSessionSpec
         .queue(1, OverflowStrategy.fail)
         .via(
           Mqtt
-            .clientSessionFlow(session)
+            .clientSessionFlow(session, ByteString("1"))
             .join(pipeToServer)
         )
         .collect {
@@ -528,9 +614,11 @@ class MqttSessionSpec
       server.reply(connAckBytes ++ publishBytes)
 
       publishReceived.future.futureValue shouldBe Done
+      client.complete()
+      client.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "receive a QoS 2 publication from a subscribed topic and rec and comp it" in {
+    "receive a QoS 2 publication from a subscribed topic and rec and comp it" in assertAllStagesStopped {
       val session = ActorMqttClientSession(settings)
 
       val server = TestProbe()
@@ -545,7 +633,7 @@ class MqttSessionSpec
         .queue(1, OverflowStrategy.fail)
         .via(
           Mqtt
-            .clientSessionFlow(session)
+            .clientSessionFlow(session, ByteString("1"))
             .join(pipeToServer)
         )
         .collect {
@@ -602,9 +690,11 @@ class MqttSessionSpec
       client.offer(Command(pubComp))
 
       server.expectMsg(pubCompBytes)
+      client.complete()
+      client.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "publish with a QoS of 0" in {
+    "publish with a QoS of 0" in assertAllStagesStopped {
       val session = ActorMqttClientSession(settings)
 
       val server = TestProbe()
@@ -615,7 +705,7 @@ class MqttSessionSpec
           .queue(1, OverflowStrategy.fail)
           .via(
             Mqtt
-              .clientSessionFlow(session)
+              .clientSessionFlow(session, ByteString("1"))
               .join(pipeToServer)
           )
           .toMat(Sink.ignore)(Keep.left)
@@ -637,9 +727,11 @@ class MqttSessionSpec
       session ! Command(publish)
 
       server.expectMsg(publishBytes)
+      client.complete()
+      client.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "publish and carry through an object to pubAck" in {
+    "publish and carry through an object to pubAck" in assertAllStagesStopped {
       val session = ActorMqttClientSession(settings)
 
       val server = TestProbe()
@@ -650,7 +742,7 @@ class MqttSessionSpec
           .queue(1, OverflowStrategy.fail)
           .via(
             Mqtt
-              .clientSessionFlow[String](session)
+              .clientSessionFlow[String](session, ByteString("1"))
               .join(pipeToServer)
           )
           .drop(1)
@@ -679,9 +771,11 @@ class MqttSessionSpec
       server.reply(pubAckBytes)
 
       result.futureValue shouldBe Right(Event(pubAck, Some(carry)))
+      client.complete()
+      client.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "publish twice with a QoS of 1 so that the second is queued" in {
+    "publish twice with a QoS of 1 so that the second is queued" in assertAllStagesStopped {
       val session = ActorMqttClientSession(settings)
 
       val server = TestProbe()
@@ -692,7 +786,7 @@ class MqttSessionSpec
           .queue(1, OverflowStrategy.fail)
           .via(
             Mqtt
-              .clientSessionFlow(session)
+              .clientSessionFlow(session, ByteString("1"))
               .join(pipeToServer)
           )
           .toMat(Sink.ignore)(Keep.left)
@@ -724,9 +818,12 @@ class MqttSessionSpec
 
       server.expectMsg(secondPublishBytes)
       server.reply(secondPubAckBytes)
+
+      client.complete()
+      client.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "publish with a QoS of 1 and cause a retry given a timeout" in {
+    "publish with a QoS of 1 and cause a retry given a timeout" in /* failing when enabled assertAllStagesStopped */ {
       val session = ActorMqttClientSession(settings.withProducerPubAckRecTimeout(10.millis))
 
       val server = TestProbe()
@@ -737,7 +834,7 @@ class MqttSessionSpec
           .queue(1, OverflowStrategy.fail)
           .via(
             Mqtt
-              .clientSessionFlow(session)
+              .clientSessionFlow(session, ByteString("1"))
               .join(pipeToServer)
           )
           .toMat(Sink.ignore)(Keep.left)
@@ -763,12 +860,88 @@ class MqttSessionSpec
       session ! Command(publish)
 
       server.expectMsg(publishBytes)
+      // This reply triggers an error showing in the logs which hinders proper shutdown
+      //   7   │ 2019-03-06 11:28:23,035 ERROR [mqtt-spec-akka.actor.default-dispatcher-3] [akka.actor.OneForOneStrategy]  56 (of class java.lang.Integer)
+      //   8   │ scala.MatchError: 56 (of class java.lang.Integer)
+      //   9   │     at akka.stream.impl.fusing.GraphInterpreter.$anonfun$toSnapshot$4(GraphInterpreter.scala:662)
       server.reply(connAckBytes) // It doesn't matter what the message is - our test machinery here just wants a reply
       server.expectMsg(publishDupBytes)
       server.reply(pubAckBytes)
+
+      client.complete()
+      client.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "publish with QoS 2 and carry through an object to pubComp" in {
+    "publish with a QoS of 1 and cause a retry given a reconnect" in {
+      val session = ActorMqttClientSession(settings.withProducerPubAckRecTimeout(0.millis))
+
+      val server = TestProbe()
+      val pipeToServer = Flow[ByteString].mapAsync(1)(msg => server.ref.ask(msg).mapTo[ByteString])
+
+      val connect = Connect("some-client-id", ConnectFlags.None)
+      val connectBytes = connect.encode(ByteString.newBuilder).result()
+      val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
+      val connAckBytes = connAck.encode(ByteString.newBuilder).result()
+
+      val publish = Publish("some-topic", ByteString("some-payload"))
+      val publishBytes = publish.encode(ByteString.newBuilder, Some(PacketId(1))).result()
+      val publishDup = publish.copy(flags = publish.flags | ControlPacketFlags.DUP)
+      val publishDupBytes = publishDup.encode(ByteString.newBuilder, Some(PacketId(1))).result()
+      val pubAck = PubAck(PacketId(1))
+      val pubAckBytes = pubAck.encode(ByteString.newBuilder).result()
+
+      val firstClient =
+        Source
+          .queue(1, OverflowStrategy.fail)
+          .via(
+            Mqtt
+              .clientSessionFlow(session, ByteString("1"))
+              .join(pipeToServer)
+          )
+          .toMat(Sink.ignore)(Keep.left)
+          .run()
+
+      firstClient.offer(Command(connect))
+
+      server.expectMsg(connectBytes)
+      server.reply(connAckBytes)
+
+      session ! Command(publish)
+
+      server.expectMsg(publishBytes)
+
+      server.reply(connAckBytes)
+
+      firstClient.complete()
+
+      val secondClient =
+        Source
+          .queue(1, OverflowStrategy.fail)
+          .via(
+            Mqtt
+              .clientSessionFlow(session, ByteString("2"))
+              .join(pipeToServer)
+          )
+          .toMat(Sink.ignore)(Keep.left)
+          .run()
+
+      secondClient.offer(Command(connect))
+
+      server.expectMsg(connectBytes)
+      server.reply(connAckBytes)
+
+      server.expectMsg(publishDupBytes)
+      server.reply(pubAckBytes)
+
+      secondClient.complete()
+
+      for {
+        _ <- firstClient.watchCompletion()
+        _ <- secondClient.watchCompletion()
+      } yield session.shutdown()
+    }
+
+    "publish with QoS 2 and carry through an object to pubComp" in assertAllStagesStopped {
       val session = ActorMqttClientSession(settings)
 
       val server = TestProbe()
@@ -779,7 +952,7 @@ class MqttSessionSpec
           .queue(1, OverflowStrategy.fail)
           .via(
             Mqtt
-              .clientSessionFlow[String](session)
+              .clientSessionFlow[String](session, ByteString("1"))
               .join(pipeToServer)
           )
           .drop(2)
@@ -815,9 +988,13 @@ class MqttSessionSpec
       server.reply(pubCompBytes)
 
       result.futureValue shouldBe Right(Event(pubComp, Some(carry)))
+
+      client.complete()
+      client.watchCompletion().foreach(_ => session.shutdown())
     }
 
     "connect and send out a ping request" in {
+      /*assertAllStagesStopped { */
       val session = ActorMqttClientSession(settings)
 
       val server = TestProbe()
@@ -828,7 +1005,7 @@ class MqttSessionSpec
           .queue(1, OverflowStrategy.fail)
           .via(
             Mqtt
-              .clientSessionFlow(session)
+              .clientSessionFlow(session, ByteString("1"))
               .join(pipeToServer)
           )
           .toMat(Sink.ignore)(Keep.left)
@@ -854,9 +1031,12 @@ class MqttSessionSpec
       server.reply(pingRespBytes)
       server.expectMsg(pingReqBytes)
       server.reply(pingRespBytes)
+
+      client.complete()
+      client.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "disconnect a connected session if a ping request is not replied to" in {
+    "disconnect a connected session if a ping request is not replied to" in assertAllStagesStopped {
       val session = ActorMqttClientSession(settings)
 
       val server = TestProbe()
@@ -867,7 +1047,7 @@ class MqttSessionSpec
           .queue(1, OverflowStrategy.fail)
           .via(
             Mqtt
-              .clientSessionFlow(session)
+              .clientSessionFlow(session, ByteString("1"))
               .join(pipeToServer)
           )
           .toMat(Sink.ignore)(Keep.both)
@@ -888,9 +1068,12 @@ class MqttSessionSpec
       server.expectMsg(pingReqBytes)
 
       result.failed.futureValue shouldBe ActorMqttClientSession.PingFailed
+
+      client.complete()
+      client.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "unsubscribe a client session" in {
+    "unsubscribe a client session" in assertAllStagesStopped {
       val session = ActorMqttClientSession(settings)
 
       val server = TestProbe()
@@ -904,7 +1087,7 @@ class MqttSessionSpec
           .queue(2, OverflowStrategy.fail)
           .via(
             Mqtt
-              .clientSessionFlow(session)
+              .clientSessionFlow(session, ByteString("1"))
               .join(pipeToServer)
           )
           .drop(3)
@@ -970,9 +1153,12 @@ class MqttSessionSpec
 
       // Quite possible to receive a pub from an unsubscribed topic given that it may be in transit
       result.futureValue shouldBe Vector(Right(Event(unsubAck)), Right(Event(publishDup)))
+
+      client.complete()
+      client.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "shutdown a session" in {
+    "shutdown a session" in assertAllStagesStopped {
       val session = ActorMqttClientSession(settings)
       session.shutdown()
 
@@ -984,7 +1170,7 @@ class MqttSessionSpec
           .queue(1, OverflowStrategy.fail)
           .via(
             Mqtt
-              .clientSessionFlow(session)
+              .clientSessionFlow(session, ByteString("1"))
               .join(pipeToServer)
           )
           .toMat(Sink.ignore)(Keep.both)
@@ -995,13 +1181,16 @@ class MqttSessionSpec
       client.offer(Command(connect))
 
       result.failed.futureValue shouldBe a[WatchedActorTerminatedException]
+
+      client.complete()
+      client.watchCompletion().foreach(_ => session.shutdown())
     }
 
   }
 
   "MQTT server connector" should {
 
-    "flow through a server session" in {
+    "flow through a server session" in assertAllStagesStopped {
       val session = ActorMqttServerSession(settings)
 
       val client = TestProbe()
@@ -1100,9 +1289,12 @@ class MqttSessionSpec
         case Right(Event(s: Subscribe, _)) => s.topicFilters shouldBe subscribe.topicFilters
         case x => fail("Unexpected: " + x)
       }
+
+      server.complete()
+      server.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "receive two subscriptions for the same topic" in {
+    "receive two subscriptions for the same topic" in assertAllStagesStopped {
       val session = ActorMqttServerSession(settings)
 
       val client = TestProbe()
@@ -1172,9 +1364,13 @@ class MqttSessionSpec
 
       server.offer(Command(sub2Ack))
       client.expectMsg(sub2AckBytes)
+
+      fromClientQueue.complete()
+      server.complete()
+      server.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "unsubscribe a server session" in {
+    "unsubscribe a server session" in assertAllStagesStopped {
       val session = ActorMqttServerSession(settings.withProducerPubAckRecTimeout(0.seconds))
 
       val client = TestProbe()
@@ -1253,9 +1449,13 @@ class MqttSessionSpec
       client.fishForSpecificMessage(3.seconds.dilated) {
         case `unsubAckBytes` =>
       }
+
+      fromClientQueue.complete()
+      server.complete()
+      server.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "reply to a ping request" in {
+    "reply to a ping request" in assertAllStagesStopped {
       val session = ActorMqttServerSession(settings)
 
       val client = TestProbe()
@@ -1309,9 +1509,17 @@ class MqttSessionSpec
       fromClientQueue.complete()
 
       result.futureValue shouldBe List(Right(Event(connect)), Right(Event(pingReq)))
+
+      fromClientQueue.complete()
+      server.complete()
+      server.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "close when no ping request received" ignore { // https://github.com/akka/akka/issues/17997#issuecomment-429670321
+    "close when no ping request received" in assertAllStagesStopped {
+      // A longer patience config implicit is provided since minimum client's keep alive time is 1 second, so default
+      // 150 millis is not enough for the ping request timeout to be triggered and verify the stream fails as expected.
+      implicit val patienceConfig = PatienceConfig(scaled(Span(3000, Millis)), scaled(Span(15, Millis)))
+
       val session = ActorMqttServerSession(settings)
 
       val client = TestProbe()
@@ -1353,9 +1561,13 @@ class MqttSessionSpec
       client.expectMsg(connAckBytes)
 
       result.failed.futureValue shouldBe ActorMqttServerSession.PingFailed
+
+      fromClientQueue.complete()
+      server.complete()
+      server.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "notify on disconnect" in {
+    "notify on disconnect" in assertAllStagesStopped {
       val session = ActorMqttServerSession(settings.withReceiveConnectTimeout(100.millis.dilated))
 
       val client = TestProbe()
@@ -1408,8 +1620,13 @@ class MqttSessionSpec
 
       disconnectReceived.future.futureValue shouldBe Done
 
-      session.watchClientSessions.runWith(Sink.head).futureValue shouldBe
-      MqttServerSession.ClientSessionTerminated(clientId)
+      session.watchClientSessions.runWith(Sink.head).futureValue shouldBe MqttServerSession.ClientSessionTerminated(
+        clientId
+      )
+
+      fromClientQueue.complete()
+      server.complete()
+      server.watchCompletion().foreach(_ => session.shutdown())
     }
 
     def reconnectTest(explicitDisconnect: Boolean): Unit = {
@@ -1521,15 +1738,29 @@ class MqttSessionSpec
 
       session ! Command(publish)
       client.expectMsg(publishBytes)
+
+      fromClientQueue1.complete()
+      fromClientQueue2.complete()
+      serverConnection1.complete()
+      serverConnection2.complete()
+
+      for {
+        _ <- fromClientQueue1.watchCompletion()
+        _ <- fromClientQueue2.watchCompletion()
+        _ <- serverConnection1.watchCompletion()
+        _ <- serverConnection2.watchCompletion()
+      } session.shutdown()
     }
 
-    "re-connect given connect, subscribe, disconnect, connect, publish" in
-    reconnectTest(explicitDisconnect = true)
+    "re-connect given connect, subscribe, disconnect, connect, publish" in assertAllStagesStopped {
+      reconnectTest(explicitDisconnect = true)
+    }
 
-    "re-connect given connect, subscribe, connect again, publish" in
-    reconnectTest(explicitDisconnect = false)
+    "re-connect given connect, subscribe, connect again, publish" in assertAllStagesStopped {
+      reconnectTest(explicitDisconnect = false)
+    }
 
-    "consume a duplicate publish on the server" in {
+    "consume a duplicate publish on the server" in assertAllStagesStopped {
       val session = ActorMqttServerSession(settings)
 
       val client = TestProbe()
@@ -1596,9 +1827,13 @@ class MqttSessionSpec
 
       server.offer(Command(pubAck))
       client.expectMsg(pubAckBytes)
+
+      fromClientQueue.complete()
+      server.complete()
+      server.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "produce a duplicate publish on the server given two client connections" in {
+    "produce a duplicate publish on the server given two client connections" in assertAllStagesStopped {
       val serverSession = ActorMqttServerSession(settings.withProducerPubAckRecTimeout(10.millis))
 
       val client1 = TestProbe()
@@ -1736,6 +1971,19 @@ class MqttSessionSpec
 
       client2Connection.offer(pubAckBytes)
       pubAckReceived.future.futureValue shouldBe Done
+
+      client1Connection.complete()
+      client2Connection.complete()
+      serverConnection1.complete()
+      serverConnection2.complete()
+
+      for {
+        _ <- client1Connection.watchCompletion()
+        _ <- client2Connection.watchCompletion()
+        _ <- serverConnection1.watchCompletion()
+        _ <- serverConnection2.watchCompletion()
+      } serverSession.shutdown()
+
     }
   }
 

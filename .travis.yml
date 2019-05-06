@@ -5,20 +5,12 @@ services:
   - docker
 
 before_install:
-  # make comparing to origin/master work
-  - git remote set-branches --add origin master && git fetch
-  # fetch full history for correct current and previous version detection
-  - git fetch --unshallow
-  # using jabba for custom jdk management
-  - curl -sL https://raw.githubusercontent.com/shyiko/jabba/0.11.2/install.sh | bash && . ~/.jabba/jabba.sh
-  - jabba install adopt@~1.8.202-08
+  # make comparing to origin/master work and fetch full history for correct current and previous version detection
+  - git remote set-branches --add origin master && git fetch --unshallow
 
 # default script for jobs, that do not have any specified
 script:
-  - jabba use ${JDK:=adopt@~1.8.202-08}
-  - java -version
-  - ${PRE_CMD:=return 0} # do nothing if not set
-  - sbt -jvm-opts .jvmopts-travis "$CMD"
+  - ./scripts/buildChanged.sh ${DIR:=.} "${JDK:=adopt@~1.8.202-08}" "${PRE_CMD:=echo NOOP}" "${CMD:=+$DIR/testChanged}"
 
 jobs:
   include:
@@ -35,81 +27,106 @@ jobs:
       name: "Create all API docs"
     - env: CMD="docs/Paradox/paradox"
       name: "Create site with Paradox"
+    - env: CMD="mimaReportBinaryIssues"
+      name: "Check binary compatibility"
 
     - stage: test
       env:
+      - DIR=amqp
       - PRE_CMD="docker-compose up -d amqp"
-      - CMD=+amqp/testChanged
-    - env: CMD=+avroparquet/testChanged
-    - env: CMD=+awslambda/testChanged
-    - env: CMD=+azure-storage-queue/testChanged
     - env:
+      - DIR=avroparquet
+    - env:
+      - DIR=awslambda
+    - env:
+      - DIR=azure-storage-queue
+    - env:
+      - DIR=cassandra
       - PRE_CMD="docker-compose up -d cassandra"
-      - CMD=+cassandra/testChanged
     - env:
+      - DIR=couchbase
       - PRE_CMD="docker-compose up -d couchbase_prep"
-      - CMD=+couchbase/testChanged
-    - env: CMD=+csv/testChanged
     - env:
+      - DIR=csv
+    - env:
+      - DIR=dynamodb
       - PRE_CMD="docker-compose up -d dynamodb"
-      - CMD=+dynamodb/testChanged
-    - env: CMD=+elasticsearch/testChanged
-    - env: CMD=+file/testChanged
-    - env: CMD=+ftp/testChanged
     - env:
+      - DIR=elasticsearch
+    - env:
+      - DIR=file
+    - env:
+      - DIR=ftp
+      - PRE_CMD="docker-compose up -d ftp sftp"
+    - env:
+      - DIR=geode
       - PRE_CMD="docker-compose up -d geode"
-      - CMD=+geode/testChanged
-    - env: CMD=+google-cloud-pub-sub/testChanged
     - env:
+      - DIR=google-cloud-pub-sub
+    - env:
+      - DIR=google-cloud-pub-sub-grpc
       - PRE_CMD="docker-compose up -d gcloud-pubsub-emulator_prep"
-      - CMD=+google-cloud-pub-sub-grpc/testChanged
-    - env: CMD=+google-fcm/testChanged
     - env:
+      - DIR=google-fcm
+    - env:
+      - DIR=hbase
       - PRE_CMD="docker-compose up -d hbase"
-      - CMD=+hbase/testChanged
-    - env: CMD=+hdfs/testChanged
     - env:
+      - DIR=hdfs
+    - env:
+      - DIR=ironmq
       - PRE_CMD="docker-compose up -d ironauth ironmq"
-      - CMD=+ironmq/testChanged
     - env:
+      - DIR=jms
       - PRE_CMD="docker-compose up -d ibmmq"
-      - CMD=+jms/testChanged
-    - env: CMD=+json-streaming/testChanged
-    - env: CMD=+kinesis/testChanged
     - env:
+      - DIR=json-streaming
+    - env:
+      - DIR=kinesis
+    - env:
+      - DIR=kudu
       - PRE_CMD="docker-compose up -d kudu-master-data kudu-tserver-data kudu-master kudu-tserver"
-      - CMD=+kudu/testChanged
     - env:
+      - DIR=mongodb
       - PRE_CMD="docker-compose up -d mongo"
-      - CMD=+mongodb/testChanged
     - env:
+      - DIR=mqtt
       - PRE_CMD="docker-compose up -d mqtt"
-      - CMD=+mqtt/testChanged
     - env:
+      - DIR=mqtt-streaming
       - PRE_CMD="docker-compose up -d mqtt"
-      - CMD=+mqtt-streaming/testChanged
     - env:
+      - DIR=orientdb
       - PRE_CMD="docker-compose up -d orientdb"
-      - CMD=+orientdb/testChanged
-    - env: CMD=+reference/testChanged
     - env:
+      - DIR=reference
+    - env:
+      - DIR=s3
       - PRE_CMD="docker-compose up -d minio_prep"
-      - CMD=+s3/testChanged
-    - env: CMD=+spring-web/testChanged
-    - env: CMD=+simple-codecs/testChanged
-    - env: CMD=+slick/testChanged
     - env:
+      - DIR=spring-web
+    - env:
+      - DIR=simple-codecs
+    - env:
+      - DIR=slick
+    - env:
+      - DIR=sns
       - PRE_CMD="docker-compose up -d amazonsns"
-      - CMD=+sns/testChanged
-    - env: CMD=+solr/testChanged
     - env:
+      - DIR=solr
+    - env:
+      - DIR=sqs
       - PRE_CMD="docker-compose up -d elasticmq"
-      - CMD=+sqs/testChanged
-    - env: CMD=+sse/testChanged
-    - env: CMD=+text/testChanged
-    - env: CMD=+udp/testChanged
-    - env: CMD=+unix-domain-socket/testChanged
-    - env: CMD=+xml/testChanged
+    - env:
+      - DIR=sse
+    - env:
+      - DIR=text
+    - env:
+      - DIR=udp
+    - env:
+      - DIR=unix-domain-socket
+    - env:
+      - DIR=xml
 
     - stage: whitesource
       script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt whitesourceCheckPolicies whitesourceUpdate
@@ -153,6 +170,7 @@ cache:
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot
+    - $HOME/.sbt/launchers
     - $HOME/.jabba/jdk
   timeout: 900
 

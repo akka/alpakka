@@ -62,7 +62,7 @@ public class SqsSourceTest extends BaseSqsTest {
                 queueUrl,
                 SqsSourceSettings.create()
                     .withCloseOnEmptyReceive(true)
-                    .withWaitTime(Duration.ofSeconds(0)),
+                    .withWaitTime(Duration.ofMillis(10)),
                 sqsClient)
             .runWith(Sink.seq(), materializer);
     // #run
