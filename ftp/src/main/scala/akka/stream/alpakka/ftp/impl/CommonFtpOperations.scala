@@ -63,7 +63,11 @@ private[ftp] trait CommonFtpOperations {
 
   def listFiles(handler: Handler): immutable.Seq[FtpFile] = listFiles("", handler)
 
-  def retrieveFileInputStream(name: String, handler: Handler): Try[InputStream] = Try {
+  def retrieveFileInputStream(name: String, handler: Handler): Try[InputStream] =
+    retrieveFileInputStream(name, handler, 0L)
+
+  def retrieveFileInputStream(name: String, handler: Handler, offset: Long): Try[InputStream] = Try {
+    handler.setRestartOffset(offset)
     val is = handler.retrieveFileStream(name)
     if (is != null) is else throw new IOException(s"$name: No such file or directory")
   }

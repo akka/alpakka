@@ -50,6 +50,8 @@ private[ftp] trait FtpIOSourceStage[FtpClient, S <: RemoteFileSettings]
 
   def chunkSize: Int
 
+  def offset: Long = 0L
+
   val shape: SourceShape[ByteString] = SourceShape(Outlet[ByteString](s"$name.out"))
   val out: Outlet[ByteString] = shape.outlets.head.asInstanceOf[Outlet[ByteString]]
 
@@ -109,7 +111,12 @@ private[ftp] trait FtpIOSourceStage[FtpClient, S <: RemoteFileSettings]
         }
 
       protected[this] def doPreStart(): Unit =
-        isOpt = Some(ftpLike.retrieveFileInputStream(path, handler.get).get)
+        isOpt = ftpLike match {
+          case ro: RetrieveOffset =>
+            Some(ro.retrieveFileInputStream(path, handler.get.asInstanceOf[ro.Handler], offset).get)
+          case _ =>
+            Some(ftpLike.retrieveFileInputStream(path, handler.get).get)
+        }
 
       protected[this] def matSuccess(): Boolean =
         matValuePromise.trySuccess(IOResult.createSuccessful(readBytesTotal))

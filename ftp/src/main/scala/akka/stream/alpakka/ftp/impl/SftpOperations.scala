@@ -85,9 +85,12 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
 
   def listFiles(handler: Handler): immutable.Seq[FtpFile] = listFiles(".", handler)
 
-  def retrieveFileInputStream(name: String, handler: Handler): Try[InputStream] = Try {
+  def retrieveFileInputStream(name: String, handler: Handler): Try[InputStream] =
+    retrieveFileInputStream(name, handler, 0L)
+
+  def retrieveFileInputStream(name: String, handler: Handler, offset: Long): Try[InputStream] = Try {
     val remoteFile = handler.open(name, java.util.EnumSet.of(OpenMode.READ))
-    val is = new remoteFile.RemoteFileInputStream() {
+    val is = new remoteFile.RemoteFileInputStream(offset) {
 
       override def close(): Unit =
         try {
