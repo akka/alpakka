@@ -8,7 +8,8 @@ import java.util.concurrent.CompletionStage
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
-import akka.event.Logging
+import akka.dispatch.ExecutionContexts
+import akka.stream.alpakka.couchbase.impl.CouchbaseClusterRegistry
 import akka.stream.alpakka.couchbase.javadsl.{CouchbaseSession => JCouchbaseSession}
 import akka.stream.alpakka.couchbase.scaladsl.CouchbaseSession
 
@@ -40,7 +41,9 @@ final class CouchbaseSessionRegistry(system: ExtendedActorSystem) extends Extens
 
   import CouchbaseSessionRegistry._
 
-  private val log = Logging(system, classOf[CouchbaseSessionRegistry])
+  private val blockingDispatcher = system.dispatchers.lookup("akka.actor.default-blocking-io-dispatcher")
+
+  private val clusterRegistry = new CouchbaseClusterRegistry(system)
 
   private val sessions = new AtomicReference(Map.empty[SessionKey, Future[CouchbaseSession]])
 
@@ -67,7 +70,9 @@ final class CouchbaseSessionRegistry(system: ExtendedActorSystem) extends Extens
    * if you need a more fine grained life cycle control, create the CouchbaseSession manually instead.
    */
   def getSessionFor(settings: CouchbaseSessionSettings, bucketName: String): CompletionStage[JCouchbaseSession] =
-    sessionFor(settings, bucketName).map(_.asJava)(system.dispatcher).toJava
+    sessionFor(settings, bucketName)
+      .map(_.asJava)(ExecutionContexts.sameThreadExecutionContext)
+      .toJava
 
   @tailrec
   private def startSession(key: SessionKey): Future[CouchbaseSession] = {
@@ -76,17 +81,13 @@ final class CouchbaseSessionRegistry(system: ExtendedActorSystem) extends Extens
     val newSessions = oldSessions.updated(key, promise.future)
     if (sessions.compareAndSet(oldSessions, newSessions)) {
       // we won cas, initialize session
-      def nodesAsString = key.settings.nodes.mkString("\"", "\", \"", "\"")
-      log.info("Starting Couchbase session for nodes [{}]", nodesAsString)
-      promise.completeWith(CouchbaseSession(key.settings, key.bucketName)(system.dispatcher))
-      val future = promise.future
-      system.registerOnTermination {
-        future.foreach { session =>
-          session.close()
-          log.info("Shutting down couchbase session for nodes [{}]", nodesAsString)
-        }(system.dispatcher)
-      }
-      future
+      val session = clusterRegistry
+        .clusterFor(key.settings)
+        .flatMap(cluster => CouchbaseSession(cluster, key.bucketName)(blockingDispatcher))(
+          ExecutionContexts.sameThreadExecutionContext
+        )
+      promise.completeWith(session)
+      promise.future
     } else {
       // we lost cas (could be concurrent call for some other key though), retry
       startSession(key)

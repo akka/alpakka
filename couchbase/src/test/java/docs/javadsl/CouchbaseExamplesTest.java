@@ -27,6 +27,10 @@ import com.couchbase.client.java.ReplicateTo;
 import com.couchbase.client.java.document.JsonDocument;
 import com.couchbase.client.java.document.StringDocument;
 import com.couchbase.client.java.document.json.JsonObject;
+// #registry
+import com.couchbase.client.java.env.CouchbaseEnvironment;
+import com.couchbase.client.java.env.DefaultCouchbaseEnvironment;
+// #registry
 // #n1ql
 import com.couchbase.client.java.query.N1qlParams;
 import com.couchbase.client.java.query.N1qlQuery;
@@ -42,14 +46,13 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletionStage;
+import java.util.concurrent.*;
+// #registry
+import akka.stream.alpakka.couchbase.CouchbaseSessionRegistry;
 // #session
 import akka.stream.alpakka.couchbase.CouchbaseSessionSettings;
 import akka.stream.alpakka.couchbase.javadsl.CouchbaseSession;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-// #session
-import java.util.concurrent.TimeUnit;
+// #session #registry
 import java.util.stream.Collectors;
 // #sessionFromBucket
 import com.couchbase.client.java.Bucket;
@@ -94,6 +97,26 @@ public class CouchbaseExamplesTest {
   @After
   public void checkForStageLeaks() {
     StreamTestKit.assertAllStagesStopped(materializer);
+  }
+
+  @Test
+  public void registry() throws Exception {
+    // #registry
+
+    CouchbaseSessionRegistry registry = CouchbaseSessionRegistry.get(actorSystem);
+
+    // If connecting to more than one Couchbase cluster, the environment should be shared
+    CouchbaseEnvironment environment = DefaultCouchbaseEnvironment.create();
+    actorSystem.registerOnTermination(() -> environment.shutdown());
+
+    CouchbaseSessionSettings sessionSettings =
+        CouchbaseSessionSettings.create(actorSystem).withEnvironment(environment);
+    CompletionStage<CouchbaseSession> sessionCompletionStage =
+        registry.getSessionFor(sessionSettings, bucketName);
+    // #registry
+    CouchbaseSession session =
+        sessionCompletionStage.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    assertNotNull(session);
   }
 
   @Test
@@ -253,8 +276,7 @@ public class CouchbaseExamplesTest {
     List<CouchbaseWriteResult<StringDocument>> writeResults =
         upsertResults.toCompletableFuture().get(3, TimeUnit.SECONDS);
     List<CouchbaseWriteFailure<StringDocument>> failedDocs =
-        writeResults
-            .stream()
+        writeResults.stream()
             .filter(CouchbaseWriteResult::isFailure)
             .map(res -> (CouchbaseWriteFailure<StringDocument>) res)
             .collect(Collectors.toList());
