@@ -179,7 +179,7 @@ lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, fork in Te
 
 lazy val hdfs = alpakkaProject("hdfs", "hdfs", Dependencies.Hdfs, parallelExecution in Test := false)
 
-lazy val influxdb = alpakkaProject("influxdb", "influxdb", Dependencies.InfluxDB)
+lazy val influxdb = alpakkaProject("influxdb", "influxdb", Dependencies.InfluxDB).disablePlugins(MimaPlugin)
 
 lazy val ironmq = alpakkaProject("ironmq",
                                  "ironmq",
