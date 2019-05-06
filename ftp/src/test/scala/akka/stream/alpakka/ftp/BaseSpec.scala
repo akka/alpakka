@@ -44,6 +44,8 @@ trait BaseSpec
 
   protected def retrieveFromPath(path: String, fromRoot: Boolean = false): Source[ByteString, Future[IOResult]]
 
+  protected def retrieveFromPathWithOffset(path: String, offset: Long): Source[ByteString, Future[IOResult]]
+
   protected def storeToPath(path: String, append: Boolean): Sink[ByteString, Future[IOResult]]
 
   protected def remove(): Sink[FtpFile, Future[IOResult]]

@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.couchbase.scaladsl
 
-import akka.annotation.DoNotInherit
+import akka.annotation.{DoNotInherit, InternalApi}
 import akka.stream.alpakka.couchbase.impl.{CouchbaseSessionImpl, RxUtilities}
 import akka.stream.alpakka.couchbase.javadsl.{CouchbaseSession => JavaDslCouchbaseSession}
 import akka.stream.alpakka.couchbase.{CouchbaseSessionSettings, CouchbaseWriteSettings}
@@ -31,20 +31,15 @@ object CouchbaseSession {
    * the session is closed.
    */
   def apply(settings: CouchbaseSessionSettings,
-            bucketName: String)(implicit ec: ExecutionContext): Future[CouchbaseSession] = {
-    //wrap CouchbaseAsyncCluster.create up in the Future because it's blocking
-    val asyncCluster: Future[AsyncCluster] =
-      Future(settings.environment match {
-        case Some(environment) =>
-          CouchbaseAsyncCluster.create(environment, settings.nodes: _*)
-        case None =>
-          CouchbaseAsyncCluster.create(settings.nodes: _*)
-      }).map(_.authenticate(settings.username, settings.password))
+            bucketName: String)(implicit ec: ExecutionContext): Future[CouchbaseSession] =
+    createClusterClient(settings).flatMap(c => openBucket(c, disconnectClusterOnClose = true, bucketName))
 
-    asyncCluster
-      .flatMap(c => RxUtilities.singleObservableToFuture(c.openBucket(bucketName), "").map((c, _)))
-      .map { case (c, bucket) => new CouchbaseSessionImpl(bucket, Some(c)) }
-  }
+  /**
+   * Create a given bucket using a pre-existing cluster client, allowing for it to be shared among
+   * multiple `CouchbaseSession`s. The cluster client's life-cycle is the user's responsibility.
+   */
+  def apply(cluster: AsyncCluster, bucketName: String)(implicit ec: ExecutionContext): Future[CouchbaseSession] =
+    openBucket(cluster, disconnectClusterOnClose = false, bucketName)
 
   /**
    * Create a session against the given bucket. You are responsible for managing the lifecycle of the couchbase client
@@ -52,6 +47,33 @@ object CouchbaseSession {
    */
   def apply(bucket: Bucket): CouchbaseSession =
     new CouchbaseSessionImpl(bucket.async(), None)
+
+  /**
+   * INTERNAL API.
+   *
+   * Connects to a Couchbase cluster by creating an `AsyncCluster`.
+   * The life-cycle of it is the user's responsibility.
+   */
+  @InternalApi
+  private[couchbase] def createClusterClient(
+      settings: CouchbaseSessionSettings
+  )(implicit ec: ExecutionContext): Future[AsyncCluster] =
+    //wrap CouchbaseAsyncCluster.create up in the Future because it's blocking
+    Future(settings.environment match {
+      case Some(environment) =>
+        CouchbaseAsyncCluster.create(environment, settings.nodes: _*)
+      case None =>
+        CouchbaseAsyncCluster.create(settings.nodes: _*)
+    }).map(_.authenticate(settings.username, settings.password))
+
+  private def openBucket(cluster: AsyncCluster, disconnectClusterOnClose: Boolean, bucketName: String)(
+      implicit ec: ExecutionContext
+  ): Future[CouchbaseSession] =
+    RxUtilities
+      .singleObservableToFuture(cluster.openBucket(bucketName), "openBucket")
+      .map { bucket =>
+        new CouchbaseSessionImpl(bucket, if (disconnectClusterOnClose) Some(cluster) else None)
+      }
 
 }
 
