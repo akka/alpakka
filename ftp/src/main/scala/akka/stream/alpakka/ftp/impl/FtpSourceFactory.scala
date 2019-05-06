@@ -58,6 +58,14 @@ private[ftp] trait FtpSourceFactory[FtpClient] { self =>
       _connectionSettings: S,
       _chunkSize: Int
   )(implicit _ftpLike: FtpLike[FtpClient, S]): FtpIOSourceStage[FtpClient, S] =
+    createIOSource(_path, _connectionSettings, _chunkSize, 0L)
+
+  protected[this] def createIOSource(
+      _path: String,
+      _connectionSettings: S,
+      _chunkSize: Int,
+      _offset: Long
+  )(implicit _ftpLike: FtpLike[FtpClient, S]): FtpIOSourceStage[FtpClient, S] =
     new FtpIOSourceStage[FtpClient, S] {
       lazy val name: String = ftpIOSourceName
       val path: String = _path
@@ -65,6 +73,7 @@ private[ftp] trait FtpSourceFactory[FtpClient] { self =>
       val ftpClient: () => FtpClient = self.ftpClient
       val ftpLike: FtpLike[FtpClient, S] = _ftpLike
       val chunkSize: Int = _chunkSize
+      override val offset: Long = _offset
     }
 
   protected[this] def createIOSink(
