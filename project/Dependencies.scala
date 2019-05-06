@@ -15,6 +15,7 @@ object Dependencies {
 
   val AwsSdkVersion = "1.11.476"
   val AwsSdk2Version = "2.5.20"
+  val AwsSpiAkkaHttpVersion = "0.0.6"
   val AkkaHttpVersion = "10.1.7"
   val mockitoVersion = "2.27.0"
 
@@ -340,7 +341,7 @@ object Dependencies {
 
   val Sns = Seq(
     libraryDependencies ++= Seq(
-      "com.github.matsluni" %% "aws-spi-akka-http" % "0.0.6" excludeAll ExclusionRule(
+      "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll ExclusionRule(
         organization = "com.typesafe.akka"
       ), // ApacheV2
       "software.amazon.awssdk" % "sns" % AwsSdk2Version excludeAll (ExclusionRule(
@@ -369,7 +370,7 @@ object Dependencies {
 
   val Sqs = Seq(
     libraryDependencies ++= Seq(
-      "com.github.matsluni" %% "aws-spi-akka-http" % "0.0.6" excludeAll ExclusionRule(
+      "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll ExclusionRule(
         organization = "com.typesafe.akka"
       ), // ApacheV2
       "software.amazon.awssdk" % "sqs" % AwsSdk2Version excludeAll (ExclusionRule(
