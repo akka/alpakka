@@ -26,6 +26,29 @@ class CouchbaseSessionExamplesSpec
   override def afterAll(): Unit = super.afterAll()
 
   "a Couchbasesession" should {
+    "be managed by the registry" in {
+      // #registry
+      import akka.stream.alpakka.couchbase.CouchbaseSessionRegistry
+      import akka.stream.alpakka.couchbase.CouchbaseSessionSettings
+      import akka.stream.alpakka.couchbase.scaladsl.CouchbaseSession
+      import com.couchbase.client.java.env.{CouchbaseEnvironment, DefaultCouchbaseEnvironment}
+
+      // Akka extension (singleton per actor system)
+      val registry = CouchbaseSessionRegistry(actorSystem)
+
+      // If connecting to more than one Couchbase cluster, the environment should be shared
+      val environment: CouchbaseEnvironment = DefaultCouchbaseEnvironment.create()
+      actorSystem.registerOnTermination {
+        environment.shutdown()
+      }
+
+      val sessionSettings = CouchbaseSessionSettings(actorSystem)
+        .withEnvironment(environment)
+      val sessionFuture: Future[CouchbaseSession] = registry.sessionFor(sessionSettings, bucketName)
+      // #registry
+      sessionFuture.futureValue shouldBe a[CouchbaseSession]
+    }
+
     "be created from settings" in {
       // #create
       import akka.stream.alpakka.couchbase.CouchbaseSessionSettings
@@ -62,7 +85,6 @@ class CouchbaseSessionExamplesSpec
       val session: CouchbaseSession = CouchbaseSession(bucket)
       actorSystem.registerOnTermination {
         session.close()
-        bucket.close()
       }
 
       val id = "myId"
