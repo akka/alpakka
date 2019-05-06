@@ -32,7 +32,6 @@ import akka.stream.alpakka.influxdb.javadsl.InfluxDBSource;
 import akka.stream.javadsl.Sink;
 import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
-import static docs.javadsl.TestConstants.DATABASE_NAME;
 import static docs.javadsl.TestUtils.cleanDatabase;
 import static docs.javadsl.TestUtils.dropDatabase;
 import static docs.javadsl.TestUtils.populateDatabase;
@@ -44,6 +43,8 @@ public class InfluxDBTest {
   private static ActorSystem system;
   private static Materializer materializer;
   private static InfluxDB influxDB;
+
+  private static final String DATABASE_NAME = "InfluxDBTest";
 
   private static Pair<ActorSystem, Materializer> setupMaterializer() {
     // #init-mat
@@ -59,23 +60,23 @@ public class InfluxDBTest {
     system = sysmat.first();
     materializer = sysmat.second();
 
-    influxDB = setupConnection();
+    influxDB = setupConnection(DATABASE_NAME);
   }
 
   @AfterClass
   public static void teardown() {
-    dropDatabase(influxDB);
+    dropDatabase(influxDB, DATABASE_NAME);
     TestKit.shutdownActorSystem(system);
   }
 
   @Before
   public void setUp() throws Exception {
-    populateDatabase(influxDB);
+    populateDatabase(influxDB, InfluxDBCpu.class);
   }
 
   @After
   public void cleanUp() {
-    cleanDatabase(influxDB);
+    cleanDatabase(influxDB, DATABASE_NAME);
     StreamTestKit.assertAllStagesStopped(materializer);
   }
 
@@ -83,14 +84,15 @@ public class InfluxDBTest {
   public void testConsumeAndPublishMeasurementsUsingTyped() throws Exception {
     Query query = new Query("SELECT*FROM cpu", DATABASE_NAME);
     CompletionStage<Done> completionStage =
-        InfluxDBSource.typed(Cpu.class, InfluxDBSettings.Default(), influxDB, query)
+        InfluxDBSource.typed(InfluxDBCpu.class, InfluxDBSettings.Default(), influxDB, query)
             .map(
                 cpu -> {
-                  Cpu clonedCpu = cpu.cloneAt(cpu.getTime().plusSeconds(60000l));
+                  InfluxDBCpu clonedCpu = cpu.cloneAt(cpu.getTime().plusSeconds(60000l));
                   return new InfluxDBWriteMessage<>(clonedCpu, NotUsed.notUsed());
                 })
             .runWith(
-                InfluxDBSink.typed(Cpu.class, InfluxDBSettings.Default(), influxDB), materializer);
+                InfluxDBSink.typed(InfluxDBCpu.class, InfluxDBSettings.Default(), influxDB),
+                materializer);
 
     Assert.assertNotNull(completionStage.toCompletableFuture().get());
 

@@ -5,18 +5,8 @@
 package docs.javadsl;
 
 import java.time.Instant;
-import java.util.concurrent.TimeUnit;
-
 import org.influxdb.annotation.Column;
-import org.influxdb.annotation.Measurement;
 
-import static docs.javadsl.TestConstants.DATABASE_NAME;
-
-@Measurement(
-    name = "cpu",
-    database = DATABASE_NAME,
-    retentionPolicy = "autogen",
-    timeUnit = TimeUnit.MILLISECONDS)
 public class Cpu {
 
   @Column(name = "time")
@@ -76,9 +66,5 @@ public class Cpu {
 
   public Long getUptimeSecs() {
     return uptimeSecs;
-  }
-
-  public Cpu cloneAt(Instant time) {
-    return new Cpu(time, hostname, region, idle, happydevop, uptimeSecs);
   }
 }
