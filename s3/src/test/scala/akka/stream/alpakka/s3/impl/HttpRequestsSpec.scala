@@ -10,7 +10,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.{ByteRange, RawHeader}
-import akka.http.scaladsl.model.{HttpEntity, HttpRequest, IllegalUriException, MediaTypes}
+import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.s3.headers.{CannedAcl, ServerSideEncryption, StorageClass}
 import akka.stream.alpakka.s3.{ApiVersion, BufferType, MemoryBufferType, MetaHeaders, Proxy, S3Headers, S3Settings}
@@ -397,5 +397,41 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     val request = HttpRequests.uploadCopyPartRequest(multipartCopy, Some("abcdwxyz"))
     request.headers should contain(RawHeader("x-amz-copy-source", "/source-bucket/some/source-key?versionId=abcdwxyz"))
     request.headers should contain(RawHeader("x-amz-copy-source-range", "bytes=0-5242879"))
+  }
+
+  it should "create make bucket request" in {
+    implicit val settings: S3Settings = getSettings()
+
+    val request = HttpRequests.bucketManagementRequest(location, method = HttpMethods.PUT)
+
+    //Date is added by akka by default
+    request.uri.authority.host.toString should equal("bucket.s3.amazonaws.com")
+    request.entity.contentLengthOption should equal(Some(0))
+    request.uri.queryString() should equal(None)
+    request.method should equal(HttpMethods.PUT)
+  }
+
+  it should "create delete bucket request" in {
+    implicit val settings: S3Settings = getSettings()
+
+    val request = HttpRequests.bucketManagementRequest(location, method = HttpMethods.DELETE)
+
+    //Date is added by akka by default
+    request.uri.authority.host.toString should equal("bucket.s3.amazonaws.com")
+    request.entity.contentLengthOption should equal(Some(0))
+    request.uri.queryString() should equal(None)
+    request.method should equal(HttpMethods.DELETE)
+  }
+
+  it should "create checkIfExits bucket request" in {
+    implicit val settings: S3Settings = getSettings()
+
+    val request: HttpRequest = HttpRequests.bucketManagementRequest(location, method = HttpMethods.HEAD)
+
+    //Date is added by akka by default
+    request.uri.authority.host.toString should equal("bucket.s3.amazonaws.com")
+    request.entity.contentLengthOption should equal(Some(0))
+    request.uri.queryString() should equal(None)
+    request.method should equal(HttpMethods.HEAD)
   }
 }

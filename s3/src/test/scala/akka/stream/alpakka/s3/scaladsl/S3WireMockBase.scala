@@ -742,6 +742,36 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
         )
     )
   }
+
+  def mockMakingBucket(): Unit =
+    mock.register(
+      put(urlEqualTo("/")).willReturn(
+        aResponse()
+          .withStatus(200)
+      )
+    )
+
+  def mockDeletingBucket(): Unit = mock.register(
+    delete(urlEqualTo("/")).willReturn(
+      aResponse()
+        .withStatus(200)
+    )
+  )
+
+  def mockCheckingBucketStateForNonExistingBucket(): Unit =
+    mock.register(
+      head(urlEqualTo("/")).willReturn(aResponse().withStatus(404))
+    )
+
+  def mockCheckingBucketStateForExistingBucket(): Unit =
+    mock.register(
+      head(urlEqualTo("/")).willReturn(aResponse().withStatus(200))
+    )
+
+  def mockCheckingBucketStateForBucketWithoutRights(): Unit =
+    mock.register(
+      head(urlEqualTo("/")).willReturn(aResponse().withStatus(403))
+    )
 }
 
 private object S3WireMockBase {
