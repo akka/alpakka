@@ -19,6 +19,7 @@ import akka.http.scaladsl.model.StatusCodes.{NoContent, NotFound, OK}
 import akka.http.scaladsl.model.headers.{`Content-Length`, `Content-Type`, ByteRange, CustomHeader}
 import akka.http.scaladsl.model.{headers => http, _}
 import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
+import akka.stream.alpakka.s3.BucketAccess.{AccessDenied, AccessGranted, NotExists}
 import akka.stream.{ActorMaterializer, Attributes, Materializer}
 import akka.stream.alpakka.s3.impl.auth.{CredentialScope, Signer, SigningKey}
 import akka.stream.alpakka.s3._
@@ -260,6 +261,99 @@ import akka.util.ByteString
       case Some(range) => downloadRequest.addHeader(http.Range(range))
       case _ => downloadRequest
     }
+
+  def makeBucketSource(bucket: String): Source[Done, NotUsed] =
+    bucketManagementRequest[Done](
+      bucket = bucket,
+      method = HttpMethods.PUT,
+      process = processBucketLifecycleResponse
+    )
+
+  def makeBucket(bucket: String)(implicit mat: Materializer, attr: Attributes): Future[Done] =
+    makeBucketSource(bucket).withAttributes(attr).runWith(Sink.ignore)
+
+  def deleteBucketSource(bucket: String): Source[Done, NotUsed] =
+    bucketManagementRequest[Done](
+      bucket = bucket,
+      method = HttpMethods.DELETE,
+      process = processBucketLifecycleResponse
+    )
+
+  def deleteBucket(bucket: String)(implicit mat: Materializer, attr: Attributes): Future[Done] =
+    deleteBucketSource(bucket).withAttributes(attr).runWith(Sink.ignore)
+
+  def checkIfBucketExistsSource(bucketName: String): Source[BucketAccess, NotUsed] =
+    bucketManagementRequest[BucketAccess](
+      bucket = bucketName,
+      method = HttpMethods.HEAD,
+      process = processCheckIfExistsResponse
+    )
+
+  def checkIfBucketExists(bucket: String)(implicit mat: Materializer, attr: Attributes): Future[BucketAccess] =
+    checkIfBucketExistsSource(bucket).withAttributes(attr).runWith(Sink.head)
+
+  private def bucketManagementRequest[T](
+      bucket: String,
+      method: HttpMethod,
+      process: (HttpResponse, Materializer) => Future[T]
+  ): Source[T, NotUsed] =
+    Setup
+      .source { mat => implicit attr =>
+        implicit val sys: ActorSystem = mat.system
+        implicit val conf: S3Settings = resolveSettings()
+
+        val location = S3Location(bucket = bucket, key = "")
+
+        signAndRequest(
+          requestHeaders(
+            HttpRequests.bucketManagementRequest(location, method),
+            None
+          )
+        ).mapAsync(1) { response =>
+          process(response, mat)
+        }
+      }
+      .mapMaterializedValue(_ => NotUsed)
+
+  private def processBucketLifecycleResponse(response: HttpResponse, materializer: Materializer): Future[Done] = {
+    import materializer.executionContext
+
+    implicit val mat: Materializer = materializer
+
+    response match {
+      case HttpResponse(status, _, entity, _) if status.isSuccess() =>
+        entity.discardBytes().future()
+      case HttpResponse(_, _, entity, _) =>
+        Unmarshal(entity).to[String].map { err =>
+          throw new S3Exception(err)
+        }
+    }
+  }
+
+  private def processCheckIfExistsResponse(response: HttpResponse, materializer: Materializer): Future[BucketAccess] = {
+    import materializer.executionContext
+
+    implicit val mat: Materializer = materializer
+
+    response match {
+      case code @ HttpResponse(StatusCodes.NotFound | StatusCodes.Forbidden | StatusCodes.OK, _, entity, _) =>
+        entity
+          .discardBytes()
+          .future()
+          .map(
+            _ =>
+              code.status match {
+                case StatusCodes.NotFound => NotExists
+                case StatusCodes.Forbidden => AccessDenied
+                case StatusCodes.OK => AccessGranted
+            }
+          )
+      case HttpResponse(_, _, entity, _) =>
+        Unmarshal(entity).to[String].map { err =>
+          throw new S3Exception(err)
+        }
+    }
+  }
 
   /**
    * Uploads a stream of ByteStrings to a specified location as a multipart upload.

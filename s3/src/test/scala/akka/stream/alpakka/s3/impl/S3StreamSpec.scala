@@ -5,9 +5,10 @@
 package akka.stream.alpakka.s3.impl
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.model.headers.ByteRange
-import akka.stream.alpakka.s3.{ApiVersion, MemoryBufferType, S3Settings}
+import akka.stream.alpakka.s3.BucketAccess.{AccessDenied, AccessGranted, NotExists}
+import akka.stream.alpakka.s3.{ApiVersion, BucketAccess, MemoryBufferType, S3Settings}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.testkit.TestKit
@@ -16,6 +17,8 @@ import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.regions.AwsRegionProvider
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.{FlatSpecLike, Matchers, PrivateMethodTester}
+
+import scala.concurrent.Future
 
 class S3StreamSpec(_system: ActorSystem)
     extends TestKit(_system)
@@ -155,4 +158,31 @@ class S3StreamSpec(_system: ActorSystem)
     partitions should equal(List(CopyPartition(1, sourceLocation)))
   }
 
+  "processCheckIfExistsResponse" should "convert head response to BucketAccess" in {
+    def bucketStatusPreparation(response: HttpResponse): Future[BucketAccess] = {
+      val testedMethod = PrivateMethod[Future[BucketAccess]]('processCheckIfExistsResponse)
+
+      val result: Future[BucketAccess] = S3Stream invokePrivate testedMethod(response, materializer)
+
+      result
+    }
+
+    val responseWithOkCode = HttpResponse(
+      status = StatusCodes.OK
+    )
+
+    bucketStatusPreparation(responseWithOkCode).futureValue shouldEqual AccessGranted
+
+    val responseWithNotFoundCode = HttpResponse(
+      status = StatusCodes.NotFound
+    )
+
+    bucketStatusPreparation(responseWithNotFoundCode).futureValue shouldEqual NotExists
+
+    val responseWithForbiddenCode = HttpResponse(
+      status = StatusCodes.Forbidden
+    )
+
+    bucketStatusPreparation(responseWithForbiddenCode).futureValue shouldEqual AccessDenied
+  }
 }

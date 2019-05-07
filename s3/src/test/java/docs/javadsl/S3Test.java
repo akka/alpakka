@@ -10,14 +10,19 @@ import static org.junit.Assert.assertTrue;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
+import akka.Done;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.model.*;
+import akka.stream.Attributes;
 import akka.stream.alpakka.s3.*;
 import akka.stream.alpakka.s3.headers.CustomerKeys;
 import akka.stream.alpakka.s3.headers.ServerSideEncryption;
 import akka.stream.alpakka.s3.javadsl.S3;
+import akka.stream.javadsl.Sink$;
 import org.junit.Test;
 import akka.NotUsed;
 import akka.http.javadsl.model.headers.ByteRange;
@@ -29,10 +34,13 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import scala.Option;
+import scala.collection.immutable.List;
 
 public class S3Test extends S3WireMockBase {
 
   private final Materializer materializer = ActorMaterializer.create(system());
+
+  private final S3Settings sampleSettings = S3Ext.get(system()).settings();
 
   @Test
   public void multipartUpload() throws Exception {
@@ -483,5 +491,136 @@ public class S3Test extends S3WireMockBase {
         result,
         MultipartUploadResult.create(
             Uri.create(targetUrl()), targetBucket(), targetBucketKey(), etag(), Optional.empty()));
+  }
+
+  @Test
+  public void makeBucket() throws Exception {
+    mockMakingBucket();
+
+    // #make-bucket
+    final Attributes sampleAttributes = S3Attributes.settings(sampleSettings);
+
+    final String bucketName = "samplebucket1";
+
+    CompletionStage<Done> makeBucketRequest = S3.makeBucket(bucketName, materializer);
+    CompletionStage<Done> makeBucketRequestWithAttributes =
+        S3.makeBucket(bucketName, materializer, sampleAttributes);
+    Source<Done, NotUsed> makeBucketSourceRequest = S3.makeBucketSource(bucketName);
+    // #make-bucket
+
+    assertEquals(makeBucketRequest.toCompletableFuture().get(5, TimeUnit.SECONDS), Done.done());
+    assertEquals(
+        makeBucketRequestWithAttributes.toCompletableFuture().get(5, TimeUnit.SECONDS),
+        Done.done());
+    assertEquals(
+        makeBucketSourceRequest
+            .runWith(Sink.ignore(), materializer)
+            .toCompletableFuture()
+            .get(5, TimeUnit.SECONDS),
+        Done.done());
+  }
+
+  @Test
+  public void deleteBucket() throws Exception {
+    final String bucketName = "samplebucket1";
+
+    mockDeletingBucket();
+
+    // #delete-bucket
+    final Attributes sampleAttributes = S3Attributes.settings(sampleSettings);
+
+    CompletionStage<Done> deleteBucketRequest = S3.deleteBucket(bucketName, materializer);
+    CompletionStage<Done> deleteBucketRequestWithAttribues =
+        S3.deleteBucket(bucketName, materializer, sampleAttributes);
+
+    Source<Done, NotUsed> deleteBucketSourceRequest = S3.deleteBucketSource(bucketName);
+    // #delete-bucket
+
+    assertEquals(deleteBucketRequest.toCompletableFuture().get(5, TimeUnit.SECONDS), Done.done());
+
+    assertEquals(
+        deleteBucketRequestWithAttribues.toCompletableFuture().get(5, TimeUnit.SECONDS),
+        Done.done());
+
+    assertEquals(
+        deleteBucketSourceRequest
+            .runWith(Sink.ignore(), materializer)
+            .toCompletableFuture()
+            .get(5, TimeUnit.SECONDS),
+        Done.done());
+  }
+
+  @Test
+  public void checkIfBucketExistsForNonExisting() throws Exception {
+    mockCheckingBucketStateForNonExistingBucket();
+
+    // #check-if-bucket-exists
+    final Attributes sampleAttributes = S3Attributes.settings(sampleSettings);
+
+    final CompletionStage<BucketAccess> doesntExistRequest =
+        S3.checkIfBucketExists(bucket(), materializer);
+    final CompletionStage<BucketAccess> doesntExistRequestWithAttributes =
+        S3.checkIfBucketExists(bucket(), materializer, sampleAttributes);
+
+    final Source<BucketAccess, NotUsed> doesntExistSourceRequest =
+        S3.checkIfBucketExistsSource(bucket());
+    // #check-if-bucket-exists
+
+    assertEquals(
+        doesntExistRequest.toCompletableFuture().get(5, TimeUnit.SECONDS),
+        BucketAccess.notExists());
+
+    assertEquals(
+        doesntExistRequestWithAttributes.toCompletableFuture().get(5, TimeUnit.SECONDS),
+        BucketAccess.notExists());
+
+    assertEquals(
+        doesntExistSourceRequest
+            .runWith(Sink.head(), materializer)
+            .toCompletableFuture()
+            .get(5, TimeUnit.SECONDS),
+        BucketAccess.notExists());
+  }
+
+  @Test
+  public void checkIfBucketExistsForExisting() throws Exception {
+    mockCheckingBucketStateForExistingBucket();
+
+    final CompletionStage<BucketAccess> existRequest =
+        S3.checkIfBucketExists(bucket(), materializer);
+
+    final Source<BucketAccess, NotUsed> existSourceRequest = S3.checkIfBucketExistsSource(bucket());
+
+    assertEquals(
+        existRequest.toCompletableFuture().get(5, TimeUnit.SECONDS), BucketAccess.accessGranted());
+
+    assertEquals(
+        existSourceRequest
+            .runWith(Sink.head(), materializer)
+            .toCompletableFuture()
+            .get(5, TimeUnit.SECONDS),
+        BucketAccess.accessGranted());
+  }
+
+  @Test
+  public void checkIfBucketExistsForBucketWithoutRights() throws Exception {
+    mockCheckingBucketStateForBucketWithoutRights();
+
+    final CompletionStage<BucketAccess> noRightsRequest =
+        S3.checkIfBucketExists(bucket(), materializer);
+
+    final Source<BucketAccess, NotUsed> noRightsSourceRequest =
+        S3.checkIfBucketExistsSource(bucket());
+
+    assertEquals(
+        noRightsRequest.toCompletableFuture().get(5, TimeUnit.SECONDS),
+        BucketAccess.accessDenied());
+
+    assertEquals(
+        noRightsSourceRequest
+            .runWith(Sink.head(), materializer)
+            .toCompletableFuture()
+            .get(5, TimeUnit.SECONDS),
+        BucketAccess.accessDenied());
   }
 }

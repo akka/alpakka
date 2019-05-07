@@ -4,19 +4,22 @@
 
 package docs.scaladsl
 
-import akka.NotUsed
 import akka.http.scaladsl.model.headers.ByteRange
 import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpEntity, HttpResponse}
+import akka.stream.Attributes
+import akka.stream.alpakka.s3.BucketAccess.{AccessDenied, AccessGranted, NotExists}
 import akka.stream.alpakka.s3._
 import akka.stream.alpakka.s3.headers.ServerSideEncryption
 import akka.stream.alpakka.s3.scaladsl.{S3, S3ClientIntegrationSpec, S3WireMockBase}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
+import akka.{Done, NotUsed}
 import com.amazonaws.regions.AwsRegionProvider
 
 import scala.concurrent.Future
 
 class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
+  private val sampleSettings = S3Ext(system).settings
 
   override protected def afterEach(): Unit =
     mock.removeMappings()
@@ -239,6 +242,74 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     result.futureValue.key shouldBe listKey
   }
 
+  it should "make a bucket with given name" in {
+    mockMakingBucket()
+
+    //#make-bucket
+    val bucketName = "samplebucket1"
+
+    implicit val sampleAttributes: Attributes = S3Attributes.settings(sampleSettings)
+
+    val makeBucketRequest: Future[Done] = S3.makeBucket(bucketName)
+    val makeBucketSourceRequest: Source[Done, NotUsed] = S3.makeBucketSource(bucketName)
+    //#make-bucket
+
+    makeBucketRequest.futureValue shouldBe Done
+    makeBucketSourceRequest.runWith(Sink.ignore).futureValue shouldBe Done
+  }
+
+  it should "delete a bucket with given name" in {
+    val bucketName = "samplebucket1"
+
+    mockDeletingBucket()
+
+    //#delete-bucket
+    implicit val sampleAttributes: Attributes = S3Attributes.settings(sampleSettings)
+
+    val deleteBucketRequest: Future[Done] = S3.deleteBucket(bucketName)
+    val deleteBucketSourceRequest: Source[Done, NotUsed] = S3.deleteBucketSource(bucketName)
+    //#delete-bucket
+
+    deleteBucketRequest.futureValue shouldBe Done
+    deleteBucketSourceRequest.runWith(Sink.ignore).futureValue shouldBe Done
+  }
+
+  it should "check for non existing buckets" in {
+    mockCheckingBucketStateForNonExistingBucket()
+
+    //#check-if-bucket-exists
+    implicit val sampleAttributes: Attributes = S3Attributes.settings(sampleSettings)
+
+    val doesntExistRequest: Future[BucketAccess] = S3.checkIfBucketExists(bucket)
+    val doesntExistSourceRequest: Source[BucketAccess, NotUsed] = S3.checkIfBucketExistsSource(bucket)
+    //#check-if-bucket-exists
+
+    doesntExistRequest.futureValue shouldBe NotExists
+
+    doesntExistSourceRequest.runWith(Sink.head).futureValue shouldBe NotExists
+  }
+
+  it should "check for existing buckets" in {
+    mockCheckingBucketStateForExistingBucket()
+
+    val existRequest: Future[BucketAccess] = S3.checkIfBucketExists(bucket)
+    val existSourceRequest: Source[BucketAccess, NotUsed] = S3.checkIfBucketExistsSource(bucket)
+
+    existRequest.futureValue shouldBe AccessGranted
+
+    existSourceRequest.runWith(Sink.head).futureValue shouldBe AccessGranted
+  }
+
+  it should "check for buckets without rights" in {
+    mockCheckingBucketStateForBucketWithoutRights()
+
+    val noRightsRequest: Future[BucketAccess] = S3.checkIfBucketExists(bucket)
+    val noRightsSourceRequest: Source[BucketAccess, NotUsed] = S3.checkIfBucketExistsSource(bucket)
+
+    noRightsRequest.futureValue shouldBe AccessDenied
+
+    noRightsSourceRequest.runWith(Sink.head).futureValue shouldBe AccessDenied
+  }
   override protected def afterAll(): Unit = {
     super.afterAll()
     stopWireMockServer()

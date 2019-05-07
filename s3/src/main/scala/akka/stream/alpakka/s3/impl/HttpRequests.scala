@@ -60,6 +60,14 @@ import scala.concurrent.{ExecutionContext, Future}
       .withDefaultHeaders(s3Headers)
   }
 
+  def bucketManagementRequest(
+      s3Location: S3Location,
+      method: HttpMethod,
+      headers: Seq[HttpHeader] = Seq.empty[HttpHeader]
+  )(implicit conf: S3Settings): HttpRequest =
+    s3Request(s3Location = s3Location, method = method)
+      .withDefaultHeaders(headers)
+
   def uploadRequest(s3Location: S3Location,
                     payload: Source[ByteString, _],
                     contentLength: Long,

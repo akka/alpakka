@@ -12,6 +12,7 @@ import akka.http.javadsl.model._
 import akka.http.javadsl.model.headers.ByteRange
 import akka.http.scaladsl.model.headers.{ByteRange => ScalaByteRange}
 import akka.http.scaladsl.model.{ContentType => ScalaContentType, HttpMethod => ScalaHttpMethod}
+import akka.stream.{Attributes, Materializer}
 import akka.stream.alpakka.s3.headers.{CannedAcl, ServerSideEncryption}
 import akka.stream.alpakka.s3.impl._
 import akka.stream.alpakka.s3._
@@ -324,7 +325,7 @@ object S3 {
    * @param key the s3 object key
    * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
    * @param s3Headers any headers you want to add
-   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[ava.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
+   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
    */
   def multipartUpload(bucket: String,
                       key: String,
@@ -353,7 +354,7 @@ object S3 {
    *
    * @param bucket the s3 bucket name
    * @param key the s3 object key
-   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[ava.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
+   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
    */
   def multipartUpload(bucket: String, key: String): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
     multipartUpload(bucket, key, ContentTypes.APPLICATION_OCTET_STREAM)
@@ -465,6 +466,107 @@ object S3 {
                     targetBucket: String,
                     targetKey: String): RunnableGraph[CompletionStage[MultipartUploadResult]] =
     multipartCopy(sourceBucket, sourceKey, targetBucket, targetKey, ContentTypes.APPLICATION_OCTET_STREAM, S3Headers())
+
+  /**
+   * Create new bucket with a given name
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketPUT.html
+   * @param bucketName bucket name
+   * @param materializer materializer to run with
+   * @param attributes attributes to run request with
+   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
+   */
+  def makeBucket(bucketName: String, materializer: Materializer, attributes: Attributes): CompletionStage[Done] =
+    S3Stream.makeBucket(bucketName)(materializer, attributes).toJava
+
+  /**
+   * Create new bucket with a given name
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketPUT.html
+   * @param bucketName bucket name
+   * @param materializer materializer to run with
+   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
+   */
+  def makeBucket(bucketName: String, materializer: Materializer): CompletionStage[Done] =
+    S3Stream.makeBucket(bucketName)(materializer, Attributes()).toJava
+
+  /**
+   * Create new bucket with a given name
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketPUT.html
+   * @param bucketName bucket name
+   * @return [[akka.stream.javadsl.Source Source]] of type [[Done]] as API doesn't return any additional information
+   */
+  def makeBucketSource(bucketName: String): Source[Done, NotUsed] =
+    S3Stream.makeBucketSource(bucketName).asJava
+
+  /**
+   * Delete bucket with a given name
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketDELETE.html
+   * @param bucketName   bucket name
+   * @param materializer materializer to run with
+   * @param attributes attributes to run request with
+   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
+   */
+  def deleteBucket(bucketName: String, materializer: Materializer, attributes: Attributes): CompletionStage[Done] =
+    S3Stream.deleteBucket(bucketName)(materializer, attributes).toJava
+
+  /**
+   * Delete bucket with a given name
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketDELETE.html
+   * @param bucketName   bucket name
+   * @param materializer materializer to run with
+   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
+   */
+  def deleteBucket(bucketName: String, materializer: Materializer): CompletionStage[Done] =
+    S3Stream.deleteBucket(bucketName)(materializer, Attributes()).toJava
+
+  /**
+   * Delete bucket with a given name
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketDELETE.html
+   * @param bucketName   bucket name
+   * @return [[akka.stream.javadsl.Source Source]] of type [[Done]] as API doesn't return any additional information
+   */
+  def deleteBucketSource(bucketName: String): Source[Done, NotUsed] =
+    S3Stream.deleteBucketSource(bucketName).asJava
+
+  /**
+   * Checks whether the bucket exists and the user has rights to perform the `ListBucket` operation
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketHEAD.html
+   * @param bucketName   bucket name
+   * @param materializer materializer to run with
+   * @param attributes attributes to run request with
+   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[BucketAccess]]
+   */
+  def checkIfBucketExists(bucketName: String,
+                          materializer: Materializer,
+                          attributes: Attributes): CompletionStage[BucketAccess] =
+    S3Stream.checkIfBucketExists(bucketName)(materializer, attributes).toJava
+
+  /**
+   * Checks whether the bucket exits and user has rights to perform ListBucket operation
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketHEAD.html
+   * @param bucketName   bucket name
+   * @param materializer materializer to run with
+   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[BucketAccess]]
+   */
+  def checkIfBucketExists(bucketName: String, materializer: Materializer): CompletionStage[BucketAccess] =
+    S3Stream.checkIfBucketExists(bucketName)(materializer, Attributes()).toJava
+
+  /**
+   * Checks whether the bucket exits and user has rights to perform ListBucket operation
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketHEAD.html
+   * @param bucketName   bucket name
+   * @return [[akka.stream.javadsl.Source Source]] of type [[BucketAccess]]
+   */
+  def checkIfBucketExistsSource(bucketName: String): Source[BucketAccess, NotUsed] =
+    S3Stream.checkIfBucketExistsSource(bucketName).asJava
 
   private def func[T, R](f: T => R) = new akka.japi.function.Function[T, R] {
     override def apply(param: T): R = f(param)
