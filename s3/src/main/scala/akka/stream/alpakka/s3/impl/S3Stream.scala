@@ -747,7 +747,7 @@ import akka.util.ByteString
       implicit val settings = resolveSettings()
 
       requests
-        .via(superPool[MultipartCopy](settings, sys))
+        .via(superPool[MultipartCopy])
         .map {
           case (Success(r), multipartCopy) =>
             val entity = r.entity
