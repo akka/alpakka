@@ -1,0 +1,3 @@
+# Forward proxy support https://github.com/akka/alpakka/pull/1639
+# constructor is private
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.s3.S3Settings.this")
