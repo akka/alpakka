@@ -25,7 +25,7 @@ class InfluxDBSpec extends WordSpec with MustMatchers with BeforeAndAfterEach wi
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()
 
-  val DatabaseName = this.getClass.getSimpleName
+  final val DatabaseName = this.getClass.getSimpleName
 
   implicit var influxDB: InfluxDB = _
 

@@ -24,7 +24,7 @@ class InfluxDBSourceSpec
     with BeforeAndAfterAll
     with ScalaFutures {
 
-  val DatabaseName = "InfluxDBSourceSpec"
+  final val DatabaseName = "InfluxDBSourceSpec"
 
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()
