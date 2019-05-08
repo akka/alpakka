@@ -15,7 +15,7 @@ object InfluxDBSettings {
 
 }
 
-final class InfluxDBSettings private (
+final case class InfluxDBSettings private (
     val batchSize: Int,
     val precision: TimeUnit
 ) {
