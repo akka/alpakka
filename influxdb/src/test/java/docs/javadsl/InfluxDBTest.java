@@ -130,10 +130,10 @@ public class InfluxDBTest {
     List<InfluxDBWriteMessage<Point, NotUsed>> points = new ArrayList<>();
 
     for (QueryResult.Result result : queryResult.getResults()) {
-      for (QueryResult.Series serie : result.getSeries()) {
-        for (List<Object> rows : serie.getValues()) {
+      for (QueryResult.Series series : result.getSeries()) {
+        for (List<Object> rows : series.getValues()) {
           InfluxDBWriteMessage<Point, NotUsed> influxDBWriteMessage =
-              new InfluxDBWriteMessage<>(resultToPoint(serie, rows), NotUsed.notUsed());
+              new InfluxDBWriteMessage<>(resultToPoint(series, rows), NotUsed.notUsed());
           points.add(influxDBWriteMessage);
         }
       }
