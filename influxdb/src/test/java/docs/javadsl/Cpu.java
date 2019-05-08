@@ -12,7 +12,7 @@ public class Cpu {
   @Column(name = "time")
   private Instant time;
 
-  @Column(name = "host", tag = true)
+  @Column(name = "hostname", tag = true)
   private String hostname;
 
   @Column(name = "region", tag = true)

@@ -61,7 +61,7 @@ public class TestUtils {
 
       if (column.equals("time")) {
         builder.time(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
-      } else if (column.equals("host") || column.equals("region")) {
+      } else if (column.equals("hostname") || column.equals("region")) {
         builder.tag(column, value.toString());
       } else if (column.equals("uptimesecs")) {
         builder.addField(column, ((Double) value).longValue());
