@@ -20,7 +20,7 @@ object InfluxDBFlow {
       implicit influxDB: InfluxDB
   ): Flow[InfluxDBWriteMessage[T, NotUsed], InfluxDBWriteResult[T, NotUsed], NotUsed] =
     Flow[InfluxDBWriteMessage[T, NotUsed]]
-      .batch(settings.batchSize, immutable.Seq(_)) { case (seq, wm) => seq :+ wm }
+      .batch(settings.batchSize, immutable.Seq(_))(_ :+ _)
       .via(
         new impl.InfluxDBFlowStage[T, NotUsed](
           Option.empty,
@@ -33,7 +33,7 @@ object InfluxDBFlow {
       implicit influxDB: InfluxDB
   ): Flow[InfluxDBWriteMessage[T, NotUsed], InfluxDBWriteResult[T, NotUsed], NotUsed] =
     Flow[InfluxDBWriteMessage[T, NotUsed]]
-      .batch(settings.batchSize, immutable.Seq(_)) { case (seq, wm) => seq :+ wm }
+      .batch(settings.batchSize, immutable.Seq(_))(_ :+ _)
       .via(
         new impl.InfluxDBFlowStage[T, NotUsed](
           Option(clazz),
@@ -46,7 +46,7 @@ object InfluxDBFlow {
       implicit influxDB: InfluxDB
   ): Flow[InfluxDBWriteMessage[T, C], InfluxDBWriteResult[T, C], NotUsed] =
     Flow[InfluxDBWriteMessage[T, C]]
-      .batch(settings.batchSize, immutable.Seq(_)) { case (seq, wm) => seq :+ wm }
+      .batch(settings.batchSize, immutable.Seq(_))(_ :+ _)
       .via(
         new impl.InfluxDBFlowStage[T, C](
           Option.empty,
@@ -59,7 +59,7 @@ object InfluxDBFlow {
       implicit influxDB: InfluxDB
   ): Flow[InfluxDBWriteMessage[T, C], InfluxDBWriteResult[T, C], NotUsed] =
     Flow[InfluxDBWriteMessage[T, C]]
-      .batch(settings.batchSize, immutable.Seq(_)) { case (seq, wm) => seq :+ wm }
+      .batch(settings.batchSize, immutable.Seq(_))(_ :+ _)
       .via(
         new impl.InfluxDBFlowStage[T, C](
           Option(clazz),
