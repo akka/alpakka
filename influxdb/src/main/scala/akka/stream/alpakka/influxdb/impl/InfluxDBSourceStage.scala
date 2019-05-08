@@ -4,8 +4,6 @@
 
 package akka.stream.alpakka.influxdb.impl
 
-import java.util.concurrent.TimeUnit
-
 import akka.annotation.InternalApi
 import akka.stream.alpakka.influxdb.InfluxDBSettings
 import akka.stream.{Attributes, Outlet, SourceShape}

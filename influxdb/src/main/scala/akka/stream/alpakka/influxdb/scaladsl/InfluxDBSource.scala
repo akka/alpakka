@@ -20,12 +20,7 @@ object InfluxDBSource {
    * Java API: creates an [[akka.stream.alpakka.influxdb.impl.InfluxDBRawSourceStage]] from a given statement.
    */
   def apply(influxDB: InfluxDB, query: Query): Source[QueryResult, NotUsed] =
-    Source.fromGraph(
-      new InfluxDBRawSourceStage(
-        query,
-        influxDB
-      )
-    )
+    Source.fromGraph(new InfluxDBRawSourceStage(query, influxDB))
 
   /**
    * Read elements of `T` from `className` or by `query`.
