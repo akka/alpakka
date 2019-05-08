@@ -49,7 +49,7 @@ private[influxdb] final class InfluxDBSourceLogic[T](clazz: Class[T],
 
   setHandler(outlet, this)
 
-  var dataRetrieved: Option[QueryResult] = Option.empty
+  var dataRetrieved: Option[QueryResult] = None
   var resultMapperHelper: InfluxDBResultMapperHelper = _
 
   override def preStart(): Unit = {
@@ -58,26 +58,25 @@ private[influxdb] final class InfluxDBSourceLogic[T](clazz: Class[T],
 
     val queryResult = influxDB.query(query)
     if (!queryResult.hasError) {
-      dataRetrieved = Option(queryResult)
+      dataRetrieved = Some(queryResult)
     }
   }
 
   override def onPull(): Unit =
-    if (dataRetrieved.isEmpty)
-      completeStage()
-    else {
-      val queryResult = dataRetrieved.get
-      for {
-        result <- queryResult.getResults.asScala
-        series <- result.getSeries.asScala
-      }(
-        emitMultiple(outlet,
-                     resultMapperHelper.parseSeriesAs(clazz, series, settings.precision).asScala.toIterator)
-      )
+    dataRetrieved match {
+      case None => completeStage()
+      case Some(queryResult) => {
+        for {
+          result <- queryResult.getResults.asScala
+          series <- result.getSeries.asScala
+        }(
+          emitMultiple(outlet,
+                       resultMapperHelper.parseSeriesAs(clazz, series, settings.precision).asScala.toIterator)
+        )
 
-      dataRetrieved = Option.empty
+        dataRetrieved = None
+      }
     }
-
 }
 
 /**

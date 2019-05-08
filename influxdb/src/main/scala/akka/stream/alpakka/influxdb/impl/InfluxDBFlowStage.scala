@@ -46,7 +46,7 @@ private[influxdb] class InfluxDBFlowStage[T, C](
 
         influxDB.enableBatch(BatchOptions.DEFAULTS)
         write(messages)
-        val writtenMessages = messages.map(m => new InfluxDBWriteResult(m, Option.empty))
+        val writtenMessages = messages.map(m => new InfluxDBWriteResult(m, None))
         influxDB.close()
         push(out, writtenMessages)
       }
