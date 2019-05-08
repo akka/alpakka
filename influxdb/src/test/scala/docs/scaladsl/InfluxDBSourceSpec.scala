@@ -45,7 +45,7 @@ class InfluxDBSourceSpec
 
   "support source" in assertAllStagesStopped {
     // #run-typed
-    val query = new Query("SELECT*FROM cpu", DatabaseName);
+    val query = new Query("SELECT * FROM cpu", DatabaseName);
 
     val influxDBResult = InfluxDBSource(influxDB, query).runWith(Sink.seq)
     val resultToAssert = influxDBResult.futureValue.head

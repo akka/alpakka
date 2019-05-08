@@ -82,7 +82,7 @@ public class InfluxDBTest {
 
   @Test
   public void testConsumeAndPublishMeasurementsUsingTyped() throws Exception {
-    Query query = new Query("SELECT*FROM cpu", DATABASE_NAME);
+    Query query = new Query("SELECT * FROM cpu", DATABASE_NAME);
     CompletionStage<Done> completionStage =
         InfluxDBSource.typed(InfluxDBCpu.class, InfluxDBSettings.Default(), influxDB, query)
             .map(
@@ -105,7 +105,7 @@ public class InfluxDBTest {
 
   @Test
   public void testConsumeAndPublishMeasurements() throws Exception {
-    Query query = new Query("SELECT*FROM cpu", DATABASE_NAME);
+    Query query = new Query("SELECT * FROM cpu", DATABASE_NAME);
 
     CompletionStage<Done> completionStage =
         InfluxDBSource.create(influxDB, query)

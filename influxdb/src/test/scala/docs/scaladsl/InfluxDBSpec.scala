@@ -42,7 +42,7 @@ class InfluxDBSpec extends WordSpec with MustMatchers with BeforeAndAfterEach wi
     cleanDatabase(influxDB, DatabaseName)
 
   "support typed source" in assertAllStagesStopped {
-    val query = new Query("SELECT*FROM cpu", DatabaseName);
+    val query = new Query("SELECT * FROM cpu", DatabaseName);
     val measurements =
       InfluxDBSource.typed(classOf[InfluxDBSpecCpu], InfluxDBSettings(), influxDB, query).runWith(Sink.seq)
 
@@ -52,7 +52,7 @@ class InfluxDBSpec extends WordSpec with MustMatchers with BeforeAndAfterEach wi
   "InfluxDBFlow" should {
 
     "consume and publish measurements using typed" in assertAllStagesStopped {
-      val query = new Query("SELECT*FROM cpu", DatabaseName);
+      val query = new Query("SELECT * FROM cpu", DatabaseName);
 
       val f1 = InfluxDBSource
         .typed(classOf[InfluxDBSpecCpu], InfluxDBSettings(), influxDB, query)
@@ -72,7 +72,7 @@ class InfluxDBSpec extends WordSpec with MustMatchers with BeforeAndAfterEach wi
     }
 
     "consume and publish measurements" in assertAllStagesStopped {
-      val query = new Query("SELECT*FROM cpu", DatabaseName);
+      val query = new Query("SELECT * FROM cpu", DatabaseName);
 
       val f1 = InfluxDBSource(influxDB, query)
         .mapConcat(resultToPoints)

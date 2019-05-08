@@ -75,7 +75,7 @@ public class InfluxDBSourceTest {
 
   @Test
   public void streamQueryResult() throws Exception {
-    Query query = new Query("SELECT*FROM cpu", DATABASE_NAME);
+    Query query = new Query("SELECT * FROM cpu", DATABASE_NAME);
 
     CompletionStage<List<InfluxDBSourceCpu>> rows =
         InfluxDBSource.typed(InfluxDBSourceCpu.class, InfluxDBSettings.Default(), influxDB, query)
@@ -88,7 +88,7 @@ public class InfluxDBSourceTest {
 
   @Test
   public void streamRawQueryResult() throws Exception {
-    Query query = new Query("SELECT*FROM cpu", DATABASE_NAME);
+    Query query = new Query("SELECT * FROM cpu", DATABASE_NAME);
 
     CompletionStage<List<QueryResult>> completionStage =
         InfluxDBSource.create(influxDB, query).runWith(Sink.seq(), materializer);
