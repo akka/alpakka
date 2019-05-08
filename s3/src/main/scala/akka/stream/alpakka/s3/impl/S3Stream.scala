@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.s3.impl
 
-import java.time.LocalDate
+import java.time.{LocalDate, ZoneOffset}
 
 import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}
@@ -63,7 +63,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
   // def because tokens can expire
   def signingKey = SigningKey(
     settings.credentialsProvider,
-    CredentialScope(LocalDate.now(), settings.s3RegionProvider.getRegion, "s3")
+    CredentialScope(LocalDate.now(ZoneOffset.UTC), settings.s3RegionProvider.getRegion, "s3")
   )
 
   def download(s3Location: S3Location,
