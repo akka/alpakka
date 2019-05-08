@@ -200,7 +200,6 @@ object S3 {
    * @param sourceVersionId optional version id of source object, if the versioning is enabled in source bucket
    * @param contentType  an optional [[akka.http.scaladsl.model.ContentType ContentType]]
    * @param s3Headers any headers you want to add
-   * @param sse an optional server side encryption key
    * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
    * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
    * @return a runnable graph which upon materialization will return a [[scala.concurrent.Future Future ]] containing the results of the copy operation.
