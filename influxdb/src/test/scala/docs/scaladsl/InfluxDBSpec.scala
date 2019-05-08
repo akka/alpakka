@@ -75,10 +75,7 @@ class InfluxDBSpec extends WordSpec with MustMatchers with BeforeAndAfterEach wi
       val query = new Query("SELECT*FROM cpu", databaseName);
 
       val f1 = InfluxDBSource(influxDB, query)
-        .map { queryReqult =>
-          resultToPoints(queryReqult)
-        }
-        .mapConcat(identity)
+        .mapConcat(resultToPoints)
         .runWith(InfluxDBSink(InfluxDBSettings()))
 
       f1.futureValue mustBe Done
@@ -91,11 +88,11 @@ class InfluxDBSpec extends WordSpec with MustMatchers with BeforeAndAfterEach wi
     def resultToPoints(queryResult: QueryResult): List[InfluxDBWriteMessage[Point, NotUsed]] = {
       val points = for {
         results <- queryResult.getResults.asScala
-        serie <- results.getSeries.asScala
-        values <- serie.getValues.asScala
+        series <- results.getSeries.asScala
+        values <- series.getValues.asScala
       } yield
         (
-          InfluxDBWriteMessage(resultToPoint(serie, values))
+          InfluxDBWriteMessage(resultToPoint(series, values))
         )
       points.toList
     }
