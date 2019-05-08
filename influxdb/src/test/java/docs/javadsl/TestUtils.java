@@ -52,11 +52,11 @@ public class TestUtils {
     influxDB.query(new Query("DROP DATABASE " + databaseName));
   }
 
-  public static Point resultToPoint(QueryResult.Series serie, List<Object> values) {
-    Point.Builder builder = Point.measurement(serie.getName());
+  public static Point resultToPoint(QueryResult.Series series, List<Object> values) {
+    Point.Builder builder = Point.measurement(series.getName());
 
-    for (int i = 0; i < serie.getColumns().size(); i++) {
-      String column = serie.getColumns().get(i);
+    for (int i = 0; i < series.getColumns().size(); i++) {
+      String column = series.getColumns().get(i);
       Object value = values.get(i);
 
       if (column.equals("time")) {
