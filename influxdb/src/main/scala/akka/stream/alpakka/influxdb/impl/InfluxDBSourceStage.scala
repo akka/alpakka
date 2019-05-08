@@ -108,21 +108,22 @@ private[influxdb] final class InfluxDBSourceRawLogic(query: Query,
 
   setHandler(outlet, this)
 
-  var dataRetrieved: Option[QueryResult] = Option.empty
+  var dataRetrieved: Option[QueryResult] = None
 
   override def preStart(): Unit = {
     val queryResult = influxDB.query(query)
     if (!queryResult.hasError) {
-      dataRetrieved = Option(queryResult)
+      dataRetrieved = Some(queryResult)
     }
   }
 
   override def onPull(): Unit =
-    if (dataRetrieved.isEmpty) {
-      completeStage()
-    } else {
-      emit(outlet, dataRetrieved.get)
-      dataRetrieved = Option.empty
+    dataRetrieved match {
+      case None => completeStage()
+      case Some(queryResult) => {
+        emit(outlet, queryResult)
+        dataRetrieved = None
+      }
     }
 
 }
