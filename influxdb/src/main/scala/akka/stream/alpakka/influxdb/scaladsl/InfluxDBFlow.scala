@@ -21,7 +21,7 @@ object InfluxDBFlow {
   ): Flow[InfluxDBWriteMessage[T, NotUsed], InfluxDBWriteResult[T, NotUsed], NotUsed] =
     Flow[InfluxDBWriteMessage[T, NotUsed]]
       .batch(settings.batchSize, immutable.Seq(_))(_ :+ _)
-      .via(new impl.InfluxDBFlowStage[T, NotUsed](Option.empty, influxDB))
+      .via(new impl.InfluxDBFlowStage[T, NotUsed](None, influxDB))
       .mapConcat(identity)
 
   def typed[T](clazz: Class[T], settings: InfluxDBSettings)(
@@ -37,7 +37,7 @@ object InfluxDBFlow {
   ): Flow[InfluxDBWriteMessage[T, C], InfluxDBWriteResult[T, C], NotUsed] =
     Flow[InfluxDBWriteMessage[T, C]]
       .batch(settings.batchSize, immutable.Seq(_))(_ :+ _)
-      .via(new impl.InfluxDBFlowStage[T, C](Option.empty, influxDB))
+      .via(new impl.InfluxDBFlowStage[T, C](None, influxDB))
       .mapConcat(identity)
 
   def typedWithPassThrough[T, C](clazz: Class[T], settings: InfluxDBSettings)(
