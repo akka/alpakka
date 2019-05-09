@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.s3.impl.auth
 
-import java.time.{LocalDate, LocalDateTime, ZoneOffset, ZonedDateTime}
+import java.time.{LocalDateTime, ZoneOffset, ZonedDateTime}
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
@@ -35,8 +35,8 @@ class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLik
     new BasicAWSCredentials("AKIDEXAMPLE", "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY")
   )
 
-  def scope(date: LocalDate) = CredentialScope(date, "us-east-1", "iam")
-  def signingKey(dateTime: ZonedDateTime) = SigningKey(credentials, scope(dateTime.toLocalDate))
+  def signingKey(dateTime: ZonedDateTime) =
+    SigningKey(dateTime, credentials, CredentialScope(dateTime.toLocalDate, "us-east-1", "iam"))
 
   val cr = CanonicalRequest(
     "GET",
@@ -65,7 +65,7 @@ class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLik
 
     val date = LocalDateTime.of(2015, 8, 30, 12, 36, 0).atZone(ZoneOffset.UTC)
     val srFuture =
-      Signer.signedRequest(req, signingKey(date), date).runWith(Sink.head)
+      Signer.signedRequest(req, signingKey(date)).runWith(Sink.head)
     whenReady(srFuture) { signedRequest =>
       signedRequest should equal(
         HttpRequest(HttpMethods.GET)
@@ -90,7 +90,7 @@ class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLik
 
     val date = LocalDateTime.of(2017, 12, 31, 12, 36, 0).atZone(ZoneOffset.UTC)
     val srFuture =
-      Signer.signedRequest(req, signingKey(date), date).runWith(Sink.head)
+      Signer.signedRequest(req, signingKey(date)).runWith(Sink.head)
 
     whenReady(srFuture) { signedRequest =>
       signedRequest.getHeader("x-amz-date").get.value should equal("20171231T123600Z")
@@ -124,12 +124,12 @@ class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLik
 
       override def refresh(): Unit = refreshed = true
     }
-    val key = SigningKey(sessionCredentialsProvider, scope(date.toLocalDate))
+    val key = SigningKey(date, sessionCredentialsProvider, CredentialScope(date.toLocalDate, "us-east-1", "iam"))
 
     sessionCredentialsProvider.refresh()
 
     val srFuture =
-      Signer.signedRequest(req, key, date).runWith(Sink.head)
+      Signer.signedRequest(req, key).runWith(Sink.head)
 
     whenReady(srFuture) { signedRequest =>
       signedRequest.getHeader("x-amz-security-token").get.value should equal(initialCredentials.getSessionToken)
