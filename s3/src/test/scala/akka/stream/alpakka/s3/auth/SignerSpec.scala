@@ -28,8 +28,8 @@ class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLik
     new BasicAWSCredentials("AKIDEXAMPLE", "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY")
   )
 
-  def scope(date: LocalDate) = CredentialScope(date, "us-east-1", "iam")
-  def signingKey(dateTime: ZonedDateTime) = SigningKey(credentials, scope(dateTime.toLocalDate))
+  def signingKey(dateTime: ZonedDateTime) =
+    SigningKey(dateTime, credentials, CredentialScope(dateTime.toLocalDate, "us-east-1", "iam"))
 
   val cr = CanonicalRequest(
     "GET",
@@ -58,7 +58,7 @@ class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLik
 
     val date = LocalDateTime.of(2015, 8, 30, 12, 36, 0).atZone(ZoneOffset.UTC)
     val srFuture =
-      Signer.signedRequest(req, signingKey(date), date)
+      Signer.signedRequest(req, signingKey(date))
     whenReady(srFuture) { signedRequest =>
       signedRequest should equal(
         HttpRequest(HttpMethods.GET)
@@ -83,7 +83,7 @@ class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLik
 
     val date = LocalDateTime.of(2017, 12, 31, 12, 36, 0).atZone(ZoneOffset.UTC)
     val srFuture =
-      Signer.signedRequest(req, signingKey(date), date)
+      Signer.signedRequest(req, signingKey(date))
 
     whenReady(srFuture) { signedRequest =>
       signedRequest.getHeader("x-amz-date").get.value should equal("20171231T123600Z")

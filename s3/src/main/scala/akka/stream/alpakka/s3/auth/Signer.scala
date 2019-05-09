@@ -17,18 +17,18 @@ import com.amazonaws.auth._
 private[alpakka] object Signer {
   private val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmssX")
 
-  def signedRequest(request: HttpRequest, key: SigningKey, date: ZonedDateTime = ZonedDateTime.now(ZoneOffset.UTC))(
+  def signedRequest(request: HttpRequest, key: SigningKey)(
       implicit mat: Materializer
   ): Future[HttpRequest] = {
     import mat.executionContext
     val hashedBody = request.entity.dataBytes.runWith(digest()).map(hash => encodeHex(hash.toArray))
 
     hashedBody.map { hb =>
-      val headersToAdd = Vector(RawHeader("x-amz-date", date.format(dateFormatter)),
+      val headersToAdd = Vector(RawHeader("x-amz-date", key.requestDate.format(dateFormatter)),
                                 RawHeader("x-amz-content-sha256", hb)) ++ sessionHeader(key.credProvider)
       val reqWithHeaders = request.withHeaders(request.headers ++ headersToAdd)
       val cr = CanonicalRequest.from(reqWithHeaders)
-      val authHeader = authorizationHeader("AWS4-HMAC-SHA256", key, date, cr)
+      val authHeader = authorizationHeader("AWS4-HMAC-SHA256", key, key.requestDate, cr)
       reqWithHeaders.withHeaders(reqWithHeaders.headers :+ authHeader)
     }
   }

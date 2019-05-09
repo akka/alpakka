@@ -4,8 +4,9 @@
 
 package akka.stream.alpakka.s3.auth
 
-import java.time.LocalDate
+import java.time.{LocalDate, ZonedDateTime}
 import java.time.format.DateTimeFormatter
+
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import com.amazonaws.auth.{AWSCredentials ⇒ AmzAWSCredentials, AWSCredentialsProvider}
@@ -16,7 +17,8 @@ private[alpakka] final case class CredentialScope(date: LocalDate, awsRegion: St
   def scopeString = s"$formattedDate/$awsRegion/$awsService/aws4_request"
 }
 
-private[alpakka] final case class SigningKey(credProvider: AWSCredentialsProvider,
+private[alpakka] final case class SigningKey(requestDate: ZonedDateTime,
+                                             credProvider: AWSCredentialsProvider,
                                              scope: CredentialScope,
                                              algorithm: String = "HmacSHA256") {
 

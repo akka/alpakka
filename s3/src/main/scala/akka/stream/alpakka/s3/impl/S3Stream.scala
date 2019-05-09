@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.s3.impl
 
-import java.time.{LocalDate, ZoneOffset}
+import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 
 import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}
@@ -61,10 +61,14 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
   implicit val conf = settings
   val MinChunkSize = 5242880 //in bytes
   // def because tokens can expire
-  def signingKey = SigningKey(
-    settings.credentialsProvider,
-    CredentialScope(LocalDate.now(ZoneOffset.UTC), settings.s3RegionProvider.getRegion, "s3")
-  )
+  def signingKey = {
+    val requestDate: ZonedDateTime = ZonedDateTime.now(ZoneOffset.UTC)
+    SigningKey(
+      requestDate,
+      settings.credentialsProvider,
+      CredentialScope(requestDate.toLocalDate, settings.s3RegionProvider.getRegion, "s3")
+    )
+  }
 
   def download(s3Location: S3Location,
                range: Option[ByteRange],
@@ -262,9 +266,6 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
                        sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(InitiateMultipartUpload) }
                      ))
 
-    // use the same key for all sub-requests (chunks)
-    val key: SigningKey = signingKey
-
     val headers: S3Headers = S3Headers(sse.fold[Seq[HttpHeader]](Seq.empty) { _.headersFor(UploadPart) })
 
     SplitAfterSize(chunkSize)(Flow.apply[ByteString])
@@ -277,7 +278,7 @@ private[alpakka] final class S3Stream(settings: S3Settings)(implicit system: Act
             uploadPartRequest(uploadInfo, chunkIndex, chunkedPayload.data, chunkedPayload.size, headers)
           (partRequest, (uploadInfo, chunkIndex))
       }
-      .mapAsync(parallelism) { case (req, info) => Signer.signedRequest(req, key).zip(Future.successful(info)) }
+      .mapAsync(parallelism) { case (req, info) => Signer.signedRequest(req, signingKey).zip(Future.successful(info)) }
   }
 
   private def getChunkBuffer(chunkSize: Int) = settings.bufferType match {
