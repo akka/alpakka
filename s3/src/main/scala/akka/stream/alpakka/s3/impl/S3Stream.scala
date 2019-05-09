@@ -4,8 +4,8 @@
 
 package akka.stream.alpakka.s3.impl
 
-import java.time.{Instant, LocalDate, ZoneOffset}
 import java.net.InetSocketAddress
+import java.time.{Instant, ZoneOffset, ZonedDateTime}
 
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
@@ -98,10 +98,14 @@ import akka.util.ByteString
   val MaxChunkSize: Int = 10 * 1024 * 1024 //in bytes
 
   // def because tokens can expire
-  def signingKey(implicit settings: S3Settings) = SigningKey(
-    settings.credentialsProvider,
-    CredentialScope(LocalDate.now(ZoneOffset.UTC), settings.s3RegionProvider.getRegion, "s3")
-  )
+  def signingKey(implicit settings: S3Settings) = {
+    val requestDate = ZonedDateTime.now(ZoneOffset.UTC)
+    SigningKey(
+      requestDate,
+      settings.credentialsProvider,
+      CredentialScope(requestDate.toLocalDate, settings.s3RegionProvider.getRegion, "s3")
+    )
+  }
 
   def download(
       s3Location: S3Location,
@@ -354,6 +358,7 @@ import akka.util.ByteString
                 case StatusCodes.NotFound => NotExists
                 case StatusCodes.Forbidden => AccessDenied
                 case StatusCodes.OK => AccessGranted
+                case other => throw new IllegalArgumentException(s"received status $other")
             }
           )
       case HttpResponse(_, _, entity, _) =>
