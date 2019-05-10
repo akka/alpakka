@@ -341,15 +341,15 @@ object Dependencies {
 
   val Sns = Seq(
     libraryDependencies ++= Seq(
-      "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll ExclusionRule(
-        organization = "com.typesafe.akka"
-      ), // ApacheV2
       "software.amazon.awssdk" % "sns" % AwsSdk2Version excludeAll (ExclusionRule(
         organization = "software.amazon.awssdk",
         name = "netty-nio-client"
       ), ExclusionRule(organization = "io.netty")), // ApacheV2
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
-      "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
+      "org.mockito" % "mockito-core" % mockitoVersion % Test, // MIT
+      "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion % Test excludeAll ExclusionRule(
+        organization = "com.typesafe.akka"
+      ), // ApacheV2
     )
   )
 
@@ -370,16 +370,16 @@ object Dependencies {
 
   val Sqs = Seq(
     libraryDependencies ++= Seq(
-      "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll ExclusionRule(
-        organization = "com.typesafe.akka"
-      ), // ApacheV2
       "software.amazon.awssdk" % "sqs" % AwsSdk2Version excludeAll (ExclusionRule(
         organization = "software.amazon.awssdk",
         name = "netty-nio-client"
       ), ExclusionRule(organization = "io.netty")), // ApacheV2
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
       "org.mockito" % "mockito-core" % mockitoVersion % Test, // MIT
-      "org.mockito" % "mockito-inline" % mockitoVersion % Test // MIT
+      "org.mockito" % "mockito-inline" % mockitoVersion % Test, // MIT
+      "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion % Test excludeAll ExclusionRule(
+        organization = "com.typesafe.akka"
+      ), // ApacheV2
     )
   )
 
