@@ -153,23 +153,4 @@ object SolrFlow {
       .map(_.asJava)
       .asJava
 
-  /**
-   * Do not stream element to Solr. Just pass the pass-through data.
-   *
-   * @tparam PT pass-through type
-   */
-  def passThrough[T, PT](
-      collection: String,
-      settings: SolrUpdateSettings,
-      client: SolrClient
-  ): javadsl.Flow[java.util.List[WriteMessage[T, PT]], java.util.List[WriteResult[T, PT]], NotUsed] =
-    Flow
-      .fromFunction[java.util.List[WriteMessage[T, PT]], immutable.Seq[WriteMessage[T, PT]]](_.asScala.toIndexedSeq)
-      .via(
-        scaladsl.SolrFlow
-          .passThrough[T, PT](collection, settings)(client)
-      )
-      .map(_.asJava)
-      .asJava
-
 }

@@ -683,11 +683,11 @@ class SolrSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaF
       val copyCollection = kafkaConsumerSource
         .map { offset: CommittableOffset =>
           // Transform message so that we can write to solr
-          WriteMessage.createPassThrough(offset)
+          WriteMessage.createPassThrough(offset).withSource(new SolrInputDocument())
         }
         .groupedWithin(5, 10.millis)
         .via( // write to Solr
-          SolrFlow.passThrough[NotUsed, CommittableOffset](
+          SolrFlow.documentsWithPassThrough[CommittableOffset](
             collectionName,
             // use implicit commits to Solr
             SolrUpdateSettings().withCommitWithin(5)

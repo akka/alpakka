@@ -31,7 +31,7 @@ private[solr] final class SolrFlowStage[T, C](
     collection: String,
     client: SolrClient,
     settings: SolrUpdateSettings,
-    messageBinder: Option[T => SolrInputDocument]
+    messageBinder: T => SolrInputDocument
 ) extends GraphStage[FlowShape[immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]]]] {
 
   private val in = Inlet[immutable.Seq[WriteMessage[T, C]]]("messages")
@@ -55,7 +55,7 @@ private final class SolrFlowLogic[T, C](
     out: Outlet[immutable.Seq[WriteResult[T, C]]],
     shape: FlowShape[immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]]],
     settings: SolrUpdateSettings,
-    messageBinder: Option[T => SolrInputDocument]
+    messageBinder: T => SolrInputDocument
 ) extends GraphStageLogic(shape)
     with OutHandler
     with InHandler
@@ -86,9 +86,7 @@ private final class SolrFlowLogic[T, C](
     }
 
   private def updateBulkToSolr(messages: immutable.Seq[WriteMessage[T, C]]): UpdateResponse = {
-    val docs = messageBinder.fold { Seq.empty[SolrInputDocument] } { mb =>
-      messages.flatMap(_.source.map(mb))
-    }
+    val docs = messages.flatMap(_.source.map(messageBinder))
 
     if (log.isDebugEnabled) log.debug("Upsert {}", docs)
     client.add(collection, docs.asJava, settings.commitWithin)

@@ -34,7 +34,7 @@ object SolrFlow {
           collection,
           client,
           settings,
-          Some(identity)
+          identity
         )
       )
 
@@ -54,7 +54,7 @@ object SolrFlow {
           collection,
           client,
           settings,
-          Some(new DefaultSolrObjectBinder(client))
+          new DefaultSolrObjectBinder(client)
         )
       )
 
@@ -76,7 +76,7 @@ object SolrFlow {
           collection,
           client,
           settings,
-          Some(binder)
+          binder
         )
       )
 
@@ -99,7 +99,7 @@ object SolrFlow {
           collection,
           client,
           settings,
-          Some(identity)
+          identity
         )
       )
 
@@ -119,7 +119,7 @@ object SolrFlow {
           collection,
           client,
           settings,
-          Some(new DefaultSolrObjectBinder(client))
+          new DefaultSolrObjectBinder(client)
         )
       )
 
@@ -140,28 +140,7 @@ object SolrFlow {
           collection,
           client,
           settings,
-          Some(binder)
-        )
-      )
-
-  /**
-   * Do not stream element to Solr. Just pass the pass-through data.
-   *
-   * @tparam PT pass-through type
-   */
-  def passThrough[T, PT](
-      collection: String,
-      settings: SolrUpdateSettings
-  )(
-      implicit client: SolrClient
-  ): Flow[immutable.Seq[WriteMessage[T, PT]], immutable.Seq[WriteResult[T, PT]], NotUsed] =
-    Flow
-      .fromGraph(
-        new SolrFlowStage[T, PT](
-          collection,
-          client,
-          settings,
-          None
+          binder
         )
       )
 

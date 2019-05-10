@@ -724,11 +724,12 @@ public class SolrTest {
             .map(
                 kafkaMessage -> {
                   // Transform message so that we can write to elastic
-                  return WriteMessage.createPassThrough(kafkaMessage);
+                  return WriteMessage.createPassThrough(kafkaMessage)
+                      .withSource(new SolrInputDocument());
                 })
             .groupedWithin(5, Duration.ofMillis(10))
             .via(
-                SolrFlow.passThrough(
+                SolrFlow.documentsWithPassThrough(
                     collectionName,
                     // use implicit commits to Solr
                     SolrUpdateSettings.create().withCommitWithin(5),
