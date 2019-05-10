@@ -11,6 +11,7 @@ import akka.stream.alpakka.mqtt.streaming._
 import akka.stream.alpakka.mqtt.streaming.scaladsl._
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, RestartFlow, Source, SourceQueueWithComplete}
 import akka.stream.{Materializer, OverflowStrategy}
+import akka.util.ByteString
 import akka.{Done, NotUsed}
 
 import scala.collection.immutable
@@ -24,6 +25,7 @@ private[streaming] object HighLevelMqttSource {
 
   def atMostOnce(
       mqttClientSession: MqttClientSession,
+      connectionId: ByteString,
       transportSettings: MqttTransportSettings,
       restartSettings: MqttRestartSettings,
       connectionSettings: MqttConnectionSettings,
@@ -33,6 +35,7 @@ private[streaming] object HighLevelMqttSource {
 
     val sendAcknowledge: SourceQueueWithComplete[Command[Nothing]] => PartialFunction[Event[Nothing], Out] =
       commands => {
+        // TODO https://github.com/akka/alpakka/pull/1565#discussion_r267088596
         case Event(publish @ Publish(_, _, Some(packetId), _), _) =>
           commands.offer(Command(PubAck(packetId)))
           publish
@@ -41,6 +44,7 @@ private[streaming] object HighLevelMqttSource {
       }
 
     createOnMaterialization[Out](mqttClientSession,
+                                 connectionId,
                                  transportSettings,
                                  restartSettings,
                                  connectionSettings,
@@ -50,6 +54,7 @@ private[streaming] object HighLevelMqttSource {
 
   def atLeastOnce[Out](
       mqttClientSession: MqttClientSession,
+      connectionId: ByteString,
       transportSettings: MqttTransportSettings,
       restartSettings: MqttRestartSettings,
       connectionSettings: MqttConnectionSettings,
@@ -69,6 +74,7 @@ private[streaming] object HighLevelMqttSource {
       }
 
     createOnMaterialization[Out](mqttClientSession,
+                                 connectionId,
                                  transportSettings,
                                  restartSettings,
                                  connectionSettings,
@@ -78,6 +84,7 @@ private[streaming] object HighLevelMqttSource {
 
   private def createOnMaterialization[Out](
       mqttClientSession: MqttClientSession,
+      connectionId: ByteString,
       transportSettings: MqttTransportSettings,
       restartSettings: MqttRestartSettings,
       connectionSettings: MqttConnectionSettings,
@@ -91,6 +98,7 @@ private[streaming] object HighLevelMqttSource {
         implicit val system: ActorSystem = materializer.system
 
         constructInternals[Out](mqttClientSession,
+                                connectionId,
                                 transportSettings,
                                 restartSettings,
                                 connectionSettings,
@@ -101,27 +109,32 @@ private[streaming] object HighLevelMqttSource {
 
   private def constructInternals[Out](
       mqttClientSession: MqttClientSession,
+      connectionId: ByteString,
       transport: MqttTransportSettings,
       restartSettings: MqttRestartSettings,
       connect: MqttConnectPacket,
       subscribe: MqttSubscribe,
       acknowledgeAndOut: SourceQueueWithComplete[Command[Nothing]] => PartialFunction[Event[Nothing], Out]
   )(implicit system: ActorSystem, materializer: Materializer) = {
-    val mqttFlow: Flow[Command[Nothing], Either[MqttCodec.DecodeError, Event[Nothing]], NotUsed] = {
-      import restartSettings._
-      RestartFlow.onFailuresWithBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts) { () =>
-        Mqtt
-          .clientSessionFlow(mqttClientSession)
-          .join(transport.connectionFlow())
-      }
-    }
-    val subscribed = Promise[immutable.Seq[(String, ControlPacketFlags)]]()
-
     val subscribePacket = subscribe.controlPacket
     val initCommands = immutable.Seq(
       Command(connect.controlPacket),
       Command(subscribePacket)
     )
+
+    val mqttFlow: Flow[Command[Nothing], Either[MqttCodec.DecodeError, Event[Nothing]], NotUsed] = {
+      import restartSettings._
+      RestartFlow.onFailuresWithBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts) { () =>
+        Flow[Command[Nothing]]
+          .prepend(Source(initCommands))
+          .via(
+            Mqtt
+              .clientSessionFlow(mqttClientSession, connectionId)
+              .join(transport.connectionFlow())
+          )
+      }
+    }
+    val subscribed = Promise[immutable.Seq[(String, ControlPacketFlags)]]()
 
     val (commands: SourceQueueWithComplete[Command[Nothing]], subscription: Source[Event[Nothing], NotUsed]) =
       Source
@@ -135,6 +148,7 @@ private[streaming] object HighLevelMqttSource {
             val subscriptionAnswer = subscribePacket.topicFilters.map(_._1).zip(s.returnCodes)
             subscribed.trySuccess(subscriptionAnswer)
             event
+          // TODO https://github.com/akka/alpakka/pull/1565#discussion_r267089165
           case Right(event) =>
             event
         }
@@ -146,11 +160,13 @@ private[streaming] object HighLevelMqttSource {
         .collect { acknowledgeAndOut(commands) }
         .mapMaterializedValue(_ => subscribed.future)
         .watchTermination() {
-          case (publishSourceCompletion, completion) =>
-            completion.foreach { _ =>
-              // shut down the client flow
-              commands.complete()
-            }(system.dispatcher)
+          case (publishSourceCompletion, streamTermination) =>
+            // shut down the client flow
+            streamTermination
+              .flatMap(_ => commands.offer(Command(Disconnect)))(system.dispatcher)
+              .foreach { _ =>
+                commands.complete()
+              }(system.dispatcher)
             publishSourceCompletion
         }
     publishSource

@@ -9,6 +9,7 @@ import akka.annotation.{ApiMayChange, InternalApi}
 import akka.stream.alpakka.mqtt.streaming._
 import akka.stream.alpakka.mqtt.streaming.impl.HighLevelMqttSource
 import akka.stream.scaladsl.Source
+import akka.util.ByteString
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -32,6 +33,7 @@ object MqttSource {
   @ApiMayChange
   def atMostOnce(
       mqttClientSession: MqttClientSession,
+      connectionId: ByteString,
       transportSettings: MqttTransportSettings,
       restartSettings: MqttRestartSettings,
       connectionSettings: MqttConnectionSettings,
@@ -39,6 +41,7 @@ object MqttSource {
   ): Source[Publish, Future[immutable.Seq[(String, ControlPacketFlags)]]] =
     HighLevelMqttSource.atMostOnce(
       mqttClientSession,
+      connectionId,
       transportSettings,
       restartSettings,
       connectionSettings,
@@ -52,6 +55,7 @@ object MqttSource {
   @ApiMayChange
   def atLeastOnce(
       mqttClientSession: MqttClientSession,
+      connectionId: ByteString,
       transportSettings: MqttTransportSettings,
       restartSettings: MqttRestartSettings,
       connectionSettings: MqttConnectionSettings,
@@ -59,6 +63,7 @@ object MqttSource {
   ): Source[(Publish, MqttAckHandle), Future[immutable.Seq[(String, ControlPacketFlags)]]] =
     HighLevelMqttSource.atLeastOnce(
       mqttClientSession,
+      connectionId,
       transportSettings,
       restartSettings,
       connectionSettings,

@@ -34,6 +34,7 @@ import static org.junit.Assert.assertThat;
 public class MqttSourceTest {
 
   private final String topicPrefix = "streaming/source-test/topic/";
+  private final ByteString connectionId = ByteString.fromString("MqttSourceSpec");
   private final String time = LocalTime.now().toString();
   private final List<String> input =
       Arrays.asList("one-" + time, "two-" + time, "three-" + time, "four-" + time, "five-" + time);
@@ -91,6 +92,7 @@ public class MqttSourceTest {
         stream =
             MqttSource.atLeastOnce(
                     mqttClientSession,
+                    connectionId,
                     transportSettings,
                     MqttRestartSettings.create(),
                     MqttConnectionSettings.create(clientId),
@@ -151,7 +153,7 @@ public class MqttSourceTest {
         new ActorMqttClientSession(MqttSessionSettings.create(), materializer, actorSystem);
 
     Flow<Command<Object>, DecodeErrorOrEvent<Object>, NotUsed> join =
-        Mqtt.clientSessionFlow(session)
+        Mqtt.clientSessionFlow(session, ByteString.fromString("SourceQueueWithComplete"))
             .join(transportSettings.connectionFlow(actorSystem).asJava());
     SourceQueueWithComplete<Command<Object>> commands =
         Source.<Command<Object>>queue(10, OverflowStrategy.fail())
