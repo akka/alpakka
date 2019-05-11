@@ -67,10 +67,7 @@ private[influxdb] final class InfluxDBSourceLogic[T](clazz: Class[T],
         for {
           result <- queryResult.getResults.asScala
           series <- result.getSeries.asScala
-        }(
-          emitMultiple(outlet,
-                       resultMapperHelper.parseSeriesAs(clazz, series, settings.precision).asScala.toIterator)
-        )
+        } emitMultiple(outlet, resultMapperHelper.parseSeriesAs(clazz, series, settings.precision).asScala.toIterator)
 
         dataRetrieved = None
       }

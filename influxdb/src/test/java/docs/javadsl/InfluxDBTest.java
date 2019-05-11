@@ -88,7 +88,7 @@ public class InfluxDBTest {
             .map(
                 cpu -> {
                   InfluxDBCpu clonedCpu = cpu.cloneAt(cpu.getTime().plusSeconds(60000l));
-                  return new InfluxDBWriteMessage<>(clonedCpu, NotUsed.notUsed());
+                  return InfluxDBWriteMessage.create(clonedCpu, NotUsed.notUsed());
                 })
             .runWith(
                 InfluxDBSink.typed(InfluxDBCpu.class, InfluxDBSettings.Default(), influxDB),
@@ -133,7 +133,7 @@ public class InfluxDBTest {
       for (QueryResult.Series series : result.getSeries()) {
         for (List<Object> rows : series.getValues()) {
           InfluxDBWriteMessage<Point, NotUsed> influxDBWriteMessage =
-              new InfluxDBWriteMessage<>(resultToPoint(series, rows), NotUsed.notUsed());
+              InfluxDBWriteMessage.create(resultToPoint(series, rows), NotUsed.notUsed());
           points.add(influxDBWriteMessage);
         }
       }

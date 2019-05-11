@@ -8,11 +8,11 @@ import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.stream.alpakka.influxdb.{InfluxDBWriteMessage, InfluxDBWriteResult}
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import org.influxdb.InfluxDB
-import org.influxdb.impl.InfluxDBMapper
+import org.influxdb.impl.InfluxDBResultMapperHelper
 
 import scala.collection.immutable
 import org.influxdb.BatchOptions
-import org.influxdb.dto.Point
+import org.influxdb.dto.{BatchPoints, Point}
 
 /**
  * INTERNAL API
@@ -57,29 +57,73 @@ private[influxdb] class InfluxDBFlowStage[T, C](
 
   final class InfluxDBRecordLogic extends InfluxDBLogic {
 
+    private var mapperHelper: InfluxDBResultMapperHelper = new InfluxDBResultMapperHelper
+
     override protected def write(messages: immutable.Seq[InfluxDBWriteMessage[T, C]]): Unit =
-      messages.foreach {
-        case InfluxDBWriteMessage(point: Point, _) => {
-          influxDB.write(point)
+      messages
+        .filter {
+          case InfluxDBWriteMessage(point: Point, _, _, _) => {
+            true
+          }
+          case InfluxDBWriteMessage(others: AnyRef, _, _, _) => {
+            failStage(new RuntimeException(s"unexpected type Point or annotated with Measurement required"))
+            false
+          }
         }
-        case InfluxDBWriteMessage(others: AnyRef, _) =>
-          failStage(new RuntimeException(s"unexpected type Point or annotated with Measurement required"))
-      }
+        .groupBy(im => (im.databaseName, im.retentionPolicy))
+        .map(wm => toBatchPoints(wm._1._1, wm._1._2, wm._2))
+        .foreach(influxDB.write)
 
   }
 
   final class InfluxDBMapperRecordLogic extends InfluxDBLogic {
 
-    protected var influxDBMapper: InfluxDBMapper = _
-
-    override def preStart(): Unit =
-      influxDBMapper = new InfluxDBMapper(influxDB)
+    private var mapperHelper: InfluxDBResultMapperHelper = new InfluxDBResultMapperHelper
 
     override protected def write(messages: immutable.Seq[InfluxDBWriteMessage[T, C]]): Unit =
-      messages.foreach {
-        case InfluxDBWriteMessage(typeMetric: Any, _) =>
-          influxDBMapper.save(typeMetric)
+      messages
+        .groupBy(im => {
+          (
+            im.databaseName match {
+              case Some(databaseName) => Some(databaseName)
+              case None => Some(mapperHelper.databaseName(im.point))
+            },
+            im.retentionPolicy match {
+              case Some(databaseName) => Some(databaseName)
+              case None => Some(mapperHelper.retentionPolicy(im.point))
+            }
+          )
+        })
+        .map(
+          wm =>
+            toBatchPoints(wm._1._1,
+                          wm._1._2,
+                          wm._2.map(im => im.withPoint(mapperHelper.convertModelToPoint(im.point).asInstanceOf[T])))
+        )
+        .foreach(influxDB.write)
+  }
+
+  private def toBatchPoints(databaseName: Option[String],
+                            retentionPolicy: Option[String],
+                            seq: Seq[InfluxDBWriteMessage[T, C]]) = {
+
+    val builder = databaseName match {
+      case Some(databaseName) => BatchPoints.database(databaseName)
+      case None => BatchPoints.builder()
+    }
+
+    if (retentionPolicy.isDefined) builder.retentionPolicy(retentionPolicy.get)
+
+    def convert(messages: Seq[InfluxDBWriteMessage[T, C]]): BatchPoints =
+      messages match {
+        case head :: tail => {
+          builder.point(head.point.asInstanceOf[Point])
+          convert(tail)
+        }
+        case Nil => builder.build()
       }
+
+    convert(seq)
   }
 
 }

@@ -14,7 +14,6 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, MustMatchers, WordS
 import org.scalatest.concurrent.ScalaFutures
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import docs.javadsl.TestUtils._
-import docs.javadsl.TestConstants._
 import org.influxdb.dto.Query
 
 class InfluxDBSourceSpec
