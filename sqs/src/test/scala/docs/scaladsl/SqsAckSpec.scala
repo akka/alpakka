@@ -159,7 +159,7 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
     //#flow-ack
 
     val result = future.futureValue
-    result shouldBe a[DeleteResult]
+    result shouldBe a[SqsDeleteResult]
     result.messageAction.message.body() shouldBe "alpakka-flow-ack"
     verify(awsSqsClient).deleteMessage(any[DeleteMessageRequest])
   }
@@ -194,7 +194,7 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
     val results = future.futureValue
     results.size shouldBe 10
     results.foreach { r =>
-      r shouldBe a[DeleteResultEntry]
+      r shouldBe a[SqsDeleteResultEntry]
     }
     results.map(_.messageAction.message.body()) should contain theSameElementsAs messages
     verify(awsSqsClient, times(1)).deleteMessageBatch(
@@ -214,7 +214,7 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     val results = future.futureValue
     results.foreach { r =>
-      r shouldBe a[DeleteResultEntry]
+      r shouldBe a[SqsDeleteResultEntry]
     }
     results.map(_.messageAction.message.body()) should contain theSameElementsAs messages
     verify(awsSqsClient, times(2)).deleteMessageBatch(
@@ -321,7 +321,7 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     val results = future.futureValue
     results.foreach { r =>
-      r shouldBe a[ChangeMessageVisibilityResultEntry]
+      r shouldBe a[SqsChangeMessageVisibilityResultEntry]
     }
     results.map(_.messageAction.message.body()) should contain theSameElementsAs messages
     verify(awsSqsClient, times(1))

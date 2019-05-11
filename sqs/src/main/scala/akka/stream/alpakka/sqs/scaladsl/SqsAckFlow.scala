@@ -48,7 +48,7 @@ object SqsAckFlow {
           sqsClient
             .deleteMessage(request)
             .toScala
-            .map(resp => Some(new DeleteResult(messageAction, resp)))(sameThreadExecutionContext)
+            .map(resp => Some(new SqsDeleteResult(messageAction, resp)))(sameThreadExecutionContext)
 
         case messageAction: MessageAction.ChangeMessageVisibility =>
           val request =
@@ -62,7 +62,7 @@ object SqsAckFlow {
           sqsClient
             .changeMessageVisibility(request)
             .toScala
-            .map(resp => Some(new ChangeMessageVisibilityResult(messageAction, resp)))(
+            .map(resp => Some(new SqsChangeMessageVisibilityResult(messageAction, resp)))(
               sameThreadExecutionContext
             )
 
@@ -105,7 +105,7 @@ object SqsAckFlow {
 
   private def groupedDelete(queueUrl: String, settings: SqsAckGroupedSettings)(
       implicit sqsClient: SqsAsyncClient
-  ): Flow[MessageAction.Delete, DeleteResultEntry, NotUsed] =
+  ): Flow[MessageAction.Delete, SqsDeleteResultEntry, NotUsed] =
     Flow[MessageAction.Delete]
       .groupedWithin(settings.maxBatchSize, settings.maxBatchWait)
       .map { actions =>
@@ -136,7 +136,7 @@ object SqsAckFlow {
                 actions.zipWithIndex.map {
                   case (a, i) =>
                     val result = resultEntries(i)
-                    new DeleteResultEntry(a, result, responseMetadata)
+                    new SqsDeleteResultEntry(a, result, responseMetadata)
                 }
               case resp =>
                 val numberOfMessages = request.entries().size()
@@ -157,7 +157,7 @@ object SqsAckFlow {
 
   private def groupedChangeMessageVisibility(queueUrl: String, settings: SqsAckGroupedSettings)(
       implicit sqsClient: SqsAsyncClient
-  ): Flow[MessageAction.ChangeMessageVisibility, ChangeMessageVisibilityResultEntry, NotUsed] =
+  ): Flow[MessageAction.ChangeMessageVisibility, SqsChangeMessageVisibilityResultEntry, NotUsed] =
     Flow[MessageAction.ChangeMessageVisibility]
       .groupedWithin(settings.maxBatchSize, settings.maxBatchWait)
       .map { actions =>
@@ -189,7 +189,7 @@ object SqsAckFlow {
                 actions.zipWithIndex.map {
                   case (a, i) =>
                     val result = resultEntries(i)
-                    new ChangeMessageVisibilityResultEntry(a, result, responseMetadata)
+                    new SqsChangeMessageVisibilityResultEntry(a, result, responseMetadata)
                 }
               case resp =>
                 val numberOfMessages = request.entries().size()

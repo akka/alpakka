@@ -60,11 +60,11 @@ class SqsModelSpec extends FlatSpec with Matchers {
     val response = SendMessageResponse.builder().build()
     val otherResponse = SendMessageResponse.builder().messageId("1").build()
 
-    val reference = new PublishResult(request, response)
+    val reference = new SqsPublishResult(request, response)
 
-    new PublishResult(request, response) shouldBe reference
-    new PublishResult(otherRequest, response) should not be reference
-    new PublishResult(request, otherResponse) should not be reference
+    new SqsPublishResult(request, response) shouldBe reference
+    new SqsPublishResult(otherRequest, response) should not be reference
+    new SqsPublishResult(request, otherResponse) should not be reference
   }
 
   "SqsPublishBatchResultEntry" should "implement proper equality" in {
@@ -74,11 +74,11 @@ class SqsModelSpec extends FlatSpec with Matchers {
     val batchResultEntry = SendMessageBatchResultEntry.builder().build()
     val otherBatchResultEntry = SendMessageBatchResultEntry.builder().md5OfMessageBody("1234").build()
 
-    val reference = new PublishResultEntry(request, batchResultEntry, responseMetadata)
+    val reference = new SqsPublishResultEntry(request, batchResultEntry, responseMetadata)
 
-    new PublishResultEntry(request, batchResultEntry, responseMetadata) shouldBe reference
-    new PublishResultEntry(otherRequest, batchResultEntry, responseMetadata) should not be reference
-    new PublishResultEntry(request, otherBatchResultEntry, responseMetadata) should not be reference
+    new SqsPublishResultEntry(request, batchResultEntry, responseMetadata) shouldBe reference
+    new SqsPublishResultEntry(otherRequest, batchResultEntry, responseMetadata) should not be reference
+    new SqsPublishResultEntry(request, otherBatchResultEntry, responseMetadata) should not be reference
   }
 
   "DeleteResult" should "implement proper equality" in {
@@ -87,10 +87,10 @@ class SqsModelSpec extends FlatSpec with Matchers {
 
     val response = DeleteMessageResponse.builder().build() // there is only one possible response
 
-    val reference = new DeleteResult(messageAction, response)
+    val reference = new SqsDeleteResult(messageAction, response)
 
-    new DeleteResult(messageAction, response) shouldBe reference
-    new DeleteResult(otherMessageAction, response) should not be reference
+    new SqsDeleteResult(messageAction, response) shouldBe reference
+    new SqsDeleteResult(otherMessageAction, response) should not be reference
   }
 
   "ChangeMessageVisibilityResult" should "implement proper equality" in {
@@ -99,10 +99,10 @@ class SqsModelSpec extends FlatSpec with Matchers {
 
     val response = ChangeMessageVisibilityResponse.builder().build() // there is only one possible response
 
-    val reference = new ChangeMessageVisibilityResult(messageAction, response)
+    val reference = new SqsChangeMessageVisibilityResult(messageAction, response)
 
-    new ChangeMessageVisibilityResult(messageAction, response) shouldBe reference
-    new ChangeMessageVisibilityResult(otherMessageAction, response) should not be reference
+    new SqsChangeMessageVisibilityResult(messageAction, response) shouldBe reference
+    new SqsChangeMessageVisibilityResult(otherMessageAction, response) should not be reference
   }
 
   "DeleteResultEntry" should "implement proper equality" in {
@@ -112,11 +112,11 @@ class SqsModelSpec extends FlatSpec with Matchers {
     val result = DeleteMessageBatchResultEntry.builder().build()
     val otherResult = DeleteMessageBatchResultEntry.builder().id("1").build()
 
-    val reference = new DeleteResultEntry(messageAction, result, responseMetadata)
+    val reference = new SqsDeleteResultEntry(messageAction, result, responseMetadata)
 
-    new DeleteResultEntry(messageAction, result, responseMetadata) shouldBe reference
-    new DeleteResultEntry(otherMessageAction, result, responseMetadata) should not be reference
-    new DeleteResultEntry(messageAction, otherResult, responseMetadata) should not be reference
+    new SqsDeleteResultEntry(messageAction, result, responseMetadata) shouldBe reference
+    new SqsDeleteResultEntry(otherMessageAction, result, responseMetadata) should not be reference
+    new SqsDeleteResultEntry(messageAction, otherResult, responseMetadata) should not be reference
   }
 
   "ChangeMessageVisibilityResultEntry" should "implement proper equality" in {
@@ -126,11 +126,11 @@ class SqsModelSpec extends FlatSpec with Matchers {
     val result = ChangeMessageVisibilityBatchResultEntry.builder().build()
     val otherResult = ChangeMessageVisibilityBatchResultEntry.builder().id("1").build()
 
-    val reference = new ChangeMessageVisibilityResultEntry(messageAction, result, responseMetadata)
+    val reference = new SqsChangeMessageVisibilityResultEntry(messageAction, result, responseMetadata)
 
-    new ChangeMessageVisibilityResultEntry(messageAction, result, responseMetadata) shouldBe reference
-    new ChangeMessageVisibilityResultEntry(messageAction, result, otherResponseMetadata) shouldBe reference // responseMetadata does not count in equality
-    new ChangeMessageVisibilityResultEntry(otherMessageAction, result, responseMetadata) should not be reference
-    new ChangeMessageVisibilityResultEntry(messageAction, otherResult, responseMetadata) should not be reference
+    new SqsChangeMessageVisibilityResultEntry(messageAction, result, responseMetadata) shouldBe reference
+    new SqsChangeMessageVisibilityResultEntry(messageAction, result, otherResponseMetadata) shouldBe reference // responseMetadata does not count in equality
+    new SqsChangeMessageVisibilityResultEntry(otherMessageAction, result, responseMetadata) should not be reference
+    new SqsChangeMessageVisibilityResultEntry(messageAction, otherResult, responseMetadata) should not be reference
   }
 }

@@ -148,7 +148,7 @@ sealed abstract class SqsResult {
 /**
  * Messages returned by a SqsPublishFlow
  */
-final class PublishResult @InternalApi private[sqs] (
+final class SqsPublishResult @InternalApi private[sqs] (
     val request: SendMessageRequest,
     response: SendMessageResponse
 ) extends SqsResult {
@@ -160,10 +160,10 @@ final class PublishResult @InternalApi private[sqs] (
   override def result: SendMessageResponse = response
 
   override def toString =
-    s"""PublishResult(request=$request,result=$result)"""
+    s"""SqsPublishResult(request=$request,result=$result)"""
 
   override def equals(other: Any): Boolean = other match {
-    case that: PublishResult =>
+    case that: SqsPublishResult =>
       java.util.Objects.equals(this.request, that.request) &&
       java.util.Objects.equals(this.result, that.result)
     case _ => false
@@ -175,7 +175,7 @@ final class PublishResult @InternalApi private[sqs] (
 /**
  * Messages returned by a SqsPublishFlow.grouped or batched
  */
-final class PublishResultEntry @InternalApi private[sqs] (
+final class SqsPublishResultEntry @InternalApi private[sqs] (
     val request: SendMessageRequest,
     override val result: SendMessageBatchResultEntry,
     override val responseMetadata: SqsResponseMetadata
@@ -184,10 +184,10 @@ final class PublishResultEntry @InternalApi private[sqs] (
   override type Result = SendMessageBatchResultEntry
 
   override def toString =
-    s"""PublishResultEntry(request=$request,result=$result)"""
+    s"""SqsPublishResultEntry(request=$request,result=$result)"""
 
   override def equals(other: Any): Boolean = other match {
-    case that: PublishResultEntry =>
+    case that: SqsPublishResultEntry =>
       java.util.Objects.equals(this.request, that.request) &&
       java.util.Objects.equals(this.result, that.result)
     case _ => false
@@ -220,7 +220,7 @@ object SqsAckResult {
    * @param messageAction the delete message action
    * @param result the sqs DeleteMessageResponse
    */
-  final class DeleteResult @InternalApi private[sqs] (
+  final class SqsDeleteResult @InternalApi private[sqs] (
       override val messageAction: MessageAction.Delete,
       override val result: DeleteMessageResponse
   ) extends SqsAckResult {
@@ -228,10 +228,10 @@ object SqsAckResult {
     override type Result = DeleteMessageResponse
 
     override def toString: String =
-      s"DeleteResult(messageAction=$messageAction,result=$result)"
+      s"SqsDeleteResult(messageAction=$messageAction,result=$result)"
 
     override def equals(other: Any): Boolean = other match {
-      case that: DeleteResult =>
+      case that: SqsDeleteResult =>
         java.util.Objects.equals(this.messageAction, that.messageAction) &&
         java.util.Objects.equals(this.result, that.result)
       case _ => false
@@ -245,7 +245,7 @@ object SqsAckResult {
    * @param messageAction the change message visibility action
    * @param result the sqs ChangeMessageVisibilityResponse
    */
-  final class ChangeMessageVisibilityResult @InternalApi private[sqs] (
+  final class SqsChangeMessageVisibilityResult @InternalApi private[sqs] (
       override val messageAction: MessageAction.ChangeMessageVisibility,
       override val result: ChangeMessageVisibilityResponse
   ) extends SqsAckResult {
@@ -253,10 +253,10 @@ object SqsAckResult {
     override type Result = ChangeMessageVisibilityResponse
 
     override def toString: String =
-      s"ChangeMessageVisibilityResult(messageAction=$messageAction,result=$result)"
+      s"SqsChangeMessageVisibilityResult(messageAction=$messageAction,result=$result)"
 
     override def equals(other: Any): Boolean = other match {
-      case that: ChangeMessageVisibilityResult =>
+      case that: SqsChangeMessageVisibilityResult =>
         java.util.Objects.equals(this.messageAction, that.messageAction) &&
         java.util.Objects.equals(this.result, that.result)
       case _ => false
@@ -287,18 +287,18 @@ object SqsAckResultEntry {
    * @param messageAction the delete message action
    * @param result the sqs DeleteMessageBatchResultEntry
    */
-  final class DeleteResultEntry(override val messageAction: MessageAction.Delete,
-                                override val result: DeleteMessageBatchResultEntry,
-                                override val responseMetadata: SqsResponseMetadata)
+  final class SqsDeleteResultEntry(override val messageAction: MessageAction.Delete,
+                                   override val result: DeleteMessageBatchResultEntry,
+                                   override val responseMetadata: SqsResponseMetadata)
       extends SqsAckResultEntry {
 
     override type Result = DeleteMessageBatchResultEntry
 
     override def toString: String =
-      s"DeleteResultEntry(messageAction=$messageAction,result=$result)"
+      s"SqsDeleteResultEntry(messageAction=$messageAction,result=$result)"
 
     override def equals(other: Any): Boolean = other match {
-      case that: DeleteResultEntry =>
+      case that: SqsDeleteResultEntry =>
         java.util.Objects.equals(this.messageAction, that.messageAction) &&
         java.util.Objects.equals(this.result, that.result)
       case _ => false
@@ -313,18 +313,18 @@ object SqsAckResultEntry {
    * @param messageAction the change message visibility action
    * @param result the sqs ChangeMessageVisibilityBatchResultEntry
    */
-  final class ChangeMessageVisibilityResultEntry(override val messageAction: MessageAction.ChangeMessageVisibility,
-                                                 override val result: ChangeMessageVisibilityBatchResultEntry,
-                                                 override val responseMetadata: SqsResponseMetadata)
+  final class SqsChangeMessageVisibilityResultEntry(override val messageAction: MessageAction.ChangeMessageVisibility,
+                                                    override val result: ChangeMessageVisibilityBatchResultEntry,
+                                                    override val responseMetadata: SqsResponseMetadata)
       extends SqsAckResultEntry {
 
     override type Result = ChangeMessageVisibilityBatchResultEntry
 
     override def toString: String =
-      s"ChangeMessageVisibilityResultEntry(messageAction=$messageAction,result=$result)"
+      s"SqsChangeMessageVisibilityResultEntry(messageAction=$messageAction,result=$result)"
 
     override def equals(other: Any): Boolean = other match {
-      case that: ChangeMessageVisibilityResultEntry =>
+      case that: SqsChangeMessageVisibilityResultEntry =>
         java.util.Objects.equals(this.messageAction, that.messageAction) &&
         java.util.Objects.equals(this.result, that.result)
       case _ => false
