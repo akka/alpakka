@@ -60,8 +60,6 @@ private[influxdb] class InfluxDBFlowStage[T, C](
 
   final class InfluxDBRecordLogic extends InfluxDBLogic {
 
-    private var mapperHelper: InfluxDBResultMapperHelper = new InfluxDBResultMapperHelper
-
     override protected def write(messages: immutable.Seq[InfluxDBWriteMessage[T, C]]): Unit =
       messages
         .filter {
@@ -81,7 +79,7 @@ private[influxdb] class InfluxDBFlowStage[T, C](
 
   final class InfluxDBMapperRecordLogic extends InfluxDBLogic {
 
-    private var mapperHelper: InfluxDBResultMapperHelper = new InfluxDBResultMapperHelper
+    private val mapperHelper: InfluxDBResultMapperHelper = new InfluxDBResultMapperHelper
 
     override protected def write(messages: immutable.Seq[InfluxDBWriteMessage[T, C]]): Unit =
       messages
