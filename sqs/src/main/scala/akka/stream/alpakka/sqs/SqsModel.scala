@@ -4,7 +4,9 @@
 
 package akka.stream.alpakka.sqs
 
+import akka.NotUsed
 import akka.annotation.InternalApi
+import software.amazon.awssdk.awscore.DefaultAwsResponseMetadata
 import software.amazon.awssdk.services.sqs.model._
 
 import scala.concurrent.duration.FiniteDuration
@@ -145,6 +147,12 @@ sealed abstract class SqsResult {
   def getResult: Result = result
 }
 
+object SqsResult {
+  private[sqs] val EmptyResponseMetadata: SqsResponseMetadata = SqsResponseMetadata.create(
+    DefaultAwsResponseMetadata.create(java.util.Collections.emptyMap())
+  )
+}
+
 /**
  * Messages returned by a SqsPublishFlow
  */
@@ -202,11 +210,7 @@ final class SqsPublishResultEntry @InternalApi private[sqs] (
  */
 sealed abstract class SqsAckResult extends SqsResult {
 
-  type Result <: SqsResponse
-
   def messageAction: MessageAction
-
-  override def responseMetadata: SqsResponseMetadata = result.responseMetadata
 
   /** Java API */
   def getMessageAction: MessageAction = messageAction
@@ -227,6 +231,8 @@ object SqsAckResult {
 
     override type Result = DeleteMessageResponse
 
+    override def responseMetadata: SqsResponseMetadata = result.responseMetadata
+
     override def toString: String =
       s"SqsDeleteResult(messageAction=$messageAction,result=$result)"
 
@@ -241,6 +247,34 @@ object SqsAckResult {
   }
 
   /**
+   * Ignore acknowledgment
+   * No requests are executed on the SQS service for ignore messageAction.
+   * Its result is [[akka.NotUsed]] and the responseMetadata is always empty
+   * @param messageAction the ignore message action
+   */
+  final class SqsIgnoreResult @InternalApi private[sqs] (
+      override val messageAction: MessageAction.Ignore
+  ) extends SqsAckResult {
+
+    override type Result = NotUsed.type
+
+    override def responseMetadata: SqsResponseMetadata = SqsResult.EmptyResponseMetadata
+
+    override def result: Result = NotUsed
+
+    override def toString: String =
+      s"SqsIgnoreResult(messageAction=$messageAction)"
+
+    override def equals(other: Any): Boolean = other match {
+      case that: SqsIgnoreResult =>
+        java.util.Objects.equals(this.messageAction, that.messageAction)
+      case _ => false
+    }
+
+    override def hashCode(): Int = java.util.Objects.hash(messageAction)
+  }
+
+  /**
    * ChangeMessageVisibility acknowledgement
    * @param messageAction the change message visibility action
    * @param result the sqs ChangeMessageVisibilityResponse
@@ -251,6 +285,8 @@ object SqsAckResult {
   ) extends SqsAckResult {
 
     override type Result = ChangeMessageVisibilityResponse
+
+    override def responseMetadata: SqsResponseMetadata = result.responseMetadata
 
     override def toString: String =
       s"SqsChangeMessageVisibilityResult(messageAction=$messageAction,result=$result)"
@@ -306,6 +342,34 @@ object SqsAckResultEntry {
 
     override def hashCode(): Int = java.util.Objects.hash(messageAction, result)
 
+  }
+
+  /**
+   * Ignore acknowledgment within a batch
+   * No requests are executed on the SQS service for ignore messageAction.
+   * Its result is [[akka.NotUsed]] and the responseMetadata is always empty
+   * @param messageAction the ignore message action
+   */
+  final class SqsIgnoreResultEntry @InternalApi private[sqs] (
+      override val messageAction: MessageAction.Ignore
+  ) extends SqsAckResultEntry {
+
+    override type Result = NotUsed.type
+
+    override def responseMetadata: SqsResponseMetadata = SqsResult.EmptyResponseMetadata
+
+    override def result: Result = NotUsed
+
+    override def toString: String =
+      s"SqsIgnoreResultEntry(messageAction=$messageAction)"
+
+    override def equals(other: Any): Boolean = other match {
+      case that: SqsIgnoreResultEntry =>
+        java.util.Objects.equals(this.messageAction, that.messageAction)
+      case _ => false
+    }
+
+    override def hashCode(): Int = java.util.Objects.hash(messageAction)
   }
 
   /**

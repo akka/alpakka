@@ -165,17 +165,18 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
   }
 
   it should "pull and ignore a message" taggedAs Integration in new IntegrationFixture {
-    sendMessage("alpakka-4")
+    sendMessage("alpakka-flow-ack")
 
     val future =
       SqsSource(queueUrl, sqsSourceSettings)
         .take(1)
         .map(MessageAction.Ignore(_))
         .via(SqsAckFlow(queueUrl))
-        .runWith(Sink.headOption)
+        .runWith(Sink.head)
 
     val result = future.futureValue
-    result shouldBe empty
+    result shouldBe a[SqsIgnoreResult]
+    result.messageAction.message.body() shouldBe "alpakka-flow-ack"
   }
 
   it should "delete batch of messages" taggedAs Integration in new IntegrationFixture {
@@ -300,7 +301,7 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
     val results = future.futureValue
     results.count(_.messageAction.isInstanceOf[MessageAction.Delete]) shouldBe 4
     results.count(_.messageAction.isInstanceOf[MessageAction.ChangeMessageVisibility]) shouldBe 3
-    results.count(_.messageAction.isInstanceOf[MessageAction.Ignore]) shouldBe 0
+    results.count(_.messageAction.isInstanceOf[MessageAction.Ignore]) shouldBe 3
 
     verify(awsSqsClient, times(1)).deleteMessageBatch(any[DeleteMessageBatchRequest])
     verify(awsSqsClient, times(1)).changeMessageVisibilityBatch(any[ChangeMessageVisibilityBatchRequest])
@@ -345,7 +346,9 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
     //#batch-ignore
 
     val results = future.futureValue
-    results shouldBe empty
+    results.foreach { r =>
+      r shouldBe a[SqsIgnoreResultEntry]
+    }
   }
 
 }

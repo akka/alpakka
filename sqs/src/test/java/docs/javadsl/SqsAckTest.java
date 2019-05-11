@@ -166,7 +166,15 @@ public class SqsAckTest extends BaseSqsTest {
     // #ignore
 
     List<SqsAckResult> results = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
-    assertEquals(0, results.size());
+    assertEquals(10, results.size());
+    for (int i = 0; i < 10; i++) {
+      SqsAckResult r = results.get(i);
+      Message m = messages.get(i);
+
+      MessageAction messageAction = MessageAction.ignore(m);
+      assertEquals(messageAction, r.messageAction());
+      assertEquals(NotUsed.getInstance(), r.result());
+    }
   }
 
   @Test
@@ -272,6 +280,14 @@ public class SqsAckTest extends BaseSqsTest {
     // #batch-ignore
 
     List<SqsAckResultEntry> results = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
-    assertEquals(0, results.size());
+    for (int i = 0; i < 10; i++) {
+      SqsAckResultEntry r = results.get(i);
+      Message m = messages.get(i);
+
+      MessageAction messageAction = MessageAction.ignore(m);
+
+      assertEquals(messageAction, r.messageAction());
+      assertEquals(NotUsed.getInstance(), r.result());
+    }
   }
 }

@@ -48,7 +48,7 @@ object SqsAckFlow {
           sqsClient
             .deleteMessage(request)
             .toScala
-            .map(resp => Some(new SqsDeleteResult(messageAction, resp)))(sameThreadExecutionContext)
+            .map(resp => new SqsDeleteResult(messageAction, resp))(sameThreadExecutionContext)
 
         case messageAction: MessageAction.ChangeMessageVisibility =>
           val request =
@@ -62,15 +62,10 @@ object SqsAckFlow {
           sqsClient
             .changeMessageVisibility(request)
             .toScala
-            .map(resp => Some(new SqsChangeMessageVisibilityResult(messageAction, resp)))(
-              sameThreadExecutionContext
-            )
+            .map(resp => new SqsChangeMessageVisibilityResult(messageAction, resp))(sameThreadExecutionContext)
 
-        case _: MessageAction.Ignore =>
-          Future.successful(None)
-      }
-      .collect {
-        case Some(ack) => ack
+        case messageAction: MessageAction.Ignore =>
+          Future.successful(new SqsIgnoreResult(messageAction))
       }
 
   /**
@@ -97,7 +92,7 @@ object SqsAckFlow {
 
         p.out(0) ~> mapDelete ~> groupedDelete(queueUrl, settings) ~> merge
         p.out(1) ~> mapChangeMessageVisibility ~> groupedChangeMessageVisibility(queueUrl, settings) ~> merge
-        p.out(2) ~> mapChangeIgnore ~> Flow[Ignore].collect[SqsAckResultEntry](PartialFunction.empty) ~> merge
+        p.out(2) ~> mapChangeIgnore ~> Flow[Ignore].map(new SqsIgnoreResultEntry(_)) ~> merge
 
         FlowShape(p.in, merge.out)
       }
