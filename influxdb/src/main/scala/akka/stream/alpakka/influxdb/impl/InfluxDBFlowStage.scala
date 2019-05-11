@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.influxdb.impl
 
-import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
+import akka.stream._
 import akka.stream.alpakka.influxdb.{InfluxDBWriteMessage, InfluxDBWriteResult}
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import org.influxdb.InfluxDB
@@ -25,6 +25,9 @@ private[influxdb] class InfluxDBFlowStage[T, C](
   private val out = Outlet[immutable.Seq[InfluxDBWriteResult[T, C]]]("out")
 
   override val shape = FlowShape(in, out)
+
+  override protected def initialAttributes: Attributes =
+    super.initialAttributes and Attributes(ActorAttributes.IODispatcher)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     clazz match {
