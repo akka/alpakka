@@ -178,7 +178,7 @@ Failure to deserialize a kafka message is a particular case of conditional messa
 It is also likely that we would have no message to produce to SolR when we encounter messages that fail to deserialize.
 The solr flow will not let us pass through the corresponding committable offset without doing a request to solr.
 
-Use `SolrFlow.passThrough` to exclude this message without doing any change on solr.
+Use `WriteMessage.createPassThrough` to exclude this message without doing any change on solr inside a flow.
 
 Scala
 : @@snip [snip](/solr/src/test/scala/docs/scaladsl/SolrSpec.scala) { #kafka-example-PT }
