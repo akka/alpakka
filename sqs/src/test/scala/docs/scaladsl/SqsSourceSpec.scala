@@ -10,9 +10,11 @@ import akka.Done
 import akka.stream.alpakka.sqs._
 import akka.stream.alpakka.sqs.scaladsl.{DefaultTestContext, SqsSource}
 import akka.stream.scaladsl.Sink
+import com.github.matsluni.akkahttpspi.AkkaHttpClient
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FlatSpec, Matchers}
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
+import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{
@@ -171,12 +173,20 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
   }
 
   "SqsSource" should "stream a single batch from the queue with custom client" taggedAs Integration in new IntegrationFixture {
+    /*
+    // #init-custom-client
+    val customClient: SdkAsyncHttpClient = NettyNioAsyncHttpClient.builder().maxConcurrency(100).build()
+    // #init-custom-client
+     */
+    val customClient: SdkAsyncHttpClient = AkkaHttpClient.builder().withActorSystem(system).build()
+
     //#init-custom-client
     implicit val customSqsClient = SqsAsyncClient
       .builder()
       .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
       .endpointOverride(URI.create(sqsEndpoint))
       .region(Region.EU_CENTRAL_1)
+      .httpClient(customClient)
       .build()
 
     //#init-custom-client

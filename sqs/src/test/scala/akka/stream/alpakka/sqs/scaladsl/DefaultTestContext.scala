@@ -11,11 +11,13 @@ import akka.stream.alpakka.sqs.SqsSourceSettings
 import akka.stream.{ActorMaterializer, Materializer}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Matchers, Suite, Tag}
+//#init-client
+import com.github.matsluni.akkahttpspi.AkkaHttpClient
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.CreateQueueRequest
-
+//#init-client
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.util.Random
@@ -65,11 +67,13 @@ trait DefaultTestContext extends Matchers with BeforeAndAfterAll with ScalaFutur
 
   def createAsyncClient(sqsEndpoint: String): SqsAsyncClient = {
     //#init-client
+
     implicit val awsSqsClient = SqsAsyncClient
       .builder()
       .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
       .endpointOverride(URI.create(sqsEndpoint))
       .region(Region.EU_CENTRAL_1)
+      .httpClient(AkkaHttpClient.builder().withActorSystem(system).build())
       .build()
 
     system.registerOnTermination(awsSqsClient.close())

@@ -55,6 +55,23 @@ Scala
 Java
 : @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/BaseSqsTest.java) { #init-client }
 
+### Underlying HTTP client
+
+Alpakka SQS and SNS are set up to use @extref:[Akka HTTP](akka-http-docs:) as default HTTP client via the thin adapter library [AWS Akka-Http SPI implementation](https://github.com/matsluni/aws-spi-akka-http). By setting the `httpClient` explicitly (as above) the Akka actor system is reused, if not set explicitly a separate actor system will be created internally.
+
+It is possible to configure the use of Netty instead, which is Amazon's default. Please add an appropriate Netty version to the dependencies. `AmazonSQSAsyncClient` uses a fixed thread pool with 50 threads by default. To tune the thread pool used by
+`AmazonSQSAsyncClient` you can supply a custom `ExecutorService` on client creation.
+
+Scala
+: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsSourceSpec.scala) { #init-custom-client }
+
+Java
+: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsSourceTest.java) { #init-custom-client }
+
+Please make sure to configure a big enough thread pool for the Netty client to avoid resource starvation. This is especially important,
+if you share the client between multiple Sources, Sinks and Flows. For the SQS Sinks and Sources the sum of all
+`parallelism` (Source) and `maxInFlight` (Sink) must be less than or equal to the thread pool size.
+
 
 ## Read from an SQS queue
 
@@ -101,20 +118,7 @@ switching to long-polling (by setting `waitTimeSeconds` to a nonzero value).
 
 Be aware that the `SqsSource` runs multiple requests to Amazon SQS in parallel. The maximum number of concurrent
 requests is limited by `parallelism = maxBufferSize / maxBatchSize`. E.g.: By default `maxBatchSize` is set to 10 and
-`maxBufferSize` is set to 100 so at the maximum, `SqsSource` will run 10 concurrent requests to Amazon SQS. `AmazonSQSAsyncClient`
-uses a fixed thread pool with 50 threads by default. To tune the thread pool used by
-`AmazonSQSAsyncClient` you can supply a custom `ExecutorService` on client creation.
-
-Scala
-: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsSourceSpec.scala) { #init-custom-client }
-
-Java
-: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsSourceTest.java) { #init-custom-client }
-
-Please make sure to configure a big enough thread pool to avoid resource starvation. This is especially important,
-if you share the client between multiple Sources, Sinks and Flows. For the SQS Sinks and Sources the sum of all
-`parallelism` (Source) and `maxInFlight` (Sink) must be less than or equal to the thread pool size.
-
+`maxBufferSize` is set to 100 so at the maximum, `SqsSource` will run 10 concurrent requests to Amazon SQS. 
 
 ## Publish messages to an SQS queue
 
