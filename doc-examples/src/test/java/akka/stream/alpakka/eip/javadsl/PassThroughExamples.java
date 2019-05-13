@@ -101,7 +101,7 @@ public class PassThroughExamples {
 // #PassThrough
 class PassThroughFlow {
 
-  public static <A, T> Graph<FlowShape<A, akka.japi.Pair<T, A>>, NotUsed> create(
+  public static <A, T> Graph<FlowShape<A, Pair<T, A>>, NotUsed> create(
       Flow<A, T, NotUsed> flow) {
     return create(flow, Keep.both());
   }

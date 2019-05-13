@@ -65,10 +65,16 @@ a=>(a, a)=>unzip -                     zip=>(a1, a)=> a
 Scala
 : @@snip [snip](/doc-examples/src/test/scala/akka/stream/alpakka/eip/scaladsl/PassThroughExamples.scala) { #PassThrough }
 
+Java
+: @@snip [snip](/doc-examples/src/test/java/akka/stream/alpakka/eip/javadsl/PassThroughExamples.java) { #PassThrough }
+
 A sample usage:
  
 Scala
 : @@snip [snip](/doc-examples/src/test/scala/akka/stream/alpakka/eip/scaladsl/PassThroughExamples.scala) { #PassThroughTuple }
+
+Java
+: @@snip [snip](/doc-examples/src/test/java/akka/stream/alpakka/eip/javadsl/PassThroughExamples.java) { #PassThroughTuple }
 
 Using `Keep` you can choose what it the return value:
 
@@ -81,7 +87,13 @@ You can also write your own output function to combine in different ways the two
 Scala
 : @@snip [snip](/doc-examples/src/test/scala/akka/stream/alpakka/eip/scaladsl/PassThroughExamples.scala) { #PassThroughWithKeep }
 
+Java
+: @@snip [snip](/doc-examples/src/test/java/akka/stream/alpakka/eip/javadsl/PassThroughExamples.java) { #PassThroughWithKeep }
+
 This pattern is useful when integrating Alpakka connectors together. Here an example with Kafka:
 
 Scala
 : @@snip [snip](/doc-examples/src/test/scala/akka/stream/alpakka/eip/scaladsl/PassThroughExamples.scala) { #passThroughKafkaFlow }
+
+Java
+: @@snip [snip](/doc-examples/src/test/java/akka/stream/alpakka/eip/javadsl/PassThroughExamples.java) { #passThroughKafkaFlow }
