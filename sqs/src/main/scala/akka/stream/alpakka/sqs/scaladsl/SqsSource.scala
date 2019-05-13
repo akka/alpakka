@@ -42,7 +42,7 @@ object SqsSource {
           case Some(t) => requestBuilder.visibilityTimeout(t.toSeconds.toInt).build()
         }
       }
-      .mapAsync(settings.maxBufferSize / settings.maxBatchSize)(sqsClient.receiveMessage(_).toScala)
+      .mapAsync(settings.parallelRequests)(sqsClient.receiveMessage(_).toScala)
       .map(_.messages().asScala.toList)
       .takeWhile(messages => !settings.closeOnEmptyReceive || messages.nonEmpty)
       .mapConcat(identity)

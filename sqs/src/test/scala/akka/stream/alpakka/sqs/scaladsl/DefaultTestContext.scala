@@ -5,6 +5,7 @@
 package akka.stream.alpakka.sqs.scaladsl
 
 import java.net.URI
+import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorSystem, Terminated}
 import akka.stream.alpakka.sqs.SqsSourceSettings
@@ -44,7 +45,7 @@ trait DefaultTestContext extends Matchers with BeforeAndAfterAll with ScalaFutur
   def randomQueueUrl(): String =
     sqsClient
       .createQueue(CreateQueueRequest.builder().queueName(s"queue-${Random.nextInt}").build())
-      .get()
+      .get(2, TimeUnit.SECONDS)
       .queueUrl()
 
   val fifoQueueRequest =
@@ -54,7 +55,7 @@ trait DefaultTestContext extends Matchers with BeforeAndAfterAll with ScalaFutur
       .attributesWithStrings(Map("FifoQueue" -> "true", "ContentBasedDeduplication" -> "true").asJava)
       .build()
 
-  def randomFifoQueueUrl(): String = sqsClient.createQueue(fifoQueueRequest).get().queueUrl()
+  def randomFifoQueueUrl(): String = sqsClient.createQueue(fifoQueueRequest).get(2, TimeUnit.SECONDS).queueUrl()
 
   override protected def afterAll(): Unit =
     try {
