@@ -149,9 +149,6 @@ private final class SolrFlowLogic[T, C](
     responses.find(_.getStatus != 0).getOrElse(responses.head)
   }
 
-  private def passThrough(current: immutable.Seq[WriteMessage[T, C]]): Unit =
-    if (log.isDebugEnabled) log.debug(s"passThrough writes $current")
-
   private def sendBulkToSolr(messages: immutable.Seq[WriteMessage[T, C]]): Unit = {
 
     @tailrec
@@ -167,7 +164,7 @@ private final class SolrFlowLogic[T, C](
         case AtomicUpdate => Option(atomicUpdateBulkToSolr(current))
         case DeleteByIds => Option(deleteBulkToSolrByIds(current))
         case DeleteByQuery => Option(deleteEachByQuery(current))
-        case PassThrough => passThrough(current); None
+        case PassThrough => None
       }
       if (remaining.nonEmpty) {
         send(remaining)
