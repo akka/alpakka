@@ -23,6 +23,7 @@ import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
 
 import java.net.URI;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 public abstract class BaseSqsTest {
 
@@ -75,7 +76,7 @@ public abstract class BaseSqsTest {
             CreateQueueRequest.builder()
                 .queueName(String.format("queue-%s", new Random().nextInt()))
                 .build())
-        .get()
+        .get(2, TimeUnit.SECONDS)
         .queueUrl();
   }
 }

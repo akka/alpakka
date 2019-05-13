@@ -5,7 +5,7 @@
 package akka.stream.alpakka.sqs.scaladsl
 
 import java.util.UUID
-import java.util.concurrent.CompletableFuture
+import java.util.concurrent.{CompletableFuture, TimeUnit}
 import java.util.function.Supplier
 
 import akka.Done
@@ -78,7 +78,8 @@ class SqsPublishSinkSpec extends FlatSpec with Matchers with DefaultTestContext 
 
     future.futureValue shouldBe Done
 
-    val result = sqsClient.receiveMessage(ReceiveMessageRequest.builder().queueUrl(queue2).build()).get()
+    val result =
+      sqsClient.receiveMessage(ReceiveMessageRequest.builder().queueUrl(queue2).build()).get(2, TimeUnit.SECONDS)
     result.messages().size() shouldBe 1
     result.messages().get(0).body() shouldBe "alpakka"
   }

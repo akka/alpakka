@@ -54,10 +54,10 @@ public class SqsSourceTest extends BaseSqsTest {
                                 .messageBody("alpakka-" + i)
                                 .build()))
                 .collect(Collectors.toList()))
-        .get();
+        .get(2, TimeUnit.SECONDS);
 
-    final CompletionStage<List<Message>> cs =
-        // #run
+    // #run
+    final CompletionStage<List<Message>> messages =
         SqsSource.create(
                 queueUrl,
                 SqsSourceSettings.create()
@@ -67,7 +67,7 @@ public class SqsSourceTest extends BaseSqsTest {
             .runWith(Sink.seq(), materializer);
     // #run
 
-    assertEquals(100, cs.toCompletableFuture().get(20, TimeUnit.SECONDS).size());
+    assertEquals(100, messages.toCompletableFuture().get(20, TimeUnit.SECONDS).size());
   }
 
   @Test
@@ -106,7 +106,7 @@ public class SqsSourceTest extends BaseSqsTest {
 
     customSqsClient
         .sendMessage(SendMessageRequest.builder().queueUrl(queueUrl).messageBody("alpakka").build())
-        .get();
+        .get(2, TimeUnit.SECONDS);
 
     final CompletionStage<String> cs =
         SqsSource.create(

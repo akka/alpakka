@@ -80,7 +80,7 @@ Java
 
 Options:
 
- - `maxBatchSize` - the maximum number of messages to return (see `MaxNumberOfMessages` in AWS docs). Default: 10
+ - `maxBatchSize` - the maximum number of messages to return per request (allowed values 1-10, see `MaxNumberOfMessages` in AWS docs). Default: 10
  - `maxBufferSize` - internal buffer size used by the `Source`. Default: 100 messages
  - `waitTimeSeconds` - the duration for which the call waits for a message to arrive in the queue before
     returning (see `WaitTimeSeconds` in AWS docs). Default: 20 seconds  
