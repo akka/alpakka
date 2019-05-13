@@ -116,10 +116,9 @@ private[streaming] object HighLevelMqttSource {
       subscribe: MqttSubscribe,
       acknowledgeAndOut: SourceQueueWithComplete[Command[Nothing]] => PartialFunction[Event[Nothing], Out]
   )(implicit system: ActorSystem, materializer: Materializer) = {
-    val subscribePacket = subscribe.controlPacket
     val initCommands = immutable.Seq(
       Command(connect.controlPacket),
-      Command(subscribePacket)
+      Command(subscribe.controlPacket)
     )
 
     val mqttFlow: Flow[Command[Nothing], Either[MqttCodec.DecodeError, Event[Nothing]], NotUsed] = {
@@ -145,8 +144,8 @@ private[streaming] object HighLevelMqttSource {
           case Left(decodeError) =>
             throw new RuntimeException(decodeError.toString)
           case Right(event @ Event(s: SubAck, _)) =>
-            val subscriptionAnswer = subscribePacket.topicFilters.map(_._1).zip(s.returnCodes)
-            subscribed.trySuccess(subscriptionAnswer)
+            val subscriptionAnswer = subscribe.controlPacket.topicFilters.map(_._1).zip(s.returnCodes)
+            subscribed.trySuccess(subscriptionAnswer.toIndexedSeq)
             event
           // TODO https://github.com/akka/alpakka/pull/1565#discussion_r267089165
           case Right(event) =>
