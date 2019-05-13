@@ -4,6 +4,8 @@
 
 package docs.scaladsl
 
+import java.util.concurrent.TimeUnit
+
 import akka.Done
 import akka.stream.alpakka.sqs._
 import akka.stream.alpakka.sqs.scaladsl._
@@ -23,7 +25,7 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
     def receiveMessage(): Message =
       awsSqsClient
         .receiveMessage(ReceiveMessageRequest.builder().queueUrl(queueUrl).build())
-        .get()
+        .get(2, TimeUnit.SECONDS)
         .messages()
         .asScala
         .head
@@ -39,7 +41,7 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
           .maxNumberOfMessages(maxNumberOfMessages)
           .build()
 
-      awsSqsClient.receiveMessage(request).get().messages().asScala.toSeq
+      awsSqsClient.receiveMessage(request).get(2, TimeUnit.SECONDS).messages().asScala.toSeq
     }
   }
 
