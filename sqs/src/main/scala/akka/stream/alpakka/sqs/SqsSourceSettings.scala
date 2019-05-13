@@ -17,7 +17,7 @@ final class SqsSourceSettings private (
     val attributeNames: immutable.Seq[AttributeName],
     val messageAttributeNames: immutable.Seq[MessageAttributeName],
     val closeOnEmptyReceive: Boolean,
-    val visibilityTimeout: Option[FiniteDuration],
+    val visibilityTimeout: Option[FiniteDuration]
 ) {
   require(maxBatchSize <= maxBufferSize, "maxBatchSize must be lower or equal than maxBufferSize")
   // SQS requirements
