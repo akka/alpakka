@@ -44,6 +44,9 @@ object WriteMessage {
       case (k, v: java.util.Map[String, Object]) =>
         (k, v.asScala.toMap)
     }.toMap
+
+  def createPassThrough[C](passThrough: C): WriteMessage[NotUsed, C] =
+    new WriteMessage(PassThrough).withPassThrough(passThrough)
 }
 
 // Left for backwards compatibility, might become deprecated after 1.0
@@ -160,6 +163,9 @@ object IncomingAtomicUpdateMessage {
                    passThrough: C): WriteMessage[T, C] =
     apply(idField, idValue, Option(routingFieldValue), WriteMessage.asScalaUpdates(updates))
       .withPassThrough(passThrough)
+
+  def create[T, C](passThrough: C): WriteMessage[NotUsed, C] =
+    WriteMessage.createPassThrough(passThrough)
 }
 
 final class WriteMessage[T, C] private (
@@ -240,3 +246,4 @@ object Upsert extends Operation
 object DeleteByIds extends Operation
 object DeleteByQuery extends Operation
 object AtomicUpdate extends Operation
+object PassThrough extends Operation
