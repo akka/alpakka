@@ -63,11 +63,11 @@ private[influxdb] class InfluxDBFlowStage[T, C](
     override protected def write(messages: immutable.Seq[InfluxDBWriteMessage[T, C]]): Unit =
       messages
         .filter {
-          case InfluxDBWriteMessage(point: Point, _, _, _) => {
+          case InfluxDBWriteMessage( _: Point, _, _, _) => {
             true
           }
-          case InfluxDBWriteMessage(others: AnyRef, _, _, _) => {
-            failStage(new RuntimeException(s"unexpected type Point or annotated with Measurement required"))
+          case InfluxDBWriteMessage( _: AnyRef, _, _, _) => {
+            failStage(new RuntimeException(s"unexpected type Point required"))
             false
           }
         }
@@ -83,25 +83,26 @@ private[influxdb] class InfluxDBFlowStage[T, C](
 
     override protected def write(messages: immutable.Seq[InfluxDBWriteMessage[T, C]]): Unit =
       messages
-        .groupBy(im => {
-          (
-            im.databaseName match {
-              case Some(databaseName) => Some(databaseName)
-              case None => Some(mapperHelper.databaseName(im.point))
-            },
-            im.retentionPolicy match {
-              case Some(databaseName) => Some(databaseName)
-              case None => Some(mapperHelper.retentionPolicy(im.point))
-            }
-          )
-        })
-        .map(
-          wm =>
-            toBatchPoints(wm._1._1,
-                          wm._1._2,
-                          wm._2.map(im => im.withPoint(mapperHelper.convertModelToPoint(im.point).asInstanceOf[T])))
-        )
+        .groupBy(groupByDbRp)
+        .map(convertToBatchPoints)
         .foreach(influxDB.write)
+
+    def groupByDbRp(im: InfluxDBWriteMessage[T, C]) =
+      (
+        im.databaseName match {
+          case Some(databaseName) => Some(databaseName)
+          case None => Some(mapperHelper.databaseName(im.point))
+        },
+        im.retentionPolicy match {
+          case Some(databaseName) => Some(databaseName)
+          case None => Some(mapperHelper.retentionPolicy(im.point))
+        }
+      )
+
+    def convertToBatchPoints(wm: ((Some[String], Some[String]), immutable.Seq[InfluxDBWriteMessage[T, C]])) =
+      toBatchPoints(wm._1._1,
+                    wm._1._2,
+                    wm._2.map(im => im.withPoint(mapperHelper.convertModelToPoint(im.point).asInstanceOf[T])))
   }
 
   private def toBatchPoints(databaseName: Option[String],
