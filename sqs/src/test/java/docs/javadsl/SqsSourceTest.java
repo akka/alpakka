@@ -91,6 +91,7 @@ public class SqsSourceTest extends BaseSqsTest {
 
     /*
     // #init-custom-client
+    import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
     SdkAsyncHttpClient customClient = NettyNioAsyncHttpClient.builder().maxConcurrency(100).build();
     // #init-custom-client
     */

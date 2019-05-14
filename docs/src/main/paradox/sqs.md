@@ -36,7 +36,7 @@ See [Alpakka SQS issues](https://github.com/akka/alpakka/labels/p%3Aaws-sqs)
 
 ## Setup
 
-Prepare an @scaladoc[ActorSystem](akka.actor.ActorSystem) and a @scaladoc[Materializer](akka.stream.Materializer).
+Prepare an @scaladoc[`ActorSystem`](akka.actor.ActorSystem) and a @scaladoc[`Materializer`](akka.stream.Materializer).
 
 Scala
 : @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/DefaultTestContext.scala) { #init-mat }
@@ -45,9 +45,9 @@ Java
 : @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/BaseSqsTest.java) { #init-mat }
 
 
-This connector requires an implicit `AmazonSQSAsync` instance to communicate with AWS SQS. 
+This connector requires an implicit @javadoc[`SqsAsyncClient`](software.amazon.awssdk.services.sqs.SqsAsyncClient) instance to communicate with AWS SQS.
 
-It is your code's responsibility to call `shutdown` to free any resources held by the client. In this example it will be called when the actor system is terminated.
+It is your code's responsibility to call `close` to free any resources held by the client. In this example it will be called when the actor system is terminated.
 
 Scala
 : @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/DefaultTestContext.scala) { #init-client }
@@ -59,8 +59,7 @@ Java
 
 Alpakka SQS and SNS are set up to use @extref:[Akka HTTP](akka-http-docs:) as default HTTP client via the thin adapter library [AWS Akka-Http SPI implementation](https://github.com/matsluni/aws-spi-akka-http). By setting the `httpClient` explicitly (as above) the Akka actor system is reused, if not set explicitly a separate actor system will be created internally.
 
-It is possible to configure the use of Netty instead, which is Amazon's default. Please add an appropriate Netty version to the dependencies. `AmazonSQSAsyncClient` uses a fixed thread pool with 50 threads by default. To tune the thread pool used by
-`AmazonSQSAsyncClient` you can supply a custom `ExecutorService` on client creation.
+It is possible to configure the use of Netty instead, which is Amazon's default. Add an appropriate Netty version to the dependencies and configure @javadoc[`NettyNioAsyncHttpClient`](software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient).
 
 Scala
 : @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsSourceSpec.scala) { #init-custom-client }

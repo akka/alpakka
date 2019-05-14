@@ -175,6 +175,7 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
   "SqsSource" should "stream a single batch from the queue with custom client" taggedAs Integration in new IntegrationFixture {
     /*
     // #init-custom-client
+    import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient
     val customClient: SdkAsyncHttpClient = NettyNioAsyncHttpClient.builder().maxConcurrency(100).build()
     // #init-custom-client
      */
