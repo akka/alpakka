@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package docs.scaladsl
 
 import java.util.concurrent.TimeUnit
@@ -15,8 +19,7 @@ import docs.javadsl.TestUtils._
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import org.influxdb.dto.Point
 
-private final case class InvalidModel(description: String) {
-}
+private final case class InvalidModel(description: String) {}
 
 class FlowSpec extends WordSpec with MustMatchers with BeforeAndAfterEach with BeforeAndAfterAll with ScalaFutures {
 
@@ -35,37 +38,37 @@ class FlowSpec extends WordSpec with MustMatchers with BeforeAndAfterEach with B
     TestKit.shutdownActorSystem(system)
   }
 
-
   "invalid model" in assertAllStagesStopped {
-    val result = Source(List(
-      InfluxDBWriteMessage(InvalidModel("Invalid measurement one")),
-      InfluxDBWriteMessage(InvalidModel("Invalid measurement two")))
-    )
-      .via(InfluxDBFlow.create[InvalidModel](InfluxDBSettings()))
+    val result = Source(
+      List(InfluxDBWriteMessage(InvalidModel("Invalid measurement one")),
+           InfluxDBWriteMessage(InvalidModel("Invalid measurement two")))
+    ).via(InfluxDBFlow.create[InvalidModel](InfluxDBSettings()))
       .recover {
-        case _: RuntimeException => InfluxDBWriteResult( null, Some("error occurred"))
+        case _: RuntimeException => InfluxDBWriteResult(null, Some("error occurred"))
       }
       .runWith(Sink.seq)
       .futureValue
 
-    result mustBe Seq(InfluxDBWriteResult( null, Some("error occurred")))
+    result mustBe Seq(InfluxDBWriteResult(null, Some("error occurred")))
   }
 
   "mixed model" in assertAllStagesStopped {
 
-    val point = Point.measurement("disk")
+    val point = Point
+      .measurement("disk")
       .time(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
       .addField("used", 80L)
       .addField("free", 1L)
       .build()
 
-
     val validMessage = InfluxDBWriteMessage(point)
       .withDatabaseName(DatabaseName)
 
-    val result = Source(List(
-      validMessage
-    )).via(InfluxDBFlow.create[Point](InfluxDBSettings()))
+    val result = Source(
+      List(
+        validMessage
+      )
+    ).via(InfluxDBFlow.create[Point](InfluxDBSettings()))
       .runWith(Sink.seq)
       .futureValue
 

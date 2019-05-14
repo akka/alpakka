@@ -63,10 +63,10 @@ private[influxdb] class InfluxDBFlowStage[T, C](
     override protected def write(messages: immutable.Seq[InfluxDBWriteMessage[T, C]]): Unit =
       messages
         .filter {
-          case InfluxDBWriteMessage( _: Point, _, _, _) => {
+          case InfluxDBWriteMessage(_: Point, _, _, _) => {
             true
           }
-          case InfluxDBWriteMessage( _: AnyRef, _, _, _) => {
+          case InfluxDBWriteMessage(_: AnyRef, _, _, _) => {
             failStage(new RuntimeException(s"unexpected type Point required"))
             false
           }
