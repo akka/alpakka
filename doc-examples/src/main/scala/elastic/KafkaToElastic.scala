@@ -39,7 +39,9 @@ object KafkaToElastic extends App {
   val elasticsearchAddress = elasticsearchContainer.getHttpHostAddress
 
   // Testcontainers: start Kafka in Docker
-  val kafka = new KafkaContainer()
+  // [[https://hub.docker.com/r/confluentinc/cp-kafka/tags Available Docker images]]
+  // [[https://docs.confluent.io/current/installation/versions-interoperability.html Kafka versions in Confluent Platform]]
+  val kafka = new KafkaContainer("5.1.2") // contains Kafka 2.1.x
   kafka.start()
   val kafkaBootstrapServers = kafka.getBootstrapServers
 
@@ -96,7 +98,7 @@ object KafkaToElastic extends App {
 
     val control: Consumer.DrainingControl[Done] = Consumer
       .committableSource(kafkaConsumerSettings, Subscriptions.topics(topic)) // (5)
-      .startContextPropagation(_.committableOffset) // (6)
+      .asSourceWithContext(_.committableOffset) // (6)
       .map(_.record)
       .map { consumerRecord => // (7)
         val movie = consumerRecord.value().parseJson.convertTo[Movie]
@@ -109,7 +111,7 @@ object KafkaToElastic extends App {
         }
         NotUsed
       }
-      .endContextPropagation // (10)
+      .asSource // (10)
       .map {
         case (_, committableOffset) =>
           committableOffset

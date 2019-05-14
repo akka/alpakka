@@ -37,6 +37,9 @@
     <logger name="org.apache.kafka.clients.NetworkClient" level="ERROR"/>
     <logger name="org.I0Itec.zkclient" level="WARN"/>
 
+    <logger name="org.testcontainers" level="WARN"/>
+    <logger name="com.github.dockerjava" level="WARN"/>
+
     <!-- Log at the INFO level. Change the main loglevel here. -->
     <!-- Note that custom loggers obey their own levels. -->
     <root level="debug">

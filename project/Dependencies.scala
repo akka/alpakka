@@ -86,6 +86,7 @@ object Dependencies {
 
   val `Doc-examples` = Seq(
     libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-discovery" % AkkaVersion,
       // https://mina.apache.org/ftpserver-project/downloads.html
       "org.apache.ftpserver" % "ftpserver-core" % "1.1.1", // ApacheV2
       "org.apache.sshd" % "sshd-scp" % "2.1.0", // ApacheV2
