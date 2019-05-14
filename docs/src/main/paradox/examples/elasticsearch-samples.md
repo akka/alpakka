@@ -26,7 +26,7 @@ Java
 
 - Configure Kafka consumer (1)
 - Data class mapped to Elasticsearch (2)
-- Spray JSON conversion for the data class (3)
+- @scala[Spray JSON]@java[Jackson] conversion for the data class (3)
 - Elasticsearch client setup (4)
 - Kafka consumer with committing support (5)
 - Use `FlowWithContext` to focus on `ConsumerRecord` (6)
@@ -41,6 +41,9 @@ Java
 
 Scala
 : @@snip [snip](/doc-examples/src/main/scala/elastic/KafkaToElastic.scala) { #imports #kafka-setup #es-setup #flow }
+
+Java
+: @@snip [snip](/doc-examples/src/main/java/elastic/KafkaToElasticInJava.java) { #imports #kafka-setup #es-setup #flow }
 
 
 
