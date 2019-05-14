@@ -148,7 +148,7 @@ sealed abstract class SqsResult {
 }
 
 object SqsResult {
-  private[sqs] val EmptyResponseMetadata: SqsResponseMetadata = SqsResponseMetadata.create(
+  private[sqs] val EmptySqsResponseMetadata: SqsResponseMetadata = SqsResponseMetadata.create(
     DefaultAwsResponseMetadata.create(java.util.Collections.emptyMap())
   )
 }
@@ -258,7 +258,7 @@ object SqsAckResult {
 
     override type Result = NotUsed.type
 
-    override def responseMetadata: SqsResponseMetadata = SqsResult.EmptyResponseMetadata
+    override def responseMetadata: SqsResponseMetadata = SqsResult.EmptySqsResponseMetadata
 
     override def result: Result = NotUsed
 
@@ -356,7 +356,7 @@ object SqsAckResultEntry {
 
     override type Result = NotUsed.type
 
-    override def responseMetadata: SqsResponseMetadata = SqsResult.EmptyResponseMetadata
+    override def responseMetadata: SqsResponseMetadata = SqsResult.EmptySqsResponseMetadata
 
     override def result: Result = NotUsed
 

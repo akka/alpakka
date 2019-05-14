@@ -3,10 +3,9 @@
  */
 
 package akka.stream.alpakka.sqs.testkit
-import akka.stream.alpakka.sqs.{MessageAction, SqsPublishResult, SqsPublishResultEntry}
-import akka.stream.alpakka.sqs.SqsAckResult.{SqsChangeMessageVisibilityResult, SqsDeleteResult}
-import akka.stream.alpakka.sqs.SqsAckResultEntry.{SqsChangeMessageVisibilityResultEntry, SqsDeleteResultEntry}
-import software.amazon.awssdk.awscore.DefaultAwsResponseMetadata
+import akka.stream.alpakka.sqs.SqsAckResult.{SqsChangeMessageVisibilityResult, SqsDeleteResult, SqsIgnoreResult}
+import akka.stream.alpakka.sqs.SqsAckResultEntry.{SqsChangeMessageVisibilityResultEntry, SqsDeleteResultEntry, SqsIgnoreResultEntry}
+import akka.stream.alpakka.sqs.{MessageAction, SqsPublishResult, SqsPublishResultEntry, SqsResult}
 import software.amazon.awssdk.services.sqs.model._
 
 /**
@@ -30,35 +29,42 @@ object MessageFactory {
   def createSqsAckResult[T <: SqsResponse](metadata: Option[T], messageAction: MessageAction): SqsAckResult[T] =
     new SqsAckResult(metadata, messageAction)
 
-  val EmptySqsResponseMetadata: SqsResponseMetadata =
-    SqsResponseMetadata.create(DefaultAwsResponseMetadata.create(java.util.Collections.emptyMap()))
-
-  def createPublishResult(request: SendMessageRequest, response: SendMessageResponse): SqsPublishResult =
+  def createSqsPublishResult(request: SendMessageRequest, response: SendMessageResponse): SqsPublishResult =
     new SqsPublishResult(request, response)
 
-  def createPublishResultEntry(
+  def createSqsPublishResultEntry(
       request: SendMessageRequest,
       result: SendMessageBatchResultEntry,
-      responseMetadata: SqsResponseMetadata = EmptySqsResponseMetadata
+      responseMetadata: SqsResponseMetadata = SqsResult.EmptySqsResponseMetadata
   ): SqsPublishResultEntry =
     new SqsPublishResultEntry(request, result, responseMetadata)
 
-  def createDeleteResult(messageAction: MessageAction.Delete, response: DeleteMessageResponse): SqsDeleteResult =
+  def createSqsDeleteResult(messageAction: MessageAction.Delete, response: DeleteMessageResponse): SqsDeleteResult =
     new SqsDeleteResult(messageAction, response)
 
-  def createChangeMessageVisibilityResult(messageAction: MessageAction.ChangeMessageVisibility,
-                                          response: ChangeMessageVisibilityResponse): SqsChangeMessageVisibilityResult =
+  def createSqsIgnoreResult(messageAction: MessageAction.Ignore): SqsIgnoreResult =
+    new SqsIgnoreResult(messageAction)
+
+  def createSqsChangeMessageVisibilityResult(
+      messageAction: MessageAction.ChangeMessageVisibility,
+      response: ChangeMessageVisibilityResponse
+  ): SqsChangeMessageVisibilityResult =
     new SqsChangeMessageVisibilityResult(messageAction, response)
 
-  def createDeleteResultEntry(messageAction: MessageAction.Delete,
-                              result: DeleteMessageBatchResultEntry,
-                              responseMetadata: SqsResponseMetadata = EmptySqsResponseMetadata): SqsDeleteResultEntry =
+  def createSqsDeleteResultEntry(
+      messageAction: MessageAction.Delete,
+      result: DeleteMessageBatchResultEntry,
+      responseMetadata: SqsResponseMetadata = SqsResult.EmptySqsResponseMetadata
+  ): SqsDeleteResultEntry =
     new SqsDeleteResultEntry(messageAction, result, responseMetadata)
 
-  def createChangeMessageVisibilityResultEntry(
+  def createSqsIgnoreResultEntry(messageAction: MessageAction.Ignore): SqsIgnoreResultEntry =
+    new SqsIgnoreResultEntry(messageAction)
+
+  def createSqsChangeMessageVisibilityResultEntry(
       messageAction: MessageAction.ChangeMessageVisibility,
       result: ChangeMessageVisibilityBatchResultEntry,
-      responseMetadata: SqsResponseMetadata = EmptySqsResponseMetadata
+      responseMetadata: SqsResponseMetadata = SqsResult.EmptySqsResponseMetadata
   ): SqsChangeMessageVisibilityResultEntry =
     new SqsChangeMessageVisibilityResultEntry(messageAction, result, responseMetadata)
 }
