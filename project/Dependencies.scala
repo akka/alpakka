@@ -86,6 +86,7 @@ object Dependencies {
 
   val `Doc-examples` = Seq(
     libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-discovery" % AkkaVersion,
       // https://mina.apache.org/ftpserver-project/downloads.html
       "org.apache.ftpserver" % "ftpserver-core" % "1.1.1", // ApacheV2
       "org.apache.sshd" % "sshd-scp" % "2.1.0", // ApacheV2
@@ -108,6 +109,9 @@ object Dependencies {
       "io.netty" % "netty-all" % "4.1.29.Final", // ApacheV2
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.9.8",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.9.8",
+      "org.testcontainers" % "kafka" % "1.11.1", // MIT
+      "org.testcontainers" % "elasticsearch" % "1.11.1", // MIT
+      "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.11.2", // ApacheV2
       "org.slf4j" % "log4j-over-slf4j" % "1.7.25",
       "org.slf4j" % "jcl-over-slf4j" % "1.7.25",
       "ch.qos.logback" % "logback-classic" % "1.2.3" // Eclipse Public License 1.0
