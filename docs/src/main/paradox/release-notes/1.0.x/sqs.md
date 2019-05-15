@@ -2,6 +2,9 @@
 
 ## 1.0.1
 
+**API change**: We markeed the Alpakka SQS API as "API may change" for release 1.0.0, these changes are now applied via [#1604](https://github.com/akka/alpakka/pull/1604).
+
+* SQS: Revise stream element data model [#1604](https://github.com/akka/alpakka/pull/1604) by [Michel Davit, @RustedBones](https://github.com/RustedBones) **api-change**
 * AWS SQS/SNS: more concise docs about the HTTP client [#1695](https://github.com/akka/alpakka/pull/1695)  
 * SQS/SNS: Update aws-spi-akka-http to version 0.0.6 [#1681](https://github.com/akka/alpakka/pull/1681) by [Matthias Lüneberg, @matsluni](https://github.com/matsluni) **dependency-change**
 * Enable Scala 2.13 for sqs and sns connectors. [#1641](https://github.com/akka/alpakka/pull/1641)  **dependency-change**  

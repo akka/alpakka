@@ -2,7 +2,7 @@
 
 ## 1.0.1
 
-No changes.
+* Complete LogRotatorSink when consuming an empty source [#1703](https://github.com/akka/alpakka/pull/1703) by [Sami Dalouche, @samidalouche](https://github.com/samidalouche)
 
 [*closed in 1.0.1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.0.1+label%3Ap%3Afile)
 
