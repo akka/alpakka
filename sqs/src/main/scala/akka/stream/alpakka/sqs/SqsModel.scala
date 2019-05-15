@@ -4,10 +4,11 @@
 
 package akka.stream.alpakka.sqs
 
-import akka.annotation.{ApiMayChange, InternalApi}
-import software.amazon.awssdk.services.sqs.model.{Message, SqsResponse}
+import akka.NotUsed
+import akka.annotation.InternalApi
+import software.amazon.awssdk.awscore.DefaultAwsResponseMetadata
+import software.amazon.awssdk.services.sqs.model._
 
-import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.FiniteDuration
 
 sealed abstract class MessageAction(val message: Message) {
@@ -24,7 +25,7 @@ object MessageAction {
    * @see [https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_DeleteMessage.html DeleteMessage]
    */
   final class Delete private (message: Message) extends MessageAction(message) {
-    override def toString: String = s"Delete($message)"
+    override def toString: String = s"Delete(message=$message)"
 
     override def equals(other: Any): Boolean = other match {
       case that: Delete => java.util.Objects.equals(this.message, that.message)
@@ -35,14 +36,14 @@ object MessageAction {
   }
 
   final object Delete {
-    def apply(message: Message): MessageAction = new Delete(message)
+    def apply(message: Message): Delete = new Delete(message)
   }
 
   /**
    * Ignore the message.
    */
   final class Ignore private (message: Message) extends MessageAction(message) {
-    override def toString: String = s"Ignore($message)"
+    override def toString: String = s"Ignore(message=$message)"
 
     override def equals(other: Any): Boolean = other match {
       case that: Ignore => java.util.Objects.equals(this.message, that.message)
@@ -53,7 +54,7 @@ object MessageAction {
   }
 
   final object Ignore {
-    def apply(message: Message): MessageAction = new Ignore(message)
+    def apply(message: Message): Ignore = new Ignore(message)
   }
 
   /**
@@ -74,7 +75,7 @@ object MessageAction {
     /** Java API */
     def getVisibilityTimeout: Int = visibilityTimeout
 
-    override def toString: String = s"ChangeMessageVisibility($message, $visibilityTimeout)"
+    override def toString: String = s"ChangeMessageVisibility(message=$message,visibilityTimeout=$visibilityTimeout)"
 
     override def equals(other: Any): Boolean = other match {
       case that: ChangeMessageVisibility =>
@@ -87,10 +88,10 @@ object MessageAction {
   }
 
   object ChangeMessageVisibility {
-    def apply(message: Message, visibilityTimeout: Int): MessageAction =
+    def apply(message: Message, visibilityTimeout: Int): ChangeMessageVisibility =
       new ChangeMessageVisibility(message, visibilityTimeout)
 
-    def apply(message: Message, visibilityTimeout: FiniteDuration): MessageAction =
+    def apply(message: Message, visibilityTimeout: FiniteDuration): ChangeMessageVisibility =
       new ChangeMessageVisibility(message, visibilityTimeout.toSeconds.toInt)
   }
 
@@ -125,89 +126,275 @@ object MessageAction {
 }
 
 /**
- * Additional identifiers for FIFO messsages
+ * Result contained in a Sqs Response.
  *
- * @see [https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-additional-fifo-queue-identifiers.html]
  */
-final class FifoMessageIdentifiers @InternalApi private[sqs] (
-    val sequenceNumber: String,
-    val messageGroupId: String,
-    val messageDeduplicationId: Option[String]
-) {
+sealed abstract class SqsResult {
+
+  type Result
+
+  /**
+   * The SQS response metadata (AWS request ID, ...)
+   */
+  def responseMetadata: SqsResponseMetadata
+
+  def result: Result
 
   /** Java API */
-  def getSequenceNumber: String = sequenceNumber
+  def geResponseMetadata: SqsResponseMetadata = responseMetadata
 
   /** Java API */
-  def getMessageGroupId: String = messageGroupId
+  def getResult: Result = result
+}
 
-  /** Java API */
-  def getMessageDeduplicationId: java.util.Optional[String] = messageDeduplicationId.asJava
-
-  override def toString: String =
-    s"FifoMessageIdentifiers(sequenceNumber=$sequenceNumber, messageGroupId=$messageGroupId, messageDeduplicationId=$messageDeduplicationId)"
-
-  override def equals(other: Any): Boolean = other match {
-    case that: FifoMessageIdentifiers =>
-      java.util.Objects.equals(this.sequenceNumber, that.sequenceNumber) &&
-      java.util.Objects.equals(this.messageGroupId, that.messageGroupId) &&
-      java.util.Objects.equals(this.messageDeduplicationId, that.messageDeduplicationId)
-    case _ => false
-  }
-
-  override def hashCode(): Int = java.util.Objects.hash(sequenceNumber, messageGroupId, messageDeduplicationId)
+object SqsResult {
+  private[sqs] val EmptySqsResponseMetadata: SqsResponseMetadata = SqsResponseMetadata.create(
+    DefaultAwsResponseMetadata.create(java.util.Collections.emptyMap())
+  )
 }
 
 /**
- * Messages returned by a SqsFlow.
- *
- * @param message the SQS message.
+ * Messages returned by a SqsPublishFlow
  */
-@ApiMayChange
-final class SqsPublishResult[T <: SqsResponse] @InternalApi private[sqs] (
-    val metadata: T,
-    val fifoMessageIdentifiers: Option[FifoMessageIdentifiers]
-) {
+final class SqsPublishResult @InternalApi private[sqs] (
+    val request: SendMessageRequest,
+    response: SendMessageResponse
+) extends SqsResult {
 
-  /** Java API */
-  def getMetadata: T = metadata
+  override type Result = SendMessageResponse
 
-  /** Java API */
-  def getFifoMessageIdentifiers: java.util.Optional[FifoMessageIdentifiers] = fifoMessageIdentifiers.asJava
+  override def responseMetadata: SqsResponseMetadata = response.responseMetadata
+
+  override def result: SendMessageResponse = response
 
   override def toString =
-    s"""SqsPublishResult(metadata=$metadata, fifoMessageIdentifiers=$fifoMessageIdentifiers)"""
+    s"""SqsPublishResult(request=$request,result=$result)"""
 
   override def equals(other: Any): Boolean = other match {
-    case that: SqsPublishResult[T] =>
-      java.util.Objects.equals(this.metadata, that.metadata) &&
-      java.util.Objects.equals(this.fifoMessageIdentifiers, that.fifoMessageIdentifiers)
+    case that: SqsPublishResult =>
+      java.util.Objects.equals(this.request, that.request) &&
+      java.util.Objects.equals(this.result, that.result)
     case _ => false
   }
 
-  override def hashCode(): Int = java.util.Objects.hash(metadata, fifoMessageIdentifiers)
+  override def hashCode(): Int = java.util.Objects.hash(request, result)
 }
 
-@ApiMayChange
-final class SqsAckResult[T <: SqsResponse] @InternalApi private[sqs] (val metadata: Option[T],
-                                                                      val messageAction: MessageAction) {
+/**
+ * Messages returned by a SqsPublishFlow.grouped or batched
+ */
+final class SqsPublishResultEntry @InternalApi private[sqs] (
+    val request: SendMessageRequest,
+    override val result: SendMessageBatchResultEntry,
+    override val responseMetadata: SqsResponseMetadata
+) extends SqsResult {
 
-  /** Java API */
-  def getMetadata: java.util.Optional[T] = metadata.asJava
+  override type Result = SendMessageBatchResultEntry
+
+  override def toString =
+    s"""SqsPublishResultEntry(request=$request,result=$result)"""
+
+  override def equals(other: Any): Boolean = other match {
+    case that: SqsPublishResultEntry =>
+      java.util.Objects.equals(this.request, that.request) &&
+      java.util.Objects.equals(this.result, that.result)
+    case _ => false
+  }
+
+  override def hashCode(): Int = java.util.Objects.hash(request, result)
+}
+
+/**
+ * Messages returned by a SqsAckFlow
+ *
+ */
+sealed abstract class SqsAckResult extends SqsResult {
+
+  def messageAction: MessageAction
 
   /** Java API */
   def getMessageAction: MessageAction = messageAction
 
-  override def toString =
-    s"""SqsAckResult(metadata=$metadata,messageAction=$messageAction)"""
+}
 
-  override def equals(other: Any): Boolean = other match {
-    case that: SqsAckResult[T] =>
-      java.util.Objects.equals(this.metadata, that.metadata) &&
-      java.util.Objects.equals(this.messageAction, that.messageAction)
-    case _ => false
+object SqsAckResult {
+
+  /**
+   * Delete acknowledgment
+   * @param messageAction the delete message action
+   * @param result the sqs DeleteMessageResponse
+   */
+  final class SqsDeleteResult @InternalApi private[sqs] (
+      override val messageAction: MessageAction.Delete,
+      override val result: DeleteMessageResponse
+  ) extends SqsAckResult {
+
+    override type Result = DeleteMessageResponse
+
+    override def responseMetadata: SqsResponseMetadata = result.responseMetadata
+
+    override def toString: String =
+      s"SqsDeleteResult(messageAction=$messageAction,result=$result)"
+
+    override def equals(other: Any): Boolean = other match {
+      case that: SqsDeleteResult =>
+        java.util.Objects.equals(this.messageAction, that.messageAction) &&
+        java.util.Objects.equals(this.result, that.result)
+      case _ => false
+    }
+
+    override def hashCode(): Int = java.util.Objects.hash(messageAction, result)
   }
 
-  override def hashCode(): Int =
-    java.util.Objects.hash(metadata, messageAction)
+  /**
+   * Ignore acknowledgment
+   * No requests are executed on the SQS service for ignore messageAction.
+   * Its result is [[akka.NotUsed]] and the responseMetadata is always empty
+   * @param messageAction the ignore message action
+   */
+  final class SqsIgnoreResult @InternalApi private[sqs] (
+      override val messageAction: MessageAction.Ignore
+  ) extends SqsAckResult {
+
+    override type Result = NotUsed.type
+
+    override def responseMetadata: SqsResponseMetadata = SqsResult.EmptySqsResponseMetadata
+
+    override def result: Result = NotUsed
+
+    override def toString: String =
+      s"SqsIgnoreResult(messageAction=$messageAction)"
+
+    override def equals(other: Any): Boolean = other match {
+      case that: SqsIgnoreResult =>
+        java.util.Objects.equals(this.messageAction, that.messageAction)
+      case _ => false
+    }
+
+    override def hashCode(): Int = java.util.Objects.hash(messageAction)
+  }
+
+  /**
+   * ChangeMessageVisibility acknowledgement
+   * @param messageAction the change message visibility action
+   * @param result the sqs ChangeMessageVisibilityResponse
+   */
+  final class SqsChangeMessageVisibilityResult @InternalApi private[sqs] (
+      override val messageAction: MessageAction.ChangeMessageVisibility,
+      override val result: ChangeMessageVisibilityResponse
+  ) extends SqsAckResult {
+
+    override type Result = ChangeMessageVisibilityResponse
+
+    override def responseMetadata: SqsResponseMetadata = result.responseMetadata
+
+    override def toString: String =
+      s"SqsChangeMessageVisibilityResult(messageAction=$messageAction,result=$result)"
+
+    override def equals(other: Any): Boolean = other match {
+      case that: SqsChangeMessageVisibilityResult =>
+        java.util.Objects.equals(this.messageAction, that.messageAction) &&
+        java.util.Objects.equals(this.result, that.result)
+      case _ => false
+    }
+
+    override def hashCode(): Int = java.util.Objects.hash(messageAction, result)
+  }
+
+}
+
+/**
+ * Messages returned by a SqsAckFlow.
+ *
+ */
+sealed abstract class SqsAckResultEntry extends SqsResult {
+
+  def messageAction: MessageAction
+
+  /** Java API */
+  def getMessageAction: MessageAction = messageAction
+
+}
+
+object SqsAckResultEntry {
+
+  /**
+   * Delete acknowledgement within a batch
+   * @param messageAction the delete message action
+   * @param result the sqs DeleteMessageBatchResultEntry
+   */
+  final class SqsDeleteResultEntry(override val messageAction: MessageAction.Delete,
+                                   override val result: DeleteMessageBatchResultEntry,
+                                   override val responseMetadata: SqsResponseMetadata)
+      extends SqsAckResultEntry {
+
+    override type Result = DeleteMessageBatchResultEntry
+
+    override def toString: String =
+      s"SqsDeleteResultEntry(messageAction=$messageAction,result=$result)"
+
+    override def equals(other: Any): Boolean = other match {
+      case that: SqsDeleteResultEntry =>
+        java.util.Objects.equals(this.messageAction, that.messageAction) &&
+        java.util.Objects.equals(this.result, that.result)
+      case _ => false
+    }
+
+    override def hashCode(): Int = java.util.Objects.hash(messageAction, result)
+
+  }
+
+  /**
+   * Ignore acknowledgment within a batch
+   * No requests are executed on the SQS service for ignore messageAction.
+   * Its result is [[akka.NotUsed]] and the responseMetadata is always empty
+   * @param messageAction the ignore message action
+   */
+  final class SqsIgnoreResultEntry @InternalApi private[sqs] (
+      override val messageAction: MessageAction.Ignore
+  ) extends SqsAckResultEntry {
+
+    override type Result = NotUsed.type
+
+    override def responseMetadata: SqsResponseMetadata = SqsResult.EmptySqsResponseMetadata
+
+    override def result: Result = NotUsed
+
+    override def toString: String =
+      s"SqsIgnoreResultEntry(messageAction=$messageAction)"
+
+    override def equals(other: Any): Boolean = other match {
+      case that: SqsIgnoreResultEntry =>
+        java.util.Objects.equals(this.messageAction, that.messageAction)
+      case _ => false
+    }
+
+    override def hashCode(): Int = java.util.Objects.hash(messageAction)
+  }
+
+  /**
+   * ChangeMessageVisibility acknowledgement within a batch
+   * @param messageAction the change message visibility action
+   * @param result the sqs ChangeMessageVisibilityBatchResultEntry
+   */
+  final class SqsChangeMessageVisibilityResultEntry(override val messageAction: MessageAction.ChangeMessageVisibility,
+                                                    override val result: ChangeMessageVisibilityBatchResultEntry,
+                                                    override val responseMetadata: SqsResponseMetadata)
+      extends SqsAckResultEntry {
+
+    override type Result = ChangeMessageVisibilityBatchResultEntry
+
+    override def toString: String =
+      s"SqsChangeMessageVisibilityResultEntry(messageAction=$messageAction,result=$result)"
+
+    override def equals(other: Any): Boolean = other match {
+      case that: SqsChangeMessageVisibilityResultEntry =>
+        java.util.Objects.equals(this.messageAction, that.messageAction) &&
+        java.util.Objects.equals(this.result, that.result)
+      case _ => false
+    }
+
+    override def hashCode(): Int = java.util.Objects.hash(messageAction, result)
+  }
+
 }

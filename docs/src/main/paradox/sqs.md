@@ -26,14 +26,6 @@ The table below shows direct dependencies of this module and the second tab show
 @@dependencies { projectId="sqs" }
 
 
-@@@warning { title="API may change" }
-
-The Alpakka SQS API may change as it could support [SQS FiFo queues with little effort](https://github.com/akka/alpakka/pull/1604). That and a few other possible enhancements let us open up for API changes within the 1.0.x releases of Alpakka.
-
-See [Alpakka SQS issues](https://github.com/akka/alpakka/labels/p%3Aaws-sqs)
-
-@@@
-
 ## Setup
 
 Prepare an @scaladoc[`ActorSystem`](akka.actor.ActorSystem) and a @scaladoc[`Materializer`](akka.stream.Materializer).
@@ -138,7 +130,8 @@ Scala
 Java
 : @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsPublishTest.java) { #run-send-request }
 
-You can also build flow stages which publish messages to SQS queues, backpressure on queue response, and then forward @scaladoc[`SqsPublishResult`](akka.stream.alpakka.sqs.SqsPublishResult) further down the stream. 
+You can also build flow stages which publish messages to SQS queues, backpressure on queue response, and then forward 
+@scaladoc[`PublishResult`](akka.stream.alpakka.sqs.PublishResult) further down the stream.
 
 Scala
 : @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsPublishSpec.scala) { #flow }
@@ -151,7 +144,9 @@ Java
 
 ### Group messages and publish batches to an SQS queue
 
-Create a sink, that forwards `String` to the SQS queue. However, the main difference from the previous use case, it batches items and sends as a one request.
+Create a sink, that forwards `String` to the SQS queue. However, the main difference from the previous use case, 
+it batches items and sends as a one request and forwards a @scaladoc[`PublishResultEntry`](akka.stream.alpakka.sqs.PublishResultEntry)
+further down the stream for each item processed.
 
 Note: There is also another option to send batch of messages to SQS which is using `AmazonSQSBufferedAsyncClient`.
 This client buffers `SendMessageRequest`s under the hood and sends them as a batch instead of sending them one by one. However, beware that `AmazonSQSBufferedAsyncClient`
@@ -185,9 +180,6 @@ Options:
 ### Publish lists as batches to an SQS queue
 
 Create a sink, that publishes @scala[`Iterable[String]`]@java[`Iterable<String>`] to the SQS queue.
-
-Be aware that the size of the batch must be less than or equal to 10 because Amazon SQS has a limit for batch request.
-If the batch has more than 10 entries, the request will fail.
 
 Scala
 : @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsPublishSpec.scala) { #batch-string }
@@ -226,7 +218,8 @@ Options:
 
 ## Updating message statuses
 
-`SqsAckSink` and `SqsAckFlow` provide the possibility to acknowledge (delete), ignore, or postpone messages on an SQS queue. They accept @scaladoc[`MessageAction`](akka.stream.alpakka.sqs.MessageAction) sub-classes to select the action to be taken.
+`SqsAckSink` and `SqsAckFlow` provide the possibility to acknowledge (delete), ignore, or postpone messages on an SQS queue.
+They accept @scaladoc[`MessageAction`](akka.stream.alpakka.sqs.MessageAction) sub-classes to select the action to be taken.
 
 For every message you may decide which action to take and push it together with message back to the queue:
 
@@ -266,7 +259,11 @@ Java
 
 ### Update message status in a flow
 
-The flow accepts a @scaladoc[`MessageAction`](akka.stream.alpakka.sqs.MessageAction) sub-classes, and returns @scaladoc[`SqsAckResult`](akka.stream.alpakka.sqs.SqsAckResult) .
+The `SqsAckFlow` forwards a @scaladoc[`SqsAckResult`](akka.stream.alpakka.sqs.SqsAckResult) sub-class down the stream:
+
+- `DeleteResult` to acknowledge message deletion
+- `ChangeMessageVisibilityResult` to acknowledge message visibility change
+- In case of `Ignore` action, nothing is performed on the sqs queue, thus no `SqsAckResult` is forwarded.
 
 Scala
 : @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsAckSpec.scala) { #flow-ack }
@@ -292,7 +289,12 @@ Options:
 
 ### Updating message statuses in batches with grouping
 
-`SqsAckFlow.grouped` is a flow that can acknowledge (delete), ignore, or postpone messages, but it batches items and sends them as one request per action.
+`SqsAckFlow.grouped` batches actions on their type and forwards a @scaladoc[`SqsAckResultEntry`](akka.stream.alpakka.sqs.SqsAckResultEntry) 
+sub-class for each item processed:
+
+- `DeleteResultEntry` to acknowledge message deletion
+- `ChangeMessageVisibilityResultEntry` to acknowledge message visibility change
+- In case of `Ignore` action, nothing is performed on the sqs queue, thus no `SqsAckResult` is forwarded.
 
 Acknowledge (delete) messages:
 

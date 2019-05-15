@@ -131,7 +131,7 @@ public class SqsPublishTest extends BaseSqsTest {
   public void sendViaFlow() throws Exception {
     final String queueUrl = randomQueueUrl();
 
-    CompletionStage<SqsPublishResult<SendMessageResponse>> done =
+    CompletionStage<SqsPublishResult> done =
         // #flow
         // for fix SQS queue
         Source.single(SendMessageRequest.builder().messageBody("alpakka-flow").build())
@@ -139,9 +139,8 @@ public class SqsPublishTest extends BaseSqsTest {
             .runWith(Sink.head(), materializer);
 
     // #flow
-    SqsPublishResult<SendMessageResponse> result =
-        done.toCompletableFuture().get(10, TimeUnit.SECONDS);
-    assertEquals(toMd5("alpakka-flow"), result.metadata().md5OfMessageBody());
+    SqsPublishResult result = done.toCompletableFuture().get(10, TimeUnit.SECONDS);
+    assertEquals(toMd5("alpakka-flow"), result.result().md5OfMessageBody());
 
     List<Message> messages =
         sqsClient
@@ -156,7 +155,7 @@ public class SqsPublishTest extends BaseSqsTest {
   public void sendViaFlowWithDynamicQueue() throws Exception {
     final String queueUrl = randomQueueUrl();
 
-    CompletionStage<SqsPublishResult<SendMessageResponse>> done =
+    CompletionStage<SqsPublishResult> done =
         // #flow
         // for dynamic SQS queues
         Source.single(
@@ -164,9 +163,8 @@ public class SqsPublishTest extends BaseSqsTest {
             .via(SqsPublishFlow.create(SqsPublishSettings.create(), sqsClient))
             .runWith(Sink.head(), materializer);
     // #flow
-    SqsPublishResult<SendMessageResponse> result =
-        done.toCompletableFuture().get(10, TimeUnit.SECONDS);
-    assertEquals(toMd5("alpakka-flow"), result.metadata().md5OfMessageBody());
+    SqsPublishResult result = done.toCompletableFuture().get(10, TimeUnit.SECONDS);
+    assertEquals(toMd5("alpakka-flow"), result.result().md5OfMessageBody());
 
     List<Message> messages =
         sqsClient
@@ -281,14 +279,20 @@ public class SqsPublishTest extends BaseSqsTest {
       messagesToSend.add(SendMessageRequest.builder().messageBody("Message - " + i).build());
     }
 
-    CompletionStage<List<SqsPublishResult<SendMessageBatchResponse>>> stage =
+    CompletionStage<List<SqsPublishResultEntry>> stage =
         Source.from(messagesToSend)
             .via(SqsPublishFlow.grouped(queueUrl, SqsPublishGroupedSettings.create(), sqsClient))
             .runWith(Sink.seq(), materializer);
 
-    List<SqsPublishResult<SendMessageBatchResponse>> result =
-        stage.toCompletableFuture().get(10, TimeUnit.SECONDS);
-    assertEquals(10, result.size());
+    List<SqsPublishResultEntry> results = stage.toCompletableFuture().get(10, TimeUnit.SECONDS);
+    assertEquals(10, results.size());
+    for (int i = 0; i < 10; i++) {
+      SqsPublishResultEntry r = results.get(i);
+      SendMessageRequest req = messagesToSend.get(i);
+
+      assertEquals(req, r.request());
+      assertEquals(toMd5(req.messageBody()), r.result().md5OfMessageBody());
+    }
 
     List<Message> messagesFirstBatch =
         sqsClient
@@ -310,16 +314,23 @@ public class SqsPublishTest extends BaseSqsTest {
     }
     Iterable<SendMessageRequest> it = messagesToSend;
 
-    CompletionStage<List<SqsPublishResult<SendMessageBatchResponse>>> stage =
+    CompletionStage<List<SqsPublishResultEntry>> stage =
         Source.single(it)
             .via(SqsPublishFlow.batch(queueUrl, SqsPublishBatchSettings.create(), sqsClient))
             .mapConcat(x -> x)
             .runWith(Sink.seq(), materializer);
 
-    List<SqsPublishResult<SendMessageBatchResponse>> result = new ArrayList<>();
+    List<SqsPublishResultEntry> results = new ArrayList<>();
 
-    result.addAll(stage.toCompletableFuture().get(1, TimeUnit.SECONDS));
-    assertEquals(10, result.size());
+    results.addAll(stage.toCompletableFuture().get(1, TimeUnit.SECONDS));
+    assertEquals(10, results.size());
+    for (int i = 0; i < 10; i++) {
+      SqsPublishResultEntry r = results.get(i);
+      SendMessageRequest req = messagesToSend.get(i);
+
+      assertEquals(req, r.request());
+      assertEquals(toMd5(req.messageBody()), r.result().md5OfMessageBody());
+    }
 
     List<Message> messagesFirstBatch =
         sqsClient
@@ -335,14 +346,13 @@ public class SqsPublishTest extends BaseSqsTest {
   public void ackViaFlow() throws Exception {
     final String queueUrl = randomQueueUrl();
 
-    CompletionStage<SqsPublishResult<SendMessageResponse>> stage =
+    CompletionStage<SqsPublishResult> stage =
         Source.single(SendMessageRequest.builder().messageBody("alpakka-flow").build())
             .via(SqsPublishFlow.create(queueUrl, SqsPublishSettings.create(), sqsClient))
             .runWith(Sink.head(), materializer);
 
-    SqsPublishResult<SendMessageResponse> result =
-        stage.toCompletableFuture().get(10, TimeUnit.SECONDS);
-    assertEquals(toMd5("alpakka-flow"), result.metadata().md5OfMessageBody());
+    SqsPublishResult result = stage.toCompletableFuture().get(10, TimeUnit.SECONDS);
+    assertEquals(toMd5("alpakka-flow"), result.result().md5OfMessageBody());
 
     List<Message> messages =
         sqsClient
@@ -357,7 +367,7 @@ public class SqsPublishTest extends BaseSqsTest {
 
   private String toMd5(String s) throws Exception {
     MessageDigest m = MessageDigest.getInstance("MD5");
-    m.update(s.getBytes(), 0, s.length());
-    return new BigInteger(1, m.digest()).toString(16);
+    BigInteger bigInt = new BigInteger(1, m.digest(s.getBytes()));
+    return String.format("%032x", bigInt);
   }
 }
