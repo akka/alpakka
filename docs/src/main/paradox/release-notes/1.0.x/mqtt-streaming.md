@@ -1,5 +1,13 @@
 # MQTT Streaming
 
+## 1.0.1
+
+* mqtt-streaming: Fix a race condition in server publishing [#1629](https://github.com/akka/alpakka/pull/1629) by [Jason Longshore, @longshorej](https://github.com/longshorej) 
+* MQTT streaming: Fixes wrong Exception thrown when client ping timeouts [#1642](https://github.com/akka/alpakka/pull/1642) by [Juan Carlos Roig, @jcroig](https://github.com/jcroig)
+
+[*closed in 1.0.1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.0.1+label%3Ap%3Amqtt-streaming)
+
+
 ## 1.0.0 (changes since 0.20)
 
 * Further MQTT streaming hardening [#1327](https://github.com/akka/alpakka/pull/1327)  
