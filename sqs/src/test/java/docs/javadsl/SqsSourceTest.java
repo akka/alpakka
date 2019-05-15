@@ -14,11 +14,11 @@ import com.github.matsluni.akkahttpspi.AkkaHttpClient;
 import org.junit.Test;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sqs.SqsAsyncClient;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
-import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 import java.net.URI;
 import java.time.Duration;
@@ -29,7 +29,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 
@@ -90,6 +89,13 @@ public class SqsSourceTest extends BaseSqsTest {
 
     final String queueUrl = randomQueueUrl();
 
+    /*
+    // #init-custom-client
+    import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
+    SdkAsyncHttpClient customClient = NettyNioAsyncHttpClient.builder().maxConcurrency(100).build();
+    // #init-custom-client
+    */
+    SdkAsyncHttpClient customClient = AkkaHttpClient.builder().withActorSystem(system).build();
     // #init-custom-client
     final SqsAsyncClient customSqsClient =
         SqsAsyncClient.builder()
@@ -97,8 +103,7 @@ public class SqsSourceTest extends BaseSqsTest {
                 StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
             .endpointOverride(URI.create(sqsEndpoint))
             .region(Region.US_WEST_2)
-            // NettyNioAsyncHttpClient.builder().maxConcurrency(100).build()
-            .httpClient(AkkaHttpClient.builder().build())
+            .httpClient(customClient)
             .build();
 
     system.registerOnTermination(() -> customSqsClient.close());

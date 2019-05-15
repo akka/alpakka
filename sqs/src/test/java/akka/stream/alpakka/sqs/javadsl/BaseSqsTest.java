@@ -9,7 +9,7 @@ import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.testkit.javadsl.TestKit;
 // #init-client
-
+import com.github.matsluni.akkahttpspi.AkkaHttpClient;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -63,6 +63,7 @@ public abstract class BaseSqsTest {
                 StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
             .endpointOverride(URI.create(sqsEndpoint))
             .region(Region.EU_CENTRAL_1)
+            .httpClient(AkkaHttpClient.builder().withActorSystem(system).build())
             .build();
 
     system.registerOnTermination(() -> sqsClient.close());
