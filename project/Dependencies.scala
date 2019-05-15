@@ -225,14 +225,11 @@ object Dependencies {
     val hadoopVersion = "2.7.4"
     Seq(
       libraryDependencies ++= Seq(
-          // for some reason version 2.2.3U1 started to get picked which was not accepted by Whitesource)
-          "com.sun.xml.bind" % "jaxb-impl" % "2.2.3-1", // CDDL + GPLv2
-          // TODO: remove direct dependency ^^ when updating from these very old versions
           "org.apache.hbase" % "hbase-shaded-client" % hbaseVersion exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2,
           "org.apache.hbase" % "hbase-common" % hbaseVersion exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2,
           "org.apache.hadoop" % "hadoop-common" % hadoopVersion exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2,
           "org.apache.hadoop" % "hadoop-mapreduce-client-core" % hadoopVersion exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2,
-          "org.slf4j" % "log4j-over-slf4j" % log4jOverSlf4jVersion % Test // MIT like: http://www.slf4j.org/license.html
+          "org.slf4j" % "log4j-over-slf4j" % "1.7.25" % Test // MIT like: http://www.slf4j.org/license.html
         )
     )
   }
