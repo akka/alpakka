@@ -124,8 +124,10 @@ final private class LogRotatorSink[C, R](triggerGeneratorCreator: () => ByteStri
           }
         }
 
-        override def onUpstreamFinish(): Unit =
+        override def onUpstreamFinish(): Unit = {
+          promise.trySuccess(Done)
           completeStage()
+        }
 
         override def onUpstreamFailure(ex: Throwable): Unit =
           failThisStage(ex)
