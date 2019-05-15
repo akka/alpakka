@@ -21,13 +21,19 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Setup
 
-Sources provided by this connector need a prepared `AmazonSNSAsyncClient` to publish messages to a topic.
+This connector requires an implicit @javadoc[SnsAsyncClient](software.amazon.awssdk.services.sns.SnsAsyncClient) instance to communicate with AWS SQS.
+
+It is your code's responsibility to call `close` to free any resources held by the client. In this example it will be called when the actor system is terminated.
 
 Scala
 : @@snip [snip](/sns/src/test/scala/akka/stream/alpakka/sns/IntegrationTestContext.scala) { #init-client }
 
 Java
 : @@snip [snip](/sns/src/test/java/docs/javadsl/SnsPublisherTest.java) { #init-client }
+
+Alpakka SQS and SNS are set up to use @extref:[Akka HTTP](akka-http-docs:) as default HTTP client via the thin adapter library [AWS Akka-Http SPI implementation](https://github.com/matsluni/aws-spi-akka-http). By setting the `httpClient` explicitly (as above) the Akka actor system is reused, if not set explicitly a separate actor system will be created internally.
+
+It is possible to configure the use of Netty instead, which is Amazon's default. Add an appropriate Netty version to the dependencies and configure @javadoc[`NettyNioAsyncHttpClient`](software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient).
 
 We will also need an @scaladoc[ActorSystem](akka.actor.ActorSystem) and an @scaladoc[ActorMaterializer](akka.stream.ActorMaterializer).
 
