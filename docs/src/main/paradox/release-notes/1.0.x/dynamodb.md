@@ -1,5 +1,12 @@
 # Dynamo DB
 
+## 1.0.1
+
+No changes.
+
+[*closed in 1.0.1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.0.1+label%3Ap%3Adynamodb)
+
+
 ## 1.0.0 (changes since 0.20)
 
 * Refactor DynamoDb to factories taking client [#1220](https://github.com/akka/alpakka/pull/1220)   
