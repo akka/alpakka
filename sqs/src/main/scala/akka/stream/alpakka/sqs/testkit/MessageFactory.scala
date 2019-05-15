@@ -16,23 +16,6 @@ import software.amazon.awssdk.services.sqs.model._
  * Message factory class for testing purposes
  */
 object MessageFactory {
-  @ApiMayChange
-  def createFifoMessageIdentifiers(sequenceNumber: String,
-                                   messageGroupId: String,
-                                   messageDeduplicationId: Option[String]): FifoMessageIdentifiers =
-    new FifoMessageIdentifiers(sequenceNumber, messageGroupId, messageDeduplicationId)
-
-  @ApiMayChange
-  def createSqsPublishResult[T <: SqsResponse](
-      metadata: T,
-      fifoMessageIdentifiers: Option[FifoMessageIdentifiers]
-  ): SqsPublishResult[T] =
-    new SqsPublishResult(metadata, fifoMessageIdentifiers)
-
-  @ApiMayChange
-  def createSqsAckResult[T <: SqsResponse](metadata: Option[T], messageAction: MessageAction): SqsAckResult[T] =
-    new SqsAckResult(metadata, messageAction)
-
   def createSqsPublishResult(request: SendMessageRequest, response: SendMessageResponse): SqsPublishResult =
     new SqsPublishResult(request, response)
 

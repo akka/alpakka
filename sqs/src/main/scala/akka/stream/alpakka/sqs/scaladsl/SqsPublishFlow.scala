@@ -7,6 +7,7 @@ package akka.stream.alpakka.sqs.scaladsl
 import java.util.concurrent.CompletionException
 
 import akka.NotUsed
+import akka.annotation.ApiMayChange
 import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 import akka.stream.alpakka.sqs.{SqsBatchException, _}
 import akka.stream.scaladsl.{Flow, Source}
