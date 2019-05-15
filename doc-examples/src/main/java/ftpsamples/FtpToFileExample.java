@@ -68,8 +68,7 @@ public class FtpToFileExample extends ActorSystemAvailable {
     fetchedFiles
         .thenApply(
             files ->
-                files
-                    .stream()
+                files.stream()
                     .filter(pathResult -> !pathResult.second().wasSuccessful())
                     .collect(Collectors.toList()))
         .whenComplete(
