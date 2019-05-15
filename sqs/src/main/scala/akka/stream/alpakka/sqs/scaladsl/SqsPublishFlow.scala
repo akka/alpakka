@@ -100,7 +100,7 @@ object SqsPublishFlow {
           .toScala
           .map(response => requests -> response)(sameThreadExecutionContext)
       }
-      .map {
+      .mapConcat {
         case (requests, response) =>
           val responseMetadata = response.responseMetadata()
           val idToRequest = requests.zipWithIndex.map(_.swap).toMap
@@ -119,5 +119,8 @@ object SqsPublishFlow {
             }.toList
           List(successful, failed)
       }
-      .mapConcat(_.map(_.map(_.get)))
+      .map(_.map {
+        case Success(result) => result
+        case Failure(e) => throw e
+      })
 }
