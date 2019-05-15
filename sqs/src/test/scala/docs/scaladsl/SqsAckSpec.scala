@@ -8,18 +8,20 @@ import java.util.concurrent.{CompletableFuture, TimeUnit}
 import java.util.function.Supplier
 
 import akka.Done
-import akka.stream.alpakka.sqs.{MessageAction, _}
 import akka.stream.alpakka.sqs.scaladsl._
+import akka.stream.alpakka.sqs._
+import akka.stream.alpakka.sqs.SqsAckResult._
+import akka.stream.alpakka.sqs.SqsAckResultEntry._
 import akka.stream.scaladsl.{Sink, Source}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{spy, times, verify, when}
-import org.scalatest.mockito.MockitoSugar.mock
 import org.scalatest.{FlatSpec, Matchers}
+import org.scalatestplus.mockito.MockitoSugar.mock
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model._
 
-import scala.concurrent.duration._
 import scala.collection.JavaConverters._
+import scala.concurrent.duration._
 
 class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
 
@@ -122,7 +124,7 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
       //#requeue
       SqsSource(queueUrl, sqsSourceSettings)
         .take(1)
-        .map(MessageAction.ChangeMessageVisibility(_, 5))
+        .map(MessageAction.ChangeMessageVisibility(_, 5.minutes))
         .runWith(SqsAckSink(queueUrl))
     //#requeue
 
@@ -157,14 +159,13 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
     //#flow-ack
 
     val result = future.futureValue
-    result.metadata shouldBe defined
-    result.messageAction shouldBe a[MessageAction.Delete]
+    result shouldBe a[SqsDeleteResult]
     result.messageAction.message.body() shouldBe "alpakka-flow-ack"
     verify(awsSqsClient).deleteMessage(any[DeleteMessageRequest])
   }
 
   it should "pull and ignore a message" taggedAs Integration in new IntegrationFixture {
-    sendMessage("alpakka-4")
+    sendMessage("alpakka-flow-ack")
 
     val future =
       SqsSource(queueUrl, sqsSourceSettings)
@@ -174,9 +175,8 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
         .runWith(Sink.head)
 
     val result = future.futureValue
-    result.metadata shouldBe empty
-    result.messageAction shouldBe a[MessageAction.Ignore]
-    result.messageAction.message.body() shouldBe "alpakka-4"
+    result shouldBe a[SqsIgnoreResult]
+    result.messageAction.message.body() shouldBe "alpakka-flow-ack"
   }
 
   it should "delete batch of messages" taggedAs Integration in new IntegrationFixture {
@@ -195,8 +195,7 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
     val results = future.futureValue
     results.size shouldBe 10
     results.foreach { r =>
-      r.metadata shouldBe defined
-      r.messageAction shouldBe a[MessageAction.Delete]
+      r shouldBe a[SqsDeleteResultEntry]
     }
     results.map(_.messageAction.message.body()) should contain theSameElementsAs messages
     verify(awsSqsClient, times(1)).deleteMessageBatch(
@@ -216,8 +215,7 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     val results = future.futureValue
     results.foreach { r =>
-      r.metadata shouldBe defined
-      r.messageAction shouldBe a[MessageAction.Delete]
+      r shouldBe a[SqsDeleteResultEntry]
     }
     results.map(_.messageAction.message.body()) should contain theSameElementsAs messages
     verify(awsSqsClient, times(2)).deleteMessageBatch(
@@ -304,7 +302,6 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
     results.count(_.messageAction.isInstanceOf[MessageAction.Delete]) shouldBe 4
     results.count(_.messageAction.isInstanceOf[MessageAction.ChangeMessageVisibility]) shouldBe 3
     results.count(_.messageAction.isInstanceOf[MessageAction.Ignore]) shouldBe 3
-    results.map(_.messageAction.message.body()) should contain theSameElementsAs messages
 
     verify(awsSqsClient, times(1)).deleteMessageBatch(any[DeleteMessageBatchRequest])
     verify(awsSqsClient, times(1)).changeMessageVisibilityBatch(any[ChangeMessageVisibilityBatchRequest])
@@ -318,15 +315,14 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
       //#batch-requeue
       SqsSource(queueUrl, sqsSourceSettings)
         .take(10)
-        .map(MessageAction.ChangeMessageVisibility(_, 5))
+        .map(MessageAction.ChangeMessageVisibility(_, 5.minutes))
         .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings.Defaults))
         .runWith(Sink.seq)
     //#batch-requeue
 
     val results = future.futureValue
     results.foreach { r =>
-      r.metadata shouldBe defined
-      r.messageAction shouldBe a[MessageAction.ChangeMessageVisibility]
+      r shouldBe a[SqsChangeMessageVisibilityResultEntry]
     }
     results.map(_.messageAction.message.body()) should contain theSameElementsAs messages
     verify(awsSqsClient, times(1))
@@ -351,10 +347,8 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     val results = future.futureValue
     results.foreach { r =>
-      r.metadata shouldBe empty
-      r.messageAction shouldBe a[MessageAction.Ignore]
+      r shouldBe a[SqsIgnoreResultEntry]
     }
-    results.map(_.messageAction.message) should contain theSameElementsAs messages
   }
 
 }
