@@ -14,7 +14,6 @@ import software.amazon.awssdk.services.sqs.model._
 
 import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters._
-import scala.util.Try
 import scala.util.{Failure, Success}
 
 /**
@@ -116,7 +115,8 @@ object SqsPublishFlow {
             .asScala
             .map { e =>
               Failure(new SqsBatchException(requests.size, e.message()))
-            }.toList
+            }
+            .toList
           List(successful, failed)
       }
       .map(_.map {
