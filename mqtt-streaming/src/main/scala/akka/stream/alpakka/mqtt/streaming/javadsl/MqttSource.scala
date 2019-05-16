@@ -13,7 +13,6 @@ import akka.japi.Pair
 import akka.stream.alpakka.mqtt.streaming._
 import akka.stream.alpakka.mqtt.streaming.impl.HighLevelMqttSource
 import akka.stream.javadsl.Source
-import akka.util.ByteString
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
@@ -43,7 +42,6 @@ object MqttSource {
   @ApiMayChange
   def atMostOnce(
       sessionSettings: MqttSessionSettings,
-      connectionId: ByteString,
       transportSettings: MqttTransportSettings,
       restartSettings: MqttRestartSettings,
       connectionSettings: MqttConnectionSettings,
@@ -52,7 +50,6 @@ object MqttSource {
     HighLevelMqttSource
       .atMostOnce(
         sessionSettings,
-        connectionId,
         transportSettings,
         restartSettings,
         connectionSettings,
@@ -68,7 +65,6 @@ object MqttSource {
   @ApiMayChange
   def atLeastOnce(
       sessionSettings: MqttSessionSettings,
-      connectionId: ByteString,
       transportSettings: MqttTransportSettings,
       restartSettings: MqttRestartSettings,
       connectionSettings: MqttConnectionSettings,
@@ -77,7 +73,6 @@ object MqttSource {
     HighLevelMqttSource
       .atLeastOnce(
         sessionSettings,
-        connectionId,
         transportSettings,
         restartSettings,
         connectionSettings,

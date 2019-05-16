@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.mqtt.streaming.impl
 
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
@@ -27,7 +27,6 @@ private[streaming] object HighLevelMqttSource {
 
   def atMostOnce(
       sessionSettings: MqttSessionSettings,
-      connectionId: ByteString,
       transportSettings: MqttTransportSettings,
       restartSettings: MqttRestartSettings,
       connectionSettings: MqttConnectionSettings,
@@ -37,7 +36,7 @@ private[streaming] object HighLevelMqttSource {
 
     val sendAcknowledge: SourceQueueWithComplete[Command[Nothing]] => PartialFunction[Event[Nothing], Out] =
       commands => {
-        // TODO https://github.com/akka/alpakka/pull/1565#discussion_r267088596
+        // https://docs.oasis-open.org/mqtt/mqtt/v5.0/cos02/mqtt-v5.0-cos02.html#_Toc1477420
         case Event(publish @ Publish(_, _, Some(packetId), _), _) =>
           commands.offer(Command(PubAck(packetId)))
           publish
@@ -46,7 +45,6 @@ private[streaming] object HighLevelMqttSource {
       }
 
     createOnMaterialization[Out](sessionSettings,
-                                 connectionId,
                                  transportSettings,
                                  restartSettings,
                                  connectionSettings,
@@ -56,7 +54,6 @@ private[streaming] object HighLevelMqttSource {
 
   def atLeastOnce[Out](
       sessionSettings: MqttSessionSettings,
-      connectionId: ByteString,
       transportSettings: MqttTransportSettings,
       restartSettings: MqttRestartSettings,
       connectionSettings: MqttConnectionSettings,
@@ -65,6 +62,7 @@ private[streaming] object HighLevelMqttSource {
   ): Source[Out, Future[immutable.Seq[(String, ControlPacketFlags)]]] = {
     val createAckHandle: SourceQueueWithComplete[Command[Nothing]] => PartialFunction[Event[Nothing], Out] =
       commands => {
+        // https://docs.oasis-open.org/mqtt/mqtt/v5.0/cos02/mqtt-v5.0-cos02.html#_Toc1477420
         case Event(publish @ Publish(_, _, Some(packetId), _), _) =>
           createOut(publish,
                     () =>
@@ -76,7 +74,6 @@ private[streaming] object HighLevelMqttSource {
       }
 
     createOnMaterialization[Out](sessionSettings,
-                                 connectionId,
                                  transportSettings,
                                  restartSettings,
                                  connectionSettings,
@@ -86,7 +83,6 @@ private[streaming] object HighLevelMqttSource {
 
   private def createOnMaterialization[Out](
       sessionSettings: MqttSessionSettings,
-      connectionId: ByteString,
       transportSettings: MqttTransportSettings,
       restartSettings: MqttRestartSettings,
       connectionSettings: MqttConnectionSettings,
@@ -101,7 +97,6 @@ private[streaming] object HighLevelMqttSource {
 
         val mqttClientSession: MqttClientSession = ActorMqttClientSession(sessionSettings)
         constructInternals[Out](mqttClientSession,
-                                connectionId,
                                 transportSettings,
                                 restartSettings,
                                 connectionSettings,
@@ -117,7 +112,6 @@ private[streaming] object HighLevelMqttSource {
 
   private def constructInternals[Out](
       mqttClientSession: MqttClientSession,
-      connectionId: ByteString,
       transport: MqttTransportSettings,
       restartSettings: MqttRestartSettings,
       connect: MqttConnectPacket,
@@ -130,9 +124,9 @@ private[streaming] object HighLevelMqttSource {
     )
 
     val connectionIdFunction: () => ByteString = {
-      val counter = new AtomicInteger()
+      val counter = new AtomicLong()
       () =>
-        connectionId.concat(ByteString(counter.incrementAndGet().toString))
+        ByteString(counter.incrementAndGet().toString)
     }
 
     val mqttFlow: Flow[Command[Nothing], Either[MqttCodec.DecodeError, Event[Nothing]], NotUsed] = {

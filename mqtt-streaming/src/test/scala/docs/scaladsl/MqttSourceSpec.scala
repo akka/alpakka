@@ -60,7 +60,6 @@ class MqttSourceSpec
       val (subscribed, received) = MqttSource
         .atMostOnce(
           MqttSessionSettings(),
-          connectionId = ByteString("MqttSourceSpec"),
           transportSettings,
           MqttRestartSettings(),
           MqttConnectionSettings(clientId),
@@ -91,7 +90,6 @@ class MqttSourceSpec
       val ((subscribed, switch), received) = MqttSource
         .atMostOnce(
           MqttSessionSettings(),
-          connectionId = ByteString("MqttSourceSpec"),
           transportSettings,
           MqttRestartSettings(),
           MqttConnectionSettings(clientId),
@@ -129,7 +127,6 @@ class MqttSourceSpec
       val subscriptions = MqttSubscriptions.atLeastOnce(topic)
       val ((subscribed, switch), received) = MqttSource
         .atMostOnce(sessionSettings,
-                    connectionId = ByteString("at-most-once-3"),
                     transportSettings,
                     MqttRestartSettings(),
                     MqttConnectionSettings(clientId),
@@ -186,7 +183,6 @@ class MqttSourceSpec
       val stream = MqttSource
         .atLeastOnce(
           MqttSessionSettings(),
-          connectionId = ByteString("MqttSourceSpec"),
           transportSettings,
           MqttRestartSettings(),
           MqttConnectionSettings(clientId),
@@ -223,10 +219,7 @@ class MqttSourceSpec
       // #at-least-once
     }
 
-    "receive unacked messages later" in { //assertAllStagesStopped { TODO fails about 50% of the time
-      // TODO ...possibly related to "[MqttSourceSpec-akka.actor.default-dispatcher-14] [akka.actor.RepointableActorRef]  Message
-      //  [akka.stream.alpakka.mqtt.streaming.impl.RemotePacketRouter$Unregister] without sender to
-      //  Actor[akka://MqttSourceSpec/user/client-consumer-packet-id-allocator-0#-252658640] was not delivered."
+    "receive unacked messages later" in assertAllStagesStopped {
       val testId = "5"
       val time = LocalTime.now().toString
       val clientId = s"streaming/source-spec/$testId/$time"
@@ -236,8 +229,6 @@ class MqttSourceSpec
       val ackedInFirstBatch = 2
 
       val connectionSettings = MqttConnectionSettings(clientId).withConnectFlags(ConnectFlags.None)
-      val restartSettings = MqttRestartSettings()
-
       val subscriptions = MqttSubscriptions.atLeastOnce(topic)
 
       // read first elements
@@ -245,7 +236,6 @@ class MqttSourceSpec
         val (subscription, received) = MqttSource
           .atLeastOnce(
             MqttSessionSettings(),
-            connectionId = ByteString("MqttSourceSpec-1"),
             transportSettings,
             MqttRestartSettings(),
             connectionSettings,
@@ -264,9 +254,7 @@ class MqttSourceSpec
           .run()
 
         // await the subscription
-        subscription.futureValue should contain theSameElementsInOrderAs Seq(
-          (topic, ControlPacketFlags.QoSAtLeastOnceDelivery)
-        )
+        subscription.futureValue should contain theSameElementsInOrderAs subscriptions.subscriptions.toList
         // publish messages
         val publishFlow = publish(topic, ControlPacketFlags.QoSAtLeastOnceDelivery, transportSettings, input)
         received.futureValue.map(_.payload.utf8String) should contain theSameElementsInOrderAs input.take(
@@ -281,9 +269,8 @@ class MqttSourceSpec
       val (switch, received) = MqttSource
         .atLeastOnce(
           MqttSessionSettings(),
-          connectionId = ByteString("MqttSourceSpec-1"),
           transportSettings,
-          restartSettings,
+          MqttRestartSettings(),
           connectionSettings,
           subscriptions
         )

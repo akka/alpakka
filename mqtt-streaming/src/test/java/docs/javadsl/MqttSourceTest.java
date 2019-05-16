@@ -34,7 +34,6 @@ import static org.junit.Assert.assertThat;
 public class MqttSourceTest {
 
   private final String topicPrefix = "streaming/source-test/topic/";
-  private final ByteString connectionId = ByteString.fromString("MqttSourceSpec");
   private final String time = LocalTime.now().toString();
   private final List<String> input =
       Arrays.asList("one-" + time, "two-" + time, "three-" + time, "four-" + time, "five-" + time);
@@ -90,7 +89,6 @@ public class MqttSourceTest {
         stream =
             MqttSource.atLeastOnce(
                     MqttSessionSettings.create(),
-                    connectionId,
                     transportSettings,
                     MqttRestartSettings.create(),
                     MqttConnectionSettings.create(clientId),
