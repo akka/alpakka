@@ -42,7 +42,7 @@ object MqttSource {
    */
   @ApiMayChange
   def atMostOnce(
-      mqttClientSession: MqttClientSession,
+      sessionSettings: MqttSessionSettings,
       connectionId: ByteString,
       transportSettings: MqttTransportSettings,
       restartSettings: MqttRestartSettings,
@@ -51,7 +51,7 @@ object MqttSource {
   ): Source[Publish, CompletionStage[java.util.List[Pair[String, ControlPacketFlags]]]] =
     HighLevelMqttSource
       .atMostOnce(
-        mqttClientSession.underlying,
+        sessionSettings,
         connectionId,
         transportSettings,
         restartSettings,
@@ -67,7 +67,7 @@ object MqttSource {
    */
   @ApiMayChange
   def atLeastOnce(
-      mqttClientSession: MqttClientSession,
+      sessionSettings: MqttSessionSettings,
       connectionId: ByteString,
       transportSettings: MqttTransportSettings,
       restartSettings: MqttRestartSettings,
@@ -76,7 +76,7 @@ object MqttSource {
   ): Source[Pair[Publish, MqttAckHandle], CompletionStage[java.util.List[Pair[String, ControlPacketFlags]]]] =
     HighLevelMqttSource
       .atLeastOnce(
-        mqttClientSession.underlying,
+        sessionSettings,
         connectionId,
         transportSettings,
         restartSettings,

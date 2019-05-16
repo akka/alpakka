@@ -32,7 +32,7 @@ object MqttSource {
    */
   @ApiMayChange
   def atMostOnce(
-      mqttClientSession: MqttClientSession,
+      sessionSettings: MqttSessionSettings,
       connectionId: ByteString,
       transportSettings: MqttTransportSettings,
       restartSettings: MqttRestartSettings,
@@ -40,7 +40,7 @@ object MqttSource {
       subscriptions: MqttSubscribe
   ): Source[Publish, Future[immutable.Seq[(String, ControlPacketFlags)]]] =
     HighLevelMqttSource.atMostOnce(
-      mqttClientSession,
+      sessionSettings,
       connectionId,
       transportSettings,
       restartSettings,
@@ -54,7 +54,7 @@ object MqttSource {
    */
   @ApiMayChange
   def atLeastOnce(
-      mqttClientSession: MqttClientSession,
+      mqttClientSession: MqttSessionSettings,
       connectionId: ByteString,
       transportSettings: MqttTransportSettings,
       restartSettings: MqttRestartSettings,

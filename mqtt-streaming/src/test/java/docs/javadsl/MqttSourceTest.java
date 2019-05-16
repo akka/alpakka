@@ -81,8 +81,6 @@ public class MqttSourceTest {
 
     // #at-least-once
 
-    MqttClientSession mqttClientSession =
-        ActorMqttClientSession.create(MqttSessionSettings.create(), materializer, system);
     MqttTcpTransportSettings transportSettings = MqttTcpTransportSettings.create("localhost");
     MqttSubscribe subscriptions = MqttSubscriptions.atLeastOnce(topic);
 
@@ -91,7 +89,7 @@ public class MqttSourceTest {
             CompletionStage<Done>>
         stream =
             MqttSource.atLeastOnce(
-                    mqttClientSession,
+                    MqttSessionSettings.create(),
                     connectionId,
                     transportSettings,
                     MqttRestartSettings.create(),
@@ -135,10 +133,6 @@ public class MqttSourceTest {
         is(input));
 
     publishFlow.complete();
-    // #at-least-once
-
-    streamCompletion.thenAccept(done -> mqttClientSession.shutdown());
-    // #at-least-once
   }
 
   private static SourceQueueWithComplete<Command<Object>> publish(

@@ -4,6 +4,8 @@
 
 package akka.stream.alpakka.mqtt.streaming.impl
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
@@ -24,7 +26,7 @@ import scala.concurrent.{Future, Promise}
 private[streaming] object HighLevelMqttSource {
 
   def atMostOnce(
-      mqttClientSession: MqttClientSession,
+      sessionSettings: MqttSessionSettings,
       connectionId: ByteString,
       transportSettings: MqttTransportSettings,
       restartSettings: MqttRestartSettings,
@@ -43,7 +45,7 @@ private[streaming] object HighLevelMqttSource {
           publish
       }
 
-    createOnMaterialization[Out](mqttClientSession,
+    createOnMaterialization[Out](sessionSettings,
                                  connectionId,
                                  transportSettings,
                                  restartSettings,
@@ -53,7 +55,7 @@ private[streaming] object HighLevelMqttSource {
   }
 
   def atLeastOnce[Out](
-      mqttClientSession: MqttClientSession,
+      sessionSettings: MqttSessionSettings,
       connectionId: ByteString,
       transportSettings: MqttTransportSettings,
       restartSettings: MqttRestartSettings,
@@ -73,7 +75,7 @@ private[streaming] object HighLevelMqttSource {
           throw new RuntimeException(s"Received Publish without packetId in at-least-once mode: $publish")
       }
 
-    createOnMaterialization[Out](mqttClientSession,
+    createOnMaterialization[Out](sessionSettings,
                                  connectionId,
                                  transportSettings,
                                  restartSettings,
@@ -83,7 +85,7 @@ private[streaming] object HighLevelMqttSource {
   }
 
   private def createOnMaterialization[Out](
-      mqttClientSession: MqttClientSession,
+      sessionSettings: MqttSessionSettings,
       connectionId: ByteString,
       transportSettings: MqttTransportSettings,
       restartSettings: MqttRestartSettings,
@@ -97,6 +99,7 @@ private[streaming] object HighLevelMqttSource {
       .source { implicit materializer => implicit attributes =>
         implicit val system: ActorSystem = materializer.system
 
+        val mqttClientSession: MqttClientSession = ActorMqttClientSession(sessionSettings)
         constructInternals[Out](mqttClientSession,
                                 connectionId,
                                 transportSettings,
@@ -104,6 +107,11 @@ private[streaming] object HighLevelMqttSource {
                                 connectionSettings,
                                 subscriptions,
                                 createAckHandle)
+          .watchTermination() {
+            case (materialized, termination) =>
+              termination.foreach(_ => mqttClientSession.shutdown())(system.dispatcher)
+              materialized
+          }
       }
       .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.sameThreadExecutionContext))
 
@@ -121,6 +129,12 @@ private[streaming] object HighLevelMqttSource {
       Command(subscribe.controlPacket)
     )
 
+    val connectionIdFunction: () => ByteString = {
+      val counter = new AtomicInteger()
+      () =>
+        connectionId.concat(ByteString(counter.incrementAndGet().toString))
+    }
+
     val mqttFlow: Flow[Command[Nothing], Either[MqttCodec.DecodeError, Event[Nothing]], NotUsed] = {
       import restartSettings._
       RestartFlow.onFailuresWithBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts) { () =>
@@ -128,7 +142,7 @@ private[streaming] object HighLevelMqttSource {
           .prepend(Source(initCommands))
           .via(
             Mqtt
-              .clientSessionFlow(mqttClientSession, connectionId)
+              .clientSessionFlow(mqttClientSession, connectionIdFunction())
               .join(transport.connectionFlow())
           )
       }
@@ -138,7 +152,6 @@ private[streaming] object HighLevelMqttSource {
     val (commands: SourceQueueWithComplete[Command[Nothing]], subscription: Source[Event[Nothing], NotUsed]) =
       Source
         .queue[Command[Nothing]](connect.bufferSize, OverflowStrategy.backpressure)
-        .prepend(Source(initCommands))
         .via(mqttFlow)
         .map {
           case Left(decodeError) =>

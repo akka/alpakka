@@ -56,16 +56,16 @@ class MqttSourceSpec
       val time = LocalTime.now().toString
       val input = Vector("one-" + time, "two-" + time, "three-" + time, "four-" + time, "five-" + time)
 
-      val mqttClientSession: MqttClientSession = ActorMqttClientSession(MqttSessionSettings())
-
       val subscriptions = MqttSubscriptions(topic, ControlPacketFlags.QoSAtLeastOnceDelivery)
       val (subscribed, received) = MqttSource
-        .atMostOnce(mqttClientSession,
-                    connectionId = ByteString("MqttSourceSpec"),
-                    transportSettings,
-                    MqttRestartSettings(),
-                    MqttConnectionSettings(clientId),
-                    subscriptions)
+        .atMostOnce(
+          MqttSessionSettings(),
+          connectionId = ByteString("MqttSourceSpec"),
+          transportSettings,
+          MqttRestartSettings(),
+          MqttConnectionSettings(clientId),
+          subscriptions
+        )
         .take(input.size)
         .toMat(Sink.seq)(Keep.both)
         .run()
@@ -77,9 +77,6 @@ class MqttSourceSpec
       received.futureValue.map(_.payload.utf8String) should contain theSameElementsAs input
 
       publishFlow.complete()
-      publishFlow.watchCompletion().foreach { _ =>
-        mqttClientSession.shutdown()
-      }
     }
 
     "receive subscribed messages only once (AtMostOnceDelivery)" in assertAllStagesStopped {
@@ -90,16 +87,16 @@ class MqttSourceSpec
       val time = LocalTime.now().toString
       val input = Vector("one-" + time, "two-" + time, "three-" + time, "four-" + time, "five-" + time)
 
-      val mqttClientSession: MqttClientSession = ActorMqttClientSession(MqttSessionSettings())
-
       val subscriptions = MqttSubscriptions.atLeastOnce(topic)
       val ((subscribed, switch), received) = MqttSource
-        .atMostOnce(mqttClientSession,
-                    connectionId = ByteString("MqttSourceSpec"),
-                    transportSettings,
-                    MqttRestartSettings(),
-                    MqttConnectionSettings(clientId),
-                    subscriptions)
+        .atMostOnce(
+          MqttSessionSettings(),
+          connectionId = ByteString("MqttSourceSpec"),
+          transportSettings,
+          MqttRestartSettings(),
+          MqttConnectionSettings(clientId),
+          subscriptions
+        )
         .viaMat(KillSwitches.single)(Keep.both)
         .toMat(Sink.seq)(Keep.both)
         .run()
@@ -118,9 +115,6 @@ class MqttSourceSpec
       )
 
       publishFlow.complete()
-      publishFlow.watchCompletion().foreach { _ =>
-        mqttClientSession.shutdown()
-      }
     }
 
     "receive subscribed messages only once (AtLeastOnceDelivery)" in assertAllStagesStopped {
@@ -132,11 +126,9 @@ class MqttSourceSpec
       val time = LocalTime.now().toString
       val input = Vector("one-" + time, "two-" + time, "three-" + time, "four-" + time, "five-" + time)
 
-      val mqttClientSession: MqttClientSession = ActorMqttClientSession(sessionSettings)
-
       val subscriptions = MqttSubscriptions.atLeastOnce(topic)
       val ((subscribed, switch), received) = MqttSource
-        .atMostOnce(mqttClientSession,
+        .atMostOnce(sessionSettings,
                     connectionId = ByteString("at-most-once-3"),
                     transportSettings,
                     MqttRestartSettings(),
@@ -161,9 +153,6 @@ class MqttSourceSpec
       )
 
       publishFlow.complete()
-      publishFlow.watchCompletion().foreach { _ =>
-        mqttClientSession.shutdown()
-      }
     }
   }
 
@@ -191,17 +180,18 @@ class MqttSourceSpec
 
       // #at-least-once
 
-      val mqttClientSession: MqttClientSession = ActorMqttClientSession(MqttSessionSettings())
       val transportSettings = MqttTcpTransportSettings("localhost")
       val subscriptions = MqttSubscriptions.atLeastOnce(topic)
 
       val stream = MqttSource
-        .atLeastOnce(mqttClientSession,
-                     connectionId = ByteString("MqttSourceSpec"),
-                     transportSettings,
-                     MqttRestartSettings(),
-                     MqttConnectionSettings(clientId),
-                     subscriptions)
+        .atLeastOnce(
+          MqttSessionSettings(),
+          connectionId = ByteString("MqttSourceSpec"),
+          transportSettings,
+          MqttRestartSettings(),
+          MqttConnectionSettings(clientId),
+          subscriptions
+        )
         .via(businessLogic)
         .mapAsync(1) {
           case (_, ackHandle) =>
@@ -230,9 +220,6 @@ class MqttSourceSpec
       publishFlow.complete()
       // #at-least-once
 
-      streamCompletion.foreach { _ =>
-        mqttClientSession.shutdown()
-      }
       // #at-least-once
     }
 
@@ -245,11 +232,8 @@ class MqttSourceSpec
       val clientId = s"streaming/source-spec/$testId/$time"
       val topic = TopicPrefix + testId
 
-      val sessionSettings = MqttSessionSettings()
       val input = Vector("one-" + time, "two-" + time, "three-" + time, "four-" + time, "five-" + time)
       val ackedInFirstBatch = 2
-
-      val mqttClientSession: MqttClientSession = ActorMqttClientSession(sessionSettings)
 
       val connectionSettings = MqttConnectionSettings(clientId).withConnectFlags(ConnectFlags.None)
       val restartSettings = MqttRestartSettings()
@@ -258,9 +242,9 @@ class MqttSourceSpec
 
       // read first elements
       val publishFlow: SourceQueueWithComplete[Command[Nothing]] = {
-        val (switch, received) = MqttSource
+        val (subscription, received) = MqttSource
           .atLeastOnce(
-            mqttClientSession,
+            MqttSessionSettings(),
             connectionId = ByteString("MqttSourceSpec-1"),
             transportSettings,
             MqttRestartSettings(),
@@ -268,23 +252,26 @@ class MqttSourceSpec
             subscriptions
           )
           .log("client 1 received", p => p._1.payload.utf8String)
-          .zipWithIndex
+          .take(ackedInFirstBatch)
           .mapAsync(1) {
-            case ((publish, ackHandle), index) if index < ackedInFirstBatch =>
+            case (publish, ackHandle) =>
               ackHandle.ack().map { _ =>
                 logging.debug(s"client 1 acked ${publish.payload.utf8String}")
                 publish
               }
-            case ((publish, _), _) =>
-              Future.successful(publish)
           }
-          .viaMat(KillSwitches.single)(Keep.right)
           .toMat(Sink.seq)(Keep.both)
           .run()
 
+        // await the subscription
+        subscription.futureValue should contain theSameElementsInOrderAs Seq(
+          (topic, ControlPacketFlags.QoSAtLeastOnceDelivery)
+        )
+        // publish messages
         val publishFlow = publish(topic, ControlPacketFlags.QoSAtLeastOnceDelivery, transportSettings, input)
-        sleepToReceiveAll()
-        switch.shutdown()
+        received.futureValue.map(_.payload.utf8String) should contain theSameElementsInOrderAs input.take(
+          ackedInFirstBatch
+        )
         publishFlow.complete()
         publishFlow
       }
@@ -293,7 +280,7 @@ class MqttSourceSpec
       // read elements that where not acked
       val (switch, received) = MqttSource
         .atLeastOnce(
-          mqttClientSession,
+          MqttSessionSettings(),
           connectionId = ByteString("MqttSourceSpec-1"),
           transportSettings,
           restartSettings,
@@ -318,10 +305,6 @@ class MqttSourceSpec
       received.futureValue.map(_.payload.utf8String) should contain theSameElementsInOrderAs input.drop(
         ackedInFirstBatch
       )
-
-      publishFlow.watchCompletion().foreach { _ =>
-        mqttClientSession.shutdown()
-      }
     }
 
   }
