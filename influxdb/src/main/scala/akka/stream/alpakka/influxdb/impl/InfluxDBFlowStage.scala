@@ -90,11 +90,11 @@ private[influxdb] class InfluxDBFlowStage[T, C](
     def groupByDbRp(im: InfluxDBWriteMessage[T, C]) =
       (
         im.databaseName match {
-          case dbn: Some(databaseName) => dbn
+          case dbn: Some[String] => dbn
           case None => Some(mapperHelper.databaseName(im.point))
         },
         im.retentionPolicy match {
-          case Some(databaseName) => Some(databaseName)
+          case dbn: Some[String] => dbn
           case None => Some(mapperHelper.retentionPolicy(im.point))
         }
       )
