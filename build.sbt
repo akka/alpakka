@@ -328,6 +328,15 @@ lazy val docs = project
     publishRsyncHost := "akkarepo@gustav.akka.io"
   )
 
+lazy val whitesourceSupported = project
+  .in(file("tmp"))
+  .settings(whitesourceGroup := Whitesource.Group.Supported)
+  .aggregate(
+    couchbase,
+    csv,
+  )
+
+
 lazy val `doc-examples` = project
   .enablePlugins(AutomateHeaderPlugin)
   .disablePlugins(BintrayPlugin, MimaPlugin, SitePlugin)

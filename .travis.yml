@@ -129,7 +129,7 @@ jobs:
       - DIR=xml
 
     - stage: whitesource
-      script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt whitesourceCheckPolicies whitesourceUpdate
+      script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt whitesourceCheckPolicies whitesourceUpdate whitesourceSupported/whitesourceUpdate
 
     - stage: publish
       env: CMD="++2.11.12 publish"
