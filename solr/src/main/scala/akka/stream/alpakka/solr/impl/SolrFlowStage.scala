@@ -152,7 +152,7 @@ private final class SolrFlowLogic[T, C](
   private def sendBulkToSolr(messages: immutable.Seq[WriteMessage[T, C]]): Unit = {
 
     @tailrec
-    def send(toSend: immutable.Seq[WriteMessage[T, C]]): UpdateResponse = {
+    def send(toSend: immutable.Seq[WriteMessage[T, C]]): Option[UpdateResponse] = {
       val operation = toSend.head.operation
       //Just take a subset of this operation
       val (current, remaining) = toSend.span { m =>
@@ -160,10 +160,11 @@ private final class SolrFlowLogic[T, C](
       }
       //send this subset
       val response = operation match {
-        case Upsert => updateBulkToSolr(current)
-        case AtomicUpdate => atomicUpdateBulkToSolr(current)
-        case DeleteByIds => deleteBulkToSolrByIds(current)
-        case DeleteByQuery => deleteEachByQuery(current)
+        case Upsert => Option(updateBulkToSolr(current))
+        case AtomicUpdate => Option(atomicUpdateBulkToSolr(current))
+        case DeleteByIds => Option(deleteBulkToSolrByIds(current))
+        case DeleteByQuery => Option(deleteEachByQuery(current))
+        case PassThrough => None
       }
       if (remaining.nonEmpty) {
         send(remaining)
@@ -172,7 +173,8 @@ private final class SolrFlowLogic[T, C](
       }
     }
 
-    val response = if (messages.nonEmpty) send(messages).getStatus else 0
+    val response = if (messages.nonEmpty) send(messages).fold(0) { _.getStatus } else 0
+
     log.debug("Handle the response with {}", response)
     val results = messages.map(
       m =>

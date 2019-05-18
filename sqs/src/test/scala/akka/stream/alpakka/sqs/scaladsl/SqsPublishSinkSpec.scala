@@ -5,7 +5,7 @@
 package akka.stream.alpakka.sqs.scaladsl
 
 import java.util.UUID
-import java.util.concurrent.CompletableFuture
+import java.util.concurrent.{CompletableFuture, TimeUnit}
 import java.util.function.Supplier
 
 import akka.Done
@@ -14,7 +14,7 @@ import akka.stream.scaladsl.Keep
 import akka.stream.testkit.scaladsl.TestSource
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
-import org.scalatest.mockito.MockitoSugar.mock
+import org.scalatestplus.mockito.MockitoSugar.mock
 import org.scalatest.{FlatSpec, Matchers}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model._
@@ -78,7 +78,8 @@ class SqsPublishSinkSpec extends FlatSpec with Matchers with DefaultTestContext 
 
     future.futureValue shouldBe Done
 
-    val result = sqsClient.receiveMessage(ReceiveMessageRequest.builder().queueUrl(queue2).build()).get()
+    val result =
+      sqsClient.receiveMessage(ReceiveMessageRequest.builder().queueUrl(queue2).build()).get(2, TimeUnit.SECONDS)
     result.messages().size() shouldBe 1
     result.messages().get(0).body() shouldBe "alpakka"
   }

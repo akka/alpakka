@@ -48,6 +48,7 @@ trait IntegrationTestContext extends BeforeAndAfterAll with ScalaFutures {
     //#init-client
     import java.net.URI
 
+    import com.github.matsluni.akkahttpspi.AkkaHttpClient
     import software.amazon.awssdk.services.sns.SnsAsyncClient
     import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
     import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
@@ -59,6 +60,7 @@ trait IntegrationTestContext extends BeforeAndAfterAll with ScalaFutures {
         .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
         .endpointOverride(URI.create(endEndpoint))
         .region(Region.EU_CENTRAL_1)
+        .httpClient(AkkaHttpClient.builder().withActorSystem(system).build())
         .build()
 
     system.registerOnTermination(awsSnsClient.close())

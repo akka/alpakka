@@ -6,6 +6,7 @@ package akka.stream.alpakka.s3.scaladsl
 import akka.{Done, NotUsed}
 import akka.http.scaladsl.model.headers.ByteRange
 import akka.http.scaladsl.model._
+import akka.stream.{Attributes, Materializer}
 import akka.stream.alpakka.s3.headers.{CannedAcl, ServerSideEncryption}
 import akka.stream.alpakka.s3._
 import akka.stream.alpakka.s3.impl._
@@ -199,7 +200,6 @@ object S3 {
    * @param sourceVersionId optional version id of source object, if the versioning is enabled in source bucket
    * @param contentType  an optional [[akka.http.scaladsl.model.ContentType ContentType]]
    * @param s3Headers any headers you want to add
-   * @param sse an optional server side encryption key
    * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
    * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
    * @return a runnable graph which upon materialization will return a [[scala.concurrent.Future Future ]] containing the results of the copy operation.
@@ -225,4 +225,72 @@ object S3 {
         chunkSize,
         chunkingParallelism
       )
+
+  /**
+   * Create new bucket with a given name
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketPUT.html
+   *
+   * @param bucketName bucket name
+   * @return [[scala.concurrent.Future Future]] with type [[Done]] as API doesn't return any additional information
+   */
+  def makeBucket(bucketName: String)(implicit mat: Materializer, attr: Attributes = Attributes()): Future[Done] =
+    S3Stream.makeBucket(bucketName)
+
+  /**
+   * Create new bucket with a given name
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketPUT.html
+   *
+   * @param bucketName bucket name
+   * @return [[akka.stream.scaladsl.Source Source]] of type [[Done]] as API doesn't return any additional information
+   */
+  def makeBucketSource(bucketName: String): Source[Done, NotUsed] =
+    S3Stream.makeBucketSource(bucketName)
+
+  /**
+   * Delete bucket with a given name
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketDELETE.html
+   *
+   * @param bucketName bucket name
+   * @return [[scala.concurrent.Future Future]] of type [[Done]] as API doesn't return any additional information
+   */
+  def deleteBucket(bucketName: String)(implicit mat: Materializer,
+                                       attributes: Attributes = Attributes()): Future[Done] =
+    S3Stream.deleteBucket(bucketName)
+
+  /**
+   * Delete bucket with a given name
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketDELETE.html
+   *
+   * @param bucketName bucket name
+   * @return [[akka.stream.scaladsl.Source Source]] of type [[Done]] as API doesn't return any additional information
+   */
+  def deleteBucketSource(bucketName: String): Source[Done, NotUsed] =
+    S3Stream.deleteBucketSource(bucketName)
+
+  /**
+   *   Checks whether the bucket exits and user has rights to perform ListBucket operation
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketHEAD.html
+   *
+   * @param bucketName bucket name
+   * @return [[scala.concurrent.Future Future]] of type [[BucketAccess]]
+   */
+  def checkIfBucketExists(bucketName: String)(implicit mat: Materializer,
+                                              attributes: Attributes = Attributes()): Future[BucketAccess] =
+    S3Stream.checkIfBucketExists(bucketName)
+
+  /**
+   *   Checks whether the bucket exits and user has rights to perform ListBucket operation
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketHEAD.html
+   *
+   * @param bucketName bucket name
+   * @return [[akka.stream.scaladsl.Source Source]] of type [[BucketAccess]]
+   */
+  def checkIfBucketExistsSource(bucketName: String): Source[BucketAccess, NotUsed] =
+    S3Stream.checkIfBucketExistsSource(bucketName)
 }

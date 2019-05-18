@@ -82,6 +82,19 @@ class LogRotatorSinkSpec
   val testByteStrings = TestLines.map(ByteString(_))
 
   "LogRotatorSink" must {
+
+    "complete when consuming an empty source" in assertAllStagesStopped {
+      val triggerCreator: () => ByteString => Option[Path] = () => { element: ByteString =>
+        fail("trigger creator should not be called")
+      }
+
+      val rotatorSink: Sink[ByteString, Future[Done]] =
+        LogRotatorSink(triggerCreator)
+
+      val completion = Source.empty[ByteString].runWith(rotatorSink)
+      completion.futureValue shouldBe Done
+    }
+
     "work for size-based rotation " in assertAllStagesStopped {
       // #size
       import akka.stream.alpakka.file.scaladsl.LogRotatorSink

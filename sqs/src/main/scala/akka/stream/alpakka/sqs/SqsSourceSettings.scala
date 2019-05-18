@@ -13,6 +13,7 @@ import scala.concurrent.duration.FiniteDuration
 final class SqsSourceSettings private (
     val waitTimeSeconds: Int,
     val maxBufferSize: Int,
+    val parallelRequests: Int,
     val maxBatchSize: Int,
     val attributeNames: immutable.Seq[AttributeName],
     val messageAttributeNames: immutable.Seq[MessageAttributeName],
@@ -59,6 +60,8 @@ final class SqsSourceSettings private (
    */
   def withMaxBufferSize(maxBufferSize: Int): SqsSourceSettings = copy(maxBufferSize = maxBufferSize)
 
+  def withParallelRequests(value: Int): SqsSourceSettings = copy(parallelRequests = value)
+
   /**
    * The maximum number of messages to return (see MaxNumberOfMessages in AWS docs).
    * Default: 10
@@ -102,6 +105,7 @@ final class SqsSourceSettings private (
   private def copy(
       waitTimeSeconds: Int = waitTimeSeconds,
       maxBufferSize: Int = maxBufferSize,
+      parallelRequests: Int = parallelRequests,
       maxBatchSize: Int = maxBatchSize,
       attributeNames: immutable.Seq[AttributeName] = attributeNames,
       messageAttributeNames: immutable.Seq[MessageAttributeName] = messageAttributeNames,
@@ -110,6 +114,7 @@ final class SqsSourceSettings private (
   ): SqsSourceSettings = new SqsSourceSettings(
     waitTimeSeconds,
     maxBufferSize,
+    parallelRequests,
     maxBatchSize,
     attributeNames,
     messageAttributeNames,
@@ -121,6 +126,7 @@ final class SqsSourceSettings private (
     "SqsSourceSettings(" +
     s"waitTimeSeconds=$waitTimeSeconds, " +
     s"maxBufferSize=$maxBufferSize, " +
+    s"parallelRequests=$parallelRequests, " +
     s"maxBatchSize=$maxBatchSize, " +
     s"attributeNames=${attributeNames.mkString(",")}, " +
     s"messageAttributeNames=${messageAttributeNames.mkString(",")}, " +
@@ -130,13 +136,16 @@ final class SqsSourceSettings private (
 }
 
 object SqsSourceSettings {
-  val Defaults = new SqsSourceSettings(20,
-                                       100,
-                                       10,
-                                       attributeNames = immutable.Seq(),
-                                       messageAttributeNames = immutable.Seq(),
-                                       closeOnEmptyReceive = false,
-                                       visibilityTimeout = None)
+  val Defaults = new SqsSourceSettings(
+    waitTimeSeconds = 20,
+    maxBufferSize = 100,
+    parallelRequests = 1,
+    maxBatchSize = 10,
+    attributeNames = immutable.Seq.empty,
+    messageAttributeNames = immutable.Seq.empty,
+    closeOnEmptyReceive = false,
+    visibilityTimeout = None
+  )
 
   /**
    * Scala API

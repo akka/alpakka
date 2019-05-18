@@ -16,7 +16,8 @@ object Dependencies {
   val InfluxDBJavaVersion = "2.15"
 
   val AwsSdkVersion = "1.11.476"
-  val AwsSdk2Version = "2.5.20"
+  val AwsSdk2Version = "2.5.41"
+  val AwsSpiAkkaHttpVersion = "0.0.6"
   val AkkaHttpVersion = "10.1.7"
   val mockitoVersion = "2.27.0"
 
@@ -87,6 +88,7 @@ object Dependencies {
 
   val `Doc-examples` = Seq(
     libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-discovery" % AkkaVersion,
       // https://mina.apache.org/ftpserver-project/downloads.html
       "org.apache.ftpserver" % "ftpserver-core" % "1.1.1", // ApacheV2
       "org.apache.sshd" % "sshd-scp" % "2.1.0", // ApacheV2
@@ -96,7 +98,7 @@ object Dependencies {
       "com.typesafe.akka" %% "akka-http-xml" % AkkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
       // https://github.com/akka/alpakka-kafka/releases
-      "com.typesafe.akka" %% "akka-stream-kafka" % "1.0.2",
+      "com.typesafe.akka" %% "akka-stream-kafka" % "1.0.3",
       // https://github.com/embeddedkafka/embedded-kafka/releases
       "io.github.embeddedkafka" %% "embedded-kafka" % "2.1.1", // MIT
       // https://github.com/javaee/javax.jms
@@ -109,6 +111,9 @@ object Dependencies {
       "io.netty" % "netty-all" % "4.1.29.Final", // ApacheV2
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.9.8",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.9.8",
+      "org.testcontainers" % "kafka" % "1.11.1", // MIT
+      "org.testcontainers" % "elasticsearch" % "1.11.1", // MIT
+      "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.11.2", // ApacheV2
       "org.slf4j" % "log4j-over-slf4j" % "1.7.25",
       "org.slf4j" % "jcl-over-slf4j" % "1.7.25",
       "ch.qos.logback" % "logback-classic" % "1.2.3" // Eclipse Public License 1.0
@@ -184,7 +189,7 @@ object Dependencies {
   val GooglePubSubGrpc = Seq(
     libraryDependencies ++= Seq(
       "com.google.api.grpc" % "grpc-google-cloud-pubsub-v1" % "0.12.0" % "protobuf", // ApacheV2
-      "io.grpc" % "grpc-auth" % "1.16.1", // ApacheV2
+      "io.grpc" % "grpc-auth" % "1.20.0", // ApacheV2
       "com.google.auth" % "google-auth-library-oauth2-http" % "0.15.0" // BSD 3-clause
     ) ++ Silencer
   )
@@ -348,7 +353,7 @@ object Dependencies {
 
   val Sns = Seq(
     libraryDependencies ++= Seq(
-      "com.github.matsluni" %% "aws-spi-akka-http" % "0.0.5" excludeAll ExclusionRule(
+      "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll ExclusionRule(
         organization = "com.typesafe.akka"
       ), // ApacheV2
       "software.amazon.awssdk" % "sns" % AwsSdk2Version excludeAll (ExclusionRule(
@@ -377,7 +382,7 @@ object Dependencies {
 
   val Sqs = Seq(
     libraryDependencies ++= Seq(
-      "com.github.matsluni" %% "aws-spi-akka-http" % "0.0.5" excludeAll ExclusionRule(
+      "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll ExclusionRule(
         organization = "com.typesafe.akka"
       ), // ApacheV2
       "software.amazon.awssdk" % "sqs" % AwsSdk2Version excludeAll (ExclusionRule(

@@ -4,7 +4,8 @@
 
 package akka.stream.alpakka.s3.impl
 
-import java.time.{Instant, LocalDate, ZoneOffset}
+import java.net.InetSocketAddress
+import java.time.{Instant, ZoneOffset, ZonedDateTime}
 
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
@@ -14,11 +15,19 @@ import scala.collection.immutable.Seq
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 import akka.{Done, NotUsed}
-import akka.http.scaladsl.Http
+import akka.http.scaladsl.{ClientTransport, Http}
 import akka.http.scaladsl.model.StatusCodes.{NoContent, NotFound, OK}
-import akka.http.scaladsl.model.headers.{`Content-Length`, `Content-Type`, ByteRange, CustomHeader}
+import akka.http.scaladsl.model.headers.{
+  `Content-Length`,
+  `Content-Type`,
+  BasicHttpCredentials,
+  ByteRange,
+  CustomHeader
+}
 import akka.http.scaladsl.model.{headers => http, _}
+import akka.http.scaladsl.settings.{ClientConnectionSettings, ConnectionPoolSettings}
 import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
+import akka.stream.alpakka.s3.BucketAccess.{AccessDenied, AccessGranted, NotExists}
 import akka.stream.{ActorMaterializer, Attributes, Materializer}
 import akka.stream.alpakka.s3.impl.auth.{CredentialScope, Signer, SigningKey}
 import akka.stream.alpakka.s3._
@@ -89,10 +98,14 @@ import akka.util.ByteString
   val MaxChunkSize: Int = 10 * 1024 * 1024 //in bytes
 
   // def because tokens can expire
-  def signingKey(implicit settings: S3Settings) = SigningKey(
-    settings.credentialsProvider,
-    CredentialScope(LocalDate.now(ZoneOffset.UTC), settings.s3RegionProvider.getRegion, "s3")
-  )
+  def signingKey(implicit settings: S3Settings) = {
+    val requestDate = ZonedDateTime.now(ZoneOffset.UTC)
+    SigningKey(
+      requestDate,
+      settings.credentialsProvider,
+      CredentialScope(requestDate.toLocalDate, settings.s3RegionProvider.getRegion, "s3")
+    )
+  }
 
   def download(
       s3Location: S3Location,
@@ -260,6 +273,100 @@ import akka.util.ByteString
       case Some(range) => downloadRequest.addHeader(http.Range(range))
       case _ => downloadRequest
     }
+
+  def makeBucketSource(bucket: String): Source[Done, NotUsed] =
+    bucketManagementRequest[Done](
+      bucket = bucket,
+      method = HttpMethods.PUT,
+      process = processBucketLifecycleResponse
+    )
+
+  def makeBucket(bucket: String)(implicit mat: Materializer, attr: Attributes): Future[Done] =
+    makeBucketSource(bucket).withAttributes(attr).runWith(Sink.ignore)
+
+  def deleteBucketSource(bucket: String): Source[Done, NotUsed] =
+    bucketManagementRequest[Done](
+      bucket = bucket,
+      method = HttpMethods.DELETE,
+      process = processBucketLifecycleResponse
+    )
+
+  def deleteBucket(bucket: String)(implicit mat: Materializer, attr: Attributes): Future[Done] =
+    deleteBucketSource(bucket).withAttributes(attr).runWith(Sink.ignore)
+
+  def checkIfBucketExistsSource(bucketName: String): Source[BucketAccess, NotUsed] =
+    bucketManagementRequest[BucketAccess](
+      bucket = bucketName,
+      method = HttpMethods.HEAD,
+      process = processCheckIfExistsResponse
+    )
+
+  def checkIfBucketExists(bucket: String)(implicit mat: Materializer, attr: Attributes): Future[BucketAccess] =
+    checkIfBucketExistsSource(bucket).withAttributes(attr).runWith(Sink.head)
+
+  private def bucketManagementRequest[T](
+      bucket: String,
+      method: HttpMethod,
+      process: (HttpResponse, Materializer) => Future[T]
+  ): Source[T, NotUsed] =
+    Setup
+      .source { mat => implicit attr =>
+        implicit val sys: ActorSystem = mat.system
+        implicit val conf: S3Settings = resolveSettings()
+
+        val location = S3Location(bucket = bucket, key = "")
+
+        signAndRequest(
+          requestHeaders(
+            HttpRequests.bucketManagementRequest(location, method),
+            None
+          )
+        ).mapAsync(1) { response =>
+          process(response, mat)
+        }
+      }
+      .mapMaterializedValue(_ => NotUsed)
+
+  private def processBucketLifecycleResponse(response: HttpResponse, materializer: Materializer): Future[Done] = {
+    import materializer.executionContext
+
+    implicit val mat: Materializer = materializer
+
+    response match {
+      case HttpResponse(status, _, entity, _) if status.isSuccess() =>
+        entity.discardBytes().future()
+      case HttpResponse(_, _, entity, _) =>
+        Unmarshal(entity).to[String].map { err =>
+          throw new S3Exception(err)
+        }
+    }
+  }
+
+  private def processCheckIfExistsResponse(response: HttpResponse, materializer: Materializer): Future[BucketAccess] = {
+    import materializer.executionContext
+
+    implicit val mat: Materializer = materializer
+
+    response match {
+      case code @ HttpResponse(StatusCodes.NotFound | StatusCodes.Forbidden | StatusCodes.OK, _, entity, _) =>
+        entity
+          .discardBytes()
+          .future()
+          .map(
+            _ =>
+              code.status match {
+                case StatusCodes.NotFound => NotExists
+                case StatusCodes.Forbidden => AccessDenied
+                case StatusCodes.OK => AccessGranted
+                case other => throw new IllegalArgumentException(s"received status $other")
+            }
+          )
+      case HttpResponse(_, _, entity, _) =>
+        Unmarshal(entity).to[String].map { err =>
+          throw new S3Exception(err)
+        }
+    }
+  }
 
   /**
    * Uploads a stream of ByteStrings to a specified location as a multipart upload.
@@ -434,6 +541,26 @@ import akka.util.ByteString
       new DiskBuffer(2, chunkSize * 2, d.path)
   }
 
+  private def poolSettings(implicit settings: S3Settings, system: ActorSystem) =
+    settings.forwardProxy.map(proxy => {
+      val address = InetSocketAddress.createUnresolved(proxy.host, proxy.port)
+      val transport = proxy.credentials.fold(ClientTransport.httpsProxy(address))(
+        c => ClientTransport.httpsProxy(address, BasicHttpCredentials(c.username, c.password))
+      )
+
+      ConnectionPoolSettings(system)
+        .withConnectionSettings(
+          ClientConnectionSettings(system)
+            .withTransport(transport)
+        )
+    })
+
+  private def singleRequest(req: HttpRequest)(implicit settings: S3Settings, system: ActorSystem) =
+    poolSettings.fold(Http().singleRequest(req))(s => Http().singleRequest(req, settings = s))
+
+  private def superPool[T](implicit settings: S3Settings, sys: ActorSystem) =
+    poolSettings.fold(Http().superPool[T]())(s => Http().superPool[T](settings = s))
+
   private def chunkAndRequest(
       s3Location: S3Location,
       contentType: ContentType,
@@ -448,12 +575,13 @@ import akka.util.ByteString
 
     // The individual upload part requests are processed here
     Setup
-      .flow { implicit mat => _ =>
+      .flow { implicit mat => implicit attr =>
         import mat.executionContext
         implicit val sys = mat.system
+        implicit val conf = resolveSettings()
 
         requestFlow
-          .via(Http().superPool[(MultipartUpload, Int)]())
+          .via(superPool[(MultipartUpload, Int)])
           .mapAsync(parallelism) {
             case (Success(r), (upload, index)) =>
               if (r.status.isFailure()) {
@@ -546,7 +674,7 @@ import akka.util.ByteString
 
     Signer
       .signedRequest(request, signingKey)
-      .mapAsync(parallelism = 1)(req => Http().singleRequest(req))
+      .mapAsync(parallelism = 1)(req => singleRequest(req))
       .flatMapConcat {
         case HttpResponse(status, _, _, _) if (retries > 0) && (500 to 599 contains status.intValue()) =>
           signAndRequest(request, retries - 1)
@@ -618,12 +746,13 @@ import akka.util.ByteString
   private def processUploadCopyPartRequests(
       requests: Source[(HttpRequest, MultipartCopy), NotUsed]
   )(parallelism: Int) =
-    Setup.source { implicit mat => _ =>
+    Setup.source { implicit mat => implicit attr =>
       import mat.executionContext
       implicit val sys = mat.system
+      implicit val settings = resolveSettings()
 
       requests
-        .via(Http().superPool[MultipartCopy]())
+        .via(superPool[MultipartCopy])
         .map {
           case (Success(r), multipartCopy) =>
             val entity = r.entity

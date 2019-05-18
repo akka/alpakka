@@ -8,7 +8,7 @@ import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.{Arrays, Optional}
 
-import akka.Done
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.stream.alpakka.solr._
 import akka.stream.alpakka.solr.scaladsl.{SolrFlow, SolrSink, SolrSource}
@@ -649,6 +649,66 @@ class SolrSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaF
         .runWith(Sink.seq)
 
       res2.futureValue shouldEqual Seq.empty[String]
+    }
+
+    "pass through only (Kafka example)" in {
+      val collectionName = createCollection()
+
+      var committedOffsets = List[CommittableOffset]()
+
+      case class CommittableOffset(offset: Int) {
+        def commitScaladsl(): Future[Done] = {
+          committedOffsets = committedOffsets :+ this
+          Future.successful(Done)
+        }
+      }
+
+      case class CommittableOffsetBatch(offsets: immutable.Seq[CommittableOffset]) {
+        def commitScaladsl(): Future[Done] = {
+          committedOffsets = committedOffsets ++ offsets
+          Future.successful(Done)
+        }
+      }
+
+      case class CommittableMessage(book: Book, committableOffset: CommittableOffset)
+
+      val messagesFromKafka = List(
+        CommittableOffset(0),
+        CommittableOffset(1),
+        CommittableOffset(2)
+      )
+      val kafkaConsumerSource = Source(messagesFromKafka)
+      //#kafka-example-PT
+      // Note: This code mimics Alpakka Kafka APIs
+      val copyCollection = kafkaConsumerSource
+        .map { offset: CommittableOffset =>
+          // Transform message so that we can write to solr
+          WriteMessage.createPassThrough(offset).withSource(new SolrInputDocument())
+        }
+        .groupedWithin(5, 10.millis)
+        .via( // write to Solr
+          SolrFlow.documentsWithPassThrough[CommittableOffset](
+            collectionName,
+            // use implicit commits to Solr
+            SolrUpdateSettings().withCommitWithin(5)
+          )
+        ) // check status and collect Kafka offsets
+        .map { messageResults =>
+          val offsets = messageResults.map { result =>
+            if (result.status != 0)
+              throw new Exception("Failed to write message to Solr")
+            result.passThrough
+          }
+          CommittableOffsetBatch(offsets)
+        }
+        .mapAsync(1)(_.commitScaladsl())
+        .runWith(Sink.ignore)
+      //#kafka-example-PT
+
+      copyCollection.futureValue
+
+      // Make sure all messages was committed to kafka
+      assert(List(0, 1, 2) == committedOffsets.map(_.offset))
     }
 
   }

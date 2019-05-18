@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.s3.impl.auth
 
-import java.time.LocalDate
+import java.time.{LocalDate, ZonedDateTime}
 import java.time.format.DateTimeFormatter
 
 import akka.annotation.InternalApi
@@ -22,7 +22,8 @@ import com.amazonaws.auth.{
   def scopeString = s"$formattedDate/$awsRegion/$awsService/aws4_request"
 }
 
-@InternalApi private[impl] final case class SigningKey(credProvider: AWSCredentialsProvider,
+@InternalApi private[impl] final case class SigningKey(requestDate: ZonedDateTime,
+                                                       credProvider: AWSCredentialsProvider,
                                                        scope: CredentialScope,
                                                        algorithm: String = "HmacSHA256") {
 

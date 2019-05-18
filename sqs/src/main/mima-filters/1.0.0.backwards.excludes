@@ -1,0 +1,24 @@
+# PR #1604
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.sqs.SqsPublishResult.getMetadata")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.sqs.SqsPublishResult.metadata")
+
+ProblemFilters.exclude[AbstractClassProblem]("akka.stream.alpakka.sqs.SqsAckResult")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.sqs.SqsAckResult.getMetadata")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.sqs.SqsAckResult.metadata")
+ProblemFilters.exclude[DirectAbstractMethodProblem]("akka.stream.alpakka.sqs.SqsAckResult.messageAction")
+ProblemFilters.exclude[ReversedAbstractMethodProblem]("akka.stream.alpakka.sqs.SqsAckResult.messageAction")
+ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.alpakka.sqs.SqsAckResult.result")
+ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.alpakka.sqs.SqsAckResult.responseMetadata")
+
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.sqs.MessageAction#ChangeMessageVisibility.apply")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.sqs.MessageAction#Delete.apply")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.sqs.MessageAction#Ignore.apply")
+
+# Remove fifoMessageIdentifiers
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.sqs.SqsPublishResult.getFifoMessageIdentifiers")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.sqs.SqsPublishResult.fifoMessageIdentifiers")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.sqs.SqsPublishResult.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.sqs.SqsAckResult.this")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.alpakka.sqs.FifoMessageIdentifiers")
+
+ProblemFilters.exclude[Problem]("akka.stream.alpakka.sqs.testkit.MessageFactory.*")

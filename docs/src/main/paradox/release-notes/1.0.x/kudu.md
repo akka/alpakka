@@ -1,4 +1,13 @@
-#### Apache Kudu
+# Apache Kudu
+
+## 1.0.1
+
+No changes.
+
+[*closed in 1.0.1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.0.1+label%3Ap%3Akudu)
+
+
+## 1.0.0 (changes since 0.20)
 
 * towards 1.0 [#1184](https://github.com/akka/alpakka/pull/1184)  **api-change**
 
