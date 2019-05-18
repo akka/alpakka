@@ -8,8 +8,8 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.influxdb.{InfluxDBSettings, InfluxDBWriteMessage, InfluxDBWriteResult}
-import akka.stream.alpakka.influxdb.scaladsl.InfluxDBFlow
+import akka.stream.alpakka.influxdb.{InfluxDbSettings, InfluxDbWriteMessage, InfluxDbWriteResult}
+import akka.stream.alpakka.influxdb.scaladsl.InfluxDbFlow
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
 import org.influxdb.InfluxDB
@@ -40,16 +40,16 @@ class FlowSpec extends WordSpec with MustMatchers with BeforeAndAfterEach with B
 
   "invalid model" in assertAllStagesStopped {
     val result = Source(
-      List(InfluxDBWriteMessage(InvalidModel("Invalid measurement one")),
-           InfluxDBWriteMessage(InvalidModel("Invalid measurement two")))
-    ).via(InfluxDBFlow.create[InvalidModel](InfluxDBSettings()))
+      List(InfluxDbWriteMessage(InvalidModel("Invalid measurement one")),
+           InfluxDbWriteMessage(InvalidModel("Invalid measurement two")))
+    ).via(InfluxDbFlow.create[InvalidModel](InfluxDbSettings()))
       .recover {
-        case _: RuntimeException => InfluxDBWriteResult(null, Some("error occurred"))
+        case _: RuntimeException => InfluxDbWriteResult(null, Some("error occurred"))
       }
       .runWith(Sink.seq)
       .futureValue
 
-    result mustBe Seq(InfluxDBWriteResult(null, Some("error occurred")))
+    result mustBe Seq(InfluxDbWriteResult(null, Some("error occurred")))
   }
 
   "mixed model" in assertAllStagesStopped {
@@ -61,14 +61,14 @@ class FlowSpec extends WordSpec with MustMatchers with BeforeAndAfterEach with B
       .addField("free", 1L)
       .build()
 
-    val validMessage = InfluxDBWriteMessage(point)
+    val validMessage = InfluxDbWriteMessage(point)
       .withDatabaseName(DatabaseName)
 
     val result = Source(
       List(
         validMessage
       )
-    ).via(InfluxDBFlow.create[Point](InfluxDBSettings()))
+    ).via(InfluxDbFlow.create[Point](InfluxDbSettings()))
       .runWith(Sink.seq)
       .futureValue
 

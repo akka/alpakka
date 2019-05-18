@@ -8,12 +8,12 @@ import java.time.Instant;
 
 import org.influxdb.annotation.Measurement;
 
-@Measurement(name = "cpu", database = "InfluxDBSourceTest")
-public class InfluxDBSourceCpu extends Cpu {
+@Measurement(name = "cpu", database = "InfluxDbTest")
+public class InfluxDbCpu extends Cpu {
 
-  public InfluxDBSourceCpu() {}
+  public InfluxDbCpu() {}
 
-  public InfluxDBSourceCpu(
+  public InfluxDbCpu(
       Instant time,
       String hostname,
       String region,
@@ -21,5 +21,10 @@ public class InfluxDBSourceCpu extends Cpu {
       Boolean happydevop,
       Long uptimeSecs) {
     super(time, hostname, region, idle, happydevop, uptimeSecs);
+  }
+
+  public InfluxDbCpu cloneAt(Instant time) {
+    return new InfluxDbCpu(
+        time, getHostname(), getRegion(), getIdle(), getHappydevop(), getUptimeSecs());
   }
 }

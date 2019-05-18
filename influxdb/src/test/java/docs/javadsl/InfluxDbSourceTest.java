@@ -21,8 +21,8 @@ import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-import akka.stream.alpakka.influxdb.InfluxDBSettings;
-import akka.stream.alpakka.influxdb.javadsl.InfluxDBSource;
+import akka.stream.alpakka.influxdb.InfluxDbSettings;
+import akka.stream.alpakka.influxdb.javadsl.InfluxDbSource;
 import akka.stream.javadsl.Sink;
 import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
@@ -31,13 +31,13 @@ import static docs.javadsl.TestUtils.dropDatabase;
 import static docs.javadsl.TestUtils.populateDatabase;
 import static docs.javadsl.TestUtils.setupConnection;
 
-public class InfluxDBSourceTest {
+public class InfluxDbSourceTest {
 
   private static ActorSystem system;
   private static Materializer materializer;
   private static InfluxDB influxDB;
 
-  private static final String DATABASE_NAME = "InfluxDBSourceTest";
+  private static final String DATABASE_NAME = "InfluxDbSourceTest";
 
   private static Pair<ActorSystem, Materializer> setupMaterializer() {
     // #init-mat
@@ -64,7 +64,7 @@ public class InfluxDBSourceTest {
 
   @Before
   public void setUp() throws Exception {
-    populateDatabase(influxDB, InfluxDBSourceCpu.class);
+    populateDatabase(influxDB, InfluxDbSourceCpu.class);
   }
 
   @After
@@ -77,11 +77,11 @@ public class InfluxDBSourceTest {
   public void streamQueryResult() throws Exception {
     Query query = new Query("SELECT * FROM cpu", DATABASE_NAME);
 
-    CompletionStage<List<InfluxDBSourceCpu>> rows =
-        InfluxDBSource.typed(InfluxDBSourceCpu.class, InfluxDBSettings.Default(), influxDB, query)
+    CompletionStage<List<InfluxDbSourceCpu>> rows =
+        InfluxDbSource.typed(InfluxDbSourceCpu.class, InfluxDbSettings.Default(), influxDB, query)
             .runWith(Sink.seq(), materializer);
 
-    List<InfluxDBSourceCpu> cpus = rows.toCompletableFuture().get();
+    List<InfluxDbSourceCpu> cpus = rows.toCompletableFuture().get();
 
     Assert.assertEquals(2, cpus.size());
   }
@@ -91,7 +91,7 @@ public class InfluxDBSourceTest {
     Query query = new Query("SELECT * FROM cpu", DATABASE_NAME);
 
     CompletionStage<List<QueryResult>> completionStage =
-        InfluxDBSource.create(influxDB, query).runWith(Sink.seq(), materializer);
+        InfluxDbSource.create(influxDB, query).runWith(Sink.seq(), materializer);
 
     List<QueryResult> queryResults = completionStage.toCompletableFuture().get();
     QueryResult queryResult = queryResults.get(0);

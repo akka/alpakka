@@ -12,15 +12,15 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, MustMatchers, WordS
 import org.scalatest.concurrent.ScalaFutures
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.{Done, NotUsed}
-import akka.stream.alpakka.influxdb.{InfluxDBSettings, InfluxDBWriteMessage}
-import akka.stream.alpakka.influxdb.scaladsl.{InfluxDBSink, InfluxDBSource}
+import akka.stream.alpakka.influxdb.{InfluxDbSettings, InfluxDbWriteMessage}
+import akka.stream.alpakka.influxdb.scaladsl.{InfluxDbSink, InfluxDbSource}
 import akka.testkit.TestKit
 import docs.javadsl.TestUtils._
 import akka.stream.scaladsl.Sink
 
 import scala.collection.JavaConverters._
 
-class InfluxDBSpec extends WordSpec with MustMatchers with BeforeAndAfterEach with BeforeAndAfterAll with ScalaFutures {
+class InfluxDbSpec extends WordSpec with MustMatchers with BeforeAndAfterEach with BeforeAndAfterAll with ScalaFutures {
 
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()
@@ -36,7 +36,7 @@ class InfluxDBSpec extends WordSpec with MustMatchers with BeforeAndAfterEach wi
     TestKit.shutdownActorSystem(system)
 
   override def beforeEach(): Unit =
-    populateDatabase(influxDB, classOf[InfluxDBSpecCpu])
+    populateDatabase(influxDB, classOf[InfluxDbSpecCpu])
 
   override def afterEach() =
     cleanDatabase(influxDB, DatabaseName)
@@ -44,29 +44,29 @@ class InfluxDBSpec extends WordSpec with MustMatchers with BeforeAndAfterEach wi
   "support typed source" in assertAllStagesStopped {
     val query = new Query("SELECT * FROM cpu", DatabaseName);
     val measurements =
-      InfluxDBSource.typed(classOf[InfluxDBSpecCpu], InfluxDBSettings(), influxDB, query).runWith(Sink.seq)
+      InfluxDbSource.typed(classOf[InfluxDbSpecCpu], InfluxDbSettings(), influxDB, query).runWith(Sink.seq)
 
     measurements.futureValue.map(_.getHostname) mustBe List("local_1", "local_2")
   }
 
-  "InfluxDBFlow" should {
+  "InfluxDbFlow" should {
 
     "consume and publish measurements using typed" in assertAllStagesStopped {
       val query = new Query("SELECT * FROM cpu", DatabaseName);
 
-      val f1 = InfluxDBSource
-        .typed(classOf[InfluxDBSpecCpu], InfluxDBSettings(), influxDB, query)
-        .map { cpu: InfluxDBSpecCpu =>
+      val f1 = InfluxDbSource
+        .typed(classOf[InfluxDbSpecCpu], InfluxDbSettings(), influxDB, query)
+        .map { cpu: InfluxDbSpecCpu =>
           {
             val clonedCpu = cpu.cloneAt(cpu.getTime.plusSeconds(60000))
-            InfluxDBWriteMessage(clonedCpu)
+            InfluxDbWriteMessage(clonedCpu)
           }
         }
-        .runWith(InfluxDBSink.typed(classOf[InfluxDBSpecCpu], InfluxDBSettings()))
+        .runWith(InfluxDbSink.typed(classOf[InfluxDbSpecCpu], InfluxDbSettings()))
 
       f1.futureValue mustBe Done
 
-      val f2 = InfluxDBSource.typed(classOf[InfluxDBSpecCpu], InfluxDBSettings(), influxDB, query).runWith(Sink.seq)
+      val f2 = InfluxDbSource.typed(classOf[InfluxDbSpecCpu], InfluxDbSettings(), influxDB, query).runWith(Sink.seq)
 
       f2.futureValue.length mustBe 4
     }
@@ -74,25 +74,25 @@ class InfluxDBSpec extends WordSpec with MustMatchers with BeforeAndAfterEach wi
     "consume and publish measurements" in assertAllStagesStopped {
       val query = new Query("SELECT * FROM cpu", DatabaseName);
 
-      val f1 = InfluxDBSource(influxDB, query)
+      val f1 = InfluxDbSource(influxDB, query)
         .mapConcat(resultToPoints)
-        .runWith(InfluxDBSink(InfluxDBSettings()))
+        .runWith(InfluxDbSink(InfluxDbSettings()))
 
       f1.futureValue mustBe Done
 
-      val f2 = InfluxDBSource.typed(classOf[InfluxDBSpecCpu], InfluxDBSettings(), influxDB, query).runWith(Sink.seq)
+      val f2 = InfluxDbSource.typed(classOf[InfluxDbSpecCpu], InfluxDbSettings(), influxDB, query).runWith(Sink.seq)
 
       f2.futureValue.length mustBe 4
     }
 
-    def resultToPoints(queryResult: QueryResult): List[InfluxDBWriteMessage[Point, NotUsed]] = {
+    def resultToPoints(queryResult: QueryResult): List[InfluxDbWriteMessage[Point, NotUsed]] = {
       val points = for {
         results <- queryResult.getResults.asScala
         series <- results.getSeries.asScala
         values <- series.getValues.asScala
       } yield
         (
-          InfluxDBWriteMessage(resultToPoint(series, values))
+          InfluxDbWriteMessage(resultToPoint(series, values))
         )
       points.toList
     }

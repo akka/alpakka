@@ -16,7 +16,7 @@ import org.influxdb.annotation.Column;
 import org.influxdb.dto.Point;
 import org.influxdb.dto.QueryResult;
 
-public class InfluxDBResultMapperHelper {
+public class InfluxDbResultMapperHelper {
 
   private final InfluxDBResultMapper influxDBResultMapper = new InfluxDBResultMapper();
 

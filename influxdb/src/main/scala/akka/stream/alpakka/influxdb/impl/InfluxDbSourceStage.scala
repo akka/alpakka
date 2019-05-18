@@ -5,12 +5,12 @@
 package akka.stream.alpakka.influxdb.impl
 
 import akka.annotation.InternalApi
-import akka.stream.alpakka.influxdb.InfluxDBSettings
+import akka.stream.alpakka.influxdb.InfluxDbSettings
 import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import org.influxdb.InfluxDB
 import org.influxdb.dto.{Query, QueryResult}
-import org.influxdb.impl.InfluxDBResultMapperHelper
+import org.influxdb.impl.InfluxDbResultMapperHelper
 
 import scala.collection.JavaConverters._
 
@@ -18,17 +18,17 @@ import scala.collection.JavaConverters._
  * INTERNAL API
  */
 @InternalApi
-private[influxdb] final class InfluxDBSourceStage[T](clazz: Class[T],
-                                                     settings: InfluxDBSettings,
+private[influxdb] final class InfluxDbSourceStage[T](clazz: Class[T],
+                                                     settings: InfluxDbSettings,
                                                      influxDB: InfluxDB,
                                                      query: Query)
     extends GraphStage[SourceShape[T]] {
 
-  val out: Outlet[T] = Outlet("InfluxDB.out")
+  val out: Outlet[T] = Outlet("InfluxDb.out")
   override val shape = SourceShape(out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new InfluxDBSourceLogic[T](clazz, settings, influxDB, query, out, shape)
+    new InfluxDbSourceLogic[T](clazz, settings, influxDB, query, out, shape)
 
 }
 
@@ -36,8 +36,8 @@ private[influxdb] final class InfluxDBSourceStage[T](clazz: Class[T],
  * INTERNAL API
  */
 @InternalApi
-private[influxdb] final class InfluxDBSourceLogic[T](clazz: Class[T],
-                                                     settings: InfluxDBSettings,
+private[influxdb] final class InfluxDbSourceLogic[T](clazz: Class[T],
+                                                     settings: InfluxDbSettings,
                                                      influxDB: InfluxDB,
                                                      query: Query,
                                                      outlet: Outlet[T],
@@ -48,10 +48,10 @@ private[influxdb] final class InfluxDBSourceLogic[T](clazz: Class[T],
   setHandler(outlet, this)
 
   var dataRetrieved: Option[QueryResult] = None
-  var resultMapperHelper: InfluxDBResultMapperHelper = _
+  var resultMapperHelper: InfluxDbResultMapperHelper = _
 
   override def preStart(): Unit = {
-    resultMapperHelper = new InfluxDBResultMapperHelper
+    resultMapperHelper = new InfluxDbResultMapperHelper
     resultMapperHelper.cacheClassFields(clazz)
 
     val queryResult = influxDB.query(query)
@@ -78,14 +78,14 @@ private[influxdb] final class InfluxDBSourceLogic[T](clazz: Class[T],
  * INTERNAL API
  */
 @InternalApi
-private[influxdb] final class InfluxDBRawSourceStage(query: Query, influxDB: InfluxDB)
+private[influxdb] final class InfluxDbRawSourceStage(query: Query, influxDB: InfluxDB)
     extends GraphStage[SourceShape[QueryResult]] {
 
-  val out: Outlet[QueryResult] = Outlet("InfluxDB.out")
+  val out: Outlet[QueryResult] = Outlet("InfluxDb.out")
   override val shape = SourceShape(out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new InfluxDBSourceRawLogic(query, influxDB, out, shape)
+    new InfluxDbSourceRawLogic(query, influxDB, out, shape)
 
 }
 
@@ -93,7 +93,7 @@ private[influxdb] final class InfluxDBRawSourceStage(query: Query, influxDB: Inf
  * INTERNAL API
  */
 @InternalApi
-private[influxdb] final class InfluxDBSourceRawLogic(query: Query,
+private[influxdb] final class InfluxDbSourceRawLogic(query: Query,
                                                      influxDB: InfluxDB,
                                                      outlet: Outlet[QueryResult],
                                                      shape: SourceShape[QueryResult])

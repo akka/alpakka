@@ -25,10 +25,10 @@ import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-import akka.stream.alpakka.influxdb.InfluxDBSettings;
-import akka.stream.alpakka.influxdb.InfluxDBWriteMessage;
-import akka.stream.alpakka.influxdb.javadsl.InfluxDBSink;
-import akka.stream.alpakka.influxdb.javadsl.InfluxDBSource;
+import akka.stream.alpakka.influxdb.InfluxDbSettings;
+import akka.stream.alpakka.influxdb.InfluxDbWriteMessage;
+import akka.stream.alpakka.influxdb.javadsl.InfluxDbSink;
+import akka.stream.alpakka.influxdb.javadsl.InfluxDbSource;
 import akka.stream.javadsl.Sink;
 import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
@@ -38,13 +38,13 @@ import static docs.javadsl.TestUtils.populateDatabase;
 import static docs.javadsl.TestUtils.resultToPoint;
 import static docs.javadsl.TestUtils.setupConnection;
 
-public class InfluxDBTest {
+public class InfluxDbTest {
 
   private static ActorSystem system;
   private static Materializer materializer;
   private static InfluxDB influxDB;
 
-  private static final String DATABASE_NAME = "InfluxDBTest";
+  private static final String DATABASE_NAME = "InfluxDbTest";
 
   private static Pair<ActorSystem, Materializer> setupMaterializer() {
     // #init-mat
@@ -71,7 +71,7 @@ public class InfluxDBTest {
 
   @Before
   public void setUp() throws Exception {
-    populateDatabase(influxDB, InfluxDBCpu.class);
+    populateDatabase(influxDB, InfluxDbCpu.class);
   }
 
   @After
@@ -84,20 +84,20 @@ public class InfluxDBTest {
   public void testConsumeAndPublishMeasurementsUsingTyped() throws Exception {
     Query query = new Query("SELECT * FROM cpu", DATABASE_NAME);
     CompletionStage<Done> completionStage =
-        InfluxDBSource.typed(InfluxDBCpu.class, InfluxDBSettings.Default(), influxDB, query)
+        InfluxDbSource.typed(InfluxDbCpu.class, InfluxDbSettings.Default(), influxDB, query)
             .map(
                 cpu -> {
-                  InfluxDBCpu clonedCpu = cpu.cloneAt(cpu.getTime().plusSeconds(60000l));
-                  return InfluxDBWriteMessage.create(clonedCpu, NotUsed.notUsed());
+                  InfluxDbCpu clonedCpu = cpu.cloneAt(cpu.getTime().plusSeconds(60000l));
+                  return InfluxDbWriteMessage.create(clonedCpu, NotUsed.notUsed());
                 })
             .runWith(
-                InfluxDBSink.typed(InfluxDBCpu.class, InfluxDBSettings.Default(), influxDB),
+                InfluxDbSink.typed(InfluxDbCpu.class, InfluxDbSettings.Default(), influxDB),
                 materializer);
 
     Assert.assertNotNull(completionStage.toCompletableFuture().get());
 
     CompletionStage<List<Cpu>> sources =
-        InfluxDBSource.typed(Cpu.class, InfluxDBSettings.Default(), influxDB, query)
+        InfluxDbSource.typed(Cpu.class, InfluxDbSettings.Default(), influxDB, query)
             .runWith(Sink.seq(), materializer);
 
     Assert.assertEquals(4, sources.toCompletableFuture().get().size());
@@ -108,15 +108,15 @@ public class InfluxDBTest {
     Query query = new Query("SELECT * FROM cpu", DATABASE_NAME);
 
     CompletionStage<Done> completionStage =
-        InfluxDBSource.create(influxDB, query)
+        InfluxDbSource.create(influxDB, query)
             .map(queryResult -> points(queryResult))
             .mapConcat(i -> i)
-            .runWith(InfluxDBSink.create(InfluxDBSettings.Default(), influxDB), materializer);
+            .runWith(InfluxDbSink.create(InfluxDbSettings.Default(), influxDB), materializer);
 
     Assert.assertNotNull(completionStage.toCompletableFuture().get());
 
     List<QueryResult> queryResult =
-        InfluxDBSource.create(influxDB, query)
+        InfluxDbSource.create(influxDB, query)
             .runWith(Sink.seq(), materializer)
             .toCompletableFuture()
             .get();
@@ -126,14 +126,14 @@ public class InfluxDBTest {
     Assert.assertEquals(4, resultSize);
   }
 
-  private List<InfluxDBWriteMessage<Point, NotUsed>> points(QueryResult queryResult) {
-    List<InfluxDBWriteMessage<Point, NotUsed>> points = new ArrayList<>();
+  private List<InfluxDbWriteMessage<Point, NotUsed>> points(QueryResult queryResult) {
+    List<InfluxDbWriteMessage<Point, NotUsed>> points = new ArrayList<>();
 
     for (QueryResult.Result result : queryResult.getResults()) {
       for (QueryResult.Series series : result.getSeries()) {
         for (List<Object> rows : series.getValues()) {
-          InfluxDBWriteMessage<Point, NotUsed> influxDBWriteMessage =
-              InfluxDBWriteMessage.create(resultToPoint(series, rows), NotUsed.notUsed());
+          InfluxDbWriteMessage<Point, NotUsed> influxDBWriteMessage =
+              InfluxDbWriteMessage.create(resultToPoint(series, rows), NotUsed.notUsed());
           points.add(influxDBWriteMessage);
         }
       }

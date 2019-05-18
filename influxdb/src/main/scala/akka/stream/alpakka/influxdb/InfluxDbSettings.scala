@@ -8,24 +8,24 @@ import java.util.concurrent.TimeUnit
 
 import scala.concurrent.duration.TimeUnit
 
-object InfluxDBSettings {
-  val Default = new InfluxDBSettings(batchSize = 10, TimeUnit.MILLISECONDS)
+object InfluxDbSettings {
+  val Default = new InfluxDbSettings(batchSize = 10, TimeUnit.MILLISECONDS)
 
-  def apply(): InfluxDBSettings = Default
+  def apply(): InfluxDbSettings = Default
 
 }
 
-final class InfluxDBSettings private (
+final class InfluxDbSettings private (
     val batchSize: Int,
     val precision: TimeUnit
 ) {
 
-  def withBatchSize(value: Int): InfluxDBSettings = copy(batchSize = value)
+  def withBatchSize(value: Int): InfluxDbSettings = copy(batchSize = value)
 
   private def copy(
       batchSize: Int = batchSize,
       precision: TimeUnit = precision
-  ): InfluxDBSettings = new InfluxDBSettings(
+  ): InfluxDbSettings = new InfluxDbSettings(
     batchSize = batchSize,
     precision = precision
   )
