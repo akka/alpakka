@@ -6,9 +6,9 @@ package akka.stream.alpakka.influxdb.impl
 
 import akka.annotation.InternalApi
 import akka.stream.alpakka.influxdb.InfluxDbSettings
-import akka.stream.{Attributes, Outlet, SourceShape}
+import akka.stream.{ActorAttributes, Attributes, Outlet, SourceShape}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
-import org.influxdb.InfluxDB
+import org.influxdb.{InfluxDB, InfluxDBException}
 import org.influxdb.dto.{Query, QueryResult}
 import org.influxdb.impl.InfluxDbResultMapperHelper
 
@@ -26,6 +26,9 @@ private[influxdb] final class InfluxDbSourceStage[T](clazz: Class[T],
 
   val out: Outlet[T] = Outlet("InfluxDb.out")
   override val shape = SourceShape(out)
+
+  override protected def initialAttributes: Attributes =
+    super.initialAttributes and Attributes(ActorAttributes.IODispatcher)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new InfluxDbSourceLogic[T](clazz, settings, influxDB, query, out, shape)
@@ -47,20 +50,29 @@ private[influxdb] final class InfluxDbSourceLogic[T](clazz: Class[T],
 
   setHandler(outlet, this)
 
+  var queryExecuted: Boolean = false
   var dataRetrieved: Option[QueryResult] = None
   var resultMapperHelper: InfluxDbResultMapperHelper = _
 
   override def preStart(): Unit = {
     resultMapperHelper = new InfluxDbResultMapperHelper
     resultMapperHelper.cacheClassFields(clazz)
-
-    val queryResult = influxDB.query(query)
-    if (!queryResult.hasError) {
-      dataRetrieved = Some(queryResult)
-    }
   }
 
-  override def onPull(): Unit =
+  private def runQuery() =
+    if (!queryExecuted) {
+      val queryResult = influxDB.query(query)
+      if (!queryResult.hasError) {
+        dataRetrieved = Some(queryResult)
+      } else {
+        failStage(new InfluxDBException(queryResult.getError))
+        dataRetrieved = None
+      }
+      queryExecuted = true
+    }
+
+  override def onPull(): Unit = {
+    runQuery()
     dataRetrieved match {
       case None => completeStage()
       case Some(queryResult) => {
@@ -72,6 +84,7 @@ private[influxdb] final class InfluxDbSourceLogic[T](clazz: Class[T],
         dataRetrieved = None
       }
     }
+  }
 }
 
 /**
