@@ -59,18 +59,6 @@ private[influxdb] final class InfluxDbSourceLogic[T](clazz: Class[T],
     resultMapperHelper.cacheClassFields(clazz)
   }
 
-  private def runQuery() =
-    if (!queryExecuted) {
-      val queryResult = influxDB.query(query)
-      if (!queryResult.hasError) {
-        dataRetrieved = Some(queryResult)
-      } else {
-        failStage(new InfluxDBException(queryResult.getError))
-        dataRetrieved = None
-      }
-      queryExecuted = true
-    }
-
   override def onPull(): Unit = {
     runQuery()
     dataRetrieved match {
@@ -85,6 +73,19 @@ private[influxdb] final class InfluxDbSourceLogic[T](clazz: Class[T],
       }
     }
   }
+
+  private def runQuery() =
+    if (!queryExecuted) {
+      val queryResult = influxDB.query(query)
+      if (!queryResult.hasError) {
+        dataRetrieved = Some(queryResult)
+      } else {
+        failStage(new InfluxDBException(queryResult.getError))
+        dataRetrieved = None
+      }
+      queryExecuted = true
+    }
+
 }
 
 /**
@@ -96,6 +97,9 @@ private[influxdb] final class InfluxDbRawSourceStage(query: Query, influxDB: Inf
 
   val out: Outlet[QueryResult] = Outlet("InfluxDb.out")
   override val shape = SourceShape(out)
+
+  override protected def initialAttributes: Attributes =
+    super.initialAttributes and Attributes(ActorAttributes.IODispatcher)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new InfluxDbSourceRawLogic(query, influxDB, out, shape)
@@ -115,22 +119,36 @@ private[influxdb] final class InfluxDbSourceRawLogic(query: Query,
 
   setHandler(outlet, this)
 
+  var queryExecuted: Boolean = false
   var dataRetrieved: Option[QueryResult] = None
 
-  override def preStart(): Unit = {
-    val queryResult = influxDB.query(query)
-    if (!queryResult.hasError) {
-      dataRetrieved = Some(queryResult)
-    }
-  }
-
-  override def onPull(): Unit =
+  override def onPull(): Unit = {
+    runQuery()
     dataRetrieved match {
       case None => completeStage()
       case Some(queryResult) => {
         emit(outlet, queryResult)
         dataRetrieved = None
       }
+    }
+  }
+
+  private def runQuery() =
+    if (!queryExecuted) {
+      val queryResult = influxDB.query(query)
+      if (!queryResult.hasError) {
+        queryResult.getResults.forEach(failOnError)
+        dataRetrieved = Some(queryResult)
+      } else {
+        failStage(new InfluxDBException(queryResult.getError))
+        dataRetrieved = None
+      }
+      queryExecuted = true
+    }
+
+  private def failOnError(result: QueryResult.Result) =
+    if (result.hasError) {
+      failStage(new InfluxDBException(result.getError))
     }
 
 }

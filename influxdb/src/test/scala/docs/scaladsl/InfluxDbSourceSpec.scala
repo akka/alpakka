@@ -6,10 +6,11 @@ package docs.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.stream.alpakka.influxdb.InfluxDbWriteResult
 import akka.stream.alpakka.influxdb.scaladsl.InfluxDbSource
 import akka.stream.scaladsl.Sink
 import akka.testkit.TestKit
-import org.influxdb.InfluxDB
+import org.influxdb.{InfluxDB, InfluxDBException}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, MustMatchers, WordSpec}
 import org.scalatest.concurrent.ScalaFutures
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
@@ -52,6 +53,19 @@ class InfluxDbSourceSpec
     val values = resultToAssert.getResults.get(0).getSeries().get(0).getValues
 
     values.size() mustBe 2
+  }
+
+  "exception on source" in assertAllStagesStopped {
+    val query = new Query("SELECT man() FROM invalid", DatabaseName);
+
+    val result = InfluxDbSource(influxDB, query) //.runWith(Sink.seq)
+      .recover {
+        case e: InfluxDBException => InfluxDbWriteResult(null, Some(e.getMessage))
+      }
+      .runWith(Sink.seq)
+      .futureValue
+
+    result mustBe Seq(InfluxDbWriteResult(null, Some("undefined function man()")))
   }
 
 }
