@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.influxdb.impl
 
+import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.alpakka.influxdb.{InfluxDbWriteMessage, InfluxDbWriteResult}
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
@@ -14,9 +15,12 @@ import org.influxdb.BatchOptions
 import org.influxdb.dto.{BatchPoints, Point}
 import org.influxdb.impl.InfluxDbResultMapperHelper
 
+import scala.annotation.tailrec
+
 /**
  * INTERNAL API
  */
+@InternalApi
 private[influxdb] class InfluxDbFlowStage[T, C](
     clazz: Option[Class[T]],
     influxDB: InfluxDB
@@ -76,6 +80,7 @@ private[influxdb] sealed abstract class InfluxDbLogic[T, C](
 
     if (retentionPolicy.isDefined) builder.retentionPolicy(retentionPolicy.get)
 
+    @tailrec
     def convert(messages: Seq[InfluxDbWriteMessage[T, C]]): BatchPoints =
       messages match {
         case head :: tail => {
