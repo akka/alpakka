@@ -82,8 +82,6 @@ public class InfluxDbTest {
 
   @Test
   public void testConsumeAndPublishMeasurementsUsingTyped() throws Exception {
-    Sink<InfluxDbWriteMessage<InfluxDbCpu, NotUsed>, CompletionStage<Done>> sink =
-        InfluxDbSink.typed(InfluxDbCpu.class, InfluxDbSettings.Default(), influxDB);
     Query query = new Query("SELECT * FROM cpu", DATABASE_NAME);
     CompletionStage<Done> completionStage =
         InfluxDbSource.typed(InfluxDbCpu.class, InfluxDbSettings.Default(), influxDB, query)
@@ -92,7 +90,9 @@ public class InfluxDbTest {
                   InfluxDbCpu clonedCpu = cpu.cloneAt(cpu.getTime().plusSeconds(60000l));
                   return InfluxDbWriteMessage.create(clonedCpu, NotUsed.notUsed());
                 })
-            .runWith(sink, materializer);
+            .runWith(
+                InfluxDbSink.typed(InfluxDbCpu.class, InfluxDbSettings.Default(), influxDB),
+                materializer);
 
     Assert.assertNotNull(completionStage.toCompletableFuture().get());
 
