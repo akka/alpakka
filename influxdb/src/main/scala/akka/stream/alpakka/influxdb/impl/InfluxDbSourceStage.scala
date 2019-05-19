@@ -64,11 +64,16 @@ private[influxdb] final class InfluxDbSourceLogic[T](clazz: Class[T],
     dataRetrieved match {
       case None => completeStage()
       case Some(queryResult) => {
-        for {
-          result <- queryResult.getResults.asScala
-          series <- result.getSeries.asScala
-        } emitMultiple(outlet, resultMapperHelper.parseSeriesAs(clazz, series, settings.precision).asScala.toIterator)
-
+        for (result <- queryResult.getResults.asScala) {
+          if (result.hasError) {
+            failStage(new InfluxDBException(result.getError))
+          } else {
+            for (series <- result.getSeries.asScala) {
+              emitMultiple(outlet,
+                           resultMapperHelper.parseSeriesAs(clazz, series, settings.precision).asScala.toIterator)
+            }
+          }
+        }
         dataRetrieved = None
       }
     }

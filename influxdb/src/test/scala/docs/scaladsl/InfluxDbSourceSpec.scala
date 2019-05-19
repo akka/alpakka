@@ -6,7 +6,7 @@ package docs.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.influxdb.InfluxDbWriteResult
+import akka.stream.alpakka.influxdb.{InfluxDbSettings, InfluxDbWriteResult}
 import akka.stream.alpakka.influxdb.scaladsl.InfluxDbSource
 import akka.stream.scaladsl.Sink
 import akka.testkit.TestKit
@@ -59,6 +59,20 @@ class InfluxDbSourceSpec
     val query = new Query("SELECT man() FROM invalid", DatabaseName);
 
     val result = InfluxDbSource(influxDB, query) //.runWith(Sink.seq)
+      .recover {
+        case e: InfluxDBException => InfluxDbWriteResult(null, Some(e.getMessage))
+      }
+      .runWith(Sink.seq)
+      .futureValue
+
+    result mustBe Seq(InfluxDbWriteResult(null, Some("undefined function man()")))
+  }
+
+  "exception on typed source" in assertAllStagesStopped {
+    val query = new Query("SELECT man() FROM invalid", DatabaseName);
+
+    val result = InfluxDbSource
+      .typed(classOf[InfluxDbSourceCpu], InfluxDbSettings.Default, influxDB, query) //.runWith(Sink.seq)
       .recover {
         case e: InfluxDBException => InfluxDbWriteResult(null, Some(e.getMessage))
       }
