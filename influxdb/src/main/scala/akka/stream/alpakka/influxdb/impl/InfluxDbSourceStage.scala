@@ -142,7 +142,7 @@ private[influxdb] final class InfluxDbSourceRawLogic(query: Query,
     if (!queryExecuted) {
       val queryResult = influxDB.query(query)
       if (!queryResult.hasError) {
-        queryResult.getResults.forEach(failOnError)
+        failOnError(queryResult)
         dataRetrieved = Some(queryResult)
       } else {
         failStage(new InfluxDBException(queryResult.getError))
@@ -151,9 +151,14 @@ private[influxdb] final class InfluxDbSourceRawLogic(query: Query,
       queryExecuted = true
     }
 
-  private def failOnError(result: QueryResult.Result) =
-    if (result.hasError) {
-      failStage(new InfluxDBException(result.getError))
+  private def failOnError(result: QueryResult) = {
+    val totalErrors = result.getResults.asScala
+      .filter(_.hasError)
+      .map(_.getError)
+    if (totalErrors.size == result.getResults.size()) {
+      val errorMessage = totalErrors.reduceLeft((m1, m2) => m1 + ";" + m2)
+      failStage(new InfluxDBException(errorMessage))
     }
+  }
 
 }

@@ -60,12 +60,25 @@ class InfluxDbSourceSpec
 
     val result = InfluxDbSource(influxDB, query) //.runWith(Sink.seq)
       .recover {
-        case e: InfluxDBException => InfluxDbWriteResult(null, Some(e.getMessage))
+        case e: InfluxDBException => e.getMessage
       }
       .runWith(Sink.seq)
       .futureValue
 
-    result mustBe Seq(InfluxDbWriteResult(null, Some("undefined function man()")))
+    result mustBe Seq("undefined function man()")
+  }
+
+  "partial error in query" in assertAllStagesStopped {
+    val query = new Query("SELECT*FROM cpu; SELECT man() FROM invalid", DatabaseName);
+
+    val influxDBResult = InfluxDbSource(influxDB, query).runWith(Sink.seq)
+    val resultToAssert = influxDBResult.futureValue.head
+
+    val valuesFetched = resultToAssert.getResults.get(0).getSeries().get(0).getValues
+    valuesFetched.size() mustBe 2
+
+    val error = resultToAssert.getResults.get(1).getError
+    error mustBe "undefined function man()"
   }
 
   "exception on typed source" in assertAllStagesStopped {
@@ -74,12 +87,30 @@ class InfluxDbSourceSpec
     val result = InfluxDbSource
       .typed(classOf[InfluxDbSourceCpu], InfluxDbSettings.Default, influxDB, query) //.runWith(Sink.seq)
       .recover {
-        case e: InfluxDBException => InfluxDbWriteResult(null, Some(e.getMessage))
+        case e: InfluxDBException => e.getMessage
       }
       .runWith(Sink.seq)
       .futureValue
 
-    result mustBe Seq(InfluxDbWriteResult(null, Some("undefined function man()")))
+    result mustBe Seq("undefined function man()")
+  }
+
+  "mixed exception on typed source" in assertAllStagesStopped {
+    val query = new Query("SELECT*FROM cpu;SELECT man() FROM invalid; SELECT*FROM cpu;", DatabaseName);
+
+    val result = InfluxDbSource
+      .typed(classOf[InfluxDbSourceCpu], InfluxDbSettings.Default, influxDB, query) //.runWith(Sink.seq)
+      .recover {
+        case e: InfluxDBException => e.getMessage
+      }
+      .runWith(Sink.seq)
+      .futureValue
+
+    val firstResult = result(0).asInstanceOf[InfluxDbSourceCpu]
+    firstResult.getHostname mustBe "local_1"
+
+    val error = result(1).asInstanceOf[String]
+    error mustBe "not executed"
   }
 
 }
