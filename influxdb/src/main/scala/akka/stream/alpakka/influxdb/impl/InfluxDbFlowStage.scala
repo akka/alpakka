@@ -13,7 +13,7 @@ import org.influxdb.InfluxDB
 import scala.collection.immutable
 import org.influxdb.BatchOptions
 import org.influxdb.dto.{BatchPoints, Point}
-import org.influxdb.impl.InfluxDbResultMapperHelper
+import org.influxdb.impl.AlpakkaResultMapperHelper
 
 import scala.annotation.tailrec
 
@@ -125,7 +125,7 @@ private[influxdb] final class InfluxDbMapperRecordLogic[T, C](
     shape: FlowShape[immutable.Seq[InfluxDbWriteMessage[T, C]], immutable.Seq[InfluxDbWriteResult[T, C]]]
 ) extends InfluxDbLogic(influxDB, in, out, shape) {
 
-  private val mapperHelper: InfluxDbResultMapperHelper = new InfluxDbResultMapperHelper
+  private val mapperHelper: AlpakkaResultMapperHelper = new AlpakkaResultMapperHelper
 
   override protected def write(messages: immutable.Seq[InfluxDbWriteMessage[T, C]]): Unit =
     messages

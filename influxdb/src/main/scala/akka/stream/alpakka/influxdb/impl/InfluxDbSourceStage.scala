@@ -10,7 +10,7 @@ import akka.stream.{ActorAttributes, Attributes, Outlet, SourceShape}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import org.influxdb.{InfluxDB, InfluxDBException}
 import org.influxdb.dto.{Query, QueryResult}
-import org.influxdb.impl.InfluxDbResultMapperHelper
+import org.influxdb.impl.AlpakkaResultMapperHelper
 
 import scala.collection.JavaConverters._
 
@@ -52,10 +52,10 @@ private[influxdb] final class InfluxDbSourceLogic[T](clazz: Class[T],
 
   var queryExecuted: Boolean = false
   var dataRetrieved: Option[QueryResult] = None
-  var resultMapperHelper: InfluxDbResultMapperHelper = _
+  var resultMapperHelper: AlpakkaResultMapperHelper = _
 
   override def preStart(): Unit = {
-    resultMapperHelper = new InfluxDbResultMapperHelper
+    resultMapperHelper = new AlpakkaResultMapperHelper
     resultMapperHelper.cacheClassFields(clazz)
   }
 

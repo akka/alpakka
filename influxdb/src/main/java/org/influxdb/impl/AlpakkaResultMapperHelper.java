@@ -16,7 +16,12 @@ import org.influxdb.annotation.Column;
 import org.influxdb.dto.Point;
 import org.influxdb.dto.QueryResult;
 
-public class InfluxDbResultMapperHelper {
+/**
+ * This mapper helper is used in order to map the results to an InfluxDB measurement model for cases
+ * of multiple query results. Currently it needs to reside under the package org.influxdb.impl due
+ * to some package private methods from InfluxDBResultMapper.
+ */
+public class AlpakkaResultMapperHelper {
 
   private final InfluxDBResultMapper influxDBResultMapper = new InfluxDBResultMapper();
 
