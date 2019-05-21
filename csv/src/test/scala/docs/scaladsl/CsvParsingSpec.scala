@@ -136,8 +136,8 @@ class CsvParsingSpec extends CsvSpec {
     }
 
     "read all lines without final line end and last column empty" in {
-      val result = Source.single(ByteString(
-        """eins,zwei,drei
+      val result = Source
+        .single(ByteString("""eins,zwei,drei
           |uno,""".stripMargin))
         .via(CsvParsing.lineScanner())
         .map(_.map(_.utf8String))
