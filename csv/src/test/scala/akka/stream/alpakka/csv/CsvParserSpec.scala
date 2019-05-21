@@ -238,6 +238,19 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
       exception.getMessage should be("unclosed quote at end of input 1:6, no matching quote found")
     }
 
+    "accept delimiter as last input" in {
+      val parser = new CsvParser(delimiter = ',', quoteChar = '"', escapeChar = '\\', maximumLineLength)
+      parser.offer(ByteString("A,B\nA,"))
+      parser.poll(requireLineEnd = false).value.map(_.utf8String) should be(List("A", "B"))
+      parser.poll(requireLineEnd = false).value shouldBe List(ByteString("A"), ByteString.empty)
+    }
+
+    "accept delimiter as last input on first line" in {
+      val parser = new CsvParser(delimiter = ',', quoteChar = '"', escapeChar = '\\', maximumLineLength)
+      parser.offer(ByteString("A,"))
+      parser.poll(requireLineEnd = false).value shouldBe List(ByteString("A"), ByteString.empty)
+    }
+
     "detect line ending correctly if input is split between CR & LF" in {
       val parser = new CsvParser(delimiter = ',', quoteChar = '"', escapeChar = '\\', maximumLineLength)
       parser.offer(ByteString("A,D\r"))
