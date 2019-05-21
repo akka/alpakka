@@ -88,10 +88,13 @@ public class ExampleTest {
 
   @Test
   public void allowMultipleRequests() throws Exception {
+    AwsOp.CreateTable createTable =
+        AwsOp.create(new CreateTableRequest().withTableName("testTable"));
+
     // #flow
     Source<String, NotUsed> tableArnSource =
-        Source.single(AwsOp.create(new CreateTableRequest().withTableName("testTable")))
-            .via(DynamoDb.flow())
+        Source.single(createTable)
+            .via(DynamoDb.flow(createTable))
             .map(r -> (CreateTableResult) r)
             .map(result -> result.getTableDescription().getTableArn());
     // #flow

@@ -8,6 +8,10 @@ import akka.actor.ActorSystem
 import com.amazonaws.auth._
 import com.typesafe.config.Config
 import java.util.Optional
+import java.util.concurrent.TimeUnit
+
+import akka.stream.alpakka.dynamodb.RetrySettings.{Exponential, Linear}
+import scala.concurrent.duration._
 import scala.compat.java8.OptionConverters._
 
 final class DynamoSettings private (
@@ -17,6 +21,7 @@ final class DynamoSettings private (
     val tls: Boolean,
     val parallelism: Int,
     val maxOpenRequests: Option[Int],
+    val retrySettings: RetrySettings,
     val credentialsProvider: com.amazonaws.auth.AWSCredentialsProvider
 ) extends AwsClientSettings {
 
@@ -47,6 +52,7 @@ final class DynamoSettings private (
       tls: Boolean = tls,
       parallelism: Int = parallelism,
       maxOpenRequests: Option[Int] = maxOpenRequests,
+      retrySettings: RetrySettings = retrySettings,
       credentialsProvider: com.amazonaws.auth.AWSCredentialsProvider = credentialsProvider
   ): DynamoSettings = new DynamoSettings(
     region = region,
@@ -55,6 +61,7 @@ final class DynamoSettings private (
     tls = tls,
     parallelism = parallelism,
     maxOpenRequests = maxOpenRequests,
+    retrySettings = retrySettings,
     credentialsProvider = credentialsProvider
   )
 
@@ -94,6 +101,22 @@ object DynamoSettings {
         new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey))
       } else new DefaultAWSCredentialsProviderChain()
     }
+
+    val retrySettings = {
+      if (c.hasPath("maximum-retries") && c.hasPath("initial-retry-timeout") && c.hasPath("retry-strategy")) {
+        val maximumRetries = c.getInt("maximum-retries")
+        val initialRetryTimeout = c.getDuration("initial-retry-timeout", TimeUnit.MILLISECONDS).milliseconds
+        val backoffStrategy = c.getString("retry-strategy") match {
+          case "exponential" => Exponential
+          case "linear" => Linear
+        }
+
+        RetrySettings(maximumRetries, initialRetryTimeout, backoffStrategy)
+      } else {
+        RetrySettings.DefaultRetrySettings
+      }
+    }
+
     new DynamoSettings(
       region,
       host,
@@ -101,6 +124,7 @@ object DynamoSettings {
       tls,
       parallelism,
       maxOpenRequests,
+      retrySettings,
       awsCredentialsProvider
     )
   }
@@ -127,6 +151,7 @@ object DynamoSettings {
     tls = true,
     parallelism = 4,
     maxOpenRequests = None,
+    retrySettings = RetrySettings.DefaultRetrySettings,
     new DefaultAWSCredentialsProviderChain()
   )
 

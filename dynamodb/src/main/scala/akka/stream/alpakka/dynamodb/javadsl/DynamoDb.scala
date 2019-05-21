@@ -21,8 +21,8 @@ object DynamoDb {
   /**
    * Create a Flow that emits a response for every request.
    */
-  def flow[Op <: AwsOp](): Flow[Op, Op#B, NotUsed] =
-    scaladsl.DynamoDb.flow.asJava
+  def flow[Op <: AwsOp](op: Op): Flow[Op, Op#B, NotUsed] =
+    scaladsl.DynamoDb.flow(op).asJava
 
   /**
    * Create a Source that will emit potentially multiple responses for a given request.

@@ -12,13 +12,21 @@ import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.http.scaladsl.Http.HostConnectionPool
 import akka.http.scaladsl.model.{ContentType, HttpEntity, _}
+import akka.stream._
 import akka.stream.alpakka.dynamodb.impl.AwsClient.{AwsConnect, AwsRequestMetadata}
 import akka.stream.alpakka.dynamodb.{AwsClientSettings, AwsOp}
-import akka.stream.scaladsl.Flow
-import akka.stream.{ActorAttributes, Materializer, Supervision}
+import akka.stream.scaladsl.{Flow, Source}
 import com.amazonaws.auth.AWS4Signer
 import com.amazonaws.http.{HttpMethodName, HttpResponseHandler, HttpResponse => AWSHttpResponse}
-import com.amazonaws.{DefaultRequest, HttpMethod => _, _}
+import com.amazonaws.services.dynamodbv2.model.{
+  InternalServerErrorException,
+  ItemCollectionSizeLimitExceededException,
+  LimitExceededException,
+  ProvisionedThroughputExceededException,
+  RequestLimitExceededException,
+  ResourceNotFoundException
+}
+import com.amazonaws.{DefaultRequest, ResponseMetadata, HttpMethod => _, _}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.implicitConversions
@@ -30,10 +38,10 @@ import scala.util.{Failure, Success, Try}
 @InternalApi
 private[dynamodb] object AwsClient {
 
-  case class AwsRequestMetadata(id: Long, op: AwsOp)
-
   type AwsConnect =
     Flow[(HttpRequest, AwsRequestMetadata), (Try[HttpResponse], AwsRequestMetadata), HostConnectionPool]
+
+  case class AwsRequestMetadata(id: Long, op: AwsOp)
 
 }
 
@@ -49,23 +57,23 @@ private[dynamodb] trait AwsClient[S <: AwsClientSettings] {
 
   protected implicit def ec: ExecutionContext
 
-  protected val settings: S
-  protected val connection: AwsConnect
-  protected val service: String
-  protected val defaultContentType: ContentType
-  protected val errorResponseHandler: HttpResponseHandler[AmazonServiceException]
-
-  protected def url: String = s"https://${settings.host}/"
-
-  private val requestId = new AtomicInteger()
-  private val credentials = settings.credentialsProvider
-
   private lazy val signer = {
     val s = new AWS4Signer()
     s.setServiceName(service)
     s.setRegionName(settings.region)
     s
   }
+  protected val settings: S
+  protected val connection: AwsConnect
+  protected val service: String
+  protected val defaultContentType: ContentType
+  protected val errorResponseHandler: HttpResponseHandler[AmazonServiceException]
+
+  private val requestId = new AtomicInteger()
+  private val credentials = settings.credentialsProvider
+  private val signableUrl = Uri(url)
+  private val uri = new java.net.URI(url)
+  private val decider: Supervision.Decider = _ => Supervision.Stop
 
   private implicit def method(method: HttpMethodName): HttpMethod = method match {
     case HttpMethodName.POST => HttpMethods.POST
@@ -77,22 +85,32 @@ private[dynamodb] trait AwsClient[S <: AwsClientSettings] {
     case HttpMethodName.PATCH => HttpMethods.PATCH
   }
 
-  private val signableUrl = Uri(url)
+  def flow[Op <: AwsOp](op: Op): Flow[Op, Op#B, NotUsed] = {
+    val opFlow =
+      Flow[Op]
+        .map(op => toAwsRequest(op))
+        .via(connection)
+        .mapAsync(settings.parallelism) {
+          case (Success(response), i) => toAwsResult(response, i)
+          case (Failure(ex), _) => Future.failed(ex)
+        }
 
-  private val uri = new java.net.URI(url)
-
-  private val decider: Supervision.Decider = _ => Supervision.Stop
-
-  def flow[Op <: AwsOp]: Flow[Op, Op#B, NotUsed] =
-    Flow[Op]
-      .map(op => toAwsRequest(op))
-      .via(connection)
-      .mapAsync(settings.parallelism) {
-        case (Success(response), i) => toAwsResult(response, i)
-        case (Failure(ex), _) => Future.failed(ex)
-      }
+    opFlow
+      .via(
+        new RecoverWithRetry(
+          settings.retrySettings.maximumRetries,
+          settings.retrySettings.initialRetryTimeout,
+          settings.retrySettings.backoffStrategy, {
+            case _ @(_: InternalServerErrorException | _: ItemCollectionSizeLimitExceededException |
+                _: LimitExceededException | _: ProvisionedThroughputExceededException |
+                _: RequestLimitExceededException) =>
+              Source.single(op.asInstanceOf[Op]).via(opFlow)
+          }
+        )
+      )
       .withAttributes(ActorAttributes.supervisionStrategy(decider))
       .map(_.asInstanceOf[Op#B])
+  }
 
   private def toAwsRequest(s: AwsOp): (HttpRequest, AwsRequestMetadata) = {
     val original = s.marshaller.marshall(s.request)
@@ -127,6 +145,8 @@ private[dynamodb] trait AwsClient[S <: AwsClientSettings] {
     httpr -> AwsRequestMetadata(requestId.getAndIncrement(), s)
   }
 
+  private def read(in: InputStream) = Stream.continually(in.read).takeWhile(-1 != _).map(_.toByte).toArray
+
   private def toAwsResult(
       response: HttpResponse,
       metadata: AwsRequestMetadata
@@ -150,6 +170,6 @@ private[dynamodb] trait AwsClient[S <: AwsClientSettings] {
     }
   }
 
-  private def read(in: InputStream) = Stream.continually(in.read).takeWhile(-1 != _).map(_.toByte).toArray
+  protected def url: String = s"https://${settings.host}/"
 
 }

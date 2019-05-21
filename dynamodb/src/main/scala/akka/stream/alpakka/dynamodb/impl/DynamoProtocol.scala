@@ -41,6 +41,9 @@ private[dynamodb] trait DynamoProtocol {
           .withErrorCode("InternalServerError")
           .withModeledClass(classOf[InternalServerErrorException]),
         new JsonErrorShapeMetadata()
+          .withErrorCode("RequestLimitExceededException")
+          .withModeledClass(classOf[RequestLimitExceededException]),
+        new JsonErrorShapeMetadata()
           .withErrorCode("LimitExceededException")
           .withModeledClass(classOf[LimitExceededException])
       )
