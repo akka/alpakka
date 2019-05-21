@@ -135,6 +135,20 @@ class CsvParsingSpec extends CsvSpec {
       sink.expectComplete()
     }
 
+    "read all lines without final line end and last column empty" in {
+      val result = Source.single(ByteString(
+        """eins,zwei,drei
+          |uno,""".stripMargin))
+        .via(CsvParsing.lineScanner())
+        .map(_.map(_.utf8String))
+        .runWith(Sink.seq)
+        .futureValue
+
+      result should have size 2
+      result.head should be(List("eins", "zwei", "drei"))
+      result(1) should be(List("uno", ""))
+    }
+
     "parse Apple Numbers exported file" in assertAllStagesStopped {
       val fut =
         FileIO
