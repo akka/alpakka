@@ -9,13 +9,14 @@ import akka.stream.alpakka.influxdb.{InfluxDbSettings, InfluxDbWriteMessage, Inf
 import org.influxdb.InfluxDB
 import akka.stream.javadsl.Flow
 import akka.stream.alpakka.influxdb.scaladsl
+import org.influxdb.dto.Point
 
 object InfluxDbFlow {
 
-  def create[T](
+  def create(
       settings: InfluxDbSettings,
       influxDB: InfluxDB
-  ): Flow[InfluxDbWriteMessage[T, NotUsed], InfluxDbWriteResult[T, NotUsed], NotUsed] =
+  ): Flow[InfluxDbWriteMessage[Point, NotUsed], InfluxDbWriteResult[Point, NotUsed], NotUsed] =
     scaladsl.InfluxDbFlow.create(settings)(influxDB).asJava
 
   def typed[T](
@@ -25,10 +26,10 @@ object InfluxDbFlow {
   ): Flow[InfluxDbWriteMessage[T, NotUsed], InfluxDbWriteResult[T, NotUsed], NotUsed] =
     scaladsl.InfluxDbFlow.typed(clazz, settings)(influxDB).asJava
 
-  def createWithPassThrough[T, C](
+  def createWithPassThrough[C](
       settings: InfluxDbSettings,
       influxDB: InfluxDB
-  ): Flow[InfluxDbWriteMessage[T, C], InfluxDbWriteResult[T, C], NotUsed] =
+  ): Flow[InfluxDbWriteMessage[Point, C], InfluxDbWriteResult[Point, C], NotUsed] =
     scaladsl.InfluxDbFlow.createWithPassThrough(settings)(influxDB).asJava
 
   def typedWithPassThrough[T, C](
@@ -38,10 +39,10 @@ object InfluxDbFlow {
   ): Flow[InfluxDbWriteMessage[T, C], InfluxDbWriteResult[T, C], NotUsed] =
     scaladsl.InfluxDbFlow.typedWithPassThrough(clazz, settings)(influxDB).asJava
 
-  def createWithContext[T, C](
+  def createWithContext[C](
       settings: InfluxDbSettings,
       influxDB: InfluxDB
-  ): Flow[(InfluxDbWriteMessage[T, NotUsed], C), (InfluxDbWriteResult[T, C], C), NotUsed] =
+  ): Flow[(InfluxDbWriteMessage[Point, NotUsed], C), (InfluxDbWriteResult[Point, C], C), NotUsed] =
     scaladsl.InfluxDbFlow.createWithContext(settings)(influxDB).asJava
 
   def typedWithContext[T, C](

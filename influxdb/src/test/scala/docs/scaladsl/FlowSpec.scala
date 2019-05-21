@@ -19,8 +19,6 @@ import docs.javadsl.TestUtils._
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import org.influxdb.dto.Point
 
-private final case class InvalidModel(description: String) {}
-
 class FlowSpec extends WordSpec with MustMatchers with BeforeAndAfterEach with BeforeAndAfterAll with ScalaFutures {
 
   implicit val system = ActorSystem()
@@ -36,20 +34,6 @@ class FlowSpec extends WordSpec with MustMatchers with BeforeAndAfterEach with B
   override protected def afterAll(): Unit = {
     dropDatabase(influxDB, DatabaseName)
     TestKit.shutdownActorSystem(system)
-  }
-
-  "invalid model" in assertAllStagesStopped {
-    val result = Source(
-      List(InfluxDbWriteMessage(InvalidModel("Invalid measurement one")),
-           InfluxDbWriteMessage(InvalidModel("Invalid measurement two")))
-    ).via(InfluxDbFlow.create[InvalidModel](InfluxDbSettings()))
-      .recover {
-        case _: RuntimeException => InfluxDbWriteResult(null, Some("error occurred"))
-      }
-      .runWith(Sink.seq)
-      .futureValue
-
-    result mustBe Seq(InfluxDbWriteResult(null, Some("error occurred")))
   }
 
   "mixed model" in assertAllStagesStopped {
@@ -68,7 +52,7 @@ class FlowSpec extends WordSpec with MustMatchers with BeforeAndAfterEach with B
       List(
         validMessage
       )
-    ).via(InfluxDbFlow.create[Point](InfluxDbSettings()))
+    ).via(InfluxDbFlow.create(InfluxDbSettings()))
       .runWith(Sink.seq)
       .futureValue
 

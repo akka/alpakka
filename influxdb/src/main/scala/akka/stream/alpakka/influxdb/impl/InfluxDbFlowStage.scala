@@ -8,10 +8,9 @@ import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.alpakka.influxdb.{InfluxDbWriteMessage, InfluxDbWriteResult}
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
-import org.influxdb.InfluxDB
+import org.influxdb.{BatchOptions, InfluxDB}
 
 import scala.collection.immutable
-import org.influxdb.BatchOptions
 import org.influxdb.dto.{BatchPoints, Point}
 import org.influxdb.impl.AlpakkaResultMapperHelper
 
@@ -21,12 +20,13 @@ import scala.annotation.tailrec
  * INTERNAL API
  */
 @InternalApi
-private[influxdb] class InfluxDbFlowStage[T, C](
-    clazz: Option[Class[T]],
+private[influxdb] class InfluxDbFlowStage[C](
     influxDB: InfluxDB
-) extends GraphStage[FlowShape[immutable.Seq[InfluxDbWriteMessage[T, C]], immutable.Seq[InfluxDbWriteResult[T, C]]]] {
-  private val in = Inlet[immutable.Seq[InfluxDbWriteMessage[T, C]]]("in")
-  private val out = Outlet[immutable.Seq[InfluxDbWriteResult[T, C]]]("out")
+) extends GraphStage[
+      FlowShape[immutable.Seq[InfluxDbWriteMessage[Point, C]], immutable.Seq[InfluxDbWriteResult[Point, C]]]
+    ] {
+  private val in = Inlet[immutable.Seq[InfluxDbWriteMessage[Point, C]]]("in")
+  private val out = Outlet[immutable.Seq[InfluxDbWriteResult[Point, C]]]("out")
 
   override val shape = FlowShape(in, out)
 
@@ -34,10 +34,21 @@ private[influxdb] class InfluxDbFlowStage[T, C](
     super.initialAttributes and Attributes(ActorAttributes.IODispatcher)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    clazz match {
-      case Some(c) => new InfluxDbMapperRecordLogic(influxDB, in, out, shape)
-      case None => new InfluxDbRecordLogic(influxDB, in, out, shape)
-    }
+    new InfluxDbRecordLogic(influxDB, in, out, shape)
+
+}
+private[influxdb] class InfluxDbMapperFlowStage[T, C](
+    clazz: Class[T],
+    influxDB: InfluxDB
+) extends GraphStage[FlowShape[immutable.Seq[InfluxDbWriteMessage[T, C]], immutable.Seq[InfluxDbWriteResult[T, C]]]] {
+
+  private val in = Inlet[immutable.Seq[InfluxDbWriteMessage[T, C]]]("in")
+  private val out = Outlet[immutable.Seq[InfluxDbWriteResult[T, C]]]("out")
+
+  override val shape = FlowShape(in, out)
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new InfluxDbMapperRecordLogic(influxDB, in, out, shape)
 
 }
 
@@ -95,24 +106,15 @@ private[influxdb] sealed abstract class InfluxDbLogic[T, C](
 
 }
 
-private[influxdb] final class InfluxDbRecordLogic[T, C](
+private[influxdb] final class InfluxDbRecordLogic[C](
     influxDB: InfluxDB,
-    in: Inlet[immutable.Seq[InfluxDbWriteMessage[T, C]]],
-    out: Outlet[immutable.Seq[InfluxDbWriteResult[T, C]]],
-    shape: FlowShape[immutable.Seq[InfluxDbWriteMessage[T, C]], immutable.Seq[InfluxDbWriteResult[T, C]]]
+    in: Inlet[immutable.Seq[InfluxDbWriteMessage[Point, C]]],
+    out: Outlet[immutable.Seq[InfluxDbWriteResult[Point, C]]],
+    shape: FlowShape[immutable.Seq[InfluxDbWriteMessage[Point, C]], immutable.Seq[InfluxDbWriteResult[Point, C]]]
 ) extends InfluxDbLogic(influxDB, in, out, shape) {
 
-  override protected def write(messages: immutable.Seq[InfluxDbWriteMessage[T, C]]): Unit =
+  override protected def write(messages: immutable.Seq[InfluxDbWriteMessage[Point, C]]): Unit =
     messages
-      .filter {
-        case InfluxDbWriteMessage(_: Point, _, _, _) => {
-          true
-        }
-        case InfluxDbWriteMessage(_: AnyRef, _, _, _) => {
-          failStage(new RuntimeException(s"unexpected type Point required"))
-          false
-        }
-      }
       .groupBy(im => (im.databaseName, im.retentionPolicy))
       .map(wm => toBatchPoints(wm._1._1, wm._1._2, wm._2))
       .foreach(influxDB.write)

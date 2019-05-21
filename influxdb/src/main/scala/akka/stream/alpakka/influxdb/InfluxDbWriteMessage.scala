@@ -9,24 +9,32 @@ import akka.NotUsed
 object InfluxDbWriteMessage {
   // Apply method to use when not using passThrough
   def apply[T](point: T): InfluxDbWriteMessage[T, NotUsed] =
-    InfluxDbWriteMessage(point = point, passThrough = NotUsed)
+    new InfluxDbWriteMessage(point = point, passThrough = NotUsed)
 
   // Java-api - without passThrough
   def create[T](point: T): InfluxDbWriteMessage[T, NotUsed] =
-    InfluxDbWriteMessage(point, NotUsed)
+    new InfluxDbWriteMessage(point, NotUsed)
 
   // Java-api - with passThrough
   def create[T, C](point: T, passThrough: C) =
-    InfluxDbWriteMessage(point, passThrough)
+    new InfluxDbWriteMessage(point, passThrough)
 }
 
-final case class InfluxDbWriteMessage[T, C](point: T,
-                                            passThrough: C,
-                                            databaseName: Option[String] = None,
-                                            retentionPolicy: Option[String] = None) {
+final class InfluxDbWriteMessage[T, C](val point: T,
+                                       val passThrough: C,
+                                       val databaseName: Option[String] = None,
+                                       val retentionPolicy: Option[String] = None) {
 
   def withPoint(point: T): InfluxDbWriteMessage[T, C] =
     copy(point = point)
+
+  def withPassThrough[PT2](passThrough: PT2): InfluxDbWriteMessage[T, PT2] =
+    new InfluxDbWriteMessage[T, PT2](
+      point = point,
+      passThrough = passThrough,
+      databaseName = databaseName,
+      retentionPolicy = retentionPolicy
+    )
 
   def withDatabaseName(databaseName: String): InfluxDbWriteMessage[T, C] =
     copy(databaseName = Some(databaseName))

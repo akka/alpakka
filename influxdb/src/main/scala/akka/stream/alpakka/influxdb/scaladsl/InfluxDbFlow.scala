@@ -8,6 +8,7 @@ import akka.NotUsed
 import akka.stream.alpakka.influxdb.{impl, InfluxDbSettings, InfluxDbWriteMessage, InfluxDbWriteResult}
 import akka.stream.scaladsl.Flow
 import org.influxdb.InfluxDB
+import org.influxdb.dto.Point
 
 import scala.collection.immutable
 
@@ -16,12 +17,12 @@ import scala.collection.immutable
  */
 object InfluxDbFlow {
 
-  def create[T](settings: InfluxDbSettings)(
+  def create(settings: InfluxDbSettings)(
       implicit influxDB: InfluxDB
-  ): Flow[InfluxDbWriteMessage[T, NotUsed], InfluxDbWriteResult[T, NotUsed], NotUsed] =
-    Flow[InfluxDbWriteMessage[T, NotUsed]]
+  ): Flow[InfluxDbWriteMessage[Point, NotUsed], InfluxDbWriteResult[Point, NotUsed], NotUsed] =
+    Flow[InfluxDbWriteMessage[Point, NotUsed]]
       .batch(settings.batchSize, immutable.Seq(_))(_ :+ _)
-      .via(new impl.InfluxDbFlowStage[T, NotUsed](None, influxDB))
+      .via(new impl.InfluxDbFlowStage[NotUsed](influxDB))
       .mapConcat(identity)
 
   def typed[T](clazz: Class[T], settings: InfluxDbSettings)(
@@ -29,15 +30,15 @@ object InfluxDbFlow {
   ): Flow[InfluxDbWriteMessage[T, NotUsed], InfluxDbWriteResult[T, NotUsed], NotUsed] =
     Flow[InfluxDbWriteMessage[T, NotUsed]]
       .batch(settings.batchSize, immutable.Seq(_))(_ :+ _)
-      .via(new impl.InfluxDbFlowStage[T, NotUsed](Some(clazz), influxDB))
+      .via(new impl.InfluxDbMapperFlowStage[T, NotUsed](clazz, influxDB))
       .mapConcat(identity)
 
-  def createWithPassThrough[T, C](settings: InfluxDbSettings)(
+  def createWithPassThrough[C](settings: InfluxDbSettings)(
       implicit influxDB: InfluxDB
-  ): Flow[InfluxDbWriteMessage[T, C], InfluxDbWriteResult[T, C], NotUsed] =
-    Flow[InfluxDbWriteMessage[T, C]]
+  ): Flow[InfluxDbWriteMessage[Point, C], InfluxDbWriteResult[Point, C], NotUsed] =
+    Flow[InfluxDbWriteMessage[Point, C]]
       .batch(settings.batchSize, immutable.Seq(_))(_ :+ _)
-      .via(new impl.InfluxDbFlowStage[T, C](None, influxDB))
+      .via(new impl.InfluxDbFlowStage[C](influxDB))
       .mapConcat(identity)
 
   def typedWithPassThrough[T, C](clazz: Class[T], settings: InfluxDbSettings)(
@@ -45,18 +46,19 @@ object InfluxDbFlow {
   ): Flow[InfluxDbWriteMessage[T, C], InfluxDbWriteResult[T, C], NotUsed] =
     Flow[InfluxDbWriteMessage[T, C]]
       .batch(settings.batchSize, immutable.Seq(_))(_ :+ _)
-      .via(new impl.InfluxDbFlowStage[T, C](Some(clazz), influxDB))
+      .via(new impl.InfluxDbMapperFlowStage[T, C](clazz, influxDB))
       .mapConcat(identity)
 
-  def createWithContext[T, C](settings: InfluxDbSettings)(
+  def createWithContext[C](settings: InfluxDbSettings)(
       implicit influxDB: InfluxDB
-  ): Flow[(InfluxDbWriteMessage[T, NotUsed], C), (InfluxDbWriteResult[T, C], C), NotUsed] =
-    Flow[(InfluxDbWriteMessage[T, NotUsed], C)]
+  ): Flow[(InfluxDbWriteMessage[Point, NotUsed], C), (InfluxDbWriteResult[Point, C], C), NotUsed] =
+    Flow[(InfluxDbWriteMessage[Point, NotUsed], C)]
       .map {
-        case (wm, pt) =>
-          InfluxDbWriteMessage(wm.point, pt)
+        case (wm, pt) => wm.withPassThrough(pt)
       }
-      .via(createWithPassThrough(settings))
+      .via(
+        createWithPassThrough(settings)
+      )
       .map { wr =>
         (wr, wr.writeMessage.passThrough)
       }
@@ -66,8 +68,7 @@ object InfluxDbFlow {
   ): Flow[(InfluxDbWriteMessage[T, NotUsed], C), (InfluxDbWriteResult[T, C], C), NotUsed] =
     Flow[(InfluxDbWriteMessage[T, NotUsed], C)]
       .map {
-        case (wm, pt) =>
-          InfluxDbWriteMessage(wm.point, pt)
+        case (wm, pt) => wm.withPassThrough(pt)
       }
       .via(typedWithPassThrough(clazz, settings))
       .map { wr =>

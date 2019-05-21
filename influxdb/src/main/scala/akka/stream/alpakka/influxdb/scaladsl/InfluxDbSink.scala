@@ -17,7 +17,7 @@ object InfluxDbSink {
   def apply(
       settings: InfluxDbSettings
   )(implicit influxDB: InfluxDB): Sink[InfluxDbWriteMessage[Point, NotUsed], Future[Done]] =
-    InfluxDbFlow.create[Point](settings).toMat(Sink.ignore)(Keep.right)
+    InfluxDbFlow.create(settings).toMat(Sink.ignore)(Keep.right)
 
   def typed[T](
       clazz: Class[T],
