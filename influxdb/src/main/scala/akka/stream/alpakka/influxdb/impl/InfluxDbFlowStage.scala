@@ -89,7 +89,7 @@ private[influxdb] sealed abstract class InfluxDbLogic[T, C](
       case None => BatchPoints.builder()
     }
 
-    if (retentionPolicy.isDefined) builder.retentionPolicy(retentionPolicy.get)
+    retentionPolicy.foreach(builder.retentionPolicy)
 
     @tailrec
     def convert(messages: Seq[InfluxDbWriteMessage[T, C]]): BatchPoints =
