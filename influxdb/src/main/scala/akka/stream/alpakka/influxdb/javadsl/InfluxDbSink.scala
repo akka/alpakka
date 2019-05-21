@@ -7,7 +7,7 @@ package akka.stream.alpakka.influxdb.javadsl
 import java.util.concurrent.CompletionStage
 
 import akka.{Done, NotUsed}
-import akka.stream.alpakka.influxdb.{InfluxDbSettings, InfluxDbWriteMessage, InfluxDbWriteResult}
+import akka.stream.alpakka.influxdb.{InfluxDbWriteMessage, InfluxDbWriteResult, InfluxDbWriteSettings}
 import akka.stream.javadsl.{Keep, Sink}
 import org.influxdb.InfluxDB
 import org.influxdb.dto.Point
@@ -18,7 +18,7 @@ import org.influxdb.dto.Point
 object InfluxDbSink {
 
   def create(
-      settings: InfluxDbSettings,
+      settings: InfluxDbWriteSettings,
       influxDB: InfluxDB
   ): akka.stream.javadsl.Sink[InfluxDbWriteMessage[Point, NotUsed], CompletionStage[Done]] =
     InfluxDbFlow
@@ -26,7 +26,7 @@ object InfluxDbSink {
       .toMat(Sink.ignore[InfluxDbWriteResult[Point, NotUsed]], Keep.right[NotUsed, CompletionStage[Done]])
 
   def typed[T](clazz: Class[T],
-               settings: InfluxDbSettings,
+               settings: InfluxDbWriteSettings,
                influxDB: InfluxDB): akka.stream.javadsl.Sink[InfluxDbWriteMessage[T, NotUsed], CompletionStage[Done]] =
     InfluxDbFlow
       .typed(clazz, settings, influxDB)

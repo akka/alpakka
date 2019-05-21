@@ -6,7 +6,7 @@ package docs.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.influxdb.{InfluxDbSettings}
+import akka.stream.alpakka.influxdb.{InfluxDbReadSettings, InfluxDbWriteSettings}
 import akka.stream.alpakka.influxdb.scaladsl.InfluxDbSource
 import akka.stream.scaladsl.Sink
 import akka.testkit.TestKit
@@ -85,7 +85,7 @@ class InfluxDbSourceSpec
     val query = new Query("SELECT man() FROM invalid", DatabaseName);
 
     val result = InfluxDbSource
-      .typed(classOf[InfluxDbSourceCpu], InfluxDbSettings.Default, influxDB, query) //.runWith(Sink.seq)
+      .typed(classOf[InfluxDbSourceCpu], InfluxDbReadSettings.Default, influxDB, query) //.runWith(Sink.seq)
       .recover {
         case e: InfluxDBException => e.getMessage
       }
@@ -99,7 +99,7 @@ class InfluxDbSourceSpec
     val query = new Query("SELECT*FROM cpu;SELECT man() FROM invalid; SELECT*FROM cpu;", DatabaseName);
 
     val result = InfluxDbSource
-      .typed(classOf[InfluxDbSourceCpu], InfluxDbSettings.Default, influxDB, query) //.runWith(Sink.seq)
+      .typed(classOf[InfluxDbSourceCpu], InfluxDbReadSettings.Default, influxDB, query) //.runWith(Sink.seq)
       .recover {
         case e: InfluxDBException => e.getMessage
       }

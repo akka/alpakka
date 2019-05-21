@@ -12,7 +12,7 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, MustMatchers, WordS
 import org.scalatest.concurrent.ScalaFutures
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.{Done, NotUsed}
-import akka.stream.alpakka.influxdb.{InfluxDbSettings, InfluxDbWriteMessage}
+import akka.stream.alpakka.influxdb.{InfluxDbReadSettings, InfluxDbWriteMessage, InfluxDbWriteSettings}
 import akka.stream.alpakka.influxdb.scaladsl.{InfluxDbSink, InfluxDbSource}
 import akka.testkit.TestKit
 import docs.javadsl.TestUtils._
@@ -44,7 +44,7 @@ class InfluxDbSpec extends WordSpec with MustMatchers with BeforeAndAfterEach wi
   "support typed source" in assertAllStagesStopped {
     val query = new Query("SELECT * FROM cpu", DatabaseName);
     val measurements =
-      InfluxDbSource.typed(classOf[InfluxDbSpecCpu], InfluxDbSettings(), influxDB, query).runWith(Sink.seq)
+      InfluxDbSource.typed(classOf[InfluxDbSpecCpu], InfluxDbReadSettings(), influxDB, query).runWith(Sink.seq)
 
     measurements.futureValue.map(_.getHostname) mustBe List("local_1", "local_2")
   }
@@ -55,18 +55,19 @@ class InfluxDbSpec extends WordSpec with MustMatchers with BeforeAndAfterEach wi
       val query = new Query("SELECT * FROM cpu", DatabaseName);
 
       val f1 = InfluxDbSource
-        .typed(classOf[InfluxDbSpecCpu], InfluxDbSettings(), influxDB, query)
+        .typed(classOf[InfluxDbSpecCpu], InfluxDbReadSettings(), influxDB, query)
         .map { cpu: InfluxDbSpecCpu =>
           {
             val clonedCpu = cpu.cloneAt(cpu.getTime.plusSeconds(60000))
             InfluxDbWriteMessage(clonedCpu)
           }
         }
-        .runWith(InfluxDbSink.typed(classOf[InfluxDbSpecCpu], InfluxDbSettings()))
+        .runWith(InfluxDbSink.typed(classOf[InfluxDbSpecCpu], InfluxDbWriteSettings()))
 
       f1.futureValue mustBe Done
 
-      val f2 = InfluxDbSource.typed(classOf[InfluxDbSpecCpu], InfluxDbSettings(), influxDB, query).runWith(Sink.seq)
+      val f2 =
+        InfluxDbSource.typed(classOf[InfluxDbSpecCpu], InfluxDbReadSettings(), influxDB, query).runWith(Sink.seq)
 
       f2.futureValue.length mustBe 4
     }
@@ -76,11 +77,12 @@ class InfluxDbSpec extends WordSpec with MustMatchers with BeforeAndAfterEach wi
 
       val f1 = InfluxDbSource(influxDB, query)
         .mapConcat(resultToPoints)
-        .runWith(InfluxDbSink(InfluxDbSettings()))
+        .runWith(InfluxDbSink(InfluxDbWriteSettings()))
 
       f1.futureValue mustBe Done
 
-      val f2 = InfluxDbSource.typed(classOf[InfluxDbSpecCpu], InfluxDbSettings(), influxDB, query).runWith(Sink.seq)
+      val f2 =
+        InfluxDbSource.typed(classOf[InfluxDbSpecCpu], InfluxDbReadSettings(), influxDB, query).runWith(Sink.seq)
 
       f2.futureValue.length mustBe 4
     }

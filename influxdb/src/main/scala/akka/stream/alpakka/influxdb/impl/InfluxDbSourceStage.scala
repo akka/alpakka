@@ -5,7 +5,7 @@
 package akka.stream.alpakka.influxdb.impl
 
 import akka.annotation.InternalApi
-import akka.stream.alpakka.influxdb.InfluxDbSettings
+import akka.stream.alpakka.influxdb.{InfluxDbReadSettings}
 import akka.stream.{ActorAttributes, Attributes, Outlet, SourceShape}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import org.influxdb.{InfluxDB, InfluxDBException}
@@ -19,7 +19,7 @@ import scala.collection.JavaConverters._
  */
 @InternalApi
 private[influxdb] final class InfluxDbSourceStage[T](clazz: Class[T],
-                                                     settings: InfluxDbSettings,
+                                                     settings: InfluxDbReadSettings,
                                                      influxDB: InfluxDB,
                                                      query: Query)
     extends GraphStage[SourceShape[T]] {
@@ -40,7 +40,7 @@ private[influxdb] final class InfluxDbSourceStage[T](clazz: Class[T],
  */
 @InternalApi
 private[influxdb] final class InfluxDbSourceLogic[T](clazz: Class[T],
-                                                     settings: InfluxDbSettings,
+                                                     settings: InfluxDbReadSettings,
                                                      influxDB: InfluxDB,
                                                      query: Query,
                                                      outlet: Outlet[T],

@@ -5,7 +5,7 @@
 package akka.stream.alpakka.influxdb.javadsl
 
 import akka.NotUsed
-import akka.stream.alpakka.influxdb.InfluxDbSettings
+import akka.stream.alpakka.influxdb.{InfluxDbReadSettings, InfluxDbWriteSettings}
 import akka.stream.javadsl.Source
 import org.influxdb.InfluxDB
 import org.influxdb.dto.{Query, QueryResult}
@@ -25,7 +25,7 @@ object InfluxDbSource {
   /**
    * Java API: creates an  [[InfluxDbSourceStage]] of elements of `T` from `query`.
    */
-  def typed[T](clazz: Class[T], settings: InfluxDbSettings, influxDB: InfluxDB, query: Query): Source[T, NotUsed] =
+  def typed[T](clazz: Class[T], settings: InfluxDbReadSettings, influxDB: InfluxDB, query: Query): Source[T, NotUsed] =
     Source.fromGraph(
       new InfluxDbSourceStage[T](
         clazz,

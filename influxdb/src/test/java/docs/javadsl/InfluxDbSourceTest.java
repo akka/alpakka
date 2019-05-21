@@ -21,7 +21,8 @@ import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-import akka.stream.alpakka.influxdb.InfluxDbSettings;
+import akka.stream.alpakka.influxdb.InfluxDbReadSettings;
+import akka.stream.alpakka.influxdb.InfluxDbWriteSettings;
 import akka.stream.alpakka.influxdb.javadsl.InfluxDbSource;
 import akka.stream.javadsl.Sink;
 import akka.stream.testkit.javadsl.StreamTestKit;
@@ -78,7 +79,8 @@ public class InfluxDbSourceTest {
     Query query = new Query("SELECT * FROM cpu", DATABASE_NAME);
 
     CompletionStage<List<InfluxDbSourceCpu>> rows =
-        InfluxDbSource.typed(InfluxDbSourceCpu.class, InfluxDbSettings.Default(), influxDB, query)
+        InfluxDbSource.typed(
+                InfluxDbSourceCpu.class, InfluxDbReadSettings.Default(), influxDB, query)
             .runWith(Sink.seq(), materializer);
 
     List<InfluxDbSourceCpu> cpus = rows.toCompletableFuture().get();

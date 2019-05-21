@@ -25,7 +25,8 @@ import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-import akka.stream.alpakka.influxdb.InfluxDbSettings;
+import akka.stream.alpakka.influxdb.InfluxDbReadSettings;
+import akka.stream.alpakka.influxdb.InfluxDbWriteSettings;
 import akka.stream.alpakka.influxdb.InfluxDbWriteMessage;
 import akka.stream.alpakka.influxdb.javadsl.InfluxDbSink;
 import akka.stream.alpakka.influxdb.javadsl.InfluxDbSource;
@@ -84,20 +85,20 @@ public class InfluxDbTest {
   public void testConsumeAndPublishMeasurementsUsingTyped() throws Exception {
     Query query = new Query("SELECT * FROM cpu", DATABASE_NAME);
     CompletionStage<Done> completionStage =
-        InfluxDbSource.typed(InfluxDbCpu.class, InfluxDbSettings.Default(), influxDB, query)
+        InfluxDbSource.typed(InfluxDbCpu.class, InfluxDbReadSettings.Default(), influxDB, query)
             .map(
                 cpu -> {
                   InfluxDbCpu clonedCpu = cpu.cloneAt(cpu.getTime().plusSeconds(60000l));
                   return InfluxDbWriteMessage.create(clonedCpu, NotUsed.notUsed());
                 })
             .runWith(
-                InfluxDbSink.typed(InfluxDbCpu.class, InfluxDbSettings.Default(), influxDB),
+                InfluxDbSink.typed(InfluxDbCpu.class, InfluxDbWriteSettings.Default(), influxDB),
                 materializer);
 
     Assert.assertNotNull(completionStage.toCompletableFuture().get());
 
     CompletionStage<List<Cpu>> sources =
-        InfluxDbSource.typed(Cpu.class, InfluxDbSettings.Default(), influxDB, query)
+        InfluxDbSource.typed(Cpu.class, InfluxDbReadSettings.Default(), influxDB, query)
             .runWith(Sink.seq(), materializer);
 
     Assert.assertEquals(4, sources.toCompletableFuture().get().size());
@@ -111,7 +112,7 @@ public class InfluxDbTest {
         InfluxDbSource.create(influxDB, query)
             .map(queryResult -> points(queryResult))
             .mapConcat(i -> i)
-            .runWith(InfluxDbSink.create(InfluxDbSettings.Default(), influxDB), materializer);
+            .runWith(InfluxDbSink.create(InfluxDbWriteSettings.Default(), influxDB), materializer);
 
     Assert.assertNotNull(completionStage.toCompletableFuture().get());
 

@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.influxdb.{InfluxDbSettings, InfluxDbWriteMessage, InfluxDbWriteResult}
+import akka.stream.alpakka.influxdb.{InfluxDbWriteMessage, InfluxDbWriteResult, InfluxDbWriteSettings}
 import akka.stream.alpakka.influxdb.scaladsl.InfluxDbFlow
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
@@ -52,7 +52,7 @@ class FlowSpec extends WordSpec with MustMatchers with BeforeAndAfterEach with B
       List(
         validMessage
       )
-    ).via(InfluxDbFlow.create(InfluxDbSettings()))
+    ).via(InfluxDbFlow.create(InfluxDbWriteSettings()))
       .runWith(Sink.seq)
       .futureValue
 
