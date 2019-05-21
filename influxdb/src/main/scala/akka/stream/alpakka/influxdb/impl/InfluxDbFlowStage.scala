@@ -37,6 +37,8 @@ private[influxdb] class InfluxDbFlowStage[C](
     new InfluxDbRecordLogic(influxDB, in, out, shape)
 
 }
+
+@InternalApi
 private[influxdb] class InfluxDbMapperFlowStage[T, C](
     clazz: Class[T],
     influxDB: InfluxDB
