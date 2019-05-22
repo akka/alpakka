@@ -43,7 +43,7 @@ class ExampleSpec
     "provide a simple usage example" in {
       //##simple-request
       val listTablesResult: Future[ListTablesResult] =
-        DynamoDb.single(new ListTablesRequest())
+        DynamoDb.singleOp(new ListTablesRequest())
       //##simple-request
 
       listTablesResult.futureValue
@@ -57,9 +57,9 @@ class ExampleSpec
 
       val source = Source
         .single[CreateTable](createTableOp)
-        .via(DynamoDb.flow(createTableOp))
+        .via(DynamoDb.flowOp(createTableOp))
         .map[DescribeTable](_ => describeTableOp)
-        .via(DynamoDb.flow(describeTableOp))
+        .via(DynamoDb.flowOp(describeTableOp))
         .map(_.getTable.getItemCount)
       val streamCompletion = source.runWith(Sink.seq)
       streamCompletion.failed.futureValue shouldBe a[AmazonDynamoDBException]
@@ -72,7 +72,7 @@ class ExampleSpec
 
       val source: Source[String, NotUsed] = Source
         .single[CreateTable](createTableOp)
-        .via(DynamoDb.flow(createTableOp))
+        .via(DynamoDb.flowOp(createTableOp))
         .map(_.getTableDescription.getTableArn)
       //##flow
       val streamCompletion = source.runWith(Sink.seq)
@@ -86,9 +86,9 @@ class ExampleSpec
       val describeTableOp: DescribeTable = new DescribeTableRequest().withTableName(tableName)
 
       val source: Source[lang.Long, NotUsed] = DynamoDb
-        .source(createTableOp) // creating a source from a single req is common enough to warrant a utility function
+        .sourceOp(createTableOp) // creating a source from a single req is common enough to warrant a utility function
         .map[DescribeTable](result => describeTableOp)
-        .via(DynamoDb.flow(describeTableOp))
+        .via(DynamoDb.flowOp(describeTableOp))
         .map(_.getTable.getItemCount)
       val streamCompletion = source.runWith(Sink.seq)
       streamCompletion.failed.futureValue shouldBe a[AmazonDynamoDBException]
@@ -97,7 +97,7 @@ class ExampleSpec
     "provide a paginated requests example" in assertAllStagesStopped {
       //##paginated
       val scanPages: Source[ScanResult, NotUsed] =
-        DynamoDb.source(new ScanRequest().withTableName("testTable"))
+        DynamoDb.sourceOp(new ScanRequest().withTableName("testTable"))
       //##paginated
       val streamCompletion = scanPages.runWith(Sink.seq)
       streamCompletion.failed.futureValue shouldBe a[AmazonDynamoDBException]
@@ -110,7 +110,7 @@ class ExampleSpec
 
       val source: Source[ListTablesResult, NotUsed] =
         DynamoDb
-          .source(new ListTablesRequest())
+          .sourceOp(new ListTablesRequest())
           .withAttributes(DynamoAttributes.client(client))
       // #attributes
 

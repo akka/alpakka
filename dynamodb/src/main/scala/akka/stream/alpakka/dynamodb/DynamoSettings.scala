@@ -12,7 +12,7 @@ import com.typesafe.config.Config
 
 import scala.compat.java8.OptionConverters._
 
-@deprecated("Use AwsDynamoSettings instead")
+@deprecated("Use AwsDynamoSettings instead", "")
 final class DynamoSettings private (
     val region: String,
     val host: String,

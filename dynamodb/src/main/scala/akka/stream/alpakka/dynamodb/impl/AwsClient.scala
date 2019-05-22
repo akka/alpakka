@@ -85,7 +85,19 @@ private[dynamodb] trait AwsClient[S <: AwsClientSettings] {
     case HttpMethodName.PATCH => HttpMethods.PATCH
   }
 
-  def flow[Op <: AwsOp](op: Op): Flow[Op, Op#B, NotUsed] = {
+  @deprecated("Use flowOp instead", "")
+  def flow[Op <: AwsOp]: Flow[Op, Op#B, NotUsed] =
+    Flow[Op]
+      .map(op => toAwsRequest(op))
+      .via(connection)
+      .mapAsync(settings.parallelism) {
+        case (Success(response), i) => toAwsResult(response, i)
+        case (Failure(ex), _) => Future.failed(ex)
+      }
+      .withAttributes(ActorAttributes.supervisionStrategy(decider))
+      .map(_.asInstanceOf[Op#B])
+
+  def flowOp[Op <: AwsOp](op: Op): Flow[Op, Op#B, NotUsed] = {
     val opFlow =
       Flow[Op]
         .map(op => toAwsRequest(op))
