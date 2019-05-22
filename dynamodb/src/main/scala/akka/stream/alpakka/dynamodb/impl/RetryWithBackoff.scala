@@ -11,7 +11,7 @@ import akka.stream.alpakka.dynamodb.RetrySettings.{Exponential, Linear, RetryBac
 import akka.stream.alpakka.dynamodb.impl.RetryWithBackoff._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.scaladsl.{Flow, Source}
-import akka.stream.stage.{GraphStageLogic, InHandler, OutHandler, TimerGraphStageLogic}
+import akka.stream.stage._
 import akka.stream.{Attributes, Graph, SourceShape}
 
 import scala.concurrent.duration.FiniteDuration
@@ -40,7 +40,7 @@ private[dynamodb] final class RetryWithBackoff[T, M](val maximumRetries: Int,
 
   override def toString: String = "RetryWithBackoff"
 
-  override def createLogic(attr: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
+  override def createLogic(attr: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) with StageLogging {
     var attempt = 0
 
     setHandler(
@@ -73,6 +73,8 @@ private[dynamodb] final class RetryWithBackoff[T, M](val maximumRetries: Int,
             case Exponential => retryInitialTimeout * Math.pow(2, attempt - 1).toInt
             case Linear => retryInitialTimeout * attempt
           }
+        log.debug(s"Retry attempt $attempt for exception $ex to be scheduled after $delay ${delay.unit}")
+
         scheduleOnce(RetryContainer(ex), delay)
       } else {
         failStage(ex)
