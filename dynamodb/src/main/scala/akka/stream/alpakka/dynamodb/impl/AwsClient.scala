@@ -91,7 +91,7 @@ private[dynamodb] trait AwsClient[S <: AwsClientSettings] {
         .map(op => toAwsRequest(op))
         .via(connection)
         .mapAsync(settings.parallelism) {
-          case (Success(response), i) => toAwsResult(response, i)
+          case (Success(response), awsRequestMeta) => toAwsResult(response, awsRequestMeta)
           case (Failure(ex), _) => Future.failed(ex)
         }
 
