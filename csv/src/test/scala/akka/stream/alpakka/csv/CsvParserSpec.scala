@@ -96,6 +96,10 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
       expectInOut("a,\\,,c\n", List("a", ",", "c"))
     }
 
+    "parse escape char into itself if not followed by escape or delimiter" in {
+      expectInOut("a,\\b,\"\\-c\"\n", List("a", "\\b", "\\-c"))
+    }
+
     "fail on escaped quote as quotes are escaped by doubled quote chars" in {
       val in = ByteString("a,\\\",c\n")
       val parser = new CsvParser(',', '"', '\\', maximumLineLength)
@@ -103,7 +107,7 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
       val exception = the[MalformedCsvException] thrownBy {
         parser.poll(requireLineEnd = true)
       }
-      exception.getMessage should be("wrong escaping at 1:3, only escape or delimiter may be escaped")
+      exception.getMessage should be("wrong escaping at 1:3, quote is escaped as \"\"")
       exception.getLineNo should be(1)
       exception.getBytePos should be(3)
     }

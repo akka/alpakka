@@ -314,12 +314,17 @@ import scala.collection.mutable
               state = WithinField
               advance()
 
-            case b =>
+            case `quoteChar` =>
               throw new MalformedCsvException(
                 currentLineNo,
                 lineLength,
-                s"wrong escaping at $currentLineNo:$lineLength, only escape or delimiter may be escaped"
+                s"wrong escaping at $currentLineNo:$lineLength, quote is escaped as ${quoteChar.toChar}${quoteChar.toChar}"
               )
+
+            case b =>
+              fieldBuilder.add(escapeChar)
+              state = WithinField
+
           }
 
         case QuoteStarted =>
@@ -384,12 +389,16 @@ import scala.collection.mutable
               state = WithinQuotedField
               advance()
 
-            case b =>
+            case `quoteChar` =>
               throw new MalformedCsvException(
                 currentLineNo,
                 lineLength,
-                s"wrong escaping at $currentLineNo:$lineLength, only escape or quote may be escaped within quotes"
+                s"wrong escaping at $currentLineNo:$lineLength, quote is escaped as ${quoteChar.toChar}${quoteChar.toChar}"
               )
+
+            case b =>
+              fieldBuilder.add(escapeChar)
+              state = WithinQuotedField
           }
 
         case WithinQuotedFieldQuote =>
