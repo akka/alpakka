@@ -20,7 +20,7 @@ private[dynamodb] object RecoverWithRetry {
   case class RetryContainer(ex: Throwable, id: UUID = UUID.randomUUID)
 
   implicit class RecoverWithRetryImplicits[T, U, M](flow: Flow[T, U, M]) {
-    def retiresWithBackoff(maximumRetries: Int,
+    def retryWithBackoff(maximumRetries: Int,
                            retryInitialTimeout: FiniteDuration,
                            backoffStrategy: RetryBackoffStrategy,
                            decider: PartialFunction[Throwable, Graph[SourceShape[U], M]]): Flow[T, U, M] =

@@ -96,7 +96,7 @@ private[dynamodb] trait AwsClient[S <: AwsClientSettings] {
         }
 
     opFlow
-      .retiresWithBackoff(
+      .retryWithBackoff(
         settings.retrySettings.maximumRetries,
         settings.retrySettings.initialRetryTimeout,
         settings.retrySettings.backoffStrategy, {
