@@ -41,6 +41,76 @@ class ExampleSpec
   "DynamoDB" should {
 
     "provide a simple usage example" in {
+
+      //##simple-request
+      val listTablesResult: Future[ListTablesResult] =
+        DynamoDb.single(new ListTablesRequest())
+      //##simple-request
+
+      listTablesResult.futureValue
+    }
+
+    "allow multiple requests - explicit types" in assertAllStagesStopped {
+      import akka.stream.alpakka.dynamodb.AwsOp._
+      val source = Source
+        .single[CreateTable](new CreateTableRequest().withTableName("testTable"))
+        .via(DynamoDb.flow)
+        .map[DescribeTable](
+          result => new DescribeTableRequest().withTableName(result.getTableDescription.getTableName)
+        )
+        .via(DynamoDb.flow)
+        .map(_.getTable.getItemCount)
+      val streamCompletion = source.runWith(Sink.seq)
+      streamCompletion.failed.futureValue shouldBe a[AmazonDynamoDBException]
+    }
+
+    "allow multiple requests" in assertAllStagesStopped {
+      //##flow
+      import akka.stream.alpakka.dynamodb.AwsOp._
+      val source: Source[String, NotUsed] = Source
+        .single[CreateTable](new CreateTableRequest().withTableName("testTable"))
+        .via(DynamoDb.flow)
+        .map(_.getTableDescription.getTableArn)
+      //##flow
+      val streamCompletion = source.runWith(Sink.seq)
+      streamCompletion.failed.futureValue shouldBe a[AmazonDynamoDBException]
+    }
+
+    "allow multiple requests - single source" in assertAllStagesStopped {
+      import akka.stream.alpakka.dynamodb.AwsOp._
+      val source: Source[lang.Long, NotUsed] = DynamoDb
+        .source(new CreateTableRequest().withTableName("testTable")) // creating a source from a single req is common enough to warrant a utility function
+        .map[DescribeTable](result => new DescribeTableRequest().withTableName(result.getTableDescription.getTableName))
+        .via(DynamoDb.flow)
+        .map(_.getTable.getItemCount)
+      val streamCompletion = source.runWith(Sink.seq)
+      streamCompletion.failed.futureValue shouldBe a[AmazonDynamoDBException]
+    }
+
+    "provide a paginated requests example" in assertAllStagesStopped {
+      //##paginated
+      val scanPages: Source[ScanResult, NotUsed] =
+        DynamoDb.source(new ScanRequest().withTableName("testTable"))
+      //##paginated
+      val streamCompletion = scanPages.runWith(Sink.seq)
+      streamCompletion.failed.futureValue shouldBe a[AmazonDynamoDBException]
+    }
+
+    "use client from attributes" in assertAllStagesStopped {
+      // #attributes
+      val settings = DynamoSettings(system).withRegion("custom-region")
+      val client = DynamoClient(settings)
+
+      val source: Source[ListTablesResult, NotUsed] =
+        DynamoDb
+          .source(new ListTablesRequest())
+          .withAttributes(DynamoAttributes.client(client))
+      // #attributes
+
+      source.runWith(Sink.head).futureValue
+    }
+
+    "provide a simple usage example with singleOp" in {
       //##simple-request
       val listTablesResult: Future[ListTablesResult] =
         DynamoDb.singleOp(new ListTablesRequest())
@@ -49,7 +119,7 @@ class ExampleSpec
       listTablesResult.futureValue
     }
 
-    "allow multiple requests - explicit types" in assertAllStagesStopped {
+    "allow multiple requests with flowOp - explicit types" in assertAllStagesStopped {
       import akka.stream.alpakka.dynamodb.AwsOp._
       val tableName = "testTable"
       val createTableOp: CreateTable = new CreateTableRequest().withTableName(tableName)
@@ -65,7 +135,7 @@ class ExampleSpec
       streamCompletion.failed.futureValue shouldBe a[AmazonDynamoDBException]
     }
 
-    "allow multiple requests" in assertAllStagesStopped {
+    "allow multiple requests with flowOp" in assertAllStagesStopped {
       //##flow
       import akka.stream.alpakka.dynamodb.AwsOp._
       val createTableOp: CreateTable = new CreateTableRequest().withTableName("testTable")
@@ -79,7 +149,7 @@ class ExampleSpec
       streamCompletion.failed.futureValue shouldBe a[AmazonDynamoDBException]
     }
 
-    "allow multiple requests - single source" in assertAllStagesStopped {
+    "allow multiple requests with sourceOp - single source" in assertAllStagesStopped {
       import akka.stream.alpakka.dynamodb.AwsOp._
       val tableName = "testTable"
       val createTableOp: CreateTable = new CreateTableRequest().withTableName(tableName)
@@ -87,14 +157,14 @@ class ExampleSpec
 
       val source: Source[lang.Long, NotUsed] = DynamoDb
         .sourceOp(createTableOp) // creating a source from a single req is common enough to warrant a utility function
-        .map[DescribeTable](result => describeTableOp)
+        .map[DescribeTable](_ => describeTableOp)
         .via(DynamoDb.flowOp(describeTableOp))
         .map(_.getTable.getItemCount)
       val streamCompletion = source.runWith(Sink.seq)
       streamCompletion.failed.futureValue shouldBe a[AmazonDynamoDBException]
     }
 
-    "provide a paginated requests example" in assertAllStagesStopped {
+    "provide a paginated requests example with sourceOp" in assertAllStagesStopped {
       //##paginated
       val scanPages: Source[ScanResult, NotUsed] =
         DynamoDb.sourceOp(new ScanRequest().withTableName("testTable"))
@@ -103,7 +173,7 @@ class ExampleSpec
       streamCompletion.failed.futureValue shouldBe a[AmazonDynamoDBException]
     }
 
-    "use client from attributes" in assertAllStagesStopped {
+    "use client from attributes with sourceOp" in assertAllStagesStopped {
       // #attributes
       val settings = DynamoSettings(system).withRegion("custom-region")
       val client = DynamoClient(settings)
