@@ -11,6 +11,7 @@ abstract class AwsClientSettings {
   val host: String
   val port: Int
   val parallelism: Int
-  val retrySettings: RetrySettings
   val credentialsProvider: AWSCredentialsProvider
+
+  val retrySettings: RetrySettings = RetrySettings.DefaultRetrySettings
 }
