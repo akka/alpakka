@@ -29,7 +29,7 @@ class ExampleSpec
     with ScalaFutures {
 
   implicit val materializer: Materializer = ActorMaterializer()
-  override implicit val patienceConfig: PatienceConfig = PatienceConfig(10.seconds, 100.millis)
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 100.millis)
 
   override def beforeAll(): Unit = {
     System.setProperty("aws.accessKeyId", "someKeyId")
@@ -41,7 +41,6 @@ class ExampleSpec
   "DynamoDB" should {
 
     "provide a simple usage example" in {
-
       //##simple-request
       val listTablesResult: Future[ListTablesResult] =
         DynamoDb.single(new ListTablesRequest())
