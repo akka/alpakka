@@ -21,20 +21,29 @@ object DynamoDb {
   /**
    * Create a Flow that emits a response for every request.
    */
-  def flow[Op <: AwsOp](op: Op): Flow[Op, Op#B, NotUsed] =
+  def flowOp[Op <: AwsOp](op: Op): Flow[Op, Op#B, NotUsed] =
     scaladsl.DynamoDb.flowOp(op).asJava
+
+  /**
+   * Create a Flow that emits a response for every request.
+   */
+  @deprecated("User flowOp instead", "")
+  def flow[Op <: AwsOp]: Flow[Op, Op#B, NotUsed] =
+    scaladsl.DynamoDb.flow.asJava
 
   /**
    * Create a Source that will emit potentially multiple responses for a given request.
    */
+  @deprecated("Use sourceOp instead", "")
   def source(op: AwsPagedOp): Source[op.B, NotUsed] =
-    scaladsl.DynamoDb.sourceOp(op).asJava
+    scaladsl.DynamoDb.source(op).asJava
 
   /**
    * Create a Source that will emit a response for a given request.
    */
+  @deprecated("Use sourceOp instead", "")
   def source(op: AwsOp): Source[op.B, NotUsed] =
-    scaladsl.DynamoDb.sourceOp(op).asJava
+    scaladsl.DynamoDb.source(op).asJava
 
   /**
    * Create a CompletionStage that will be completed with a response to a given request.

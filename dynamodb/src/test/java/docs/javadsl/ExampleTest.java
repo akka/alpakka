@@ -94,7 +94,7 @@ public class ExampleTest {
     // #flow
     Source<String, NotUsed> tableArnSource =
         Source.single(createTable)
-            .via(DynamoDb.flow(createTable))
+            .via(DynamoDb.flowOp(createTable))
             .map(r -> (CreateTableResult) r)
             .map(result -> result.getTableDescription().getTableArn());
     // #flow
