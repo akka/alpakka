@@ -8,7 +8,7 @@ import java.util.UUID
 
 import akka.annotation.InternalApi
 import akka.stream.alpakka.dynamodb.RetrySettings.{Exponential, Linear, RetryBackoffStrategy}
-import akka.stream.alpakka.dynamodb.impl.RecoverWithRetry._
+import akka.stream.alpakka.dynamodb.impl.RetryWithBackoff._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.scaladsl.{Flow, Source}
 import akka.stream.stage.{GraphStageLogic, InHandler, OutHandler, TimerGraphStageLogic}
@@ -16,15 +16,15 @@ import akka.stream.{Attributes, Graph, SourceShape}
 
 import scala.concurrent.duration.FiniteDuration
 
-private[dynamodb] object RecoverWithRetry {
+private[dynamodb] object RetryWithBackoff {
   case class RetryContainer(ex: Throwable, id: UUID = UUID.randomUUID)
 
   implicit class RecoverWithRetryImplicits[T, U, M](flow: Flow[T, U, M]) {
     def retryWithBackoff(maximumRetries: Int,
-                           retryInitialTimeout: FiniteDuration,
-                           backoffStrategy: RetryBackoffStrategy,
-                           decider: PartialFunction[Throwable, Graph[SourceShape[U], M]]): Flow[T, U, M] =
-      flow.via(new RecoverWithRetry(maximumRetries, retryInitialTimeout, backoffStrategy, decider))
+                         retryInitialTimeout: FiniteDuration,
+                         backoffStrategy: RetryBackoffStrategy,
+                         decider: PartialFunction[Throwable, Graph[SourceShape[U], M]]): Flow[T, U, M] =
+      flow.via(new RetryWithBackoff(maximumRetries, retryInitialTimeout, backoffStrategy, decider))
   }
 }
 
@@ -32,13 +32,13 @@ private[dynamodb] object RecoverWithRetry {
  * INTERNAL API
  */
 @InternalApi
-private[dynamodb] final class RecoverWithRetry[T, M](val maximumRetries: Int,
+private[dynamodb] final class RetryWithBackoff[T, M](val maximumRetries: Int,
                                                      val retryInitialTimeout: FiniteDuration,
                                                      val backoffStrategy: RetryBackoffStrategy,
                                                      val decider: PartialFunction[Throwable, Graph[SourceShape[T], M]])
     extends SimpleLinearGraphStage[T] {
 
-  override def toString: String = "RecoverWithRetry"
+  override def toString: String = "RetryWithBackoff"
 
   override def createLogic(attr: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
     var attempt = 0
@@ -79,7 +79,7 @@ private[dynamodb] final class RecoverWithRetry[T, M](val maximumRetries: Int,
       }
 
     def switchTo(key: RetryContainer): Unit = {
-      val sinkIn = new SubSinkInlet[T]("RecoverWithRetrySink")
+      val sinkIn = new SubSinkInlet[T]("RetryWithBackoffSink")
 
       sinkIn.setHandler(new InHandler {
         override def onPush(): Unit = {

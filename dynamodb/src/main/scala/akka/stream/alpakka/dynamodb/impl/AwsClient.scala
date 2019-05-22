@@ -30,7 +30,7 @@ import com.amazonaws.{DefaultRequest, ResponseMetadata, HttpMethod => _, _}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
-import akka.stream.alpakka.dynamodb.impl.RecoverWithRetry.RecoverWithRetryImplicits
+import akka.stream.alpakka.dynamodb.impl.RetryWithBackoff.RecoverWithRetryImplicits
 
 /**
  * INTERNAL API
