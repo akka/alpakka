@@ -333,9 +333,8 @@ lazy val whitesourceSupported = project
   .settings(whitesourceGroup := Whitesource.Group.Supported)
   .aggregate(
     couchbase,
-    csv,
+    csv
   )
-
 
 lazy val `doc-examples` = project
   .enablePlugins(AutomateHeaderPlugin)
