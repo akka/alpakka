@@ -23,8 +23,7 @@ import com.amazonaws.services.dynamodbv2.model.{
   ItemCollectionSizeLimitExceededException,
   LimitExceededException,
   ProvisionedThroughputExceededException,
-  RequestLimitExceededException,
-  ResourceNotFoundException
+  RequestLimitExceededException
 }
 import com.amazonaws.{DefaultRequest, ResponseMetadata, HttpMethod => _, _}
 
@@ -104,7 +103,7 @@ private[dynamodb] trait AwsClient[S <: AwsClientSettings] {
             case _ @(_: InternalServerErrorException | _: ItemCollectionSizeLimitExceededException |
                 _: LimitExceededException | _: ProvisionedThroughputExceededException |
                 _: RequestLimitExceededException) =>
-              Source.single(op.asInstanceOf[Op]).via(opFlow)
+              Source.single(op).via(opFlow)
           }
         )
       )
