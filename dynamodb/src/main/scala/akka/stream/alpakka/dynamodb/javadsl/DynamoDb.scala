@@ -34,16 +34,14 @@ object DynamoDb {
   /**
    * Create a Source that will emit potentially multiple responses for a given request.
    */
-  @deprecated("Use sourceOp instead", "")
   def source(op: AwsPagedOp): Source[op.B, NotUsed] =
-    scaladsl.DynamoDb.source(op).asJava
+    scaladsl.DynamoDb.sourceOp(op).asJava
 
   /**
    * Create a Source that will emit a response for a given request.
    */
-  @deprecated("Use sourceOp instead", "")
   def source(op: AwsOp): Source[op.B, NotUsed] =
-    scaladsl.DynamoDb.source(op).asJava
+    scaladsl.DynamoDb.sourceOp(op).asJava
 
   /**
    * Create a CompletionStage that will be completed with a response to a given request.
