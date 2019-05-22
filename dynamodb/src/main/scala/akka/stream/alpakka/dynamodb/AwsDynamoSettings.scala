@@ -36,6 +36,15 @@ final class AwsDynamoSettings private (
     if (value == tls) this else copy(tls = value)
   def withParallelism(value: Int): AwsDynamoSettings = copy(parallelism = value)
   def withMaxOpenRequests(value: Option[Int]): AwsDynamoSettings = copy(maxOpenRequests = value)
+  def withRetrySettings(value: RetrySettings): AwsDynamoSettings = copy(retrySettings = value)
+  def withCredentialsProvider(value: com.amazonaws.auth.AWSCredentialsProvider): AwsDynamoSettings =
+    copy(credentialsProvider = value)
+
+  /** Java Api */
+  def withMaxOpenRequests(value: Optional[Int]): AwsDynamoSettings = copy(maxOpenRequests = value.asScala)
+
+  /** Java Api */
+  def getMaxOpenRequests(): Optional[Int] = maxOpenRequests.asJava
 
   private def copy(
       region: String = region,
@@ -56,17 +65,6 @@ final class AwsDynamoSettings private (
     retrySettings = retrySettings,
     credentialsProvider = credentialsProvider
   )
-
-  def withRetrySettings(value: RetrySettings): AwsDynamoSettings = copy(retrySettings = value)
-
-  def withCredentialsProvider(value: com.amazonaws.auth.AWSCredentialsProvider): AwsDynamoSettings =
-    copy(credentialsProvider = value)
-
-  /** Java Api */
-  def withMaxOpenRequests(value: Optional[Int]): AwsDynamoSettings = copy(maxOpenRequests = value.asScala)
-
-  /** Java Api */
-  def getMaxOpenRequests(): Optional[Int] = maxOpenRequests.asJava
 
   override def toString =
     s"""AwsDynamoSettings(region=$region,host=$host,port=$port,parallelism=$parallelism,maxOpenRequests=$maxOpenRequests,credentialsProvider=$credentialsProvider)"""
