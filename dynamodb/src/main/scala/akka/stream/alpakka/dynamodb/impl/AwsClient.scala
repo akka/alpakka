@@ -30,6 +30,7 @@ import com.amazonaws.{DefaultRequest, ResponseMetadata, HttpMethod => _, _}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
+import akka.stream.alpakka.dynamodb.impl.RecoverWithRetry.RecoverWithRetryImplicits
 
 /**
  * INTERNAL API
@@ -95,17 +96,15 @@ private[dynamodb] trait AwsClient[S <: AwsClientSettings] {
         }
 
     opFlow
-      .via(
-        new RecoverWithRetry(
-          settings.retrySettings.maximumRetries,
-          settings.retrySettings.initialRetryTimeout,
-          settings.retrySettings.backoffStrategy, {
-            case _ @(_: InternalServerErrorException | _: ItemCollectionSizeLimitExceededException |
-                _: LimitExceededException | _: ProvisionedThroughputExceededException |
-                _: RequestLimitExceededException) =>
-              Source.single(op).via(opFlow)
-          }
-        )
+      .retiresWithBackoff(
+        settings.retrySettings.maximumRetries,
+        settings.retrySettings.initialRetryTimeout,
+        settings.retrySettings.backoffStrategy, {
+          case _ @(_: InternalServerErrorException | _: ItemCollectionSizeLimitExceededException |
+              _: LimitExceededException | _: ProvisionedThroughputExceededException |
+              _: RequestLimitExceededException) =>
+            Source.single(op).via(opFlow)
+        }
       )
       .withAttributes(ActorAttributes.supervisionStrategy(decider))
       .map(_.asInstanceOf[Op#B])

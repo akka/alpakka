@@ -10,7 +10,7 @@ import akka.annotation.InternalApi
 import akka.stream.alpakka.dynamodb.RetrySettings.{Exponential, Linear, RetryBackoffStrategy}
 import akka.stream.alpakka.dynamodb.impl.RecoverWithRetry._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{Flow, Source}
 import akka.stream.stage.{GraphStageLogic, InHandler, OutHandler, TimerGraphStageLogic}
 import akka.stream.{Attributes, Graph, SourceShape}
 
@@ -18,6 +18,14 @@ import scala.concurrent.duration.FiniteDuration
 
 private[dynamodb] object RecoverWithRetry {
   case class RetryContainer(ex: Throwable, id: UUID = UUID.randomUUID)
+
+  implicit class RecoverWithRetryImplicits[T, U, M](flow: Flow[T, U, M]) {
+    def retiresWithBackoff(maximumRetries: Int,
+                           retryInitialTimeout: FiniteDuration,
+                           backoffStrategy: RetryBackoffStrategy,
+                           decider: PartialFunction[Throwable, Graph[SourceShape[U], M]]): Flow[T, U, M] =
+      flow.via(new RecoverWithRetry(maximumRetries, retryInitialTimeout, backoffStrategy, decider))
+  }
 }
 
 /**
