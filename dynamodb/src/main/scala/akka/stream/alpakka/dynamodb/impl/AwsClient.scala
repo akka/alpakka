@@ -109,7 +109,7 @@ private[dynamodb] trait AwsClient[S <: AwsClientSettings] {
 
     opFlow
       .retryWithBackoff(
-        settings.retrySettings.maximumRetries,
+        settings.retrySettings.maximumAttempts,
         settings.retrySettings.initialRetryTimeout,
         settings.retrySettings.backoffStrategy, {
           case _ @(_: InternalServerErrorException | _: ItemCollectionSizeLimitExceededException |

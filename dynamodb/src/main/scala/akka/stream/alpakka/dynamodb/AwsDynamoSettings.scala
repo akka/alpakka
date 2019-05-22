@@ -111,15 +111,15 @@ object AwsDynamoSettings {
     }
 
     val retrySettings = {
-      if (c.hasPath("maximum-retries") && c.hasPath("initial-retry-timeout") && c.hasPath("retry-strategy")) {
-        val maximumRetries = c.getInt("maximum-retries")
-        val initialRetryTimeout = c.getDuration("initial-retry-timeout", TimeUnit.MILLISECONDS).milliseconds
-        val backoffStrategy = c.getString("retry-strategy") match {
+      if (c.hasPath("retry.maximum-attempts") && c.hasPath("retry.initial-timeout") && c.hasPath("retry.strategy")) {
+        val maximumAttempts = c.getInt("retry.maximum-attempts")
+        val initialRetryTimeout = c.getDuration("retry.initial-timeout", TimeUnit.MILLISECONDS).milliseconds
+        val backoffStrategy = c.getString("retry.strategy") match {
           case "exponential" => Exponential
           case "linear" => Linear
         }
 
-        RetrySettings(maximumRetries, initialRetryTimeout, backoffStrategy)
+        RetrySettings(maximumAttempts, initialRetryTimeout, backoffStrategy)
       } else {
         RetrySettings.DefaultRetrySettings
       }

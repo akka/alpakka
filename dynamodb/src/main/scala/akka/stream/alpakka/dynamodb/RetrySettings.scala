@@ -15,6 +15,6 @@ object RetrySettings {
   val DefaultRetrySettings = RetrySettings(3, 1.seconds, Exponential)
 }
 
-case class RetrySettings(maximumRetries: Int,
+case class RetrySettings(maximumAttempts: Int,
                          initialRetryTimeout: FiniteDuration,
                          backoffStrategy: RetryBackoffStrategy)
