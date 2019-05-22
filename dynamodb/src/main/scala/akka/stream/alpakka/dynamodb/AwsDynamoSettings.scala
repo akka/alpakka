@@ -75,6 +75,12 @@ final class AwsDynamoSettings private (
 object AwsDynamoSettings {
 
   val ConfigPath = "akka.stream.alpakka.dynamodb"
+  val MaxOpenRequestsPath = "max-open-requests"
+  val AwsCredentialsAccessKeyPath = "credentials.access-key-id"
+  val AwsCredentialsSecretKeyPath = "credentials.secret-key-id"
+  val RetryMaximumAttemptsPath = "retry.maximum-attempts"
+  val RetryInitialTimeoutPath = "retry.initial-timeout"
+  val RetryStrategyPath = "retry.strategy"
 
   /**
    * Java API: Creates [[AwsDynamoSettings]] from the [[com.typesafe.config.Config Config]] attached to an [[akka.actor.ActorSystem]].
@@ -97,24 +103,25 @@ object AwsDynamoSettings {
     val port = c.getInt("port")
     val tls = c.getBoolean("tls")
     val parallelism = c.getInt("parallelism")
-    val maxOpenRequests = if (c.hasPath("max-open-requests")) {
-      Option(c.getInt("max-open-requests"))
-    } else None
+    val maxOpenRequests =
+      if (c.hasPath(MaxOpenRequestsPath)) Option(c.getInt(MaxOpenRequestsPath))
+      else None
 
     val awsCredentialsProvider = {
-      if (c.hasPath("credentials.access-key-id") &&
-          c.hasPath("credentials.secret-key-id")) {
-        val accessKey = c.getString("credentials.access-key-id")
-        val secretKey = c.getString("credentials.secret-key-id")
+      if (c.hasPath(AwsCredentialsAccessKeyPath) && c.hasPath(AwsCredentialsSecretKeyPath)) {
+        val accessKey = c.getString(AwsCredentialsAccessKeyPath)
+        val secretKey = c.getString(AwsCredentialsSecretKeyPath)
         new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey))
-      } else new DefaultAWSCredentialsProviderChain()
+      } else {
+        new DefaultAWSCredentialsProviderChain()
+      }
     }
 
     val retrySettings = {
-      if (c.hasPath("retry.maximum-attempts") && c.hasPath("retry.initial-timeout") && c.hasPath("retry.strategy")) {
-        val maximumAttempts = c.getInt("retry.maximum-attempts")
-        val initialRetryTimeout = c.getDuration("retry.initial-timeout", TimeUnit.MILLISECONDS).milliseconds
-        val backoffStrategy = c.getString("retry.strategy") match {
+      if (c.hasPath(RetryMaximumAttemptsPath) && c.hasPath(RetryInitialTimeoutPath) && c.hasPath(RetryStrategyPath)) {
+        val maximumAttempts = c.getInt(RetryMaximumAttemptsPath)
+        val initialRetryTimeout = c.getDuration(RetryInitialTimeoutPath, TimeUnit.MILLISECONDS).milliseconds
+        val backoffStrategy = c.getString(RetryStrategyPath) match {
           case "exponential" => Exponential
           case "linear" => Linear
         }
