@@ -114,19 +114,19 @@ import scala.collection.mutable
       current = next.iterator
     }
 
-  def poll(requireLineEnd: Boolean): Option[List[ByteString]] =
-    if (buffer.nonEmpty) {
-      val line = parseLine(requireLineEnd)
-      if (line.nonEmpty) {
-        currentLineNo += 1
-        if (state == LineEnd) {
-          state = LineStart
-        }
-        resetLine()
-        columns.clear()
+  def poll(requireLineEnd: Boolean): Option[List[ByteString]] = {
+    if (buffer.nonEmpty) parseLine()
+    val line = maybeExtractLine(requireLineEnd)
+    if (line.nonEmpty) {
+      currentLineNo += 1
+      if (state == LineEnd || !requireLineEnd) {
+        state = LineStart
       }
-      line
-    } else None
+      resetLine()
+      columns.clear()
+    }
+    line
+  }
 
   private[this] def advance(n: Int = 1): Unit = {
     pos += n
@@ -198,14 +198,12 @@ import scala.collection.mutable
       }
     }
 
-  protected def parseLine(requireLineEnd: Boolean): Option[List[ByteString]] = {
+  private[this] def parseLine(): Unit = {
     if (firstData) {
       checkForByteOrderMark()
       firstData = false
     }
-
     churn()
-    maybeExtractLine(requireLineEnd)
   }
 
   private[this] def churn(): Unit = {
@@ -446,8 +444,10 @@ import scala.collection.mutable
           Some(columns.toList)
         case WithinFieldEscaped | WithinQuotedFieldEscaped =>
           noCharEscaped()
-        case _ =>
+        case _ if columns.nonEmpty =>
           Some(columns.toList)
+        case _ =>
+          None
       }
     }
 
