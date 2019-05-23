@@ -41,10 +41,7 @@ object DynamoDb {
   def source(op: AwsPagedOp): Source[op.B, NotUsed] =
     Setup
       .source { mat => attr =>
-        Paginator.source(
-          clientFlowOp(op)(mat)(attr).asInstanceOf[Flow[AwsOp, AmazonWebServiceResult[ResponseMetadata], NotUsed]],
-          op
-        )
+        Paginator.source(clientFlowOp(op.asInstanceOf[AwsOp])(mat)(attr), op)
       }
       .mapMaterializedValue(_ => NotUsed)
 
