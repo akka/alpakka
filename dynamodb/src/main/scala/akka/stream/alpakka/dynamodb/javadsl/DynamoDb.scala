@@ -27,7 +27,7 @@ object DynamoDb {
   /**
    * Create a Flow that emits a response for every request.
    */
-  @deprecated("User flowOp instead", "")
+  @deprecated("Use flowOp instead", "")
   def flow[Op <: AwsOp]: Flow[Op, Op#B, NotUsed] =
     scaladsl.DynamoDb.flow.asJava
 
