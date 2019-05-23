@@ -52,6 +52,9 @@ final class InfluxDbWriteMessage[T, C](val point: T,
                              passThrough = passThrough,
                              databaseName = databaseName,
                              retentionPolicy = retentionPolicy)
+
+  override def toString: String =
+    s"""InfluxDbWriteMessage(point=$point,passThrough=$passThrough,databaseName=$databaseName,retentionPolicy=$retentionPolicy)"""
 }
 
 final case class InfluxDbWriteResult[T, C](writeMessage: InfluxDbWriteMessage[T, C], error: Option[String])
