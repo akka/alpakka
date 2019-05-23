@@ -109,5 +109,35 @@ class ExampleSpec
 
       source.runWith(Sink.head).futureValue
     }
+
+    "allow multiple requests with flowOp - explicit types" in assertAllStagesStopped {
+      import akka.stream.alpakka.dynamodb.AwsOp._
+      val tableName = "testTable"
+      val createTableOp: CreateTable = new CreateTableRequest().withTableName(tableName)
+      val describeTableOp: DescribeTable = new DescribeTableRequest().withTableName(tableName)
+
+      val source = Source
+        .single[CreateTable](createTableOp)
+        .via(DynamoDb.flowOp(createTableOp))
+        .map[DescribeTable](_ => describeTableOp)
+        .via(DynamoDb.flowOp(describeTableOp))
+        .map(_.getTable.getItemCount)
+      val streamCompletion = source.runWith(Sink.seq)
+      streamCompletion.failed.futureValue shouldBe a[AmazonDynamoDBException]
+    }
+
+    "allow multiple requests with flowOp" in assertAllStagesStopped {
+      //##flow
+      import akka.stream.alpakka.dynamodb.AwsOp._
+      val createTableOp: CreateTable = new CreateTableRequest().withTableName("testTable")
+
+      val source: Source[String, NotUsed] = Source
+        .single[CreateTable](createTableOp)
+        .via(DynamoDb.flowOp(createTableOp))
+        .map(_.getTableDescription.getTableArn)
+      //##flow
+      val streamCompletion = source.runWith(Sink.seq)
+      streamCompletion.failed.futureValue shouldBe a[AmazonDynamoDBException]
+    }
   }
 }

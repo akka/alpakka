@@ -28,38 +28,38 @@ class TableSpec extends TestKit(ActorSystem("TableSpec")) with AsyncWordSpecLike
     import TableSpecOps._
 
     "1) create table" in assertAllStagesStopped {
-      DynamoDb.singleOp(createTableRequest).map(_.getTableDescription.getTableName shouldEqual tableName)
+      DynamoDb.single(createTableRequest).map(_.getTableDescription.getTableName shouldEqual tableName)
     }
 
     "2) list tables" in assertAllStagesStopped {
-      DynamoDb.singleOp(listTablesRequest).map(_.getTableNames.asScala.count(_ == tableName) shouldEqual 1)
+      DynamoDb.single(listTablesRequest).map(_.getTableNames.asScala.count(_ == tableName) shouldEqual 1)
     }
 
     "3) describe table" in assertAllStagesStopped {
-      DynamoDb.singleOp(describeTableRequest).map(_.getTable.getTableName shouldEqual tableName)
+      DynamoDb.single(describeTableRequest).map(_.getTable.getTableName shouldEqual tableName)
     }
 
     "4) update table" in assertAllStagesStopped {
       DynamoDb
-        .singleOp(describeTableRequest)
+        .single(describeTableRequest)
         .map(_.getTable.getProvisionedThroughput.getWriteCapacityUnits shouldEqual 10L)
-        .flatMap(_ => DynamoDb.singleOp(updateTableRequest))
+        .flatMap(_ => DynamoDb.single(updateTableRequest))
         .map(_.getTableDescription.getProvisionedThroughput.getWriteCapacityUnits shouldEqual newMaxLimit)
     }
 
     // TODO: Enable this test when DynamoDB Local supports TTLs
     "5) update time to live" ignore assertAllStagesStopped {
       DynamoDb
-        .singleOp(describeTimeToLiveRequest)
+        .single(describeTimeToLiveRequest)
         .map(_.getTimeToLiveDescription.getAttributeName shouldEqual null)
-        .flatMap(_ => DynamoDb.singleOp(updateTimeToLiveRequest))
+        .flatMap(_ => DynamoDb.single(updateTimeToLiveRequest))
         .map(_.getTimeToLiveSpecification.getAttributeName shouldEqual "expires")
     }
 
     "6) delete table" in assertAllStagesStopped {
       DynamoDb
-        .singleOp(deleteTableRequest)
-        .flatMap(_ => DynamoDb.singleOp(listTablesRequest))
+        .single(deleteTableRequest)
+        .flatMap(_ => DynamoDb.single(listTablesRequest))
         .map(_.getTableNames.asScala.count(_ == tableName) shouldEqual 0)
     }
 

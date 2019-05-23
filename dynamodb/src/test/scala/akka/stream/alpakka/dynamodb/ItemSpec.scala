@@ -30,31 +30,31 @@ class ItemSpec extends TestKit(ActorSystem("ItemSpec")) with AsyncWordSpecLike w
     import ItemSpecOps._
 
     "1) list zero tables" in assertAllStagesStopped {
-      DynamoDb.singleOp(listTablesRequest).map(_.getTableNames.asScala.count(_ == tableName) shouldBe 0)
+      DynamoDb.single(listTablesRequest).map(_.getTableNames.asScala.count(_ == tableName) shouldBe 0)
     }
 
     "2) create a table" in assertAllStagesStopped {
-      DynamoDb.singleOp(createTableRequest).map(_.getTableDescription.getTableStatus shouldBe "ACTIVE")
+      DynamoDb.single(createTableRequest).map(_.getTableDescription.getTableStatus shouldBe "ACTIVE")
     }
 
     "3) find a new table" in assertAllStagesStopped {
-      DynamoDb.singleOp(listTablesRequest).map(_.getTableNames.asScala.count(_ == tableName) shouldBe 1)
+      DynamoDb.single(listTablesRequest).map(_.getTableNames.asScala.count(_ == tableName) shouldBe 1)
     }
 
     "4) put an item and read it back" in assertAllStagesStopped {
       DynamoDb
-        .singleOp(test4PutItemRequest)
-        .flatMap(_ => DynamoDb.singleOp(getItemRequest))
+        .single(test4PutItemRequest)
+        .flatMap(_ => DynamoDb.single(getItemRequest))
         .map(_.getItem.get("data").getS shouldEqual "test4data")
     }
 
     "5) put two items in a batch" in assertAllStagesStopped {
-      DynamoDb.singleOp(batchWriteItemRequest).map(_.getUnprocessedItems.size() shouldEqual 0)
+      DynamoDb.single(batchWriteItemRequest).map(_.getUnprocessedItems.size() shouldEqual 0)
     }
 
     "6) query two items with page size equal to 1" in assertAllStagesStopped {
       DynamoDb
-        .sourceOp(queryItemsRequest)
+        .source(queryItemsRequest)
         .filterNot(_.getItems.isEmpty)
         .map(_.getItems)
         .runWith(Sink.seq)
@@ -70,8 +70,8 @@ class ItemSpec extends TestKit(ActorSystem("ItemSpec")) with AsyncWordSpecLike w
 
     "7) delete an item" in assertAllStagesStopped {
       DynamoDb
-        .singleOp(deleteItemRequest)
-        .flatMap(_ => DynamoDb.singleOp(getItemRequest))
+        .single(deleteItemRequest)
+        .flatMap(_ => DynamoDb.single(getItemRequest))
         .map(_.getItem shouldEqual null)
     }
 
@@ -79,11 +79,11 @@ class ItemSpec extends TestKit(ActorSystem("ItemSpec")) with AsyncWordSpecLike w
     // succeed against a cloud instance so can be enabled once local support is available.
 
     "8) put two items in a transaction" ignore assertAllStagesStopped {
-      DynamoDb.singleOp(transactPutItemsRequest).map(_ => succeed)
+      DynamoDb.single(transactPutItemsRequest).map(_ => succeed)
     }
 
     "9) get two items in a transaction" ignore assertAllStagesStopped {
-      DynamoDb.singleOp(transactGetItemsRequest).map { results =>
+      DynamoDb.single(transactGetItemsRequest).map { results =>
         results.getResponses.size shouldBe 2
         val responses = results.getResponses.asScala
         responses.head.getItem.get(sortCol) shouldEqual N(0)
@@ -92,13 +92,13 @@ class ItemSpec extends TestKit(ActorSystem("ItemSpec")) with AsyncWordSpecLike w
     }
 
     "10) delete two items in a transaction" ignore assertAllStagesStopped {
-      DynamoDb.singleOp(transactDeleteItemsRequest).map(_ => succeed)
+      DynamoDb.single(transactDeleteItemsRequest).map(_ => succeed)
     }
 
     "11) delete table" in assertAllStagesStopped {
       DynamoDb
-        .singleOp(deleteTableRequest)
-        .flatMap(_ => DynamoDb.singleOp(listTablesRequest))
+        .single(deleteTableRequest)
+        .flatMap(_ => DynamoDb.single(listTablesRequest))
         .map(_.getTableNames.asScala.count(_ == tableName) shouldEqual 0)
     }
 

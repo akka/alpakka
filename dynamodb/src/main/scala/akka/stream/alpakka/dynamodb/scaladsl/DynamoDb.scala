@@ -28,39 +28,6 @@ object DynamoDb {
       .mapMaterializedValue(_ => NotUsed)
 
   /**
-   * Create a Source that will emit potentially multiple responses for a given request.
-   */
-  @deprecated("Use sourceOp instead", "")
-  def source(op: AwsPagedOp): Source[op.B, NotUsed] =
-    Setup
-      .source { mat => attr =>
-        Paginator.source(clientFlow(mat)(attr), op)
-      }
-      .mapMaterializedValue(_ => NotUsed)
-
-  /**
-   * Create a Source that will emit a response for a given request.
-   */
-  @deprecated("Use sourceOp instead", "")
-  def source(op: AwsOp): Source[op.B, NotUsed] =
-    Source.single(op).via(flow).map(_.asInstanceOf[op.B])
-
-  /**
-   * Create a Future that will be completed with a response to a given request.
-   */
-  @deprecated("Use singleOp instead", "")
-  def single(op: AwsOp)(implicit mat: Materializer): Future[op.B] =
-    source(op).runWith(Sink.head)
-
-  private def clientFlow[Op <: AwsOp](mat: ActorMaterializer)(attr: Attributes) =
-    attr
-      .get[DynamoAttributes.Client]
-      .map(_.client)
-      .getOrElse(DynamoClientExt(mat.system).dynamoClient)
-      .underlying
-      .flow[Op]
-
-  /**
    * Create a Flow that emits a response for every request to DynamoDB.
    */
   def flowOp[Op <: AwsOp](op: Op): Flow[Op, Op#B, NotUsed] =
@@ -71,7 +38,7 @@ object DynamoDb {
   /**
    * Create a Source that will emit potentially multiple responses for a given request.
    */
-  def sourceOp(op: AwsPagedOp): Source[op.B, NotUsed] =
+  def source(op: AwsPagedOp): Source[op.B, NotUsed] =
     Setup
       .source { mat => attr =>
         Paginator.source(
@@ -84,14 +51,14 @@ object DynamoDb {
   /**
    * Create a Source that will emit a response for a given request.
    */
-  def sourceOp(op: AwsOp): Source[op.B, NotUsed] =
+  def source(op: AwsOp): Source[op.B, NotUsed] =
     Source.single(op).via(flowOp(op)).map(_.asInstanceOf[op.B])
 
   /**
    * Create a Future that will be completed with a response to a given request.
    */
-  def singleOp(op: AwsOp)(implicit mat: Materializer): Future[op.B] =
-    sourceOp(op).runWith(Sink.head)
+  def single(op: AwsOp)(implicit mat: Materializer): Future[op.B] =
+    source(op).runWith(Sink.head)
 
   private def clientFlowOp[Op <: AwsOp](op: Op)(mat: ActorMaterializer)(attr: Attributes) =
     attr
@@ -100,4 +67,12 @@ object DynamoDb {
       .getOrElse(DynamoClientExt(mat.system).dynamoClient)
       .underlying
       .flowOp[Op](op)
+
+  private def clientFlow[Op <: AwsOp](mat: ActorMaterializer)(attr: Attributes) =
+    attr
+      .get[DynamoAttributes.Client]
+      .map(_.client)
+      .getOrElse(DynamoClientExt(mat.system).dynamoClient)
+      .underlying
+      .flow[Op]
 }
