@@ -83,7 +83,7 @@ Scala
 : @@snip [snip](/csv/src/test/scala/docs/scaladsl/CsvToMapSpec.scala) { #flow-type }
 
 Java
-: @@snip [snip](/csv/src/test/java/docs/javadsl/CsvToMapTest.java) { #flow-type }
+: @@snip [snip](/csv/src/test/java/docs/javadsl/CsvToMapTest.java) { #import #flow-type }
 
 
 This example uses the first line (the header line) in the CSV data as column names:
@@ -92,7 +92,7 @@ Scala
 : @@snip [snip](/csv/src/test/scala/docs/scaladsl/CsvToMapSpec.scala) { #header-line }
 
 Java
-: @@snip [snip](/csv/src/test/java/docs/javadsl/CsvToMapTest.java) { #header-line }
+: @@snip [snip](/csv/src/test/java/docs/javadsl/CsvToMapTest.java) { #import #header-line }
 
 
 This sample will generate the same output as above, but the column names are specified
@@ -102,7 +102,7 @@ Scala
 : @@snip [snip](/csv/src/test/scala/docs/scaladsl/CsvToMapSpec.scala) { #column-names }
 
 Java
-: @@snip [snip](/csv/src/test/java/docs/javadsl/CsvToMapTest.java) { #column-names }
+: @@snip [snip](/csv/src/test/java/docs/javadsl/CsvToMapTest.java) { #import #column-names }
 
 ## CSV formatting
 
@@ -119,7 +119,7 @@ Scala
 : @@snip [snip](/csv/src/test/scala/docs/scaladsl/CsvFormattingSpec.scala) { #flow-type }
 
 Java
-: @@snip [snip](/csv/src/test/java/docs/javadsl/CsvFormattingTest.java) { #flow-type }
+: @@snip [snip](/csv/src/test/java/docs/javadsl/CsvFormattingTest.java) { #import #flow-type }
 
 This example uses the default configuration:
 
@@ -135,4 +135,4 @@ Scala
 : @@snip [snip](/csv/src/test/scala/docs/scaladsl/CsvFormattingSpec.scala) { #formatting }
 
 Java
-: @@snip [snip](/csv/src/test/java/docs/javadsl/CsvFormattingTest.java) { #formatting }
+: @@snip [snip](/csv/src/test/java/docs/javadsl/CsvFormattingTest.java) { #import #formatting }
