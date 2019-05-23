@@ -32,8 +32,8 @@ private[dynamodb] object RetryWithBackoff {
  * INTERNAL API
  */
 @InternalApi
-private[dynamodb] final class RetryWithBackoff[T, M](val maximumRetries: Int,
-                                                     val retryInitialTimeout: FiniteDuration,
+private[dynamodb] final class RetryWithBackoff[T, M](val maximumAttempts: Int,
+                                                     val initialRetryTimeout: FiniteDuration,
                                                      val backoffStrategy: RetryBackoffStrategy,
                                                      val decider: PartialFunction[Throwable, Graph[SourceShape[T], M]])
     extends SimpleLinearGraphStage[T] {
@@ -65,13 +65,13 @@ private[dynamodb] final class RetryWithBackoff[T, M](val maximumRetries: Int,
     }
 
     def onFailure(ex: Throwable): Unit =
-      if ((maximumRetries < 0 || attempt < maximumRetries) && decider.isDefinedAt(ex)) {
+      if ((maximumAttempts < 0 || attempt < maximumAttempts) && decider.isDefinedAt(ex)) {
         attempt += 1
 
         val delay =
           backoffStrategy match {
-            case Exponential => retryInitialTimeout * Math.pow(2, attempt - 1).toInt
-            case Linear => retryInitialTimeout * attempt
+            case Exponential => initialRetryTimeout * Math.pow(2, attempt - 1).toInt
+            case Linear => initialRetryTimeout * attempt
           }
         log.debug(s"Retry attempt $attempt for exception $ex to be scheduled after $delay ${delay.unit}")
 
