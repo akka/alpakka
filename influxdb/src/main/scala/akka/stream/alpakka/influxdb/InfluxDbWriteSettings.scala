@@ -23,4 +23,7 @@ final class InfluxDbWriteSettings private (
     batchSize = batchSize
   )
 
+  override def toString: String =
+    s"""InfluxDbWriteSettings(batchSize=$batchSize)"""
+
 }

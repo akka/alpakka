@@ -23,4 +23,7 @@ final class InfluxDbReadSettings private (val precision: TimeUnit) {
     precision = precision
   )
 
+  override def toString: String =
+    s"""InfluxDbReadSettings(precision=$precision)"""
+
 }

@@ -20,7 +20,7 @@ object InfluxDbWriteMessage {
     new InfluxDbWriteMessage(point, passThrough)
 }
 
-final class InfluxDbWriteMessage[T, C](val point: T,
+final class InfluxDbWriteMessage[T, C] private (val point: T,
                                        val passThrough: C,
                                        val databaseName: Option[String] = None,
                                        val retentionPolicy: Option[String] = None) {
