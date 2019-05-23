@@ -54,7 +54,7 @@ Scala
 : @@snip [snip](/csv/src/test/scala/docs/scaladsl/CsvParsingSpec.scala) { #flow-type }
 
 Java
-: @@snip [snip](/csv/src/test/java/docs/javadsl/CsvParsingTest.java) { #flow-type }
+: @@snip [snip](/csv/src/test/java/docs/javadsl/CsvParsingTest.java) { #import #flow-type }
 
 
 In this sample we read a single line of CSV formatted data into a list of column elements:
@@ -63,7 +63,7 @@ Scala
 : @@snip [snip](/csv/src/test/scala/docs/scaladsl/CsvParsingSpec.scala) { #line-scanner }
 
 Java
-: @@snip [snip](/csv/src/test/java/docs/javadsl/CsvParsingTest.java) { #line-scanner }
+: @@snip [snip](/csv/src/test/java/docs/javadsl/CsvParsingTest.java) { #import #line-scanner }
 
 To convert the `ByteString` columns as `String`, a `map` operation can be added to the Flow:
 
@@ -71,7 +71,7 @@ Scala
 : @@snip [snip](/csv/src/test/scala/docs/scaladsl/CsvParsingSpec.scala) { #line-scanner-string }
 
 Java
-: @@snip [snip](/csv/src/test/java/docs/javadsl/CsvParsingTest.java) { #line-scanner-string }
+: @@snip [snip](/csv/src/test/java/docs/javadsl/CsvParsingTest.java) { #import #line-scanner-string }
 
 ## CSV conversion into a map
 
