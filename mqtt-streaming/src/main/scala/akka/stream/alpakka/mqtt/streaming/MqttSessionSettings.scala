@@ -271,5 +271,21 @@ final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
     )
 
   override def toString: String =
-    s"MqttSessionSettings(maxPacketSize=$maxPacketSize,clientTerminationWatcherBufferSize=$clientTerminationWatcherBufferSize,commandParallelism=$commandParallelism,eventParallelism=$eventParallelism,receiveConnectTimeout=$receiveConnectTimeout,receiveConnAckTimeout=$receiveConnAckTimeout,receivePubAckRecTimeout=$producerPubAckRecTimeout,receivePubCompTimeout=$producerPubCompTimeout,receivePubAckRecTimeout=$consumerPubAckRecTimeout,receivePubCompTimeout=$consumerPubCompTimeout,receivePubRelTimeout=$consumerPubRelTimeout,receiveSubAckTimeout=$receiveSubAckTimeout,receiveUnsubAckTimeout=$receiveUnsubAckTimeout,serverSendBufferSize=$serverSendBufferSize)"
+    "MqttSessionSettings(" +
+      s"maxPacketSize=$maxPacketSize," +
+      s"clientSendBufferSize=$clientSendBufferSize," +
+      s"clientTerminationWatcherBufferSize=$clientTerminationWatcherBufferSize," +
+      s"commandParallelism=$commandParallelism," +
+      s"eventParallelism=$eventParallelism," +
+      s"receiveConnectTimeout=${receiveConnectTimeout.toCoarsest}," +
+      s"receiveConnAckTimeout=${receiveConnAckTimeout.toCoarsest}," +
+      s"receivePubAckRecTimeout=${producerPubAckRecTimeout.toCoarsest}," +
+      s"receivePubCompTimeout=${producerPubCompTimeout.toCoarsest}," +
+      s"receivePubAckRecTimeout=${consumerPubAckRecTimeout.toCoarsest}," +
+      s"receivePubCompTimeout=${consumerPubCompTimeout.toCoarsest}," +
+      s"receivePubRelTimeout=${consumerPubRelTimeout.toCoarsest}," +
+      s"receiveSubAckTimeout=${receiveSubAckTimeout.toCoarsest}," +
+      s"receiveUnsubAckTimeout=${receiveUnsubAckTimeout.toCoarsest}," +
+      s"serverSendBufferSize=$serverSendBufferSize" +
+      ")"
 }
