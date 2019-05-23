@@ -38,7 +38,7 @@ private[dynamodb] class DynamoClientImpl(
       .withMaxConnections(settings.parallelism)
       .withMaxOpenRequests(settings.maxOpenRequests.getOrElse(settings.parallelism))
     if (settings.tls)
-      Http().cachedHostConnectionPoolHttps[AwsRequestMetadata](settings.host, settings = poolSettings)
+      Http().cachedHostConnectionPoolHttps[AwsRequestMetadata](settings.host, settings.port, settings = poolSettings)
     else
       Http().cachedHostConnectionPool[AwsRequestMetadata](settings.host, settings.port, settings = poolSettings)
   }
