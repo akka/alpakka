@@ -9,7 +9,6 @@ import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.csv.MalformedCsvException;
-import akka.stream.alpakka.csv.javadsl.CsvParsing;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -21,12 +20,10 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-// #line-scanner
+// #import
+import akka.stream.alpakka.csv.javadsl.CsvParsing;
 
-// #line-scanner
-// #line-scanner-string
-
-// #line-scanner-string
+// #import
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -87,7 +84,7 @@ public class CsvParsingTest {
   @Test
   public void illegalFormatShouldThrow() throws Exception {
     CompletionStage<List<Collection<ByteString>>> completionStage =
-        Source.single(ByteString.fromString("eins,zwei,drei\na,b,\\c"))
+        Source.single(ByteString.fromString("eins,zwei,drei\na,b,\\\"c"))
             .via(CsvParsing.lineScanner())
             .runWith(Sink.seq(), materializer);
     try {
@@ -100,6 +97,19 @@ public class CsvParsingTest {
       assertThat(csvException.getLineNo(), equalTo(2L));
       assertThat(csvException.getBytePos(), equalTo(5));
     }
+  }
+
+  @Test
+  public void escapeWithoutEscapedByteShouldProduceEscape() throws Exception {
+    CompletionStage<List<String>> completionStage =
+        Source.single(ByteString.fromString("a,b,\\c"))
+            .via(CsvParsing.lineScanner())
+            .map(line -> line.stream().map(ByteString::utf8String).collect(Collectors.toList()))
+            .runWith(Sink.head(), materializer);
+    List<String> res = completionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+    assertThat(res.get(0), equalTo("a"));
+    assertThat(res.get(1), equalTo("b"));
+    assertThat(res.get(2), equalTo("\\c"));
   }
 
   @BeforeClass
