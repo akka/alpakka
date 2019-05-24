@@ -77,7 +77,7 @@ class InfluxDbSpec extends WordSpec with MustMatchers with BeforeAndAfterEach wi
 
       val f1 = InfluxDbSource(influxDB, query)
         .mapConcat(resultToPoints)
-        .runWith(InfluxDbSink(InfluxDbWriteSettings()))
+        .runWith(InfluxDbSink.create(InfluxDbWriteSettings()))
 
       f1.futureValue mustBe Done
 

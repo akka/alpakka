@@ -15,7 +15,7 @@ object InfluxDbReadSettings {
 
 final class InfluxDbReadSettings private (val precision: TimeUnit) {
 
-  def withPrecision(value: TimeUnit): InfluxDbReadSettings = copy(precision = value)
+  def withPrecision(precision: TimeUnit): InfluxDbReadSettings = copy(precision = precision)
 
   private def copy(
       precision: TimeUnit = precision

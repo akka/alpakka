@@ -14,7 +14,7 @@ import scala.concurrent.Future
 
 object InfluxDbSink {
 
-  def apply(
+  def create(
       settings: InfluxDbWriteSettings
   )(implicit influxDB: InfluxDB): Sink[InfluxDbWriteMessage[Point, NotUsed], Future[Done]] =
     InfluxDbFlow.create(settings).toMat(Sink.ignore)(Keep.right)
