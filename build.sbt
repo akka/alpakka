@@ -275,14 +275,14 @@ lazy val docs = project
     publish / skip := true,
     whitesourceIgnore := true,
     makeSite := makeSite.dependsOn(LocalRootProject / ScalaUnidoc / doc).value,
+    previewPath := "docs/alpakka/snapshot/",
     Preprocess / siteSubdirName := s"api/alpakka/${if (isSnapshot.value) "snapshot" else version.value}",
     Preprocess / sourceDirectory := (LocalRootProject / ScalaUnidoc / unidoc / target).value,
     Preprocess / preprocessRules := Seq(
       ("\\.java\\.scala".r, _ => ".java")
     ),
     Paradox / siteSubdirName := s"docs/alpakka/${if (isSnapshot.value) "snapshot" else version.value}",
-    Paradox / sourceDirectory := sourceDirectory.value / "main",
-    Paradox / paradoxProperties ++= Map(
+    paradoxProperties ++= Map(
       "akka.version" -> Dependencies.AkkaVersion,
       "akka-http.version" -> Dependencies.AkkaHttpVersion,
       "couchbase.version" -> Dependencies.CouchbaseVersion,
@@ -322,7 +322,7 @@ lazy val docs = project
         s"$docsHost/api/alpakka/${if (isSnapshot.value) "snapshot" else version.value}/"
       }
     ),
-    Paradox / paradoxGroups := Map("Language" -> Seq("Java", "Scala")),
+    paradoxGroups := Map("Language" -> Seq("Java", "Scala")),
     resolvers += Resolver.jcenterRepo,
     publishRsyncArtifact := makeSite.value -> "www/",
     publishRsyncHost := "akkarepo@gustav.akka.io"
