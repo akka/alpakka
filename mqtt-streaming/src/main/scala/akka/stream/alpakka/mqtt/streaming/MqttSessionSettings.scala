@@ -272,20 +272,20 @@ final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
 
   override def toString: String =
     "MqttSessionSettings(" +
-      s"maxPacketSize=$maxPacketSize," +
-      s"clientSendBufferSize=$clientSendBufferSize," +
-      s"clientTerminationWatcherBufferSize=$clientTerminationWatcherBufferSize," +
-      s"commandParallelism=$commandParallelism," +
-      s"eventParallelism=$eventParallelism," +
-      s"receiveConnectTimeout=${receiveConnectTimeout.toCoarsest}," +
-      s"receiveConnAckTimeout=${receiveConnAckTimeout.toCoarsest}," +
-      s"receivePubAckRecTimeout=${producerPubAckRecTimeout.toCoarsest}," +
-      s"receivePubCompTimeout=${producerPubCompTimeout.toCoarsest}," +
-      s"receivePubAckRecTimeout=${consumerPubAckRecTimeout.toCoarsest}," +
-      s"receivePubCompTimeout=${consumerPubCompTimeout.toCoarsest}," +
-      s"receivePubRelTimeout=${consumerPubRelTimeout.toCoarsest}," +
-      s"receiveSubAckTimeout=${receiveSubAckTimeout.toCoarsest}," +
-      s"receiveUnsubAckTimeout=${receiveUnsubAckTimeout.toCoarsest}," +
-      s"serverSendBufferSize=$serverSendBufferSize" +
-      ")"
+    s"maxPacketSize=$maxPacketSize," +
+    s"clientSendBufferSize=$clientSendBufferSize," +
+    s"clientTerminationWatcherBufferSize=$clientTerminationWatcherBufferSize," +
+    s"commandParallelism=$commandParallelism," +
+    s"eventParallelism=$eventParallelism," +
+    s"receiveConnectTimeout=${receiveConnectTimeout.toCoarsest}," +
+    s"receiveConnAckTimeout=${receiveConnAckTimeout.toCoarsest}," +
+    s"receivePubAckRecTimeout=${producerPubAckRecTimeout.toCoarsest}," +
+    s"receivePubCompTimeout=${producerPubCompTimeout.toCoarsest}," +
+    s"receivePubAckRecTimeout=${consumerPubAckRecTimeout.toCoarsest}," +
+    s"receivePubCompTimeout=${consumerPubCompTimeout.toCoarsest}," +
+    s"receivePubRelTimeout=${consumerPubRelTimeout.toCoarsest}," +
+    s"receiveSubAckTimeout=${receiveSubAckTimeout.toCoarsest}," +
+    s"receiveUnsubAckTimeout=${receiveUnsubAckTimeout.toCoarsest}," +
+    s"serverSendBufferSize=$serverSendBufferSize" +
+    ")"
 }
