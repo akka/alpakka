@@ -120,8 +120,14 @@ object Dependencies {
 
   val DynamoDB = Seq(
     libraryDependencies ++= Seq(
-      "com.amazonaws" % "aws-java-sdk-dynamodb" % AwsSdkVersion, // ApacheV2
-      "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion
+      "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll ExclusionRule(
+        organization = "com.typesafe.akka"
+      ), // ApacheV2
+      "software.amazon.awssdk" % "dynamodb" % AwsSdk2Version excludeAll (ExclusionRule(
+        organization = "software.amazon.awssdk",
+        name = "netty-nio-client"
+      ), ExclusionRule(organization = "io.netty")), // ApacheV2
+      "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
     )
   )
 
