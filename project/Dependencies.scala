@@ -127,7 +127,7 @@ object Dependencies {
         organization = "software.amazon.awssdk",
         name = "netty-nio-client"
       ), ExclusionRule(organization = "io.netty")), // ApacheV2
-      "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
+      "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion // ApacheV2
     )
   )
 
