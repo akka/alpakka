@@ -44,15 +44,6 @@ Scala
 Java
 : @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #paginated }
 
-A custom configured client can be used by attaching it as an attribute to the stream:
-
-Scala
-: @@snip [snip](/dynamodb/src/test/scala/docs/scaladsl/ExampleSpec.scala) { #attributes }
-
-Java
-: @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #attributes }
-
-
 ## Running the example code
 
 The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
