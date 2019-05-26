@@ -3,9 +3,9 @@
 ### Example: Fetch CSV from Internet and publish the data as JSON to Kafka
 
 This example uses 
-@extref[Akka HTTP to send the HTTP request](akka-http-docs:client-side/connection-level.html#opening-http-connections) 
+@extref:[Akka HTTP to send the HTTP request](akka-http:client-side/connection-level.html#opening-http-connections) 
 and @scala[Akka HTTPs primary JSON support
-via @extref[Spray JSON](akka-http-docs:common/json-support.html#spray-json-support) to convert the map into a JSON structure.]
+via @extref:[Spray JSON](akka-http:common/json-support.html#spray-json-support) to convert the map into a JSON structure.]
 @java[Jackson JSON generator to convert the map into a JSON-formatted string.] 
 
 - (1) trigger an HTTP request every 30 seconds,
