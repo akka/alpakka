@@ -61,7 +61,7 @@ Scala
 Java
 : @@snip [snip](/cassandra/src/test/java/docs/javadsl/CassandraSourceTest.java) { #run-source }
 
-Here we used a basic sink to complete the stream by collecting all of the stream elements to a collection. The power of streams comes from building larger data pipelines which leverage backpressure to ensure efficient flow control. Feel free to edit the example code and build @extref[more advanced stream topologies](akka-docs:stream/stream-introduction.html).
+Here we used a basic sink to complete the stream by collecting all of the stream elements to a collection. The power of streams comes from building larger data pipelines which leverage backpressure to ensure efficient flow control. Feel free to edit the example code and build @extref:[more advanced stream topologies](akka:stream/stream-introduction.html).
 
 ## Flow with passthrough
 

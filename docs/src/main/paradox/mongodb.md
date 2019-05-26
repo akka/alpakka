@@ -87,7 +87,7 @@ Java
 
 Here we used a basic sink to complete the stream by collecting all of the stream elements to a collection.
 The power of streams comes from building larger data pipelines which leverage backpressure to ensure efficient flow control.
-Feel free to edit the example code and build @extref[more advanced stream topologies](akka-docs:scala/stream/stream-introduction.html).
+Feel free to edit the example code and build @extref:[more advanced stream topologies](akka:scala/stream/stream-introduction.html).
 
 ## Flow and Sink
 
