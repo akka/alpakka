@@ -25,7 +25,6 @@ public class TestUtils {
   public static InfluxDB setupConnection(final String databaseName) {
     final InfluxDB influxDB = InfluxDBFactory.connect(INFLUXDB_URL, USERNAME, PASSWORD);
     influxDB.setDatabase(databaseName);
-    influxDB.setLogLevel(InfluxDB.LogLevel.FULL);
     influxDB.query(new Query("CREATE DATABASE " + databaseName, databaseName));
     return influxDB;
   }
