@@ -125,7 +125,7 @@ class AmqpDocsSpec extends AmqpSpec {
         AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
-          .withPublishConfirm(confirmTimeout = FiniteDuration(1, SECONDS))
+          .withPublishConfirm(AmqpPublishConfirmConfiguration(confirmTimeout = FiniteDuration(1, SECONDS)))
       )
       //#create-publish-flow
 

@@ -187,15 +187,12 @@ final class AmqpReplyToSinkSettings private (
   def withFailIfReplyToMissing(failIfReplyToMissing: Boolean): AmqpReplyToSinkSettings =
     copy(failIfReplyToMissing = failIfReplyToMissing)
 
-  def withPublishConfirm(confirmTimeout: FiniteDuration): AmqpReplyToSinkSettings =
-    copy(publishConfirm = Some(AmqpPublishConfirmConfiguration(confirmTimeout)))
+  def withPublishConfirm(config: AmqpPublishConfirmConfiguration): AmqpReplyToSinkSettings =
+    copy(publishConfirm = Some(config))
 
   /**
    * Java API
    */
-  def withPublishConfirm(confirmTimeout: Duration): AmqpReplyToSinkSettings =
-    copy(publishConfirm = Some(AmqpPublishConfirmConfiguration.create(confirmTimeout)))
-
   private def copy(connectionProvider: AmqpConnectionProvider = connectionProvider,
                    failIfReplyToMissing: Boolean = failIfReplyToMissing,
                    publishConfirm: Option[AmqpPublishConfirmConfiguration] = publishConfirm) =
@@ -240,17 +237,14 @@ final class AmqpWriteSettings private (
   def withDeclarations(declarations: immutable.Seq[Declaration]): AmqpWriteSettings =
     copy(declarations = declarations)
 
-  def withPublishConfirm(confirmTimeout: FiniteDuration): AmqpWriteSettings =
-    copy(publishConfirm = Some(AmqpPublishConfirmConfiguration(confirmTimeout)))
+  def withPublishConfirm(config: AmqpPublishConfirmConfiguration): AmqpWriteSettings =
+    copy(publishConfirm = Some(config))
 
   /**
    * Java API
    */
   def withDeclarations(declarations: java.util.List[Declaration]): AmqpWriteSettings =
     copy(declarations = declarations.asScala.toIndexedSeq)
-
-  def withPublishConfirm(confirmTimeout: Duration): AmqpWriteSettings =
-    copy(publishConfirm = Some(AmqpPublishConfirmConfiguration.create(confirmTimeout)))
 
   private def copy(connectionProvider: AmqpConnectionProvider = connectionProvider,
                    exchange: Option[String] = exchange,

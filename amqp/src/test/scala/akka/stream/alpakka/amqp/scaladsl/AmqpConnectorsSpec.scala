@@ -131,7 +131,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
         AmqpWriteSettings(connectionProvider)
           .withRoutingKey(queueName)
           .withDeclaration(queueDeclaration)
-          .withPublishConfirm(confirmTimeout = FiniteDuration(1, SECONDS))
+          .withPublishConfirm(AmqpPublishConfirmConfiguration(confirmTimeout = FiniteDuration(1, SECONDS)))
       )
 
       val input = Vector("one", "two", "three", "four", "five")
@@ -156,7 +156,7 @@ class AmqpConnectorsSpec extends AmqpSpec {
         AmqpWriteSettings(connectionProvider)
           .withRoutingKey(routingKey)
           .withExchange(exchangeName)
-          .withPublishConfirm(confirmTimeout = FiniteDuration(1, SECONDS))
+          .withPublishConfirm(AmqpPublishConfirmConfiguration(confirmTimeout = FiniteDuration(1, SECONDS)))
       )
 
       val input = Vector("one")

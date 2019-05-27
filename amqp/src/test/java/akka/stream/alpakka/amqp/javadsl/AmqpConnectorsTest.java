@@ -28,10 +28,9 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.collection.JavaConverters;
-import scala.concurrent.duration.Duration;
-import scala.concurrent.duration.FiniteDuration;
 
 import java.net.ConnectException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -167,7 +166,9 @@ public class AmqpConnectorsTest {
 
     List<ReadResult> probeResult =
         JavaConverters.seqAsJavaListConverter(
-                result.second().toStrict(Duration.create(3, TimeUnit.SECONDS)))
+                result
+                    .second()
+                    .toStrict(scala.concurrent.duration.Duration.create(3, TimeUnit.SECONDS)))
             .asJava();
     assertEquals(
         probeResult.stream().map(s -> s.bytes().utf8String()).collect(Collectors.toList()), input);
@@ -188,7 +189,7 @@ public class AmqpConnectorsTest {
             AmqpWriteSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
                 .withDeclaration(queueDeclaration)
-                .withPublishConfirm(Duration.create(1, TimeUnit.SECONDS)));
+                .withPublishConfirm(AmqpPublishConfirmConfiguration.create(Duration.ofSeconds(1))));
 
     TestSubscriber.Probe<String> result =
         Source.from(input)
@@ -199,7 +200,8 @@ public class AmqpConnectorsTest {
             .run(materializer);
 
     List<String> probeResult =
-        JavaConverters.seqAsJavaListConverter(result.toStrict(Duration.create(3, TimeUnit.SECONDS)))
+        JavaConverters.seqAsJavaListConverter(
+                result.toStrict(scala.concurrent.duration.Duration.create(3, TimeUnit.SECONDS)))
             .asJava();
     assertEquals(probeResult, input.stream().map(s -> "something").collect(Collectors.toList()));
   }

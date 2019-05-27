@@ -185,7 +185,7 @@ public class AmqpDocsTest {
             AmqpWriteSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
                 .withDeclaration(queueDeclaration)
-                .withPublishConfirm(Duration.ofSeconds(1)));
+                .withPublishConfirm(AmqpPublishConfirmConfiguration.create(Duration.ofSeconds(1))));
     // #create-publish-flow
 
     // #run-publish-flow
