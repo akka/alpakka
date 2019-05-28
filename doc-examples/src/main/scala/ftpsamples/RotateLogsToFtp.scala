@@ -38,15 +38,14 @@ object RotateLogsToFtp extends ActorSystemAvailable with App {
   // (2)
   val rotator = () => {
     var last: Char = ' '
-    (bs: ByteString) =>
-      {
-        bs.head.toChar match {
-          case char if char != last =>
-            last = char
-            Some(s"log-$char.z")
-          case _ => None
-        }
+    (bs: ByteString) => {
+      bs.head.toChar match {
+        case char if char != last =>
+          last = char
+          Some(s"log-$char.z")
+        case _ => None
       }
+    }
   }
 
   // (3)

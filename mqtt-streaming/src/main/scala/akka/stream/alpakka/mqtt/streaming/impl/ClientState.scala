@@ -457,7 +457,7 @@ import scala.util.{Failure, Success}
                 data.copy(
                   activeConsumers = data.activeConsumers + (topicName -> consumer),
                   pendingRemotePublications =
-                  data.pendingRemotePublications.take(i) ++ data.pendingRemotePublications.drop(i + 1)
+                    data.pendingRemotePublications.take(i) ++ data.pendingRemotePublications.drop(i + 1)
                 )
               )
             } else {
@@ -512,7 +512,7 @@ import scala.util.{Failure, Success}
                 data.copy(
                   activeProducers = data.activeProducers + (topicName -> producer),
                   pendingLocalPublications =
-                  data.pendingLocalPublications.take(i) ++ data.pendingLocalPublications.drop(i + 1)
+                    data.pendingLocalPublications.take(i) ++ data.pendingLocalPublications.drop(i + 1)
                 )
               )
             } else {
