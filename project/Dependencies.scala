@@ -97,8 +97,6 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         // https://github.com/akka/alpakka-kafka/releases
         "com.typesafe.akka" %% "akka-stream-kafka" % "1.0.3",
-        // https://github.com/embeddedkafka/embedded-kafka/releases
-        "io.github.embeddedkafka" %% "embedded-kafka" % "2.1.1", // MIT
         // https://github.com/javaee/javax.jms
         "javax.jms" % "jms" % "1.1", // CDDL Version 1.1
         // http://activemq.apache.org/download.html

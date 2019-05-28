@@ -6,17 +6,14 @@ package akka.stream.alpakka.eip.scaladsl
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.kafka.ConsumerMessage.CommittableOffsetBatch
-import akka.kafka.{ConsumerMessage, ConsumerSettings, Subscriptions}
-import akka.kafka.scaladsl.Consumer
+import akka.kafka.{CommitterSettings, ConsumerMessage, ConsumerSettings, Subscriptions}
+import akka.kafka.scaladsl.{Committer, Consumer}
 import akka.kafka.scaladsl.Consumer.DrainingControl
 import akka.stream.{ActorMaterializer, FlowShape, Graph}
 import akka.stream.scaladsl._
 import org.apache.kafka.common.serialization.{ByteArrayDeserializer, StringDeserializer}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
-
-import scala.concurrent.duration._
 
 class PassThroughExamples extends WordSpec with BeforeAndAfterAll with Matchers with ScalaFutures {
 
@@ -104,15 +101,13 @@ object PassThroughFlowKafkaCommitExample {
 
     val consumerSettings =
       ConsumerSettings(system, new StringDeserializer, new ByteArrayDeserializer)
+    val committerSettings = CommitterSettings(system)
 
     Consumer
       .committableSource(consumerSettings, Subscriptions.topics("topic1"))
       .via(PassThroughFlow(writeFlow, Keep.right))
       .map(_.committableOffset)
-      .groupedWithin(10, 5.seconds)
-      .map(CommittableOffsetBatch(_))
-      .mapAsync(3)(_.commitScaladsl())
-      .toMat(Sink.ignore)(Keep.both)
+      .toMat(Committer.sink(committerSettings))(Keep.both)
       .mapMaterializedValue(DrainingControl.apply)
       .run()
     // #passThroughKafkaFlow
