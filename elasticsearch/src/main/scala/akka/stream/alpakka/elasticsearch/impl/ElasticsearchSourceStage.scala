@@ -111,11 +111,11 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](indexName: String
         val completeParams = searchParams ++ extraParams.flatten
 
         val searchBody = "{" + completeParams
-          .map {
-            case (name, json) =>
-              "\"" + name + "\":" + json
-          }
-          .mkString(",") + "}"
+            .map {
+              case (name, json) =>
+                "\"" + name + "\":" + json
+            }
+            .mkString(",") + "}"
 
         val endpoint: String = (indexName, typeName) match {
           case (i, Some(t)) => s"/$i/$t/_search"

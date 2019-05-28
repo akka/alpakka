@@ -81,8 +81,7 @@ object LogRotatorSink {
       f: function.Creator[function.Function[ByteString, Optional[C]]]
   ): () => ByteString => Option[C] = () => {
     val fun = f.create()
-    elem =>
-      fun(elem).asScala
+    elem => fun(elem).asScala
   }
 
 }
