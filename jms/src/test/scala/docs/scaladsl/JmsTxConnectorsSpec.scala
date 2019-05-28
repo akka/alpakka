@@ -53,11 +53,11 @@ class JmsTxConnectorsSpec extends JmsSpec {
         )
 
         val msgsIn = 1 to 100 map { n =>
-          JmsTextMessage(n.toString)
-            .withProperty("Number", n)
-            .withProperty("IsOdd", n % 2 == 1)
-            .withProperty("IsEven", n % 2 == 0)
-        }
+            JmsTextMessage(n.toString)
+              .withProperty("Number", n)
+              .withProperty("IsOdd", n % 2 == 1)
+              .withProperty("IsEven", n % 2 == 0)
+          }
 
         Source(msgsIn).runWith(jmsSink)
 
@@ -95,8 +95,8 @@ class JmsTxConnectorsSpec extends JmsSpec {
           JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
         )
         val msgsIn = 1 to 100 map { n =>
-          JmsTextMessage(n.toString).withProperty("Number", n)
-        }
+            JmsTextMessage(n.toString).withProperty("Number", n)
+          }
 
         Source(msgsIn).runWith(jmsSink)
 
@@ -132,11 +132,11 @@ class JmsTxConnectorsSpec extends JmsSpec {
         )
 
         val msgsIn = 1 to 100 map { n =>
-          JmsTextMessage(n.toString)
-            .withProperty("Number", n)
-            .withProperty("IsOdd", n % 2 == 1)
-            .withProperty("IsEven", n % 2 == 0)
-        }
+            JmsTextMessage(n.toString)
+              .withProperty("Number", n)
+              .withProperty("IsOdd", n % 2 == 1)
+              .withProperty("IsEven", n % 2 == 0)
+          }
         Source(msgsIn).runWith(jmsSink)
 
         val jmsSource = JmsConsumer.txSource(
