@@ -61,10 +61,6 @@ import akka.util.ByteString
     extends UploadPartResponse
 
 /** Internal Api */
-@InternalApi private[impl] final case class FailedUpload(reasons: Seq[Throwable])
-    extends Exception(reasons.map(_.getMessage).mkString(", "))
-
-/** Internal Api */
 @InternalApi private[impl] final case class CompleteMultipartUploadResult(location: Uri,
                                                                           bucket: String,
                                                                           key: String,
