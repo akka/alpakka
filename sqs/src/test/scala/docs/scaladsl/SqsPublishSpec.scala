@@ -237,9 +237,9 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
     // override val queueUrl = "https://sqs.us-east-1.amazonaws.com/$AWS_ACCOUNT_ID/$queue_name.fifo"
     // override implicit val awsSqsClient: SqsAsyncClient = SqsAsyncClient.builder().build()
 
-    val messages = for (i <- 0 until 10)
-      yield
-        SendMessageRequest
+    val messages =
+      for (i <- 0 until 10)
+        yield SendMessageRequest
           .builder()
           .messageBody(s"Message $i")
           .messageGroupId("group-id")

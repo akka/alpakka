@@ -34,11 +34,9 @@ object Directory {
     require(Files.isDirectory(directory), s"Path must be a directory, $directory isn't")
     val factory = maxDepth match {
       case None =>
-        () =>
-          Files.walk(directory, fileVisitOptions: _*)
+        () => Files.walk(directory, fileVisitOptions: _*)
       case Some(maxDepth) =>
-        () =>
-          Files.walk(directory, maxDepth, fileVisitOptions: _*)
+        () => Files.walk(directory, maxDepth, fileVisitOptions: _*)
     }
 
     StreamConverters.fromJavaStream(factory)

@@ -65,8 +65,8 @@ final class KMS private[headers] (val keyId: String, val context: Option[String]
 
   @InternalApi private[s3] override def headers: immutable.Seq[HttpHeader] = {
     val baseHeaders = RawHeader("x-amz-server-side-encryption", "aws:kms") ::
-    RawHeader("x-amz-server-side-encryption-aws-kms-key-id", keyId) ::
-    Nil
+      RawHeader("x-amz-server-side-encryption-aws-kms-key-id", keyId) ::
+      Nil
 
     val headers = baseHeaders ++ context.map(ctx => RawHeader("x-amz-server-side-encryption-context", ctx)).toSeq
     headers
@@ -128,16 +128,16 @@ final class CustomerKeys private[headers] (val key: String, val md5: Option[Stri
       headers
     case CopyPart =>
       val copyHeaders =
-      RawHeader("x-amz-copy-source-server-side-encryption-customer-algorithm", "AES256") ::
-      RawHeader("x-amz-copy-source-server-side-encryption-customer-key", key) ::
-      RawHeader(
-        "x-amz-copy-source-server-side-encryption-customer-key-MD5",
-        md5.getOrElse({
-          val decodedKey = Base64.decode(key)
-          val md5 = Md5Utils.md5AsBase64(decodedKey)
-          md5
-        })
-      ) :: Nil
+        RawHeader("x-amz-copy-source-server-side-encryption-customer-algorithm", "AES256") ::
+        RawHeader("x-amz-copy-source-server-side-encryption-customer-key", key) ::
+        RawHeader(
+          "x-amz-copy-source-server-side-encryption-customer-key-MD5",
+          md5.getOrElse({
+            val decodedKey = Base64.decode(key)
+            val md5 = Md5Utils.md5AsBase64(decodedKey)
+            md5
+          })
+        ) :: Nil
       headers ++: copyHeaders
     case _ => Nil
   }

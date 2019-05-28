@@ -245,12 +245,16 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
   )(sel: Selector, key: SelectionKey)(implicit mat: ActorMaterializer, ec: ExecutionContext): Unit = {
 
     val acceptingChannel = key.channel().asInstanceOf[UnixServerSocketChannel]
-    val acceptedChannel = try { acceptingChannel.accept() } catch { case _: IOException => null }
+    val acceptedChannel = try {
+      acceptingChannel.accept()
+    } catch { case _: IOException => null }
 
     if (acceptedChannel != null) {
       acceptedChannel.configureBlocking(false)
       val (context, connectionFlow) = sendReceiveStructures(sel, receiveBufferSize, sendBufferSize, halfClose)
-      try { acceptedChannel.register(sel, SelectionKey.OP_READ, context) } catch { case _: IOException => }
+      try {
+        acceptedChannel.register(sel, SelectionKey.OP_READ, context)
+      } catch { case _: IOException => }
       incomingConnectionQueue.offer(
         IncomingConnection(localAddress, acceptingChannel.getRemoteSocketAddress, connectionFlow)
       )

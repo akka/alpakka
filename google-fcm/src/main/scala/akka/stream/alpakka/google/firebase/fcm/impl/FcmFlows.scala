@@ -29,7 +29,7 @@ private[fcm] object FcmFlows {
             in =>
               session.getToken().flatMap { token =>
                 sender.send(conf.projectId, token, http, FcmSend(conf.isTest, in._1)).zip(Future.successful(in._2))
-            }
+              }
           )
       }
       .mapMaterializedValue(_ => NotUsed)
@@ -46,7 +46,7 @@ private[fcm] object FcmFlows {
             in =>
               session.getToken().flatMap { token =>
                 sender.send(conf.projectId, token, http, FcmSend(conf.isTest, in))
-            }
+              }
           )
       }
       .mapMaterializedValue(_ => NotUsed)

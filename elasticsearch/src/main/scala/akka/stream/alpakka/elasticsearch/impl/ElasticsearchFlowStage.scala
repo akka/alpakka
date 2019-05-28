@@ -140,9 +140,9 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
       val json = messages
         .map { message =>
           val sharedFields: Seq[(String, JsString)] = Seq(
-            "_index" -> JsString(message.indexName.getOrElse(indexName)),
-            typeNameTuple
-          ) ++ message.customMetadata.map { case (field, value) => field -> JsString(value) }
+              "_index" -> JsString(message.indexName.getOrElse(indexName)),
+              typeNameTuple
+            ) ++ message.customMetadata.map { case (field, value) => field -> JsString(value) }
           val tuple: (String, JsObject) = message.operation match {
             case Index =>
               val fields = Seq(
