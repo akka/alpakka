@@ -975,9 +975,9 @@ object MqttCodec {
           }
         val topicFilters = decodeTopicFilters(l - (packetLen - v.len), Vector.empty)
         val topicFiltersValid = topicFilters.nonEmpty && topicFilters.foldLeft(true) {
-          case (true, (Right(_), tff)) if tff.underlying < ControlPacketFlags.QoSReserved.underlying => true
-          case _ => false
-        }
+            case (true, (Right(_), tff)) if tff.underlying < ControlPacketFlags.QoSReserved.underlying => true
+            case _ => false
+          }
         if (topicFiltersValid) {
           Right(Subscribe(packetId, topicFilters.flatMap {
             case (Right(tfs), tff) => List(tfs -> tff)
@@ -1006,9 +1006,9 @@ object MqttCodec {
           }
         val returnCodes = decodeReturnCodes(l - (packetLen - v.len), Vector.empty)
         val returnCodesValid = returnCodes.nonEmpty && returnCodes.foldLeft(true) {
-          case (true, rc) if rc.underlying < ControlPacketFlags.QoSReserved.underlying => true
-          case _ => false
-        }
+            case (true, rc) if rc.underlying < ControlPacketFlags.QoSReserved.underlying => true
+            case _ => false
+          }
         if (returnCodesValid) {
           Right(SubAck(packetId, returnCodes))
         } else {
@@ -1037,9 +1037,9 @@ object MqttCodec {
           }
         val topicFilters = decodeTopicFilters(l - (packetLen - v.len), Vector.empty)
         val topicFiltersValid = topicFilters.nonEmpty && topicFilters.foldLeft(true) {
-          case (true, Right(_)) => true
-          case _ => false
-        }
+            case (true, Right(_)) => true
+            case _ => false
+          }
         if (topicFiltersValid) {
           Right(Unsubscribe(packetId, topicFilters.flatMap {
             case Right(tfs) => List(tfs)

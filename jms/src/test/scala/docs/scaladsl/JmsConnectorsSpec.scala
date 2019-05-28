@@ -575,7 +575,7 @@ class JmsConnectorsSpec extends JmsSpec {
             Future {
               Thread.sleep(100)
               JmsTextMessage(n.toString)
-          }
+            }
         )
         .runWith(jmsSink)
 

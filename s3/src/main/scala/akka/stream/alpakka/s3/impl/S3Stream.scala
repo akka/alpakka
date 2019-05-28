@@ -359,7 +359,7 @@ import akka.util.ByteString
                 case StatusCodes.Forbidden => AccessDenied
                 case StatusCodes.OK => AccessGranted
                 case other => throw new IllegalArgumentException(s"received status $other")
-            }
+              }
           )
       case HttpResponse(_, _, entity, _) =>
         Unmarshal(entity).to[String].map { err =>

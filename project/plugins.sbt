@@ -1,5 +1,5 @@
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.2.0")
-addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.0.0-RC5")
+addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.0.0")
 addSbtPlugin("com.dwijnand" % "sbt-dynver" % "3.3.0")
 addSbtPlugin("com.lightbend.paradox" % "sbt-paradox-dependencies" % "0.1")
 addSbtPlugin("com.lightbend.paradox" % "sbt-paradox-project-info" % "1.1.2")
