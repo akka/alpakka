@@ -1,5 +1,12 @@
 # AWS Lambda
 
+## 1.0.2
+
+* AWS SDK 2.5.44 [#1704](https://github.com/akka/alpakka/pull/1704)
+
+[*closed in 1.0.2*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.0.2+label%3Ap%3Aaws-lambda)
+
+
 ## 1.0.1
 
 * AWS SDK 2.5.20 -> 2.5.41 [#1700](https://github.com/akka/alpakka/pull/1700)  **dependency-change** 

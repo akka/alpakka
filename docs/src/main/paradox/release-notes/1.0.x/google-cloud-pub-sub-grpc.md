@@ -1,5 +1,12 @@
 # Google Cloud Pub/Sub gRPC
 
+## 1.0.2
+
+No changes.
+
+[*closed in 1.0.2*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.0.2+label%3Ap%3Agoogle-cloud-pub-sub-grpc)
+
+
 ## 1.0.1
 
 * Google cloud pub/sub gRPC: use Akka gRPC 0.6.1 [#1661](https://github.com/akka/alpakka/pull/1661)  **dependency-change**
