@@ -1,5 +1,12 @@
 # AWS SNS
 
+## 1.0.2
+
+* AWS SDK 2.5.44 [#1704](https://github.com/akka/alpakka/pull/1704)
+
+[*closed in 1.0.2*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.0.2+label%3Ap%3Aaws-sns)
+
+
 ## 1.0.1
 
 * AWS SQS/SNS: more concise docs about the HTTP client [#1695](https://github.com/akka/alpakka/pull/1695)  

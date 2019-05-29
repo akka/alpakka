@@ -1,5 +1,12 @@
 # MQTT Streaming
 
+## 1.0.2
+
+* MQTT streaming: correct deprecated since version [#1721](https://github.com/akka/alpakka/pull/1721)
+
+[*closed in 1.0.2*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.0.2+label%3Ap%3Amqtt-streaming)
+
+
 ## 1.0.1
 
 * mqtt-streaming: Fix a race condition in server publishing [#1629](https://github.com/akka/alpakka/pull/1629) by [Jason Longshore, @longshorej](https://github.com/longshorej) 

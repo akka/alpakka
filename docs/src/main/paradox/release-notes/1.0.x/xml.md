@@ -1,5 +1,12 @@
 #### XML
 
+## 1.0.2
+
+No changes.
+
+[*closed in 1.0.2*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.0.2+label%3Ap%3Axml)
+
+
 ## 1.0.1
 
 * xml: flush output after the input is finished [#1652](https://github.com/akka/alpakka/pull/1652)
