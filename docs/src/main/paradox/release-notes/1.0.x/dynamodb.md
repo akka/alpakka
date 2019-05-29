@@ -1,5 +1,12 @@
 # Dynamo DB
 
+## 1.0.2
+
+* DynamoDb: set port from settings even when tls=true [#1722](https://github.com/akka/alpakka/pull/1722) and [#1724](https://github.com/akka/alpakka/pull/1724)
+
+[*closed in 1.0.2*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.0.2+label%3Ap%3Adynamodb)
+
+
 ## 1.0.1
 
 No changes.
