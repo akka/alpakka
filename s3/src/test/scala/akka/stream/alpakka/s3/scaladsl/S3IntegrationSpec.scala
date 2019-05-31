@@ -240,76 +240,12 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     S3.deleteObject(defaultRegionBucket, objectKey).runWith(Sink.head).futureValue shouldEqual akka.Done
   }
 
-  it should "upload, download and delete with spaces in the key in non us-east-1 zone" in {
-    val objectKey = "test folder/test file.txt"
-    val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
+  it should "upload, download and delete with spaces in the key in non us-east-1 zone" in uploadDownloadAndDeteleInOtherRegionCase("test folder/test file.txt")
 
-    val results = for {
-      upload <- source
-        .runWith(
-          S3.multipartUpload(otherRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
-            .withAttributes(S3Attributes.settings(otherRegionSettings))
-        )
-      download <- S3
-        .download(otherRegionBucket, objectKey)
-        .withAttributes(S3Attributes.settings(otherRegionSettings))
-        .runWith(Sink.head)
-        .flatMap {
-          case Some((downloadSource, _)) =>
-            downloadSource
-              .map(_.decodeString("utf8"))
-              .runWith(Sink.head)
-          case None => Future.successful(None)
-        }
-    } yield (upload, download)
+  // we want ASCII and other UTF-8 characters!
+  it should "upload, download and delete with special characters in the key in non us-east-1 zone" in uploadDownloadAndDeteleInOtherRegionCase("føldęrü/1234()[]><!? .TXT")
 
-    val (multipartUploadResult, downloaded) = Await.result(results, 10.seconds)
-
-    multipartUploadResult.bucket shouldBe otherRegionBucket
-    multipartUploadResult.key shouldBe objectKey
-    downloaded shouldBe objectValue
-
-    S3.deleteObject(otherRegionBucket, objectKey)
-      .withAttributes(S3Attributes.settings(otherRegionSettings))
-      .runWith(Sink.head)
-      .futureValue shouldEqual akka.Done
-  }
-
-  it should "upload, download and delete with special characters in the key in non us-east-1 zone" in {
-    // we want ASCII and other UTF-8 characters!
-    val objectKey = "føldęrü/1234()[]><!? .TXT"
-    val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
-
-    val results = for {
-      upload <- source
-        .runWith(
-          S3.multipartUpload(otherRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
-            .withAttributes(S3Attributes.settings(otherRegionSettings))
-        )
-      download <- S3
-        .download(otherRegionBucket, objectKey)
-        .withAttributes(S3Attributes.settings(otherRegionSettings))
-        .runWith(Sink.head)
-        .flatMap {
-          case Some((downloadSource, _)) =>
-            downloadSource
-              .map(_.decodeString("utf8"))
-              .runWith(Sink.head)
-          case None => Future.successful(None)
-        }
-    } yield (upload, download)
-
-    val (multipartUploadResult, downloaded) = Await.result(results, 10.seconds)
-
-    multipartUploadResult.bucket shouldBe otherRegionBucket
-    multipartUploadResult.key shouldBe objectKey
-    downloaded shouldBe objectValue
-
-    S3.deleteObject(otherRegionBucket, objectKey)
-      .withAttributes(S3Attributes.settings(otherRegionSettings))
-      .runWith(Sink.head)
-      .futureValue shouldEqual akka.Done
-  }
+  it should "upload, download and delete with `+` character in the key in non us-east-1 zone" in uploadDownloadAndDeteleInOtherRegionCase("1 + 2 = 3")
 
   it should "upload, copy, download the copy, and delete" in {
     val sourceKey = "original/file.txt"
@@ -464,6 +400,40 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
 
   private def deleteBucketAfterTest(bucketName: String): Unit =
     Await.result(S3.deleteBucket(bucketName), Duration(1, TimeUnit.MINUTES))
+
+  private def uploadDownloadAndDeteleInOtherRegionCase(objectKey: String): Assertion = {
+    val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
+
+    val results = for {
+      upload <- source
+        .runWith(
+          S3.multipartUpload(otherRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
+            .withAttributes(S3Attributes.settings(otherRegionSettings))
+        )
+      download <- S3
+        .download(otherRegionBucket, objectKey)
+        .withAttributes(S3Attributes.settings(otherRegionSettings))
+        .runWith(Sink.head)
+        .flatMap {
+          case Some((downloadSource, _)) =>
+            downloadSource
+              .map(_.decodeString("utf8"))
+              .runWith(Sink.head)
+          case None => Future.successful(None)
+        }
+    } yield (upload, download)
+
+    val (multipartUploadResult, downloaded) = Await.result(results, 10.seconds)
+
+    multipartUploadResult.bucket shouldBe otherRegionBucket
+    multipartUploadResult.key shouldBe objectKey
+    downloaded shouldBe objectValue
+
+    S3.deleteObject(otherRegionBucket, objectKey)
+      .withAttributes(S3Attributes.settings(otherRegionSettings))
+      .runWith(Sink.head)
+      .futureValue shouldEqual akka.Done
+  }
 }
 
 /*
