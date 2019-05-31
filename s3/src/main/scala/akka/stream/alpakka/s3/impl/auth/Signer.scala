@@ -10,7 +10,7 @@ import java.time.ZonedDateTime
 
 import akka.NotUsed
 import akka.annotation.InternalApi
-import akka.http.scaladsl.model.headers.{RawHeader, `Raw-Request-URI`}
+import akka.http.scaladsl.model.headers.{`Raw-Request-URI`, RawHeader}
 import akka.http.scaladsl.model.{HttpHeader, HttpRequest}
 import akka.stream.scaladsl.Source
 

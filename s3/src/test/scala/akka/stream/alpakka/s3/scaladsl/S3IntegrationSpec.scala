@@ -240,12 +240,18 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     S3.deleteObject(defaultRegionBucket, objectKey).runWith(Sink.head).futureValue shouldEqual akka.Done
   }
 
-  it should "upload, download and delete with spaces in the key in non us-east-1 zone" in uploadDownloadAndDeteleInOtherRegionCase("test folder/test file.txt")
+  it should "upload, download and delete with spaces in the key in non us-east-1 zone" in uploadDownloadAndDeteleInOtherRegionCase(
+    "test folder/test file.txt"
+  )
 
   // we want ASCII and other UTF-8 characters!
-  it should "upload, download and delete with special characters in the key in non us-east-1 zone" in uploadDownloadAndDeteleInOtherRegionCase("føldęrü/1234()[]><!? .TXT")
+  it should "upload, download and delete with special characters in the key in non us-east-1 zone" in uploadDownloadAndDeteleInOtherRegionCase(
+    "føldęrü/1234()[]><!? .TXT"
+  )
 
-  it should "upload, download and delete with `+` character in the key in non us-east-1 zone" in uploadDownloadAndDeteleInOtherRegionCase("1 + 2 = 3")
+  it should "upload, download and delete with `+` character in the key in non us-east-1 zone" in uploadDownloadAndDeteleInOtherRegionCase(
+    "1 + 2 = 3"
+  )
 
   it should "upload, copy, download the copy, and delete" in {
     val sourceKey = "original/file.txt"

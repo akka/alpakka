@@ -8,7 +8,7 @@ import java.time.{LocalDateTime, ZoneOffset, ZonedDateTime}
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
-import akka.http.scaladsl.model.headers.{Host, RawHeader, `Raw-Request-URI`}
+import akka.http.scaladsl.model.headers.{`Raw-Request-URI`, Host, RawHeader}
 import akka.stream.scaladsl.Sink
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.testkit.TestKit
