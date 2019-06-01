@@ -153,12 +153,11 @@ import scala.concurrent.{ExecutionContext, Future}
       implicit conf: S3Settings
   ): HttpRequest = {
     val s3RequestUri = uriFn(requestUri(s3Location.bucket, Some(s3Location.key)))
-    val rawUri = s3RequestUri.toString.replaceAll("\\+", "%2B")
 
     HttpRequest(method)
       .withHeaders(
         Host(requestAuthority(s3Location.bucket, conf.s3RegionProvider.getRegion)),
-        `Raw-Request-URI`(rawUri)
+        `Raw-Request-URI`(rawRequestUri(s3RequestUri))
       )
       .withUri(s3RequestUri)
   }
@@ -215,5 +214,13 @@ import scala.concurrent.{ExecutionContext, Future}
       case None =>
         uri.withScheme("https")
     }
+  }
+
+  private def rawRequestUri(uri: Uri): String = {
+    val rawUri = uri.toString
+    val rawPath = uri.path.toString()
+    val fixedPath = rawPath.replaceAll("\\+", "%2B")
+
+    rawUri.replaceFirst(rawPath, fixedPath)
   }
 }
