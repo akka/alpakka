@@ -9,7 +9,7 @@ import java.util.UUID
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri.Query
-import akka.http.scaladsl.model.headers.{ByteRange, RawHeader, `Raw-Request-URI`}
+import akka.http.scaladsl.model.headers.{`Raw-Request-URI`, ByteRange, RawHeader}
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.s3.headers.{CannedAcl, ServerSideEncryption, StorageClass}
