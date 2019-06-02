@@ -86,10 +86,8 @@ private[influxdb] sealed abstract class InfluxDbLogic[T, C](
   protected def toBatchPoints(databaseName: Option[String],
                               retentionPolicy: Option[String],
                               seq: Seq[InfluxDbWriteMessage[T, C]]) = {
-    val builder = databaseName match {
-      case Some(databaseName) => BatchPoints.database(databaseName)
-      case None => BatchPoints.builder()
-    }
+
+    val builder = BatchPoints.database(databaseName.orNull)
 
     retentionPolicy.foreach(builder.retentionPolicy)
 
