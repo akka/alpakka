@@ -9,7 +9,7 @@ import java.util.UUID
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri.Query
-import akka.http.scaladsl.model.headers.{ByteRange, RawHeader}
+import akka.http.scaladsl.model.headers.{`Raw-Request-URI`, ByteRange, RawHeader}
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.s3.headers.{CannedAcl, ServerSideEncryption, StorageClass}
@@ -175,6 +175,16 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     req.uri.authority.host.toString shouldEqual "bucket.s3.amazonaws.com"
     req.uri.path.toString shouldEqual "/test%20folder/test%20file.txt"
     req.uri.rawQueryString shouldBe empty
+  }
+
+  it should "support download requests with keys containing plus" in {
+    implicit val settings = getSettings()
+
+    val location = S3Location("bucket", "test folder/1 + 2 = 3")
+    val req = HttpRequests.getDownloadRequest(location)
+    req.uri.authority.host.toString shouldEqual "bucket.s3.amazonaws.com"
+    req.uri.path.toString shouldEqual "/test%20folder/1%20+%202%20=%203"
+    req.headers should contain(`Raw-Request-URI`("https://bucket.s3.amazonaws.com/test%20folder/1%20%2B%202%20=%203"))
   }
 
   it should "support download requests with keys containing spaces with path-style access in other regions" in {

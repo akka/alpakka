@@ -156,4 +156,27 @@ class CanonicalRequestSpec extends FlatSpec with Matchers {
       }
     }
   }
+
+  it should "correctly build a canonicalString when synthetic headers are present" in {
+    val req = HttpRequest(
+      HttpMethods.GET,
+      Uri("https://s3-eu-central-1.amazonaws.com/my.test.bucket/file+name.txt")
+    ).withHeaders(
+      RawHeader("x-amz-content-sha256", "testhash"),
+      `Content-Type`(ContentTypes.`application/json`),
+      `Raw-Request-URI`("/my.test.bucket/file%2Bname.txt"),
+      `Remote-Address`(RemoteAddress.Unknown)
+    )
+    val canonical = CanonicalRequest.from(req)
+    canonical.canonicalString should equal(
+      """GET
+        |/my.test.bucket/file%2Bname.txt
+        |
+        |content-type:application/json
+        |x-amz-content-sha256:testhash
+        |
+        |content-type;x-amz-content-sha256
+        |testhash""".stripMargin
+    )
+  }
 }
