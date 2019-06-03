@@ -10,7 +10,7 @@ import java.time.ZonedDateTime
 
 import akka.NotUsed
 import akka.annotation.InternalApi
-import akka.http.scaladsl.model.headers.{`Raw-Request-URI`, RawHeader}
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{HttpHeader, HttpRequest}
 import akka.stream.scaladsl.Source
 
@@ -25,9 +25,7 @@ import akka.stream.scaladsl.Source
         val headersToAdd = Vector(RawHeader("x-amz-date", key.requestDate.format(dateFormatter)),
                                   RawHeader("x-amz-content-sha256", hb)) ++ sessionHeader(key)
         val reqWithHeaders = request.withHeaders(request.headers ++ headersToAdd)
-        val cr = CanonicalRequest.from(
-          reqWithHeaders.withHeaders(reqWithHeaders.headers.filterNot(_.isInstanceOf[`Raw-Request-URI`]))
-        )
+        val cr = CanonicalRequest.from(reqWithHeaders)
         val authHeader = authorizationHeader("AWS4-HMAC-SHA256", key, key.requestDate, cr)
         reqWithHeaders.withHeaders(reqWithHeaders.headers :+ authHeader)
       }
