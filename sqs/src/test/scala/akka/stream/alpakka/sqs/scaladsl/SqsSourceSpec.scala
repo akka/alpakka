@@ -76,7 +76,7 @@ class SqsSourceSpec extends FlatSpec with Matchers with DefaultTestContext {
     val firstWithDataCount = 30
     val thenEmptyCount = 15
     val parallelism = 10
-    val timeoutMs = 100
+    val timeout = 1.second
     var requestsCounter = 0
     when(sqsClient.receiveMessage(any[ReceiveMessageRequest])).thenAnswer(new Answer[CompletableFuture[ReceiveMessageResponse]] {
       def answer(invocation: InvocationOnMock): CompletableFuture[ReceiveMessageResponse] = {
@@ -87,14 +87,12 @@ class SqsSourceSpec extends FlatSpec with Matchers with DefaultTestContext {
         }
 
         requestsCounter += 1
-        CompletableFuture.supplyAsync(() => {
-          Thread.sleep(timeoutMs)
-
+        CompletableFuture.completedFuture(
           ReceiveMessageResponse
             .builder()
             .messages(messages: _*)
             .build()
-        })
+        )
       }
     })
 
@@ -103,21 +101,23 @@ class SqsSourceSpec extends FlatSpec with Matchers with DefaultTestContext {
       SqsSourceSettings.Defaults
         .withMaxBufferSize(10)
         .withParallelRequests(10)
-        .withWaitTime(timeoutMs.milliseconds)
+        .withWaitTime(timeout)
     ).runWith(TestSink.probe[Message])
 
     (1 to firstWithDataCount * 10).foreach(_ => probe.requestNext())
 
-    verify(sqsClient, atLeastTimes(firstWithDataCount + parallelism)).receiveMessage(any[ReceiveMessageRequest])
+    verify(sqsClient, times(firstWithDataCount + parallelism + 2)).receiveMessage(any[ReceiveMessageRequest])
 
     // now the throttling kicks in
     probe.request(1)
-    probe.expectNoMessage(((thenEmptyCount - parallelism) * timeoutMs).milliseconds)
-    verify(sqsClient, atMostTimes(firstWithDataCount + thenEmptyCount + parallelism)).receiveMessage(any[ReceiveMessageRequest])
+    probe.expectNoMessage((thenEmptyCount - parallelism - 1) * timeout)
+    verify(sqsClient, times(firstWithDataCount + thenEmptyCount)).receiveMessage(any[ReceiveMessageRequest])
+
+    Thread.sleep(timeout.toMillis)
 
     // now the throttling is off
-    probe.expectNext((timeoutMs * 2).milliseconds)
+    probe.expectNext()
 
-    (1 to firstWithDataCount).foreach(_ => probe.requestNext(timeoutMs.milliseconds))
+    (1 to 10).foreach(_ => probe.requestNext(timeout))
   }
 }
