@@ -1,6 +1,11 @@
+/*
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package akka.stream.alpakka.sqs.scaladsl
 
 import java.util.concurrent.CompletableFuture
+import java.util.function.Supplier
 
 import akka.stream.alpakka.sqs.SqsSourceSettings
 import akka.stream.testkit.scaladsl.TestSink
@@ -16,17 +21,21 @@ import software.amazon.awssdk.services.sqs.model.{Message, ReceiveMessageRequest
 import scala.concurrent.duration._
 
 class SqsSourceSpec extends FlatSpec with Matchers with DefaultTestContext {
-  val defaultMessages = (1 to 10).map { i => Message.builder().body(s"message $i").build() }
+  val defaultMessages = (1 to 10).map { i =>
+    Message.builder().body(s"message $i").build()
+  }
 
   "SqsSource" should "send a request and unwrap the response" in {
     implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
     when(sqsClient.receiveMessage(any[ReceiveMessageRequest]))
-      .thenReturn(CompletableFuture.completedFuture(
-        ReceiveMessageResponse
-          .builder()
-          .messages(defaultMessages:_*)
-          .build()
-      ))
+      .thenReturn(
+        CompletableFuture.completedFuture(
+          ReceiveMessageResponse
+            .builder()
+            .messages(defaultMessages: _*)
+            .build()
+        )
+      )
 
     val probe = SqsSource(
       "url",
@@ -36,11 +45,11 @@ class SqsSourceSpec extends FlatSpec with Matchers with DefaultTestContext {
     defaultMessages.foreach(probe.requestNext)
 
     /**
-      * Invocations:
-      * 1 - to initially fill he buffer
-      * 2 - asynchronous call after the buffer is filled
-      * 3 - buffer proxies pull when it's not full -> async stage provides the data and executes the next call
-      */
+     * Invocations:
+     * 1 - to initially fill he buffer
+     * 2 - asynchronous call after the buffer is filled
+     * 3 - buffer proxies pull when it's not full -> async stage provides the data and executes the next call
+     */
     verify(sqsClient, times(3)).receiveMessage(any[ReceiveMessageRequest])
   }
 
@@ -48,15 +57,22 @@ class SqsSourceSpec extends FlatSpec with Matchers with DefaultTestContext {
     implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
     val timeoutMs = 300
     val bufferToBatchRatio = 5
-    when(sqsClient.receiveMessage(any[ReceiveMessageRequest]))
-      .thenReturn(CompletableFuture.supplyAsync(() => {
-        Thread.sleep(timeoutMs)
 
-        ReceiveMessageResponse
-          .builder()
-          .messages(defaultMessages: _*)
-          .build()
-      }))
+    when(sqsClient.receiveMessage(any[ReceiveMessageRequest]))
+      .thenReturn(
+        CompletableFuture.supplyAsync(
+          new Supplier[ReceiveMessageResponse] {
+            override def get(): ReceiveMessageResponse = {
+              Thread.sleep(timeoutMs)
+
+              ReceiveMessageResponse
+                .builder()
+                .messages(defaultMessages: _*)
+                .build()
+            }
+          }
+        )
+      )
 
     val probe = SqsSource(
       "url",
@@ -78,23 +94,25 @@ class SqsSourceSpec extends FlatSpec with Matchers with DefaultTestContext {
     val parallelism = 10
     val timeout = 1.second
     var requestsCounter = 0
-    when(sqsClient.receiveMessage(any[ReceiveMessageRequest])).thenAnswer(new Answer[CompletableFuture[ReceiveMessageResponse]] {
-      def answer(invocation: InvocationOnMock): CompletableFuture[ReceiveMessageResponse] = {
-        val messages = if (requestsCounter >= firstWithDataCount && requestsCounter < firstWithDataCount + thenEmptyCount) {
-          List.empty[Message]
-        } else {
-          defaultMessages
-        }
+    when(sqsClient.receiveMessage(any[ReceiveMessageRequest]))
+      .thenAnswer(new Answer[CompletableFuture[ReceiveMessageResponse]] {
+        def answer(invocation: InvocationOnMock): CompletableFuture[ReceiveMessageResponse] = {
+          val messages =
+            if (requestsCounter >= firstWithDataCount && requestsCounter < firstWithDataCount + thenEmptyCount) {
+              List.empty[Message]
+            } else {
+              defaultMessages
+            }
 
-        requestsCounter += 1
-        CompletableFuture.completedFuture(
-          ReceiveMessageResponse
-            .builder()
-            .messages(messages: _*)
-            .build()
-        )
-      }
-    })
+          requestsCounter += 1
+          CompletableFuture.completedFuture(
+            ReceiveMessageResponse
+              .builder()
+              .messages(messages: _*)
+              .build()
+          )
+        }
+      })
 
     val probe = SqsSource(
       "url",

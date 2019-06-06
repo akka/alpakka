@@ -29,7 +29,8 @@ object SqsSource {
       queueUrl: String,
       settings: SqsSourceSettings = SqsSourceSettings.Defaults
   )(implicit sqsClient: SqsAsyncClient): Source[Message, NotUsed] = {
-    val controlledThrottling = new ControlledThrottling[ReceiveMessageRequest](Clock.systemDefaultZone(), settings.waitTimeSeconds.seconds)
+    val controlledThrottling =
+      new ControlledThrottling[ReceiveMessageRequest](Clock.systemDefaultZone(), settings.waitTimeSeconds.seconds)
 
     Source
       .repeat {
