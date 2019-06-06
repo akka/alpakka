@@ -37,6 +37,7 @@ import akka.stream.alpakka.mqtt.MqttOfflinePersistenceSettings
 /**
  * INTERNAL API
  */
+
 @InternalApi
 private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettings,
                                         subscriptions: Map[String, MqttQoS],
@@ -55,7 +56,7 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
     val subscriptionPromise = Promise[Done]
     val logic = new GraphStageLogic(shape) with StageLogging with InHandler with OutHandler {
       private val backpressurePahoClient = new Semaphore(bufferSize)
-      private var pendingMsg = Option.empty[MqttMessage]
+      private var pendingMsg = Option.empty[Any]
       private val queue = mutable.Queue[MqttMessageWithAck]()
       private val unackedMessages = new AtomicInteger()
 
@@ -169,9 +170,11 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
           }
 
         override def connectComplete(reconnect: Boolean, serverURI: String): Unit = {
-          pendingMsg.foreach { msg =>
-            publishToMqtt(msg)
-            pendingMsg = None
+          pendingMsg.foreach {
+            case msg: MqttMessageWithAck | MqttMessage =>
+              publishToMqtt(msg)
+              pendingMsg = None
+            case _ =>
           }
           if (reconnect && !hasBeenPulled(in)) pull(in)
         }
@@ -217,6 +220,11 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
         pahoMsg.setQos(msg.qos.getOrElse(defaultQoS).value)
         pahoMsg.setRetained(msg.retained)
         mqttClient.publish(msg.topic, pahoMsg, msg, asActionListener(onPublished.invoke))
+      }
+
+      private def publishToMqtt(msg: MqttMessageWithAck): Unit = {
+        val publish = publishToMqtt(msg.message)
+        msg.ack()
       }
 
       private def pushDownstream(message: MqttMessageWithAck): Unit = {
