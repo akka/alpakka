@@ -5,7 +5,7 @@ import java.util.concurrent.CompletableFuture
 import akka.stream.alpakka.sqs.SqsSourceSettings
 import akka.stream.testkit.scaladsl.TestSink
 import org.mockito.ArgumentMatchers._
-import org.mockito.Mockito.{atLeast => atLeastTimes, atMost => atMostTimes, _}
+import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.scalatest.{FlatSpec, Matchers}
