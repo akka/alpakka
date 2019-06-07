@@ -38,7 +38,30 @@ Alpakka Couchbase offers both @ref:[Akka Streams APIs](#reading-from-couchbase-i
 * `CouchbaseSessionRegistry` (@scaladoc[API](akka.stream.alpakka.couchbase.CouchbaseSessionRegistry$)) is an Akka extension to keep track and share `CouchbaseSession`s within an `ActorSystem`
 * `CouchbaseSource` (@scala[@scaladoc[API](akka.stream.alpakka.couchbase.scaladsl.CouchbaseSource$)]@java[@scaladoc[API](akka.stream.alpakka.couchbase.javadsl.CouchbaseSource$)]), `CouchbaseFlow` (@scala[@scaladoc[API](akka.stream.alpakka.couchbase.scaladsl.CouchbaseFlow$)]@java[@scaladoc[API](akka.stream.alpakka.couchbase.javadsl.CouchbaseFlow$)]), and `CouchbaseSink` (@scala[@scaladoc[API](akka.stream.alpakka.couchbase.scaladsl.CouchbaseSink$)]@java[@scaladoc[API](akka.stream.alpakka.couchbase.javadsl.CouchbaseSink$)]) offer factory methods to create Akka Stream operators
 
+## Configuration
+
 All operations use the `CouchbaseSession` internally. A session is configured with `CouchbaseSessionSettings` (@scaladoc[API](akka.stream.alpakka.couchbase.CouchbaseSessionSettings$)) and a Couchbase bucket name. The Akka Stream factory methods create and access the corresponding session instance behind the scenes.
+
+By default the `CouchbaseSessionSettings` are read from the `alpakka.couchbase.session` section from the configuration eg. in your `application.conf`.
+
+Settings
+: @@snip [snip](/couchbase/src/test/resources/application.conf) { #settings }
+
+## Using Akka Discovery
+
+To defer the configuration of Couchbase nodes to any of [Akka Discovery's lookup mechanisms](https://doc.akka.io/docs/akka/current/discovery/index.html), specify a service name and lookup timeout in the Couchbase section and configure Akka Discovery accordingly.
+
+The Akka Discovery dependency has to be added explicitly.
+
+Discovery settings (Config discovery)
+: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/DiscoverySpec.scala) { #discovery-settings }
+
+
+To enable Akka Discovery on the `CouchbaseSessionSettings`, use `DiscoverySupport.nodes()` as enrichment function.
+
+Scala
+: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/DiscoverySpec.scala) { #registry }
+
 
 # Reading from Couchbase in Akka Streams
 

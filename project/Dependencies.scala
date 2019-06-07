@@ -83,7 +83,8 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.couchbase.client" % "java-client" % CouchbaseVersion, // ApacheV2
         "io.reactivex" % "rxjava-reactive-streams" % "1.2.1", //ApacheV2
-        "com.typesafe.play" %% "play-json" % "2.7.4" % Test, // MIT like: http://www.slf4j.org/license.html
+        "com.typesafe.akka" %% "akka-discovery" % AkkaVersion % Provided, // Apache V2
+        "com.typesafe.play" %% "play-json" % "2.7.4" % Test, // Apache V2
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion % Test // Apache V2
       )
   )
