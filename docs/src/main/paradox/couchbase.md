@@ -54,13 +54,16 @@ To defer the configuration of Couchbase nodes to any of [Akka Discovery's lookup
 The Akka Discovery dependency has to be added explicitly.
 
 Discovery settings (Config discovery)
-: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/DiscoverySpec.scala) { #discovery-settings }
+: @@snip [snip](/couchbase/src/test/resources/discovery.conf) { #discovery-settings }
 
 
 To enable Akka Discovery on the `CouchbaseSessionSettings`, use `DiscoverySupport.nodes()` as enrichment function.
 
 Scala
 : @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/DiscoverySpec.scala) { #registry }
+
+Java
+: @@snip [snip](/couchbase/src/test/java/docs/javadsl/DiscoveryTest.java) { #registry }
 
 
 # Reading from Couchbase in Akka Streams

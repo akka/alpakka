@@ -7,7 +7,7 @@ package docs.scaladsl
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
 import com.couchbase.client.java.document.JsonDocument
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 
@@ -16,38 +16,9 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class DiscoverySpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
 
-  implicit val actorSystem: ActorSystem = ActorSystem(
-    "with-discovery",
-    ConfigFactory.parseString("""
-      akka {
-        loggers = ["akka.event.slf4j.Slf4jLogger"]
-        logging-filter = "akka.event.slf4j.Slf4jLoggingFilter"
-        loglevel = "DEBUG"
-      }
+  val config: Config = ConfigFactory.parseResources("discovery.conf")
 
-      // #discovery-settings
-      alpakka.couchbase {
-        session {
-          service {
-            name = couchbase-service
-            lookup-timeout = 1 s
-          }
-          username = "anotherUser"
-          password = "differentPassword"
-        }
-      }
-
-      akka.discovery.method = config
-      akka.discovery.config.services = {
-        couchbase-service = {
-          endpoints = [
-            { host = "akka.io" }
-          ]
-        }
-      }
-      // #discovery-settings
-     """)
-  )
+  implicit val actorSystem: ActorSystem = ActorSystem("DiscoverySpec", config)
   implicit val mat: Materializer = ActorMaterializer()
 
   override implicit def patienceConfig: PatienceConfig = PatienceConfig(10.seconds, 250.millis)
