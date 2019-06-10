@@ -4,9 +4,10 @@
 
 package akka.stream.alpakka.couchbase
 
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{CompletionStage, TimeUnit}
 
 import akka.actor.ActorSystem
+import akka.annotation.InternalApi
 import com.couchbase.client.java.document.Document
 import com.couchbase.client.java.env.CouchbaseEnvironment
 import com.couchbase.client.java.{PersistTo, ReplicateTo}
@@ -15,6 +16,7 @@ import com.typesafe.config.Config
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.Future
+import scala.compat.java8.FutureConverters._
 import scala.concurrent.duration._
 
 /**
@@ -178,12 +180,28 @@ final class CouchbaseSessionSettings private (
   def withNodes(nodes: java.util.List[String]): CouchbaseSessionSettings =
     copy(nodes = nodes.asScala.toList)
 
+  /** Scala API:
+   * Allows to provide an asynchronous method to update the settings.
+   */
   def withEnrichAsync(value: CouchbaseSessionSettings => Future[CouchbaseSessionSettings]): CouchbaseSessionSettings =
     copy(enrichAsync = value)
+
+  /** Java API:
+   * Allows to provide an asynchronous method to update the settings.
+   */
+  def withEnrichCompletionStage(
+      value: CouchbaseSessionSettings => CompletionStage[CouchbaseSessionSettings]
+  ): CouchbaseSessionSettings =
+    copy(enrichAsync = (s: CouchbaseSessionSettings) => value.apply(s).toScala)
 
   def withEnvironment(environment: CouchbaseEnvironment): CouchbaseSessionSettings =
     copy(environment = Some(environment))
 
+  /**
+   * Internal API.
+   * Used internally to apply the asynchronous settings enrichment function.
+   */
+  @InternalApi
   def enriched: Future[CouchbaseSessionSettings] = enrichAsync(this)
 
   private def copy(

@@ -13,6 +13,9 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
+/**
+ * Utility to delegate Couchbase node address lookup to [[https://doc.akka.io/docs/akka/current/discovery/index.html Akka Discovery]].
+ */
 sealed class DiscoverySupport {
 
   /**
@@ -62,6 +65,9 @@ sealed class DiscoverySupport {
     nodes(system.settings.config.getConfig(CouchbaseSessionSettings.configPath))(system)
 }
 
+/**
+ * Utility to delegate Couchbase node address lookup to [[https://doc.akka.io/docs/akka/current/discovery/index.html Akka Discovery]].
+ */
 object DiscoverySupport extends DiscoverySupport {
   val INSTANCE: DiscoverySupport = this
 }
