@@ -10,9 +10,9 @@ import akka.stream.Materializer;
 // #registry
 import akka.stream.alpakka.couchbase.CouchbaseSessionRegistry;
 import akka.stream.alpakka.couchbase.CouchbaseSessionSettings;
-import akka.stream.alpakka.couchbase.DiscoverySupport;
-// #registry
+import akka.stream.alpakka.couchbase.javadsl.DiscoverySupport;
 import akka.stream.alpakka.couchbase.javadsl.CouchbaseSession;
+// #registry
 import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -53,7 +53,7 @@ public class DiscoveryTest {
 
     CouchbaseSessionSettings sessionSettings =
         CouchbaseSessionSettings.create(actorSystem)
-            .withEnrichAsync(DiscoverySupport.INSTANCE().nodes(actorSystem));
+            .withEnrichCompletionStage(DiscoverySupport.getNodes(actorSystem));
     CompletionStage<CouchbaseSession> session = registry.getSessionFor(sessionSettings, bucketName);
     // #registry
     try {

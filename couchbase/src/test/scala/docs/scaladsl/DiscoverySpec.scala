@@ -31,8 +31,8 @@ class DiscoverySpec extends WordSpec with Matchers with BeforeAndAfterAll with S
   "a Couchbasesession" should {
     "be managed by the registry" in {
       // #registry
-      import akka.stream.alpakka.couchbase.scaladsl.CouchbaseSession
-      import akka.stream.alpakka.couchbase.{CouchbaseSessionRegistry, CouchbaseSessionSettings, DiscoverySupport}
+      import akka.stream.alpakka.couchbase.scaladsl.{CouchbaseSession, DiscoverySupport}
+      import akka.stream.alpakka.couchbase.{CouchbaseSessionRegistry, CouchbaseSessionSettings}
 
       val registry = CouchbaseSessionRegistry(actorSystem)
 
@@ -45,8 +45,8 @@ class DiscoverySpec extends WordSpec with Matchers with BeforeAndAfterAll with S
 
     "be created from settings" in {
       // #create
-      import akka.stream.alpakka.couchbase.scaladsl.CouchbaseSession
-      import akka.stream.alpakka.couchbase.{CouchbaseSessionSettings, DiscoverySupport}
+      import akka.stream.alpakka.couchbase.scaladsl.{CouchbaseSession, DiscoverySupport}
+      import akka.stream.alpakka.couchbase.CouchbaseSessionSettings
 
       implicit val ec: ExecutionContext = actorSystem.dispatcher
       val sessionSettings = CouchbaseSessionSettings(actorSystem)

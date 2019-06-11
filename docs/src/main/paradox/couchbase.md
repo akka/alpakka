@@ -49,7 +49,7 @@ Settings
 
 ## Using Akka Discovery
 
-To delegate the configuration of Couchbase nodes to any of [Akka Discovery's lookup mechanisms](https://doc.akka.io/docs/akka/current/discovery/index.html), specify a service name and lookup timeout in the Couchbase section, and pass in @scaladoc[DiscoverySupport](akka.stream.alpakka.couchbase.DiscoverySupport$) nodes lookup to `enrichAsync` and configure Akka Discovery accordingly.
+To delegate the configuration of Couchbase nodes to any of [Akka Discovery's lookup mechanisms](https://doc.akka.io/docs/akka/current/discovery/index.html), specify a service name and lookup timeout in the Couchbase section, and pass in @scala[@scaladoc[DiscoverySupport](akka.stream.alpakka.couchbase.scaladsl.DiscoverySupport$)]@java[@scaladoc[DiscoverySupport](akka.stream.alpakka.couchbase.javadsl.DiscoverySupport)] nodes lookup to `enrichAsync` and configure Akka Discovery accordingly.
 
 **The Akka Discovery dependency has to be added explicitly**.
 

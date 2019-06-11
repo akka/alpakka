@@ -55,8 +55,8 @@ final class CouchbaseSessionRegistry(system: ExtendedActorSystem) extends Extens
    * if you need a more fine grained life cycle control, create the CouchbaseSession manually instead.
    */
   def sessionFor(settings: CouchbaseSessionSettings, bucketName: String): Future[CouchbaseSession] =
-    settings.enriched.flatMap { sett =>
-      val key = SessionKey(sett, bucketName)
+    settings.enriched.flatMap { enrichedSettings =>
+      val key = SessionKey(enrichedSettings, bucketName)
       sessions.get.get(key) match {
         case Some(futureSession) => futureSession
         case _ => startSession(key)
