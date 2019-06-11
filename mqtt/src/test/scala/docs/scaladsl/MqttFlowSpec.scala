@@ -77,7 +77,7 @@ class MqttFlowSpec
         )
       //#create-flow
 
-      class MqttMessageWithAckFake extends MqttMessageWithAck{
+      class MqttMessageWithAckFake extends MqttMessageWithAck {
         var acked = false
         override val message: MqttMessage = MqttMessage.create(topic, ByteString.fromString("ohi"))
         override def ack(): Future[Done] = {
@@ -85,8 +85,8 @@ class MqttFlowSpec
           Future.successful(Done)
         }
       }
-      
-      val message = new  MqttMessageWithAckFake
+
+      val message = new MqttMessageWithAckFake
       message.acked shouldBe false
       val source = Source.single(message)
 
@@ -98,7 +98,7 @@ class MqttFlowSpec
       //#run-flow
 
       Await.ready(subscribed, timeout)
-     // mqttMessagePromise.success(None)
+      // mqttMessagePromise.success(None)
       noException should be thrownBy result.futureValue
       message.acked shouldBe true
     }
