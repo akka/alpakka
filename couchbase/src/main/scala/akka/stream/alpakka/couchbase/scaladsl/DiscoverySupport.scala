@@ -86,6 +86,7 @@ sealed class DiscoverySupport private {
  * Utility to delegate Couchbase node address lookup to [[https://doc.akka.io/docs/akka/current/discovery/index.html Akka Discovery]].
  */
 object DiscoverySupport extends DiscoverySupport {
+
   /** Internal API */
-  @InternalApi private[couchbase] val INSTANCE: DiscoverySupport = this
+  @InternalApi val INSTANCE: DiscoverySupport = this
 }

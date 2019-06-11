@@ -11,7 +11,8 @@ import com.typesafe.config.Config;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Utility to delegate Couchbase node address lookup to [[https://doc.akka.io/docs/akka/current/discovery/index.html Akka Discovery]].
+ * Utility to delegate Couchbase node address lookup to
+ * [[https://doc.akka.io/docs/akka/current/discovery/index.html Akka Discovery]].
  */
 public final class DiscoverySupport {
 
