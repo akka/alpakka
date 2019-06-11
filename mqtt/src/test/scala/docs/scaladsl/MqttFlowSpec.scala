@@ -96,9 +96,8 @@ class MqttFlowSpec
         .toMat(Sink.seq)(Keep.both)
         .run()
       //#run-flow
-
       Await.ready(subscribed, timeout)
-      // mqttMessagePromise.success(None)
+      Await.ready(result, timeout)
       noException should be thrownBy result.futureValue
       message.acked shouldBe true
     }
