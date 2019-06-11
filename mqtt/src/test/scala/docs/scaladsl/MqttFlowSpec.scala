@@ -7,10 +7,11 @@ package docs.scaladsl
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
-import akka.stream.alpakka.mqtt.scaladsl.MqttFlow
+import akka.stream.alpakka.mqtt.scaladsl.{MqttFlow, MqttMessageWithAck}
 import akka.stream.alpakka.mqtt._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.testkit.TestKit
+import akka.util.ByteString
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
@@ -63,6 +64,43 @@ class MqttFlowSpec
       Await.ready(subscribed, timeout)
       mqttMessagePromise.success(None)
       noException should be thrownBy result.futureValue
+    }
+    "send an ack after sent confirmation" in {
+      val topic = "flow-spec-ack/topic"
+      //#create-flow
+      val mqttFlow: Flow[MqttMessageWithAck, MqttMessageWithAck, Future[Done]] =
+        MqttFlow.atLeastOnceWithAck(
+          connectionSettings.withClientId(topic),
+          MqttSubscriptions(topic, MqttQoS.AtLeastOnce),
+          bufferSize = 8,
+          MqttQoS.AtLeastOnce
+        )
+      //#create-flow
+
+      class MqttMessageWithAckFake extends MqttMessageWithAck{
+        var acked = false
+        override val message: MqttMessage = MqttMessage.create(topic, ByteString.fromString("ohi"))
+        override def ack(): Future[Done] = {
+          acked = true
+          Future.successful(Done)
+        }
+      }
+      
+      val message = new  MqttMessageWithAckFake
+      message.acked shouldBe false
+      val source = Source.single(message)
+
+      //#run-flow
+      val ((mqttMessagePromise, subscribed), result) = source
+        .viaMat(mqttFlow)(Keep.both)
+        .toMat(Sink.seq)(Keep.both)
+        .run()
+      //#run-flow
+
+      Await.ready(subscribed, timeout)
+     // mqttMessagePromise.success(None)
+      noException should be thrownBy result.futureValue
+      message.acked shouldBe true
     }
   }
 }
