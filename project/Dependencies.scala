@@ -243,7 +243,7 @@ object Dependencies {
         "com.ibm.mq" % "com.ibm.mq.allclient" % "9.1.1.0" % Test, // IBM International Program License Agreement https://public.dhe.ibm.com/ibmdl/export/pub/software/websphere/messaging/mqdev/maven/licenses/L-APIG-AZYF2E/LI_en.html
         "org.apache.activemq" % "activemq-broker" % "5.15.4" % Test, // ApacheV2
         "org.apache.activemq" % "activemq-client" % "5.15.4" % Test, // ApacheV2
-        "io.github.sullis" %% "jms-testkit" % "0.2.1" % Test, // ApacheV2
+        "io.github.sullis" %% "jms-testkit" % "0.2.6" % Test, // ApacheV2
         "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
       ),
     // Having JBoss as a first resolver is a workaround for https://github.com/coursier/coursier/issues/200
