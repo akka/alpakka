@@ -19,6 +19,7 @@ import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
+import scala.util.Try
 
 class MqttFlowSpec
     extends TestKit(ActorSystem("MqttFlowSpec"))
@@ -97,7 +98,10 @@ class MqttFlowSpec
         .run()
       //#run-flow
       pub.sendNext(message)
-      sub.requestNext()
+      Try {
+        sub.requestNext()
+      }
+
       message.acked shouldBe true
     }
   }
