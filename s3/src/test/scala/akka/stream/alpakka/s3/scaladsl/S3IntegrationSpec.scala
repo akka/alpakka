@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.ContentTypes
+import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.s3.BucketAccess.{AccessGranted, NotExists}
 import akka.stream.alpakka.s3._
@@ -58,6 +58,7 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     S3Settings().withPathStyleAccess(true).withS3RegionProvider(otherRegionProvider)
   def listBucketVersion1Settings =
     S3Settings().withListBucketApiVersion(ApiVersion.ListBucketVersion1)
+  def invalidCredentials = S3Settings() //Empty settings to be override in MinioSpec
 
   def defaultRegionContentCount = 4
   def otherRegionContentCount = 5
@@ -65,7 +66,6 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
   it should "list with real credentials" in {
     val result = S3
       .listBucket(defaultRegionBucket, None)
-      //.addAttributes(S3Attributes.settings(settings))
       .runWith(Sink.seq)
 
     val listingResult = result.futureValue
@@ -138,7 +138,6 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
 
   it should "upload multipart with real credentials" in {
     val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
-    //val source: Source[ByteString, Any] = FileIO.fromPath(Paths.get("/tmp/IMG_0470.JPG"))
 
     val result =
       source
@@ -240,16 +239,16 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     S3.deleteObject(defaultRegionBucket, objectKey).runWith(Sink.head).futureValue shouldEqual akka.Done
   }
 
-  it should "upload, download and delete with spaces in the key in non us-east-1 zone" in uploadDownloadAndDeteleInOtherRegionCase(
+  it should "upload, download and delete with spaces in the key in non us-east-1 zone" in uploadDownloadAndDeleteInOtherRegionCase(
     "test folder/test file.txt"
   )
 
   // we want ASCII and other UTF-8 characters!
-  it should "upload, download and delete with special characters in the key in non us-east-1 zone" in uploadDownloadAndDeteleInOtherRegionCase(
+  it should "upload, download and delete with special characters in the key in non us-east-1 zone" in uploadDownloadAndDeleteInOtherRegionCase(
     "føldęrü/1234()[]><!? .TXT"
   )
 
-  it should "upload, download and delete with `+` character in the key in non us-east-1 zone" in uploadDownloadAndDeteleInOtherRegionCase(
+  it should "upload, download and delete with `+` character in the key in non us-east-1 zone" in uploadDownloadAndDeleteInOtherRegionCase(
     "1 + 2 = 3"
   )
 
@@ -404,10 +403,23 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
     }
   }
 
+  it should "contain error code even if exception in empty" in {
+    val exception = intercept[S3Exception] {
+      val result = S3
+        .getObjectMetadata(defaultRegionBucket, "sample")
+        .withAttributes(S3Attributes.settings(invalidCredentials))
+        .runWith(Sink.head)
+
+      Await.result(result, Duration(1, TimeUnit.MINUTES))
+    }
+
+    exception.code shouldBe StatusCodes.Forbidden.toString()
+  }
+
   private def deleteBucketAfterTest(bucketName: String): Unit =
     Await.result(S3.deleteBucket(bucketName), Duration(1, TimeUnit.MINUTES))
 
-  private def uploadDownloadAndDeteleInOtherRegionCase(objectKey: String): Assertion = {
+  private def uploadDownloadAndDeleteInOtherRegionCase(objectKey: String): Assertion = {
     val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
 
     val results = for {
@@ -477,6 +489,10 @@ class MinioS3IntegrationSpec extends S3IntegrationSpec {
     new BasicAWSCredentials(accessKey, secret)
   )
 
+  val invalidCredentialsProvider = new AWSStaticCredentialsProvider(
+    new BasicAWSCredentials(invalidAccessKey, invalidSecret)
+  )
+
   override val defaultRegionContentCount = 0
   override val otherRegionContentCount = 0
 
@@ -500,6 +516,12 @@ class MinioS3IntegrationSpec extends S3IntegrationSpec {
       .withEndpointUrl(endpointUrl)
       .withPathStyleAccess(true)
 
+  override def invalidCredentials: S3Settings =
+    S3Settings()
+      .withCredentialsProvider(invalidCredentialsProvider)
+      .withEndpointUrl(endpointUrl)
+      .withPathStyleAccess(true)
+
   it should "properly set the endpointUrl" in {
     S3Settings().endpointUrl.value shouldEqual endpointUrl
   }
@@ -509,4 +531,7 @@ object MinioS3IntegrationSpec {
   val accessKey = "TESTKEY"
   val secret = "TESTSECRET"
   val endpointUrl = "http://localhost:9000"
+
+  val invalidAccessKey = ""
+  val invalidSecret = ""
 }
