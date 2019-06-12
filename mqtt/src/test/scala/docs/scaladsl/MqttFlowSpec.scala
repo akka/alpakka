@@ -95,7 +95,7 @@ class MqttFlowSpec
         .via(mqttFlow)
         .toMat(TestSink.probe[MqttMessageWithAck])(Keep.both)
         .run()
-
+      //#run-flow
       pub.sendNext(message)
       sub.requestNext()
       message.acked shouldBe true
