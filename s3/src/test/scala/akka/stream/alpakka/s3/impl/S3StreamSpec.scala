@@ -33,7 +33,7 @@ class S3StreamSpec(_system: ActorSystem)
   def this() = this(ActorSystem("S3StreamSpec"))
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withDebugLogging(true))
 
-  "Non-ranged downloads" should "have one (host) header" in {
+  "Non-ranged downloads" should "have two (host and synthetic raw-request-uri) headers" in {
 
     val requestHeaders = PrivateMethod[HttpRequest]('requestHeaders)
     val credentialsProvider = new AWSStaticCredentialsProvider(
@@ -48,20 +48,15 @@ class S3StreamSpec(_system: ActorSystem)
     val location = S3Location("test-bucket", "test-key")
 
     implicit val settings =
-      S3Settings(MemoryBufferType,
-                 None,
-                 credentialsProvider,
-                 regionProvider,
-                 false,
-                 None,
-                 ApiVersion.ListBucketVersion2)
+      S3Settings(MemoryBufferType, credentialsProvider, regionProvider, ApiVersion.ListBucketVersion2)
 
     val result: HttpRequest = S3Stream invokePrivate requestHeaders(getDownloadRequest(location), None)
-    result.headers.size shouldBe 1
+    result.headers.size shouldBe 2
     result.headers.seq.exists(_.lowercaseName() == "host")
+    result.headers.seq.exists(_.lowercaseName() == "raw-request-uri")
   }
 
-  "Ranged downloads" should "have two (host, range) headers" in {
+  "Ranged downloads" should "have three (host, range and synthetic raw-request-uri) headers" in {
 
     val requestHeaders = PrivateMethod[HttpRequest]('requestHeaders)
     val credentialsProvider =
@@ -79,18 +74,13 @@ class S3StreamSpec(_system: ActorSystem)
     val range = ByteRange(1, 4)
 
     implicit val settings =
-      S3Settings(MemoryBufferType,
-                 None,
-                 credentialsProvider,
-                 regionProvider,
-                 false,
-                 None,
-                 ApiVersion.ListBucketVersion2)
+      S3Settings(MemoryBufferType, credentialsProvider, regionProvider, ApiVersion.ListBucketVersion2)
 
     val result: HttpRequest = S3Stream invokePrivate requestHeaders(getDownloadRequest(location), Some(range))
-    result.headers.size shouldBe 2
+    result.headers.size shouldBe 3
     result.headers.seq.exists(_.lowercaseName() == "host")
     result.headers.seq.exists(_.lowercaseName() == "range")
+    result.headers.seq.exists(_.lowercaseName() == "raw-request-uri")
 
   }
 

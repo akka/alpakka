@@ -46,10 +46,12 @@ final private[couchbase] class CouchbaseSessionImpl(asyncBucket: AsyncBucket, cl
     insertDoc(document, writeSettings)
 
   def insertDoc[T <: Document[_]](document: T, writeSettings: CouchbaseWriteSettings): Future[T] =
-    singleObservableToFuture(
-      asyncBucket.insert(document, writeSettings.persistTo, writeSettings.timeout.toMillis, TimeUnit.MILLISECONDS),
-      document
-    )
+    singleObservableToFuture(asyncBucket.insert(document,
+                                                writeSettings.persistTo,
+                                                writeSettings.replicateTo,
+                                                writeSettings.timeout.toMillis,
+                                                TimeUnit.MILLISECONDS),
+                             document)
 
   def get(id: String): Future[Option[JsonDocument]] =
     zeroOrOneObservableToFuture(asyncBucket.get(id))

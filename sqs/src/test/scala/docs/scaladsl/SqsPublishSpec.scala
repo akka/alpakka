@@ -4,11 +4,14 @@
 
 package docs.scaladsl
 
+import java.util.concurrent.TimeUnit
+
 import akka.Done
 import akka.stream.alpakka.sqs._
 import akka.stream.alpakka.sqs.scaladsl._
 import akka.stream.scaladsl.{Sink, Source}
 import org.scalatest.{FlatSpec, Matchers}
+import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{Message, ReceiveMessageRequest, SendMessageRequest}
 
 import scala.collection.JavaConverters._
@@ -18,12 +21,12 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
 
   abstract class IntegrationFixture(fifo: Boolean = false) {
     val queueUrl: String = if (fifo) randomFifoQueueUrl() else randomQueueUrl()
-    implicit val awsSqsClient = sqsClient
+    implicit val awsSqsClient: SqsAsyncClient = sqsClient
 
     def receiveMessage(): Message =
       awsSqsClient
         .receiveMessage(ReceiveMessageRequest.builder().queueUrl(queueUrl).build())
-        .get()
+        .get(2, TimeUnit.SECONDS)
         .messages()
         .asScala
         .head
@@ -39,7 +42,7 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
           .maxNumberOfMessages(maxNumberOfMessages)
           .build()
 
-      awsSqsClient.receiveMessage(request).get().messages().asScala.toSeq
+      awsSqsClient.receiveMessage(request).get(2, TimeUnit.SECONDS).messages().asScala.toSeq
     }
   }
 
@@ -176,8 +179,8 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
     //#flow
 
     val result = future.futureValue
-    result.metadata.md5OfMessageBody() shouldBe md5HashString("alpakka")
-    result.fifoMessageIdentifiers shouldBe empty
+    result.result
+    result.result.md5OfMessageBody() shouldBe md5HashString("alpakka")
 
     receiveMessage().body() shouldBe "alpakka"
   }
@@ -193,8 +196,7 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
     //#flow
 
     val result = future.futureValue
-    result.metadata.md5OfMessageBody() shouldBe md5HashString("alpakka")
-    result.fifoMessageIdentifiers shouldBe empty
+    result.result.md5OfMessageBody() shouldBe md5HashString("alpakka")
 
     receiveMessage().body() shouldBe "alpakka"
   }
@@ -204,8 +206,8 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
   ) {
     // elasticmq does not provide proper fifo support (see https://github.com/adamw/elasticmq/issues/92)
     // set your fifo sqs queue url and awsSqsClient manually
-    // override val queue = "https://sqs.us-east-1.amazonaws.com/$AWS_ACCOUNT_ID/$queue_name.fifo"
-    // override implicit val awsSqsClient: AmazonSQSAsync = AmazonSQSAsyncClientBuilder.standard().build()
+    // override val queueUrl = "https://sqs.us-east-1.amazonaws.com/$AWS_ACCOUNT_ID/$queue_name.fifo"
+    // override implicit val awsSqsClient: SqsAsyncClient = SqsAsyncClient.builder().build()
 
     val future =
       Source
@@ -214,28 +216,55 @@ class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
             .builder()
             .messageBody("alpakka")
             .messageGroupId("group-id")
-            .messageDeduplicationId(s"deduplication-id")
+            .messageDeduplicationId("deduplication-id")
             .build()
         )
         .via(SqsPublishFlow(queueUrl))
         .runWith(Sink.head)
 
     val result = future.futureValue
-    result.metadata.md5OfMessageBody() shouldBe md5HashString("alpakka")
-    result.fifoMessageIdentifiers.map(_.sequenceNumber) shouldBe defined
-    result.fifoMessageIdentifiers.map(_.messageGroupId) shouldBe Some("group-id")
-    result.fifoMessageIdentifiers.flatMap(_.messageDeduplicationId) shouldBe Some("deduplication-id")
+    result.result.md5OfMessageBody() shouldBe md5HashString("alpakka")
+    result.result.sequenceNumber() should not be empty
 
     receiveMessage().body() shouldBe "alpakka"
   }
 
+  ignore should "put message in a flow, batch, then pass the result further with fifo queues" taggedAs Integration in new IntegrationFixture(
+    fifo = true
+  ) {
+    // elasticmq does not provide proper fifo support (see https://github.com/adamw/elasticmq/issues/92)
+    // set your fifo sqs queue url and awsSqsClient manually
+    // override val queueUrl = "https://sqs.us-east-1.amazonaws.com/$AWS_ACCOUNT_ID/$queue_name.fifo"
+    // override implicit val awsSqsClient: SqsAsyncClient = SqsAsyncClient.builder().build()
+
+    val messages =
+      for (i <- 0 until 10)
+        yield SendMessageRequest
+          .builder()
+          .messageBody(s"Message $i")
+          .messageGroupId("group-id")
+          .messageDeduplicationId(s"deduplication-$i")
+          .build()
+
+    val future =
+      Source
+        .single(messages)
+        .via(SqsPublishFlow.batch(queueUrl))
+        .runWith(Sink.seq)
+
+    future.futureValue.flatten.zipWithIndex.foreach {
+      case (result, i) =>
+        result.result.md5OfMessageBody() shouldBe md5HashString(s"Message $i")
+        result.result.sequenceNumber() should not be empty
+    }
+
+    receiveMessages(10) should have size 10
+  }
+
   def md5HashString(s: String): String = {
     import java.security.MessageDigest
-    import java.math.BigInteger
     val md = MessageDigest.getInstance("MD5")
-    val digest = md.digest(s.getBytes)
-    val bigInt = new BigInteger(1, digest)
-    val hashedString = bigInt.toString(16)
-    hashedString
+    val bigInt = BigInt(1, md.digest(s.getBytes))
+    f"$bigInt%032x"
   }
 }

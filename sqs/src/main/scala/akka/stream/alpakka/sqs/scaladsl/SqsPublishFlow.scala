@@ -9,14 +9,13 @@ import java.util.concurrent.CompletionException
 import akka.NotUsed
 import akka.annotation.ApiMayChange
 import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
-import akka.stream.alpakka.sqs.{SqsBatchException, SqsPublishResult, _}
+import akka.stream.alpakka.sqs.{SqsBatchException, _}
 import akka.stream.scaladsl.{Flow, Source}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model._
 
 import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters._
-import scala.concurrent.Future
 
 /**
  * Scala API to create publishing SQS flows.
@@ -29,7 +28,7 @@ object SqsPublishFlow {
    */
   def apply(queueUrl: String, settings: SqsPublishSettings)(
       implicit sqsClient: SqsAsyncClient
-  ): Flow[SendMessageRequest, SqsPublishResult[SendMessageResponse], NotUsed] =
+  ): Flow[SendMessageRequest, SqsPublishResult, NotUsed] =
     Flow
       .fromFunction((r: SendMessageRequest) => r.toBuilder.queueUrl(queueUrl).build())
       .via(apply(settings))
@@ -39,7 +38,7 @@ object SqsPublishFlow {
    */
   def apply(queueUrl: String)(
       implicit sqsClient: SqsAsyncClient
-  ): Flow[SendMessageRequest, SqsPublishResult[SendMessageResponse], NotUsed] =
+  ): Flow[SendMessageRequest, SqsPublishResult, NotUsed] =
     apply(queueUrl, SqsPublishSettings.Defaults)
 
   /**
@@ -47,7 +46,7 @@ object SqsPublishFlow {
    */
   def apply(settings: SqsPublishSettings = SqsPublishSettings.Defaults)(
       implicit sqsClient: SqsAsyncClient
-  ): Flow[SendMessageRequest, SqsPublishResult[SendMessageResponse], NotUsed] =
+  ): Flow[SendMessageRequest, SqsPublishResult, NotUsed] =
     Flow[SendMessageRequest]
       .mapAsync(settings.maxInFlight) { req =>
         sqsClient
@@ -55,16 +54,7 @@ object SqsPublishFlow {
           .toScala
           .map(req -> _)(sameThreadExecutionContext)
       }
-      .map {
-        case (request, response) =>
-          val fifoIdentifiers = Option(response.sequenceNumber()).map { sequenceNumber =>
-            val messageGroupId = request.messageGroupId()
-            val messageDeduplicationId = Option(request.messageDeduplicationId())
-            new FifoMessageIdentifiers(sequenceNumber, messageGroupId, messageDeduplicationId)
-          }
-
-          new SqsPublishResult(response, fifoIdentifiers)
-      }
+      .map { case (request, response) => new SqsPublishResult(request, response) }
 
   /**
    * creates a [[akka.stream.scaladsl.Flow Flow]] that groups messages and publishes them in batches to a SQS queue using an [[software.amazon.awssdk.services.sqs.SqsAsyncClient SqsAsyncClient]]
@@ -73,7 +63,7 @@ object SqsPublishFlow {
    */
   def grouped(queueUrl: String, settings: SqsPublishGroupedSettings = SqsPublishGroupedSettings.Defaults)(
       implicit sqsClient: SqsAsyncClient
-  ): Flow[SendMessageRequest, SqsPublishResult[SendMessageBatchResponse], NotUsed] =
+  ): Flow[SendMessageRequest, SqsPublishResultEntry, NotUsed] =
     Flow[SendMessageRequest]
       .groupedWithin(settings.maxBatchSize, settings.maxBatchWait)
       .via(batch(queueUrl, SqsPublishBatchSettings.create().withConcurrentRequests(settings.concurrentRequests)))
@@ -84,7 +74,7 @@ object SqsPublishFlow {
    */
   def batch(queueUrl: String, settings: SqsPublishBatchSettings = SqsPublishBatchSettings.Defaults)(
       implicit sqsClient: SqsAsyncClient
-  ): Flow[Iterable[SendMessageRequest], List[SqsPublishResult[SendMessageBatchResponse]], NotUsed] =
+  ): Flow[Iterable[SendMessageRequest], List[SqsPublishResultEntry], NotUsed] =
     Flow[Iterable[SendMessageRequest]]
       .map { requests =>
         val entries = requests.zipWithIndex.map {
@@ -99,50 +89,34 @@ object SqsPublishFlow {
               .build()
         }
 
-        SendMessageBatchRequest
+        requests -> SendMessageBatchRequest
           .builder()
           .queueUrl(queueUrl)
           .entries(entries.toList.asJava)
           .build()
       }
-      .mapAsync(settings.concurrentRequests) { req =>
-        sqsClient
-          .sendMessageBatch(req)
-          .toScala
-          .map(req -> _)(sameThreadExecutionContext)
-      }
       .mapAsync(settings.concurrentRequests) {
-        case (request, response) if !response.failed().isEmpty =>
-          val nrOfFailedMessages = response.failed().size()
-          val numberOfMessages = request.entries().size()
-
-          Future.failed(
-            new SqsBatchException(
-              numberOfMessages,
-              s"Some messages are failed to send. $nrOfFailedMessages of $numberOfMessages messages are failed"
-            )
-          )
-
-        case (request, response) =>
-          val requestEntries = request.entries().asScala.map(e => e.id -> e).toMap
-
-          def result =
-            response
-              .successful()
-              .asScala
-              .map { resp =>
-                val req = requestEntries(resp.id)
-
-                val fifoIdentifiers = Option(resp.sequenceNumber()).map { sequenceNumber =>
-                  val messageGroupId = req.messageGroupId()
-                  val messageDeduplicationId = Option(req.messageDeduplicationId())
-                  new FifoMessageIdentifiers(sequenceNumber, messageGroupId, messageDeduplicationId)
-                }
-
-                new SqsPublishResult(response, fifoIdentifiers)
-              }
-
-          Future.successful(result.toList)
+        case (requests, batchRequest) =>
+          sqsClient
+            .sendMessageBatch(batchRequest)
+            .toScala
+            .map {
+              case response if response.failed().isEmpty =>
+                val responseMetadata = response.responseMetadata()
+                val resultEntries = response.successful().asScala.map(e => e.id.toInt -> e).toMap
+                requests.zipWithIndex.map {
+                  case (r, i) =>
+                    val result = resultEntries(i)
+                    new SqsPublishResultEntry(r, result, responseMetadata)
+                }.toList
+              case response =>
+                val numberOfMessages = batchRequest.entries().size()
+                val nrOfFailedMessages = response.failed().size()
+                throw new SqsBatchException(
+                  numberOfMessages,
+                  s"Some messages are failed to send. $nrOfFailedMessages of $numberOfMessages messages are failed"
+                )
+            }(sameThreadExecutionContext)
       }
       .recoverWithRetries(1, {
         case e: CompletionException =>

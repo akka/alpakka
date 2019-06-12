@@ -11,7 +11,7 @@ import akka.annotation.InternalApi
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.Uri.{Authority, Query}
-import akka.http.scaladsl.model.headers.{Host, RawHeader}
+import akka.http.scaladsl.model.headers.{`Raw-Request-URI`, Host, RawHeader}
 import akka.http.scaladsl.model.{ContentTypes, RequestEntity, _}
 import akka.stream.alpakka.s3.{ApiVersion, S3Settings}
 import akka.stream.scaladsl.Source
@@ -151,14 +151,21 @@ import scala.concurrent.{ExecutionContext, Future}
 
   private[this] def s3Request(s3Location: S3Location, method: HttpMethod, uriFn: Uri => Uri = identity)(
       implicit conf: S3Settings
-  ): HttpRequest =
+  ): HttpRequest = {
+    val s3RequestUri = uriFn(requestUri(s3Location.bucket, Some(s3Location.key)))
+
     HttpRequest(method)
-      .withHeaders(Host(requestAuthority(s3Location.bucket, conf.s3RegionProvider.getRegion)))
-      .withUri(uriFn(requestUri(s3Location.bucket, Some(s3Location.key))))
+      .withHeaders(
+        Host(requestAuthority(s3Location.bucket, conf.s3RegionProvider.getRegion)),
+        `Raw-Request-URI`(rawRequestUri(s3RequestUri))
+      )
+      .withUri(s3RequestUri)
+  }
 
   @throws(classOf[IllegalUriException])
   private[this] def requestAuthority(bucket: String, region: String)(implicit conf: S3Settings): Authority =
-    conf.proxy match {
+    conf.endpointUrl match {
+      case Some(endpointUrl) => Uri(endpointUrl).authority
       case None =>
         if (!conf.pathStyleAccess) {
           val bucketRegex = "[^a-z0-9\\-\\.]{1,255}|[\\.]{2,}".r
@@ -167,16 +174,14 @@ import scala.concurrent.{ExecutionContext, Future}
               throw IllegalUriException(
                 "Bucket name contains non-LDH characters",
                 s"""The following character is not allowed: $illegalCharacter
-                   | This may be solved by setting alpakka.s3.path-style-access to true in the configuration.
+                       | This may be solved by setting alpakka.s3.path-style-access to true in the configuration.
                  """.stripMargin
               )
             case None => ()
           }
         }
-        (region, conf.endpointUrl) match {
-          case (_, Some(endpointUrl)) =>
-            Uri(endpointUrl).authority
-          case ("us-east-1", _) =>
+        region match {
+          case "us-east-1" =>
             if (conf.pathStyleAccess) {
               Authority(Uri.Host("s3.amazonaws.com"))
             } else {
@@ -189,7 +194,6 @@ import scala.concurrent.{ExecutionContext, Future}
               Authority(Uri.Host(s"$bucket.s3-$region.amazonaws.com"))
             }
         }
-      case Some(proxy) => Authority(Uri.Host(proxy.host))
     }
 
   private[this] def requestUri(bucket: String, key: Option[String])(implicit conf: S3Settings): Uri = {
@@ -202,15 +206,26 @@ import scala.concurrent.{ExecutionContext, Future}
       someKey.split("/").foldLeft(basePath)((acc, p) => acc / p)
     }
     val uri = Uri(path = path, authority = requestAuthority(bucket, conf.s3RegionProvider.getRegion))
+      .withHost(requestAuthority(bucket, conf.s3RegionProvider.getRegion).host)
 
-    (conf.proxy, conf.endpointUrl) match {
-      case (_, Some(endpointUri)) =>
-        uri
-          .withScheme(Uri(endpointUri).scheme)
-          .withHost(requestAuthority(bucket, conf.s3RegionProvider.getRegion).host)
-      case (None, _) =>
-        uri.withScheme("https").withHost(requestAuthority(bucket, conf.s3RegionProvider.getRegion).host)
-      case (Some(proxy), _) => uri.withPort(proxy.port).withScheme(proxy.scheme).withHost(proxy.host)
+    conf.endpointUrl match {
+      case Some(endpointUri) =>
+        uri.withScheme(Uri(endpointUri).scheme)
+      case None =>
+        uri.withScheme("https")
+    }
+  }
+
+  private def rawRequestUri(uri: Uri): String = {
+    val rawUri = uri.toString
+    val rawPath = uri.path.toString()
+
+    if (rawPath.contains("+")) {
+      val fixedPath = rawPath.replaceAll("\\+", "%2B")
+
+      rawUri.replace(rawPath, fixedPath)
+    } else {
+      rawUri
     }
   }
 }

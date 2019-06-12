@@ -172,6 +172,19 @@ Scala
 Java
 : @@snip [snip](/solr/src/test/java/docs/javadsl/SolrTest.java) { #kafka-example }
 
+#### Excluding messages
+
+Failure to deserialize a kafka message is a particular case of conditional message processing.
+It is also likely that we would have no message to produce to SolR when we encounter messages that fail to deserialize.
+The solr flow will not let us pass through the corresponding committable offset without doing a request to solr.
+
+Use `WriteMessage.createPassThrough` to exclude this message without doing any change on solr inside a flow.
+
+Scala
+: @@snip [snip](/solr/src/test/scala/docs/scaladsl/SolrSpec.scala) { #kafka-example-PT }
+
+Java
+: @@snip [snip](/solr/src/test/java/docs/javadsl/SolrTest.java) { #kafka-example-PT }
 
 
 ## Update documents

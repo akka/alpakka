@@ -7,10 +7,11 @@ package docs.javadsl;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-// #header-line #column-names
+// #import
 import akka.stream.alpakka.csv.javadsl.CsvParsing;
 import akka.stream.alpakka.csv.javadsl.CsvToMap;
-// #header-line #column-names
+
+// #import
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -59,7 +60,6 @@ public class CsvToMapTest {
   public void parsedLineShouldBecomeMapKeys() throws Exception {
     CompletionStage<Map<String, ByteString>> completionStage =
         // #header-line
-
         // values as ByteString
         Source.single(ByteString.fromString("eins,zwei,drei\n1,2,3"))
             .via(CsvParsing.lineScanner())
@@ -99,7 +99,6 @@ public class CsvToMapTest {
   public void givenHeadersShouldBecomeMapKeys() throws Exception {
     CompletionStage<Map<String, ByteString>> completionStage =
         // #column-names
-
         // values as ByteString
         Source.single(ByteString.fromString("1,2,3"))
             .via(CsvParsing.lineScanner())

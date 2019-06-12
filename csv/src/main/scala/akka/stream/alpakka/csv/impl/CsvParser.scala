@@ -9,7 +9,9 @@ import java.nio.charset.UnsupportedCharsetException
 import akka.annotation.InternalApi
 import akka.stream.alpakka.csv.MalformedCsvException
 import akka.stream.alpakka.csv.scaladsl.ByteOrderMark
-import akka.util.{ByteString, ByteStringBuilder}
+import akka.util.{ByteIterator, ByteString, ByteStringBuilder}
+
+import scala.collection.mutable
 
 /**
  * INTERNAL API: Use [[akka.stream.alpakka.csv.scaladsl.CsvParsing]] instead.
@@ -43,34 +45,102 @@ import akka.util.{ByteString, ByteStringBuilder}
 
   import CsvParser._
 
-  private[this] var buffer = ByteString.empty
+  /**
+   * Concatenated input chunks,
+   * appended to by [[offer()]] and dropped from by [[dropReadBuffer()]].
+   *
+   * May include previous chunks that start a field but do not complete it.
+   */
+  private[this] var buffer: ByteString = ByteString.empty
+
+  /**
+   * Flag to run BOM checks against first two bytes of the stream.
+   */
   private[this] var firstData = true
-  private[this] var pos = 0
+
+  /**
+   * Current position within [[buffer]].
+   *
+   * Points to the same byte as [[current.head]].
+   * Used for slicing fields out of [[buffer]] and for debug info.
+   */
+  private[this] var pos: Int = 0
+
+  /**
+   * Number of bytes dropped on the current row.
+   *
+   * Perf:
+   * We need to track this in order to call [[dropReadBuffer()]] after each field instead of each line.
+   * We want to call [[dropReadBuffer()]] ASAP to convert [[buffer]] from a
+   * [[akka.util.ByteString.ByteStrings]] to a [[akka.util.ByteString.ByteString1]]
+   * to exploit the much faster [[ByteString.slice()]] implementation.
+   */
+  private[this] var lineBytesDropped = 0
+
+  /**
+   * Position within the current row.
+   *
+   * Used for enforcing line length limits and as debug info for exceptions.
+   */
+  private[this] def lineLength: Int = lineBytesDropped + pos
+
+  /**
+   * Position within [[buffer]] of the start of the current field.
+   */
   private[this] var fieldStart = 0
   private[this] var currentLineNo = 1L
 
-  def offer(input: ByteString): Unit =
-    buffer ++= input
+  /**
+   * Reset after each row.
+   */
+  private[this] var columns = mutable.ListBuffer[ByteString]()
+  private[this] var state: State = LineStart
+  private[this] var fieldBuilder = new FieldBuilder
 
-  def poll(requireLineEnd: Boolean): Option[List[ByteString]] =
-    if (buffer.nonEmpty) {
-      val preFirstData = firstData
-      val prePos = pos
-      val preFieldStart = fieldStart
-      val line = parseLine(requireLineEnd)
-      if (line.nonEmpty) {
-        currentLineNo += 1
-        dropReadBuffer()
-      } else {
-        firstData = preFirstData
-        pos = prePos
-        fieldStart = preFieldStart
+  /**
+   * Current iterator being parsed.
+   *
+   * Previous implementation indexed into [[buffer.apply()]] for each byte,
+   * which is slow against [[akka.util.ByteString.ByteStrings]].
+   *
+   * We fully parse each chunk before getting the next, so we only need to track one [[ByteIterator]] at a time.
+   */
+  private[this] var current: ByteIterator = ByteString.empty.iterator
+
+  def offer(next: ByteString): Unit =
+    if (next.nonEmpty) {
+      require(current.isEmpty, "offer(ByteString) may not be called before all buffered input is parsed.")
+      buffer ++= next
+      current = next.iterator
+    }
+
+  def poll(requireLineEnd: Boolean): Option[List[ByteString]] = {
+    if (buffer.nonEmpty) parseLine()
+    val line = maybeExtractLine(requireLineEnd)
+    if (line.nonEmpty) {
+      currentLineNo += 1
+      if (state == LineEnd || !requireLineEnd) {
+        state = LineStart
       }
-      line
-    } else None
+      resetLine()
+      columns.clear()
+    }
+    line
+  }
 
-  private def dropReadBuffer() = {
+  private[this] def advance(n: Int = 1): Unit = {
+    pos += n
+    current.drop(n)
+  }
+
+  private[this] def resetLine(): Unit = {
+    dropReadBuffer()
+    lineBytesDropped = 0
+  }
+
+  private[this] def dropReadBuffer() = {
     buffer = buffer.drop(pos)
+    lineBytesDropped += pos
     pos = 0
     fieldStart = 0
   }
@@ -78,8 +148,11 @@ import akka.util.{ByteString, ByteStringBuilder}
   /** FieldBuilder will just cut the required part out of the incoming ByteBuffer
    * as long as non escaping is used.
    */
-  private final class FieldBuilder(buf: ByteString) {
+  private final class FieldBuilder {
 
+    /**
+     * false if [[builder]] is null.
+     */
     private[this] var useBuilder = false
     private[this] var builder: ByteStringBuilder = _
 
@@ -87,7 +160,7 @@ import akka.util.{ByteString, ByteStringBuilder}
      */
     @inline def init(): Unit =
       if (!useBuilder) {
-        builder = ByteString.newBuilder ++= buf.slice(fieldStart, pos)
+        builder = ByteString.newBuilder ++= buffer.slice(fieldStart, pos)
         useBuilder = true
       }
 
@@ -98,115 +171,113 @@ import akka.util.{ByteString, ByteStringBuilder}
       if (useBuilder) {
         useBuilder = false
         builder.result()
-      } else buf.slice(fieldStart, pos)
+      } else buffer.slice(fieldStart, pos)
 
   }
 
-  protected def parseLine(requireLineEnd: Boolean): Option[List[ByteString]] = {
-    val buf = buffer
-    var columns = Vector[ByteString]()
-    var state: State = LineStart
-    val fieldBuilder = new FieldBuilder(buf)
+  private[this] def noCharEscaped() =
+    throw new MalformedCsvException(currentLineNo,
+                                    lineLength,
+                                    s"wrong escaping at $currentLineNo:$lineLength, no character after escape")
 
-    def noCharEscaped() =
-      throw new MalformedCsvException(currentLineNo,
-                                      pos,
-                                      s"wrong escaping at $currentLineNo:$pos, no character after escape")
-
-    def checkForByteOrderMark(): Unit =
-      if (buf.length >= 2) {
-        if (buf.startsWith(ByteOrderMark.UTF_8)) {
-          pos = 3
-          fieldStart = 3
-        } else {
-          if (buf.startsWith(ByteOrderMark.UTF_16_LE)) {
-            throw new UnsupportedCharsetException("UTF-16 LE and UTF-32 LE")
-          }
-          if (buf.startsWith(ByteOrderMark.UTF_16_BE)) {
-            throw new UnsupportedCharsetException("UTF-16 BE")
-          }
-          if (buf.startsWith(ByteOrderMark.UTF_32_BE)) {
-            throw new UnsupportedCharsetException("UTF-32 BE")
-          }
+  private[this] def checkForByteOrderMark(): Unit =
+    if (buffer.length >= 2) {
+      if (buffer.startsWith(ByteOrderMark.UTF_8)) {
+        advance(4)
+        fieldStart = 3
+      } else {
+        if (buffer.startsWith(ByteOrderMark.UTF_16_LE)) {
+          throw new UnsupportedCharsetException("UTF-16 LE and UTF-32 LE")
+        }
+        if (buffer.startsWith(ByteOrderMark.UTF_16_BE)) {
+          throw new UnsupportedCharsetException("UTF-16 BE")
+        }
+        if (buffer.startsWith(ByteOrderMark.UTF_32_BE)) {
+          throw new UnsupportedCharsetException("UTF-32 BE")
         }
       }
+    }
 
+  private[this] def parseLine(): Unit = {
     if (firstData) {
       checkForByteOrderMark()
       firstData = false
     }
+    churn()
+  }
 
-    while (state != LineEnd && pos < buf.length) {
-      if (pos >= maximumLineLength)
+  private[this] def churn(): Unit = {
+    while (state != LineEnd && pos < buffer.length) {
+      if (lineLength >= maximumLineLength)
         throw new MalformedCsvException(
           currentLineNo,
-          pos,
+          lineLength,
           s"no line end encountered within $maximumLineLength bytes on line $currentLineNo"
         )
-      val byte = buf(pos)
+      val byte = current.head
       state match {
         case LineStart =>
           byte match {
             case `quoteChar` =>
               state = QuoteStarted
-              pos += 1
+              advance()
               fieldStart = pos
             case `escapeChar` =>
               fieldBuilder.init()
               state = WithinFieldEscaped
-              pos += 1
+              advance()
               fieldStart = pos
             case `delimiter` =>
-              columns :+= ByteString.empty
+              columns += ByteString.empty
               state = AfterDelimiter
-              pos += 1
+              advance()
               fieldStart = pos
             case LF =>
-              columns :+= ByteString.empty
+              columns += ByteString.empty
               state = LineEnd
-              pos += 1
+              advance()
               fieldStart = pos
             case CR =>
-              columns :+= ByteString.empty
+              columns += ByteString.empty
               state = AfterCr
-              pos += 1
+              advance()
               fieldStart = pos
             case b =>
               fieldBuilder.add(b)
               state = WithinField
-              pos += 1
+              advance()
           }
 
         case AfterDelimiter =>
           byte match {
             case `quoteChar` =>
               state = QuoteStarted
-              pos += 1
+              advance()
               fieldStart = pos
             case `escapeChar` =>
               fieldBuilder.init()
               state = WithinFieldEscaped
-              pos += 1
+              advance()
               fieldStart = pos
             case `delimiter` =>
-              columns :+= ByteString.empty
+              columns += ByteString.empty
               state = AfterDelimiter
-              pos += 1
+              advance()
               fieldStart = pos
             case LF =>
-              columns :+= ByteString.empty
+              columns += ByteString.empty
               state = LineEnd
-              pos += 1
+              advance()
               fieldStart = pos
             case CR =>
-              columns :+= ByteString.empty
+              columns += ByteString.empty
               state = AfterCr
-              pos += 1
+              advance()
               fieldStart = pos
             case b =>
               fieldBuilder.add(b)
               state = WithinField
-              pos += 1
+              advance()
           }
 
         case WithinField =>
@@ -214,26 +285,26 @@ import akka.util.{ByteString, ByteStringBuilder}
             case `escapeChar` =>
               fieldBuilder.init()
               state = WithinFieldEscaped
-              pos += 1
+              advance()
             case `delimiter` =>
-              columns :+= fieldBuilder.result(pos)
+              columns += fieldBuilder.result(pos)
               state = AfterDelimiter
-              pos += 1
-              fieldStart = pos
+              advance()
+              dropReadBuffer()
             case LF =>
-              columns :+= fieldBuilder.result(pos)
+              columns += fieldBuilder.result(pos)
               state = LineEnd
-              pos += 1
-              fieldStart = pos
+              advance()
+              dropReadBuffer()
             case CR =>
-              columns :+= fieldBuilder.result(pos)
+              columns += fieldBuilder.result(pos)
               state = AfterCr
-              pos += 1
-              fieldStart = pos
+              advance()
+              dropReadBuffer()
             case b =>
               fieldBuilder.add(b)
               state = WithinField
-              pos += 1
+              advance()
           }
 
         case WithinFieldEscaped =>
@@ -241,14 +312,19 @@ import akka.util.{ByteString, ByteStringBuilder}
             case `escapeChar` | `delimiter` =>
               fieldBuilder.add(byte)
               state = WithinField
-              pos += 1
+              advance()
 
-            case b =>
+            case `quoteChar` =>
               throw new MalformedCsvException(
                 currentLineNo,
-                pos,
-                s"wrong escaping at $currentLineNo:$pos, only escape or delimiter may be escaped"
+                lineLength,
+                s"wrong escaping at $currentLineNo:$lineLength, quote is escaped as ${quoteChar.toChar}${quoteChar.toChar}"
               )
+
+            case b =>
+              fieldBuilder.add(escapeChar)
+              state = WithinField
+
           }
 
         case QuoteStarted =>
@@ -256,37 +332,37 @@ import akka.util.{ByteString, ByteStringBuilder}
             case `escapeChar` if escapeChar != quoteChar =>
               fieldBuilder.init()
               state = WithinQuotedFieldEscaped
-              pos += 1
+              advance()
             case `quoteChar` =>
               fieldBuilder.init()
               state = WithinQuotedFieldQuote
-              pos += 1
+              advance()
             case b =>
               fieldBuilder.add(b)
               state = WithinQuotedField
-              pos += 1
+              advance()
           }
 
         case QuoteEnd =>
           byte match {
             case `delimiter` =>
-              columns :+= fieldBuilder.result(pos - 1)
+              columns += fieldBuilder.result(pos - 1)
               state = AfterDelimiter
-              pos += 1
-              fieldStart = pos
+              advance()
+              dropReadBuffer()
             case LF =>
-              columns :+= fieldBuilder.result(pos - 1)
+              columns += fieldBuilder.result(pos - 1)
               state = LineEnd
-              pos += 1
-              fieldStart = pos
+              advance()
+              dropReadBuffer()
             case CR =>
-              columns :+= fieldBuilder.result(pos - 1)
+              columns += fieldBuilder.result(pos - 1)
               state = AfterCr
-              pos += 1
-              fieldStart = pos
+              advance()
+              dropReadBuffer()
             case c =>
               throw new MalformedCsvException(currentLineNo,
-                                              pos,
+                                              lineLength,
                                               s"expected delimiter or end of line at $currentLineNo:$pos")
           }
 
@@ -295,15 +371,15 @@ import akka.util.{ByteString, ByteStringBuilder}
             case `escapeChar` if escapeChar != quoteChar =>
               fieldBuilder.init()
               state = WithinQuotedFieldEscaped
-              pos += 1
+              advance()
             case `quoteChar` =>
               fieldBuilder.init()
               state = WithinQuotedFieldQuote
-              pos += 1
+              advance()
             case b =>
               fieldBuilder.add(b)
               state = WithinQuotedField
-              pos += 1
+              advance()
           }
 
         case WithinQuotedFieldEscaped =>
@@ -311,14 +387,11 @@ import akka.util.{ByteString, ByteStringBuilder}
             case `escapeChar` | `quoteChar` =>
               fieldBuilder.add(byte)
               state = WithinQuotedField
-              pos += 1
+              advance()
 
             case b =>
-              throw new MalformedCsvException(
-                currentLineNo,
-                pos,
-                s"wrong escaping at $currentLineNo:$pos, only escape or quote may be escaped within quotes"
-              )
+              fieldBuilder.add(escapeChar)
+              state = WithinQuotedField
           }
 
         case WithinQuotedFieldQuote =>
@@ -326,7 +399,7 @@ import akka.util.{ByteString, ByteStringBuilder}
             case `quoteChar` =>
               fieldBuilder.add(byte)
               state = WithinQuotedField
-              pos += 1
+              advance()
 
             case b =>
               state = QuoteEnd
@@ -336,15 +409,17 @@ import akka.util.{ByteString, ByteStringBuilder}
           byte match {
             case CR =>
               state = AfterCr
-              pos += 1
+              advance()
             case LF =>
               state = LineEnd
-              pos += 1
+              advance()
             case _ =>
               state = LineEnd
           }
       }
     }
+  }
+  private[this] def maybeExtractLine(requireLineEnd: Boolean): Option[List[ByteString]] =
     if (requireLineEnd) {
       state match {
         case LineEnd =>
@@ -355,26 +430,27 @@ import akka.util.{ByteString, ByteStringBuilder}
     } else {
       state match {
         case AfterDelimiter =>
-          columns :+= ByteString.empty
+          columns += ByteString.empty
           Some(columns.toList)
         case WithinQuotedField =>
           throw new MalformedCsvException(
             currentLineNo,
-            pos,
-            s"unclosed quote at end of input $currentLineNo:$pos, no matching quote found"
+            lineLength,
+            s"unclosed quote at end of input $currentLineNo:$lineLength, no matching quote found"
           )
         case WithinField =>
-          columns :+= fieldBuilder.result(pos)
+          columns += fieldBuilder.result(pos)
           Some(columns.toList)
         case QuoteEnd | WithinQuotedFieldQuote =>
-          columns :+= fieldBuilder.result(pos - 1)
+          columns += fieldBuilder.result(pos - 1)
           Some(columns.toList)
         case WithinFieldEscaped | WithinQuotedFieldEscaped =>
           noCharEscaped()
-        case _ =>
+        case _ if columns.nonEmpty =>
           Some(columns.toList)
+        case _ =>
+          None
       }
     }
-  }
 
 }

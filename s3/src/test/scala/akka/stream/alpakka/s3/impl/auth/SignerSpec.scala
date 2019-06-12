@@ -4,11 +4,11 @@
 
 package akka.stream.alpakka.s3.impl.auth
 
-import java.time.{LocalDate, LocalDateTime, ZoneOffset, ZonedDateTime}
+import java.time.{LocalDateTime, ZoneOffset, ZonedDateTime}
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
-import akka.http.scaladsl.model.headers.{Host, RawHeader}
+import akka.http.scaladsl.model.headers.{`Raw-Request-URI`, Host, RawHeader}
 import akka.stream.scaladsl.Sink
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.testkit.TestKit
@@ -21,7 +21,10 @@ import com.amazonaws.auth.{
 }
 import org.scalatest.{FlatSpecLike, Matchers}
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.OptionValues._
 import org.scalatest.time.{Millis, Seconds, Span}
+
+import scala.compat.java8.OptionConverters._
 
 class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLike with Matchers with ScalaFutures {
   def this() = this(ActorSystem("SignerSpec"))
@@ -35,8 +38,8 @@ class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLik
     new BasicAWSCredentials("AKIDEXAMPLE", "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY")
   )
 
-  def scope(date: LocalDate) = CredentialScope(date, "us-east-1", "iam")
-  def signingKey(dateTime: ZonedDateTime) = SigningKey(credentials, scope(dateTime.toLocalDate))
+  def signingKey(dateTime: ZonedDateTime) =
+    SigningKey(dateTime, credentials, CredentialScope(dateTime.toLocalDate, "us-east-1", "iam"))
 
   val cr = CanonicalRequest(
     "GET",
@@ -65,7 +68,7 @@ class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLik
 
     val date = LocalDateTime.of(2015, 8, 30, 12, 36, 0).atZone(ZoneOffset.UTC)
     val srFuture =
-      Signer.signedRequest(req, signingKey(date), date).runWith(Sink.head)
+      Signer.signedRequest(req, signingKey(date)).runWith(Sink.head)
     whenReady(srFuture) { signedRequest =>
       signedRequest should equal(
         HttpRequest(HttpMethods.GET)
@@ -90,7 +93,7 @@ class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLik
 
     val date = LocalDateTime.of(2017, 12, 31, 12, 36, 0).atZone(ZoneOffset.UTC)
     val srFuture =
-      Signer.signedRequest(req, signingKey(date), date).runWith(Sink.head)
+      Signer.signedRequest(req, signingKey(date)).runWith(Sink.head)
 
     whenReady(srFuture) { signedRequest =>
       signedRequest.getHeader("x-amz-date").get.value should equal("20171231T123600Z")
@@ -124,15 +127,35 @@ class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLik
 
       override def refresh(): Unit = refreshed = true
     }
-    val key = SigningKey(sessionCredentialsProvider, scope(date.toLocalDate))
+    val key = SigningKey(date, sessionCredentialsProvider, CredentialScope(date.toLocalDate, "us-east-1", "iam"))
 
     sessionCredentialsProvider.refresh()
 
     val srFuture =
-      Signer.signedRequest(req, key, date).runWith(Sink.head)
+      Signer.signedRequest(req, key).runWith(Sink.head)
 
     whenReady(srFuture) { signedRequest =>
       signedRequest.getHeader("x-amz-security-token").get.value should equal(initialCredentials.getSessionToken)
+    }
+  }
+
+  it should "correctly sign request with Raw-Request-URI header" in {
+    val req = HttpRequest(HttpMethods.GET)
+      .withUri("https://iam.amazonaws.com/?Action=ListUsers&Version=2010-05-08")
+      .withHeaders(
+        Host("iam.amazonaws.com"),
+        RawHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8"),
+        `Raw-Request-URI`("/1 + 2=3")
+      )
+
+    val date = LocalDateTime.of(2015, 8, 30, 12, 36, 0).atZone(ZoneOffset.UTC)
+    val srFuture = Signer.signedRequest(req, signingKey(date)).runWith(Sink.head)
+
+    whenReady(srFuture) { signedRequest =>
+      signedRequest.getHeader("Authorization").asScala.value shouldEqual RawHeader(
+        "Authorization",
+        "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20150830/us-east-1/iam/aws4_request, SignedHeaders=content-type;host;x-amz-content-sha256;x-amz-date, Signature=dd479fa8a80364edf2119ec24bebde66712ee9c9cb2b0d92eb3ab9ccdc0c3947"
+      )
     }
   }
 }

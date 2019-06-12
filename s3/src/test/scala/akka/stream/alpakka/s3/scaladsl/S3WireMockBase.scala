@@ -39,6 +39,33 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
       )
     )
 
+  def mockFailureAfterInitiate(): Unit = {
+    mock
+      .register(
+        post(urlEqualTo(s"/$bucketKey?uploads")).willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("x-amz-id-2", "Uuag1LuByRx9e6j5Onimru9pO4ZVKnJ2Qz7/C1NPcfTWAtRPfTaOFg==")
+            .withHeader("x-amz-request-id", "656c76696e6727732072657175657374")
+            .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
+                 |<InitiateMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                 |  <Bucket>$bucket</Bucket>
+                 |  <Key>$bucketKey</Key>
+                 |  <UploadId>$uploadId</UploadId>
+                 |</InitiateMultipartUploadResult>""".stripMargin)
+        )
+      )
+
+    mock.register(
+      put(urlEqualTo(s"/$bucketKey?partNumber=1&uploadId=$uploadId"))
+        .withRequestBody(matching(body))
+        .willReturn(
+          aResponse()
+            .withStatus(500)
+        )
+    )
+  }
+
   def mockSSEInvalidRequest(): Unit =
     mock.register(
       any(anyUrl()).willReturn(
@@ -800,11 +827,6 @@ private object S3WireMockBase {
 
   private def config(proxyPort: Int) = ConfigFactory.parseString(s"""
     |${S3Settings.ConfigPath} {
-    |  proxy {
-    |    host = localhost
-    |    port = $proxyPort
-    |    secure = false
-    |  }
     |  aws {
     |    credentials {
     |      provider = static
@@ -817,6 +839,7 @@ private object S3WireMockBase {
     |    }
     |  }
     |  path-style-access = false
+    |  endpoint-url = "http://localhost:$proxyPort"
     |}
     """.stripMargin)
 }

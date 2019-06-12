@@ -5,14 +5,17 @@
 package docs.scaladsl
 
 import java.net.URI
+import java.util.concurrent.TimeUnit
 
 import akka.Done
 import akka.stream.alpakka.sqs._
 import akka.stream.alpakka.sqs.scaladsl.{DefaultTestContext, SqsSource}
 import akka.stream.scaladsl.Sink
+import com.github.matsluni.akkahttpspi.AkkaHttpClient
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FlatSpec, Matchers}
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
+import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{
@@ -24,6 +27,7 @@ import software.amazon.awssdk.services.sqs.model.{
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
+import scala.concurrent.Future
 import scala.concurrent.duration._
 
 class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with DefaultTestContext {
@@ -43,7 +47,7 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
         .messageBody("alpakka")
         .build()
 
-    sqsClient.sendMessage(sendMessageRequest).get()
+    sqsClient.sendMessage(sendMessageRequest).get(2, TimeUnit.SECONDS)
 
     val future = SqsSource(queueUrl, sqsSourceSettings)
       .runWith(Sink.head)
@@ -88,7 +92,7 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
         .messageBody("alpakka")
         .build()
 
-    sqsClient.sendMessage(sendMessageRequest).get()
+    sqsClient.sendMessage(sendMessageRequest).get(2, TimeUnit.SECONDS)
 
     val future = SqsSource(queueUrl, settings).runWith(Sink.head)
 
@@ -112,7 +116,7 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
         .messageAttributes(messageAttributes.asJava)
         .build()
 
-    sqsClient.sendMessage(sendMessageRequest).get()
+    sqsClient.sendMessage(sendMessageRequest).get(2, TimeUnit.SECONDS)
 
     val future = SqsSource(queueUrl, settings)
       .runWith(Sink.head)
@@ -171,12 +175,21 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
   }
 
   "SqsSource" should "stream a single batch from the queue with custom client" taggedAs Integration in new IntegrationFixture {
+    /*
+    // #init-custom-client
+    import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient
+    val customClient: SdkAsyncHttpClient = NettyNioAsyncHttpClient.builder().maxConcurrency(100).build()
+    // #init-custom-client
+     */
+    val customClient: SdkAsyncHttpClient = AkkaHttpClient.builder().withActorSystem(system).build()
+
     //#init-custom-client
     implicit val customSqsClient = SqsAsyncClient
       .builder()
       .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
       .endpointOverride(URI.create(sqsEndpoint))
       .region(Region.EU_CENTRAL_1)
+      .httpClient(customClient)
       .build()
 
     //#init-custom-client
@@ -188,7 +201,7 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
         .messageBody("alpakka")
         .build()
 
-    customSqsClient.sendMessage(sendMessageRequest).get()
+    customSqsClient.sendMessage(sendMessageRequest).get(2, TimeUnit.SECONDS)
 
     val future = SqsSource(queueUrl, sqsSourceSettings)(customSqsClient)
       .runWith(Sink.head)
@@ -197,25 +210,25 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
   }
 
   it should "stream multiple batches from the queue" taggedAs Integration in new IntegrationFixture {
-    val input = for (i <- 1 to 100)
-      yield
-        SendMessageRequest
+    val input =
+      for (i <- 1 to 100)
+        yield SendMessageRequest
           .builder()
           .queueUrl(queueUrl)
           .messageBody(s"alpakka-$i")
           .build()
 
-    input.foreach(m => sqsClient.sendMessage(m).get())
+    input.foreach(m => sqsClient.sendMessage(m).get(2, TimeUnit.SECONDS))
 
-    val future =
-      //#run
+    //#run
+    val messages: Future[immutable.Seq[Message]] =
       SqsSource(
         queueUrl,
         SqsSourceSettings().withCloseOnEmptyReceive(true).withWaitTime(10.millis)
       ).runWith(Sink.seq)
     //#run
 
-    future.futureValue should have size 100
+    messages.futureValue should have size 100
   }
 
   it should "stream single message at least twice from the queue when visibility timeout passed" taggedAs Integration in new IntegrationFixture {
@@ -226,7 +239,7 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
         .messageBody("alpakka")
         .build()
 
-    sqsClient.sendMessage(sendMessageRequest).get()
+    sqsClient.sendMessage(sendMessageRequest).get(2, TimeUnit.SECONDS)
 
     val future = SqsSource(queueUrl, sqsSourceSettings.withVisibilityTimeout(1.second))
       .takeWithin(1200.milliseconds)
@@ -243,7 +256,7 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
         .messageBody("alpakka")
         .build()
 
-    sqsClient.sendMessage(sendMessageRequest).get()
+    sqsClient.sendMessage(sendMessageRequest).get(2, TimeUnit.SECONDS)
 
     val future = SqsSource(queueUrl, sqsSourceSettings.withVisibilityTimeout(10.seconds))
       .takeWithin(500.milliseconds)
