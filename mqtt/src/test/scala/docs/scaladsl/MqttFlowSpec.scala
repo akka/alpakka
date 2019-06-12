@@ -101,7 +101,7 @@ class MqttFlowSpec
       Try {
         sub.requestNext()
       }
-      
+
       message.acked shouldBe true
     }
   }
