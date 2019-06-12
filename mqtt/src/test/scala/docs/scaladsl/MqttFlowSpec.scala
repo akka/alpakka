@@ -10,6 +10,7 @@ import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.mqtt.scaladsl.{MqttFlow, MqttMessageWithAck}
 import akka.stream.alpakka.mqtt._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.testkit.scaladsl.{TestSink, TestSource}
 import akka.testkit.TestKit
 import akka.util.ByteString
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
@@ -88,17 +89,15 @@ class MqttFlowSpec
 
       val message = new MqttMessageWithAckFake
       message.acked shouldBe false
-      val source = Source.single(message)
-
       //#run-flow
-      val ((mqttMessagePromise, subscribed), result) = source
-        .viaMat(mqttFlow)(Keep.both)
-        .toMat(Sink.seq)(Keep.both)
+      val (pub, sub) = TestSource
+        .probe[MqttMessageWithAck](system)
+        .via(mqttFlow)
+        .toMat(TestSink.probe[MqttMessageWithAck])(Keep.both)
         .run()
-      //#run-flow
-      Await.ready(subscribed, timeout)
-      Await.ready(result, timeout)
-      noException should be thrownBy result.futureValue
+
+      pub.sendNext(message)
+      sub.requestNext()
       message.acked shouldBe true
     }
   }
