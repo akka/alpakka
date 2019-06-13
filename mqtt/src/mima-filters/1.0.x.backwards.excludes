@@ -1,0 +1,3 @@
+# Allow changes to impl
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.alpakka.mqtt.impl.MqttFlowStage*")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.mqtt.impl.MqttFlowStage.*")
