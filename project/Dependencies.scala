@@ -234,8 +234,8 @@ object Dependencies {
 
   val InfluxDB = Seq(
     libraryDependencies ++= Seq(
-      "org.influxdb" % "influxdb-java" % InfluxDBJavaVersion // MIT
-    )
+        "org.influxdb" % "influxdb-java" % InfluxDBJavaVersion // MIT
+      )
   )
 
   val IronMq = Seq(
