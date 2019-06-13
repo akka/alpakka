@@ -135,7 +135,7 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
               args.promise.complete(SuccessfullyDone)
             } catch {
               case e: Throwable => args.promise.failure(e)
-          }
+            }
         )
 
       mqttClient.setCallback(new MqttCallbackExtended {

@@ -38,12 +38,12 @@ object Mqtt {
    * [[ByteString]] payloads and independently produces [[ByteString]] payloads e.g.
    * an MQTT server.
    *
-   * @deprecated Provide a connectionId instead (since 1.0.0)
+   * @deprecated Provide a connectionId instead (since 1.0.1)
    * @param session the client session to use
    * @return the bidirectional flow
    */
   @Deprecated
-  @deprecated("Provide a connectionId instead", "1.0.0")
+  @deprecated("Provide a connectionId instead", "1.0.1")
   def clientSessionFlow[A](
       session: MqttClientSession
   ): BidiFlow[Command[A], ByteString, ByteString, DecodeErrorOrEvent[A], NotUsed] =

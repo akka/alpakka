@@ -60,12 +60,12 @@ final class S3Headers private (val cannedAcl: Option[CannedAcl] = None,
                                val serverSideEncryption: Option[ServerSideEncryption] = None) {
 
   @InternalApi private[s3] val headers: Seq[HttpHeader] =
-  cannedAcl.toIndexedSeq.map(_.header) ++
-  metaHeaders.toIndexedSeq.flatMap(_.headers) ++
-  storageClass.toIndexedSeq.map(_.header) ++
-  customHeaders.map { header =>
-    RawHeader(header._1, header._2)
-  }
+    cannedAcl.toIndexedSeq.map(_.header) ++
+    metaHeaders.toIndexedSeq.flatMap(_.headers) ++
+    storageClass.toIndexedSeq.map(_.header) ++
+    customHeaders.map { header =>
+      RawHeader(header._1, header._2)
+    }
 
   @InternalApi private[s3] def headersFor(request: S3Request) =
     headers ++ serverSideEncryption.toIndexedSeq.flatMap(_.headersFor(request))

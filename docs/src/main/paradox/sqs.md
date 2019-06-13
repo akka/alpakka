@@ -49,7 +49,7 @@ Java
 
 ### Underlying HTTP client
 
-Alpakka SQS and SNS are set up to use @extref:[Akka HTTP](akka-http-docs:) as default HTTP client via the thin adapter library [AWS Akka-Http SPI implementation](https://github.com/matsluni/aws-spi-akka-http). By setting the `httpClient` explicitly (as above) the Akka actor system is reused, if not set explicitly a separate actor system will be created internally.
+Alpakka SQS and SNS are set up to use @extref:[Akka HTTP](akka-http:) as default HTTP client via the thin adapter library [AWS Akka-Http SPI implementation](https://github.com/matsluni/aws-spi-akka-http). By setting the `httpClient` explicitly (as above) the Akka actor system is reused, if not set explicitly a separate actor system will be created internally.
 
 It is possible to configure the use of Netty instead, which is Amazon's default. Add an appropriate Netty version to the dependencies and configure @javadoc[`NettyNioAsyncHttpClient`](software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient).
 
@@ -131,7 +131,7 @@ Java
 : @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsPublishTest.java) { #run-send-request }
 
 You can also build flow stages which publish messages to SQS queues, backpressure on queue response, and then forward 
-@scaladoc[`PublishResult`](akka.stream.alpakka.sqs.PublishResult) further down the stream.
+@scaladoc[`SqsPublishResult`](akka.stream.alpakka.sqs.SqsPublishResult) further down the stream.
 
 Scala
 : @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsPublishSpec.scala) { #flow }
@@ -145,7 +145,7 @@ Java
 ### Group messages and publish batches to an SQS queue
 
 Create a sink, that forwards `String` to the SQS queue. However, the main difference from the previous use case, 
-it batches items and sends as a one request and forwards a @scaladoc[`PublishResultEntry`](akka.stream.alpakka.sqs.PublishResultEntry)
+it batches items and sends as a one request and forwards a @scaladoc[`SqsPublishResultEntry`](akka.stream.alpakka.sqs.SqsPublishResultEntry)
 further down the stream for each item processed.
 
 Note: There is also another option to send batch of messages to SQS which is using `AmazonSQSBufferedAsyncClient`.

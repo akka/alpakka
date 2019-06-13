@@ -157,7 +157,7 @@ import scala.util.{Failure, Success}
           listening(
             data.copy(
               clientConnections = data.clientConnections
-                .filterNot { case (_, (clientId, _)) => clientId == connect.clientId } + newConnection
+                  .filterNot { case (_, (clientId, _)) => clientId == connect.clientId } + newConnection
             )
           )
         case (_, ConnAckReceivedLocally(connectionId, connAck, remote)) =>
@@ -548,7 +548,7 @@ import scala.util.{Failure, Success}
                 data.copy(
                   activeConsumers = data.activeConsumers + (topicName -> consumer),
                   pendingRemotePublications =
-                  data.pendingRemotePublications.take(i) ++ data.pendingRemotePublications.drop(i + 1)
+                    data.pendingRemotePublications.take(i) ++ data.pendingRemotePublications.drop(i + 1)
                 )
               )
             } else {
@@ -603,7 +603,7 @@ import scala.util.{Failure, Success}
                 data.copy(
                   activeProducers = data.activeProducers + (topicName -> producer),
                   pendingLocalPublications =
-                  data.pendingLocalPublications.take(i) ++ data.pendingLocalPublications.drop(i + 1)
+                    data.pendingLocalPublications.take(i) ++ data.pendingLocalPublications.drop(i + 1)
                 )
               )
             } else {

@@ -1,5 +1,12 @@
 # Apache Solr
 
+## 1.0.2
+
+No changes.
+
+[*closed in 1.0.2*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.0.2+label%3Ap%3Asolr)
+
+
 ## 1.0.1
 
 * SOLR: Exclude message with PassThrough [#1673](https://github.com/akka/alpakka/pull/1673) by [Giena, @giena](https://github.com/giena)

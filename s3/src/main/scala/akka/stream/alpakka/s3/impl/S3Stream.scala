@@ -61,10 +61,6 @@ import akka.util.ByteString
     extends UploadPartResponse
 
 /** Internal Api */
-@InternalApi private[impl] final case class FailedUpload(reasons: Seq[Throwable])
-    extends Exception(reasons.map(_.getMessage).mkString(", "))
-
-/** Internal Api */
 @InternalApi private[impl] final case class CompleteMultipartUploadResult(location: Uri,
                                                                           bucket: String,
                                                                           key: String,
@@ -184,10 +180,10 @@ import akka.util.ByteString
             }
           case HttpResponse(NotFound, _, entity, _) =>
             Source.fromFuture(entity.discardBytes().future().map(_ => None))
-          case HttpResponse(_, _, entity, _) =>
+          case HttpResponse(code, _, entity, _) =>
             Source.fromFuture {
               Unmarshal(entity).to[String].map { err =>
-                throw new S3Exception(err)
+                throw new S3Exception(err, code)
               }
             }
         }
@@ -201,10 +197,10 @@ import akka.util.ByteString
         request(s3Location, HttpMethods.DELETE, versionId = versionId).flatMapConcat {
           case HttpResponse(NoContent, _, entity, _) =>
             Source.fromFuture(entity.discardBytes().future().map(_ => Done))
-          case HttpResponse(_, _, entity, _) =>
+          case HttpResponse(code, _, entity, _) =>
             Source.fromFuture {
               Unmarshal(entity).to[String].map { err =>
-                throw new S3Exception(err)
+                throw new S3Exception(err, code)
               }
             }
         }
@@ -244,10 +240,10 @@ import akka.util.ByteString
                   ObjectMetadata(h :+ `Content-Length`(entity.contentLengthOption.getOrElse(0)))
                 }
               }
-            case HttpResponse(_, _, entity, _) =>
+            case HttpResponse(code, _, entity, _) =>
               Source.fromFuture {
                 Unmarshal(entity).to[String].map { err =>
-                  throw new S3Exception(err)
+                  throw new S3Exception(err, code)
                 }
               }
           }
@@ -335,9 +331,9 @@ import akka.util.ByteString
     response match {
       case HttpResponse(status, _, entity, _) if status.isSuccess() =>
         entity.discardBytes().future()
-      case HttpResponse(_, _, entity, _) =>
+      case HttpResponse(code, _, entity, _) =>
         Unmarshal(entity).to[String].map { err =>
-          throw new S3Exception(err)
+          throw new S3Exception(err, code)
         }
     }
   }
@@ -359,11 +355,11 @@ import akka.util.ByteString
                 case StatusCodes.Forbidden => AccessDenied
                 case StatusCodes.OK => AccessGranted
                 case other => throw new IllegalArgumentException(s"received status $other")
-            }
+              }
           )
-      case HttpResponse(_, _, entity, _) =>
+      case HttpResponse(code, _, entity, _) =>
         Unmarshal(entity).to[String].map { err =>
-          throw new S3Exception(err)
+          throw new S3Exception(err, code)
         }
     }
   }
@@ -395,10 +391,10 @@ import akka.util.ByteString
         signAndRequest(req).flatMapConcat {
           case HttpResponse(status, _, entity, _) if status.isSuccess() =>
             Source.fromFuture(Unmarshal(entity).to[MultipartUpload])
-          case HttpResponse(_, _, entity, _) =>
+          case HttpResponse(code, _, entity, _) =>
             Source.fromFuture {
               Unmarshal(entity).to[String].map { err =>
-                throw new S3Exception(err)
+                throw new S3Exception(err, code)
               }
             }
         }
@@ -689,9 +685,9 @@ import akka.util.ByteString
     resp match {
       case HttpResponse(status, headers, entity, _) if status.isSuccess() && !status.isRedirection() =>
         Future.successful((entity, headers))
-      case HttpResponse(_, _, entity, _) =>
+      case HttpResponse(code, _, entity, _) =>
         Unmarshal(entity).to[String].map { err =>
-          throw new S3Exception(err)
+          throw new S3Exception(err, code)
         }
     }
   }
@@ -765,7 +761,7 @@ import akka.util.ByteString
               case statusCode: StatusCode =>
                 Unmarshal(entity).to[String].map { err =>
                   val response = Option(err).getOrElse(s"Failed to upload part into S3, status code was: $statusCode")
-                  throw new S3Exception(response)
+                  throw new S3Exception(response, statusCode)
                 }
             }
 

@@ -117,10 +117,10 @@ private[dynamodb] trait AwsClient[S <: AwsClientSettings] {
       uri = signableUrl,
       method = original.getHttpMethod,
       headers = List(
-        headers.RawHeader("x-amz-date", amzHeaders.get("X-Amz-Date")),
-        headers.RawHeader("authorization", amzHeaders.get("Authorization")),
-        headers.RawHeader("x-amz-target", amzHeaders.get("X-Amz-Target"))
-      ) ++ tokenHeader,
+          headers.RawHeader("x-amz-date", amzHeaders.get("X-Amz-Date")),
+          headers.RawHeader("authorization", amzHeaders.get("Authorization")),
+          headers.RawHeader("x-amz-target", amzHeaders.get("X-Amz-Target"))
+        ) ++ tokenHeader,
       entity = HttpEntity(defaultContentType, body)
     )
 

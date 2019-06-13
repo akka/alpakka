@@ -197,7 +197,7 @@ class MqttSourceSpec
             Seq(
               MqttMessage(topic1, ByteString(s"ohi_$i")),
               MqttMessage(topic2, ByteString(s"ohi_$i"))
-          )
+            )
         )
 
       //#create-source

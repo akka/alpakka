@@ -210,9 +210,9 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
   }
 
   it should "stream multiple batches from the queue" taggedAs Integration in new IntegrationFixture {
-    val input = for (i <- 1 to 100)
-      yield
-        SendMessageRequest
+    val input =
+      for (i <- 1 to 100)
+        yield SendMessageRequest
           .builder()
           .queueUrl(queueUrl)
           .messageBody(s"alpakka-$i")

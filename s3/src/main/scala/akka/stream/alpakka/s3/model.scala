@@ -114,6 +114,25 @@ object MultipartUploadResult {
 }
 
 /**
+ * Thrown when multipart upload or multipart copy fails because of a server failure.
+ */
+final class FailedUpload private (
+    val reasons: Seq[Throwable]
+) extends Exception(reasons.map(_.getMessage).mkString(", ")) {
+
+  /** Java API */
+  def getReasons: java.util.List[Throwable] = reasons.asJava
+}
+
+object FailedUpload {
+
+  def apply(reasons: Seq[Throwable]) = new FailedUpload(reasons)
+
+  /** Java API */
+  def create(reasons: Seq[Throwable]) = FailedUpload(reasons)
+}
+
+/**
  * @param bucketName The name of the bucket in which this object is stored
  * @param key The key under which this object is stored
  * @param eTag Hex encoded MD5 hash of this object's contents, as computed by Amazon S3

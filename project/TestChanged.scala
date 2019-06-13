@@ -35,10 +35,10 @@ object TestChanged extends AutoPlugin {
 
   override lazy val projectSettings = Seq(
     testChanged := Def.taskDyn {
-      val skip = Def.setting { task(()) }
-      if (shouldBuild(name.value, changedDirectories.value)) test in Test
-      else skip
-    }.value
+        val skip = Def.setting { task(()) }
+        if (shouldBuild(name.value, changedDirectories.value)) test in Test
+        else skip
+      }.value
   )
 
   implicit class RegexHelper(val sc: StringContext) extends AnyVal {

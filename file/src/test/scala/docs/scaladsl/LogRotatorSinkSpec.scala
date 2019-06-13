@@ -62,18 +62,17 @@ class LogRotatorSinkSpec
     val testFunction = () => {
       val max = 2002
       var size: Long = max
-      (element: ByteString) =>
-        {
-          if (size + element.size > max) {
-            val path = Files.createTempFile(fs.getPath("/"), "test", ".log")
-            files :+= path
-            size = element.size
-            Option(path)
-          } else {
-            size += element.size
-            Option.empty[Path]
-          }
+      (element: ByteString) => {
+        if (size + element.size > max) {
+          val path = Files.createTempFile(fs.getPath("/"), "test", ".log")
+          files :+= path
+          size = element.size
+          Option(path)
+        } else {
+          size += element.size
+          Option.empty[Path]
         }
+      }
     }
     val listFiles = () => files
     (testFunction, listFiles)
@@ -84,8 +83,8 @@ class LogRotatorSinkSpec
   "LogRotatorSink" must {
 
     "complete when consuming an empty source" in assertAllStagesStopped {
-      val triggerCreator: () => ByteString => Option[Path] = () => { element: ByteString =>
-        fail("trigger creator should not be called")
+      val triggerCreator: () => ByteString => Option[Path] = () => {
+        element: ByteString => fail("trigger creator should not be called")
       }
 
       val rotatorSink: Sink[ByteString, Future[Done]] =
@@ -131,16 +130,15 @@ class LogRotatorSinkSpec
 
       val timeBasedTriggerCreator: () => ByteString => Option[Path] = () => {
         var currentFilename: Option[String] = None
-        (_: ByteString) =>
-          {
-            val newName = LocalDateTime.now().format(formatter)
-            if (currentFilename.contains(newName)) {
-              None
-            } else {
-              currentFilename = Some(newName)
-              Some(destinationDir.resolve(newName))
-            }
+        (_: ByteString) => {
+          val newName = LocalDateTime.now().format(formatter)
+          if (currentFilename.contains(newName)) {
+            None
+          } else {
+            currentFilename = Some(newName)
+            Some(destinationDir.resolve(newName))
           }
+        }
       }
 
       val timeBasedSink: Sink[ByteString, Future[Done]] =
@@ -173,17 +171,16 @@ class LogRotatorSinkSpec
       var files = Seq.empty[Path]
       val triggerFunctionCreator = () => {
         var fileName: String = null
-        (element: ByteString) =>
-          {
-            if (fileName == null) {
-              val path = Files.createTempFile(fs.getPath("/"), "test", ".log")
-              files :+= path
-              fileName = path.toString
-              Some(path)
-            } else {
-              None
-            }
+        (element: ByteString) => {
+          if (fileName == null) {
+            val path = Files.createTempFile(fs.getPath("/"), "test", ".log")
+            files :+= path
+            fileName = path.toString
+            Some(path)
+          } else {
+            None
           }
+        }
       }
       val completion = Source(testByteStrings).runWith(LogRotatorSink(triggerFunctionCreator))
       Await.result(completion, 3.seconds)
@@ -260,8 +257,8 @@ class LogRotatorSinkSpec
 
     "function fail on path creation" in assertAllStagesStopped {
       val ex = new Exception("my-exception")
-      val triggerFunctionCreator = () => { (x: ByteString) =>
-        {
+      val triggerFunctionCreator = () => {
+        (x: ByteString) => {
           throw ex
         }
       }
@@ -273,8 +270,8 @@ class LogRotatorSinkSpec
 
     "downstream fail on file write" in assertAllStagesStopped {
       val path = Files.createTempFile(fs.getPath("/"), "test", ".log")
-      val triggerFunctionCreator = () => { (x: ByteString) =>
-        {
+      val triggerFunctionCreator = () => {
+        (x: ByteString) => {
           Option(path)
         }
       }

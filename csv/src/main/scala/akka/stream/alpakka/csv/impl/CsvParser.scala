@@ -114,19 +114,19 @@ import scala.collection.mutable
       current = next.iterator
     }
 
-  def poll(requireLineEnd: Boolean): Option[List[ByteString]] =
-    if (buffer.nonEmpty) {
-      val line = parseLine(requireLineEnd)
-      if (line.nonEmpty) {
-        currentLineNo += 1
-        if (state == LineEnd) {
-          state = LineStart
-        }
-        resetLine()
-        columns.clear()
+  def poll(requireLineEnd: Boolean): Option[List[ByteString]] = {
+    if (buffer.nonEmpty) parseLine()
+    val line = maybeExtractLine(requireLineEnd)
+    if (line.nonEmpty) {
+      currentLineNo += 1
+      if (state == LineEnd || !requireLineEnd) {
+        state = LineStart
       }
-      line
-    } else None
+      resetLine()
+      columns.clear()
+    }
+    line
+  }
 
   private[this] def advance(n: Int = 1): Unit = {
     pos += n
@@ -198,14 +198,12 @@ import scala.collection.mutable
       }
     }
 
-  protected def parseLine(requireLineEnd: Boolean): Option[List[ByteString]] = {
+  private[this] def parseLine(): Unit = {
     if (firstData) {
       checkForByteOrderMark()
       firstData = false
     }
-
     churn()
-    maybeExtractLine(requireLineEnd)
   }
 
   private[this] def churn(): Unit = {
@@ -316,12 +314,17 @@ import scala.collection.mutable
               state = WithinField
               advance()
 
-            case b =>
+            case `quoteChar` =>
               throw new MalformedCsvException(
                 currentLineNo,
                 lineLength,
-                s"wrong escaping at $currentLineNo:$lineLength, only escape or delimiter may be escaped"
+                s"wrong escaping at $currentLineNo:$lineLength, quote is escaped as ${quoteChar.toChar}${quoteChar.toChar}"
               )
+
+            case b =>
+              fieldBuilder.add(escapeChar)
+              state = WithinField
+
           }
 
         case QuoteStarted =>
@@ -387,11 +390,8 @@ import scala.collection.mutable
               advance()
 
             case b =>
-              throw new MalformedCsvException(
-                currentLineNo,
-                lineLength,
-                s"wrong escaping at $currentLineNo:$lineLength, only escape or quote may be escaped within quotes"
-              )
+              fieldBuilder.add(escapeChar)
+              state = WithinQuotedField
           }
 
         case WithinQuotedFieldQuote =>
@@ -446,8 +446,10 @@ import scala.collection.mutable
           Some(columns.toList)
         case WithinFieldEscaped | WithinQuotedFieldEscaped =>
           noCharEscaped()
-        case _ =>
+        case _ if columns.nonEmpty =>
           Some(columns.toList)
+        case _ =>
+          None
       }
     }
 
