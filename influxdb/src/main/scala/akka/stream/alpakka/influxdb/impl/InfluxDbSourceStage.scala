@@ -10,7 +10,6 @@ import akka.stream.{ActorAttributes, Attributes, Outlet, SourceShape}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import org.influxdb.{InfluxDB, InfluxDBException}
 import org.influxdb.dto.{Query, QueryResult}
-import org.influxdb.impl.AlpakkaResultMapperHelper
 
 import scala.collection.JavaConverters._
 
@@ -69,8 +68,7 @@ private[influxdb] final class InfluxDbSourceLogic[T](clazz: Class[T],
             failStage(new InfluxDBException(result.getError))
           } else {
             for (series <- result.getSeries.asScala) {
-              emitMultiple(outlet,
-                           resultMapperHelper.parseSeriesAs(clazz, series, settings.precision).asScala.toIterator)
+              emitMultiple(outlet, resultMapperHelper.parseSeriesAs(clazz, series, settings.precision))
             }
           }
         }

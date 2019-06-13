@@ -6,7 +6,7 @@ package docs.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.influxdb.{InfluxDbReadSettings, InfluxDbWriteSettings}
+import akka.stream.alpakka.influxdb.{InfluxDbReadSettings}
 import akka.stream.alpakka.influxdb.scaladsl.InfluxDbSource
 import akka.stream.scaladsl.Sink
 import akka.testkit.TestKit

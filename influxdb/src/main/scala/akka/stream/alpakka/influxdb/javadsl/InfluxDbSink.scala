@@ -7,7 +7,7 @@ package akka.stream.alpakka.influxdb.javadsl
 import java.util.concurrent.CompletionStage
 
 import akka.{Done, NotUsed}
-import akka.stream.alpakka.influxdb.{InfluxDbWriteMessage, InfluxDbWriteResult, InfluxDbWriteSettings}
+import akka.stream.alpakka.influxdb.{InfluxDbWriteMessage, InfluxDbWriteResult}
 import akka.stream.javadsl.{Keep, Sink}
 import org.influxdb.InfluxDB
 import org.influxdb.dto.Point
@@ -18,18 +18,19 @@ import org.influxdb.dto.Point
 object InfluxDbSink {
 
   def create(
-      settings: InfluxDbWriteSettings,
       influxDB: InfluxDB
-  ): akka.stream.javadsl.Sink[InfluxDbWriteMessage[Point, NotUsed], CompletionStage[Done]] =
+  ): akka.stream.javadsl.Sink[java.util.List[InfluxDbWriteMessage[Point, NotUsed]], CompletionStage[Done]] =
     InfluxDbFlow
-      .create(settings, influxDB)
-      .toMat(Sink.ignore[InfluxDbWriteResult[Point, NotUsed]], Keep.right[NotUsed, CompletionStage[Done]])
+      .create(influxDB)
+      .toMat(Sink.ignore[java.util.List[InfluxDbWriteResult[Point, NotUsed]]],
+             Keep.right[NotUsed, CompletionStage[Done]])
 
-  def typed[T](clazz: Class[T],
-               settings: InfluxDbWriteSettings,
-               influxDB: InfluxDB): akka.stream.javadsl.Sink[InfluxDbWriteMessage[T, NotUsed], CompletionStage[Done]] =
+  def typed[T](
+      clazz: Class[T],
+      influxDB: InfluxDB
+  ): akka.stream.javadsl.Sink[java.util.List[InfluxDbWriteMessage[T, NotUsed]], CompletionStage[Done]] =
     InfluxDbFlow
-      .typed(clazz, settings, influxDB)
-      .toMat(Sink.ignore[InfluxDbWriteResult[T, NotUsed]], Keep.right[NotUsed, CompletionStage[Done]])
+      .typed(clazz, influxDB)
+      .toMat(Sink.ignore[java.util.List[InfluxDbWriteResult[T, NotUsed]]], Keep.right[NotUsed, CompletionStage[Done]])
 
 }

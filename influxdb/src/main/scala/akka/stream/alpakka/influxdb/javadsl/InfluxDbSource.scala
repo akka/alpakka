@@ -5,7 +5,7 @@
 package akka.stream.alpakka.influxdb.javadsl
 
 import akka.NotUsed
-import akka.stream.alpakka.influxdb.{InfluxDbReadSettings, InfluxDbWriteSettings}
+import akka.stream.alpakka.influxdb.{InfluxDbReadSettings}
 import akka.stream.javadsl.Source
 import org.influxdb.InfluxDB
 import org.influxdb.dto.{Query, QueryResult}

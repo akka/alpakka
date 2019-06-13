@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.influxdb.{InfluxDbWriteMessage, InfluxDbWriteResult, InfluxDbWriteSettings}
+import akka.stream.alpakka.influxdb.{InfluxDbWriteMessage, InfluxDbWriteResult}
 import akka.stream.alpakka.influxdb.scaladsl.InfluxDbFlow
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
@@ -18,6 +18,7 @@ import org.scalatest.concurrent.ScalaFutures
 import docs.javadsl.TestUtils._
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import org.influxdb.dto.Point
+import scala.concurrent.duration._
 
 class FlowSpec extends WordSpec with MustMatchers with BeforeAndAfterEach with BeforeAndAfterAll with ScalaFutures {
 
@@ -50,12 +51,12 @@ class FlowSpec extends WordSpec with MustMatchers with BeforeAndAfterEach with B
 
     val result = Source(
       List(
-        validMessage
+        List(validMessage)
       )
-    ).via(InfluxDbFlow.create(InfluxDbWriteSettings()))
+    ).via(InfluxDbFlow.create())
       .runWith(Sink.seq)
       .futureValue
 
-    result(0).error mustBe None
+    result(0)(0).error mustBe None
   }
 }

@@ -12,7 +12,6 @@ import org.influxdb.{BatchOptions, InfluxDB}
 
 import scala.collection.immutable
 import org.influxdb.dto.{BatchPoints, Point}
-import org.influxdb.impl.AlpakkaResultMapperHelper
 
 import scala.annotation.tailrec
 
@@ -139,11 +138,11 @@ private[influxdb] final class InfluxDbMapperRecordLogic[T, C](
     (
       im.databaseName match {
         case dbn: Some[String] => dbn
-        case None => Some(mapperHelper.databaseName(im.point))
+        case None => Some(mapperHelper.databaseName(im.point.getClass))
       },
       im.retentionPolicy match {
         case dbn: Some[String] => dbn
-        case None => Some(mapperHelper.retentionPolicy(im.point))
+        case None => Some(mapperHelper.retentionPolicy(im.point.getClass))
       }
     )
 

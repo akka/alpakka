@@ -22,7 +22,6 @@ import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.influxdb.InfluxDbReadSettings;
-import akka.stream.alpakka.influxdb.InfluxDbWriteSettings;
 import akka.stream.alpakka.influxdb.javadsl.InfluxDbSource;
 import akka.stream.javadsl.Sink;
 import akka.stream.testkit.javadsl.StreamTestKit;

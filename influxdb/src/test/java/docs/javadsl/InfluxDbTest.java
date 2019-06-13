@@ -4,9 +4,12 @@
 
 package docs.javadsl;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 import org.influxdb.InfluxDB;
 import org.influxdb.dto.Point;
@@ -26,7 +29,6 @@ import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.influxdb.InfluxDbReadSettings;
-import akka.stream.alpakka.influxdb.InfluxDbWriteSettings;
 import akka.stream.alpakka.influxdb.InfluxDbWriteMessage;
 import akka.stream.alpakka.influxdb.javadsl.InfluxDbSink;
 import akka.stream.alpakka.influxdb.javadsl.InfluxDbSource;
@@ -91,9 +93,8 @@ public class InfluxDbTest {
                   InfluxDbCpu clonedCpu = cpu.cloneAt(cpu.getTime().plusSeconds(60000l));
                   return InfluxDbWriteMessage.create(clonedCpu, NotUsed.notUsed());
                 })
-            .runWith(
-                InfluxDbSink.typed(InfluxDbCpu.class, InfluxDbWriteSettings.Default(), influxDB),
-                materializer);
+            .groupedWithin(10, Duration.of(50l, ChronoUnit.MILLIS))
+            .runWith(InfluxDbSink.typed(InfluxDbCpu.class, influxDB), materializer);
 
     Assert.assertNotNull(completionStage.toCompletableFuture().get());
 
@@ -112,7 +113,8 @@ public class InfluxDbTest {
         InfluxDbSource.create(influxDB, query)
             .map(queryResult -> points(queryResult))
             .mapConcat(i -> i)
-            .runWith(InfluxDbSink.create(InfluxDbWriteSettings.Default(), influxDB), materializer);
+            .groupedWithin(10, Duration.of(50l, ChronoUnit.MILLIS))
+            .runWith(InfluxDbSink.create(influxDB), materializer);
 
     Assert.assertNotNull(completionStage.toCompletableFuture().get());
 
