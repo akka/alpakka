@@ -94,10 +94,9 @@ class InfluxDbSpec extends WordSpec with MustMatchers with BeforeAndAfterEach wi
         results <- queryResult.getResults.asScala
         series <- results.getSeries.asScala
         values <- series.getValues.asScala
-      } yield
-        (
-          InfluxDbWriteMessage(resultToPoint(series, values))
-        )
+      } yield (
+        InfluxDbWriteMessage(resultToPoint(series, values))
+      )
       points.toList
     }
 
