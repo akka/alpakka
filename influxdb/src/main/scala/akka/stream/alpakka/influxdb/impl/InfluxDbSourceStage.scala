@@ -56,10 +56,10 @@ private[influxdb] final class InfluxDbSourceLogic[T](clazz: Class[T],
   override def preStart(): Unit = {
     resultMapperHelper = new AlpakkaResultMapperHelper
     resultMapperHelper.cacheClassFields(clazz)
+    runQuery()
   }
 
   override def onPull(): Unit = {
-    runQuery()
     dataRetrieved match {
       case None => completeStage()
       case Some(queryResult) => {
