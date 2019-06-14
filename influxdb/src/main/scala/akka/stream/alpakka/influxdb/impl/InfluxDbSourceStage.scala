@@ -44,23 +44,17 @@ private[influxdb] final class InfluxDbSourceLogic[T](clazz: Class[T],
                                                      query: Query,
                                                      outlet: Outlet[T],
                                                      shape: SourceShape[T])
-    extends GraphStageLogic(shape)
-    with OutHandler {
+    extends InfluxDbBaseSourceLogic[T](influxDB, query, outlet, shape) {
 
-  setHandler(outlet, this)
-
-  var queryExecuted: Boolean = false
-  var dataRetrieved: Option[QueryResult] = None
   var resultMapperHelper: AlpakkaResultMapperHelper = _
 
   override def preStart(): Unit = {
     resultMapperHelper = new AlpakkaResultMapperHelper
     resultMapperHelper.cacheClassFields(clazz)
-    runQuery()
+    super.preStart()
   }
-
   override def onPull(): Unit =
-    dataRetrieved match {
+    this.dataRetrieved match {
       case None => completeStage()
       case Some(queryResult) => {
         for (result <- queryResult.getResults.asScala) {
@@ -74,18 +68,6 @@ private[influxdb] final class InfluxDbSourceLogic[T](clazz: Class[T],
         }
         dataRetrieved = None
       }
-    }
-
-  private def runQuery() =
-    if (!queryExecuted) {
-      val queryResult = influxDB.query(query)
-      if (!queryResult.hasError) {
-        dataRetrieved = Some(queryResult)
-      } else {
-        failStage(new InfluxDBException(queryResult.getError))
-        dataRetrieved = None
-      }
-      queryExecuted = true
     }
 
 }
@@ -116,6 +98,24 @@ private[influxdb] final class InfluxDbSourceRawLogic(query: Query,
                                                      influxDB: InfluxDB,
                                                      outlet: Outlet[QueryResult],
                                                      shape: SourceShape[QueryResult])
+    extends InfluxDbBaseSourceLogic[QueryResult](influxDB, query, outlet, shape) {
+
+  override def onPull(): Unit =
+    dataRetrieved match {
+      case None => completeStage()
+      case Some(queryResult) => {
+        emit(outlet, queryResult)
+        dataRetrieved = None
+      }
+    }
+
+  override protected def validateTotalResults: Boolean = true
+}
+
+private[impl] sealed abstract class InfluxDbBaseSourceLogic[T](influxDB: InfluxDB,
+                                                               query: Query,
+                                                               outlet: Outlet[T],
+                                                               shape: SourceShape[T])
     extends GraphStageLogic(shape)
     with OutHandler {
 
@@ -124,16 +124,8 @@ private[influxdb] final class InfluxDbSourceRawLogic(query: Query,
   var queryExecuted: Boolean = false
   var dataRetrieved: Option[QueryResult] = None
 
-  override def onPull(): Unit = {
+  override def preStart(): Unit =
     runQuery()
-    dataRetrieved match {
-      case None => completeStage()
-      case Some(queryResult) => {
-        emit(outlet, queryResult)
-        dataRetrieved = None
-      }
-    }
-  }
 
   private def runQuery() =
     if (!queryExecuted) {
@@ -148,14 +140,17 @@ private[influxdb] final class InfluxDbSourceRawLogic(query: Query,
       queryExecuted = true
     }
 
-  private def failOnError(result: QueryResult) = {
-    val totalErrors = result.getResults.asScala
-      .filter(_.hasError)
-      .map(_.getError)
-    if (totalErrors.size == result.getResults.size()) {
-      val errorMessage = totalErrors.reduceLeft((m1, m2) => m1 + ";" + m2)
-      failStage(new InfluxDBException(errorMessage))
+  protected def validateTotalResults: Boolean = false
+
+  private def failOnError(result: QueryResult) =
+    if (validateTotalResults) {
+      val totalErrors = result.getResults.asScala
+        .filter(_.hasError)
+        .map(_.getError)
+      if (totalErrors.size == result.getResults.size()) {
+        val errorMessage = totalErrors.reduceLeft((m1, m2) => m1 + ";" + m2)
+        failStage(new InfluxDBException(errorMessage))
+      }
     }
-  }
 
 }
