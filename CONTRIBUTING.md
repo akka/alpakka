@@ -39,6 +39,32 @@ In case of questions about the contribution process or for discussion of specifi
 We've collected a few notes on how we would like Alpakka modules to be designed based on what has evolved so far.
 Please have a look at our [contributor advice](contributor-advice.md).
 
+
+## Binary compatibility (MiMa)
+
+Binary compatibility rules and guarantees are described in depth in the [Binary Compatibility Rules
+](https://doc.akka.io/docs/akka/snapshot/common/binary-compatibility-rules.html) section of the Akka documentation.
+
+Akka projects use MiMa (which originally was called [Lightbend Migration Manager](https://github.com/lightbend/mima)) to
+validate binary compatibility of incoming pull requests. In the Travis build step "Check binary compatibility", you may see
+an error like this:
+
+```
+[info] akka-stream: found 1 potential binary incompatibilities while checking against com.typesafe.akka:akka-stream_2.12:2.4.2  (filtered 222)
+[error]  * method foldAsync(java.lang.Object,scala.Function2)akka.stream.scaladsl.FlowOps in trait akka.stream.scaladsl.FlowOps is present only in current version
+[error]    filter with: ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.foldAsync")
+```
+
+In such situations it's good to consult with a core team member if the violation can be safely ignored (by adding the above snippet to `<module>/src/main/mima-filters/<latest-version>.backwards.excludes`), or if it would indeed break binary compatibility.
+
+Situations when it may be fine to ignore a MiMa issued warning include:
+
+- if it is concerning internal classes in package `impl` or `internal`
+    - add eg. `1.0.x.backwards.excludes` with `ProblemFilters.exclude[Problem]("akka.stream.alpakka.<module>.impl.*")` to ignore all internal changes
+- if it is touching anything marked as `@InternalApi`
+
+The binary compatibility of the current changes can be checked by running `mimaReportBinaryIssues` in sbt.
+
 ## Pull Request Requirements
 
 For a Pull Request to be considered at all it has to meet these requirements:
