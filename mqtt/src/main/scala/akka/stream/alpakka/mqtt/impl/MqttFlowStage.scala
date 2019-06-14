@@ -61,20 +61,24 @@ private[mqtt] final class MqttFlowStage(connectionSettings: MqttConnectionSettin
                                                     subscriptions,
                                                     bufferSize,
                                                     defaultQoS,
-                                                    manualAcks)
+                                                    manualAcks) {
+
+      override def publishPending(msg: MqttMessage): Unit = super.publishToMqtt(msg)
+
+    }
     (logic, subscriptionPromise.future)
   }
 }
 
-class MqttFlowStageLogic[I](in: Inlet[I],
-                            out: Outlet[MqttMessageWithAck],
-                            shape: Shape,
-                            subscriptionPromise: Promise[Done],
-                            connectionSettings: MqttConnectionSettings,
-                            subscriptions: Map[String, MqttQoS],
-                            bufferSize: Int,
-                            defaultQoS: MqttQoS,
-                            manualAcks: Boolean)
+abstract class MqttFlowStageLogic[I](in: Inlet[I],
+                                     out: Outlet[MqttMessageWithAck],
+                                     shape: Shape,
+                                     subscriptionPromise: Promise[Done],
+                                     connectionSettings: MqttConnectionSettings,
+                                     subscriptions: Map[String, MqttQoS],
+                                     bufferSize: Int,
+                                     defaultQoS: MqttQoS,
+                                     manualAcks: Boolean)
     extends GraphStageLogic(shape)
     with StageLogging
     with InHandler
@@ -199,14 +203,9 @@ class MqttFlowStageLogic[I](in: Inlet[I],
       }
 
     override def connectComplete(reconnect: Boolean, serverURI: String): Unit = {
-      pendingMsg.foreach {
-        case msg: MqttMessage =>
-          publishToMqtt(msg)
-          pendingMsg = None
-        case msg: MqttMessageWithAck =>
-          publishToMqttWithAck(msg)
-          pendingMsg = None
-        case _ =>
+      pendingMsg.foreach { msg =>
+        publishPending(msg)
+        pendingMsg = None
       }
       if (reconnect && !hasBeenPulled(in)) pull(in)
     }
@@ -216,11 +215,7 @@ class MqttFlowStageLogic[I](in: Inlet[I],
   override def onPush(): Unit = {
     val msg = grab(in)
     try {
-      msg match {
-        case msg: MqttMessage => publishToMqtt(msg)
-        case msg: MqttMessageWithAck => publishToMqttWithAck(msg)
-        case _ =>
-      }
+      publishPending(msg)
     } catch {
       case _: MqttException if connectionSettings.automaticReconnect => pendingMsg = Some(msg)
       case NonFatal(e) => throw e
@@ -258,7 +253,7 @@ class MqttFlowStageLogic[I](in: Inlet[I],
     mqttClient.publish(msg.topic, pahoMsg, msg, asActionListener(onPublished.invoke))
   }
 
-  def publishToMqttWithAck(msg: MqttMessageWithAck): IMqttDeliveryToken = publishToMqtt(msg.message)
+  def publishPending(msg: I): Unit = ()
 
   private def pushDownstream(message: MqttMessageWithAck): Unit = {
     push(out, message)

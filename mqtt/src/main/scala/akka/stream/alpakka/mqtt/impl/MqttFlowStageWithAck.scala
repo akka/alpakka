@@ -4,36 +4,16 @@
 
 package akka.stream.alpakka.mqtt.impl
 
-import java.util.Properties
-import java.util.concurrent.Semaphore
-import java.util.concurrent.atomic.AtomicInteger
-
 import akka.Done
 import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.alpakka.mqtt._
 import akka.stream.alpakka.mqtt.scaladsl.MqttMessageWithAck
 import akka.stream.stage._
-import akka.util.ByteString
-import org.eclipse.paho.client.mqttv3.{
-  IMqttActionListener,
-  IMqttAsyncClient,
-  IMqttDeliveryToken,
-  IMqttToken,
-  MqttAsyncClient,
-  MqttCallbackExtended,
-  MqttConnectOptions,
-  MqttException,
-  MqttMessage => PahoMqttMessage
-}
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
 
 import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
-import scala.util.control.NonFatal
-import scala.util.{Failure, Success, Try}
-import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions
-import akka.stream.alpakka.mqtt.MqttOfflinePersistenceSettings
-import akka.stream.alpakka.mqtt.impl.MqttFlowStageLogic.asActionListener
 
 /**
  * INTERNAL API
@@ -56,15 +36,6 @@ private[mqtt] final class MqttFlowStageWithAck(connectionSettings: MqttConnectio
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
     val subscriptionPromise = Promise[Done]
 
-    new MqttFlowStageLogic[MqttMessageWithAck](in,
-                                               out,
-                                               shape,
-                                               subscriptionPromise,
-                                               connectionSettings,
-                                               subscriptions,
-                                               bufferSize,
-                                               defaultQoS,
-                                               manualAcks)
     val logic = new MqttFlowWithAckStageLogic(in,
                                               out,
                                               shape,
@@ -106,10 +77,9 @@ class MqttFlowWithAckStageLogic(in: Inlet[MqttMessageWithAck],
       messagesToAck.remove(token.getMessageId)
     }
 
-  override def publishToMqttWithAck(msg: MqttMessageWithAck): IMqttDeliveryToken = {
+  override def publishPending(msg: MqttMessageWithAck): Unit = {
     val publish = publishToMqtt(msg.message)
     messagesToAck ++= mutable.HashMap(publish.getMessageId -> msg)
-    publish
   }
 
 }
