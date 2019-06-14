@@ -90,13 +90,13 @@ class MqttFlowSpec
 
       val message = new MqttMessageWithAckFake
       message.acked shouldBe false
-      //#run-flow
+      
       val (pub, sub) = TestSource
         .probe[MqttMessageWithAck](system)
         .via(mqttFlow)
         .toMat(TestSink.probe[MqttMessageWithAck])(Keep.both)
         .run()
-      //#run-flow
+
       pub.sendNext(message)
       Try {
         sub.requestNext()

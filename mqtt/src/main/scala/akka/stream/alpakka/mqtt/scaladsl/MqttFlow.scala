@@ -7,7 +7,7 @@ package akka.stream.alpakka.mqtt.scaladsl
 import akka.Done
 import akka.stream.alpakka.mqtt._
 import akka.stream.alpakka.mqtt.impl.{MqttFlowStage, MqttFlowStageWithAck}
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.{Flow, Keep}
 
 import scala.concurrent.Future
 
@@ -126,4 +126,15 @@ object MqttFlow {
                                defaultQos,
                                manualAcks = true)
     )
+
+  def atLeastOnceWithAckForJava(
+      connectionSettings: MqttConnectionSettings,
+      subscriptions: MqttSubscriptions,
+      bufferSize: Int,
+      defaultQos: MqttQoS
+  ): Flow[javadsl.MqttMessageWithAck, MqttMessageWithAck, Future[Done]] =
+    Flow
+      .fromFunction(MqttMessageWithAck.fromJava)
+      .viaMat(atLeastOnceWithAck(connectionSettings, subscriptions, bufferSize, defaultQos))(Keep.right)
+
 }

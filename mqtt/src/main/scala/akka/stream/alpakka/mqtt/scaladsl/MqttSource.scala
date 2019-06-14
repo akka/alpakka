@@ -68,17 +68,4 @@ object MqttSource {
       MqttFlow.atLeastOnce(settings, subscriptions, bufferSize, defaultQos = MqttQoS.AtLeastOnce)
     )(Keep.right)
 
-  /**
-   * Create a source subscribing to MQTT messages with a commit handle to acknowledge message reception and message to send.
-   *
-   * The materialized value completes on successful connection to the MQTT broker.
-   *
-   * @param bufferSize max number of messages read from MQTT before back-pressure applies
-   */
-  def atLeastOnceWithAck(settings: MqttConnectionSettings,
-                         subscriptions: MqttSubscriptions,
-                         bufferSize: Int): Source[MqttMessageWithAck, Future[Done]] =
-    Source.maybe.viaMat(
-      MqttFlow.atLeastOnceWithAck(settings, subscriptions, bufferSize, defaultQos = MqttQoS.AtLeastOnce)
-    )(Keep.right)
 }
