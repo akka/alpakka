@@ -68,11 +68,11 @@ class MqttFlowSpec
       noException should be thrownBy result.futureValue
     }
     "send an ack after sent confirmation" in {
-      val topic = "flow-spec-ack/topic"
+      val topic = "flow-spec/topic"
       //#create-flow
       val mqttFlow: Flow[MqttMessageWithAck, MqttMessageWithAck, Future[Done]] =
         MqttFlow.atLeastOnceWithAck(
-          connectionSettings.withClientId(topic),
+          connectionSettings.withClientId("flow-spec/flow"),
           MqttSubscriptions(topic, MqttQoS.AtLeastOnce),
           bufferSize = 8,
           MqttQoS.AtLeastOnce
