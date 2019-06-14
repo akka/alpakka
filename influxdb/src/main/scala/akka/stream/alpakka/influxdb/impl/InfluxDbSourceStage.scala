@@ -59,7 +59,7 @@ private[influxdb] final class InfluxDbSourceLogic[T](clazz: Class[T],
     runQuery()
   }
 
-  override def onPull(): Unit = {
+  override def onPull(): Unit =
     dataRetrieved match {
       case None => completeStage()
       case Some(queryResult) => {
@@ -75,7 +75,6 @@ private[influxdb] final class InfluxDbSourceLogic[T](clazz: Class[T],
         dataRetrieved = None
       }
     }
-  }
 
   private def runQuery() =
     if (!queryExecuted) {
