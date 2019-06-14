@@ -69,7 +69,7 @@ class MqttFlowSpec
     }
     "send an ack after sent confirmation" in {
       val topic = "flow-spec/topic"
-      //#create-flow
+
       val mqttFlow: Flow[MqttMessageWithAck, MqttMessageWithAck, Future[Done]] =
         MqttFlow.atLeastOnceWithAck(
           connectionSettings.withClientId("flow-spec/flow"),
@@ -77,11 +77,11 @@ class MqttFlowSpec
           bufferSize = 8,
           MqttQoS.AtLeastOnce
         )
-      //#create-flow
 
       class MqttMessageWithAckFake extends MqttMessageWithAck {
         var acked = false
         override val message: MqttMessage = MqttMessage.create(topic, ByteString.fromString("ohi"))
+
         override def ack(): Future[Done] = {
           acked = true
           Future.successful(Done)
@@ -90,7 +90,7 @@ class MqttFlowSpec
 
       val message = new MqttMessageWithAckFake
       message.acked shouldBe false
-      
+
       val (pub, sub) = TestSource
         .probe[MqttMessageWithAck](system)
         .via(mqttFlow)
