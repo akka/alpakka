@@ -71,11 +71,8 @@ private[influxdb] sealed abstract class InfluxDbLogic[T, C](
   override def onPush(): Unit = {
     val messages = grab(in)
     if (messages.nonEmpty) {
-
-      influxDB.enableBatch(BatchOptions.DEFAULTS)
       write(messages)
       val writtenMessages = messages.map(m => new InfluxDbWriteResult(m, None))
-      influxDB.close()
       push(out, writtenMessages)
     }
 
