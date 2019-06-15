@@ -73,6 +73,9 @@ sealed class JmsByteMessagePassThrough[+PassThrough] protected[jms] (val bytes: 
   def withProperty(name: String, value: Any): JmsByteMessagePassThrough[PassThrough] =
     copy(properties = properties + (name -> value))
 
+  def withProperties(props: Map[String, Any]): JmsByteMessagePassThrough[PassThrough] =
+    copy(properties = properties ++ props)
+
   def toQueue(name: String): JmsByteMessagePassThrough[PassThrough] = to(Queue(name))
 
   def toTopic(name: String): JmsByteMessagePassThrough[PassThrough] = to(Topic(name))
@@ -197,6 +200,9 @@ sealed class JmsByteStringMessagePassThrough[+PassThrough] protected[jms] (val b
    */
   def withProperty(name: String, value: Any): JmsByteStringMessagePassThrough[PassThrough] =
     copy(properties = properties + (name -> value))
+
+  def withProperties(props: Map[String, Any]): JmsByteStringMessagePassThrough[PassThrough] =
+    copy(properties = properties ++ props)
 
   def toQueue(name: String): JmsByteStringMessagePassThrough[PassThrough] = to(Queue(name))
 
@@ -325,6 +331,9 @@ sealed class JmsMapMessagePassThrough[+PassThrough] protected[jms] (val body: Ma
   def withProperty(name: String, value: Any): JmsMapMessagePassThrough[PassThrough] =
     copy(properties = properties + (name -> value))
 
+  def withProperties(props: Map[String, Any]): JmsMapMessagePassThrough[PassThrough] =
+    copy(properties = properties ++ props)
+
   def toQueue(name: String): JmsMapMessagePassThrough[PassThrough] = to(Queue(name))
 
   def toTopic(name: String): JmsMapMessagePassThrough[PassThrough] = to(Topic(name))
@@ -451,6 +460,9 @@ sealed class JmsTextMessagePassThrough[+PassThrough] protected[jms] (val body: S
   def withProperty(name: String, value: Any): JmsTextMessagePassThrough[PassThrough] =
     copy(properties = properties + (name -> value))
 
+  def withProperties(props: Map[String, Any]): JmsTextMessagePassThrough[PassThrough] =
+    copy(properties = properties ++ props)
+
   def toQueue(name: String): JmsTextMessagePassThrough[PassThrough] = to(Queue(name))
 
   def toTopic(name: String): JmsTextMessagePassThrough[PassThrough] = to(Topic(name))
@@ -573,6 +585,9 @@ sealed class JmsObjectMessagePassThrough[+PassThrough] protected[jms] (val seria
    */
   def withProperty(name: String, value: Any): JmsObjectMessagePassThrough[PassThrough] =
     copy(properties = properties + (name -> value))
+
+  def withProperties(props: Map[String, Any]): JmsObjectMessagePassThrough[PassThrough] =
+    copy(properties = properties ++ props)
 
   def toQueue(name: String): JmsObjectMessagePassThrough[PassThrough] = to(Queue(name))
 
