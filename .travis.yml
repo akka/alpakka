@@ -28,7 +28,7 @@ jobs:
     - env: CMD="docs/paradox"
       name: "Create site with Paradox"
     - env: CMD="mimaReportBinaryIssues"
-      name: "Check binary compatibility"
+      name: "Check binary compatibility (MiMa)"
 
     - stage: test
       env:
