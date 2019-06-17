@@ -10,7 +10,7 @@ import java.util.function.Supplier
 import akka.stream.alpakka.sqs.SqsSourceSettings
 import akka.stream.testkit.scaladsl.TestSink
 import org.mockito.ArgumentMatchers._
-import org.mockito.Mockito._
+import org.mockito.Mockito.{atMost => atMostTimes, _}
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.scalatest.{FlatSpec, Matchers}
@@ -46,11 +46,12 @@ class SqsSourceSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     /**
      * Invocations:
-     * 1 - to initially fill he buffer
+     * 1 - to initially fill the buffer
      * 2 - asynchronous call after the buffer is filled
      * 3 - buffer proxies pull when it's not full -> async stage provides the data and executes the next call
+     * 4 - ???
      */
-    verify(sqsClient, times(3)).receiveMessage(any[ReceiveMessageRequest])
+    verify(sqsClient, times(4)).receiveMessage(any[ReceiveMessageRequest])
   }
 
   it should "buffer messages and acquire them fast with slow sqs" in {
@@ -96,21 +97,27 @@ class SqsSourceSpec extends FlatSpec with Matchers with DefaultTestContext {
     var requestsCounter = 0
     when(sqsClient.receiveMessage(any[ReceiveMessageRequest]))
       .thenAnswer(new Answer[CompletableFuture[ReceiveMessageResponse]] {
-        def answer(invocation: InvocationOnMock): CompletableFuture[ReceiveMessageResponse] = {
-          val messages =
-            if (requestsCounter >= firstWithDataCount && requestsCounter < firstWithDataCount + thenEmptyCount) {
-              List.empty[Message]
-            } else {
-              defaultMessages
-            }
-
+        def answer(invocation: InvocationOnMock) = {
           requestsCounter += 1
-          CompletableFuture.completedFuture(
-            ReceiveMessageResponse
-              .builder()
-              .messages(messages: _*)
-              .build()
-          )
+
+          if (requestsCounter > firstWithDataCount && requestsCounter <= firstWithDataCount + thenEmptyCount) {
+            CompletableFuture.supplyAsync(new Supplier[ReceiveMessageResponse] {
+              def get(): ReceiveMessageResponse = {
+                Thread.sleep(timeout.toMillis)
+                ReceiveMessageResponse
+                  .builder()
+                  .messages(List.empty[Message]: _*)
+                  .build()
+              }
+            })
+          } else {
+            CompletableFuture.completedFuture(
+              ReceiveMessageResponse
+                .builder()
+                .messages(defaultMessages: _*)
+                .build()
+            )
+          }
         }
       })
 
@@ -124,17 +131,15 @@ class SqsSourceSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     (1 to firstWithDataCount * 10).foreach(_ => probe.requestNext(10.milliseconds))
 
-    verify(sqsClient, times(firstWithDataCount + parallelism + 3)).receiveMessage(any[ReceiveMessageRequest])
+    verify(sqsClient, atMostTimes(firstWithDataCount + parallelism)).receiveMessage(any[ReceiveMessageRequest])
 
     // now the throttling kicks in
     probe.request(1)
-    probe.expectNoMessage((thenEmptyCount - parallelism - 3) * timeout)
-    verify(sqsClient, times(firstWithDataCount + thenEmptyCount)).receiveMessage(any[ReceiveMessageRequest])
-
-    Thread.sleep(timeout.toMillis * 2)
+    probe.expectNoMessage((thenEmptyCount - parallelism) * timeout)
+    verify(sqsClient, atMostTimes(firstWithDataCount + thenEmptyCount)).receiveMessage(any[ReceiveMessageRequest])
 
     // now the throttling is off
-    probe.expectNext(10.milliseconds)
+    probe.expectNext()
 
     (1 to 100).foreach(_ => probe.requestNext(10.milliseconds))
   }

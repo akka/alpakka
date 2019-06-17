@@ -6,7 +6,7 @@ package akka.stream.alpakka.sqs.scaladsl
 
 import akka._
 import akka.stream._
-import akka.stream.alpakka.sqs.impl.ControlledThrottling
+import akka.stream.alpakka.sqs.impl.{AutoBalancingSqsReceive, ControlledThrottling}
 import akka.stream.alpakka.sqs.SqsSourceSettings
 import akka.stream.scaladsl.Source
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
@@ -28,7 +28,7 @@ object SqsSource {
       queueUrl: String,
       settings: SqsSourceSettings = SqsSourceSettings.Defaults
   )(implicit sqsClient: SqsAsyncClient): Source[Message, NotUsed] = {
-    val controlledThrottling = new ControlledThrottling[ReceiveMessageRequest](settings.waitTimeSeconds.seconds)
+    val autoBalancingSqsReceive = new AutoBalancingSqsReceive(settings.parallelRequests)
 
     Source
       .repeat {
@@ -46,14 +46,8 @@ object SqsSource {
           case Some(t) => requestBuilder.visibilityTimeout(t.toSeconds.toInt).build()
         }
       }
-      .via(controlledThrottling())
-      .mapAsyncUnordered(settings.parallelRequests)(sqsClient.receiveMessage(_).toScala)
-      .map(_.messages().asScala.toList)
+      .via(autoBalancingSqsReceive())
       .takeWhile(messages => !settings.closeOnEmptyReceive || messages.nonEmpty)
-      .map { messages =>
-        controlledThrottling.setThrottling(messages.isEmpty)
-        messages
-      }
       .mapConcat(identity)
       .buffer(settings.maxBufferSize, OverflowStrategy.backpressure)
   }
