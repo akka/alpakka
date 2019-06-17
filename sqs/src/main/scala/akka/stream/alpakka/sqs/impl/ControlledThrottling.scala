@@ -23,7 +23,7 @@ private[akka] class ControlledThrottling[T](delay: FiniteDuration) {
       import GraphDSL.Implicits._
 
       val partition = b.add(Partition[T](2, _ => if (isThrottling) 1 else 0 ))
-      val throttle = b.add(Flow[T].delay(delay, DelayOverflowStrategy.backpressure).throttle(1, delay))
+      val throttle = b.add(Flow[T].throttle(1, delay).delay(delay, DelayOverflowStrategy.backpressure))
       val merge = b.add(Merge[T](2))
 
       partition       ~>       merge
