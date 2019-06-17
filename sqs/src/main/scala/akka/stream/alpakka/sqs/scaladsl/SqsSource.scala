@@ -4,11 +4,10 @@
 
 package akka.stream.alpakka.sqs.scaladsl
 
-import java.time.Clock
-
 import akka._
 import akka.stream._
-import akka.stream.alpakka.sqs.{ControlledThrottling, SqsSourceSettings}
+import akka.stream.alpakka.sqs.impl.ControlledThrottling
+import akka.stream.alpakka.sqs.SqsSourceSettings
 import akka.stream.scaladsl.Source
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{Message, QueueAttributeName, ReceiveMessageRequest}
@@ -29,8 +28,7 @@ object SqsSource {
       queueUrl: String,
       settings: SqsSourceSettings = SqsSourceSettings.Defaults
   )(implicit sqsClient: SqsAsyncClient): Source[Message, NotUsed] = {
-    val controlledThrottling =
-      new ControlledThrottling[ReceiveMessageRequest](Clock.systemDefaultZone(), settings.waitTimeSeconds.seconds)
+    val controlledThrottling = new ControlledThrottling[ReceiveMessageRequest](settings.waitTimeSeconds.seconds)
 
     Source
       .repeat {
@@ -48,12 +46,13 @@ object SqsSource {
           case Some(t) => requestBuilder.visibilityTimeout(t.toSeconds.toInt).build()
         }
       }
-      .via(controlledThrottling)
-      .mapAsync(settings.parallelRequests)(sqsClient.receiveMessage(_).toScala)
+      .via(controlledThrottling())
+      .mapAsyncUnordered(settings.parallelRequests)(sqsClient.receiveMessage(_).toScala)
       .map(_.messages().asScala.toList)
       .takeWhile(messages => !settings.closeOnEmptyReceive || messages.nonEmpty)
-      .wireTap { messages =>
+      .map { messages =>
         controlledThrottling.setThrottling(messages.isEmpty)
+        messages
       }
       .mapConcat(identity)
       .buffer(settings.maxBufferSize, OverflowStrategy.backpressure)
