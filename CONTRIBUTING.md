@@ -45,7 +45,7 @@ Please have a look at our [contributor advice](contributor-advice.md).
 Binary compatibility rules and guarantees are described in depth in the [Binary Compatibility Rules
 ](https://doc.akka.io/docs/akka/snapshot/common/binary-compatibility-rules.html) section of the Akka documentation.
 
-Akka projects use MiMa (which originally was called [Lightbend Migration Manager](https://github.com/lightbend/mima)) to
+Akka projects use [MiMa](https://github.com/lightbend/mima) (which originally was called Lightbend Migration Manager) to
 validate binary compatibility of incoming pull requests. In the Travis build step "Check binary compatibility", you may see
 an error like this:
 
