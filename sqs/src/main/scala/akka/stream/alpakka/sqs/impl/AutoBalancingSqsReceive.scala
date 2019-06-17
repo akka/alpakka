@@ -1,5 +1,6 @@
 package akka.stream.alpakka.sqs.impl
 
+import akka.annotation.InternalApi
 import akka.stream.FlowShape
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, Partition}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
@@ -8,7 +9,8 @@ import software.amazon.awssdk.services.sqs.model.{Message, ReceiveMessageRequest
 import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters._
 
-class AutoBalancingSqsReceive(parallelism: Int)(implicit sqsClient: SqsAsyncClient) {
+@InternalApi
+private[akka] class AutoBalancingSqsReceive(parallelism: Int)(implicit sqsClient: SqsAsyncClient) {
   private var isThrottling: Boolean = false
 
   def apply(): Flow[ReceiveMessageRequest, List[Message], _] = Flow.fromGraph(GraphDSL.create() { implicit b =>
