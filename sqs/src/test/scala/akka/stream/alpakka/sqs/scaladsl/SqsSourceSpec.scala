@@ -55,7 +55,7 @@ class SqsSourceSpec extends FlatSpec with Matchers with DefaultTestContext {
 
   it should "buffer messages and acquire them fast with slow sqs" in {
     implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
-    val timeoutMs = 300
+    val timeoutMs = 500
     val bufferToBatchRatio = 5
 
     when(sqsClient.receiveMessage(any[ReceiveMessageRequest]))
@@ -84,7 +84,7 @@ class SqsSourceSpec extends FlatSpec with Matchers with DefaultTestContext {
     for {
       i <- 1 to (bufferToBatchRatio + 1)
       message <- defaultMessages
-    } probe.requestNext(2.millisecond) shouldEqual message
+    } probe.requestNext(5.milliseconds) shouldEqual message
   }
 
   it should "enable throttling on emptyReceives and disable throttling when a new message arrives" in {
