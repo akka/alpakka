@@ -6,20 +6,19 @@ package docs.scaladsl
 
 import akka.Done
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, Materializer}
-import akka.stream.alpakka.mqtt.scaladsl.{MqttFlow, MqttMessageWithAck}
 import akka.stream.alpakka.mqtt._
+import akka.stream.alpakka.mqtt.scaladsl.{MqttFlow, MqttMessageWithAck}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
-import akka.stream.testkit.scaladsl.{TestSink, TestSource}
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
 import akka.util.ByteString
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
-import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
-import scala.util.Try
+import scala.concurrent.{Await, Future}
+import scala.util.Random
 
 class MqttFlowSpec
     extends TestKit(ActorSystem("MqttFlowSpec"))
@@ -68,11 +67,12 @@ class MqttFlowSpec
       noException should be thrownBy result.futureValue
     }
     "send an ack after sent confirmation" in {
-      val topic = "flow-spec/topic"
+
+      val topic = Random.alphanumeric.toString()
 
       val mqttFlow: Flow[MqttMessageWithAck, MqttMessageWithAck, Future[Done]] =
         MqttFlow.atLeastOnceWithAck(
-          connectionSettings.withClientId("flow-spec/flow"),
+          connectionSettings.withClientId(topic),
           MqttSubscriptions(topic, MqttQoS.AtLeastOnce),
           bufferSize = 8,
           MqttQoS.AtLeastOnce
@@ -84,6 +84,7 @@ class MqttFlowSpec
 
         override def ack(): Future[Done] = {
           acked = true
+          println("[MqttMessageWithAck]")
           Future.successful(Done)
         }
       }
@@ -91,17 +92,14 @@ class MqttFlowSpec
       val message = new MqttMessageWithAckFake
       message.acked shouldBe false
 
-      val (pub, sub) = TestSource
-        .probe[MqttMessageWithAck](system)
-        .via(mqttFlow)
-        .toMat(TestSink.probe[MqttMessageWithAck])(Keep.both)
+      val source = Source.single(message)
+
+      val ((mqttMessagePromise, subscribed), result) = source
+        .viaMat(mqttFlow)(Keep.both)
+        .toMat(Sink.seq)(Keep.both)
         .run()
 
-      pub.sendNext(message)
-      Try {
-        sub.requestNext()
-      }
-
+      Thread.sleep(3000)
       message.acked shouldBe true
     }
   }
