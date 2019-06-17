@@ -147,6 +147,40 @@ Java
 : @@snip [snip](/mqtt/src/test/java/docs/javadsl/MqttFlowTest.java) { #run-flow }
 
 
+## Using flow with Acknowledge on message sent
+
+It is possible to create a flow that receive `MqttMessageWithAck` instead `MqttMessage`.
+In this case, when the message is successfully sent to the broker, an ack in sent.
+This flow can be used in a stream when the source must be acknowledged ONLY when the message is sent.
+
+The flow receive a `MqttMessageWithAck` with the message swapped with the new content and the ack function from source
+
+Scala
+:   ```
+    val exampleFlow: Flow[MqttMessageWithAck, MqttMessageWithAck, NotUsed] = Flow[MqttMessageWithAck].mapAsync(1) {
+        received => {
+            val body = received.message
+            Future.successful(new MqttMessageWithAck {
+                override val message: MqttMessage = MqttMessage.create("topic", ByteString.fromString("message is arrived"))
+                override def ack(): Future[Done] = received.ack
+                })
+        }
+    }
+    ```
+
+
+Using `MqttFlow.atLeastOnceWithAck`, when the message are sent, an ack is called
+
+Scala
+:   ```
+    MqttSource.atLeastOnce(sourceSettings.connectionSettings, MqttSubscriptions(sourceSettings.subscriptions), bufferSize)
+        .via(exampleFlow)
+        .runWith(MqttFlow.atLeastOnceWithAck(sinkSettings, MqttSubscriptions.empty, 0, MqttQoS.AtLeastOnce)
+        .toMat(Sink.ignore)(Keep.right))
+    ```
+
+
+
 ## Capturing MQTT client logging
 
 The Paho library uses its own logging adapter and contains a default implementation to use `java.util.logging`. See [Paho/Log and Debug](https://wiki.eclipse.org/Paho/Log_and_Debug_in_the_Java_client).
