@@ -5,7 +5,6 @@
 package akka.stream.alpakka.sqs.scaladsl
 
 import java.util.concurrent.CompletableFuture
-import java.util.function.Supplier
 
 import akka.stream.alpakka.sqs.SqsSourceSettings
 import akka.stream.testkit.scaladsl.TestSink
@@ -57,36 +56,36 @@ class SqsSourceSpec extends FlatSpec with Matchers with DefaultTestContext {
 
   it should "buffer messages and acquire them fast with slow sqs" in {
     implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
-    val timeoutMs = 1000
+    val timeout = 1.second
     val bufferToBatchRatio = 5
 
     when(sqsClient.receiveMessage(any[ReceiveMessageRequest]))
-      .thenReturn(
-        CompletableFuture.supplyAsync(
-          new Supplier[ReceiveMessageResponse] {
-            override def get(): ReceiveMessageResponse = {
-              Thread.sleep(timeoutMs)
-
+      .thenAnswer(new Answer[CompletableFuture[ReceiveMessageResponse]] {
+        def answer(invocation: InvocationOnMock) = {
+          akka.pattern.after(timeout, system.scheduler) {
+            Future.successful(
               ReceiveMessageResponse
                 .builder()
                 .messages(defaultMessages: _*)
                 .build()
-            }
-          }
-        )
-      )
+            )
+          }(system.dispatcher).toJava.toCompletableFuture
+        }
+      })
 
     val probe = SqsSource(
       "url",
       SqsSourceSettings.Defaults.withMaxBufferSize(SqsSourceSettings.Defaults.maxBatchSize * bufferToBatchRatio)
     ).runWith(TestSink.probe[Message])
 
-    Thread.sleep(timeoutMs * (bufferToBatchRatio + 1))
+    Thread.sleep(timeout.toMillis * (bufferToBatchRatio + 1))
 
     for {
-      i <- 1 to (bufferToBatchRatio + 1)
+      i <- 1 to bufferToBatchRatio
       message <- defaultMessages
-    } probe.requestNext(10.milliseconds) shouldEqual message
+    } {
+      probe.requestNext(10.milliseconds) shouldEqual message
+    }
   }
 
   it should "enable throttling on emptyReceives and disable throttling when a new message arrives" in {
