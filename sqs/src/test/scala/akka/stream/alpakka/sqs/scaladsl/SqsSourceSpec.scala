@@ -49,9 +49,8 @@ class SqsSourceSpec extends FlatSpec with Matchers with DefaultTestContext {
      * 1 - to initially fill the buffer
      * 2 - asynchronous call after the buffer is filled
      * 3 - buffer proxies pull when it's not full -> async stage provides the data and executes the next call
-     * 4 - ???
      */
-    verify(sqsClient, times(4)).receiveMessage(any[ReceiveMessageRequest])
+    verify(sqsClient, times(3)).receiveMessage(any[ReceiveMessageRequest])
   }
 
   it should "buffer messages and acquire them fast with slow sqs" in {
@@ -91,7 +90,7 @@ class SqsSourceSpec extends FlatSpec with Matchers with DefaultTestContext {
   it should "enable throttling on emptyReceives and disable throttling when a new message arrives" in {
     implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
     val firstWithDataCount = 30
-    val thenEmptyCount = 20
+    val thenEmptyCount = 15
     val parallelism = 10
     val timeout = 1.second
     var requestsCounter = 0
@@ -135,12 +134,12 @@ class SqsSourceSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     // now the throttling kicks in
     probe.request(1)
-    probe.expectNoMessage((thenEmptyCount - parallelism) * timeout)
+    probe.expectNoMessage((thenEmptyCount - parallelism + 3) * timeout)
     verify(sqsClient, atMostTimes(firstWithDataCount + thenEmptyCount)).receiveMessage(any[ReceiveMessageRequest])
 
     // now the throttling is off
     probe.expectNext()
 
-    (1 to 100).foreach(_ => probe.requestNext(10.milliseconds))
+    (1 to 1000).foreach(_ => probe.requestNext(10.milliseconds))
   }
 }
