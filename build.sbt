@@ -314,13 +314,7 @@ lazy val docs = project
         "javadoc.org.eclipse.paho.client.mqttv3.base_url" -> "https://www.eclipse.org/paho/files/javadoc/",
         "javadoc.org.bson.codecs.configuration.base_url" -> "https://mongodb.github.io/mongo-java-driver/3.7/javadoc/",
         "scaladoc.scala.base_url" -> s"https://www.scala-lang.org/api/${scalaBinaryVersion.value}.x/",
-        "scaladoc.akka.stream.alpakka.base_url" -> {
-          val docsHost = sys.env
-            .get("CI")
-            .map(_ => "https://doc.akka.io")
-            .getOrElse(s"http://localhost:${(previewSite / previewFixedPort).value.getOrElse(4000)}")
-          s"$docsHost/api/alpakka/${if (isSnapshot.value) "snapshot" else version.value}/"
-        }
+        "scaladoc.akka.stream.alpakka.base_url" -> s"/api/alpakka/${if (isSnapshot.value) "snapshot" else version.value}/"
       ),
     paradoxGroups := Map("Language" -> Seq("Java", "Scala")),
     resolvers += Resolver.jcenterRepo,
