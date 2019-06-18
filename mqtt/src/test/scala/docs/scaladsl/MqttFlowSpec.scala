@@ -72,10 +72,15 @@ class MqttFlowSpec
     "send an ack after sent confirmation" in {
 
       val topic = Random.alphanumeric.toString()
+      val connectionSettings = MqttConnectionSettings(
+        "tcp://localhost:1883",
+        topic,
+        new MemoryPersistence
+      )
 
       val mqttFlow: Flow[MqttMessageWithAck, MqttMessageWithAck, Future[Done]] =
         MqttFlow.atLeastOnceWithAck(
-          connectionSettings.withClientId(topic),
+          connectionSettings,
           MqttSubscriptions(topic, MqttQoS.AtLeastOnce),
           bufferSize = 8,
           MqttQoS.AtLeastOnce
@@ -107,7 +112,8 @@ class MqttFlowSpec
 
       println("[Check]")
       eventually(timeout(Span(15, Seconds))) {
-        Thread.sleep(10); message.acked should be(true)
+        Thread.sleep(10)
+        message.acked should be(true)
       }
       message.acked shouldBe true
     }
