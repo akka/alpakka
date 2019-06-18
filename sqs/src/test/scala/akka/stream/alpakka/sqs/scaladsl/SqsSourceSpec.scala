@@ -18,6 +18,8 @@ import org.scalatestplus.mockito.MockitoSugar.mock
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{Message, ReceiveMessageRequest, ReceiveMessageResponse}
 
+import scala.compat.java8.FutureConverters._
+import scala.concurrent.Future
 import scala.concurrent.duration._
 
 class SqsSourceSpec extends FlatSpec with Matchers with DefaultTestContext {
@@ -100,15 +102,14 @@ class SqsSourceSpec extends FlatSpec with Matchers with DefaultTestContext {
           requestsCounter += 1
 
           if (requestsCounter > firstWithDataCount && requestsCounter <= firstWithDataCount + thenEmptyCount) {
-            CompletableFuture.supplyAsync(new Supplier[ReceiveMessageResponse] {
-              def get(): ReceiveMessageResponse = {
-                Thread.sleep(timeout.toMillis)
+            akka.pattern.after(timeout, system.scheduler) {
+              Future.successful(
                 ReceiveMessageResponse
                   .builder()
                   .messages(List.empty[Message]: _*)
                   .build()
-              }
-            })
+              )
+            }(system.dispatcher).toJava.toCompletableFuture
           } else {
             CompletableFuture.completedFuture(
               ReceiveMessageResponse
@@ -134,7 +135,7 @@ class SqsSourceSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     // now the throttling kicks in
     probe.request(1)
-    probe.expectNoMessage((thenEmptyCount - parallelism + 3) * timeout)
+    probe.expectNoMessage((thenEmptyCount - parallelism + 1) * timeout)
     verify(sqsClient, atMostTimes(firstWithDataCount + thenEmptyCount)).receiveMessage(any[ReceiveMessageRequest])
 
     // now the throttling is off
