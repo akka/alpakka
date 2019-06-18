@@ -14,7 +14,8 @@ import akka.testkit.TestKit
 import akka.util.ByteString
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.scalatest._
-import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.concurrent.{Eventually, IntegrationPatience, ScalaFutures}
+import org.scalatest.time.{Seconds, Span}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
@@ -25,7 +26,9 @@ class MqttFlowSpec
     with WordSpecLike
     with Matchers
     with BeforeAndAfterAll
-    with ScalaFutures {
+    with ScalaFutures
+    with Eventually
+    with IntegrationPatience {
 
   val timeout = 5.seconds
   implicit val defaultPatience =
@@ -94,12 +97,16 @@ class MqttFlowSpec
 
       val source = Source.single(message)
 
-      val ((mqttMessagePromise, subscribed), result) = source
+      val ((_, subscribed), result) = source
         .viaMat(mqttFlow)(Keep.both)
         .toMat(Sink.seq)(Keep.both)
         .run()
 
-      Thread.sleep(3000)
+      Await.ready(subscribed, timeout)
+      Await.ready(result, timeout)
+      
+      println("[Check]")
+      eventually(timeout(Span(15, Seconds))) { Thread.sleep(10); message.acked should be(true) }
       message.acked shouldBe true
     }
   }
