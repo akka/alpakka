@@ -50,3 +50,5 @@ private[javadsl] object MqttMessageWithAck {
     override def ack(): CompletionStage[Done] = cm.ack().toJava
   }
 }
+
+abstract class MqttMessageWithAckImpl extends MqttMessageWithAck

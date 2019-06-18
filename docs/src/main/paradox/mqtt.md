@@ -163,11 +163,31 @@ Scala
             Future.successful(new MqttMessageWithAck {
                 override val message: MqttMessage = MqttMessage.create("topic", ByteString.fromString("message is arrived"))
                 override def ack(): Future[Done] = received.ack
-                })
+            })
         }
     }
     ```
 
+Java
+:   ```
+    Flow<MqttMessageWithAck, MqttMessageWithAck, NotUsed> exampleFlow = Flow.of(MqttMessageWithAck.class).map(received -> {
+             final MqttMessageWithAck mqttMessageWithAck = new MqttMessageWithAckImpl() {
+                   @Override
+                   public CompletionStage<Done> ack() {
+                       return received.ack();
+                   }
+                   @Override
+                   public MqttMessage message() {
+                       return MqttMessage.create("topic", ByteString.fromString("message arrived"));
+                   }
+                   @Override
+                   public CompletionStage<Done> messageArrivedComplete() {
+                       return ack();
+                   }
+              };
+              return mqttMessageWithAck;
+         );
+    ```
 
 Using `MqttFlow.atLeastOnceWithAck`, when the message are sent, an ack is called
 
@@ -179,7 +199,13 @@ Scala
         .toMat(Sink.ignore)(Keep.right))
     ```
 
-
+Java
+:   ```
+    CompletionStage<Done> materialized = MqttSource.atLeastOnce(connectionSettings.withClientId("source-test/source"), subscriptions, bufferSize)
+                .via(exampleFlow)
+                .via(MqttFlow.atLeastOnceWithAck(connectionSettings, subscriptions, 0, MqttQoS.atLeastOnce()))
+                .runWith(Sink.ignore(), materializer);
+    ```
 
 ## Capturing MQTT client logging
 
