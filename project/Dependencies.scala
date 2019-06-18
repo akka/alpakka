@@ -341,13 +341,14 @@ object Dependencies {
 
   val Sns = Seq(
     libraryDependencies ++= Seq(
-        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll ExclusionRule(
-          organization = "com.typesafe.akka"
-        ), // ApacheV2
-        "software.amazon.awssdk" % "sns" % AwsSdk2Version excludeAll (ExclusionRule(
-          organization = "software.amazon.awssdk",
-          name = "netty-nio-client"
-        ), ExclusionRule(organization = "io.netty")), // ApacheV2
+        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll // ApacheV2
+        ExclusionRule(organization = "com.typesafe.akka"),
+        "software.amazon.awssdk" % "sns" % AwsSdk2Version excludeAll // ApacheV2
+        (
+          ExclusionRule("software.amazon.awssdk", "netty-nio-client"),
+          ExclusionRule(organization = "io.netty"),
+          ExclusionRule("org.apache.httpcomponents", "httpclient")
+        ),
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
         "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
       )
@@ -370,13 +371,14 @@ object Dependencies {
 
   val Sqs = Seq(
     libraryDependencies ++= Seq(
-        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll ExclusionRule(
-          organization = "com.typesafe.akka"
-        ), // ApacheV2
-        "software.amazon.awssdk" % "sqs" % AwsSdk2Version excludeAll (ExclusionRule(
-          organization = "software.amazon.awssdk",
-          name = "netty-nio-client"
-        ), ExclusionRule(organization = "io.netty")), // ApacheV2
+        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll // ApacheV2
+        ExclusionRule(organization = "com.typesafe.akka"),
+        "software.amazon.awssdk" % "sqs" % AwsSdk2Version excludeAll // ApacheV2
+        (
+          ExclusionRule("software.amazon.awssdk", "netty-nio-client"),
+          ExclusionRule(organization = "io.netty"),
+          ExclusionRule("org.apache.httpcomponents", "httpclient")
+        ),
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
         "org.mockito" % "mockito-core" % mockitoVersion % Test, // MIT
         "org.mockito" % "mockito-inline" % mockitoVersion % Test // MIT
