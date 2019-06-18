@@ -104,9 +104,11 @@ class MqttFlowSpec
 
       Await.ready(subscribed, timeout)
       Await.ready(result, timeout)
-      
+
       println("[Check]")
-      eventually(timeout(Span(15, Seconds))) { Thread.sleep(10); message.acked should be(true) }
+      eventually(timeout(Span(15, Seconds))) {
+        Thread.sleep(10); message.acked should be(true)
+      }
       message.acked shouldBe true
     }
   }
