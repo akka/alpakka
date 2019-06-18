@@ -61,16 +61,18 @@ class SqsSourceSpec extends FlatSpec with Matchers with DefaultTestContext {
 
     when(sqsClient.receiveMessage(any[ReceiveMessageRequest]))
       .thenAnswer(new Answer[CompletableFuture[ReceiveMessageResponse]] {
-        def answer(invocation: InvocationOnMock) = {
-          akka.pattern.after(timeout, system.scheduler) {
-            Future.successful(
-              ReceiveMessageResponse
-                .builder()
-                .messages(defaultMessages: _*)
-                .build()
-            )
-          }(system.dispatcher).toJava.toCompletableFuture
-        }
+        def answer(invocation: InvocationOnMock) =
+          akka.pattern
+            .after(timeout, system.scheduler) {
+              Future.successful(
+                ReceiveMessageResponse
+                  .builder()
+                  .messages(defaultMessages: _*)
+                  .build()
+              )
+            }(system.dispatcher)
+            .toJava
+            .toCompletableFuture
       })
 
     val probe = SqsSource(
@@ -101,14 +103,17 @@ class SqsSourceSpec extends FlatSpec with Matchers with DefaultTestContext {
           requestsCounter += 1
 
           if (requestsCounter > firstWithDataCount && requestsCounter <= firstWithDataCount + thenEmptyCount) {
-            akka.pattern.after(timeout, system.scheduler) {
-              Future.successful(
-                ReceiveMessageResponse
-                  .builder()
-                  .messages(List.empty[Message]: _*)
-                  .build()
-              )
-            }(system.dispatcher).toJava.toCompletableFuture
+            akka.pattern
+              .after(timeout, system.scheduler) {
+                Future.successful(
+                  ReceiveMessageResponse
+                    .builder()
+                    .messages(List.empty[Message]: _*)
+                    .build()
+                )
+              }(system.dispatcher)
+              .toJava
+              .toCompletableFuture
           } else {
             CompletableFuture.completedFuture(
               ReceiveMessageResponse
