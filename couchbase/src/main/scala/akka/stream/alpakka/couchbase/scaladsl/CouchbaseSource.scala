@@ -5,7 +5,6 @@
 package akka.stream.alpakka.couchbase.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.couchbase.impl.Setup
 import akka.stream.alpakka.couchbase.{CouchbaseSessionRegistry, CouchbaseSessionSettings}
 import akka.stream.scaladsl.Source
 import com.couchbase.client.java.document.json.JsonObject
@@ -22,8 +21,8 @@ object CouchbaseSource {
   def fromStatement(sessionSettings: CouchbaseSessionSettings,
                     statement: Statement,
                     bucketName: String): Source[JsonObject, NotUsed] =
-    Setup
-      .source { materializer => _ =>
+    Source
+      .setup { (materializer, _) =>
         val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
         Source
           .fromFuture(session.map(_.streamedQuery(statement))(materializer.system.dispatcher))
@@ -37,8 +36,8 @@ object CouchbaseSource {
   def fromN1qlQuery(sessionSettings: CouchbaseSessionSettings,
                     query: N1qlQuery,
                     bucketName: String): Source[JsonObject, NotUsed] =
-    Setup
-      .source { materializer => _ =>
+    Source
+      .setup { (materializer, _) =>
         val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
         Source
           .fromFuture(session.map(_.streamedQuery(query))(materializer.system.dispatcher))
