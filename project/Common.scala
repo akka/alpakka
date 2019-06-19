@@ -46,10 +46,11 @@ object Common extends AutoPlugin {
         ),
       scalacOptions ++= (scalaVersion.value match {
           case Dependencies.Scala213 => Seq.empty[String]
-          case _ => Seq(
-            "-Xfuture",
-            "-Yno-adapted-args"
-          )
+          case _ =>
+            Seq(
+              "-Xfuture",
+              "-Yno-adapted-args"
+            )
         }),
       Compile / doc / scalacOptions := scalacOptions.value ++ Seq(
           "-doc-title",
