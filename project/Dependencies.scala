@@ -55,6 +55,8 @@ object Dependencies {
   val AwsLambda = Seq(
     libraryDependencies ++= Seq(
         "software.amazon.awssdk" % "lambda" % AwsSdk2Version, // ApacheV2
+        // overriding AWS SDK version to avoid https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-12086
+        "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.9",
         "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
       )
   )
@@ -105,8 +107,8 @@ object Dependencies {
         "org.elasticsearch.client" % "elasticsearch-rest-client" % "6.3.1", // ApacheV2
         "org.codelibs" % "elasticsearch-cluster-runner" % "6.3.1.0", // ApacheV2
         "io.netty" % "netty-all" % "4.1.29.Final", // ApacheV2
-        "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.9.8",
-        "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.9.8",
+        "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.9.9",
+        "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.9.9",
         "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.11.2", // ApacheV2
         "org.slf4j" % "log4j-over-slf4j" % "1.7.25",
         "org.slf4j" % "jcl-over-slf4j" % "1.7.25",
@@ -125,7 +127,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "org.elasticsearch.client" % "elasticsearch-rest-client" % "6.3.1", // ApacheV2
         "io.spray" %% "spray-json" % "1.3.5", // ApacheV2
-        "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.8", // ApacheV2
+        "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.9", // ApacheV2
         "org.codelibs" % "elasticsearch-cluster-runner" % "6.3.1.0" % Test, // ApacheV2
         "org.slf4j" % "jcl-over-slf4j" % "1.7.25" % Test
       )
@@ -341,13 +343,17 @@ object Dependencies {
 
   val Sns = Seq(
     libraryDependencies ++= Seq(
-        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll ExclusionRule(
-          organization = "com.typesafe.akka"
-        ), // ApacheV2
-        "software.amazon.awssdk" % "sns" % AwsSdk2Version excludeAll (ExclusionRule(
-          organization = "software.amazon.awssdk",
-          name = "netty-nio-client"
-        ), ExclusionRule(organization = "io.netty")), // ApacheV2
+        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll // ApacheV2
+        (
+          ExclusionRule(organization = "com.typesafe.akka")
+        ),
+        "software.amazon.awssdk" % "sns" % AwsSdk2Version excludeAll // ApacheV2
+        (
+          ExclusionRule("software.amazon.awssdk", "apache-client"),
+          ExclusionRule("software.amazon.awssdk", "netty-nio-client")
+        ),
+        // overriding AWS SDK version to avoid https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-12086
+        "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.9",
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
         "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
       )
@@ -370,13 +376,17 @@ object Dependencies {
 
   val Sqs = Seq(
     libraryDependencies ++= Seq(
-        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll ExclusionRule(
-          organization = "com.typesafe.akka"
-        ), // ApacheV2
-        "software.amazon.awssdk" % "sqs" % AwsSdk2Version excludeAll (ExclusionRule(
-          organization = "software.amazon.awssdk",
-          name = "netty-nio-client"
-        ), ExclusionRule(organization = "io.netty")), // ApacheV2
+        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll // ApacheV2
+        (
+          ExclusionRule(organization = "com.typesafe.akka")
+        ),
+        "software.amazon.awssdk" % "sqs" % AwsSdk2Version excludeAll // ApacheV2
+        (
+          ExclusionRule("software.amazon.awssdk", "apache-client"),
+          ExclusionRule("software.amazon.awssdk", "netty-nio-client")
+        ),
+        // overriding AWS SDK version to avoid https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-12086
+        "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.9",
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
         "org.mockito" % "mockito-core" % mockitoVersion % Test, // MIT
         "org.mockito" % "mockito-inline" % mockitoVersion % Test // MIT
