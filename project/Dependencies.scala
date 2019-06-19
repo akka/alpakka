@@ -17,7 +17,7 @@ object Dependencies {
   val AwsSdk2Version = "2.5.65"
   val AwsSpiAkkaHttpVersion = "0.0.6"
   val AkkaHttpVersion = "10.1.7"
-  val mockitoVersion = "2.27.0"
+  val mockitoVersion = "2.28.2"
 
   val CouchbaseVersion = "2.7.2"
   val CouchbaseVersionForDocs = "2.7"
