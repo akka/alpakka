@@ -156,56 +156,19 @@ This flow can be used in a stream when the source must be acknowledged ONLY when
 The flow receive a `MqttMessageWithAck` with the message swapped with the new content and the ack function from source
 
 Scala
-:   ```
-    val exampleFlow: Flow[MqttMessageWithAck, MqttMessageWithAck, NotUsed] = Flow[MqttMessageWithAck].mapAsync(1) {
-        received => {
-            val body = received.message
-            Future.successful(new MqttMessageWithAck {
-                override val message: MqttMessage = MqttMessage.create("topic", ByteString.fromString("message is arrived"))
-                override def ack(): Future[Done] = received.ack
-            })
-        }
-    }
-    ```
+: @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttFlowSpec.scala) { #create-flow-ack }
 
 Java
-:   ```
-    Flow<MqttMessageWithAck, MqttMessageWithAck, NotUsed> exampleFlow = Flow.of(MqttMessageWithAck.class).map(received -> {
-             final MqttMessageWithAck mqttMessageWithAck = new MqttMessageWithAckImpl() {
-                   @Override
-                   public CompletionStage<Done> ack() {
-                       return received.ack();
-                   }
-                   @Override
-                   public MqttMessage message() {
-                       return MqttMessage.create("topic", ByteString.fromString("message arrived"));
-                   }
-                   @Override
-                   public CompletionStage<Done> messageArrivedComplete() {
-                       return ack();
-                   }
-              };
-              return mqttMessageWithAck;
-         );
-    ```
+: @@snip [snip](/mqtt/src/test/java/docs/javadsl/MqttFlowTest.java) { #create-flow-ack }
 
-Using `MqttFlow.atLeastOnceWithAck`, when the message are sent, an ack is called
+Run the flow by connecting a source of messages to be published and a sink for received messages.
+When the message are sent, an ack is called.
 
 Scala
-:   ```
-    MqttSource.atLeastOnce(sourceSettings.connectionSettings, MqttSubscriptions(sourceSettings.subscriptions), bufferSize)
-        .via(exampleFlow)
-        .runWith(MqttFlow.atLeastOnceWithAck(sinkSettings, MqttSubscriptions.empty, 0, MqttQoS.AtLeastOnce)
-        .toMat(Sink.ignore)(Keep.right))
-    ```
+: @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttFlowSpec.scala) { #run-flow-ack }
 
 Java
-:   ```
-    CompletionStage<Done> materialized = MqttSource.atLeastOnce(connectionSettings.withClientId("source-test/source"), subscriptions, bufferSize)
-                .via(exampleFlow)
-                .via(MqttFlow.atLeastOnceWithAck(connectionSettings, subscriptions, 0, MqttQoS.atLeastOnce()))
-                .runWith(Sink.ignore(), materializer);
-    ```
+: @@snip [snip](/mqtt/src/test/java/docs/javadsl/MqttFlowTest.java) { #run-flow-ack }
 
 ## Capturing MQTT client logging
 

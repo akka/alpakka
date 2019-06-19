@@ -19,7 +19,6 @@ import org.scalatest.time.{Seconds, Span}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
-import scala.util.Random
 
 class MqttFlowSpec
     extends TestKit(ActorSystem("MqttFlowSpec"))
@@ -71,13 +70,14 @@ class MqttFlowSpec
     }
     "send an ack after sent confirmation" in {
 
-      val topic = Random.alphanumeric.toString()
+      val topic = "flow-spec/topic-ack"
       val connectionSettings = MqttConnectionSettings(
         "tcp://localhost:1883",
         topic,
         new MemoryPersistence
       )
 
+      //#create-flow-ack
       val mqttFlow: Flow[MqttMessageWithAck, MqttMessageWithAck, Future[Done]] =
         MqttFlow.atLeastOnceWithAck(
           connectionSettings,
@@ -85,6 +85,7 @@ class MqttFlowSpec
           bufferSize = 8,
           MqttQoS.AtLeastOnce
         )
+      //#create-flow-ack
 
       class MqttMessageWithAckFake extends MqttMessageWithAck {
         var acked = false
@@ -102,11 +103,13 @@ class MqttFlowSpec
 
       val source = Source.single(message)
 
+      //#run-flow-ack
       val ((_, subscribed), result) = source
         .viaMat(mqttFlow)(Keep.both)
         .toMat(Sink.seq)(Keep.both)
         .run()
 
+      //#run-flow-ack
       Await.ready(subscribed, timeout)
       Await.ready(result, timeout)
 

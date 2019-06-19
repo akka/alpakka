@@ -101,22 +101,25 @@ public class MqttFlowTest {
 
     final MqttConnectionSettings connectionSettings =
         MqttConnectionSettings.create(
-            "tcp://localhost:1883", "test-java-clien-ack", new MemoryPersistence());
-
+            "tcp://localhost:1883", "test-java-client-ack", new MemoryPersistence());
+    // #create-flow-ack
     final Flow<MqttMessageWithAck, MqttMessageWithAck, CompletionStage<Done>> mqttFlow =
         MqttFlow.atLeastOnceWithAck(
             connectionSettings,
             MqttSubscriptions.create("flow-test/topic-ack", MqttQoS.atMostOnce()),
             bufferSize,
             MqttQoS.atLeastOnce());
+    // #create-flow-ack
 
-
-
-
-
-    final Pair<Pair<NotUsed, CompletionStage<Done>>, CompletionStage<List<MqttMessageWithAck>>>
+    // #run-flow-ack
+    final Pair<Pair<NotUsed, CompletionStage<Done>>,
+            CompletionStage<List<MqttMessageWithAck>>>
         materialized =
-            source.viaMat(mqttFlow, Keep.both()).toMat(Sink.seq(), Keep.both()).run(materializer);
+            source.viaMat(mqttFlow, Keep.both())
+                    .toMat(Sink.seq(), Keep.both())
+                    .run(materializer);
+
+    // #run-flow-ack
 
     for (int i = 0; (i < 10 && !((MqttMessageWithAckFake) testMessage).acked); i++) {
       Thread.sleep(1000);
