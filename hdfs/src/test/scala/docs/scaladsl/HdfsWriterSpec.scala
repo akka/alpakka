@@ -48,6 +48,36 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
   val settings = HdfsWritingSettings()
 
   "DataWriter" should {
+    "overwrite an existent file" in {
+      val books1 = books
+      val existentFile = new Path("/data/existent_file.txt")
+      val outputStream = fs.create(existentFile)
+      books1.flatMap(_.utf8String).map(_.toInt).foreach(outputStream.write)
+      outputStream.close()
+
+      val books2 = List(ByteString("all books were stolen"))
+      val overwriteF = Source
+        .fromIterator(() => books2.toIterator)
+        .map(byteStr => HdfsWriteMessage(byteStr))
+        .via(
+          HdfsFlow.data(
+            fs,
+            SyncStrategy.none,
+            RotationStrategy.none,
+            HdfsWritingSettings()
+              .withPathGenerator(FilePathGenerator {
+                case (_, _) => existentFile.toString
+              })
+              .withOverwrite(true)
+          )
+        )
+        .runWith(Sink.seq)
+      val logs = Await.result(overwriteF, Duration.Inf)
+      logs shouldEqual Seq(RotationMessage(existentFile.toString, 0))
+
+      readLogsWithFlatten(fs, logs) shouldEqual books2.flatMap(_.utf8String)
+    }
+
     "use file size rotation and produce five files" in {
       val flow = HdfsFlow.data(
         fs,
