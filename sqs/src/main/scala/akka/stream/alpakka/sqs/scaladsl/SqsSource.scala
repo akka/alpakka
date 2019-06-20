@@ -50,7 +50,7 @@ object SqsSource {
       .mapConcat(identity)
       .buffer(settings.maxBufferSize, OverflowStrategy.backpressure)
 
-  private def resolveHandler(parallelism: Int)(implicit sqsClient: SqsAsyncClient) = {
+  private def resolveHandler(parallelism: Int)(implicit sqsClient: SqsAsyncClient) =
     if (parallelism == 1) {
       MapAsyncUnordered[ReceiveMessageRequest, ReceiveMessageResponse](
         parallelism,
@@ -63,5 +63,4 @@ object SqsSource {
         (response, _) => if (response.messages().isEmpty) 1 else parallelism
       )
     }
-  }
 }
