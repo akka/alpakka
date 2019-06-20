@@ -8,7 +8,7 @@ import akka.NotUsed
 import akka.annotation.ApiMayChange
 import akka.stream.alpakka.elasticsearch._
 import akka.stream.alpakka.elasticsearch.impl
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.{Flow, FlowWithContext}
 import org.elasticsearch.client.RestClient
 import spray.json._
 
@@ -120,7 +120,7 @@ object ElasticsearchFlow {
                               settings: ElasticsearchWriteSettings = ElasticsearchWriteSettings())(
       implicit elasticsearchClient: RestClient,
       sprayJsonWriter: JsonWriter[T]
-  ): Flow[(WriteMessage[T, NotUsed], C), (WriteResult[T, C], C), NotUsed] =
+  ): FlowWithContext[WriteMessage[T, NotUsed], C, WriteResult[T, C], C, NotUsed] =
     createWithContext[T, C](indexName, typeName, settings, new SprayJsonWriter[T]()(sprayJsonWriter))
 
   /**
@@ -137,18 +137,14 @@ object ElasticsearchFlow {
                               settings: ElasticsearchWriteSettings,
                               writer: MessageWriter[T])(
       implicit elasticsearchClient: RestClient
-  ): Flow[(WriteMessage[T, NotUsed], C), (WriteResult[T, C], C), NotUsed] = {
+  ): FlowWithContext[WriteMessage[T, NotUsed], C, WriteResult[T, C], C, NotUsed] = {
     require(settings.retryLogic == RetryNever,
             "`withContext` may not be used with retrying enabled, as it disturbs element order")
-    Flow[(WriteMessage[T, NotUsed], C)]
-      .map {
-        case (wm, pt) =>
-          wm.withPassThrough(pt)
-      }
+    Flow[WriteMessage[T, C]]
       .via(createWithPassThrough(indexName, typeName, settings, writer))
-      .map { wr =>
-        (wr, wr.message.passThrough)
-      }
+      .asFlowWithContext[WriteMessage[T, NotUsed], C, C]((res, c) => res.withPassThrough(c))(
+        p => p.message.passThrough
+      )
   }
 
   private final class SprayJsonWriter[T](implicit writer: JsonWriter[T]) extends MessageWriter[T] {
