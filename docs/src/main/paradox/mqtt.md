@@ -151,7 +151,7 @@ Java
 
 It is possible to create a flow that receives `MqttMessageWithAck` instead of `MqttMessage`.
 In this case, when the message is successfully sent to the broker, an ack is sent.
-This flow can be used in a stream when the source must be acknowledged ONLY when the message is sent.
+This flow can be used when the source must be acknowledged **only** when the message is successfully sent to the destination topic. This provides *at-least-once* semantics.
 
 The flow emits `MqttMessageWithAck`s with the message swapped with the new content and keeps the ack function from the original source.
 
