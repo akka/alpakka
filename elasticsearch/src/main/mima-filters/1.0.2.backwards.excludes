@@ -1,0 +1,3 @@
+# PR #1766 use proper FlowWithContext
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchFlow.createWithContext")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchFlow.createWithContext")
