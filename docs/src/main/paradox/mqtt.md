@@ -149,7 +149,7 @@ Java
 
 ## Using flow with Acknowledge on message sent
 
-It is possible to create a flow that receive `MqttMessageWithAck` instead `MqttMessage`.
+It is possible to create a flow that receives `MqttMessageWithAck` instead of `MqttMessage`.
 In this case, when the message is successfully sent to the broker, an ack in sent.
 This flow can be used in a stream when the source must be acknowledged ONLY when the message is sent.
 
