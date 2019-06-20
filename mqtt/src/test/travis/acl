@@ -12,6 +12,8 @@ topic source-test/topic2
 topic source-test/will
 topic source-test/manualacks
 topic source-test/pendingacks
+topic flow-spec/topic-ack
+topic flow-test/topic-ack
 
 user username1
 topic source-spec/secure-topic1
