@@ -6,17 +6,19 @@ package akka.stream.alpakka.sse
 package scaladsl
 
 import akka.NotUsed
+import akka.actor.ActorSystem
 import akka.http.scaladsl.client.RequestBuilding.Get
 import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, Source}
-import akka.stream.{Materializer, SourceShape}
+import akka.stream.{ActorMaterializer, Materializer, SourceShape}
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.model.sse.ServerSentEvent.heartbeat
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.headers.`Last-Event-ID`
 import akka.http.scaladsl.unmarshalling.sse.EventStreamUnmarshalling
+
 import scala.concurrent.Future
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
@@ -85,8 +87,9 @@ object EventSource {
             retryDelay: FiniteDuration = Duration.Zero)(
       implicit mat: Materializer
   ): EventSource = {
-    import EventStreamUnmarshalling._
+    import EventStreamUnmarshalling.fromEventsStream
     import mat.executionContext
+    implicit val system: ActorSystem = actorMaterializer(mat).system
 
     val continuousEvents = {
       def getEventSource(lastEventId: Option[String]) = {
@@ -125,4 +128,10 @@ object EventSource {
       SourceShape(events.out)
     })
   }
+
+  private def actorMaterializer(mat: Materializer): ActorMaterializer = mat match {
+    case am: ActorMaterializer => am
+    case _ => throw new Error("ActorMaterializer required")
+  }
+
 }
