@@ -128,11 +128,7 @@ public class MqttSourceTest {
 
     assertEquals(
         input,
-        unackedResult
-            .second()
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS)
-            .stream()
+        unackedResult.second().toCompletableFuture().get(5, TimeUnit.SECONDS).stream()
             .map(m -> m.message().payload().utf8String())
             .collect(Collectors.toList()));
 
@@ -152,10 +148,7 @@ public class MqttSourceTest {
 
     assertEquals(
         input,
-        result
-            .toCompletableFuture()
-            .get(3, TimeUnit.SECONDS)
-            .stream()
+        result.toCompletableFuture().get(3, TimeUnit.SECONDS).stream()
             .map(m -> m.payload().utf8String())
             .collect(Collectors.toList()));
   }

@@ -118,9 +118,7 @@ public class CassandraSourceTest {
 
     assertEquals(
         IntStream.range(1, 103).boxed().collect(Collectors.toSet()),
-        rows.toCompletableFuture()
-            .get(3, TimeUnit.SECONDS)
-            .stream()
+        rows.toCompletableFuture().get(3, TimeUnit.SECONDS).stream()
             .map(r -> r.getInt("id"))
             .collect(Collectors.toSet()));
   }
@@ -149,10 +147,7 @@ public class CassandraSourceTest {
 
     List<Integer> resultToAssert = result.toCompletableFuture().get();
     Set<Integer> found =
-        session
-            .execute("select * from akka_stream_java_test.test")
-            .all()
-            .stream()
+        session.execute("select * from akka_stream_java_test.test").all().stream()
             .map(r -> r.getInt("id"))
             .collect(Collectors.toSet());
 
@@ -194,10 +189,7 @@ public class CassandraSourceTest {
     Set<Integer> resultToAssert =
         result.toCompletableFuture().get().stream().map(ti -> ti.cc).collect(Collectors.toSet());
     Set<Integer> found =
-        session
-            .execute("select * from akka_stream_java_test.test_batch")
-            .all()
-            .stream()
+        session.execute("select * from akka_stream_java_test.test_batch").all().stream()
             .map(r -> r.getInt("cc"))
             .collect(Collectors.toSet());
 
@@ -231,10 +223,7 @@ public class CassandraSourceTest {
     result.toCompletableFuture().get();
 
     Set<Integer> found =
-        session
-            .execute("select * from akka_stream_java_test.test")
-            .all()
-            .stream()
+        session.execute("select * from akka_stream_java_test.test").all().stream()
             .map(r -> r.getInt("id"))
             .collect(Collectors.toSet());
     assertEquals(found, IntStream.range(1, 10).boxed().collect(Collectors.toSet()));
