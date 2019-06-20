@@ -153,7 +153,7 @@ It is possible to create a flow that receives `MqttMessageWithAck` instead of `M
 In this case, when the message is successfully sent to the broker, an ack is sent.
 This flow can be used in a stream when the source must be acknowledged ONLY when the message is sent.
 
-The flow receive a `MqttMessageWithAck` with the message swapped with the new content and the ack function from source
+The flow emits `MqttMessageWithAck`s with the message swapped with the new content and keeps the ack function from the original source.
 
 Scala
 : @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttFlowSpec.scala) { #create-flow-ack }
