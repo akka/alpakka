@@ -8,8 +8,7 @@ import akka._
 import akka.stream._
 import akka.stream.alpakka.sqs.SqsSourceSettings
 import akka.stream.alpakka.sqs.impl.BalancingMapAsync
-import akka.stream.impl.fusing.MapAsyncUnordered
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{Flow, Source}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model._
 
@@ -52,10 +51,7 @@ object SqsSource {
 
   private def resolveHandler(parallelism: Int)(implicit sqsClient: SqsAsyncClient) =
     if (parallelism == 1) {
-      MapAsyncUnordered[ReceiveMessageRequest, ReceiveMessageResponse](
-        parallelism,
-        sqsClient.receiveMessage(_).toScala
-      )
+      Flow[ReceiveMessageRequest].mapAsync(parallelism)(sqsClient.receiveMessage(_).toScala)
     } else {
       BalancingMapAsync[ReceiveMessageRequest, ReceiveMessageResponse](
         parallelism,
