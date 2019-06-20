@@ -346,8 +346,7 @@ public class OrientDbTest {
               ODatabaseDocumentTx db = oDatabase.acquire();
               db.setDatabaseOwner(new OObjectDatabaseTx(db));
               ODatabaseRecordThreadLocal.instance().set(db);
-              messages
-                  .stream()
+              messages.stream()
                   .forEach(
                       message -> {
                         commitToKafka.accept(((KafkaOffset) message.passThrough()));
@@ -369,8 +368,7 @@ public class OrientDbTest {
             .get(10, TimeUnit.SECONDS);
 
     assertEquals(
-        messagesFromKafkas
-            .stream()
+        messagesFromKafkas.stream()
             .map(m -> m.getBook_title())
             .sorted()
             .collect(Collectors.toList()),

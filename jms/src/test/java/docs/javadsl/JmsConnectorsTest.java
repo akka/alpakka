@@ -336,8 +336,7 @@ public class JmsConnectorsTest {
 
           // #create-messages-with-headers
           List<JmsTextMessage> msgsIn =
-              createTestMessageList()
-                  .stream()
+              createTestMessageList().stream()
                   .map(
                       jmsTextMessage ->
                           jmsTextMessage
@@ -447,8 +446,7 @@ public class JmsConnectorsTest {
           // #source-with-selector
 
           List<JmsTextMessage> oddMsgsIn =
-              msgsIn
-                  .stream()
+              msgsIn.stream()
                   .filter(msg -> Integer.valueOf(msg.body()) % 2 == 1)
                   .collect(Collectors.toList());
           assertEquals(5, oddMsgsIn.size());
@@ -648,10 +646,7 @@ public class JmsConnectorsTest {
           // #browse-source
 
           List<String> resultText =
-              result
-                  .toCompletableFuture()
-                  .get()
-                  .stream()
+              result.toCompletableFuture().get().stream()
                   .map(
                       message -> {
                         try {
