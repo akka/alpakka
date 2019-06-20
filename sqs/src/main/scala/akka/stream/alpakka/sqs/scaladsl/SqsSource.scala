@@ -51,7 +51,7 @@ object SqsSource {
 
   private def resolveHandler(parallelism: Int)(implicit sqsClient: SqsAsyncClient) =
     if (parallelism == 1) {
-      Flow[ReceiveMessageRequest].mapAsync(parallelism)(sqsClient.receiveMessage(_).toScala)
+      Flow[ReceiveMessageRequest].mapAsyncUnordered(parallelism)(sqsClient.receiveMessage(_).toScala)
     } else {
       BalancingMapAsync[ReceiveMessageRequest, ReceiveMessageResponse](
         parallelism,
