@@ -1,9 +1,9 @@
-# Google Cloud Storage 
+# Google Cloud Storage
 
 Google Cloud Storage allows world-wide storage and retrieval of any amount of data at any time.
 
 Further information at the official [Google Cloud Storage documentation website](https://cloud.google.com/storage/docs/).
-This connector communicates to Cloud Storage via HTTP requests. 
+This connector communicates to Cloud Storage via HTTP requests.
 
 @@project-info{ projectId="google-cloud-storage" }
 
@@ -124,7 +124,7 @@ Java
 : @@snip [snip](/google-cloud-storage/src/test/java/docs/javadsl/GCStorageTest.java) { #delete-bucket }
 
 
-### Get bucket 
+### Get bucket
 To get a bucket you need to specify its name.
 
 Scala
@@ -151,6 +151,3 @@ Java
     ```
 
 > Some test code requires access to Google cloud storage, to run them you will need to configure a project and pub/sub in google cloud and provide your own credentials.
-                                                          
-
-
