@@ -61,14 +61,13 @@ jobs:
     - env:
       - DIR=geode
       - PRE_CMD="docker-compose up -d geode"
-      - CMD=+geode/testChanged
-    - env: CMD=+google-cloud-pub-sub/testChanged
-    - env: CMD=+google-cloud-storage/testChanged
     - env:
       - DIR=google-cloud-pub-sub
     - env:
       - DIR=google-cloud-pub-sub-grpc
       - PRE_CMD="docker-compose up -d gcloud-pubsub-emulator_prep"
+    - env:
+      - DIR=google-cloud-storage
     - env:
       - DIR=google-fcm
     - env:

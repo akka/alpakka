@@ -174,7 +174,8 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
   crossScalaVersions --= Seq(Dependencies.Scala211, Dependencies.Scala213) // https://github.com/akka/akka-grpc/pull/599
 ).enablePlugins(AkkaGrpcPlugin, JavaAgent)
 
-lazy val googleCloudStorage = alpakkaProject("google-cloud-storage", "google.cloud.storage", Dependencies.GoogleStorage)
+lazy val googleCloudStorage =
+  alpakkaProject("google-cloud-storage", "google.cloud.storage", Dependencies.GoogleStorage).disablePlugins(MimaPlugin)
 
 lazy val googleFcm = alpakkaProject(
   "google-fcm",
@@ -183,9 +184,6 @@ lazy val googleFcm = alpakkaProject(
   fork in Test := true,
   crossScalaVersions -= Dependencies.Scala213 // requires upgrade of jwt-core to 3.0.1
 )
-
-lazy val googleCloudStorage =
-  alpakkaProject("google-cloud-storage", "google.cloud.storage", Dependencies.GoogleStorage).disablePlugins(MimaPlugin)
 
 lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, fork in Test := true)
 
