@@ -7,7 +7,7 @@ package akka.stream.alpakka.reference.scaladsl
 import akka.actor.ActorSystem
 import akka.stream.Attributes
 import akka.{Done, NotUsed}
-import akka.stream.alpakka.reference.impl.{ReferenceFlow, ReferenceSource, ReferenceWithResourceFlow, Setup}
+import akka.stream.alpakka.reference.impl.{ReferenceFlow, ReferenceSource, ReferenceWithResourceFlow}
 import akka.stream.alpakka.reference._
 import akka.stream.scaladsl.{Flow, Source}
 
@@ -40,13 +40,12 @@ object Reference {
    * An implementation of a flow that needs access to materializer or attributes during materialization.
    */
   def flowWithResource(): Flow[ReferenceWriteMessage, ReferenceWriteResult, NotUsed] =
-    Setup
-      .flow { mat => implicit attr =>
-        implicit val sys = mat.system
-        Flow.fromGraph(new ReferenceWithResourceFlow(resolveResource()))
+    Flow
+      .setup { (mat, attr) =>
+        Flow.fromGraph(new ReferenceWithResourceFlow(resolveResource(mat.system, attr)))
       }
       .mapMaterializedValue(_ => NotUsed)
 
-  private def resolveResource()(implicit sys: ActorSystem, attr: Attributes) =
-    attr.get[ReferenceResourceValue].map(_.resource).getOrElse(ResourceExt().resource)
+  private def resolveResource(sys: ActorSystem, attr: Attributes) =
+    attr.get[ReferenceResourceValue].map(_.resource).getOrElse(ResourceExt()(sys).resource)
 }

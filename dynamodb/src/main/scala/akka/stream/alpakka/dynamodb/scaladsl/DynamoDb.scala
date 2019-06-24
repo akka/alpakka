@@ -6,7 +6,7 @@ package akka.stream.alpakka.dynamodb.scaladsl
 
 import akka.NotUsed
 import akka.stream.{ActorMaterializer, Attributes, Materializer}
-import akka.stream.alpakka.dynamodb.impl.{Paginator, Setup}
+import akka.stream.alpakka.dynamodb.impl.Paginator
 import akka.stream.alpakka.dynamodb.{AwsOp, AwsPagedOp, DynamoAttributes, DynamoClientExt}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 
@@ -21,17 +21,17 @@ object DynamoDb {
    * Create a Flow that emits a response for every request to DynamoDB.
    */
   def flow[Op <: AwsOp]: Flow[Op, Op#B, NotUsed] =
-    Setup
-      .flow(clientFlow[Op])
+    Flow
+      .setup(clientFlow[Op])
       .mapMaterializedValue(_ => NotUsed)
 
   /**
    * Create a Source that will emit potentially multiple responses for a given request.
    */
   def source(op: AwsPagedOp): Source[op.B, NotUsed] =
-    Setup
-      .source { mat => attr =>
-        Paginator.source(clientFlow(mat)(attr), op)
+    Source
+      .setup { (mat, attr) =>
+        Paginator.source(clientFlow(mat, attr), op)
       }
       .mapMaterializedValue(_ => NotUsed)
 
@@ -47,7 +47,7 @@ object DynamoDb {
   def single(op: AwsOp)(implicit mat: Materializer): Future[op.B] =
     source(op).runWith(Sink.head)
 
-  private def clientFlow[Op <: AwsOp](mat: ActorMaterializer)(attr: Attributes) =
+  private def clientFlow[Op <: AwsOp](mat: ActorMaterializer, attr: Attributes) =
     attr
       .get[DynamoAttributes.Client]
       .map(_.client)
