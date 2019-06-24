@@ -105,10 +105,7 @@ public class AmqpDocsTest {
 
     assertEquals(
         input,
-        result
-            .toCompletableFuture()
-            .get(3, TimeUnit.SECONDS)
-            .stream()
+        result.toCompletableFuture().get(3, TimeUnit.SECONDS).stream()
             .map(m -> m.bytes().utf8String())
             .collect(Collectors.toList()));
   }
@@ -278,10 +275,7 @@ public class AmqpDocsTest {
 
     assertEquals(
         input,
-        result
-            .toCompletableFuture()
-            .get(3, TimeUnit.SECONDS)
-            .stream()
+        result.toCompletableFuture().get(3, TimeUnit.SECONDS).stream()
             .map(m -> m.bytes().utf8String())
             .collect(Collectors.toList()));
   }
@@ -335,10 +329,7 @@ public class AmqpDocsTest {
 
     assertEquals(
         input,
-        result2
-            .toCompletableFuture()
-            .get(10, TimeUnit.SECONDS)
-            .stream()
+        result2.toCompletableFuture().get(10, TimeUnit.SECONDS).stream()
             .map(m -> m.message().bytes().utf8String())
             .collect(Collectors.toList()));
 
