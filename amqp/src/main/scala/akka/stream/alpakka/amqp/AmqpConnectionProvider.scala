@@ -203,6 +203,9 @@ object AmqpDetailsConnectionProvider {
   def apply(host: String, port: Int): AmqpDetailsConnectionProvider =
     new AmqpDetailsConnectionProvider(immutable.Seq(host -> port))
 
+  def apply(hostAndPorts: immutable.Seq[(String, Int)]): AmqpDetailsConnectionProvider =
+    new AmqpDetailsConnectionProvider(hostAndPorts)
+
   /**
    * Java API
    */
