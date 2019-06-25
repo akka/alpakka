@@ -204,7 +204,7 @@ object AmqpDetailsConnectionProvider {
     new AmqpDetailsConnectionProvider(immutable.Seq(host -> port))
 
   def apply(hostAndPorts: immutable.Seq[(String, Int)]): AmqpDetailsConnectionProvider =
-    new AmqpDetailsConnectionProvider(hostAndPorts)
+    new AmqpDetailsConnectionProvider(hostAndPorts.asScala.map(_.toScala).toIndexedSeq)
 
   /**
    * Java API
