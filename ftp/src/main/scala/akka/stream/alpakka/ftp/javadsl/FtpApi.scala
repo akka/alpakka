@@ -294,7 +294,7 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
     import scala.compat.java8.FutureConverters._
     ScalaSink
       .fromGraph(createMoveSink(destinationPath.asScala, connectionSettings))
-      .mapMaterializedValue(_.toJava)
+      .mapMaterializedValue[CompletionStage[IOResult]](_.toJava)
       .asJava
   }
 

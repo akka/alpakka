@@ -143,7 +143,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
 
       files should have size 1
       inside(files.head) {
-        case FtpFile(actualFileName, actualPath, isDirectory, size, lastModified, perms) ⇒
+        case FtpFile(actualFileName, actualPath, isDirectory, size, lastModified, perms) =>
           actualFileName shouldBe fileName
           // actualPath shouldBe s"/$basePath$fileName"
           isDirectory shouldBe false
@@ -227,7 +227,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
     "no file is already present at the target location" should {
       "create a new file from the provided stream of bytes regardless of the append mode" in assertAllStagesStopped {
         val fileName = "sample_io_" + Instant.now().getNano
-        List(true, false).foreach { mode ⇒
+        List(true, false).foreach { mode =>
           val result =
             Source.single(ByteString(getDefaultContent)).runWith(storeToPath(s"/$fileName", mode)).futureValue
 
@@ -290,7 +290,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
 
       val result = Source[Byte](fileContents.toList)
         .grouped(8192)
-        .map(s ⇒ ByteString.apply(s.toArray))
+        .map(s => ByteString.apply(s.toArray))
         .runWith(storeToPath(s"/$fileName", append = false))
         .futureValue
 
@@ -306,7 +306,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
 
     "fail and report the exception in the result status if upstream fails" in assertAllStagesStopped {
       val fileName = "sample_io_upstream_" + Instant.now().getNano
-      val brokenSource = Source(10.to(0, -1)).map(x ⇒ ByteString(10 / x))
+      val brokenSource = Source(10.to(0, -1)).map(x => ByteString(10 / x))
 
       val result = brokenSource.runWith(storeToPath(s"/$fileName", append = false)).futureValue
 
