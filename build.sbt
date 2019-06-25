@@ -15,6 +15,7 @@ lazy val modules: Seq[ProjectReference] = Seq(
   geode,
   googleCloudPubSub,
   googleCloudPubSubGrpc,
+  googleCloudStorage,
   googleFcm,
   hbase,
   hdfs,
@@ -172,6 +173,9 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
   Compile / compile / scalacOptions += "-P:silencer:pathFilters=src_managed",
   crossScalaVersions --= Seq(Dependencies.Scala211, Dependencies.Scala213) // https://github.com/akka/akka-grpc/pull/599
 ).enablePlugins(AkkaGrpcPlugin, JavaAgent)
+
+lazy val googleCloudStorage =
+  alpakkaProject("google-cloud-storage", "google.cloud.storage", Dependencies.GoogleStorage).disablePlugins(MimaPlugin)
 
 lazy val googleFcm = alpakkaProject(
   "google-fcm",
