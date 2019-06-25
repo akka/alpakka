@@ -32,7 +32,7 @@ blog by Sidharth Khattri, May 2018
 
 [Alpakka (Akka Streams) vs Apache Camel: who wins?](http://www.thedevpiece.com/alpakka-akka-streams-vs-apache-camel-who-wins/) Blog by Gabriel Francisco, May 2018 
 
-[Alpakka – a new world of Connectors for Reactive Enterprise Integration](https://www.youtube.com/watch?v=EcNZ2mJZmCk)
+[Alpakka – a new world of connectors for Reactive Enterprise Integration](https://www.youtube.com/watch?v=EcNZ2mJZmCk)
 presentation by Jan Pustelnik, Actyx, ReactSphere Kraków, April 2018
 
 [Revitalizing Enterprise Integration with Reactive Streams](https://info.lightbend.com/webinar-revitalizing-enterprise-integration-with-reactive-streams-recording.html)
@@ -49,7 +49,7 @@ Presentation by Colin Breck, Tesla, February 2018
 [Build Real-Time Streaming ETL Pipelines with Akka Streams, Alpakka and Apache Kafka](https://www.lightbend.com/blog/build-real-time-streaming-etl-pipelines-with-akka-streams-alpakka-and-apache-kafka)
 Webinar by Konrad Malawski, Lightbend, October 2017
 
-[Alpakka File CSV and ElasticSearch Connectors](https://abhsrivastava.github.io/2017/10/02/Alpkka-File-CSV-Elastic/)
+[Alpakka File CSV and ElasticSearch connectors](https://abhsrivastava.github.io/2017/10/02/Alpkka-File-CSV-Elastic/)
 blog by Abhishek Srivastava, October 2017
 
 [Stream Avro Records into Kafka using Avro4s and Akka Streams Kafka](https://abhsrivastava.github.io/2017/10/02/Stream-Avro-Records-into-Kafka/)

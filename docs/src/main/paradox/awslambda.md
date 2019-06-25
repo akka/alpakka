@@ -1,6 +1,6 @@
 # AWS Lambda
 
-The AWS Lambda Connector provides Akka Flow for AWS Lambda integration.
+The AWS Lambda connector provides Akka Flow for AWS Lambda integration.
 
 For more information about AWS Lambda please visit the [AWS lambda documentation](https://aws.amazon.com/documentation/lambda/).
 
