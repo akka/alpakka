@@ -211,6 +211,9 @@ object AmqpDetailsConnectionProvider {
    */
   def create(host: String, port: Int): AmqpDetailsConnectionProvider =
     AmqpDetailsConnectionProvider(host, port)
+
+  def create(hostAndPorts: java.util.List[akka.japi.Pair[String, Int]]): AmqpDetailsConnectionProvider =
+    AmqpDetailsConnectionProvider(hostAndPorts)
 }
 
 final class AmqpCredentials private (val username: String, val password: String) {
