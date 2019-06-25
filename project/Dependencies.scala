@@ -169,6 +169,8 @@ object Dependencies {
           .map("org.apache.geode" % _ % GeodeVersion exclude ("org.slf4j", "slf4j-log4j12")) ++
         Seq(
           "com.chuusai" %% "shapeless" % "2.3.3",
+          // overriding version from geode to avoid some security vulnerabilities
+          "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.9",
           "org.slf4j" % "log4j-over-slf4j" % slf4jVersion % Test // MIT like: http://www.slf4j.org/license.html
         )
     )
@@ -265,7 +267,9 @@ object Dependencies {
   val JsonStreaming = Seq(
     libraryDependencies ++= Seq(
         "com.github.jsurfer" % "jsurfer" % "1.4.3", // MIT,
-        "com.github.jsurfer" % "jsurfer-jackson" % "1.4.3" // MIT
+        "com.github.jsurfer" % "jsurfer-jackson" % "1.4.3", // MIT
+        // overriding version from jsurfer-jackson to avoid some security vulnerabilities
+        "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.9"
       )
   )
 
