@@ -50,9 +50,7 @@ public class CharsetCodingFlowsDoc {
 
     Properties properties = System.getProperties();
     List<String> strings =
-        properties
-            .stringPropertyNames()
-            .stream()
+        properties.stringPropertyNames().stream()
             .map(p -> p + " -> " + properties.getProperty(p))
             .collect(Collectors.toList());
     // #encoding

@@ -203,11 +203,17 @@ object AmqpDetailsConnectionProvider {
   def apply(host: String, port: Int): AmqpDetailsConnectionProvider =
     new AmqpDetailsConnectionProvider(immutable.Seq(host -> port))
 
+  def apply(hostAndPorts: immutable.Seq[(String, Int)]): AmqpDetailsConnectionProvider =
+    new AmqpDetailsConnectionProvider(hostAndPorts)
+
   /**
    * Java API
    */
   def create(host: String, port: Int): AmqpDetailsConnectionProvider =
     AmqpDetailsConnectionProvider(host, port)
+
+  def create(hostAndPorts: java.util.List[akka.japi.Pair[String, Int]]): AmqpDetailsConnectionProvider =
+    AmqpDetailsConnectionProvider(hostAndPorts.asScala.map(_.toScala).toIndexedSeq)
 }
 
 final class AmqpCredentials private (val username: String, val password: String) {

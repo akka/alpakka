@@ -33,6 +33,7 @@ The [Alpakka project](https://doc.akka.io/docs/alpakka/current/) is an open sour
 * [FTP](ftp.md)
 * [Google Cloud Pub/Sub](google-cloud-pub-sub.md)
 * [Google Cloud Pub/Sub gRPC](google-cloud-pub-sub-grpc.md)
+* [Google Cloud Storage](google-cloud-storage.md)
 * [Google Firebase Cloud Messaging](google-fcm.md)
 * [gRPC](external/grpc.md)
 * [Hadoop Distributed File System](hdfs.md)

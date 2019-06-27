@@ -147,6 +147,29 @@ Java
 : @@snip [snip](/mqtt/src/test/java/docs/javadsl/MqttFlowTest.java) { #run-flow }
 
 
+## Using flow with Acknowledge on message sent
+
+It is possible to create a flow that receives `MqttMessageWithAck` instead of `MqttMessage`.
+In this case, when the message is successfully sent to the broker, an ack is sent.
+This flow can be used when the source must be acknowledged **only** when the message is successfully sent to the destination topic. This provides *at-least-once* semantics.
+
+The flow emits `MqttMessageWithAck`s with the message swapped with the new content and keeps the ack function from the original source.
+
+Scala
+: @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttFlowSpec.scala) { #create-flow-ack }
+
+Java
+: @@snip [snip](/mqtt/src/test/java/docs/javadsl/MqttFlowTest.java) { #create-flow-ack }
+
+Run the flow by connecting a source of messages to be published and a sink for received messages.
+When the message are sent, an ack is called.
+
+Scala
+: @@snip [snip](/mqtt/src/test/scala/docs/scaladsl/MqttFlowSpec.scala) { #run-flow-ack }
+
+Java
+: @@snip [snip](/mqtt/src/test/java/docs/javadsl/MqttFlowTest.java) { #run-flow-ack }
+
 ## Capturing MQTT client logging
 
 The Paho library uses its own logging adapter and contains a default implementation to use `java.util.logging`. See [Paho/Log and Debug](https://wiki.eclipse.org/Paho/Log_and_Debug_in_the_Java_client).

@@ -111,18 +111,20 @@ import akka.util.ByteString
   ): Source[Option[(Source[ByteString, NotUsed], ObjectMetadata)], NotUsed] = {
     val s3Headers = sse.toIndexedSeq.flatMap(_.headersFor(GetObject))
 
-    Setup.source { implicit mat => _ =>
-      request(s3Location, rangeOption = range, versionId = versionId, s3Headers = s3Headers)
-        .map(response => response.withEntity(response.entity.withoutSizeLimit))
-        .mapAsync(parallelism = 1)(entityForSuccess)
-        .map {
-          case (entity, headers) =>
-            Option((entity.dataBytes.mapMaterializedValue(_ => NotUsed), computeMetaData(headers, entity)))
-        }
-        .recover[Option[(Source[ByteString, NotUsed], ObjectMetadata)]] {
-          case e: S3Exception if e.code == "NoSuchKey" => None
-        }
-    }
+    Source
+      .setup { (mat, attr) =>
+        implicit val materializer = mat
+        request(s3Location, rangeOption = range, versionId = versionId, s3Headers = s3Headers)
+          .map(response => response.withEntity(response.entity.withoutSizeLimit))
+          .mapAsync(parallelism = 1)(entityForSuccess)
+          .map {
+            case (entity, headers) =>
+              Option((entity.dataBytes.mapMaterializedValue(_ => NotUsed), computeMetaData(headers, entity)))
+          }
+          .recover[Option[(Source[ByteString, NotUsed], ObjectMetadata)]] {
+            case e: S3Exception if e.code == "NoSuchKey" => None
+          }
+      }
   }.mapMaterializedValue(_ => NotUsed)
 
   def listBucket(bucket: String, prefix: Option[String] = None): Source[ListBucketResultContents, NotUsed] = {
@@ -136,8 +138,7 @@ import akka.util.ByteString
     )(implicit mat: ActorMaterializer,
       attr: Attributes): Future[Option[(ListBucketState, Seq[ListBucketResultContents])]] = {
       import mat.executionContext
-      implicit val sys = mat.system
-      implicit val conf = resolveSettings()
+      implicit val conf = resolveSettings(attr, mat.system)
 
       signAndGetAs[ListBucketResult](HttpRequests.listBucket(bucket, prefix, token))
         .map { (res: ListBucketResult) =>
@@ -150,8 +151,10 @@ import akka.util.ByteString
         }
     }
 
-    Setup
-      .source { implicit mat => implicit attr =>
+    Source
+      .setup { (mat, attr) =>
+        implicit val materializer = mat
+        implicit val attributes = attr
         Source
           .unfoldAsync[ListBucketState, Seq[ListBucketResultContents]](Starting) {
             case Finished => Future.successful(None)
@@ -167,32 +170,35 @@ import akka.util.ByteString
                         key: String,
                         versionId: Option[String],
                         sse: Option[ServerSideEncryption]): Source[Option[ObjectMetadata], NotUsed] =
-    Setup
-      .source { implicit mat => _ =>
+    Source
+      .setup { (mat, attr) =>
+        implicit val materializer = mat
         import mat.executionContext
         val s3Headers = sse.toIndexedSeq.flatMap(_.headersFor(HeadObject))
-        request(S3Location(bucket, key), HttpMethods.HEAD, versionId = versionId, s3Headers = s3Headers).flatMapConcat {
-          case HttpResponse(OK, headers, entity, _) =>
-            Source.fromFuture {
-              entity.withoutSizeLimit().discardBytes().future().map { _ =>
-                Some(computeMetaData(headers, entity))
+        request(S3Location(bucket, key), HttpMethods.HEAD, versionId = versionId, s3Headers = s3Headers)
+          .flatMapConcat {
+            case HttpResponse(OK, headers, entity, _) =>
+              Source.fromFuture {
+                entity.withoutSizeLimit().discardBytes().future().map { _ =>
+                  Some(computeMetaData(headers, entity))
+                }
               }
-            }
-          case HttpResponse(NotFound, _, entity, _) =>
-            Source.fromFuture(entity.discardBytes().future().map(_ => None))
-          case HttpResponse(code, _, entity, _) =>
-            Source.fromFuture {
-              Unmarshal(entity).to[String].map { err =>
-                throw new S3Exception(err, code)
+            case HttpResponse(NotFound, _, entity, _) =>
+              Source.fromFuture(entity.discardBytes().future().map(_ => None))
+            case HttpResponse(code, _, entity, _) =>
+              Source.fromFuture {
+                Unmarshal(entity).to[String].map { err =>
+                  throw new S3Exception(err, code)
+                }
               }
-            }
-        }
+          }
       }
       .mapMaterializedValue(_ => NotUsed)
 
   def deleteObject(s3Location: S3Location, versionId: Option[String]): Source[Done, NotUsed] =
-    Setup
-      .source { implicit mat => _ =>
+    Source
+      .setup { (mat, attr) =>
+        implicit val m = mat
         import mat.executionContext
         request(s3Location, HttpMethods.DELETE, versionId = versionId).flatMapConcat {
           case HttpResponse(NoContent, _, entity, _) =>
@@ -224,11 +230,13 @@ import akka.util.ByteString
 
     val headers = s3Headers.headersFor(PutObject)
 
-    Setup
-      .source { implicit mat => implicit attr =>
+    Source
+      .setup { (mat, attr) =>
+        implicit val materializer = mat
+        implicit val attributes = attr
         import mat.executionContext
         implicit val sys = mat.system
-        implicit val conf = resolveSettings()
+        implicit val conf = resolveSettings(attr, mat.system)
 
         val req = uploadRequest(s3Location, data, contentLength, contentType, headers)
 
@@ -256,10 +264,11 @@ import akka.util.ByteString
               rangeOption: Option[ByteRange] = None,
               versionId: Option[String] = None,
               s3Headers: Seq[HttpHeader] = Seq.empty): Source[HttpResponse, NotUsed] =
-    Setup
-      .source { mat => implicit attr =>
+    Source
+      .setup { (mat, attr) =>
+        implicit val attributes = attr
         implicit val sys = mat.system
-        implicit val conf = resolveSettings()
+        implicit val conf = resolveSettings(attr, mat.system)
         signAndRequest(requestHeaders(getDownloadRequest(s3Location, method, s3Headers, versionId), rangeOption))
       }
       .mapMaterializedValue(_ => NotUsed)
@@ -305,10 +314,11 @@ import akka.util.ByteString
       method: HttpMethod,
       process: (HttpResponse, Materializer) => Future[T]
   ): Source[T, NotUsed] =
-    Setup
-      .source { mat => implicit attr =>
+    Source
+      .setup { (mat, attr) =>
+        implicit val attributes = attr
         implicit val sys: ActorSystem = mat.system
-        implicit val conf: S3Settings = resolveSettings()
+        implicit val conf: S3Settings = resolveSettings(attr, mat.system)
 
         val location = S3Location(bucket = bucket, key = "")
 
@@ -380,11 +390,13 @@ import akka.util.ByteString
   private def initiateMultipartUpload(s3Location: S3Location,
                                       contentType: ContentType,
                                       s3Headers: Seq[HttpHeader]): Source[MultipartUpload, NotUsed] =
-    Setup
-      .source { implicit mat => implicit attr =>
+    Source
+      .setup { (mat, attr) =>
+        implicit val materializer = mat
+        implicit val attributes = attr
         import mat.executionContext
         implicit val sys = mat.system
-        implicit val conf = resolveSettings()
+        implicit val conf = resolveSettings(attr, mat.system)
 
         val req = initiateMultipartUploadRequest(s3Location, contentType, s3Headers)
 
@@ -463,8 +475,7 @@ import akka.util.ByteString
     }
 
     import mat.executionContext
-    implicit val sys = mat.system
-    implicit val conf = resolveSettings()
+    implicit val conf = resolveSettings(attr, mat.system)
 
     val headers = sse.toIndexedSeq.flatMap(_.headersFor(UploadPart))
 
@@ -510,10 +521,9 @@ import akka.util.ByteString
 
     val headers = s3Headers.serverSideEncryption.toIndexedSeq.flatMap(_.headersFor(UploadPart))
 
-    Setup
-      .flow { mat => implicit attr =>
-        implicit val sys = mat.system
-        implicit val conf = resolveSettings()
+    Flow
+      .setup { (mat, attr) =>
+        implicit val conf = resolveSettings(attr, mat.system)
 
         SplitAfterSize(chunkSize, MaxChunkSize)(atLeastOneByteString)
           .via(getChunkBuffer(chunkSize)) //creates the chunks
@@ -570,11 +580,12 @@ import akka.util.ByteString
     val requestFlow = createRequests(s3Location, contentType, s3Headers, chunkSize, parallelism)
 
     // The individual upload part requests are processed here
-    Setup
-      .flow { implicit mat => implicit attr =>
+    Flow
+      .setup { (mat, attr) =>
+        implicit val materializer = mat
         import mat.executionContext
         implicit val sys = mat.system
-        implicit val conf = resolveSettings()
+        implicit val conf = resolveSettings(attr, mat.system)
 
         requestFlow
           .via(superPool[(MultipartUpload, Int)])
@@ -611,8 +622,10 @@ import akka.util.ByteString
       s3Location: S3Location,
       sse: Option[ServerSideEncryption]
   ): Sink[UploadPartResponse, Future[MultipartUploadResult]] =
-    Setup
-      .sink { implicit mat => implicit attr =>
+    Sink
+      .setup { (mat, attr) =>
+        implicit val materializer = mat
+        implicit val attributes = attr
         val sys = mat.system
         import sys.dispatcher
         Sink
@@ -666,7 +679,7 @@ import akka.util.ByteString
       request: HttpRequest,
       retries: Int = 3
   )(implicit sys: ActorSystem, attr: Attributes): Source[HttpResponse, NotUsed] = {
-    implicit val conf = resolveSettings()
+    implicit val conf = resolveSettings(attr, sys)
 
     Signer
       .signedRequest(request, signingKey)
@@ -717,10 +730,9 @@ import akka.util.ByteString
 
     val headers = s3Headers.serverSideEncryption.toIndexedSeq.flatMap(_.headersFor(CopyPart))
 
-    Setup
-      .source { mat => implicit attr =>
-        implicit val sys = mat.system
-        implicit val conf = resolveSettings()
+    Source
+      .setup { (mat, attr) =>
+        implicit val conf = resolveSettings(attr, mat.system)
 
         requestInfo
           .zipWith(partitions) {
@@ -742,38 +754,41 @@ import akka.util.ByteString
   private def processUploadCopyPartRequests(
       requests: Source[(HttpRequest, MultipartCopy), NotUsed]
   )(parallelism: Int) =
-    Setup.source { implicit mat => implicit attr =>
-      import mat.executionContext
-      implicit val sys = mat.system
-      implicit val settings = resolveSettings()
+    Source
+      .setup { (mat, attr) =>
+        implicit val materializer = mat
+        import mat.executionContext
+        implicit val sys = mat.system
+        implicit val settings = resolveSettings(attr, mat.system)
 
-      requests
-        .via(superPool[MultipartCopy])
-        .map {
-          case (Success(r), multipartCopy) =>
-            val entity = r.entity
-            val upload = multipartCopy.multipartUpload
-            val index = multipartCopy.copyPartition.partNumber
-            import StatusCodes._
-            r.status match {
-              case OK =>
-                Unmarshal(entity).to[CopyPartResult].map(cp => SuccessfulUploadPart(upload, index, cp.eTag))
-              case statusCode: StatusCode =>
-                Unmarshal(entity).to[String].map { err =>
-                  val response = Option(err).getOrElse(s"Failed to upload part into S3, status code was: $statusCode")
-                  throw new S3Exception(response, statusCode)
-                }
-            }
+        requests
+          .via(superPool[MultipartCopy])
+          .map {
+            case (Success(r), multipartCopy) =>
+              val entity = r.entity
+              val upload = multipartCopy.multipartUpload
+              val index = multipartCopy.copyPartition.partNumber
+              import StatusCodes._
+              r.status match {
+                case OK =>
+                  Unmarshal(entity).to[CopyPartResult].map(cp => SuccessfulUploadPart(upload, index, cp.eTag))
+                case statusCode: StatusCode =>
+                  Unmarshal(entity).to[String].map { err =>
+                    val response =
+                      Option(err).getOrElse(s"Failed to upload part into S3, status code was: $statusCode")
+                    throw new S3Exception(response, statusCode)
+                  }
+              }
 
-          case (Failure(ex), multipartCopy) =>
-            Future.successful(
-              FailedUploadPart(multipartCopy.multipartUpload, multipartCopy.copyPartition.partNumber, ex)
-            )
-        }
-        .mapAsync(parallelism)(identity)
-    }
+            case (Failure(ex), multipartCopy) =>
+              Future.successful(
+                FailedUploadPart(multipartCopy.multipartUpload, multipartCopy.copyPartition.partNumber, ex)
+              )
+          }
+          .mapAsync(parallelism)(identity)
+      }
 
-  private def resolveSettings()(implicit attr: Attributes, sys: ActorSystem) =
+  private def resolveSettings(attr: Attributes, sys: ActorSystem) =
     attr
       .get[S3SettingsValue]
       .map(_.settings)

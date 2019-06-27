@@ -588,8 +588,7 @@ public class ElasticsearchTest {
 
     assertEquals(
         docs.size(),
-        result
-            .stream()
+        result.stream()
             .filter(
                 d -> {
                   return d.a != null && d.b == null;

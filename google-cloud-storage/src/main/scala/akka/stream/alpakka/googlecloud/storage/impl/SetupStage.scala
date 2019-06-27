@@ -2,12 +2,11 @@
  * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.googlecloud.pubsub.grpc.impl
+package akka.stream.alpakka.googlecloud.storage.impl
 
 import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
-import akka.stream.javadsl
 import akka.stream.stage._
 
 import scala.concurrent.{Future, Promise}
@@ -149,26 +148,13 @@ private object SetupStage {
   }
 }
 
-@InternalApi private[grpc] object Setup {
+@InternalApi private[impl] object Setup {
   def sink[T, M](factory: ActorMaterializer => Attributes => Sink[T, M]): Sink[T, Future[M]] =
     Sink.fromGraph(new SetupSinkStage(factory))
-
-  def createSink[T, M](factory: ActorMaterializer => Attributes => javadsl.Sink[T, M]): javadsl.Sink[T, Future[M]] =
-    Sink.fromGraph(new SetupSinkStage(mat => attr => factory(mat)(attr).asScala)).asJava
 
   def flow[T, U, M](factory: ActorMaterializer => Attributes => Flow[T, U, M]): Flow[T, U, Future[M]] =
     Flow.fromGraph(new SetupFlowStage(factory))
 
-  def createFlow[T, U, M](
-      factory: ActorMaterializer => Attributes => javadsl.Flow[T, U, M]
-  ): javadsl.Flow[T, U, Future[M]] =
-    Flow.fromGraph(new SetupFlowStage(mat => attr => factory(mat)(attr).asScala)).asJava
-
   def source[T, M](factory: ActorMaterializer => Attributes => Source[T, M]): Source[T, Future[M]] =
     Source.fromGraph(new SetupSourceStage(factory))
-
-  def createSource[T, M](
-      factory: ActorMaterializer => Attributes => javadsl.Source[T, M]
-  ): javadsl.Source[T, Future[M]] =
-    Source.fromGraph(new SetupSourceStage(mat => attr => factory(mat)(attr).asScala)).asJava
 }

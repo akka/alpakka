@@ -111,10 +111,7 @@ public class MongoSinkTest {
 
     assertEquals(
         testRange,
-        found
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS)
-            .stream()
+        found.toCompletableFuture().get(5, TimeUnit.SECONDS).stream()
             .map(n -> n.getInteger("value"))
             .collect(Collectors.toList()));
   }
@@ -148,10 +145,7 @@ public class MongoSinkTest {
 
     assertEquals(
         testRange,
-        found
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS)
-            .stream()
+        found.toCompletableFuture().get(5, TimeUnit.SECONDS).stream()
             .map(n -> n.getInteger("value"))
             .collect(Collectors.toList()));
   }
@@ -189,10 +183,7 @@ public class MongoSinkTest {
 
     assertEquals(
         testRange,
-        found
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS)
-            .stream()
+        found.toCompletableFuture().get(5, TimeUnit.SECONDS).stream()
             .map(n -> n.getInteger("value"))
             .collect(Collectors.toList()));
   }
@@ -236,10 +227,7 @@ public class MongoSinkTest {
 
     assertEquals(
         testRange.stream().map(i -> Pair.create(i, i * -1)).collect(Collectors.toList()),
-        found
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS)
-            .stream()
+        found.toCompletableFuture().get(5, TimeUnit.SECONDS).stream()
             .map(d -> Pair.create(d.getInteger("value"), d.getInteger("updateValue")))
             .collect(Collectors.toList()));
   }
@@ -262,10 +250,7 @@ public class MongoSinkTest {
 
     assertEquals(
         testRange.stream().map(i -> Pair.create(i, 0)).collect(Collectors.toList()),
-        found
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS)
-            .stream()
+        found.toCompletableFuture().get(5, TimeUnit.SECONDS).stream()
             .map(d -> Pair.create(d.getInteger("value"), d.getInteger("updateValue")))
             .collect(Collectors.toList()));
   }
