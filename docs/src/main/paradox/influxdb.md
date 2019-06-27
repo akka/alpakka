@@ -24,7 +24,7 @@ Sources, Flows and Sinks provided by this connector need a prepared `org.influxd
 access to InfluxDB.
 
 Scala
-: @@snip [snip](/inflxudb/src/test/scala/docs/scaladsl/InfluxDbSpec.scala) { #init-client }
+: @@snip [snip](/influxdb/src/test/scala/docs/scaladsl/InfluxDbSpec.scala) { #init-client }
 
 Java
 : @@snip [snip](/influxdb/src/test/java/docs/javadsl/TestUtils.java) { #init-client }
