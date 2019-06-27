@@ -3,6 +3,8 @@
  */
 
 package akka.stream.alpakka.jms
+import javax.jms
+
 import scala.concurrent.TimeoutException
 import scala.util.control.NoStackTrace
 
@@ -34,6 +36,12 @@ case class UnsupportedMapMessageEntryType(entryName: String, entryValue: Any, me
 case class NullMapMessageEntry(entryName: String, message: JmsMapMessagePassThrough[_])
     extends Exception(
       s"null value was given for Jms MapMessage entry '$entryName'."
+    )
+    with NonRetriableJmsException
+
+case class UnsupportedMessageType(message: jms.Message)
+    extends Exception(
+      s"Can't convert a ${message.getClass.getName} to a JmsMessage"
     )
     with NonRetriableJmsException
 

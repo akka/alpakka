@@ -102,3 +102,51 @@ object JmsDeliveryMode {
    */
   def create(deliveryMode: Int) = JmsDeliveryMode(deliveryMode)
 }
+
+final case class JmsMessageId(jmsMessageId: String) extends JmsHeader {
+  override val usedDuringSend: Boolean = false
+}
+
+object JmsMessageId {
+
+  /**
+   * Java API: create [[JmsMessageId]]
+   */
+  def create(messageId: String) = JmsMessageId(messageId)
+}
+
+final case class JmsTimestamp(jmsTimestamp: Long) extends JmsHeader {
+  override val usedDuringSend: Boolean = false
+}
+
+object JmsTimestamp {
+
+  /**
+   * Java API: create [[JmsTimestamp]]
+   */
+  def create(timestamp: Long) = JmsTimestamp(timestamp)
+}
+
+final case class JmsRedelivered(jmsRedelivered: Boolean) extends JmsHeader {
+  override val usedDuringSend: Boolean = false
+}
+
+object JmsRedelivered {
+
+  /**
+   * Java API: create [[JmsRedelivered]]
+   */
+  def create(redelivered: Boolean) = JmsRedelivered(redelivered)
+}
+
+final case class JmsExpiration(jmsExpiration: Long) extends JmsHeader {
+  override val usedDuringSend: Boolean = false
+}
+
+object JmsExpiration {
+
+  /**
+   * Java API: create [[JmsExpiration]]
+   */
+  def create(expiration: Long) = JmsExpiration(expiration)
+}

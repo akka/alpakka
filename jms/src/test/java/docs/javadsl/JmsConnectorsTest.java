@@ -10,6 +10,7 @@ import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+import akka.stream.alpakka.jms.Destination;
 import akka.stream.alpakka.jms.*;
 import akka.stream.alpakka.jms.javadsl.JmsConsumer;
 import akka.stream.alpakka.jms.javadsl.JmsConsumerControl;
@@ -20,8 +21,8 @@ import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
-import jmstestkit.JmsBroker;
 import com.typesafe.config.Config;
+import jmstestkit.JmsBroker;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.activemq.ActiveMQSession;
 import org.apache.activemq.command.ActiveMQQueue;
@@ -29,12 +30,12 @@ import org.apache.activemq.command.ActiveMQTextMessage;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import scala.collection.JavaConverters;
 import scala.util.Failure;
 import scala.util.Success;
 import scala.util.Try;
 
 import javax.jms.*;
-import javax.jms.Message;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -865,6 +866,73 @@ public class JmsConnectorsTest {
 
           switchAndItems.first().shutdown();
           assertTrue(switchAndItems.second().toCompletableFuture().get().isEmpty());
+        });
+  }
+
+  @Test
+  public void requestReplyWithTempQueues() throws Exception {
+    withServer(
+        server -> {
+          ConnectionFactory connectionFactory = server.createConnectionFactory();
+
+          Connection connection = connectionFactory.createConnection();
+          connection.start();
+          Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+          TemporaryQueue tempQueue = session.createTemporaryQueue();
+          Destination tempQueueDest =
+              akka.stream.alpakka.jms.Destination.createDestination(tempQueue);
+          String message = "ThisIsATest";
+          Function<String, String> reverse = (in) -> new StringBuilder(in).reverse().toString();
+          String correlationId = UUID.randomUUID().toString();
+
+          Sink<JmsTextMessage, CompletionStage<Done>> toRespondSink =
+              JmsProducer.sink(
+                  JmsProducerSettings.create(system, connectionFactory).withQueue("test"));
+
+          CompletionStage<Done> toRespondStreamCompletion =
+              Source.single(
+                      JmsTextMessage.create(message)
+                          .withHeader(JmsCorrelationId.create(correlationId))
+                          .withHeader(new JmsReplyTo(tempQueueDest)))
+                  .runWith(toRespondSink, materializer);
+
+          // #request-reply
+          JmsConsumerControl respondStreamControl =
+              JmsConsumer.create(
+                      JmsConsumerSettings.create(system, connectionFactory).withQueue("test"))
+                  .map(JmsMessage::create)
+                  .collectType(JmsTextMessage.class)
+                  .map(
+                      textMessage -> {
+                        JmsTextMessage m = JmsTextMessage.create(reverse.apply(textMessage.body()));
+                        for (JmsHeader h : JavaConverters.asJavaCollection(textMessage.headers()))
+                          if (h.getClass().equals(JmsReplyTo.class))
+                            m = m.to(((JmsReplyTo) h).jmsDestination());
+                          else if (h.getClass().equals(JmsCorrelationId.class)) m = m.withHeader(h);
+                        return m;
+                      })
+                  .via(
+                      JmsProducer.flow(
+                          JmsProducerSettings.create(system, connectionFactory)
+                              .withQueue("ignored")))
+                  .to(Sink.ignore())
+                  .run(materializer);
+          // #request-reply
+
+          // getting ConnectionRetryException when trying to listen using streams, assuming it's
+          // because a different session can't listen on the original session's TemporaryQueue
+          MessageConsumer consumer = session.createConsumer(tempQueue);
+          Message msg = consumer.receive(5000);
+
+          assertEquals(Done.done(), toRespondStreamCompletion.toCompletableFuture().get());
+
+          assertTrue(msg instanceof TextMessage);
+          assertEquals(correlationId, msg.getJMSCorrelationID());
+          assertEquals(reverse.apply(message), ((TextMessage) msg).getText());
+
+          respondStreamControl.shutdown();
+
+          connection.close();
         });
   }
 
