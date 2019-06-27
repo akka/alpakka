@@ -6,7 +6,7 @@ package docs.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import org.influxdb.InfluxDB
+import org.influxdb.{InfluxDB, InfluxDBFactory}
 import org.influxdb.dto.{Point, Query, QueryResult}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, MustMatchers, WordSpec}
 import org.scalatest.concurrent.ScalaFutures
@@ -17,9 +17,11 @@ import akka.stream.alpakka.influxdb.scaladsl.{InfluxDbSink, InfluxDbSource}
 import akka.testkit.TestKit
 import docs.javadsl.TestUtils._
 import akka.stream.scaladsl.Sink
-import scala.concurrent.duration._
 
+import scala.concurrent.duration._
 import scala.collection.JavaConverters._
+
+import docs.javadsl.TestConstants.{INFLUXDB_URL, PASSWORD, USERNAME}
 
 class InfluxDbSpec extends WordSpec with MustMatchers with BeforeAndAfterEach with BeforeAndAfterAll with ScalaFutures {
 
@@ -30,8 +32,12 @@ class InfluxDbSpec extends WordSpec with MustMatchers with BeforeAndAfterEach wi
 
   implicit var influxDB: InfluxDB = _
 
-  override protected def beforeAll(): Unit =
-    influxDB = setupConnection(DatabaseName)
+  //#define-class
+  override protected def beforeAll(): Unit = {
+    influxDB = InfluxDBFactory.connect(INFLUXDB_URL, USERNAME, PASSWORD);
+    influxDB.setDatabase(DatabaseName);
+    influxDB.query(new Query("CREATE DATABASE " + DatabaseName, DatabaseName));
+  }
 
   override protected def afterAll(): Unit =
     TestKit.shutdownActorSystem(system)
@@ -55,6 +61,7 @@ class InfluxDbSpec extends WordSpec with MustMatchers with BeforeAndAfterEach wi
     "consume and publish measurements using typed" in assertAllStagesStopped {
       val query = new Query("SELECT * FROM cpu", DatabaseName);
 
+      //#run-typed
       val f1 = InfluxDbSource
         .typed(classOf[InfluxDbSpecCpu], InfluxDbReadSettings(), influxDB, query)
         .map { cpu: InfluxDbSpecCpu =>
@@ -76,7 +83,7 @@ class InfluxDbSpec extends WordSpec with MustMatchers with BeforeAndAfterEach wi
 
     "consume and publish measurements" in assertAllStagesStopped {
       val query = new Query("SELECT * FROM cpu", DatabaseName);
-
+      //#run-query-result
       val f1 = InfluxDbSource(influxDB, query)
         .map(resultToPoints)
         .runWith(InfluxDbSink.create())

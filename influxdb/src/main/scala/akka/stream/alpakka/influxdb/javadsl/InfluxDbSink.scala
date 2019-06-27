@@ -6,6 +6,7 @@ package akka.stream.alpakka.influxdb.javadsl
 
 import java.util.concurrent.CompletionStage
 
+import akka.annotation.ApiMayChange
 import akka.{Done, NotUsed}
 import akka.stream.alpakka.influxdb.{InfluxDbWriteMessage, InfluxDbWriteResult}
 import akka.stream.javadsl.{Keep, Sink}
@@ -15,6 +16,7 @@ import org.influxdb.dto.Point
 /**
  * Java API.
  */
+@ApiMayChange
 object InfluxDbSink {
 
   def create(

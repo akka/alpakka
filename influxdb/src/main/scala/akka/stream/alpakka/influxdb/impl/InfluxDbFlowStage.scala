@@ -89,12 +89,10 @@ private[influxdb] sealed abstract class InfluxDbLogic[T, C](
 
     @tailrec
     def convert(messages: Seq[InfluxDbWriteMessage[T, C]]): BatchPoints =
-      messages match {
-        case head :: tail => {
-          builder.point(head.point.asInstanceOf[Point])
-          convert(tail)
-        }
-        case Nil => builder.build()
+      if (messages.size == 0) builder.build()
+      else {
+        builder.point(messages.head.point.asInstanceOf[Point])
+        convert(messages.tail)
       }
 
     convert(seq)

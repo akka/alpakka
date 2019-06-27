@@ -4,8 +4,9 @@
 
 package akka.stream.alpakka.influxdb.scaladsl
 
+import akka.annotation.ApiMayChange
 import akka.{Done, NotUsed}
-import akka.stream.alpakka.influxdb.{InfluxDbWriteMessage}
+import akka.stream.alpakka.influxdb.InfluxDbWriteMessage
 import akka.stream.scaladsl.{Keep, Sink}
 import org.influxdb.InfluxDB
 import org.influxdb.dto.Point
@@ -13,6 +14,7 @@ import org.influxdb.dto.Point
 import scala.concurrent.Future
 import scala.collection.immutable
 
+@ApiMayChange
 object InfluxDbSink {
 
   def create()(implicit influxDB: InfluxDB): Sink[immutable.Seq[InfluxDbWriteMessage[Point, NotUsed]], Future[Done]] =

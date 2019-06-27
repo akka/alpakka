@@ -5,13 +5,16 @@
 package akka.stream.alpakka.influxdb.javadsl
 
 import akka.NotUsed
+import akka.annotation.ApiMayChange
 import akka.stream.alpakka.influxdb.{InfluxDbWriteMessage, InfluxDbWriteResult}
 import org.influxdb.InfluxDB
 import akka.stream.javadsl.Flow
 import akka.stream.alpakka.influxdb.scaladsl
 import org.influxdb.dto.Point
+
 import scala.collection.JavaConverters._
 
+@ApiMayChange
 object InfluxDbFlow {
 
   def create(

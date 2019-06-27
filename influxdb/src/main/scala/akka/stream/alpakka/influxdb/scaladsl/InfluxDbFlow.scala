@@ -5,7 +5,8 @@
 package akka.stream.alpakka.influxdb.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.influxdb.{impl, InfluxDbWriteMessage, InfluxDbWriteResult}
+import akka.annotation.ApiMayChange
+import akka.stream.alpakka.influxdb.{InfluxDbWriteMessage, InfluxDbWriteResult, impl}
 import akka.stream.scaladsl.Flow
 import org.influxdb.InfluxDB
 import org.influxdb.dto.Point
@@ -15,6 +16,7 @@ import scala.collection.immutable
 /**
  * Scala API to create InfluxDB flows.
  */
+@ApiMayChange
 object InfluxDbFlow {
 
   def create()(

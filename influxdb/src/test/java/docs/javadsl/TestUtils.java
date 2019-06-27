@@ -22,6 +22,7 @@ import static docs.javadsl.TestConstants.USERNAME;
 
 public class TestUtils {
 
+  // #define-class
   public static InfluxDB setupConnection(final String databaseName) {
     final InfluxDB influxDB = InfluxDBFactory.connect(INFLUXDB_URL, USERNAME, PASSWORD);
     influxDB.setDatabase(databaseName);
