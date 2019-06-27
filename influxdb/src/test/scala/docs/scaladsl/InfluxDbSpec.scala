@@ -34,9 +34,11 @@ class InfluxDbSpec extends WordSpec with MustMatchers with BeforeAndAfterEach wi
 
   //#define-class
   override protected def beforeAll(): Unit = {
+    //#init-client
     influxDB = InfluxDBFactory.connect(INFLUXDB_URL, USERNAME, PASSWORD);
     influxDB.setDatabase(DatabaseName);
     influxDB.query(new Query("CREATE DATABASE " + DatabaseName, DatabaseName));
+    //#init-client
   }
 
   override protected def afterAll(): Unit =
