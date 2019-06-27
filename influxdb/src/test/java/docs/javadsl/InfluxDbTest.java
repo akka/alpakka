@@ -135,6 +135,7 @@ public class InfluxDbTest {
                 })
             .groupedWithin(10, Duration.of(50l, ChronoUnit.MILLIS))
             .runWith(InfluxDbSink.typed(InfluxDbCpu.class, influxDB), materializer);
+    //#run-typed
 
     Assert.assertNotNull(completionStage.toCompletableFuture().get());
 
@@ -147,15 +148,16 @@ public class InfluxDbTest {
 
   @Test
   public void testConsumeAndPublishMeasurements() throws Exception {
+    //#run-query-result
     Query query = new Query("SELECT * FROM cpu", DATABASE_NAME);
 
-    // #run-query-result
     CompletionStage<Done> completionStage =
         InfluxDbSource.create(influxDB, query)
             .map(queryResult -> points(queryResult))
             .mapConcat(i -> i)
             .groupedWithin(10, Duration.of(50l, ChronoUnit.MILLIS))
             .runWith(InfluxDbSink.create(influxDB), materializer);
+    //#run-query-result
 
     Assert.assertNotNull(completionStage.toCompletableFuture().get());
 
@@ -172,7 +174,6 @@ public class InfluxDbTest {
 
   @Test
   public void testPointFlow() throws Exception {
-    // #run-flow
     Point point =
         Point.measurement("disk")
             .time(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
@@ -182,11 +183,13 @@ public class InfluxDbTest {
 
     InfluxDbWriteMessage<Point, NotUsed> influxDbWriteMessage = InfluxDbWriteMessage.create(point);
 
+    //#run-flow
     CompletableFuture<List<List<InfluxDbWriteResult<Point, NotUsed>>>> completableFuture =
         Source.single(Collections.singletonList(influxDbWriteMessage))
             .via(InfluxDbFlow.create(influxDB))
             .runWith(Sink.seq(), materializer)
             .toCompletableFuture();
+    //#run-flow
 
     InfluxDbWriteResult<Point, NotUsed> influxDbWriteResult = completableFuture.get().get(0).get(0);
     Assert.assertTrue(influxDbWriteResult.error().isEmpty());

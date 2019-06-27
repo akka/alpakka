@@ -10,6 +10,7 @@ import org.influxdb.annotation.Measurement;
 
 import docs.javadsl.Cpu;
 
+//#define-class
 @Measurement(name = "cpu", database = "InfluxDbSpec")
 public class InfluxDbSpecCpu extends Cpu {
     public InfluxDbSpecCpu() {
@@ -23,3 +24,4 @@ public class InfluxDbSpecCpu extends Cpu {
         return new InfluxDbSpecCpu(time, getHostname(), getRegion(), getIdle(), getHappydevop(), getUptimeSecs());
     }
 }
+//#define-class

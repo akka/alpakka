@@ -40,10 +40,10 @@ or the
 
 
 Scala
-: @@snip [snip](/influxdb/src/test/scala/docs/scaladsl/InfluxDbSpec.scala) { #define-class }
+: @@snip [snip](/influxdb/src/test/scala/docs/scaladsl/InfluxDbSpecCpu.java) { #define-class }
 
 Java
-: @@snip [snip](/influxdb/src/test/java/docs/javadsl/InfluxDbTest.java) { #define-class }
+: @@snip [snip](/influxdb/src/test/java/docs/javadsl/InfluxDbCpu.java) { #define-class }
 
 ### With typed source
 
@@ -87,7 +87,7 @@ Java
 When streaming documents from Kafka, you might want to commit to Kafka **AFTER** the document has been written to InfluxDB.
 
 Scala
-: @@snip [snip](/influxdb/src/test/scala/docs/scaladsl/InfluxDbSpec.scala) { #kafka-example }
+: @@snip [snip](/influxdb/src/test/scala/docs/scaladsl/FlowSpec.scala) { #kafka-example }
 
 Java
 : @@snip [snip](/influxdb/src/test/java/docs/javadsl/InfluxDbTest.java) { #kafka-example }

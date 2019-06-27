@@ -41,7 +41,6 @@ class FlowSpec extends WordSpec with MustMatchers with BeforeAndAfterEach with B
   }
 
   "mixed model" in assertAllStagesStopped {
-    //#run-flow
     val point = Point
       .measurement("disk")
       .time(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
@@ -52,6 +51,7 @@ class FlowSpec extends WordSpec with MustMatchers with BeforeAndAfterEach with B
     val validMessage = InfluxDbWriteMessage(point)
       .withDatabaseName(DatabaseName)
 
+    //#run-flow
     val result = Source(
       List(
         List(validMessage)
@@ -59,6 +59,7 @@ class FlowSpec extends WordSpec with MustMatchers with BeforeAndAfterEach with B
     ).via(InfluxDbFlow.create())
       .runWith(Sink.seq)
       .futureValue
+    //#run-flow
 
     result(0)(0).error mustBe None
   }

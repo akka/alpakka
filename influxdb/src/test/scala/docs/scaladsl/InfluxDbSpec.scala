@@ -73,6 +73,7 @@ class InfluxDbSpec extends WordSpec with MustMatchers with BeforeAndAfterEach wi
           }
         }
         .runWith(InfluxDbSink.typed(classOf[InfluxDbSpecCpu]))
+      //#run-typed
 
       f1.futureValue mustBe Done
 
@@ -84,11 +85,13 @@ class InfluxDbSpec extends WordSpec with MustMatchers with BeforeAndAfterEach wi
     }
 
     "consume and publish measurements" in assertAllStagesStopped {
-      val query = new Query("SELECT * FROM cpu", DatabaseName);
       //#run-query-result
+      val query = new Query("SELECT * FROM cpu", DatabaseName);
+
       val f1 = InfluxDbSource(influxDB, query)
         .map(resultToPoints)
         .runWith(InfluxDbSink.create())
+      //#run-query-result
 
       f1.futureValue mustBe Done
 

@@ -8,6 +8,7 @@ import java.time.Instant;
 
 import org.influxdb.annotation.Measurement;
 
+//#define-class
 @Measurement(name = "cpu", database = "InfluxDbTest")
 public class InfluxDbCpu extends Cpu {
 
@@ -28,3 +29,4 @@ public class InfluxDbCpu extends Cpu {
         time, getHostname(), getRegion(), getIdle(), getHappydevop(), getUptimeSecs());
   }
 }
+//#define-class
