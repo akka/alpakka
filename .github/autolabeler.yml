@@ -20,7 +20,7 @@ dependency-change: "/project/Dependencies.scala"
 'p:geode': ["/geode"]
 'p:google-cloud-pub-sub': ["/google-cloud-pub-sub"]
 'p:google-cloud-pub-sub-grpc': ["/google-cloud-pub-sub-grpc"]
-'p:google-cloud-storage': ["/google-cloud-pub-storage"]
+'p:google-cloud-storage': ["/google-cloud-storage"]
 'p:google-fcm': ["/google-fcm"]
 'p:hbase': ["/hdfs"]
 'p:hdfs': ["/hdfs"]
