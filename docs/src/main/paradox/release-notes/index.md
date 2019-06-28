@@ -1,5 +1,7 @@
 # Release Notes
 
+To understand the forces on version numbers, read about @ref:[Alpakka's versioning scheme](../other-docs/versioning.md). 
+
 @@toc { depth=2 }
 
 @@@ index
