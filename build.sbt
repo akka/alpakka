@@ -19,6 +19,7 @@ lazy val modules: Seq[ProjectReference] = Seq(
   googleFcm,
   hbase,
   hdfs,
+  influxdb,
   ironmq,
   jms,
   jsonStreaming,
@@ -193,6 +194,10 @@ lazy val hdfs = alpakkaProject("hdfs",
                                parallelExecution in Test := false,
                                crossScalaVersions -= Dependencies.Scala213 // Requires upgrade of cats-core
 )
+
+lazy val influxdb =
+  alpakkaProject("influxdb", "influxdb", Dependencies.InfluxDB, crossScalaVersions -= Dependencies.Scala211)
+    .disablePlugins(MimaPlugin)
 
 lazy val ironmq = alpakkaProject(
   "ironmq",
