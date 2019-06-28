@@ -46,7 +46,7 @@ The "Project information" section for every connector states which versions of S
 
 ### Third-party dependencies
 
-Alpakka depends heavily on third-party (non-Akka) libraries to integrate with other technologies via their client APIs. To keep up with the development within the technologies Alpakka integrates with, Alpakka connectors need to upgrade the client libraries. 
+Alpakka depends heavily on third-party (non-Akka) libraries to integrate with other technologies via their client APIs. To keep up with the development within the technologies Alpakka integrates with, Alpakka connectors need to upgrade the client libraries regularly. 
 
 Code using Alpakka will in many cases even make direct use of the client library and thus depend directly on the version Alpakka pulls into the project. Not all libraries apply the same rules for binary- and source-compatibility and it is very hard to track all of those rules. 
 
