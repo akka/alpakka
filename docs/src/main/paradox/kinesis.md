@@ -153,7 +153,7 @@ Scala
 Java
 : @@snip [snip](/kinesis/src/test/java/docs/javadsl/KinesisFirehoseSnippets.java) { #init-client }
 
-### Kinesis Put via Flow or as Sink
+### Kinesis Firehose Put via Flow or as Sink
 
 The
 @scala[@scaladoc[KinesisFirehoseFlow](akka.stream.alpakka.kinesisfirehose.scaladsl.KinesisFirehoseFlow$) (or @scaladoc[KinesisFirehoseSink](akka.stream.alpakka.kinesisfirehose.scaladsl.KinesisFirehoseSink$))]
