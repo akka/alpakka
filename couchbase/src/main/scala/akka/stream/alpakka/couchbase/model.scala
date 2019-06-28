@@ -114,7 +114,7 @@ object CouchbaseSessionSettings {
     val username = config.getString("username")
     val password = config.getString("password")
     val nodes = config.getStringList("nodes").asScala.toList
-    new CouchbaseSessionSettings(username, password, nodes, None, EnrichAsync)
+    new CouchbaseSessionSettings(username, password, nodes, environment = None, enrichAsync = Future.successful)
   }
 
   /**
@@ -129,7 +129,7 @@ object CouchbaseSessionSettings {
    * Scala API:
    */
   def apply(username: String, password: String): CouchbaseSessionSettings =
-    new CouchbaseSessionSettings(username, password, Nil, None, EnrichAsync)
+    new CouchbaseSessionSettings(username, password, Nil, environment = None, enrichAsync = Future.successful)
 
   /**
    * Java API:
@@ -151,9 +151,6 @@ object CouchbaseSessionSettings {
    */
   def create(system: ActorSystem): CouchbaseSessionSettings =
     apply(system.settings.config.getConfig(configPath))
-
-  private val EnrichAsync: CouchbaseSessionSettings => Future[CouchbaseSessionSettings] = s => Future.successful(s)
-
 }
 
 final class CouchbaseSessionSettings private (
