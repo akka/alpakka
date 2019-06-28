@@ -14,6 +14,9 @@ import org.influxdb.dto.Point
 
 import scala.collection.JavaConverters._
 
+/**
+ * API may change.
+ */
 @ApiMayChange
 object InfluxDbFlow {
 

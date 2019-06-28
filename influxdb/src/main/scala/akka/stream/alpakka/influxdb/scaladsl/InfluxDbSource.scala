@@ -14,6 +14,8 @@ import org.influxdb.dto.{Query, QueryResult}
 
 /**
  * Scala API.
+ *
+ * API may change.
  */
 @ApiMayChange
 object InfluxDbSource {

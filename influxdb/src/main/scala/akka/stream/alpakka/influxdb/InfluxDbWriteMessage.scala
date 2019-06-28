@@ -5,7 +5,12 @@
 package akka.stream.alpakka.influxdb
 
 import akka.NotUsed
+import akka.annotation.ApiMayChange
 
+/**
+ * API may change.
+ */
+@ApiMayChange
 object InfluxDbWriteMessage {
   // Apply method to use when not using passThrough
   def apply[T](point: T): InfluxDbWriteMessage[T, NotUsed] =
@@ -20,6 +25,10 @@ object InfluxDbWriteMessage {
     new InfluxDbWriteMessage(point, passThrough)
 }
 
+/**
+ * API may change.
+ */
+@ApiMayChange
 final class InfluxDbWriteMessage[T, C] private (val point: T,
                                                 val passThrough: C,
                                                 val databaseName: Option[String] = None,
@@ -54,7 +63,16 @@ final class InfluxDbWriteMessage[T, C] private (val point: T,
                              retentionPolicy = retentionPolicy)
 
   override def toString: String =
-    s"""InfluxDbWriteMessage(point=$point,passThrough=$passThrough,databaseName=$databaseName,retentionPolicy=$retentionPolicy)"""
+    "InfluxDbWriteMessage(" +
+    s"point=$point," +
+    s"passThrough=$passThrough," +
+    s"databaseName=$databaseName," +
+    s"retentionPolicy=$retentionPolicy" +
+    ")"
 }
 
+/**
+ * API may change.
+ */
+@ApiMayChange
 final case class InfluxDbWriteResult[T, C](writeMessage: InfluxDbWriteMessage[T, C], error: Option[String])

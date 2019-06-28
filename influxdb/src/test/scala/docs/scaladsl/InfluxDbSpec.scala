@@ -18,7 +18,6 @@ import akka.testkit.TestKit
 import docs.javadsl.TestUtils._
 import akka.stream.scaladsl.Sink
 
-import scala.concurrent.duration._
 import scala.collection.JavaConverters._
 
 import docs.javadsl.TestConstants.{INFLUXDB_URL, PASSWORD, USERNAME}
@@ -80,7 +79,6 @@ class InfluxDbSpec extends WordSpec with MustMatchers with BeforeAndAfterEach wi
       val f2 =
         InfluxDbSource.typed(classOf[InfluxDbSpecCpu], InfluxDbReadSettings(), influxDB, query).runWith(Sink.seq)
 
-      val aFutVal = f2.futureValue
       f2.futureValue.length mustBe 4
     }
 
