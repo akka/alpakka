@@ -59,7 +59,7 @@ services:
           cbq -c Administrator:password -e http://couchbase:8093
       "
   elasticmq:
-    image: softwaremill/elasticmq:0.14.6
+    image: softwaremill/elasticmq-native:0.14.7
     ports:
       - "9324:9324"
   dynamodb:
