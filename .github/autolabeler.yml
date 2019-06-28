@@ -22,7 +22,7 @@ dependency-change: "/project/Dependencies.scala"
 'p:google-cloud-pub-sub-grpc': ["/google-cloud-pub-sub-grpc"]
 'p:google-cloud-storage': ["/google-cloud-storage"]
 'p:google-fcm': ["/google-fcm"]
-'p:hbase': ["/hdfs"]
+'p:hbase': ["/hbase"]
 'p:hdfs': ["/hdfs"]
 'p:influxdb': ["/influxdb"]
 'p:ironmq': ["/ironmq"]
