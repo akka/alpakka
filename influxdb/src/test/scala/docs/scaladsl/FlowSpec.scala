@@ -90,7 +90,6 @@ class FlowSpec extends WordSpec with MustMatchers with BeforeAndAfterEach with B
     val f1 = Source(messagesFromKafka)
       .map { kafkaMessage: KafkaMessage =>
         val cpu = kafkaMessage.cpu
-        val id = cpu.getHostname
         println("hostname: " + cpu.getHostname)
 
         InfluxDbWriteMessage(cpu).withPassThrough(kafkaMessage.offset)

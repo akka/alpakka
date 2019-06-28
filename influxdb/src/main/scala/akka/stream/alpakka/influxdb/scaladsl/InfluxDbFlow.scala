@@ -15,6 +15,8 @@ import scala.collection.immutable
 
 /**
  * Scala API to create InfluxDB flows.
+ *
+ * API may change.
  */
 @ApiMayChange
 object InfluxDbFlow {

@@ -15,6 +15,8 @@ import org.influxdb.dto.Point
 
 /**
  * Java API.
+ *
+ * API may change.
  */
 @ApiMayChange
 object InfluxDbSink {

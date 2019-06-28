@@ -14,6 +14,9 @@ import org.influxdb.dto.Point
 import scala.concurrent.Future
 import scala.collection.immutable
 
+/**
+ * API may change.
+ */
 @ApiMayChange
 object InfluxDbSink {
 

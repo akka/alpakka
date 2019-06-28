@@ -8,7 +8,7 @@ import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.alpakka.influxdb.{InfluxDbWriteMessage, InfluxDbWriteResult}
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
-import org.influxdb.{BatchOptions, InfluxDB}
+import org.influxdb.InfluxDB
 
 import scala.collection.immutable
 import org.influxdb.dto.{BatchPoints, Point}
@@ -37,6 +37,9 @@ private[influxdb] class InfluxDbFlowStage[C](
 
 }
 
+/**
+ * Internal API.
+ */
 @InternalApi
 private[influxdb] class InfluxDbMapperFlowStage[T, C](
     clazz: Class[T],
@@ -53,6 +56,10 @@ private[influxdb] class InfluxDbMapperFlowStage[T, C](
 
 }
 
+/**
+ * Internal API.
+ */
+@InternalApi
 private[influxdb] sealed abstract class InfluxDbLogic[T, C](
     influxDB: InfluxDB,
     in: Inlet[immutable.Seq[InfluxDbWriteMessage[T, C]]],
@@ -100,6 +107,10 @@ private[influxdb] sealed abstract class InfluxDbLogic[T, C](
 
 }
 
+/**
+ * Internal API.
+ */
+@InternalApi
 private[influxdb] final class InfluxDbRecordLogic[C](
     influxDB: InfluxDB,
     in: Inlet[immutable.Seq[InfluxDbWriteMessage[Point, C]]],
@@ -114,6 +125,10 @@ private[influxdb] final class InfluxDbRecordLogic[C](
       .foreach(influxDB.write)
 }
 
+/**
+ * Internal API.
+ */
+@InternalApi
 private[influxdb] final class InfluxDbMapperRecordLogic[T, C](
     influxDB: InfluxDB,
     in: Inlet[immutable.Seq[InfluxDbWriteMessage[T, C]]],

@@ -24,12 +24,12 @@ public class TestUtils {
 
   // #define-class
   public static InfluxDB setupConnection(final String databaseName) {
-    //#init-client
+    // #init-client
     final InfluxDB influxDB = InfluxDBFactory.connect(INFLUXDB_URL, USERNAME, PASSWORD);
     influxDB.setDatabase(databaseName);
     influxDB.query(new Query("CREATE DATABASE " + databaseName, databaseName));
     return influxDB;
-    //#init-client
+    // #init-client
   }
 
   public static void populateDatabase(InfluxDB influxDB, Class<?> clazz) throws Exception {
