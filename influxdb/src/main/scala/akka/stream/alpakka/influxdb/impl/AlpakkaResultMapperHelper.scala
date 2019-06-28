@@ -13,11 +13,17 @@ import java.util.concurrent.{ConcurrentHashMap, ConcurrentMap}
 import org.influxdb.annotation.{Column, Measurement}
 import org.influxdb.dto.QueryResult
 import java.util.concurrent.TimeUnit
+
+import akka.annotation.InternalApi
 import org.influxdb.InfluxDBMapperException
 import org.influxdb.dto.Point
 
 import scala.collection.JavaConverters._
 
+/**
+ * Internal API.
+ */
+@InternalApi
 private[impl] class AlpakkaResultMapperHelper {
 
   val CLASS_FIELD_CACHE: ConcurrentHashMap[String, ConcurrentMap[String, Field]] = new ConcurrentHashMap();

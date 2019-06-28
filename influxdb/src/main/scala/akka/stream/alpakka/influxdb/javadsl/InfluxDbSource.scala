@@ -14,6 +14,8 @@ import akka.stream.alpakka.influxdb.impl.{InfluxDbRawSourceStage, InfluxDbSource
 
 /**
  * Java API to create InfluxDB sources.
+ *
+ * API may change.
  */
 @ApiMayChange
 object InfluxDbSource {

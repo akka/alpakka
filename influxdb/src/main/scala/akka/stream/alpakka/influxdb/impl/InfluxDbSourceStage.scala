@@ -112,6 +112,10 @@ private[influxdb] final class InfluxDbSourceRawLogic(query: Query,
   override protected def validateTotalResults: Boolean = true
 }
 
+/**
+ * Internal API.
+ */
+@InternalApi
 private[impl] sealed abstract class InfluxDbBaseSourceLogic[T](influxDB: InfluxDB,
                                                                query: Query,
                                                                outlet: Outlet[T],
