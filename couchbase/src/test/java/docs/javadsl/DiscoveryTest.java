@@ -53,7 +53,7 @@ public class DiscoveryTest {
 
     CouchbaseSessionSettings sessionSettings =
         CouchbaseSessionSettings.create(actorSystem)
-            .withEnrichCompletionStage(DiscoverySupport.getNodes(actorSystem));
+            .withEnrichAsyncCs(DiscoverySupport.getNodes(actorSystem));
     CompletionStage<CouchbaseSession> session = registry.getSessionFor(sessionSettings, bucketName);
     // #registry
     try {

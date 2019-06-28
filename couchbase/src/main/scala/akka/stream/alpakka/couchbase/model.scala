@@ -189,7 +189,7 @@ final class CouchbaseSessionSettings private (
   /** Java API:
    * Allows to provide an asynchronous method to update the settings.
    */
-  def withEnrichCompletionStage(
+  def withEnrichAsyncCs(
       value: java.util.function.Function[CouchbaseSessionSettings, CompletionStage[CouchbaseSessionSettings]]
   ): CouchbaseSessionSettings =
     copy(enrichAsync = (s: CouchbaseSessionSettings) => value.apply(s).toScala)
