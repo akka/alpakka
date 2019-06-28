@@ -76,6 +76,9 @@ jobs:
     - env:
       - DIR=hdfs
     - env:
+      - DIR=influxdb
+      - PRE_CMD="docker-compose up -d influxdb"
+    - env:
       - DIR=ironmq
       - PRE_CMD="docker-compose up -d ironauth ironmq"
     - env:

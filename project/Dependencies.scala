@@ -13,6 +13,8 @@ object Dependencies {
     case _ => "2.5.23"
   }
 
+  val InfluxDBJavaVersion = "2.15"
+
   val AwsSdkVersion = "1.11.476"
   val AwsSdk2Version = "2.5.65"
   val AwsSpiAkkaHttpVersion = "0.0.7"
@@ -245,6 +247,12 @@ object Dependencies {
         "org.apache.hadoop" % "hadoop-common" % HadoopVersion % Test classifier "tests" exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2
         "org.apache.hadoop" % "hadoop-minicluster" % HadoopVersion % Test exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2
         "org.slf4j" % "log4j-over-slf4j" % "1.7.25" % Test // MIT like: http://www.slf4j.org/license.html
+      )
+  )
+
+  val InfluxDB = Seq(
+    libraryDependencies ++= Seq(
+        "org.influxdb" % "influxdb-java" % InfluxDBJavaVersion // MIT
       )
   )
 
