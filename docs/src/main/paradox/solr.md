@@ -101,7 +101,7 @@ Java
 : @@snip [snip](/solr/src/test/java/docs/javadsl/SolrTest.java) { #define-class }
 
 
-#### Writing `SolrInputDocument`s
+#### Creating a writer stream
 
 Use `SolrSink.documents`, `SolrFlow.documents` or `SolrFlow.documentsWithPassThrough` to stream `SolrInputDocument`s to Solr.
 
