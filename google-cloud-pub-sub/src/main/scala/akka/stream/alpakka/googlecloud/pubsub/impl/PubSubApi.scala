@@ -17,7 +17,7 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.pubsub._
 import spray.json.DefaultJsonProtocol._
-import spray.json.{deserializationError, DefaultJsonProtocol, JsString, JsValue, RootJsonFormat}
+import spray.json.{deserializationError, DefaultJsonProtocol, JsObject, JsString, JsValue, JsonFormat, RootJsonFormat}
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -57,7 +57,22 @@ private[pubsub] trait PubSubApi {
     }
     override def write(instant: Instant): JsValue = JsString(instant.toString)
   }
-  private implicit val pubSubMessageFormat = DefaultJsonProtocol.jsonFormat4(PubSubMessage.apply)
+
+  private implicit val pubSubMessageFormat = {
+    val defaultFormat = DefaultJsonProtocol.jsonFormat4(PubSubMessage.apply)
+    val attributesFormat = implicitly[JsonFormat[Option[immutable.Map[String, String]]]]
+    new RootJsonFormat[PubSubMessage] {
+      def read(json: JsValue): PubSubMessage = defaultFormat.read(json)
+      //Do not publish "messageId" nor "publishTime"
+      def write(m: PubSubMessage): JsValue = {
+        val fields = List("data" -> JsString(m.data)) ++ m.attributes.map(
+            attrs => "attributes" -> attributesFormat.write(m.attributes)
+          )
+        JsObject(fields: _*)
+      }
+
+    }
+  }
   private implicit val pubSubRequestFormat = DefaultJsonProtocol.jsonFormat1(PublishRequest.apply)
   private implicit val gcePubSubResponseFormat = DefaultJsonProtocol.jsonFormat1(PublishResponse)
   private implicit val receivedMessageFormat = DefaultJsonProtocol.jsonFormat2(ReceivedMessage)

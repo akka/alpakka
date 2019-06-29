@@ -47,7 +47,7 @@ class ExampleUsage {
 
   //#publish-single
   val publishMessage =
-    PubSubMessage(messageId = "1", data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)))
+    PubSubMessage(new String(Base64.getEncoder.encode("Hello Google!".getBytes)))
   val publishRequest = PublishRequest(Seq(publishMessage))
 
   val source: Source[PublishRequest, NotUsed] = Source.single(publishRequest)
