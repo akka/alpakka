@@ -3,15 +3,14 @@ import Keys._
 
 object Dependencies {
 
+  val Nightly = sys.env.get("TRAVIS_EVENT_TYPE").contains("cron")
+
   val Scala211 = "2.11.12"
   val Scala212 = "2.12.7"
   val Scala213 = "2.13.0"
-  val ScalaVersions = Seq(Scala212, Scala211, Scala213)
+  val ScalaVersions = Seq(Scala212, Scala211, Scala213).filterNot(_ == Scala211 && Nightly)
 
-  val AkkaVersion = sys.env.get("AKKA_SERIES") match {
-    case Some("2.4") => sys.error("Akka 2.4 is not supported anymore")
-    case _ => "2.5.23"
-  }
+  val AkkaVersion = if (Nightly) "2.6.0-M3" else "2.5.23"
 
   val InfluxDBJavaVersion = "2.15"
 
