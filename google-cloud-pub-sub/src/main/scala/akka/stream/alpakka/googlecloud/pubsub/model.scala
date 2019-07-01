@@ -22,7 +22,7 @@ import scala.collection.JavaConverters._
 class PubSubConfig private (val projectId: String,
                             val pullReturnImmediately: Boolean,
                             val pullMaxMessagesPerInternalBatch: Int,
-                            /**
+                            /*
                              * Internal API
                              */
                             @InternalApi private[pubsub] val session: GoogleSession) {
@@ -77,50 +77,88 @@ object PubSubConfig {
     apply(projectId, clientEmail, privateKey, pullReturnImmediately, pullMaxMessagesPerInternalBatch)(actorSystem)
 }
 
+final class PublishMessage private[pubsub] (val data: String,
+                                            val attributes: Option[immutable.Map[String, String]] = None) {
+  override def toString: String = "PublishMessage(data=" + data + ",attributes=" + attributes.toString + ")"
+
+  override def equals(other: Any): Boolean = other match {
+    case that: PublishMessage => data == that.data && attributes == that.attributes
+    case _ => false
+  }
+
+  override def hashCode: Int = java.util.Objects.hash(data, attributes)
+}
+
+object PublishMessage {
+  def apply(data: String, attributes: immutable.Map[String, String]) = new PublishMessage(data, Some(attributes))
+  def apply(data: String, attributes: Option[immutable.Map[String, String]]) = new PublishMessage(data, attributes)
+  def apply(data: String) = new PublishMessage(data, None)
+  def create(data: String) = new PublishMessage(data, None)
+  def create(data: String, attributes: immutable.Map[String, String]) = new PublishMessage(data, Some(attributes))
+}
+
 /**
- *
- * @param data the base64 encoded data
- * @param messageId the message id given by server. It must not be populated when publishing.
- * @param attributes optional extra attributes for this message.
- * @param publishTime the time the message was published. It must not be populated when publishing.
+ * 'data' of [[ReceivedMessage]].
+ * @param data the base64 encoded data, if not present, attributes have to contain at least one entry
+ * @param attributes attributes for this message, if not present, data can't be empty
+ * @param messageId the message id given by server.
+ * @param publishTime the time the message was published.
  */
-final case class PubSubMessage(data: String,
-                               //Should be Option[String]. '""' is used as default when creating messages for publishing.
-                               messageId: String,
-                               attributes: Option[immutable.Map[String, String]] = None,
-                               publishTime: Option[Instant] = None) {
+final class PubSubMessage(val data: Option[String],
+                          val attributes: Option[immutable.Map[String, String]],
+                          val messageId: String,
+                          val publishTime: Instant) {
 
   def withAttributes(attributes: java.util.Map[String, String]): PubSubMessage =
-    copy(attributes = Some(attributes.asScala.toMap))
+    new PubSubMessage(data, Some(attributes.asScala.toMap), messageId, publishTime)
 
-  def withPublishTime(publishTime: Instant): PubSubMessage =
-    copy(publishTime = Some(publishTime))
+  def withData(data: String): PubSubMessage =
+    new PubSubMessage(Some(data), attributes, messageId, publishTime)
 
+  override def equals(other: Any): Boolean = other match {
+    case that: PubSubMessage =>
+      data == that.data && attributes == that.attributes && messageId == that.messageId && publishTime == that.publishTime
+    case _ => false
+  }
+
+  override def hashCode: Int = java.util.Objects.hash(data, attributes, messageId, publishTime)
+
+  override def toString: String =
+    "PubSubMessage(data=" + data + ",attributes=" + attributes + ",messageId=" + messageId + ",publishTime=" + publishTime + ")"
 }
 
 object PubSubMessage {
 
-  def apply(data: String): PubSubMessage = PubSubMessage(data, "")
+  def apply(data: Option[String] = None,
+            attributes: Option[immutable.Map[String, String]] = None,
+            messageId: String,
+            publishTime: Instant) = new PubSubMessage(data, attributes, messageId, publishTime)
 
-  def apply(data: String, attributes: immutable.Map[String, String]): PubSubMessage =
-    PubSubMessage(data, "", Some(attributes), None)
+  def create(data: Option[String],
+             attributes: Option[immutable.Map[String, String]],
+             messageId: String,
+             publishTime: Instant) = new PubSubMessage(data, attributes, messageId, publishTime)
 
-  /**
-   * Java API: create [[PubSubMessage]]
-   */
-  def create(data: String) =
-    PubSubMessage(data)
-
-  @deprecated("Setting messageId when creating message for publishing is futile.", "1.1.0")
-  def create(data: String, messageId: String) =
-    PubSubMessage(data, messageId)
 }
 
-final case class PublishRequest(messages: immutable.Seq[PubSubMessage])
+final class PublishRequest private[pubsub] (val messages: immutable.Seq[PublishMessage]) {
+
+  override def equals(other: Any): Boolean = other match {
+    case that: PublishRequest => messages == that.messages
+    case _ => false
+  }
+
+  override def hashCode: Int = messages.hashCode
+
+  override def toString: String = "PublishRequest(" + messages.mkString("[", ",", "]") + ")"
+}
 
 object PublishRequest {
-  def of(messages: java.util.List[PubSubMessage]): PublishRequest =
-    PublishRequest(messages.asScala.toList)
+
+  def apply(messages: immutable.Seq[PublishMessage]): PublishRequest = new PublishRequest(messages)
+
+  def of(messages: java.util.List[PublishMessage]): PublishRequest =
+    new PublishRequest(messages.asScala.toList)
 }
 
 /**
@@ -128,15 +166,83 @@ object PublishRequest {
  * @param ackId acknowledgement id. This id is used to tell pub/sub the message has been processed.
  * @param message the pubsub message including its data.
  */
-final case class ReceivedMessage(ackId: String, message: PubSubMessage)
+final class ReceivedMessage(val ackId: String, val message: PubSubMessage) {
 
-final case class AcknowledgeRequest(ackIds: immutable.Seq[String])
+  override def equals(other: Any): Boolean = other match {
+    case that: ReceivedMessage => ackId == that.ackId && message == that.message
+    case _ => false
+  }
+
+  override def hashCode: Int = java.util.Objects.hash(ackId, message)
+
+  override def toString: String = "ReceivedMessage(ackId=" + ackId.toString + ",message=" + message.toString + ")"
+}
+
+object ReceivedMessage {
+
+  def apply(ackId: String, message: PubSubMessage): ReceivedMessage =
+    new ReceivedMessage(ackId, message)
+
+  def create(ackId: String, message: PubSubMessage): ReceivedMessage =
+    new ReceivedMessage(ackId, message)
+}
+
+final class AcknowledgeRequest private[pubsub] (val ackIds: immutable.Seq[String]) {
+
+  override def equals(other: Any): Boolean = other match {
+    case that: AcknowledgeRequest => ackIds == that.ackIds
+    case _ => false
+  }
+
+  override def hashCode: Int = ackIds.hashCode
+
+  override def toString: String = "AcknowledgeRequest(" + ackIds.mkString("[", ",", "]") + ")"
+}
 
 object AcknowledgeRequest {
+
+  def apply(ackIds: String*): AcknowledgeRequest =
+    new AcknowledgeRequest(ackIds.toList)
+
+  def apply(ackIds: immutable.Seq[String]): AcknowledgeRequest =
+    new AcknowledgeRequest(ackIds)
+
   def of(ackIds: java.util.List[String]): AcknowledgeRequest =
     AcknowledgeRequest(ackIds.asScala.toList)
 }
 
-private final case class PublishResponse(messageIds: immutable.Seq[String])
+private final class PublishResponse private[pubsub] (val messageIds: immutable.Seq[String]) {
 
-private final case class PullResponse(receivedMessages: Option[immutable.Seq[ReceivedMessage]])
+  override def equals(other: Any): Boolean = other match {
+    case that: PublishResponse => messageIds == that.messageIds
+    case _ => false
+  }
+
+  override def hashCode: Int = messageIds.hashCode
+
+  override def toString: String = "PublishResponse(" + messageIds.mkString("[", ",", "]") + ")"
+}
+
+object PublishResponse {
+
+  private[pubsub] def apply(messageIds: immutable.Seq[String]): PublishResponse = new PublishResponse(messageIds)
+}
+
+private final class PullResponse private[pubsub] (val receivedMessages: Option[immutable.Seq[ReceivedMessage]]) {
+
+  override def equals(other: Any): Boolean = other match {
+    case that: PullResponse => receivedMessages == that.receivedMessages
+    case _ => false
+  }
+
+  override def hashCode: Int = receivedMessages.hashCode
+
+  override def toString: String = "PullResponse(" + receivedMessages.map(_.mkString("[", ",", "]")) + ")"
+}
+
+object PullResponse {
+
+  private[pubsub] def apply(receivedMessages: Option[immutable.Seq[ReceivedMessage]]) =
+    new PullResponse(receivedMessages)
+
+}

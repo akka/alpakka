@@ -47,7 +47,7 @@ class ExampleUsage {
 
   //#publish-single
   val publishMessage =
-    PubSubMessage(new String(Base64.getEncoder.encode("Hello Google!".getBytes)))
+    PublishMessage(new String(Base64.getEncoder.encode("Hello Google!".getBytes)))
   val publishRequest = PublishRequest(Seq(publishMessage))
 
   val source: Source[PublishRequest, NotUsed] = Source.single(publishRequest)
@@ -59,7 +59,7 @@ class ExampleUsage {
   //#publish-single
 
   //#publish-fast
-  val messageSource: Source[PubSubMessage, NotUsed] = Source(List(publishMessage, publishMessage))
+  val messageSource: Source[PublishMessage, NotUsed] = Source(List(publishMessage, publishMessage))
   messageSource.groupedWithin(1000, 1.minute).map(PublishRequest.apply).via(publishFlow).to(Sink.seq)
   //#publish-fast
 
