@@ -112,12 +112,9 @@ public class MqttFlowTest {
     // #create-flow-ack
 
     // #run-flow-ack
-    final Pair<Pair<NotUsed, CompletionStage<Done>>,
-            CompletionStage<List<MqttMessageWithAck>>>
+    final Pair<Pair<NotUsed, CompletionStage<Done>>, CompletionStage<List<MqttMessageWithAck>>>
         materialized =
-            source.viaMat(mqttFlow, Keep.both())
-                    .toMat(Sink.seq(), Keep.both())
-                    .run(materializer);
+            source.viaMat(mqttFlow, Keep.both()).toMat(Sink.seq(), Keep.both()).run(materializer);
 
     // #run-flow-ack
 
@@ -131,10 +128,9 @@ public class MqttFlowTest {
   class MqttMessageWithAckFake extends MqttMessageWithAckImpl {
     Boolean acked;
 
-    MqttMessageWithAckFake(){
+    MqttMessageWithAckFake() {
       acked = false;
     }
-
 
     @Override
     public CompletionStage<Done> messageArrivedComplete() {
