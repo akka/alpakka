@@ -242,6 +242,9 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
                 case c: Command[A] => throw new IllegalStateException(c + " is not a client command")
               }
             )
+            .recover {
+              case _: WatchedActorTerminatedException => ByteString.empty
+            }
             .filter(_.nonEmpty)
             .log("client-commandFlow", _.iterator.decodeControlPacket(settings.maxPacketSize)) // we decode here so we can see the generated packet id
             .withAttributes(ActorAttributes.logLevels(onFailure = Logging.DebugLevel))
@@ -330,6 +333,9 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
         case _ =>
           Supervision.Stop
       })
+      .recoverWithRetries(-1, {
+        case _: WatchedActorTerminatedException => Source.empty
+      })
       .withAttributes(ActorAttributes.logLevels(onFailure = Logging.DebugLevel))
 }
 
@@ -395,7 +401,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
 
   private val (terminations, terminationsSource) = Source
     .queue[ServerConnector.ClientSessionTerminated](settings.clientTerminationWatcherBufferSize,
-                                                    OverflowStrategy.dropNew)
+                                                    OverflowStrategy.backpressure)
     .toMat(BroadcastHub.sink)(Keep.both)
     .run()
 
@@ -544,6 +550,9 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
                 case c: Command[A] => throw new IllegalStateException(c + " is not a server command")
               }
             )
+            .recover {
+              case _: WatchedActorTerminatedException => ByteString.empty
+            }
             .filter(_.nonEmpty)
             .log("server-commandFlow", _.iterator.decodeControlPacket(settings.maxPacketSize)) // we decode here so we can see the generated packet id
             .withAttributes(ActorAttributes.logLevels(onFailure = Logging.DebugLevel))
@@ -625,6 +634,9 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
           Supervision.Resume
         case _ =>
           Supervision.Stop
+      })
+      .recoverWithRetries(-1, {
+        case _: WatchedActorTerminatedException => Source.empty
       })
       .withAttributes(ActorAttributes.logLevels(onFailure = Logging.DebugLevel))
 }
