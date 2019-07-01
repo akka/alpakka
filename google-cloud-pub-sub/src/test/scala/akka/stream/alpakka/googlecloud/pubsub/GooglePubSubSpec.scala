@@ -47,7 +47,7 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
       config = config
     )
 
-    val request = PublishRequest(Seq(PubSubMessage(messageId = "1", data = base64String("Hello Google!"))))
+    val request = PublishRequest(Seq(PubSubMessage(data = base64String("Hello Google!"))))
 
     val source = Source(List(request))
 
@@ -87,7 +87,7 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
       config = config
     )
 
-    val request = PublishRequest(Seq(PubSubMessage(messageId = "2", data = base64String("Hello Google!"))))
+    val request = PublishRequest(Seq(PubSubMessage(data = base64String("Hello Google!"))))
 
     val source = Source(List(request))
     val result = source.via(flow).runWith(Sink.seq)
