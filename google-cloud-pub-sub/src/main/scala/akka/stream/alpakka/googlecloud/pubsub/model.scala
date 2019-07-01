@@ -111,7 +111,7 @@ object PubSubMessage {
   def create(data: String) =
     PubSubMessage(data)
 
-  @deprecated("Setting messageId when creating message for publishing is futile.", "1.0.3")
+  @deprecated("Setting messageId when creating message for publishing is futile.", "1.1.0")
   def create(data: String, messageId: String) =
     PubSubMessage(data, messageId)
 }
