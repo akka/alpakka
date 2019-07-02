@@ -10,7 +10,7 @@ import scala.compat.java8.FunctionConverters._
 /**
  * A destination to send to/receive from.
  */
-sealed trait Destination {
+sealed abstract class Destination {
   val name: String
   val create: jms.Session => jms.Destination
 }

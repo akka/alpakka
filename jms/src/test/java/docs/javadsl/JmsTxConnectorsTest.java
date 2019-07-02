@@ -179,8 +179,7 @@ public class JmsTxConnectorsTest {
                   JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
 
           List<JmsTextMessage> msgsIn =
-              createTestMessageList()
-                  .stream()
+              createTestMessageList().stream()
                   .map(jmsTextMessage -> jmsTextMessage.withHeader(JmsType.create("type")))
                   .map(
                       jmsTextMessage ->
@@ -257,8 +256,7 @@ public class JmsTxConnectorsTest {
                       .withSelector("IsOdd = TRUE"));
 
           List<JmsTextMessage> oddMsgsIn =
-              msgsIn
-                  .stream()
+              msgsIn.stream()
                   .filter(msg -> Integer.valueOf(msg.body()) % 2 == 1)
                   .collect(Collectors.toList());
           assertEquals(5, oddMsgsIn.size());
