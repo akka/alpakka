@@ -11,6 +11,7 @@ import akka.NotUsed
 import akka.stream.alpakka.jms.impl.JmsMessageReader._
 import akka.util.ByteString
 import scala.collection.JavaConverters._
+import scala.compat.java8.OptionConverters._
 
 /**
  * Base interface for messages handled by JmsProducers. Sub-classes support pass-through or use [[akka.NotUsed]] as type for pass-through.
@@ -19,9 +20,32 @@ import scala.collection.JavaConverters._
  */
 sealed trait JmsEnvelope[+PassThrough] {
   def headers: Set[JmsHeader]
+
+  /**
+   *  Java API.
+   */
+  def getHeaders: java.util.Collection[JmsHeader] = headers.asJavaCollection
+
   def properties: Map[String, Any]
+
+  /**
+   * Java API.
+   */
+  def getProperties: java.util.Map[String, Any] = properties.asJava
+
   def destination: Option[Destination]
+
+  /**
+   * Java API.
+   */
+  def getDestination: java.util.Optional[Destination] = destination.asJava
+
   def passThrough: PassThrough
+
+  /**
+   * Java API
+   */
+  def getPassThrough: PassThrough = passThrough
 }
 
 /**
@@ -85,6 +109,21 @@ object JmsMessage {
    * Java API: Convert a [[javax.jms.Message]] to a [[JmsMessage]]
    */
   def create(message: jms.Message): JmsMessage = apply(message)
+}
+
+// Scala 2.11 compatibility adapter for the Java API
+object JmsMessageFactory {
+
+  /**
+   * Java API: Convert a [[javax.jms.Message]] to a [[JmsEnvelope]] with pass-through
+   */
+  def create[PassThrough](message: jms.Message, passThrough: PassThrough): JmsEnvelope[PassThrough] =
+    JmsMessage.apply(message, passThrough)
+
+  /**
+   * Java API: Convert a [[javax.jms.Message]] to a [[JmsMessage]]
+   */
+  def create(message: jms.Message): JmsMessage = JmsMessage.apply(message)
 }
 
 /**
