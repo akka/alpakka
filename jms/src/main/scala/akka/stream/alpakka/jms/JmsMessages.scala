@@ -5,11 +5,13 @@
 package akka.stream.alpakka.jms
 
 import java.util
+import javax.jms
 
 import akka.NotUsed
+import akka.stream.alpakka.jms.impl.JmsMessageReader._
 import akka.util.ByteString
-
 import scala.collection.JavaConverters._
+import scala.compat.java8.OptionConverters._
 
 /**
  * Base interface for messages handled by JmsProducers. Sub-classes support pass-through or use [[akka.NotUsed]] as type for pass-through.
@@ -18,9 +20,32 @@ import scala.collection.JavaConverters._
  */
 sealed trait JmsEnvelope[+PassThrough] {
   def headers: Set[JmsHeader]
+
+  /**
+   *  Java API.
+   */
+  def getHeaders: java.util.Collection[JmsHeader] = headers.asJavaCollection
+
   def properties: Map[String, Any]
+
+  /**
+   * Java API.
+   */
+  def getProperties: java.util.Map[String, Any] = properties.asJava
+
   def destination: Option[Destination]
+
+  /**
+   * Java API.
+   */
+  def getDestination: java.util.Optional[Destination] = destination.asJava
+
   def passThrough: PassThrough
+
+  /**
+   * Java API
+   */
+  def getPassThrough: PassThrough = passThrough
 }
 
 /**
@@ -49,6 +74,57 @@ object JmsPassThrough {
  * Marker trait for stream elements that do not contain pass-through data.
  */
 sealed trait JmsMessage extends JmsEnvelope[NotUsed]
+
+object JmsMessage {
+
+  /**
+   * Convert a [[javax.jms.Message]] to a [[JmsEnvelope]] with pass-through
+   */
+  def apply[PassThrough](message: jms.Message, passThrough: PassThrough): JmsEnvelope[PassThrough] = message match {
+    case v: jms.BytesMessage => JmsByteMessage(v, passThrough)
+    case v: jms.MapMessage => JmsMapMessage(v, passThrough)
+    case v: jms.TextMessage => JmsTextMessage(v, passThrough)
+    case v: jms.ObjectMessage => JmsObjectMessage(v, passThrough)
+    case _ => throw UnsupportedMessageType(message)
+  }
+
+  /**
+   * Convert a [[javax.jms.Message]] to a [[JmsMessage]]
+   */
+  def apply(message: jms.Message): JmsMessage = message match {
+    case v: jms.BytesMessage => JmsByteMessage(v)
+    case v: jms.MapMessage => JmsMapMessage(v)
+    case v: jms.TextMessage => JmsTextMessage(v)
+    case v: jms.ObjectMessage => JmsObjectMessage(v)
+    case _ => throw UnsupportedMessageType(message)
+  }
+
+  /**
+   * Java API: Convert a [[javax.jms.Message]] to a [[JmsEnvelope]] with pass-through
+   */
+  def create[PassThrough](message: jms.Message, passThrough: PassThrough): JmsEnvelope[PassThrough] =
+    apply(message, passThrough)
+
+  /**
+   * Java API: Convert a [[javax.jms.Message]] to a [[JmsMessage]]
+   */
+  def create(message: jms.Message): JmsMessage = apply(message)
+}
+
+// Scala 2.11 compatibility adapter for the Java API
+object JmsMessageFactory {
+
+  /**
+   * Java API: Convert a [[javax.jms.Message]] to a [[JmsEnvelope]] with pass-through
+   */
+  def create[PassThrough](message: jms.Message, passThrough: PassThrough): JmsEnvelope[PassThrough] =
+    JmsMessage.apply(message, passThrough)
+
+  /**
+   * Java API: Convert a [[javax.jms.Message]] to a [[JmsMessage]]
+   */
+  def create(message: jms.Message): JmsMessage = JmsMessage.apply(message)
+}
 
 /**
  * Produces byte arrays to JMS, supports pass-through data.
@@ -175,6 +251,35 @@ object JmsByteMessage {
    */
   def create(bytes: Array[Byte]) = new JmsByteMessage(bytes = bytes)
 
+  /**
+   * Create a byte message from a [[javax.jms.BytesMessage]] with pass-through
+   */
+  def apply[PassThrough](message: jms.BytesMessage, passThrough: PassThrough): JmsByteMessagePassThrough[PassThrough] =
+    new JmsByteMessagePassThrough[PassThrough](readArray(message),
+                                               readHeaders(message),
+                                               readProperties(message),
+                                               Option(message.getJMSDestination).map(Destination(_)),
+                                               passThrough)
+
+  /**
+   * Create a byte message from a [[javax.jms.BytesMessage]]
+   */
+  def apply(message: jms.BytesMessage): JmsByteMessage =
+    new JmsByteMessage(readArray(message),
+                       readHeaders(message),
+                       readProperties(message),
+                       Option(message.getJMSDestination).map(Destination(_)))
+
+  /**
+   * Java API: Create a byte message from a [[javax.jms.BytesMessage]] with pass-through
+   */
+  def create[PassThrough](message: jms.BytesMessage, passThrough: PassThrough): JmsByteMessagePassThrough[PassThrough] =
+    apply(message, passThrough)
+
+  /**
+   * Java API: Create a byte message from a [[javax.jms.BytesMessage]]
+   */
+  def create(message: jms.BytesMessage): JmsByteMessage = apply(message)
 }
 
 /**
@@ -306,6 +411,38 @@ object JmsByteStringMessage {
    */
   def create(byteString: ByteString) = apply(byteString)
 
+  /**
+   * Create a byte message from a [[javax.jms.BytesMessage]] with pass-through
+   */
+  def apply[PassThrough](message: jms.BytesMessage,
+                         passThrough: PassThrough): JmsByteStringMessagePassThrough[PassThrough] =
+    new JmsByteStringMessagePassThrough[PassThrough](readBytes(message),
+                                                     readHeaders(message),
+                                                     readProperties(message),
+                                                     Option(message.getJMSDestination).map(Destination(_)),
+                                                     passThrough)
+
+  /**
+   * Create a byte message from a [[javax.jms.BytesMessage]]
+   */
+  def apply(message: jms.BytesMessage): JmsByteStringMessage =
+    new JmsByteStringMessage(readBytes(message),
+                             readHeaders(message),
+                             readProperties(message),
+                             Option(message.getJMSDestination).map(Destination(_)))
+
+  /**
+   * Java API: Create a byte message from a [[javax.jms.BytesMessage]] with pass-through
+   */
+  def create[PassThrough](message: jms.BytesMessage,
+                          passThrough: PassThrough): JmsByteStringMessagePassThrough[PassThrough] =
+    apply(message, passThrough)
+
+  /**
+   * Java API: Create a byte message from a [[javax.jms.BytesMessage]]
+   */
+  def create(message: jms.BytesMessage): JmsByteStringMessage = apply(message)
+
 }
 
 /**
@@ -435,6 +572,35 @@ object JmsMapMessage {
    */
   def create(map: util.Map[String, Any]) = new JmsMapMessage(body = map.asScala.toMap)
 
+  /**
+   * Create a map message from a [[javax.jms.MapMessage]] with pass-through
+   */
+  def apply[PassThrough](message: jms.MapMessage, passThrough: PassThrough): JmsMapMessagePassThrough[PassThrough] =
+    new JmsMapMessagePassThrough[PassThrough](readMap(message),
+                                              readHeaders(message),
+                                              readProperties(message),
+                                              Option(message.getJMSDestination).map(Destination(_)),
+                                              passThrough)
+
+  /**
+   * Create a map message from a [[javax.jms.MapMessage]]
+   */
+  def apply(message: jms.MapMessage): JmsMapMessage =
+    new JmsMapMessage(readMap(message),
+                      readHeaders(message),
+                      readProperties(message),
+                      Option(message.getJMSDestination).map(Destination(_)))
+
+  /**
+   * Java API: Create a map message from a [[javax.jms.MapMessage]] with pass-through
+   */
+  def create[PassThrough](message: jms.MapMessage, passThrough: PassThrough): JmsMapMessagePassThrough[PassThrough] =
+    apply(message, passThrough)
+
+  /**
+   * Java API: Create a map message from a [[javax.jms.MapMessage]]
+   */
+  def create(message: jms.MapMessage): JmsMapMessage = apply(message)
 }
 
 /**
@@ -561,6 +727,35 @@ object JmsTextMessage {
    */
   def create(body: String): JmsTextMessage = new JmsTextMessage(body = body)
 
+  /**
+   * Create a text message from a [[javax.jms.TextMessage]] with pass-through
+   */
+  def apply[PassThrough](message: jms.TextMessage, passThrough: PassThrough): JmsTextMessagePassThrough[PassThrough] =
+    new JmsTextMessagePassThrough[PassThrough](message.getText,
+                                               readHeaders(message),
+                                               readProperties(message),
+                                               Option(message.getJMSDestination).map(Destination(_)),
+                                               passThrough)
+
+  /**
+   * Create a text message from a [[javax.jms.TextMessage]]
+   */
+  def apply(message: jms.TextMessage): JmsTextMessage =
+    new JmsTextMessage(message.getText,
+                       readHeaders(message),
+                       readProperties(message),
+                       Option(message.getJMSDestination).map(Destination(_)))
+
+  /**
+   * Java API: Create a text message from a [[javax.jms.TextMessage]] with pass-through
+   */
+  def create[PassThrough](message: jms.TextMessage, passThrough: PassThrough): JmsTextMessagePassThrough[PassThrough] =
+    apply(message, passThrough)
+
+  /**
+   * Java API: Create a text message from a [[javax.jms.TextMessage]]
+   */
+  def create(message: jms.TextMessage): JmsTextMessage = apply(message)
 }
 
 /**
@@ -691,4 +886,35 @@ object JmsObjectMessage {
    */
   def create(serializable: Serializable) = new JmsObjectMessage(serializable)
 
+  /**
+   * Create an object message with pass-through
+   */
+  def apply[PassThrough](message: jms.ObjectMessage,
+                         passThrough: PassThrough): JmsObjectMessagePassThrough[PassThrough] =
+    new JmsObjectMessagePassThrough[PassThrough](message.getObject,
+                                                 readHeaders(message),
+                                                 readProperties(message),
+                                                 Option(message.getJMSDestination).map(Destination(_)),
+                                                 passThrough)
+
+  /**
+   * Create an object message
+   */
+  def apply(message: jms.ObjectMessage): JmsObjectMessage =
+    new JmsObjectMessage(message.getObject,
+                         readHeaders(message),
+                         readProperties(message),
+                         Option(message.getJMSDestination).map(Destination(_)))
+
+  /**
+   * Java API: Create an object message with pass-through
+   */
+  def create[PassThrough](message: jms.ObjectMessage,
+                          passThrough: PassThrough): JmsObjectMessagePassThrough[PassThrough] =
+    apply(message, passThrough)
+
+  /**
+   * Java API: Create an object message
+   */
+  def create(message: jms.ObjectMessage): JmsObjectMessage = apply(message)
 }
