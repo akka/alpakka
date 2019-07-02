@@ -793,7 +793,7 @@ import scala.util.{Failure, Success}
           case (_, ReceiveConnectTimeout) =>
             throw ClientConnectionFailed
           case (_, ConnectionLost) =>
-            Behavior.same // We know... we are disconnected...
+            Behaviors.same // We know... we are disconnected...
           case (_, PublishReceivedLocally(publish, _))
               if !data.publishers.exists(Topics.filter(_, publish.topicName)) =>
             Behaviors.same

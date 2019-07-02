@@ -296,7 +296,7 @@ import scala.util.{Either, Failure, Success}
           QueueOfferState.waitForQueueOfferCompleted(nextState, stash = data.stash)
 
         case (_, ConnectionLost(_)) =>
-          Behavior.same
+          Behaviors.same
         case (_, e) =>
           disconnected(data.copy(stash = data.stash :+ e))
       }
