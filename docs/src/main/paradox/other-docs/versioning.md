@@ -36,6 +36,8 @@ Alpakka’s Akka and Akka HTTP dependencies are upgraded only if that version br
 
 Users are recommended to upgrade to the latest Akka version later than the one required by Alpakka at their convenience. 
 
+Alpakka's nightly tests verify compatibility with the upcoming Akka 2.6 release.
+
 @@@
 
 
