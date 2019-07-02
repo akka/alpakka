@@ -30,7 +30,6 @@ import org.apache.activemq.command.ActiveMQTextMessage;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.collection.JavaConverters;
 import scala.util.Failure;
 import scala.util.Success;
 import scala.util.Try;
@@ -337,8 +336,7 @@ public class JmsConnectorsTest {
 
           // #create-messages-with-headers
           List<JmsTextMessage> msgsIn =
-              createTestMessageList()
-                  .stream()
+              createTestMessageList().stream()
                   .map(
                       jmsTextMessage ->
                           jmsTextMessage
@@ -448,8 +446,7 @@ public class JmsConnectorsTest {
           // #source-with-selector
 
           List<JmsTextMessage> oddMsgsIn =
-              msgsIn
-                  .stream()
+              msgsIn.stream()
                   .filter(msg -> Integer.valueOf(msg.body()) % 2 == 1)
                   .collect(Collectors.toList());
           assertEquals(5, oddMsgsIn.size());
@@ -649,10 +646,7 @@ public class JmsConnectorsTest {
           // #browse-source
 
           List<String> resultText =
-              result
-                  .toCompletableFuture()
-                  .get()
-                  .stream()
+              result.toCompletableFuture().get().stream()
                   .map(
                       message -> {
                         try {
@@ -900,12 +894,12 @@ public class JmsConnectorsTest {
           JmsConsumerControl respondStreamControl =
               JmsConsumer.create(
                       JmsConsumerSettings.create(system, connectionFactory).withQueue("test"))
-                  .map(JmsMessage::create)
+                  .map(JmsMessageFactory::create)
                   .collectType(JmsTextMessage.class)
                   .map(
                       textMessage -> {
                         JmsTextMessage m = JmsTextMessage.create(reverse.apply(textMessage.body()));
-                        for (JmsHeader h : JavaConverters.asJavaCollection(textMessage.headers()))
+                        for (JmsHeader h : textMessage.getHeaders())
                           if (h.getClass().equals(JmsReplyTo.class))
                             m = m.to(((JmsReplyTo) h).jmsDestination());
                           else if (h.getClass().equals(JmsCorrelationId.class)) m = m.withHeader(h);

@@ -1233,21 +1233,24 @@ class JmsConnectorsSpec extends JmsSpec {
 
     //#request-reply
     val respondStreamControl: JmsConsumerControl =
-      JmsConsumer {
-        JmsConsumerSettings(system, connectionFactory).withQueue("test")
-      } collect {
-        case message: TextMessage => JmsTextMessage(message)
-      } map { textMessage =>
-        textMessage.headers.foldLeft(JmsTextMessage(textMessage.body.reverse)) {
-          case (acc, rt: JmsReplyTo) => acc.to(rt.jmsDestination)
-          case (acc, cId: JmsCorrelationId) => acc.withHeader(cId)
-          case (acc, _) => acc
+      JmsConsumer(JmsConsumerSettings(system, connectionFactory).withQueue("test"))
+        .collect {
+          case message: TextMessage => JmsTextMessage(message)
         }
-      } via {
-        JmsProducer.flow(
-          JmsProducerSettings(system, connectionFactory).withQueue("ignored")
-        )
-      } to Sink.ignore run ()
+        .map { textMessage =>
+          textMessage.headers.foldLeft(JmsTextMessage(textMessage.body.reverse)) {
+            case (acc, rt: JmsReplyTo) => acc.to(rt.jmsDestination)
+            case (acc, cId: JmsCorrelationId) => acc.withHeader(cId)
+            case (acc, _) => acc
+          }
+        }
+        .via {
+          JmsProducer.flow(
+            JmsProducerSettings(system, connectionFactory).withQueue("ignored")
+          )
+        }
+        .to(Sink.ignore)
+        .run()
     //#request-reply
 
     // getting ConnectionRetryException when trying to listen using streams, assuming it's because
