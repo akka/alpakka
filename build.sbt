@@ -176,7 +176,10 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
 ).enablePlugins(AkkaGrpcPlugin, JavaAgent)
 
 lazy val googleCloudStorage =
-  alpakkaProject("google-cloud-storage", "google.cloud.storage", Dependencies.GoogleStorage).disablePlugins(MimaPlugin)
+  alpakkaProject("google-cloud-storage",
+                 "google.cloud.storage",
+                 Dependencies.GoogleStorage,
+                 crossScalaVersions -= Dependencies.Scala211).disablePlugins(MimaPlugin)
 
 lazy val googleFcm = alpakkaProject(
   "google-fcm",
