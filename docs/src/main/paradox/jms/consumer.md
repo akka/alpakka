@@ -191,3 +191,15 @@ Scala
 Java
 : @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #object-source }
 
+
+## Request / Reply
+
+The request / reply pattern can be implemented by streaming a @java[@scaladoc[JmsConsumer](akka.stream.alpakka.jms.javadsl.JmsConsumer$)]@scala[@scaladoc[JmsConsumer](akka.stream.alpakka.jms.scaladsl.JmsConsumer$)]
+to a @java[@scaladoc[JmsProducer](akka.stream.alpakka.jms.javadsl.JmsProducer$)]@scala[@scaladoc[JmsProducer](akka.stream.alpakka.jms.scaladsl.JmsProducer$)],
+with a stage in between that extracts the `ReplyTo` and `CorrelationID` from the original message and adds them to the response.
+
+Scala
+: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #request-reply }
+
+Java
+: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #request-reply }

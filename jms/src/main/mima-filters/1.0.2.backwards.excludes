@@ -1,0 +1,10 @@
+# PR #1787
+# change `sealed trait Destination` to be an `sealed abstract class`
+ProblemFilters.exclude[IncompatibleTemplateDefProblem]("akka.stream.alpakka.jms.Destination")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.alpakka.jms.CustomDestination")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.alpakka.jms.Topic")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.alpakka.jms.Queue")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.alpakka.jms.DurableTopic")
+
+# add Java API
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.alpakka.jms.JmsEnvelope.*")
