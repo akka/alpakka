@@ -16,7 +16,7 @@ import akka.stream.alpakka.orientdb.javadsl.OrientDbSink;
 import akka.stream.alpakka.orientdb.javadsl.OrientDbSource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import com.orientechnologies.orient.client.remote.OServerAdmin;
 import com.orientechnologies.orient.core.db.ODatabaseRecordThreadLocal;
 // #init-settings
@@ -183,7 +183,7 @@ public class OrientDbTest {
 
     client.close();
     oDatabase.close();
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
   }
 
   private static void register(String className) {
