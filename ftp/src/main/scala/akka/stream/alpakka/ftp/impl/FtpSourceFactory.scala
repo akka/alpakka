@@ -26,6 +26,8 @@ private[ftp] trait FtpSourceFactory[FtpClient] { self =>
 
   protected[this] def ftpBrowserSourceName: String
 
+  protected[this] def ftpDirectorySourceName: String = "GenericDirectorySource"
+
   protected[this] def ftpIOSourceName: String
 
   protected[this] def ftpIOSinkName: String
@@ -51,6 +53,23 @@ private[ftp] trait FtpSourceFactory[FtpClient] { self =>
       val ftpLike: FtpLike[FtpClient, S] = _ftpLike
       override val branchSelector: (FtpFile) => Boolean = _branchSelector
       override val emitTraversedDirectories: Boolean = _emitTraversedDirectories
+    }
+
+  protected[this] def createMkdirGraph(baseDirectoryPath: String, dirName: String, currentConnectionSettings: S)(
+      implicit _ftpLike: FtpLike[FtpClient, S]
+  ): FtpDirectoryOperationsGraphStage[FtpClient, S] =
+    new FtpDirectoryOperationsGraphStage[FtpClient, S] {
+      override val ftpLike: FtpLike[FtpClient, S] = _ftpLike
+
+      override def name: String = ftpDirectorySourceName
+
+      override def basePath: String = baseDirectoryPath
+
+      override def connectionSettings: S = currentConnectionSettings
+
+      override def ftpClient: () => FtpClient = self.ftpClient
+
+      override val directoryName: String = dirName
     }
 
   protected[this] def createIOSource(
@@ -124,11 +143,14 @@ private[ftp] trait FtpSourceFactory[FtpClient] { self =>
 private[ftp] trait FtpSource extends FtpSourceFactory[FTPClient] {
   protected final val FtpBrowserSourceName = "FtpBrowserSource"
   protected final val FtpIOSourceName = "FtpIOSource"
+  protected final val FtpDirectorySource = "FtpDirectorySource"
   protected final val FtpIOSinkName = "FtpIOSink"
+
   protected val ftpClient: () => FTPClient = () => new FTPClient
   protected val ftpBrowserSourceName: String = FtpBrowserSourceName
   protected val ftpIOSourceName: String = FtpIOSourceName
   protected val ftpIOSinkName: String = FtpIOSinkName
+  override protected val ftpDirectorySourceName: String = FtpDirectorySource
 }
 
 /**
@@ -138,11 +160,14 @@ private[ftp] trait FtpSource extends FtpSourceFactory[FTPClient] {
 private[ftp] trait FtpsSource extends FtpSourceFactory[FTPSClient] {
   protected final val FtpsBrowserSourceName = "FtpsBrowserSource"
   protected final val FtpsIOSourceName = "FtpsIOSource"
+  protected final val FtpsDirectorySource = "FtpsDirectorySource"
   protected final val FtpsIOSinkName = "FtpsIOSink"
+
   protected val ftpClient: () => FTPSClient = () => new FTPSClient
   protected val ftpBrowserSourceName: String = FtpsBrowserSourceName
   protected val ftpIOSourceName: String = FtpsIOSourceName
   protected val ftpIOSinkName: String = FtpsIOSinkName
+  override protected val ftpDirectorySourceName: String = FtpsDirectorySource
 }
 
 /**
@@ -152,12 +177,15 @@ private[ftp] trait FtpsSource extends FtpSourceFactory[FTPSClient] {
 private[ftp] trait SftpSource extends FtpSourceFactory[SSHClient] {
   protected final val sFtpBrowserSourceName = "sFtpBrowserSource"
   protected final val sFtpIOSourceName = "sFtpIOSource"
+  protected final val sFtpDirectorySource = "sFtpDirectorySource"
   protected final val sFtpIOSinkName = "sFtpIOSink"
+
   def sshClient(): SSHClient = new SSHClient()
   protected val ftpClient: () => SSHClient = () => sshClient()
   protected val ftpBrowserSourceName: String = sFtpBrowserSourceName
   protected val ftpIOSourceName: String = sFtpIOSourceName
   protected val ftpIOSinkName: String = sFtpIOSinkName
+  override protected val ftpDirectorySourceName: String = sFtpDirectorySource
 }
 
 /**
