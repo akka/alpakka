@@ -99,6 +99,12 @@ object ActorMqttClientSession {
    */
   case object PingFailed extends Exception with NoStackTrace
 
+  /**
+   * An attempt to acknowledge a PUBLISH in some way has failed,
+   * possibly because there were multiple requests to do so.
+   */
+  case object CannotAck extends Exception with NoStackTrace
+
   private[scaladsl] val clientSessionCounter = new AtomicLong
 }
 
@@ -201,9 +207,8 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
                                                                   cp.packetId,
                                                                   Consumer.PubAckReceivedLocally(reply),
                                                                   reply)
-                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
-                    case e: RemotePacketRouter.CannotRoute =>
-                      ByteString.empty
+                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).mapError {
+                    case _: RemotePacketRouter.CannotRoute => CannotAck
                   }
                 case Command(cp: PubRec, _, _) =>
                   val reply = Promise[Consumer.ForwardPubRec.type]
@@ -211,8 +216,8 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
                                                                   cp.packetId,
                                                                   Consumer.PubRecReceivedLocally(reply),
                                                                   reply)
-                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
-                    case _: RemotePacketRouter.CannotRoute => ByteString.empty
+                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).mapError {
+                    case _: RemotePacketRouter.CannotRoute => CannotAck
                   }
                 case Command(cp: PubComp, _, _) =>
                   val reply = Promise[Consumer.ForwardPubComp.type]
@@ -220,8 +225,8 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
                                                                   cp.packetId,
                                                                   Consumer.PubCompReceivedLocally(reply),
                                                                   reply)
-                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
-                    case _: RemotePacketRouter.CannotRoute => ByteString.empty
+                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).mapError {
+                    case _: RemotePacketRouter.CannotRoute => CannotAck
                   }
                 case Command(cp: Subscribe, _, carry) =>
                   val reply = Promise[Subscriber.ForwardSubscribe]
@@ -383,6 +388,12 @@ object ActorMqttServerSession {
    */
   case object PingFailed extends Exception with NoStackTrace
 
+  /**
+   * An attempt to acknowledge a PUBLISH in some way has failed,
+   * possibly because there were multiple requests to do so.
+   */
+  case object CannotAck extends Exception with NoStackTrace
+
   private[scaladsl] val serverSessionCounter = new AtomicLong
 }
 
@@ -525,9 +536,8 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
                                                                                cp.packetId,
                                                                                Consumer.PubAckReceivedLocally(reply),
                                                                                reply)
-                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
-                    case _: RemotePacketRouter.CannotRoute =>
-                      ByteString.empty
+                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).mapError {
+                    case _: RemotePacketRouter.CannotRoute => CannotAck
                   }
                 case Command(cp: PubRec, _, _) =>
                   val reply = Promise[Consumer.ForwardPubRec.type]
@@ -535,8 +545,8 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
                                                                                cp.packetId,
                                                                                Consumer.PubRecReceivedLocally(reply),
                                                                                reply)
-                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
-                    case _: RemotePacketRouter.CannotRoute => ByteString.empty
+                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).mapError {
+                    case _: RemotePacketRouter.CannotRoute => CannotAck
                   }
                 case Command(cp: PubComp, _, _) =>
                   val reply = Promise[Consumer.ForwardPubComp.type]
@@ -544,8 +554,8 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
                                                                                cp.packetId,
                                                                                Consumer.PubCompReceivedLocally(reply),
                                                                                reply)
-                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
-                    case _: RemotePacketRouter.CannotRoute => ByteString.empty
+                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).mapError {
+                    case _: RemotePacketRouter.CannotRoute => CannotAck
                   }
                 case c: Command[A] => throw new IllegalStateException(c + " is not a server command")
               }
