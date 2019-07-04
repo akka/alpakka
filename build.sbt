@@ -179,7 +179,7 @@ lazy val googleCloudStorage =
   alpakkaProject("google-cloud-storage",
                  "google.cloud.storage",
                  Dependencies.GoogleStorage,
-                 crossScalaVersions -= Dependencies.Scala211).disablePlugins(MimaPlugin)
+                 crossScalaVersions -= Dependencies.Scala211)
 
 lazy val googleFcm = alpakkaProject(
   "google-fcm",
@@ -200,7 +200,6 @@ lazy val hdfs = alpakkaProject("hdfs",
 
 lazy val influxdb =
   alpakkaProject("influxdb", "influxdb", Dependencies.InfluxDB, crossScalaVersions -= Dependencies.Scala211)
-    .disablePlugins(MimaPlugin)
 
 lazy val ironmq = alpakkaProject(
   "ironmq",
