@@ -5,22 +5,28 @@
 package docs.javadsl;
 
 // #storing
-import akka.stream.IOResult;
+// #create-settings
 import akka.stream.alpakka.ftp.javadsl.Ftp;
+// #create-settings
+import akka.stream.IOResult;
 import akka.stream.javadsl.Compression;
 import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.util.ByteString;
 import java.util.concurrent.CompletionStage;
 // #storing
 import java.io.PrintWriter;
-import java.net.InetAddress;
+
+// #create-settings
 import akka.stream.alpakka.ftp.FtpSettings;
-import akka.stream.alpakka.ftp.BaseFtpSupport;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Source;
-import akka.testkit.javadsl.TestKit;
 import org.apache.commons.net.PrintCommandListener;
 import org.apache.commons.net.ftp.FTPClient;
+import java.net.InetAddress;
+
+// #create-settings
+import akka.stream.alpakka.ftp.BaseFtpSupport;
+import akka.stream.Materializer;
+import akka.testkit.javadsl.TestKit;
 import org.junit.*;
 
 import static org.junit.Assert.*;
