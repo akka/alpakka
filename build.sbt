@@ -74,7 +74,6 @@ lazy val alpakka = project
       (ScalaUnidoc / unidoc / fullClasspath).value
         .filterNot(_.data.getAbsolutePath.contains("protobuf-java-2.5.0.jar"))
         .filterNot(_.data.getAbsolutePath.contains("guava-27.1-android.jar"))
-        .filterNot(_.data.getAbsolutePath.contains("jwt-core_2.12-3.0.1.jar"))
     },
     ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(`doc-examples`),
     crossScalaVersions := List() // workaround for https://github.com/sbt/sbt/issues/3465
@@ -155,8 +154,7 @@ lazy val googleCloudPubSub = alpakkaProject(
   fork in Test := true,
   envVars in Test := Map("PUBSUB_EMULATOR_HOST" -> "localhost:8538"),
   // For mockito https://github.com/akka/alpakka/issues/390
-  parallelExecution in Test := false,
-  crossScalaVersions -= Dependencies.Scala213 // requires upgrade of jwt-core to 3.0.1
+  parallelExecution in Test := false
 )
 
 lazy val googleCloudPubSubGrpc = alpakkaProject(
@@ -183,8 +181,7 @@ lazy val googleFcm = alpakkaProject(
   "google-fcm",
   "google.firebase.fcm",
   Dependencies.GoogleFcm,
-  fork in Test := true,
-  crossScalaVersions -= Dependencies.Scala213 // requires upgrade of jwt-core to 3.0.1
+  fork in Test := true
 )
 
 lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, fork in Test := true)
