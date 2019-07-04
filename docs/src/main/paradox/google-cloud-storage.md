@@ -75,7 +75,7 @@ Java
 
 ## Rewrite (multi part)
 
-Copy an Google Clouds Storage object from source bucket to target bucket using @scala[@scaladoc[GCStorage.rewrite](akka.stream.alpakka.googlecloud.storage.scaladsl.GCStorage$)]@java[@scaladoc[GCStorage.rewrite](akka.stream.alpakka.googlecloud.stourage.javadsl.GCStorage$)].
+Copy an Google Clouds Storage object from source bucket to target bucket using @scala[@scaladoc[GCStorage.rewrite](akka.stream.alpakka.googlecloud.storage.scaladsl.GCStorage$)]@java[@scaladoc[GCStorage.rewrite](akka.stream.alpakka.googlecloud.storage.javadsl.GCStorage$)].
 When run, this will emit a single @scaladoc[StorageObject](akka.stream.alpakka.googlecloud.storage.StorageObject) with the information about the copied object.
 
 Scala
