@@ -512,7 +512,7 @@ class MqttSessionSpec
       client.watchCompletion().foreach(_ => session.shutdown())
     }
 
-    "receive a QoS 1 publication from a subscribed topic and ack it and then ack it again - the stream should fail" in assertAllStagesStopped {
+    "receive a QoS 1 publication from a subscribed topic and ack it and then ack it again - the stream should ignore" in assertAllStagesStopped {
       val session = ActorMqttClientSession(settings)
 
       val server = TestProbe()
@@ -562,16 +562,20 @@ class MqttSessionSpec
 
       publishReceived.future.futureValue shouldBe Done
 
-      client.offer(Command(pubAck))
+      val deliverPubAck1 = Promise[Done]
+      client.offer(Command(pubAck, Some(deliverPubAck1), None))
 
+      deliverPubAck1.future.futureValue shouldBe Done
       server.expectMsg(pubAckBytes)
 
-      client.offer(Command(pubAck))
+      val deliverPubAck2 = Promise[Done]
+      client.offer(Command(pubAck, Some(deliverPubAck2), None))
 
+      deliverPubAck2.future.failed.futureValue shouldBe an[Exception]
       server.expectNoMessage()
 
       client.complete()
-      result.failed.futureValue shouldBe ActorMqttClientSession.CannotAck
+      result.futureValue shouldBe Done
       client.watchCompletion().foreach(_ => session.shutdown())
     }
 
