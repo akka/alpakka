@@ -90,10 +90,6 @@ object Dependencies {
       )
   )
 
-  val Csv = Seq(
-    libraryDependencies ++= Seq()
-  )
-
   val `Doc-examples` = Seq(
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion,
@@ -106,14 +102,11 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http-xml" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         // https://github.com/akka/alpakka-kafka/releases
-        "com.typesafe.akka" %% "akka-stream-kafka" % "1.0.3",
+        "com.typesafe.akka" %% "akka-stream-kafka" % "1.0.4",
         // https://github.com/javaee/javax.jms
         "javax.jms" % "jms" % "1.1", // CDDL Version 1.1
         // http://activemq.apache.org/download.html
         "org.apache.activemq" % "activemq-all" % "5.15.4" exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2
-        "com.h2database" % "h2" % "1.4.197", // Eclipse Public License 1.0
-        "org.elasticsearch.client" % "elasticsearch-rest-client" % "6.3.1", // ApacheV2
-        "org.codelibs" % "elasticsearch-cluster-runner" % "6.3.1.0", // ApacheV2
         "io.netty" % "netty-all" % "4.1.29.Final", // ApacheV2
         "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.9.9",
         "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.9.9",
