@@ -11,6 +11,7 @@ import akka.stream.alpakka.solr._
 import akka.stream.stage._
 import org.apache.solr.client.solrj.SolrClient
 import org.apache.solr.client.solrj.impl.CloudSolrClient
+import org.apache.solr.client.solrj.request.UpdateRequest
 import org.apache.solr.client.solrj.response.UpdateResponse
 import org.apache.solr.common.SolrInputDocument
 
@@ -144,7 +145,11 @@ private final class SolrFlowLogic[T, C](
     val responses = messages.map { message =>
       val query = message.query.get
       if (log.isDebugEnabled) log.debug(s"Delete by the query $query")
-      client.deleteByQuery(collection, query, settings.commitWithin)
+      val req = new UpdateRequest()
+      if (message.routingFieldValue.isDefined) req.setParam("_route_", message.routingFieldValue.get)
+      req.deleteByQuery(query)
+      req.setCommitWithin(settings.commitWithin)
+      req.process(client, collection)
     }
     responses.find(_.getStatus != 0).getOrElse(responses.head)
   }
