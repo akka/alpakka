@@ -1,54 +1,52 @@
 import Whitesource.whitesourceGroup
 
-lazy val modules: Seq[ProjectReference] = Seq(
-  amqp,
-  avroparquet,
-  awslambda,
-  azureStorageQueue,
-  cassandra,
-  couchbase,
-  csv,
-  dynamodb,
-  elasticsearch,
-  files,
-  ftp,
-  geode,
-  googleCloudPubSub,
-  googleCloudPubSubGrpc,
-  googleCloudStorage,
-  googleFcm,
-  hbase,
-  hdfs,
-  influxdb,
-  ironmq,
-  jms,
-  jsonStreaming,
-  kinesis,
-  kudu,
-  mongodb,
-  mqtt,
-  mqttStreaming,
-  orientdb,
-  reference,
-  s3,
-  springWeb,
-  simpleCodecs,
-  slick,
-  sns,
-  solr,
-  sqs,
-  sse,
-  text,
-  udp,
-  unixdomainsocket,
-  xml
-)
-
 lazy val alpakka = project
   .in(file("."))
   .enablePlugins(ScalaUnidocPlugin)
   .disablePlugins(MimaPlugin, SitePlugin)
-  .aggregate(modules: _*)
+  .aggregate(
+    amqp,
+    avroparquet,
+    awslambda,
+    azureStorageQueue,
+    cassandra,
+    couchbase,
+    csv,
+    dynamodb,
+    elasticsearch,
+    files,
+    ftp,
+    geode,
+    googleCloudPubSub,
+    googleCloudPubSubGrpc,
+    googleCloudStorage,
+    googleFcm,
+    hbase,
+    hdfs,
+    influxdb,
+    ironmq,
+    jms,
+    jsonStreaming,
+    kinesis,
+    kudu,
+    mongodb,
+    mqtt,
+    mqttStreaming,
+    orientdb,
+    reference,
+    s3,
+    springWeb,
+    simpleCodecs,
+    slick,
+    sns,
+    solr,
+    sqs,
+    sse,
+    text,
+    udp,
+    unixdomainsocket,
+    xml
+  )
   .aggregate(`doc-examples`)
   .settings(
     onLoadMessage :=
@@ -103,7 +101,7 @@ lazy val couchbase =
                  parallelExecution in Test := false,
                  whitesourceGroup := Whitesource.Group.Supported)
 
-lazy val csv = alpakkaProject("csv", "csv", Dependencies.Csv, whitesourceGroup := Whitesource.Group.Supported)
+lazy val csv = alpakkaProject("csv", "csv", whitesourceGroup := Whitesource.Group.Supported)
 
 lazy val csvBench = alpakkaProject("csv-bench", "csvBench", publish / skip := true)
   .dependsOn(csv)
@@ -358,7 +356,10 @@ lazy val `doc-examples` = project
   .enablePlugins(AutomateHeaderPlugin)
   .disablePlugins(BintrayPlugin, MimaPlugin, SitePlugin)
   .dependsOn(
-    modules.map(p => classpathDependency(p)): _*
+    files,
+    ftp,
+    jms,
+    mqtt
   )
   .settings(
     name := s"akka-stream-alpakka-doc-examples",
