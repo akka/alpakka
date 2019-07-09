@@ -186,7 +186,7 @@ object Dependencies {
 
   val GooglePubSubGrpc = Seq(
     libraryDependencies ++= Seq(
-        "com.google.api.grpc" % "grpc-google-cloud-pubsub-v1" % "1.61.0" % "protobuf", // ApacheV2
+        "com.google.api.grpc" % "grpc-google-cloud-pubsub-v1" % "1.63.0" % "protobuf", // ApacheV2
         "io.grpc" % "grpc-auth" % "1.21.0", // ApacheV2
         "com.google.auth" % "google-auth-library-oauth2-http" % "0.16.1" // BSD 3-clause
       ) ++ Silencer
