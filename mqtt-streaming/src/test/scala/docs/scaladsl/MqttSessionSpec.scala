@@ -562,12 +562,16 @@ class MqttSessionSpec
 
       publishReceived.future.futureValue shouldBe Done
 
-      client.offer(Command(pubAck))
+      val deliverPubAck1 = Promise[Done]
+      client.offer(Command(pubAck, Some(deliverPubAck1), None))
 
+      deliverPubAck1.future.futureValue shouldBe Done
       server.expectMsg(pubAckBytes)
 
-      client.offer(Command(pubAck))
+      val deliverPubAck2 = Promise[Done]
+      client.offer(Command(pubAck, Some(deliverPubAck2), None))
 
+      deliverPubAck2.future.failed.futureValue shouldBe an[Exception]
       server.expectNoMessage()
 
       client.complete()

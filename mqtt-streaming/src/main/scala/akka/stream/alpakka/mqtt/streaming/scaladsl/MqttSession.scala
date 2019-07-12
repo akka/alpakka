@@ -195,31 +195,48 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
                         }
                       })
                   )
-                case Command(cp: PubAck, _, _) =>
+                case Command(cp: PubAck, completed, _) =>
                   val reply = Promise[Consumer.ForwardPubAck.type]
                   consumerPacketRouter ! RemotePacketRouter.Route(None,
                                                                   cp.packetId,
                                                                   Consumer.PubAckReceivedLocally(reply),
                                                                   reply)
-                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
-                    case e: RemotePacketRouter.CannotRoute =>
-                      ByteString.empty
+
+                  reply.future.onComplete { result =>
+                    completed
+                      .foreach(_.complete(result.map(_ => Done)))
                   }
-                case Command(cp: PubRec, _, _) =>
+
+                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
+                    case _: RemotePacketRouter.CannotRoute => ByteString.empty
+                  }
+                case Command(cp: PubRec, completed, _) =>
                   val reply = Promise[Consumer.ForwardPubRec.type]
                   consumerPacketRouter ! RemotePacketRouter.Route(None,
                                                                   cp.packetId,
                                                                   Consumer.PubRecReceivedLocally(reply),
                                                                   reply)
+
+                  reply.future.onComplete { result =>
+                    completed
+                      .foreach(_.complete(result.map(_ => Done)))
+                  }
+
                   Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
                     case _: RemotePacketRouter.CannotRoute => ByteString.empty
                   }
-                case Command(cp: PubComp, _, _) =>
+                case Command(cp: PubComp, completed, _) =>
                   val reply = Promise[Consumer.ForwardPubComp.type]
                   consumerPacketRouter ! RemotePacketRouter.Route(None,
                                                                   cp.packetId,
                                                                   Consumer.PubCompReceivedLocally(reply),
                                                                   reply)
+
+                  reply.future.onComplete { result =>
+                    completed
+                      .foreach(_.complete(result.map(_ => Done)))
+                  }
+
                   Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
                     case _: RemotePacketRouter.CannotRoute => ByteString.empty
                   }
@@ -512,38 +529,61 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
                       case _: RemotePacketRouter.CannotRoute => ByteString.empty
                     }
 
-                case Command(cp: UnsubAck, _, _) =>
+                case Command(cp: UnsubAck, completed, _) =>
                   val reply = Promise[Unpublisher.ForwardUnsubAck.type]
                   unpublisherPacketRouter ! RemotePacketRouter
                     .RouteViaConnection(connectionId, cp.packetId, Unpublisher.UnsubAckReceivedLocally(reply), reply)
+
+                  reply.future.onComplete { result =>
+                    completed
+                      .foreach(_.complete(result.map(_ => Done)))
+                  }
+
                   Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
                     case _: RemotePacketRouter.CannotRoute => ByteString.empty
                   }
-                case Command(cp: PubAck, _, _) =>
+                case Command(cp: PubAck, completed, _) =>
                   val reply = Promise[Consumer.ForwardPubAck.type]
                   consumerPacketRouter ! RemotePacketRouter.RouteViaConnection(connectionId,
                                                                                cp.packetId,
                                                                                Consumer.PubAckReceivedLocally(reply),
                                                                                reply)
-                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
-                    case _: RemotePacketRouter.CannotRoute =>
-                      ByteString.empty
+
+                  reply.future.onComplete { result =>
+                    completed
+                      .foreach(_.complete(result.map(_ => Done)))
                   }
-                case Command(cp: PubRec, _, _) =>
+
+                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
+                    case _: RemotePacketRouter.CannotRoute => ByteString.empty
+                  }
+                case Command(cp: PubRec, completed, _) =>
                   val reply = Promise[Consumer.ForwardPubRec.type]
                   consumerPacketRouter ! RemotePacketRouter.RouteViaConnection(connectionId,
                                                                                cp.packetId,
                                                                                Consumer.PubRecReceivedLocally(reply),
                                                                                reply)
+
+                  reply.future.onComplete { result =>
+                    completed
+                      .foreach(_.complete(result.map(_ => Done)))
+                  }
+
                   Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
                     case _: RemotePacketRouter.CannotRoute => ByteString.empty
                   }
-                case Command(cp: PubComp, _, _) =>
+                case Command(cp: PubComp, completed, _) =>
                   val reply = Promise[Consumer.ForwardPubComp.type]
                   consumerPacketRouter ! RemotePacketRouter.RouteViaConnection(connectionId,
                                                                                cp.packetId,
                                                                                Consumer.PubCompReceivedLocally(reply),
                                                                                reply)
+
+                  reply.future.onComplete { result =>
+                    completed
+                      .foreach(_.complete(result.map(_ => Done)))
+                  }
+
                   Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
                     case _: RemotePacketRouter.CannotRoute => ByteString.empty
                   }
