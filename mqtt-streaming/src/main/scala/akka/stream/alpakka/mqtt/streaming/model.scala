@@ -1090,8 +1090,8 @@ object Command {
  * @param command The command to send
  * @param completed A promise that is completed by the session when the command has been processed -
  *                  useful for synchronizing when activities should occur in relation to a command
- *                  The only command that supports this presently is SubAck on the server side. This
- *                  is because it is important to know when to start publishing.
+ *                  The only commands that support this presently are SubAck, UnsubAck, PubAck, PubRec and PubComp.
+ *                 These completions can be used to signal when processing should continue.
  * @param carry The data to carry though
  * @tparam A The type of data to carry through
  */
@@ -1105,8 +1105,8 @@ final case class Command[A](command: ControlPacket, completed: Option[Promise[Do
    * @param command The command to send
    * @param completed A promise that is completed by the session when the command has been processed -
    *                  useful for synchronizing when activities should occur in relation to a command
-   *                  The only command that supports this presently is SubAck on the server side. This
-   *                  is because it is important to know when to start publishing.
+   *                  The only commands that support this presently are SubAck, UnsubAck, PubAck, PubRec and PubComp.
+   *                 These completions can be used to signal when processing should continue.
    * @param carry The data to carry though
    */
   def this(command: ControlPacket, completed: Optional[CompletionStage[Done]], carry: Optional[A]) =
