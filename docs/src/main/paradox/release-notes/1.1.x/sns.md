@@ -7,4 +7,4 @@
 
 [*closed in 1.1.0*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.0.2+label%3Ap%3Aaws-sns)
 
-For earlier changes see [1.0.x versions](../1.0.x/sns.md)
+For earlier changes see @ref:[1.0.x versions](../1.0.x/sns.md)
