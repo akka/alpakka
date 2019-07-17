@@ -43,5 +43,5 @@ private[mqtt] object QueueOfferState {
         case (_, other) =>
           waitForQueueOfferCompleted(behavior, stash = stash :+ other)
       }
-      .receiveSignal { case (ctx, signal) => Behavior.interpretSignal(behavior, ctx, signal) } // handle signals immediately
+      .orElse(behavior) // handle signals immediately
 }
