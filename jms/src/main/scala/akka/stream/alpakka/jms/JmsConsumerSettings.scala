@@ -8,6 +8,8 @@ import akka.actor.ActorSystem
 import akka.util.JavaDurationConverters._
 import com.typesafe.config.{Config, ConfigValueType}
 
+import scala.concurrent.duration.Duration
+
 /**
  * Settings for [[akka.stream.alpakka.jms.scaladsl.JmsConsumer]] and [[akka.stream.alpakka.jms.javadsl.JmsConsumer]].
  */
@@ -134,7 +136,7 @@ object JmsConsumerSettings {
     val selector = getStringOption("selector")
     val acknowledgeMode =
       getOption("acknowledge-mode", c => AcknowledgeMode.from(c.getString("acknowledge-mode")))
-    val ackTimeout = c.getDuration("ack-timeout").asScala
+    val ackTimeout = if (c.hasPath("ack-timeout")) c.getDuration("ack-timeout").asScala else Duration.Inf
     new JmsConsumerSettings(
       connectionFactory,
       connectionRetrySettings,

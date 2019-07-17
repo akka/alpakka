@@ -79,7 +79,7 @@ class JmsSettingsSpec extends JmsSpec with OptionValues {
         .withConnectionRetrySettings(retrySettings)
         .withSessionCount(1)
         .withBufferSize(100)
-        .withAckTimeout(1.second)
+        .withAckTimeout(Duration.Inf)
       //#consumer-settings
 
       val retrySettings2 = ConnectionRetrySettings(system)
