@@ -20,6 +20,7 @@ private[writer] final case class SequenceWriter[K <: Writable, V <: Writable](
     fs: FileSystem,
     writerOptions: Seq[Writer.Option],
     pathGenerator: FilePathGenerator,
+    overwrite: Boolean,
     maybeTargetPath: Option[Path]
 ) extends HdfsWriter[SequenceFile.Writer, (K, V)] {
 
@@ -54,9 +55,10 @@ private[hdfs] object SequenceWriter {
       fs: FileSystem,
       classK: Class[K],
       classV: Class[V],
-      pathGenerator: FilePathGenerator
+      pathGenerator: FilePathGenerator,
+      overwrite: Boolean
   ): SequenceWriter[K, V] =
-    new SequenceWriter[K, V](fs, options(classK, classV), pathGenerator, None)
+    new SequenceWriter[K, V](fs, options(classK, classV), pathGenerator, overwrite, None)
 
   def apply[K <: Writable, V <: Writable](
       fs: FileSystem,
@@ -64,9 +66,14 @@ private[hdfs] object SequenceWriter {
       compressionCodec: CompressionCodec,
       classK: Class[K],
       classV: Class[V],
-      pathGenerator: FilePathGenerator
+      pathGenerator: FilePathGenerator,
+      overwrite: Boolean
   ): SequenceWriter[K, V] =
-    new SequenceWriter[K, V](fs, options(compressionType, compressionCodec, classK, classV), pathGenerator, None)
+    new SequenceWriter[K, V](fs,
+                             options(compressionType, compressionCodec, classK, classV),
+                             pathGenerator,
+                             overwrite,
+                             None)
 
   private def options[K <: Writable, V <: Writable](
       classK: Class[K],
