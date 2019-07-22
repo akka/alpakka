@@ -17,36 +17,36 @@ import org.apache.hadoop.io.compress.{CodecPool, CompressionCodec, CompressionOu
  */
 @InternalApi
 private[writer] final case class CompressedDataWriter(
-    fs: FileSystem,
+    override val fs: FileSystem,
     compressionCodec: CompressionCodec,
-    pathGenerator: FilePathGenerator,
+    override val pathGenerator: FilePathGenerator,
     maybeTargetPath: Option[Path],
-    overwrite: Boolean
+    override val overwrite: Boolean
 ) extends HdfsWriter[FSDataOutputStream, ByteString] {
 
-  protected lazy val target: Path = getOrCreatePath(maybeTargetPath, outputFileWithExtension(0))
+  override protected lazy val target: Path = getOrCreatePath(maybeTargetPath, outputFileWithExtension(0))
 
   private val compressor: Compressor = CodecPool.getCompressor(compressionCodec, fs.getConf)
   private val cmpOutput: CompressionOutputStream = compressionCodec.createOutputStream(output, compressor)
 
   require(compressor ne null, "Compressor cannot be null")
 
-  def sync(): Unit = output.hsync()
+  override def sync(): Unit = output.hsync()
 
-  def write(input: ByteString, separator: Option[Array[Byte]]): Long = {
+  override def write(input: ByteString, separator: Option[Array[Byte]]): Long = {
     val bytes = input.toArray
     cmpOutput.write(bytes)
     separator.foreach(output.write)
     compressor.getBytesWritten
   }
 
-  def rotate(rotationCount: Long): CompressedDataWriter = {
+  override def rotate(rotationCount: Long): CompressedDataWriter = {
     cmpOutput.finish()
     output.close()
     copy(maybeTargetPath = Some(outputFileWithExtension(rotationCount)))
   }
 
-  protected def create(fs: FileSystem, file: Path): FSDataOutputStream = fs.create(file, overwrite)
+  override protected def create(fs: FileSystem, file: Path): FSDataOutputStream = fs.create(file, overwrite)
 
   private def outputFileWithExtension(rotationCount: Long): Path = {
     val candidatePath = createTargetPath(pathGenerator, rotationCount)

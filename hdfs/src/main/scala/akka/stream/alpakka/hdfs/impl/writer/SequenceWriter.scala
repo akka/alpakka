@@ -17,29 +17,29 @@ import org.apache.hadoop.io.{SequenceFile, Writable}
  */
 @InternalApi
 private[writer] final case class SequenceWriter[K <: Writable, V <: Writable](
-    fs: FileSystem,
+    override val fs: FileSystem,
     writerOptions: Seq[Writer.Option],
-    pathGenerator: FilePathGenerator,
-    overwrite: Boolean,
+    override val pathGenerator: FilePathGenerator,
+    override val overwrite: Boolean,
     maybeTargetPath: Option[Path]
 ) extends HdfsWriter[SequenceFile.Writer, (K, V)] {
 
-  protected lazy val target: Path =
+  override protected lazy val target: Path =
     getOrCreatePath(maybeTargetPath, createTargetPath(pathGenerator, 0))
 
-  def sync(): Unit = output.hsync()
+  override def sync(): Unit = output.hsync()
 
-  def write(input: (K, V), separator: Option[Array[Byte]]): Long = {
+  override def write(input: (K, V), separator: Option[Array[Byte]]): Long = {
     output.append(input._1, input._2)
     output.getLength
   }
 
-  def rotate(rotationCount: Long): SequenceWriter[K, V] = {
+  override def rotate(rotationCount: Long): SequenceWriter[K, V] = {
     output.close()
     copy(maybeTargetPath = Some(createTargetPath(pathGenerator, rotationCount)))
   }
 
-  protected def create(fs: FileSystem, file: Path): SequenceFile.Writer = {
+  override protected def create(fs: FileSystem, file: Path): SequenceFile.Writer = {
     val ops = SequenceFile.Writer.file(file) +: writerOptions
     SequenceFile.createWriter(fs.getConf, ops: _*)
   }
