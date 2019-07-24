@@ -211,24 +211,6 @@ case object MessageDeduplicationId extends AttributeName("MessageDeduplicationId
 case object MessageGroupId extends AttributeName("MessageGroupId")
 case object SequenceNumber extends AttributeName("SequenceNumber")
 
-case object Policy extends AttributeName("Policy")
-case object VisibilityTimeout extends AttributeName("VisibilityTimeout")
-case object MaximumMessageSize extends AttributeName("MaximumMessageSize")
-case object MessageRetentionPeriod extends AttributeName("MessageRetentionPeriod")
-case object ApproximateNumberOfMessages extends AttributeName("ApproximateNumberOfMessages")
-case object ApproximateNumberOfMessagesNotVisible extends AttributeName("ApproximateNumberOfMessagesNotVisible")
-case object CreatedTimestamp extends AttributeName("CreatedTimestamp")
-case object LastModifiedTimestamp extends AttributeName("LastModifiedTimestamp")
-case object QueueArn extends AttributeName("QueueArn")
-case object ApproximateNumberOfMessagesDelayed extends AttributeName("ApproximateNumberOfMessagesDelayed")
-case object DelaySeconds extends AttributeName("DelaySeconds")
-case object ReceiveMessageWaitTimeSeconds extends AttributeName("ReceiveMessageWaitTimeSeconds")
-case object RedrivePolicy extends AttributeName("RedrivePolicy")
-case object FifoQueue extends AttributeName("FifoQueue")
-case object ContentBasedDeduplication extends AttributeName("ContentBasedDeduplication")
-case object KmsMasterKeyId extends AttributeName("KmsMasterKeyId")
-case object KmsDataKeyReusePeriodSeconds extends AttributeName("KmsDataKeyReusePeriodSeconds")
-
 /**
  * Java API:
  *
@@ -244,22 +226,4 @@ object Attribute {
   val messageDeduplicationId = MessageDeduplicationId
   val messageGroupId = MessageGroupId
   val sequenceNumber = SequenceNumber
-
-  val policy = Policy
-  val visibilityTimeout = VisibilityTimeout
-  val maximumMessageSize = MaximumMessageSize
-  val messageRetentionPeriod = MessageRetentionPeriod
-  val approximateNumberOfMessages = ApproximateNumberOfMessages
-  val approximateNumberOfMessagesNotVisible = ApproximateNumberOfMessagesNotVisible
-  val createdTimestamp = CreatedTimestamp
-  val lastModifiedTimestamp = LastModifiedTimestamp
-  val queueArn = QueueArn
-  val approximateNumberOfMessagesDelayed = ApproximateNumberOfMessagesDelayed
-  val delaySeconds = DelaySeconds
-  val receiveMessageWaitTimeSeconds = ReceiveMessageWaitTimeSeconds
-  val redrivePolicy = RedrivePolicy
-  val fifoQueue = FifoQueue
-  val contentBasedDeduplication = ContentBasedDeduplication
-  val kmsMasterKeyId = KmsMasterKeyId
-  val kmsDataKeyReusePeriodSeconds = KmsDataKeyReusePeriodSeconds
 }
