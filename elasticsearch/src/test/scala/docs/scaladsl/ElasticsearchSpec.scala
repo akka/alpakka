@@ -122,6 +122,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
         .withBufferSize(10)
         .withVersionType("internal")
         .withRetryLogic(RetryAtFixedRate(maxRetries = 5, retryInterval = 1.second))
+        .withAllowExplicitIndex(true)
     //#sink-settings
   }
 
@@ -137,6 +138,20 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
       }
       .runWith(Sink.seq)
 
+  "Sink Settings" should {
+    "copy explicit index name permission" in {
+      val sinkSettings =
+        ElasticsearchWriteSettings()
+          .withBufferSize(10)
+          .withVersionType("internal")
+          .withRetryLogic(RetryAtFixedRate(maxRetries = 5, retryInterval = 1.second))
+
+      val restrictiveCopy = sinkSettings.withAllowExplicitIndex(false)
+
+      restrictiveCopy.allowExplicitIndex shouldEqual false
+    }
+
+  }
   "Source Settings" should {
     "convert scrollDuration value to correct scroll string value (Days)" in {
       val sourceSettings = ElasticsearchSourceSettings()
