@@ -71,7 +71,7 @@ final class ElasticsearchWriteSettings private (val bufferSize: Int,
 }
 
 object ElasticsearchWriteSettings {
-  val Default = new ElasticsearchWriteSettings(bufferSize = 10, retryLogic = RetryNever, versionType = None, multiAllowExplicitIndex = False)
+  val Default = new ElasticsearchWriteSettings(bufferSize = 10, retryLogic = RetryNever, versionType = None, multiAllowExplicitIndex = True)
 
   /** Scala API */
   def apply(): ElasticsearchWriteSettings = Default
