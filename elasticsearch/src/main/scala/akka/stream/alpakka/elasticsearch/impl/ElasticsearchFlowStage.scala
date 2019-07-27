@@ -38,6 +38,8 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
   private val out = Outlet[immutable.Seq[WriteResult[T, C]]]("result")
   override val shape = FlowShape(in, out)
 
+  private val sharedFieldsFn = if (settings.multiAllowExplicitIndex) sharedFields else sharedFieldsNoIndex
+
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new StageLogic()
 
   private class StageLogic extends TimerGraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
@@ -62,7 +64,7 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
 
     override def onTimer(timerKey: Any): Unit = {
       if (log.isDebugEnabled) log.debug("retrying inflight={} {}", inflight, failedMessages)
-      sendBulkUpdateRequest(failedMessages)
+      sendBulkUpdateRequest(failedMessages, sharedFieldsFn)
       failedMessages = Nil
     }
 
@@ -136,13 +138,20 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
       if (upstreamFinished && inflight == 0) completeStage()
     }
 
-    private def sendBulkUpdateRequest(messages: immutable.Seq[WriteMessage[T, C]]): Unit = {
+    private def sharedFieldsNoIndex(message: WriteMessage[T,C]): Seq[(String, JsString)] = {
+      Seq(typeNameTuple) ++ message.customMetadata.map { case (field, value) => field -> JsString(value) }
+    }
+
+    private def sharedFields(message: WriteMessage[T,C]): Seq[(String, JsString)] = {
+      Seq("_index" -> JsString(message.indexName.getOrElse(indexName)) ++ sharedFieldsNoIndex(message)
+    }
+
+    private def sendBulkUpdateRequest(messages: immutable.Seq[WriteMessage[T, C]],
+                                      bulkSharedFields: WriteMessage[T,C] => Seq[(String, JsString)] ): Unit = {
       val json = messages
         .map { message =>
-          val sharedFields: Seq[(String, JsString)] = Seq(
-              "_index" -> JsString(message.indexName.getOrElse(indexName)),
-              typeNameTuple
-            ) ++ message.customMetadata.map { case (field, value) => field -> JsString(value) }
+          val sharedFields: Seq[(String, JsString)] = bulkSharedFields(message) 
+
           val tuple: (String, JsObject) = message.operation match {
             case Index =>
               val fields = Seq(
@@ -232,7 +241,7 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
     override def onPush(): Unit = {
       val messages = grab(in)
       inflight += messages.size
-      sendBulkUpdateRequest(messages)
+      sendBulkUpdateRequest(messages, sharedFieldsFn)
     }
 
     override def onUpstreamFinish(): Unit =

@@ -44,7 +44,8 @@ object RetryAtFixedRate {
  */
 final class ElasticsearchWriteSettings private (val bufferSize: Int,
                                                 val retryLogic: RetryLogic,
-                                                val versionType: Option[String]) {
+                                                val versionType: Option[String],
+                                                val multiAllowExplicitIndex: Boolean) {
 
   def withBufferSize(value: Int): ElasticsearchWriteSettings = copy(bufferSize = value)
 
@@ -53,18 +54,24 @@ final class ElasticsearchWriteSettings private (val bufferSize: Int,
 
   def withVersionType(value: String): ElasticsearchWriteSettings = copy(versionType = Option(value))
 
+  def withMultiAllowExplicitIndex(value: Boolean): ElasticsearchWriteSettings = copy(multiAllowExplicitIndex = value)
+
   private def copy(bufferSize: Int = bufferSize,
                    retryLogic: RetryLogic = retryLogic,
-                   versionType: Option[String] = versionType): ElasticsearchWriteSettings =
-    new ElasticsearchWriteSettings(bufferSize = bufferSize, retryLogic = retryLogic, versionType = versionType)
+                   versionType: Option[String] = versionType,
+                   multiAllowExplicitIndex: Boolean = multiAllowExplicitIndex): ElasticsearchWriteSettings =
+    new ElasticsearchWriteSettings(bufferSize = bufferSize,
+                                   retryLogic = retryLogic,
+                                   versionType = versionType,
+                                   multiAllowExplicitIndex = multiAllowExplicitIndex)
 
   override def toString =
-    s"ElasticsearchUpdateSettings(bufferSize=$bufferSize,retryLogic=$retryLogic,versionType=$versionType)"
+    s"ElasticsearchUpdateSettings(bufferSize=$bufferSize,retryLogic=$retryLogic,versionType=$versionType,multiAllowExplicitIndex=$multiAllowExplicitIndex)"
 
 }
 
 object ElasticsearchWriteSettings {
-  val Default = new ElasticsearchWriteSettings(bufferSize = 10, retryLogic = RetryNever, versionType = None)
+  val Default = new ElasticsearchWriteSettings(bufferSize = 10, retryLogic = RetryNever, versionType = None, multiAllowExplicitIndex = False)
 
   /** Scala API */
   def apply(): ElasticsearchWriteSettings = Default
