@@ -121,9 +121,12 @@ Java
 | bufferSize          | 10      | Flow and Sink batch messages to bulk requests when back-pressure applies.                             |
 | versionType         | None    | If set, `ElasticsearchSink` uses the chosen versionType to index documents. See [Version types](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#_version_types) for accepted settings. |
 | retryLogic | No retries | See below |
+| allowExplicitIndex | True | When set to False, the index name will be included in the URL instead of on each document | See below |
 
 
 A bulk request might fail partially for some reason. To retry failed writes to Elasticsearch, a `RetryLogic` can be specified. The provided implementation is `RetryAtFixedRate`.
+
+When using the `_bulk` API, Elasticsearch will reject requests that have an explicit index in the request body if explicit index names are not allowed. See [URL-based access control](https://www.elastic.co/guide/en/elasticsearch/reference/current/url-access-control.html)
 
 @@@ warning
 If using retries, you will receive messages **out of order downstream** in cases when Elasticsearch returns an error on some of the documents in a bulk request.
