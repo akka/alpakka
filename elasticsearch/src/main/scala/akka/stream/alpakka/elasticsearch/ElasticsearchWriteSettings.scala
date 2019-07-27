@@ -54,7 +54,7 @@ final class ElasticsearchWriteSettings private (val bufferSize: Int,
 
   def withVersionType(value: String): ElasticsearchWriteSettings = copy(versionType = Option(value))
 
-  def withMultiAllowExplicitIndex(value: Boolean): ElasticsearchWriteSettings = copy(allowExplicitIndex = value)
+  def withAllowExplicitIndex(value: Boolean): ElasticsearchWriteSettings = copy(allowExplicitIndex = value)
 
   private def copy(bufferSize: Int = bufferSize,
                    retryLogic: RetryLogic = retryLogic,
