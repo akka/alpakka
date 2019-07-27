@@ -40,6 +40,8 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
 
   private val sharedFieldsFn = if (settings.multiAllowExplicitIndex) sharedFields else sharedFieldsNoIndex
 
+  private val endpoint = if (settings.multiAllowExplicitIndex) "/_bulk" else s"/$indexName/_bulk"
+
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new StageLogic()
 
   private class StageLogic extends TimerGraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
@@ -206,7 +208,7 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
 
       client.performRequestAsync(
         "POST",
-        "/_bulk",
+        endpoint,
         java.util.Collections.emptyMap[String, String](),
         new StringEntity(json, StandardCharsets.UTF_8),
         new ResponseListener() {
