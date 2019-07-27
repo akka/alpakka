@@ -74,7 +74,7 @@ object ElasticsearchWriteSettings {
   val Default = new ElasticsearchWriteSettings(bufferSize = 10,
                                                retryLogic = RetryNever,
                                                versionType = None,
-                                               allowExplicitIndex = True)
+                                               allowExplicitIndex = true)
 
   /** Scala API */
   def apply(): ElasticsearchWriteSettings = Default
