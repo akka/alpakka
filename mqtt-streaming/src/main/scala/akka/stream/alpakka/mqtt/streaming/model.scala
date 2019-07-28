@@ -550,8 +550,10 @@ object MqttCodec {
       extends DecodeError
 
   /**
-   * Something is wrong with the subscribe ack message
+   * Unable to subscribe at the requested QoS
+   * @deprecated this message was never able to be returned - always use [[SubAck]] to test subscribed QoS, since 1.1.1
    */
+  @deprecated("this message was never able to be returned - always use [[SubAck]] to test subscribed QoS", "1.1.1")
   final case class BadSubAckMessage(packetId: PacketId, returnCodes: Seq[ControlPacketFlags]) extends DecodeError
 
   /**
@@ -1005,15 +1007,7 @@ object MqttCodec {
             returnCodes
           }
         val returnCodes = decodeReturnCodes(l - (packetLen - v.len), Vector.empty)
-        val returnCodesValid = returnCodes.nonEmpty && returnCodes.foldLeft(true) {
-            case (true, rc) if rc.underlying < ControlPacketFlags.QoSReserved.underlying => true
-            case _ => false
-          }
-        if (returnCodesValid) {
-          Right(SubAck(packetId, returnCodes))
-        } else {
-          Left(BadSubAckMessage(packetId, returnCodes))
-        }
+        Right(SubAck(packetId, returnCodes))
       } catch {
         case _: NoSuchElementException => Left(BufferUnderflow)
       }
