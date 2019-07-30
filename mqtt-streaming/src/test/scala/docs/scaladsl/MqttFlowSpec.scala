@@ -6,6 +6,8 @@ package docs.scaladsl
 
 import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.adapter._
 import akka.stream.alpakka.mqtt.streaming._
 import akka.stream.alpakka.mqtt.streaming.scaladsl.{ActorMqttClientSession, ActorMqttServerSession, Mqtt}
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Sink, Source, SourceQueueWithComplete, Tcp}
@@ -19,12 +21,12 @@ import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
 
-class MqttFlowSpec
-    extends TestKit(ActorSystem("MqttFlowSpec"))
-    with WordSpecLike
-    with Matchers
-    with BeforeAndAfterAll
-    with ScalaFutures {
+class UntypedMqttFlowSpec extends TestKit(ActorSystem("UntypedMqttFlowSpec")) with MqttFlowSpec
+class TypedMqttFlowSpec
+    extends TestKit(akka.actor.typed.ActorSystem(Behaviors.ignore, "TypedMqttFlowSpec").toUntyped)
+    with MqttFlowSpec
+
+trait MqttFlowSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with ScalaFutures { self: TestKit =>
 
   private implicit val defaultPatience: PatienceConfig = PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
