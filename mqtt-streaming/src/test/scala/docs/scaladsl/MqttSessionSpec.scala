@@ -513,6 +513,9 @@ class MqttSessionSpec
     }
 
     "receive a QoS 1 publication from a subscribed topic and ack it and then ack it again - the stream should ignore" in assertAllStagesStopped {
+      // longer patience needed since Akka 2.6
+      implicit val patienceConfig = PatienceConfig(scaled(1.second), scaled(50.millis))
+
       val session = ActorMqttClientSession(settings)
 
       val server = TestProbe()
