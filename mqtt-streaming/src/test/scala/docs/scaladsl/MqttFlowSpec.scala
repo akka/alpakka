@@ -21,12 +21,19 @@ import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
 
-class UntypedMqttFlowSpec extends TestKit(ActorSystem("UntypedMqttFlowSpec")) with MqttFlowSpec
+class UntypedMqttFlowSpec
+    extends ParametrizedTestKit("untyped-flow-spec/flow", "typed-flow-spec/topic1", ActorSystem("UntypedMqttFlowSpec"))
+    with MqttFlowSpec
 class TypedMqttFlowSpec
-    extends TestKit(akka.actor.typed.ActorSystem(Behaviors.ignore, "TypedMqttFlowSpec").toUntyped)
+    extends ParametrizedTestKit("typed-flow-spec/flow",
+                                "typed-flow-spec/topic1",
+                                akka.actor.typed.ActorSystem(Behaviors.ignore, "TypedMqttFlowSpec").toUntyped)
     with MqttFlowSpec
 
-trait MqttFlowSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with ScalaFutures { self: TestKit =>
+class ParametrizedTestKit(val clientId: String, val topic: String, system: ActorSystem) extends TestKit(system)
+
+trait MqttFlowSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with ScalaFutures {
+  self: ParametrizedTestKit =>
 
   private implicit val defaultPatience: PatienceConfig = PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
@@ -38,9 +45,6 @@ trait MqttFlowSpec extends WordSpecLike with Matchers with BeforeAndAfterAll wit
 
   "mqtt client flow" should {
     "establish a bidirectional connection and subscribe to a topic" in assertAllStagesStopped {
-      val clientId = "source-spec/flow"
-      val topic = "source-spec/topic1"
-
       //#create-streaming-flow
       val settings = MqttSessionSettings()
       val session = ActorMqttClientSession(settings)
@@ -87,10 +91,7 @@ trait MqttFlowSpec extends WordSpecLike with Matchers with BeforeAndAfterAll wit
 
   "mqtt server flow" should {
     "receive a bidirectional connection and a subscription to a topic" in assertAllStagesStopped {
-      val clientId = "flow-spec/flow"
-      val topic = "source-spec/topic1"
       val host = "localhost"
-      val port = 9883
 
       //#create-streaming-bind-flow
       val settings = MqttSessionSettings()
@@ -100,7 +101,7 @@ trait MqttFlowSpec extends WordSpecLike with Matchers with BeforeAndAfterAll wit
 
       val bindSource: Source[Either[MqttCodec.DecodeError, Event[Nothing]], Future[Tcp.ServerBinding]] =
         Tcp()
-          .bind(host, port)
+          .bind(host, 0)
           .flatMapMerge(
             maxConnections, { connection =>
               val mqttFlow: Flow[Command[Nothing], Either[MqttCodec.DecodeError, Event[Nothing]], NotUsed] =
@@ -141,10 +142,11 @@ trait MqttFlowSpec extends WordSpecLike with Matchers with BeforeAndAfterAll wit
         .run()
       //#run-streaming-bind-flow
 
-      bound.futureValue.localAddress.getPort shouldBe port
+      val binding = bound.futureValue
+      binding.localAddress.getPort should not be 0
 
       val clientSession = ActorMqttClientSession(settings)
-      val connection = Tcp().outgoingConnection(host, port)
+      val connection = Tcp().outgoingConnection(host, binding.localAddress.getPort)
       val mqttFlow = Mqtt.clientSessionFlow(clientSession, ByteString("1")).join(connection)
       val (commands, events) =
         Source
