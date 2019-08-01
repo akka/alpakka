@@ -21,6 +21,7 @@ import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{
   Message,
   MessageAttributeValue,
+  MessageSystemAttributeName,
   QueueDoesNotExistException,
   SendMessageRequest
 }
@@ -97,8 +98,9 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
 
     val future = SqsSource(queueUrl, settings).runWith(Sink.head)
 
-    private val value: Message = future.futureValue
-    value.attributes().keySet.asScala should contain theSameElementsAs allAvailableAttributes.map(_.name)
+    private val message: Message = future.futureValue
+    message.attributes().keySet.asScala should contain theSameElementsAs allAvailableAttributes
+      .map(attr => MessageSystemAttributeName.fromValue(attr.name))
   }
 
   allAvailableAttributes foreach { attribute =>
@@ -116,8 +118,8 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
 
       val future = SqsSource(queueUrl, settings).runWith(Sink.head)
 
-      private val value: Message = future.futureValue
-      value.attributes().keySet.asScala should contain only attribute.name
+      private val message: Message = future.futureValue
+      message.attributes().keySet.asScala should contain only MessageSystemAttributeName.fromValue(attribute.name)
     }
   }
 
@@ -136,8 +138,10 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
 
     val future = SqsSource(queueUrl, settings).runWith(Sink.head)
 
-    private val value: Message = future.futureValue
-    value.attributes().keySet.asScala should contain theSameElementsAs attributes.map(_.name)
+    private val message: Message = future.futureValue
+    message.attributes().keySet.asScala should contain theSameElementsAs attributes
+      .map(_.name)
+      .map(MessageSystemAttributeName.fromValue)
   }
 
   it should "ask for all the message attributes set in the settings" taggedAs Integration in new IntegrationFixture {
@@ -314,7 +318,7 @@ object SqsSourceSpec {
     SenderId,
     SentTimestamp,
     MessageDeduplicationId,
-    MessageGroupId,
-    SequenceNumber
+    MessageGroupId
+    // SequenceNumber, not supported by elasticmq
   )
 }
