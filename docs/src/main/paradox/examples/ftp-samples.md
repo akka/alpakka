@@ -36,11 +36,14 @@ Java
 Scala
 : @@snip [snip](/doc-examples/src/main/scala/ftpsamples/RotateLogsToFtp.scala) { #sample }
 
+Java
+: @@snip [snip](/doc-examples/src/main/java/ftpsamples/RotateLogsToFtpExample.java) { #sample }
+
 ### Running the example code
 
 This example is contained in a stand-alone runnable main, it can be run
  from `sbt` like this:
- 
+
 
 Scala
 :   ```
@@ -53,4 +56,5 @@ Java
 :   ```
     sbt
     > doc-examples/runMain ftpsamples.FtpToFileExample
+    > doc-examples/runMain ftpsamples.RotateLogsToFtpExample
     ```
