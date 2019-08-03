@@ -541,7 +541,7 @@ import scala.util.{Failure, Success}
                                          data.consumerPacketRouter,
                                          data.settings),
                                 consumerName)
-                context.watchWith(consumer, ConsumerFree(publish.topicName))
+                context.watch(consumer)
                 clientConnected(data.copy(activeConsumers = data.activeConsumers + (publish.topicName -> consumer)))
               case Some(consumer) if publish.flags.contains(ControlPacketFlags.DUP) =>
                 consumer ! Consumer.DupPublishReceivedFromRemote(local)
@@ -565,10 +565,7 @@ import scala.util.{Failure, Success}
                          data.settings),
                 consumerName
               )
-              context.watchWith(
-                consumer,
-                ConsumerFree(topicName)
-              )
+              context.watch(consumer)
               clientConnected(
                 data.copy(
                   activeConsumers = data.activeConsumers + (topicName -> consumer),
@@ -605,10 +602,7 @@ import scala.util.{Failure, Success}
               val producer =
                 context.spawn(Producer(publish, publishData, reply, data.producerPacketRouter, data.settings),
                               producerName)
-              context.watchWith(
-                producer,
-                ProducerFree(publish.topicName)
-              )
+              context.watch(producer)
               clientConnected(data.copy(activeProducers = data.activeProducers + (publish.topicName -> producer)))
             } else {
               clientConnected(
@@ -629,10 +623,7 @@ import scala.util.{Failure, Success}
                 Producer(prl.publish, prl.publishData, reply, data.producerPacketRouter, data.settings),
                 producerName
               )
-              context.watchWith(
-                producer,
-                ProducerFree(topicName)
-              )
+              context.watch(producer)
               clientConnected(
                 data.copy(
                   activeProducers = data.activeProducers + (topicName -> producer),
@@ -731,9 +722,22 @@ import scala.util.{Failure, Success}
         }
         .receiveSignal {
           case (context, ChildFailed(_, failure))
-              if failure == Publisher.SubscribeFailed || failure == Unpublisher.UnsubscribeFailed =>
+              if failure == Subscriber.SubscribeFailed ||
+              failure == Unsubscriber.UnsubscribeFailed ||
+              failure.isInstanceOf[Consumer.ConsumeFailed] =>
+            data.remote.fail(failure)
             disconnect(context, data.remote, data)
-          case (_, _: Terminated) =>
+          case (context, t: Terminated) =>
+            data.activeConsumers.find(_._2 == t.ref) match {
+              case Some((topic, _)) =>
+                context.self ! ConsumerFree(topic)
+              case None =>
+                data.activeProducers.find(_._2 == t.ref) match {
+                  case Some((topic, _)) =>
+                    context.self ! ProducerFree(topic)
+                  case None =>
+                }
+            }
             Behaviors.same
           case (_, PostStop) =>
             data.remote.complete()
