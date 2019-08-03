@@ -5,7 +5,6 @@
 package akka.stream.alpakka.dynamodb.impl
 
 import java.io.{ByteArrayInputStream, InputStream}
-import java.util.concurrent.atomic.AtomicInteger
 
 import akka.NotUsed
 import akka.actor.ActorSystem
@@ -30,7 +29,7 @@ import scala.util.{Failure, Success, Try}
 @InternalApi
 private[dynamodb] object AwsClient {
 
-  case class AwsRequestMetadata(id: Long, op: AwsOp)
+  case class AwsRequestMetadata(op: AwsOp, state: Any)
 
   type AwsConnect =
     Flow[(HttpRequest, AwsRequestMetadata), (Try[HttpResponse], AwsRequestMetadata), HostConnectionPool]
@@ -57,7 +56,6 @@ private[dynamodb] trait AwsClient[S <: AwsClientSettings] {
 
   protected def url: String = s"https://${settings.host}/"
 
-  private val requestId = new AtomicInteger()
   private val credentials = settings.credentialsProvider
 
   private lazy val signer = {
@@ -85,16 +83,24 @@ private[dynamodb] trait AwsClient[S <: AwsClientSettings] {
 
   def flow[Op <: AwsOp]: Flow[Op, Op#B, NotUsed] =
     Flow[Op]
-      .map(op => toAwsRequest(op))
+      .map((_, ()))
+      .via(tryFlow)
+      .map {
+        case (Success(response), _) => response
+        case (Failure(ex), _) => throw ex
+      }
+      .withAttributes(ActorAttributes.supervisionStrategy(decider))
+
+  def tryFlow[Op <: AwsOp, State]: Flow[(Op, State), (Try[Op#B], State), NotUsed] =
+    Flow[(Op, State)]
+      .map(op => (toAwsRequest _).tupled(op))
       .via(connection)
       .mapAsync(settings.parallelism) {
         case (Success(response), i) => toAwsResult(response, i)
-        case (Failure(ex), _) => Future.failed(ex)
+        case (Failure(ex), i) => Future.successful(Failure(ex) -> i.state.asInstanceOf[State])
       }
-      .withAttributes(ActorAttributes.supervisionStrategy(decider))
-      .map(_.asInstanceOf[Op#B])
 
-  private def toAwsRequest(s: AwsOp): (HttpRequest, AwsRequestMetadata) = {
+  private def toAwsRequest[State](s: AwsOp, state: State): (HttpRequest, AwsRequestMetadata) = {
     val original = s.marshaller.marshall(s.request)
     original.setEndpoint(uri)
     original.getHeaders.remove("Content-Type")
@@ -124,13 +130,13 @@ private[dynamodb] trait AwsClient[S <: AwsClientSettings] {
       entity = HttpEntity(defaultContentType, body)
     )
 
-    httpr -> AwsRequestMetadata(requestId.getAndIncrement(), s)
+    httpr -> AwsRequestMetadata(s, state.asInstanceOf[Any])
   }
 
-  private def toAwsResult(
+  private def toAwsResult[Op <: AwsOp, State](
       response: HttpResponse,
       metadata: AwsRequestMetadata
-  ): Future[AmazonWebServiceResult[ResponseMetadata]] = {
+  ): Future[(Try[Op#B], State)] = {
     val req = new DefaultRequest(this.service)
     val awsResp = new AWSHttpResponse(req, null) //
     response.entity.dataBytes.runFold(Array.emptyByteArray)(_ ++ _).flatMap { bytes =>
@@ -139,13 +145,13 @@ private[dynamodb] trait AwsClient[S <: AwsClientSettings] {
       awsResp.setStatusText(response.status.defaultMessage)
       if (200 <= awsResp.getStatusCode && awsResp.getStatusCode < 300) {
         val handle = metadata.op.handler.handle(awsResp)
-        val resp = handle.getResult
-        Future.successful(resp)
+        val resp = handle.getResult.asInstanceOf[Op#B]
+        Future.successful(Success(resp) -> metadata.state.asInstanceOf[State])
       } else {
         response.headers.foreach { h =>
           awsResp.addHeader(h.name, h.value)
         }
-        Future.failed(errorResponseHandler.handle(awsResp))
+        Future.successful(Failure(errorResponseHandler.handle(awsResp)) -> metadata.state.asInstanceOf[State])
       }
     }
   }

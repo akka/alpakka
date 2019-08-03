@@ -22,7 +22,7 @@ import scala.concurrent.ExecutionContextExecutor
  * INTERNAL API
  */
 @InternalApi
-private[dynamodb] class DynamoClientImpl(
+private[dynamodb] class DynamoClientImpl[State](
     val settings: DynamoSettings,
     val errorResponseHandler: HttpResponseHandler[AmazonServiceException]
 )(implicit protected val system: ActorSystem, implicit protected val materializer: Materializer)
