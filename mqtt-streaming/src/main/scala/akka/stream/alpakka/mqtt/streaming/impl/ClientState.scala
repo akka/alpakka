@@ -698,11 +698,6 @@ import scala.util.{Either, Failure, Success}
         case ReceiveSubAckTimeout =>
           throw SubscribeFailed
       }
-      .receiveSignal {
-        case (_, PostStop) =>
-          data.packetRouter ! LocalPacketRouter.Unregister(data.packetId)
-          Behaviors.same
-      }
   }
 }
 
@@ -786,11 +781,6 @@ import scala.util.{Either, Failure, Success}
           Behaviors.stopped
         case ReceiveUnsubAckTimeout =>
           throw UnsubscribeFailed
-      }
-      .receiveSignal {
-        case (_, PostStop) =>
-          data.packetRouter ! LocalPacketRouter.Unregister(data.packetId)
-          Behaviors.same
       }
   }
 }
