@@ -903,11 +903,6 @@ import scala.util.{Failure, Success}
           data.subscribed.failure(SubscribeFailed)
           throw SubscribeFailed
       }
-      .receiveSignal {
-        case (_, PostStop) =>
-          data.packetRouter ! RemotePacketRouter.Unregister(data.clientId, data.packetId)
-          Behaviors.same
-      }
   }
 }
 
@@ -1001,11 +996,6 @@ import scala.util.{Failure, Success}
         case ReceiveUnsubAckTimeout =>
           data.unsubscribed.failure(UnsubscribeFailed)
           throw UnsubscribeFailed
-      }
-      .receiveSignal {
-        case (_, PostStop) =>
-          data.packetRouter ! RemotePacketRouter.Unregister(data.clientId, data.packetId)
-          Behaviors.same
       }
   }
 }
