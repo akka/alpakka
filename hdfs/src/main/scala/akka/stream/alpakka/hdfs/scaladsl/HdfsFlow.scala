@@ -195,7 +195,7 @@ object HdfsFlow {
           syncStrategy,
           rotationStrategy,
           settings,
-          SequenceWriter(fs, classK, classV, settings.pathGenerator)
+          SequenceWriter(fs, classK, classV, settings.pathGenerator, settings.overwrite)
         )
       )
 
@@ -228,7 +228,13 @@ object HdfsFlow {
           syncStrategy,
           rotationStrategy,
           settings,
-          SequenceWriter(fs, compressionType, compressionCodec, classK, classV, settings.pathGenerator)
+          SequenceWriter(fs,
+                         compressionType,
+                         compressionCodec,
+                         classK,
+                         classV,
+                         settings.pathGenerator,
+                         settings.overwrite)
         )
       )
 }
