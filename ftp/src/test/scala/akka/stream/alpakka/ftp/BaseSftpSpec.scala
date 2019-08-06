@@ -5,7 +5,7 @@
 package akka.stream.alpakka.ftp
 import java.net.InetAddress
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.stream.IOResult
 import akka.stream.alpakka.ftp.scaladsl.Sftp
 import akka.stream.scaladsl.{Sink, Source}
@@ -45,4 +45,7 @@ trait BaseSftpSpec extends BaseSftpSupport with BaseSpec {
 
   protected def move(destinationPath: FtpFile => String): Sink[FtpFile, Future[IOResult]] =
     Sftp.move(file => ROOT_PATH + destinationPath(file), settings)
+
+  protected def mkdir(basePath: String, name: String): Source[Done, NotUsed] =
+    Sftp.mkdir(ROOT_PATH + basePath, name, settings)
 }

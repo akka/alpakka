@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.ftp
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.stream.IOResult
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
@@ -51,6 +51,8 @@ trait BaseSpec
   protected def remove(): Sink[FtpFile, Future[IOResult]]
 
   protected def move(destinationPath: FtpFile => String): Sink[FtpFile, Future[IOResult]]
+
+  protected def mkdir(basePath: String, name: String): Source[Done, NotUsed]
 
   /** For a few tests `assertAllStagesStopped` failed on Travis, this hook allows to inject a bit more patience
    * for the check.

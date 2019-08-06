@@ -70,6 +70,20 @@ object scalaExamples {
     //#moving
   }
 
+  object mkdir {
+    //#mkdir-source
+
+    import akka.NotUsed
+    import akka.stream.scaladsl.Source
+    import akka.stream.alpakka.ftp.scaladsl.Ftp
+    import akka.Done
+
+    def mkdir(basePath: String, directoryName: String, settings: FtpSettings): Source[Done, NotUsed] =
+      Ftp.mkdir(basePath, directoryName, settings)
+
+    //#mkdir-source
+  }
+
   object processAndMove {
     //#processAndMove
     import java.nio.file.Files

@@ -52,7 +52,7 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
   }
 
   def listFiles(basePath: String, handler: Handler): immutable.Seq[FtpFile] = {
-    val path = if (!basePath.isEmpty && basePath.head != '/') s"/$basePath" else basePath
+    val path = if (basePath.nonEmpty && basePath.head != '/') s"/$basePath" else basePath
     val entries = handler.ls(path).asScala
     entries.map { file =>
       FtpFile(
@@ -64,6 +64,11 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
         getPosixFilePermissions(file)
       )
     }.toVector
+  }
+
+  def mkdir(path: String, name: String, handler: Handler): Unit = {
+    val updatedPath = CommonFtpOperations.concatPath(path, name)
+    handler.mkdirs(updatedPath)
   }
 
   private def getPosixFilePermissions(file: RemoteResourceInfo) = {

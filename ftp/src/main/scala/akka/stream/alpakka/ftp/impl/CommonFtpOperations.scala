@@ -85,4 +85,22 @@ private[ftp] trait CommonFtpOperations {
 
   def completePendingCommand(handler: Handler): Boolean =
     handler.completePendingCommand()
+
+  def mkdir(path: String, name: String, handler: Handler): Unit = {
+    val updatedPath = CommonFtpOperations.concatPath(path, name)
+    handler.makeDirectory(updatedPath)
+
+    if (handler.getReplyCode != 257) {
+      throw new IOException(handler.getReplyString)
+    }
+  }
+}
+
+private[ftp] object CommonFtpOperations {
+  def concatPath(path: String, name: String): String =
+    if (path.endsWith("/")) {
+      path ++ name
+    } else {
+      s"$path/$name"
+    }
 }
