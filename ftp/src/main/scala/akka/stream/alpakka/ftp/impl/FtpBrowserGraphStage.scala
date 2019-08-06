@@ -6,36 +6,20 @@ package akka.stream.alpakka.ftp
 package impl
 
 import akka.annotation.InternalApi
-import akka.stream.stage.{GraphStage, OutHandler}
-import akka.stream.{Attributes, Outlet, SourceShape}
-import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
+import akka.stream.{Attributes, Outlet}
+import akka.stream.stage.OutHandler
 
 /**
  * INTERNAL API
  */
 @InternalApi
-private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings] extends GraphStage[SourceShape[FtpFile]] {
-
-  def name: String
-
-  def basePath: String
-
-  def connectionSettings: S
-
-  def ftpClient: () => FtpClient
-
+private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings]
+    extends FtpGraphStage[FtpClient, S, FtpFile] {
   val ftpLike: FtpLike[FtpClient, S]
-
-  val shape: SourceShape[FtpFile] = SourceShape(Outlet[FtpFile](s"$name.out"))
-
-  val out = shape.outlets.head.asInstanceOf[Outlet[FtpFile]]
 
   val branchSelector: FtpFile => Boolean = (f) => true
 
   def emitTraversedDirectories: Boolean = false
-
-  override def initialAttributes: Attributes =
-    super.initialAttributes and Attributes.name(name) and IODispatcher
 
   def createLogic(inheritedAttributes: Attributes) = {
     val logic = new FtpGraphStageLogic[FtpFile, FtpClient, S](shape, ftpLike, connectionSettings, ftpClient) {

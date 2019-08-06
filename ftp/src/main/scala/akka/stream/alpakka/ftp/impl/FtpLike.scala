@@ -37,6 +37,8 @@ protected[ftp] trait FtpLike[FtpClient, S <: RemoteFileSettings] {
   def move(fromPath: String, destinationPath: String, handler: Handler): Unit
 
   def remove(path: String, handler: Handler): Unit
+
+  def mkdir(path: String, name: String, handler: Handler): Unit
 }
 
 /**

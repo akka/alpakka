@@ -8,6 +8,7 @@ import java.net.InetAddress
 import java.nio.file.attribute.PosixFilePermission
 import java.nio.file.{Files, Paths}
 import java.time.Instant
+import java.util.concurrent.TimeUnit
 
 import akka.stream.IOResult
 import BaseSftpSupport.{CLIENT_PRIVATE_KEY_PASSPHRASE => ClientPrivateKeyPassphrase}
@@ -18,6 +19,8 @@ import akka.util.ByteString
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Millis, Seconds, Span}
 
+import scala.collection.immutable
+import scala.concurrent.{Await, ExecutionContextExecutor}
 import scala.concurrent.duration._
 import scala.util.Random
 
@@ -366,6 +369,61 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
         fileExists(fileName2) shouldBe true
       }
       extraWaitForStageShutdown()
+    }
+  }
+
+  "FtpDirectoryOperationsSource" should {
+    "make a directory in current path" in {
+      val basePath = "/"
+      val name = "sample_dir_" + Instant.now().getNano
+
+      val source = mkdir(basePath, name)
+
+      val res = source.runWith(Sink.head)
+
+      Await.result(res, Duration(1, TimeUnit.MINUTES))
+
+      val listing = listFilesWithFilter(basePath = "/", branchSelector = _ => true, emitTraversedDirectories = true)
+        .runWith(Sink.seq)
+
+      val listingRes: immutable.Seq[FtpFile] = Await.result(listing, Duration(1, TimeUnit.MINUTES))
+
+      listingRes.map(_.name) should contain allElementsOf Seq(name)
+    }
+
+    "make a directory in given path" in {
+      val basePath = "/"
+      val name = "sample_dir_" + Instant.now().getNano
+      val innerDirPath = s"$basePath/$name"
+      val innerDirName = "sample_dir_" + Instant.now().getNano
+
+      val source = mkdir(basePath, name)
+      val innerSource = mkdir(innerDirPath, innerDirName)
+
+      implicit val ec: ExecutionContextExecutor = mat.executionContext
+
+      val res = for {
+        x <- source.runWith(Sink.head)
+        y <- innerSource.runWith(Sink.head)
+      } yield (x, y)
+
+      Await.result(res, Duration(1, TimeUnit.MINUTES))
+
+      val listing = listFilesWithFilter(basePath = "/", branchSelector = _ => true, emitTraversedDirectories = true)
+        .runWith(Sink.seq)
+
+      val listingRes: immutable.Seq[FtpFile] = Await.result(listing, Duration(1, TimeUnit.MINUTES))
+
+      listingRes.map(_.name) should contain allElementsOf Seq(name)
+
+      val listingOnlyInnerDir = listFilesWithFilter(basePath = innerDirPath,
+                                                    branchSelector = _ => true,
+                                                    emitTraversedDirectories = true).runWith(Sink.seq)
+
+      val listingInnerDirRes: immutable.Seq[FtpFile] = Await.result(listingOnlyInnerDir, Duration(1, TimeUnit.MINUTES))
+
+      listingInnerDirRes.map(_.name) should contain allElementsOf Seq(innerDirName)
+
     }
   }
 }
