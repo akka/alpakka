@@ -103,10 +103,9 @@ lazy val couchbase =
 
 lazy val csv = alpakkaProject("csv", "csv", whitesourceGroup := Whitesource.Group.Supported)
 
-lazy val csvBench = alpakkaProject("csv-bench", "csvBench", publish / skip := true)
+lazy val csvBench = internalProject("csv-bench")
   .dependsOn(csv)
   .enablePlugins(JmhPlugin)
-  .disablePlugins(BintrayPlugin, MimaPlugin)
 
 lazy val dynamodb = alpakkaProject("dynamodb", "aws.dynamodb", Dependencies.DynamoDB)
 
@@ -232,12 +231,9 @@ lazy val mqttStreaming = alpakkaProject("mqtt-streaming",
                                         "mqttStreaming",
                                         Dependencies.MqttStreaming,
                                         crossScalaVersions -= Dependencies.Scala211)
-lazy val mqttStreamingBench = alpakkaProject("mqtt-streaming-bench",
-                                             "mqttStreamingBench",
-                                             publish / skip := true,
+lazy val mqttStreamingBench = internalProject("mqtt-streaming-bench",
                                              crossScalaVersions -= Dependencies.Scala211)
   .enablePlugins(JmhPlugin)
-  .disablePlugins(BintrayPlugin, MimaPlugin)
   .dependsOn(mqtt, mqttStreaming)
 
 lazy val orientdb = alpakkaProject("orientdb",
@@ -247,7 +243,7 @@ lazy val orientdb = alpakkaProject("orientdb",
                                    parallelExecution in Test := false)
 
 lazy val reference = alpakkaProject("reference", "reference", Dependencies.Reference, publish / skip := true)
-  .disablePlugins(BintrayPlugin, MimaPlugin)
+  .disablePlugins(BintrayPlugin)
 
 lazy val s3 = alpakkaProject("s3", "aws.s3", Dependencies.S3)
 
@@ -372,7 +368,9 @@ lazy val `doc-examples` = project
     Dependencies.`Doc-examples`
   )
 
-def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sbt.Def.SettingsDefinition*): Project =
+def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sbt.Def.SettingsDefinition*): Project = {
+  import com.typesafe.tools.mima.core.{Problem, ProblemFilters}
+  import sbt.Keys.publish
   Project(id = projectId, base = file(projectId))
     .enablePlugins(AutomateHeaderPlugin)
     .disablePlugins(SitePlugin)
@@ -382,7 +380,19 @@ def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sb
       mimaPreviousArtifacts := Set(
           organization.value %% name.value % previousStableVersion.value
             .getOrElse(throw new Error("Unable to determine previous version"))
-        )
+        ),
+      mimaBinaryIssueFilters += ProblemFilters.exclude[Problem]("*.impl.*")
+    )
+    .settings(additionalSettings: _*)
+  }
+
+def internalProject(projectId: String, additionalSettings: sbt.Def.SettingsDefinition*): Project =
+  Project(id = projectId, base = file(projectId))
+    .enablePlugins(AutomateHeaderPlugin)
+    .disablePlugins(SitePlugin, BintrayPlugin, MimaPlugin)
+    .settings(
+      name := s"akka-stream-alpakka-$projectId",
+      publish / skip := true
     )
     .settings(additionalSettings: _*)
 
