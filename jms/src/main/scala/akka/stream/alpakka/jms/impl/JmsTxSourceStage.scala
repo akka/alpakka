@@ -60,7 +60,7 @@ private[jms] final class JmsTxSourceStage(settings: JmsConsumerSettings, destina
                         case _: TimeoutException =>
                           val exception = new JmsTxAckTimeout(settings.ackTimeout)
                           session.session.rollback()
-                          if (settings.failOnAckTimeout) {
+                          if (settings.failStreamOnAckTimeout) {
                             handleError.invoke(exception)
                           } else {
                             log.warning(exception.getMessage)

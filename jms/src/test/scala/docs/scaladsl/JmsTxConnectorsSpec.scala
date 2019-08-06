@@ -572,7 +572,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
         resultList.toSet should contain theSameElementsAs numsIn.map(_.toString)
     }
 
-    "fail the stream when ack-timeout causes a rollback (and fail-on-ack-timeout is true)" in {
+    "fail the stream when ack-timeout causes a rollback (and fail-stream-on-ack-timeout is true)" in {
       withConnectionFactory() { connectionFactory =>
         val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer.sink(
           JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
@@ -591,7 +591,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
             .withSessionCount(5)
             .withQueue("numbers")
             .withAckTimeout(10.millis)
-            .withFailOnAckTimeout(true)
+            .withFailStreamOnAckTimeout(true)
         )
 
         val r = new java.util.Random
