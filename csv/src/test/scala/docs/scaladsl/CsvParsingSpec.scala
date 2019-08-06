@@ -228,6 +228,24 @@ class CsvParsingSpec extends CsvSpec {
           "Price" -> "4900.00"
         )
       )
+      res(5) should contain allElementsOf (
+        Map(
+          "Year" -> "1995",
+          "Make" -> "VW",
+          "Model" -> "Golf \"GTE\"",
+          "Description" -> "",
+          "Price" -> "5000.00"
+        )
+      )
+      res(6) should contain allElementsOf (
+        Map(
+          "Year" -> "1996",
+          "Make" -> "VW",
+          "Model" -> "Golf GTE",
+          "Description" -> "",
+          "Price" -> "5000.00"
+        )
+      )
     }
   }
 }
