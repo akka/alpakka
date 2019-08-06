@@ -292,6 +292,37 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
       )
     }
 
+    "store properly formatted JSON from Strings" in assertAllStagesStopped {
+      val indexName = "sink3-0"
+      // #string
+      val write: Future[immutable.Seq[WriteResult[String, NotUsed]]] = Source(
+        immutable.Seq(
+          WriteMessage.createIndexMessage("1", s"""{"title": "Das Parfum"}"""),
+          WriteMessage.createIndexMessage("2", s"""{"title": "Faust"}"""),
+          WriteMessage.createIndexMessage("3", s"""{"title": "Die unendliche Geschichte"}""")
+        )
+      ).via(
+          ElasticsearchFlow.create(
+            indexName = indexName,
+            typeName = "_doc",
+            ElasticsearchWriteSettings.Default,
+            StringMessageWriter
+          )
+        )
+        .runWith(Sink.seq)
+      // #string
+
+      // Assert no errors
+      write.futureValue.filter(!_.success) shouldBe empty
+      flush(indexName)
+
+      readTitlesFrom(indexName).futureValue.sorted shouldEqual Seq(
+        "Das Parfum",
+        "Die unendliche Geschichte",
+        "Faust"
+      )
+    }
+
     "pass through data in `withContext`" in assertAllStagesStopped {
       val books = immutable.Seq(
         "Akka in Action",
