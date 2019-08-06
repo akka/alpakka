@@ -42,7 +42,10 @@ private[dynamodb] trait DynamoProtocol {
           .withModeledClass(classOf[InternalServerErrorException]),
         new JsonErrorShapeMetadata()
           .withErrorCode("LimitExceededException")
-          .withModeledClass(classOf[LimitExceededException])
+          .withModeledClass(classOf[LimitExceededException]),
+        new JsonErrorShapeMetadata()
+          .withErrorCode("TransactionCanceledException")
+          .withModeledClass(classOf[TransactionCanceledException])
       )
       .withBaseServiceExceptionClass(classOf[com.amazonaws.services.dynamodbv2.model.AmazonDynamoDBException])
   )
