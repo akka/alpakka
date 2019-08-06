@@ -20,7 +20,7 @@ object Dependencies {
   val AkkaHttpVersion = "10.1.8"
   val mockitoVersion = "3.0.0"
 
-  val CouchbaseVersion = "2.7.8"
+  val CouchbaseVersion = "2.7.7"
   val CouchbaseVersionForDocs = "2.7"
 
   val JwtCoreVersion = "3.0.1"
