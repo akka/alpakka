@@ -6,6 +6,7 @@ package akka.stream.alpakka.jms
 import javax.jms
 
 import scala.concurrent.TimeoutException
+import scala.concurrent.duration.Duration
 import scala.util.control.NoStackTrace
 
 /**
@@ -56,3 +57,6 @@ final case class StopMessageListenerException() extends Exception("Stopping Mess
 case object JmsNotConnected extends Exception("JmsConnector is not connected") with NoStackTrace
 
 case class JmsConnectTimedOut(message: String) extends TimeoutException(message)
+
+final class JmsTxAckTimeout(ackTimeout: Duration)
+    extends TimeoutException(s"The TxEnvelope didn't get committed or rolled back within ack-timeout ($ackTimeout)")
