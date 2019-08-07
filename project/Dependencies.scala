@@ -14,13 +14,13 @@ object Dependencies {
 
   val InfluxDBJavaVersion = "2.15"
 
-  val AwsSdkVersion = "1.11.604"
-  val AwsSdk2Version = "2.5.71"
+  val AwsSdkVersion = "1.11.476"
+  val AwsSdk2Version = "2.5.65"
   val AwsSpiAkkaHttpVersion = "0.0.7"
   val AkkaHttpVersion = "10.1.8"
   val mockitoVersion = "3.0.0"
 
-  val CouchbaseVersion = "2.7.7"
+  val CouchbaseVersion = "2.7.2"
   val CouchbaseVersionForDocs = "2.7"
 
   val JwtCoreVersion = "3.0.1"
@@ -129,7 +129,7 @@ object Dependencies {
 
   val Elasticsearch = Seq(
     libraryDependencies ++= Seq(
-        "org.elasticsearch.client" % "elasticsearch-rest-client" % "6.3.2", // ApacheV2
+        "org.elasticsearch.client" % "elasticsearch-rest-client" % "6.3.1", // ApacheV2
         "io.spray" %% "spray-json" % "1.3.5", // ApacheV2
         "com.fasterxml.jackson.core" % "jackson-databind" % JacksonDatabindVersion, // ApacheV2
         "org.codelibs" % "elasticsearch-cluster-runner" % "6.3.2.1" % Test, // ApacheV2
@@ -145,7 +145,7 @@ object Dependencies {
 
   val AvroParquet = Seq(
     libraryDependencies ++= Seq(
-        "org.apache.parquet" % "parquet-avro" % "1.10.1", //Apache2
+        "org.apache.parquet" % "parquet-avro" % "1.10.0", //Apache2
         "org.apache.hadoop" % "hadoop-client" % "3.2.0" % Test exclude ("log4j", "log4j"), //Apache2
         "org.apache.hadoop" % "hadoop-common" % "3.2.0" % Test exclude ("log4j", "log4j"), //Apache2
         "org.specs2" %% "specs2-core" % "4.5.1" % Test, //MIT like: https://github.com/etorreborre/specs2/blob/master/LICENSE.txt
@@ -215,7 +215,7 @@ object Dependencies {
   )
 
   val HBase = {
-    val hbaseVersion = "1.2.12"
+    val hbaseVersion = "1.2.6.1"
     val hadoopVersion = "2.5.2"
     Seq(
       libraryDependencies ++= Seq(
@@ -231,11 +231,11 @@ object Dependencies {
     )
   }
 
-  val HadoopVersion = "3.1.2"
+  val HadoopVersion = "3.1.1"
   val Hdfs = Seq(
     libraryDependencies ++= Seq(
         "org.apache.hadoop" % "hadoop-client" % HadoopVersion exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2
-        "org.typelevel" %% "cats-core" % "1.6.1", // MIT,
+        "org.typelevel" %% "cats-core" % "1.6.0", // MIT,
         "org.apache.hadoop" % "hadoop-hdfs" % HadoopVersion % Test classifier "tests" exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2
         "org.apache.hadoop" % "hadoop-common" % HadoopVersion % Test classifier "tests" exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2
         "org.apache.hadoop" % "hadoop-minicluster" % HadoopVersion % Test exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2
@@ -252,7 +252,7 @@ object Dependencies {
   val IronMq = Seq(
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
-        "de.heikoseeberger" %% "akka-http-circe" % "1.21.1" // ApacheV2
+        "de.heikoseeberger" %% "akka-http-circe" % "1.21.0" // ApacheV2
       )
   )
 
@@ -302,7 +302,7 @@ object Dependencies {
 
   val Mqtt = Seq(
     libraryDependencies ++= Seq(
-        "org.eclipse.paho" % "org.eclipse.paho.client.mqttv3" % "1.2.1" // Eclipse Public License 1.0
+        "org.eclipse.paho" % "org.eclipse.paho.client.mqttv3" % "1.2.0" // Eclipse Public License 1.0
       )
   )
 
@@ -316,8 +316,8 @@ object Dependencies {
 
   val OrientDB = Seq(
     libraryDependencies ++= Seq(
-        "com.orientechnologies" % "orientdb-graphdb" % "3.0.22", // ApacheV2
-        "com.orientechnologies" % "orientdb-object" % "3.0.22" // ApacheV2
+        "com.orientechnologies" % "orientdb-graphdb" % "3.0.13", // ApacheV2
+        "com.orientechnologies" % "orientdb-object" % "3.0.13" // ApacheV2
       )
   )
 
@@ -339,8 +339,8 @@ object Dependencies {
   )
 
   val SpringWeb = {
-    val SpringVersion = "5.1.9.RELEASE"
-    val SpringBootVersion = "2.1.6.RELEASE"
+    val SpringVersion = "5.1.4.RELEASE"
+    val SpringBootVersion = "2.1.2.RELEASE"
     Seq(
       libraryDependencies ++= Seq(
           "org.springframework" % "spring-core" % SpringVersion,
@@ -420,14 +420,14 @@ object Dependencies {
 
   val UnixDomainSocket = Seq(
     libraryDependencies ++= Seq(
-        "com.github.jnr" % "jffi" % "1.2.19" classifier "complete", // ApacheV2
+        "com.github.jnr" % "jffi" % "1.2.17" classifier "complete", // ApacheV2
         "com.github.jnr" % "jnr-unixsocket" % "0.22" // BSD/ApacheV2/CPL/MIT as per https://github.com/akka/alpakka/issues/620#issuecomment-348727265
       )
   )
 
   val Xml = Seq(
     libraryDependencies ++= Seq(
-        "com.fasterxml" % "aalto-xml" % "1.1.1" // ApacheV2
+        "com.fasterxml" % "aalto-xml" % "1.1.0" // ApacheV2
       )
   )
 
