@@ -304,7 +304,7 @@ public class ElasticsearchTest {
                     "_doc",
                     ElasticsearchWriteSettings.create().withBufferSize(5),
                     client,
-                    new StringMessageWriter()))
+                    StringMessageWriter.getInstance()))
             .runWith(Sink.seq(), materializer);
     // #string
 

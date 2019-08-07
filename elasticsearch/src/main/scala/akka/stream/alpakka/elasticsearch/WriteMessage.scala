@@ -168,10 +168,12 @@ trait MessageWriter[T] {
   def convert(message: T): String
 }
 
-class StringMessageWriter extends MessageWriter[String] {
+sealed class StringMessageWriter private () extends MessageWriter[String] {
   override def convert(message: String): String = message
 }
 
 object StringMessageWriter extends StringMessageWriter {
-  val INSTANCE: StringMessageWriter = StringMessageWriter
+
+  /** Java API: get the singleton instance of `StringMessageWriter` */
+  val getInstance: StringMessageWriter = StringMessageWriter
 }
