@@ -5,7 +5,7 @@
 package akka.stream.alpakka.jms.impl
 
 import akka.annotation.InternalApi
-import akka.stream.alpakka.jms.{AcknowledgeMode, Destination, JmsConsumerSettings, TxEnvelope}
+import akka.stream.alpakka.jms.{AcknowledgeMode, Destination, JmsConsumerSettings, JmsTxAckTimeout, TxEnvelope}
 import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue}
 import akka.stream.{Attributes, Outlet, SourceShape}
 import javax.jms
@@ -50,10 +50,23 @@ private[jms] final class JmsTxSourceStage(settings: JmsConsumerSettings, destina
                     try {
                       val envelope = TxEnvelope(message, session)
                       handleMessage.invoke(envelope)
-                      val action = Await.result(envelope.commitFuture, settings.ackTimeout)
-                      action()
+                      try {
+                        // JMS spec defines that commit/rollback must be done on the same thread.
+                        // While some JMS implementations work without this constraint, IBM MQ is
+                        // very strict about the spec and throws exceptions when called from a different thread.
+                        val action = Await.result(envelope.commitFuture, settings.ackTimeout)
+                        action()
+                      } catch {
+                        case _: TimeoutException =>
+                          val exception = new JmsTxAckTimeout(settings.ackTimeout)
+                          session.session.rollback()
+                          if (settings.failStreamOnAckTimeout) {
+                            handleError.invoke(exception)
+                          } else {
+                            log.warning(exception.getMessage)
+                          }
+                      }
                     } catch {
-                      case _: TimeoutException => session.session.rollback()
                       case e: IllegalArgumentException => handleError.invoke(e) // Invalid envelope. Fail the stage.
                       case e: jms.JMSException => handleError.invoke(e)
                     }
@@ -63,7 +76,7 @@ private[jms] final class JmsTxSourceStage(settings: JmsConsumerSettings, destina
 
           case _ =>
             throw new IllegalArgumentException(
-              "Session must be of type JMSAckSession, it is a " +
+              "Session must be of type JmsAckSession, it is a " +
               jmsSession.getClass.getName
             )
         }

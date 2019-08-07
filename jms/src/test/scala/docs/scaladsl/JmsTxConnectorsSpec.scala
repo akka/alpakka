@@ -519,7 +519,7 @@ class JmsTxConnectorsSpec extends JmsSpec {
             Sink.foreach { env =>
               val text = env.message.asInstanceOf[TextMessage].getText
               if (r.nextInt(3) <= 1) {
-                // Artifially timing out this message
+                // Artificially timing out this message
                 Thread.sleep(20)
               }
               resultQueue.add(text)
@@ -570,6 +570,53 @@ class JmsTxConnectorsSpec extends JmsSpec {
 
         // messages might get delivered more than once, use set to ignore duplicates
         resultList.toSet should contain theSameElementsAs numsIn.map(_.toString)
+    }
+
+    "fail the stream when ack-timeout causes a rollback (and fail-stream-on-ack-timeout is true)" in {
+      withConnectionFactory() { connectionFactory =>
+        val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer.sink(
+          JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
+        )
+
+        val publishKillSwitch = Source
+          .unfold(1)(n => Some(n + 1 -> n))
+          .throttle(15, 1.second, 2, ThrottleMode.shaping) // Higher than consumption rate.
+          .viaMat(KillSwitches.single)(Keep.right)
+          .alsoTo(Flow[Int].map(n => JmsTextMessage(n.toString).withProperty("Number", n)).to(jmsSink))
+          .toMat(Sink.ignore)(Keep.left)
+          .run()
+
+        val jmsSource: Source[TxEnvelope, JmsConsumerControl] = JmsConsumer.txSource(
+          JmsConsumerSettings(consumerConfig, connectionFactory)
+            .withSessionCount(5)
+            .withQueue("numbers")
+            .withAckTimeout(10.millis)
+            .withFailStreamOnAckTimeout(true)
+        )
+
+        val r = new java.util.Random
+
+        val (killSwitch, streamDone) = jmsSource
+          .throttle(10, 1.second, 2, ThrottleMode.shaping)
+          .toMat(
+            Sink.foreach { env =>
+              if (r.nextInt(3) <= 1) {
+                // Artificially timing out this message
+                Thread.sleep(20)
+              }
+              env.commit()
+            }
+          )(Keep.both)
+          .run()
+
+        // Need to wait for the stream to have started and running for sometime.
+        Thread.sleep(3000)
+
+        killSwitch.shutdown()
+
+        streamDone.failed.futureValue shouldBe a[JmsTxAckTimeout]
+        publishKillSwitch.shutdown()
+      }
     }
   }
 }
