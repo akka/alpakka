@@ -72,6 +72,18 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
       expectInOut("a,\"\",c\n", List("a", "", "c"))
     }
 
+    "accept mid-column quotes" in {
+      expectInOut("11,22\"z\",13\n", List("11", "22\"z\"", "13"))
+    }
+
+    "accept quote ending mid-column" in {
+      expectInOut("11,\"z\"22,13\n", List("11", "z22", "13"))
+    }
+
+    "accept quote ending mid-column (with new line)" in {
+      expectInOut("11,\"z\n\"22,13\n", List("11", "z\n22", "13"))
+    }
+
     "parse double quote chars within quotes into one quote" in {
       expectInOut("a,\"\"\"\",c\n", List("a", "\"", "c"))
     }
