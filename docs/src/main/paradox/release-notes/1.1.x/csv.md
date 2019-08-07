@@ -1,5 +1,12 @@
 # Comma-separated Values (CSV)
 
+## 1.1.1
+
+- CSV: accept quotes ending mid-column [#1858](https://github.com/akka/alpakka/issues/1858) by [@ennru](https://github.com/ennru)
+
+[*closed in 1.1.1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.1.1+label%3Ap%3Acsv)
+
+
 ## 1.1.0
 
 No changes.
