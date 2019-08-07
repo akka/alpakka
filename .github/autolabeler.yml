@@ -13,7 +13,7 @@ dependency-change: "/project/Dependencies.scala"
 'p:cassandra': ["/cassandra"]
 'p:csv': ["/csv", "/csv-bench"]
 'p:couchbase': ["/couchbase"]
-'p:dynamodb': ["/dyamodb"]
+'p:dynamodb': ["/dynamodb"]
 'p:elasticsearch': ["/elasticsearch"]
 'p:file': ["/file"]
 'p:ftp': ["/ftp"]
