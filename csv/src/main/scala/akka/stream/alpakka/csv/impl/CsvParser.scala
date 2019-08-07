@@ -25,11 +25,10 @@ import scala.collection.mutable
   private final val AfterDelimiter = 3
   private final val LineEnd = 4
   private final val QuoteStarted = 5
-  private final val QuoteEnd = 6
-  private final val WithinQuotedField = 7
-  private final val WithinQuotedFieldEscaped = 8
-  private final val WithinQuotedFieldQuote = 9
-  private final val AfterCr = 10
+  private final val WithinQuotedField = 6
+  private final val WithinQuotedFieldEscaped = 7
+  private final val WithinQuotedFieldQuote = 8
+  private final val AfterCr = 9
 
   private final val LF: Byte = '\n'
   private final val CR: Byte = '\r'
@@ -343,29 +342,6 @@ import scala.collection.mutable
               advance()
           }
 
-        case QuoteEnd =>
-          byte match {
-            case `delimiter` =>
-              columns += fieldBuilder.result(pos - 1)
-              state = AfterDelimiter
-              advance()
-              dropReadBuffer()
-            case LF =>
-              columns += fieldBuilder.result(pos - 1)
-              state = LineEnd
-              advance()
-              dropReadBuffer()
-            case CR =>
-              columns += fieldBuilder.result(pos - 1)
-              state = AfterCr
-              advance()
-              dropReadBuffer()
-            case c =>
-              throw new MalformedCsvException(currentLineNo,
-                                              lineLength,
-                                              s"expected delimiter or end of line at $currentLineNo:$pos")
-          }
-
         case WithinQuotedField =>
           byte match {
             case `escapeChar` if escapeChar != quoteChar =>
@@ -402,7 +378,7 @@ import scala.collection.mutable
               advance()
 
             case b =>
-              state = QuoteEnd
+              state = WithinField
           }
 
         case AfterCr =>
@@ -441,7 +417,7 @@ import scala.collection.mutable
         case WithinField =>
           columns += fieldBuilder.result(pos)
           Some(columns.toList)
-        case QuoteEnd | WithinQuotedFieldQuote =>
+        case WithinQuotedFieldQuote =>
           columns += fieldBuilder.result(pos - 1)
           Some(columns.toList)
         case WithinFieldEscaped | WithinQuotedFieldEscaped =>
