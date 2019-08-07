@@ -352,7 +352,6 @@ lazy val `doc-examples` = project
   .dependsOn(
     files,
     ftp,
-    jms,
     mqtt
   )
   .settings(
