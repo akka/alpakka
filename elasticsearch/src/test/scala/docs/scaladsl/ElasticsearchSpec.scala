@@ -11,7 +11,6 @@ import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.elasticsearch.scaladsl._
-import akka.stream.alpakka.elasticsearch.testkit.MessageFactory
 import akka.stream.alpakka.elasticsearch._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
@@ -110,12 +109,13 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
       new BasicHeader("Content-Type", "application/json")
     )
 
-  private def documentation: Unit = {
+  def documentation(): Unit = {
     //#source-settings
     val sourceSettings = ElasticsearchSourceSettings()
       .withBufferSize(10)
       .withScrollDuration(5.minutes)
     //#source-settings
+    sourceSettings.toString should startWith("ElasticsearchSourceSettings(")
     //#sink-settings
     val sinkSettings =
       ElasticsearchWriteSettings()
@@ -123,6 +123,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
         .withVersionType("internal")
         .withRetryLogic(RetryAtFixedRate(maxRetries = 5, retryInterval = 1.second))
     //#sink-settings
+    sinkSettings.toString should startWith("ElasticsearchWriteSettings(")
   }
 
   private def readTitlesFrom(indexName: String): Future[immutable.Seq[String]] =
@@ -289,6 +290,37 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
         "Programming in Scala",
         "Scala Puzzlers",
         "Scala for Spark in Production"
+      )
+    }
+
+    "store properly formatted JSON from Strings" in assertAllStagesStopped {
+      val indexName = "sink3-0"
+      // #string
+      val write: Future[immutable.Seq[WriteResult[String, NotUsed]]] = Source(
+        immutable.Seq(
+          WriteMessage.createIndexMessage("1", s"""{"title": "Das Parfum"}"""),
+          WriteMessage.createIndexMessage("2", s"""{"title": "Faust"}"""),
+          WriteMessage.createIndexMessage("3", s"""{"title": "Die unendliche Geschichte"}""")
+        )
+      ).via(
+          ElasticsearchFlow.create(
+            indexName = indexName,
+            typeName = "_doc",
+            ElasticsearchWriteSettings.Default,
+            StringMessageWriter
+          )
+        )
+        .runWith(Sink.seq)
+      // #string
+
+      // Assert no errors
+      write.futureValue.filter(!_.success) shouldBe empty
+      flush(indexName)
+
+      readTitlesFrom(indexName).futureValue.sorted shouldEqual Seq(
+        "Das Parfum",
+        "Die unendliche Geschichte",
+        "Faust"
       )
     }
 
@@ -920,6 +952,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
       .createIndexMessage(doc)
       .withCustomMetadata(Map("pipeline" -> "myPipeline"))
     //#custom-metadata-example
+    msg.customMetadata should contain("pipeline")
   }
 
 }
