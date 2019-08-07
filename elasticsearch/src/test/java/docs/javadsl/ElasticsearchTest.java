@@ -7,6 +7,7 @@ package docs.javadsl;
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
+import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 // #init-client
 import akka.stream.alpakka.elasticsearch.*;
@@ -280,6 +281,54 @@ public class ElasticsearchTest {
             "Programming in Scala",
             "Scala Puzzlers",
             "Scala for Spark in Production");
+
+    Collections.sort(result2);
+    assertEquals(expect, result2);
+  }
+
+  @Test
+  public void stringFlow() throws Exception {
+    // Copy source/book to sink3/book through JsObject stream
+    // #string
+    String indexName = "sink3-0";
+    CompletionStage<List<WriteResult<String, NotUsed>>> write =
+        Source.from(
+                Arrays.asList(
+                    WriteMessage.createIndexMessage("1", "{\"title\": \"Das Parfum\"}"),
+                    WriteMessage.createIndexMessage("2", "{\"title\": \"Faust\"}"),
+                    WriteMessage.createIndexMessage(
+                        "3", "{\"title\": \"Die unendliche Geschichte\"}")))
+            .via(
+                ElasticsearchFlow.create(
+                    indexName,
+                    "_doc",
+                    ElasticsearchWriteSettings.create().withBufferSize(5),
+                    client,
+                    StringMessageWriter.getInstance()))
+            .runWith(Sink.seq(), materializer);
+    // #string
+
+    List<WriteResult<String, NotUsed>> result1 = write.toCompletableFuture().get();
+    flush(indexName);
+
+    for (WriteResult<String, NotUsed> aResult1 : result1) {
+      assertEquals(true, aResult1.success());
+    }
+
+    CompletionStage<List<String>> f2 =
+        ElasticsearchSource.typed(
+                indexName,
+                "_doc",
+                "{\"match_all\": {}}",
+                ElasticsearchSourceSettings.create().withBufferSize(5),
+                client,
+                Book.class)
+            .map(m -> m.source().title)
+            .runWith(Sink.seq(), materializer);
+
+    List<String> result2 = new ArrayList<>(f2.toCompletableFuture().get());
+
+    List<String> expect = Arrays.asList("Das Parfum", "Die unendliche Geschichte", "Faust");
 
     Collections.sort(result2);
     assertEquals(expect, result2);
