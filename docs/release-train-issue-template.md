@@ -59,14 +59,14 @@ Key links:
          ```
          ln -nsf $VERSION$ www/docs/alpakka/current
          ln -nsf $VERSION$ www/api/alpakka/current
-         ln -nsf $VERSION$ www/docs/alpakka/1.0
-         ln -nsf $VERSION$ www/api/alpakka/1.0
+         ln -nsf $VERSION$ www/docs/alpakka/1.1
+         ln -nsf $VERSION$ www/api/alpakka/1.1
          ```
     - [ ] check changes and commit the new version to the local git repository
          ```
          cd ~/www
-         git add docs/alpakka/1.0 docs/alpakka/current docs/alpakka/$VERSION$
-         git add api/alpakka/1.0 api/alpakka/current api/alpakka/$VERSION$
+         git add docs/alpakka/1.1 docs/alpakka/current docs/alpakka/$VERSION$
+         git add api/alpakka/1.1 api/alpakka/current api/alpakka/$VERSION$
          git commit -m "Alpakka $VERSION$"
          ```
 
@@ -80,7 +80,6 @@ Key links:
 
 ### Afterwards
 
-- [ ] If Cassandra has relevant changes, create/update PR in [Akka Persistence Cassandra](https://github.com/akka/akka-persistence-cassandra/) to upgrade to $VERSION$
 - [ ] If Couchbase has relevant changes, create/update PR in [Akka Persistence Couchbase](https://github.com/akka/akka-persistence-couchbase/) to upgrade to $VERSION$
-- [ ] Update version for [Lightbend Supported Modules](https://developer.lightbend.com/docs/reactive-platform/2.0/supported-modules/#other-akka-modules) in [private project](https://github.com/lightbend/reactive-platform-docs/blob/master/build.sbt)
+- [ ] Update version for [Lightbend Supported Modules](https://developer.lightbend.com/docs/lightbend-platform/introduction/getting-help/build-dependencies.html#_alpakka) in [private project](https://github.com/lightbend/lightbend-platform-docs/blob/master/docs/modules/getting-help/examples/build.sbt)
 - Close this issue

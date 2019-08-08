@@ -1,5 +1,11 @@
 # Google Cloud Pub/Sub
 
+## 1.1.1
+
+No changes.
+
+[*closed in 1.1.1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.1.1+label%3Ap%3Agoogle-cloud-pub-sub)
+
 ## 1.1.0
 
 - 'messageId' and 'publishTime' should not be published [#1795](https://github.com/akka/alpakka/pull/1795) by [@LGLO](https://github.com/LGLO)

@@ -1,5 +1,12 @@
 # AWS SQS
 
+## 1.1.1
+
+No changes.
+
+[*closed in 1.1.1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.1.1+label%3Ap%3Aaws-sqs)
+
+
 ## 1.1.0
 
 - AWS SQS source: reduce consumption on empty receives [#1743](https://github.com/akka/alpakka/issues/1743) by [@gipeshka](https://github.com/gipeshka)
