@@ -334,7 +334,7 @@ object Dependencies {
         "com.amazonaws" % "aws-java-sdk-core" % AwsSdkVersion, // ApacheV2
         // in-memory filesystem for file related tests
         "com.google.jimfs" % "jimfs" % "1.1" % Test, // ApacheV2
-        "com.github.tomakehurst" % "wiremock" % "2.24.0" % Test // ApacheV2
+        "com.github.tomakehurst" % "wiremock" % "2.18.0" % Test // ApacheV2
       )
   )
 
@@ -358,7 +358,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.slick" %% "slick" % SlickVersion, // BSD 2-clause "Simplified" License
         "com.typesafe.slick" %% "slick-hikaricp" % SlickVersion, // BSD 2-clause "Simplified" License
-        "com.h2database" % "h2" % "1.4.199" % Test // Eclipse Public License 1.0
+        "com.h2database" % "h2" % "1.4.197" % Test // Eclipse Public License 1.0
       )
   )
 
