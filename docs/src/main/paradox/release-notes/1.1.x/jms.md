@@ -2,7 +2,7 @@
 
 ## 1.1.1
 
-No changes.
+- JMS transactions: fail stream or log on ack timeouts  [#1857](https://github.com/akka/alpakka/issues/1857) by [@ennru](https://github.com/ennru) (problem reported by [@WellingR](https://github.com/WellingR) in [#1831](https://github.com/akka/alpakka/pull/1831)) 
 
 [*closed in 1.1.1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.1.1+label%3Ap%3Ajms)
 

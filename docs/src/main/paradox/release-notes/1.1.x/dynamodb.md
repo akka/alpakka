@@ -2,7 +2,7 @@
 
 ## 1.1.1
 
-No changes.
+- DynamoDB: Add TransactionCanceledException [#1863](https://github.com/akka/alpakka/issues/1863) by [@pulltab](https://github.com/pulltab)
 
 [*closed in 1.1.1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.1.1+label%3Ap%3Adynamodb)
 
