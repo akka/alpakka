@@ -1,5 +1,12 @@
 # Google Cloud Storage
 
+## 1.1.1
+
+No changes.
+
+[*closed in 1.1.1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.1.1+label%3Ap%3Agoogle-cloud-storage)
+
+
 ## 1.1.0
 
 - New module: Google cloud storage support [#1340](https://github.com/akka/alpakka/issues/1340) by [@jkobejs](https://github.com/jkobejs)

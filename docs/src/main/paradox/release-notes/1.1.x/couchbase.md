@@ -1,5 +1,12 @@
 # Couchbase
 
+## 1.1.1
+
+No changes.
+
+[*closed in 1.1.1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.1.1+label%3Ap%3Acouchbase)
+
+
 ## 1.1.0
 
 - Couchbase: Propagate replicateTo setting when using CouchbaseSession.insert #1744 [#1745](https://github.com/akka/alpakka/issues/1745) by [@srxx](https://github.com/srxx)

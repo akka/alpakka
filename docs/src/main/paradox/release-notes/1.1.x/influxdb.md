@@ -1,5 +1,12 @@
 # InfluxDB
 
+## 1.1.1
+
+No changes.
+
+[*closed in 1.1.1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.1.1+label%3Ap%3Ainfluxdb)
+
+
 ## 1.1.0
 
 - New module: Influxdb connector [#1680](https://github.com/akka/alpakka/issues/1680) by [@gkatzioura](https://github.com/gkatzioura)

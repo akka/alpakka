@@ -1,5 +1,12 @@
 # Server-sent events (SSE)
 
+## 1.1.1
+
+No changes.
+
+[*closed in 1.1.1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.1.1+label%3Ap%3Asse)
+
+
 ## 1.1.0
 
 - SSE: Support gzip encoding [#1796](https://github.com/akka/alpakka/issues/1796) by [@jefftt](https://github.com/jefftt)
