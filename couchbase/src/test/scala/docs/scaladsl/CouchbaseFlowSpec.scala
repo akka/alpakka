@@ -389,6 +389,61 @@ class CouchbaseFlowSpec
         .runWith(Sink.seq)
       result.futureValue.map(_.id) shouldBe Seq("First", "Second", "Third", "Fourth")
     }
+
+    "replace single element" in assertAllStagesStopped {
+      upsertSampleData()
+
+      val obj = TestObject("Second", "SecondReplace")
+
+      // #replace
+      val replaceFuture: Future[Done] =
+        Source
+          .single(obj)
+          .map(toJsonDocument)
+          .via(
+            CouchbaseFlow.replace(
+              sessionSettings,
+              writeSettings,
+              bucketName
+            )
+          )
+          .runWith(Sink.ignore)
+      // #replace
+      replaceFuture.futureValue
+
+      Thread.sleep(1000)
+
+      val msgFuture: Future[Option[JsonDocument]] = session.get(obj.id)
+      msgFuture.futureValue.get.content().get("value") shouldEqual obj.value
+    }
+
+    "replace RawJsonDocument" in assertAllStagesStopped {
+
+      upsertSampleData()
+
+      val obj = TestObject("Second", "SecondReplace")
+
+      // #replaceDoc
+      val replaceDocFuture: Future[Done] = Source
+        .single(obj)
+        .map(toJsonDocument)
+        .via(
+          CouchbaseFlow.replaceDoc(
+            sessionSettings,
+            writeSettings,
+            bucketName
+          )
+        )
+        .runWith(Sink.ignore)
+      // #replaceDocreplace
+
+      replaceDocFuture.futureValue
+
+      Thread.sleep(1000)
+
+      val msgFuture: Future[Option[JsonDocument]] = session.get(obj.id)
+      msgFuture.futureValue.get.content().get("value") shouldEqual obj.value
+    }
   }
 
   "Couchbase upsert with result" should {

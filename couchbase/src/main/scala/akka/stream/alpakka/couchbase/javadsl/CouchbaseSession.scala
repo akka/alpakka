@@ -179,6 +179,41 @@ abstract class CouchbaseSession {
   def upsertDoc[T <: Document[_]](document: T, writeSettings: CouchbaseWriteSettings): CompletionStage[T]
 
   /**
+   * Replace using the default write settings
+   *
+   * For replacing other types of documents see `replaceDoc`.
+   *
+   * @return a CompletionStage that completes when the replace is done
+   */
+  def replace(document: JsonDocument): CompletionStage[JsonDocument]
+
+  /**
+   * Replace using the default write settings.
+   * Separate from `replace` to make the most common case smoother with the type inference
+   *
+   * @return a CompletionStage that completes when the replace is done
+   */
+  def replaceDoc[T <: Document[_]](document: T): CompletionStage[T]
+
+  /**
+   * Replace using the given write settings.
+   *
+   * For replacing other types of documents see `replaceDoc`.
+   *
+   * @return a CompletionStage that completes when the replace done
+   */
+  def replace(document: JsonDocument, writeSettings: CouchbaseWriteSettings): CompletionStage[JsonDocument]
+
+  /**
+   * Replace using the given write settings.
+   *
+   * Separate from `replace` to make the most common case smoother with the type inference
+   *
+   * @return a CompletionStage that completes when the replace is done
+   */
+  def replaceDoc[T <: Document[_]](document: T, writeSettings: CouchbaseWriteSettings): CompletionStage[T]
+
+  /**
    * Remove a document by id using the default write settings.
    *
    * @return CompletionStage that completes when the document has been removed, if there is no such document

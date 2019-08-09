@@ -252,21 +252,21 @@ public class CouchbaseExamplesTest {
   @Test
   public void upsertDoc() {
     CouchbaseWriteSettings writeSettings = CouchbaseWriteSettings.create();
-    // #upsert
 
+    // #upsertDoc
     CompletionStage<Done> stringDocumentUpsert =
         Source.single(sampleData)
             .map(support::toStringDocument)
             .via(CouchbaseFlow.upsertDoc(sessionSettings, writeSettings, bucketName))
             .runWith(Sink.ignore(), materializer);
-    // #upsert
+    // #upsertDoc
   }
 
   @Test
-  public void upsertDocWitResult() throws Exception {
+  public void upsertDocWithResult() throws Exception {
     CouchbaseWriteSettings writeSettings = CouchbaseWriteSettings.create();
-    // #upsertDocWithResult
 
+    // #upsertDocWithResult
     CompletionStage<List<CouchbaseWriteResult<StringDocument>>> upsertResults =
         Source.from(sampleSequence)
             .map(support::toStringDocument)
@@ -281,6 +281,59 @@ public class CouchbaseExamplesTest {
             .map(res -> (CouchbaseWriteFailure<StringDocument>) res)
             .collect(Collectors.toList());
     // #upsertDocWithResult
+
+    assertThat(writeResults.size(), is(sampleSequence.size()));
+    assertTrue("unexpected failed writes", failedDocs.isEmpty());
+  }
+
+  @Test
+  public void replace() {
+    // #replace
+    TestObject obj = new TestObject("First", "First");
+
+    CouchbaseWriteSettings writeSettings = CouchbaseWriteSettings.create();
+
+    CompletionStage<Done> jsonDocumentUpsert =
+        Source.single(obj)
+            .map(support::toJsonDocument)
+            .via(CouchbaseFlow.replace(sessionSettings, writeSettings, bucketName))
+            .runWith(Sink.ignore(), materializer);
+    // #replace
+  }
+
+  @Test
+  public void replaceDoc() {
+    CouchbaseWriteSettings writeSettings = CouchbaseWriteSettings.create();
+
+    // #replaceDoc
+    CompletionStage<Done> stringDocumentUpsert =
+        Source.single(sampleData)
+            .map(support::toStringDocument)
+            .via(CouchbaseFlow.replaceDoc(sessionSettings, writeSettings, bucketName))
+            .runWith(Sink.ignore(), materializer);
+    // #replaceDoc
+  }
+
+  @Test
+  public void replaceDocWithResult() throws Exception {
+    CouchbaseWriteSettings writeSettings = CouchbaseWriteSettings.create();
+
+    // #replaceDocWithResult
+    CompletionStage<List<CouchbaseWriteResult<StringDocument>>> replaceResults =
+        Source.from(sampleSequence)
+            .map(support::toStringDocument)
+            .via(CouchbaseFlow.replaceDocWithResult(sessionSettings, writeSettings, bucketName))
+            .runWith(Sink.seq(), materializer);
+
+    List<CouchbaseWriteResult<StringDocument>> writeResults =
+        replaceResults.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    List<CouchbaseWriteFailure<StringDocument>> failedDocs =
+        writeResults.stream()
+            .filter(CouchbaseWriteResult::isFailure)
+            .map(res -> (CouchbaseWriteFailure<StringDocument>) res)
+            .collect(Collectors.toList());
+    // #replaceDocWithResult
+
     assertThat(writeResults.size(), is(sampleSequence.size()));
     assertTrue("unexpected failed writes", failedDocs.isEmpty());
   }
