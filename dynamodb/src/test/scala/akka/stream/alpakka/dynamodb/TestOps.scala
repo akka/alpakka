@@ -4,7 +4,6 @@
 
 package akka.stream.alpakka.dynamodb
 
-import akka.util.ByteString
 import com.amazonaws.services.dynamodbv2.model._
 
 import scala.collection.JavaConverters._
@@ -12,7 +11,6 @@ import scala.collection.JavaConverters._
 trait TestOps {
 
   val tableName: String
-  val lowThroughputTableName: String
 
   val keyCol = "kkey"
   val sortCol = "sort"
@@ -47,24 +45,9 @@ trait TestOps {
         new ProvisionedThroughput().withReadCapacityUnits(10L).withWriteCapacityUnits(10L)
       )
 
-    val createLowThroughputTableRequest = new CreateTableRequest()
-      .withTableName(lowThroughputTableName)
-      .withKeySchema(
-        new KeySchemaElement().withAttributeName(keyCol).withKeyType(KeyType.HASH),
-        new KeySchemaElement().withAttributeName(sortCol).withKeyType(KeyType.RANGE)
-      )
-      .withAttributeDefinitions(
-        new AttributeDefinition().withAttributeName(keyCol).withAttributeType("S"),
-        new AttributeDefinition().withAttributeName(sortCol).withAttributeType("N")
-      )
-      .withProvisionedThroughput(
-        new ProvisionedThroughput().withReadCapacityUnits(1L).withWriteCapacityUnits(1L)
-      )
-
     val describeTableRequest = new DescribeTableRequest().withTableName(tableName)
 
     val deleteTableRequest = new DeleteTableRequest().withTableName(tableName)
-    val deleteLowThroughputTableRequest = new DeleteTableRequest().withTableName(lowThroughputTableName)
   }
 
 }
@@ -72,12 +55,10 @@ trait TestOps {
 object ItemSpecOps extends TestOps {
 
   override val tableName = "ItemSpecOps"
-  override val lowThroughputTableName = "ItemSpecOpsLowThroughput"
 
   val listTablesRequest = common.listTablesRequest
 
   val createTableRequest = common.createTableRequest
-  val createLowThroughputTableRequest = common.createLowThroughputTableRequest
 
   val test4Data = "test4data"
 
@@ -172,13 +153,11 @@ object ItemSpecOps extends TestOps {
   )
 
   val deleteTableRequest = common.deleteTableRequest
-  val deleteLowThroughputTableRequest = common.deleteLowThroughputTableRequest
 }
 
 object TableSpecOps extends TestOps {
 
   override val tableName = "TableSpecOps"
-  override val lowThroughputTableName = "TableSpecOpsLowThroughput"
 
   val createTableRequest = common.createTableRequest
 

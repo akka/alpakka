@@ -26,6 +26,11 @@ object DynamoDb {
       .setup((mat, attributes) => client(mat, attributes).flow[Op])
       .mapMaterializedValue(_ => NotUsed)
 
+  /**
+   * Create a Flow that emits a response for every request to DynamoDB.
+   * A successful response is wrapped in [scala.util.success] and a failed
+   * response is wrapped in [scala.util.Failure].
+   */
   def tryFlow[Op <: AwsOp, State]: Flow[(Op, State), (Try[Op#B], State), NotUsed] =
     Flow
       .setup((mat, attributes) => client(mat, attributes).tryFlow[Op, State])
