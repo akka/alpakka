@@ -1,0 +1,6 @@
+# PR #1781 Updated dependencies
+ProblemFilters.exclude[Problem]("com.google.api.*")
+ProblemFilters.exclude[Problem]("com.google.protobuf.*")
+ProblemFilters.exclude[Problem]("com.google.pubsub.v1.*")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("com.google.longrunning.Operations.waitOperation")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("com.google.longrunning.operations.Operations.waitOperation")
