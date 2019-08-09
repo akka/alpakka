@@ -37,6 +37,12 @@ class CsvToMapSpec extends CsvSpec {
     = CsvToMap.withHeadersAsStrings(StandardCharsets.UTF_8, "column1", "column2", "column3")
     // #flow-type
     // format: on
+
+    Source.single(List(ByteString("a"), ByteString("b"))).via(flow1).runWith(Sink.ignore)
+    Source.single(List(ByteString("a"), ByteString("b"))).via(flow2).runWith(Sink.ignore)
+    Source.single(List(ByteString("a"), ByteString("b"))).via(flow3).runWith(Sink.ignore)
+    Source.single(List(ByteString("a"), ByteString("b"))).via(flow4).runWith(Sink.ignore)
+    Source.single(List(ByteString("a"), ByteString("b"))).via(flow5).runWith(Sink.ignore)
   }
 
   "CSV to Map" should {

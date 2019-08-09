@@ -68,6 +68,9 @@ class DirectorySpec
 
       val result = files.runWith(Sink.seq).futureValue
       result shouldEqual List(root, subdir1, file1, subdir2, file2)
+
+      val result2 = files2.runWith(Sink.seq).futureValue
+      result2 shouldEqual List(root, subdir1, subdir2)
     }
   }
 

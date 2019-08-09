@@ -15,7 +15,7 @@ import akka.stream.alpakka.googlecloud.pubsub.impl.{GoogleSession, PubSubApi, Te
 import akka.stream.alpakka.googlecloud.pubsub.scaladsl.GooglePubSub
 import akka.stream.scaladsl.{Sink, Source}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
 import org.mockito.Mockito._
 
