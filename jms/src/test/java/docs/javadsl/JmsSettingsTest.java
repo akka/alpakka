@@ -60,7 +60,7 @@ public class JmsSettingsTest {
     JmsProducerSettings settings =
         JmsProducerSettings.create(producerConfig, new ActiveMQConnectionFactory("broker-url"))
             .withTopic("target-topic")
-            .withCredential(Credentials.create("username", "password"))
+            .withCredentials(Credentials.create("username", "password"))
             .withConnectionRetrySettings(retrySettings)
             .withSendRetrySettings(sendRetrySettings)
             .withSessionCount(10)
@@ -79,7 +79,7 @@ public class JmsSettingsTest {
     JmsConsumerSettings settings =
         JmsConsumerSettings.create(consumerConfig, new ActiveMQConnectionFactory("broker-url"))
             .withTopic("message-topic")
-            .withCredential(Credentials.create("username", "password"))
+            .withCredentials(Credentials.create("username", "password"))
             .withConnectionRetrySettings(retrySettings)
             .withSessionCount(10)
             .withAcknowledgeMode(AcknowledgeMode.AutoAcknowledge())

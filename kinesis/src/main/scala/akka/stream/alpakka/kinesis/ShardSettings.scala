@@ -51,15 +51,6 @@ final class ShardSettings private (
 
   /**
    * Sets `shardIteratorType` to `AT_TIMESTAMP` and uses the given `Instant` as starting timestamp.
-   *
-   * @deprecated prefer java.time.Instant to provide the timeout, since 1.0-M3
-   */
-  @deprecated("prefer java.time.Instant to provide the timeout", "1.0-M3")
-  def withAtTimestamp(value: java.util.Date): ShardSettings =
-    copy(shardIteratorType = ShardIteratorType.AT_TIMESTAMP, atTimestamp = Option(value.toInstant))
-
-  /**
-   * Sets `shardIteratorType` to `AT_TIMESTAMP` and uses the given `Instant` as starting timestamp.
    */
   def withAtTimestamp(value: java.time.Instant): ShardSettings =
     copy(shardIteratorType = ShardIteratorType.AT_TIMESTAMP, atTimestamp = Option(value))

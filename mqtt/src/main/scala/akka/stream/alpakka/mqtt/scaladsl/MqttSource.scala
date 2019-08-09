@@ -24,17 +24,6 @@ object MqttSource {
    *
    * @param bufferSize max number of messages read from MQTT before back-pressure applies
    */
-  @deprecated("use atMostOnce with MqttConnectionSettings and MqttSubscriptions instead", "1.0-M1")
-  def atMostOnce(settings: MqttSourceSettings, bufferSize: Int): Source[MqttMessage, Future[Done]] =
-    atMostOnce(settings.connectionSettings, MqttSubscriptions(settings.subscriptions), bufferSize)
-
-  /**
-   * Create a source subscribing to MQTT messages (without a commit handle).
-   *
-   * The materialized value completes on successful connection to the MQTT broker.
-   *
-   * @param bufferSize max number of messages read from MQTT before back-pressure applies
-   */
   def atMostOnce(settings: MqttConnectionSettings,
                  subscriptions: MqttSubscriptions,
                  bufferSize: Int): Source[MqttMessage, Future[Done]] =
@@ -42,17 +31,6 @@ object MqttSource {
       .viaMat(
         MqttFlow.atMostOnce(settings, subscriptions, bufferSize, defaultQos = MqttQoS.AtLeastOnce)
       )(Keep.right)
-
-  /**
-   * Create a source subscribing to MQTT messages with a commit handle to acknowledge message reception.
-   *
-   * The materialized value completes on successful connection to the MQTT broker.
-   *
-   * @param bufferSize max number of messages read from MQTT before back-pressure applies
-   */
-  @deprecated("use atLeastOnce with MqttConnectionSettings and MqttSubscriptions instead", "1.0-M1")
-  def atLeastOnce(settings: MqttSourceSettings, bufferSize: Int): Source[MqttMessageWithAck, Future[Done]] =
-    atLeastOnce(settings.connectionSettings, MqttSubscriptions(settings.subscriptions), bufferSize)
 
   /**
    * Create a source subscribing to MQTT messages with a commit handle to acknowledge message reception.

@@ -133,11 +133,6 @@ public class MqttFlowTest {
     }
 
     @Override
-    public CompletionStage<Done> messageArrivedComplete() {
-      return ack();
-    }
-
-    @Override
     public CompletionStage<Done> ack() {
       acked = true;
       System.out.println("[MqttMessageWithAckImpl]");

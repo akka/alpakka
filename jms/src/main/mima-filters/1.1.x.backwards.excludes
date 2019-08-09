@@ -4,3 +4,7 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.alpakka.jms.Jm
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.alpakka.jms.JmsMessage.withProperties")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.alpakka.jms.JmsMessage.withHeader")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.alpakka.jms.JmsMessage.withoutDestination")
+
+# Remove deprecated methods
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.jms.JmsConsumerSettings.withCredential")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.jms.JmsProducerSettings.withCredential")

@@ -1,0 +1,4 @@
+# Remove deprecated methods
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.file.javadsl.FileTailSource.createLines")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.file.javadsl.FileTailSource.create")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.file.javadsl.DirectoryChangesSource.create")
