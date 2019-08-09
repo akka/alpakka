@@ -52,7 +52,7 @@ trait TestOps {
 
 }
 
-object ItemSpecOps extends TestOps {
+abstract class ItemSpecOps extends TestOps {
 
   override val tableName = "ItemSpecOps"
 
@@ -83,10 +83,10 @@ object ItemSpecOps extends TestOps {
     ).asJava
   )
 
-  def batchWriteLargeItemRequest(range: Range) = new BatchWriteItemRequest().withRequestItems(
+  def batchWriteLargeItemRequest(from: Int, to: Int) = new BatchWriteItemRequest().withRequestItems(
     Map(
       tableName ->
-      range.map { i =>
+      (from to to).map { i =>
         // 400k is the of one write request
         new WriteRequest(
           new PutRequest().withItem((keyMap(i.toString, i) + ("data1" -> S("0123456789" * 39000))).asJava)
@@ -95,12 +95,12 @@ object ItemSpecOps extends TestOps {
     ).asJava
   )
 
-  def batchGetLargeItemRequest(range: Range) = new BatchGetItemRequest().withRequestItems(
+  def batchGetLargeItemRequest(from: Int, to: Int) = new BatchGetItemRequest().withRequestItems(
     Map(
       tableName ->
       new KeysAndAttributes()
         .withKeys {
-          range.map { i =>
+          (from to to).map { i =>
             Map(keyCol -> S(i.toString), sortCol -> N(i)).asJava
           }.asJava
         }
@@ -154,6 +154,8 @@ object ItemSpecOps extends TestOps {
 
   val deleteTableRequest = common.deleteTableRequest
 }
+
+object ItemSpecOps extends ItemSpecOps
 
 object TableSpecOps extends TestOps {
 

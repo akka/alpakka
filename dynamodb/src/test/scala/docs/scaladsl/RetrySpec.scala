@@ -2,11 +2,12 @@
  * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.dynamodb
+package docs.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.dynamodb.AwsOp.BatchGetItem
+import akka.stream.alpakka.dynamodb.ItemSpecOps
 import akka.stream.alpakka.dynamodb.scaladsl.DynamoDb
 import akka.stream.scaladsl.{RetryFlow, Source}
 import akka.testkit.TestKit
@@ -41,10 +42,10 @@ class RetrySpec
 
   "DynamoDb connector" should {
 
-    "retry requests when exceeded throughput" in {
+    "retry requests" in {
       DynamoDb.single(createTableRequest).futureValue
-      DynamoDb.single(batchWriteLargeItemRequest(1 to 25)).futureValue
-      DynamoDb.single(batchWriteLargeItemRequest(26 to 50)).futureValue
+      DynamoDb.single(batchWriteLargeItemRequest(1, 25)).futureValue
+      DynamoDb.single(batchWriteLargeItemRequest(26, 50)).futureValue
 
       val retryFlow = RetryFlow.withBackoff(8, 10.millis, 5.seconds, 1, DynamoDb.tryFlow[BatchGetItem, Unit]) {
         case (Success(resp), _) if resp.getUnprocessedKeys.size() > 0 =>
@@ -53,7 +54,7 @@ class RetrySpec
       }
 
       val responses = Source
-        .single((BatchGetItem(batchGetLargeItemRequest(1 to 50)), ()))
+        .single((BatchGetItem(batchGetLargeItemRequest(1, 50)), ()))
         .via(retryFlow)
         .runFold(0)((cnt, _) => cnt + 1)
         .futureValue

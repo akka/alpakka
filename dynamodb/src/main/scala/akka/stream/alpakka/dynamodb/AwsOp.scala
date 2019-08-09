@@ -160,7 +160,7 @@ object AwsOp extends DynamoProtocol {
   }
 
   /** Java Api */
-  def create(r: BatchGetItemRequest): BatchGetItemRequest = r
+  def create(r: BatchGetItemRequest): BatchGetItem = r
 
   /** Java Api */
   def create(r: CreateTableRequest): CreateTable = r

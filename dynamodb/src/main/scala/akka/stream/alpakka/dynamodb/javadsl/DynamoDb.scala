@@ -13,6 +13,8 @@ import akka.stream.alpakka.dynamodb.scaladsl
 import akka.stream.javadsl.{Flow, Sink, Source}
 import com.amazonaws.services.dynamodbv2.model._
 
+import scala.util.Try
+
 /**
  * Factory of DynamoDb Akka Stream operators.
  */
@@ -23,6 +25,18 @@ object DynamoDb {
    */
   def flow[Op <: AwsOp](): Flow[Op, Op#B, NotUsed] =
     scaladsl.DynamoDb.flow.asJava
+
+  /**
+   * Create a Flow that emits a response for every request to DynamoDB.
+   * A successful response is wrapped in [scala.util.success] and a failed
+   * response is wrapped in [scala.util.Failure].
+   */
+  def tryFlow[Op <: AwsOp, State](): Flow[akka.japi.Pair[Op, State], akka.japi.Pair[Try[Op#B], State], NotUsed] =
+    Flow
+      .create[akka.japi.Pair[Op, State]]()
+      .map(p => (p.first, p.second))
+      .via(scaladsl.DynamoDb.tryFlow)
+      .map(t => akka.japi.Pair.create(t._1, t._2))
 
   /**
    * Create a Source that will emit potentially multiple responses for a given request.

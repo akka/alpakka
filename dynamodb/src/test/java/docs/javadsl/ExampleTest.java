@@ -42,11 +42,11 @@ public class ExampleTest {
     System.setProperty("aws.accessKeyId", "someKeyId");
     System.setProperty("aws.secretKey", "someSecretKey");
 
-    final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
+    final ActorSystem sys = ActorSystem.create();
+    final Materializer mat = ActorMaterializer.create(sys);
 
-    ExampleTest.system = system;
-    ExampleTest.materializer = materializer;
+    system = sys;
+    materializer = mat;
   }
 
   @AfterClass
