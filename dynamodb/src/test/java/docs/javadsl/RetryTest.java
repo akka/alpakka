@@ -62,6 +62,11 @@ public class RetryTest extends ItemSpecOps {
     StreamTestKit.assertAllStagesStopped(materializer);
   }
 
+  @Override
+  public String tableName() {
+    return "RetryTest";
+  }
+
   @Test
   public void retryRequest() throws Exception {
     DynamoDb.single(AwsOp.create(createTableRequest()), materializer)
