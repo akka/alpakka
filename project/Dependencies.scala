@@ -376,8 +376,8 @@ object Dependencies {
       )
   )
 
-  val SolrjVersion = "7.4.0"
-  val SolrVersionForDocs = "7_4"
+  val SolrjVersion = "7.7.2"
+  val SolrVersionForDocs = "7_7"
 
   val Solr = Seq(
     libraryDependencies ++= Seq(
