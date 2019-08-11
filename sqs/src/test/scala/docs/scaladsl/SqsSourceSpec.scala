@@ -104,7 +104,7 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
   }
 
   allAvailableAttributes foreach { attribute =>
-    it should s"aks for '${attribute.name}' set in the settings" taggedAs Integration in new IntegrationFixture {
+    it should s"ask for '${attribute.name}' set in the settings" taggedAs Integration in new IntegrationFixture {
       val settings = sqsSourceSettings.withAttribute(attribute)
 
       val sendMessageRequest =
