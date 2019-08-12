@@ -275,10 +275,12 @@ class GCStorageSourceSpec
       val downloadSource: Source[Option[Source[ByteString, NotUsed]], NotUsed] =
         GCStorage.download(bucketName, fileName)
 
-      val Some(data: Source[ByteString, _]): Option[Source[ByteString, NotUsed]] =
-        downloadSource.runWith(Sink.head).futureValue
+      val data: Future[Option[Source[ByteString, NotUsed]]] =
+        downloadSource.runWith(Sink.head)
 
-      val result: Future[Seq[String]] = data.map(_.utf8String).runWith(Sink.seq)
+      import system.dispatcher
+      val result: Future[Seq[String]] = data
+        .flatMap(_.getOrElse(Source.empty).map(_.utf8String).runWith(Sink.seq[String]))
 
       //#download
 
