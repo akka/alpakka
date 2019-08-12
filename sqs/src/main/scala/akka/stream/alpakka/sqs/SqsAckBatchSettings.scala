@@ -10,7 +10,7 @@ final class SqsAckBatchSettings private (val concurrentRequests: Int) {
 
   def withConcurrentRequests(value: Int): SqsAckBatchSettings = copy(concurrentRequests = value)
 
-  private def copy(concurrentRequests: Int = concurrentRequests): SqsAckBatchSettings =
+  private def copy(concurrentRequests: Int): SqsAckBatchSettings =
     new SqsAckBatchSettings(concurrentRequests = concurrentRequests)
 
   override def toString =
