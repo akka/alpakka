@@ -13,17 +13,21 @@ import akka.annotation.InternalApi
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim, JwtTime}
+import java.time.Clock
 
 import scala.concurrent.Future
 
 @InternalApi
 private[googlecloud] class GoogleTokenApi(http: => HttpExt) {
+
+  implicit val clock = Clock.systemUTC()
+
   protected val encodingAlgorithm: JwtAlgorithm.RS256.type = JwtAlgorithm.RS256
 
   private val googleTokenUrl = "https://www.googleapis.com/oauth2/v4/token"
   private val scope = "https://www.googleapis.com/auth/pubsub"
 
-  def now: Long = JwtTime.nowSeconds
+  def now: Long = JwtTime.nowSeconds(Clock.systemUTC())
 
   private def generateJwt(clientEmail: String, privateKey: String): String = {
     val claim = JwtClaim(content = s"""{"scope":"$scope","aud":"$googleTokenUrl"}""", issuer = Option(clientEmail))

@@ -41,23 +41,35 @@ class GoogleTokenApiSpec
 
   implicit val materializer: Materializer = ActorMaterializer()
 
-  //http://travistidwell.com/jsencrypt/demo/
+  // openssl genrsa -out mykey.pem 1024
+  // openssl pkcs8 -topk8 -nocrypt -in mykey.pem -out myrsakey_pcks8
+  // openssl rsa -in mykey.pem -pubout > mykey.pub
   val privateKey =
-    """-----BEGIN RSA PRIVATE KEY-----
-      |MIIBOgIBAAJBAJHPYfmEpShPxAGP12oyPg0CiL1zmd2V84K5dgzhR9TFpkAp2kl2
-      |9BTc8jbAY0dQW4Zux+hyKxd6uANBKHOWacUCAwEAAQJAQVyXbMS7TGDFWnXieKZh
-      |Dm/uYA6sEJqheB4u/wMVshjcQdHbi6Rr0kv7dCLbJz2v9bVmFu5i8aFnJy1MJOpA
-      |2QIhAPyEAaVfDqJGjVfryZDCaxrsREmdKDlmIppFy78/d8DHAiEAk9JyTHcapckD
-      |uSyaE6EaqKKfyRwSfUGO1VJXmPjPDRMCIF9N900SDnTiye/4FxBiwIfdynw6K3dW
-      |fBLb6uVYr/r7AiBUu/p26IMm6y4uNGnxvJSqe+X6AxR6Jl043OWHs4AEbwIhANuz
-      |Ay3MKOeoVbx0L+ruVRY5fkW+oLHbMGtQ9dZq7Dp9
-      |-----END RSA PRIVATE KEY-----""".stripMargin
+    """-----BEGIN PRIVATE KEY-----
+    |MIICeAIBADANBgkqhkiG9w0BAQEFAASCAmIwggJeAgEAAoGBAMwkmdwrWp+LLlsf
+    |bVE+neFjZtUNuaD4/tpQ2UIh2u+qU6sr4bG8PPuqSdrt5b0/0vfMZA11mQWmKpg5
+    |PK98kEkhbSvC08fG0TtpR9+vflghOuuvcw6kCniwNbHlOXnE8DwtKQp1DbTUPzMD
+    |hhsIjJaUtv19Xk7gh4MqYgANTm6lAgMBAAECgYEAwBXIeHSKxwiNS8ycbg//Oq7v
+    |eZV6j077bq0YYLO+cDjSlYOq0DSRJTSsXcXvoE1H00aM9mUq4TfjaGyi/3SzxYsr
+    |rSzu/qpYC58MJsnprIjlLgFZmZGe5MOSoul/u6JsBTJGkYPV0xGrtXJY103aSYzC
+    |xthpY0BHy9eO9I/pNlkCQQD/64g4INAiBdM4R5iONQvh8LLvqbb8Bw4vVwVFFnAr
+    |YHcomxtT9TunMad6KPgbOCd/fTttDADrv54htBrFGXeXAkEAzDTtisPKXPByJnUd
+    |jKO2oOg0Fs9IjGeWbnkrsN9j0134ldARE+WbT5S8G5EFo+bQi4ffU3+Y/4ly6Amm
+    |OAAzIwJBANV2GAD5HaHDShK/ZTf4dxjWM+pDnSVKnUJPS039EUKdC8cK2RiGjGNA
+    |v3jdg1Tw2cE1K8QhJwN8qOFj4JBWVbECQQCwcntej9bnf4vi1wd1YnCHkJyRqQIS
+    |7974DhNGfYAQPv5w1JwtCRSuKuJvH1w0R1ijd//scjCNfQKgpNXPRbzpAkAQ8MFA
+    |MLpOLGqezUQthJWmVtnXEXaAlb3yFSRTZQVEselObiIc6EvYzNXv780IDT4pyKjg
+    |8DS9i5jJDIVWr7mA
+    |-----END PRIVATE KEY-----
+  """.stripMargin
 
-  val publicKey =
-    """-----BEGIN PUBLIC KEY-----
-        |MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAJHPYfmEpShPxAGP12oyPg0CiL1zmd2V
-        |84K5dgzhR9TFpkAp2kl29BTc8jbAY0dQW4Zux+hyKxd6uANBKHOWacUCAwEAAQ==
-        |-----END PUBLIC KEY-----""".stripMargin
+  val publicKey = """-----BEGIN PUBLIC KEY-----
+    |MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDMJJncK1qfiy5bH21RPp3hY2bV
+    |Dbmg+P7aUNlCIdrvqlOrK+GxvDz7qkna7eW9P9L3zGQNdZkFpiqYOTyvfJBJIW0r
+    |wtPHxtE7aUffr35YITrrr3MOpAp4sDWx5Tl5xPA8LSkKdQ201D8zA4YbCIyWlLb9
+    |fV5O4IeDKmIADU5upQIDAQAB
+    |-----END PUBLIC KEY-----
+  """.stripMargin
 
   "GoogleTokenApi" should {
 
@@ -92,9 +104,10 @@ class GoogleTokenApiSpec
       val jwt = data.replace("grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=", "")
       val decoded = Jwt.decode(jwt, publicKey, Seq(JwtAlgorithm.RS256))
       decoded.isSuccess shouldBe true
-      decoded.get should include(""""aud":"https://www.googleapis.com/oauth2/v4/token"""")
-      decoded.get should include(""""scope":"https://www.googleapis.com/auth/firebase.messaging"""")
-      decoded.get should include(""""iss":"email"""")
+      val claimsJson = decoded.get.toJson
+      claimsJson should include(""""aud":"https://www.googleapis.com/oauth2/v4/token"""")
+      claimsJson should include(""""scope":"https://www.googleapis.com/auth/firebase.messaging"""")
+      claimsJson should include(""""iss":"email"""")
 
     }
 

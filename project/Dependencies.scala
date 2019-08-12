@@ -175,7 +175,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        "com.pauldijou" %% "jwt-core" % "2.1.0", // ApacheV2
+        "com.pauldijou" %% "jwt-core" % JwtCoreVersion, // ApacheV2
         "org.mockito" % "mockito-core" % mockitoVersion % Test, // MIT
         "com.github.tomakehurst" % "wiremock" % "2.24.0" % Test // ApacheV2
       )
@@ -195,7 +195,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        "com.pauldijou" %% "jwt-core" % "2.1.0", // ApacheV2
+        "com.pauldijou" %% "jwt-core" % JwtCoreVersion, // ApacheV2
         "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
       )
   )

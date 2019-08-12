@@ -107,7 +107,7 @@ class GoogleTokenApiSpec extends WordSpecLike with Matchers with ScalaFutures wi
       val claimsJson = decoded.get.toJson
       claimsJson should include(""""aud":"https://www.googleapis.com/oauth2/v4/token"""")
       claimsJson should include(""""scope":"https://www.googleapis.com/auth/devstorage.read_write"""")
-      claimsJson should include("email")
+      claimsJson should include(""""iss":"email"""")
 
     }
 
