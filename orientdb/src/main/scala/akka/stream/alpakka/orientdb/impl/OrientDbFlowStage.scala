@@ -103,12 +103,10 @@ private[orientdb] class OrientDbFlowStage[T, C](
             }
           document.setClassName(className)
           client.save(document)
-          ()
         case OrientDbWriteMessage(oRecord: ORecord, _) =>
           client.save(oRecord)
-          ()
-        case OrientDbWriteMessage(others: AnyRef, _) =>
-          failStage(new RuntimeException(s"unexpected type [${others.getClass()}], ORecord required"))
+        case m @ OrientDbWriteMessage(_, _) =>
+          failStage(new RuntimeException(s"unexpected type [${m.oDocument.getClass()}], ORecord required"))
       }
   }
 
@@ -123,7 +121,6 @@ private[orientdb] class OrientDbFlowStage[T, C](
       messages.foreach {
         case OrientDbWriteMessage(typeRecord: Any, _) =>
           oObjectClient.save(typeRecord)
-          ()
       }
 
   }

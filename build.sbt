@@ -243,7 +243,8 @@ lazy val orientdb = alpakkaProject("orientdb",
                                    "orientdb",
                                    Dependencies.OrientDB,
                                    fork in Test := true,
-                                   parallelExecution in Test := false)
+                                   parallelExecution in Test := false,
+                                   fatalWarnings := false)
 
 lazy val reference = internalProject("reference", Dependencies.Reference)
 
