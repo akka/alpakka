@@ -15,21 +15,20 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.TestSubscriber;
 import akka.stream.testkit.javadsl.StreamTestKit;
-import akka.testkit.TestKit;
+import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import scala.concurrent.duration.FiniteDuration;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.APPEND;
@@ -60,7 +59,7 @@ public class FileTailSourceTest {
             path,
             8192, // chunk size
             0, // starting position
-            FiniteDuration.create(250, TimeUnit.MILLISECONDS));
+            Duration.ofMillis((250)));
 
     final TestSubscriber.Probe<ByteString> subscriber = TestSubscriber.probe(system);
 
@@ -86,7 +85,7 @@ public class FileTailSourceTest {
         akka.stream.alpakka.file.javadsl.FileTailSource.createLines(
             path,
             8192, // chunk size
-            FiniteDuration.create(250, TimeUnit.MILLISECONDS),
+            Duration.ofMillis(250),
             "\n",
             StandardCharsets.UTF_8);
 
@@ -118,7 +117,7 @@ public class FileTailSourceTest {
     fs.close();
     fs = null;
     StreamTestKit.assertAllStagesStopped(materializer);
-    TestKit.shutdownActorSystem(system, FiniteDuration.create(10, TimeUnit.SECONDS), true);
+    TestKit.shutdownActorSystem(system);
     system = null;
     materializer = null;
   }
@@ -133,7 +132,7 @@ public class FileTailSourceTest {
 
     // #simple-lines
     final FileSystem fs = FileSystems.getDefault();
-    final FiniteDuration pollingInterval = FiniteDuration.create(250, TimeUnit.MILLISECONDS);
+    final Duration pollingInterval = Duration.ofMillis(250);
     final int maxLineSize = 8192;
 
     final Source<String, NotUsed> lines =

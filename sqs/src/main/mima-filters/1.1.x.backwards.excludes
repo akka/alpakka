@@ -1,0 +1,3 @@
+# Remove deprecated methods
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.sqs.SqsAckGroupedSettings.withMaxBatchWait")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.sqs.SqsPublishGroupedSettings.withMaxBatchWait")

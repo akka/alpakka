@@ -39,8 +39,6 @@ final class JmsProducerSettings private (
 
   /** Set a JMS destination. Allows for custom handling with [[akka.stream.alpakka.jms.CustomDestination CustomDestination]]. */
   def withDestination(value: Destination): JmsProducerSettings = copy(destination = Option(value))
-  @deprecated("use withCredentials instead", "1.0-M1")
-  def withCredential(value: Credentials): JmsProducerSettings = copy(credentials = Option(value))
 
   /** Set JMS broker credentials. */
   def withCredentials(value: Credentials): JmsProducerSettings = copy(credentials = Option(value))
