@@ -49,7 +49,7 @@ public class DocSnippetFlowWithPassThrough {
     }
 
     public <B> KafkaMessage<B> map(Function<A, B> f) {
-      return new KafkaMessage(f.apply(msg), offset);
+      return new KafkaMessage<>(f.apply(msg), offset);
     }
   }
 

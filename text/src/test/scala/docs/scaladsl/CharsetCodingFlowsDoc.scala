@@ -4,13 +4,11 @@
 
 package docs.scaladsl
 
-import java.nio.charset.{Charset, StandardCharsets, UnmappableCharacterException}
 import java.nio.file.Paths
 
-import akka.{Done, NotUsed}
+import akka.Done
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{Keep, Sink, Source}
-import akka.stream.testkit.scaladsl.{TestSink, TestSource}
+import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, IOResult, Materializer}
 import akka.testkit.TestKit
 import akka.util.ByteString
@@ -18,8 +16,7 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Matchers, RecoverMethods, WordSpecLike}
 
 import scala.collection.immutable
-import scala.concurrent.{ExecutionContextExecutor, Future}
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.Future
 import scala.util.Success
 
 class CharsetCodingFlowsDoc
@@ -31,20 +28,10 @@ class CharsetCodingFlowsDoc
     with RecoverMethods {
 
   private implicit val mat: Materializer = ActorMaterializer()
-  private implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
   val multiByteChars = "äåû經濟商行政管理总局التجارى"
 
   "Encoding" should {
-    def verifyEncoding(charsetOut: Charset, value: String) = {
-      import akka.stream.alpakka.text.scaladsl.TextFlow
-      val result = Source
-        .single(value)
-        .via(TextFlow.encoding(charsetOut))
-        .map(_.decodeString(charsetOut))
-        .runWith(Sink.head)
-      result.futureValue should be(value)
-    }
 
     "be illustrated in a documentation example" in {
       // format: off
@@ -126,34 +113,6 @@ class CharsetCodingFlowsDoc
       // #transcoding
       result.futureValue.status should be(Success(Done))
       // format: on
-    }
-
-    def verifyTranscoding(charsetIn: Charset, charsetOut: Charset, value: String) = {
-      import akka.stream.alpakka.text.scaladsl.TextFlow
-      val result = Source
-        .single(value)
-        .map(s => ByteString(s, charsetIn))
-        .via(TextFlow.transcoding(charsetIn, charsetOut))
-        .map(_.decodeString(charsetOut))
-        .runWith(Sink.head)
-      result.futureValue should be(value)
-    }
-
-    def verifyByteSends(charsetIn: Charset, charsetOut: Charset, in: String) = {
-      import akka.stream.alpakka.text.scaladsl.TextFlow
-      val (source, sink) = TestSource
-        .probe[ByteString]
-        .via(TextFlow.transcoding(charsetIn, charsetOut))
-        .map(_.decodeString(charsetOut))
-        .toMat(Sink.seq)(Keep.both)
-        .run()
-
-      val bs = ByteString(in, charsetIn)
-      bs.sliding(1).foreach { bs =>
-        source.sendNext(bs)
-      }
-      source.sendComplete()
-      sink.futureValue.mkString should be(in)
     }
 
   }

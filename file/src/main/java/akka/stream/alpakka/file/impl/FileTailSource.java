@@ -36,7 +36,8 @@ import java.nio.file.StandardOpenOption;
  *
  * <p>Aborting the stage can be done by combining with a [[akka.stream.KillSwitch]]
  *
- * <p>To use the stage from Scala see the factory methods in {@link akka.stream.alpakka.file.scaladsl.FileTailSource}
+ * <p>To use the stage from Scala see the factory methods in {@link
+ * akka.stream.alpakka.file.scaladsl.FileTailSource}
  */
 @InternalApi
 public final class FileTailSource extends GraphStage<SourceShape<ByteString>> {
