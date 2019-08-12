@@ -54,6 +54,8 @@ class ReferenceSpec extends WordSpec with BeforeAndAfterAll with ScalaFutures wi
       val source: Source[ReferenceReadResult, Future[Done]] =
         Reference.source(settings)
       // #source
+
+      source
     }
 
     "compile flow" in {
@@ -62,9 +64,7 @@ class ReferenceSpec extends WordSpec with BeforeAndAfterAll with ScalaFutures wi
         Reference.flow()
       // #flow
 
-      implicit val ec = scala.concurrent.ExecutionContext.global
-      val flow2: Flow[ReferenceWriteMessage, ReferenceWriteResult, NotUsed] =
-        Reference.flow()
+      flow
     }
 
     "run source" in {
