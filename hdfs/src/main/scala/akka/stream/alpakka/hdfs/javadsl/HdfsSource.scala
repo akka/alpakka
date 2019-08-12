@@ -9,7 +9,6 @@ import java.util.concurrent.CompletionStage
 import akka.NotUsed
 import akka.japi.Pair
 import akka.stream.alpakka.hdfs.scaladsl.{HdfsSource => ScalaHdfsSource}
-import akka.stream.javadsl.Source
 import akka.stream.{javadsl, IOResult}
 import akka.util.ByteString
 import org.apache.hadoop.fs.{FileSystem, Path}
