@@ -205,6 +205,8 @@ class IntegrationSpec
           .publish(parallelism = 1)
           .withAttributes(PubSubAttributes.publisher(publisher))
       // #attributes
+
+      Source.single(PublishRequest()).via(publishFlow).to(Sink.ignore)
     }
   }
 

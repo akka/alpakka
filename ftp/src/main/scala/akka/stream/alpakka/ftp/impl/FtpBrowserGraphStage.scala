@@ -6,7 +6,7 @@ package akka.stream.alpakka.ftp
 package impl
 
 import akka.annotation.InternalApi
-import akka.stream.{Attributes, Outlet}
+import akka.stream.Attributes
 import akka.stream.stage.OutHandler
 
 /**

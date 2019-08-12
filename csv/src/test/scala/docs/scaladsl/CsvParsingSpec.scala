@@ -31,6 +31,7 @@ class CsvParsingSpec extends CsvSpec {
       = CsvParsing.lineScanner(delimiter, quoteChar, escapeChar)
     // #flow-type
     // format: on
+    Source.single(ByteString("a,b,c")).via(flow).runWith(Sink.ignore)
   }
 
   "CSV parsing" should {

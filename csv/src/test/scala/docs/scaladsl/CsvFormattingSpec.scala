@@ -36,6 +36,7 @@ class CsvFormattingSpec extends CsvSpec {
                              byteOrderMark = None)
     // #flow-type
     // format: on
+    Source.single(List("a", "b")).via(flow).runWith(Sink.ignore)
   }
 
   "CSV Formatting" should {

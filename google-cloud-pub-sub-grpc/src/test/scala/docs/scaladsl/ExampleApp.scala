@@ -35,6 +35,7 @@ object ExampleApp {
       case "publish-single" :: rest => publishSingle(rest)
       case "publish-stream" :: rest => publishStream(rest)
       case "subscribe" :: rest => subscribeStream(rest)
+      case other => scala.sys.error(s"unkown arguments: $other")
     }
 
     result.onComplete { res =>

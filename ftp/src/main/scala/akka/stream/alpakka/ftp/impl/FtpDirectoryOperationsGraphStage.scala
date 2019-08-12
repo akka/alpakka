@@ -7,7 +7,7 @@ package akka.stream.alpakka.ftp.impl
 import akka.annotation.InternalApi
 import akka.stream.alpakka.ftp.RemoteFileSettings
 import akka.stream.stage.{GraphStageLogic, OutHandler}
-import akka.stream.{Attributes, Outlet}
+import akka.stream.Attributes
 
 @InternalApi
 private[ftp] trait FtpDirectoryOperationsGraphStage[FtpClient, S <: RemoteFileSettings]
