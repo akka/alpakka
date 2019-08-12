@@ -175,7 +175,7 @@ public class CouchbaseExamplesTest {
 
   @Test
   public void statement() throws Exception {
-    support.upsertSampleData();
+    support.upsertSampleData(queryBucketName);
     // #statement
 
     CompletionStage<List<JsonObject>> resultCompletionStage =
@@ -190,7 +190,7 @@ public class CouchbaseExamplesTest {
 
   @Test
   public void n1ql() throws Exception {
-    support.upsertSampleData();
+    support.upsertSampleData(queryBucketName);
     // #n1ql
 
     N1qlParams params = N1qlParams.build().adhoc(false);
@@ -220,7 +220,7 @@ public class CouchbaseExamplesTest {
 
   @Test
   public void fromId() throws Exception {
-    support.upsertSampleData();
+    support.upsertSampleData(queryBucketName);
     // #fromId
     List<String> ids = Arrays.asList("First", "Second", "Third", "Fourth");
 
