@@ -381,6 +381,7 @@ public class CouchbaseExamplesTest {
     list.add(new TestObject("First", "FirstReplace"));
     list.add(new TestObject("Second", "SecondReplace"));
     list.add(new TestObject("Third", "ThirdReplace"));
+    list.add(new TestObject("NotExisting", "Nothing")); // should fail
     list.add(new TestObject("Fourth", "FourthReplace"));
 
     // #replaceDocWithResult
@@ -399,8 +400,8 @@ public class CouchbaseExamplesTest {
             .collect(Collectors.toList());
     // #replaceDocWithResult
 
-    assertThat(writeResults.size(), is(sampleSequence.size()));
-    assertTrue("unexpected failed writes", failedDocs.isEmpty());
+    assertThat(writeResults.size(), is(list.size()));
+    assertThat(failedDocs.size(), is(1));
   }
 
   @Test
