@@ -74,15 +74,18 @@ trait CouchbaseSupport {
     BinaryDocument.create(testObject.id, toWrite)
   }
 
-  def upsertSampleData(): Unit = {
+  def upsertSampleData(bucketName: String): Unit = {
     val bulkUpsertResult: Future[Done] = Source(sampleSequence)
       .map(toJsonDocument)
-      .via(CouchbaseFlow.upsert(sessionSettings, CouchbaseWriteSettings.inMemory, queryBucketName))
+      .via(CouchbaseFlow.upsert(sessionSettings, CouchbaseWriteSettings.inMemory, bucketName))
       .runWith(Sink.ignore)
     Await.result(bulkUpsertResult, 5.seconds)
     //all queries are Eventual Consistent, se we need to wait for index refresh!!
     Thread.sleep(2000)
   }
+
+  def cleanAllInBucket(bucketName: String): Unit =
+    cleanAllInBucket(sampleSequence.map(_.id), bucketName)
 
   def cleanAllInBucket(ids: Seq[String], bucketName: String): Unit = {
     val result: Future[Done] =

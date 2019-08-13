@@ -31,6 +31,9 @@ import com.couchbase.client.java.document.json.JsonObject;
 import com.couchbase.client.java.env.CouchbaseEnvironment;
 import com.couchbase.client.java.env.DefaultCouchbaseEnvironment;
 // #registry
+// #replace
+import com.couchbase.client.java.error.DocumentDoesNotExistException;
+// #replace
 // #n1ql
 import com.couchbase.client.java.query.N1qlParams;
 import com.couchbase.client.java.query.N1qlQuery;
@@ -43,6 +46,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -175,7 +179,7 @@ public class CouchbaseExamplesTest {
 
   @Test
   public void statement() throws Exception {
-    support.upsertSampleData();
+    support.upsertSampleData(queryBucketName);
     // #statement
 
     CompletionStage<List<JsonObject>> resultCompletionStage =
@@ -190,7 +194,7 @@ public class CouchbaseExamplesTest {
 
   @Test
   public void n1ql() throws Exception {
-    support.upsertSampleData();
+    support.upsertSampleData(queryBucketName);
     // #n1ql
 
     N1qlParams params = N1qlParams.build().adhoc(false);
@@ -220,7 +224,7 @@ public class CouchbaseExamplesTest {
 
   @Test
   public void fromId() throws Exception {
-    support.upsertSampleData();
+    support.upsertSampleData(queryBucketName);
     // #fromId
     List<String> ids = Arrays.asList("First", "Second", "Third", "Fourth");
 
@@ -235,38 +239,47 @@ public class CouchbaseExamplesTest {
   }
 
   @Test
-  public void upsert() {
-    // #upsert
+  public void upsert() throws Exception {
+
     TestObject obj = new TestObject("First", "First");
 
     CouchbaseWriteSettings writeSettings = CouchbaseWriteSettings.create();
 
-    CompletionStage<Done> jsonDocumentUpsert =
+    // #upsert
+    CompletionStage<JsonDocument> jsonDocumentUpsert =
         Source.single(obj)
             .map(support::toJsonDocument)
             .via(CouchbaseFlow.upsert(sessionSettings, writeSettings, bucketName))
-            .runWith(Sink.ignore(), materializer);
+            .runWith(Sink.head(), materializer);
     // #upsert
+
+    JsonDocument document = jsonDocumentUpsert.toCompletableFuture().get(3, TimeUnit.SECONDS);
+
+    assert (document.content().get("value") == "First");
   }
 
   @Test
-  public void upsertDoc() {
+  public void upsertDoc() throws Exception {
     CouchbaseWriteSettings writeSettings = CouchbaseWriteSettings.create();
-    // #upsert
 
-    CompletionStage<Done> stringDocumentUpsert =
+    // #upsertDoc
+    CompletionStage<StringDocument> stringDocumentUpsert =
         Source.single(sampleData)
             .map(support::toStringDocument)
             .via(CouchbaseFlow.upsertDoc(sessionSettings, writeSettings, bucketName))
-            .runWith(Sink.ignore(), materializer);
-    // #upsert
+            .runWith(Sink.head(), materializer);
+    // #upsertDoc
+
+    StringDocument document = stringDocumentUpsert.toCompletableFuture().get(3, TimeUnit.SECONDS);
+
+    assert (document.content().equals("{\"id\":\"First\",\"value\":\"First\"}"));
   }
 
   @Test
-  public void upsertDocWitResult() throws Exception {
+  public void upsertDocWithResult() throws Exception {
     CouchbaseWriteSettings writeSettings = CouchbaseWriteSettings.create();
-    // #upsertDocWithResult
 
+    // #upsertDocWithResult
     CompletionStage<List<CouchbaseWriteResult<StringDocument>>> upsertResults =
         Source.from(sampleSequence)
             .map(support::toStringDocument)
@@ -281,19 +294,126 @@ public class CouchbaseExamplesTest {
             .map(res -> (CouchbaseWriteFailure<StringDocument>) res)
             .collect(Collectors.toList());
     // #upsertDocWithResult
+
     assertThat(writeResults.size(), is(sampleSequence.size()));
     assertTrue("unexpected failed writes", failedDocs.isEmpty());
   }
 
   @Test
-  public void delete() {
+  public void replace() throws Exception {
+
+    support.upsertSampleData(bucketName);
+
+    TestObject obj = new TestObject("First", "FirstReplace");
+
+    CouchbaseWriteSettings writeSettings = CouchbaseWriteSettings.create();
+
+    // #replace
+    CompletionStage<JsonDocument> jsonDocumentReplace =
+        Source.single(obj)
+            .map(support::toJsonDocument)
+            .via(CouchbaseFlow.replace(sessionSettings, writeSettings, bucketName))
+            .runWith(Sink.head(), materializer);
+    // #replace
+
+    JsonDocument document = jsonDocumentReplace.toCompletableFuture().get(3, TimeUnit.SECONDS);
+
+    assert (document.content().get("value") == "FirstReplace");
+  }
+
+  @Test(expected = DocumentDoesNotExistException.class)
+  public void replaceFailsWhenDocumentDoesntExists() throws Throwable {
+
+    support.cleanAllInBucket(bucketName);
+
+    TestObject obj = new TestObject("First", "FirstReplace");
+
+    CouchbaseWriteSettings writeSettings = CouchbaseWriteSettings.create();
+
+    // #replace
+    CompletionStage<JsonDocument> jsonDocumentReplace =
+        Source.single(obj)
+            .map(support::toJsonDocument)
+            .via(CouchbaseFlow.replace(sessionSettings, writeSettings, bucketName))
+            .runWith(Sink.head(), materializer);
+    // #replace
+
+    try {
+      jsonDocumentReplace.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    } catch (ExecutionException ex) {
+      throw ex.getCause();
+    }
+  }
+
+  @Test
+  public void replaceDoc() throws Exception {
+
+    support.upsertSampleData(bucketName);
+
+    CouchbaseWriteSettings writeSettings = CouchbaseWriteSettings.create();
+
+    TestObject obj = new TestObject("First", "FirstReplace");
+
+    // #replaceDoc
+    CompletionStage<StringDocument> stringDocumentReplace =
+        Source.single(obj)
+            .map(support::toStringDocument)
+            .via(CouchbaseFlow.replaceDoc(sessionSettings, writeSettings, bucketName))
+            .runWith(Sink.head(), materializer);
+    // #replaceDoc
+
+    StringDocument document = stringDocumentReplace.toCompletableFuture().get(3, TimeUnit.SECONDS);
+
+    assert (document.content().equals("{\"id\":\"First\",\"value\":\"FirstReplace\"}"));
+  }
+
+  @Test
+  public void replaceDocWithResult() throws Exception {
+
+    support.upsertSampleData(bucketName);
+
+    CouchbaseWriteSettings writeSettings = CouchbaseWriteSettings.create();
+
+    List<TestObject> list = new ArrayList<TestObject>();
+    list.add(new TestObject("First", "FirstReplace"));
+    list.add(new TestObject("Second", "SecondReplace"));
+    list.add(new TestObject("Third", "ThirdReplace"));
+    list.add(new TestObject("NotExisting", "Nothing")); // should fail
+    list.add(new TestObject("Fourth", "FourthReplace"));
+
+    // #replaceDocWithResult
+    CompletionStage<List<CouchbaseWriteResult<StringDocument>>> replaceResults =
+        Source.from(list)
+            .map(support::toStringDocument)
+            .via(CouchbaseFlow.replaceDocWithResult(sessionSettings, writeSettings, bucketName))
+            .runWith(Sink.seq(), materializer);
+
+    List<CouchbaseWriteResult<StringDocument>> writeResults =
+        replaceResults.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    List<CouchbaseWriteFailure<StringDocument>> failedDocs =
+        writeResults.stream()
+            .filter(CouchbaseWriteResult::isFailure)
+            .map(res -> (CouchbaseWriteFailure<StringDocument>) res)
+            .collect(Collectors.toList());
+    // #replaceDocWithResult
+
+    assertThat(writeResults.size(), is(list.size()));
+    assertThat(failedDocs.size(), is(1));
+  }
+
+  @Test
+  public void delete() throws Exception {
     CouchbaseWriteSettings writeSettings = CouchbaseWriteSettings.create();
     // #delete
-    CompletionStage<Done> result =
+    CompletionStage<String> result =
         Source.single(sampleData.id())
             .via(CouchbaseFlow.delete(sessionSettings, writeSettings, bucketName))
-            .runWith(Sink.ignore(), materializer);
+            .runWith(Sink.head(), materializer);
     // #delete
+
+    String id = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
+
+    assertSame(sampleData.id(), id);
   }
 
   @Test
