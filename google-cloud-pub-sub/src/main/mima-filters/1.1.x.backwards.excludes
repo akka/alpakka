@@ -1,0 +1,2 @@
+# Remove changed case classes to final classes with hashCode, equals and hand made companion objects
+ProblemFilters.exclude[Problem]("akka.stream.alpakka.googlecloud.pubsub.*")

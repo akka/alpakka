@@ -117,11 +117,11 @@ class ModelSpec extends FunSuite with Matchers {
     publishRequest1.toString shouldBe "PublishRequest([PublishMessage(data=abcde,attributes=Some(Map(k1 -> v1, k2 -> v2)))])"
   }
 
-  private val publishResponse1 = new PublishResponse(Seq.empty[String])
-  private val publishResponse2 = new PublishResponse(Seq("id"))
-  private val publishResponse3 = new PublishResponse(Seq("id1", "id2"))
-  private val publishResponse4 = new PublishResponse(Seq("id2", "id1"))
-  private val publishResponse5 = new PublishResponse(Seq("id1", "id2"))
+  private val publishResponse1 = PublishResponse(Seq.empty[String])
+  private val publishResponse2 = PublishResponse(Seq("id"))
+  private val publishResponse3 = PublishResponse(Seq("id1", "id2"))
+  private val publishResponse4 = PublishResponse(Seq("id2", "id1"))
+  private val publishResponse5 = PublishResponse(Seq("id1", "id2"))
 
   test("PublishResponse equals, hashCode") {
     publishResponse1 shouldNot be(publishResponse2)

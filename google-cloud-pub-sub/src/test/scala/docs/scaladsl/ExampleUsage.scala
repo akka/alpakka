@@ -4,6 +4,7 @@
 
 package docs.scaladsl
 
+import java.time.Instant
 import java.util.Base64
 
 import akka.actor.ActorSystem
@@ -84,7 +85,7 @@ class ExampleUsage {
   //#subscribe-auto-ack
   val subscribeMessageSoruce: Source[ReceivedMessage, NotUsed] = // ???
     //#subscribe-auto-ack
-    Source.single(ReceivedMessage("id", PubSubMessage("data")))
+    Source.single(ReceivedMessage("id", PubSubMessage(Some("data"), None, "msg-id-1", Instant.now)))
   //#subscribe-auto-ack
   val processMessage: Sink[ReceivedMessage, NotUsed] = // ???
     //#subscribe-auto-ack

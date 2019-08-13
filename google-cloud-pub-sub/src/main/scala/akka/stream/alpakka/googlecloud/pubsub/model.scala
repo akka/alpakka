@@ -77,8 +77,7 @@ object PubSubConfig {
     apply(projectId, clientEmail, privateKey, pullReturnImmediately, pullMaxMessagesPerInternalBatch)(actorSystem)
 }
 
-final class PublishMessage private[pubsub] (val data: String,
-                                            val attributes: Option[immutable.Map[String, String]] = None) {
+final class PublishMessage private (val data: String, val attributes: Option[immutable.Map[String, String]]) {
   override def toString: String = "PublishMessage(data=" + data + ",attributes=" + attributes.toString + ")"
 
   override def equals(other: Any): Boolean = other match {
@@ -104,10 +103,10 @@ object PublishMessage {
  * @param messageId the message id given by server.
  * @param publishTime the time the message was published.
  */
-final class PubSubMessage(val data: Option[String],
-                          val attributes: Option[immutable.Map[String, String]],
-                          val messageId: String,
-                          val publishTime: Instant) {
+final class PubSubMessage private (val data: Option[String],
+                                   val attributes: Option[immutable.Map[String, String]],
+                                   val messageId: String,
+                                   val publishTime: Instant) {
 
   def withAttributes(attributes: java.util.Map[String, String]): PubSubMessage =
     new PubSubMessage(data, Some(attributes.asScala.toMap), messageId, publishTime)
@@ -141,7 +140,7 @@ object PubSubMessage {
 
 }
 
-final class PublishRequest private[pubsub] (val messages: immutable.Seq[PublishMessage]) {
+final class PublishRequest private (val messages: immutable.Seq[PublishMessage]) {
 
   override def equals(other: Any): Boolean = other match {
     case that: PublishRequest => messages == that.messages
@@ -166,7 +165,7 @@ object PublishRequest {
  * @param ackId acknowledgement id. This id is used to tell pub/sub the message has been processed.
  * @param message the pubsub message including its data.
  */
-final class ReceivedMessage(val ackId: String, val message: PubSubMessage) {
+final class ReceivedMessage private (val ackId: String, val message: PubSubMessage) {
 
   override def equals(other: Any): Boolean = other match {
     case that: ReceivedMessage => ackId == that.ackId && message == that.message
@@ -187,7 +186,7 @@ object ReceivedMessage {
     new ReceivedMessage(ackId, message)
 }
 
-final class AcknowledgeRequest private[pubsub] (val ackIds: immutable.Seq[String]) {
+final class AcknowledgeRequest private (val ackIds: immutable.Seq[String]) {
 
   override def equals(other: Any): Boolean = other match {
     case that: AcknowledgeRequest => ackIds == that.ackIds
@@ -211,7 +210,7 @@ object AcknowledgeRequest {
     AcknowledgeRequest(ackIds.asScala.toList)
 }
 
-private final class PublishResponse private[pubsub] (val messageIds: immutable.Seq[String]) {
+private final class PublishResponse private (val messageIds: immutable.Seq[String]) {
 
   override def equals(other: Any): Boolean = other match {
     case that: PublishResponse => messageIds == that.messageIds
