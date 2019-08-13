@@ -323,11 +323,8 @@ public class CouchbaseExamplesTest {
 
   @Test(expected = DocumentDoesNotExistException.class)
   public void replaceFailsWhenDocumentDoesntExists() throws Throwable {
-    List<String> ids = new ArrayList<>();
-    ids.add("First");
 
-    support.cleanAllInBucket(
-        scala.collection.JavaConverters.asScalaBuffer(ids).toList(), bucketName);
+    support.cleanAllInBucket(bucketName);
 
     TestObject obj = new TestObject("First", "FirstReplace");
 

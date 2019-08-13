@@ -622,7 +622,7 @@ class CouchbaseFlowSpec
 
     "expose failures in-stream" in assertAllStagesStopped {
 
-      cleanAllInBucket(sampleSequence.map(_.id), bucketName)
+      cleanAllInBucket(bucketName)
 
       import akka.stream.alpakka.couchbase.{CouchbaseWriteFailure, CouchbaseWriteResult}
 

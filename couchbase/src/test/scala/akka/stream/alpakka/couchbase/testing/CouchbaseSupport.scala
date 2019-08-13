@@ -84,6 +84,9 @@ trait CouchbaseSupport {
     Thread.sleep(2000)
   }
 
+  def cleanAllInBucket(bucketName: String): Unit =
+    cleanAllInBucket(sampleSequence.map(_.id), bucketName)
+
   def cleanAllInBucket(ids: Seq[String], bucketName: String): Unit = {
     val result: Future[Done] =
       Source(ids)

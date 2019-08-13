@@ -89,7 +89,7 @@ class CouchbaseSourceSpec
   }
 
   override def afterAll(): Unit = {
-    cleanAllInBucket(sampleSequence.map(_.id), queryBucketName)
+    cleanAllInBucket(queryBucketName)
     super.afterAll()
   }
 
