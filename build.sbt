@@ -213,12 +213,14 @@ lazy val jms =
 
 lazy val jsonStreaming = alpakkaProject("json-streaming", "json.streaming", Dependencies.JsonStreaming)
 
-lazy val kinesis = alpakkaProject("kinesis",
-                                  "aws.kinesis",
-                                  Dependencies.Kinesis,
-                                  // For mockito https://github.com/akka/alpakka/issues/390
-                                  parallelExecution in Test := false,
-                                  fatalWarnings := false)
+lazy val kinesis = alpakkaProject(
+  "kinesis",
+  "aws.kinesis",
+  Dependencies.Kinesis,
+  // For mockito https://github.com/akka/alpakka/issues/390
+  parallelExecution in Test := false,
+  fatalWarnings := false
+)
 
 lazy val kudu = alpakkaProject("kudu", "kudu", Dependencies.Kudu, fork in Test := false)
 
