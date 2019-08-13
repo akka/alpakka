@@ -83,6 +83,22 @@ final private[couchbase] class CouchbaseSessionImpl(asyncBucket: AsyncBucket, cl
                                                 TimeUnit.MILLISECONDS),
                              document.id)
 
+  def replace(document: JsonDocument): Future[JsonDocument] = replaceDoc(document)
+
+  def replaceDoc[T <: Document[_]](document: T): Future[T] =
+    singleObservableToFuture(asyncBucket.replace(document), document.id)
+
+  def replace(document: JsonDocument, writeSettings: CouchbaseWriteSettings): Future[JsonDocument] =
+    replaceDoc(document, writeSettings)
+
+  def replaceDoc[T <: Document[_]](document: T, writeSettings: CouchbaseWriteSettings): Future[T] =
+    singleObservableToFuture(asyncBucket.replace(document,
+                                                 writeSettings.persistTo,
+                                                 writeSettings.replicateTo,
+                                                 writeSettings.timeout.toMillis,
+                                                 TimeUnit.MILLISECONDS),
+                             document.id)
+
   def remove(id: String): Future[Done] =
     singleObservableToFuture(asyncBucket.remove(id), id)
       .map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)

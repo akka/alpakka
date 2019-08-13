@@ -1,0 +1,3 @@
+# Added replace to CouchbaseSession
+ProblemFilters.exclude[Problem]("akka.stream.alpakka.couchbase.scaladsl.CouchbaseSession.replace*")
+ProblemFilters.exclude[Problem]("akka.stream.alpakka.couchbase.javadsl.CouchbaseSession.replace*")

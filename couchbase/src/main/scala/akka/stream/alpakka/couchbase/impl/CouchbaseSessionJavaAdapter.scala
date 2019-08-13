@@ -73,6 +73,16 @@ private[couchbase] final class CouchbaseSessionJavaAdapter(delegate: scaladsl.Co
   override def upsertDoc[T <: Document[_]](document: T, writeSettings: CouchbaseWriteSettings): CompletionStage[T] =
     delegate.upsertDoc(document, writeSettings).toJava
 
+  override def replace(document: JsonDocument): CompletionStage[JsonDocument] = delegate.replace(document).toJava
+
+  override def replaceDoc[T <: Document[_]](document: T): CompletionStage[T] = delegate.replaceDoc(document).toJava
+
+  override def replace(document: JsonDocument, writeSettings: CouchbaseWriteSettings): CompletionStage[JsonDocument] =
+    delegate.replace(document, writeSettings).toJava
+
+  override def replaceDoc[T <: Document[_]](document: T, writeSettings: CouchbaseWriteSettings): CompletionStage[T] =
+    delegate.replaceDoc(document, writeSettings).toJava
+
   override def remove(id: String): CompletionStage[Done] = delegate.remove(id).toJava
 
   override def remove(id: String, writeSettings: CouchbaseWriteSettings): CompletionStage[Done] =
