@@ -6,6 +6,8 @@ package akka.stream.alpakka.sqs
 
 import java.time.temporal.ChronoUnit
 
+import software.amazon.awssdk.services.sqs.model
+
 import scala.collection.immutable
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.FiniteDuration
@@ -15,7 +17,7 @@ final class SqsSourceSettings private (
     val maxBufferSize: Int,
     val parallelRequests: Int,
     val maxBatchSize: Int,
-    val attributeNames: immutable.Seq[AttributeName],
+    val attributeNames: immutable.Seq[MessageSystemAttributeName],
     val messageAttributeNames: immutable.Seq[MessageAttributeName],
     val closeOnEmptyReceive: Boolean,
     val visibilityTimeout: Option[FiniteDuration]
@@ -68,11 +70,13 @@ final class SqsSourceSettings private (
    */
   def withMaxBatchSize(maxBatchSize: Int): SqsSourceSettings = copy(maxBatchSize = maxBatchSize)
 
-  def withAttribute(attribute: AttributeName): SqsSourceSettings = copy(attributeNames = immutable.Seq(attribute))
-  def withAttributes(attributes: immutable.Seq[AttributeName]): SqsSourceSettings = copy(attributeNames = attributes)
+  def withAttribute(attribute: MessageSystemAttributeName): SqsSourceSettings =
+    copy(attributeNames = immutable.Seq(attribute))
+  def withAttributes(attributes: immutable.Seq[MessageSystemAttributeName]): SqsSourceSettings =
+    copy(attributeNames = attributes)
 
   /** Java API */
-  def withAttributes(attributes: java.util.List[AttributeName]): SqsSourceSettings =
+  def withAttributes(attributes: java.util.List[MessageSystemAttributeName]): SqsSourceSettings =
     copy(attributeNames = attributes.asScala.toList)
 
   def withMessageAttribute(attributes: MessageAttributeName): SqsSourceSettings =
@@ -107,7 +111,7 @@ final class SqsSourceSettings private (
       maxBufferSize: Int = maxBufferSize,
       parallelRequests: Int = parallelRequests,
       maxBatchSize: Int = maxBatchSize,
-      attributeNames: immutable.Seq[AttributeName] = attributeNames,
+      attributeNames: immutable.Seq[MessageSystemAttributeName] = attributeNames,
       messageAttributeNames: immutable.Seq[MessageAttributeName] = messageAttributeNames,
       closeOnEmptyReceive: Boolean = closeOnEmptyReceive,
       visibilityTimeout: Option[FiniteDuration] = visibilityTimeout
@@ -196,20 +200,62 @@ object MessageAttributeName {
   def create(name: String): MessageAttributeName = new MessageAttributeName(name)
 }
 
+sealed abstract class AttributeName(val name: String)
+
 /**
  * Source parameters as described at
  * https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_ReceiveMessage.html#API_ReceiveMessage_RequestParameters
  */
-sealed abstract class AttributeName(val name: String)
+sealed abstract class MessageSystemAttributeName(_name: String) extends AttributeName(_name) {
+  protected def this(messageSystemAttributeName: model.MessageSystemAttributeName) {
+    this(messageSystemAttributeName.toString)
+  }
+}
 
-case object All extends AttributeName("All")
-case object ApproximateFirstReceiveTimestamp extends AttributeName("ApproximateFirstReceiveTimestamp")
-case object ApproximateReceiveCount extends AttributeName("ApproximateReceiveCount")
-case object SenderId extends AttributeName("SenderId")
-case object SentTimestamp extends AttributeName("SentTimestamp")
-case object MessageDeduplicationId extends AttributeName("MessageDeduplicationId")
-case object MessageGroupId extends AttributeName("MessageGroupId")
-case object SequenceNumber extends AttributeName("SequenceNumber")
+// All is missing in [[software.amazon.awssdk.services.sqs.model.MessageSystemAttributeName]]
+// (see https://github.com/akka/alpakka/pull/1839)
+case object All extends MessageSystemAttributeName("All")
+
+case object ApproximateFirstReceiveTimestamp
+    extends MessageSystemAttributeName(model.MessageSystemAttributeName.APPROXIMATE_FIRST_RECEIVE_TIMESTAMP)
+case object ApproximateReceiveCount
+    extends MessageSystemAttributeName(model.MessageSystemAttributeName.APPROXIMATE_RECEIVE_COUNT)
+case object SenderId extends MessageSystemAttributeName(model.MessageSystemAttributeName.SENDER_ID)
+case object SentTimestamp extends MessageSystemAttributeName(model.MessageSystemAttributeName.SENT_TIMESTAMP)
+case object MessageDeduplicationId
+    extends MessageSystemAttributeName(model.MessageSystemAttributeName.MESSAGE_DEDUPLICATION_ID)
+case object MessageGroupId extends MessageSystemAttributeName(model.MessageSystemAttributeName.MESSAGE_GROUP_ID)
+case object SequenceNumber extends MessageSystemAttributeName(model.MessageSystemAttributeName.SEQUENCE_NUMBER)
+
+/**
+ * Source parameters as described at
+ * https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_GetQueueAttributes.html
+ */
+sealed abstract class QueueAttributeName(queueAttributeName: model.QueueAttributeName)
+    extends AttributeName(queueAttributeName.toString)
+
+case object Policy extends QueueAttributeName(model.QueueAttributeName.POLICY)
+case object VisibilityTimeout extends QueueAttributeName(model.QueueAttributeName.VISIBILITY_TIMEOUT)
+case object MaximumMessageSize extends QueueAttributeName(model.QueueAttributeName.MAXIMUM_MESSAGE_SIZE)
+case object MessageRetentionPeriod extends QueueAttributeName(model.QueueAttributeName.MESSAGE_RETENTION_PERIOD)
+case object ApproximateNumberOfMessages
+    extends QueueAttributeName(model.QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES)
+case object ApproximateNumberOfMessagesNotVisible
+    extends QueueAttributeName(model.QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES_NOT_VISIBLE)
+case object CreatedTimestamp extends QueueAttributeName(model.QueueAttributeName.CREATED_TIMESTAMP)
+case object LastModifiedTimestamp extends QueueAttributeName(model.QueueAttributeName.LAST_MODIFIED_TIMESTAMP)
+case object QueueArn extends QueueAttributeName(model.QueueAttributeName.QUEUE_ARN)
+case object ApproximateNumberOfMessagesDelayed
+    extends QueueAttributeName(model.QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES_DELAYED)
+case object DelaySeconds extends QueueAttributeName(model.QueueAttributeName.DELAY_SECONDS)
+case object ReceiveMessageWaitTimeSeconds
+    extends QueueAttributeName(model.QueueAttributeName.RECEIVE_MESSAGE_WAIT_TIME_SECONDS)
+case object RedrivePolicy extends QueueAttributeName(model.QueueAttributeName.REDRIVE_POLICY)
+case object FifoQueue extends QueueAttributeName(model.QueueAttributeName.FIFO_QUEUE)
+case object ContentBasedDeduplication extends QueueAttributeName(model.QueueAttributeName.CONTENT_BASED_DEDUPLICATION)
+case object KmsMasterKeyId extends QueueAttributeName(model.QueueAttributeName.KMS_MASTER_KEY_ID)
+case object KmsDataKeyReusePeriodSeconds
+    extends QueueAttributeName(model.QueueAttributeName.KMS_DATA_KEY_REUSE_PERIOD_SECONDS)
 
 /**
  * Java API:
