@@ -263,7 +263,7 @@ case object KmsDataKeyReusePeriodSeconds
  * Source parameters as described at
  * https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_ReceiveMessage.html#API_ReceiveMessage_RequestParameters
  */
-object Attribute {
+object MessageSystemAttributeName {
   val all = All
   val approximateFirstReceiveTimestamp = ApproximateFirstReceiveTimestamp
   val approximateReceiveCount = ApproximateReceiveCount

@@ -4,8 +4,8 @@
 
 package docs.javadsl;
 
-import akka.stream.alpakka.sqs.Attribute;
 import akka.stream.alpakka.sqs.MessageAttributeName;
+import akka.stream.alpakka.sqs.MessageSystemAttributeName;
 import akka.stream.alpakka.sqs.SqsSourceSettings;
 import akka.stream.alpakka.sqs.javadsl.BaseSqsTest;
 import akka.stream.alpakka.sqs.javadsl.SqsSource;
@@ -77,7 +77,10 @@ public class SqsSourceTest extends BaseSqsTest {
             .withWaitTime(Duration.ofSeconds(20))
             .withMaxBufferSize(100)
             .withMaxBatchSize(10)
-            .withAttributes(Arrays.asList(Attribute.senderId(), Attribute.sentTimestamp()))
+            .withAttributes(
+                Arrays.asList(
+                    MessageSystemAttributeName.senderId(),
+                    MessageSystemAttributeName.sentTimestamp()))
             .withMessageAttribute(MessageAttributeName.create("bar.*"))
             .withCloseOnEmptyReceive(true);
     // #SqsSourceSettings
