@@ -23,7 +23,8 @@ import java.nio.file.Path;
  *
  * <p>Aborting the stage can be done by combining with a [[akka.stream.KillSwitch]]
  *
- * <p>To use the stage from Scala see the factory methods in {@link akka.stream.alpakka.file.scaladsl.FileTailSource}
+ * <p>To use the stage from Scala see the factory methods in {@link
+ * akka.stream.alpakka.file.scaladsl.FileTailSource}
  */
 public final class FileTailSource {
 

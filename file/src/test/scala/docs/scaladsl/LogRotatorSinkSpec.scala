@@ -283,7 +283,16 @@ class LogRotatorSinkSpec
       probe.sendNext(ByteString("test"))
       probe.sendNext(ByteString("test"))
       probe.expectCancellation()
-      the[Exception] thrownBy Await.result(completion, 3.seconds) shouldBe a[NonWritableChannelException]
+
+      val exception = intercept[Exception] {
+        Await.result(completion, 3.seconds)
+      }
+
+      exactly(
+        1,
+        List(exception, // Akka 2.5 throws nio exception directly
+             exception.getCause) // Akka 2.6 wraps nio exception in a akka.stream.IOOperationIncompleteException
+      ) shouldBe a[java.nio.channels.NonWritableChannelException]
     }
 
   }
