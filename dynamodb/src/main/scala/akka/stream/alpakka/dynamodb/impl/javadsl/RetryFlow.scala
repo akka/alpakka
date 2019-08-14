@@ -64,9 +64,13 @@ object RetryFlow {
 
     Flow
       .create[akka.japi.Pair[In, State]]()
-      .map(p => (p.first, p.second))
+      .map(func(p => (p.first, p.second)))
       .viaMat(retryFlow, Keep.right[NotUsed, Mat])
-      .map(t => akka.japi.Pair.create(t._1, t._2))
+      .map(func(t => akka.japi.Pair.create(t._1, t._2)))
+  }
+
+  private def func[T, R](f: T => R) = new akka.japi.function.Function[T, R] {
+    override def apply(param: T): R = f(param)
   }
 
 }

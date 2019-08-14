@@ -34,9 +34,9 @@ object DynamoDb {
   def tryFlow[Op <: AwsOp, State](): Flow[akka.japi.Pair[Op, State], akka.japi.Pair[Try[Op#B], State], NotUsed] =
     Flow
       .create[akka.japi.Pair[Op, State]]()
-      .map(p => (p.first, p.second))
+      .map(func(p => (p.first, p.second)))
       .via(scaladsl.DynamoDb.tryFlow)
-      .map(t => akka.japi.Pair.create(t._1, t._2))
+      .map(func(t => akka.japi.Pair.create(t._1, t._2)))
 
   /**
    * Create a Source that will emit potentially multiple responses for a given request.
@@ -115,4 +115,8 @@ object DynamoDb {
 
   def updateTimeToLive(request: UpdateTimeToLiveRequest): Source[UpdateTimeToLiveResult, NotUsed] =
     scaladsl.DynamoDb.source(request).asJava
+
+  private def func[T, R](f: T => R) = new akka.japi.function.Function[T, R] {
+    override def apply(param: T): R = f(param)
+  }
 }

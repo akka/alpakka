@@ -31,7 +31,12 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
+import scala.compat.java8.FunctionConverters.package$;
+import static scala.compat.java8.FunctionConverters.package$.MODULE$;
+
 public class RetryTest extends ItemSpecOps {
+
+  private static package$ functionConverters = MODULE$;
 
   static ActorSystem system;
   static Materializer materializer;
@@ -118,7 +123,11 @@ public class RetryTest extends ItemSpecOps {
                     .map(
                         pair ->
                             Pair.create(
-                                pair.first().map(r -> (BatchGetItemResult) r), pair.second())),
+                                pair.first()
+                                    .map(
+                                        functionConverters.asScalaFromFunction(
+                                            r -> (BatchGetItemResult) r)),
+                                pair.second())),
                 retryMatcher);
 
     final long responses =
