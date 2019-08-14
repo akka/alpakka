@@ -1,0 +1,4 @@
+# 1839 Re-model attributes
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.sqs.SqsSourceSettings.withAttribute")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.alpakka.sqs.Attribute$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.alpakka.sqs.Attribute")
