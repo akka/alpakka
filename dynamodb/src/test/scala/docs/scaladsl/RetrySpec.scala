@@ -8,8 +8,9 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.dynamodb.AwsOp.BatchGetItem
 import akka.stream.alpakka.dynamodb.ItemSpecOps
+import akka.stream.alpakka.dynamodb.impl.scaladsl.RetryFlow
 import akka.stream.alpakka.dynamodb.scaladsl.DynamoDb
-import akka.stream.scaladsl.{RetryFlow, Source}
+import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}

@@ -2,13 +2,14 @@
  * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.javadsl
+package akka.stream.alpakka.dynamodb.impl.javadsl
 
 import java.util
 
 import akka.NotUsed
 import akka.japi.Pair
-import akka.stream.scaladsl.RetryFlow.withBackoffAndContext
+import akka.stream.alpakka.dynamodb.impl.scaladsl
+import akka.stream.javadsl.{Flow, FlowWithContext, Keep}
 
 import scala.concurrent.duration._
 import scala.runtime.AbstractPartialFunction
@@ -49,15 +50,17 @@ object RetryFlow {
       flow: Flow[Pair[In, State], Pair[Try[Out], State], Mat],
       retryWith: AbstractPartialFunction[Pair[Try[Out], State], akka.japi.Option[util.Collection[Pair[In, State]]]]
   ): Flow[akka.japi.Pair[In, State], akka.japi.Pair[Try[Out], State], Mat] = {
-    val retryFlow = withBackoffAndContext(parallelism,
-                                          Duration.fromNanos(minBackoff.toNanos),
-                                          Duration.fromNanos(maxBackoff.toNanos),
-                                          randomFactor,
-                                          FlowWithContext.fromPairs(flow).asScala) {
-      case (t, s) =>
-        retryWith(Pair.create(t, s))
-          .map(coll => coll.asScala.toIndexedSeq.map(pair => (pair.first, pair.second)))
-    }.asFlow
+    val retryFlow = scaladsl.RetryFlow
+      .withBackoffAndContext(parallelism,
+                             Duration.fromNanos(minBackoff.toNanos),
+                             Duration.fromNanos(maxBackoff.toNanos),
+                             randomFactor,
+                             FlowWithContext.fromPairs(flow).asScala) {
+        case (t, s) =>
+          retryWith(Pair.create(t, s))
+            .map(coll => coll.asScala.toIndexedSeq.map(pair => (pair.first, pair.second)))
+      }
+      .asFlow
 
     Flow
       .create[akka.japi.Pair[In, State]]()

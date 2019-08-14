@@ -2,10 +2,11 @@
  * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.scaladsl
+package akka.stream.alpakka.dynamodb.impl.scaladsl
 
 import akka.pattern.BackoffSupervisor
-import akka.stream.scaladsl.RetryFlowCoordinator.InternalState
+import akka.stream.alpakka.dynamodb.impl.scaladsl.RetryFlowCoordinator.InternalState
+import akka.stream.scaladsl.{Broadcast, Flow, FlowWithContext, GraphDSL, ZipWith2}
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler, TimerGraphStageLogic}
 import akka.stream.{Attributes, BidiShape, FlowShape, Inlet, Outlet}
 
