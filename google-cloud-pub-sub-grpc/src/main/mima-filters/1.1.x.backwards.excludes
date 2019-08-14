@@ -4,3 +4,11 @@ ProblemFilters.exclude[Problem]("com.google.protobuf.*")
 ProblemFilters.exclude[Problem]("com.google.pubsub.v1.*")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("com.google.longrunning.Operations.waitOperation")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("com.google.longrunning.operations.Operations.waitOperation")
+
+# PR #1886 Update to the latest akka-grpc
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("com.google.longrunning.operations.ListOperationsResponse.addAllOperations")
+ProblemFilters.exclude[Problem]("com.google.iam.v1.*")
+ProblemFilters.exclude[Problem]("com.google.rpc.*")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("com.google.type.postal_address.PostalAddress.addAllAddressLines")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("com.google.type.postal_address.PostalAddress.addAllRecipients")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("com.google.cloud.audit.audit_log.AuditLog.addAllAuthorizationInfo")
