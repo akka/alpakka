@@ -88,7 +88,9 @@ public class RetryTest extends ItemSpecOps {
             Pair<Try<BatchGetItemResult>, NotUsed>,
             akka.japi.Option<Collection<Pair<AwsOp.BatchGetItem, NotUsed>>>>
         retryMatcher =
-            new JavaPartialFunction<>() {
+            new JavaPartialFunction<
+                Pair<Try<BatchGetItemResult>, NotUsed>,
+                akka.japi.Option<Collection<Pair<AwsOp.BatchGetItem, NotUsed>>>>() {
               public akka.japi.Option<Collection<Pair<AwsOp.BatchGetItem, NotUsed>>> apply(
                   Pair<Try<BatchGetItemResult>, NotUsed> in, boolean isCheck) {
                 final Try<BatchGetItemResult> response = in.first();
