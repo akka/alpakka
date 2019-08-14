@@ -15,7 +15,7 @@ final class OrientDbWriteSettings private (
   ): OrientDbWriteSettings = copy(oDatabasePool = value)
 
   private def copy(
-      oDatabasePool: com.orientechnologies.orient.core.db.OPartitionedDatabasePool = oDatabasePool
+      oDatabasePool: com.orientechnologies.orient.core.db.OPartitionedDatabasePool
   ): OrientDbWriteSettings = new OrientDbWriteSettings(
     oDatabasePool = oDatabasePool
   )

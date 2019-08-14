@@ -9,7 +9,7 @@ final class SqsPublishSettings private (val maxInFlight: Int) {
 
   def withMaxInFlight(maxInFlight: Int): SqsPublishSettings = copy(maxInFlight = maxInFlight)
 
-  private def copy(maxInFlight: Int = maxInFlight) = new SqsPublishSettings(maxInFlight)
+  private def copy(maxInFlight: Int) = new SqsPublishSettings(maxInFlight)
 
   override def toString: String =
     "SqsPublishSettings(" +

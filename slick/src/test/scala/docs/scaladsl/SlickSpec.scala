@@ -33,13 +33,6 @@ class SlickSpec extends WordSpec with ScalaFutures with BeforeAndAfterEach with 
   implicit val session = SlickSession.forConfig("slick-h2")
   //#init-session
 
-  private def documentation: Unit = {
-    //#init-db-config-session
-    val databaseConfig = DatabaseConfig.forConfig[JdbcProfile]("slick-h2")
-    implicit val session = SlickSession.forConfig(databaseConfig)
-    //#init-db-config-session
-  }
-
   import session.profile.api._
 
   case class User(id: Int, name: String)
@@ -132,6 +125,11 @@ class SlickSpec extends WordSpec with ScalaFutures with BeforeAndAfterEach with 
 
   "Slick.flow(..)" must {
     "insert 40 records into a table (no parallelism)" in {
+      //#init-db-config-session
+      val databaseConfig = DatabaseConfig.forConfig[JdbcProfile]("slick-h2")
+      implicit val session = SlickSession.forConfig(databaseConfig)
+      //#init-db-config-session
+
       val inserted = Source(users)
         .via(Slick.flow(insertUser))
         .runWith(Sink.seq)

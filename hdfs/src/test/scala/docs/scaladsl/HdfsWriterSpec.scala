@@ -519,7 +519,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
   private def output(s: String): String = s"$destination$s"
 
-  private def documentation(): Unit = {
+  private def documentation(): HdfsWritingSettings = {
     //#define-generator
     val pathGenerator =
       FilePathGenerator(
@@ -534,5 +534,7 @@ class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll w
         .withLineSeparator(System.getProperty("line.separator"))
         .withPathGenerator(pathGenerator)
     //#define-settings
+    settings
   }
+  documentation()
 }

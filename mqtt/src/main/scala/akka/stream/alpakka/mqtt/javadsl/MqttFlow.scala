@@ -7,7 +7,7 @@ package akka.stream.alpakka.mqtt.javadsl
 import java.util.concurrent.CompletionStage
 
 import akka.Done
-import akka.stream.alpakka.mqtt.{javadsl, _}
+import akka.stream.alpakka.mqtt._
 import akka.stream.javadsl.Flow
 
 import scala.compat.java8.FutureConverters._

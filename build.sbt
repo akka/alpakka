@@ -193,26 +193,34 @@ lazy val hdfs = alpakkaProject("hdfs",
                                crossScalaVersions -= Dependencies.Scala213 // Requires upgrade of cats-core
 )
 
-lazy val influxdb =
-  alpakkaProject("influxdb", "influxdb", Dependencies.InfluxDB, crossScalaVersions -= Dependencies.Scala211)
+lazy val influxdb = alpakkaProject("influxdb",
+                                   "influxdb",
+                                   Dependencies.InfluxDB,
+                                   crossScalaVersions -= Dependencies.Scala211,
+                                   fatalWarnings := false)
 
 lazy val ironmq = alpakkaProject(
   "ironmq",
   "ironmq",
   Dependencies.IronMq,
   fork in Test := true,
-  crossScalaVersions -= Dependencies.Scala213 // https://github.com/hseeberger/akka-http-json/issues/253
+  crossScalaVersions -= Dependencies.Scala213, // https://github.com/hseeberger/akka-http-json/issues/253
+  fatalWarnings := false
 )
 
-lazy val jms = alpakkaProject("jms", "jms", Dependencies.Jms, parallelExecution in Test := false)
+lazy val jms =
+  alpakkaProject("jms", "jms", Dependencies.Jms, parallelExecution in Test := false, fatalWarnings := false)
 
 lazy val jsonStreaming = alpakkaProject("json-streaming", "json.streaming", Dependencies.JsonStreaming)
 
-lazy val kinesis = alpakkaProject("kinesis",
-                                  "aws.kinesis",
-                                  Dependencies.Kinesis,
-                                  // For mockito https://github.com/akka/alpakka/issues/390
-                                  parallelExecution in Test := false)
+lazy val kinesis = alpakkaProject(
+  "kinesis",
+  "aws.kinesis",
+  Dependencies.Kinesis,
+  // For mockito https://github.com/akka/alpakka/issues/390
+  parallelExecution in Test := false,
+  fatalWarnings := false
+)
 
 lazy val kudu = alpakkaProject("kudu", "kudu", Dependencies.Kudu, fork in Test := false)
 
@@ -237,7 +245,8 @@ lazy val orientdb = alpakkaProject("orientdb",
                                    "orientdb",
                                    Dependencies.OrientDB,
                                    fork in Test := true,
-                                   parallelExecution in Test := false)
+                                   parallelExecution in Test := false,
+                                   fatalWarnings := false)
 
 lazy val reference = internalProject("reference", Dependencies.Reference)
 

@@ -161,8 +161,7 @@ final class MqttConnectionSettings private (val broker: String,
                                             val serverUris: immutable.Seq[String],
                                             val sslHostnameVerifier: Option[javax.net.ssl.HostnameVerifier],
                                             val sslProperties: Map[String, String],
-                                            val offlinePersistenceSettings: Option[MqttOfflinePersistenceSettings] =
-                                              None) {
+                                            val offlinePersistenceSettings: Option[MqttOfflinePersistenceSettings]) {
 
   def withBroker(value: String): MqttConnectionSettings = copy(broker = value)
   def withClientId(clientId: String): MqttConnectionSettings = copy(clientId = clientId)

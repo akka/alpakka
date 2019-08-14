@@ -9,6 +9,11 @@ import Whitesource.whitesourceGroup
 
 object Common extends AutoPlugin {
 
+  object autoImport {
+    val fatalWarnings = settingKey[Boolean]("Warnings stop compilation with an error")
+  }
+  import autoImport._
+
   override def trigger = allRequirements
 
   override def requires = JvmPlugin && HeaderPlugin
@@ -25,7 +30,8 @@ object Common extends AutoPlugin {
                             "https://gitter.im/akka/dev",
                             url("https://github.com/akka/alpakka/graphs/contributors")),
     licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
-    description := "Alpakka is a Reactive Enterprise Integration library for Java and Scala, based on Reactive Streams and Akka."
+    description := "Alpakka is a Reactive Enterprise Integration library for Java and Scala, based on Reactive Streams and Akka.",
+    fatalWarnings := true
   )
 
   override lazy val projectSettings = Dependencies.Common ++ Seq(
@@ -46,11 +52,11 @@ object Common extends AutoPlugin {
         ),
       scalacOptions ++= (scalaVersion.value match {
           case Dependencies.Scala213 => Seq.empty[String]
-          case _ =>
-            Seq(
-              "-Xfuture",
-              "-Yno-adapted-args"
-            )
+          case _ => Seq("-Xfuture", "-Yno-adapted-args")
+        }),
+      scalacOptions ++= (scalaVersion.value match {
+          case Dependencies.Scala212 if insideCI.value && fatalWarnings.value => Seq("-Xfatal-warnings")
+          case _ => Seq.empty
         }),
       Compile / doc / scalacOptions := scalacOptions.value ++ Seq(
           "-doc-title",
@@ -70,9 +76,14 @@ object Common extends AutoPlugin {
           "com.google.api:com.google.cloud:com.google.iam:com.google.logging:" +
           "com.google.longrunning:com.google.protobuf:com.google.rpc:com.google.type"
         ),
-      javacOptions in compile ++= Seq(
+      Compile / doc / scalacOptions -= "-Xfatal-warnings",
+      compile / javacOptions ++= Seq(
           "-Xlint:unchecked"
         ),
+      compile / javacOptions ++= (scalaVersion.value match {
+          case Dependencies.Scala212 if insideCI.value && fatalWarnings.value => Seq("-Werror")
+          case _ => Seq.empty
+        }),
       autoAPIMappings := true,
       apiURL := Some(url(s"https://doc.akka.io/api/alpakka/${version.value}/akka/stream/alpakka/index.html")),
       // show full stack traces and test case durations
