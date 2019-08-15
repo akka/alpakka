@@ -64,8 +64,8 @@ object HdfsSource {
     val reader: SequenceFile.Reader = new SequenceFile.Reader(fs.getConf, SequenceFile.Reader.file(path))
     val it = Iterator
       .continually {
-        val key = classK.newInstance()
-        val value = classV.newInstance()
+        val key = classK.getDeclaredConstructor().newInstance()
+        val value = classV.getDeclaredConstructor().newInstance()
         val hasCurrent = reader.next(key, value)
         (hasCurrent, (key, value))
       }

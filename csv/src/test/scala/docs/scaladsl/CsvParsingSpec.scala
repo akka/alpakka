@@ -31,6 +31,7 @@ class CsvParsingSpec extends CsvSpec {
       = CsvParsing.lineScanner(delimiter, quoteChar, escapeChar)
     // #flow-type
     // format: on
+    Source.single(ByteString("a,b,c")).via(flow).runWith(Sink.ignore)
   }
 
   "CSV parsing" should {
@@ -226,6 +227,24 @@ class CsvParsingSpec extends CsvSpec {
           "Model" -> "Venture \"Extended Edition\"",
           "Description" -> "",
           "Price" -> "4900.00"
+        )
+      )
+      res(5) should contain allElementsOf (
+        Map(
+          "Year" -> "1995",
+          "Make" -> "VW",
+          "Model" -> "Golf \"GTE\"",
+          "Description" -> "",
+          "Price" -> "5000.00"
+        )
+      )
+      res(6) should contain allElementsOf (
+        Map(
+          "Year" -> "1996",
+          "Make" -> "VW",
+          "Model" -> "Golf GTE",
+          "Description" -> "",
+          "Price" -> "5000.00"
         )
       )
     }

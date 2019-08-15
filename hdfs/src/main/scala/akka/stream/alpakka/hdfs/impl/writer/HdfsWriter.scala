@@ -22,6 +22,8 @@ private[hdfs] trait HdfsWriter[W, I] {
   def moveToTarget(): Boolean = {
     if (!fs.exists(target.getParent))
       fs.mkdirs(target.getParent)
+    // mimics FileContext#rename(temp, target, Options.Rename.Overwrite) semantics
+    if (overwrite) fs.delete(target, false)
     fs.rename(temp, target)
   }
 
@@ -36,6 +38,8 @@ private[hdfs] trait HdfsWriter[W, I] {
   protected def target: Path
 
   protected def fs: FileSystem
+
+  protected def overwrite: Boolean
 
   protected def pathGenerator: FilePathGenerator
 

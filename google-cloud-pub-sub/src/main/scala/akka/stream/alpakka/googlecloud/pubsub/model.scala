@@ -80,11 +80,12 @@ object PubSubConfig {
 /**
  *
  * @param data the base64 encoded data
- * @param messageId the message id
+ * @param messageId the message id given by server. It must not be populated when publishing.
  * @param attributes optional extra attributes for this message.
  * @param publishTime the time the message was published. It must not be populated when publishing.
  */
 final case class PubSubMessage(data: String,
+                               //Should be Option[String]. '""' is used as default when creating messages for publishing.
                                messageId: String,
                                attributes: Option[immutable.Map[String, String]] = None,
                                publishTime: Option[Instant] = None) {
@@ -99,9 +100,18 @@ final case class PubSubMessage(data: String,
 
 object PubSubMessage {
 
+  def apply(data: String): PubSubMessage = PubSubMessage(data, "")
+
+  def apply(data: String, attributes: immutable.Map[String, String]): PubSubMessage =
+    PubSubMessage(data, "", Some(attributes), None)
+
   /**
    * Java API: create [[PubSubMessage]]
    */
+  def create(data: String) =
+    PubSubMessage(data)
+
+  @deprecated("Setting messageId when creating message for publishing is futile.", "1.1.0")
   def create(data: String, messageId: String) =
     PubSubMessage(data, messageId)
 }

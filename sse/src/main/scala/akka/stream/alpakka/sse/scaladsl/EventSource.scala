@@ -6,17 +6,20 @@ package akka.stream.alpakka.sse
 package scaladsl
 
 import akka.NotUsed
+import akka.actor.ActorSystem
 import akka.http.scaladsl.client.RequestBuilding.Get
+import akka.http.scaladsl.coding.Gzip
 import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, Source}
-import akka.stream.{Materializer, SourceShape}
+import akka.stream.{ActorMaterializer, Materializer, SourceShape}
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.model.sse.ServerSentEvent.heartbeat
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.headers.`Last-Event-ID`
 import akka.http.scaladsl.unmarshalling.sse.EventStreamUnmarshalling
+
 import scala.concurrent.Future
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
@@ -24,7 +27,7 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
  * This stream processing stage establishes a continuous source of server-sent events from the given URI.
  *
  * A single source of server-sent events is obtained from the URI. Once completed, either normally or by failure, a next
- * one is obtained thereby sending a Last-Evend-ID header if available. This continues in an endless cycle.
+ * one is obtained thereby sending a Last-Event-ID header if available. This continues in an endless cycle.
  *
  * The shape of this processing stage is a source of server-sent events; to take effect it must be connected and run.
  * Progress (including termination) is controlled by the connected flow or sink, e.g. a retry delay can be implemented
@@ -74,7 +77,7 @@ object EventSource {
   /**
    * @param uri URI with absolute path, e.g. "http://myserver/events
    * @param send function to send a HTTP request
-   * @param initialLastEventId initial value for Last-Evend-ID header, `None` by default
+   * @param initialLastEventId initial value for Last-Event-ID header, `None` by default
    * @param retryDelay delay for retrying after completion, `0` by default
    * @param mat implicit `Materializer`, needed to obtain server-sent events
    * @return continuous source of server-sent events
@@ -85,8 +88,9 @@ object EventSource {
             retryDelay: FiniteDuration = Duration.Zero)(
       implicit mat: Materializer
   ): EventSource = {
-    import EventStreamUnmarshalling._
+    import EventStreamUnmarshalling.fromEventsStream
     import mat.executionContext
+    implicit val system: ActorSystem = actorMaterializer(mat).system
 
     val continuousEvents = {
       def getEventSource(lastEventId: Option[String]) = {
@@ -94,7 +98,10 @@ object EventSource {
           val r = Get(uri).addHeader(Accept(`text/event-stream`))
           lastEventId.foldLeft(r)((r, i) => r.addHeader(`Last-Event-ID`(i)))
         }
-        send(request).flatMap(Unmarshal(_).to[EventSource]).fallbackTo(Future.successful(noEvents))
+        send(request)
+          .map(response => Gzip.decodeMessage(response))
+          .flatMap(Unmarshal(_).to[EventSource])
+          .fallbackTo(Future.successful(noEvents))
       }
       def recover(eventSource: EventSource) = eventSource.recoverWithRetries(1, { case _ => noEvents })
       def delimit(eventSource: EventSource) = eventSource.concat(singleDelimiter)
@@ -125,4 +132,10 @@ object EventSource {
       SourceShape(events.out)
     })
   }
+
+  private def actorMaterializer(mat: Materializer): ActorMaterializer = mat match {
+    case am: ActorMaterializer => am
+    case _ => throw new Error("ActorMaterializer required")
+  }
+
 }

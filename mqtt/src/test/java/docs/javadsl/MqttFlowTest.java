@@ -5,17 +5,21 @@
 package docs.javadsl;
 
 import akka.Done;
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.mqtt.*;
 import akka.stream.alpakka.mqtt.javadsl.MqttFlow;
+import akka.stream.alpakka.mqtt.javadsl.MqttMessageWithAck;
+import akka.stream.alpakka.mqtt.javadsl.MqttMessageWithAckImpl;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
+import akka.util.ByteString;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -87,5 +91,57 @@ public class MqttFlowTest {
           mqttMessagePromise.complete(Optional.empty());
           assertFalse(streamResult.toCompletableFuture().isCompletedExceptionally());
         });
+  }
+
+  @Test
+  public void sendAnAckAfterMessageSent() throws Exception {
+    MqttMessageWithAck testMessage = new MqttMessageWithAckFake();
+
+    final Source<MqttMessageWithAck, NotUsed> source = Source.single(testMessage);
+
+    final MqttConnectionSettings connectionSettings =
+        MqttConnectionSettings.create(
+            "tcp://localhost:1883", "test-java-client-ack", new MemoryPersistence());
+    // #create-flow-ack
+    final Flow<MqttMessageWithAck, MqttMessageWithAck, CompletionStage<Done>> mqttFlow =
+        MqttFlow.atLeastOnceWithAck(
+            connectionSettings,
+            MqttSubscriptions.create("flow-test/topic-ack", MqttQoS.atMostOnce()),
+            bufferSize,
+            MqttQoS.atLeastOnce());
+    // #create-flow-ack
+
+    // #run-flow-ack
+    final Pair<Pair<NotUsed, CompletionStage<Done>>, CompletionStage<List<MqttMessageWithAck>>>
+        materialized =
+            source.viaMat(mqttFlow, Keep.both()).toMat(Sink.seq(), Keep.both()).run(materializer);
+
+    // #run-flow-ack
+
+    for (int i = 0; (i < 10 && !((MqttMessageWithAckFake) testMessage).acked); i++) {
+      Thread.sleep(1000);
+    }
+
+    assert ((MqttMessageWithAckFake) testMessage).acked;
+  }
+
+  class MqttMessageWithAckFake extends MqttMessageWithAckImpl {
+    Boolean acked;
+
+    MqttMessageWithAckFake() {
+      acked = false;
+    }
+
+    @Override
+    public CompletionStage<Done> ack() {
+      acked = true;
+      System.out.println("[MqttMessageWithAckImpl]");
+      return CompletableFuture.completedFuture(Done.getInstance());
+    }
+
+    @Override
+    public MqttMessage message() {
+      return MqttMessage.create("topic", ByteString.fromString("hi!"));
+    }
   }
 }

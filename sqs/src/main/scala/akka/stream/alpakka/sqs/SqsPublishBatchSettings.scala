@@ -8,7 +8,7 @@ final class SqsPublishBatchSettings private (val concurrentRequests: Int) {
 
   def withConcurrentRequests(value: Int): SqsPublishBatchSettings = copy(concurrentRequests = value)
 
-  private def copy(concurrentRequests: Int = concurrentRequests): SqsPublishBatchSettings =
+  private def copy(concurrentRequests: Int): SqsPublishBatchSettings =
     new SqsPublishBatchSettings(concurrentRequests = concurrentRequests)
 
   override def toString =

@@ -6,7 +6,7 @@ package akka.stream.alpakka.couchbase.testing
 
 import akka.Done
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.couchbase.scaladsl._
 import akka.stream.alpakka.couchbase.{CouchbaseSessionSettings, CouchbaseWriteSettings}
 import akka.stream.scaladsl.{Sink, Source}
@@ -32,7 +32,7 @@ trait CouchbaseSupport {
 
   //#init-actor-system
   implicit val actorSystem: ActorSystem = ActorSystem()
-  implicit val mat: ActorMaterializer = ActorMaterializer()
+  implicit val mat: Materializer = ActorMaterializer()
   //#init-actor-system
 
   val sampleData = TestObject("First", "First")

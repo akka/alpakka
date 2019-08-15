@@ -72,6 +72,18 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
       expectInOut("a,\"\",c\n", List("a", "", "c"))
     }
 
+    "accept mid-column quotes" in {
+      expectInOut("11,22\"z\",13\n", List("11", "22\"z\"", "13"))
+    }
+
+    "accept quote ending mid-column" in {
+      expectInOut("11,\"z\"22,13\n", List("11", "z22", "13"))
+    }
+
+    "accept quote ending mid-column (with new line)" in {
+      expectInOut("11,\"z\n\"22,13\n", List("11", "z\n22", "13"))
+    }
+
     "parse double quote chars within quotes into one quote" in {
       expectInOut("a,\"\"\"\",c\n", List("a", "\"", "c"))
     }
@@ -105,8 +117,8 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
       val parser = new CsvParser(',', '"', '\\', maximumLineLength)
       parser.offer(in)
       val exception = the[MalformedCsvException] thrownBy {
-        parser.poll(requireLineEnd = true)
-      }
+          parser.poll(requireLineEnd = true)
+        }
       exception.getMessage should be("wrong escaping at 1:3, quote is escaped as \"\"")
       exception.getLineNo should be(1)
       exception.getBytePos should be(3)
@@ -117,8 +129,8 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
       val parser = new CsvParser(',', '"', '\\', maximumLineLength)
       parser.offer(in)
       val exception = the[MalformedCsvException] thrownBy {
-        parser.poll(requireLineEnd = false)
-      }
+          parser.poll(requireLineEnd = false)
+        }
       exception.getMessage should be("wrong escaping at 1:3, no character after escape")
     }
 
@@ -127,8 +139,8 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
       val parser = new CsvParser(',', '"', '\\', maximumLineLength)
       parser.offer(in)
       val exception = the[MalformedCsvException] thrownBy {
-        parser.poll(requireLineEnd = false)
-      }
+          parser.poll(requireLineEnd = false)
+        }
       exception.getMessage should be("wrong escaping at 1:4, no character after escape")
     }
 
@@ -137,8 +149,8 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
       val parser = new CsvParser(',', '"', '\\', maximumLineLength)
       parser.offer(in)
       val exception = the[MalformedCsvException] thrownBy {
-        parser.poll(requireLineEnd = false)
-      }
+          parser.poll(requireLineEnd = false)
+        }
       exception.getMessage should be("wrong escaping at 1:4, no character after escape")
     }
 
@@ -237,8 +249,8 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
       parser.offer(ByteString("\",B"))
       parser.poll(requireLineEnd = true) should be('empty)
       val exception = the[MalformedCsvException] thrownBy {
-        parser.poll(requireLineEnd = false)
-      }
+          parser.poll(requireLineEnd = false)
+        }
       exception.getMessage should be("unclosed quote at end of input 1:6, no matching quote found")
     }
 
@@ -293,8 +305,8 @@ class CsvParserSpec extends WordSpec with Matchers with OptionValues {
       parser.offer(in)
       parser.poll(requireLineEnd = true)
       val exception = the[MalformedCsvException] thrownBy {
-        parser.poll(requireLineEnd = true)
-      }
+          parser.poll(requireLineEnd = true)
+        }
       exception.getMessage should be("no line end encountered within 11 bytes on line 2")
     }
 

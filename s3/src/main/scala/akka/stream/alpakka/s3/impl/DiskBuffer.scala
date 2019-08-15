@@ -79,7 +79,9 @@ import akka.annotation.InternalApi
 
       override def postStop(): Unit =
         // close stream even if we didn't emit
-        try { pathOut.close() } catch { case x: Throwable => () }
+        try {
+          pathOut.close()
+        } catch { case x: Throwable => () }
 
       private def emit(): Unit = {
         pathOut.close()

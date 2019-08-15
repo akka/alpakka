@@ -550,8 +550,10 @@ object MqttCodec {
       extends DecodeError
 
   /**
-   * Something is wrong with the subscribe ack message
+   * Unable to subscribe at the requested QoS
+   * @deprecated this message was never able to be returned - always use [[SubAck]] to test subscribed QoS, since 1.1.1
    */
+  @deprecated("this message was never able to be returned - always use [[SubAck]] to test subscribed QoS", "1.1.1")
   final case class BadSubAckMessage(packetId: PacketId, returnCodes: Seq[ControlPacketFlags]) extends DecodeError
 
   /**
@@ -975,9 +977,9 @@ object MqttCodec {
           }
         val topicFilters = decodeTopicFilters(l - (packetLen - v.len), Vector.empty)
         val topicFiltersValid = topicFilters.nonEmpty && topicFilters.foldLeft(true) {
-          case (true, (Right(_), tff)) if tff.underlying < ControlPacketFlags.QoSReserved.underlying => true
-          case _ => false
-        }
+            case (true, (Right(_), tff)) if tff.underlying < ControlPacketFlags.QoSReserved.underlying => true
+            case _ => false
+          }
         if (topicFiltersValid) {
           Right(Subscribe(packetId, topicFilters.flatMap {
             case (Right(tfs), tff) => List(tfs -> tff)
@@ -1005,15 +1007,7 @@ object MqttCodec {
             returnCodes
           }
         val returnCodes = decodeReturnCodes(l - (packetLen - v.len), Vector.empty)
-        val returnCodesValid = returnCodes.nonEmpty && returnCodes.foldLeft(true) {
-          case (true, rc) if rc.underlying < ControlPacketFlags.QoSReserved.underlying => true
-          case _ => false
-        }
-        if (returnCodesValid) {
-          Right(SubAck(packetId, returnCodes))
-        } else {
-          Left(BadSubAckMessage(packetId, returnCodes))
-        }
+        Right(SubAck(packetId, returnCodes))
       } catch {
         case _: NoSuchElementException => Left(BufferUnderflow)
       }
@@ -1037,9 +1031,9 @@ object MqttCodec {
           }
         val topicFilters = decodeTopicFilters(l - (packetLen - v.len), Vector.empty)
         val topicFiltersValid = topicFilters.nonEmpty && topicFilters.foldLeft(true) {
-          case (true, Right(_)) => true
-          case _ => false
-        }
+            case (true, Right(_)) => true
+            case _ => false
+          }
         if (topicFiltersValid) {
           Right(Unsubscribe(packetId, topicFilters.flatMap {
             case Right(tfs) => List(tfs)
@@ -1090,8 +1084,8 @@ object Command {
  * @param command The command to send
  * @param completed A promise that is completed by the session when the command has been processed -
  *                  useful for synchronizing when activities should occur in relation to a command
- *                  The only command that supports this presently is SubAck on the server side. This
- *                  is because it is important to know when to start publishing.
+ *                  The only commands that support this presently are SubAck, UnsubAck, PubAck, PubRec and PubComp.
+ *                 These completions can be used to signal when processing should continue.
  * @param carry The data to carry though
  * @tparam A The type of data to carry through
  */
@@ -1105,8 +1099,8 @@ final case class Command[A](command: ControlPacket, completed: Option[Promise[Do
    * @param command The command to send
    * @param completed A promise that is completed by the session when the command has been processed -
    *                  useful for synchronizing when activities should occur in relation to a command
-   *                  The only command that supports this presently is SubAck on the server side. This
-   *                  is because it is important to know when to start publishing.
+   *                  The only commands that support this presently are SubAck, UnsubAck, PubAck, PubRec and PubComp.
+   *                 These completions can be used to signal when processing should continue.
    * @param carry The data to carry though
    */
   def this(command: ControlPacket, completed: Optional[CompletionStage[Done]], carry: Optional[A]) =

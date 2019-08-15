@@ -4,6 +4,8 @@
 
 package akka.stream.alpakka.s3
 
+import akka.http.scaladsl.model.StatusCode
+
 import scala.util.Try
 import scala.xml.{Elem, XML}
 
@@ -23,5 +25,14 @@ class S3Exception(val code: String, val message: String, val requestId: String, 
       )
     )
 
-  override def toString = s"${super.toString} (Code: $code, RequestID: $requestId, HostID: $hostId)"
+  def this(response: String, code: StatusCode) =
+    this(
+      Try(XML.loadString(response)).getOrElse(
+        <Error><Code>{code}</Code><Message>{response}</Message><RequestID>-</RequestID><HostID>-</HostID></Error>
+      )
+    )
+
+  override def toString: String =
+    s"${super.toString} (Code: $code, RequestID: $requestId, HostID: $hostId)"
+
 }

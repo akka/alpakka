@@ -15,7 +15,7 @@ import akka.stream.alpakka.googlecloud.pubsub.impl.{GoogleSession, PubSubApi, Te
 import akka.stream.alpakka.googlecloud.pubsub.scaladsl.GooglePubSub
 import akka.stream.scaladsl.{Sink, Source}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
 import org.mockito.Mockito._
 
@@ -47,7 +47,7 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
       config = config
     )
 
-    val request = PublishRequest(Seq(PubSubMessage(messageId = "1", data = base64String("Hello Google!"))))
+    val request = PublishRequest(Seq(PubSubMessage(data = base64String("Hello Google!"))))
 
     val source = Source(List(request))
 
@@ -87,7 +87,7 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
       config = config
     )
 
-    val request = PublishRequest(Seq(PubSubMessage(messageId = "2", data = base64String("Hello Google!"))))
+    val request = PublishRequest(Seq(PubSubMessage(data = base64String("Hello Google!"))))
 
     val source = Source(List(request))
     val result = source.via(flow).runWith(Sink.seq)

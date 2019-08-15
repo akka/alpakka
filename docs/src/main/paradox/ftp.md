@@ -115,6 +115,20 @@ This sink will consume @scaladoc[FtpFile](akka.stream.alpakka.ftp.FtpFile) eleme
 
 Typical use-case for this would be listing files from a ftp location, do some processing and move the files when done. An example of this use case can be found below.
 
+## Creating directory
+
+In order to create a directory the user has to specify a parent directory (also known as base path) and directory's name.
+
+Alpakka provides a materialized API `mkdirAsync` (based on @scala[Future]@java[Completion Stage]) and unmaterialized API `mkdir` (using Sources) to let the user choose when the action will be executed.
+
+Scala
+: @@snip [snip](/ftp/src/test/scala/docs/scaladsl/scalaExamples.scala) { #mkdir-source }
+
+Java
+: @@snip [snip](/ftp/src/test/java/docs/javadsl/FtpMkdirExample.java){ #mkdir-source }
+
+Please note that to include a subdirectory in result of `ls` the `emitTraversedDirectories` has to be set to `true`.
+
 ### Example: downloading files from an FTP location and move the original files  
 
 Scala
@@ -127,14 +141,8 @@ Java
 
 The code in this guide is part of runnable tests of this project. You are welcome to browse the code, edit and run it in sbt.
 
-Scala
-:   ```
-    sbt
-    > ftp/test
     ```
-
-Java
-:   ```
+    docker-compose up -d ftp sftp
     sbt
     > ftp/test
     ```

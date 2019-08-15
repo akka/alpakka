@@ -1,5 +1,12 @@
 # FTP
 
+## 1.0.2
+
+No changes.
+
+[*closed in 1.0.2*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.0.2+label%3Ap%3Aftp)
+
+
 ## 1.0.1
 
 * FTP: Support partial file download @github[#1660](#1660) by [Thomas Gambet, @tgambet](https://github.com/tgambet)

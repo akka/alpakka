@@ -133,39 +133,6 @@ object MqttSubscriptions {
 
 }
 
-/**
- * @param subscriptions the mapping between a topic name and a [[MqttQoS]].
- * @deprecated use MqttConnectionSettings and MqttSubscriptions instead
- */
-@deprecated("use MqttConnectionSettings and MqttSubscriptions instead", "1.0-M1")
-@java.lang.Deprecated
-final case class MqttSourceSettings(
-    connectionSettings: MqttConnectionSettings,
-    subscriptions: Map[String, MqttQoS] = Map.empty
-) {
-  @annotation.varargs
-  def withSubscriptions(subscriptions: akka.japi.Pair[String, MqttQoS]*) =
-    copy(subscriptions = subscriptions.map(_.toScala).toMap)
-}
-
-/**
- * @deprecated use MqttConnectionSettings and MqttSubscriptions instead
- */
-@deprecated("use MqttConnectionSettings and MqttSubscriptions instead", "1.0-M1")
-@java.lang.Deprecated
-object MqttSourceSettings {
-
-  /**
-   * Java API: create [[MqttSourceSettings]].
-   *
-   * @deprecated use MqttConnectionSettings and MqttSubscriptions instead
-   */
-  @deprecated("use MqttConnectionSettings and MqttSubscriptions instead", "1.0-M1")
-  @java.lang.Deprecated
-  def create(connectionSettings: MqttConnectionSettings) =
-    MqttSourceSettings(connectionSettings)
-}
-
 private[mqtt] final case class MqttOfflinePersistenceSettings(
     bufferSize: Int = 5000,
     deleteOldestMessage: Boolean = false,
@@ -194,8 +161,7 @@ final class MqttConnectionSettings private (val broker: String,
                                             val serverUris: immutable.Seq[String],
                                             val sslHostnameVerifier: Option[javax.net.ssl.HostnameVerifier],
                                             val sslProperties: Map[String, String],
-                                            val offlinePersistenceSettings: Option[MqttOfflinePersistenceSettings] =
-                                              None) {
+                                            val offlinePersistenceSettings: Option[MqttOfflinePersistenceSettings]) {
 
   def withBroker(value: String): MqttConnectionSettings = copy(broker = value)
   def withClientId(clientId: String): MqttConnectionSettings = copy(clientId = clientId)
@@ -277,34 +243,6 @@ final class MqttConnectionSettings private (val broker: String,
       offlinePersistenceSettings =
         Option(MqttOfflinePersistenceSettings(bufferSize, deleteOldestMessage, persistBuffer))
     )
-
-  /**
-   * @deprecated use with [[java.time.Duration]] instead
-   */
-  @java.lang.Deprecated
-  def withKeepAliveInterval(keepAliveInterval: Int, unit: TimeUnit): MqttConnectionSettings =
-    copy(keepAliveInterval = FiniteDuration(keepAliveInterval, unit))
-
-  /**
-   * @deprecated use with [[java.time.Duration]] instead
-   */
-  @java.lang.Deprecated
-  def withConnectionTimeout(connectionTimeout: Int, unit: TimeUnit): MqttConnectionSettings =
-    copy(connectionTimeout = FiniteDuration(connectionTimeout, unit))
-
-  /**
-   * @deprecated use with [[java.time.Duration]] instead
-   */
-  @java.lang.Deprecated
-  def withDisconnectQuiesceTimeout(disconnectQuiesceTimeout: Int, unit: TimeUnit): MqttConnectionSettings =
-    copy(disconnectQuiesceTimeout = FiniteDuration(disconnectQuiesceTimeout, unit))
-
-  /**
-   * @deprecated use with [[java.time.Duration]] instead
-   */
-  @java.lang.Deprecated
-  def withDisconnectTimeout(disconnectTimeout: Int, unit: TimeUnit): MqttConnectionSettings =
-    copy(disconnectTimeout = FiniteDuration(disconnectTimeout, unit))
 
   private def copy(
       broker: String = broker,

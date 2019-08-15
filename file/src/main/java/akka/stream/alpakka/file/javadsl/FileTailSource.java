@@ -40,28 +40,6 @@ public final class FileTailSource {
    * @param maxChunkSize The max emitted size of the `ByteString`s
    * @param startingPosition Offset into the file to start reading
    * @param pollingInterval When the end has been reached, look for new content with this interval
-   * @deprecated use method taking `java.time.Duration` instead
-   */
-  @Deprecated
-  public static Source<ByteString, NotUsed> create(
-      Path path, int maxChunkSize, long startingPosition, FiniteDuration pollingInterval) {
-    return Source.fromGraph(
-        new akka.stream.alpakka.file.impl.FileTailSource(
-            path, maxChunkSize, startingPosition, pollingInterval));
-  }
-
-  /**
-   * Read the entire contents of a file as chunks of bytes and when the end is reached, keep reading
-   * newly appended data. Like the unix command `tail -f` but for bytes.
-   *
-   * <p>Reading text lines can be done with the `createLines` factory methods or by composing with
-   * other stages manually depending on your needs. Aborting the stage can be done by combining with
-   * a [[akka.stream.KillSwitch]]
-   *
-   * @param path a file path to tail
-   * @param maxChunkSize The max emitted size of the `ByteString`s
-   * @param startingPosition Offset into the file to start reading
-   * @param pollingInterval When the end has been reached, look for new content with this interval
    */
   public static Source<ByteString, NotUsed> create(
       Path path, int maxChunkSize, long startingPosition, java.time.Duration pollingInterval) {
@@ -71,29 +49,6 @@ public final class FileTailSource {
             maxChunkSize,
             startingPosition,
             JavaDurationConverters.asFiniteDuration(pollingInterval)));
-  }
-
-  /**
-   * Read the entire contents of a file as text lines, and then when the end is reached, keep
-   * reading newly appended data. Like the unix command `tail -f`.
-   *
-   * <p>If a line is longer than `maxChunkSize` the stream will fail.
-   *
-   * <p>Aborting the stage can be done by combining with a [[akka.stream.KillSwitch]]
-   *
-   * @param path a file path to tail
-   * @param maxLineSize The max emitted size of the `ByteString`s
-   * @param pollingInterval When the end has been reached, look for new content with this interval
-   * @param lf The character or characters used as line separator
-   * @param charset The charset of the file
-   * @deprecated use method taking `java.time.Duration` instead
-   */
-  @Deprecated
-  public static Source<String, NotUsed> createLines(
-      Path path, int maxLineSize, FiniteDuration pollingInterval, String lf, Charset charset) {
-    return create(path, maxLineSize, 0, pollingInterval)
-        .via(Framing.delimiter(ByteString.fromString(lf, charset.name()), maxLineSize))
-        .map(bytes -> bytes.decodeString(charset));
   }
 
   /**
@@ -120,13 +75,16 @@ public final class FileTailSource {
   /**
    * Same as {@link #createLines(Path, int, java.time.Duration, String, Charset)} but using the OS
    * default line separator and UTF-8 for charset
+   *
+   * @deprecated (since 2.0.0) use method with `java.time.Duration` instead
    */
+  @Deprecated
   public static Source<String, NotUsed> createLines(
       Path path, int maxChunkSize, FiniteDuration pollingInterval) {
     return createLines(
         path,
         maxChunkSize,
-        pollingInterval,
+        java.time.Duration.ofNanos(pollingInterval.toNanos()),
         System.getProperty("line.separator"),
         StandardCharsets.UTF_8);
   }

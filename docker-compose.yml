@@ -59,7 +59,7 @@ services:
           cbq -c Administrator:password -e http://couchbase:8093
       "
   elasticmq:
-    image: softwaremill/elasticmq:0.14.6
+    image: softwaremill/elasticmq-native:0.14.7
     ports:
       - "9324:9324"
   dynamodb:
@@ -84,7 +84,7 @@ services:
       ADDED_FLAGS: "--tls=1"
   geode:
     container_name: geode
-    image: apachegeode/geode:1.8.0
+    image: apachegeode/geode:1.9.0
     hostname: geode
     mem_limit: 2g
     expose:
@@ -202,6 +202,10 @@ services:
     image: mongo
     ports:
       - "27017:27017"
+  influxdb:
+    image: influxdb
+    ports:
+      - "8086:8086"
   mqtt:
     image: toke/mosquitto
     ports:

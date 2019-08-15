@@ -10,7 +10,7 @@ final class SqsAckSettings private (val maxInFlight: Int) {
 
   def withMaxInFlight(value: Int): SqsAckSettings = copy(maxInFlight = value)
 
-  private def copy(maxInFlight: Int = maxInFlight): SqsAckSettings =
+  private def copy(maxInFlight: Int): SqsAckSettings =
     new SqsAckSettings(maxInFlight = maxInFlight)
 
   override def toString =

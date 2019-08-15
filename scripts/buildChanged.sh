@@ -17,19 +17,24 @@ else
 fi
 
 git diff "$COMPARE_TO" --exit-code --quiet "$DIR" build.sbt project/ .travis.yml
+DIFF_EXIT_CODE=$?
 
-if [ $? -eq 1 ]
+if [ "$TRAVIS_EVENT_TYPE" == "cron" ]
+then
+  echo "Building everything because nightly"
+elif [ "$DIFF_EXIT_CODE" -eq 1 ]
 then
   echo "Changes in ${DIR}"
-  # using jabba for custom jdk management
-  curl -sL https://raw.githubusercontent.com/shyiko/jabba/0.11.2/install.sh | bash
-  . ~/.jabba/jabba.sh
-  jabba install "$JDK"
-  jabba use "$JDK"
-  java -version
-  $PRE_CMD
-  sbt -jvm-opts .jvmopts-travis "$CMD"
 else
   echo "No changes in $DIR"
   exit 0
 fi
+
+# using jabba for custom jdk management
+curl -sL https://raw.githubusercontent.com/shyiko/jabba/0.11.2/install.sh | bash
+. ~/.jabba/jabba.sh
+jabba install "$JDK"
+jabba use "$JDK"
+java -version
+$PRE_CMD
+sbt -jvm-opts .jvmopts-travis "$CMD"

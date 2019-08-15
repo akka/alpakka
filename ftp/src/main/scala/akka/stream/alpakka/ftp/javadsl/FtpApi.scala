@@ -4,20 +4,18 @@
 
 package akka.stream.alpakka.ftp.javadsl
 
-import akka.NotUsed
-import akka.stream.alpakka.ftp.impl._
-import akka.stream.alpakka.ftp.{FtpFile, RemoteFileSettings}
-import akka.stream.alpakka.ftp.impl.{FtpLike, FtpSourceFactory}
-import akka.stream.IOResult
-import akka.stream.javadsl.Source
-import akka.stream.javadsl.Sink
-import akka.stream.scaladsl.{Source => ScalaSource}
-import akka.stream.scaladsl.{Sink => ScalaSink}
-import akka.util.ByteString
-import net.schmizz.sshj.SSHClient
-import org.apache.commons.net.ftp.{FTPClient, FTPSClient}
 import java.util.concurrent.CompletionStage
 import java.util.function._
+
+import akka.stream.alpakka.ftp.impl.{FtpLike, FtpSourceFactory, _}
+import akka.stream.alpakka.ftp.{FtpFile, RemoteFileSettings}
+import akka.stream.javadsl.{Sink, Source}
+import akka.stream.scaladsl.{Sink => ScalaSink, Source => ScalaSource}
+import akka.stream.{IOResult, Materializer}
+import akka.util.ByteString
+import akka.{Done, NotUsed}
+import net.schmizz.sshj.SSHClient
+import org.apache.commons.net.ftp.{FTPClient, FTPSClient}
 
 import scala.compat.java8.FunctionConverters._
 
@@ -231,6 +229,28 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
   }
 
   /**
+   * Java API for creating a directory in a given path
+   *
+   * @param basePath path to start with
+   * @param name name of a directory to create
+   * @param connectionSettings connection settings
+   * @return [[akka.stream.javadsl.Source Source]] of [[Done]]
+   */
+  def mkdir(basePath: String, name: String, connectionSettings: S): Source[Done, NotUsed] =
+    ScalaSource.fromGraph(createMkdirGraph(basePath, name, connectionSettings)).map(_ => Done.getInstance()).asJava
+
+  /**
+   * Java API for creating a directory in a given path
+   *
+   * @param basePath path to start with
+   * @param name name of a directory to create
+   * @param connectionSettings connection settings
+   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of [[akka.Done]] indicating a materialized, asynchronous request
+   */
+  def mkdirAsync(basePath: String, name: String, connectionSettings: S, mat: Materializer): CompletionStage[Done] =
+    mkdir(basePath, name, connectionSettings).runWith(Sink.head(), mat)
+
+  /**
    * Java API: creates a [[akka.stream.javadsl.Sink Sink]] of [[akka.util.ByteString ByteString]] to some file path.
    *
    * @param path the file path
@@ -270,8 +290,8 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
    */
   def move(destinationPath: Function[FtpFile, String],
            connectionSettings: S): Sink[FtpFile, CompletionStage[IOResult]] = {
-    import scala.compat.java8.FutureConverters._
     import scala.compat.java8.FunctionConverters._
+    import scala.compat.java8.FutureConverters._
     ScalaSink
       .fromGraph(createMoveSink(destinationPath.asScala, connectionSettings))
       .mapMaterializedValue(_.toJava)

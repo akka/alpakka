@@ -8,7 +8,7 @@ import akka.stream.alpakka.jms.{Destination, _}
 import javax.jms.{Destination => JmsDestination, _}
 import org.mockito.ArgumentMatchers.{any, anyBoolean, anyInt, anyString}
 import org.mockito.Mockito._
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 
 class JmsMessageProducerSpec extends JmsSpec with MockitoSugar {
 

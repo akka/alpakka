@@ -7,7 +7,7 @@ package docs.scaladsl
 import akka.NotUsed
 import akka.stream.alpakka.s3.headers.{CannedAcl, ServerSideEncryption}
 import akka.stream.alpakka.s3.scaladsl.{S3, S3ClientIntegrationSpec, S3WireMockBase}
-import akka.stream.alpakka.s3.{MultipartUploadResult, S3Headers}
+import akka.stream.alpakka.s3.{FailedUpload, MultipartUploadResult, S3Headers}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 
@@ -82,6 +82,19 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
       .runWith(S3.multipartUpload("nonexisting_bucket", "nonexisting_file.xml"))
 
     result.failed.futureValue.getMessage shouldBe "No key found"
+  }
+
+  it should "fail if response is a failure after initiation" in {
+
+    mockFailureAfterInitiate()
+
+    val result = Source
+      .single(ByteString(body))
+      .runWith(S3.multipartUpload(bucket, bucketKey))
+
+    val exception = result.failed.futureValue
+    exception shouldBe a[FailedUpload]
+    result.failed.futureValue.getMessage should startWith("Upload part 1 request failed")
   }
 
   it should "copy a file from source bucket to target bucket when expected content length is less then chunk size" in {

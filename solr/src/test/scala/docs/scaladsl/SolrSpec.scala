@@ -8,7 +8,7 @@ import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.{Arrays, Optional}
 
-import akka.{Done, NotUsed}
+import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.alpakka.solr._
 import akka.stream.alpakka.solr.scaladsl.{SolrFlow, SolrSink, SolrSource}

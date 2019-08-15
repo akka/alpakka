@@ -12,7 +12,6 @@ import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import com.mongodb.reactivestreams.client.MongoClients
 import org.bson.Document
-import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 

@@ -4,9 +4,6 @@
 
 package akka.stream.alpakka.sqs
 
-import java.util.concurrent.TimeUnit
-
-import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
 
 final class SqsPublishGroupedSettings private (val maxBatchSize: Int,
@@ -30,15 +27,6 @@ final class SqsPublishGroupedSettings private (val maxBatchSize: Int,
       scala.concurrent.duration.FiniteDuration(value.toMillis, java.util.concurrent.TimeUnit.MILLISECONDS)
     )
 
-  /**
-   * Java API
-   *
-   * @deprecated use withMaxBatchWait(java.time.Duration) instead
-   */
-  @deprecated("use withMaxBatchWait(java.time.Duration) instead", "1.0-M1")
-  def withMaxBatchWait(length: Long, unit: TimeUnit): SqsPublishGroupedSettings =
-    copy(maxBatchWait = FiniteDuration(length, unit))
-
   def withConcurrentRequests(value: Int): SqsPublishGroupedSettings = copy(concurrentRequests = value)
 
   private def copy(maxBatchSize: Int = maxBatchSize,
@@ -49,7 +37,11 @@ final class SqsPublishGroupedSettings private (val maxBatchSize: Int,
                                   concurrentRequests = concurrentRequests)
 
   override def toString =
-    s"""SqsPublishGroupedSettings(maxBatchSize=$maxBatchSize,maxBatchWait=$maxBatchWait,concurrentRequests=$concurrentRequests)"""
+    "SqsPublishGroupedSettings(" +
+    s"maxBatchSize=$maxBatchSize," +
+    s"maxBatchWait=$maxBatchWait," +
+    s"concurrentRequests=$concurrentRequests" +
+    ")"
 
 }
 

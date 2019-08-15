@@ -10,9 +10,26 @@ import scala.compat.java8.FunctionConverters._
 /**
  * A destination to send to/receive from.
  */
-sealed trait Destination {
+sealed abstract class Destination {
   val name: String
   val create: jms.Session => jms.Destination
+}
+
+object Destination {
+
+  /**
+   * Create a [[Destination]] from a [[javax.jms.Destination]]
+   */
+  def apply(destination: jms.Destination): Destination = destination match {
+    case queue: jms.Queue => Queue(queue.getQueueName)
+    case topic: jms.Topic => Topic(topic.getTopicName)
+    case _ => CustomDestination(destination.toString, _ => destination)
+  }
+
+  /**
+   * Java API: Create a [[Destination]] from a [[javax.jms.Destination]]
+   */
+  def createDestination(destination: jms.Destination): Destination = apply(destination)
 }
 
 /**

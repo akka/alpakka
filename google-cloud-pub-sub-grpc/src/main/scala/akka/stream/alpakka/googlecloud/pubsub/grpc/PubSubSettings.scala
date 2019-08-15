@@ -73,7 +73,7 @@ object PubSubSettings {
       config.getString("rootCa") match {
         case fileName if fileName != "none" => pubSubConfig.withRootCa(fileName)
         case _ => pubSubConfig
-    }
+      }
     val setCallCredentials = (pubSubConfig: PubSubSettings) =>
       config.getString("callCredentials") match {
         case "google-application-default" =>
@@ -81,7 +81,7 @@ object PubSubSettings {
             .map(pubSubConfig.withCallCredentials)
             .getOrElse(pubSubConfig)
         case _ => pubSubConfig
-    }
+      }
 
     Seq(setRootCa, setCallCredentials).foldLeft(pubSubConfig) {
       case (config, f) => f(config)

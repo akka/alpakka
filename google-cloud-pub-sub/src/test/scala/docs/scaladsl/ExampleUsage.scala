@@ -47,7 +47,7 @@ class ExampleUsage {
 
   //#publish-single
   val publishMessage =
-    PubSubMessage(messageId = "1", data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)))
+    PubSubMessage(new String(Base64.getEncoder.encode("Hello Google!".getBytes)))
   val publishRequest = PublishRequest(Seq(publishMessage))
 
   val source: Source[PublishRequest, NotUsed] = Source.single(publishRequest)
@@ -82,8 +82,14 @@ class ExampleUsage {
   //#subscribe
 
   //#subscribe-auto-ack
-  val subscribeMessageSoruce: Source[ReceivedMessage, NotUsed] = ???
-  val processMessage: Sink[ReceivedMessage, NotUsed] = ???
+  val subscribeMessageSoruce: Source[ReceivedMessage, NotUsed] = // ???
+    //#subscribe-auto-ack
+    Source.single(ReceivedMessage("id", PubSubMessage("data")))
+  //#subscribe-auto-ack
+  val processMessage: Sink[ReceivedMessage, NotUsed] = // ???
+    //#subscribe-auto-ack
+    Flow[ReceivedMessage].to(Sink.ignore)
+  //#subscribe-auto-ack
 
   val batchAckSink =
     Flow[ReceivedMessage].map(_.ackId).groupedWithin(1000, 1.minute).map(AcknowledgeRequest.apply).to(ackSink)

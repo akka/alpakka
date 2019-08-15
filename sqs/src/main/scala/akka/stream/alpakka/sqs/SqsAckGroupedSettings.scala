@@ -4,7 +4,6 @@
 
 package akka.stream.alpakka.sqs
 
-import scala.concurrent.duration.{FiniteDuration, TimeUnit}
 import scala.concurrent.duration._
 import akka.util.JavaDurationConverters._
 
@@ -29,15 +28,6 @@ final class SqsAckGroupedSettings private (val maxBatchSize: Int,
     withMaxBatchWait(
       scala.concurrent.duration.FiniteDuration(value.toMillis, java.util.concurrent.TimeUnit.MILLISECONDS)
     )
-
-  /**
-   * Java API
-   *
-   * @deprecated use withMaxBatchWait(java.time.Duration) instead
-   */
-  @deprecated("use withMaxBatchWait(java.time.Duration) instead", "1.0-M1")
-  def withMaxBatchWait(length: Long, unit: TimeUnit): SqsAckGroupedSettings =
-    this.copy(maxBatchWait = FiniteDuration(length, unit))
 
   def withConcurrentRequests(value: Int): SqsAckGroupedSettings = copy(concurrentRequests = value)
 

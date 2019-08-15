@@ -93,9 +93,7 @@ public class MongoSourceTest {
 
     assertEquals(
         data,
-        rows.toCompletableFuture()
-            .get(5, TimeUnit.SECONDS)
-            .stream()
+        rows.toCompletableFuture().get(5, TimeUnit.SECONDS).stream()
             .map(n -> n.getInteger("_id"))
             .collect(Collectors.toList()));
   }
@@ -123,20 +121,12 @@ public class MongoSourceTest {
 
     assertEquals(
         data,
-        source
-            .runWith(Sink.seq(), mat)
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS)
-            .stream()
+        source.runWith(Sink.seq(), mat).toCompletableFuture().get(5, TimeUnit.SECONDS).stream()
             .map(n -> n.getInteger("_id"))
             .collect(Collectors.toList()));
     assertEquals(
         data,
-        source
-            .runWith(Sink.seq(), mat)
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS)
-            .stream()
+        source.runWith(Sink.seq(), mat).toCompletableFuture().get(5, TimeUnit.SECONDS).stream()
             .map(n -> n.getInteger("_id"))
             .collect(Collectors.toList()));
   }

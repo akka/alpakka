@@ -4,41 +4,30 @@
 
 package akka.stream.alpakka.eip.javadsl;
 
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
-
+import akka.Done;
+import akka.NotUsed;
+import akka.actor.ActorSystem;
+import akka.japi.Pair;
+import akka.japi.function.Function2;
+import akka.kafka.CommitterSettings;
+import akka.kafka.ConsumerMessage;
+import akka.kafka.ConsumerSettings;
+import akka.kafka.Subscriptions;
+import akka.kafka.javadsl.Committer;
+import akka.kafka.javadsl.Consumer;
+import akka.stream.*;
+import akka.stream.javadsl.*;
+import akka.testkit.javadsl.TestKit;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import akka.Done;
-import akka.NotUsed;
-import akka.actor.ActorSystem;
-import akka.japi.Pair;
-import akka.japi.function.Function2;
-import akka.kafka.ConsumerMessage;
-import akka.kafka.ConsumerSettings;
-import akka.kafka.Subscriptions;
-import akka.kafka.scaladsl.Consumer;
-import akka.stream.ActorMaterializer;
-import akka.stream.FlowShape;
-import akka.stream.Graph;
-import akka.stream.Materializer;
-import akka.stream.javadsl.Flow;
-import akka.stream.javadsl.GraphDSL;
-import akka.stream.javadsl.Keep;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
-import akka.testkit.javadsl.TestKit;
-import akka.stream.UniformFanOutShape;
-import akka.stream.FanInShape2;
-import akka.stream.javadsl.Broadcast;
-import akka.stream.javadsl.ZipWith;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 
 public class PassThroughExamples {
   private static ActorSystem system;
@@ -101,8 +90,7 @@ public class PassThroughExamples {
 // #PassThrough
 class PassThroughFlow {
 
-  public static <A, T> Graph<FlowShape<A, Pair<T, A>>, NotUsed> create(
-      Flow<A, T, NotUsed> flow) {
+  public static <A, T> Graph<FlowShape<A, Pair<T, A>>, NotUsed> create(Flow<A, T, NotUsed> flow) {
     return create(flow, Keep.both());
   }
 
@@ -132,13 +120,12 @@ class PassThroughFlowKafkaCommitExample {
 
     ConsumerSettings<String, byte[]> consumerSettings =
         ConsumerSettings.create(system, new StringDeserializer(), new ByteArrayDeserializer());
+    CommitterSettings comitterSettings = CommitterSettings.create(system);
     Consumer.DrainingControl<Done> control =
         Consumer.committableSource(consumerSettings, Subscriptions.topics("topic1"))
             .via(PassThroughFlow.create(writeFlow, Keep.right()))
             .map(i -> i.committableOffset())
-            .groupedWithin(10, Duration.ofSeconds(5))
-            .mapAsync(3, i -> i.commitJavadsl())
-            .toMat(Sink.ignore(), Keep.both())
+            .toMat(Committer.sink(comitterSettings), Keep.both())
             .mapMaterializedValue(Consumer::createDrainingControl)
             .run(materializer);
 

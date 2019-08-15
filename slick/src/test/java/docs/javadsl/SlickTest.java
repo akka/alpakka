@@ -226,8 +226,7 @@ public class SlickTest {
     final List<User> usersList = new ArrayList<>(SlickTest.users);
 
     final List<KafkaMessage<User>> messagesFromKafka =
-        usersList
-            .stream()
+        usersList.stream()
             .map(user -> new KafkaMessage<>(user, new KafkaOffset(usersList.indexOf(user))))
             .collect(Collectors.toList());
 
@@ -304,7 +303,7 @@ public class SlickTest {
     }
 
     public <B> KafkaMessage<B> map(Function<A, B> f) {
-      return new KafkaMessage(f.apply(msg), offset);
+      return new KafkaMessage<>(f.apply(msg), offset);
     }
   }
 }

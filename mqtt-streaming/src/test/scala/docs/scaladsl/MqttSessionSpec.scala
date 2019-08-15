@@ -16,7 +16,7 @@ import akka.stream.alpakka.mqtt.streaming.scaladsl.{
 }
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Sink, Source, SourceQueueWithComplete}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
-import akka.stream.{ActorMaterializer, Materializer, OverflowStrategy, WatchedActorTerminatedException}
+import akka.stream.{ActorMaterializer, Materializer, OverflowStrategy}
 import akka.testkit._
 import akka.util.{ByteString, Timeout}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
@@ -57,6 +57,7 @@ class MqttSessionSpec
               .clientSessionFlow(session, ByteString("1"))
               .join(pipeToServer)
           )
+          .take(3)
           .toMat(Sink.seq)(Keep.both)
           .run()
 
@@ -90,9 +91,8 @@ class MqttSessionSpec
       server.expectMsg(publishBytes)
       server.reply(pubAckBytes)
 
-      client.complete()
-
       result.futureValue shouldBe List(Right(Event(connAck)), Right(Event(subAck)), Right(Event(pubAck)))
+      client.complete()
       client.watchCompletion().foreach(_ => session.shutdown())
     }
 
@@ -513,6 +513,9 @@ class MqttSessionSpec
     }
 
     "receive a QoS 1 publication from a subscribed topic and ack it and then ack it again - the stream should ignore" in assertAllStagesStopped {
+      // longer patience needed since Akka 2.6
+      implicit val patienceConfig = PatienceConfig(scaled(1.second), scaled(50.millis))
+
       val session = ActorMqttClientSession(settings)
 
       val server = TestProbe()
@@ -562,12 +565,16 @@ class MqttSessionSpec
 
       publishReceived.future.futureValue shouldBe Done
 
-      client.offer(Command(pubAck))
+      val deliverPubAck1 = Promise[Done]
+      client.offer(Command(pubAck, Some(deliverPubAck1), None))
 
+      deliverPubAck1.future.futureValue shouldBe Done
       server.expectMsg(pubAckBytes)
 
-      client.offer(Command(pubAck))
+      val deliverPubAck2 = Promise[Done]
+      client.offer(Command(pubAck, Some(deliverPubAck2), None))
 
+      deliverPubAck2.future.failed.futureValue shouldBe an[Exception]
       server.expectNoMessage()
 
       client.complete()
@@ -1173,14 +1180,14 @@ class MqttSessionSpec
               .clientSessionFlow(session, ByteString("1"))
               .join(pipeToServer)
           )
-          .toMat(Sink.ignore)(Keep.both)
+          .toMat(Sink.headOption)(Keep.both)
           .run()
 
       val connect = Connect("some-client-id", ConnectFlags.None)
 
       client.offer(Command(connect))
 
-      result.failed.futureValue shouldBe a[WatchedActorTerminatedException]
+      result.futureValue shouldBe None
 
       client.complete()
       client.watchCompletion().foreach(_ => session.shutdown())
@@ -1284,7 +1291,7 @@ class MqttSessionSpec
 
       fromClientQueue.complete()
 
-      result.futureValue.apply(0) shouldBe Right(Event(connect))
+      result.futureValue.head shouldBe Right(Event(connect))
       result.futureValue.apply(1) match {
         case Right(Event(s: Subscribe, _)) => s.topicFilters shouldBe subscribe.topicFilters
         case x => fail("Unexpected: " + x)
@@ -1391,7 +1398,7 @@ class MqttSessionSpec
       val unsubscribe = Unsubscribe("some-topic")
       val unsubscribeReceived = Promise[Done]
 
-      val (server, result) =
+      val server =
         Source
           .queue[Command[Nothing]](1, OverflowStrategy.fail)
           .via(
@@ -1407,7 +1414,7 @@ class MqttSessionSpec
             case Right(Event(cp: Unsubscribe, _)) if cp.topicFilters == unsubscribe.topicFilters =>
               unsubscribeReceived.success(Done)
           })
-          .toMat(Sink.seq)(Keep.both)
+          .toMat(Sink.ignore)(Keep.left)
           .run()
 
       val connectBytes = connect.encode(ByteString.newBuilder).result()

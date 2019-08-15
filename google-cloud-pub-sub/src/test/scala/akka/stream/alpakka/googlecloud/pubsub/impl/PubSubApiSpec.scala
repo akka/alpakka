@@ -52,15 +52,49 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
 
     val publishMessage =
       PubSubMessage(
-        messageId = "1",
         data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)),
+        attributes = Map("row_id" -> "7")
+      )
+    val publishRequest = PublishRequest(Seq(publishMessage))
+
+    val expectedPublishRequest =
+      """{"messages":[{"data":"SGVsbG8gR29vZ2xlIQ==","attributes":{"row_id":"7"}}]}"""
+    val publishResponse = """{"messageIds":["1"]}"""
+
+    mock.register(
+      WireMock
+        .post(
+          urlEqualTo(s"/v1/projects/${config.projectId}/topics/topic1:publish")
+        )
+        .withRequestBody(WireMock.equalToJson(expectedPublishRequest))
+        .withHeader("Authorization", WireMock.equalTo("Bearer " + accessToken))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withBody(publishResponse)
+            .withHeader("Content-Type", "application/json")
+        )
+    )
+
+    val result =
+      TestHttpApi.publish(config.projectId, "topic1", Some(accessToken), publishRequest)
+
+    result.futureValue shouldBe Seq("1")
+  }
+
+  it should "not send 'messageId' and 'publishTime' when publishing" in {
+
+    val publishMessage =
+      PubSubMessage(
+        data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)),
+        messageId = "my-id",
         attributes = Some(Map("row_id" -> "7")),
         publishTime = Some(Instant.parse("2014-10-02T15:01:23.045123456Z"))
       )
     val publishRequest = PublishRequest(Seq(publishMessage))
 
     val expectedPublishRequest =
-      """{"messages":[{"data":"SGVsbG8gR29vZ2xlIQ==","messageId":"1","attributes":{"row_id":"7"},"publishTime":"2014-10-02T15:01:23.045123456Z"}]}"""
+      """{"messages":[{"data":"SGVsbG8gR29vZ2xlIQ==","attributes":{"row_id":"7"}}]}"""
     val publishResponse = """{"messageIds":["1"]}"""
 
     mock.register(
@@ -93,11 +127,11 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
     }
 
     val publishMessage =
-      PubSubMessage(messageId = "1", data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)))
+      PubSubMessage(data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)))
     val publishRequest = PublishRequest(Seq(publishMessage))
 
     val expectedPublishRequest =
-      """{"messages":[{"data":"SGVsbG8gR29vZ2xlIQ==","messageId":"1"}]}"""
+      """{"messages":[{"data":"SGVsbG8gR29vZ2xlIQ=="}]}"""
     val publishResponse = """{"messageIds":["1"]}"""
 
     mock.register(
@@ -123,7 +157,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
 
   it should "Pull with results" in {
 
-    val publishMessage =
+    val message =
       PubSubMessage(messageId = "1", data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)))
 
     val pullResponse =
@@ -144,7 +178,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
     )
 
     val result = TestHttpApi.pull(config.projectId, "sub1", Some(accessToken), true, 1000)
-    result.futureValue shouldBe PullResponse(Some(Seq(ReceivedMessage("ack1", publishMessage))))
+    result.futureValue shouldBe PullResponse(Some(Seq(ReceivedMessage("ack1", message))))
 
   }
 
@@ -155,7 +189,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
       val GoogleApisHost = s"http://localhost:${wiremockServer.port()}"
     }
 
-    val publishMessage =
+    val message =
       PubSubMessage(messageId = "1", data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)))
 
     val pullResponse =
@@ -176,7 +210,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
     )
 
     val result = TestEmulatorHttpApi.pull(config.projectId, "sub1", None, true, 1000)
-    result.futureValue shouldBe PullResponse(Some(Seq(ReceivedMessage("ack1", publishMessage))))
+    result.futureValue shouldBe PullResponse(Some(Seq(ReceivedMessage("ack1", message))))
 
   }
 
@@ -227,16 +261,14 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
   it should "return exception with the meaningful error message in case of not successful publish response" in {
     val publishMessage =
       PubSubMessage(
-        messageId = "1",
         data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)),
-        attributes = Some(Map("row_id" -> "7")),
-        publishTime = Some(Instant.parse("2014-10-02T15:01:23.045123456Z"))
+        attributes = Map("row_id" -> "7")
       )
 
     val publishRequest = PublishRequest(Seq(publishMessage))
 
     val expectedPublishRequest =
-      """{"messages":[{"data":"SGVsbG8gR29vZ2xlIQ==","messageId":"1","attributes":{"row_id":"7"},"publishTime":"2014-10-02T15:01:23.045123456Z"}]}"""
+      """{"messages":[{"data":"SGVsbG8gR29vZ2xlIQ==","attributes":{"row_id":"7"}}]}"""
 
     mock.register(
       WireMock

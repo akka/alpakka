@@ -358,23 +358,13 @@ class MqttCodecSpec extends WordSpec with Matchers {
       bytes.iterator.decodeControlPacket(MaxPacketSize) shouldBe Right(packet)
     }
 
-    "bad sub ack message when decoding sub ack packets given failure QoS" in {
+    "regular sub ack message when decoding sub ack packets given failure QoS" in {
       val bsb: ByteStringBuilder = ByteString.newBuilder
       val packet = SubAck(PacketId(1), List(ControlPacketFlags.QoSExactlyOnceDelivery, ControlPacketFlags.QoSFailure))
       val bytes = packet.encode(bsb).result()
       bytes.iterator
-        .decodeControlPacket(MaxPacketSize) shouldBe Left(
-        BadSubAckMessage(PacketId(1), List(ControlPacketFlags.QoSExactlyOnceDelivery, ControlPacketFlags.QoSFailure))
-      )
-    }
-
-    "bad sub ack message when decoding sub ack packets given no topics" in {
-      val bsb: ByteStringBuilder = ByteString.newBuilder
-      val packet = SubAck(PacketId(1), List.empty)
-      val bytes = packet.encode(bsb).result()
-      bytes.iterator
-        .decodeControlPacket(MaxPacketSize) shouldBe Left(
-        BadSubAckMessage(PacketId(1), List.empty)
+        .decodeControlPacket(MaxPacketSize) shouldBe Right(
+        SubAck(PacketId(1), List(ControlPacketFlags.QoSExactlyOnceDelivery, ControlPacketFlags.QoSFailure))
       )
     }
 

@@ -167,3 +167,13 @@ final class WriteResult[T2, C2] @InternalApi private[elasticsearch] (val message
 trait MessageWriter[T] {
   def convert(message: T): String
 }
+
+sealed class StringMessageWriter private () extends MessageWriter[String] {
+  override def convert(message: String): String = message
+}
+
+object StringMessageWriter extends StringMessageWriter {
+
+  /** Java API: get the singleton instance of `StringMessageWriter` */
+  val getInstance: StringMessageWriter = StringMessageWriter
+}

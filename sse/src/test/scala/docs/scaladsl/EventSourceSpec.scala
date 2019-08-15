@@ -186,12 +186,7 @@ final class EventSourceSpec extends AsyncWordSpec with Matchers with BeforeAndAf
       val nrOfSamples = 20
       val (host, port) = hostAndPort()
       val server = system.actorOf(Props(new Server(host, port, 2, shouldSetEventId = true)))
-      val send: HttpRequest => Future[HttpResponse] = Http()
-        .singleRequest(_)
-        .map { possiblyGzipped =>
-          val response = akka.http.scaladsl.coding.Gzip.decodeMessage(possiblyGzipped)
-          response
-        }
+      val send: HttpRequest => Future[HttpResponse] = Http().singleRequest(_)
 
       val eventSource = EventSource(Uri(s"http://$host:$port/gzipped"), send, None, 1.second)
       val events = eventSource.take(nrOfSamples).runWith(Sink.seq)

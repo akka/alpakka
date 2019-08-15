@@ -136,7 +136,7 @@ object Authentication {
     def withVerifierPredicate(verifier: Predicate[String]): Provided =
       copy(verifier = verifier.asScala)
 
-    private def copy(verifier: String => Boolean = verifier) =
+    private def copy(verifier: String => Boolean) =
       new Provided(verifier)
 
     override def toString: String =

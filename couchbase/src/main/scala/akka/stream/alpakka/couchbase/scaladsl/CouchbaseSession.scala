@@ -58,13 +58,15 @@ object CouchbaseSession {
   private[couchbase] def createClusterClient(
       settings: CouchbaseSessionSettings
   )(implicit ec: ExecutionContext): Future[AsyncCluster] =
-    //wrap CouchbaseAsyncCluster.create up in the Future because it's blocking
-    Future(settings.environment match {
-      case Some(environment) =>
-        CouchbaseAsyncCluster.create(environment, settings.nodes: _*)
-      case None =>
-        CouchbaseAsyncCluster.create(settings.nodes: _*)
-    }).map(_.authenticate(settings.username, settings.password))
+    settings.enriched
+      .flatMap { enrichedSettings =>
+        Future(enrichedSettings.environment match {
+          case Some(environment) =>
+            CouchbaseAsyncCluster.create(environment, enrichedSettings.nodes: _*)
+          case None =>
+            CouchbaseAsyncCluster.create(enrichedSettings.nodes: _*)
+        }).map(_.authenticate(enrichedSettings.username, enrichedSettings.password))
+      }
 
   private def openBucket(cluster: AsyncCluster, disconnectClusterOnClose: Boolean, bucketName: String)(
       implicit ec: ExecutionContext
