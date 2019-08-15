@@ -21,7 +21,6 @@ object DynamoDb {
 
   /**
    * Create a Flow that emits a response for every request to DynamoDB.
-   * @param parallelism
    */
   def flow[In <: DynamoDbRequest, Out <: DynamoDbResponse](
       parallelism: Int

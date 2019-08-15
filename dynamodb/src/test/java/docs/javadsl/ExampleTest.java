@@ -68,10 +68,13 @@ public class ExampleTest {
 
   @Test
   public void listTables() throws Exception {
+    // format: off
     // #simple-request
     final CompletionStage<ListTablesResponse> listTables =
-        DynamoDb.single(client, AwsOp.ListTables(), ListTablesRequest.builder().build(), materializer);
+        DynamoDb.single(
+            client, AwsOp.listTables(), ListTablesRequest.builder().build(), materializer);
     // #simple-request
+    // format: on
     ListTablesResponse result = listTables.toCompletableFuture().get(5, TimeUnit.SECONDS);
     assertNotNull(result.tableNames());
   }
@@ -81,7 +84,7 @@ public class ExampleTest {
     // #flow
     Source<String, NotUsed> tableArnSource =
         Source.single(CreateTableRequest.builder().tableName("testTable").build())
-            .via(DynamoDb.flow(client, AwsOp.CreateTable(), 1))
+            .via(DynamoDb.flow(client, AwsOp.createTable(), 1))
             .map(result -> result.tableDescription().tableArn());
     // #flow
 
@@ -99,7 +102,7 @@ public class ExampleTest {
   public void paginated() throws Exception {
     // #paginated
     Source<ScanResponse, NotUsed> scanPages =
-        DynamoDb.source(client, AwsOp.Scan(), ScanRequest.builder().tableName("testTable").build());
+        DynamoDb.source(client, AwsOp.scan(), ScanRequest.builder().tableName("testTable").build());
     // #paginated
     CompletionStage<List<ScanResponse>> streamCompletion =
         scanPages.runWith(Sink.seq(), materializer);
