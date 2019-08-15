@@ -17,7 +17,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -70,14 +69,10 @@ public class ExampleTest {
   @Test
   public void listTables() throws Exception {
     // #simple-request
-    final Source<ListTablesResponse, NotUsed> listTables =
-        DynamoDb.source(client, AwsOp.ListTables(), ListTablesRequest.builder().build());
+    final CompletionStage<ListTablesResponse> listTables =
+        DynamoDb.single(client, AwsOp.ListTables(), ListTablesRequest.builder().build(), materializer);
     // #simple-request
-    ListTablesResponse result =
-        listTables
-            .runWith(Sink.head(), materializer)
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS);
+    ListTablesResponse result = listTables.toCompletableFuture().get(5, TimeUnit.SECONDS);
     assertNotNull(result.tableNames());
   }
 

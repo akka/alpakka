@@ -35,7 +35,7 @@ Scala
 Java
 : @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #flow }
 
-Some DynamoDB operations, such as Query and Scan, are paginated by nature.
+Some DynamoDB operations, such as ListTables, Query and Scan, are paginated by nature.
 This is how you can get a stream of all result pages:
 
 Scala
