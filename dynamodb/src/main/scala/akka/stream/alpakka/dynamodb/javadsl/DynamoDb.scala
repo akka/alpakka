@@ -8,7 +8,7 @@ import java.util.concurrent.CompletionStage
 
 import akka.NotUsed
 import akka.stream.Materializer
-import akka.stream.alpakka.dynamodb.{scaladsl, AwsOp, AwsPaginatedOp}
+import akka.stream.alpakka.dynamodb.{scaladsl, DynamoDbOp, DynamoDbPaginatedOp}
 import akka.stream.javadsl.{Flow, Sink, Source}
 import software.amazon.awssdk.core.async.SdkPublisher
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
@@ -23,7 +23,7 @@ object DynamoDb {
    * Create a Flow that emits a response for every request.
    */
   def flow[In <: DynamoDbRequest, Out <: DynamoDbResponse](client: DynamoDbAsyncClient,
-                                                           operation: AwsOp[In, Out],
+                                                           operation: DynamoDbOp[In, Out],
                                                            parallelism: Int): Flow[In, Out, NotUsed] =
     scaladsl.DynamoDb.flow(parallelism)(client, operation).asJava
 
@@ -32,9 +32,9 @@ object DynamoDb {
    *
    */
   def source[In <: DynamoDbRequest, Out <: DynamoDbResponse, Pub <: SdkPublisher[Out]](
-      client: DynamoDbAsyncClient,
-      operation: AwsPaginatedOp[In, Out, Pub],
-      request: In
+                                                                                        client: DynamoDbAsyncClient,
+                                                                                        operation: DynamoDbPaginatedOp[In, Out, Pub],
+                                                                                        request: In
   ): Source[Out, NotUsed] =
     scaladsl.DynamoDb.source(request)(client, operation).asJava
 
@@ -42,7 +42,7 @@ object DynamoDb {
    * Create a CompletionStage that will be completed with a response to a given request.
    */
   def single[In <: DynamoDbRequest, Out <: DynamoDbResponse](client: DynamoDbAsyncClient,
-                                                             operation: AwsOp[In, Out],
+                                                             operation: DynamoDbOp[In, Out],
                                                              request: In,
                                                              mat: Materializer): CompletionStage[Out] =
     Source.single(request).via(flow(client, operation, 1)).runWith(Sink.head(), mat)

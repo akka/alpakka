@@ -6,7 +6,7 @@ package akka.stream.alpakka.dynamodb.scaladsl
 
 import akka.NotUsed
 import akka.stream.Materializer
-import akka.stream.alpakka.dynamodb.{AwsOp, AwsPaginatedOp}
+import akka.stream.alpakka.dynamodb.{DynamoDbOp, DynamoDbPaginatedOp}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import software.amazon.awssdk.core.async.SdkPublisher
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
@@ -24,7 +24,7 @@ object DynamoDb {
    */
   def flow[In <: DynamoDbRequest, Out <: DynamoDbResponse](
       parallelism: Int
-  )(implicit client: DynamoDbAsyncClient, operation: AwsOp[In, Out]): Flow[In, Out, NotUsed] =
+  )(implicit client: DynamoDbAsyncClient, operation: DynamoDbOp[In, Out]): Flow[In, Out, NotUsed] =
     Flow[In].mapAsync(parallelism)(operation.execute(_))
 
   /**
@@ -32,7 +32,7 @@ object DynamoDb {
    */
   def source[In <: DynamoDbRequest, Out <: DynamoDbResponse, Pub <: SdkPublisher[Out]](
       request: In
-  )(implicit client: DynamoDbAsyncClient, operation: AwsPaginatedOp[In, Out, Pub]): Source[Out, NotUsed] =
+  )(implicit client: DynamoDbAsyncClient, operation: DynamoDbPaginatedOp[In, Out, Pub]): Source[Out, NotUsed] =
     Source.fromPublisher(operation.publisher(request))
 
   /**
@@ -40,6 +40,6 @@ object DynamoDb {
    */
   def single[In <: DynamoDbRequest, Out <: DynamoDbResponse](
       request: In
-  )(implicit client: DynamoDbAsyncClient, operation: AwsOp[In, Out], mat: Materializer): Future[Out] =
+  )(implicit client: DynamoDbAsyncClient, operation: DynamoDbOp[In, Out], mat: Materializer): Future[Out] =
     Source.single(request).via(flow(1)).runWith(Sink.head)
 }

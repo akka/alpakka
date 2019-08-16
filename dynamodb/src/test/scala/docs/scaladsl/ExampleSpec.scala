@@ -8,7 +8,7 @@ import java.net.URI
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.alpakka.dynamodb.AwsOp._
+import akka.stream.alpakka.dynamodb.DynamoDbOp._
 import akka.stream.alpakka.dynamodb.scaladsl._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped

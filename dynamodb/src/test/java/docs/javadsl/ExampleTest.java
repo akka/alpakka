@@ -8,7 +8,7 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-import akka.stream.alpakka.dynamodb.AwsOp;
+import akka.stream.alpakka.dynamodb.DynamoDbOp;
 import akka.stream.alpakka.dynamodb.javadsl.DynamoDb;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -72,7 +72,7 @@ public class ExampleTest {
     // #simple-request
     final CompletionStage<ListTablesResponse> listTables =
         DynamoDb.single(
-            client, AwsOp.listTables(), ListTablesRequest.builder().build(), materializer);
+            client, DynamoDbOp.listTables(), ListTablesRequest.builder().build(), materializer);
     // #simple-request
     // format: on
     ListTablesResponse result = listTables.toCompletableFuture().get(5, TimeUnit.SECONDS);
@@ -84,7 +84,7 @@ public class ExampleTest {
     // #flow
     Source<String, NotUsed> tableArnSource =
         Source.single(CreateTableRequest.builder().tableName("testTable").build())
-            .via(DynamoDb.flow(client, AwsOp.createTable(), 1))
+            .via(DynamoDb.flow(client, DynamoDbOp.createTable(), 1))
             .map(result -> result.tableDescription().tableArn());
     // #flow
 
@@ -102,7 +102,7 @@ public class ExampleTest {
   public void paginated() throws Exception {
     // #paginated
     Source<ScanResponse, NotUsed> scanPages =
-        DynamoDb.source(client, AwsOp.scan(), ScanRequest.builder().tableName("testTable").build());
+        DynamoDb.source(client, DynamoDbOp.scan(), ScanRequest.builder().tableName("testTable").build());
     // #paginated
     CompletionStage<List<ScanResponse>> streamCompletion =
         scanPages.runWith(Sink.seq(), materializer);
