@@ -41,15 +41,15 @@ class TableSpec extends TestKit(ActorSystem("TableSpec")) with AsyncWordSpecLike
     import TableSpecOps._
 
     "1) create table" in assertAllStagesStopped {
-      DynamoDb.single(createTableRequest).map(_.tableDescription().tableName() shouldBe tableName)
+      DynamoDb.single(createTableRequest).map(_.tableDescription.tableName shouldBe tableName)
     }
 
     "2) list tables" in assertAllStagesStopped {
-      DynamoDb.single(listTablesRequest).map(_.tableNames().asScala should contain(tableName))
+      DynamoDb.single(listTablesRequest).map(_.tableNames.asScala should contain(tableName))
     }
 
     "3) describe table" in assertAllStagesStopped {
-      DynamoDb.single(describeTableRequest).map(_.table().tableName() shouldBe tableName)
+      DynamoDb.single(describeTableRequest).map(_.table.tableName shouldBe tableName)
     }
 
     "4) update table" in assertAllStagesStopped {
@@ -57,8 +57,8 @@ class TableSpec extends TestKit(ActorSystem("TableSpec")) with AsyncWordSpecLike
         describe <- DynamoDb.single(describeTableRequest)
         update <- DynamoDb.single(updateTableRequest)
       } yield {
-        describe.table().provisionedThroughput().writeCapacityUnits() shouldBe 10L
-        update.tableDescription().provisionedThroughput().writeCapacityUnits() shouldBe newMaxLimit
+        describe.table.provisionedThroughput.writeCapacityUnits shouldBe 10L
+        update.tableDescription.provisionedThroughput.writeCapacityUnits shouldBe newMaxLimit
       }
     }
 
@@ -68,8 +68,8 @@ class TableSpec extends TestKit(ActorSystem("TableSpec")) with AsyncWordSpecLike
         describe <- DynamoDb.single(describeTimeToLiveRequest)
         update <- DynamoDb.single(updateTimeToLiveRequest)
       } yield {
-        describe.timeToLiveDescription().attributeName() shouldBe empty
-        update.timeToLiveSpecification().attributeName() shouldBe "expires"
+        describe.timeToLiveDescription.attributeName shouldBe empty
+        update.timeToLiveSpecification.attributeName shouldBe "expires"
       }
     }
 
@@ -77,7 +77,7 @@ class TableSpec extends TestKit(ActorSystem("TableSpec")) with AsyncWordSpecLike
       for {
         _ <- DynamoDb.single(deleteTableRequest)
         list <- DynamoDb.single(listTablesRequest)
-      } yield list.tableNames().asScala should not contain (tableName)
+      } yield list.tableNames.asScala should not contain (tableName)
     }
 
   }

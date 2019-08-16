@@ -64,9 +64,9 @@ class ExampleSpec
       Source
         .single(CreateTableRequest.builder().tableName("testTable").build())
         .via(DynamoDb.flow(1))
-        .map(result => DescribeTableRequest.builder().tableName(result.tableDescription().tableName()).build())
+        .map(result => DescribeTableRequest.builder().tableName(result.tableDescription.tableName).build())
         .via(DynamoDb.flow(1))
-        .map(_.table().itemCount())
+        .map(_.table.itemCount)
         .runWith(Sink.ignore)
         .failed
         .futureValue
@@ -77,7 +77,7 @@ class ExampleSpec
       val source: Source[String, NotUsed] = Source
         .single(CreateTableRequest.builder().tableName("testTable").build())
         .via(DynamoDb.flow(1))
-        .map(_.tableDescription().tableArn())
+        .map(_.tableDescription.tableArn)
       //##flow
       source.runWith(Sink.ignore).failed.futureValue
     }
@@ -86,9 +86,9 @@ class ExampleSpec
       (for {
         create <- DynamoDb.single(CreateTableRequest.builder().tableName("testTable").build())
         describe <- DynamoDb.single(
-          DescribeTableRequest.builder().tableName(create.tableDescription().tableName()).build()
+          DescribeTableRequest.builder().tableName(create.tableDescription.tableName).build()
         )
-      } yield describe.table().itemCount()).failed.futureValue
+      } yield describe.table.itemCount).failed.futureValue
     }
 
     "provide a paginated requests example" in assertAllStagesStopped {
