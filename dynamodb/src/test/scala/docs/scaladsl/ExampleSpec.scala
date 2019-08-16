@@ -60,24 +60,14 @@ class ExampleSpec
       listTablesResult.futureValue
     }
 
-    "allow multiple requests - explicit types" in assertAllStagesStopped {
-      Source
-        .single(CreateTableRequest.builder().tableName("testTable").build())
-        .via(DynamoDb.flow(1))
-        .map(result => DescribeTableRequest.builder().tableName(result.tableDescription.tableName).build())
-        .via(DynamoDb.flow(1))
-        .map(_.table.itemCount)
-        .runWith(Sink.ignore)
-        .failed
-        .futureValue
-    }
-
     "allow multiple requests" in assertAllStagesStopped {
       //##flow
-      val source: Source[String, NotUsed] = Source
+      val source: Source[DescribeTableResponse, NotUsed] = Source
         .single(CreateTableRequest.builder().tableName("testTable").build())
         .via(DynamoDb.flow(1))
-        .map(_.tableDescription.tableArn)
+        .map(response => DescribeTableRequest.builder().tableName(response.tableDescription.tableName).build())
+        .via(DynamoDb.flow(1))
+
       //##flow
       source.runWith(Sink.ignore).failed.futureValue
     }

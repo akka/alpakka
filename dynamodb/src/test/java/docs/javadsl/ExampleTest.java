@@ -82,16 +82,22 @@ public class ExampleTest {
   @Test
   public void allowMultipleRequests() throws Exception {
     // #flow
-    Source<String, NotUsed> tableArnSource =
+    Source<DescribeTableResponse, NotUsed> tableArnSource =
         Source.single(CreateTableRequest.builder().tableName("testTable").build())
             .via(DynamoDb.flow(client, DynamoDbOp.createTable(), 1))
-            .map(result -> result.tableDescription().tableArn());
+            .map(
+                result ->
+                    DescribeTableRequest.builder()
+                        .tableName(result.tableDescription().tableName())
+                        .build())
+            .via(DynamoDb.flow(client, DynamoDbOp.describeTable(), 1));
     // #flow
 
-    CompletionStage<List<String>> streamCompletion =
+    CompletionStage<List<DescribeTableResponse>> streamCompletion =
         tableArnSource.runWith(Sink.seq(), materializer);
     try {
-      List<String> strings = streamCompletion.toCompletableFuture().get(5, TimeUnit.SECONDS);
+      List<DescribeTableResponse> responses =
+          streamCompletion.toCompletableFuture().get(5, TimeUnit.SECONDS);
       fail("expected missing schema");
     } catch (ExecutionException expected) {
       // expected
@@ -102,7 +108,8 @@ public class ExampleTest {
   public void paginated() throws Exception {
     // #paginated
     Source<ScanResponse, NotUsed> scanPages =
-        DynamoDb.source(client, DynamoDbOp.scan(), ScanRequest.builder().tableName("testTable").build());
+        DynamoDb.source(
+            client, DynamoDbOp.scan(), ScanRequest.builder().tableName("testTable").build());
     // #paginated
     CompletionStage<List<ScanResponse>> streamCompletion =
         scanPages.runWith(Sink.seq(), materializer);
