@@ -32,9 +32,9 @@ object DynamoDb {
    *
    */
   def source[In <: DynamoDbRequest, Out <: DynamoDbResponse, Pub <: SdkPublisher[Out]](
-                                                                                        client: DynamoDbAsyncClient,
-                                                                                        operation: DynamoDbPaginatedOp[In, Out, Pub],
-                                                                                        request: In
+      client: DynamoDbAsyncClient,
+      operation: DynamoDbPaginatedOp[In, Out, Pub],
+      request: In
   ): Source[Out, NotUsed] =
     scaladsl.DynamoDb.source(request)(client, operation).asJava
 
