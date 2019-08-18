@@ -228,36 +228,6 @@ case object MessageGroupId extends MessageSystemAttributeName(model.MessageSyste
 case object SequenceNumber extends MessageSystemAttributeName(model.MessageSystemAttributeName.SEQUENCE_NUMBER)
 
 /**
- * Source parameters as described at
- * https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_GetQueueAttributes.html
- */
-sealed abstract class QueueAttributeName(queueAttributeName: model.QueueAttributeName)
-    extends AttributeName(queueAttributeName.toString)
-
-case object Policy extends QueueAttributeName(model.QueueAttributeName.POLICY)
-case object VisibilityTimeout extends QueueAttributeName(model.QueueAttributeName.VISIBILITY_TIMEOUT)
-case object MaximumMessageSize extends QueueAttributeName(model.QueueAttributeName.MAXIMUM_MESSAGE_SIZE)
-case object MessageRetentionPeriod extends QueueAttributeName(model.QueueAttributeName.MESSAGE_RETENTION_PERIOD)
-case object ApproximateNumberOfMessages
-    extends QueueAttributeName(model.QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES)
-case object ApproximateNumberOfMessagesNotVisible
-    extends QueueAttributeName(model.QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES_NOT_VISIBLE)
-case object CreatedTimestamp extends QueueAttributeName(model.QueueAttributeName.CREATED_TIMESTAMP)
-case object LastModifiedTimestamp extends QueueAttributeName(model.QueueAttributeName.LAST_MODIFIED_TIMESTAMP)
-case object QueueArn extends QueueAttributeName(model.QueueAttributeName.QUEUE_ARN)
-case object ApproximateNumberOfMessagesDelayed
-    extends QueueAttributeName(model.QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES_DELAYED)
-case object DelaySeconds extends QueueAttributeName(model.QueueAttributeName.DELAY_SECONDS)
-case object ReceiveMessageWaitTimeSeconds
-    extends QueueAttributeName(model.QueueAttributeName.RECEIVE_MESSAGE_WAIT_TIME_SECONDS)
-case object RedrivePolicy extends QueueAttributeName(model.QueueAttributeName.REDRIVE_POLICY)
-case object FifoQueue extends QueueAttributeName(model.QueueAttributeName.FIFO_QUEUE)
-case object ContentBasedDeduplication extends QueueAttributeName(model.QueueAttributeName.CONTENT_BASED_DEDUPLICATION)
-case object KmsMasterKeyId extends QueueAttributeName(model.QueueAttributeName.KMS_MASTER_KEY_ID)
-case object KmsDataKeyReusePeriodSeconds
-    extends QueueAttributeName(model.QueueAttributeName.KMS_DATA_KEY_REUSE_PERIOD_SECONDS)
-
-/**
  * Java API:
  *
  * Source parameters as described at
