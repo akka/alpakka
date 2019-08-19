@@ -58,7 +58,7 @@ object MongoFlow {
                     options: InsertManyOptions): Flow[java.util.List[T], java.util.List[T], NotUsed] =
     akka.stream.scaladsl
       .Flow[java.util.List[T]]
-      .map(_.asScala)
+      .map(_.asScala.toIndexedSeq)
       .via(scaladsl.MongoFlow.insertMany(collection, options))
       .map(_.asJava)
       .asJava

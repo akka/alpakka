@@ -168,7 +168,7 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
   // for the ExampleApp in the tests
   connectInput in run := true,
   Compile / compile / scalacOptions += "-P:silencer:pathFilters=src_managed",
-  crossScalaVersions --= Seq(Dependencies.Scala211, Dependencies.Scala213) // https://github.com/akka/akka-grpc/pull/599
+  crossScalaVersions --= Seq(Dependencies.Scala211) // 2.11 is not supported since Akka gRPC 0.6
 ).enablePlugins(AkkaGrpcPlugin, JavaAgent)
 
 lazy val googleCloudStorage =
@@ -225,11 +225,7 @@ lazy val kinesis = alpakkaProject(
 lazy val kudu = alpakkaProject("kudu", "kudu", Dependencies.Kudu, fork in Test := false)
 
 lazy val mongodb =
-  alpakkaProject("mongodb",
-                 "mongodb",
-                 Dependencies.MongoDb,
-                 crossScalaVersions -= Dependencies.Scala213 // https://jira.mongodb.org/browse/SCALA-506
-  )
+  alpakkaProject("mongodb", "mongodb", Dependencies.MongoDb)
 
 lazy val mqtt = alpakkaProject("mqtt", "mqtt", Dependencies.Mqtt)
 

@@ -10,7 +10,7 @@ object Dependencies {
   val Scala213 = "2.13.0"
   val ScalaVersions = Seq(Scala212, Scala211, Scala213).filterNot(_ == Scala211 && Nightly)
 
-  val AkkaVersion = if (Nightly) "2.6.0-M5" else "2.5.23"
+  val AkkaVersion = if (Nightly) "2.6.0-M6" else "2.5.23"
 
   val InfluxDBJavaVersion = "2.15"
 
@@ -301,8 +301,8 @@ object Dependencies {
 
   val MongoDb = Seq(
     libraryDependencies ++= Seq(
-        "org.mongodb" % "mongodb-driver-reactivestreams" % "1.11.0", // ApacheV2
-        "org.mongodb.scala" %% "mongo-scala-bson" % "2.4.2" % "test" // ApacheV2
+        "org.mongodb" % "mongodb-driver-reactivestreams" % "1.12.0", // ApacheV2
+        "org.mongodb.scala" %% "mongo-scala-bson" % "2.7.0" % "test" // ApacheV2
       )
   )
 
