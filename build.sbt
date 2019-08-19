@@ -225,11 +225,7 @@ lazy val kinesis = alpakkaProject(
 lazy val kudu = alpakkaProject("kudu", "kudu", Dependencies.Kudu, fork in Test := false)
 
 lazy val mongodb =
-  alpakkaProject("mongodb",
-                 "mongodb",
-                 Dependencies.MongoDb,
-                 crossScalaVersions -= Dependencies.Scala213 // https://jira.mongodb.org/browse/SCALA-506
-  )
+  alpakkaProject("mongodb", "mongodb", Dependencies.MongoDb)
 
 lazy val mqtt = alpakkaProject("mqtt", "mqtt", Dependencies.Mqtt)
 
