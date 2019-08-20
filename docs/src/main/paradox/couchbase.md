@@ -148,6 +148,34 @@ Scala
 Java
 : @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #upsertDocWithResult }
 
+## Replace
+
+The `CouchbaseFlow` and `CouchbaseSink` offer factories for replacing documents in Couchbase. `replace` is used for the most commonly used `JsonDocument`, and `replaceDoc` has as type parameter to support any variants of @scala[`Document[T]`]@java[`Document<T>`] which may be `RawJsonDocument`, `StringDocument` or `BinaryDocument`.
+
+The `replace` and `replaceDoc` operators fail the stream on any error when writing to Couchbase. To handle failures in-stream use `replaceDocWithResult` shown below. 
+
+A `replace` action will fail if the original Document can't be found in Couchbase with a `DocumentDoesNotExistException`.
+
+Scala
+: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #replace }
+
+Java
+: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #replace }
+
+
+@@@ note
+
+For single document modifications you may consider using the `CouchbaseSession` methods directly, they offer a @scala[future-based]@java[CompletionStage-based] API which in many cases might be simpler than using Akka Streams with just one element (see [below](#using-couchbasesession-directly))
+
+@@@
+
+Couchbase writes may fail temporarily for a particular node. If you want to handle such failures without restarting the whole stream, the `replaceDocWithResult` operator captures failures from Couchbase and emits `CouchbaseWriteResult` sub-classes `CouchbaseWriteSuccess` and `CouchbaseWriteFailure` downstream.
+
+Scala
+: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #upsertDocWithResult }
+
+Java
+: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #upsertDocWithResult }
 
 ## Delete
 

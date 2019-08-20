@@ -54,6 +54,31 @@ object CouchbaseFlow {
     scaladsl.CouchbaseFlow.upsertDocWithResult(sessionSettings, writeSettings, bucketName).asJava
 
   /**
+   * Create a flow to replace a Couchbase [[com.couchbase.client.java.document.JsonDocument JsonDocument]].
+   */
+  def replace(sessionSettings: CouchbaseSessionSettings,
+              writeSettings: CouchbaseWriteSettings,
+              bucketName: String): Flow[JsonDocument, JsonDocument, NotUsed] =
+    scaladsl.CouchbaseFlow.replace(sessionSettings, writeSettings, bucketName).asJava
+
+  /**
+   * Create a flow to replace a Couchbase document of the given class.
+   */
+  def replaceDoc[T <: Document[_]](sessionSettings: CouchbaseSessionSettings,
+                                   writeSettings: CouchbaseWriteSettings,
+                                   bucketName: String): Flow[T, T, NotUsed] =
+    scaladsl.CouchbaseFlow.replaceDoc(sessionSettings, writeSettings, bucketName).asJava
+
+  /**
+   * Create a flow to replace a Couchbase document of the given class and emit a result so that write failures
+   * can be handled in-stream.
+   */
+  def replaceDocWithResult[T <: Document[_]](sessionSettings: CouchbaseSessionSettings,
+                                             writeSettings: CouchbaseWriteSettings,
+                                             bucketName: String): Flow[T, CouchbaseWriteResult[T], NotUsed] =
+    scaladsl.CouchbaseFlow.replaceDocWithResult(sessionSettings, writeSettings, bucketName).asJava
+
+  /**
    * Create a flow to delete documents from Couchbase by `id`. Emits the same `id`.
    */
   def delete(sessionSettings: CouchbaseSessionSettings,

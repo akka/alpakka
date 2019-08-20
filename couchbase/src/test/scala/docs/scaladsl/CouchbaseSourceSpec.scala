@@ -85,11 +85,11 @@ class CouchbaseSourceSpec
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    upsertSampleData()
+    upsertSampleData(queryBucketName)
   }
 
   override def afterAll(): Unit = {
-    cleanAllInBucket(sampleSequence.map(_.id), queryBucketName)
+    cleanAllInBucket(queryBucketName)
     super.afterAll()
   }
 

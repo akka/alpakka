@@ -181,6 +181,42 @@ trait CouchbaseSession {
   def upsertDoc[T <: Document[_]](document: T, writeSettings: CouchbaseWriteSettings): Future[T]
 
   /**
+   * Replace using the default write settings.
+   *
+   * For replacing other types of documents see `replaceDoc`.
+   *
+   * @return a future that completes when the replace is done
+   */
+  def replace(document: JsonDocument): Future[JsonDocument]
+
+  /**
+   * Replace using the default write settings.
+   *
+   * Separate from `replace` to make the most common case smoother with the type inference
+   *
+   * @return a future that completes when the replace is done
+   */
+  def replaceDoc[T <: Document[_]](document: T): Future[T]
+
+  /**
+   * Replace using the given write settings
+   *
+   * For replacing other types of documents see `replaceDoc`.
+   *
+   * @return a future that completes when the replace is done
+   */
+  def replace(document: JsonDocument, writeSettings: CouchbaseWriteSettings): Future[JsonDocument]
+
+  /**
+   * Replace using the given write settings
+   *
+   * Separate from `replace` to make the most common case smoother with the type inference
+   *
+   * @return a future that completes when the replace is done
+   */
+  def replaceDoc[T <: Document[_]](document: T, writeSettings: CouchbaseWriteSettings): Future[T]
+
+  /**
    * Remove a document by id using the default write settings.
    *
    * @return Future that completes when the document has been removed, if there is no such document
