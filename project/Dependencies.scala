@@ -118,8 +118,18 @@ object Dependencies {
 
   val DynamoDB = Seq(
     libraryDependencies ++= Seq(
-        "com.amazonaws" % "aws-java-sdk-dynamodb" % AwsSdkVersion, // ApacheV2
-        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion
+        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll // ApacheV2
+        (
+          ExclusionRule(organization = "com.typesafe.akka")
+        ),
+        "software.amazon.awssdk" % "dynamodb" % AwsSdk2Version excludeAll // ApacheV2
+        (
+          ExclusionRule("software.amazon.awssdk", "apache-client"),
+          ExclusionRule("software.amazon.awssdk", "netty-nio-client")
+        ),
+        // overriding AWS SDK version to avoid security issues
+        "com.fasterxml.jackson.core" % "jackson-databind" % JacksonDatabindVersion,
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion // ApacheV2
       )
   )
 

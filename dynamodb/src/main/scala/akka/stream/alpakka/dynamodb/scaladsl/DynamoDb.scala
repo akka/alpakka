@@ -5,10 +5,12 @@
 package akka.stream.alpakka.dynamodb.scaladsl
 
 import akka.NotUsed
-import akka.stream.{ActorMaterializer, Attributes, Materializer}
-import akka.stream.alpakka.dynamodb.impl.Paginator
-import akka.stream.alpakka.dynamodb.{AwsOp, AwsPagedOp, DynamoAttributes, DynamoClientExt}
+import akka.stream.Materializer
+import akka.stream.alpakka.dynamodb.{DynamoDbOp, DynamoDbPaginatedOp}
 import akka.stream.scaladsl.{Flow, Sink, Source}
+import software.amazon.awssdk.core.async.SdkPublisher
+import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
+import software.amazon.awssdk.services.dynamodb.model._
 
 import scala.concurrent.Future
 
@@ -20,38 +22,24 @@ object DynamoDb {
   /**
    * Create a Flow that emits a response for every request to DynamoDB.
    */
-  def flow[Op <: AwsOp]: Flow[Op, Op#B, NotUsed] =
-    Flow
-      .setup(clientFlow[Op])
-      .mapMaterializedValue(_ => NotUsed)
+  def flow[In <: DynamoDbRequest, Out <: DynamoDbResponse](
+      parallelism: Int
+  )(implicit client: DynamoDbAsyncClient, operation: DynamoDbOp[In, Out]): Flow[In, Out, NotUsed] =
+    Flow[In].mapAsync(parallelism)(operation.execute(_))
 
   /**
    * Create a Source that will emit potentially multiple responses for a given request.
    */
-  def source(op: AwsPagedOp): Source[op.B, NotUsed] =
-    Source
-      .setup { (mat, attr) =>
-        Paginator.source(clientFlow(mat, attr), op)
-      }
-      .mapMaterializedValue(_ => NotUsed)
-
-  /**
-   * Create a Source that will emit a response for a given request.
-   */
-  def source(op: AwsOp): Source[op.B, NotUsed] =
-    Source.single(op).via(flow).map(_.asInstanceOf[op.B])
+  def source[In <: DynamoDbRequest, Out <: DynamoDbResponse, Pub <: SdkPublisher[Out]](
+      request: In
+  )(implicit client: DynamoDbAsyncClient, operation: DynamoDbPaginatedOp[In, Out, Pub]): Source[Out, NotUsed] =
+    Source.fromPublisher(operation.publisher(request))
 
   /**
    * Create a Future that will be completed with a response to a given request.
    */
-  def single(op: AwsOp)(implicit mat: Materializer): Future[op.B] =
-    source(op).runWith(Sink.head)
-
-  private def clientFlow[Op <: AwsOp](mat: ActorMaterializer, attr: Attributes) =
-    attr
-      .get[DynamoAttributes.Client]
-      .map(_.client)
-      .getOrElse(DynamoClientExt(mat.system).dynamoClient)
-      .underlying
-      .flow[Op]
+  def single[In <: DynamoDbRequest, Out <: DynamoDbResponse](
+      request: In
+  )(implicit client: DynamoDbAsyncClient, operation: DynamoDbOp[In, Out], mat: Materializer): Future[Out] =
+    Source.single(request).via(flow(1)).runWith(Sink.head)
 }

@@ -17,18 +17,6 @@ The table below shows direct dependencies of this module and the second tab show
 @@dependencies { projectId="dynamodb" }
 
 
-## Setup
-
-Factories provided in the @scaladoc[DynamoDb](akka.stream.alpakka.dynamodb.scaladsl.DynamoDb$) will use the client managed by the extension. The managed client will be created using the configuration resolved from `reference.conf` and with overrides from `application.conf`.
-
-Example `application.conf`
-: @@snip [snip](/dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/DynamoSettingsSpec.scala) { #static-creds }
-
-`reference.conf`
-: @@snip [snip](/dynamodb/src/main/resources/reference.conf)
-
-If the credentials are not set in the configuration, connector will use the [default credential provider chain](http://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html) provided by the [DynamoDB Java SDK](http://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/basics.html) to retrieve credentials.
-
 ## Usage
 
 For simple operations you can issue a single request, and get back the result in a @scala[`Future`]@java[`CompletionStage`].
@@ -47,7 +35,7 @@ Scala
 Java
 : @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #flow }
 
-Some DynamoDB operations, such as Query and Scan, are paginated by nature.
+Some DynamoDB operations, such as ListTables, Query and Scan, are paginated by nature.
 This is how you can get a stream of all result pages:
 
 Scala
@@ -55,15 +43,6 @@ Scala
 
 Java
 : @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #paginated }
-
-A custom configured client can be used by attaching it as an attribute to the stream:
-
-Scala
-: @@snip [snip](/dynamodb/src/test/scala/docs/scaladsl/ExampleSpec.scala) { #attributes }
-
-Java
-: @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #attributes }
-
 
 ## Running the example code
 
