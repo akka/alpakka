@@ -55,7 +55,8 @@ object Common extends AutoPlugin {
           case _ => Seq("-Xfuture", "-Yno-adapted-args")
         }),
       scalacOptions ++= (scalaVersion.value match {
-          case Dependencies.Scala212 if insideCI.value && fatalWarnings.value => Seq("-Xfatal-warnings")
+          case Dependencies.Scala212 if insideCI.value && fatalWarnings.value && !Dependencies.Nightly =>
+            Seq("-Xfatal-warnings")
           case _ => Seq.empty
         }),
       Compile / doc / scalacOptions := scalacOptions.value ++ Seq(
