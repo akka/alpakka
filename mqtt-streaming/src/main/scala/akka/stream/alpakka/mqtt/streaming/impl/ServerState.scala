@@ -721,8 +721,7 @@ import scala.util.{Failure, Success}
         .receiveSignal {
           case (context, ChildFailed(_, failure))
               if failure == Subscriber.SubscribeFailed ||
-              failure == Unsubscriber.UnsubscribeFailed ||
-              failure.isInstanceOf[Consumer.ConsumeFailed] =>
+              failure == Unsubscriber.UnsubscribeFailed =>
             data.remote.fail(failure)
             disconnect(context, data.remote, data)
           case (context, t: Terminated) =>
