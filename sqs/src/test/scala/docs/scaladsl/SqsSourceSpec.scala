@@ -21,6 +21,7 @@ import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{
   Message,
   MessageAttributeValue,
+  MessageSystemAttributeName,
   QueueDoesNotExistException,
   SendMessageRequest
 }
@@ -31,6 +32,8 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with DefaultTestContext {
+
+  import SqsSourceSpec._
 
   implicit override val patienceConfig = PatienceConfig(timeout = 10.seconds, interval = 100.millis)
 
@@ -80,9 +83,48 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
     future.failed.futureValue.getCause shouldBe a[QueueDoesNotExistException]
   }
 
-  //TODO: it semms that the attribute names have changed a bit in the new SDK and at least with ElasticMQ it is not working properly
-  ignore should "ask for all the attributes set in the settings" taggedAs Integration in new IntegrationFixture {
-    val attributes = List(All, VisibilityTimeout, MaximumMessageSize, LastModifiedTimestamp)
+  "SqsSource" should "ask for 'All' attributes set in the settings" taggedAs Integration in new IntegrationFixture {
+    val attribute = All
+    val settings = sqsSourceSettings.withAttribute(attribute)
+
+    val sendMessageRequest =
+      SendMessageRequest
+        .builder()
+        .queueUrl(queueUrl)
+        .messageBody("alpakka")
+        .build()
+
+    sqsClient.sendMessage(sendMessageRequest).get(2, TimeUnit.SECONDS)
+
+    val future = SqsSource(queueUrl, settings).runWith(Sink.head)
+
+    private val message: Message = future.futureValue
+    message.attributes().keySet.asScala should contain theSameElementsAs allAvailableAttributes
+      .map(attr => MessageSystemAttributeName.fromValue(attr.name))
+  }
+
+  allAvailableAttributes foreach { attribute =>
+    it should s"ask for '${attribute.name}' set in the settings" taggedAs Integration in new IntegrationFixture {
+      val settings = sqsSourceSettings.withAttribute(attribute)
+
+      val sendMessageRequest =
+        SendMessageRequest
+          .builder()
+          .queueUrl(queueUrl)
+          .messageBody("alpakka")
+          .build()
+
+      sqsClient.sendMessage(sendMessageRequest).get(2, TimeUnit.SECONDS)
+
+      val future = SqsSource(queueUrl, settings).runWith(Sink.head)
+
+      private val message: Message = future.futureValue
+      message.attributes().keySet.asScala should contain only MessageSystemAttributeName.fromValue(attribute.name)
+    }
+  }
+
+  it should "ask for multiple attributes set in the settings" taggedAs Integration in new IntegrationFixture {
+    val attributes = allAvailableAttributes.filterNot(_ == All)
     val settings = sqsSourceSettings.withAttributes(attributes)
 
     val sendMessageRequest =
@@ -96,8 +138,10 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
 
     val future = SqsSource(queueUrl, settings).runWith(Sink.head)
 
-    private val value: Message = future.futureValue
-    value.attributes().keySet.asScala shouldBe attributes.map(_.name).toSet
+    private val message: Message = future.futureValue
+    message.attributes().keySet.asScala should contain theSameElementsAs attributes
+      .map(_.name)
+      .map(MessageSystemAttributeName.fromValue)
   }
 
   it should "ask for all the message attributes set in the settings" taggedAs Integration in new IntegrationFixture {
@@ -265,4 +309,16 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
     future.futureValue should have size 1
   }
 
+}
+
+object SqsSourceSpec {
+  private val allAvailableAttributes = List(
+    ApproximateFirstReceiveTimestamp,
+    ApproximateReceiveCount,
+    SenderId,
+    SentTimestamp,
+    MessageDeduplicationId,
+    MessageGroupId
+    // SequenceNumber, not supported by elasticmq
+  )
 }
