@@ -219,7 +219,7 @@ import scala.util.{Either, Failure, Success}
   /*
    * No ACK received - the publication failed
    */
-  case class ConsumeFailed(publish: Publish) extends Exception with NoStackTrace
+  case class ConsumeFailed(publish: Publish) extends Exception(publish.toString) with NoStackTrace
 
   /*
    * Construct with the starting state
@@ -356,7 +356,7 @@ import scala.util.{Either, Failure, Success}
   /*
    * Raised on routing if a packet id cannot determine an actor to route to
    */
-  case class CannotRoute(packetId: PacketId) extends Exception with NoStackTrace
+  case class CannotRoute(packetId: PacketId) extends Exception("packet id: " + packetId.underlying) with NoStackTrace
 
   /*
    * In case some brokers treat 0 as no packet id, we set our min to 1
@@ -503,7 +503,7 @@ import scala.util.{Either, Failure, Success}
   /*
    * Raised on routing if a packet id cannot determine an actor to route to
    */
-  case class CannotRoute(packetId: PacketId) extends Exception with NoStackTrace
+  case class CannotRoute(packetId: PacketId) extends Exception("packet id: " + packetId.underlying) with NoStackTrace
 
   // Requests
 
