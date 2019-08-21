@@ -1,2 +1,8 @@
 # Allow changes to impl
 ProblemFilters.exclude[Problem]("akka.stream.alpakka.ftp.impl.*")
+
+
+ProblemFilters.exclude[DirectAbstractMethodProblem]("akka.stream.alpakka.ftp.javadsl.FtpApi.*")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.ftp.javadsl.FtpApi.ftpLike")
+ProblemFilters.exclude[DirectAbstractMethodProblem]("akka.stream.alpakka.ftp.scaladsl.FtpApi.*")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.ftp.scaladsl.FtpApi.ftpLike")
