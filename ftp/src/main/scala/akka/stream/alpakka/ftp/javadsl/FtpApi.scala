@@ -4,14 +4,15 @@
 
 package akka.stream.alpakka.ftp.javadsl
 
-import java.util.concurrent.CompletionStage
-import java.util.function._
-
-import akka.stream.alpakka.ftp.impl.{FtpLike, FtpSourceFactory, _}
-import akka.stream.alpakka.ftp.{FtpFile, RemoteFileSettings}
-import akka.stream.javadsl.{Sink, Source}
-import akka.stream.scaladsl.{Sink => ScalaSink, Source => ScalaSource}
-import akka.stream.{IOResult, Materializer}
+import akka.NotUsed
+import akka.stream.alpakka.ftp.impl._
+import akka.stream.alpakka.ftp.{FtpFile, FtpSettings, FtpsSettings, RemoteFileSettings, SftpSettings}
+import akka.stream.alpakka.ftp.impl.{FtpLike, FtpSourceFactory}
+import akka.stream.IOResult
+import akka.stream.javadsl.Source
+import akka.stream.javadsl.Sink
+import akka.stream.scaladsl.{Source => ScalaSource}
+import akka.stream.scaladsl.{Sink => ScalaSink}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
 import net.schmizz.sshj.SSHClient
@@ -19,12 +20,7 @@ import org.apache.commons.net.ftp.{FTPClient, FTPSClient}
 
 import scala.compat.java8.FunctionConverters._
 
-sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
-
-  /**
-   * The refined [[RemoteFileSettings]] type.
-   */
-  type S <: RemoteFileSettings
+sealed trait FtpApi[FtpClient, S <: RemoteFileSettings] { _: FtpSourceFactory[FtpClient, S] =>
 
   /**
    * Java API: creates a [[akka.stream.javadsl.Source Source]] of [[FtpFile]]s from the remote user `root` directory.
@@ -311,9 +307,10 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
 
   protected[this] implicit def ftpLike: FtpLike[FtpClient, S]
 }
-class SftpApi extends FtpApi[SSHClient] with SftpSourceParams
-object Ftp extends FtpApi[FTPClient] with FtpSourceParams
-object Ftps extends FtpApi[FTPSClient] with FtpsSourceParams
+object Ftp extends FtpApi[FTPClient, FtpSettings] with FtpSourceParams
+object Ftps extends FtpApi[FTPSClient, FtpsSettings] with FtpsSourceParams
+
+class SftpApi extends FtpApi[SSHClient, SftpSettings] with SftpSourceParams
 object Sftp extends SftpApi {
 
   /**

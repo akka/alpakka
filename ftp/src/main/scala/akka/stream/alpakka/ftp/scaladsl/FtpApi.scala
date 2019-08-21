@@ -7,7 +7,7 @@ package akka.stream.alpakka.ftp.scaladsl
 import akka.{Done, NotUsed}
 import akka.stream.{IOResult, Materializer}
 import akka.stream.alpakka.ftp.impl._
-import akka.stream.alpakka.ftp.{FtpFile, RemoteFileSettings}
+import akka.stream.alpakka.ftp.{FtpFile, FtpSettings, FtpsSettings, RemoteFileSettings, SftpSettings}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import net.schmizz.sshj.SSHClient
@@ -15,12 +15,7 @@ import org.apache.commons.net.ftp.{FTPClient, FTPSClient}
 
 import scala.concurrent.Future
 
-sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
-
-  /**
-   * The refined [[RemoteFileSettings]] type.
-   */
-  type S <: RemoteFileSettings
+sealed trait FtpApi[FtpClient, S <: RemoteFileSettings] { _: FtpSourceFactory[FtpClient, S] =>
 
   /**
    * Scala API: creates a [[akka.stream.scaladsl.Source Source]] of [[FtpFile]]s from the remote user `root` directory.
@@ -229,10 +224,10 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
   protected[this] implicit def ftpLike: FtpLike[FtpClient, S]
 }
 
-class SftpApi extends FtpApi[SSHClient] with SftpSourceParams
-object Ftp extends FtpApi[FTPClient] with FtpSourceParams
-object Ftps extends FtpApi[FTPSClient] with FtpsSourceParams
+object Ftp extends FtpApi[FTPClient, FtpSettings] with FtpSourceParams
+object Ftps extends FtpApi[FTPSClient, FtpsSettings] with FtpsSourceParams
 
+class SftpApi extends FtpApi[SSHClient, SftpSettings] with SftpSourceParams
 object Sftp extends SftpApi {
 
   /**
