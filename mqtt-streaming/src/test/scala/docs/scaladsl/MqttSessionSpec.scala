@@ -514,7 +514,7 @@ class MqttSessionSpec
 
     "receive a QoS 1 publication from a subscribed topic and ack it and then ack it again - the stream should ignore" in assertAllStagesStopped {
       // longer patience needed since Akka 2.6
-      implicit val patienceConfig = PatienceConfig(scaled(1.second), scaled(50.millis))
+      implicit val patienceConfig: PatienceConfig = PatienceConfig(scaled(1.second), scaled(50.millis))
 
       val session = ActorMqttClientSession(settings)
 
@@ -576,6 +576,90 @@ class MqttSessionSpec
 
       deliverPubAck2.future.failed.futureValue shouldBe an[Exception]
       server.expectNoMessage()
+
+      client.complete()
+      result.futureValue shouldBe Done
+      client.watchCompletion().foreach(_ => session.shutdown())
+    }
+
+    "receive a QoS 1 publication from a subscribed topic but do not ack it initially" in assertAllStagesStopped {
+      // longer patience needed since Akka 2.6
+      implicit val patienceConfig: PatienceConfig = PatienceConfig(scaled(1.second), scaled(50.millis))
+
+      val consumerPubAckRecTimeout = 250.millis.dilated
+      val session = ActorMqttClientSession(settings.withConsumerPubAckRecTimeout(consumerPubAckRecTimeout))
+
+      val server = TestProbe()
+      val pipeToServer = Flow[ByteString].mapAsync(1)(msg => server.ref.ask(msg).mapTo[ByteString])
+
+      val connect = Connect("some-client-id", ConnectFlags.None)
+
+      val publish1Received = Promise[Done]
+      val publish2Received = Promise[Done]
+
+      val (client, result) = Source
+        .queue(1, OverflowStrategy.fail)
+        .via(
+          Mqtt
+            .clientSessionFlow(session, ByteString("1"))
+            .join(pipeToServer)
+        )
+        .collect {
+          case Right(Event(cp: Publish, None)) => cp
+        }
+        .wireTap { _ =>
+          if (!publish1Received.isCompleted)
+            publish1Received.success(Done)
+          else
+            publish2Received.success(Done)
+        }
+        .toMat(Sink.ignore)(Keep.both)
+        .run()
+
+      val connectBytes = connect.encode(ByteString.newBuilder).result()
+      val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
+      val connAckBytes = connAck.encode(ByteString.newBuilder).result()
+
+      val subscribe = Subscribe("some-topic")
+      val subscribe1Bytes = subscribe.encode(ByteString.newBuilder, PacketId(1)).result()
+      val subAck1 = SubAck(PacketId(1), List(ControlPacketFlags.QoSAtLeastOnceDelivery))
+      val subAck1Bytes = subAck1.encode(ByteString.newBuilder).result()
+      val subscribe2Bytes = subscribe.encode(ByteString.newBuilder, PacketId(2)).result()
+      val subAck2 = SubAck(PacketId(2), List(ControlPacketFlags.QoSAtLeastOnceDelivery))
+      val subAck2Bytes = subAck2.encode(ByteString.newBuilder).result()
+
+      val publish = Publish(ControlPacketFlags.QoSAtLeastOnceDelivery, "some-topic", ByteString("some-payload"))
+      val publishBytes = publish.encode(ByteString.newBuilder, Some(PacketId(1))).result()
+      val pubAck = PubAck(PacketId(1))
+
+      client.offer(Command(connect))
+
+      server.expectMsg(connectBytes)
+      server.reply(connAckBytes)
+
+      client.offer(Command(subscribe))
+
+      server.expectMsg(subscribe1Bytes)
+      server.reply(subAck1Bytes ++ publishBytes)
+
+      publish1Received.future.futureValue shouldBe Done
+
+      server.expectNoMessage(consumerPubAckRecTimeout * 2) // We need some time to pass before trying again
+
+      val deliverPubAck1 = Promise[Done]
+      client.offer(Command(pubAck, Some(deliverPubAck1), None))
+      deliverPubAck1.future.failed.futureValue shouldBe an[Exception]
+
+      client.offer(Command(subscribe))
+
+      server.expectMsg(subscribe2Bytes)
+      server.reply(subAck2Bytes ++ publishBytes)
+
+      publish2Received.future.futureValue shouldBe Done
+
+      val deliverPubAck2 = Promise[Done]
+      client.offer(Command(pubAck, Some(deliverPubAck2), None))
+      deliverPubAck2.future.futureValue shouldBe Done
 
       client.complete()
       result.futureValue shouldBe Done
@@ -1525,7 +1609,7 @@ class MqttSessionSpec
     "close when no ping request received" in assertAllStagesStopped {
       // A longer patience config implicit is provided since minimum client's keep alive time is 1 second, so default
       // 150 millis is not enough for the ping request timeout to be triggered and verify the stream fails as expected.
-      implicit val patienceConfig = PatienceConfig(scaled(Span(3000, Millis)), scaled(Span(15, Millis)))
+      implicit val patienceConfig: PatienceConfig = PatienceConfig(scaled(Span(3000, Millis)), scaled(Span(15, Millis)))
 
       val session = ActorMqttServerSession(settings)
 
@@ -1973,7 +2057,7 @@ class MqttSessionSpec
 
       client2.fishForMessage(3.seconds.dilated) {
         case msg: ByteString if msg == dupPublishBytes => true
-        case x => false
+        case _ => false
       }
 
       client2Connection.offer(pubAckBytes)
