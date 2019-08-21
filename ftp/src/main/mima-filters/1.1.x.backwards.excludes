@@ -1,7 +1,4 @@
-# Allow changes to impl
-ProblemFilters.exclude[Problem]("akka.stream.alpakka.ftp.impl.*")
-
-
+# Restructure to enable compilation with Scala 2.12.8+ PR #1779
 ProblemFilters.exclude[DirectAbstractMethodProblem]("akka.stream.alpakka.ftp.javadsl.FtpApi.*")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.ftp.javadsl.FtpApi.ftpLike")
 ProblemFilters.exclude[DirectAbstractMethodProblem]("akka.stream.alpakka.ftp.scaladsl.FtpApi.*")
