@@ -7,7 +7,7 @@ package akka.stream.alpakka.ftp
 import java.net.InetAddress
 import java.nio.file.attribute.PosixFilePermission
 
-import akka.annotation.InternalApi
+import akka.annotation.{DoNotInherit, InternalApi}
 import org.apache.commons.net.ftp.{FTPClient, FTPSClient}
 
 /**
@@ -35,6 +35,7 @@ final case class FtpFile(
 /**
  * Common remote file settings.
  */
+@DoNotInherit
 sealed abstract class RemoteFileSettings {
   def host: InetAddress
   def port: Int
@@ -44,6 +45,7 @@ sealed abstract class RemoteFileSettings {
 /**
  * Common settings for FTP and FTPs.
  */
+@DoNotInherit
 sealed abstract class FtpFileSettings extends RemoteFileSettings {
   def binary: Boolean // BINARY or ASCII (default)
   def passiveMode: Boolean

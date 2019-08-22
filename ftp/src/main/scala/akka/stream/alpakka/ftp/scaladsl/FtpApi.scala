@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.ftp.scaladsl
 
+import akka.annotation.DoNotInherit
 import akka.stream.alpakka.ftp.impl.{FtpSourceFactory, FtpSourceParams, FtpsSourceParams, SftpSourceParams}
 import akka.stream.alpakka.ftp._
 import akka.stream.scaladsl.{Sink, Source}
@@ -15,6 +16,7 @@ import org.apache.commons.net.ftp.{FTPClient, FTPSClient}
 
 import scala.concurrent.Future
 
+@DoNotInherit
 sealed trait FtpApi[FtpClient, S <: RemoteFileSettings] { _: FtpSourceFactory[FtpClient, S] =>
 
   /**

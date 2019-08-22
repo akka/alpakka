@@ -7,6 +7,7 @@ package akka.stream.alpakka.ftp.javadsl
 import java.util.concurrent.CompletionStage
 import java.util.function._
 
+import akka.annotation.DoNotInherit
 import akka.stream.alpakka.ftp._
 import akka.stream.alpakka.ftp.impl._
 import akka.stream.javadsl.{Sink, Source}
@@ -18,6 +19,7 @@ import org.apache.commons.net.ftp.{FTPClient, FTPSClient}
 
 import scala.compat.java8.FunctionConverters._
 
+@DoNotInherit
 sealed trait FtpApi[FtpClient, S <: RemoteFileSettings] { _: FtpSourceFactory[FtpClient, S] =>
 
   /**
@@ -255,6 +257,11 @@ sealed trait FtpApi[FtpClient, S <: RemoteFileSettings] { _: FtpSourceFactory[Ft
    * @return A [[akka.stream.javadsl.Sink Sink]] of [[FtpFile]] that materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[IOResult]]
    */
   def remove(connectionSettings: S): Sink[FtpFile, CompletionStage[IOResult]]
+
+  protected[javadsl] def func[T, R](f: T => R): akka.japi.function.Function[T, R] =
+    new akka.japi.function.Function[T, R] {
+      override def apply(param: T): R = f(param)
+    }
 }
 
 object Ftp extends FtpApi[FTPClient, FtpSettings] with FtpSourceParams {
@@ -313,18 +320,18 @@ object Ftp extends FtpApi[FTPClient, FtpSettings] with FtpSourceParams {
     import scala.compat.java8.FutureConverters._
     Source
       .fromGraph(createIOSource(path, connectionSettings, chunkSize, offset))
-      .mapMaterializedValue(_.toJava)
+      .mapMaterializedValue(func(_.toJava))
   }
 
   def mkdir(basePath: String, name: String, connectionSettings: S): Source[Done, NotUsed] =
-    Source.fromGraph(createMkdirGraph(basePath, name, connectionSettings)).map(_ => Done)
+    Source.fromGraph(createMkdirGraph(basePath, name, connectionSettings)).map(func(_ => Done))
 
   def mkdirAsync(basePath: String, name: String, connectionSettings: S, mat: Materializer): CompletionStage[Done] =
     mkdir(basePath, name, connectionSettings).runWith(Sink.head(), mat)
 
   def toPath(path: String, connectionSettings: S, append: Boolean): Sink[ByteString, CompletionStage[IOResult]] = {
     import scala.compat.java8.FutureConverters._
-    Sink.fromGraph(createIOSink(path, connectionSettings, append)).mapMaterializedValue(_.toJava)
+    Sink.fromGraph(createIOSink(path, connectionSettings, append)).mapMaterializedValue(func(_.toJava))
   }
 
   def toPath(path: String, connectionSettings: S): Sink[ByteString, CompletionStage[IOResult]] =
@@ -336,12 +343,12 @@ object Ftp extends FtpApi[FTPClient, FtpSettings] with FtpSourceParams {
     import scala.compat.java8.FutureConverters._
     Sink
       .fromGraph(createMoveSink(destinationPath.asScala, connectionSettings))
-      .mapMaterializedValue[CompletionStage[IOResult]](_.toJava)
+      .mapMaterializedValue[CompletionStage[IOResult]](func(_.toJava))
   }
 
   def remove(connectionSettings: S): Sink[FtpFile, CompletionStage[IOResult]] = {
     import scala.compat.java8.FutureConverters._
-    Sink.fromGraph(createRemoveSink(connectionSettings)).mapMaterializedValue(_.toJava)
+    Sink.fromGraph(createRemoveSink(connectionSettings)).mapMaterializedValue(func(_.toJava))
   }
 
 }
@@ -401,18 +408,18 @@ object Ftps extends FtpApi[FTPSClient, FtpsSettings] with FtpsSourceParams {
     import scala.compat.java8.FutureConverters._
     Source
       .fromGraph(createIOSource(path, connectionSettings, chunkSize, offset))
-      .mapMaterializedValue(_.toJava)
+      .mapMaterializedValue(func(_.toJava))
   }
 
   def mkdir(basePath: String, name: String, connectionSettings: S): Source[Done, NotUsed] =
-    Source.fromGraph(createMkdirGraph(basePath, name, connectionSettings)).map(_ => Done)
+    Source.fromGraph(createMkdirGraph(basePath, name, connectionSettings)).map(func(_ => Done))
 
   def mkdirAsync(basePath: String, name: String, connectionSettings: S, mat: Materializer): CompletionStage[Done] =
     mkdir(basePath, name, connectionSettings).runWith(Sink.head(), mat)
 
   def toPath(path: String, connectionSettings: S, append: Boolean): Sink[ByteString, CompletionStage[IOResult]] = {
     import scala.compat.java8.FutureConverters._
-    Sink.fromGraph(createIOSink(path, connectionSettings, append)).mapMaterializedValue(_.toJava)
+    Sink.fromGraph(createIOSink(path, connectionSettings, append)).mapMaterializedValue(func(_.toJava))
   }
 
   def toPath(path: String, connectionSettings: S): Sink[ByteString, CompletionStage[IOResult]] =
@@ -424,12 +431,12 @@ object Ftps extends FtpApi[FTPSClient, FtpsSettings] with FtpsSourceParams {
     import scala.compat.java8.FutureConverters._
     Sink
       .fromGraph(createMoveSink(destinationPath.asScala, connectionSettings))
-      .mapMaterializedValue[CompletionStage[IOResult]](_.toJava)
+      .mapMaterializedValue(func(_.toJava))
   }
 
   def remove(connectionSettings: S): Sink[FtpFile, CompletionStage[IOResult]] = {
     import scala.compat.java8.FutureConverters._
-    Sink.fromGraph(createRemoveSink(connectionSettings)).mapMaterializedValue(_.toJava)
+    Sink.fromGraph(createRemoveSink(connectionSettings)).mapMaterializedValue(func(_.toJava))
   }
 
 }
@@ -490,18 +497,18 @@ class SftpApi extends FtpApi[SSHClient, SftpSettings] with SftpSourceParams {
     import scala.compat.java8.FutureConverters._
     Source
       .fromGraph(createIOSource(path, connectionSettings, chunkSize, offset))
-      .mapMaterializedValue(_.toJava)
+      .mapMaterializedValue(func(_.toJava))
   }
 
   def mkdir(basePath: String, name: String, connectionSettings: S): Source[Done, NotUsed] =
-    Source.fromGraph(createMkdirGraph(basePath, name, connectionSettings)).map(_ => Done)
+    Source.fromGraph(createMkdirGraph(basePath, name, connectionSettings)).map(func(_ => Done))
 
   def mkdirAsync(basePath: String, name: String, connectionSettings: S, mat: Materializer): CompletionStage[Done] =
     mkdir(basePath, name, connectionSettings).runWith(Sink.head(), mat)
 
   def toPath(path: String, connectionSettings: S, append: Boolean): Sink[ByteString, CompletionStage[IOResult]] = {
     import scala.compat.java8.FutureConverters._
-    Sink.fromGraph(createIOSink(path, connectionSettings, append)).mapMaterializedValue(_.toJava)
+    Sink.fromGraph(createIOSink(path, connectionSettings, append)).mapMaterializedValue(func(_.toJava))
   }
 
   def toPath(path: String, connectionSettings: S): Sink[ByteString, CompletionStage[IOResult]] =
@@ -513,12 +520,12 @@ class SftpApi extends FtpApi[SSHClient, SftpSettings] with SftpSourceParams {
     import scala.compat.java8.FutureConverters._
     Sink
       .fromGraph(createMoveSink(destinationPath.asScala, connectionSettings))
-      .mapMaterializedValue[CompletionStage[IOResult]](_.toJava)
+      .mapMaterializedValue(func(_.toJava))
   }
 
   def remove(connectionSettings: S): Sink[FtpFile, CompletionStage[IOResult]] = {
     import scala.compat.java8.FutureConverters._
-    Sink.fromGraph(createRemoveSink(connectionSettings)).mapMaterializedValue(_.toJava)
+    Sink.fromGraph(createRemoveSink(connectionSettings)).mapMaterializedValue(func(_.toJava))
   }
 
 }
