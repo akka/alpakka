@@ -22,6 +22,8 @@ object DynamoDb {
 
   /**
    * Create a Flow that emits a response for every request to DynamoDB.
+   *
+   * @param parallelism maximum number of in-flight requests at any given time
    */
   def flow[In <: DynamoDbRequest, Out <: DynamoDbResponse](
       parallelism: Int
@@ -30,8 +32,20 @@ object DynamoDb {
 
   /**
    * Create a Flow that emits a response for every request to DynamoDB.
-   * A successful response is wrapped in [scala.util.success] and a failed
+   * A successful response is wrapped in [scala.util.Success] and a failed
    * response is wrapped in [scala.util.Failure].
+   *
+   * The returned flow is meant to compose easily with an Akka Stream RetryFlow
+   * which can retry requests, that have responses wrapped in [scala.util.Try].
+   *
+   * @param parallelism maximum number of in-flight requests at any given time
+   *
+   * @tparam State the type of the pass-through value that is taken together with
+   *               requests and is emitted together with responses. Can be used,
+   *               for example:
+   *                 * to correlate a request with a response
+   *                 * to track number of retries
+   *                 * to store request to be issued in the case of retry
    */
   def tryFlow[In <: DynamoDbRequest, Out <: DynamoDbResponse, State](
       parallelism: Int

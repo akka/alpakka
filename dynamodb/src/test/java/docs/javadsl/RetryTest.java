@@ -7,6 +7,7 @@ package docs.javadsl;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.JavaPartialFunction;
+import akka.japi.Option;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
@@ -27,6 +28,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
+import static akka.japi.Option.*;
 import static org.junit.Assert.*;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -104,27 +106,27 @@ public class RetryTest extends ItemSpecOps {
 
     final JavaPartialFunction<
             Pair<Try<BatchGetItemResponse>, NotUsed>,
-            akka.japi.Option<Collection<Pair<BatchGetItemRequest, NotUsed>>>>
+            Option<Collection<Pair<BatchGetItemRequest, NotUsed>>>>
         retryMatcher =
             new JavaPartialFunction<
                 Pair<Try<BatchGetItemResponse>, NotUsed>,
-                akka.japi.Option<Collection<Pair<BatchGetItemRequest, NotUsed>>>>() {
-              public akka.japi.Option<Collection<Pair<BatchGetItemRequest, NotUsed>>> apply(
+                Option<Collection<Pair<BatchGetItemRequest, NotUsed>>>>() {
+              public Option<Collection<Pair<BatchGetItemRequest, NotUsed>>> apply(
                   Pair<Try<BatchGetItemResponse>, NotUsed> in, boolean isCheck) {
                 final Try<BatchGetItemResponse> response = in.first();
                 if (response.isSuccess()) {
                   final BatchGetItemResponse result = response.get();
                   if (result.unprocessedKeys().size() > 0) {
-                    return akka.japi.Option.some(
+                    return some(
                         Collections.singleton(
                             Pair.create(
                                 batchGetItemRequest(result.unprocessedKeys()),
                                 NotUsed.getInstance())));
                   } else {
-                    return akka.japi.Option.none();
+                    return none();
                   }
                 } else {
-                  return akka.japi.Option.none();
+                  return none();
                 }
               }
             };
@@ -155,21 +157,19 @@ public class RetryTest extends ItemSpecOps {
   @Test
   public void retryFailedRequests() throws Exception {
     final JavaPartialFunction<
-            Pair<Try<GetItemResponse>, Integer>,
-            akka.japi.Option<Collection<Pair<GetItemRequest, Integer>>>>
+            Pair<Try<GetItemResponse>, Integer>, Option<Collection<Pair<GetItemRequest, Integer>>>>
         retryMatcher =
             new JavaPartialFunction<
                 Pair<Try<GetItemResponse>, Integer>,
-                akka.japi.Option<Collection<Pair<GetItemRequest, Integer>>>>() {
-              public akka.japi.Option<Collection<Pair<GetItemRequest, Integer>>> apply(
+                Option<Collection<Pair<GetItemRequest, Integer>>>>() {
+              public Option<Collection<Pair<GetItemRequest, Integer>>> apply(
                   Pair<Try<GetItemResponse>, Integer> in, boolean isCheck) {
                 final Try<GetItemResponse> response = in.first();
                 final Integer retries = in.second();
                 if (response.isFailure()) {
-                  return akka.japi.Option.some(
-                      Collections.singleton(Pair.create(getItemRequest(), retries + 1)));
+                  return some(Collections.singleton(Pair.create(getItemRequest(), retries + 1)));
                 } else {
-                  return akka.japi.Option.none();
+                  return none();
                 }
               }
             };
