@@ -286,9 +286,26 @@ final class MqttConnectionSettings private (val broker: String,
     )
 
   override def toString =
-    s"""MqttConnectionSettings(broker=$broker,clientId=$clientId,persistence=$persistence,auth(username)=${auth.map(
-      _._1
-    )},socketFactory=$socketFactory,cleanSession=$cleanSession,will=$will,automaticReconnect=$automaticReconnect,keepAliveInterval=$keepAliveInterval,connectionTimeout=$connectionTimeout,disconnectQuiesceTimeout=$disconnectQuiesceTimeout,disconnectTimeout=$disconnectTimeout,maxInFlight=$maxInFlight,mqttVersion=$mqttVersion,serverUris=$serverUris,sslHostnameVerifier=$sslHostnameVerifier,sslProperties=$sslProperties,offlinePersistenceSettings=$offlinePersistenceSettings)"""
+    "MqttConnectionSettings(" +
+    s"broker=$broker," +
+    s"clientId=$clientId," +
+    s"persistence=$persistence," +
+    s"auth(username)=${auth.map(_._1)}," +
+    s"socketFactory=$socketFactory," +
+    s"cleanSession=$cleanSession," +
+    s"will=$will," +
+    s"automaticReconnect=$automaticReconnect," +
+    s"keepAliveInterval=$keepAliveInterval," +
+    s"connectionTimeout=$connectionTimeout," +
+    s"disconnectQuiesceTimeout=$disconnectQuiesceTimeout," +
+    s"disconnectTimeout=$disconnectTimeout," +
+    s"maxInFlight=$maxInFlight," +
+    s"mqttVersion=$mqttVersion," +
+    s"serverUris=$serverUris," +
+    s"sslHostnameVerifier=$sslHostnameVerifier," +
+    s"sslProperties=$sslProperties," +
+    s"offlinePersistenceSettings=$offlinePersistenceSettings" +
+    ")"
 }
 
 /**
