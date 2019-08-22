@@ -14,7 +14,7 @@ import akka.annotation.InternalApi
 import akka.stream.{Materializer, OverflowStrategy, QueueOfferResult}
 import akka.stream.scaladsl.{BroadcastHub, Keep, Source, SourceQueueWithComplete}
 import akka.util.ByteString
-
+import scala.collection.immutable.Seq
 import scala.concurrent.Promise
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NoStackTrace
@@ -121,19 +121,16 @@ import scala.util.{Failure, Success}
     def childTerminated(terminatedCc: ActorRef[ClientConnection.Event]): Behavior[Event] =
       data.clientConnections.find { case (_, (_, cc)) => cc == terminatedCc } match {
         case Some((connectionId, (clientId, _))) =>
-          import context.executionContext
-
-          data.terminations
-            .offer(ClientSessionTerminated(clientId))
-            .onComplete(result => context.self.tell(QueueOfferCompleted(connectionId, result.toEither)))
-
           data.consumerPacketRouter ! RemotePacketRouter.UnregisterConnection(connectionId)
           data.publisherPacketRouter ! RemotePacketRouter.UnregisterConnection(connectionId)
           data.unpublisherPacketRouter ! RemotePacketRouter.UnregisterConnection(connectionId)
 
           QueueOfferState.waitForQueueOfferCompleted(
+            data.terminations
+              .offer(ClientSessionTerminated(clientId)),
+            result => QueueOfferCompleted(connectionId, result.toEither),
             listening(data.copy(clientConnections = data.clientConnections - connectionId)),
-            stash = Seq.empty
+            stash = Vector.empty
           )
 
         case None =>
@@ -397,8 +394,6 @@ import scala.util.{Failure, Success}
       Behaviors
         .receivePartial[Event] {
           case (context, ConnAckReceivedLocally(_, remote)) =>
-            import context.executionContext
-
             val (queue, source) = Source
               .queue[ForwardConnAckCommand](data.settings.serverSendBufferSize, OverflowStrategy.backpressure)
               .toMat(BroadcastHub.sink)(Keep.both)
@@ -406,16 +401,15 @@ import scala.util.{Failure, Success}
 
             remote.success(source)
 
-            queue
-              .offer(ForwardConnAck)
-              .onComplete(result => context.self.tell(QueueOfferCompleted(result.toEither)))
-
             timer.cancel(ReceiveConnAck)
 
             data.activeProducers.values
               .foreach(_ ! Producer.ReceiveConnect)
 
             QueueOfferState.waitForQueueOfferCompleted(
+              queue
+                .offer(ForwardConnAck),
+              result => QueueOfferCompleted(result.toEither),
               clientConnected(
                 ConnAckReplied(
                   data.connect,
@@ -458,22 +452,24 @@ import scala.util.{Failure, Success}
   ): Behavior[Event] = {
     remote.complete()
 
-    data.stash.foreach(context.self.tell)
-
-    clientDisconnected(
-      Disconnected(
-        Vector.empty,
-        data.publishers,
-        data.activeConsumers,
-        data.activeProducers,
-        data.pendingLocalPublications,
-        data.pendingRemotePublications,
-        data.consumerPacketRouter,
-        data.producerPacketRouter,
-        data.publisherPacketRouter,
-        data.unpublisherPacketRouter,
-        data.settings
-      )
+    BehaviorRunner.run(
+      clientDisconnected(
+        Disconnected(
+          Vector.empty,
+          data.publishers,
+          data.activeConsumers,
+          data.activeProducers,
+          data.pendingLocalPublications,
+          data.pendingRemotePublications,
+          data.consumerPacketRouter,
+          data.producerPacketRouter,
+          data.publisherPacketRouter,
+          data.unpublisherPacketRouter,
+          data.settings
+        )
+      ),
+      context,
+      data.stash.map(BehaviorRunner.StoredMessage.apply)
     )
   }
 
@@ -577,15 +573,12 @@ import scala.util.{Failure, Success}
           case (context, PublishReceivedLocally(publish, _))
               if (publish.flags & ControlPacketFlags.QoSReserved).underlying == 0 &&
               data.publishers.exists(Topics.filter(_, publish.topicName)) =>
-            import context.executionContext
-
-            data.remote
-              .offer(ForwardPublish(publish, None))
-              .onComplete(result => context.self.tell(QueueOfferCompleted(result.toEither)))
-
             QueueOfferState.waitForQueueOfferCompleted(
+              data.remote
+                .offer(ForwardPublish(publish, None)),
+              result => QueueOfferCompleted(result.toEither),
               clientConnected(data),
-              stash = Seq.empty
+              stash = Vector.empty
             )
 
           case (context, prl @ PublishReceivedLocally(publish, publishData))
@@ -633,35 +626,30 @@ import scala.util.{Failure, Success}
               clientConnected(data.copy(activeProducers = data.activeProducers - topicName))
             }
           case (context, ReceivedProducerPublishingCommand(command)) =>
-            import context.executionContext
-
-            command match {
+            val eventualResult = command match {
               case Producer.ForwardPublish(publish, packetId) =>
                 data.remote
                   .offer(ForwardPublish(publish, packetId))
-                  .onComplete(result => context.self.tell(QueueOfferCompleted(result.toEither)))
               case Producer.ForwardPubRel(_, packetId) =>
                 data.remote
                   .offer(ForwardPubRel(packetId))
-                  .onComplete(result => context.self.tell(QueueOfferCompleted(result.toEither)))
             }
 
             QueueOfferState.waitForQueueOfferCompleted(
+              eventualResult,
+              result => QueueOfferCompleted(result.toEither),
               clientConnected(data),
-              stash = Seq.empty
+              stash = Vector.empty
             )
           case (context, PingReqReceivedFromRemote(local)) =>
-            import context.executionContext
-
-            data.remote
-              .offer(ForwardPingResp)
-              .onComplete(result => context.self.tell(QueueOfferCompleted(result.toEither)))
-
             local.success(ForwardPingReq)
 
             QueueOfferState.waitForQueueOfferCompleted(
+              data.remote
+                .offer(ForwardPingResp),
+              result => QueueOfferCompleted(result.toEither),
               clientConnected(data),
-              stash = Seq.empty
+              stash = Vector.empty
             )
 
           case (context, ReceivePingReqTimeout) =>
@@ -773,24 +761,29 @@ import scala.util.{Failure, Success}
             )
           case (context, ConnectReceivedFromRemote(connect, local)) =>
             timer.cancel(ReceiveConnect)
-            data.stash.foreach(context.self.tell)
-            clientConnect(
-              ConnectReceived(
-                connect,
-                local,
-                Vector.empty,
-                data.publishers,
-                data.activeConsumers,
-                data.activeProducers,
-                data.pendingLocalPublications,
-                data.pendingRemotePublications,
-                data.consumerPacketRouter,
-                data.producerPacketRouter,
-                data.publisherPacketRouter,
-                data.unpublisherPacketRouter,
-                data.settings
-              )
+
+            BehaviorRunner.run(
+              clientConnect(
+                ConnectReceived(
+                  connect,
+                  local,
+                  Vector.empty,
+                  data.publishers,
+                  data.activeConsumers,
+                  data.activeProducers,
+                  data.pendingLocalPublications,
+                  data.pendingRemotePublications,
+                  data.consumerPacketRouter,
+                  data.producerPacketRouter,
+                  data.publisherPacketRouter,
+                  data.unpublisherPacketRouter,
+                  data.settings
+                )
+              ),
+              context,
+              data.stash.map(BehaviorRunner.StoredMessage.apply)
             )
+
           case (_, ReceiveConnectTimeout) =>
             throw ClientConnectionFailed
           case (_, ConnectionLost) =>

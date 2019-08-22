@@ -82,8 +82,6 @@ import scala.util.{Either, Failure, Success}
   // State event handling
 
   def preparePublish(data: Start)(implicit mat: Materializer): Behavior[Event] = Behaviors.setup { context =>
-    import context.executionContext
-
     def requestPacketId(): Unit = {
       val reply = Promise[LocalPacketRouter.Registered]
       data.packetRouter ! LocalPacketRouter.Register(context.self.unsafeUpcast, reply)
@@ -106,15 +104,14 @@ import scala.util.{Either, Failure, Success}
     Behaviors
       .receiveMessagePartial[Event] {
         case AcquiredPacketId(packetId) =>
-          queue
-            .offer(ForwardPublish(data.publish, Some(packetId)))
-            .onComplete(result => context.self.tell(QueueOfferCompleted(result.toEither)))
-
           QueueOfferState.waitForQueueOfferCompleted(
+            queue
+              .offer(ForwardPublish(data.publish, Some(packetId))),
+            result => QueueOfferCompleted(result.toEither),
             publishUnacknowledged(
               Publishing(queue, packetId, data.publish, data.publishData, data.packetRouter, data.settings)
             ),
-            stash = Seq.empty
+            stash = Vector.empty
           )
 
         case UnacquiredPacketId =>
@@ -148,18 +145,15 @@ import scala.util.{Either, Failure, Success}
             publishAcknowledged(data)
 
           case (context, ReceivePubAckRecTimeout | ReceiveConnect) =>
-            import context.executionContext
-
-            data.remote
-              .offer(
-                ForwardPublish(data.publish.copy(flags = data.publish.flags | ControlPacketFlags.DUP),
-                               Some(data.packetId))
-              )
-              .onComplete(result => context.self.tell(QueueOfferCompleted(result.toEither)))
-
             QueueOfferState.waitForQueueOfferCompleted(
+              data.remote
+                .offer(
+                  ForwardPublish(data.publish.copy(flags = data.publish.flags | ControlPacketFlags.DUP),
+                                 Some(data.packetId))
+                ),
+              result => QueueOfferCompleted(result.toEither),
               publishUnacknowledged(data),
-              stash = Seq.empty
+              stash = Vector.empty
             )
         }
         .receiveSignal {
@@ -176,26 +170,22 @@ import scala.util.{Either, Failure, Success}
         timer.startSingleTimer(ReceivePubrel, ReceivePubCompTimeout, data.settings.producerPubCompTimeout)
 
       Behaviors.setup { context =>
-        import context.executionContext
-
-        data.remote
-          .offer(ForwardPubRel(data.publish, data.packetId))
-          .onComplete(result => context.self.tell(QueueOfferCompleted(result.toEither)))
-
         QueueOfferState.waitForQueueOfferCompleted(
+          data.remote
+            .offer(ForwardPubRel(data.publish, data.packetId)),
+          result => QueueOfferCompleted(result.toEither),
           Behaviors
             .receiveMessagePartial[Event] {
               case PubCompReceivedFromRemote(local) =>
                 local.success(ForwardPubComp(data.publishData))
                 Behaviors.stopped
               case ReceivePubCompTimeout | ReceiveConnect =>
-                data.remote
-                  .offer(ForwardPubRel(data.publish, data.packetId))
-                  .onComplete(result => context.self.tell(QueueOfferCompleted(result.toEither)))
-
                 QueueOfferState.waitForQueueOfferCompleted(
+                  data.remote
+                    .offer(ForwardPubRel(data.publish, data.packetId)),
+                  result => QueueOfferCompleted(result.toEither),
                   publishAcknowledged(data),
-                  stash = Seq.empty
+                  stash = Vector.empty
                 )
             }
             .receiveSignal {
@@ -203,7 +193,7 @@ import scala.util.{Either, Failure, Success}
                 data.remote.complete()
                 Behaviors.same
             },
-          stash = Seq.empty
+          stash = Vector.empty
         )
       }
   }
