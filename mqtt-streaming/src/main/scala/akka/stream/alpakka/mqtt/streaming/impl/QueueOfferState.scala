@@ -7,6 +7,9 @@ package akka.stream.alpakka.mqtt.streaming.impl
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.stream.QueueOfferResult
+import scala.collection.immutable.Seq
+import scala.concurrent.Future
+import scala.util.{Failure, Success, Try}
 
 private[mqtt] object QueueOfferState {
 
@@ -23,15 +26,43 @@ private[mqtt] object QueueOfferState {
    *
    * This is to be used only with SourceQueues that use backpressure.
    */
-  def waitForQueueOfferCompleted[T](behavior: Behavior[T], stash: Seq[T]): Behavior[T] =
+  def waitForQueueOfferCompleted[T](result: Future[QueueOfferResult],
+                                    f: Try[QueueOfferResult] => T with QueueOfferCompleted,
+                                    behavior: Behavior[T],
+                                    stash: Seq[T]): Behavior[T] = Behaviors.setup { context =>
+    import context.executionContext
+
+    val s = stash.map(BehaviorRunner.StoredMessage.apply)
+
+    if (result.isCompleted) {
+      // optimize for a common case where we were immediately able to enqueue
+
+      result.value.get match {
+        case Success(QueueOfferResult.Enqueued) =>
+          BehaviorRunner.run(behavior, context, s)
+
+        case Success(other) =>
+          throw new IllegalStateException(s"Failed to offer to queue: $other")
+
+        case Failure(failure) =>
+          throw failure
+      }
+    } else {
+      result.onComplete { r =>
+        context.self.tell(f(r))
+      }
+
+      behaviorImpl(behavior, s)
+    }
+  }
+
+  private def behaviorImpl[T](behavior: Behavior[T], stash: Seq[BehaviorRunner.Interpretable[T]]): Behavior[T] =
     Behaviors
       .receive[T] {
         case (context, completed: QueueOfferCompleted) =>
           completed.result match {
             case Right(QueueOfferResult.Enqueued) =>
-              stash.foreach(context.self.tell)
-
-              behavior
+              BehaviorRunner.run(behavior, context, stash)
 
             case Right(other) =>
               throw new IllegalStateException(s"Failed to offer to queue: $other")
@@ -41,7 +72,11 @@ private[mqtt] object QueueOfferState {
           }
 
         case (_, other) =>
-          waitForQueueOfferCompleted(behavior, stash = stash :+ other)
+          behaviorImpl(behavior, stash :+ BehaviorRunner.StoredMessage(other))
+
       }
-      .receiveSignal { case (ctx, signal) => Behavior.interpretSignal(Behavior.start(behavior, ctx), ctx, signal) } // handle signals immediately
+      .receiveSignal {
+        case (_, signal) =>
+          behaviorImpl(behavior, stash :+ BehaviorRunner.StoredSignal(signal))
+      }
 }

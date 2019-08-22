@@ -29,7 +29,7 @@ object MqttSessionSettings {
  * Configuration settings for client and server usage.
  */
 final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
-                                         val clientSendBufferSize: Int = 10,
+                                         val clientSendBufferSize: Int = 64,
                                          val clientTerminationWatcherBufferSize: Int = 100,
                                          val commandParallelism: Int = 50,
                                          val eventParallelism: Int = 10,
@@ -42,8 +42,7 @@ final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
                                          val consumerPubRelTimeout: FiniteDuration = 30.seconds,
                                          val receiveSubAckTimeout: FiniteDuration = 30.seconds,
                                          val receiveUnsubAckTimeout: FiniteDuration = 30.seconds,
-                                         val serverSendBufferSize: Int = 100) {
-
+                                         val serverSendBufferSize: Int = 64) {
   require(
     commandParallelism >= 2,
     s"commandParallelism of $commandParallelism must be greater than or equal to 2 to support connection replies such as pinging"
