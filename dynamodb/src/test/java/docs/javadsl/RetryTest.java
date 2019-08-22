@@ -6,8 +6,6 @@ package docs.javadsl;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.japi.JavaPartialFunction;
-import akka.japi.Option;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
@@ -24,7 +22,6 @@ import scala.util.Try;
 
 import java.net.URI;
 import java.time.Duration;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
@@ -104,34 +101,8 @@ public class RetryTest extends ItemSpecOps {
         .toCompletableFuture()
         .get(5, TimeUnit.SECONDS);
 
-    final JavaPartialFunction<
-            Pair<Try<BatchGetItemResponse>, NotUsed>,
-            Option<Collection<Pair<BatchGetItemRequest, NotUsed>>>>
-        retryMatcher =
-            new JavaPartialFunction<
-                Pair<Try<BatchGetItemResponse>, NotUsed>,
-                Option<Collection<Pair<BatchGetItemRequest, NotUsed>>>>() {
-              public Option<Collection<Pair<BatchGetItemRequest, NotUsed>>> apply(
-                  Pair<Try<BatchGetItemResponse>, NotUsed> in, boolean isCheck) {
-                final Try<BatchGetItemResponse> response = in.first();
-                if (response.isSuccess()) {
-                  final BatchGetItemResponse result = response.get();
-                  if (result.unprocessedKeys().size() > 0) {
-                    return some(
-                        Collections.singleton(
-                            Pair.create(
-                                batchGetItemRequest(result.unprocessedKeys()),
-                                NotUsed.getInstance())));
-                  } else {
-                    return none();
-                  }
-                } else {
-                  return none();
-                }
-              }
-            };
-
-    Flow<Pair<BatchGetItemRequest, NotUsed>, Pair<Try<BatchGetItemResponse>, NotUsed>, NotUsed>
+    final Flow<
+            Pair<BatchGetItemRequest, NotUsed>, Pair<Try<BatchGetItemResponse>, NotUsed>, NotUsed>
         retryFlow =
             RetryFlow.withBackoff(
                 8,
@@ -139,7 +110,23 @@ public class RetryTest extends ItemSpecOps {
                 Duration.ofSeconds(5),
                 0,
                 DynamoDb.tryFlow(client, DynamoDbOp.batchGetItem(), 1),
-                retryMatcher);
+                resp -> {
+                  final Try<BatchGetItemResponse> response = resp.first();
+                  if (response.isSuccess()) {
+                    final BatchGetItemResponse result = response.get();
+                    if (result.unprocessedKeys().size() > 0) {
+                      return some(
+                          Collections.singleton(
+                              Pair.create(
+                                  batchGetItemRequest(result.unprocessedKeys()),
+                                  NotUsed.getInstance())));
+                    } else {
+                      return none();
+                    }
+                  } else {
+                    return none();
+                  }
+                });
 
     final long responses =
         Source.single(Pair.create(batchGetLargeItemRequest(1, 50), NotUsed.getInstance()))
@@ -154,32 +141,23 @@ public class RetryTest extends ItemSpecOps {
   @Test
   public void retryFailedRequests() throws Exception {
     // #create-retry-flow
-    final JavaPartialFunction<
-            Pair<Try<GetItemResponse>, Integer>, Option<Collection<Pair<GetItemRequest, Integer>>>>
-        retryMatcher =
-            new JavaPartialFunction<
-                Pair<Try<GetItemResponse>, Integer>,
-                Option<Collection<Pair<GetItemRequest, Integer>>>>() {
-              public Option<Collection<Pair<GetItemRequest, Integer>>> apply(
-                  Pair<Try<GetItemResponse>, Integer> in, boolean isCheck) {
-                final Try<GetItemResponse> response = in.first();
-                final Integer retries = in.second();
-                if (response.isFailure()) {
-                  return some(Collections.singleton(Pair.create(getItemRequest(), retries + 1)));
-                } else {
-                  return none();
-                }
-              }
-            };
-
-    Flow<Pair<GetItemRequest, Integer>, Pair<Try<GetItemResponse>, Integer>, NotUsed> retryFlow =
-        RetryFlow.withBackoff(
-            8,
-            Duration.ofMillis(10),
-            Duration.ofSeconds(5),
-            0,
-            DynamoDb.tryFlow(client, DynamoDbOp.getItem(), 1),
-            retryMatcher);
+    final Flow<Pair<GetItemRequest, Integer>, Pair<Try<GetItemResponse>, Integer>, NotUsed>
+        retryFlow =
+            RetryFlow.withBackoff(
+                8,
+                Duration.ofMillis(10),
+                Duration.ofSeconds(5),
+                0,
+                DynamoDb.tryFlow(client, DynamoDbOp.getItem(), 1),
+                resp -> {
+                  final Try<GetItemResponse> response = resp.first();
+                  final Integer retries = resp.second();
+                  if (response.isFailure()) {
+                    return some(Collections.singleton(Pair.create(getItemRequest(), retries + 1)));
+                  } else {
+                    return none();
+                  }
+                });
     // #create-retry-flow
 
     // #use-retry-flow

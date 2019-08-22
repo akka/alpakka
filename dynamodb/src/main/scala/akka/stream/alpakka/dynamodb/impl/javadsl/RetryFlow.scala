@@ -12,7 +12,6 @@ import akka.stream.alpakka.dynamodb.impl.scaladsl
 import akka.stream.javadsl.{Flow, FlowWithContext, Keep}
 
 import scala.concurrent.duration._
-import scala.runtime.AbstractPartialFunction
 import scala.util.Try
 import scala.collection.JavaConverters._
 
@@ -48,7 +47,7 @@ object RetryFlow {
       maxBackoff: java.time.Duration,
       randomFactor: Double,
       flow: Flow[Pair[In, State], Pair[Try[Out], State], Mat],
-      retryWith: AbstractPartialFunction[Pair[Try[Out], State], akka.japi.Option[util.Collection[Pair[In, State]]]]
+      retryWith: java.util.function.Function[Pair[Try[Out], State], akka.japi.Option[util.Collection[Pair[In, State]]]]
   ): Flow[akka.japi.Pair[In, State], akka.japi.Pair[Try[Out], State], Mat] = {
     val retryFlow = scaladsl.RetryFlow
       .withBackoffAndContext(parallelism,
