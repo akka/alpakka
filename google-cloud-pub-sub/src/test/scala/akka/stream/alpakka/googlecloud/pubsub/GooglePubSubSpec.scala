@@ -130,7 +130,7 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
         project = TestCredentials.projectId,
         subscription = "sub1",
         maybeAccessToken = Some("ok"),
-        request = AcknowledgeRequest(ackIds = Seq("a1"))
+        request = AcknowledgeRequest(ackIds = "a1")
       )
     ).thenReturn(Future.successful(()))
 
@@ -139,7 +139,7 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
       config = config
     )
 
-    val source = Source(List(AcknowledgeRequest(List("a1"))))
+    val source = Source(List(AcknowledgeRequest("a1")))
 
     val result = source.runWith(sink)
 
@@ -166,7 +166,7 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
       config = config
     )
 
-    val source = Source(List(AcknowledgeRequest(List("a1"))))
+    val source = Source(List(AcknowledgeRequest("a1")))
 
     val result = source.runWith(sink)
 

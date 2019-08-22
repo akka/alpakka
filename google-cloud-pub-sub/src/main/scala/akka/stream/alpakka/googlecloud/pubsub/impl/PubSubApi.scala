@@ -118,7 +118,7 @@ private[pubsub] trait PubSubApi {
 
   private implicit val acknowledgeRequestFormat = new RootJsonFormat[AcknowledgeRequest] {
     def read(json: JsValue): AcknowledgeRequest =
-      AcknowledgeRequest(json.asJsObject.fields("ackIds").convertTo[immutable.Seq[String]])
+      AcknowledgeRequest(json.asJsObject.fields("ackIds").convertTo[immutable.Seq[String]]: _*)
     def write(ar: AcknowledgeRequest): JsValue = JsObject("ackIds" -> ar.ackIds.toJson)
   }
   private implicit val pullRequestFormat = DefaultJsonProtocol.jsonFormat2(PubSubApi.PullRequest)

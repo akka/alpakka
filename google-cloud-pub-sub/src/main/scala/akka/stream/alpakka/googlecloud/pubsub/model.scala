@@ -22,9 +22,6 @@ import scala.collection.JavaConverters._
 class PubSubConfig private (val projectId: String,
                             val pullReturnImmediately: Boolean,
                             val pullMaxMessagesPerInternalBatch: Int,
-                            /*
-                             * Internal API
-                             */
                             @InternalApi private[pubsub] val session: GoogleSession) {
 
   /**
@@ -68,6 +65,9 @@ object PubSubConfig {
   def create(projectId: String, clientEmail: String, privateKey: String, actorSystem: ActorSystem): PubSubConfig =
     apply(projectId, clientEmail, privateKey)(actorSystem)
 
+  /**
+   * Java API
+   */
   def create(projectId: String,
              clientEmail: String,
              privateKey: String,
@@ -93,7 +93,12 @@ object PublishMessage {
   def apply(data: String, attributes: Option[immutable.Map[String, String]]) = new PublishMessage(data, attributes)
   def apply(data: String) = new PublishMessage(data, None)
   def create(data: String) = new PublishMessage(data, None)
-  def create(data: String, attributes: immutable.Map[String, String]) = new PublishMessage(data, Some(attributes))
+
+  /**
+   * Java API
+   */
+  def create(data: String, attributes: java.util.Map[String, String]) =
+    new PublishMessage(data, Some(attributes.asScala.toMap))
 }
 
 /**
@@ -133,10 +138,17 @@ object PubSubMessage {
             messageId: String,
             publishTime: Instant) = new PubSubMessage(data, attributes, messageId, publishTime)
 
-  def create(data: Option[String],
-             attributes: Option[immutable.Map[String, String]],
+  /**
+   * Java API
+   */
+  def create(data: java.util.Optional[String],
+             attributes: java.util.Optional[java.util.Map[String, String]],
              messageId: String,
-             publishTime: Instant) = new PubSubMessage(data, attributes, messageId, publishTime)
+             publishTime: Instant) =
+    new PubSubMessage(Option(data.orElse(null)),
+                      Option(attributes.orElse(null)).map(_.asScala.toMap),
+                      messageId,
+                      publishTime)
 
 }
 
@@ -156,6 +168,9 @@ object PublishRequest {
 
   def apply(messages: immutable.Seq[PublishMessage]): PublishRequest = new PublishRequest(messages)
 
+  /**
+   * Java API
+   */
   def of(messages: java.util.List[PublishMessage]): PublishRequest =
     new PublishRequest(messages.asScala.toList)
 }
@@ -203,11 +218,11 @@ object AcknowledgeRequest {
   def apply(ackIds: String*): AcknowledgeRequest =
     new AcknowledgeRequest(ackIds.toList)
 
-  def apply(ackIds: immutable.Seq[String]): AcknowledgeRequest =
-    new AcknowledgeRequest(ackIds)
-
-  def of(ackIds: java.util.List[String]): AcknowledgeRequest =
-    AcknowledgeRequest(ackIds.asScala.toList)
+  /**
+   * Java API
+   */
+  def create(ackIds: java.util.List[String]): AcknowledgeRequest =
+    new AcknowledgeRequest(ackIds.asScala.toList)
 }
 
 private final class PublishResponse private (val messageIds: immutable.Seq[String]) {
@@ -224,9 +239,11 @@ private final class PublishResponse private (val messageIds: immutable.Seq[Strin
 
 object PublishResponse {
 
-  private[pubsub] def apply(messageIds: immutable.Seq[String]): PublishResponse = new PublishResponse(messageIds)
+  @InternalApi private[pubsub] def apply(messageIds: immutable.Seq[String]): PublishResponse =
+    new PublishResponse(messageIds)
 }
 
+@InternalApi
 private final class PullResponse private[pubsub] (val receivedMessages: Option[immutable.Seq[ReceivedMessage]]) {
 
   override def equals(other: Any): Boolean = other match {
@@ -241,7 +258,7 @@ private final class PullResponse private[pubsub] (val receivedMessages: Option[i
 
 object PullResponse {
 
-  private[pubsub] def apply(receivedMessages: Option[immutable.Seq[ReceivedMessage]]) =
+  @InternalApi private[pubsub] def apply(receivedMessages: Option[immutable.Seq[ReceivedMessage]]) =
     new PullResponse(receivedMessages)
 
 }

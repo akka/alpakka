@@ -90,7 +90,7 @@ public class ExampleUsageJava {
               return message.ackId();
             })
         .groupedWithin(1000, Duration.ofMinutes(1))
-        .map(acks -> AcknowledgeRequest.of(acks))
+        .map(acks -> AcknowledgeRequest.create(acks))
         .to(ackSink);
     // #subscribe
 
@@ -103,7 +103,7 @@ public class ExampleUsageJava {
         Flow.of(ReceivedMessage.class)
             .map(t -> t.ackId())
             .groupedWithin(1000, Duration.ofMinutes(1))
-            .map(ids -> AcknowledgeRequest.of(ids))
+            .map(ids -> AcknowledgeRequest.create(ids))
             .to(ackSink);
 
     subscriptionSource.alsoTo(batchAckSink).to(processSink);

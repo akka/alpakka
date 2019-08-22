@@ -51,7 +51,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
   it should "publish" in {
 
     val publishMessage =
-      PublishMessage.create(
+      PublishMessage(
         data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)),
         attributes = Map("row_id" -> "7")
       )
@@ -223,7 +223,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
         .willReturn(aResponse().withStatus(200))
     )
 
-    val acknowledgeRequest = AcknowledgeRequest(Seq("ack1"))
+    val acknowledgeRequest = AcknowledgeRequest("ack1")
 
     val result = TestHttpApi.acknowledge(config.projectId, "sub1", Some(accessToken), acknowledgeRequest)
 
@@ -232,7 +232,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
 
   it should "return exception with the meaningful error message in case of not successful publish response" in {
     val publishMessage =
-      PublishMessage.create(
+      PublishMessage(
         data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)),
         attributes = Map("row_id" -> "7")
       )
