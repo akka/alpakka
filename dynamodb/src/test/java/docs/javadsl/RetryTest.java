@@ -131,10 +131,7 @@ public class RetryTest extends ItemSpecOps {
               }
             };
 
-    Flow<
-            akka.japi.Pair<BatchGetItemRequest, NotUsed>,
-            akka.japi.Pair<Try<BatchGetItemResponse>, NotUsed>,
-            NotUsed>
+    Flow<Pair<BatchGetItemRequest, NotUsed>, Pair<Try<BatchGetItemResponse>, NotUsed>, NotUsed>
         retryFlow =
             RetryFlow.withBackoff(
                 8,
@@ -156,6 +153,7 @@ public class RetryTest extends ItemSpecOps {
 
   @Test
   public void retryFailedRequests() throws Exception {
+    // #create-retry-flow
     final JavaPartialFunction<
             Pair<Try<GetItemResponse>, Integer>, Option<Collection<Pair<GetItemRequest, Integer>>>>
         retryMatcher =
@@ -174,25 +172,24 @@ public class RetryTest extends ItemSpecOps {
               }
             };
 
-    Flow<
-            akka.japi.Pair<GetItemRequest, Integer>,
-            akka.japi.Pair<Try<GetItemResponse>, Integer>,
-            NotUsed>
-        retryFlow =
-            RetryFlow.withBackoff(
-                8,
-                Duration.ofMillis(10),
-                Duration.ofSeconds(5),
-                0,
-                DynamoDb.tryFlow(client, DynamoDbOp.getItem(), 1),
-                retryMatcher);
+    Flow<Pair<GetItemRequest, Integer>, Pair<Try<GetItemResponse>, Integer>, NotUsed> retryFlow =
+        RetryFlow.withBackoff(
+            8,
+            Duration.ofMillis(10),
+            Duration.ofSeconds(5),
+            0,
+            DynamoDb.tryFlow(client, DynamoDbOp.getItem(), 1),
+            retryMatcher);
+    // #create-retry-flow
 
+    // #use-retry-flow
     final Pair<Try<GetItemResponse>, Integer> responsePair =
         Source.single(Pair.create(getItemMalformedRequest(), 0))
             .via(retryFlow)
             .runWith(Sink.head(), materializer)
             .toCompletableFuture()
             .get(30, TimeUnit.SECONDS);
+    // #use-retry-flow
 
     final Try<GetItemResponse> response = responsePair.first();
     final long retries = responsePair.second();

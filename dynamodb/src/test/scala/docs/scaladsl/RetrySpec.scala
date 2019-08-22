@@ -90,13 +90,17 @@ class RetrySpec
     }
 
     "retry failed requests" in {
+      //#create-retry-flow
       val retryFlow =
         RetryFlow.withBackoff(8, 10.millis, 5.seconds, 1, DynamoDb.tryFlow[GetItemRequest, GetItemResponse, Int](1)) {
           case (Failure(_), retries) => Some(List((getItemRequest, retries + 1)))
         }
+      //#create-retry-flow
 
+      //#use-retry-flow
       val (response, retries) =
         Source.single((getItemMalformedRequest, 0)).via(retryFlow).runWith(Sink.head).futureValue
+      //#use-retry-flow
 
       response shouldBe a[Success[_]]
       retries shouldBe 1
