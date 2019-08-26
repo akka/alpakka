@@ -16,9 +16,7 @@ import org.apache.commons.net.ftp.{FTPClient, FTPSClient}
  * INTERNAL API
  */
 @InternalApi
-private[ftp] trait FtpSourceFactory[FtpClient] { self =>
-
-  type S <: RemoteFileSettings
+private[ftp] trait FtpSourceFactory[FtpClient, S <: RemoteFileSettings] { self =>
 
   protected[this] final val DefaultChunkSize = 8192
 
@@ -140,7 +138,7 @@ private[ftp] trait FtpSourceFactory[FtpClient] { self =>
  * INTERNAL API
  */
 @InternalApi
-private[ftp] trait FtpSource extends FtpSourceFactory[FTPClient] {
+private[ftp] trait FtpSource extends FtpSourceFactory[FTPClient, FtpSettings] {
   protected final val FtpBrowserSourceName = "FtpBrowserSource"
   protected final val FtpIOSourceName = "FtpIOSource"
   protected final val FtpDirectorySource = "FtpDirectorySource"
@@ -157,7 +155,7 @@ private[ftp] trait FtpSource extends FtpSourceFactory[FTPClient] {
  * INTERNAL API
  */
 @InternalApi
-private[ftp] trait FtpsSource extends FtpSourceFactory[FTPSClient] {
+private[ftp] trait FtpsSource extends FtpSourceFactory[FTPSClient, FtpsSettings] {
   protected final val FtpsBrowserSourceName = "FtpsBrowserSource"
   protected final val FtpsIOSourceName = "FtpsIOSource"
   protected final val FtpsDirectorySource = "FtpsDirectorySource"
@@ -174,7 +172,7 @@ private[ftp] trait FtpsSource extends FtpSourceFactory[FTPSClient] {
  * INTERNAL API
  */
 @InternalApi
-private[ftp] trait SftpSource extends FtpSourceFactory[SSHClient] {
+private[ftp] trait SftpSource extends FtpSourceFactory[SSHClient, SftpSettings] {
   protected final val sFtpBrowserSourceName = "sFtpBrowserSource"
   protected final val sFtpIOSourceName = "sFtpIOSource"
   protected final val sFtpDirectorySource = "sFtpDirectorySource"
@@ -195,8 +193,8 @@ private[ftp] trait SftpSource extends FtpSourceFactory[SSHClient] {
 private[ftp] trait FtpDefaultSettings {
   protected def defaultSettings(
       hostname: String,
-      username: Option[String],
-      password: Option[String]
+      username: Option[String] = None,
+      password: Option[String] = None
   ): FtpSettings =
     FtpSettings(
       InetAddress.getByName(hostname)
@@ -215,8 +213,8 @@ private[ftp] trait FtpDefaultSettings {
 private[ftp] trait FtpsDefaultSettings {
   protected def defaultSettings(
       hostname: String,
-      username: Option[String],
-      password: Option[String]
+      username: Option[String] = None,
+      password: Option[String] = None
   ): FtpsSettings =
     FtpsSettings(
       InetAddress.getByName(hostname)
@@ -235,8 +233,8 @@ private[ftp] trait FtpsDefaultSettings {
 private[ftp] trait SftpDefaultSettings {
   protected def defaultSettings(
       hostname: String,
-      username: Option[String],
-      password: Option[String]
+      username: Option[String] = None,
+      password: Option[String] = None
   ): SftpSettings =
     SftpSettings(
       InetAddress.getByName(hostname)

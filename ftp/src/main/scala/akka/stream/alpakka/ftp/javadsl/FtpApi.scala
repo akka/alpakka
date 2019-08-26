@@ -7,10 +7,10 @@ package akka.stream.alpakka.ftp.javadsl
 import java.util.concurrent.CompletionStage
 import java.util.function._
 
-import akka.stream.alpakka.ftp.impl.{FtpLike, FtpSourceFactory, _}
-import akka.stream.alpakka.ftp.{FtpFile, RemoteFileSettings}
+import akka.annotation.DoNotInherit
+import akka.stream.alpakka.ftp._
+import akka.stream.alpakka.ftp.impl._
 import akka.stream.javadsl.{Sink, Source}
-import akka.stream.scaladsl.{Sink => ScalaSink, Source => ScalaSource}
 import akka.stream.{IOResult, Materializer}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
@@ -19,12 +19,8 @@ import org.apache.commons.net.ftp.{FTPClient, FTPSClient}
 
 import scala.compat.java8.FunctionConverters._
 
-sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
-
-  /**
-   * The refined [[RemoteFileSettings]] type.
-   */
-  type S <: RemoteFileSettings
+@DoNotInherit
+sealed trait FtpApi[FtpClient, S <: RemoteFileSettings] { _: FtpSourceFactory[FtpClient, S] =>
 
   /**
    * Java API: creates a [[akka.stream.javadsl.Source Source]] of [[FtpFile]]s from the remote user `root` directory.
@@ -33,8 +29,7 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
    * @param host FTP, FTPs or SFTP host
    * @return A [[akka.stream.javadsl.Source Source]] of [[FtpFile]]s
    */
-  def ls(host: String): Source[FtpFile, NotUsed] =
-    ls(host, basePath = "")
+  def ls(host: String): Source[FtpFile, NotUsed]
 
   /**
    * Java API: creates a [[akka.stream.javadsl.Source Source]] of [[FtpFile]]s from a base path.
@@ -47,8 +42,7 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
   def ls(
       host: String,
       basePath: String
-  ): Source[FtpFile, NotUsed] =
-    ls(basePath, defaultSettings(host))
+  ): Source[FtpFile, NotUsed]
 
   /**
    * Java API: creates a [[akka.stream.javadsl.Source Source]] of [[FtpFile]]s from the remote user `root` directory.
@@ -62,8 +56,7 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
       host: String,
       username: String,
       password: String
-  ): Source[FtpFile, NotUsed] =
-    ls("", defaultSettings(host, Some(username), Some(password)))
+  ): Source[FtpFile, NotUsed]
 
   /**
    * Java API: creates a [[akka.stream.javadsl.Source Source]] of [[FtpFile]]s from a base path.
@@ -79,8 +72,7 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
       username: String,
       password: String,
       basePath: String
-  ): Source[FtpFile, NotUsed] =
-    ls(basePath, defaultSettings(host, Some(username), Some(password)))
+  ): Source[FtpFile, NotUsed]
 
   /**
    * Java API: creates a [[akka.stream.javadsl.Source Source]] of [[FtpFile]]s from a base path.
@@ -92,12 +84,7 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
   def ls(
       basePath: String,
       connectionSettings: S
-  ): Source[FtpFile, NotUsed] =
-    ScalaSource
-      .fromGraph(
-        createBrowserGraph(basePath, connectionSettings, f => true, _emitTraversedDirectories = false)
-      )
-      .asJava
+  ): Source[FtpFile, NotUsed]
 
   /**
    * Java API: creates a [[akka.stream.javadsl.Source Source]] of [[FtpFile]]s from a base path.
@@ -114,15 +101,7 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
    *
    * @return A [[akka.stream.javadsl.Source Source]] of [[FtpFile]]s
    */
-  def ls(basePath: String, connectionSettings: S, branchSelector: Predicate[FtpFile]): Source[FtpFile, NotUsed] =
-    Source.fromGraph(
-      createBrowserGraph(
-        basePath,
-        connectionSettings,
-        asScalaFromPredicate(branchSelector),
-        _emitTraversedDirectories = false
-      )
-    )
+  def ls(basePath: String, connectionSettings: S, branchSelector: Predicate[FtpFile]): Source[FtpFile, NotUsed]
 
   /**
    * Java API: creates a [[akka.stream.javadsl.Source Source]] of [[FtpFile]]s from a base path.
@@ -143,10 +122,7 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
   def ls(basePath: String,
          connectionSettings: S,
          branchSelector: Predicate[FtpFile],
-         emitTraversedDirectories: Boolean): Source[FtpFile, NotUsed] =
-    Source.fromGraph(
-      createBrowserGraph(basePath, connectionSettings, asScalaFromPredicate(branchSelector), emitTraversedDirectories)
-    )
+         emitTraversedDirectories: Boolean): Source[FtpFile, NotUsed]
 
   /**
    * Java API: creates a [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]] from some file path.
@@ -158,8 +134,7 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
   def fromPath(
       host: String,
       path: String
-  ): Source[ByteString, CompletionStage[IOResult]] =
-    fromPath(path, defaultSettings(host))
+  ): Source[ByteString, CompletionStage[IOResult]]
 
   /**
    * Java API: creates a [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]] from some file path.
@@ -175,8 +150,7 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
       username: String,
       password: String,
       path: String
-  ): Source[ByteString, CompletionStage[IOResult]] =
-    fromPath(path, defaultSettings(host, Some(username), Some(password)))
+  ): Source[ByteString, CompletionStage[IOResult]]
 
   /**
    * Java API: creates a [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]] from some file path.
@@ -188,8 +162,7 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
   def fromPath(
       path: String,
       connectionSettings: S
-  ): Source[ByteString, CompletionStage[IOResult]] =
-    fromPath(path, connectionSettings, DefaultChunkSize)
+  ): Source[ByteString, CompletionStage[IOResult]]
 
   /**
    * Java API: creates a [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]] from some file path.
@@ -203,8 +176,7 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
       path: String,
       connectionSettings: S,
       chunkSize: Int = DefaultChunkSize
-  ): Source[ByteString, CompletionStage[IOResult]] =
-    fromPath(path, connectionSettings, chunkSize, 0L)
+  ): Source[ByteString, CompletionStage[IOResult]]
 
   /**
    * Java API: creates a [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]] from some file path.
@@ -220,13 +192,7 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
       connectionSettings: S,
       chunkSize: Int,
       offset: Long
-  ): Source[ByteString, CompletionStage[IOResult]] = {
-    import scala.compat.java8.FutureConverters._
-    ScalaSource
-      .fromGraph(createIOSource(path, connectionSettings, chunkSize, offset))
-      .mapMaterializedValue(_.toJava)
-      .asJava
-  }
+  ): Source[ByteString, CompletionStage[IOResult]]
 
   /**
    * Java API for creating a directory in a given path
@@ -236,8 +202,7 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
    * @param connectionSettings connection settings
    * @return [[akka.stream.javadsl.Source Source]] of [[Done]]
    */
-  def mkdir(basePath: String, name: String, connectionSettings: S): Source[Done, NotUsed] =
-    ScalaSource.fromGraph(createMkdirGraph(basePath, name, connectionSettings)).map(_ => Done.getInstance()).asJava
+  def mkdir(basePath: String, name: String, connectionSettings: S): Source[Done, NotUsed]
 
   /**
    * Java API for creating a directory in a given path
@@ -247,8 +212,7 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
    * @param connectionSettings connection settings
    * @return [[java.util.concurrent.CompletionStage CompletionStage]] of [[akka.Done]] indicating a materialized, asynchronous request
    */
-  def mkdirAsync(basePath: String, name: String, connectionSettings: S, mat: Materializer): CompletionStage[Done] =
-    mkdir(basePath, name, connectionSettings).runWith(Sink.head(), mat)
+  def mkdirAsync(basePath: String, name: String, connectionSettings: S, mat: Materializer): CompletionStage[Done]
 
   /**
    * Java API: creates a [[akka.stream.javadsl.Sink Sink]] of [[akka.util.ByteString ByteString]] to some file path.
@@ -262,10 +226,7 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
       path: String,
       connectionSettings: S,
       append: Boolean
-  ): Sink[ByteString, CompletionStage[IOResult]] = {
-    import scala.compat.java8.FutureConverters._
-    ScalaSink.fromGraph(createIOSink(path, connectionSettings, append)).mapMaterializedValue(_.toJava).asJava
-  }
+  ): Sink[ByteString, CompletionStage[IOResult]]
 
   /**
    * Java API: creates a [[akka.stream.javadsl.Sink Sink]] of [[akka.util.ByteString ByteString]] to some file path.
@@ -278,8 +239,7 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
   def toPath(
       path: String,
       connectionSettings: S
-  ): Sink[ByteString, CompletionStage[IOResult]] =
-    toPath(path, connectionSettings, append = false)
+  ): Sink[ByteString, CompletionStage[IOResult]]
 
   /**
    * Java API: creates a [[akka.stream.javadsl.Sink Sink]] of a [[FtpFile]] that moves a file to some file path.
@@ -288,15 +248,7 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
    * @param connectionSettings connection settings
    * @return A [[akka.stream.javadsl.Sink Sink]] of [[FtpFile]] that materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[IOResult]]
    */
-  def move(destinationPath: Function[FtpFile, String],
-           connectionSettings: S): Sink[FtpFile, CompletionStage[IOResult]] = {
-    import scala.compat.java8.FunctionConverters._
-    import scala.compat.java8.FutureConverters._
-    ScalaSink
-      .fromGraph(createMoveSink(destinationPath.asScala, connectionSettings))
-      .mapMaterializedValue(_.toJava)
-      .asJava
-  }
+  def move(destinationPath: Function[FtpFile, String], connectionSettings: S): Sink[FtpFile, CompletionStage[IOResult]]
 
   /**
    * Java API: creates a [[akka.stream.javadsl.Sink Sink]] of a [[FtpFile]] that removes a file.
@@ -304,16 +256,279 @@ sealed trait FtpApi[FtpClient] { _: FtpSourceFactory[FtpClient] =>
    * @param connectionSettings connection settings
    * @return A [[akka.stream.javadsl.Sink Sink]] of [[FtpFile]] that materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[IOResult]]
    */
-  def remove(connectionSettings: S): Sink[FtpFile, CompletionStage[IOResult]] = {
+  def remove(connectionSettings: S): Sink[FtpFile, CompletionStage[IOResult]]
+
+  protected[javadsl] def func[T, R](f: T => R): akka.japi.function.Function[T, R] =
+    new akka.japi.function.Function[T, R] {
+      override def apply(param: T): R = f(param)
+    }
+}
+
+object Ftp extends FtpApi[FTPClient, FtpSettings] with FtpSourceParams {
+  def ls(host: String): Source[FtpFile, NotUsed] = ls(host, basePath = "")
+  def ls(host: String, basePath: String): Source[FtpFile, NotUsed] = ls(basePath, defaultSettings(host))
+
+  def ls(host: String, username: String, password: String): Source[FtpFile, NotUsed] =
+    ls("", defaultSettings(host, Some(username), Some(password)))
+
+  def ls(host: String, username: String, password: String, basePath: String): Source[FtpFile, NotUsed] =
+    ls(basePath, defaultSettings(host, Some(username), Some(password)))
+
+  def ls(basePath: String, connectionSettings: S): Source[FtpFile, NotUsed] =
+    Source
+      .fromGraph(createBrowserGraph(basePath, connectionSettings, _ => true, _emitTraversedDirectories = false))
+
+  def ls(basePath: String, connectionSettings: S, branchSelector: Predicate[FtpFile]): Source[FtpFile, NotUsed] =
+    Source.fromGraph(
+      createBrowserGraph(
+        basePath,
+        connectionSettings,
+        asScalaFromPredicate(branchSelector),
+        _emitTraversedDirectories = false
+      )
+    )
+
+  def ls(basePath: String,
+         connectionSettings: S,
+         branchSelector: Predicate[FtpFile],
+         emitTraversedDirectories: Boolean): Source[FtpFile, NotUsed] =
+    Source.fromGraph(
+      createBrowserGraph(basePath, connectionSettings, asScalaFromPredicate(branchSelector), emitTraversedDirectories)
+    )
+
+  def fromPath(host: String, path: String): Source[ByteString, CompletionStage[IOResult]] =
+    fromPath(path, defaultSettings(host))
+
+  def fromPath(host: String,
+               username: String,
+               password: String,
+               path: String): Source[ByteString, CompletionStage[IOResult]] =
+    fromPath(path, defaultSettings(host, Some(username), Some(password)))
+
+  def fromPath(path: String, connectionSettings: S): Source[ByteString, CompletionStage[IOResult]] =
+    fromPath(path, connectionSettings, DefaultChunkSize)
+
+  def fromPath(path: String,
+               connectionSettings: S,
+               chunkSize: Int = DefaultChunkSize): Source[ByteString, CompletionStage[IOResult]] =
+    fromPath(path, connectionSettings, chunkSize, 0L)
+
+  def fromPath(path: String,
+               connectionSettings: S,
+               chunkSize: Int,
+               offset: Long): Source[ByteString, CompletionStage[IOResult]] = {
     import scala.compat.java8.FutureConverters._
-    ScalaSink.fromGraph(createRemoveSink(connectionSettings)).mapMaterializedValue(_.toJava).asJava
+    Source
+      .fromGraph(createIOSource(path, connectionSettings, chunkSize, offset))
+      .mapMaterializedValue(func(_.toJava))
   }
 
-  protected[this] implicit def ftpLike: FtpLike[FtpClient, S]
+  def mkdir(basePath: String, name: String, connectionSettings: S): Source[Done, NotUsed] =
+    Source.fromGraph(createMkdirGraph(basePath, name, connectionSettings)).map(func(_ => Done))
+
+  def mkdirAsync(basePath: String, name: String, connectionSettings: S, mat: Materializer): CompletionStage[Done] =
+    mkdir(basePath, name, connectionSettings).runWith(Sink.head(), mat)
+
+  def toPath(path: String, connectionSettings: S, append: Boolean): Sink[ByteString, CompletionStage[IOResult]] = {
+    import scala.compat.java8.FutureConverters._
+    Sink.fromGraph(createIOSink(path, connectionSettings, append)).mapMaterializedValue(func(_.toJava))
+  }
+
+  def toPath(path: String, connectionSettings: S): Sink[ByteString, CompletionStage[IOResult]] =
+    toPath(path, connectionSettings, append = false)
+
+  def move(destinationPath: Function[FtpFile, String],
+           connectionSettings: S): Sink[FtpFile, CompletionStage[IOResult]] = {
+    import scala.compat.java8.FunctionConverters._
+    import scala.compat.java8.FutureConverters._
+    Sink
+      .fromGraph(createMoveSink(destinationPath.asScala, connectionSettings))
+      .mapMaterializedValue[CompletionStage[IOResult]](func(_.toJava))
+  }
+
+  def remove(connectionSettings: S): Sink[FtpFile, CompletionStage[IOResult]] = {
+    import scala.compat.java8.FutureConverters._
+    Sink.fromGraph(createRemoveSink(connectionSettings)).mapMaterializedValue(func(_.toJava))
+  }
+
 }
-class SftpApi extends FtpApi[SSHClient] with SftpSourceParams
-object Ftp extends FtpApi[FTPClient] with FtpSourceParams
-object Ftps extends FtpApi[FTPSClient] with FtpsSourceParams
+object Ftps extends FtpApi[FTPSClient, FtpsSettings] with FtpsSourceParams {
+  def ls(host: String): Source[FtpFile, NotUsed] = ls(host, basePath = "")
+  def ls(host: String, basePath: String): Source[FtpFile, NotUsed] = ls(basePath, defaultSettings(host))
+
+  def ls(host: String, username: String, password: String): Source[FtpFile, NotUsed] =
+    ls("", defaultSettings(host, Some(username), Some(password)))
+
+  def ls(host: String, username: String, password: String, basePath: String): Source[FtpFile, NotUsed] =
+    ls(basePath, defaultSettings(host, Some(username), Some(password)))
+
+  def ls(basePath: String, connectionSettings: S): Source[FtpFile, NotUsed] =
+    Source
+      .fromGraph(createBrowserGraph(basePath, connectionSettings, _ => true, _emitTraversedDirectories = false))
+
+  def ls(basePath: String, connectionSettings: S, branchSelector: Predicate[FtpFile]): Source[FtpFile, NotUsed] =
+    Source.fromGraph(
+      createBrowserGraph(
+        basePath,
+        connectionSettings,
+        asScalaFromPredicate(branchSelector),
+        _emitTraversedDirectories = false
+      )
+    )
+
+  def ls(basePath: String,
+         connectionSettings: S,
+         branchSelector: Predicate[FtpFile],
+         emitTraversedDirectories: Boolean): Source[FtpFile, NotUsed] =
+    Source.fromGraph(
+      createBrowserGraph(basePath, connectionSettings, asScalaFromPredicate(branchSelector), emitTraversedDirectories)
+    )
+
+  def fromPath(host: String, path: String): Source[ByteString, CompletionStage[IOResult]] =
+    fromPath(path, defaultSettings(host))
+
+  def fromPath(host: String,
+               username: String,
+               password: String,
+               path: String): Source[ByteString, CompletionStage[IOResult]] =
+    fromPath(path, defaultSettings(host, Some(username), Some(password)))
+
+  def fromPath(path: String, connectionSettings: S): Source[ByteString, CompletionStage[IOResult]] =
+    fromPath(path, connectionSettings, DefaultChunkSize)
+
+  def fromPath(path: String,
+               connectionSettings: S,
+               chunkSize: Int = DefaultChunkSize): Source[ByteString, CompletionStage[IOResult]] =
+    fromPath(path, connectionSettings, chunkSize, 0L)
+
+  def fromPath(path: String,
+               connectionSettings: S,
+               chunkSize: Int,
+               offset: Long): Source[ByteString, CompletionStage[IOResult]] = {
+    import scala.compat.java8.FutureConverters._
+    Source
+      .fromGraph(createIOSource(path, connectionSettings, chunkSize, offset))
+      .mapMaterializedValue(func(_.toJava))
+  }
+
+  def mkdir(basePath: String, name: String, connectionSettings: S): Source[Done, NotUsed] =
+    Source.fromGraph(createMkdirGraph(basePath, name, connectionSettings)).map(func(_ => Done))
+
+  def mkdirAsync(basePath: String, name: String, connectionSettings: S, mat: Materializer): CompletionStage[Done] =
+    mkdir(basePath, name, connectionSettings).runWith(Sink.head(), mat)
+
+  def toPath(path: String, connectionSettings: S, append: Boolean): Sink[ByteString, CompletionStage[IOResult]] = {
+    import scala.compat.java8.FutureConverters._
+    Sink.fromGraph(createIOSink(path, connectionSettings, append)).mapMaterializedValue(func(_.toJava))
+  }
+
+  def toPath(path: String, connectionSettings: S): Sink[ByteString, CompletionStage[IOResult]] =
+    toPath(path, connectionSettings, append = false)
+
+  def move(destinationPath: Function[FtpFile, String],
+           connectionSettings: S): Sink[FtpFile, CompletionStage[IOResult]] = {
+    import scala.compat.java8.FunctionConverters._
+    import scala.compat.java8.FutureConverters._
+    Sink
+      .fromGraph(createMoveSink(destinationPath.asScala, connectionSettings))
+      .mapMaterializedValue(func(_.toJava))
+  }
+
+  def remove(connectionSettings: S): Sink[FtpFile, CompletionStage[IOResult]] = {
+    import scala.compat.java8.FutureConverters._
+    Sink.fromGraph(createRemoveSink(connectionSettings)).mapMaterializedValue(func(_.toJava))
+  }
+
+}
+
+class SftpApi extends FtpApi[SSHClient, SftpSettings] with SftpSourceParams {
+  def ls(host: String): Source[FtpFile, NotUsed] = ls(host, basePath = "")
+  def ls(host: String, basePath: String): Source[FtpFile, NotUsed] = ls(basePath, defaultSettings(host))
+
+  def ls(host: String, username: String, password: String): Source[FtpFile, NotUsed] =
+    ls("", defaultSettings(host, Some(username), Some(password)))
+
+  def ls(host: String, username: String, password: String, basePath: String): Source[FtpFile, NotUsed] =
+    ls(basePath, defaultSettings(host, Some(username), Some(password)))
+
+  def ls(basePath: String, connectionSettings: S): Source[FtpFile, NotUsed] =
+    Source
+      .fromGraph(createBrowserGraph(basePath, connectionSettings, _ => true, _emitTraversedDirectories = false))
+
+  def ls(basePath: String, connectionSettings: S, branchSelector: Predicate[FtpFile]): Source[FtpFile, NotUsed] =
+    Source.fromGraph(
+      createBrowserGraph(
+        basePath,
+        connectionSettings,
+        asScalaFromPredicate(branchSelector),
+        _emitTraversedDirectories = false
+      )
+    )
+
+  def ls(basePath: String,
+         connectionSettings: S,
+         branchSelector: Predicate[FtpFile],
+         emitTraversedDirectories: Boolean): Source[FtpFile, NotUsed] =
+    Source.fromGraph(
+      createBrowserGraph(basePath, connectionSettings, asScalaFromPredicate(branchSelector), emitTraversedDirectories)
+    )
+
+  def fromPath(host: String, path: String): Source[ByteString, CompletionStage[IOResult]] =
+    fromPath(path, defaultSettings(host))
+
+  def fromPath(host: String,
+               username: String,
+               password: String,
+               path: String): Source[ByteString, CompletionStage[IOResult]] =
+    fromPath(path, defaultSettings(host, Some(username), Some(password)))
+
+  def fromPath(path: String, connectionSettings: S): Source[ByteString, CompletionStage[IOResult]] =
+    fromPath(path, connectionSettings, DefaultChunkSize)
+
+  def fromPath(path: String,
+               connectionSettings: S,
+               chunkSize: Int = DefaultChunkSize): Source[ByteString, CompletionStage[IOResult]] =
+    fromPath(path, connectionSettings, chunkSize, 0L)
+
+  def fromPath(path: String,
+               connectionSettings: S,
+               chunkSize: Int,
+               offset: Long): Source[ByteString, CompletionStage[IOResult]] = {
+    import scala.compat.java8.FutureConverters._
+    Source
+      .fromGraph(createIOSource(path, connectionSettings, chunkSize, offset))
+      .mapMaterializedValue(func(_.toJava))
+  }
+
+  def mkdir(basePath: String, name: String, connectionSettings: S): Source[Done, NotUsed] =
+    Source.fromGraph(createMkdirGraph(basePath, name, connectionSettings)).map(func(_ => Done))
+
+  def mkdirAsync(basePath: String, name: String, connectionSettings: S, mat: Materializer): CompletionStage[Done] =
+    mkdir(basePath, name, connectionSettings).runWith(Sink.head(), mat)
+
+  def toPath(path: String, connectionSettings: S, append: Boolean): Sink[ByteString, CompletionStage[IOResult]] = {
+    import scala.compat.java8.FutureConverters._
+    Sink.fromGraph(createIOSink(path, connectionSettings, append)).mapMaterializedValue(func(_.toJava))
+  }
+
+  def toPath(path: String, connectionSettings: S): Sink[ByteString, CompletionStage[IOResult]] =
+    toPath(path, connectionSettings, append = false)
+
+  def move(destinationPath: Function[FtpFile, String],
+           connectionSettings: S): Sink[FtpFile, CompletionStage[IOResult]] = {
+    import scala.compat.java8.FunctionConverters._
+    import scala.compat.java8.FutureConverters._
+    Sink
+      .fromGraph(createMoveSink(destinationPath.asScala, connectionSettings))
+      .mapMaterializedValue(func(_.toJava))
+  }
+
+  def remove(connectionSettings: S): Sink[FtpFile, CompletionStage[IOResult]] = {
+    import scala.compat.java8.FutureConverters._
+    Sink.fromGraph(createRemoveSink(connectionSettings)).mapMaterializedValue(func(_.toJava))
+  }
+
+}
 object Sftp extends SftpApi {
 
   /**
@@ -324,6 +539,6 @@ object Sftp extends SftpApi {
    */
   def create(customSshClient: SSHClient): SftpApi =
     new SftpApi {
-      override val sshClient = customSshClient
+      override val sshClient: SSHClient = customSshClient
     }
 }

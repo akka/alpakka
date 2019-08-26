@@ -48,17 +48,17 @@ private[ftp] trait CommonFtpOperations {
 
   private def getPosixFilePermissions(file: FTPFile) =
     Map(
-      PosixFilePermission.OWNER_READ → file.hasPermission(FTPFile.USER_ACCESS, FTPFile.READ_PERMISSION),
-      PosixFilePermission.OWNER_WRITE → file.hasPermission(FTPFile.USER_ACCESS, FTPFile.WRITE_PERMISSION),
-      PosixFilePermission.OWNER_EXECUTE → file.hasPermission(FTPFile.USER_ACCESS, FTPFile.EXECUTE_PERMISSION),
-      PosixFilePermission.GROUP_READ → file.hasPermission(FTPFile.GROUP_ACCESS, FTPFile.READ_PERMISSION),
-      PosixFilePermission.GROUP_WRITE → file.hasPermission(FTPFile.GROUP_ACCESS, FTPFile.WRITE_PERMISSION),
-      PosixFilePermission.GROUP_EXECUTE → file.hasPermission(FTPFile.GROUP_ACCESS, FTPFile.EXECUTE_PERMISSION),
-      PosixFilePermission.OTHERS_READ → file.hasPermission(FTPFile.WORLD_ACCESS, FTPFile.READ_PERMISSION),
-      PosixFilePermission.OTHERS_WRITE → file.hasPermission(FTPFile.WORLD_ACCESS, FTPFile.WRITE_PERMISSION),
-      PosixFilePermission.OTHERS_EXECUTE → file.hasPermission(FTPFile.WORLD_ACCESS, FTPFile.EXECUTE_PERMISSION)
+      PosixFilePermission.OWNER_READ -> file.hasPermission(FTPFile.USER_ACCESS, FTPFile.READ_PERMISSION),
+      PosixFilePermission.OWNER_WRITE -> file.hasPermission(FTPFile.USER_ACCESS, FTPFile.WRITE_PERMISSION),
+      PosixFilePermission.OWNER_EXECUTE -> file.hasPermission(FTPFile.USER_ACCESS, FTPFile.EXECUTE_PERMISSION),
+      PosixFilePermission.GROUP_READ -> file.hasPermission(FTPFile.GROUP_ACCESS, FTPFile.READ_PERMISSION),
+      PosixFilePermission.GROUP_WRITE -> file.hasPermission(FTPFile.GROUP_ACCESS, FTPFile.WRITE_PERMISSION),
+      PosixFilePermission.GROUP_EXECUTE -> file.hasPermission(FTPFile.GROUP_ACCESS, FTPFile.EXECUTE_PERMISSION),
+      PosixFilePermission.OTHERS_READ -> file.hasPermission(FTPFile.WORLD_ACCESS, FTPFile.READ_PERMISSION),
+      PosixFilePermission.OTHERS_WRITE -> file.hasPermission(FTPFile.WORLD_ACCESS, FTPFile.WRITE_PERMISSION),
+      PosixFilePermission.OTHERS_EXECUTE -> file.hasPermission(FTPFile.WORLD_ACCESS, FTPFile.EXECUTE_PERMISSION)
     ).collect {
-      case (perm, true) ⇒ perm
+      case (perm, true) => perm
     }.toSet
 
   def listFiles(handler: Handler): immutable.Seq[FtpFile] = listFiles("", handler)

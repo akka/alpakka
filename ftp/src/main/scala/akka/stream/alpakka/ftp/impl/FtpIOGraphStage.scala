@@ -178,7 +178,7 @@ private[ftp] trait FtpIOSinkStage[FtpClient, S <: RemoteFileSettings]
               write(grab(in))
               pull(in)
             } catch {
-              case NonFatal(e) ⇒
+              case NonFatal(e) =>
                 failed = true
                 matFailure(e)
                 failStage(e)
