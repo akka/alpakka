@@ -296,9 +296,6 @@ lazy val docs = project
     previewPath := (Paradox / siteSubdirName).value,
     Preprocess / siteSubdirName := s"api/alpakka/${projectInfoVersion.value}",
     Preprocess / sourceDirectory := (LocalRootProject / ScalaUnidoc / unidoc / target).value,
-    Preprocess / preprocessRules := Seq(
-        ("\\.java\\.scala".r, _ => ".java")
-      ),
     Paradox / siteSubdirName := s"docs/alpakka/${projectInfoVersion.value}",
     paradoxProperties ++= Map(
         "akka.version" -> Dependencies.AkkaVersion,
