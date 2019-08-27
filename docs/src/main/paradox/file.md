@@ -116,3 +116,19 @@ Java
 ### Example: content-based rotation with compression to SFTP file
 
 This example can be found in the @ref:[self-contained example documentation section](examples/ftp-samples.md#example-rotate-data-stream-over-to-multiple-compressed-files-on-sftp-server).
+
+## ZIP Archive
+
+The @scala[@scaladoc[Archive](akka.stream.alpakka.file.scaladsl.Archive$)]  @java[@scaladoc[Archive](akka.stream.alpakka.file.javadsl.Archive$)]
+contains flow for compressing multiple files into one ZIP file.
+
+Result of flow can be send to sink even before whole ZIP file is created, so size of resulting ZIP archive
+is not limited to memory size.  
+
+This example usage shows compressing files from disk. 
+
+Scala
+: @@snip [snip](/file/src/test/scala/docs/scaladsl/ArchiveSpec.scala) { #sample }
+
+Java
+: @@snip [snip](/file/src/test/java/docs/javadsl/ArchiveTest.java) { #sample }
