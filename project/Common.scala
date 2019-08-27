@@ -68,8 +68,10 @@ object Common extends AutoPlugin {
           (baseDirectory in ThisBuild).value.toString,
           "-doc-source-url", {
             val branch = if (isSnapshot.value) "master" else s"v${version.value}"
-            s"https://github.com/akka/alpakka/tree/${branch}€{FILE_PATH}.scala#L1"
+            s"https://github.com/akka/alpakka/tree/${branch}€{FILE_PATH_EXT}#L€{FILE_LINE}"
           },
+          "-doc-canonical-base-url",
+          "https://doc.akka.io/api/alpakka/current/",
           "-skip-packages",
           "akka.pattern:" + // for some reason Scaladoc creates this
           "org.mongodb.scala:" + // this one is a mystery as well
