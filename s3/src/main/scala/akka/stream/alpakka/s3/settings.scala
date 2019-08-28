@@ -10,9 +10,10 @@ import java.util.Objects
 import scala.util.Try
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
-import com.amazonaws.auth._
-import com.amazonaws.regions.{AwsRegionProvider, DefaultAwsRegionProviderChain}
+import software.amazon.awssdk.auth.credentials._
+import software.amazon.awssdk.regions.providers._
 import com.typesafe.config.Config
+import software.amazon.awssdk.regions.Region
 
 import scala.compat.java8.OptionConverters._
 
@@ -178,7 +179,7 @@ object ApiVersion {
 
 final class S3Settings private (
     val bufferType: BufferType,
-    val credentialsProvider: AWSCredentialsProvider,
+    val credentialsProvider: AwsCredentialsProvider,
     val s3RegionProvider: AwsRegionProvider,
     val pathStyleAccess: Boolean,
     val endpointUrl: Option[String],
@@ -196,7 +197,7 @@ final class S3Settings private (
   def getProxy: java.util.Optional[Proxy] = proxy.asJava
 
   /** Java API */
-  def getCredentialsProvider: AWSCredentialsProvider = credentialsProvider
+  def getCredentialsProvider: AwsCredentialsProvider = credentialsProvider
 
   /** Java API */
   def getS3RegionProvider: AwsRegionProvider = s3RegionProvider
@@ -218,7 +219,7 @@ final class S3Settings private (
   @deprecated("Please use endpointUrl instead", since = "1.0.1")
   def withProxy(value: Proxy): S3Settings = copy(endpointUrl = Some(s"${value.scheme}://${value.host}:${value.port}"))
 
-  def withCredentialsProvider(value: AWSCredentialsProvider): S3Settings =
+  def withCredentialsProvider(value: AwsCredentialsProvider): S3Settings =
     copy(credentialsProvider = value)
   def withS3RegionProvider(value: AwsRegionProvider): S3Settings = copy(s3RegionProvider = value)
   def withPathStyleAccess(value: Boolean): S3Settings =
@@ -231,7 +232,7 @@ final class S3Settings private (
 
   private def copy(
       bufferType: BufferType = bufferType,
-      credentialsProvider: AWSCredentialsProvider = credentialsProvider,
+      credentialsProvider: AwsCredentialsProvider = credentialsProvider,
       s3RegionProvider: AwsRegionProvider = s3RegionProvider,
       pathStyleAccess: Boolean = pathStyleAccess,
       endpointUrl: Option[String] = endpointUrl,
@@ -333,7 +334,7 @@ object S3Settings {
       val regionProviderPath = "aws.region.provider"
 
       val staticRegionProvider = new AwsRegionProvider {
-        lazy val getRegion: String = c.getString("aws.region.default-region")
+        lazy val getRegion: Region = Region.of(c.getString("aws.region.default-region"))
       }
 
       if (c.hasPath(regionProviderPath)) {
@@ -355,27 +356,27 @@ object S3Settings {
       if (c.hasPath(credProviderPath)) {
         c.getString(credProviderPath) match {
           case "default" ⇒
-            DefaultAWSCredentialsProviderChain.getInstance()
+            DefaultCredentialsProvider.create()
 
           case "static" ⇒
             val aki = c.getString("aws.credentials.access-key-id")
             val sak = c.getString("aws.credentials.secret-access-key")
             val tokenPath = "aws.credentials.token"
             val creds = if (c.hasPath(tokenPath)) {
-              new BasicSessionCredentials(aki, sak, c.getString(tokenPath))
+              AwsSessionCredentials.create(aki, sak, c.getString(tokenPath))
             } else {
-              new BasicAWSCredentials(aki, sak)
+              AwsBasicCredentials.create(aki, sak)
             }
-            new AWSStaticCredentialsProvider(creds)
+            StaticCredentialsProvider.create(creds)
 
           case "anon" ⇒
-            new AWSStaticCredentialsProvider(new AnonymousAWSCredentials())
+            AnonymousCredentialsProvider.create()
 
           case _ ⇒
-            DefaultAWSCredentialsProviderChain.getInstance()
+            DefaultCredentialsProvider.create()
         }
       } else {
-        DefaultAWSCredentialsProviderChain.getInstance()
+        DefaultCredentialsProvider.create()
       }
     }
 
@@ -405,7 +406,7 @@ object S3Settings {
   def apply(
       bufferType: BufferType,
       proxy: Option[Proxy],
-      credentialsProvider: AWSCredentialsProvider,
+      credentialsProvider: AwsCredentialsProvider,
       s3RegionProvider: AwsRegionProvider,
       pathStyleAccess: Boolean,
       endpointUrl: Option[String],
@@ -423,7 +424,7 @@ object S3Settings {
   /** Scala API */
   def apply(
       bufferType: BufferType,
-      credentialsProvider: AWSCredentialsProvider,
+      credentialsProvider: AwsCredentialsProvider,
       s3RegionProvider: AwsRegionProvider,
       listBucketApiVersion: ApiVersion
   ): S3Settings = new S3Settings(
@@ -441,7 +442,7 @@ object S3Settings {
   def create(
       bufferType: BufferType,
       proxy: java.util.Optional[Proxy],
-      credentialsProvider: AWSCredentialsProvider,
+      credentialsProvider: AwsCredentialsProvider,
       s3RegionProvider: AwsRegionProvider,
       pathStyleAccess: Boolean,
       endpointUrl: java.util.Optional[String],
@@ -459,7 +460,7 @@ object S3Settings {
   /** Java API */
   def create(
       bufferType: BufferType,
-      credentialsProvider: AWSCredentialsProvider,
+      credentialsProvider: AwsCredentialsProvider,
       s3RegionProvider: AwsRegionProvider,
       listBucketApiVersion: ApiVersion
   ): S3Settings = apply(

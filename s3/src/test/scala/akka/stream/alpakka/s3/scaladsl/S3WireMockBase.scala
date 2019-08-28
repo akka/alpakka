@@ -17,6 +17,7 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
 import com.github.tomakehurst.wiremock.matching.{ContainsPattern, EqualToPattern}
 import com.github.tomakehurst.wiremock.stubbing.Scenario
 import com.typesafe.config.ConfigFactory
+import software.amazon.awssdk.regions.Region
 
 abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockServer) extends TestKit(_system) {
 
@@ -115,11 +116,11 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
         )
       )
 
-  def mockDownload(region: String): Unit =
+  def mockDownload(region: Region): Unit =
     mock
       .register(
         get(urlEqualTo(s"/$bucketKey"))
-          .withHeader("Authorization", new ContainsPattern(region))
+          .withHeader("Authorization", new ContainsPattern(region.id))
           .willReturn(
             aResponse()
               .withStatus(200)

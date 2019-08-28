@@ -14,14 +14,15 @@ import akka.stream.alpakka.s3.BucketAccess.{AccessGranted, NotExists}
 import akka.stream.alpakka.s3._
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.util.ByteString
-import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
+import software.amazon.awssdk.auth.credentials._
+import software.amazon.awssdk.regions.providers._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest._
+import software.amazon.awssdk.regions.Region
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
-import com.amazonaws.regions.AwsRegionProvider
 
 trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matchers with ScalaFutures with OptionValues {
 
@@ -36,9 +37,9 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
 
   val defaultRegionBucket = "my-test-us-east-1"
 
-  val otherRegion = "eu-central-1"
+  val otherRegion = Region.EU_CENTRAL_1
   val otherRegionProvider = new AwsRegionProvider {
-    val getRegion: String = otherRegion
+    val getRegion: Region = otherRegion
   }
   val otherRegionBucket = "my.test.frankfurt" // with dots forcing path style access
 
@@ -485,12 +486,12 @@ class AWSS3IntegrationSpec extends S3IntegrationSpec
 class MinioS3IntegrationSpec extends S3IntegrationSpec {
   import MinioS3IntegrationSpec._
 
-  val staticProvider = new AWSStaticCredentialsProvider(
-    new BasicAWSCredentials(accessKey, secret)
+  val staticProvider = StaticCredentialsProvider.create(
+    AwsBasicCredentials.create(accessKey, secret)
   )
 
-  val invalidCredentialsProvider = new AWSStaticCredentialsProvider(
-    new BasicAWSCredentials(invalidAccessKey, invalidSecret)
+  val invalidCredentialsProvider = StaticCredentialsProvider.create(
+    AwsBasicCredentials.create(invalidAccessKey, invalidSecret)
   )
 
   override val defaultRegionContentCount = 0
@@ -532,6 +533,6 @@ object MinioS3IntegrationSpec {
   val secret = "TESTSECRET"
   val endpointUrl = "http://localhost:9000"
 
-  val invalidAccessKey = ""
-  val invalidSecret = ""
+  val invalidAccessKey = "invalid"
+  val invalidSecret = "invalid"
 }

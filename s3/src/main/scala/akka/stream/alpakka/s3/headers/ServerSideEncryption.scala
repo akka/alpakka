@@ -9,7 +9,8 @@ import akka.annotation.InternalApi
 import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.stream.alpakka.s3.impl._
-import com.amazonaws.util.{Base64, Md5Utils}
+import software.amazon.awssdk.utils.BinaryUtils
+import software.amazon.awssdk.utils.Md5Utils
 
 import scala.collection.immutable
 
@@ -118,7 +119,7 @@ final class CustomerKeys private[headers] (val key: String, val md5: Option[Stri
     RawHeader("x-amz-server-side-encryption-customer-algorithm", "AES256") ::
     RawHeader("x-amz-server-side-encryption-customer-key", key) ::
     RawHeader("x-amz-server-side-encryption-customer-key-MD5", md5.getOrElse({
-      val decodedKey = Base64.decode(key)
+      val decodedKey = BinaryUtils.fromBase64(key)
       val md5 = Md5Utils.md5AsBase64(decodedKey)
       md5
     })) :: Nil
@@ -133,7 +134,7 @@ final class CustomerKeys private[headers] (val key: String, val md5: Option[Stri
         RawHeader(
           "x-amz-copy-source-server-side-encryption-customer-key-MD5",
           md5.getOrElse({
-            val decodedKey = Base64.decode(key)
+            val decodedKey = BinaryUtils.fromBase64(key)
             val md5 = Md5Utils.md5AsBase64(decodedKey)
             md5
           })
