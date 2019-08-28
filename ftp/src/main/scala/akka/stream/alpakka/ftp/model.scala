@@ -5,6 +5,7 @@
 package akka.stream.alpakka.ftp
 
 import java.net.InetAddress
+import java.net.Proxy
 import java.nio.file.attribute.PosixFilePermission
 
 import akka.annotation.InternalApi
@@ -59,6 +60,7 @@ sealed abstract class FtpFileSettings extends RemoteFileSettings {
  * @param passiveMode specifies whether to use passive mode connections. Default is active mode (false)
  * @param configureConnection A function which will be called after connecting to the server. Use this for
  *                            any custom configuration required by the server you are connecting to.
+ * @param proxy An optional proxy to use when connecting with these settings
  */
 final class FtpSettings private (
     val host: java.net.InetAddress,
@@ -66,7 +68,8 @@ final class FtpSettings private (
     val credentials: FtpCredentials,
     val binary: Boolean,
     val passiveMode: Boolean,
-    val configureConnection: FTPClient => Unit
+    val configureConnection: FTPClient => Unit,
+    val proxy: Option[Proxy]
 ) extends FtpFileSettings {
 
   def withHost(value: java.net.InetAddress): FtpSettings = copy(host = value)
@@ -74,6 +77,7 @@ final class FtpSettings private (
   def withCredentials(value: FtpCredentials): FtpSettings = copy(credentials = value)
   def withBinary(value: Boolean): FtpSettings = if (binary == value) this else copy(binary = value)
   def withPassiveMode(value: Boolean): FtpSettings = if (passiveMode == value) this else copy(passiveMode = value)
+  def withProxy(value: Proxy): FtpSettings = copy(proxy = Some(value))
 
   /**
    * Scala API:
@@ -95,18 +99,20 @@ final class FtpSettings private (
       credentials: FtpCredentials = credentials,
       binary: Boolean = binary,
       passiveMode: Boolean = passiveMode,
-      configureConnection: FTPClient => Unit = configureConnection
+      configureConnection: FTPClient => Unit = configureConnection,
+      proxy: Option[Proxy] = None
   ): FtpSettings = new FtpSettings(
     host = host,
     port = port,
     credentials = credentials,
     binary = binary,
     passiveMode = passiveMode,
-    configureConnection = configureConnection
+    configureConnection = configureConnection,
+    proxy = proxy
   )
 
   override def toString =
-    s"""FtpSettings(host=$host,port=$port,credentials=$credentials,binary=$binary,passiveMode=$passiveMode,configureConnection=$configureConnection)"""
+    s"""FtpSettings(host=$host,port=$port,credentials=$credentials,binary=$binary,passiveMode=$passiveMode,configureConnection=$configureConnection),proxy=$proxy"""
 }
 
 /**
@@ -126,7 +132,8 @@ object FtpSettings {
     credentials = FtpCredentials.AnonFtpCredentials,
     binary = false,
     passiveMode = false,
-    configureConnection = _ => ()
+    configureConnection = _ => (),
+    proxy = None
   )
 
   /** Java API */
@@ -147,6 +154,7 @@ object FtpSettings {
  * @param passiveMode specifies whether to use passive mode connections. Default is active mode (false)
  * @param configureConnection A function which will be called after connecting to the server. Use this for
  *                            any custom configuration required by the server you are connecting to.
+ * @param proxy An optional proxy to use when connecting with these settings
  */
 final class FtpsSettings private (
     val host: java.net.InetAddress,
@@ -154,7 +162,8 @@ final class FtpsSettings private (
     val credentials: FtpCredentials,
     val binary: Boolean,
     val passiveMode: Boolean,
-    val configureConnection: FTPSClient => Unit
+    val configureConnection: FTPSClient => Unit,
+    val proxy: Option[Proxy]
 ) extends FtpFileSettings {
 
   def withHost(value: java.net.InetAddress): FtpsSettings = copy(host = value)
@@ -162,6 +171,7 @@ final class FtpsSettings private (
   def withCredentials(value: FtpCredentials): FtpsSettings = copy(credentials = value)
   def withBinary(value: Boolean): FtpsSettings = if (binary == value) this else copy(binary = value)
   def withPassiveMode(value: Boolean): FtpsSettings = if (passiveMode == value) this else copy(passiveMode = value)
+  def withProxy(value: Proxy): FtpsSettings = copy(proxy = Some(value))
 
   /**
    * Scala API:
@@ -182,18 +192,20 @@ final class FtpsSettings private (
       credentials: FtpCredentials = credentials,
       binary: Boolean = binary,
       passiveMode: Boolean = passiveMode,
-      configureConnection: FTPSClient => Unit = configureConnection
+      configureConnection: FTPSClient => Unit = configureConnection,
+      proxy: Option[Proxy] = None
   ): FtpsSettings = new FtpsSettings(
     host = host,
     port = port,
     credentials = credentials,
     binary = binary,
     passiveMode = passiveMode,
-    configureConnection = configureConnection
+    configureConnection = configureConnection,
+    proxy = proxy
   )
 
   override def toString =
-    s"""FtpsSettings(host=$host,port=$port,credentials=$credentials,binary=$binary,passiveMode=$passiveMode,configureConnection=$configureConnection)"""
+    s"""FtpsSettings(host=$host,port=$port,credentials=$credentials,binary=$binary,passiveMode=$passiveMode,configureConnection=$configureConnection),proxy=$proxy"""
 }
 
 /**
@@ -213,7 +225,8 @@ object FtpsSettings {
     FtpCredentials.AnonFtpCredentials,
     binary = false,
     passiveMode = false,
-    configureConnection = _ => ()
+    configureConnection = _ => (),
+    proxy = None
   )
 
   /** Java API */
@@ -233,6 +246,7 @@ object FtpsSettings {
  * @param strictHostKeyChecking sets whether to use strict host key checking.
  * @param knownHosts known hosts file to be used when connecting
  * @param sftpIdentity private/public key config to use when connecting
+ * @param proxy An optional proxy to use when connecting with these settings
  */
 final class SftpSettings private (
     val host: java.net.InetAddress,
@@ -240,7 +254,8 @@ final class SftpSettings private (
     val credentials: FtpCredentials,
     val strictHostKeyChecking: Boolean,
     val knownHosts: Option[String],
-    val sftpIdentity: Option[SftpIdentity]
+    val sftpIdentity: Option[SftpIdentity],
+    val proxy: Option[Proxy]
 ) extends RemoteFileSettings {
 
   def withHost(value: java.net.InetAddress): SftpSettings = copy(host = value)
@@ -250,6 +265,7 @@ final class SftpSettings private (
     if (strictHostKeyChecking == value) this else copy(strictHostKeyChecking = value)
   def withKnownHosts(value: String): SftpSettings = copy(knownHosts = Option(value))
   def withSftpIdentity(value: SftpIdentity): SftpSettings = copy(sftpIdentity = Option(value))
+  def withProxy(value: Proxy): SftpSettings = copy(proxy = Some(value))
 
   private def copy(
       host: java.net.InetAddress = host,
@@ -257,18 +273,20 @@ final class SftpSettings private (
       credentials: FtpCredentials = credentials,
       strictHostKeyChecking: Boolean = strictHostKeyChecking,
       knownHosts: Option[String] = knownHosts,
-      sftpIdentity: Option[SftpIdentity] = sftpIdentity
+      sftpIdentity: Option[SftpIdentity] = sftpIdentity,
+      proxy: Option[Proxy] = None
   ): SftpSettings = new SftpSettings(
     host = host,
     port = port,
     credentials = credentials,
     strictHostKeyChecking = strictHostKeyChecking,
     knownHosts = knownHosts,
-    sftpIdentity = sftpIdentity
+    sftpIdentity = sftpIdentity,
+    proxy = proxy
   )
 
   override def toString =
-    s"""SftpSettings(host=$host,port=$port,credentials=$credentials,strictHostKeyChecking=$strictHostKeyChecking,knownHosts=$knownHosts,sftpIdentity=$sftpIdentity)"""
+    s"""SftpSettings(host=$host,port=$port,credentials=$credentials,strictHostKeyChecking=$strictHostKeyChecking,knownHosts=$knownHosts,sftpIdentity=$sftpIdentity,proxy=$proxy)"""
 }
 
 /**
@@ -288,7 +306,8 @@ object SftpSettings {
     FtpCredentials.AnonFtpCredentials,
     strictHostKeyChecking = true,
     knownHosts = None,
-    sftpIdentity = None
+    sftpIdentity = None,
+    proxy = None
   )
 
   /** Java API */

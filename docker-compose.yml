@@ -230,3 +230,10 @@ services:
     ports:
       - "2222:22"
     command: username:userpass:2000:2000
+  squid:
+    network_mode: host # required for route back to localhost
+    image: datadog/squid
+    volumes:
+      - ./ftp/src/test/resources/squid.conf:/etc/squid/squid.conf
+    ports:
+      - "3128:3128"

@@ -15,6 +15,7 @@ import net.schmizz.sshj.transport.verification.PromiscuousVerifier
 import net.schmizz.sshj.userauth.keyprovider.OpenSSHKeyFile
 import net.schmizz.sshj.userauth.password.PasswordUtils
 import net.schmizz.sshj.xfer.FilePermission
+import org.apache.commons.net.DefaultSocketFactory
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
@@ -30,6 +31,8 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
 
   def connect(connectionSettings: SftpSettings)(implicit ssh: SSHClient): Try[Handler] = Try {
     import connectionSettings._
+
+    proxy.foreach(p => ssh.setSocketFactory(new DefaultSocketFactory(p)))
 
     if (!strictHostKeyChecking)
       ssh.addHostKeyVerifier(new PromiscuousVerifier)
