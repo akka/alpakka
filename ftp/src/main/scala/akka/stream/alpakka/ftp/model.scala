@@ -100,7 +100,7 @@ final class FtpSettings private (
       binary: Boolean = binary,
       passiveMode: Boolean = passiveMode,
       configureConnection: FTPClient => Unit = configureConnection,
-      proxy: Option[Proxy] = None
+      proxy: Option[Proxy] = proxy
   ): FtpSettings = new FtpSettings(
     host = host,
     port = port,
