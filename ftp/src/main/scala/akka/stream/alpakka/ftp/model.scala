@@ -274,7 +274,7 @@ final class SftpSettings private (
       strictHostKeyChecking: Boolean = strictHostKeyChecking,
       knownHosts: Option[String] = knownHosts,
       sftpIdentity: Option[SftpIdentity] = sftpIdentity,
-      proxy: Option[Proxy] = None
+      proxy: Option[Proxy] = proxy
   ): SftpSettings = new SftpSettings(
     host = host,
     port = port,
