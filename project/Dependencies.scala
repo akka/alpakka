@@ -143,7 +143,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "org.apache.parquet" % "parquet-avro" % "1.10.0", //Apache2
         "org.apache.hadoop" % "hadoop-client" % "3.2.0" % Test exclude ("log4j", "log4j"), //Apache2
-        "org.apache.hadoop" % "hadoop-common" % "3.2.0" % Test exclude ("log4j", "log4j"),
+        "org.apache.hadoop" % "hadoop-common" % "3.2.0" % Test exclude ("log4j", "log4j"), //Apache2
         "org.specs2" %% "specs2-core" % "4.5.1" % Test, //MIT like: https://github.com/etorreborre/specs2/blob/master/LICENSE.txt
         "org.slf4j" % "log4j-over-slf4j" % log4jOverSlf4jVersion % Test // MIT like: http://www.slf4j.org/license.html
       )
@@ -220,8 +220,7 @@ object Dependencies {
           // TODO: remove direct dependency ^^ when updating from these very old versions
           "org.apache.hbase" % "hbase-shaded-client" % hbaseVersion exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2,
           "org.apache.hbase" % "hbase-common" % hbaseVersion exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2,
-          "org.apache.hadoop" % "hadoop-common" % hadoopVersion exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12") exclude ("commons-net", "commons-net"), // ApacheV2,
-          "commons-net" % "commons-net" % "3.6",
+          "org.apache.hadoop" % "hadoop-common" % hadoopVersion exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2,
           "org.apache.hadoop" % "hadoop-mapreduce-client-core" % hadoopVersion exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2,
           "org.slf4j" % "log4j-over-slf4j" % log4jOverSlf4jVersion % Test // MIT like: http://www.slf4j.org/license.html
         )
