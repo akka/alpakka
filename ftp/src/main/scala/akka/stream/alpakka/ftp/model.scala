@@ -113,13 +113,13 @@ final class FtpSettings private (
 
   override def toString =
     "FtpSettings(" +
-      s"host=$host," +
-      s"port=$port," +
-      s"credentials=$credentials," +
-      s"binary=$binary," +
-      s"passiveMode=$passiveMode," +
-      s"configureConnection=$configureConnection," +
-      s"proxy=$proxy)"
+    s"host=$host," +
+    s"port=$port," +
+    s"credentials=$credentials," +
+    s"binary=$binary," +
+    s"passiveMode=$passiveMode," +
+    s"configureConnection=$configureConnection," +
+    s"proxy=$proxy)"
 }
 
 /**
@@ -213,13 +213,13 @@ final class FtpsSettings private (
 
   override def toString =
     "FtpsSettings(" +
-      s"host=$host," +
-      s"port=$port," +
-      s"credentials=$credentials," +
-      s"binary=$binary," +
-      s"passiveMode=$passiveMode," +
-      s"configureConnection=$configureConnection," +
-      s"proxy=$proxy)"
+    s"host=$host," +
+    s"port=$port," +
+    s"credentials=$credentials," +
+    s"binary=$binary," +
+    s"passiveMode=$passiveMode," +
+    s"configureConnection=$configureConnection," +
+    s"proxy=$proxy)"
 }
 
 /**
@@ -301,13 +301,13 @@ final class SftpSettings private (
 
   override def toString =
     "SftpSettings(" +
-      s"host=$host," +
-      s"port=$port," +
-      s"credentials=$credentials," +
-      s"strictHostKeyChecking=$strictHostKeyChecking," +
-      s"knownHosts=$knownHosts," +
-      s"sftpIdentity=$sftpIdentity," +
-      s"proxy=$proxy)"
+    s"host=$host," +
+    s"port=$port," +
+    s"credentials=$credentials," +
+    s"strictHostKeyChecking=$strictHostKeyChecking," +
+    s"knownHosts=$knownHosts," +
+    s"sftpIdentity=$sftpIdentity," +
+    s"proxy=$proxy)"
 }
 
 /**
