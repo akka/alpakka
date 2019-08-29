@@ -37,7 +37,7 @@ The example demonstrates optional use of `configureConnection` option available 
 
 For non-anonymous connection, please provide an instance of @scaladoc[NonAnonFtpCredentials](akka.stream.alpakka.ftp.FtpCredentials$$NonAnonFtpCredentials) instead.
 
-For connection via a proxy, please provide an instance of `java.net.Proxy`.
+For connection via a proxy, please provide an instance of `java.net.Proxy` by using the `withProxy` method.
 
 For connection using a private key, please provide an instance of @scaladoc[SftpIdentity](akka.stream.alpakka.ftp.SftpIdentity) to @scaladoc[SftpSettings](akka.stream.alpakka.ftp.SftpSettings).
 
