@@ -28,41 +28,52 @@ private[elasticsearch] object Operation {
   object Update extends Operation("update")
   object Upsert extends Operation("update")
   object Delete extends Operation("delete")
+  object InlineScript extends Operation("inlineScript")
+  object PreparedScript extends Operation("preparedScript")
+
 }
 
-final class WriteMessage[T, PT] private (val operation: Operation,
+final class WriteMessage[T, PT, U] private (val operation: Operation,
                                          val id: Option[String],
                                          val source: Option[T],
                                          val passThrough: PT = NotUsed,
                                          val version: Option[Long] = None,
                                          val indexName: Option[String] = None,
-                                         val customMetadata: Map[String, java.lang.String] = Map.empty) {
+                                         val customMetadata: Map[String, java.lang.String] = Map.empty,
+                                         val lang: Option[String] = None,
+                                         val scriptRef: Option[String] = None,
+                                         val script: Option[String] =  None,
+                                         val upsertDoc: U = NotUsed) {
 
-  def withSource(value: T): WriteMessage[T, PT] = copy(source = Option(value))
+  def withSource(value: T): WriteMessage[T, PT, U] = copy(source = Option(value))
 
-  def withPassThrough[PT2](value: PT2): WriteMessage[T, PT2] =
-    new WriteMessage[T, PT2](operation = operation,
+  def withPassThrough[PT2](value: PT2): WriteMessage[T, PT2, U] =
+    new WriteMessage[T, PT2, U](operation = operation,
                              id = id,
                              source = source,
                              value,
                              version = version,
                              indexName = indexName,
-                             customMetadata = customMetadata)
+                             customMetadata = customMetadata,
+                             lang = lang,
+                             scriptRef = scriptRef,
+                             script = script,
+                             upsertDoc = upsertDoc)
 
-  def withVersion(value: Long): WriteMessage[T, PT] = copy(version = Option(value))
-  def withIndexName(value: String): WriteMessage[T, PT] = copy(indexName = Option(value))
+  def withVersion(value: Long): WriteMessage[T, PT, U] = copy(version = Option(value))
+  def withIndexName(value: String): WriteMessage[T, PT, U] = copy(indexName = Option(value))
 
   /**
    * Scala API: define custom metadata for this message. Fields should
    * have the full metadata field name as key (including the "_" prefix if there is one)
    */
-  def withCustomMetadata(value: Map[String, java.lang.String]): WriteMessage[T, PT] = copy(customMetadata = value)
+  def withCustomMetadata(value: Map[String, java.lang.String]): WriteMessage[T, PT, U] = copy(customMetadata = value)
 
   /**
    * Java API: define custom metadata for this message. Fields should
    * have the full metadata field name as key (including the "_" prefix if there is one)
    */
-  def withCustomMetadata(metadata: java.util.Map[String, String]): WriteMessage[T, PT] =
+  def withCustomMetadata(metadata: java.util.Map[String, String]): WriteMessage[T, PT, U] =
     this.copy(customMetadata = metadata.asScala.toMap)
 
   private def copy(operation: Operation = operation,
@@ -71,20 +82,24 @@ final class WriteMessage[T, PT] private (val operation: Operation,
                    passThrough: PT = passThrough,
                    version: Option[Long] = version,
                    indexName: Option[String] = indexName,
-                   customMetadata: Map[String, String] = customMetadata): WriteMessage[T, PT] =
-    new WriteMessage[T, PT](operation = operation,
+                   customMetadata: Map[String, String] = customMetadata,
+                   lang: Option[String] = lang,
+                   scriptRef: Option[String] = scriptRef,
+                   script: Option[String] = script,
+                   upsertDoc: U = upsertDoc): WriteMessage[T, PT, U] =
+    new WriteMessage[T, PT, U](operation = operation,
                             id = id,
                             source = source,
                             passThrough = passThrough,
                             version = version,
                             indexName = indexName,
-                            customMetadata = customMetadata)
+                            customMetadata = customMetadata, lang = lang, upsertDoc = upsertDoc)
 
   override def toString =
     s"""WriteMessage(operation=$operation,id=$id,source=$source,passThrough=$passThrough,version=$version,indexName=$indexName,customMetadata=$customMetadata)"""
 
   override def equals(other: Any): Boolean = other match {
-    case that: WriteMessage[_, _] =>
+    case that: WriteMessage[_, _,_] =>
       java.util.Objects.equals(this.operation, that.operation) &&
       java.util.Objects.equals(this.id, that.id) &&
       java.util.Objects.equals(this.source, that.source) &&
@@ -107,24 +122,29 @@ final class WriteMessage[T, PT] private (val operation: Operation,
 object WriteMessage {
   import Operation._
 
-  def createIndexMessage[T](source: T): WriteMessage[T, NotUsed] =
+  def createIndexMessage[T](source: T): WriteMessage[T, NotUsed, NotUsed] =
     new WriteMessage(Index, id = None, source = Option(source))
 
-  def createIndexMessage[T](id: String, source: T): WriteMessage[T, NotUsed] =
+  def createIndexMessage[T](id: String, source: T): WriteMessage[T, NotUsed, NotUsed] =
     new WriteMessage(Index, id = Option(id), source = Option(source))
 
-  def createCreateMessage[T](id: String, source: T): WriteMessage[T, NotUsed] =
+  def createCreateMessage[T](id: String, source: T): WriteMessage[T, NotUsed,NotUsed] =
     new WriteMessage(Create, id = Option(id), source = Option(source))
 
-  def createUpdateMessage[T](id: String, source: T): WriteMessage[T, NotUsed] =
+  def createUpdateMessage[T](id: String, source: T): WriteMessage[T, NotUsed,NotUsed] =
     new WriteMessage(Update, id = Option(id), source = Option(source))
 
-  def createUpsertMessage[T](id: String, source: T): WriteMessage[T, NotUsed] =
+  def createUpsertMessage[T](id: String, source: T): WriteMessage[T, NotUsed,NotUsed] =
     new WriteMessage(Upsert, id = Option(id), source = Option(source))
 
-  def createDeleteMessage[T](id: String): WriteMessage[T, NotUsed] =
+  def createDeleteMessage[T](id: String): WriteMessage[T, NotUsed,NotUsed] =
     new WriteMessage(Delete, id = Option(id), None)
 
+  def createInlineScriptMessage[T](id:String, script: String, lang: String, source:T): WriteMessage[T, NotUsed,NotUsed] =
+    new WriteMessage(InlineScript, id = Option(id), source = Option(source), script = Option(script), lang = Option(lang))
+
+  def createPreparedScriptMessage[T](id:String, source:T, scriptRef: String): WriteMessage[T, NotUsed,NotUsed] =
+    new WriteMessage(PreparedScript, id = Option(id), source = Option(source), scriptRef = Option(scriptRef))
 }
 
 /**
