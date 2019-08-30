@@ -56,6 +56,31 @@ abstract class MqttSession {
   def ![A](cp: Command[A]): Unit
 
   /**
+   * Ask the session to perform a command regardless of the state it is
+   * in. This is important for sending Publish messages in particular,
+   * as a connection may not have been established with a session.
+   * @param cp The command to perform
+   * @tparam A The type of any carry for the command.
+   * @return A future indicating when the command has completed. Completion
+   *         is defined as when it has been acknowledged by the recipient
+   *         endpoint.
+   */
+  final def ask[A](cp: Command[A]): Future[A] =
+    this ? cp
+
+  /**
+   * Ask the session to perform a command regardless of the state it is
+   * in. This is important for sending Publish messages in particular,
+   * as a connection may not have been established with a session.
+   * @param cp The command to perform
+   * @tparam A The type of any carry for the command.
+   * @return A future indicating when the command has completed. Completion
+   *         is defined as when it has been acknowledged by the recipient
+   *         endpoint.
+   */
+  def ?[A](cp: Command[A]): Future[A]
+
+  /**
    * Shutdown the session gracefully
    */
   def shutdown(): Unit
@@ -170,6 +195,9 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
       clientConnector ! ClientConnector.PublishReceivedLocally(cp, carry)
     case c: Command[A] => throw new IllegalStateException(c + " is not a client command that can be sent directly")
   }
+
+  override def ?[A](cp: Command[A]): Future[A] =
+    ???
 
   override def shutdown(): Unit = {
     system.stop(clientConnector.toClassic)
@@ -512,6 +540,9 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
       serverConnector ! ServerConnector.PublishReceivedLocally(cp, carry)
     case c: Command[A] => throw new IllegalStateException(c + " is not a server command that can be sent directly")
   }
+
+  override def ?[A](cp: Command[A]): Future[A] =
+    ???
 
   override def shutdown(): Unit = {
     system.stop(serverConnector.toClassic)
