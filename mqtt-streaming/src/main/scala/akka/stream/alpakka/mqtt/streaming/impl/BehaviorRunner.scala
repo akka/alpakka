@@ -4,8 +4,9 @@
 
 package akka.stream.alpakka.mqtt.streaming.impl
 
-import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{Behavior, Signal}
+
 import scala.collection.immutable.Seq
 
 object BehaviorRunner {
@@ -24,7 +25,7 @@ object BehaviorRunner {
       case (b, StoredMessage(msg)) =>
         val nextBehavior = Behavior.interpretMessage(b, context, msg)
 
-        if ((nextBehavior ne Behavior.same) && (nextBehavior ne Behavior.unhandled)) {
+        if ((nextBehavior ne Behaviors.same) && (nextBehavior ne Behaviors.unhandled)) {
           nextBehavior
         } else {
           b
@@ -33,7 +34,7 @@ object BehaviorRunner {
       case (b, StoredSignal(signal)) =>
         val nextBehavior = Behavior.interpretSignal(b, context, signal)
 
-        if ((nextBehavior ne Behavior.same) && (nextBehavior ne Behavior.unhandled)) {
+        if ((nextBehavior ne Behaviors.same) && (nextBehavior ne Behaviors.unhandled)) {
           nextBehavior
         } else {
           b
