@@ -62,7 +62,7 @@ jobs:
       - DIR=file
     - env:
       - DIR=ftp
-      - PRE_CMD="docker-compose up -d ftp sftp"
+      - PRE_CMD="docker-compose up -d ftp sftp squid"
     - env:
       - DIR=geode
       - PRE_CMD="docker-compose up -d geode"

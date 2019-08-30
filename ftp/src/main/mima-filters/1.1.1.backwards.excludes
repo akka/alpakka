@@ -1,0 +1,5 @@
+# Allow changes to all [S]FTP[S]Settings
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.ftp.FtpSettings.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.ftp.SftpSettings.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.ftp.FtpsSettings.this")
+
