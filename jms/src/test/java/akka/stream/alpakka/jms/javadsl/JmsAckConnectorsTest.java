@@ -57,11 +57,12 @@ public class JmsAckConnectorsTest {
     List<Integer> intsIn = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
     List<JmsTextMessage> msgsIn = new ArrayList<>();
     for (Integer n : intsIn) {
-      msgsIn.add(
-          JmsTextMessage.create(n.toString())
-              .withProperty("Number", n)
-              .withProperty("IsOdd", n % 2 == 1)
-              .withProperty("IsEven", n % 2 == 0));
+      final Map<String, Object> map = new HashMap<>();
+      map.put("Number", n);
+      map.put("IsOdd", n % 2 == 1);
+      map.put("IsEven", n % 2 == 0);
+
+      msgsIn.add(JmsTextMessage.create(n.toString()).withProperties(map));
     }
 
     return msgsIn;
@@ -252,7 +253,7 @@ public class JmsAckConnectorsTest {
 
           List<JmsTextMessage> oddMsgsIn =
               msgsIn.stream()
-                  .filter(msg -> Integer.valueOf(msg.body()) % 2 == 1)
+                  .filter(msg -> Integer.parseInt(msg.body()) % 2 == 1)
                   .collect(Collectors.toList());
           assertEquals(5, oddMsgsIn.size());
 
