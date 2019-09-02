@@ -330,12 +330,14 @@ lazy val docs = project
         "javadoc.org.eclipse.paho.client.mqttv3.base_url" -> "https://www.eclipse.org/paho/files/javadoc/",
         "javadoc.org.bson.codecs.configuration.base_url" -> "https://mongodb.github.io/mongo-java-driver/3.7/javadoc/",
         "scaladoc.scala.base_url" -> s"https://www.scala-lang.org/api/${scalaBinaryVersion.value}.x/",
-        "scaladoc.akka.stream.alpakka.base_url" -> s"/${(Preprocess / siteSubdirName).value}/"
+        "scaladoc.akka.stream.alpakka.base_url" -> s"/${(Preprocess / siteSubdirName).value}/",
+        "javadoc.akka.stream.alpakka.base_url" -> ""
       ),
     paradoxGroups := Map("Language" -> Seq("Java", "Scala")),
     resolvers += Resolver.jcenterRepo,
     publishRsyncArtifact := makeSite.value -> "www/",
-    publishRsyncHost := "akkarepo@gustav.akka.io"
+    publishRsyncHost := "akkarepo@gustav.akka.io",
+    apidocRootPackage := "akka"
   )
 
 lazy val whitesourceSupported = project
