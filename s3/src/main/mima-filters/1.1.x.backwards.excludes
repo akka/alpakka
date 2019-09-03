@@ -1,0 +1,10 @@
+# Migration to AWS SDK 2 #1905
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.s3.S3Settings.apply")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.s3.S3Settings.create")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.s3.S3Settings.credentialsProvider")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.s3.S3Settings.getCredentialsProvider")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.s3.S3Settings.withCredentialsProvider")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.s3.S3Settings.s3RegionProvider")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.s3.S3Settings.getS3RegionProvider")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.s3.S3Settings.withS3RegionProvider")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.s3.S3Settings.this")

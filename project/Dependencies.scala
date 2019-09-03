@@ -334,7 +334,9 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-xml" % AkkaHttpVersion,
-        "com.amazonaws" % "aws-java-sdk-core" % AwsSdkVersion, // ApacheV2
+        "software.amazon.awssdk" % "auth" % AwsSdk2Version,
+        // overriding AWS SDK version to avoid security issues
+        "com.fasterxml.jackson.core" % "jackson-databind" % JacksonDatabindVersion,
         // in-memory filesystem for file related tests
         "com.google.jimfs" % "jimfs" % "1.1" % Test, // ApacheV2
         "com.github.tomakehurst" % "wiremock" % "2.18.0" % Test // ApacheV2

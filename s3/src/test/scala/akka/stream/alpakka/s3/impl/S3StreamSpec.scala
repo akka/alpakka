@@ -13,10 +13,11 @@ import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.testkit.TestKit
 import akka.util.ByteString
-import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
-import com.amazonaws.regions.AwsRegionProvider
+import software.amazon.awssdk.auth.credentials._
+import software.amazon.awssdk.regions.providers._
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.{FlatSpecLike, Matchers, PrivateMethodTester}
+import software.amazon.awssdk.regions.Region
 
 import scala.concurrent.Future
 
@@ -36,14 +37,14 @@ class S3StreamSpec(_system: ActorSystem)
   "Non-ranged downloads" should "have two (host and synthetic raw-request-uri) headers" in {
 
     val requestHeaders = PrivateMethod[HttpRequest]('requestHeaders)
-    val credentialsProvider = new AWSStaticCredentialsProvider(
-      new BasicAWSCredentials(
+    val credentialsProvider = StaticCredentialsProvider.create(
+      AwsBasicCredentials.create(
         "test-Id",
         "test-key"
       )
     )
     val regionProvider = new AwsRegionProvider {
-      def getRegion = "us-east-1"
+      def getRegion = Region.US_EAST_1
     }
     val location = S3Location("test-bucket", "test-key")
 
@@ -60,15 +61,15 @@ class S3StreamSpec(_system: ActorSystem)
 
     val requestHeaders = PrivateMethod[HttpRequest]('requestHeaders)
     val credentialsProvider =
-      new AWSStaticCredentialsProvider(
-        new BasicAWSCredentials(
+      StaticCredentialsProvider.create(
+        AwsBasicCredentials.create(
           "test-Id",
           "test-key"
         )
       )
     val regionProvider =
       new AwsRegionProvider {
-        def getRegion: String = "us-east-1"
+        def getRegion: Region = Region.US_EAST_1
       }
     val location = S3Location("test-bucket", "test-key")
     val range = ByteRange(1, 4)

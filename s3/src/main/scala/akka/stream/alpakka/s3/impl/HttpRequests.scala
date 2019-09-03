@@ -16,6 +16,7 @@ import akka.http.scaladsl.model.{ContentTypes, RequestEntity, _}
 import akka.stream.alpakka.s3.{ApiVersion, S3Settings}
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import software.amazon.awssdk.regions.Region
 
 import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}
@@ -163,7 +164,7 @@ import scala.concurrent.{ExecutionContext, Future}
   }
 
   @throws(classOf[IllegalUriException])
-  private[this] def requestAuthority(bucket: String, region: String)(implicit conf: S3Settings): Authority =
+  private[this] def requestAuthority(bucket: String, region: Region)(implicit conf: S3Settings): Authority =
     conf.endpointUrl match {
       case Some(endpointUrl) => Uri(endpointUrl).authority
       case None =>
@@ -181,7 +182,7 @@ import scala.concurrent.{ExecutionContext, Future}
           }
         }
         region match {
-          case "us-east-1" =>
+          case Region.US_EAST_1 =>
             if (conf.pathStyleAccess) {
               Authority(Uri.Host("s3.amazonaws.com"))
             } else {

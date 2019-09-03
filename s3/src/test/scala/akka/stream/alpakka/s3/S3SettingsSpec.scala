@@ -5,10 +5,11 @@
 package akka.stream.alpakka.s3
 
 import akka.stream.alpakka.s3.scaladsl.{S3ClientIntegrationSpec, S3WireMockBase}
-import com.amazonaws.auth._
-import com.amazonaws.regions.DefaultAwsRegionProviderChain
+import software.amazon.awssdk.auth.credentials._
+import software.amazon.awssdk.regions.providers._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.OptionValues
+import software.amazon.awssdk.regions.Region
 
 class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with OptionValues {
   private def mkSettings(more: String): S3Settings =
@@ -25,7 +26,7 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
   "S3Settings" should "correctly parse config with anonymous credentials" in {
     val settings: S3Settings = mkSettings("aws.credentials.provider = anon")
 
-    settings.credentialsProvider.getCredentials shouldBe a[AnonymousAWSCredentials]
+    settings.credentialsProvider.resolveCredentials shouldBe AnonymousCredentialsProvider.create().resolveCredentials()
   }
 
   it should "correctly parse config with static credentials / basic" in {
@@ -40,9 +41,9 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
         |}
       """.stripMargin
     )
-    settings.credentialsProvider.getCredentials shouldBe a[BasicAWSCredentials]
-    settings.credentialsProvider.getCredentials.getAWSAccessKeyId shouldBe testKi
-    settings.credentialsProvider.getCredentials.getAWSSecretKey shouldBe testSk
+    settings.credentialsProvider.resolveCredentials() shouldBe a[AwsBasicCredentials]
+    settings.credentialsProvider.resolveCredentials().accessKeyId shouldBe testKi
+    settings.credentialsProvider.resolveCredentials().secretAccessKey shouldBe testSk
   }
 
   it should "correctly parse config with static credentials / session" in {
@@ -59,19 +60,20 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
          |}
       """.stripMargin
     )
-    settings.credentialsProvider.getCredentials shouldBe a[AWSSessionCredentials]
-    val creds: AWSSessionCredentials = settings.credentialsProvider.getCredentials.asInstanceOf[AWSSessionCredentials]
+    settings.credentialsProvider.resolveCredentials() shouldBe a[AwsSessionCredentials]
+    val creds: AwsSessionCredentials =
+      settings.credentialsProvider.resolveCredentials().asInstanceOf[AwsSessionCredentials]
 
-    creds.getSessionToken shouldBe testTok
-    creds.getAWSAccessKeyId shouldBe testKi
-    creds.getAWSSecretKey shouldBe testSk
+    creds.sessionToken shouldBe testTok
+    creds.accessKeyId shouldBe testKi
+    creds.secretAccessKey shouldBe testSk
   }
 
   it should "correctly parse config with default credentials" in {
     val settings: S3Settings = mkSettings(
       "aws.credentials.provider = default"
     )
-    settings.credentialsProvider shouldBe a[DefaultAWSCredentialsProviderChain]
+    settings.credentialsProvider shouldBe a[DefaultCredentialsProvider]
     settings.endpointUrl shouldBe 'empty
   }
 
@@ -79,18 +81,18 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
     val settings: S3Settings = mkSettings(
       "" // no credentials section
     )
-    settings.credentialsProvider shouldBe a[DefaultAWSCredentialsProviderChain]
+    settings.credentialsProvider shouldBe a[DefaultCredentialsProvider]
   }
 
   it should "use default region provider chain by default" in {
     val settings: S3Settings = mkSettings(
       "" // no credentials section
     )
-    settings.s3RegionProvider shouldBe a[DefaultAwsRegionProviderChain]
+    settings.s3RegionProvider shouldBe a[AwsRegionProvider]
   }
 
   it should "use given region when using static region provider" in {
-    val otherRegion = "testRegion"
+    val otherRegion = Region.of("testRegion")
 
     val settings: S3Settings = mkSettings(
       s"""
@@ -134,7 +136,7 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
   }
 
   it should "be able to instantiate using custom config prefix" in {
-    val otherRegion = "testRegion"
+    val otherRegion = Region.of("testRegion")
     val endpointUrl = "http://localhost:9000"
 
     val settings: S3Settings = mkSettings(

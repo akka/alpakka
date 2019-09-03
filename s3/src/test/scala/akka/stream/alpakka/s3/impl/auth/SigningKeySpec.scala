@@ -6,19 +6,20 @@ package akka.stream.alpakka.s3.impl.auth
 
 import java.time.{ZoneId, ZonedDateTime}
 
-import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
+import software.amazon.awssdk.auth.credentials._
 import org.scalatest.{FlatSpec, Matchers}
+import software.amazon.awssdk.regions.Region
 
 class SigningKeySpec extends FlatSpec with Matchers {
   behavior of "A Signing Key"
 
-  val credentials = new AWSStaticCredentialsProvider(
-    new BasicAWSCredentials("AKIDEXAMPLE", "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY")
+  val credentials = StaticCredentialsProvider.create(
+    AwsBasicCredentials.create("AKIDEXAMPLE", "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY")
   )
 
   val signingKey = {
     val requestDate = ZonedDateTime.of(2015, 8, 30, 1, 2, 3, 4, ZoneId.of("UTC"))
-    SigningKey(requestDate, credentials, CredentialScope(requestDate.toLocalDate, "us-east-1", "iam"))
+    SigningKey(requestDate, credentials, CredentialScope(requestDate.toLocalDate, Region.US_EAST_1, "iam"))
   }
 
   it should "produce a signing key" in {
