@@ -39,8 +39,7 @@ object AmqpSink {
    * Scala API:
    *
    * Connects to an AMQP server upon materialization and sends incoming messages to the server.
-   * Each materialized sink will create one connection to the broker. This stage sends messages to
-   * the queue named in the replyTo options of the message instead of from settings declared at construction.
+   * Each materialized sink will create one connection to the broker. 
    *
    * This stage materializes to a Future[Done], which can be used to know when the Sink completes, either normally
    * or because of an amqp failure
