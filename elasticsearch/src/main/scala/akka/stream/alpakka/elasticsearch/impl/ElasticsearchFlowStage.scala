@@ -24,18 +24,19 @@ import scala.collection.immutable
  * INTERNAL API
  */
 @InternalApi
-private[elasticsearch] final class ElasticsearchFlowStage[T, C](
+private[elasticsearch] final class ElasticsearchFlowStage[T, C, P](
     indexName: String,
     typeName: String,
     client: RestClient,
     settings: ElasticsearchWriteSettings,
-    writer: MessageWriter[T]
-) extends GraphStage[FlowShape[immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]]]] {
+    sourceWriter: MessageWriter[T],
+    paramsWriter: MessageWriter[P]
+) extends GraphStage[FlowShape[immutable.Seq[WriteMessage[T, C, P]], immutable.Seq[WriteResult[T, C, P]]]] {
   require(indexName != null, "You must define an index name")
   require(typeName != null, "You must define a type name")
 
-  private val in = Inlet[immutable.Seq[WriteMessage[T, C]]]("messages")
-  private val out = Outlet[immutable.Seq[WriteResult[T, C]]]("result")
+  private val in = Inlet[immutable.Seq[WriteMessage[T, C, P]]]("messages")
+  private val out = Outlet[immutable.Seq[WriteResult[T, C, P]]]("result")
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new StageLogic()
@@ -50,9 +51,9 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
     private var upstreamFinished = false
     private var inflight = 0
 
-    private val failureHandler = getAsyncCallback[(immutable.Seq[WriteMessage[T, C]], Throwable)](handleFailure)
-    private val responseHandler = getAsyncCallback[(immutable.Seq[WriteMessage[T, C]], Response)](handleResponse)
-    private var failedMessages: immutable.Seq[WriteMessage[T, C]] = Nil
+    private val failureHandler = getAsyncCallback[(immutable.Seq[WriteMessage[T, C, P]], Throwable)](handleFailure)
+    private val responseHandler = getAsyncCallback[(immutable.Seq[WriteMessage[T, C, P]], Response)](handleResponse)
+    private var failedMessages: immutable.Seq[WriteMessage[T, C, P]] = Nil
     private var retryCount: Int = 0
 
     private def tryPull(): Unit =
@@ -66,7 +67,7 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
       failedMessages = Nil
     }
 
-    private def handleFailure(args: (immutable.Seq[WriteMessage[T, C]], Throwable)): Unit = {
+    private def handleFailure(args: (immutable.Seq[WriteMessage[T, C, P]], Throwable)): Unit = {
       val (messages, exception) = args
       if (!settings.retryLogic.shouldRetry(retryCount, List(exception.toString))) {
         log.error("Received error from elastic. Giving up after {} tries. {}, Error: {}",
@@ -85,14 +86,14 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
       }
     }
 
-    private def handleResponse(args: (immutable.Seq[WriteMessage[T, C]], Response)): Unit = {
+    private def handleResponse(args: (immutable.Seq[WriteMessage[T, C, P]], Response)): Unit = {
       val (messages, response) = args
       val responseJson = EntityUtils.toString(response.getEntity).parseJson
       if (log.isDebugEnabled) log.debug("response {}", responseJson.prettyPrint)
 
       // If some commands in bulk request failed, pass failed messages to follows.
       val items = responseJson.asJsObject.fields("items").asInstanceOf[JsArray]
-      val messageResults: immutable.Seq[WriteResult[T, C]] = items.elements.zip(messages).map {
+      val messageResults: immutable.Seq[WriteResult[T, C, P]] = items.elements.zip(messages).map {
         case (item, message) =>
           val command = message.operation.command
           val res = item.asJsObject.fields(command).asJsObject
@@ -111,8 +112,8 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
     }
 
     private def retryPartialFailedMessages(
-        messageResults: immutable.Seq[WriteResult[T, C]],
-        failedMsgs: immutable.Seq[WriteResult[T, C]]
+        messageResults: immutable.Seq[WriteResult[T, C, P]],
+        failedMsgs: immutable.Seq[WriteResult[T, C, P]]
     ): Unit = {
       if (log.isDebugEnabled) log.debug("retryPartialFailedMessages inflight={} {}", inflight, failedMsgs)
       // Retry partial failed messages
@@ -129,14 +130,14 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
       }
     }
 
-    private def emitResults(successMsgs: immutable.Seq[WriteResult[T, C]]): Unit = {
+    private def emitResults(successMsgs: immutable.Seq[WriteResult[T, C, P]]): Unit = {
       emit(out, successMsgs)
       tryPull()
       inflight -= successMsgs.size
       if (upstreamFinished && inflight == 0) completeStage()
     }
 
-    private def sendBulkUpdateRequest(messages: immutable.Seq[WriteMessage[T, C]]): Unit = {
+    private def sendBulkUpdateRequest(messages: immutable.Seq[WriteMessage[T, C, P]]): Unit = {
       val json = messages
         .map { message =>
           val sharedFields: Seq[(String, JsString)] = Seq(
@@ -166,7 +167,7 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
               "create" -> JsObject(
                 (sharedFields ++ fields): _*
               )
-            case Update | Upsert =>
+            case Update | Upsert | InlineScript | PreparedScript =>
               val fields = Seq(
                 message.version.map { version =>
                   "_version" -> JsNumber(version)
@@ -208,21 +209,38 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
       )
     }
 
-    private def messageToJsonString(message: WriteMessage[T, C]): String =
+    private def messageToJsonString(message: WriteMessage[T, C, P]): String =
       message.operation match {
         case Index | Create =>
-          "\n" + writer.convert(message.source.get)
+          "\n" + sourceWriter.convert(message.source.get)
         case Upsert =>
           "\n" + JsObject(
-            "doc" -> writer.convert(message.source.get).parseJson,
+            "doc" -> sourceWriter.convert(message.source.get).parseJson,
             "doc_as_upsert" -> JsTrue
           ).toString
         case Update =>
           "\n" + JsObject(
-            "doc" -> writer.convert(message.source.get).parseJson
+            "doc" -> sourceWriter.convert(message.source.get).parseJson
           ).toString
         case Delete =>
           ""
+        case PreparedScript =>
+          "\n" + JsObject(
+            "script" -> JsObject(
+              "id" -> JsString(message.scriptRef.get),
+              "params" -> paramsWriter.convert(message.params.get).parseJson,
+              "upsert" -> sourceWriter.convert(message.source.get).parseJson,
+            )
+          ).toString
+        case PreparedScript =>
+          "\n" + JsObject(
+            "script" -> JsObject(
+              "source" -> JsString(message.scriptSource.get),
+              "lang" -> JsString(message.lang.get),
+              "params" -> paramsWriter.convert(message.params.get).parseJson,
+              "upsert" -> sourceWriter.convert(message.source.get).parseJson,
+            )
+          ).toString
       }
 
     setHandlers(in, out, this)
