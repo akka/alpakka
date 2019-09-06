@@ -56,7 +56,7 @@ public class ExampleUsageJava {
     // #publish-single
     PublishMessage publishMessage =
         PublishMessage.create(new String(Base64.getEncoder().encode("Hello Google!".getBytes())));
-    PublishRequest publishRequest = PublishRequest.of(Lists.newArrayList(publishMessage));
+    PublishRequest publishRequest = PublishRequest.create(Lists.newArrayList(publishMessage));
 
     Source<PublishRequest, NotUsed> source = Source.single(publishRequest);
 
@@ -71,7 +71,7 @@ public class ExampleUsageJava {
     Source<PublishMessage, NotUsed> messageSource = Source.single(publishMessage);
     messageSource
         .groupedWithin(1000, Duration.ofMinutes(1))
-        .map(messages -> PublishRequest.of(messages))
+        .map(messages -> PublishRequest.create(messages))
         .via(publishFlow)
         .runWith(Sink.ignore(), materializer);
     // #publish-fast

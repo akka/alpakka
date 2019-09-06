@@ -171,7 +171,7 @@ object PublishRequest {
   /**
    * Java API
    */
-  def of(messages: java.util.List[PublishMessage]): PublishRequest =
+  def create(messages: java.util.List[PublishMessage]): PublishRequest =
     new PublishRequest(messages.asScala.toList)
 }
 
