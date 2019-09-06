@@ -11,6 +11,7 @@ import scala.collection.JavaConverters._
 trait TestOps {
 
   val tableName: String
+
   val keyCol = "kkey"
   val sortCol = "sort"
 
@@ -55,7 +56,7 @@ trait TestOps {
 
 }
 
-object ItemSpecOps extends TestOps {
+abstract class ItemSpecOps extends TestOps {
 
   override val tableName = "ItemSpecOps"
 
@@ -70,6 +71,9 @@ object ItemSpecOps extends TestOps {
 
   val getItemRequest =
     GetItemRequest.builder().tableName(tableName).key(keyMap("A", 0).asJava).attributesToGet("data").build()
+
+  val getItemMalformedRequest =
+    GetItemRequest.builder().tableName(tableName).attributesToGet("data").build()
 
   val test5Data = "test5Data"
 
@@ -94,6 +98,47 @@ object ItemSpecOps extends TestOps {
       ).asJava
     )
     .build()
+
+  def batchWriteLargeItemRequest(from: Int, to: Int) =
+    BatchWriteItemRequest
+      .builder()
+      .requestItems(
+        Map(
+          tableName ->
+          (from to to).map { i =>
+            // 400k is the of one write request
+            WriteRequest
+              .builder()
+              .putRequest(
+                PutRequest.builder().item((keyMap(i.toString, i) + ("data1" -> S("0123456789" * 39000))).asJava).build()
+              )
+              .build()
+          }.asJava
+        ).asJava
+      )
+      .build()
+
+  def batchGetLargeItemRequest(from: Int, to: Int) =
+    BatchGetItemRequest
+      .builder()
+      .requestItems(
+        Map(
+          tableName ->
+          KeysAndAttributes
+            .builder()
+            .keys {
+              (from to to).map { i =>
+                Map(keyCol -> S(i.toString), sortCol -> N(i)).asJava
+              }.asJava
+            }
+            .attributesToGet("data1")
+            .build()
+        ).asJava
+      )
+      .build()
+
+  def batchGetItemRequest(items: java.util.Map[String, KeysAndAttributes]) =
+    BatchGetItemRequest.builder().requestItems(items).build()
 
   val queryItemsRequest = QueryRequest
     .builder()
@@ -164,8 +209,9 @@ object ItemSpecOps extends TestOps {
     .build()
 
   val deleteTableRequest = common.deleteTableRequest
-
 }
+
+object ItemSpecOps extends ItemSpecOps
 
 object TableSpecOps extends TestOps {
 

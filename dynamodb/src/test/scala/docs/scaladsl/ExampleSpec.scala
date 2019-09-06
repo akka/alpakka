@@ -7,18 +7,25 @@ package docs.scaladsl
 import java.net.URI
 
 import akka.NotUsed
+//#init-client
 import akka.actor.ActorSystem
+import akka.stream.{ActorMaterializer, Materializer}
+
+//#init-client
 import akka.stream.alpakka.dynamodb.DynamoDbOp._
 import akka.stream.alpakka.dynamodb.scaladsl._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
-import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+//#init-client
+import com.github.matsluni.akkahttpspi.AkkaHttpClient
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
+
+//#init-client
 import software.amazon.awssdk.services.dynamodb.model._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -32,18 +39,24 @@ class ExampleSpec
     with BeforeAndAfterAll
     with ScalaFutures {
 
-  implicit val materializer: Materializer = ActorMaterializer()
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 100.millis)
+
+  //#init-client
+  implicit val materializer: Materializer = ActorMaterializer()
 
   implicit val client: DynamoDbAsyncClient = DynamoDbAsyncClient
     .builder()
     .region(Region.AWS_GLOBAL)
     .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
+    .httpClient(AkkaHttpClient.builder().withActorSystem(system).build())
     .endpointOverride(new URI("http://localhost:8001/"))
     .build()
 
+  system.registerOnTermination(client.close())
+
+  //#init-client
+
   override def afterAll(): Unit = {
-    client.close()
     shutdown()
     super.afterAll()
   }

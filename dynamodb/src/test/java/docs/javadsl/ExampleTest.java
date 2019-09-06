@@ -5,9 +5,12 @@
 package docs.javadsl;
 
 import akka.NotUsed;
+// #init-client
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+
+// #init-client
 import akka.stream.alpakka.dynamodb.DynamoDbOp;
 import akka.stream.alpakka.dynamodb.javadsl.DynamoDb;
 import akka.stream.javadsl.Sink;
@@ -17,10 +20,14 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+// #init-client
+import com.github.matsluni.akkahttpspi.AkkaHttpClient;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
+
+// #init-client
 import software.amazon.awssdk.services.dynamodb.model.*;
 
 import java.net.URI;
@@ -40,6 +47,8 @@ public class ExampleTest {
 
   @BeforeClass
   public static void setup() throws Exception {
+
+    // #init-client
     final ActorSystem system = ActorSystem.create();
     final Materializer materializer = ActorMaterializer.create(system);
     final DynamoDbAsyncClient client =
@@ -47,8 +56,13 @@ public class ExampleTest {
             .credentialsProvider(
                 StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
             .region(Region.AWS_GLOBAL)
+            .httpClient(AkkaHttpClient.builder().withActorSystem(system).build())
             .endpointOverride(new URI("http://localhost:8001/"))
             .build();
+
+    system.registerOnTermination(() -> client.close());
+
+    // #init-client
 
     ExampleTest.system = system;
     ExampleTest.materializer = materializer;
@@ -57,7 +71,6 @@ public class ExampleTest {
 
   @AfterClass
   public static void tearDown() {
-    client.close();
     system.terminate();
   }
 
