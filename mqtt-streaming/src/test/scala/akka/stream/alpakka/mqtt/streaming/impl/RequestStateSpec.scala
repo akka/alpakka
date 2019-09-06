@@ -69,7 +69,7 @@ class RequestStateSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
     "calculate the next packet id correctly, accounting for used ids" in {
       LocalPacketRouter.findNextPacketId(
         Map(
-          PacketId(2) -> testKit.spawn(LocalPacketRouter[String])
+          PacketId(2) -> LocalPacketRouter.Registration(testKit.spawn(LocalPacketRouter[String]), List.empty)
         ),
         PacketId(1)
       ) shouldBe Some(PacketId(3))
@@ -95,25 +95,28 @@ class RequestStateSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
     }
 
     "acquire consecutive packet ids" in {
-      val registrant = testKit.createTestProbe[String]()
+      val registrant1 = testKit.createTestProbe[String]()
+      val registrant2 = testKit.createTestProbe[String]()
+      val registrant3 = testKit.createTestProbe[String]()
+      val registrant4 = testKit.createTestProbe[String]()
       val reply1 = Promise[LocalPacketRouter.Registered]
       val reply2 = Promise[LocalPacketRouter.Registered]
       val reply3 = Promise[LocalPacketRouter.Registered]
       val reply4 = Promise[LocalPacketRouter.Registered]
       val router = testKit.spawn(LocalPacketRouter[String])
 
-      router ! LocalPacketRouter.Register(registrant.ref, reply1)
-      router ! LocalPacketRouter.Register(registrant.ref, reply2)
+      router ! LocalPacketRouter.Register(registrant1.ref, reply1)
+      router ! LocalPacketRouter.Register(registrant2.ref, reply2)
       reply1.future.futureValue shouldBe LocalPacketRouter.Registered(PacketId(1))
       reply2.future.futureValue shouldBe LocalPacketRouter.Registered(PacketId(2))
 
-      router ! LocalPacketRouter.Unregister(PacketId(1))
-      router ! LocalPacketRouter.Register(registrant.ref, reply3)
+      registrant1.stop()
+      router ! LocalPacketRouter.Register(registrant3.ref, reply3)
       reply3.future.futureValue shouldBe LocalPacketRouter.Registered(PacketId(3))
 
-      router ! LocalPacketRouter.Unregister(PacketId(2))
-      router ! LocalPacketRouter.Unregister(PacketId(3))
-      router ! LocalPacketRouter.Register(registrant.ref, reply4)
+      registrant2.stop()
+      registrant3.stop()
+      router ! LocalPacketRouter.Register(registrant4.ref, reply4)
       reply4.future.futureValue shouldBe LocalPacketRouter.Registered(PacketId(4))
     }
 
@@ -129,11 +132,27 @@ class RequestStateSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       failureReply.future.isCompleted shouldBe false
     }
 
-    "fail to route a packet" in {
+    "fail to route a packet given no registrant" in {
       val reply = Promise[LocalPacketRouter.Registered]()
       val router = testKit.spawn(LocalPacketRouter[String])
       router ! LocalPacketRouter.Route(PacketId(1), "some-packet", reply)
       reply.future.failed.futureValue shouldBe LocalPacketRouter.CannotRoute(PacketId(1))
+    }
+
+    "fail to route a packet given a stopped registrant" in {
+      val registrant = testKit.createTestProbe[String]()
+      val reply1 = Promise[LocalPacketRouter.Registered]()
+      val reply2 = Promise[LocalPacketRouter.Registered]()
+      val reply3 = Promise[LocalPacketRouter.Registered]()
+      val router = testKit.spawn(LocalPacketRouter[String])
+      router ! LocalPacketRouter.Register(registrant.ref, reply1)
+      router ! LocalPacketRouter.Route(PacketId(1), "some-packet", reply2)
+      registrant.expectMessage("some-packet")
+      reply2.future.isCompleted shouldBe false
+      registrant.stop()
+      router ! LocalPacketRouter.Route(PacketId(1), "some-packet", reply3)
+      reply2.future.failed.futureValue shouldBe LocalPacketRouter.CannotRoute(PacketId(1))
+      reply3.future.failed.futureValue shouldBe LocalPacketRouter.CannotRoute(PacketId(1))
     }
   }
 
@@ -170,7 +189,7 @@ class RequestStateSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       failureReply4.future.failed.futureValue shouldBe RemotePacketRouter.CannotRoute(packetId)
       registrant.expectNoMessage(100.millis)
 
-      router ! RemotePacketRouter.Unregister(Some(clientId), packetId)
+      registrant.stop()
       router ! RemotePacketRouter.Route(Some(clientId), packetId, "some-packet", failureReply2)
       failureReply2.future.failed.futureValue shouldBe RemotePacketRouter.CannotRoute(packetId)
       registrant.expectNoMessage(100.millis)
