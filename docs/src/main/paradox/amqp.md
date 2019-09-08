@@ -42,6 +42,8 @@ Java
 
 Here we used @scaladoc[QueueDeclaration](akka.stream.alpakka.amqp.QueueDeclaration) configuration class to create a queue declaration.
 
+### With sink
+
 Create a sink, that accepts and forwards @scaladoc[ByteString](akka.util.ByteString)s to the AMQP server.
 
 @scala[@scaladoc[AmqpSink](akka.stream.alpakka.amqp.scaladsl.AmqpSink$)]@java[@scaladoc[AmqpSink](akka.stream.alpakka.amqp.javadsl.AmqpSink$)] is a collection of factory methods that facilitates creation of sinks. Here we created a *simple* sink, which means that we are able to pass `ByteString`s to the sink instead of wrapping data into @scaladoc[WriteMessage](akka.stream.alpakka.amqp.WriteMessage)s.
@@ -54,6 +56,28 @@ Scala
 Java
 : @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #create-sink }
 
+### With flow
+
+Similarly as with Sink, the first step is to create Flow which accepts @scala[@scaladoc[WriteMessage](akka.stream.alpakka.amqp.WriteMessage)s and forwards it's content to the AMQP server. Flow emits @scala[@scaladoc[WriteResult](akka.stream.alpakka.amqp.WriteResult)s informing about publication result (see below for summary of delivery guarantees for different Flow variants), and optionally containing pass-through data attached to @scala[@scaladoc[WriteMessage](akka.stream.alpakka.amqp.WriteMessage).
+
+@scala[@scaladoc[AmqpFlow](akka.stream.alpakka.amqp.scaladsl.AmqpFlow$)]@java[@scaladoc[AmqpFlow](akka.stream.alpakka.amqp.javadsl.AmqpFlow$)] is a collection of factory methods that facilitates creation of flows. Here we created a *simple* sink, which means that we are able to pass `ByteString`s to the sink instead of wrapping data into @scaladoc[WriteMessage](akka.stream.alpakka.amqp.WriteMessage)s.
+
+Last step is to @extref:[materialize](akka:stream/stream-flows-and-basics.html) and run the flow we have created.
+
+Scala
+: @@snip [snip](/amqp/src/test/scala/docs/scaladsl/AmqpDocsSpec.scala) { #create-flow }
+
+Java
+: @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #create-flow }
+
+Various variants of AMQP flow offer different delivery and ordering guarantees:
+
+| AMQP flow factory                  | Description                                                                                          |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| AmqpFlow.apply                     | The most basic type of flow. Does not impose delivery guarantees, messages are published in a fire-and-forget manner. Emitted results have `confirmed` always set to true.
+| AmqpFlow.withConfirm               | Imposes the most strict ordering guarantees. Confirmation is awaited after every single publication.It can be used to ensure order of messages accepted by queue at the cost of significantly lower publication throughput. Please note that such strict ordering guarantee is rarely needed, and in most cases if confirmation is required it's perfectly sufficient to use one of the two asynchronous variants for better performance. 
+| AmqpFlow.withAsyncConfirm          | Variant that uses asynchronous confirmations. Maximum number of messages simultaneously waiting for confirmation before signaling backpressure is configured with a `bufferSize` parameter. Emitted results preserve the order of messages pulled from upstream - due to that restriction this flow is expected to be slightly less effective than it's unordered counterpart.
+| AmqpFlow.withAsyncUnorderedConfirm | The same as `AmqpFlow.withAsyncUnorderedConfirm` with the exception of ordering guarantee - results are emitted downstream as soon as confirmation is received, meaning that there is no ordering guarantee of any sort.
 
 ## Receiving messages
 

@@ -13,6 +13,7 @@ import akka.stream.KillSwitches;
 import akka.stream.Materializer;
 import akka.stream.UniqueKillSwitch;
 import akka.stream.alpakka.amqp.*;
+import akka.stream.alpakka.amqp.javadsl.AmqpFlow;
 import akka.stream.alpakka.amqp.javadsl.AmqpRpcFlow;
 import akka.stream.alpakka.amqp.javadsl.AmqpSink;
 import akka.stream.alpakka.amqp.javadsl.AmqpSource;
@@ -26,6 +27,8 @@ import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.stream.testkit.javadsl.TestSink;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
+import scala.collection.JavaConverters;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -142,7 +145,7 @@ public class AmqpDocsTest {
     // #create-rpc-flow
     result.first().toCompletableFuture().get(3, TimeUnit.SECONDS);
 
-    Sink<WriteMessage, CompletionStage<Done>> amqpSink =
+    Sink<WriteMessage<NotUsed>, CompletionStage<Done>> amqpSink =
         AmqpSink.createReplyTo(AmqpReplyToSinkSettings.create(connectionProvider));
 
     UniqueKillSwitch killSwitch =
@@ -336,5 +339,39 @@ public class AmqpDocsTest {
     // See https://github.com/akka/akka/issues/26410
     // extra wait before assertAllStagesStopped kicks in
     Thread.sleep(6 * 1000);
+  }
+
+  @Test
+  public void shouldPublishWithFlow() throws Exception {
+    final String queueName = "amqp-conn-it-test-flow-" + System.currentTimeMillis();
+    final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
+
+    // #create-flow
+    final AmqpWriteSettings settings =
+        AmqpWriteSettings.create(connectionProvider)
+            .withRoutingKey(queueName)
+            .withDeclaration(queueDeclaration);
+
+    final Flow<WriteMessage<String>, WriteResult<String>, CompletionStage<Done>> amqpFlow =
+        AmqpFlow.createWithAsyncConfirm(settings, 10, Duration.ofMillis(200));
+
+    final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
+
+    final List<WriteResult<String>> result =
+            Source.from(input)
+                    .map(message ->
+                        WriteMessage.create(ByteString.fromString(message))
+                            .withPassThrough(message)
+                    )
+                    .via(amqpFlow)
+                    .runWith(Sink.seq(), materializer)
+                    .toCompletableFuture()
+                    .get();
+    // #create-flow
+
+    final List<WriteResult<String>> expectedResult =
+        input.stream().map(s -> WriteResult.create(true, s)).collect(Collectors.toList());
+
+    assertEquals(result, expectedResult);
   }
 }
