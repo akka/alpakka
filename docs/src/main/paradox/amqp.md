@@ -58,7 +58,7 @@ Java
 
 ### With flow
 
-Similarly as with Sink, the first step is to create Flow which accepts @scala[@scaladoc[WriteMessage](akka.stream.alpakka.amqp.WriteMessage)s and forwards it's content to the AMQP server. Flow emits @scala[@scaladoc[WriteResult](akka.stream.alpakka.amqp.WriteResult)s informing about publication result (see below for summary of delivery guarantees for different Flow variants), and optionally containing pass-through data attached to @scala[@scaladoc[WriteMessage](akka.stream.alpakka.amqp.WriteMessage).
+Similarly as with Sink, the first step is to create Flow which accepts @scaladoc[WriteMessage](akka.stream.alpakka.amqp.WriteMessage)s and forwards it's content to the AMQP server. Flow emits @scaladoc[WriteResult](akka.stream.alpakka.amqp.WriteResult)s informing about publication result (see below for summary of delivery guarantees for different Flow variants), and optionally containing pass-through data attached to @scaladoc[WriteMessage](akka.stream.alpakka.amqp.WriteMessage).
 
 @scala[@scaladoc[AmqpFlow](akka.stream.alpakka.amqp.scaladsl.AmqpFlow$)]@java[@scaladoc[AmqpFlow](akka.stream.alpakka.amqp.javadsl.AmqpFlow$)] is a collection of factory methods that facilitates creation of flows. Here we created a *simple* sink, which means that we are able to pass `ByteString`s to the sink instead of wrapping data into @scaladoc[WriteMessage](akka.stream.alpakka.amqp.WriteMessage)s.
 
