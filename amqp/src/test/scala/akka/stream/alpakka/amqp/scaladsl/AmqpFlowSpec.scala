@@ -193,9 +193,7 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
 
       messages should contain theSameElementsInOrderAs expectedResult
       completion.futureValue shouldBe an[Done]
-
     }
-
   }
 
   "AMQP unordered async confirmation flow" should {
@@ -443,6 +441,8 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
     sourceProbe.sendComplete()
 
     val (confirmCallback, _) = confirmationCallbacks()
+
+    verify(channelMock, Mockito.timeout(200).times(input.size)).getNextPublishSeqNo
 
     confirmCallback.handle(2L, true)
 

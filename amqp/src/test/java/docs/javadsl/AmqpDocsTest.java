@@ -358,15 +358,14 @@ public class AmqpDocsTest {
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
 
     final List<WriteResult<String>> result =
-            Source.from(input)
-                    .map(message ->
-                        WriteMessage.create(ByteString.fromString(message))
-                            .withPassThrough(message)
-                    )
-                    .via(amqpFlow)
-                    .runWith(Sink.seq(), materializer)
-                    .toCompletableFuture()
-                    .get();
+        Source.from(input)
+            .map(
+                message ->
+                    WriteMessage.create(ByteString.fromString(message)).withPassThrough(message))
+            .via(amqpFlow)
+            .runWith(Sink.seq(), materializer)
+            .toCompletableFuture()
+            .get();
     // #create-flow
 
     final List<WriteResult<String>> expectedResult =

@@ -35,9 +35,7 @@ import akka.stream.testkit.javadsl.TestSink;
 import akka.util.ByteString;
 import scala.collection.JavaConverters;
 
-/**
- * Needs a local running AMQP server on the default port with no password.
- */
+/** Needs a local running AMQP server on the default port with no password. */
 @RunWith(Parameterized.class)
 public class AmqpFlowTest {
 
@@ -67,12 +65,13 @@ public class AmqpFlowTest {
 
   @Parameterized.Parameters
   public static Collection<Object[]> data() {
-    return Arrays.asList(new Object[][] {
-            { AmqpFlow.create(settings()) },
-            { AmqpFlow.createWithConfirm(settings(), Duration.ofMillis(200)) },
-            { AmqpFlow.createWithAsyncConfirm(settings(), 10, Duration.ofMillis(200)) },
-            { AmqpFlow.createWithAsyncUnorderedConfirm(settings(), 10, Duration.ofMillis(200)) }
-    });
+    return Arrays.asList(
+        new Object[][] {
+          {AmqpFlow.create(settings())},
+          {AmqpFlow.createWithConfirm(settings(), Duration.ofMillis(200))},
+          {AmqpFlow.createWithAsyncConfirm(settings(), 10, Duration.ofMillis(200))},
+          {AmqpFlow.createWithAsyncUnorderedConfirm(settings(), 10, Duration.ofMillis(200))}
+        });
   }
 
   @Test
@@ -80,18 +79,19 @@ public class AmqpFlowTest {
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
     final List<WriteResult<String>> expectedOutput =
-            input.stream().map(pt -> WriteResult.create(true, pt)).collect(Collectors.toList());
+        input.stream().map(pt -> WriteResult.create(true, pt)).collect(Collectors.toList());
 
     final Pair<CompletionStage<Done>, TestSubscriber.Probe<WriteResult<String>>> result =
         Source.from(input)
             .map(s -> WriteMessage.create(ByteString.fromString(s)).withPassThrough(s))
             .viaMat(flow, Keep.right())
-            .toMat(TestSink.probe(system),Keep.both())
+            .toMat(TestSink.probe(system), Keep.both())
             .run(materializer);
 
-    result.second()
+    result
+        .second()
         .request(input.size())
-        .expectNextN(JavaConverters.asScalaBuffer(expectedOutput).toList());
+        .expectNextN(JavaConverters.asScalaBufferConverter(expectedOutput).asScala().toList());
 
     result.first().toCompletableFuture().get(1, TimeUnit.SECONDS);
   }
