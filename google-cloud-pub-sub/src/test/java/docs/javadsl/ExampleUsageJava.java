@@ -54,9 +54,9 @@ public class ExampleUsageJava {
     // #init-credentials
 
     // #publish-single
-    PubSubMessage publishMessage =
-        PubSubMessage.create(new String(Base64.getEncoder().encode("Hello Google!".getBytes())));
-    PublishRequest publishRequest = PublishRequest.of(Lists.newArrayList(publishMessage));
+    PublishMessage publishMessage =
+        PublishMessage.create(new String(Base64.getEncoder().encode("Hello Google!".getBytes())));
+    PublishRequest publishRequest = PublishRequest.create(Lists.newArrayList(publishMessage));
 
     Source<PublishRequest, NotUsed> source = Source.single(publishRequest);
 
@@ -68,10 +68,10 @@ public class ExampleUsageJava {
     // #publish-single
 
     // #publish-fast
-    Source<PubSubMessage, NotUsed> messageSource = Source.single(publishMessage);
+    Source<PublishMessage, NotUsed> messageSource = Source.single(publishMessage);
     messageSource
         .groupedWithin(1000, Duration.ofMinutes(1))
-        .map(messages -> PublishRequest.of(messages))
+        .map(messages -> PublishRequest.create(messages))
         .via(publishFlow)
         .runWith(Sink.ignore(), materializer);
     // #publish-fast
@@ -90,7 +90,7 @@ public class ExampleUsageJava {
               return message.ackId();
             })
         .groupedWithin(1000, Duration.ofMinutes(1))
-        .map(acks -> AcknowledgeRequest.of(acks))
+        .map(acks -> AcknowledgeRequest.create(acks))
         .to(ackSink);
     // #subscribe
 
@@ -103,7 +103,7 @@ public class ExampleUsageJava {
         Flow.of(ReceivedMessage.class)
             .map(t -> t.ackId())
             .groupedWithin(1000, Duration.ofMinutes(1))
-            .map(ids -> AcknowledgeRequest.of(ids))
+            .map(ids -> AcknowledgeRequest.create(ids))
             .to(ackSink);
 
     subscriptionSource.alsoTo(batchAckSink).to(processSink);

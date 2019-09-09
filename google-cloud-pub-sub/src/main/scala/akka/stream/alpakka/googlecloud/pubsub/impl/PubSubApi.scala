@@ -16,8 +16,9 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.pubsub._
+import spray.json._
 import spray.json.DefaultJsonProtocol._
-import spray.json.{deserializationError, DefaultJsonProtocol, JsObject, JsString, JsValue, JsonFormat, RootJsonFormat}
+import spray.json.{deserializationError, DefaultJsonProtocol, JsObject, JsString, JsValue, RootJsonFormat}
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -58,27 +59,68 @@ private[pubsub] trait PubSubApi {
     override def write(instant: Instant): JsValue = JsString(instant.toString)
   }
 
-  private implicit val pubSubMessageFormat = {
-    val defaultFormat = DefaultJsonProtocol.jsonFormat4(PubSubMessage.apply)
-    val attributesFormat = implicitly[JsonFormat[Option[immutable.Map[String, String]]]]
+  private implicit val pubSubMessageFormat =
     new RootJsonFormat[PubSubMessage] {
-      def read(json: JsValue): PubSubMessage = defaultFormat.read(json)
-      //Do not publish "messageId" nor "publishTime"
-      def write(m: PubSubMessage): JsValue = {
-        val fields = List("data" -> JsString(m.data)) ++ m.attributes.map(
-            attrs => "attributes" -> attributesFormat.write(m.attributes)
-          )
-        JsObject(fields: _*)
+      override def read(json: JsValue): PubSubMessage = {
+        val fields = json.asJsObject.fields
+        PubSubMessage(
+          fields.get("data").map(_.convertTo[String]),
+          fields.get("attributes").map(_.convertTo[Map[String, String]]),
+          fields("messageId").convertTo[String],
+          fields("publishTime").convertTo[Instant]
+        )
       }
-
+      override def write(m: PubSubMessage): JsValue =
+        JsObject(
+          Seq(
+            "messageId" -> m.messageId.toJson,
+            "publishTime" -> m.publishTime.toJson
+          )
+          ++ m.data.map(data => "data" -> data.toJson)
+          ++ m.attributes.map(attributes => "attributes" -> attributes.toJson): _*
+        )
     }
+
+  private implicit val publishMessageFormat = new RootJsonFormat[PublishMessage] {
+    def read(json: JsValue): PublishMessage = {
+      val data = json.asJsObject.fields("data").convertTo[String]
+      val attributes = json.asJsObject.fields("attributes").convertTo[immutable.Map[String, String]]
+      PublishMessage(data, attributes)
+    }
+    def write(m: PublishMessage): JsValue =
+      JsObject(Seq("data" -> JsString(m.data)) ++ m.attributes.map(a => "attributes" -> a.toJson): _*)
   }
-  private implicit val pubSubRequestFormat = DefaultJsonProtocol.jsonFormat1(PublishRequest.apply)
-  private implicit val gcePubSubResponseFormat = DefaultJsonProtocol.jsonFormat1(PublishResponse)
-  private implicit val receivedMessageFormat = DefaultJsonProtocol.jsonFormat2(ReceivedMessage)
-  private implicit val pubSubPullResponseFormat = DefaultJsonProtocol.jsonFormat1(PullResponse)
-  private implicit val acknowledgeRequestFormat =
-    DefaultJsonProtocol.jsonFormat1(AcknowledgeRequest.apply)
+
+  private implicit val pubSubRequestFormat = new RootJsonFormat[PublishRequest] {
+    def read(json: JsValue): PublishRequest =
+      PublishRequest(json.asJsObject.fields("messages").convertTo[immutable.Seq[PublishMessage]])
+    def write(pr: PublishRequest): JsValue = JsObject("messages" -> pr.messages.toJson)
+  }
+  private implicit val gcePubSubResponseFormat = new RootJsonFormat[PublishResponse] {
+    def read(json: JsValue): PublishResponse =
+      PublishResponse(json.asJsObject.fields("messageIds").convertTo[immutable.Seq[String]])
+    def write(pr: PublishResponse): JsValue = JsObject("messageIds" -> pr.messageIds.toJson)
+  }
+
+  private implicit val receivedMessageFormat = new RootJsonFormat[ReceivedMessage] {
+    def read(json: JsValue): ReceivedMessage =
+      ReceivedMessage(json.asJsObject.fields("ackId").convertTo[String],
+                      json.asJsObject.fields("message").convertTo[PubSubMessage])
+    def write(rm: ReceivedMessage): JsValue =
+      JsObject("ackId" -> rm.ackId.toJson, "message" -> rm.message.toJson)
+  }
+  private implicit val pubSubPullResponseFormat = new RootJsonFormat[PullResponse] {
+    def read(json: JsValue): PullResponse =
+      PullResponse(json.asJsObject.fields.get("receivedMessages").map(_.convertTo[immutable.Seq[ReceivedMessage]]))
+    def write(pr: PullResponse): JsValue =
+      pr.receivedMessages.map(rm => JsObject("receivedMessages" -> rm.toJson)).getOrElse(JsObject.empty)
+  }
+
+  private implicit val acknowledgeRequestFormat = new RootJsonFormat[AcknowledgeRequest] {
+    def read(json: JsValue): AcknowledgeRequest =
+      AcknowledgeRequest(json.asJsObject.fields("ackIds").convertTo[immutable.Seq[String]]: _*)
+    def write(ar: AcknowledgeRequest): JsValue = JsObject("ackIds" -> ar.ackIds.toJson)
+  }
   private implicit val pullRequestFormat = DefaultJsonProtocol.jsonFormat2(PubSubApi.PullRequest)
 
   def pull(project: String,
@@ -136,7 +178,6 @@ private[pubsub] trait PubSubApi {
     import materializer.executionContext
 
     val url: Uri = s"$PubSubGoogleApisHost/v1/projects/$project/topics/$topic:publish"
-
     for {
       request <- Marshal((HttpMethods.POST, url, request)).to[HttpRequest]
       response <- doRequest(request, maybeAccessToken)

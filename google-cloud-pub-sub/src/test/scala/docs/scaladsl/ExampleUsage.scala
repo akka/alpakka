@@ -4,6 +4,7 @@
 
 package docs.scaladsl
 
+import java.time.Instant
 import java.util.Base64
 
 import akka.actor.ActorSystem
@@ -47,7 +48,7 @@ class ExampleUsage {
 
   //#publish-single
   val publishMessage =
-    PubSubMessage(new String(Base64.getEncoder.encode("Hello Google!".getBytes)))
+    PublishMessage(new String(Base64.getEncoder.encode("Hello Google!".getBytes)))
   val publishRequest = PublishRequest(Seq(publishMessage))
 
   val source: Source[PublishRequest, NotUsed] = Source.single(publishRequest)
@@ -59,7 +60,7 @@ class ExampleUsage {
   //#publish-single
 
   //#publish-fast
-  val messageSource: Source[PubSubMessage, NotUsed] = Source(List(publishMessage, publishMessage))
+  val messageSource: Source[PublishMessage, NotUsed] = Source(List(publishMessage, publishMessage))
   messageSource.groupedWithin(1000, 1.minute).map(PublishRequest.apply).via(publishFlow).to(Sink.seq)
   //#publish-fast
 
@@ -84,7 +85,7 @@ class ExampleUsage {
   //#subscribe-auto-ack
   val subscribeMessageSoruce: Source[ReceivedMessage, NotUsed] = // ???
     //#subscribe-auto-ack
-    Source.single(ReceivedMessage("id", PubSubMessage("data")))
+    Source.single(ReceivedMessage("id", PubSubMessage(Some("data"), None, "msg-id-1", Instant.now)))
   //#subscribe-auto-ack
   val processMessage: Sink[ReceivedMessage, NotUsed] = // ???
     //#subscribe-auto-ack

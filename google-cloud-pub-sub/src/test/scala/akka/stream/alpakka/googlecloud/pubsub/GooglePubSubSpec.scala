@@ -22,6 +22,7 @@ import org.mockito.Mockito._
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.collection.immutable.Seq
+import java.time.Instant
 
 class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with Matchers {
 
@@ -47,7 +48,7 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
       config = config
     )
 
-    val request = PublishRequest(Seq(PubSubMessage(data = base64String("Hello Google!"))))
+    val request = PublishRequest(Seq(PublishMessage(data = base64String("Hello Google!"))))
 
     val source = Source(List(request))
 
@@ -87,7 +88,7 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
       config = config
     )
 
-    val request = PublishRequest(Seq(PubSubMessage(data = base64String("Hello Google!"))))
+    val request = PublishRequest(Seq(PublishMessage(data = base64String("Hello Google!"))))
 
     val source = Source(List(request))
     val result = source.via(flow).runWith(Sink.seq)
@@ -95,8 +96,12 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
   }
 
   it should "subscribe and pull a message" in new Fixtures {
+    val publishTime = Instant.ofEpochMilli(111)
     val message =
-      ReceivedMessage(ackId = "1", message = PubSubMessage(messageId = "1", data = base64String("Hello Google!")))
+      ReceivedMessage(
+        ackId = "1",
+        message = PubSubMessage(messageId = "1", data = Some(base64String("Hello Google!")), publishTime = publishTime)
+      )
 
     when(config.session.getToken()).thenReturn(Future.successful("ok"))
     when(
@@ -125,7 +130,7 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
         project = TestCredentials.projectId,
         subscription = "sub1",
         maybeAccessToken = Some("ok"),
-        request = AcknowledgeRequest(ackIds = Seq("a1"))
+        request = AcknowledgeRequest(ackIds = "a1")
       )
     ).thenReturn(Future.successful(()))
 
@@ -134,7 +139,7 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
       config = config
     )
 
-    val source = Source(List(AcknowledgeRequest(List("a1"))))
+    val source = Source(List(AcknowledgeRequest("a1")))
 
     val result = source.runWith(sink)
 
@@ -161,7 +166,7 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
       config = config
     )
 
-    val source = Source(List(AcknowledgeRequest(List("a1"))))
+    val source = Source(List(AcknowledgeRequest("a1")))
 
     val result = source.runWith(sink)
 
