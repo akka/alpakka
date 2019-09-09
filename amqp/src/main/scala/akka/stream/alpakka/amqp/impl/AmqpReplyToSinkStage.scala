@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.amqp.impl
 
-import akka.Done
+import akka.{Done, NotUsed}
 import akka.annotation.InternalApi
 import akka.stream.alpakka.amqp.{AmqpReplyToSinkSettings, WriteMessage}
 import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, InHandler}
@@ -19,11 +19,11 @@ import scala.concurrent.{Future, Promise}
  */
 @InternalApi
 private[amqp] final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings)
-    extends GraphStageWithMaterializedValue[SinkShape[WriteMessage], Future[Done]] { stage =>
+    extends GraphStageWithMaterializedValue[SinkShape[WriteMessage[NotUsed]], Future[Done]] { stage =>
 
-  val in = Inlet[WriteMessage]("AmqpReplyToSink.in")
+  val in = Inlet[WriteMessage[NotUsed]]("AmqpReplyToSink.in")
 
-  override def shape: SinkShape[WriteMessage] = SinkShape.of(in)
+  override def shape: SinkShape[WriteMessage[NotUsed]] = SinkShape.of(in)
 
   override protected def initialAttributes: Attributes =
     super.initialAttributes and Attributes.name("AmqpReplyToSink") and ActorAttributes.IODispatcher
