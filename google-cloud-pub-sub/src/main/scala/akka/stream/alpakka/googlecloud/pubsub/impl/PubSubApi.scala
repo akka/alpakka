@@ -140,7 +140,10 @@ private[pubsub] trait PubSubApi {
     for {
       request <- Marshal((HttpMethods.POST, uri, request)).to[HttpRequest]
       response <- doRequest(request, maybeAccessToken)
-      pullResponse <- Unmarshal(response).to[PullResponse]
+      pullResponse <- response.status match {
+        case StatusCodes.OK => Unmarshal(response).to[PullResponse]
+        case status => Future.failed(new RuntimeException(s"Unexpected publish response. Code: [${status}]"))
+      }
     } yield pullResponse
   }
 

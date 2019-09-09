@@ -209,6 +209,29 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
 
   }
 
+  it should "Fail pull when HTTP response is error" in {
+
+    val pullResponse = """{"is_valid_json": true}"""
+
+    val pullRequest = """{"returnImmediately":true,"maxMessages":1000}"""
+
+    mock.register(
+      WireMock
+        .post(
+          urlEqualTo(
+            s"/v1/projects/${config.projectId}/subscriptions/sub1:pull"
+          )
+        )
+        .withRequestBody(WireMock.equalToJson(pullRequest))
+        .withHeader("Authorization", WireMock.equalTo("Bearer " + accessToken))
+        .willReturn(aResponse().withStatus(418).withBody(pullResponse).withHeader("Content-Type", "application/json"))
+    )
+
+    val result = TestHttpApi.pull(config.projectId, "sub1", Some(accessToken), true, 1000)
+    result.failed.futureValue.getMessage should include("418 I'm a teapot")
+
+  }
+
   it should "acknowledge" in {
     val ackRequest = """{"ackIds":["ack1"]}"""
     mock.register(
