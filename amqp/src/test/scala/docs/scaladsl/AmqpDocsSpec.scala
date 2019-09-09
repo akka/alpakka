@@ -262,9 +262,10 @@ class AmqpDocsSpec extends AmqpSpec {
       val input = Vector("one", "two", "three", "four", "five")
       val result: Future[Seq[WriteResult[String]]] =
         Source(input)
-          .map(message =>
-            WriteMessage(ByteString(message))
-              .withPassThrough(message)
+          .map(
+            message =>
+              WriteMessage(ByteString(message))
+                .withPassThrough(message)
           )
           .via(amqpFlow)
           .runWith(Sink.seq)

@@ -13,6 +13,7 @@ import akka.stream.alpakka.amqp.{AmqpWriteSettings, WriteMessage, WriteResult}
 import akka.stream.stage._
 import com.rabbitmq.client.ConfirmCallback
 
+import scala.collection.immutable.TreeMap
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{Future, Promise}
@@ -66,7 +67,9 @@ import scala.util.{Failure, Try}
     val callback = getAsyncCallback[(DeliveryTag, Boolean)] {
       case (tag: DeliveryTag, multiple: Boolean) => confirmCallback(tag, multiple)
     }
-    (tag: DeliveryTag, multiple: Boolean) => callback.invoke((tag, multiple))
+    new ConfirmCallback { // cant use function literal because it doesn't work with 2.11
+      override def handle(tag: DeliveryTag, multiple: Boolean): Unit = callback.invoke((tag, multiple))
+    }
   }
 
   private def onConfirmation(tag: DeliveryTag, multiple: Boolean): Unit = {
@@ -245,7 +248,7 @@ import scala.util.{Failure, Try}
     val promise = Promise[Done]()
     (new AmqpAsyncFlowStageLogic(sinkSettings, bufferSize, confirmationTimeout, promise, shape) {
 
-      private val buffer = mutable.TreeMap[DeliveryTag, AwaitingMessage[T]]()
+      private var buffer = TreeMap[DeliveryTag, AwaitingMessage[T]]()
 
       override def enqueueMessage(tag: DeliveryTag, passThrough: T): Unit =
         buffer += (tag -> AwaitingMessage(tag, passThrough))

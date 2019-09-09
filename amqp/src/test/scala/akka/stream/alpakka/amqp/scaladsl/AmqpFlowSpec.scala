@@ -50,13 +50,11 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
       .withDeclaration(queueDeclaration)
   }
 
-  def localAmqpWriteSettings: AmqpWriteSettings = {
+  def localAmqpWriteSettings: AmqpWriteSettings =
     amqpWriteSettings(AmqpLocalConnectionProvider)
-  }
 
-  def mockAmqpWriteSettings: AmqpWriteSettings = {
+  def mockAmqpWriteSettings: AmqpWriteSettings =
     amqpWriteSettings(AmqpConnectionFactoryConnectionProvider(connectionFactoryMock))
-  }
 
   "The AMQP simple flow" should {
     "emit confirmation for published messages" in assertAllStagesStopped {
@@ -69,7 +67,6 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
       shouldFailStageOnPublicationError(mockedSimpleFlow)
     }
   }
-
 
   "The AMQP confirmation flow" should {
 
@@ -124,7 +121,6 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
       completion.futureValue shouldBe an[Done]
     }
   }
-
 
   "The AMQP async confirmation flow" should {
     val mockedAsyncFlow = AmqpFlow.withAsyncConfirm[String](mockAmqpWriteSettings, 10, 200.millis)
@@ -202,7 +198,6 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
 
   }
 
-
   "AMQP unordered async confirmation flow" should {
     val mockedAsyncUnorderedFlow = AmqpFlow.withAsyncUnorderedConfirm[String](mockAmqpWriteSettings, 10, 200.millis)
 
@@ -277,7 +272,9 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
     }
   }
 
-  def shouldEmitConfirmationForPublishedMessages(flow: Flow[WriteMessage[String], WriteResult[String], Future[Done]]) = {
+  def shouldEmitConfirmationForPublishedMessages(
+      flow: Flow[WriteMessage[String], WriteResult[String], Future[Done]]
+  ) = {
     val input = Vector("one", "two", "three", "four", "five")
     val expectedOutput = input.map(WriteResult.confirmed)
 
@@ -312,7 +309,9 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
     completion.failed.futureValue shouldEqual publicationError
   }
 
-  def shouldEmitRejectedResultOnMessageRejection(flow: Flow[WriteMessage[String], WriteResult[String], Future[Done]]) = {
+  def shouldEmitRejectedResultOnMessageRejection(
+      flow: Flow[WriteMessage[String], WriteResult[String], Future[Done]]
+  ) = {
 
     val deliveryTags = 1L to 2L
     when(channelMock.getNextPublishSeqNo).thenReturn(deliveryTags(0), deliveryTags(1))
@@ -342,7 +341,9 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
     completion.futureValue shouldBe an[Done]
   }
 
-  def shouldEmitRejectedResultOnConfirmationTimeout(flow: Flow[WriteMessage[String], WriteResult[String], Future[Done]]) = {
+  def shouldEmitRejectedResultOnConfirmationTimeout(
+      flow: Flow[WriteMessage[String], WriteResult[String], Future[Done]]
+  ) = {
     when(channelMock.getNextPublishSeqNo).thenReturn(1L, 2L)
 
     val input = Vector("one", "two")
@@ -360,8 +361,9 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
     completion.futureValue shouldBe an[Done]
   }
 
-
-  def shouldEmitMultipleResultsOnBatchConfirmation(flow: Flow[WriteMessage[String], WriteResult[String], Future[Done]]) = {
+  def shouldEmitMultipleResultsOnBatchConfirmation(
+      flow: Flow[WriteMessage[String], WriteResult[String], Future[Done]]
+  ) = {
     val deliveryTags = 1L to 5L
     when(channelMock.getNextPublishSeqNo).thenReturn(deliveryTags.head, deliveryTags.tail: _*)
 
@@ -420,13 +422,16 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
     probe.cancel()
   }
 
-  def shouldProcessAllBufferedMessagesOnUpstreamFinish(flow: Flow[WriteMessage[String], WriteResult[String], Future[Done]]) = {
+  def shouldProcessAllBufferedMessagesOnUpstreamFinish(
+      flow: Flow[WriteMessage[String], WriteResult[String], Future[Done]]
+  ) = {
     when(channelMock.getNextPublishSeqNo).thenReturn(1L, 2L)
 
     val input = Vector("one", "two")
 
     val (sourceProbe, sinkProbe) =
-      TestSource.probe[String]
+      TestSource
+        .probe[String]
         .map(s => WriteMessage(ByteString(s)).withPassThrough(s))
         .viaMat(flow)(Keep.left)
         .toMat(TestSink.probe)(Keep.both)

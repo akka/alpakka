@@ -21,7 +21,7 @@ trait AmqpMocking extends MockitoSugar {
       .thenReturn(channelMock)
 
     when(channelMock.addConfirmListener(any[ConfirmCallback](), any[ConfirmCallback]()))
-        .thenReturn(mock[ConfirmListener])
+      .thenReturn(mock[ConfirmListener])
 
     connectionFactory
   }
