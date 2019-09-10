@@ -17,7 +17,6 @@ import scala.collection.immutable.TreeMap
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{Future, Promise}
-import scala.util.{Failure, Try}
 
 /**
  * Internal API.
@@ -162,19 +161,14 @@ import scala.util.{Failure, Try}
 
         log.debug("Publishing message {} with deliveryTag {}.", message, tag)
 
-        Try(
-          channel.basicPublish(
-            exchange,
-            message.routingKey.getOrElse(routingKey),
-            message.mandatory,
-            message.immediate,
-            message.properties.orNull,
-            message.bytes.toArray
-          )
-        ) match {
-          case Failure(exception) => failStage(exception)
-          case _ => ()
-        }
+        channel.basicPublish(
+          exchange,
+          message.routingKey.getOrElse(routingKey),
+          message.mandatory,
+          message.immediate,
+          message.properties.orNull,
+          message.bytes.toArray
+        )
 
         tag
       }
