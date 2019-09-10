@@ -186,12 +186,7 @@ lazy val googleFcm = alpakkaProject(
 
 lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, fork in Test := true)
 
-lazy val hdfs = alpakkaProject("hdfs",
-                               "hdfs",
-                               Dependencies.Hdfs,
-                               parallelExecution in Test := false,
-                               crossScalaVersions -= Dependencies.Scala213 // Requires upgrade of cats-core
-)
+lazy val hdfs = alpakkaProject("hdfs", "hdfs", Dependencies.Hdfs, parallelExecution in Test := false)
 
 lazy val influxdb = alpakkaProject("influxdb",
                                    "influxdb",
