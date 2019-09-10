@@ -12,17 +12,10 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.Uri.{Path, Query}
-import akka.http.scaladsl.model.headers.{OAuth2BearerToken, RawHeader, _}
+import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.{ActorMaterializer, Attributes, Materializer}
-import akka.stream.alpakka.googlecloud.storage.{
-  Bucket,
-  GCStorageExt,
-  GCStorageSettings,
-  GCStorageSettingsPath,
-  GCStorageSettingsValue,
-  _
-}
+import akka.stream.alpakka.googlecloud.storage._
 import akka.stream.alpakka.googlecloud.storage.impl.Formats._
 import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source}
 import akka.util.ByteString
@@ -94,7 +87,7 @@ import scala.util.control.NonFatal
   def deleteBucket(bucketName: String)(implicit mat: Materializer, attr: Attributes): Future[Done] =
     deleteBucketSource(bucketName).withAttributes(attr).runWith(Sink.head)
 
-  def listBucket(bucket: String, prefix: Option[String]): Source[StorageObject, NotUsed] = {
+  def listBucket(bucket: String, prefix: Option[String], versions: Boolean = false): Source[StorageObject, NotUsed] = {
     sealed trait ListBucketState
     case object Starting extends ListBucketState
     case class Running(nextPageToken: String) extends ListBucketState
@@ -106,6 +99,7 @@ import scala.util.control.NonFatal
       import mat.executionContext
       val queryParams =
         Map(
+          "versions" -> s"$versions" ::
           pageToken.map(token => "pageToken" -> token).toList ++
           prefix.map(pref => "prefix" -> pref).toList: _*
         )
