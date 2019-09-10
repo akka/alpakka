@@ -16,7 +16,7 @@ import akka.util.ByteString
 import software.amazon.awssdk.auth.credentials._
 import software.amazon.awssdk.regions.providers._
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatest.{FlatSpecLike, Matchers, PrivateMethodTester}
+import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers, PrivateMethodTester}
 import software.amazon.awssdk.regions.Region
 
 import scala.concurrent.Future
@@ -25,6 +25,7 @@ class S3StreamSpec(_system: ActorSystem)
     extends TestKit(_system)
     with FlatSpecLike
     with Matchers
+    with BeforeAndAfterAll
     with PrivateMethodTester
     with ScalaFutures
     with IntegrationPatience {
@@ -33,6 +34,8 @@ class S3StreamSpec(_system: ActorSystem)
 
   def this() = this(ActorSystem("S3StreamSpec"))
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withDebugLogging(true))
+
+  override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 
   "Non-ranged downloads" should "have two (host and synthetic raw-request-uri) headers" in {
 

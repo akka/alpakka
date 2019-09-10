@@ -13,6 +13,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.alpakka.s3.BucketAccess.{AccessGranted, NotExists}
 import akka.stream.alpakka.s3._
 import akka.stream.scaladsl.{Keep, Sink, Source}
+import akka.testkit.TestKit
 import akka.util.ByteString
 import software.amazon.awssdk.auth.credentials._
 import software.amazon.awssdk.regions.providers._
@@ -47,6 +48,8 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
 
   val objectValue = "Some String"
   val metaHeaders: Map[String, String] = Map("location" -> "Africa", "datatype" -> "image")
+
+  override protected def afterAll(): Unit = TestKit.shutdownActorSystem(actorSystem)
 
   def config() = ConfigFactory.parseString("""
       |alpakka.s3.aws.region {
