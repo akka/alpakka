@@ -90,10 +90,10 @@ private[ironmq] final class IronMqClient(settings: IronMqSettings)(implicit acto
             xs.map(extractName)
           }
         }
-        .as[Traversable[String]]
+        .as[scala.collection.immutable.Seq[String]]
     }
 
-    val query = List(prefix.map("prefix" -> _), from.map("previous" -> _.value))
+    val query = List(prefix.map("prefix" -> _), from.map("previous" -> _))
       .collect {
         case Some(x) => x
       }
