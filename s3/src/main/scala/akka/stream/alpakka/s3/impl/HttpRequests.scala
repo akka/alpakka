@@ -218,13 +218,12 @@ import scala.concurrent.{ExecutionContext, Future}
   }
 
   private def rawRequestUri(uri: Uri): String = {
-    val rawUri = uri.toString
+    val rawUri = uri.toHttpRequestTargetOriginForm.toString
     val rawPath = uri.path.toString()
 
     if (rawPath.contains("+")) {
       val fixedPath = rawPath.replaceAll("\\+", "%2B")
-
-      rawUri.replace(rawPath, fixedPath)
+      fixedPath + rawUri.drop(rawPath.length)
     } else {
       rawUri
     }
