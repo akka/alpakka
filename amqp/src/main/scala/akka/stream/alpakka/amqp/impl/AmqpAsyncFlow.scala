@@ -24,7 +24,7 @@ import scala.concurrent.{Future, Promise}
 @InternalApi private final case class AwaitingMessage[T](
     tag: DeliveryTag,
     passThrough: T,
-    var ready: Boolean = false
+    ready: Boolean = false
 )
 
 /**
@@ -96,15 +96,15 @@ import scala.concurrent.{Future, Promise}
   }
 
   private def pushOrEnqueueResults(results: Iterable[WriteResult[T]]): Unit = {
-    results.foreach(result => {
-      if (exitQueue.nonEmpty || !isAvailable(out)) {
-        log.debug("Message {} queued for downstream push.", result)
-        exitQueue.enqueue(result)
-      } else {
+    results.foreach(result =>
+      if (isAvailable(out) && exitQueue.isEmpty) {
         log.debug("Pushing {} downstream.", result)
         push(out, result)
+      } else {
+        log.debug("Message {} queued for downstream push.", result)
+        exitQueue.enqueue(result)
       }
-    })
+    )
     if (isFinished) closeStage()
   }
 
@@ -247,19 +247,17 @@ import scala.concurrent.{Future, Promise}
       override def enqueueMessage(tag: DeliveryTag, passThrough: T): Unit =
         buffer += (tag -> AwaitingMessage(tag, passThrough))
 
-      override def dequeueAwaitingMessages(tag: DeliveryTag, multiple: Boolean): Iterable[AwaitingMessage[T]] = {
-        setReady(tag)
-
+      override def dequeueAwaitingMessages(tag: DeliveryTag, multiple: Boolean): Iterable[AwaitingMessage[T]] =
         if (multiple) {
           dequeueWhile((t, _) => t <= tag)
         } else {
+          setReady(tag)
           if (isAtHead(tag)) {
             dequeueWhile((_, message) => message.ready)
           } else {
             Seq.empty
           }
         }
-      }
 
       private def dequeueWhile(
           predicate: (DeliveryTag, AwaitingMessage[T]) => Boolean
@@ -320,8 +318,7 @@ import scala.concurrent.{Future, Promise}
         else
           buffer
             .dequeueFirst(_.tag == tag)
-            .map(Seq(_))
-            .getOrElse(Seq.empty)
+            .fold(Seq.empty[AwaitingMessage[T]])(Seq(_))
 
       override def messagesAwaitingDelivery: Int = buffer.length
 

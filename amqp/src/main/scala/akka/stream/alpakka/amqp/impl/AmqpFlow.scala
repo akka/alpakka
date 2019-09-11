@@ -147,18 +147,7 @@ import scala.util.{Failure, Success, Try}
 
         publicationResult
           .map(result => WriteResult(result, message.passThrough))
-          .recoverWith {
-            case _: java.util.concurrent.TimeoutException =>
-              Success(WriteResult.rejected(message.passThrough))
-            case throwable =>
-              Failure(throwable)
-          }
-          .map(push(out, _))
-          .failed
-          .map(throwable => {
-            promise.failure(throwable)
-            failStage(throwable)
-          })
+          .fold(onFailure, result => push(out, result))
       }
 
       private def publishWithBlockingConfirm(message: WriteMessage[T]): Try[Unit] = {
@@ -178,6 +167,11 @@ import scala.util.{Failure, Success, Try}
       private def waitForConfirmation(): Try[Boolean] = {
         log.debug("Waiting for message confirmation.")
         Try(channel.waitForConfirms(confirmationTimeout.toMillis))
+          .recoverWith {
+            case _: java.util.concurrent.TimeoutException => Success(false)
+            case throwable => Failure(throwable)
+          }
+
       }
 
     }, promise.future)

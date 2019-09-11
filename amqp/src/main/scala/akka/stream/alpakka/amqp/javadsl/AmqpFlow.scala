@@ -76,7 +76,7 @@ object AmqpFlow {
         bufferSize = bufferSize,
         confirmationTimeout = JavaDurationConverters.asFiniteDuration(confirmationTimeout)
       )
-      .mapMaterializedValue(f => f.toJava)
+      .mapMaterializedValue(_.toJava)
       .asJava
 
   /**
@@ -104,6 +104,6 @@ object AmqpFlow {
         bufferSize = bufferSize,
         confirmationTimeout = JavaDurationConverters.asFiniteDuration(confirmationTimeout)
       )
-      .mapMaterializedValue(f => f.toJava)
+      .mapMaterializedValue(_.toJava)
       .asJava
 }
