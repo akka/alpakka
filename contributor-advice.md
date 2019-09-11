@@ -179,5 +179,9 @@ Prepare code snippets to be integrated by Paradox in the tests. Such example sho
 unused methods.
 
 Use ScalaDoc if you see the need to describe the API usage better than the naming does.
+The `@apidoc` Paradox directive automatically creates links to the corresponding Scaladoc page for both `scaladsl` and `javadsl`. Be sure to add a `$` at the end of the name if you point to an `object`.
+`@apidoc[AmqpSink$]` will link to `akka/stream/alpakka/amqp/scaladsl/AmqpSink$.html` when viewing "Scala" and `akka/stream/alpakka/amqp/javadsl/AmqpSink$.html` for "Java".
+
+```
 
 Run `sbt docs/previewSite` to generate reference and API docs, start an embedded web-server, and open a tab to the generated documentation while developing.
