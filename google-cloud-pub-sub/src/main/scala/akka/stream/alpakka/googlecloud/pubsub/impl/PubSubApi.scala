@@ -141,8 +141,13 @@ private[pubsub] trait PubSubApi {
       request <- Marshal((HttpMethods.POST, uri, request)).to[HttpRequest]
       response <- doRequest(request, maybeAccessToken)
       pullResponse <- response.status match {
-        case StatusCodes.OK => Unmarshal(response).to[PullResponse]
-        case status => Future.failed(new RuntimeException(s"Unexpected publish response. Code: [${status}]"))
+        case StatusCodes.Success(_) => Unmarshal(response).to[PullResponse]
+        case status =>
+          Unmarshal(response)
+            .to[String]
+            .map { entity =>
+              throw new RuntimeException(s"Unexpected pull response. Code: [$status]. Entity: [$entity]")
+            }
       }
     } yield pullResponse
   }
@@ -159,14 +164,18 @@ private[pubsub] trait PubSubApi {
     for {
       request <- Marshal((HttpMethods.POST, url, request)).to[HttpRequest]
       response <- doRequest(request, maybeAccessToken)
-    } yield {
-      response.discardEntityBytes()
-      if (response.status.isSuccess()) {
-        ()
-      } else {
-        new RuntimeException("unexpected response acknowledging messages " + response)
+      _ <- response.status match {
+        case StatusCodes.Success(_) =>
+          response.discardEntityBytes()
+          Future.successful(())
+        case status =>
+          Unmarshal(response)
+            .to[String]
+            .map { entity =>
+              throw new RuntimeException(s"Unexpected acknowledge response. Code: [$status]. Entity: [$entity]")
+            }
       }
-    }
+    } yield ()
   }
 
   private[this] def doRequest(request: HttpRequest, maybeAccessToken: Option[String])(implicit as: ActorSystem) =
@@ -184,11 +193,15 @@ private[pubsub] trait PubSubApi {
     for {
       request <- Marshal((HttpMethods.POST, url, request)).to[HttpRequest]
       response <- doRequest(request, maybeAccessToken)
-    } yield {
-      response.status match {
-        case StatusCodes.OK => Unmarshal(response.entity).to[PublishResponse].map(_.messageIds)
-        case _ => throw new RuntimeException(s"Unexpected publish response. Code: [${response.status}]")
+      publishResponse <- response.status match {
+        case StatusCodes.Success(_) => Unmarshal(response.entity).to[PublishResponse].map(_.messageIds)
+        case status =>
+          Unmarshal(response)
+            .to[String]
+            .map { entity =>
+              throw new RuntimeException(s"Unexpected publish response. Code: [$status]. Entity: [$entity]")
+            }
       }
-    }
-  }.flatMap(identity)(materializer.executionContext)
+    } yield publishResponse
+  }
 }
