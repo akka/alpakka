@@ -223,6 +223,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
     if (rawPath.contains("+")) {
       val fixedPath = rawPath.replaceAll("\\+", "%2B")
+      require(rawUri startsWith rawPath)
       fixedPath + rawUri.drop(rawPath.length)
     } else {
       rawUri
