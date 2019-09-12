@@ -27,6 +27,8 @@ class MemoryBufferSpec(_system: ActorSystem)
 
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withDebugLogging(true))
 
+  override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
+
   "MemoryBuffer" should "emit a chunk on its output containg the concatenation of all input values" in {
     val result = Source(Vector(ByteString(1, 2, 3, 4, 5), ByteString(6, 7, 8, 9, 10, 11, 12), ByteString(13, 14)))
       .via(new MemoryBuffer(200))
