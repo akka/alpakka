@@ -15,7 +15,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.alpakka.s3.headers.{CannedAcl, ServerSideEncryption, StorageClass}
 import akka.stream.alpakka.s3.{ApiVersion, BufferType, MemoryBufferType, MetaHeaders, S3Headers, S3Settings}
 import akka.stream.scaladsl.Source
-import akka.testkit.{SocketUtil, TestProbe}
+import akka.testkit.{SocketUtil, TestKit, TestProbe}
 import software.amazon.awssdk.auth.credentials._
 import software.amazon.awssdk.regions.providers._
 import org.scalatest.concurrent.ScalaFutures
@@ -185,7 +185,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     val req = HttpRequests.getDownloadRequest(location)
     req.uri.authority.host.toString shouldEqual "bucket.s3.amazonaws.com"
     req.uri.path.toString shouldEqual "/test%20folder/1%20+%202%20=%203"
-    req.headers should contain(`Raw-Request-URI`("https://bucket.s3.amazonaws.com/test%20folder/1%20%2B%202%20=%203"))
+    req.headers should contain(`Raw-Request-URI`("/test%20folder/1%20%2B%202%20=%203"))
   }
 
   it should "support download requests with keys containing spaces with path-style access in other regions" in {
@@ -378,7 +378,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     probe.expectMsgType[HttpRequest]
 
     materializer.shutdown()
-    system.terminate()
+    TestKit.shutdownActorSystem(system)
   }
 
   it should "add two (source, range) headers to multipart upload (copy) request when byte range populated" in {
