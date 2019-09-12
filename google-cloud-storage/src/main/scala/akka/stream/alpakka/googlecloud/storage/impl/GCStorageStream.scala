@@ -87,7 +87,7 @@ import scala.util.control.NonFatal
   def deleteBucket(bucketName: String)(implicit mat: Materializer, attr: Attributes): Future[Done] =
     deleteBucketSource(bucketName).withAttributes(attr).runWith(Sink.head)
 
-  def listBucket(bucket: String, prefix: Option[String], versions: Boolean = false): Source[StorageObject, NotUsed] = {
+  def listBucket(bucket: String, prefix: Option[String], versions: Boolean): Source[StorageObject, NotUsed] = {
     sealed trait ListBucketState
     case object Starting extends ListBucketState
     case class Running(nextPageToken: String) extends ListBucketState
@@ -99,9 +99,9 @@ import scala.util.control.NonFatal
       import mat.executionContext
       val queryParams =
         Map(
-          "versions" -> s"$versions" ::
-          pageToken.map(token => "pageToken" -> token).toList ++
-          prefix.map(pref => "prefix" -> pref).toList: _*
+          pageToken.map(token => "pageToken" -> token).toList :::
+          prefix.map(pref => "prefix" -> pref).toList :::
+          List("versions" -> s"$versions").filter(_ => versions): _*
         )
 
       makeRequestSource(
@@ -136,13 +136,15 @@ import scala.util.control.NonFatal
       .mapMaterializedValue(_ => NotUsed)
   }
 
-  def getObject(bucket: String, objectName: String): Source[Option[StorageObject], NotUsed] =
+  def getObject(bucket: String, objectName: String, generation: Option[Long]): Source[Option[StorageObject], NotUsed] =
     Setup
       .source { implicit mat => implicit attr =>
         makeRequestSource(
           createRequestSource(
             uriFactory = (settings: GCStorageSettings) =>
-              Uri(settings.baseUrl).withPath(Path(settings.basePath) ++ getObjectPath(bucket, objectName))
+              Uri(settings.baseUrl)
+                .withPath(Path(settings.basePath) ++ getObjectPath(bucket, objectName))
+                .withQuery(Query(generation.map("generation" -> _.toString).toMap))
           )
         ).mapAsync(parallelism)(
           response => processGetStorageObjectResponse(response, mat)
@@ -150,22 +152,25 @@ import scala.util.control.NonFatal
       }
       .mapMaterializedValue(_ => NotUsed)
 
-  def deleteObjectSource(bucket: String, objectName: String): Source[Boolean, NotUsed] =
+  def deleteObjectSource(bucket: String, objectName: String, generation: Option[Long]): Source[Boolean, NotUsed] =
     Setup
       .source { implicit mat => implicit attr =>
         makeRequestSource(
-          createRequestSource(HttpMethods.DELETE,
-                              uriFactory = (settings: GCStorageSettings) =>
-                                Uri(settings.baseUrl)
-                                  .withPath(Path(settings.basePath) ++ getObjectPath(bucket, objectName)))
+          createRequestSource(
+            HttpMethods.DELETE,
+            uriFactory = (settings: GCStorageSettings) =>
+              Uri(settings.baseUrl)
+                .withPath(Path(settings.basePath) ++ getObjectPath(bucket, objectName))
+                .withQuery(Query(generation.map("generation" -> _.toString).toMap))
+          )
         ).mapAsync(parallelism)(entityForSuccessOption)
           .map(option => option.isDefined)
       }
       .mapMaterializedValue(_ => NotUsed)
 
   def deleteObjectsByPrefixSource(bucket: String, prefix: Option[String]): Source[Boolean, NotUsed] =
-    listBucket(bucket, prefix)
-      .flatMapConcat(listBucketResult => deleteObjectSource(bucket, listBucketResult.name))
+    listBucket(bucket, prefix, versions = false)
+      .flatMapConcat(listBucketResult => deleteObjectSource(bucket, listBucketResult.name, None))
 
   def putObject(bucket: String,
                 objectName: String,
@@ -188,10 +193,12 @@ import scala.util.control.NonFatal
       }
       .mapMaterializedValue(_ => NotUsed)
 
-  def download(bucket: String, objectName: String): Source[Option[Source[ByteString, NotUsed]], NotUsed] =
+  def download(bucket: String,
+               objectName: String,
+               generation: Option[Long]): Source[Option[Source[ByteString, NotUsed]], NotUsed] =
     Setup
       .source { implicit mat: ActorMaterializer => implicit attr =>
-        val queryParams = Map("alt" -> "media")
+        val queryParams = Map("alt" -> "media") ++ generation.map("generation" -> _.toString)
         makeRequestSource(
           createRequestSource(
             uriFactory = (settings: GCStorageSettings) =>
@@ -328,7 +335,7 @@ import scala.util.control.NonFatal
       method: HttpMethod,
       headers: Seq[HttpHeader] = Seq.empty,
       uriFactory: GCStorageSettings => Uri
-  )(implicit mat: ActorMaterializer, attry: Attributes): Future[HttpRequest] =
+  )(implicit mat: ActorMaterializer, attr: Attributes): Future[HttpRequest] =
     createRequestSource(method, headers, uriFactory).runWith(Sink.head)
 
   private def createPostRequestSource(

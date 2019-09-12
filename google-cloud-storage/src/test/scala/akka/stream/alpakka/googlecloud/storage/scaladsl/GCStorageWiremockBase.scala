@@ -20,6 +20,7 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
 
   def this(mock: WireMockServer) =
     this(ActorSystem(getCallerName(getClass), config(mock.port()).withFallback(ConfigFactory.load())), mock)
+
   def this() = this(initServer())
 
   val port = _wireMockServer.port()
@@ -29,14 +30,15 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
 
   val bucketName = "alpakka"
   val fileName = "file1.txt"
+  val generation = 1543055053992769L
 
-  val storageObjectJson =
+  def storageObjectJson(generation: Long = 1543055053992768L): String =
     s"""
        |{
        |  "etag":"CMDm8oLo7N4CEAE=",
        |  "name":"$fileName",
        |  "size":"5",
-       |  "generation":"1543055053992768",
+       |  "generation":"$generation",
        |  "crc32c":"AtvFhg==",
        |  "md5Hash":"emjwm9mSZxuzsZpecLeCfg==",
        |  "timeCreated":"2018-11-24T10:24:13.992Z",
@@ -254,11 +256,20 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
     )
   }
 
-  def mockDeleteObject(name: String): Unit =
+  def mockDeleteObjectJava(name: String): Unit =
+    mockDeleteObject(name, None)
+
+  def mockDeleteObjectJava(name: String, generation: Long): Unit =
+    mockDeleteObject(name, Some(generation))
+
+  def mockDeleteObject(name: String, generation: Option[Long] = None): Unit =
     mock.register(
       WireMock
         .delete(
-          urlEqualTo(s"/b/$bucketName/o/$name")
+          urlEqualTo(
+            s"/b/$bucketName/o/$name" +
+            generation.map("?generation=" + _).getOrElse("")
+          )
         )
         .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
         .willReturn(
@@ -358,33 +369,63 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
   def mockBucketListingJava(firstFileName: String, secondFileName: String, folder: String): Unit =
     mockBucketListing(firstFileName, secondFileName, Some(folder))
 
-  def mockBucketListing(firstFileName: String, secondFileName: String, folder: Option[String] = None): Unit = {
+  def mockBucketListingJava(firstFileName: String, secondFileName: String, folder: String, versions: Boolean): Unit =
+    mockBucketListing(firstFileName, secondFileName, Some(folder), versions)
+
+  def mockBucketListing(firstFileName: String,
+                        secondFileName: String,
+                        folder: Option[String] = None,
+                        versions: Boolean = false): Unit = {
     val nextPageToken = "CiAyMDA1MDEwMy8wMDAwOTUwMTQyLTA1LTAwMDAwNi5uYw"
+
+    val firstFile =
+      s"""{
+         |  "etag":"CMDm8oLo7N4CEAE=",
+         |  "name":"$firstFileName",
+         |  "size":"5",
+         |  "generation":"1543055053992768",
+         |  "crc32c":"AtvFhg==",
+         |  "md5Hash":"emjwm9mSZxuzsZpecLeCfg==",
+         |  "timeCreated":"2018-11-24T10:24:13.992Z",
+         |  "selfLink":"https://www.googleapis.com/storage/v1/b/alpakka/o/$firstFileName",
+         |  "timeStorageClassUpdated":"2018-11-24T10:24:13.992Z",
+         |  "storageClass":"MULTI_REGIONAL",
+         |  "id":"alpakka/GoogleCloudStorageClientIntegrationSpec63f9feb6-e800-472b-a51f-48e1c6d5d43f/testa.txt/1543055053992768",
+         |  "contentType":"text/plain; charset=UTF-8",
+         |  "updated":"2018-11-24T10:24:13.992Z",
+         |  "mediaLink":"https://www.googleapis.com/download/storage/v1/b/alpakka/o/$firstFileName?generation=1543055053992768&alt=media",
+         |  "bucket":"alpakka",
+         |  "kind":"storage#object",
+         |   "metageneration":"1"
+         |}""".stripMargin
+
+    val firstFileArchived =
+      s"""{
+         |  "etag":"CMDm8oLo7N4CEAE=",
+         |  "name":"$firstFileName#$generation",
+         |  "size":"5",
+         |  "generation":"$generation",
+         |  "crc32c":"AtvFhg==",
+         |  "md5Hash":"emjwm9mSZxuzsZpecLeCfg==",
+         |  "timeCreated":"2018-11-24T10:24:13.992Z",
+         |  "selfLink":"https://www.googleapis.com/storage/v1/b/alpakka/o/$firstFileName",
+         |  "timeStorageClassUpdated":"2018-11-24T10:24:13.992Z",
+         |  "storageClass":"MULTI_REGIONAL",
+         |  "id":"alpakka/GoogleCloudStorageClientIntegrationSpec63f9feb6-e800-472b-a51f-48e1c6d5d43f/testa.txt/1543055053992768",
+         |  "contentType":"text/plain; charset=UTF-8",
+         |  "updated":"2018-11-24T10:24:13.992Z",
+         |  "mediaLink":"https://www.googleapis.com/download/storage/v1/b/alpakka/o/$firstFileName?generation=1543055053992768&alt=media",
+         |  "bucket":"alpakka",
+         |  "kind":"storage#object",
+         |  "metageneration":"1"
+         |}""".stripMargin
 
     val listJsonItemsPageOne =
       s"""{
          |  "kind":"storage#objects",
          |  "nextPageToken": "$nextPageToken",
          |  "items":[
-         |    {
-         |      "etag":"CMDm8oLo7N4CEAE=",
-         |      "name":"$firstFileName",
-         |      "size":"5",
-         |      "generation":"1543055053992768",
-         |      "crc32c":"AtvFhg==",
-         |      "md5Hash":"emjwm9mSZxuzsZpecLeCfg==",
-         |      "timeCreated":"2018-11-24T10:24:13.992Z",
-         |      "selfLink":"https://www.googleapis.com/storage/v1/b/alpakka/o/$firstFileName",
-         |      "timeStorageClassUpdated":"2018-11-24T10:24:13.992Z",
-         |      "storageClass":"MULTI_REGIONAL",
-         |      "id":"alpakka/GoogleCloudStorageClientIntegrationSpec63f9feb6-e800-472b-a51f-48e1c6d5d43f/testa.txt/1543055053992768",
-         |      "contentType":"text/plain; charset=UTF-8",
-         |      "updated":"2018-11-24T10:24:13.992Z",
-         |      "mediaLink":"https://www.googleapis.com/download/storage/v1/b/alpakka/o/$firstFileName?generation=1543055053992768&alt=media",
-         |      "bucket":"alpakka",
-         |      "kind":"storage#object",
-         |      "metageneration":"1"
-         |    }
+         |    $firstFile ${if (versions) s", $firstFileArchived" else ""}
          |  ]
          |}""".stripMargin
 
@@ -417,7 +458,11 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
     mock.register(
       WireMock
         .get(
-          urlEqualTo(s"/b/$bucketName/o" + folder.map(f => s"?prefix=$f").getOrElse(""))
+          urlEqualTo(
+            s"/b/$bucketName/o" +
+            folder.map(f => s"?prefix=$f").getOrElse("") +
+            (if (versions) s"${if (folder.isEmpty) "?" else "&"}versions=$versions" else "")
+          )
         )
         .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
         .willReturn(
@@ -431,7 +476,11 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
     mock.register(
       WireMock
         .get(
-          urlEqualTo(s"/b/$bucketName/o?pageToken=$nextPageToken" + folder.map(f => s"&prefix=$f").getOrElse(""))
+          urlEqualTo(
+            s"/b/$bucketName/o?pageToken=$nextPageToken" +
+            folder.map(f => s"&prefix=$f").getOrElse("") +
+            (if (versions) s"&versions=$versions" else "")
+          )
         )
         .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
         .willReturn(
@@ -457,17 +506,26 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
         )
     )
 
-  def mockGetExistingStorageObject(): Unit =
+  def mockGetExistingStorageObjectJava(): Unit =
+    mockGetExistingStorageObject()
+
+  def mockGetExistingStorageObjectJava(generation: Long): Unit =
+    mockGetExistingStorageObject(Some(generation))
+
+  def mockGetExistingStorageObject(generation: Option[Long] = None): Unit =
     mock.register(
       WireMock
         .get(
-          urlEqualTo(s"/b/$bucketName/o/$fileName")
+          urlEqualTo(
+            s"/b/$bucketName/o/$fileName" +
+            generation.map("?generation=" + _).getOrElse("")
+          )
         )
         .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
         .willReturn(
           aResponse()
             .withStatus(200)
-            .withBody(storageObjectJson)
+            .withBody(generation.map(storageObjectJson) getOrElse storageObjectJson())
             .withHeader("Content-Type", "application/json")
         )
     )
@@ -499,11 +557,20 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
         )
     )
 
-  def mockFileDownload(fileContent: String): Unit =
+  def mockFileDownloadJava(fileContent: String): Unit =
+    mockFileDownload(fileContent)
+
+  def mockFileDownloadJava(fileContent: String, generation: Long): Unit =
+    mockFileDownload(fileContent, Some(generation))
+
+  def mockFileDownload(fileContent: String, generation: Option[Long] = None): Unit =
     mock.register(
       WireMock
         .get(
-          urlEqualTo(s"/b/$bucketName/o/$fileName?alt=media")
+          urlEqualTo(
+            s"/b/$bucketName/o/$fileName?alt=media" +
+            generation.map("&generation=" + _).getOrElse("")
+          )
         )
         .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
         .willReturn(
@@ -552,7 +619,7 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
           aResponse()
             .withStatus(200)
             .withHeader("Content-Type", "application/json")
-            .withBody(storageObjectJson)
+            .withBody(storageObjectJson())
         )
     )
 
@@ -623,7 +690,7 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
           aResponse()
             .withStatus(200)
             .withHeader("Content-Type", "application/json")
-            .withBody(storageObjectJson)
+            .withBody(storageObjectJson())
         )
     )
   }
