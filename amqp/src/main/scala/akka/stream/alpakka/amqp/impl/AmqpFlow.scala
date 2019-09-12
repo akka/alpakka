@@ -78,7 +78,7 @@ import scala.util.{Failure, Success, Try}
  * instead of complete [[WriteResult]] (possibly it would be less confusing for users), but [[WriteResult]] is used
  * for consistency with other variants and to make the flow ready for any possible future [[WriteResult]] extensions.
  */
-@InternalApi private[amqp] final class AmqpFlow[T](writeSettings: AmqpWriteSettings)
+@InternalApi private[amqp] final class AmqpSimpleFlow[T](writeSettings: AmqpWriteSettings)
     extends GraphStageWithMaterializedValue[FlowShape[WriteMessage[T], WriteResult[T]], Future[Done]] { stage =>
 
   private val in: Inlet[WriteMessage[T]] = Inlet(Logging.simpleName(this) + ".in")
@@ -146,8 +146,8 @@ import scala.util.{Failure, Success, Try}
         log.debug("Publication result: {}", publicationResult)
 
         publicationResult
-          .map(result => WriteResult(result, message.passThrough))
-          .fold(onFailure, result => push(out, result))
+          .map(result => push(out, WriteResult(result, message.passThrough)))
+          .recover { case t => onFailure(t) }
       }
 
       private def publishWithBlockingConfirm(message: WriteMessage[T]): Try[Unit] = {

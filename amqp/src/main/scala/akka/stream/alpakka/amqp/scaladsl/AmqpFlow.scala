@@ -26,7 +26,7 @@ object AmqpFlow {
       settings: AmqpWriteSettings
   ): Flow[WriteMessage[T], WriteResult[T], Future[Done]] =
     Flow.fromGraph(
-      new impl.AmqpFlow[T](settings)
+      new impl.AmqpSimpleFlow[T](settings)
     )
 
   /**

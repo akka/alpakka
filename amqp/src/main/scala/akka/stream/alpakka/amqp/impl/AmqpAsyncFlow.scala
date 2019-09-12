@@ -96,14 +96,15 @@ import scala.concurrent.{Future, Promise}
   }
 
   private def pushOrEnqueueResults(results: Iterable[WriteResult[T]]): Unit = {
-    results.foreach(result =>
-      if (isAvailable(out) && exitQueue.isEmpty) {
-        log.debug("Pushing {} downstream.", result)
-        push(out, result)
-      } else {
-        log.debug("Message {} queued for downstream push.", result)
-        exitQueue.enqueue(result)
-      }
+    results.foreach(
+      result =>
+        if (isAvailable(out) && exitQueue.isEmpty) {
+          log.debug("Pushing {} downstream.", result)
+          push(out, result)
+        } else {
+          log.debug("Message {} queued for downstream push.", result)
+          exitQueue.enqueue(result)
+        }
     )
     if (isFinished) closeStage()
   }
