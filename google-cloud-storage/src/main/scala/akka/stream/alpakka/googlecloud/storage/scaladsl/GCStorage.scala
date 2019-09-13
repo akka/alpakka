@@ -96,13 +96,35 @@ object GCStorage {
    *
    * @param bucket the name of the bucket
    * @param objectName the name of the object
+   * @return a `Source` containing `StorageObject` if it exists
+   */
+  def getObject(bucket: String, objectName: String): Source[Option[StorageObject], NotUsed] =
+    GCStorageStream.getObject(bucket, objectName, generation = None)
+
+  /**
+   * Get storage object
+   *
+   * @see https://cloud.google.com/storage/docs/json_api/v1/objects/get
+   *
+   * @param bucket the name of the bucket
+   * @param objectName the name of the object
    * @param generation the generation of the object
    * @return a `Source` containing `StorageObject` if it exists
    */
-  def getObject(bucket: String,
-                objectName: String,
-                generation: Option[Long] = None): Source[Option[StorageObject], NotUsed] =
+  def getObject(bucket: String, objectName: String, generation: Option[Long]): Source[Option[StorageObject], NotUsed] =
     GCStorageStream.getObject(bucket, objectName, generation)
+
+  /**
+   * Deletes object in bucket
+   *
+   * @see https://cloud.google.com/storage/docs/json_api/v1/objects/delete
+   *
+   * @param bucketName the name of the bucket
+   * @param objectName the name of the object
+   * @return a `Source` of `Boolean` with `true` if object is deleted, `false` if object that we want to deleted doesn't exist
+   */
+  def deleteObject(bucketName: String, objectName: String): Source[Boolean, NotUsed] =
+    GCStorageStream.deleteObjectSource(bucketName, objectName, generation = None)
 
   /**
    * Deletes object in bucket
@@ -114,8 +136,20 @@ object GCStorage {
    * @param generation the generation of the object
    * @return a `Source` of `Boolean` with `true` if object is deleted, `false` if object that we want to deleted doesn't exist
    */
-  def deleteObject(bucketName: String, objectName: String, generation: Option[Long] = None): Source[Boolean, NotUsed] =
+  def deleteObject(bucketName: String, objectName: String, generation: Option[Long]): Source[Boolean, NotUsed] =
     GCStorageStream.deleteObjectSource(bucketName, objectName, generation)
+
+  /**
+   * Lists the bucket contents
+   *
+   * @see https://cloud.google.com/storage/docs/json_api/v1/objects/list
+   *
+   * @param bucket the bucket name
+   * @param prefix the bucket prefix
+   * @return a `Source` of `StorageObject`
+   */
+  def listBucket(bucket: String, prefix: Option[String]): Source[StorageObject, NotUsed] =
+    GCStorageStream.listBucket(bucket, prefix, versions = false)
 
   /**
    * Lists the bucket contents
@@ -127,8 +161,21 @@ object GCStorage {
    * @param versions `true` to list both live and archived bucket contents
    * @return a `Source` of `StorageObject`
    */
-  def listBucket(bucket: String, prefix: Option[String], versions: Boolean = false): Source[StorageObject, NotUsed] =
+  def listBucket(bucket: String, prefix: Option[String], versions: Boolean): Source[StorageObject, NotUsed] =
     GCStorageStream.listBucket(bucket, prefix, versions)
+
+  /**
+   * Downloads object from bucket.
+   *
+   * @see https://cloud.google.com/storage/docs/json_api/v1/objects/get
+   *
+   * @param bucket the bucket name
+   * @param objectName the bucket prefix
+   * @return  The source will emit an empty [[scala.Option Option]] if an object can not be found.
+   *         Otherwise [[scala.Option Option]] will contain a source of object's data.
+   */
+  def download(bucket: String, objectName: String): Source[Option[Source[ByteString, NotUsed]], NotUsed] =
+    GCStorageStream.download(bucket, objectName, generation = None)
 
   /**
    * Downloads object from bucket.
@@ -143,7 +190,7 @@ object GCStorage {
    */
   def download(bucket: String,
                objectName: String,
-               generation: Option[Long] = None): Source[Option[Source[ByteString, NotUsed]], NotUsed] =
+               generation: Option[Long]): Source[Option[Source[ByteString, NotUsed]], NotUsed] =
     GCStorageStream.download(bucket, objectName, generation)
 
   /**
