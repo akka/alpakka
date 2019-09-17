@@ -45,6 +45,8 @@ Java
 A source for downloading a file can be created by calling @scala[@scaladoc[GCStorage.download](akka.stream.alpakka.googlecloud.storage.scaladsl.GCStorage$)]@java[@scaladoc[GCStorage.download](akka.stream.alpakka.googlecloud.storage.javadsl.GCStorage$)].
 It will emit an @scala[`Option`]@java[`Optional`] that will hold file's data or will be empty if no such file can be found.
 
+If you need to download the specific version of the object in a bucket where object versioning is enabled, you can specify the `generation`.
+
 Scala
 : @@snip [snip](/google-cloud-storage/src/test/scala/docs/scaladsl/GCStorageSourceSpec.scala) { #download }
 
@@ -56,6 +58,8 @@ Java
 
 If you do not need object itself, you can query for only object metadata using a source from @scala[@scaladoc[GCStorage.getObject](akka.stream.alpakka.googlecloud.storage.scaladsl.GCStorage$)]@java[@scaladoc[GCStorage.getObject](akka.stream.alpakka.googlecloud.storage.javadsl.GCStorage$)].
 
+If you need the specific version of the object metadata in a bucket where object versioning is enabled, you can specify the `generation`. 
+
 Scala
 : @@snip [snip](/google-cloud-storage/src/test/scala/docs/scaladsl/GCStorageSourceSpec.scala) { #objectMetadata }
 
@@ -66,6 +70,8 @@ Java
 
 To get a list of all objects in a bucket, use @scala[@scaladoc[GCStorage.listBucket](akka.stream.alpakka.googlecloud.storage.scaladsl.GCStorage$)]@java[@scaladoc[GCStorage.listBucket](akka.stream.alpakka.googlecloud.storage.javadsl.GCStorage$)].
 When run, this will give a stream of @scaladoc[StorageObject](akka.stream.alpakka.googlecloud.storage.StorageObject).
+
+To get a list of both live and archived versions of all objects in a bucket where object versioning is enabled, the `versions` has to be set to `true`
 
 Scala
 : @@snip [snip](/google-cloud-storage/src/test/scala/docs/scaladsl/GCStorageSourceSpec.scala) { #list-bucket }

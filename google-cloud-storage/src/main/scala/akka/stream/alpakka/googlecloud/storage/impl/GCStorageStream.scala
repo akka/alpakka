@@ -87,7 +87,7 @@ import scala.util.control.NonFatal
   def deleteBucket(bucketName: String)(implicit mat: Materializer, attr: Attributes): Future[Done] =
     deleteBucketSource(bucketName).withAttributes(attr).runWith(Sink.head)
 
-  def listBucket(bucket: String, prefix: Option[String], versions: Boolean): Source[StorageObject, NotUsed] = {
+  def listBucket(bucket: String, prefix: Option[String], versions: Boolean = false): Source[StorageObject, NotUsed] = {
     sealed trait ListBucketState
     case object Starting extends ListBucketState
     case class Running(nextPageToken: String) extends ListBucketState
@@ -101,7 +101,7 @@ import scala.util.control.NonFatal
         Map(
           pageToken.map(token => "pageToken" -> token).toList :::
           prefix.map(pref => "prefix" -> pref).toList :::
-          List("versions" -> s"$versions").filter(_ => versions): _*
+          (if (versions) List("versions" -> true.toString) else Nil): _*
         )
 
       makeRequestSource(
@@ -136,7 +136,9 @@ import scala.util.control.NonFatal
       .mapMaterializedValue(_ => NotUsed)
   }
 
-  def getObject(bucket: String, objectName: String, generation: Option[Long]): Source[Option[StorageObject], NotUsed] =
+  def getObject(bucket: String,
+                objectName: String,
+                generation: Option[Long] = None): Source[Option[StorageObject], NotUsed] =
     Setup
       .source { implicit mat => implicit attr =>
         makeRequestSource(
@@ -152,7 +154,9 @@ import scala.util.control.NonFatal
       }
       .mapMaterializedValue(_ => NotUsed)
 
-  def deleteObjectSource(bucket: String, objectName: String, generation: Option[Long]): Source[Boolean, NotUsed] =
+  def deleteObjectSource(bucket: String,
+                         objectName: String,
+                         generation: Option[Long] = None): Source[Boolean, NotUsed] =
     Setup
       .source { implicit mat => implicit attr =>
         makeRequestSource(
@@ -169,8 +173,8 @@ import scala.util.control.NonFatal
       .mapMaterializedValue(_ => NotUsed)
 
   def deleteObjectsByPrefixSource(bucket: String, prefix: Option[String]): Source[Boolean, NotUsed] =
-    listBucket(bucket, prefix, versions = false)
-      .flatMapConcat(listBucketResult => deleteObjectSource(bucket, listBucketResult.name, None))
+    listBucket(bucket, prefix)
+      .flatMapConcat(listBucketResult => deleteObjectSource(bucket, listBucketResult.name))
 
   def putObject(bucket: String,
                 objectName: String,
@@ -195,7 +199,7 @@ import scala.util.control.NonFatal
 
   def download(bucket: String,
                objectName: String,
-               generation: Option[Long]): Source[Option[Source[ByteString, NotUsed]], NotUsed] =
+               generation: Option[Long] = None): Source[Option[Source[ByteString, NotUsed]], NotUsed] =
     Setup
       .source { implicit mat: ActorMaterializer => implicit attr =>
         val queryParams = Map("alt" -> "media") ++ generation.map("generation" -> _.toString)

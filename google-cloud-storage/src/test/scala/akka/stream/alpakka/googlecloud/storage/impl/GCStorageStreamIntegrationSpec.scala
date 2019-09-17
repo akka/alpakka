@@ -90,14 +90,14 @@ class GCStorageStreamIntegrationSpec
     "be able to list an empty bucket" ignore {
       // the bucket is no longer empty
       val objects = GCStorageStream
-        .listBucket(bucket, None, versions = false)
+        .listBucket(bucket, None)
         .runWith(Sink.seq)
       objects.futureValue shouldBe empty
     }
 
     "get an empty list when listing a non existing folder" ignore {
       val objects = GCStorageStream
-        .listBucket(bucket, Some("non-existent"), versions = false)
+        .listBucket(bucket, Some("non-existent"))
         .runWith(Sink.seq)
 
       objects.futureValue shouldBe empty
@@ -117,7 +117,7 @@ class GCStorageStreamIntegrationSpec
                      Source.single(ByteString("testa")),
                      ContentTypes.`text/plain(UTF-8)`)
           .runWith(Sink.head)
-        listing <- GCStorageStream.listBucket(bucket, Some(folderName), versions = false).runWith(Sink.seq)
+        listing <- GCStorageStream.listBucket(bucket, Some(folderName)).runWith(Sink.seq)
       } yield {
         listing
       }
@@ -132,7 +132,7 @@ class GCStorageStreamIntegrationSpec
         _ <- GCStorageStream
           .putObject(bucket, testFileName("metadata-file"), Source.single(content), ContentTypes.`text/plain(UTF-8)`)
           .runWith(Sink.head)
-        option <- GCStorageStream.getObject(bucket, testFileName("metadata-file"), None).runWith(Sink.head)
+        option <- GCStorageStream.getObject(bucket, testFileName("metadata-file")).runWith(Sink.head)
       } yield option
 
       val so = option.futureValue.get
@@ -142,7 +142,7 @@ class GCStorageStreamIntegrationSpec
     }
 
     "get none when asking metadata of non-existing file" ignore {
-      val option = GCStorageStream.getObject(bucket, testFileName("metadata-file"), None).runWith(Sink.head)
+      val option = GCStorageStream.getObject(bucket, testFileName("metadata-file")).runWith(Sink.head)
       option.futureValue shouldBe None
     }
 
@@ -157,7 +157,7 @@ class GCStorageStreamIntegrationSpec
             ContentTypes.`text/plain(UTF-8)`
           )
           .runWith(Sink.head)
-        listing <- GCStorageStream.listBucket(bucket, Some(folderName), versions = false).runWith(Sink.seq)
+        listing <- GCStorageStream.listBucket(bucket, Some(folderName)).runWith(Sink.seq)
       } yield (so, listing)
 
       val (so, listing) = res.futureValue
@@ -175,7 +175,7 @@ class GCStorageStreamIntegrationSpec
           .putObject(bucket, fileName, Source.single(content), ContentTypes.`text/plain(UTF-8)`)
           .runWith(Sink.head)
         bs <- GCStorageStream
-          .download(bucket, fileName, None)
+          .download(bucket, fileName)
           .runWith(Sink.head)
           .flatMap(
             _.map(_.runWith(Sink.fold(ByteString.empty) { _ ++ _ })).getOrElse(Future.successful(ByteString.empty))
@@ -187,7 +187,7 @@ class GCStorageStreamIntegrationSpec
     "get a None when downloading a non extisting file" ignore {
       val fileName = testFileName("non-existing-file")
       val download = GCStorageStream
-        .download(bucket, fileName, None)
+        .download(bucket, fileName)
         .runWith(Sink.head)
         .futureValue
 
@@ -201,7 +201,7 @@ class GCStorageStreamIntegrationSpec
           .putObject(bucket, fileName, Source.single(ByteString.empty), ContentTypes.`text/plain(UTF-8)`)
           .runWith(Sink.head)
         res <- GCStorageStream
-          .download(bucket, fileName, None)
+          .download(bucket, fileName)
           .runWith(Sink.head)
           .flatMap(
             _.map(_.runWith(Sink.fold(ByteString.empty) { _ ++ _ })).getOrElse(Future.successful(ByteString.empty))
@@ -218,14 +218,14 @@ class GCStorageStreamIntegrationSpec
                      Source.single(ByteString("File content")),
                      ContentTypes.`text/plain(UTF-8)`)
           .runWith(Sink.head)
-        result <- GCStorageStream.deleteObjectSource(bucket, testFileName("fileToDelete"), None).runWith(Sink.head)
+        result <- GCStorageStream.deleteObjectSource(bucket, testFileName("fileToDelete")).runWith(Sink.head)
       } yield result
       result.futureValue shouldBe true
     }
 
     "delete an unexisting file should not give an error" ignore {
       val result =
-        GCStorageStream.deleteObjectSource(bucket, testFileName("non-existing-file-to-delete"), None).runWith(Sink.head)
+        GCStorageStream.deleteObjectSource(bucket, testFileName("non-existing-file-to-delete")).runWith(Sink.head)
       result.futureValue shouldBe false
     }
 
@@ -270,10 +270,10 @@ class GCStorageStreamIntegrationSpec
 
       res.futureValue.name shouldBe fileName
       res.futureValue.bucket shouldBe rewriteBucket
-      GCStorageStream.getObject(rewriteBucket, fileName, None).runWith(Sink.head).futureValue.isDefined shouldBe true
+      GCStorageStream.getObject(rewriteBucket, fileName).runWith(Sink.head).futureValue.isDefined shouldBe true
 
-      GCStorageStream.deleteObjectSource(bucket, fileName, None).runWith(Sink.head).futureValue
-      GCStorageStream.deleteObjectSource(rewriteBucket, fileName, None).runWith(Sink.head).futureValue
+      GCStorageStream.deleteObjectSource(bucket, fileName).runWith(Sink.head).futureValue
+      GCStorageStream.deleteObjectSource(rewriteBucket, fileName).runWith(Sink.head).futureValue
     }
   }
 }

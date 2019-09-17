@@ -111,7 +111,7 @@ object GCStorage {
    * @return a `Source` containing `StorageObject` if it exists
    */
   def getObject(bucket: String, objectName: String): Source[Optional[StorageObject], NotUsed] =
-    GCStorageStream.getObject(bucket, objectName, None).map(_.asJava).asJava
+    GCStorageStream.getObject(bucket, objectName).map(_.asJava).asJava
 
   /**
    * Get storage object
@@ -136,7 +136,7 @@ object GCStorage {
    * @return a `Source` of `Boolean` with `true` if object is deleted, `false` if object that we want to deleted doesn't exist
    */
   def deleteObject(bucketName: String, objectName: String): Source[java.lang.Boolean, NotUsed] =
-    GCStorageStream.deleteObjectSource(bucketName, objectName, None).map(boolean2Boolean).asJava
+    GCStorageStream.deleteObjectSource(bucketName, objectName).map(boolean2Boolean).asJava
 
   /**
    * Deletes object in bucket
@@ -160,7 +160,7 @@ object GCStorage {
    * @return a `Source` of `StorageObject`
    */
   def listBucket(bucket: String): Source[StorageObject, NotUsed] =
-    GCStorageStream.listBucket(bucket, None, versions = false).asJava
+    GCStorageStream.listBucket(bucket, None).asJava
 
   /**
    * Lists the bucket contents
@@ -172,7 +172,7 @@ object GCStorage {
    * @return a `Source` of `StorageObject`
    */
   def listBucket(bucket: String, prefix: String): Source[StorageObject, NotUsed] =
-    GCStorageStream.listBucket(bucket, Option(prefix), versions = false).asJava
+    GCStorageStream.listBucket(bucket, Option(prefix)).asJava
 
   /**
    * Lists the bucket contents
@@ -198,7 +198,7 @@ object GCStorage {
    *         Otherwise [[scala.Option Option]] will contain a source of object's data.
    */
   def download(bucket: String, objectName: String): Source[Optional[Source[ByteString, NotUsed]], NotUsed] =
-    GCStorageStream.download(bucket, objectName, None).map(_.map(_.asJava).asJava).asJava
+    GCStorageStream.download(bucket, objectName).map(_.map(_.asJava).asJava).asJava
 
   /**
    * Downloads object from bucket.

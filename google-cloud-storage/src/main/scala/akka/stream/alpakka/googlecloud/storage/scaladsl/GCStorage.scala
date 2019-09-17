@@ -99,7 +99,7 @@ object GCStorage {
    * @return a `Source` containing `StorageObject` if it exists
    */
   def getObject(bucket: String, objectName: String): Source[Option[StorageObject], NotUsed] =
-    GCStorageStream.getObject(bucket, objectName, generation = None)
+    GCStorageStream.getObject(bucket, objectName)
 
   /**
    * Get storage object
@@ -124,7 +124,7 @@ object GCStorage {
    * @return a `Source` of `Boolean` with `true` if object is deleted, `false` if object that we want to deleted doesn't exist
    */
   def deleteObject(bucketName: String, objectName: String): Source[Boolean, NotUsed] =
-    GCStorageStream.deleteObjectSource(bucketName, objectName, generation = None)
+    GCStorageStream.deleteObjectSource(bucketName, objectName)
 
   /**
    * Deletes object in bucket
@@ -149,7 +149,7 @@ object GCStorage {
    * @return a `Source` of `StorageObject`
    */
   def listBucket(bucket: String, prefix: Option[String]): Source[StorageObject, NotUsed] =
-    GCStorageStream.listBucket(bucket, prefix, versions = false)
+    GCStorageStream.listBucket(bucket, prefix)
 
   /**
    * Lists the bucket contents
@@ -175,7 +175,7 @@ object GCStorage {
    *         Otherwise [[scala.Option Option]] will contain a source of object's data.
    */
   def download(bucket: String, objectName: String): Source[Option[Source[ByteString, NotUsed]], NotUsed] =
-    GCStorageStream.download(bucket, objectName, generation = None)
+    GCStorageStream.download(bucket, objectName)
 
   /**
    * Downloads object from bucket.
