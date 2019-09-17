@@ -51,9 +51,9 @@ public class GCStorageTest extends GCStorageWiremockBase {
     final Attributes sampleAttributes = GCStorageAttributes.settings(sampleSettings);
 
     final CompletionStage<Bucket> createBucketResponse =
-        GCStorage.createBucket(this.bucketName(), location, materializer, sampleAttributes);
+        GCStorage.createBucket(bucketName(), location, materializer, sampleAttributes);
     final Source<Bucket, NotUsed> createBucketSourceResponse =
-        GCStorage.createBucketSource(this.bucketName(), location);
+        GCStorage.createBucketSource(bucketName(), location);
 
     // #make-bucket
 
@@ -311,20 +311,32 @@ public class GCStorageTest extends GCStorageWiremockBase {
     final String firstFileName = "file1.txt";
     final String secondFileName = "file2.txt";
     final String folder = "folder";
+    final boolean versions = true;
 
     this.mockTokenApi();
     this.mockBucketListingJava(firstFileName, secondFileName, folder);
+    this.mockBucketListingJava(firstFileName, secondFileName, folder, versions);
 
     // #list-bucket
 
-    final Source<StorageObject, NotUsed> listSource =
-        GCStorage.listBucket(this.bucketName(), folder);
+    final Source<StorageObject, NotUsed> listSource = GCStorage.listBucket(bucketName(), folder);
+
+    final Source<StorageObject, NotUsed> listVersionsSource =
+        GCStorage.listBucket(bucketName(), folder, versions);
 
     // #list-bucket
 
     assertEquals(
         Lists.newArrayList(firstFileName, secondFileName),
         listSource
+            .map(StorageObject::name)
+            .runWith(Sink.seq(), materializer)
+            .toCompletableFuture()
+            .get(5, TimeUnit.SECONDS));
+
+    assertEquals(
+        Lists.newArrayList(firstFileName, firstFileName + '#' + generation(), secondFileName),
+        listVersionsSource
             .map(StorageObject::name)
             .runWith(Sink.seq(), materializer)
             .toCompletableFuture()
@@ -337,7 +349,7 @@ public class GCStorageTest extends GCStorageWiremockBase {
     this.mockTokenApi();
     this.mockBucketListingFailure();
 
-    final Source<StorageObject, NotUsed> listSource = GCStorage.listBucket(this.bucketName());
+    final Source<StorageObject, NotUsed> listSource = GCStorage.listBucket(bucketName());
 
     try {
       listSource
@@ -362,7 +374,7 @@ public class GCStorageTest extends GCStorageWiremockBase {
         GCStorageExt.get(this.system()).settings().withBasePath("/storage/v1");
 
     final Source<StorageObject, NotUsed> listSource =
-        GCStorage.listBucket(this.bucketName())
+        GCStorage.listBucket(bucketName())
             .withAttributes(GCStorageAttributes.settings(newBasePathSettings));
 
     // #list-bucket-attributes
@@ -379,12 +391,16 @@ public class GCStorageTest extends GCStorageWiremockBase {
   @Test
   public void getExistingStorageObject() throws Exception {
     this.mockTokenApi();
-    this.mockGetExistingStorageObject();
+    this.mockGetExistingStorageObjectJava();
+    this.mockGetExistingStorageObjectJava(generation());
 
     // #objectMetadata
 
     final Source<Optional<StorageObject>, NotUsed> getObjectSource =
-        GCStorage.getObject(this.bucketName(), this.fileName());
+        GCStorage.getObject(bucketName(), fileName());
+
+    final Source<Optional<StorageObject>, NotUsed> getObjectGenerationSource =
+        GCStorage.getObject(bucketName(), fileName(), generation());
 
     // #objectMetadata
 
@@ -399,6 +415,19 @@ public class GCStorageTest extends GCStorageWiremockBase {
     final StorageObject storageObject = storageObjectOpt.get();
     assertEquals(fileName(), storageObject.name());
     assertEquals(bucketName(), storageObject.bucket());
+
+    final Optional<StorageObject> storageObjectGenerationOpt =
+        getObjectGenerationSource
+            .runWith(Sink.head(), materializer)
+            .toCompletableFuture()
+            .get(5, TimeUnit.SECONDS);
+
+    assertTrue(storageObjectGenerationOpt.isPresent());
+
+    final StorageObject storageObjectGeneration = storageObjectGenerationOpt.get();
+    assertEquals(fileName(), storageObjectGeneration.name());
+    assertEquals(bucketName(), storageObjectGeneration.bucket());
+    assertEquals(generation(), storageObjectGeneration.generation());
   }
 
   @Test
@@ -407,7 +436,7 @@ public class GCStorageTest extends GCStorageWiremockBase {
     this.mockGetNonExistingStorageObject();
 
     final Source<Optional<StorageObject>, NotUsed> getObjectSource =
-        GCStorage.getObject(this.bucketName(), this.fileName());
+        GCStorage.getObject(bucketName(), fileName());
 
     assertEquals(
         Optional.empty(),
@@ -423,7 +452,7 @@ public class GCStorageTest extends GCStorageWiremockBase {
     this.mockGetNonStorageObjectFailure();
 
     final Source<Optional<StorageObject>, NotUsed> getObjectSource =
-        GCStorage.getObject(this.bucketName(), this.fileName());
+        GCStorage.getObject(bucketName(), fileName());
 
     try {
       getObjectSource
@@ -438,14 +467,21 @@ public class GCStorageTest extends GCStorageWiremockBase {
   @Test
   public void downloadFileWhenFileExists() throws Exception {
     final String fileContent = "Google storage file content";
+    final String fileContentGeneration = "Google storage file content (archived)";
 
     this.mockTokenApi();
-    this.mockFileDownload(fileContent);
+    this.mockFileDownloadJava(fileContent);
+    this.mockFileDownloadJava(fileContentGeneration, generation());
 
     // #download
 
     final Source<Optional<Source<ByteString, NotUsed>>, NotUsed> downloadSource =
         GCStorage.download(bucketName(), fileName());
+
+    final Source<Optional<Source<ByteString, NotUsed>>, NotUsed> downloadGenerationSource =
+        GCStorage.download(bucketName(), fileName(), generation());
+
+    // #download
 
     final Source<ByteString, NotUsed> data =
         downloadSource
@@ -454,23 +490,35 @@ public class GCStorageTest extends GCStorageWiremockBase {
             .get(5, TimeUnit.SECONDS)
             .get();
 
+    final Source<ByteString, NotUsed> dataGeneration =
+        downloadGenerationSource
+            .runWith(Sink.head(), materializer)
+            .toCompletableFuture()
+            .get(5, TimeUnit.SECONDS)
+            .get();
+
     final CompletionStage<List<String>> resultCompletionStage =
         data.map(ByteString::utf8String).runWith(Sink.seq(), materializer);
+
+    final CompletionStage<List<String>> resultGenerationCompletionStage =
+        dataGeneration.map(ByteString::utf8String).runWith(Sink.seq(), materializer);
 
     final List<String> result =
         resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
-    // #download
+    final List<String> resultGeneration =
+        resultGenerationCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
-    final String content = result.stream().collect(Collectors.joining());
+    final String content = String.join("", result);
+    final String contentGeneration = String.join("", resultGeneration);
 
     assertEquals(fileContent, content);
+    assertEquals(fileContentGeneration, contentGeneration);
   }
 
   @Test
   public void downloadResultsInNoneWhenFileDoesNotExist() throws Exception {
     this.mockTokenApi();
-    ;
     this.mockNonExistingFileDownload();
 
     final Source<Optional<Source<ByteString, NotUsed>>, NotUsed> downloadSource =
@@ -552,12 +600,21 @@ public class GCStorageTest extends GCStorageWiremockBase {
   @Test
   public void deleteExistingObject() throws Exception {
     this.mockTokenApi();
-    this.mockDeleteObject(fileName());
+    this.mockDeleteObjectJava(fileName());
+    this.mockDeleteObjectJava(fileName(), generation());
 
     final Source<Boolean, NotUsed> deleteSource = GCStorage.deleteObject(bucketName(), fileName());
+    final Source<Boolean, NotUsed> deleteGenerationSource =
+        GCStorage.deleteObject(bucketName(), fileName(), generation());
 
     assertTrue(
         deleteSource
+            .runWith(Sink.head(), materializer)
+            .toCompletableFuture()
+            .get(5, TimeUnit.SECONDS));
+
+    assertTrue(
+        deleteGenerationSource
             .runWith(Sink.head(), materializer)
             .toCompletableFuture()
             .get(5, TimeUnit.SECONDS));
@@ -602,8 +659,8 @@ public class GCStorageTest extends GCStorageWiremockBase {
 
     this.mockTokenApi();
     this.mockBucketListingJava(firstFileName, secondFileName, prefix);
-    this.mockDeleteObject(firstFileName);
-    this.mockDeleteObject(secondFileName);
+    this.mockDeleteObjectJava(firstFileName);
+    this.mockDeleteObjectJava(secondFileName);
 
     final Source<Boolean, NotUsed> deleteObjectsByPrefixSource =
         GCStorage.deleteObjectsByPrefix(bucketName(), prefix);
@@ -644,8 +701,8 @@ public class GCStorageTest extends GCStorageWiremockBase {
     this.mockTokenApi();
     this.mockNonExistingBucketListingJava(prefix);
     this.mockBucketListingJava(firstFileName, secondFileName, prefix);
-    this.mockDeleteObject(firstFileName);
-    this.mockDeleteObject(secondFileName);
+    this.mockDeleteObjectJava(firstFileName);
+    this.mockDeleteObjectJava(secondFileName);
     this.mockDeleteObjectFailure(secondFileName);
 
     final Source<Boolean, NotUsed> deleteObjectsByPrefixSource =

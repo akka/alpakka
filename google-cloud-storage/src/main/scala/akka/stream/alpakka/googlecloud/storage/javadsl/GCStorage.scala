@@ -114,6 +114,19 @@ object GCStorage {
     GCStorageStream.getObject(bucket, objectName).map(_.asJava).asJava
 
   /**
+   * Get storage object
+   *
+   * @see https://cloud.google.com/storage/docs/json_api/v1/objects/get
+   *
+   * @param bucket the name of the bucket
+   * @param objectName the name of the object
+   * @param generation the generation of the object
+   * @return a `Source` containing `StorageObject` if it exists
+   */
+  def getObject(bucket: String, objectName: String, generation: Long): Source[Optional[StorageObject], NotUsed] =
+    GCStorageStream.getObject(bucket, objectName, Option(generation)).map(_.asJava).asJava
+
+  /**
    * Deletes object in bucket
    *
    * @see https://cloud.google.com/storage/docs/json_api/v1/objects/delete
@@ -124,6 +137,19 @@ object GCStorage {
    */
   def deleteObject(bucketName: String, objectName: String): Source[java.lang.Boolean, NotUsed] =
     GCStorageStream.deleteObjectSource(bucketName, objectName).map(boolean2Boolean).asJava
+
+  /**
+   * Deletes object in bucket
+   *
+   * @see https://cloud.google.com/storage/docs/json_api/v1/objects/delete
+   *
+   * @param bucketName the name of the bucket
+   * @param objectName the name of the object
+   * @param generation the generation of the object
+   * @return a `Source` of `Boolean` with `true` if object is deleted, `false` if object that we want to deleted doesn't exist
+   */
+  def deleteObject(bucketName: String, objectName: String, generation: Long): Source[java.lang.Boolean, NotUsed] =
+    GCStorageStream.deleteObjectSource(bucketName, objectName, Option(generation)).map(boolean2Boolean).asJava
 
   /**
    * Lists the bucket contents
@@ -149,6 +175,19 @@ object GCStorage {
     GCStorageStream.listBucket(bucket, Option(prefix)).asJava
 
   /**
+   * Lists the bucket contents
+   *
+   * @see https://cloud.google.com/storage/docs/json_api/v1/objects/list
+   *
+   * @param bucket the bucket name
+   * @param prefix the bucket prefix
+   * @param versions if `true` list both live and archived bucket contents
+   * @return a `Source` of `StorageObject`
+   */
+  def listBucket(bucket: String, prefix: String, versions: Boolean): Source[StorageObject, NotUsed] =
+    GCStorageStream.listBucket(bucket, Option(prefix), versions).asJava
+
+  /**
    * Downloads object from bucket.
    *
    * @see https://cloud.google.com/storage/docs/json_api/v1/objects/get
@@ -160,6 +199,22 @@ object GCStorage {
    */
   def download(bucket: String, objectName: String): Source[Optional[Source[ByteString, NotUsed]], NotUsed] =
     GCStorageStream.download(bucket, objectName).map(_.map(_.asJava).asJava).asJava
+
+  /**
+   * Downloads object from bucket.
+   *
+   * @see https://cloud.google.com/storage/docs/json_api/v1/objects/get
+   *
+   * @param bucket the bucket name
+   * @param objectName the bucket prefix
+   * @param generation the generation of the object
+   * @return  The source will emit an empty [[scala.Option Option]] if an object can not be found.
+   *         Otherwise [[scala.Option Option]] will contain a source of object's data.
+   */
+  def download(bucket: String,
+               objectName: String,
+               generation: Long): Source[Optional[Source[ByteString, NotUsed]], NotUsed] =
+    GCStorageStream.download(bucket, objectName, Option(generation)).map(_.map(_.asJava).asJava).asJava
 
   /**
    * Uploads object, use this for small files and `resumableUpload` for big ones

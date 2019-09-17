@@ -12,7 +12,6 @@ import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{Millis, Seconds, Span}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -30,7 +29,7 @@ import scala.concurrent.Future
  *    storage admin (to run the create/delete bucket test)
  * - modify test/resources/application.conf
  * - create a `alpakka` bucket for testing
- * - create a rewrite `alpakka-rewritez bucket for testing
+ * - create a rewrite `alpakka-rewrite` bucket for testing
  */
 class GCStorageStreamIntegrationSpec
     extends WordSpec
@@ -40,7 +39,7 @@ class GCStorageStreamIntegrationSpec
     with ScalaFutures {
 
   private implicit val defaultPatience =
-    PatienceConfig(timeout = Span(60, Seconds), interval = Span(60, Millis))
+    PatienceConfig(timeout = 60.seconds, interval = 60.millis)
 
   var folderName: String = _
 
@@ -59,7 +58,7 @@ class GCStorageStreamIntegrationSpec
   }
 
   after {
-    Await.result(GCStorageStream.deleteObjectsByPrefixSource(bucket, Some(folderName)).runWith(Sink.seq), 10.second)
+    Await.result(GCStorageStream.deleteObjectsByPrefixSource(bucket, Some(folderName)).runWith(Sink.seq), 10.seconds)
   }
 
   "GCStorageStream" should {
@@ -195,7 +194,7 @@ class GCStorageStreamIntegrationSpec
       download shouldBe None
     }
 
-    "get a single empty ByteString when downloading a non extisting file" ignore {
+    "get a single empty ByteString when downloading a non existing file" ignore {
       val fileName = testFileName("non-existing-file")
       val res = for {
         _ <- GCStorageStream

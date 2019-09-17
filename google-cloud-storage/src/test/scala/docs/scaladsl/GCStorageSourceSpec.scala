@@ -182,28 +182,38 @@ class GCStorageSourceSpec
     "list an existing bucket using multiple requests" in {
       val firstFileName = "file1.txt"
       val secondFileName = "file2.txt"
+      val versions = true
 
       mockBucketListing(firstFileName, secondFileName)
+      mockBucketListing(firstFileName, secondFileName, None, versions)
 
       val listSource = GCStorage.listBucket(bucketName, None)
+      val listVersionsSource = GCStorage.listBucket(bucketName, None, versions)
 
       listSource.runWith(Sink.seq).futureValue.map(_.name) shouldBe Seq(firstFileName, secondFileName)
+      listVersionsSource.runWith(Sink.seq).futureValue.map(_.name) shouldBe
+      Seq(firstFileName, s"$firstFileName#$generation", secondFileName)
     }
 
-    "list an folder in existing bucket using multiple requests" in {
+    "list a folder in existing bucket using multiple requests" in {
       val firstFileName = "file1.txt"
       val secondFileName = "file2.txt"
       val folder = "folder"
+      val versions = true
 
       mockBucketListing(firstFileName, secondFileName, Some(folder))
+      mockBucketListing(firstFileName, secondFileName, Some(folder), versions)
 
       //#list-bucket
 
       val listSource: Source[StorageObject, NotUsed] = GCStorage.listBucket(bucketName, Some(folder))
+      val listVersionsSource: Source[StorageObject, NotUsed] = GCStorage.listBucket(bucketName, Some(folder), versions)
 
       //#list-bucket
 
       listSource.runWith(Sink.seq).futureValue.map(_.name) shouldBe Seq(firstFileName, secondFileName)
+      listVersionsSource.runWith(Sink.seq).futureValue.map(_.name) shouldBe
+      Seq(firstFileName, s"$firstFileName#$generation", secondFileName)
     }
 
     "fail with error when bucket listing fails" in {
@@ -234,17 +244,26 @@ class GCStorageSourceSpec
     "get existing storage object" in {
 
       mockGetExistingStorageObject()
+      mockGetExistingStorageObject(Some(generation))
 
       //#objectMetadata
 
       val getObjectSource: Source[Option[StorageObject], NotUsed] = GCStorage.getObject(bucketName, fileName)
 
+      val getObjectGenerationSource: Source[Option[StorageObject], NotUsed] =
+        GCStorage.getObject(bucketName, fileName, Some(generation))
+
       //#objectMetadata
 
       val result = getObjectSource.runWith(Sink.head).futureValue
+      val resultGeneration = getObjectGenerationSource.runWith(Sink.head).futureValue
 
       result.map(_.name) shouldBe Some(fileName)
       result.map(_.bucket) shouldBe Some(bucketName)
+
+      resultGeneration.map(_.name) shouldBe Some(fileName)
+      resultGeneration.map(_.bucket) shouldBe Some(bucketName)
+      resultGeneration.map(_.generation) shouldBe Some(generation)
     }
 
     "get None if storage object doesn't exist" in {
@@ -267,24 +286,37 @@ class GCStorageSourceSpec
 
     "download file when file exists" in {
       val fileContent = "Google storage file content"
+      val fileContentGeneration = "Google storage file content (archived)"
 
       mockFileDownload(fileContent)
+      mockFileDownload(fileContentGeneration, Some(generation))
 
       //#download
 
       val downloadSource: Source[Option[Source[ByteString, NotUsed]], NotUsed] =
         GCStorage.download(bucketName, fileName)
 
-      val data: Future[Option[Source[ByteString, NotUsed]]] =
-        downloadSource.runWith(Sink.head)
-
-      import system.dispatcher
-      val result: Future[Seq[String]] = data
-        .flatMap(_.getOrElse(Source.empty).map(_.utf8String).runWith(Sink.seq[String]))
+      val downloadGenerationSource: Source[Option[Source[ByteString, NotUsed]], NotUsed] =
+        GCStorage.download(bucketName, fileName, Some(generation))
 
       //#download
 
+      val data: Future[Option[Source[ByteString, NotUsed]]] =
+        downloadSource.runWith(Sink.head)
+
+      val dataGeneration: Future[Option[Source[ByteString, NotUsed]]] =
+        downloadGenerationSource.runWith(Sink.head)
+
+      import system.dispatcher
+
+      val result: Future[Seq[String]] = data
+        .flatMap(_.getOrElse(Source.empty).map(_.utf8String).runWith(Sink.seq[String]))
+
+      val resultGeneration: Future[Seq[String]] = dataGeneration
+        .flatMap(_.getOrElse(Source.empty).map(_.utf8String).runWith(Sink.seq[String]))
+
       result.futureValue.mkString shouldBe fileContent
+      resultGeneration.futureValue.mkString shouldBe fileContentGeneration
 
     }
 
@@ -343,9 +375,13 @@ class GCStorageSourceSpec
     "delete existing object" in {
 
       mockDeleteObject(fileName)
+      mockDeleteObject(fileName, Some(generation))
 
       val deleteSource = GCStorage.deleteObject(bucketName, fileName)
+      val deleteGenerationSource = GCStorage.deleteObject(bucketName, fileName, Some(generation))
+
       deleteSource.runWith(Sink.head).futureValue shouldBe true
+      deleteGenerationSource.runWith(Sink.head).futureValue shouldBe true
     }
 
     "not delete non existing object" in {
