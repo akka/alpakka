@@ -76,6 +76,8 @@ final class S3Headers private (val cannedAcl: Option[CannedAcl] = None,
   def withCustomHeaders(customHeaders: Map[String, String]) = copy(customHeaders = customHeaders)
   def withServerSideEncryption(serverSideEncryption: ServerSideEncryption) =
     copy(serverSideEncryption = Some(serverSideEncryption))
+  def withOptionalServerSideEncryption(serverSideEncryption: Option[ServerSideEncryption]) =
+    copy(serverSideEncryption = serverSideEncryption)
 
   private def copy(
       cannedAcl: Option[CannedAcl] = cannedAcl,

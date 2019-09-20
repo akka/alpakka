@@ -107,14 +107,14 @@ import akka.util.ByteString
       s3Location: S3Location,
       range: Option[ByteRange],
       versionId: Option[String],
-      sse: Option[ServerSideEncryption]
+      s3Headers: S3Headers
   ): Source[Option[(Source[ByteString, NotUsed], ObjectMetadata)], NotUsed] = {
-    val s3Headers = sse.toIndexedSeq.flatMap(_.headersFor(GetObject))
+    val headers = s3Headers.headersFor(GetObject)
 
     Source
       .setup { (mat, attr) =>
         implicit val materializer = mat
-        request(s3Location, rangeOption = range, versionId = versionId, s3Headers = s3Headers)
+        request(s3Location, rangeOption = range, versionId = versionId, s3Headers = headers)
           .map(response => response.withEntity(response.entity.withoutSizeLimit))
           .mapAsync(parallelism = 1)(entityForSuccess)
           .map {
@@ -127,7 +127,9 @@ import akka.util.ByteString
       }
   }.mapMaterializedValue(_ => NotUsed)
 
-  def listBucket(bucket: String, prefix: Option[String] = None): Source[ListBucketResultContents, NotUsed] = {
+  def listBucket(bucket: String,
+                 prefix: Option[String] = None,
+                 s3Headers: S3Headers): Source[ListBucketResultContents, NotUsed] = {
     sealed trait ListBucketState
     case object Starting extends ListBucketState
     case class Running(continuationToken: String) extends ListBucketState
@@ -140,7 +142,8 @@ import akka.util.ByteString
       import mat.executionContext
       implicit val conf = resolveSettings(attr, mat.system)
 
-      signAndGetAs[ListBucketResult](HttpRequests.listBucket(bucket, prefix, token))
+      // TODO: pass the headers
+      signAndGetAs[ListBucketResult](HttpRequests.listBucket(bucket, prefix, token, s3Headers.headersFor(ListBucket)))
         .map { (res: ListBucketResult) =>
           Some(
             res.continuationToken
@@ -169,13 +172,13 @@ import akka.util.ByteString
   def getObjectMetadata(bucket: String,
                         key: String,
                         versionId: Option[String],
-                        sse: Option[ServerSideEncryption]): Source[Option[ObjectMetadata], NotUsed] =
+                        s3Headers: S3Headers): Source[Option[ObjectMetadata], NotUsed] =
     Source
       .setup { (mat, attr) =>
         implicit val materializer = mat
         import mat.executionContext
-        val s3Headers = sse.toIndexedSeq.flatMap(_.headersFor(HeadObject))
-        request(S3Location(bucket, key), HttpMethods.HEAD, versionId = versionId, s3Headers = s3Headers)
+        val headers = s3Headers.headersFor(HeadObject)
+        request(S3Location(bucket, key), HttpMethods.HEAD, versionId = versionId, s3Headers = headers)
           .flatMapConcat {
             case HttpResponse(OK, headers, entity, _) =>
               Source.fromFuture {
@@ -195,12 +198,14 @@ import akka.util.ByteString
       }
       .mapMaterializedValue(_ => NotUsed)
 
-  def deleteObject(s3Location: S3Location, versionId: Option[String]): Source[Done, NotUsed] =
+  def deleteObject(s3Location: S3Location, versionId: Option[String], s3Headers: S3Headers): Source[Done, NotUsed] =
     Source
       .setup { (mat, attr) =>
         implicit val m = mat
         import mat.executionContext
-        request(s3Location, HttpMethods.DELETE, versionId = versionId).flatMapConcat {
+
+        val headers = s3Headers.headersFor(DeleteObject)
+        request(s3Location, HttpMethods.DELETE, versionId = versionId, s3Headers = headers).flatMapConcat {
           case HttpResponse(NoContent, _, entity, _) =>
             Source.fromFuture(entity.discardBytes().future().map(_ => Done))
           case HttpResponse(code, _, entity, _) =>
@@ -213,10 +218,11 @@ import akka.util.ByteString
       }
       .mapMaterializedValue(_ => NotUsed)
 
-  def deleteObjectsByPrefix(bucket: String, prefix: Option[String]): Source[Done, NotUsed] =
-    listBucket(bucket, prefix)
+  def deleteObjectsByPrefix(bucket: String, prefix: Option[String], s3Headers: S3Headers): Source[Done, NotUsed] =
+    listBucket(bucket, prefix, s3Headers)
       .flatMapConcat(
-        listBucketResultContents => deleteObject(S3Location(bucket, listBucketResultContents.key), versionId = None)
+        listBucketResultContents =>
+          deleteObject(S3Location(bucket, listBucketResultContents.key), versionId = None, s3Headers)
       )
 
   def putObject(s3Location: S3Location,
@@ -279,39 +285,44 @@ import akka.util.ByteString
       case _ => downloadRequest
     }
 
-  def makeBucketSource(bucket: String): Source[Done, NotUsed] =
+  def makeBucketSource(bucket: String, headers: S3Headers): Source[Done, NotUsed] =
     bucketManagementRequest[Done](
       bucket = bucket,
       method = HttpMethods.PUT,
+      headers.headersFor(MakeBucket),
       process = processBucketLifecycleResponse
     )
 
-  def makeBucket(bucket: String)(implicit mat: Materializer, attr: Attributes): Future[Done] =
-    makeBucketSource(bucket).withAttributes(attr).runWith(Sink.ignore)
+  def makeBucket(bucket: String, headers: S3Headers)(implicit mat: Materializer, attr: Attributes): Future[Done] =
+    makeBucketSource(bucket, headers).withAttributes(attr).runWith(Sink.ignore)
 
-  def deleteBucketSource(bucket: String): Source[Done, NotUsed] =
+  def deleteBucketSource(bucket: String, headers: S3Headers): Source[Done, NotUsed] =
     bucketManagementRequest[Done](
       bucket = bucket,
       method = HttpMethods.DELETE,
+      headers.headersFor(DeleteBucket),
       process = processBucketLifecycleResponse
     )
 
-  def deleteBucket(bucket: String)(implicit mat: Materializer, attr: Attributes): Future[Done] =
-    deleteBucketSource(bucket).withAttributes(attr).runWith(Sink.ignore)
+  def deleteBucket(bucket: String, headers: S3Headers)(implicit mat: Materializer, attr: Attributes): Future[Done] =
+    deleteBucketSource(bucket, headers).withAttributes(attr).runWith(Sink.ignore)
 
-  def checkIfBucketExistsSource(bucketName: String): Source[BucketAccess, NotUsed] =
+  def checkIfBucketExistsSource(bucketName: String, headers: S3Headers): Source[BucketAccess, NotUsed] =
     bucketManagementRequest[BucketAccess](
       bucket = bucketName,
       method = HttpMethods.HEAD,
+      headers.headersFor(CheckBucket),
       process = processCheckIfExistsResponse
     )
 
-  def checkIfBucketExists(bucket: String)(implicit mat: Materializer, attr: Attributes): Future[BucketAccess] =
-    checkIfBucketExistsSource(bucket).withAttributes(attr).runWith(Sink.head)
+  def checkIfBucketExists(bucket: String, headers: S3Headers)(implicit mat: Materializer,
+                                                              attr: Attributes): Future[BucketAccess] =
+    checkIfBucketExistsSource(bucket, headers).withAttributes(attr).runWith(Sink.head)
 
   private def bucketManagementRequest[T](
       bucket: String,
       method: HttpMethod,
+      headers: Seq[HttpHeader],
       process: (HttpResponse, Materializer) => Future[T]
   ): Source[T, NotUsed] =
     Source
@@ -425,7 +436,7 @@ import akka.util.ByteString
 
     // Pre step get source meta to get content length (size of the object)
     val eventualMaybeObjectSize =
-      getObjectMetadata(sourceLocation.bucket, sourceLocation.key, sourceVersionId, s3Headers.serverSideEncryption)
+      getObjectMetadata(sourceLocation.bucket, sourceLocation.key, sourceVersionId, s3Headers)
         .map(_.map(_.contentLength))
     val eventualPartitions =
       eventualMaybeObjectSize.map(_.map(createPartitions(chunkSize, sourceLocation)).getOrElse(Nil))

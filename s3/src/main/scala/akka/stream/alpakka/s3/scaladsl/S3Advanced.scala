@@ -3,6 +3,7 @@
  */
 
 package akka.stream.alpakka.s3.scaladsl
+
 import akka.{Done, NotUsed}
 import akka.http.scaladsl.model.headers.ByteRange
 import akka.http.scaladsl.model._
@@ -15,11 +16,8 @@ import akka.util.ByteString
 
 import scala.concurrent.Future
 
-/**
- * Factory of S3 operations.
- */
-object S3 {
-  val MinChunkSize: Int = 5242880
+object S3Advanced {
+  import S3.MinChunkSize
 
   /**
    * Use this for a low level access to S3.
@@ -51,9 +49,9 @@ object S3 {
       bucket: String,
       key: String,
       versionId: Option[String] = None,
-      sse: Option[ServerSideEncryption] = None
+      s3Headers: S3Headers = S3Headers()
   ): Source[Option[ObjectMetadata], NotUsed] =
-    S3Stream.getObjectMetadata(bucket, key, versionId, S3Headers().withOptionalServerSideEncryption(sse))
+    S3Stream.getObjectMetadata(bucket, key, versionId, s3Headers)
 
   /**
    * Deletes a S3 Object
@@ -63,8 +61,11 @@ object S3 {
    * @param versionId optional version id of the object
    * @return A [[akka.stream.scaladsl.Source Source]] that will emit [[akka.Done]] when operation is completed
    */
-  def deleteObject(bucket: String, key: String, versionId: Option[String] = None): Source[Done, NotUsed] =
-    S3Stream.deleteObject(S3Location(bucket, key), versionId, S3Headers())
+  def deleteObject(bucket: String,
+                   key: String,
+                   versionId: Option[String] = None,
+                   s3Headers: S3Headers = S3Headers()): Source[Done, NotUsed] =
+    S3Stream.deleteObject(S3Location(bucket, key), versionId, s3Headers)
 
   /**
    * Deletes a S3 Objects which contain given prefix
@@ -73,8 +74,10 @@ object S3 {
    * @param prefix optional s3 objects prefix
    * @return A [[akka.stream.scaladsl.Source Source]] that will emit [[akka.Done]] when operation is completed
    */
-  def deleteObjectsByPrefix(bucket: String, prefix: Option[String]): Source[Done, NotUsed] =
-    S3Stream.deleteObjectsByPrefix(bucket, prefix, S3Headers())
+  def deleteObjectsByPrefix(bucket: String,
+                            prefix: Option[String],
+                            s3Headers: S3Headers = S3Headers()): Source[Done, NotUsed] =
+    S3Stream.deleteObjectsByPrefix(bucket, prefix, s3Headers)
 
   /**
    * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
@@ -92,7 +95,7 @@ object S3 {
                 data: Source[ByteString, _],
                 contentLength: Long,
                 contentType: ContentType = ContentTypes.`application/octet-stream`,
-                s3Headers: S3Headers): Source[ObjectMetadata, NotUsed] =
+                s3Headers: S3Headers = S3Headers()): Source[ObjectMetadata, NotUsed] =
     S3Stream.putObject(S3Location(bucket, key), contentType, data, contentLength, s3Headers)
 
   /**
@@ -110,9 +113,10 @@ object S3 {
       key: String,
       range: Option[ByteRange] = None,
       versionId: Option[String] = None,
-      sse: Option[ServerSideEncryption] = None
+      sse: Option[ServerSideEncryption] = None,
+      s3Headers: S3Headers = S3Headers()
   ): Source[Option[(Source[ByteString, NotUsed], ObjectMetadata)], NotUsed] =
-    S3Stream.download(S3Location(bucket, key), range, versionId, S3Headers().withOptionalServerSideEncryption(sse))
+    S3Stream.download(S3Location(bucket, key), range, versionId, s3Headers)
 
   /**
    * Will return a source of object metadata for a given bucket with optional prefix using version 2 of the List Bucket API.
@@ -126,8 +130,10 @@ object S3 {
    * @param prefix Prefix of the keys you want to list under passed bucket
    * @return [[akka.stream.scaladsl.Source Source]] of [[ListBucketResultContents]]
    */
-  def listBucket(bucket: String, prefix: Option[String]): Source[ListBucketResultContents, NotUsed] =
-    S3Stream.listBucket(bucket, prefix, S3Headers())
+  def listBucket(bucket: String,
+                 prefix: Option[String],
+                 s3Headers: S3Headers = S3Headers()): Source[ListBucketResultContents, NotUsed] =
+    S3Stream.listBucket(bucket, prefix, s3Headers)
 
   /**
    * Uploads a S3 Object by making multiple requests
@@ -149,7 +155,8 @@ object S3 {
       cannedAcl: CannedAcl = CannedAcl.Private,
       chunkSize: Int = MinChunkSize,
       chunkingParallelism: Int = 4,
-      sse: Option[ServerSideEncryption] = None
+      sse: Option[ServerSideEncryption] = None,
+      s3Headers: S3Headers = S3Headers()
   ): Sink[ByteString, Future[MultipartUploadResult]] = {
     val s3Headers = S3Headers().withCannedAcl(cannedAcl).withMetaHeaders(metaHeaders)
     S3Stream
@@ -161,34 +168,6 @@ object S3 {
         chunkingParallelism
       )
   }
-
-  /**
-   * Uploads a S3 Object by making multiple requests
-   *
-   * @param bucket the s3 bucket name
-   * @param key the s3 object key
-   * @param contentType an optional [[akka.http.scaladsl.model.ContentType ContentType]]
-   * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
-   * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
-   * @param s3Headers any headers you want to add
-   * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[scala.concurrent.Future Future]] of [[MultipartUploadResult]]
-   */
-  def multipartUploadWithHeaders(
-      bucket: String,
-      key: String,
-      contentType: ContentType = ContentTypes.`application/octet-stream`,
-      chunkSize: Int = MinChunkSize,
-      chunkingParallelism: Int = 4,
-      s3Headers: S3Headers = S3Headers()
-  ): Sink[ByteString, Future[MultipartUploadResult]] =
-    S3Stream
-      .multipartUpload(
-        S3Location(bucket, key),
-        contentType,
-        s3Headers,
-        chunkSize,
-        chunkingParallelism
-      )
 
   /**
    * Copy an S3 object from source bucket to target bucket using multi part copy upload.
@@ -234,8 +213,11 @@ object S3 {
    * @param bucketName bucket name
    * @return [[scala.concurrent.Future Future]] with type [[Done]] as API doesn't return any additional information
    */
-  def makeBucket(bucketName: String)(implicit mat: Materializer, attr: Attributes = Attributes()): Future[Done] =
-    S3Stream.makeBucket(bucketName, S3Headers())
+  def makeBucket(
+      bucketName: String,
+      s3Headers: S3Headers = S3Headers()
+  )(implicit mat: Materializer, attr: Attributes = Attributes()): Future[Done] =
+    S3Stream.makeBucket(bucketName, s3Headers)
 
   /**
    * Create new bucket with a given name
@@ -245,8 +227,8 @@ object S3 {
    * @param bucketName bucket name
    * @return [[akka.stream.scaladsl.Source Source]] of type [[Done]] as API doesn't return any additional information
    */
-  def makeBucketSource(bucketName: String): Source[Done, NotUsed] =
-    S3Stream.makeBucketSource(bucketName, S3Headers())
+  def makeBucketSource(bucketName: String, s3Headers: S3Headers = S3Headers()): Source[Done, NotUsed] =
+    S3Stream.makeBucketSource(bucketName, s3Headers)
 
   /**
    * Delete bucket with a given name
@@ -256,9 +238,11 @@ object S3 {
    * @param bucketName bucket name
    * @return [[scala.concurrent.Future Future]] of type [[Done]] as API doesn't return any additional information
    */
-  def deleteBucket(bucketName: String)(implicit mat: Materializer,
-                                       attributes: Attributes = Attributes()): Future[Done] =
-    S3Stream.deleteBucket(bucketName, S3Headers())
+  def deleteBucket(
+      bucketName: String,
+      s3Headers: S3Headers = S3Headers()
+  )(implicit mat: Materializer, attributes: Attributes = Attributes()): Future[Done] =
+    S3Stream.deleteBucket(bucketName, s3Headers)
 
   /**
    * Delete bucket with a given name
@@ -268,8 +252,8 @@ object S3 {
    * @param bucketName bucket name
    * @return [[akka.stream.scaladsl.Source Source]] of type [[Done]] as API doesn't return any additional information
    */
-  def deleteBucketSource(bucketName: String): Source[Done, NotUsed] =
-    S3Stream.deleteBucketSource(bucketName, S3Headers())
+  def deleteBucketSource(bucketName: String, s3Headers: S3Headers = S3Headers()): Source[Done, NotUsed] =
+    S3Stream.deleteBucketSource(bucketName, s3Headers)
 
   /**
    *   Checks whether the bucket exits and user has rights to perform ListBucket operation
@@ -279,9 +263,11 @@ object S3 {
    * @param bucketName bucket name
    * @return [[scala.concurrent.Future Future]] of type [[BucketAccess]]
    */
-  def checkIfBucketExists(bucketName: String)(implicit mat: Materializer,
-                                              attributes: Attributes = Attributes()): Future[BucketAccess] =
-    S3Stream.checkIfBucketExists(bucketName, S3Headers())
+  def checkIfBucketExists(
+      bucketName: String,
+      s3Headers: S3Headers = S3Headers()
+  )(implicit mat: Materializer, attributes: Attributes = Attributes()): Future[BucketAccess] =
+    S3Stream.checkIfBucketExists(bucketName, s3Headers)
 
   /**
    *   Checks whether the bucket exits and user has rights to perform ListBucket operation
@@ -291,6 +277,6 @@ object S3 {
    * @param bucketName bucket name
    * @return [[akka.stream.scaladsl.Source Source]] of type [[BucketAccess]]
    */
-  def checkIfBucketExistsSource(bucketName: String): Source[BucketAccess, NotUsed] =
-    S3Stream.checkIfBucketExistsSource(bucketName, S3Headers())
+  def checkIfBucketExistsSource(bucketName: String, s3Headers: S3Headers = S3Headers()): Source[BucketAccess, NotUsed] =
+    S3Stream.checkIfBucketExistsSource(bucketName, s3Headers)
 }

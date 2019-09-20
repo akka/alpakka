@@ -29,7 +29,8 @@ import scala.concurrent.{ExecutionContext, Future}
   def listBucket(
       bucket: String,
       prefix: Option[String] = None,
-      continuationToken: Option[String] = None
+      continuationToken: Option[String] = None,
+      headers: Seq[HttpHeader] = Nil
   )(implicit conf: S3Settings): HttpRequest = {
 
     val (listType, continuationTokenName) = conf.listBucketApiVersion match {
@@ -46,7 +47,7 @@ import scala.concurrent.{ExecutionContext, Future}
     )
 
     HttpRequest(HttpMethods.GET)
-      .withHeaders(Host(requestAuthority(bucket, conf.s3RegionProvider.getRegion)))
+      .withHeaders(Host(requestAuthority(bucket, conf.s3RegionProvider.getRegion)) +: headers: _*)
       .withUri(requestUri(bucket, None).withQuery(query))
   }
 
