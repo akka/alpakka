@@ -6,11 +6,11 @@ object Dependencies {
   val Nightly = sys.env.get("TRAVIS_EVENT_TYPE").contains("cron")
 
   val Scala211 = "2.11.12"
-  val Scala212 = "2.12.9"
-  val Scala213 = "2.13.0"
+  val Scala212 = "2.12.10"
+  val Scala213 = "2.13.1"
   val ScalaVersions = Seq(Scala212, Scala211, Scala213).filterNot(_ == Scala211 && Nightly)
 
-  val AkkaVersion = if (Nightly) "2.6.0-M6" else "2.5.23"
+  val AkkaVersion = if (Nightly) "2.6.0-M7" else "2.5.23"
 
   val InfluxDBJavaVersion = "2.15"
 
