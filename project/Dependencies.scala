@@ -38,8 +38,8 @@ object Dependencies {
   val Silencer = {
     val Version = "1.4.3"
     Seq(
-      compilerPlugin("com.github.ghik" %% "silencer-plugin" % Version),
-      "com.github.ghik" %% "silencer-lib" % Version % Provided
+      compilerPlugin("com.github.ghik" % "silencer-plugin" % Version cross CrossVersion.full),
+      "com.github.ghik" % "silencer-lib" % Version % Provided cross CrossVersion.full
     )
   }
 
