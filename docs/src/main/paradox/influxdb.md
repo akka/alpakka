@@ -20,7 +20,7 @@ Furthermore, the major InfluxDB update to [version 2.0](https://www.influxdata.c
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-influxdb$scala.binary.version$
+  artifact=akka-stream-alpakka-influxdb_$scala.binary.version$
   version=$project.version$
 }
 
