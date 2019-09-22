@@ -104,8 +104,8 @@ trait ElasticsearchJsonBase[T, C] {
         ""
     }
 
-  protected def writeResults(messages: immutable.Seq[WriteMessage[T, C]],
-                             jsonString: String): immutable.Seq[WriteResult[T, C]] = {
+  protected def toWriteResults(messages: immutable.Seq[WriteMessage[T, C]],
+                               jsonString: String): immutable.Seq[WriteResult[T, C]] = {
     val responseJson = jsonString.parseJson
     if (log.isDebugEnabled) log.debug("response {}", responseJson.prettyPrint)
 

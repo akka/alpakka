@@ -92,7 +92,7 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
     private def handleResponse(args: (immutable.Seq[WriteMessage[T, C]], Response)): Unit = {
       val (messages, response) = args
       val jsonString = EntityUtils.toString(response.getEntity)
-      val messageResults = writeResults(messages, jsonString)
+      val messageResults = toWriteResults(messages, jsonString)
 
       val failedMsgs = messageResults.filterNot(_.error.isEmpty)
 
