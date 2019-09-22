@@ -7,7 +7,6 @@ package akka.stream.alpakka.elasticsearch.impl
 import java.nio.charset.StandardCharsets
 
 import akka.annotation.InternalApi
-import akka.stream.alpakka.elasticsearch.Operation._
 import akka.stream.alpakka.elasticsearch._
 import akka.stream.alpakka.elasticsearch.impl.ElasticsearchFlowStage._
 import akka.stream.stage._
@@ -16,7 +15,6 @@ import org.apache.http.entity.StringEntity
 import org.apache.http.message.BasicHeader
 import org.apache.http.util.EntityUtils
 import org.elasticsearch.client.{Response, ResponseListener, RestClient}
-import spray.json._
 
 import scala.collection.immutable
 
@@ -25,14 +23,14 @@ import scala.collection.immutable
  */
 @InternalApi
 private[elasticsearch] final class ElasticsearchFlowStage[T, C](
-    indexName: String,
-    typeName: String,
+    _indexName: String,
+    _typeName: String,
     client: RestClient,
     settings: ElasticsearchWriteSettings,
     writer: MessageWriter[T]
 ) extends GraphStage[FlowShape[immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]]]] {
-  require(indexName != null, "You must define an index name")
-  require(typeName != null, "You must define a type name")
+  require(_indexName != null, "You must define an index name")
+  require(_typeName != null, "You must define a type name")
 
   private val in = Inlet[immutable.Seq[WriteMessage[T, C]]]("messages")
   private val out = Outlet[immutable.Seq[WriteResult[T, C]]]("result")
@@ -40,12 +38,12 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new StageLogic()
 
-  private class StageLogic extends TimerGraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
-
-    private val typeNameTuple = "_type" -> JsString(typeName)
-    private val versionTypeTuple: Option[(String, JsString)] = settings.versionType.map { versionType =>
-      "version_type" -> JsString(versionType)
-    }
+  private class StageLogic
+      extends TimerGraphStageLogic(shape)
+      with ElasticsearchJsonBase[T, C]
+      with InHandler
+      with OutHandler
+      with StageLogging {
 
     private var upstreamFinished = false
     private var inflight = 0
@@ -54,6 +52,12 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
     private val responseHandler = getAsyncCallback[(immutable.Seq[WriteMessage[T, C]], Response)](handleResponse)
     private var failedMessages: immutable.Seq[WriteMessage[T, C]] = Nil
     private var retryCount: Int = 0
+
+    // ElasticsearchJsonBase parameters
+    override val indexName: String = _indexName
+    override val typeName: String = _typeName
+    override val versionType: Option[String] = settings.versionType
+    override val messageWriter: MessageWriter[T] = writer
 
     private def tryPull(): Unit =
       if (!isClosed(in) && !hasBeenPulled(in)) {
@@ -87,18 +91,8 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
 
     private def handleResponse(args: (immutable.Seq[WriteMessage[T, C]], Response)): Unit = {
       val (messages, response) = args
-      val responseJson = EntityUtils.toString(response.getEntity).parseJson
-      if (log.isDebugEnabled) log.debug("response {}", responseJson.prettyPrint)
-
-      // If some commands in bulk request failed, pass failed messages to follows.
-      val items = responseJson.asJsObject.fields("items").asInstanceOf[JsArray]
-      val messageResults: immutable.Seq[WriteResult[T, C]] = items.elements.zip(messages).map {
-        case (item, message) =>
-          val command = message.operation.command
-          val res = item.asJsObject.fields(command).asJsObject
-          val error: Option[String] = res.fields.get("error").map(_.toString())
-          new WriteResult(message, error)
-      }
+      val jsonString = EntityUtils.toString(response.getEntity)
+      val messageResults = writeResults(messages, jsonString)
 
       val failedMsgs = messageResults.filterNot(_.error.isEmpty)
 
@@ -137,61 +131,7 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
     }
 
     private def sendBulkUpdateRequest(messages: immutable.Seq[WriteMessage[T, C]]): Unit = {
-      val json = messages
-        .map { message =>
-          val sharedFields: Seq[(String, JsString)] = Seq(
-              "_index" -> JsString(message.indexName.getOrElse(indexName)),
-              typeNameTuple
-            ) ++ message.customMetadata.map { case (field, value) => field -> JsString(value) }
-          val tuple: (String, JsObject) = message.operation match {
-            case Index =>
-              val fields = Seq(
-                message.version.map { version =>
-                  "_version" -> JsNumber(version)
-                },
-                versionTypeTuple,
-                message.id.map { id =>
-                  "_id" -> JsString(id)
-                }
-              ).flatten
-              "index" -> JsObject(
-                (sharedFields ++ fields): _*
-              )
-            case Create =>
-              val fields = Seq(
-                message.id.map { id =>
-                  "_id" -> JsString(id)
-                }
-              ).flatten
-              "create" -> JsObject(
-                (sharedFields ++ fields): _*
-              )
-            case Update | Upsert =>
-              val fields = Seq(
-                message.version.map { version =>
-                  "_version" -> JsNumber(version)
-                },
-                versionTypeTuple,
-                Option("_id" -> JsString(message.id.get))
-              ).flatten
-              "update" -> JsObject(
-                (sharedFields ++ fields): _*
-              )
-            case Delete =>
-              val fields = Seq(
-                message.version.map { version =>
-                  "_version" -> JsNumber(version)
-                },
-                versionTypeTuple,
-                Option("_id" -> JsString(message.id.get))
-              ).flatten
-              "delete" -> JsObject(
-                (sharedFields ++ fields): _*
-              )
-          }
-          JsObject(tuple).compactPrint + messageToJsonString(message)
-        }
-        .mkString("", "\n", "\n")
+      val json: String = updateJson(messages)
 
       log.debug("Posting data to Elasticsearch: {}", json)
 
@@ -207,23 +147,6 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
         new BasicHeader("Content-Type", "application/x-ndjson")
       )
     }
-
-    private def messageToJsonString(message: WriteMessage[T, C]): String =
-      message.operation match {
-        case Index | Create =>
-          "\n" + writer.convert(message.source.get)
-        case Upsert =>
-          "\n" + JsObject(
-            "doc" -> writer.convert(message.source.get).parseJson,
-            "doc_as_upsert" -> JsTrue
-          ).toString
-        case Update =>
-          "\n" + JsObject(
-            "doc" -> writer.convert(message.source.get).parseJson
-          ).toString
-        case Delete =>
-          ""
-      }
 
     setHandlers(in, out, this)
 
