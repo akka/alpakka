@@ -198,7 +198,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
           WriteMessage.createIndexMessage(message.id, book)
         }
         .runWith(
-          ElasticsearchSink.create[Book](
+          ElasticsearchSink.create[Book, NotUsed](
             indexName,
             typeName = "_doc"
           )
@@ -234,7 +234,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
           WriteMessage.createIndexMessage(message.id, message.source)
         }
         .runWith(
-          ElasticsearchSink.create[Book](
+          ElasticsearchSink.create[Book, NotUsed](
             indexName,
             typeName = "_doc"
           )
@@ -270,7 +270,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
           WriteMessage.createIndexMessage(message.id, message.source)
         }
         .via(
-          ElasticsearchFlow.create[Book](
+          ElasticsearchFlow.create[Book, NotUsed](
             indexName = indexName,
             typeName = "_doc"
           )
@@ -350,7 +350,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
 
     "fail on using `withContext` with retries" in assertAllStagesStopped {
       intercept[IllegalArgumentException] {
-        ElasticsearchFlow.createWithContext[Book, String](
+        ElasticsearchFlow.createWithContext[Book, String, NotUsed](
           "shouldFail",
           "_doc",
           ElasticsearchWriteSettings().withRetryLogic(RetryAtFixedRate(2, 1.seconds))
@@ -371,7 +371,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
             WriteMessage.createIndexMessage(index.toString, Book(book))
         }
         .via(
-          ElasticsearchFlow.create[Book](
+          ElasticsearchFlow.create[Book, NotUsed](
             indexName,
             "_doc"
           )
@@ -503,7 +503,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
           WriteMessage.createUpsertMessage(id = book._1, source = book._2)
         }
         .via(
-          ElasticsearchFlow.create[Book](
+          ElasticsearchFlow.create[Book, NotUsed](
             indexName,
             "_doc"
           )
@@ -536,7 +536,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
           WriteMessage.createUpsertMessage(id = book._1, source = book._2)
         }
         .via(
-          ElasticsearchFlow.create[JsObject](
+          ElasticsearchFlow.create[JsObject, NotUsed](
             indexName,
             "_doc"
           )
@@ -578,7 +578,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
     "handle multiple types of operations correctly" in assertAllStagesStopped {
       val indexName = "sink8"
       //#multiple-operations
-      val requests = List[WriteMessage[Book, NotUsed]](
+      val requests = List[WriteMessage[Book, NotUsed, NotUsed]](
         WriteMessage.createIndexMessage(id = "00001", source = Book("Book 1")),
         WriteMessage.createUpsertMessage(id = "00002", source = Book("Book 2")),
         WriteMessage.createUpsertMessage(id = "00003", source = Book("Book 3")),
@@ -589,7 +589,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
 
       val writeResults = Source(requests)
         .via(
-          ElasticsearchFlow.create[Book](
+          ElasticsearchFlow.create[Book, NotUsed](
             indexName,
             "_doc"
           )
@@ -633,7 +633,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
 
       val writeResults = Source(requests)
         .via(
-          ElasticsearchFlow.create[Book](
+          ElasticsearchFlow.create[Book, NotUsed](
             indexName,
             "_doc"
           )
@@ -768,7 +768,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
           WriteMessage.createIndexMessage(docId, doc).withVersion(externalVersion)
         }
         .via(
-          ElasticsearchFlow.create[Book](
+          ElasticsearchFlow.create[Book, NotUsed](
             indexName,
             typeName,
             ElasticsearchWriteSettings().withBufferSize(5).withVersionType("external")
@@ -812,7 +812,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
             .withIndexName(customIndexName) // Setting the index-name to use for this document
         }
         .runWith(
-          ElasticsearchSink.create[Book](
+          ElasticsearchSink.create[Book, NotUsed](
             indexName = "this-is-not-the-index-we-are-using",
             typeName = "_doc"
           )
@@ -846,7 +846,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
     "throw an IllegalArgumentException if indexName is null when passed to ElasticsearchFlow" in {
       assertThrows[IllegalArgumentException] {
         ElasticsearchFlow
-          .create[Book](
+          .create[Book, NotUsed](
             indexName = null,
             typeName = "_doc"
           )
@@ -911,7 +911,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
           WriteMessage.createIndexMessage(doc.id, doc)
         }
         .via(
-          ElasticsearchFlow.create[TestDoc](
+          ElasticsearchFlow.create[TestDoc, NotUsed](
             indexName,
             typeName,
             ElasticsearchWriteSettings().withBufferSize(5)

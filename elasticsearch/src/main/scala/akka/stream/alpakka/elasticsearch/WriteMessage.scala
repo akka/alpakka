@@ -43,7 +43,7 @@ final class WriteMessage[T, PT, P] private (val operation: Operation,
                                          val lang: Option[String] = None,
                                          val scriptRef: Option[String] = None,
                                          val scriptSource: Option[String] =  None,
-                                         val params: Option[P]) {
+                                         val params: P = NotUsed) {
 
   def withSource(value: T): WriteMessage[T, PT, P] = copy(source = Option(value))
 
@@ -59,6 +59,20 @@ final class WriteMessage[T, PT, P] private (val operation: Operation,
                              scriptRef = scriptRef,
                              scriptSource = scriptSource,
                              params = params)
+
+  def withParams[P2](value: P2): WriteMessage[T, PT, P2] =
+    new WriteMessage[T, PT, P2](operation = operation,
+      id = id,
+      source = source,
+      passThrough = passThrough,
+      version = version,
+      indexName = indexName,
+      customMetadata = customMetadata,
+      lang = lang,
+      scriptRef = scriptRef,
+      scriptSource = scriptSource,
+      value)
+
 
   def withVersion(value: Long): WriteMessage[T, PT, P] = copy(version = Option(value))
   def withIndexName(value: String): WriteMessage[T, PT, P] = copy(indexName = Option(value))
@@ -86,7 +100,7 @@ final class WriteMessage[T, PT, P] private (val operation: Operation,
                    lang: Option[String] = lang,
                    scriptRef: Option[String] = scriptRef,
                    scriptSource: Option[String] = scriptSource,
-                   params: Option[P] = params): WriteMessage[T, PT, P] =
+                   params: P = params): WriteMessage[T, PT, P] =
     new WriteMessage[T, PT, P](operation = operation,
                             id = id,
                             source = source,
@@ -124,40 +138,38 @@ final class WriteMessage[T, PT, P] private (val operation: Operation,
 object WriteMessage {
   import Operation._
 
-  def createIndexMessage[T, P](source: T): WriteMessage[T, NotUsed, P] =
-    new WriteMessage(Index, id = None, source = Option(source), params = None)
+  def createIndexMessage[T, P](source: T): WriteMessage[T, NotUsed, NotUsed] =
+    new WriteMessage(Index, id = None, source = Option(source))
 
-  def createIndexMessage[T, P](id: String, source: T): WriteMessage[T, NotUsed, P] =
-    new WriteMessage(Index, id = Option(id), source = Option(source), params = None)
+  def createIndexMessage[T, P](id: String, source: T): WriteMessage[T, NotUsed, NotUsed] =
+    new WriteMessage(Index, id = Option(id), source = Option(source))
 
-  def createCreateMessage[T, P](id: String, source: T): WriteMessage[T, NotUsed,P] =
-    new WriteMessage(Create, id = Option(id), source = Option(source), params = None)
+  def createCreateMessage[T, P](id: String, source: T): WriteMessage[T, NotUsed, NotUsed] =
+    new WriteMessage(Create, id = Option(id), source = Option(source))
 
-  def createUpdateMessage[T, P](id: String, source: T): WriteMessage[T, NotUsed, P] =
-    new WriteMessage(Update, id = Option(id), source = Option(source), params =  None)
+  def createUpdateMessage[T, P](id: String, source: T): WriteMessage[T, NotUsed, NotUsed] =
+    new WriteMessage(Update, id = Option(id), source = Option(source))
 
-  def createUpsertMessage[T, P](id: String, source: T): WriteMessage[T, NotUsed,P] =
-    new WriteMessage(Upsert, id = Option(id), source = Option(source), params = None)
+  def createUpsertMessage[T, P](id: String, source: T): WriteMessage[T, NotUsed, NotUsed] =
+    new WriteMessage(Upsert, id = Option(id), source = Option(source))
 
-  def createDeleteMessage[T, P](id: String): WriteMessage[T, NotUsed,P] =
-    new WriteMessage(Delete, id = Option(id), None, params = None)
+  def createDeleteMessage[T, P](id: String): WriteMessage[T, NotUsed,NotUsed] =
+    new WriteMessage(Delete, id = Option(id), None)
 
-  def createInlineScriptMessage[T, P](id:String, scriptSource: String, lang: String, params: P, source: T): WriteMessage[T, NotUsed,P] =
+  def createInlineScriptMessage[T, P](id:String, scriptSource: String, lang: String, params: P, source: T): WriteMessage[T, NotUsed,NotUsed] =
     new WriteMessage(
       InlineScript,
       id = Option(id),
-      params = Option(params),
       scriptSource = Option(scriptSource),
       lang = Option(lang),
       source = Option(source)
     )
 
 
-  def createPreparedScriptMessage[T, P](id:String, scriptRef: String,  params: P, source: T): WriteMessage[T, NotUsed,P] =
+  def createPreparedScriptMessage[T, P](id:String, scriptRef: String,  params: P, source: T): WriteMessage[T, NotUsed,NotUsed] =
     new WriteMessage(
       PreparedScript,
       id = Option(id),
-      params = Option(params),
       scriptRef = Option(scriptRef),
       source = Option(source)
     )
@@ -200,8 +212,8 @@ final class WriteResult[T2, C2, P2] @InternalApi private[elasticsearch] (val mes
     java.util.Objects.hash(message, error)
 }
 
-trait MessageWriter[T] {
-  def convert(message: T): String
+trait MessageWriter[M] {
+  def convert(message: M): String
 }
 
 sealed class StringMessageWriter private () extends MessageWriter[String] {
@@ -212,4 +224,16 @@ object StringMessageWriter extends StringMessageWriter {
 
   /** Java API: get the singleton instance of `StringMessageWriter` */
   val getInstance: StringMessageWriter = StringMessageWriter
+}
+
+
+sealed class StringParamsWriter private () extends MessageWriter[String] {
+  override def convert(message: String): String = message
+}
+
+
+object StringParamsWriter extends StringParamsWriter {
+
+  /** Java API: get the singleton instance of `StringParamsWriter` */
+  val getInstance: StringParamsWriter = StringParamsWriter
 }

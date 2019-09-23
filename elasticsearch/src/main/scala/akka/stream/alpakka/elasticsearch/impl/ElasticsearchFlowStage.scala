@@ -48,6 +48,7 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C, P](
       "version_type" -> JsString(versionType)
     }
 
+
     private var upstreamFinished = false
     private var inflight = 0
 
@@ -225,22 +226,42 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C, P](
         case Delete =>
           ""
         case PreparedScript =>
+          if (message.params != NotUsed) {
+            return "\n" + JsObject(
+              "script" -> JsObject(
+                "id" -> JsString(message.scriptRef.get),
+                "params" -> paramsWriter.convert(message.params).parseJson,
+                "upsert" -> sourceWriter.convert(message.source.get).parseJson,
+              )
+            ).toString
+          }
           "\n" + JsObject(
             "script" -> JsObject(
               "id" -> JsString(message.scriptRef.get),
-              "params" -> paramsWriter.convert(message.params.get).parseJson,
               "upsert" -> sourceWriter.convert(message.source.get).parseJson,
             )
           ).toString
-        case PreparedScript =>
+        case InlineScript =>
+          if (message.params != NotUsed) {
+            return "\n" + JsObject(
+              "script" -> JsObject(
+                "source" -> JsString(message.scriptRef.get),
+                "lang"    -> JsString(message.lang.get),
+                "params" -> paramsWriter.convert(message.params).parseJson,
+                "upsert" -> sourceWriter.convert(message.source.get).parseJson,
+              )
+            ).toString
+          }
           "\n" + JsObject(
             "script" -> JsObject(
-              "source" -> JsString(message.scriptSource.get),
-              "lang" -> JsString(message.lang.get),
-              "params" -> paramsWriter.convert(message.params.get).parseJson,
+              "source" -> JsString(message.scriptRef.get),
+              "lang"    -> JsString(message.lang.get),
+              "params" -> paramsWriter.convert(message.params).parseJson,
               "upsert" -> sourceWriter.convert(message.source.get).parseJson,
             )
           ).toString
+
+
       }
 
     setHandlers(in, out, this)
