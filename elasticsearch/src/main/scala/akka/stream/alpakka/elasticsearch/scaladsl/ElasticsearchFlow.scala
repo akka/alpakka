@@ -127,19 +127,7 @@ object ElasticsearchFlow {
             "`withContext` may not be used with retrying enabled, as it disturbs element order")
     Flow[WriteMessage[T, C]]
       .batch(settings.bufferSize, immutable.Seq(_)) { case (seq, wm) => seq :+ wm }
-      .via(
-        new impl.ElasticsearchSimpleFlowStage[T, C](
-          indexName,
-          typeName,
-          elasticsearchClient,
-          settings,
-          writer
-        )
-      )
-      .map {
-        case Success(value) => value
-        case Failure(e) => throw e
-      }
+      .via(simpleStageFlow(indexName, typeName, settings, elasticsearchClient, writer))
       .mapConcat(identity)
       .asFlowWithContext[WriteMessage[T, NotUsed], C, C]((res, c) => res.withPassThrough(c))(
         p => p.message.passThrough
@@ -154,16 +142,8 @@ object ElasticsearchFlow {
       elasticsearchClient: RestClient,
       writer: MessageWriter[T]
   ): Flow[immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]], NotUsed] =
-    if (settings.retryLogic == RetryNever) {
-      Flow
-        .fromGraph(
-          new impl.ElasticsearchSimpleFlowStage[T, C](indexName, typeName, elasticsearchClient, settings, writer)
-        )
-        .map {
-          case Success(value) => value
-          case Failure(e) => throw e
-        }
-    } else {
+    if (settings.retryLogic == RetryNever) simpleStageFlow(indexName, typeName, settings, elasticsearchClient, writer)
+    else {
       Flow.fromGraph(
         new impl.ElasticsearchFlowStage[T, C](
           indexName,
@@ -174,6 +154,21 @@ object ElasticsearchFlow {
         )
       )
     }
+
+  @InternalApi
+  private def simpleStageFlow[C, T](indexName: String,
+                                    typeName: String,
+                                    settings: ElasticsearchWriteSettings,
+                                    elasticsearchClient: RestClient,
+                                    writer: MessageWriter[T]) =
+    Flow
+      .fromGraph(
+        new impl.ElasticsearchSimpleFlowStage[T, C](indexName, typeName, elasticsearchClient, settings, writer)
+      )
+      .map {
+        case Success(value) => value
+        case Failure(e) => throw e
+      }
 
   private final class SprayJsonWriter[T](implicit writer: JsonWriter[T]) extends MessageWriter[T] {
     override def convert(message: T): String = message.toJson.toString()

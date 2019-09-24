@@ -30,7 +30,7 @@ trait ElasticsearchJsonBase[T, C] {
     "version_type" -> JsString(versionType)
   }
 
-  protected def updateJson(messages: immutable.Seq[WriteMessage[T, C]]): String =
+  protected def toJson(messages: immutable.Seq[WriteMessage[T, C]]): String =
     messages
       .map { message =>
         val sharedFields: Seq[(String, JsString)] = Seq(
@@ -83,11 +83,11 @@ trait ElasticsearchJsonBase[T, C] {
               (sharedFields ++ fields): _*
             )
         }
-        JsObject(tuple).compactPrint + messageToJsonString(message)
+        JsObject(tuple).compactPrint + messageToJson(message)
       }
       .mkString("", "\n", "\n")
 
-  private def messageToJsonString(message: WriteMessage[T, C]): String =
+  private def messageToJson(message: WriteMessage[T, C]): String =
     message.operation match {
       case Index | Create =>
         "\n" + messageWriter.convert(message.source.get)

@@ -131,7 +131,7 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
     }
 
     private def sendBulkUpdateRequest(messages: immutable.Seq[WriteMessage[T, C]]): Unit = {
-      val json: String = updateJson(messages)
+      val json: String = toJson(messages)
 
       log.debug("Posting data to Elasticsearch: {}", json)
 

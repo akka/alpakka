@@ -65,7 +65,7 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
     override def onPush(): Unit = {
       val messages = grab(in)
       inflight = true
-      val json: String = updateJson(messages)
+      val json: String = toJson(messages)
 
       log.debug("Posting data to Elasticsearch: {}", json)
 
