@@ -23,11 +23,12 @@ import org.junit.Before;
 import org.junit.Test;
 import scala.concurrent.duration.FiniteDuration;
 import static akka.util.ByteString.emptyByteString;
-
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
@@ -47,13 +48,11 @@ public class ArchiveTest {
 
   @Test
   public void flowShouldCreateZIPArchive() throws Exception {
-    Path filePath1 = getFileFromResource("akka_full_color.svg");
-    Path filePath2 = getFileFromResource("akka_icon_reverse.svg");
+    ByteString fileContent1 = readFileAsByteString(getFileFromResource("akka_full_color.svg"));
+    ByteString fileContent2 = readFileAsByteString(getFileFromResource("akka_icon_reverse.svg"));
 
-    Source<ByteString, NotUsed> source1 =
-        FileIO.fromPath(filePath1).mapMaterializedValue((v) -> NotUsed.getInstance());
-    Source<ByteString, NotUsed> source2 =
-        FileIO.fromPath(filePath2).mapMaterializedValue((v) -> NotUsed.getInstance());
+    Source<ByteString, NotUsed> source1 = toSource(fileContent1);
+    Source<ByteString, NotUsed> source2 = toSource(fileContent2);
 
     /*
     // #sample
@@ -78,21 +77,18 @@ public class ArchiveTest {
 
     ioResult.toCompletableFuture().get(3, TimeUnit.SECONDS);
 
-    archiveHelper.createReferenceZipFile(Arrays.asList(filePath1, filePath2), "logo-reference.zip");
+    Map<String, ByteString> inputFiles =
+        new HashMap<String, ByteString>() {
+          {
+            put("akka_full_color.svg", fileContent1);
+            put("akka_icon_reverse.svg", fileContent2);
+          }
+        };
 
-    final Sink<ByteString, CompletionStage<ByteString>> foldSink =
-        Sink.fold(emptyByteString(), ByteString::concat);
+    archiveHelper.createReferenceZipFileFromMemory(inputFiles, "logo-reference.zip");
 
-    ByteString resultFileContent =
-        FileIO.fromPath(Paths.get("logo.zip"))
-            .runWith(foldSink, mat)
-            .toCompletableFuture()
-            .get(3, TimeUnit.SECONDS);
-    ByteString referenceFileContent =
-        FileIO.fromPath(Paths.get("logo-reference.zip"))
-            .runWith(foldSink, mat)
-            .toCompletableFuture()
-            .get(3, TimeUnit.SECONDS);
+    ByteString resultFileContent = readFileAsByteString(Paths.get("logo.zip"));
+    ByteString referenceFileContent = readFileAsByteString(Paths.get("logo-reference.zip"));
 
     assertEquals(resultFileContent, referenceFileContent);
 
@@ -109,5 +105,19 @@ public class ArchiveTest {
 
   private Path getFileFromResource(String fileName) {
     return Paths.get(getClass().getClassLoader().getResource(fileName).getPath());
+  }
+
+  private ByteString readFileAsByteString(Path filePath) throws Exception {
+    final Sink<ByteString, CompletionStage<ByteString>> foldSink =
+        Sink.fold(emptyByteString(), ByteString::concat);
+
+    return FileIO.fromPath(filePath)
+        .runWith(foldSink, mat)
+        .toCompletableFuture()
+        .get(3, TimeUnit.SECONDS);
+  }
+
+  private Source<ByteString, NotUsed> toSource(ByteString bs) {
+    return Source.from(scala.collection.JavaConverters.seqAsJavaList(bs.grouped(10).toList()));
   }
 }
