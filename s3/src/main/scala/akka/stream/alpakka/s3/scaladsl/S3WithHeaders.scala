@@ -16,7 +16,10 @@ import akka.util.ByteString
 
 import scala.concurrent.Future
 
-object S3Advanced {
+/**
+ * Factory of S3 operations with the ability to customize the headers sent to S3.
+ */
+object S3WithHeaders {
   import S3.MinChunkSize
 
   /**
