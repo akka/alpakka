@@ -45,7 +45,7 @@ object S3WithHeaders {
    * @param bucket the s3 bucket name
    * @param key the s3 object key
    * @param versionId optional version id of the object
-   * @param sse the server side encryption to use
+   * @param s3Headers any headers you want to add
    * @return A [[akka.stream.scaladsl.Source Source]] containing an [[scala.Option]] that will be [[scala.None]] in case the object does not exist
    */
   def getObjectMetadata(
@@ -62,6 +62,7 @@ object S3WithHeaders {
    * @param bucket the s3 bucket name
    * @param key the s3 object key
    * @param versionId optional version id of the object
+   * @param s3Headers any headers you want to add
    * @return A [[akka.stream.scaladsl.Source Source]] that will emit [[akka.Done]] when operation is completed
    */
   def deleteObject(bucket: String,
@@ -75,6 +76,7 @@ object S3WithHeaders {
    *
    * @param bucket the s3 bucket name
    * @param prefix optional s3 objects prefix
+   * @param s3Headers any headers you want to add
    * @return A [[akka.stream.scaladsl.Source Source]] that will emit [[akka.Done]] when operation is completed
    */
   def deleteObjectsByPrefix(bucket: String,
@@ -107,7 +109,7 @@ object S3WithHeaders {
    * @param bucket the s3 bucket name
    * @param key the s3 object key
    * @param range [optional] the [[akka.http.scaladsl.model.headers.ByteRange ByteRange]] you want to download
-   * @param sse [optional] the server side encryption used on upload
+   * @param s3Headers any headers you want to add
    * @return The source will emit an empty [[scala.Option Option]] if an object can not be found.
    *         Otherwise [[scala.Option Option]] will contain a tuple of object's data and metadata.
    */
@@ -131,6 +133,7 @@ object S3WithHeaders {
    * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGET.html (version 1 API)
    * @param bucket Which bucket that you list object metadata for
    * @param prefix Prefix of the keys you want to list under passed bucket
+   * @param s3Headers any headers you want to add
    * @return [[akka.stream.scaladsl.Source Source]] of [[ListBucketResultContents]]
    */
   def listBucket(bucket: String,
@@ -214,6 +217,7 @@ object S3WithHeaders {
    * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketPUT.html
    *
    * @param bucketName bucket name
+   * @param s3Headers any headers you want to add
    * @return [[scala.concurrent.Future Future]] with type [[Done]] as API doesn't return any additional information
    */
   def makeBucket(
@@ -228,6 +232,7 @@ object S3WithHeaders {
    * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketPUT.html
    *
    * @param bucketName bucket name
+   * @param s3Headers any headers you want to add
    * @return [[akka.stream.scaladsl.Source Source]] of type [[Done]] as API doesn't return any additional information
    */
   def makeBucketSource(bucketName: String, s3Headers: S3Headers = S3Headers()): Source[Done, NotUsed] =
@@ -239,6 +244,7 @@ object S3WithHeaders {
    * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketDELETE.html
    *
    * @param bucketName bucket name
+   * @param s3Headers any headers you want to add
    * @return [[scala.concurrent.Future Future]] of type [[Done]] as API doesn't return any additional information
    */
   def deleteBucket(
@@ -253,6 +259,7 @@ object S3WithHeaders {
    * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketDELETE.html
    *
    * @param bucketName bucket name
+   * @param s3Headers any headers you want to add
    * @return [[akka.stream.scaladsl.Source Source]] of type [[Done]] as API doesn't return any additional information
    */
   def deleteBucketSource(bucketName: String, s3Headers: S3Headers = S3Headers()): Source[Done, NotUsed] =
@@ -264,6 +271,7 @@ object S3WithHeaders {
    * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketHEAD.html
    *
    * @param bucketName bucket name
+   * @param s3Headers any headers you want to add
    * @return [[scala.concurrent.Future Future]] of type [[BucketAccess]]
    */
   def checkIfBucketExists(
@@ -278,6 +286,7 @@ object S3WithHeaders {
    * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketHEAD.html
    *
    * @param bucketName bucket name
+   * @param s3Headers any headers you want to add
    * @return [[akka.stream.scaladsl.Source Source]] of type [[BucketAccess]]
    */
   def checkIfBucketExistsSource(bucketName: String, s3Headers: S3Headers = S3Headers()): Source[BucketAccess, NotUsed] =

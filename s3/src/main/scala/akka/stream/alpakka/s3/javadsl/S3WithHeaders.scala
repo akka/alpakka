@@ -79,7 +79,7 @@ object S3WithHeaders {
    *
    * @param bucket the s3 bucket name
    * @param key the s3 object key
-   * @param sse the server side encryption to use
+   * @param s3Headers any headers you want to add
    * @return A [[akka.stream.javadsl.Source Source]] containing an [[java.util.Optional Optional]] that will be empty in case the object does not exist
    */
   def getObjectMetadata(bucket: String, key: String, s3Headers: S3Headers): Source[Optional[ObjectMetadata], NotUsed] =
@@ -91,7 +91,7 @@ object S3WithHeaders {
    * @param bucket the s3 bucket name
    * @param key the s3 object key
    * @param versionId optional versionId of source object
-   * @param sse the server side encryption to use
+   * @param s3Headers any headers you want to add
    * @return A [[akka.stream.javadsl.Source Source]] containing an [[java.util.Optional Optional]] that will be empty in case the object does not exist
    */
   def getObjectMetadata(bucket: String,
@@ -121,6 +121,7 @@ object S3WithHeaders {
    * @param bucket the s3 bucket name
    * @param key the s3 object key
    * @param versionId optional version id of the object
+   * @param s3Headers any headers you want to add
    * @return A [[akka.stream.javadsl.Source Source]] that will emit [[java.lang.Void]] when operation is completed
    */
   def deleteObject(bucket: String,
@@ -146,6 +147,7 @@ object S3WithHeaders {
    *
    * @param bucket the s3 bucket name
    * @param prefix optional s3 objects prefix
+   * @param s3Headers any headers you want to add
    * @return A [[akka.stream.javadsl.Source Source]] that will emit [[java.lang.Void]] when operation is completed
    */
   def deleteObjectsByPrefix(bucket: String, prefix: Optional[String], s3Headers: S3Headers): Source[Done, NotUsed] =
@@ -236,7 +238,7 @@ object S3WithHeaders {
    *
    * @param bucket the s3 bucket name
    * @param key the s3 object key
-   * @param sse the server side encryption to use
+   * @param s3Headers any headers you want to add
    * @return A [[akka.japi.Pair]] with a [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]], and a [[akka.stream.javadsl.Source Source]] containing the [[ObjectMetadata]]
    */
   def download(
@@ -269,7 +271,7 @@ object S3WithHeaders {
    * @param bucket the s3 bucket name
    * @param key the s3 object key
    * @param range the [[akka.http.javadsl.model.headers.ByteRange ByteRange]] you want to download
-   * @param sse the server side encryption to use
+   * @param s3Headers any headers you want to add
    * @return A [[akka.japi.Pair]] with a [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]], and a [[akka.stream.javadsl.Source Source]] containing the [[ObjectMetadata]]
    */
   def download(
@@ -291,7 +293,7 @@ object S3WithHeaders {
    * @param key the s3 object key
    * @param range the [[akka.http.javadsl.model.headers.ByteRange ByteRange]] you want to download
    * @param versionId optional version id of the object
-   * @param sse the server side encryption to use
+   * @param s3Headers any headers you want to add
    * @return A [[akka.japi.Pair]] with a [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]], and a [[akka.stream.javadsl.Source Source]] containing the [[ObjectMetadata]]
    */
   def download(
@@ -482,6 +484,7 @@ object S3WithHeaders {
    * @param bucketName bucket name
    * @param materializer materializer to run with
    * @param attributes attributes to run request with
+   * @param s3Headers any headers you want to add
    * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
    */
   def makeBucket(bucketName: String,
@@ -506,6 +509,7 @@ object S3WithHeaders {
    *
    * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketPUT.html
    * @param bucketName bucket name
+   * @param s3Headers any headers you want to add
    * @return [[akka.stream.javadsl.Source Source]] of type [[Done]] as API doesn't return any additional information
    */
   def makeBucketSource(bucketName: String, s3Headers: S3Headers): Source[Done, NotUsed] =
@@ -518,6 +522,7 @@ object S3WithHeaders {
    * @param bucketName   bucket name
    * @param materializer materializer to run with
    * @param attributes attributes to run request with
+   * @param s3Headers any headers you want to add
    * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
    */
   def deleteBucket(bucketName: String,
@@ -542,6 +547,7 @@ object S3WithHeaders {
    *
    * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketDELETE.html
    * @param bucketName   bucket name
+   * @param s3Headers any headers you want to add
    * @return [[akka.stream.javadsl.Source Source]] of type [[Done]] as API doesn't return any additional information
    */
   def deleteBucketSource(bucketName: String, s3Headers: S3Headers): Source[Done, NotUsed] =
@@ -554,6 +560,7 @@ object S3WithHeaders {
    * @param bucketName   bucket name
    * @param materializer materializer to run with
    * @param attributes attributes to run request with
+   * @param s3Headers any headers you want to add
    * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[BucketAccess]]
    */
   def checkIfBucketExists(bucketName: String,
@@ -578,6 +585,7 @@ object S3WithHeaders {
    *
    * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketHEAD.html
    * @param bucketName   bucket name
+   * @param s3Headers any headers you want to add
    * @return [[akka.stream.javadsl.Source Source]] of type [[BucketAccess]]
    */
   def checkIfBucketExistsSource(bucketName: String, s3Headers: S3Headers): Source[BucketAccess, NotUsed] =
