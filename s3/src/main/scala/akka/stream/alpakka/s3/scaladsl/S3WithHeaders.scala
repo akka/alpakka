@@ -118,7 +118,6 @@ object S3WithHeaders {
       key: String,
       range: Option[ByteRange] = None,
       versionId: Option[String] = None,
-      sse: Option[ServerSideEncryption] = None,
       s3Headers: S3Headers = S3Headers()
   ): Source[Option[(Source[ByteString, NotUsed], ObjectMetadata)], NotUsed] =
     S3Stream.download(S3Location(bucket, key), range, versionId, s3Headers)
@@ -157,23 +156,18 @@ object S3WithHeaders {
       bucket: String,
       key: String,
       contentType: ContentType = ContentTypes.`application/octet-stream`,
-      metaHeaders: MetaHeaders = MetaHeaders(Map()),
-      cannedAcl: CannedAcl = CannedAcl.Private,
       chunkSize: Int = MinChunkSize,
       chunkingParallelism: Int = 4,
-      sse: Option[ServerSideEncryption] = None,
       s3Headers: S3Headers = S3Headers()
-  ): Sink[ByteString, Future[MultipartUploadResult]] = {
-    val s3Headers = S3Headers().withCannedAcl(cannedAcl).withMetaHeaders(metaHeaders)
+  ): Sink[ByteString, Future[MultipartUploadResult]] =
     S3Stream
       .multipartUpload(
         S3Location(bucket, key),
         contentType,
-        sse.map(s3Headers.withServerSideEncryption).getOrElse(s3Headers),
+        s3Headers,
         chunkSize,
         chunkingParallelism
       )
-  }
 
   /**
    * Copy an S3 object from source bucket to target bucket using multi part copy upload.
