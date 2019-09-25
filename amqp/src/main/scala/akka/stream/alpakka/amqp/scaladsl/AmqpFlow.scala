@@ -26,7 +26,7 @@ object AmqpFlow {
       settings: AmqpWriteSettings
   ): Flow[WriteMessage[T], WriteResult[T], Future[Done]] =
     Flow.fromGraph(
-      new impl.AmqpSimpleFlow[T](settings)
+      new impl.AmqpSimpleFlowStage[T](settings)
     )
 
   /**
@@ -45,7 +45,7 @@ object AmqpFlow {
       confirmationTimeout: FiniteDuration
   ): Flow[WriteMessage[T], WriteResult[T], Future[Done]] =
     Flow.fromGraph(
-      new impl.AmqpBlockingFlow[T](settings, confirmationTimeout)
+      new impl.AmqpBlockingFlowStage[T](settings, confirmationTimeout)
     )
 
   /**
@@ -68,7 +68,7 @@ object AmqpFlow {
       confirmationTimeout: FiniteDuration
   ): Flow[WriteMessage[T], WriteResult[T], Future[Done]] =
     Flow.fromGraph(
-      new impl.AmqpAsyncFlow(settings, bufferSize, confirmationTimeout)
+      new impl.AmqpAsyncFlowStage(settings, bufferSize, confirmationTimeout)
     )
 
   /**
@@ -91,6 +91,6 @@ object AmqpFlow {
       confirmationTimeout: FiniteDuration
   ): Flow[WriteMessage[T], WriteResult[T], Future[Done]] =
     Flow.fromGraph(
-      new impl.AmqpAsyncUnorderedFlow(settings, bufferSize, confirmationTimeout)
+      new impl.AmqpAsyncUnorderedFlowStage(settings, bufferSize, confirmationTimeout)
     )
 }

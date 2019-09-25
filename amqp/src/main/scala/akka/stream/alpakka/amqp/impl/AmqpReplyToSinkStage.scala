@@ -29,19 +29,19 @@ private[amqp] final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings
     super.initialAttributes and Attributes.name("AmqpReplyToSink") and ActorAttributes.IODispatcher
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
-    val promise = Promise[Done]()
+    val streamCompletion = Promise[Done]()
     (new GraphStageLogic(shape) with AmqpConnectorLogic {
       override val settings = stage.settings
 
       override def whenConnected(): Unit = pull(in)
 
       override def postStop(): Unit = {
-        promise.tryFailure(new RuntimeException("stage stopped unexpectedly"))
+        streamCompletion.tryFailure(new RuntimeException("stage stopped unexpectedly"))
         super.postStop()
       }
 
       override def onFailure(ex: Throwable): Unit = {
-        promise.tryFailure(ex)
+        streamCompletion.tryFailure(ex)
         super.onFailure(ex)
       }
 
@@ -50,12 +50,12 @@ private[amqp] final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings
         new InHandler {
 
           override def onUpstreamFailure(ex: Throwable): Unit = {
-            promise.failure(ex)
+            streamCompletion.failure(ex)
             super.onUpstreamFailure(ex)
           }
 
           override def onUpstreamFinish(): Unit = {
-            promise.success(Done)
+            streamCompletion.success(Done)
             super.onUpstreamFinish()
           }
 
@@ -82,7 +82,7 @@ private[amqp] final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings
         }
       )
 
-    }, promise.future)
+    }, streamCompletion.future)
   }
 
   override def toString: String = "AmqpReplyToSink"

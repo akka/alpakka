@@ -6,17 +6,15 @@ package akka.stream.alpakka.amqp.impl
 
 import akka.Done
 import akka.annotation.InternalApi
-import akka.event.Logging
 import akka.stream._
-import akka.stream.alpakka.amqp.impl.AmqpAsyncFlowStageLogic.DeliveryTag
+import akka.stream.alpakka.amqp.impl.AbstractAmqpAsyncFlowStageLogic.DeliveryTag
 import akka.stream.alpakka.amqp.{AmqpWriteSettings, WriteMessage, WriteResult}
 import akka.stream.stage._
 import com.rabbitmq.client.ConfirmCallback
 
-import scala.collection.immutable.TreeMap
 import scala.collection.mutable
+import scala.concurrent.Promise
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{Future, Promise}
 
 /**
  * Internal API.
@@ -30,7 +28,7 @@ import scala.concurrent.{Future, Promise}
 /**
  * Internal API.
  */
-@InternalApi private object AmqpAsyncFlowStageLogic {
+@InternalApi private object AbstractAmqpAsyncFlowStageLogic {
   type DeliveryTag = Long
 }
 
@@ -39,11 +37,11 @@ import scala.concurrent.{Future, Promise}
  *
  * Base stage for AMQP flows with asynchronous confirmations.
  */
-@InternalApi private sealed abstract class AmqpAsyncFlowStageLogic[T](
+@InternalApi private abstract class AbstractAmqpAsyncFlowStageLogic[T](
     override val settings: AmqpWriteSettings,
     bufferSize: Int,
     confirmationTimeout: FiniteDuration,
-    promise: Promise[Done],
+    streamCompletion: Promise[Done],
     shape: FlowShape[WriteMessage[T], WriteResult[T]]
 ) extends TimerGraphStageLogic(shape)
     with AmqpConnectorLogic
@@ -110,12 +108,12 @@ import scala.concurrent.{Future, Promise}
   }
 
   override def postStop(): Unit = {
-    promise.tryFailure(new RuntimeException("Stage stopped unexpectedly."))
+    streamCompletion.tryFailure(new RuntimeException("Stage stopped unexpectedly."))
     super.postStop()
   }
 
   override def onFailure(ex: Throwable): Unit = {
-    promise.tryFailure(ex)
+    streamCompletion.tryFailure(ex)
     onFailure(ex)
   }
 
@@ -151,7 +149,7 @@ import scala.concurrent.{Future, Promise}
 
       override def onUpstreamFinish(): Unit =
         if (noAwaitingMessages && exitQueue.isEmpty) {
-          promise.success(Done)
+          streamCompletion.success(Done)
           super.onUpstreamFinish()
         } else {
           log.debug("Received upstream finish signal - stage will be closed when all buffered messages are processed")
@@ -204,127 +202,14 @@ import scala.concurrent.{Future, Promise}
   private def closeStage(): Unit =
     upstreamException match {
       case Some(throwable) =>
-        promise.failure(throwable)
+        streamCompletion.failure(throwable)
         failStage(throwable)
       case None =>
-        promise.success(Done)
+        streamCompletion.success(Done)
         completeStage()
     }
 
   private def isFinished: Boolean = isClosed(in) && noAwaitingMessages && exitQueue.isEmpty
 }
 
-/**
- * Internal API.
- *
- * AMQP flow that uses asynchronous confirmations but preserves the order in which messages were pulled.
- * Internally messages awaiting confirmation are stored in a ordered buffer. Initially messages have `ready`
- * flag set to `false`. On confirmation flag is changed to `true` and messages from the beginning of the queue
- * are dequeued in sequence until first non-ready message - this means that if confirmed message is not a
- * first element of the buffer then nothing will be dequeued. Flag `multiple` on a confirmation means that
- * broker confirms all messages up to a given delivery tag, which means that so all messages up to (and including)
- * this delivery tag can be safely dequeued.
- */
-@InternalApi private[amqp] final class AmqpAsyncFlow[T](
-    sinkSettings: AmqpWriteSettings,
-    bufferSize: Int,
-    confirmationTimeout: FiniteDuration
-) extends GraphStageWithMaterializedValue[FlowShape[WriteMessage[T], WriteResult[T]], Future[Done]] {
 
-  val in: Inlet[WriteMessage[T]] = Inlet(Logging.simpleName(this) + ".in")
-  val out: Outlet[WriteResult[T]] = Outlet(Logging.simpleName(this) + ".out")
-
-  override def shape: FlowShape[WriteMessage[T], WriteResult[T]] = FlowShape.of(in, out)
-
-  override protected def initialAttributes: Attributes =
-    super.initialAttributes and Attributes.name(Logging.simpleName(this)) and ActorAttributes.IODispatcher
-
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
-    val promise = Promise[Done]()
-    (new AmqpAsyncFlowStageLogic(sinkSettings, bufferSize, confirmationTimeout, promise, shape) {
-
-      private var buffer = TreeMap[DeliveryTag, AwaitingMessage[T]]()
-
-      override def enqueueMessage(tag: DeliveryTag, passThrough: T): Unit =
-        buffer += (tag -> AwaitingMessage(tag, passThrough))
-
-      override def dequeueAwaitingMessages(tag: DeliveryTag, multiple: Boolean): Iterable[AwaitingMessage[T]] =
-        if (multiple) {
-          dequeueWhile((t, _) => t <= tag)
-        } else {
-          setReady(tag)
-          if (isAtHead(tag)) {
-            dequeueWhile((_, message) => message.ready)
-          } else {
-            Seq.empty
-          }
-        }
-
-      private def dequeueWhile(
-          predicate: (DeliveryTag, AwaitingMessage[T]) => Boolean
-      ): Iterable[AwaitingMessage[T]] = {
-        val dequeued = buffer.takeWhile { case (k, v) => predicate(k, v) }
-        buffer --= dequeued.keys
-        dequeued.values
-      }
-
-      private def isAtHead(tag: DeliveryTag): Boolean =
-        buffer.headOption.exists { case (tag, _) => tag == tag }
-
-      private def setReady(tag: DeliveryTag): Unit =
-        buffer.get(tag).foreach(message => buffer += (tag -> message.copy(ready = true)))
-
-      override def messagesAwaitingDelivery: Int = buffer.size
-
-      override def noAwaitingMessages: Boolean = buffer.isEmpty
-
-    }, promise.future)
-  }
-}
-
-/**
- * Internal API.
- *
- * AMQP flow that uses asynchronous confirmations in possibly the most efficient way.
- * Messages are dequeued and pushed downstream as soon as confirmation is received. Flag `ready` on [[AwaitingMessage]]
- * is not used in this case. Flag `multiple` on a confirmation means that broker confirms all messages up to a
- * given delivery tag, which means that so all messages up to (and including) this delivery tag can be safely dequeued.
- */
-@InternalApi private[amqp] final class AmqpAsyncUnorderedFlow[T](
-    sinkSettings: AmqpWriteSettings,
-    bufferSize: Int,
-    confirmationTimeout: FiniteDuration
-) extends GraphStageWithMaterializedValue[FlowShape[WriteMessage[T], WriteResult[T]], Future[Done]] {
-
-  private val in: Inlet[WriteMessage[T]] = Inlet(Logging.simpleName(this) + ".in")
-  private val out: Outlet[WriteResult[T]] = Outlet(Logging.simpleName(this) + ".out")
-
-  override val shape: FlowShape[WriteMessage[T], WriteResult[T]] = FlowShape.of(in, out)
-
-  override protected def initialAttributes: Attributes =
-    super.initialAttributes and Attributes.name(Logging.simpleName(this)) and ActorAttributes.IODispatcher
-
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
-    val promise = Promise[Done]()
-    (new AmqpAsyncFlowStageLogic(sinkSettings, bufferSize, confirmationTimeout, promise, shape) {
-
-      private val buffer = mutable.Queue.empty[AwaitingMessage[T]]
-
-      override def enqueueMessage(tag: DeliveryTag, passThrough: T): Unit =
-        buffer += AwaitingMessage(tag, passThrough)
-
-      override def dequeueAwaitingMessages(tag: DeliveryTag, multiple: Boolean): Iterable[AwaitingMessage[T]] =
-        if (multiple)
-          buffer.dequeueAll(_.tag <= tag)
-        else
-          buffer
-            .dequeueFirst(_.tag == tag)
-            .fold(Seq.empty[AwaitingMessage[T]])(Seq(_))
-
-      override def messagesAwaitingDelivery: Int = buffer.length
-
-      override def noAwaitingMessages: Boolean = buffer.isEmpty
-
-    }, promise.future)
-  }
-}

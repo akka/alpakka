@@ -40,7 +40,7 @@ private[amqp] final class AmqpRpcFlowStage(settings: AmqpWriteSettings, bufferSi
     super.initialAttributes and Attributes.name("AmqpRpcFlow") and ActorAttributes.IODispatcher
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[String]) = {
-    val promise = Promise[String]()
+    val streamCompletion = Promise[String]()
     (new GraphStageLogic(shape) with AmqpConnectorLogic {
 
       override val settings = stage.settings
@@ -136,7 +136,7 @@ private[amqp] final class AmqpRpcFlowStage(settings: AmqpWriteSettings, bufferSi
           queueName,
           amqpSourceConsumer
         )
-        promise.success(queueName)
+        streamCompletion.success(queueName)
       }
 
       def handleDelivery(message: CommittableReadResult): Unit =
@@ -219,15 +219,15 @@ private[amqp] final class AmqpRpcFlowStage(settings: AmqpWriteSettings, bufferSi
         }
       )
       override def postStop(): Unit = {
-        promise.tryFailure(new RuntimeException("stage stopped unexpectedly"))
+        streamCompletion.tryFailure(new RuntimeException("stage stopped unexpectedly"))
         super.postStop()
       }
 
       override def onFailure(ex: Throwable): Unit = {
-        promise.tryFailure(ex)
+        streamCompletion.tryFailure(ex)
         super.onFailure(ex)
       }
-    }, promise.future)
+    }, streamCompletion.future)
   }
 
   override def toString: String = "AmqpRpcFlow"
