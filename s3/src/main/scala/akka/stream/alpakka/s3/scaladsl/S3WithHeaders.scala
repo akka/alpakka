@@ -8,7 +8,6 @@ import akka.{Done, NotUsed}
 import akka.http.scaladsl.model.headers.ByteRange
 import akka.http.scaladsl.model._
 import akka.stream.{Attributes, Materializer}
-import akka.stream.alpakka.s3.headers.{CannedAcl, ServerSideEncryption}
 import akka.stream.alpakka.s3._
 import akka.stream.alpakka.s3.impl._
 import akka.stream.scaladsl.{RunnableGraph, Sink, Source}
@@ -146,10 +145,9 @@ object S3WithHeaders {
    * @param bucket the s3 bucket name
    * @param key the s3 object key
    * @param contentType an optional [[akka.http.scaladsl.model.ContentType ContentType]]
-   * @param metaHeaders any meta-headers you want to add
-   * @param cannedAcl a [[CannedAcl]], defaults to [[CannedAcl.Private]]
    * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
    * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
+   * @param s3Headers any headers you want to add
    * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts [[ByteString]]'s and materializes to a [[scala.concurrent.Future Future]] of [[MultipartUploadResult]]
    */
   def multipartUpload(
