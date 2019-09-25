@@ -28,6 +28,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import javax.xml.stream.XMLOutputFactory;
+
 import static org.junit.Assert.assertEquals;
 
 public class XmlWritingTest {
@@ -114,6 +116,41 @@ public class XmlWritingTest {
 
     final CompletionStage<String> resultStage = Source.from(docList).runWith(write, materializer);
     // #writer-usage
+
+    resultStage
+        .thenAccept((str) -> assertEquals(doc, str))
+        .toCompletableFuture()
+        .get(5, TimeUnit.SECONDS);
+  }
+
+  @Test
+  public void xmlWriterProvidedFactory()
+      throws InterruptedException, ExecutionException, TimeoutException {
+
+    final XMLOutputFactory xmlOutputFactory = XMLOutputFactory.newInstance();
+    // #writer
+    final Sink<ParseEvent, CompletionStage<String>> write =
+        Flow.of(ParseEvent.class)
+            .via(XmlWriting.writer(xmlOutputFactory))
+            .map(ByteString::utf8String)
+            .toMat(Sink.fold("", (acc, el) -> acc + el), Keep.right());
+    // #writer
+
+    final String doc =
+        "<?xml version='1.0' encoding='UTF-8'?><doc><elem>elem1</elem><elem>elem2</elem></doc>";
+    final List<ParseEvent> docList = new ArrayList<>();
+    docList.add(StartDocument.getInstance());
+    docList.add(StartElement.create("doc", Collections.emptyMap()));
+    docList.add(StartElement.create("elem", Collections.emptyMap()));
+    docList.add(Characters.create("elem1"));
+    docList.add(EndElement.create("elem"));
+    docList.add(StartElement.create("elem", Collections.emptyMap()));
+    docList.add(Characters.create("elem2"));
+    docList.add(EndElement.create("elem"));
+    docList.add(EndElement.create("doc"));
+    docList.add(EndDocument.getInstance());
+
+    final CompletionStage<String> resultStage = Source.from(docList).runWith(write, materializer);
 
     resultStage
         .thenAccept((str) -> assertEquals(doc, str))
