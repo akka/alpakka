@@ -6,12 +6,9 @@ package akka.stream.alpakka.elasticsearch.javadsl
 
 import akka.NotUsed
 import akka.annotation.ApiMayChange
-import akka.stream.alpakka.elasticsearch.{impl, _}
-import akka.stream.scaladsl
+import akka.stream.alpakka.elasticsearch.{scaladsl, _}
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.elasticsearch.client.RestClient
-
-import scala.collection.immutable
 
 /**
  * Java API to create Elasticsearch flows.
@@ -25,7 +22,7 @@ object ElasticsearchFlow {
    *
    * Warning: When settings configure retrying, messages are emitted out-of-order when errors are detected.
    *
-   * @param objectMapper Jackson object mapper converting type T` to JSON
+   * @param objectMapper Jackson object mapper converting type `T` to JSON
    */
   def create[T](
       indexName: String,
@@ -52,13 +49,8 @@ object ElasticsearchFlow {
       elasticsearchClient: RestClient,
       messageWriter: MessageWriter[T]
   ): akka.stream.javadsl.Flow[WriteMessage[T, NotUsed], WriteResult[T, NotUsed], NotUsed] =
-    scaladsl
-      .Flow[WriteMessage[T, NotUsed]]
-      .batch(settings.bufferSize, immutable.Seq(_)) { case (seq, wm) => seq :+ wm }
-      .via(
-        new impl.ElasticsearchFlowStage[T, NotUsed](indexName, typeName, elasticsearchClient, settings, messageWriter)
-      )
-      .mapConcat(identity)
+    scaladsl.ElasticsearchFlow
+      .create(indexName, typeName, settings, messageWriter)(elasticsearchClient)
       .asJava
 
   /**
@@ -97,13 +89,8 @@ object ElasticsearchFlow {
       elasticsearchClient: RestClient,
       messageWriter: MessageWriter[T]
   ): akka.stream.javadsl.Flow[WriteMessage[T, C], WriteResult[T, C], NotUsed] =
-    scaladsl
-      .Flow[WriteMessage[T, C]]
-      .batch(settings.bufferSize, immutable.Seq(_)) { case (seq, wm) => seq :+ wm }
-      .via(
-        new impl.ElasticsearchFlowStage[T, C](indexName, typeName, elasticsearchClient, settings, messageWriter)
-      )
-      .mapConcat(identity)
+    scaladsl.ElasticsearchFlow
+      .createWithPassThrough(indexName, typeName, settings, messageWriter)(elasticsearchClient)
       .asJava
 
   /**
@@ -142,16 +129,8 @@ object ElasticsearchFlow {
       elasticsearchClient: RestClient,
       messageWriter: MessageWriter[T]
   ): akka.stream.javadsl.FlowWithContext[WriteMessage[T, NotUsed], C, WriteResult[T, C], C, NotUsed] =
-    scaladsl
-      .Flow[WriteMessage[T, C]]
-      .batch(settings.bufferSize, immutable.Seq(_)) { case (seq, wm) => seq :+ wm }
-      .via(
-        new impl.ElasticsearchFlowStage[T, C](indexName, typeName, elasticsearchClient, settings, messageWriter)
-      )
-      .mapConcat(identity)
-      .asFlowWithContext[WriteMessage[T, NotUsed], C, C]((res, c) => res.withPassThrough(c))(
-        p => p.message.passThrough
-      )
+    scaladsl.ElasticsearchFlow
+      .createWithContext(indexName, typeName, settings, messageWriter)(elasticsearchClient)
       .asJava
 
   private final class JacksonWriter[T](mapper: ObjectMapper) extends MessageWriter[T] {
