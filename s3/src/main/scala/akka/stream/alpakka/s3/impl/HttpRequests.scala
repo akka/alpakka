@@ -47,7 +47,7 @@ import scala.concurrent.{ExecutionContext, Future}
     )
 
     HttpRequest(HttpMethods.GET)
-      .withHeaders(Host(requestAuthority(bucket, conf.s3RegionProvider.getRegion)) +: headers: _*)
+      .withHeaders(Host(requestAuthority(bucket, conf.s3RegionProvider.getRegion)) +: headers)
       .withUri(requestUri(bucket, None).withQuery(query))
   }
 
