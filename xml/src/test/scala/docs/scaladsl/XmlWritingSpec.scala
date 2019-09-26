@@ -9,6 +9,7 @@ import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.xml._
 import akka.stream.alpakka.xml.scaladsl.XmlWriting
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import javax.xml.stream.XMLOutputFactory
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
@@ -200,6 +201,31 @@ class XmlWritingSpec extends WordSpec with Matchers with BeforeAndAfterAll with 
       )
 
       val doc = "<doc><elem>elem1</elem><elem>elem2</elem></doc>"
+      val resultFuture: Future[String] = Source.fromIterator[ParseEvent](() => listEl.iterator).runWith(writer)
+
+      resultFuture.futureValue(Timeout(20.seconds)) should ===(doc)
+    }
+
+    "properly work with a provided XMLOutputFactory" in {
+      val listEl: List[ParseEvent] = List(
+        StartDocument,
+        StartElement("doc"),
+        StartElement("elem"),
+        Characters("elem1"),
+        EndElement("elem"),
+        StartElement("elem"),
+        Characters("elem2"),
+        EndElement("elem"),
+        EndElement("doc"),
+        EndDocument
+      )
+
+      val doc = "<?xml version='1.0' encoding='UTF-8'?><doc><elem>elem1</elem><elem>elem2</elem></doc>"
+      val outputFactory = XMLOutputFactory.newInstance()
+      val writer: Sink[ParseEvent, Future[String]] = Flow[ParseEvent]
+        .via(XmlWriting.writer(outputFactory))
+        .map[String](_.utf8String)
+        .toMat(Sink.fold[String, String]("")((t, u) => t + u))(Keep.right)
       val resultFuture: Future[String] = Source.fromIterator[ParseEvent](() => listEl.iterator).runWith(writer)
 
       resultFuture.futureValue(Timeout(20.seconds)) should ===(doc)
