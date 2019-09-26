@@ -108,8 +108,10 @@ public class RetryTest extends ItemSpecOps {
                 8,
                 Duration.ofMillis(10),
                 Duration.ofSeconds(5),
-                0,
-                DynamoDb.tryFlow(client, DynamoDbOp.batchGetItem(), 1),
+                0d,
+                DynamoDb.<BatchGetItemRequest, BatchGetItemResponse, NotUsed>flowWithContext(
+                        client, DynamoDbOp.batchGetItem(), 1)
+                    .asFlow(),
                 resp -> {
                   final Try<BatchGetItemResponse> response = resp.first();
                   if (response.isSuccess()) {
@@ -147,8 +149,10 @@ public class RetryTest extends ItemSpecOps {
                 8,
                 Duration.ofMillis(10),
                 Duration.ofSeconds(5),
-                0,
-                DynamoDb.tryFlow(client, DynamoDbOp.getItem(), 1),
+                0d,
+                DynamoDb.<GetItemRequest, GetItemResponse, Integer>flowWithContext(
+                        client, DynamoDbOp.getItem(), 1)
+                    .asFlow(),
                 resp -> {
                   final Try<GetItemResponse> response = resp.first();
                   final Integer retries = resp.second();

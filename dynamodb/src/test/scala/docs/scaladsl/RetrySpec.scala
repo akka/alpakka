@@ -74,8 +74,8 @@ class RetrySpec
         RetryFlow.withBackoff(8,
                               10.millis,
                               5.seconds,
-                              1,
-                              DynamoDb.tryFlow[BatchGetItemRequest, BatchGetItemResponse, NotUsed](1)) {
+                              1d,
+                              DynamoDb.flowWithContext[BatchGetItemRequest, BatchGetItemResponse, NotUsed](1).asFlow) {
           case (Success(resp), _) if resp.unprocessedKeys.size() > 0 =>
             Some(List((batchGetItemRequest(resp.unprocessedKeys), NotUsed)))
         }
@@ -92,7 +92,11 @@ class RetrySpec
     "retry failed requests" in {
       //#create-retry-flow
       val retryFlow =
-        RetryFlow.withBackoff(8, 10.millis, 5.seconds, 1, DynamoDb.tryFlow[GetItemRequest, GetItemResponse, Int](1)) {
+        RetryFlow.withBackoff(8,
+                              10.millis,
+                              5.seconds,
+                              1d,
+                              DynamoDb.flowWithContext[GetItemRequest, GetItemResponse, Int](1).asFlow) {
           case (Failure(_), retries) => Some(List((getItemRequest, retries + 1)))
         }
       //#create-retry-flow
