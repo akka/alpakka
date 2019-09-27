@@ -166,18 +166,18 @@ object Dependencies {
       )
   )
 
-  val GeodeVersion = "1.9.1"
-  val GeodeVersionForDocs = "19"
+  val GeodeVersion = "1.10.0"
+  val GeodeVersionForDocs = "110"
 
   val Geode = Seq(
     libraryDependencies ++=
       Seq("geode-core", "geode-cq")
-        .map("org.apache.geode" % _ % GeodeVersion exclude ("org.slf4j", "slf4j-log4j12")) ++
+        .map("org.apache.geode" % _ % GeodeVersion) ++
       Seq(
         "com.chuusai" %% "shapeless" % "2.3.3",
         // overriding version from geode to avoid some security vulnerabilities
         "com.fasterxml.jackson.core" % "jackson-databind" % JacksonDatabindVersion,
-        "org.slf4j" % "log4j-over-slf4j" % log4jOverSlf4jVersion % Test // MIT like: http://www.slf4j.org/license.html
+        "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.12.1" % Test
       )
   )
 
