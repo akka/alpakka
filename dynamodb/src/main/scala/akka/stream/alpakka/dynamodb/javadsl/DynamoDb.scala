@@ -68,7 +68,4 @@ object DynamoDb {
                                                              mat: Materializer): CompletionStage[Out] =
     Source.single(request).via(flow(client, operation, 1)).runWith(Sink.head(), mat)
 
-  private def func[T, R](f: T => R) = new akka.japi.function.Function[T, R] {
-    override def apply(param: T): R = f(param)
-  }
 }
