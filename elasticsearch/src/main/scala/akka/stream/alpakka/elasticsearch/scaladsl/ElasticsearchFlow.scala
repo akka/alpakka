@@ -44,26 +44,8 @@ object ElasticsearchFlow {
    *
    * Warning: When settings configure retrying, messages are emitted out-of-order when errors are detected.
    */
-  def create[T, P](indexName: String, typeName: String, settings: ElasticsearchWriteSettings, writer: MessageWriter[T])(
-      implicit elasticsearchClient: RestClient
-  ): Flow[WriteMessage[T, NotUsed, P], WriteResult[T, NotUsed, P], NotUsed] =
-    Flow[WriteMessage[T, NotUsed, P]]
-      .batch(settings.bufferSize, immutable.Seq(_)) { case (seq, wm) => seq :+ wm }
-      .via(
-        new impl.ElasticsearchFlowStage[T, NotUsed, P](
-          indexName,
-          typeName,
-          elasticsearchClient,
-          settings,
-          writer,
-          StringParamsWriter.getInstance()
-        )
-      )
-      .mapConcat(identity)
-
-
   def create[T, P](indexName: String, typeName: String, settings: ElasticsearchWriteSettings, writer: MessageWriter[T], paramsWriter: MessageWriter[P])(
-    implicit elasticsearchClient: RestClient
+      implicit elasticsearchClient: RestClient
   ): Flow[WriteMessage[T, NotUsed, P], WriteResult[T, NotUsed, P], NotUsed] =
     Flow[WriteMessage[T, NotUsed, P]]
       .batch(settings.bufferSize, immutable.Seq(_)) { case (seq, wm) => seq :+ wm }

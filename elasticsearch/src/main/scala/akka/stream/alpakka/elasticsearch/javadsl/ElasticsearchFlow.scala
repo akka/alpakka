@@ -45,14 +45,14 @@ object ElasticsearchFlow {
     )
 
   /**
-   * Create a flow to update Elasticsearch with [[akka.stream.alpakka.elasticsearch.WriteMessage WriteMessage]]s containing type `T`.
-   * The result status is part of the [[akka.stream.alpakka.elasticsearch.WriteResult WriteResult]] and must be checked for
-   * successful execution.
-   *
-   * Warning: When settings configure retrying, messages are emitted out-of-order when errors are detected.
-   *
-   * @param messageWriter converts type `T` to a `String` containing valid JSON
-   */
+    * Create a flow to update Elasticsearch with [[akka.stream.alpakka.elasticsearch.WriteMessage WriteMessage]]s containing type `T`.
+    * The result status is part of the [[akka.stream.alpakka.elasticsearch.WriteResult WriteResult]] and must be checked for
+    * successful execution.
+    *
+    * Warning: When settings configure retrying, messages are emitted out-of-order when errors are detected.
+    *
+    * @param messageWriter converts type `T` to a `String` containing valid JSON
+    */
   def create[T, P](
       indexName: String,
       typeName: String,
@@ -66,33 +66,6 @@ object ElasticsearchFlow {
       .batch(settings.bufferSize, immutable.Seq(_)) { case (seq, wm) => seq :+ wm }
       .via(
         new impl.ElasticsearchFlowStage[T, NotUsed, P](indexName, typeName, elasticsearchClient, settings, messageWriter, paramsWriter)
-      )
-      .mapConcat(identity)
-      .asJava
-
-
-  /**
-    * Create a flow to update Elasticsearch with [[akka.stream.alpakka.elasticsearch.WriteMessage WriteMessage]]s containing type `T`.
-    * The result status is part of the [[akka.stream.alpakka.elasticsearch.WriteResult WriteResult]] and must be checked for
-    * successful execution.
-    *
-    * Warning: When settings configure retrying, messages are emitted out-of-order when errors are detected.
-    *
-    * @param messageWriter converts type `T` to a `String` containing valid JSON
-    */
-  def create[T, P](
-                    indexName: String,
-                    typeName: String,
-                    settings: ElasticsearchWriteSettings,
-                    elasticsearchClient: RestClient,
-                    messageWriter: MessageWriter[T],
-                    paramsWriter: MessageWriter[P],
-                  ): akka.stream.javadsl.Flow[WriteMessage[T, NotUsed, P], WriteResult[T, NotUsed,P], NotUsed] =
-    scaladsl
-      .Flow[WriteMessage[T, NotUsed, NotUsed]]
-      .batch(settings.bufferSize, immutable.Seq(_)) { case (seq, wm) => seq :+ wm }
-      .via(
-        new impl.ElasticsearchFlowStage[T, NotUsed, NotUsed](indexName, typeName, elasticsearchClient, settings, messageWriter, paramsWriter)
       )
       .mapConcat(identity)
       .asJava

@@ -43,7 +43,7 @@ final class WriteMessage[T, PT, P] private (val operation: Operation,
                                          val lang: Option[String] = None,
                                          val scriptRef: Option[String] = None,
                                          val scriptSource: Option[String] =  None,
-                                         val params: P = NotUsed) {
+                                         val params: Option[P]) {
 
   def withSource(value: T): WriteMessage[T, PT, P] = copy(source = Option(value))
 
@@ -60,18 +60,7 @@ final class WriteMessage[T, PT, P] private (val operation: Operation,
                              scriptSource = scriptSource,
                              params = params)
 
-  def withParams[P2](value: P2): WriteMessage[T, PT, P2] =
-    new WriteMessage[T, PT, P2](operation = operation,
-      id = id,
-      source = source,
-      passThrough = passThrough,
-      version = version,
-      indexName = indexName,
-      customMetadata = customMetadata,
-      lang = lang,
-      scriptRef = scriptRef,
-      scriptSource = scriptSource,
-      value)
+  def withParams(value: P): WriteMessage[T, PT, P] = copy(params = Option(value))
 
 
   def withVersion(value: Long): WriteMessage[T, PT, P] = copy(version = Option(value))
@@ -100,7 +89,7 @@ final class WriteMessage[T, PT, P] private (val operation: Operation,
                    lang: Option[String] = lang,
                    scriptRef: Option[String] = scriptRef,
                    scriptSource: Option[String] = scriptSource,
-                   params: P = params): WriteMessage[T, PT, P] =
+                   params: Option[P] = params): WriteMessage[T, PT, P] =
     new WriteMessage[T, PT, P](operation = operation,
                             id = id,
                             source = source,
@@ -138,40 +127,42 @@ final class WriteMessage[T, PT, P] private (val operation: Operation,
 object WriteMessage {
   import Operation._
 
-  def createIndexMessage[T, P](source: T): WriteMessage[T, NotUsed, NotUsed] =
-    new WriteMessage(Index, id = None, source = Option(source))
+  def createIndexMessage[T,P](source: T): WriteMessage[T, NotUsed, P] =
+    new WriteMessage(Index, id = None, source = Option(source), params = None)
 
-  def createIndexMessage[T, P](id: String, source: T): WriteMessage[T, NotUsed, NotUsed] =
-    new WriteMessage(Index, id = Option(id), source = Option(source))
+  def createIndexMessage[T, P](id: String, source: T): WriteMessage[T, NotUsed, P] =
+    new WriteMessage(Index, id = Option(id), source = Option(source), params = None)
 
-  def createCreateMessage[T, P](id: String, source: T): WriteMessage[T, NotUsed, NotUsed] =
-    new WriteMessage(Create, id = Option(id), source = Option(source))
+  def createCreateMessage[T, P](id: String, source: T): WriteMessage[T, NotUsed, P] =
+    new WriteMessage(Create, id = Option(id), source = Option(source), params = None)
 
-  def createUpdateMessage[T, P](id: String, source: T): WriteMessage[T, NotUsed, NotUsed] =
-    new WriteMessage(Update, id = Option(id), source = Option(source))
+  def createUpdateMessage[T, P](id: String, source: T): WriteMessage[T, NotUsed, P] =
+    new WriteMessage(Update, id = Option(id), source = Option(source), params = None)
 
-  def createUpsertMessage[T, P](id: String, source: T): WriteMessage[T, NotUsed, NotUsed] =
-    new WriteMessage(Upsert, id = Option(id), source = Option(source))
+  def createUpsertMessage[T, P](id: String, source: T): WriteMessage[T, NotUsed, P] =
+    new WriteMessage(Upsert, id = Option(id), source = Option(source), params = None)
 
-  def createDeleteMessage[T, P](id: String): WriteMessage[T, NotUsed,NotUsed] =
-    new WriteMessage(Delete, id = Option(id), None)
+  def createDeleteMessage[T, P](id: String): WriteMessage[T, NotUsed, P] =
+    new WriteMessage(Delete, id = Option(id), None, params = None)
 
-  def createInlineScriptMessage[T, P](id:String, scriptSource: String, lang: String, params: P, source: T): WriteMessage[T, NotUsed,NotUsed] =
+  def createInlineScriptMessage[T, P](id:String, scriptSource: String, lang: String, params: P, source: T): WriteMessage[T, NotUsed,P] =
     new WriteMessage(
       InlineScript,
       id = Option(id),
       scriptSource = Option(scriptSource),
       lang = Option(lang),
-      source = Option(source)
+      source = Option(source),
+      params = Option(params)
     )
 
 
-  def createPreparedScriptMessage[T, P](id:String, scriptRef: String,  params: P, source: T): WriteMessage[T, NotUsed,NotUsed] =
+  def createPreparedScriptMessage[T, P](id:String, scriptRef: String,  params: P, source: T): WriteMessage[T, NotUsed,P] =
     new WriteMessage(
       PreparedScript,
       id = Option(id),
       scriptRef = Option(scriptRef),
-      source = Option(source)
+      source = Option(source),
+      params = Option(params)
     )
 }
 

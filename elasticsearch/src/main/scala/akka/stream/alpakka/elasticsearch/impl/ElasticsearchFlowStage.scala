@@ -30,7 +30,7 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C, P](
     client: RestClient,
     settings: ElasticsearchWriteSettings,
     sourceWriter: MessageWriter[T],
-    paramsWriter: MessageWriter[P]
+    paramsWriter: MessageWriter[P],
 ) extends GraphStage[FlowShape[immutable.Seq[WriteMessage[T, C, P]], immutable.Seq[WriteResult[T, C, P]]]] {
   require(indexName != null, "You must define an index name")
   require(typeName != null, "You must define a type name")
@@ -226,11 +226,11 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C, P](
         case Delete =>
           ""
         case PreparedScript =>
-          if (message.params != NotUsed) {
+          if (message.params != Option.empty) {
             return "\n" + JsObject(
               "script" -> JsObject(
                 "id" -> JsString(message.scriptRef.get),
-                "params" -> paramsWriter.convert(message.params).parseJson,
+                "params" -> paramsWriter.convert(message.params.get).parseJson,
                 "upsert" -> sourceWriter.convert(message.source.get).parseJson,
               )
             ).toString
@@ -242,12 +242,12 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C, P](
             )
           ).toString
         case InlineScript =>
-          if (message.params != NotUsed) {
+          if (message.params != Option.empty) {
             return "\n" + JsObject(
               "script" -> JsObject(
                 "source" -> JsString(message.scriptRef.get),
                 "lang"    -> JsString(message.lang.get),
-                "params" -> paramsWriter.convert(message.params).parseJson,
+                "params" -> paramsWriter.convert(message.params.get).parseJson,
                 "upsert" -> sourceWriter.convert(message.source.get).parseJson,
               )
             ).toString
@@ -256,7 +256,6 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C, P](
             "script" -> JsObject(
               "source" -> JsString(message.scriptRef.get),
               "lang"    -> JsString(message.lang.get),
-              "params" -> paramsWriter.convert(message.params).parseJson,
               "upsert" -> sourceWriter.convert(message.source.get).parseJson,
             )
           ).toString

@@ -30,6 +30,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import scala.None;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -232,7 +233,7 @@ public class ElasticsearchTest {
   public void flow() throws Exception {
     // Copy source/book to sink3/book through JsObject stream
     // #run-flow
-    CompletionStage<List<WriteResult<Book, NotUsed, NotUsed>>> f1 =
+    CompletionStage<List<WriteResult<Book, NotUsed, Object>>> f1 =
         ElasticsearchSource.typed(
                 "source",
                 "_doc",
@@ -254,10 +255,10 @@ public class ElasticsearchTest {
             .runWith(Sink.seq(), materializer);
     // #run-flow
 
-    List<WriteResult<Book, NotUsed, NotUsed>> result1 = f1.toCompletableFuture().get();
+    List<WriteResult<Book, NotUsed, Object>> result1 = f1.toCompletableFuture().get();
     flush("sink3");
 
-    for (WriteResult<Book, NotUsed, NotUsed> aResult1 : result1) {
+    for (WriteResult<Book, NotUsed, Object> aResult1 : result1) {
       assertEquals(true, aResult1.success());
     }
 
@@ -289,59 +290,57 @@ public class ElasticsearchTest {
     assertEquals(expect, result2);
   }
 
-//  @Test
-//  public void stringFlow() throws Exception {
-//    // Copy source/book to sink3/book through JsObject stream
-//    // #string
-//    String indexName = "sink3-0";
-//    CompletionStage<List<WriteResult<String, NotUsed, String>>> write =
-//        Source.from(
-//                Arrays.asList(
-//                    WriteMessage.createIndexMessage("1", "{\"title\": \"Das Parfum\"}"),
-//                    WriteMessage.createIndexMessage("2", "{\"title\": \"Faust\"}"),
-//                    WriteMessage.createIndexMessage(
-//                        "3", "{\"title\": \"Die unendliche Geschichte\"}")))
-//            .via(
-//                ElasticsearchFlow.create(
-//                    indexName,
-//                    "_doc",
-//                    ElasticsearchWriteSettings.create().withBufferSize(5),
-//                    client,
-//                    StringMessageWriter.getInstance()))
-//            .runWith(Sink.seq(), materializer);
-//    // #string
-//
-//    List<WriteResult<String, NotUsed, NotUsed>> result1 = write.toCompletableFuture().get();
-//    flush(indexName);
-//
-//    for (WriteResult<String, NotUsed, NotUsed> aResult1 : result1) {
-//      assertEquals(true, aResult1.success());
-//    }
-//
-//    CompletionStage<List<String>> f2 =
-//        ElasticsearchSource.typed(
-//                indexName,
-//                "_doc",
-//                "{\"match_all\": {}}",
-//                ElasticsearchSourceSettings.create().withBufferSize(5),
-//                client,
-//                Book.class)
-//            .map(m -> m.source().title)
-//            .runWith(Sink.seq(), materializer);
-//
-//    List<String> result2 = new ArrayList<>(f2.toCompletableFuture().get());
-//
-//    List<String> expect = Arrays.asList("Das Parfum", "Die unendliche Geschichte", "Faust");
-//
-//    Collections.sort(result2);
-//    assertEquals(expect, result2);
-//  }
+  @Test
+  public void stringFlow() throws Exception {
+    // Copy source/book to sink3/book through JsObject stream
+    // #string
+    String indexName = "sink3-0";
+    CompletionStage<List<WriteResult<String, NotUsed, String>>> write =
+        Source.from(
+                Arrays.asList(
+                    WriteMessage.createPreparedScriptMessage("1", "test","{\"title\": \"Das Parfum\"}","{\"title\": \"Das Parfum\"}")))
+            .via(
+                ElasticsearchFlow.create(
+                    indexName,
+                    "_doc",
+                    ElasticsearchWriteSettings.create().withBufferSize(5),
+                    client,
+                    StringMessageWriter.getInstance(),
+                    StringParamsWriter.getInstance()))
+            .runWith(Sink.seq(), materializer);
+    // #string
+
+    List<WriteResult<String, NotUsed, String>> result1 = write.toCompletableFuture().get();
+    flush(indexName);
+
+    for (WriteResult<String, NotUsed, String> aResult1 : result1) {
+      assertEquals(true, aResult1.success());
+    }
+
+    CompletionStage<List<String>> f2 =
+        ElasticsearchSource.typed(
+                indexName,
+                "_doc",
+                "{\"match_all\": {}}",
+                ElasticsearchSourceSettings.create().withBufferSize(5),
+                client,
+                Book.class)
+            .map(m -> m.source().title)
+            .runWith(Sink.seq(), materializer);
+
+    List<String> result2 = new ArrayList<>(f2.toCompletableFuture().get());
+
+    List<String> expect = Arrays.asList("Das Parfum", "Die unendliche Geschichte", "Faust");
+
+    Collections.sort(result2);
+    assertEquals(expect, result2);
+  }
 
   @Test
   public void testMultipleOperations() throws Exception {
     // #multiple-operations
     // Create, update, upsert and delete documents in sink8/book
-    List<WriteMessage<Book, NotUsed, NotUsed>> requests =
+    List<WriteMessage<Book, NotUsed, None>> requests =
         Arrays.asList(
             WriteMessage.createIndexMessage("00001", new Book("Book 1")),
             WriteMessage.createUpsertMessage("00002", new Book("Book 2")),
