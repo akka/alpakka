@@ -218,13 +218,12 @@ object StringMessageWriter extends StringMessageWriter {
 }
 
 
-sealed class StringParamsWriter private () extends MessageWriter[String] {
-  override def convert(message: String): String = message
+class EmptyMessageWriter private () extends MessageWriter[Any] {
+  override def convert(message: Any): String = ""
 }
 
+object EmptyMessageWriter extends EmptyMessageWriter {
 
-object StringParamsWriter extends StringParamsWriter {
-
-  /** Java API: get the singleton instance of `StringParamsWriter` */
-  val getInstance: StringParamsWriter = StringParamsWriter
+  /** Java API: get the singleton instance of `StringMessageWriter` */
+  val getInstance: EmptyMessageWriter = EmptyMessageWriter
 }

@@ -295,10 +295,13 @@ public class ElasticsearchTest {
     // Copy source/book to sink3/book through JsObject stream
     // #string
     String indexName = "sink3-0";
-    CompletionStage<List<WriteResult<String, NotUsed, String>>> write =
+    CompletionStage<List<WriteResult<String, NotUsed, Object>>> write =
         Source.from(
                 Arrays.asList(
-                    WriteMessage.createPreparedScriptMessage("1", "test","{\"title\": \"Das Parfum\"}","{\"title\": \"Das Parfum\"}")))
+                    WriteMessage.createIndexMessage("1", "{\"title\": \"Das Parfum\"}"),
+                    WriteMessage.createIndexMessage("2", "{\"title\": \"Faust\"}"),
+                    WriteMessage.createIndexMessage("3", "{\"title\": \"Die unendliche Geschichte\"}")
+                ))
             .via(
                 ElasticsearchFlow.create(
                     indexName,
@@ -306,14 +309,14 @@ public class ElasticsearchTest {
                     ElasticsearchWriteSettings.create().withBufferSize(5),
                     client,
                     StringMessageWriter.getInstance(),
-                    StringParamsWriter.getInstance()))
+                    EmptyMessageWriter.getInstance()))
             .runWith(Sink.seq(), materializer);
     // #string
 
-    List<WriteResult<String, NotUsed, String>> result1 = write.toCompletableFuture().get();
+    List<WriteResult<String, NotUsed, Object>> result1 = write.toCompletableFuture().get();
     flush(indexName);
 
-    for (WriteResult<String, NotUsed, String> aResult1 : result1) {
+    for (WriteResult<String, NotUsed, Object> aResult1 : result1) {
       assertEquals(true, aResult1.success());
     }
 
