@@ -4,11 +4,14 @@
 
 package docs.javadsl;
 
+import akka.util.ByteString;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -29,6 +32,18 @@ public class ArchiveHelper {
         zout.write(bytes, 0, length);
       }
       fis.close();
+    }
+    zout.close();
+  }
+
+  public void createReferenceZipFileFromMemory(
+      Map<String, ByteString> inputFilePaths, String resultFileName) throws Exception {
+    FileOutputStream fout = new FileOutputStream(resultFileName);
+    ZipOutputStream zout = new ZipOutputStream(fout);
+    for (Map.Entry<String, ByteString> file : inputFilePaths.entrySet()) {
+      ZipEntry zipEntry = new ZipEntry(file.getKey());
+      zout.putNextEntry(zipEntry);
+      zout.write(file.getValue().toArray(), 0, file.getValue().toArray().length);
     }
     zout.close();
   }
