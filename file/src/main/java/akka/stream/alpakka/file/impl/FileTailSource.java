@@ -111,11 +111,15 @@ public final class FileTailSource extends GraphStage<SourceShape<ByteString>> {
                 (tryInteger) -> {
                   if (tryInteger.isSuccess()) {
                     int readBytes = tryInteger.get();
+                    // when the number of bytes read is -1 it signals that no new data is available
                     if (readBytes > 0) {
                       buffer.flip();
                       push(out, ByteString.fromByteBuffer(buffer));
                       position += readBytes;
                       buffer.clear();
+                    } else if (!Files.exists(path)) {
+                      // when the file no longer exists complete the stream
+                      this.completeStage();
                     } else {
                       // hit end, try again in a while
                       scheduleOnce("poll", pollingInterval);

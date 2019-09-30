@@ -22,6 +22,7 @@ import com.google.common.jimfs.Jimfs;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import scala.concurrent.duration.FiniteDuration;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
@@ -29,6 +30,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.APPEND;
@@ -109,6 +111,34 @@ public class FileTailSourceTest {
     assertEquals("c", subscriber.expectNext());
 
     killSwitch.shutdown();
+    subscriber.expectComplete();
+  }
+
+  @Test
+  public void willCompleteStreamIfFileIsDeleted() throws Exception {
+    final Path path = fs.getPath("/file");
+    Files.write(path, "a\n".getBytes(UTF_8));
+
+    final Source<String, NotUsed> source =
+            akka.stream.alpakka.file.javadsl.FileTailSource.createLines(
+                    path,
+                    8192, // chunk size
+                    Duration.ofMillis(250),
+                    "\n",
+                    StandardCharsets.UTF_8);
+
+    final TestSubscriber.Probe<String> subscriber = TestSubscriber.probe(system);
+
+    source
+            .to(Sink.fromSubscriber(subscriber))
+            .run(materializer);
+
+    String result1 = subscriber.requestNext();
+    assertEquals("a", result1);
+
+    Files.delete(path);
+
+    subscriber.request(1);
     subscriber.expectComplete();
   }
 
