@@ -118,6 +118,6 @@ public class ArchiveTest {
   }
 
   private Source<ByteString, NotUsed> toSource(ByteString bs) {
-    return Source.from(scala.collection.JavaConverters.seqAsJavaList(bs.grouped(10).toList()));
+    return Source.single(bs);
   }
 }
