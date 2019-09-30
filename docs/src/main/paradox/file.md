@@ -31,6 +31,10 @@ Use the `FileIO` class to create streams reading from or writing to files. It is
 The `FileTailSource` starts at a given offset in a file and emits chunks of bytes until reaching
 the end of the file, it will then poll the file for changes and emit new changes as they are written
  to the file (unless there is backpressure).
+ 
+When there are no new changes, a second timer is initiated to check if the file still exists. When
+the file no longer exists then the `FileTailSource` will complete. The file check timer uses the
+same interval as the timer to check for new changes in the file.
 
 A very common use case is combining reading bytes with parsing the bytes into lines, therefore
 `FileTailSource` contains a few factory methods to create a source that parses the bytes into

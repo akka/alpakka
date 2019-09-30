@@ -22,7 +22,6 @@ import com.google.common.jimfs.Jimfs;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import scala.concurrent.duration.FiniteDuration;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
@@ -30,7 +29,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.APPEND;

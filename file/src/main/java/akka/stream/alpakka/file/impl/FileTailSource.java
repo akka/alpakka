@@ -4,13 +4,10 @@
 
 package akka.stream.alpakka.file.impl;
 
-import akka.NotUsed;
 import akka.annotation.InternalApi;
 import akka.stream.Attributes;
 import akka.stream.Outlet;
 import akka.stream.SourceShape;
-import akka.stream.javadsl.Framing;
-import akka.stream.javadsl.Source;
 import akka.stream.stage.*;
 import akka.util.ByteString;
 import scala.concurrent.duration.FiniteDuration;
@@ -22,8 +19,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -46,6 +41,8 @@ public final class FileTailSource extends GraphStage<SourceShape<ByteString>> {
   private final int maxChunkSize;
   private final long startingPosition;
   private final FiniteDuration pollingInterval;
+  private final String pollTimer = "poll";
+  private final String fileExistsCheckTimer = "fileCheck";
   private final Outlet<ByteString> out = Outlet.create("FileTailSource.out");
   private final SourceShape<ByteString> shape = SourceShape.of(out);
 
@@ -113,16 +110,18 @@ public final class FileTailSource extends GraphStage<SourceShape<ByteString>> {
                     int readBytes = tryInteger.get();
                     // when the number of bytes read is -1 it signals that no new data is available
                     if (readBytes > 0) {
+                      if (isTimerActive(fileExistsCheckTimer)) {
+                        cancelTimer(fileExistsCheckTimer);
+                      }
                       buffer.flip();
                       push(out, ByteString.fromByteBuffer(buffer));
                       position += readBytes;
                       buffer.clear();
-                    } else if (!Files.exists(path)) {
-                      // when the file no longer exists complete the stream
-                      this.completeStage();
                     } else {
                       // hit end, try again in a while
-                      scheduleOnce("poll", pollingInterval);
+                      scheduleOnce(pollTimer, pollingInterval);
+                      // check to see if the file still exists
+                      scheduleOnce(fileExistsCheckTimer, pollingInterval);
                     }
 
                   } else {
@@ -133,11 +132,21 @@ public final class FileTailSource extends GraphStage<SourceShape<ByteString>> {
 
       @Override
       public void onTimer(Object timerKey) {
-        doPull();
+        if (timerKey == pollTimer) {
+          doPull();
+        } else if (timerKey == fileExistsCheckTimer) {
+          fileExistsCheck();
+        }
       }
 
       private void doPull() {
         channel.read(buffer, position, chunkCallback, completionHandler);
+      }
+
+      private void fileExistsCheck() {
+        if (!Files.exists(path)) {
+          this.completeStage();
+        }
       }
 
       @Override
