@@ -124,12 +124,12 @@ object S3Headers {
   /**
    * Empty set of headers
    */
-  val empty: S3Headers = S3Headers()
+  val empty: S3Headers = new S3Headers()
 
-  def apply() = new S3Headers()
+  def apply() = empty
 
   /**
    * Java Api
    */
-  def create() = new S3Headers()
+  def create() = empty
 }
