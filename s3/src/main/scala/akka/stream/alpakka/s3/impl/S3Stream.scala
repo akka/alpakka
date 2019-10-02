@@ -142,7 +142,6 @@ import akka.util.ByteString
       import mat.executionContext
       implicit val conf = resolveSettings(attr, mat.system)
 
-      // TODO: pass the headers
       signAndGetAs[ListBucketResult](HttpRequests.listBucket(bucket, prefix, token, s3Headers.headersFor(ListBucket)))
         .map { (res: ListBucketResult) =>
           Some(
