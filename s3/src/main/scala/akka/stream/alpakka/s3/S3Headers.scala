@@ -120,6 +120,12 @@ final class S3Headers private (val cannedAcl: Option[CannedAcl] = None,
  * Convenience apply methods for creation of canned acl, meta, storage class or custom headers.
  */
 object S3Headers {
+
+  /**
+   * Empty set of headers
+   */
+  val empty: S3Headers = S3Headers()
+
   def apply() = new S3Headers()
 
   /**

@@ -35,7 +35,7 @@ object S3 {
               key: String,
               method: HttpMethod = HttpMethods.GET,
               versionId: Option[String] = None,
-              s3Headers: S3Headers = S3Headers()): Source[HttpResponse, NotUsed] =
+              s3Headers: S3Headers = S3Headers.empty): Source[HttpResponse, NotUsed] =
     S3Stream.request(S3Location(bucket, key), method, versionId = versionId, s3Headers = s3Headers.headers)
 
   /**
@@ -53,7 +53,7 @@ object S3 {
       versionId: Option[String] = None,
       sse: Option[ServerSideEncryption] = None
   ): Source[Option[ObjectMetadata], NotUsed] =
-    getObjectMetadata(bucket, key, versionId, S3Headers().withOptionalServerSideEncryption(sse))
+    getObjectMetadata(bucket, key, versionId, S3Headers.empty.withOptionalServerSideEncryption(sse))
 
   /**
    * Gets the metadata for a S3 Object
@@ -81,7 +81,7 @@ object S3 {
    * @return A [[akka.stream.scaladsl.Source Source]] that will emit [[akka.Done]] when operation is completed
    */
   def deleteObject(bucket: String, key: String, versionId: Option[String] = None): Source[Done, NotUsed] =
-    deleteObject(bucket, key, versionId, S3Headers())
+    deleteObject(bucket, key, versionId, S3Headers.empty)
 
   /**
    * Deletes a S3 Object
@@ -106,7 +106,7 @@ object S3 {
    * @return A [[akka.stream.scaladsl.Source Source]] that will emit [[akka.Done]] when operation is completed
    */
   def deleteObjectsByPrefix(bucket: String, prefix: Option[String]): Source[Done, NotUsed] =
-    deleteObjectsByPrefix(bucket, prefix, S3Headers())
+    deleteObjectsByPrefix(bucket, prefix, S3Headers.empty)
 
   /**
    * Deletes a S3 Objects which contain given prefix
@@ -155,7 +155,7 @@ object S3 {
       versionId: Option[String] = None,
       sse: Option[ServerSideEncryption] = None
   ): Source[Option[(Source[ByteString, NotUsed], ObjectMetadata)], NotUsed] =
-    download(bucket, key, range, versionId, S3Headers().withOptionalServerSideEncryption(sse))
+    download(bucket, key, range, versionId, S3Headers.empty.withOptionalServerSideEncryption(sse))
 
   /**
    * Downloads a S3 Object
@@ -189,7 +189,7 @@ object S3 {
    * @return [[akka.stream.scaladsl.Source Source]] of [[ListBucketResultContents]]
    */
   def listBucket(bucket: String, prefix: Option[String]): Source[ListBucketResultContents, NotUsed] =
-    listBucket(bucket, prefix, S3Headers())
+    listBucket(bucket, prefix, S3Headers.empty)
 
   /**
    * Will return a source of object metadata for a given bucket with optional prefix using version 2 of the List Bucket API.
@@ -232,7 +232,7 @@ object S3 {
       sse: Option[ServerSideEncryption] = None
   ): Sink[ByteString, Future[MultipartUploadResult]] = {
     val headers =
-      S3Headers().withCannedAcl(cannedAcl).withMetaHeaders(metaHeaders).withOptionalServerSideEncryption(sse)
+      S3Headers.empty.withCannedAcl(cannedAcl).withMetaHeaders(metaHeaders).withOptionalServerSideEncryption(sse)
     multipartUploadWithHeaders(bucket, key, contentType, chunkSize, chunkingParallelism, headers)
   }
 
@@ -253,7 +253,7 @@ object S3 {
       contentType: ContentType = ContentTypes.`application/octet-stream`,
       chunkSize: Int = MinChunkSize,
       chunkingParallelism: Int = 4,
-      s3Headers: S3Headers = S3Headers()
+      s3Headers: S3Headers = S3Headers.empty
   ): Sink[ByteString, Future[MultipartUploadResult]] =
     S3Stream
       .multipartUpload(
@@ -285,7 +285,7 @@ object S3 {
       targetKey: String,
       sourceVersionId: Option[String] = None,
       contentType: ContentType = ContentTypes.`application/octet-stream`,
-      s3Headers: S3Headers = S3Headers(),
+      s3Headers: S3Headers = S3Headers.empty,
       chunkSize: Int = MinChunkSize,
       chunkingParallelism: Int = 4
   ): RunnableGraph[Future[MultipartUploadResult]] =
@@ -309,7 +309,7 @@ object S3 {
    * @return [[scala.concurrent.Future Future]] with type [[Done]] as API doesn't return any additional information
    */
   def makeBucket(bucketName: String)(implicit mat: Materializer, attr: Attributes = Attributes()): Future[Done] =
-    makeBucket(bucketName, S3Headers())
+    makeBucket(bucketName, S3Headers.empty)
 
   /**
    * Create new bucket with a given name
@@ -332,7 +332,7 @@ object S3 {
    * @return [[akka.stream.scaladsl.Source Source]] of type [[Done]] as API doesn't return any additional information
    */
   def makeBucketSource(bucketName: String): Source[Done, NotUsed] =
-    makeBucketSource(bucketName, S3Headers())
+    makeBucketSource(bucketName, S3Headers.empty)
 
   /**
    * Create new bucket with a given name
@@ -356,7 +356,7 @@ object S3 {
    */
   def deleteBucket(bucketName: String)(implicit mat: Materializer,
                                        attributes: Attributes = Attributes()): Future[Done] =
-    deleteBucket(bucketName, S3Headers())
+    deleteBucket(bucketName, S3Headers.empty)
 
   /**
    * Delete bucket with a given name
@@ -382,7 +382,7 @@ object S3 {
    * @return [[akka.stream.scaladsl.Source Source]] of type [[Done]] as API doesn't return any additional information
    */
   def deleteBucketSource(bucketName: String): Source[Done, NotUsed] =
-    deleteBucketSource(bucketName, S3Headers())
+    deleteBucketSource(bucketName, S3Headers.empty)
 
   /**
    * Delete bucket with a given name
@@ -406,7 +406,7 @@ object S3 {
    */
   def checkIfBucketExists(bucketName: String)(implicit mat: Materializer,
                                               attributes: Attributes = Attributes()): Future[BucketAccess] =
-    checkIfBucketExists(bucketName, S3Headers())
+    checkIfBucketExists(bucketName, S3Headers.empty)
 
   /**
    *   Checks whether the bucket exits and user has rights to perform ListBucket operation
@@ -432,7 +432,7 @@ object S3 {
    * @return [[akka.stream.scaladsl.Source Source]] of type [[BucketAccess]]
    */
   def checkIfBucketExistsSource(bucketName: String): Source[BucketAccess, NotUsed] =
-    checkIfBucketExistsSource(bucketName, S3Headers())
+    checkIfBucketExistsSource(bucketName, S3Headers.empty)
 
   /**
    *   Checks whether the bucket exits and user has rights to perform ListBucket operation

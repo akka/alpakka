@@ -55,7 +55,7 @@ object S3 {
               key: String,
               versionId: Optional[String],
               method: HttpMethod = HttpMethods.GET,
-              s3Headers: S3Headers = S3Headers()): Source[HttpResponse, NotUsed] =
+              s3Headers: S3Headers = S3Headers.empty): Source[HttpResponse, NotUsed] =
     S3Stream
       .request(S3Location(bucket, key),
                method.asInstanceOf[ScalaHttpMethod],
@@ -72,7 +72,7 @@ object S3 {
    * @return A [[akka.stream.javadsl.Source Source]] containing an [[java.util.Optional Optional]] that will be empty in case the object does not exist
    */
   def getObjectMetadata(bucket: String, key: String): Source[Optional[ObjectMetadata], NotUsed] =
-    getObjectMetadata(bucket, key, S3Headers())
+    getObjectMetadata(bucket, key, S3Headers.empty)
 
   /**
    * Gets the metadata for a S3 Object
@@ -85,7 +85,7 @@ object S3 {
   def getObjectMetadata(bucket: String,
                         key: String,
                         sse: ServerSideEncryption): Source[Optional[ObjectMetadata], NotUsed] =
-    getObjectMetadata(bucket, key, S3Headers().withOptionalServerSideEncryption(Option(sse)))
+    getObjectMetadata(bucket, key, S3Headers.empty.withOptionalServerSideEncryption(Option(sse)))
 
   /**
    * Gets the metadata for a S3 Object
@@ -100,7 +100,7 @@ object S3 {
                         key: String,
                         versionId: Optional[String],
                         sse: ServerSideEncryption): Source[Optional[ObjectMetadata], NotUsed] =
-    getObjectMetadataWithHeaders(bucket, key, versionId, S3Headers().withOptionalServerSideEncryption(Option(sse)))
+    getObjectMetadataWithHeaders(bucket, key, versionId, S3Headers.empty.withOptionalServerSideEncryption(Option(sse)))
 
   /**
    * Gets the metadata for a S3 Object
@@ -141,7 +141,7 @@ object S3 {
    * @return A [[akka.stream.javadsl.Source Source]] that will emit [[java.lang.Void]] when operation is completed
    */
   def deleteObject(bucket: String, key: String): Source[Done, NotUsed] =
-    deleteObject(bucket, key, Optional.empty(), S3Headers())
+    deleteObject(bucket, key, Optional.empty(), S3Headers.empty)
 
   /**
    * Deletes a S3 Object
@@ -152,7 +152,7 @@ object S3 {
    * @return A [[akka.stream.javadsl.Source Source]] that will emit [[java.lang.Void]] when operation is completed
    */
   def deleteObject(bucket: String, key: String, versionId: Optional[String]): Source[Done, NotUsed] =
-    deleteObject(bucket, key, versionId, S3Headers())
+    deleteObject(bucket, key, versionId, S3Headers.empty)
 
   /**
    * Deletes a S3 Object
@@ -179,7 +179,7 @@ object S3 {
    * @return A [[akka.stream.javadsl.Source Source]] that will emit [[java.lang.Void]] when operation is completed
    */
   def deleteObjectsByPrefix(bucket: String): Source[Done, NotUsed] =
-    deleteObjectsByPrefix(bucket, Optional.empty(), S3Headers())
+    deleteObjectsByPrefix(bucket, Optional.empty(), S3Headers.empty)
 
   /**
    * Deletes all keys which have the given prefix under the specified bucket
@@ -189,7 +189,7 @@ object S3 {
    * @return A [[akka.stream.javadsl.Source Source]] that will emit [[java.lang.Void]] when operation is completed
    */
   def deleteObjectsByPrefix(bucket: String, prefix: Optional[String]): Source[Done, NotUsed] =
-    deleteObjectsByPrefix(bucket, prefix, S3Headers())
+    deleteObjectsByPrefix(bucket, prefix, S3Headers.empty)
 
   /**
    * Deletes all keys which have the given prefix under the specified bucket
@@ -245,7 +245,7 @@ object S3 {
                 data: Source[ByteString, _],
                 contentLength: Long,
                 contentType: ContentType): Source[ObjectMetadata, NotUsed] =
-    putObject(bucket, key, data, contentLength, contentType, S3Headers().withCannedAcl(CannedAcl.Private))
+    putObject(bucket, key, data, contentLength, contentType, S3Headers.empty.withCannedAcl(CannedAcl.Private))
 
   /**
    * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
@@ -280,7 +280,7 @@ object S3 {
    */
   def download(bucket: String,
                key: String): Source[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]], NotUsed] =
-    toJava(S3Stream.download(S3Location(bucket, key), None, None, S3Headers()))
+    toJava(S3Stream.download(S3Location(bucket, key), None, None, S3Headers.empty))
 
   /**
    * Downloads a S3 Object
@@ -295,7 +295,7 @@ object S3 {
       key: String,
       sse: ServerSideEncryption
   ): Source[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]], NotUsed] =
-    download(bucket, key, S3Headers().withOptionalServerSideEncryption(Option(sse)))
+    download(bucket, key, S3Headers.empty.withOptionalServerSideEncryption(Option(sse)))
 
   /**
    * Downloads a specific byte range of a S3 Object
@@ -309,7 +309,7 @@ object S3 {
                key: String,
                range: ByteRange): Source[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]], NotUsed] = {
     val scalaRange = range.asInstanceOf[ScalaByteRange]
-    toJava(S3Stream.download(S3Location(bucket, key), Some(scalaRange), None, S3Headers()))
+    toJava(S3Stream.download(S3Location(bucket, key), Some(scalaRange), None, S3Headers.empty))
   }
 
   /**
@@ -327,7 +327,7 @@ object S3 {
       range: ByteRange,
       sse: ServerSideEncryption
   ): Source[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]], NotUsed] =
-    download(bucket, key, range, S3Headers().withOptionalServerSideEncryption(Option(sse)))
+    download(bucket, key, range, S3Headers.empty.withOptionalServerSideEncryption(Option(sse)))
 
   /**
    * Downloads a specific byte range of a S3 Object
@@ -346,7 +346,7 @@ object S3 {
       versionId: Optional[String],
       sse: ServerSideEncryption
   ): Source[Optional[JPair[Source[ByteString, NotUsed], ObjectMetadata]], NotUsed] =
-    download(bucket, key, range, versionId, S3Headers().withOptionalServerSideEncryption(Option(sse)))
+    download(bucket, key, range, versionId, S3Headers.empty.withOptionalServerSideEncryption(Option(sse)))
 
   /**
    * Downloads a S3 Object
@@ -422,7 +422,7 @@ object S3 {
    * @return Source of object metadata
    */
   def listBucket(bucket: String, prefix: Option[String]): Source[ListBucketResultContents, NotUsed] =
-    listBucket(bucket, prefix, S3Headers())
+    listBucket(bucket, prefix, S3Headers.empty)
 
   /**
    * Will return a source of object metadata for a given bucket with optional prefix using version 2 of the List Bucket API.
@@ -472,7 +472,7 @@ object S3 {
   def multipartUpload(bucket: String,
                       key: String,
                       contentType: ContentType): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
-    multipartUpload(bucket, key, contentType, S3Headers().withCannedAcl(CannedAcl.Private))
+    multipartUpload(bucket, key, contentType, S3Headers.empty.withCannedAcl(CannedAcl.Private))
 
   /**
    * Uploads a S3 Object by making multiple requests
@@ -590,7 +590,12 @@ object S3 {
                     sourceKey: String,
                     targetBucket: String,
                     targetKey: String): RunnableGraph[CompletionStage[MultipartUploadResult]] =
-    multipartCopy(sourceBucket, sourceKey, targetBucket, targetKey, ContentTypes.APPLICATION_OCTET_STREAM, S3Headers())
+    multipartCopy(sourceBucket,
+                  sourceKey,
+                  targetBucket,
+                  targetKey,
+                  ContentTypes.APPLICATION_OCTET_STREAM,
+                  S3Headers.empty)
 
   /**
    * Create new bucket with a given name
@@ -602,7 +607,7 @@ object S3 {
    * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
    */
   def makeBucket(bucketName: String, materializer: Materializer, attributes: Attributes): CompletionStage[Done] =
-    makeBucket(bucketName, materializer, attributes, S3Headers())
+    makeBucket(bucketName, materializer, attributes, S3Headers.empty)
 
   /**
    * Create new bucket with a given name
@@ -613,7 +618,7 @@ object S3 {
    * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
    */
   def makeBucket(bucketName: String, materializer: Materializer): CompletionStage[Done] =
-    makeBucket(bucketName, materializer, Attributes(), S3Headers())
+    makeBucket(bucketName, materializer, Attributes(), S3Headers.empty)
 
   /**
    * Create new bucket with a given name
@@ -639,7 +644,7 @@ object S3 {
    * @return [[akka.stream.javadsl.Source Source]] of type [[Done]] as API doesn't return any additional information
    */
   def makeBucketSource(bucketName: String): Source[Done, NotUsed] =
-    makeBucketSource(bucketName, S3Headers())
+    makeBucketSource(bucketName, S3Headers.empty)
 
   /**
    * Create new bucket with a given name
@@ -662,7 +667,7 @@ object S3 {
    * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
    */
   def deleteBucket(bucketName: String, materializer: Materializer, attributes: Attributes): CompletionStage[Done] =
-    deleteBucket(bucketName, materializer, attributes, S3Headers())
+    deleteBucket(bucketName, materializer, attributes, S3Headers.empty)
 
   /**
    * Delete bucket with a given name
@@ -689,7 +694,7 @@ object S3 {
    * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
    */
   def deleteBucket(bucketName: String, materializer: Materializer): CompletionStage[Done] =
-    deleteBucket(bucketName, materializer, Attributes(), S3Headers())
+    deleteBucket(bucketName, materializer, Attributes(), S3Headers.empty)
 
   /**
    * Delete bucket with a given name
@@ -699,7 +704,7 @@ object S3 {
    * @return [[akka.stream.javadsl.Source Source]] of type [[Done]] as API doesn't return any additional information
    */
   def deleteBucketSource(bucketName: String): Source[Done, NotUsed] =
-    deleteBucketSource(bucketName, S3Headers())
+    deleteBucketSource(bucketName, S3Headers.empty)
 
   /**
    * Delete bucket with a given name
@@ -724,7 +729,7 @@ object S3 {
   def checkIfBucketExists(bucketName: String,
                           materializer: Materializer,
                           attributes: Attributes): CompletionStage[BucketAccess] =
-    checkIfBucketExists(bucketName, materializer, attributes, S3Headers())
+    checkIfBucketExists(bucketName, materializer, attributes, S3Headers.empty)
 
   /**
    * Checks whether the bucket exists and the user has rights to perform the `ListBucket` operation
@@ -751,7 +756,7 @@ object S3 {
    * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[BucketAccess]]
    */
   def checkIfBucketExists(bucketName: String, materializer: Materializer): CompletionStage[BucketAccess] =
-    checkIfBucketExists(bucketName, materializer, Attributes(), S3Headers())
+    checkIfBucketExists(bucketName, materializer, Attributes(), S3Headers.empty)
 
   /**
    * Checks whether the bucket exits and user has rights to perform ListBucket operation
@@ -761,7 +766,7 @@ object S3 {
    * @return [[akka.stream.javadsl.Source Source]] of type [[BucketAccess]]
    */
   def checkIfBucketExistsSource(bucketName: String): Source[BucketAccess, NotUsed] =
-    checkIfBucketExistsSource(bucketName, S3Headers())
+    checkIfBucketExistsSource(bucketName, S3Headers.empty)
 
   /**
    * Checks whether the bucket exits and user has rights to perform ListBucket operation
