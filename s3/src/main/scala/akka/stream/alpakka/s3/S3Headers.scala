@@ -76,6 +76,8 @@ final class S3Headers private (val cannedAcl: Option[CannedAcl] = None,
   def withCustomHeaders(customHeaders: Map[String, String]) = copy(customHeaders = customHeaders)
   def withServerSideEncryption(serverSideEncryption: ServerSideEncryption) =
     copy(serverSideEncryption = Some(serverSideEncryption))
+  def withOptionalServerSideEncryption(serverSideEncryption: Option[ServerSideEncryption]) =
+    copy(serverSideEncryption = serverSideEncryption)
 
   private def copy(
       cannedAcl: Option[CannedAcl] = cannedAcl,
@@ -118,10 +120,16 @@ final class S3Headers private (val cannedAcl: Option[CannedAcl] = None,
  * Convenience apply methods for creation of canned acl, meta, storage class or custom headers.
  */
 object S3Headers {
-  def apply() = new S3Headers()
+
+  /**
+   * Empty set of headers
+   */
+  val empty: S3Headers = new S3Headers()
+
+  def apply() = empty
 
   /**
    * Java Api
    */
-  def create() = new S3Headers()
+  def create() = empty
 }
