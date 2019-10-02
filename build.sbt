@@ -110,7 +110,7 @@ lazy val csvBench = internalProject("csv-bench")
   .dependsOn(csv)
   .enablePlugins(JmhPlugin)
 
-lazy val dynamodb = alpakkaProject("dynamodb", "aws.dynamodb", Dependencies.DynamoDB)
+lazy val dynamodb = alpakkaProject("dynamodb", "aws.dynamodb", Dependencies.DynamoDB, Test / parallelExecution := false)
 
 lazy val elasticsearch = alpakkaProject(
   "elasticsearch",

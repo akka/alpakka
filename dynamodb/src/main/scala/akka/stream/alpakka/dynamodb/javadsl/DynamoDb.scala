@@ -9,7 +9,7 @@ import java.util.concurrent.CompletionStage
 import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.alpakka.dynamodb.{scaladsl, DynamoDbOp, DynamoDbPaginatedOp}
-import akka.stream.javadsl.{Flow, Sink, Source}
+import akka.stream.javadsl.{Flow, FlowWithContext, Sink, Source}
 import software.amazon.awssdk.core.async.SdkPublisher
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
 import software.amazon.awssdk.services.dynamodb.model.{DynamoDbRequest, DynamoDbResponse}
@@ -32,32 +32,21 @@ object DynamoDb {
     scaladsl.DynamoDb.flow(parallelism)(client, operation).asJava
 
   /**
-   * Create a Flow that emits a response for every request to DynamoDB.
-   * A successful response is wrapped in [scala.util.Success] and a failed
-   * response is wrapped in [scala.util.Failure].
+   * Create a `FlowWithContext` that emits a response for every request to DynamoDB.
+   * A successful response is wrapped in [[scala.util.Success]] and a failed
+   * response is wrapped in [[scala.util.Failure]].
    *
-   * The returned flow is meant to compose easily with an Akka Stream RetryFlow
-   * which can retry requests, that have responses wrapped in [scala.util.Try].
+   * The context is merely passed through to the emitted element.
    *
    * @param parallelism maximum number of in-flight requests at any given time
-   *
-   * @tparam State the type of the pass-through value that is taken together with
-   *               requests and is emitted together with responses. Can be used,
-   *               for example:
-   *                 * to correlate a request with a response
-   *                 * to track number of retries
-   *                 * to store request to be issued in the case of retry
+   * @tparam Ctx context (or pass-through)
    */
-  def tryFlow[In <: DynamoDbRequest, Out <: DynamoDbResponse, State](
+  def flowWithContext[In <: DynamoDbRequest, Out <: DynamoDbResponse, Ctx](
       client: DynamoDbAsyncClient,
       operation: DynamoDbOp[In, Out],
       parallelism: Int
-  ): Flow[akka.japi.Pair[In, State], akka.japi.Pair[Try[Out], State], NotUsed] =
-    Flow
-      .create[akka.japi.Pair[In, State]]()
-      .map(func(p => (p.first, p.second)))
-      .via(scaladsl.DynamoDb.tryFlow(parallelism)(client, operation))
-      .map(func(t => akka.japi.Pair.create(t._1, t._2)))
+  ): FlowWithContext[In, Ctx, Try[Out], Ctx, NotUsed] =
+    scaladsl.DynamoDb.flowWithContext[In, Out, Ctx](parallelism)(client, operation).asJava
 
   /**
    * Create a Source that will emit potentially multiple responses for a given request.
@@ -79,7 +68,4 @@ object DynamoDb {
                                                              mat: Materializer): CompletionStage[Out] =
     Source.single(request).via(flow(client, operation, 1)).runWith(Sink.head(), mat)
 
-  private def func[T, R](f: T => R) = new akka.japi.function.Function[T, R] {
-    override def apply(param: T): R = f(param)
-  }
 }
