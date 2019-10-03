@@ -91,7 +91,6 @@ import akka.util.ByteString
   import Marshalling._
 
   val MinChunkSize: Int = 5 * 1024 * 1024 //in bytes
-  val MaxChunkSize: Int = 10 * 1024 * 1024 //in bytes
 
   // def because tokens can expire
   def signingKey(implicit settings: S3Settings) = {
@@ -514,6 +513,8 @@ import akka.util.ByteString
       s"Chunk size must be at least 5 MB = $MinChunkSize bytes (was $chunkSize bytes). See http://docs.aws.amazon.com/AmazonS3/latest/API/mpUploadUploadPart.html"
     )
 
+    val chunkBufferSize = chunkSize * 2
+
     // First step of the multi part upload process is made.
     //  The response is then used to construct the subsequent individual upload part requests
     val requestInfo: Source[(MultipartUpload, Int), NotUsed] =
@@ -525,8 +526,8 @@ import akka.util.ByteString
       .setup { (mat, attr) =>
         implicit val conf = resolveSettings(attr, mat.system)
 
-        SplitAfterSize(chunkSize, MaxChunkSize)(atLeastOneByteString)
-          .via(getChunkBuffer(chunkSize)) //creates the chunks
+        SplitAfterSize(chunkSize, chunkBufferSize)(atLeastOneByteString)
+          .via(getChunkBuffer(chunkSize, chunkSize * 2)) //creates the chunks
           .concatSubstreams
           .zipWith(requestInfo) {
             case (chunkedPayload, (uploadInfo, chunkIndex)) =>
@@ -540,11 +541,12 @@ import akka.util.ByteString
       .mapMaterializedValue(_ => NotUsed)
   }
 
-  private def getChunkBuffer(chunkSize: Int)(implicit settings: S3Settings) = settings.bufferType match {
+  private def getChunkBuffer(chunkSize: Int, bufferSize: Int)
+                            (implicit settings: S3Settings) = settings.bufferType match {
     case MemoryBufferType =>
-      new MemoryBuffer(chunkSize * 2)
+      new MemoryBuffer(bufferSize)
     case d: DiskBufferType =>
-      new DiskBuffer(2, chunkSize * 2, d.path)
+      new DiskBuffer(2, bufferSize, d.path)
   }
 
   private def poolSettings(implicit settings: S3Settings, system: ActorSystem) =
