@@ -255,7 +255,7 @@ object Dependencies {
   val IronMq = Seq(
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
-        "de.heikoseeberger" %% "akka-http-circe" % "1.21.0" // ApacheV2
+        "de.heikoseeberger" %% "akka-http-circe" % "1.29.1" // ApacheV2
       )
   )
 

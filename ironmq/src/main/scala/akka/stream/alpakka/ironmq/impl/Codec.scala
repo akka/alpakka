@@ -18,16 +18,16 @@ import cats.syntax.either._
  *
  * @param name The name associated with this Queue.
  */
-private case class Queue(name: Queue.Name)
+private[ironmq] case class Queue(name: Queue.Name)
 
-private object Queue {
+private[ironmq] object Queue {
 
   case class Name(value: String) extends AnyVal {
     override def toString: String = value
   }
 }
 
-private trait Codec {
+private[ironmq] trait Codec {
 
   implicit val messageIdEncoder: Encoder[Message.Id] = Encoder.instance { id =>
     Json.fromString(id.value)
@@ -83,4 +83,4 @@ private trait Codec {
   }
 }
 
-private object Codec extends Codec
+private[ironmq] object Codec extends Codec
