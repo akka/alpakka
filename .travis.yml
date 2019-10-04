@@ -11,7 +11,7 @@ before_install:
 # default script for jobs, that do not have any specified
 script:
   - |
-    [ "$TRAVIS_EVENT_TYPE" == "cron" ] && JDK="adopt@~1.11.0-2" || JDK="adopt@~1.8.202-08" 
+    [ "$TRAVIS_EVENT_TYPE" == "cron" ] && JDK="adopt@~1.11.0-4" || JDK="adopt@~1.8.0-222"
   - ./scripts/buildChanged.sh ${DIR:=.} "$JDK" "${PRE_CMD:=echo NOOP}" "${CMD:=+$DIR/testChanged}"
 
 jobs:
