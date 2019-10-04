@@ -9,8 +9,23 @@ If you know about more relevant resources: Please send a Pull Request to add the
 
 ## 2019
 
+[Streaming data from Cassandra using Alpakka](https://blog.knoldus.com/streaming-data-from-cassandra-using-alpakka/)
+blog by Girish Bharti, September 2019
+
+[Rethinking Streaming Workloads with Akka Streams: Part II](https://blog.colinbreck.com/rethinking-streaming-workloads-with-akka-streams-part-ii/)
+blog by Colin Breck, July 2019
+
+[Rethinking Streaming Workloads with Akka Streams: Part I](https://blog.colinbreck.com/rethinking-streaming-workloads-with-akka-streams-part-i/)
+blog by Colin Breck, May 2019
+
+[Reactive Integration with Akka Streams and Alpakka](https://www.youtube.com/watch?v=gUNiEZG8cbM)
+presentation by Jacek Kunicki, GeeCON Kraków, May 2019
+
 [Just Right Parallelism in Akka Streams](http://jesseyates.com/2019/04/07/just-right-parallelism-in-akka-streams.html)
 blog by Jesse Yates, April 2019
+
+[Backpressure over the wire - when things go wrong](https://www.youtube.com/watch?v=32RZoQOaucM)
+presentation by Zahari Dichev, Scala UA, March 2019
 
 
 ## 2018
