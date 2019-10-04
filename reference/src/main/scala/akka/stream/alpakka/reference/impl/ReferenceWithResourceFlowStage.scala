@@ -55,7 +55,7 @@ import akka.util.ByteString
 /**
  * INTERNAL API
  */
-@InternalApi private[reference] final class ReferenceWithResourceFlow(resource: Resource)
+@InternalApi private[reference] final class ReferenceWithResourceFlowStage(resource: Resource)
     extends GraphStage[FlowShape[ReferenceWriteMessage, ReferenceWriteResult]] {
   val in: Inlet[ReferenceWriteMessage] = Inlet(Logging.simpleName(this) + ".in")
   val out: Outlet[ReferenceWriteResult] = Outlet(Logging.simpleName(this) + ".out")

@@ -53,7 +53,7 @@ import scala.util.Success
 /**
  * INTERNAL API
  */
-@InternalApi private[reference] final class ReferenceSource(settings: SourceSettings)
+@InternalApi private[reference] final class ReferenceSourceStage(settings: SourceSettings)
     extends GraphStageWithMaterializedValue[SourceShape[ReferenceReadResult], Future[Done]] {
   val out: Outlet[ReferenceReadResult] = Outlet(Logging.simpleName(this) + ".out")
 
