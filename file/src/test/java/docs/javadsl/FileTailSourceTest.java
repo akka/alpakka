@@ -59,7 +59,8 @@ public class FileTailSourceTest {
             path,
             8192, // chunk size
             0, // starting position
-            Duration.ofMillis((250)));
+            Duration.ofMillis((250)),
+            Duration.ofDays(Long.MAX_VALUE));
 
     final TestSubscriber.Probe<ByteString> subscriber = TestSubscriber.probe(system);
 
@@ -86,6 +87,7 @@ public class FileTailSourceTest {
             path,
             8192, // chunk size
             Duration.ofMillis(250),
+            Duration.ofDays(Long.MAX_VALUE),
             "\n",
             StandardCharsets.UTF_8);
 

@@ -29,7 +29,8 @@ object FileTailSourceSpec {
     val lines: Source[String, NotUsed] = FileTailSource.lines(
       path = fs.getPath(path),
       maxLineSize = 8192,
-      pollingInterval = 250.millis
+      pollingInterval = 250.millis,
+      idleTimeout = 1000.minutes
     )
 
     lines.runForeach(line => System.out.println(line))

@@ -5,15 +5,21 @@
 package akka.stream.alpakka.file.javadsl;
 
 import akka.NotUsed;
+import akka.japi.pf.PFBuilder;
+import akka.stream.Graph;
+import akka.stream.SourceShape;
 import akka.stream.javadsl.Framing;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import akka.util.JavaDurationConverters;
+import scala.PartialFunction;
+import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Java API
@@ -40,15 +46,23 @@ public final class FileTailSource {
    * @param maxChunkSize The max emitted size of the `ByteString`s
    * @param startingPosition Offset into the file to start reading
    * @param pollingInterval When the end has been reached, look for new content with this interval
+   * @param idleTimeout Shutdown the stream after this interval
    */
   public static Source<ByteString, NotUsed> create(
-      Path path, int maxChunkSize, long startingPosition, java.time.Duration pollingInterval) {
-    return Source.fromGraph(
-        new akka.stream.alpakka.file.impl.FileTailSource(
-            path,
-            maxChunkSize,
-            startingPosition,
-            JavaDurationConverters.asFiniteDuration(pollingInterval)));
+      Path path, int maxChunkSize, long startingPosition, java.time.Duration pollingInterval,
+      java.time.Duration idleTimeout) {
+    return Source
+        .fromGraph(
+            new akka.stream.alpakka.file.impl.FileTailSource(
+                path,
+                maxChunkSize,
+                startingPosition,
+                JavaDurationConverters.asFiniteDuration(pollingInterval)))
+        .idleTimeout(idleTimeout)
+        .recoverWith(new PFBuilder<Throwable, Source<ByteString, NotUsed>>()
+            .match(TimeoutException.class, t -> Source.empty())
+            .build()
+        );
   }
 
   /**
@@ -62,18 +76,20 @@ public final class FileTailSource {
    * @param path a file path to tail
    * @param maxLineSize The max emitted size of the `ByteString`s
    * @param pollingInterval When the end has been reached, look for new content with this interval
+   * @param idleTimeout Shutdown the stream after this interval
    * @param lf The character or characters used as line separator
    * @param charset The charset of the file
    */
   public static Source<String, NotUsed> createLines(
-      Path path, int maxLineSize, java.time.Duration pollingInterval, String lf, Charset charset) {
-    return create(path, maxLineSize, 0, pollingInterval)
+      Path path, int maxLineSize, java.time.Duration pollingInterval, java.time.Duration idleTimeout, String lf,
+      Charset charset) {
+    return create(path, maxLineSize, 0, pollingInterval, idleTimeout)
         .via(Framing.delimiter(ByteString.fromString(lf, charset.name()), maxLineSize))
         .map(bytes -> bytes.decodeString(charset));
   }
 
   /**
-   * Same as {@link #createLines(Path, int, java.time.Duration, String, Charset)} but using the OS
+   * Same as {@link #createLines(Path, int, java.time.Duration, java.time.Duration, String, Charset)} but using the OS
    * default line separator and UTF-8 for charset
    *
    * @deprecated (since 2.0.0) use method with `java.time.Duration` instead
@@ -85,12 +101,13 @@ public final class FileTailSource {
         path,
         maxChunkSize,
         java.time.Duration.ofNanos(pollingInterval.toNanos()),
+        java.time.Duration.ofDays(Long.MAX_VALUE),
         System.getProperty("line.separator"),
         StandardCharsets.UTF_8);
   }
 
   /**
-   * Same as {@link #createLines(Path, int, java.time.Duration, String, Charset)} but using the OS
+   * Same as {@link #createLines(Path, int, java.time.Duration, java.time.Duration, String, Charset)} but using the OS
    * default line separator and UTF-8 for charset
    */
   public static Source<String, NotUsed> createLines(
@@ -99,6 +116,7 @@ public final class FileTailSource {
         path,
         maxChunkSize,
         pollingInterval,
+        java.time.Duration.ofDays(Long.MAX_VALUE),
         System.getProperty("line.separator"),
         StandardCharsets.UTF_8);
   }
