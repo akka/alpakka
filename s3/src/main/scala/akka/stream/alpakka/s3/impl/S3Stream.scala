@@ -527,7 +527,7 @@ import akka.util.ByteString
         implicit val conf = resolveSettings(attr, mat.system)
 
         SplitAfterSize(chunkSize, chunkBufferSize)(atLeastOneByteString)
-          .via(getChunkBuffer(chunkSize, chunkSize * 2)) //creates the chunks
+          .via(getChunkBuffer(chunkSize, chunkBufferSize)) //creates the chunks
           .concatSubstreams
           .zipWith(requestInfo) {
             case (chunkedPayload, (uploadInfo, chunkIndex)) =>
