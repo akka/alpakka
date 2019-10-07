@@ -32,10 +32,6 @@ The `FileTailSource` starts at a given offset in a file and emits chunks of byte
 the end of the file, it will then poll the file for changes and emit new changes as they are written
  to the file (unless there is backpressure).
  
-When there are no new changes, a second timer is initiated to check if the file still exists. When
-the file no longer exists then the `FileTailSource` will complete. The file check timer uses the
-same interval as the timer to check for new changes in the file.
-
 A very common use case is combining reading bytes with parsing the bytes into lines, therefore
 `FileTailSource` contains a few factory methods to create a source that parses the bytes into
 lines and emits those.
@@ -47,6 +43,37 @@ Scala
 
 Java
 : @@snip [snip](/file/src/test/java/docs/javadsl/FileTailSourceTest.java) { #simple-lines }
+
+### Shutdown stream when file is deleted
+
+The `FileTailSource` stream will not shutdown or throw an error when the file it is tailing is deleted from the filesystem. 
+If you would like to shutdown the stream, or throw an error, you can do so by merging in a second timer-based stream that checks if the file exists. 
+In the following example, a @scala[@scaladoc[`Source.tick`](akka.stream.scaladsl.Source$)]@java[@javadoc[`Source.tick`](akka.stream.javadsl.Source$)] timer is used to periodically check that the file exists. 
+If the file no longer exists then we shutdown the stream gracefully by using a @scala[@scaladoc[`Flow.recoverWithRetries`](akka.stream.scaladsl.Flow$)]@java[@javadoc[`Flow.recoverWith`](akka.stream.javadsl.Flow$)] to switch to a @scala[@scaladoc[`Source.empty`](akka.stream.scaladsl.Source$)]@java[@javadoc[`Source.empty`](akka.stream.javadsl.Source$)], which with immediately send an `OnComplete` signal and shutdown the stream.
+
+Scala
+: @@snip [snip](/file/src/test/scala/docs/scaladsl/FileTailSourceExtrasSpec.scala) { #shutdown-on-delete }
+
+Java
+: @@snip [snip](/file/src/test/java/docs/javadsl/FileTailSourceTest.java) { #shutdown-on-delete }
+
+@@@ note { title="Stream Shutdown Race Condition" }
+
+Since the `Source.tick` and the `FileTailSource` operate on separate timers there is the possibility that the stream could be shutdown prematurely.
+If the file is detected as deleted and the stream is shutdown before the last element is emitted from `FileTailSource`, then that data will never be available to downstream user stages.
+
+@@@
+
+### Shutdown stream after an idle timeout
+
+It may be useful to shutdown the stream when no new data has been added for awhile to a file being tailed by `FileTailSource`.
+In the following example, a @scala[@scaladoc[`Flow.idleTimeout`](akka.stream.scaladsl.Flow$)]@java[@javadoc[`Flow.idleTimeout`](akka.stream.javadsl.Flow$)] operator is used to trigger a `TimeoutException` that can be recovered with @scala[@scaladoc[`Flow.recoverWithRetries`](akka.stream.scaladsl.Flow$)]@java[@javadoc[`Flow.recoverWith`](akka.stream.javadsl.Flow$)] and a @scala[@scaladoc[`Source.empty`](akka.stream.scaladsl.Source$)]@java[@javadoc[`Source.empty`](akka.stream.javadsl.Source$)] to successfully shutdown the stream.
+
+Scala
+: @@snip [snip](/file/src/test/scala/docs/scaladsl/FileTailSourceExtrasSpec.scala) { #shutdown-on-idle-timeout }
+
+Java
+: @@snip [snip](/file/src/test/java/docs/javadsl/FileTailSourceTest.java) { #shutdown-on-idle-timeout }
 
 ## Listing directory contents
 

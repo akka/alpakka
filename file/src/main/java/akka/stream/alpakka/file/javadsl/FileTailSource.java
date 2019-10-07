@@ -35,8 +35,6 @@ import java.util.List;
  */
 public final class FileTailSource {
 
-  private static class Tick {}
-
   /**
    * Read the entire contents of a file as chunks of bytes and when the end is reached, keep reading
    * newly appended data. Like the unix command `tail -f` but for bytes.
@@ -52,36 +50,12 @@ public final class FileTailSource {
    */
   public static Source<ByteString, NotUsed> create(
       Path path, int maxChunkSize, long startingPosition, java.time.Duration pollingInterval) {
-    return Source
-        .fromGraph(
-            new akka.stream.alpakka.file.impl.FileTailSource(
-                path,
-                maxChunkSize,
-                startingPosition,
-                JavaDurationConverters.asFiniteDuration(pollingInterval))
-        )
-        .merge(fileCheckSource(pollingInterval, path), true);
-  }
-
-  /**
-   * Periodically checks if the file at `path` exists every `pollingInterval`. Shutdown the stream
-   * when the file is not found using an empty Source.
-   * @param pollingInterval Interval to check if file exists.
-   * @param path a file to check
-   */
-  private static Source<ByteString, Cancellable> fileCheckSource(java.time.Duration pollingInterval, Path path) {
-    return Source
-        .tick(pollingInterval, pollingInterval, new Tick())
-        .mapConcat(tick -> {
-          if (Files.exists(path)) {
-            return Collections.<ByteString>emptyList();
-          }
-          throw new FileNotFoundException();
-        })
-        .recoverWith(new PFBuilder<Throwable, Source<ByteString, NotUsed>>()
-            .match(FileNotFoundException.class, t -> Source.empty())
-            .build()
-        );
+    return Source.fromGraph(
+        new akka.stream.alpakka.file.impl.FileTailSource(
+            path,
+            maxChunkSize,
+            startingPosition,
+            JavaDurationConverters.asFiniteDuration(pollingInterval)));
   }
 
   /**

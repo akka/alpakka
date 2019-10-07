@@ -6,10 +6,13 @@ package docs.javadsl;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
+import akka.actor.Cancellable;
+import akka.japi.pf.PFBuilder;
 import akka.stream.ActorMaterializer;
 import akka.stream.KillSwitches;
 import akka.stream.Materializer;
 import akka.stream.UniqueKillSwitch;
+import akka.stream.alpakka.file.javadsl.FileTailSource;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -23,12 +26,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.FileNotFoundException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Collections;
+import java.util.concurrent.TimeoutException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.APPEND;
@@ -112,22 +118,56 @@ public class FileTailSourceTest {
     subscriber.expectComplete();
   }
 
+  // #shutdown-on-delete
+
+  private static class Tick {}
+
+  /**
+   * Periodically checks if the file at `path` exists every `pollingInterval`. Shutdown the stream
+   * when the file is not found using an empty Source.
+   * @param pollingInterval Interval to check if file exists.
+   * @param path a file to check
+   */
+  private static Source<String, Cancellable> fileCheckSource(java.time.Duration pollingInterval, Path path) {
+    return Source
+            .tick(pollingInterval, pollingInterval, new Tick())
+            .mapConcat(tick -> {
+              if (Files.exists(path)) {
+                return Collections.<String>emptyList();
+              }
+              throw new FileNotFoundException();
+            })
+            .recoverWith(new PFBuilder<Throwable, Source<String, NotUsed>>()
+                    .match(FileNotFoundException.class, t -> Source.empty())
+                    .build()
+            );
+  }
+
+  // #shutdown-on-delete
+
   @Test
   public void willCompleteStreamIfFileIsDeleted() throws Exception {
     final Path path = fs.getPath("/file");
     Files.write(path, "a\n".getBytes(UTF_8));
 
+    final TestSubscriber.Probe<String> subscriber = TestSubscriber.probe(system);
+
+    // #shutdown-on-delete
+
     final Source<String, NotUsed> source =
             akka.stream.alpakka.file.javadsl.FileTailSource.createLines(
                     path,
                     8192, // chunk size
-                    Duration.ofMillis(250),
-                    "\n",
-                    StandardCharsets.UTF_8);
+                    Duration.ofMillis(250));
 
-    final TestSubscriber.Probe<String> subscriber = TestSubscriber.probe(system);
+    final Duration checkInterval = Duration.ofSeconds(1);
 
-    source
+    final Source<String, NotUsed> stream = source
+            .merge(fileCheckSource(checkInterval, path), true);
+
+    // #shutdown-on-delete
+
+    stream
             .to(Sink.fromSubscriber(subscriber))
             .run(materializer);
 
@@ -137,6 +177,54 @@ public class FileTailSourceTest {
     Files.delete(path);
 
     subscriber.request(1);
+    subscriber.expectComplete();
+  }
+
+  @Test
+  public void willCompleteStreamIfFileIsIdle() throws Exception {
+    final Path path = fs.getPath("/file");
+    Files.write(path, "a\n".getBytes(UTF_8));
+
+    final TestSubscriber.Probe<String> subscriber = TestSubscriber.probe(system);
+
+    // just for docs
+    // #shutdown-on-idle-timeout
+
+    final Duration idleTimeout = Duration.ofSeconds(30);
+
+    Source<String, NotUsed> stream = akka.stream.alpakka.file.javadsl.FileTailSource
+            .createLines(
+              path,
+              8192, // chunk size
+              Duration.ofMillis(250))
+            .idleTimeout(idleTimeout)
+            .recoverWith(new PFBuilder<Throwable, Source<String, NotUsed>>()
+                    .match(TimeoutException.class, t -> Source.empty())
+                    .build()
+            );
+
+    // #shutdown-on-idle-timeout
+
+    final Duration idleTimeout2 = Duration.ofSeconds(1);
+
+    akka.stream.alpakka.file.javadsl.FileTailSource
+            .createLines(
+                    path,
+                    8192, // chunk size
+                    Duration.ofMillis(250))
+            .idleTimeout(idleTimeout2)
+            .recoverWith(new PFBuilder<Throwable, Source<String, NotUsed>>()
+                    .match(TimeoutException.class, t -> Source.empty())
+                    .build()
+            )
+            .to(Sink.fromSubscriber(subscriber))
+            .run(materializer);
+
+    String result1 = subscriber.requestNext();
+    assertEquals("a", result1);
+
+    Thread.sleep(idleTimeout2.toMillis() + 1000);
+
     subscriber.expectComplete();
   }
 
