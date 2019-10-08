@@ -37,30 +37,22 @@ class FileTailSourceExtrasSpec extends TestKit(ActorSystem("filetailsourceextras
 
       final case object Tick
 
-      /**
-       * Periodically checks if the file at `path` exists every `pollingInterval`. Shutdown the stream
-       * when the file is not found using an empty Source.
-       *
-       * @param pollingInterval Interval to check if file exists.
-       * @param path a file to check
-       */
-      def fileCheckSource(pollingInterval: FiniteDuration, path: Path): Source[String, Cancellable] =
-        Source
-          .tick(pollingInterval, pollingInterval, Tick)
-          .mapConcat { _ =>
-            if (Files.exists(path))
-              Collections.emptyList[String]
-            throw new FileNotFoundException
-          }
-          .recoverWithRetries(1, {
-            case _: FileNotFoundException => Source.empty
-          })
-
       val checkInterval = 1.second
+
+      val fileCheckSource = Source
+        .tick(checkInterval, checkInterval, Tick)
+        .mapConcat { _ =>
+          if (Files.exists(path))
+            Nil
+          else throw new FileNotFoundException
+        }
+        .recoverWithRetries(1, {
+          case _: FileNotFoundException => Source.empty
+        })
 
       val stream = FileTailSource
         .lines(path = path, maxLineSize = 8192, pollingInterval = 250.millis)
-        .merge(fileCheckSource(checkInterval, path), eagerComplete = true)
+        .merge(fileCheckSource, eagerComplete = true)
 
       // #shutdown-on-delete
 
@@ -82,11 +74,9 @@ class FileTailSourceExtrasSpec extends TestKit(ActorSystem("filetailsourceextras
       // just for docs
       // #shutdown-on-idle-timeout
 
-      val idleTimeout = 30.seconds
-
       val stream = FileTailSource
         .lines(path = path, maxLineSize = 8192, pollingInterval = 250.millis)
-        .idleTimeout(idleTimeout)
+        .idleTimeout(30.seconds)
         .recoverWithRetries(1, {
           case _: TimeoutException => Source.empty
         })

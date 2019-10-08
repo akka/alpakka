@@ -119,30 +119,8 @@ public class FileTailSourceTest {
   }
 
   // #shutdown-on-delete
-
   private static class Tick {}
-
-  /**
-   * Periodically checks if the file at `path` exists every `pollingInterval`. Shutdown the stream
-   * when the file is not found using an empty Source.
-   * @param pollingInterval Interval to check if file exists.
-   * @param path a file to check
-   */
-  private static Source<String, Cancellable> fileCheckSource(java.time.Duration pollingInterval, Path path) {
-    return Source
-            .tick(pollingInterval, pollingInterval, new Tick())
-            .mapConcat(tick -> {
-              if (Files.exists(path)) {
-                return Collections.<String>emptyList();
-              }
-              throw new FileNotFoundException();
-            })
-            .recoverWith(new PFBuilder<Throwable, Source<String, NotUsed>>()
-                    .match(FileNotFoundException.class, t -> Source.empty())
-                    .build()
-            );
-  }
-
+  private static Tick tick = new Tick();
   // #shutdown-on-delete
 
   @Test
@@ -154,20 +132,33 @@ public class FileTailSourceTest {
 
     // #shutdown-on-delete
 
-    final Source<String, NotUsed> source =
-            akka.stream.alpakka.file.javadsl.FileTailSource.createLines(
-                    path,
-                    8192, // chunk size
-                    Duration.ofMillis(250));
-
     final Duration checkInterval = Duration.ofSeconds(1);
 
-    final Source<String, NotUsed> stream = source
-            .merge(fileCheckSource(checkInterval, path), true);
+    final Source<String, Cancellable> fileCheckSource = Source
+            .tick(checkInterval, checkInterval, tick)
+            .mapConcat(tick -> {
+              if (Files.exists(path)) {
+                return Collections.<String>emptyList();
+              } else {
+                throw new FileNotFoundException();
+              }
+            })
+            .recoverWith(new PFBuilder<Throwable, Source<String, NotUsed>>()
+                    .match(FileNotFoundException.class, t -> Source.empty())
+                    .build()
+            );
+
+    final Source<String, NotUsed> source =
+            akka.stream.alpakka.file.javadsl.FileTailSource
+                    .createLines(
+                      path,
+                      8192, // chunk size
+                      Duration.ofMillis(250))
+                    .merge(fileCheckSource, true);
 
     // #shutdown-on-delete
 
-    stream
+    source
             .to(Sink.fromSubscriber(subscriber))
             .run(materializer);
 
@@ -190,14 +181,12 @@ public class FileTailSourceTest {
     // just for docs
     // #shutdown-on-idle-timeout
 
-    final Duration idleTimeout = Duration.ofSeconds(30);
-
     Source<String, NotUsed> stream = akka.stream.alpakka.file.javadsl.FileTailSource
             .createLines(
               path,
               8192, // chunk size
               Duration.ofMillis(250))
-            .idleTimeout(idleTimeout)
+            .idleTimeout(Duration.ofSeconds(30))
             .recoverWith(new PFBuilder<Throwable, Source<String, NotUsed>>()
                     .match(TimeoutException.class, t -> Source.empty())
                     .build()
