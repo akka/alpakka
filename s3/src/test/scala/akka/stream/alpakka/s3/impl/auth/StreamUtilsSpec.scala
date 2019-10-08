@@ -31,6 +31,11 @@ class StreamUtilsSpec(_system: ActorSystem)
   implicit val defaultPatience =
     PatienceConfig(timeout = Span(5, Seconds), interval = Span(30, Millis))
 
+  override protected def afterAll(): Unit = {
+    fs.close()
+    TestKit.shutdownActorSystem(system)
+  }
+
   val fs = Jimfs.newFileSystem("FileSourceSpec", Configuration.unix())
 
   val TestText = {
@@ -78,7 +83,4 @@ class StreamUtilsSpec(_system: ActorSystem)
       result should contain theSameElementsInOrderAs dis.getMessageDigest.digest()
     }
   }
-
-  override def afterAll(): Unit = fs.close()
-
 }

@@ -12,16 +12,23 @@ import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.stream.alpakka.s3.ListBucketResultContents
 import akka.testkit.TestKit
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{FlatSpecLike, Matchers}
+import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 
 import scala.collection.immutable.Seq
 
-class MarshallingSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLike with Matchers with ScalaFutures {
+class MarshallingSpec(_system: ActorSystem)
+    extends TestKit(_system)
+    with FlatSpecLike
+    with Matchers
+    with ScalaFutures
+    with BeforeAndAfterAll {
 
   def this() = this(ActorSystem("MarshallingSpec"))
 
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withDebugLogging(true))
   implicit val ec = materializer.executionContext
+
+  override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 
   val xmlString = """<?xml version="1.0" encoding="UTF-8"?>
                     |<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">

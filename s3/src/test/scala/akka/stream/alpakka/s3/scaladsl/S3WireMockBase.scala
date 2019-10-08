@@ -20,7 +20,7 @@ import com.typesafe.config.ConfigFactory
 
 abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockServer) extends TestKit(_system) {
 
-  def this(mock: WireMockServer) =
+  private def this(mock: WireMockServer) =
     this(ActorSystem(getCallerName(getClass), config(mock.port()).withFallback(ConfigFactory.load())), mock)
   def this() = this(initServer())
 

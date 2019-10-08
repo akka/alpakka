@@ -19,14 +19,19 @@ import com.amazonaws.auth.{
   BasicAWSCredentials,
   BasicSessionCredentials
 }
-import org.scalatest.{FlatSpecLike, Matchers}
+import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.OptionValues._
 import org.scalatest.time.{Millis, Seconds, Span}
 
 import scala.compat.java8.OptionConverters._
 
-class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLike with Matchers with ScalaFutures {
+class SignerSpec(_system: ActorSystem)
+    extends TestKit(_system)
+    with FlatSpecLike
+    with Matchers
+    with BeforeAndAfterAll
+    with ScalaFutures {
   def this() = this(ActorSystem("SignerSpec"))
 
   implicit val defaultPatience =
@@ -37,6 +42,8 @@ class SignerSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLik
   val credentials = new AWSStaticCredentialsProvider(
     new BasicAWSCredentials("AKIDEXAMPLE", "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY")
   )
+
+  override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 
   def signingKey(dateTime: ZonedDateTime) =
     SigningKey(dateTime, credentials, CredentialScope(dateTime.toLocalDate, "us-east-1", "iam"))
