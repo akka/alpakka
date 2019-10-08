@@ -61,7 +61,7 @@ private[akka] final class JsonStreamReader(path: JsonPath) extends GraphStage[Fl
           emitMultiple(out, buffer)
           buffer = Queue.empty[ByteString]
         } else {
-          // Iff the buffer is empty, we haven't consumed any values yet
+          // If the buffer is empty, we haven't consumed any values yet
           // and thus we still need to fulfill downstream need.
           tryPull(in)
         }
