@@ -73,7 +73,18 @@ object JmsPassThrough {
 /**
  * Marker trait for stream elements that do not contain pass-through data.
  */
-sealed trait JmsMessage extends JmsEnvelope[NotUsed]
+sealed trait JmsMessage extends JmsEnvelope[NotUsed] {
+
+  def withHeader(jmsHeader: JmsHeader): JmsMessage
+
+  def withHeaders(newHeaders: Set[JmsHeader]): JmsMessage
+
+  def withProperty(name: String, value: Any): JmsMessage
+
+  def withProperties(props: Map[String, Any]): JmsMessage
+
+  def withoutDestination: JmsMessage
+}
 
 object JmsMessage {
 
@@ -197,11 +208,16 @@ final class JmsByteMessage private (bytes: Array[Byte],
    */
   override def withHeader(jmsHeader: JmsHeader): JmsByteMessage = copy(headers = headers + jmsHeader)
 
+  override def withHeaders(newHeaders: Set[JmsHeader]): JmsByteMessage = copy(headers = headers ++ newHeaders)
+
   /**
    * Add a property
    */
   override def withProperty(name: String, value: Any): JmsByteMessage =
     copy(properties = properties + (name -> value))
+
+  override def withProperties(props: Map[String, Any]): JmsByteMessage =
+    copy(properties = properties ++ props)
 
   override def toQueue(name: String): JmsByteMessage = to(Queue(name))
 
@@ -355,11 +371,16 @@ final class JmsByteStringMessage private (bytes: ByteString,
    */
   override def withHeader(jmsHeader: JmsHeader): JmsByteStringMessage = copy(headers = headers + jmsHeader)
 
+  override def withHeaders(newHeaders: Set[JmsHeader]): JmsByteStringMessage = copy(headers = headers ++ newHeaders)
+
   /**
    * Add a property
    */
   override def withProperty(name: String, value: Any): JmsByteStringMessage =
     copy(properties = properties + (name -> value))
+
+  override def withProperties(props: Map[String, Any]): JmsByteStringMessage =
+    copy(properties = properties ++ props)
 
   override def toQueue(name: String): JmsByteStringMessage = to(Queue(name))
 
@@ -517,11 +538,16 @@ final class JmsMapMessage(body: Map[String, Any],
    */
   override def withHeader(jmsHeader: JmsHeader): JmsMapMessage = copy(headers = headers + jmsHeader)
 
+  override def withHeaders(newHeaders: Set[JmsHeader]): JmsMapMessage = copy(headers = headers ++ newHeaders)
+
   /**
    * Add a property
    */
   override def withProperty(name: String, value: Any): JmsMapMessage =
     copy(properties = properties + (name -> value))
+
+  override def withProperties(props: Map[String, Any]): JmsMapMessage =
+    copy(properties = properties ++ props)
 
   override def toQueue(name: String): JmsMapMessage = to(Queue(name))
 
@@ -675,10 +701,15 @@ final class JmsTextMessage private (body: String,
    */
   override def withHeader(jmsHeader: JmsHeader): JmsTextMessage = copy(headers = headers + jmsHeader)
 
+  override def withHeaders(newHeaders: Set[JmsHeader]): JmsTextMessage = copy(headers = headers ++ newHeaders)
+
   /**
    * Add a property
    */
   override def withProperty(name: String, value: Any): JmsTextMessage = copy(properties = properties + (name -> value))
+
+  override def withProperties(props: Map[String, Any]): JmsTextMessage =
+    copy(properties = properties ++ props)
 
   override def toQueue(name: String): JmsTextMessage = to(Queue(name))
 
@@ -830,11 +861,16 @@ final class JmsObjectMessage private (serializable: java.io.Serializable,
    */
   override def withHeader(jmsHeader: JmsHeader): JmsObjectMessage = copy(headers = headers + jmsHeader)
 
+  override def withHeaders(newHeaders: Set[JmsHeader]): JmsObjectMessage = copy(headers = headers ++ newHeaders)
+
   /**
    * Add a property
    */
   override def withProperty(name: String, value: Any): JmsObjectMessage =
     copy(properties = properties + (name -> value))
+
+  override def withProperties(props: Map[String, Any]): JmsObjectMessage =
+    copy(properties = properties ++ props)
 
   override def toQueue(name: String): JmsObjectMessage = to(Queue(name))
 
