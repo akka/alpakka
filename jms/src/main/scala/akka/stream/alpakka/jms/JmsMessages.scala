@@ -4,7 +4,6 @@
 
 package akka.stream.alpakka.jms
 
-import java.util
 import javax.jms
 
 import akka.NotUsed
@@ -82,6 +81,11 @@ sealed trait JmsMessage extends JmsEnvelope[NotUsed] {
   def withProperty(name: String, value: Any): JmsMessage
 
   def withProperties(props: Map[String, Any]): JmsMessage
+
+  /**
+   * Java API.
+   */
+  def withProperties(properties: java.util.Map[String, Object]): JmsMessage
 
   def withoutDestination: JmsMessage
 }
@@ -163,6 +167,12 @@ sealed class JmsByteMessagePassThrough[+PassThrough] protected[jms] (val bytes: 
   def withProperties(props: Map[String, Any]): JmsByteMessagePassThrough[PassThrough] =
     copy(properties = properties ++ props)
 
+  /**
+   * Java API.
+   */
+  def withProperties(map: java.util.Map[String, Object]): JmsByteMessagePassThrough[PassThrough] =
+    copy(properties = properties ++ map.asScala)
+
   def toQueue(name: String): JmsByteMessagePassThrough[PassThrough] = to(Queue(name))
 
   def toTopic(name: String): JmsByteMessagePassThrough[PassThrough] = to(Topic(name))
@@ -218,6 +228,12 @@ final class JmsByteMessage private (bytes: Array[Byte],
 
   override def withProperties(props: Map[String, Any]): JmsByteMessage =
     copy(properties = properties ++ props)
+
+  /**
+   * Java API.
+   */
+  override def withProperties(map: java.util.Map[String, Object]): JmsByteMessage =
+    copy(properties = properties ++ map.asScala)
 
   override def toQueue(name: String): JmsByteMessage = to(Queue(name))
 
@@ -381,6 +397,12 @@ final class JmsByteStringMessage private (bytes: ByteString,
 
   override def withProperties(props: Map[String, Any]): JmsByteStringMessage =
     copy(properties = properties ++ props)
+
+  /**
+   * Java API.
+   */
+  override def withProperties(map: java.util.Map[String, Object]): JmsByteStringMessage =
+    copy(properties = properties ++ map.asScala)
 
   override def toQueue(name: String): JmsByteStringMessage = to(Queue(name))
 
@@ -549,6 +571,12 @@ final class JmsMapMessage(body: Map[String, Any],
   override def withProperties(props: Map[String, Any]): JmsMapMessage =
     copy(properties = properties ++ props)
 
+  /**
+   * Java API.
+   */
+  override def withProperties(map: java.util.Map[String, Object]): JmsMapMessage =
+    copy(properties = properties ++ map.asScala)
+
   override def toQueue(name: String): JmsMapMessage = to(Queue(name))
 
   override def toTopic(name: String): JmsMapMessage = to(Topic(name))
@@ -596,7 +624,7 @@ object JmsMapMessage {
   /**
    * Java API: create map message
    */
-  def create(map: util.Map[String, Any]) = new JmsMapMessage(body = map.asScala.toMap)
+  def create(map: java.util.Map[String, Any]) = new JmsMapMessage(body = map.asScala.toMap)
 
   /**
    * Create a map message from a [[javax.jms.MapMessage]] with pass-through
@@ -710,6 +738,12 @@ final class JmsTextMessage private (body: String,
 
   override def withProperties(props: Map[String, Any]): JmsTextMessage =
     copy(properties = properties ++ props)
+
+  /**
+   * Java API.
+   */
+  override def withProperties(map: java.util.Map[String, Object]): JmsTextMessage =
+    copy(properties = properties ++ map.asScala)
 
   override def toQueue(name: String): JmsTextMessage = to(Queue(name))
 
@@ -871,6 +905,12 @@ final class JmsObjectMessage private (serializable: java.io.Serializable,
 
   override def withProperties(props: Map[String, Any]): JmsObjectMessage =
     copy(properties = properties ++ props)
+
+  /**
+   * Java API.
+   */
+  override def withProperties(map: java.util.Map[String, Object]): JmsObjectMessage =
+    copy(properties = properties ++ map.asScala)
 
   override def toQueue(name: String): JmsObjectMessage = to(Queue(name))
 
