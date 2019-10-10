@@ -8,7 +8,10 @@ import akka.NotUsed
 import akka.stream.alpakka.xml
 import akka.stream.alpakka.xml.ParseEvent
 import akka.util.ByteString
+import com.fasterxml.aalto.AsyncXMLInputFactory
 import org.w3c.dom.Element
+
+import java.util.function.Consumer
 
 import scala.collection.JavaConverters._
 
@@ -18,13 +21,30 @@ object XmlParsing {
    * Parser Flow that takes a stream of ByteStrings and parses them to XML events similar to SAX.
    */
   def parser(): akka.stream.javadsl.Flow[ByteString, ParseEvent, NotUsed] =
-    xml.scaladsl.XmlParsing.parser(ignoreInvalidChars = false).asJava
+    xml.scaladsl.XmlParsing.parser.asJava
 
   /**
    * Parser Flow that takes a stream of ByteStrings and parses them to XML events similar to SAX.
    */
   def parser(ignoreInvalidChars: Boolean): akka.stream.javadsl.Flow[ByteString, ParseEvent, NotUsed] =
     xml.scaladsl.XmlParsing.parser(ignoreInvalidChars).asJava
+
+  /**
+   * Parser Flow that takes a stream of ByteStrings and parses them to XML events similar to SAX.
+   */
+  def parser(
+      configureFactory: Consumer[AsyncXMLInputFactory]
+  ): akka.stream.javadsl.Flow[ByteString, ParseEvent, NotUsed] =
+    xml.scaladsl.XmlParsing.parser(false, configureFactory.accept(_)).asJava
+
+  /**
+   * Parser Flow that takes a stream of ByteStrings and parses them to XML events similar to SAX.
+   */
+  def parser(
+      ignoreInvalidChars: Boolean,
+      configureFactory: Consumer[AsyncXMLInputFactory]
+  ): akka.stream.javadsl.Flow[ByteString, ParseEvent, NotUsed] =
+    xml.scaladsl.XmlParsing.parser(ignoreInvalidChars, configureFactory.accept(_)).asJava
 
   /**
    * A Flow that transforms a stream of XML ParseEvents. This stage coalesces consequitive CData and Characters

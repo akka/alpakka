@@ -325,6 +325,35 @@ class XmlProcessingSpec extends WordSpec with Matchers with ScalaFutures with Be
       )
     }
 
+    "accept and use a provided input factory configuration function" in {
+      val doc = "<doc><elem>elem1</elem><elem>elem2</elem></doc>"
+      var configWasCalled = false
+      val resultFuture = Source
+        .single(doc)
+        .runWith(
+          Flow[String]
+            .map(ByteString(_))
+            .via(XmlParsing.parser(false, _ => configWasCalled = true))
+            .toMat(Sink.seq)(Keep.right)
+        )
+
+      resultFuture.futureValue should ===(
+        List(
+          StartDocument,
+          StartElement("doc"),
+          StartElement("elem"),
+          Characters("elem1"),
+          EndElement("elem"),
+          StartElement("elem"),
+          Characters("elem2"),
+          EndElement("elem"),
+          EndElement("doc"),
+          EndDocument
+        )
+      )
+      configWasCalled shouldBe true
+    }
+
   }
 
   override protected def afterAll(): Unit = system.terminate()
