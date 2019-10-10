@@ -27,7 +27,7 @@ object Dependencies {
 
   // Releases https://github.com/FasterXML/jackson-databind/releases
   // CVE issues https://github.com/FasterXML/jackson-databind/issues?utf8=%E2%9C%93&q=+label%3ACVE
-  val JacksonDatabindVersion = "2.9.9.3"
+  val JacksonDatabindVersion = "2.9.10"
 
   val log4jOverSlf4jVersion = "1.7.27"
   val jclOverSlf4jVersion = "1.7.27"
