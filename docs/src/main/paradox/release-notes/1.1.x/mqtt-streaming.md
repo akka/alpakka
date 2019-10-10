@@ -1,5 +1,12 @@
 # MQTT Streaming
 
+## 1.1.2
+
+- Automatically unregister packet ids and other resources [#1853](https://github.com/akka/alpakka/issues/1853) by [@huntc](https://github.com/huntc) backported in [#1961](https://github.com/akka/alpakka/pull/1961)
+
+[*closed in 1.1.2*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.1.2+label%3Ap%3Amqtt-streaming)
+
+
 ## 1.1.1
 
 - Start deferred behaviors [#1865](https://github.com/akka/alpakka/issues/1865) by [@2m](https://github.com/2m)
