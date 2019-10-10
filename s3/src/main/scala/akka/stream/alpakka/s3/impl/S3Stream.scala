@@ -541,13 +541,13 @@ import akka.util.ByteString
       .mapMaterializedValue(_ => NotUsed)
   }
 
-  private def getChunkBuffer(chunkSize: Int, bufferSize: Int)
-                            (implicit settings: S3Settings) = settings.bufferType match {
-    case MemoryBufferType =>
-      new MemoryBuffer(bufferSize)
-    case d: DiskBufferType =>
-      new DiskBuffer(2, bufferSize, d.path)
-  }
+  private def getChunkBuffer(chunkSize: Int, bufferSize: Int)(implicit settings: S3Settings) =
+    settings.bufferType match {
+      case MemoryBufferType =>
+        new MemoryBuffer(bufferSize)
+      case d: DiskBufferType =>
+        new DiskBuffer(2, bufferSize, d.path)
+    }
 
   private def poolSettings(implicit settings: S3Settings, system: ActorSystem) =
     settings.forwardProxy.map(proxy => {
