@@ -1,5 +1,12 @@
 # FTP
 
+## 1.1.2
+
+No changes.
+
+[*closed in 1.1.2*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.1.2+label%3Ap%3Aftp)
+
+
 ## 1.1.1
 
 - FTP: Mkdir [#1816](https://github.com/akka/alpakka/issues/1816) by [@MarcinAman](https://github.com/MarcinAman)
