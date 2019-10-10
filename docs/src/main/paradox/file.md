@@ -47,9 +47,10 @@ Java
 ### Shutdown stream when file is deleted
 
 The `FileTailSource` stream will not shutdown or throw an error when the file it is tailing is deleted from the filesystem. 
-If you would like to shutdown the stream, or throw an error, you can do so by merging in a second timer-based stream that checks if the file exists. 
-In the following example, a @scala[@scaladoc[`Source.tick`](akka.stream.scaladsl.Source$)]@java[@javadoc[`Source.tick`](akka.stream.javadsl.Source$)] timer is used to periodically check that the file exists. 
-If the file no longer exists then we shutdown the stream gracefully by using a @scala[@scaladoc[`Flow.recoverWithRetries`](akka.stream.scaladsl.Flow$)]@java[@javadoc[`Flow.recoverWith`](akka.stream.javadsl.Flow$)] to switch to a @scala[@scaladoc[`Source.empty`](akka.stream.scaladsl.Source$)]@java[@javadoc[`Source.empty`](akka.stream.javadsl.Source$)], which with immediately send an `OnComplete` signal and shutdown the stream.
+If you would like to shutdown the stream, or throw an error, you can do so by merging in a @scala[@scaladoc[`DirectoryChangesSource`](akka.stream.alpakka.file.scaladsl.DirectoryChangesSource)]@java[@javadoc[`DirectoryChangesSource`](akka.stream.alpakka.file.javadsl.DirectoryChangesSource)] that listens to filesystem events in the directory that contains the file. 
+
+In the following example, a `DirectoryChangesSource` is used to watch for events in a directory. 
+If a file delete event is observed for the file we are tailing then we shutdown the stream gracefully by using a @scala[@scaladoc[`Flow.recoverWithRetries`](akka.stream.scaladsl.Flow$)]@java[@javadoc[`Flow.recoverWith`](akka.stream.javadsl.Flow$)] to switch to a @scala[@scaladoc[`Source.empty`](akka.stream.scaladsl.Source$)]@java[@javadoc[`Source.empty`](akka.stream.javadsl.Source$)], which with immediately send an `OnComplete` signal and shutdown the stream.
 
 Scala
 : @@snip [snip](/file/src/test/scala/docs/scaladsl/FileTailSourceExtrasSpec.scala) { #shutdown-on-delete }
@@ -59,7 +60,7 @@ Java
 
 @@@ note { title="Stream Shutdown Race Condition" }
 
-Since the `Source.tick` and the `FileTailSource` operate on separate timers there is the possibility that the stream could be shutdown prematurely.
+Since the `DirectoryChangesSource` and the `FileTailSource` operate asynchronously as separate sources there is the possibility that the stream could be shutdown prematurely.
 If the file is detected as deleted and the stream is shutdown before the last element is emitted from `FileTailSource`, then that data will never be available to downstream user stages.
 
 @@@

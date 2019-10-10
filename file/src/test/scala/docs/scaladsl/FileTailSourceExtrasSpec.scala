@@ -2,12 +2,12 @@ package docs.scaladsl
 
 import java.io.FileNotFoundException
 import java.nio.charset.StandardCharsets.UTF_8
-import java.nio.file.{Files, Path}
-import java.util.Collections
+import java.nio.file.Files
 
-import akka.actor.{ActorSystem, Cancellable}
+import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.file.scaladsl.FileTailSource
+import akka.stream.alpakka.file.DirectoryChange
+import akka.stream.alpakka.file.scaladsl.{DirectoryChangesSource, FileTailSource}
 import akka.stream.scaladsl.{Keep, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSink
@@ -35,16 +35,11 @@ class FileTailSourceExtrasSpec extends TestKit(ActorSystem("filetailsourceextras
 
       // #shutdown-on-delete
 
-      final case object Tick
-
       val checkInterval = 1.second
-
-      val fileCheckSource = Source
-        .tick(checkInterval, checkInterval, Tick)
-        .mapConcat { _ =>
-          if (Files.exists(path))
-            Nil
-          else throw new FileNotFoundException
+      val fileCheckSource = DirectoryChangesSource(path.getParent, checkInterval, 8192)
+        .collect {
+          case (p, DirectoryChange.Deletion) if path == p =>
+            throw new FileNotFoundException(path.toString)
         }
         .recoverWithRetries(1, {
           case _: FileNotFoundException => Source.empty

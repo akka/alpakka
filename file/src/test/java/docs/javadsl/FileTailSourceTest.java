@@ -6,13 +6,12 @@ package docs.javadsl;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.actor.Cancellable;
 import akka.japi.pf.PFBuilder;
 import akka.stream.ActorMaterializer;
 import akka.stream.KillSwitches;
 import akka.stream.Materializer;
 import akka.stream.UniqueKillSwitch;
-import akka.stream.alpakka.file.javadsl.FileTailSource;
+import akka.stream.alpakka.file.DirectoryChange;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -118,11 +117,6 @@ public class FileTailSourceTest {
     subscriber.expectComplete();
   }
 
-  // #shutdown-on-delete
-  private static class Tick {}
-  private static Tick tick = new Tick();
-  // #shutdown-on-delete
-
   @Test
   public void willCompleteStreamIfFileIsDeleted() throws Exception {
     final Path path = fs.getPath("/file");
@@ -133,15 +127,17 @@ public class FileTailSourceTest {
     // #shutdown-on-delete
 
     final Duration checkInterval = Duration.ofSeconds(1);
-
-    final Source<String, Cancellable> fileCheckSource = Source
-            .tick(checkInterval, checkInterval, tick)
-            .mapConcat(tick -> {
-              if (Files.exists(path)) {
-                return Collections.<String>emptyList();
-              } else {
+    final Source<String, NotUsed> fileCheckSource =
+            akka.stream.alpakka.file.javadsl.DirectoryChangesSource.create(
+                    path.getParent(),
+                    checkInterval,
+                    8192
+            )
+            .mapConcat(pair -> {
+              if (pair.first().equals(path) && pair.second() == DirectoryChange.Deletion) {
                 throw new FileNotFoundException();
               }
+              return Collections.<String>emptyList();
             })
             .recoverWith(new PFBuilder<Throwable, Source<String, NotUsed>>()
                     .match(FileNotFoundException.class, t -> Source.empty())
