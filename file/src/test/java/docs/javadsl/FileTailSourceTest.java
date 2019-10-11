@@ -174,7 +174,6 @@ public class FileTailSourceTest {
 
     final TestSubscriber.Probe<String> subscriber = TestSubscriber.probe(system);
 
-    // just for docs
     // #shutdown-on-idle-timeout
 
     Source<String, NotUsed> stream = akka.stream.alpakka.file.javadsl.FileTailSource
@@ -182,7 +181,7 @@ public class FileTailSourceTest {
               path,
               8192, // chunk size
               Duration.ofMillis(250))
-            .idleTimeout(Duration.ofSeconds(30))
+            .idleTimeout(Duration.ofSeconds(5))
             .recoverWith(new PFBuilder<Throwable, Source<String, NotUsed>>()
                     .match(TimeoutException.class, t -> Source.empty())
                     .build()
@@ -190,25 +189,14 @@ public class FileTailSourceTest {
 
     // #shutdown-on-idle-timeout
 
-    final Duration idleTimeout2 = Duration.ofSeconds(1);
-
-    akka.stream.alpakka.file.javadsl.FileTailSource
-            .createLines(
-                    path,
-                    8192, // chunk size
-                    Duration.ofMillis(250))
-            .idleTimeout(idleTimeout2)
-            .recoverWith(new PFBuilder<Throwable, Source<String, NotUsed>>()
-                    .match(TimeoutException.class, t -> Source.empty())
-                    .build()
-            )
+    stream
             .to(Sink.fromSubscriber(subscriber))
             .run(materializer);
 
     String result1 = subscriber.requestNext();
     assertEquals("a", result1);
 
-    Thread.sleep(idleTimeout2.toMillis() + 1000);
+    Thread.sleep(Duration.ofSeconds(5).toMillis() + 1000);
 
     subscriber.expectComplete();
   }

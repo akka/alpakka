@@ -19,11 +19,12 @@ import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration._
 
-class FileTailSourceExtrasSpec extends TestKit(ActorSystem("filetailsourceextrasspec"))
-  with WordSpecLike
-  with Matchers
-  with BeforeAndAfterAll
-  with ScalaFutures {
+class FileTailSourceExtrasSpec
+    extends TestKit(ActorSystem("filetailsourceextrasspec"))
+    with WordSpecLike
+    with Matchers
+    with BeforeAndAfterAll
+    with ScalaFutures {
 
   private val fs = Jimfs.newFileSystem(Configuration.forCurrentPlatform.toBuilder.build)
   private implicit val mat = ActorMaterializer()
@@ -66,33 +67,23 @@ class FileTailSourceExtrasSpec extends TestKit(ActorSystem("filetailsourceextras
       val path = fs.getPath("/file")
       Files.write(path, "a\n".getBytes(UTF_8))
 
-      // just for docs
       // #shutdown-on-idle-timeout
 
       val stream = FileTailSource
         .lines(path = path, maxLineSize = 8192, pollingInterval = 250.millis)
-        .idleTimeout(30.seconds)
+        .idleTimeout(5.seconds)
         .recoverWithRetries(1, {
           case _: TimeoutException => Source.empty
         })
 
       // #shutdown-on-idle-timeout
 
-      val idleTimeout2 = 1.seconds
-
-      val actualStream = FileTailSource
-        .lines(path = path, maxLineSize = 8192, pollingInterval = 250.millis)
-        .idleTimeout(idleTimeout2)
-        .recoverWithRetries(1, {
-          case _: TimeoutException => Source.empty
-        })
-
-      val probe = actualStream.toMat(TestSink.probe)(Keep.right).run()
+      val probe = stream.toMat(TestSink.probe)(Keep.right).run()
 
       val result = probe.requestNext()
       result shouldEqual "a"
 
-      Thread.sleep(idleTimeout2.toMillis + 1000)
+      Thread.sleep(5.seconds.toMillis + 1000)
 
       probe.expectComplete()
     }
