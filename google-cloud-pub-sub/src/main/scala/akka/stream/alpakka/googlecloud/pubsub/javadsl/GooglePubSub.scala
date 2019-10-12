@@ -7,7 +7,7 @@ package akka.stream.alpakka.googlecloud.pubsub.javadsl
 import java.util.concurrent.CompletionStage
 
 import akka.{Done, NotUsed}
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Cancellable}
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.pubsub.{AcknowledgeRequest, PubSubConfig, PublishRequest, ReceivedMessage}
 import akka.stream.alpakka.googlecloud.pubsub.scaladsl.{GooglePubSub => GPubSub}
@@ -30,12 +30,10 @@ object GooglePubSub {
 
   def subscribe(subscription: String,
                 config: PubSubConfig,
-                actorSystem: ActorSystem): Source[ReceivedMessage, NotUsed] =
+                actorSystem: ActorSystem,
+                materializer: Materializer): Source[ReceivedMessage, Cancellable] =
     GPubSub
-      .subscribe(
-        subscription = subscription,
-        config = config
-      )(actorSystem)
+      .subscribe(subscription = subscription, config = config)(actorSystem, materializer)
       .asJava
 
   def acknowledge(subscription: String,

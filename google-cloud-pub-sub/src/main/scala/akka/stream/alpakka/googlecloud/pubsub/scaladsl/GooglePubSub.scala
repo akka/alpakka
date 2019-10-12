@@ -4,12 +4,13 @@
 
 package akka.stream.alpakka.googlecloud.pubsub.scaladsl
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Cancellable}
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.pubsub._
 import akka.stream.alpakka.googlecloud.pubsub.impl._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.{Done, NotUsed}
+import scala.concurrent.duration._
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -27,61 +28,46 @@ protected[pubsub] trait GooglePubSub {
   def publish(topic: String, config: PubSubConfig, parallelism: Int = 1)(
       implicit actorSystem: ActorSystem,
       materializer: Materializer
-  ): Flow[PublishRequest, immutable.Seq[String], NotUsed] = {
-    import materializer.executionContext
-
-    if (httpApi.isEmulated) {
-      Flow[PublishRequest].mapAsyncUnordered(parallelism) { request =>
-        httpApi.publish(config.projectId, topic, maybeAccessToken = None, request)
+  ): Flow[PublishRequest, immutable.Seq[String], NotUsed] =
+    httpApi
+      .accessToken[PublishRequest](config, parallelism)
+      .via(httpApi.publish(config.projectId, topic, parallelism))
+      .mapAsyncUnordered(parallelism) {
+        case (response, _) => response
       }
-    } else {
-      Flow[PublishRequest].mapAsyncUnordered(parallelism) { request =>
-        config.session.getToken().flatMap { accessToken =>
-          httpApi.publish(config.projectId, topic, Some(accessToken), request)
-        }
-      }
-    }
-  }
 
-  def subscribe(subscription: String, config: PubSubConfig)(
-      implicit actorSystem: ActorSystem
-  ): Source[ReceivedMessage, NotUsed] =
-    Source.fromGraph(
-      new GooglePubSubSource(
-        projectId = config.projectId,
-        session = config.session,
-        subscription = subscription,
-        returnImmediately = config.pullReturnImmediately,
-        maxMessages = config.pullMaxMessagesPerInternalBatch,
-        httpApi = httpApi
+  /**
+   * Creates a source pulling messages from subscription
+   */
+  def subscribe(subscription: String, config: PubSubConfig, parallelism: Int = 1)(
+      implicit actorSystem: ActorSystem,
+      materializer: Materializer
+  ): Source[ReceivedMessage, Cancellable] =
+    Source
+      .tick(0.seconds, 1.second, Done)
+      .via(httpApi.accessToken[Done](config, parallelism))
+      .via(
+        httpApi.pull(config.projectId,
+                     subscription,
+                     config.pullReturnImmediately,
+                     config.pullMaxMessagesPerInternalBatch,
+                     parallelism)
       )
-    )
+      .mapAsyncUnordered(parallelism) {
+        case (response, _) => response
+      }
+      .mapConcat(_.receivedMessages.getOrElse(Seq.empty[ReceivedMessage]).toIndexedSeq)
 
-  def acknowledge(
-      subscription: String,
-      config: PubSubConfig,
-      parallelism: Int = 1
-  )(implicit actorSystem: ActorSystem, materializer: Materializer): Sink[AcknowledgeRequest, Future[Done]] = {
-    import materializer.executionContext
-
-    (if (httpApi.isEmulated) {
-       Flow[AcknowledgeRequest].mapAsyncUnordered(parallelism) { ackReq =>
-         httpApi.acknowledge(project = config.projectId,
-                             subscription = subscription,
-                             maybeAccessToken = None,
-                             request = ackReq)
-       }
-     } else {
-       Flow[AcknowledgeRequest]
-         .mapAsyncUnordered(parallelism) { ackReq =>
-           config.session.getToken().flatMap { accessToken =>
-             httpApi.acknowledge(project = config.projectId,
-                                 subscription = subscription,
-                                 maybeAccessToken = Some(accessToken),
-                                 request = ackReq)
-           }
-         }
-     })
+  /**
+   * Creates a sink for acknowledging messages on subscription
+   */
+  def acknowledge(subscription: String, config: PubSubConfig, parallelism: Int = 1)(
+      implicit actorSystem: ActorSystem,
+      materializer: Materializer
+  ): Sink[AcknowledgeRequest, Future[Done]] =
+    Flow[AcknowledgeRequest]
+      .via(httpApi.accessToken[AcknowledgeRequest](config, parallelism))
+      .via(httpApi.acknowledge(config.projectId, subscription, parallelism))
       .toMat(Sink.ignore)(Keep.right)
-  }
+
 }

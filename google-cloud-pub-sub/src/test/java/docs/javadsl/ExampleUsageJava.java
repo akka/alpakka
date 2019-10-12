@@ -7,6 +7,7 @@ package docs.javadsl;
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
+import akka.actor.Cancellable;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.googlecloud.pubsub.*;
 import akka.stream.alpakka.googlecloud.pubsub.javadsl.GooglePubSub;
@@ -77,8 +78,8 @@ public class ExampleUsageJava {
     // #publish-fast
 
     // #subscribe
-    Source<ReceivedMessage, NotUsed> subscriptionSource =
-        GooglePubSub.subscribe(subscription, config, system);
+    Source<ReceivedMessage, Cancellable> subscriptionSource =
+        GooglePubSub.subscribe(subscription, config, system, materializer);
 
     Sink<AcknowledgeRequest, CompletionStage<Done>> ackSink =
         GooglePubSub.acknowledge(subscription, config, 1, system, materializer);

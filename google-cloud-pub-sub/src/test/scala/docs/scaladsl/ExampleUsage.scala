@@ -7,7 +7,7 @@ package docs.scaladsl
 import java.time.Instant
 import java.util.Base64
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Cancellable}
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.pubsub._
 import akka.stream.alpakka.googlecloud.pubsub.scaladsl.GooglePubSub
@@ -65,7 +65,7 @@ class ExampleUsage {
   //#publish-fast
 
   //#subscribe
-  val subscriptionSource: Source[ReceivedMessage, NotUsed] =
+  val subscriptionSource: Source[ReceivedMessage, Cancellable] =
     GooglePubSub.subscribe(subscription, config)
 
   val ackSink: Sink[AcknowledgeRequest, Future[Done]] =
