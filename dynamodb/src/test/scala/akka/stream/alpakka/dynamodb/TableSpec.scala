@@ -11,6 +11,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.alpakka.dynamodb.scaladsl.DynamoDb
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
+import com.github.matsluni.akkahttpspi.AkkaHttpClient
 import org.scalatest.{AsyncWordSpecLike, BeforeAndAfterAll, Matchers}
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
@@ -27,6 +28,7 @@ class TableSpec extends TestKit(ActorSystem("TableSpec")) with AsyncWordSpecLike
     .builder()
     .region(Region.AWS_GLOBAL)
     .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
+    .httpClient(AkkaHttpClient.builder().withActorSystem(system).build())
     .endpointOverride(new URI("http://localhost:8001/"))
     .build()
 

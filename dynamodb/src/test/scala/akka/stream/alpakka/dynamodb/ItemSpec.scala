@@ -12,6 +12,7 @@ import akka.stream.alpakka.dynamodb.scaladsl._
 import akka.stream.scaladsl.Sink
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
+import com.github.matsluni.akkahttpspi.AkkaHttpClient
 import org.scalatest._
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
@@ -30,6 +31,7 @@ class ItemSpec extends TestKit(ActorSystem("ItemSpec")) with AsyncWordSpecLike w
     .builder()
     .region(Region.AWS_GLOBAL)
     .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
+    .httpClient(AkkaHttpClient.builder().withActorSystem(system).build())
     .endpointOverride(new URI("http://localhost:8001/"))
     .build()
 

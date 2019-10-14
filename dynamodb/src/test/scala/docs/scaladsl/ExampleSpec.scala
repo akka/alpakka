@@ -40,16 +40,18 @@ class ExampleSpec
     with ScalaFutures {
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 100.millis)
+  implicit val materializer: Materializer = ActorMaterializer()
 
   //#init-client
-  implicit val materializer: Materializer = ActorMaterializer()
 
   implicit val client: DynamoDbAsyncClient = DynamoDbAsyncClient
     .builder()
     .region(Region.AWS_GLOBAL)
     .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
     .httpClient(AkkaHttpClient.builder().withActorSystem(system).build())
+    //#init-client
     .endpointOverride(new URI("http://localhost:8001/"))
+    //#init-client
     .build()
 
   system.registerOnTermination(client.close())
@@ -57,6 +59,7 @@ class ExampleSpec
   //#init-client
 
   override def afterAll(): Unit = {
+    client.close();
     shutdown()
     super.afterAll()
   }
