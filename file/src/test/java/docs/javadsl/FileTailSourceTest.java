@@ -6,10 +6,12 @@ package docs.javadsl;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
+import akka.japi.pf.PFBuilder;
 import akka.stream.ActorMaterializer;
 import akka.stream.KillSwitches;
 import akka.stream.Materializer;
 import akka.stream.UniqueKillSwitch;
+import akka.stream.alpakka.file.DirectoryChange;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -23,12 +25,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.FileNotFoundException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Collections;
+import java.util.concurrent.TimeoutException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.APPEND;
@@ -109,6 +114,90 @@ public class FileTailSourceTest {
     assertEquals("c", subscriber.expectNext());
 
     killSwitch.shutdown();
+    subscriber.expectComplete();
+  }
+
+  @Test
+  public void willCompleteStreamIfFileIsDeleted() throws Exception {
+    final Path path = fs.getPath("/file");
+    Files.write(path, "a\n".getBytes(UTF_8));
+
+    final TestSubscriber.Probe<String> subscriber = TestSubscriber.probe(system);
+
+    // #shutdown-on-delete
+
+    final Duration checkInterval = Duration.ofSeconds(1);
+    final Source<String, NotUsed> fileCheckSource =
+            akka.stream.alpakka.file.javadsl.DirectoryChangesSource.create(
+                    path.getParent(),
+                    checkInterval,
+                    8192
+            )
+            .mapConcat(pair -> {
+              if (pair.first().equals(path) && pair.second() == DirectoryChange.Deletion) {
+                throw new FileNotFoundException();
+              }
+              return Collections.<String>emptyList();
+            })
+            .recoverWith(new PFBuilder<Throwable, Source<String, NotUsed>>()
+                    .match(FileNotFoundException.class, t -> Source.empty())
+                    .build()
+            );
+
+    final Source<String, NotUsed> source =
+            akka.stream.alpakka.file.javadsl.FileTailSource
+                    .createLines(
+                      path,
+                      8192, // chunk size
+                      Duration.ofMillis(250))
+                    .merge(fileCheckSource, true);
+
+    // #shutdown-on-delete
+
+    source
+            .to(Sink.fromSubscriber(subscriber))
+            .run(materializer);
+
+    String result1 = subscriber.requestNext();
+    assertEquals("a", result1);
+
+    Files.delete(path);
+
+    subscriber.request(1);
+    subscriber.expectComplete();
+  }
+
+  @Test
+  public void willCompleteStreamIfFileIsIdle() throws Exception {
+    final Path path = fs.getPath("/file");
+    Files.write(path, "a\n".getBytes(UTF_8));
+
+    final TestSubscriber.Probe<String> subscriber = TestSubscriber.probe(system);
+
+    // #shutdown-on-idle-timeout
+
+    Source<String, NotUsed> stream = akka.stream.alpakka.file.javadsl.FileTailSource
+            .createLines(
+              path,
+              8192, // chunk size
+              Duration.ofMillis(250))
+            .idleTimeout(Duration.ofSeconds(5))
+            .recoverWith(new PFBuilder<Throwable, Source<String, NotUsed>>()
+                    .match(TimeoutException.class, t -> Source.empty())
+                    .build()
+            );
+
+    // #shutdown-on-idle-timeout
+
+    stream
+            .to(Sink.fromSubscriber(subscriber))
+            .run(materializer);
+
+    String result1 = subscriber.requestNext();
+    assertEquals("a", result1);
+
+    Thread.sleep(Duration.ofSeconds(5).toMillis() + 1000);
+
     subscriber.expectComplete();
   }
 

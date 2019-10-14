@@ -5,15 +5,22 @@
 package akka.stream.alpakka.file.javadsl;
 
 import akka.NotUsed;
+import akka.actor.Cancellable;
+import akka.japi.pf.PFBuilder;
 import akka.stream.javadsl.Framing;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import akka.util.JavaDurationConverters;
 import scala.concurrent.duration.FiniteDuration;
 
+import java.io.FileNotFoundException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Java API
