@@ -10,13 +10,20 @@ import org.reactivestreams.Publisher
 import software.amazon.awssdk.core.async.SdkPublisher
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
 import software.amazon.awssdk.services.dynamodb.model._
-import software.amazon.awssdk.services.dynamodb.paginators.{ListTablesPublisher, QueryPublisher, ScanPublisher}
+import software.amazon.awssdk.services.dynamodb.paginators.{
+  BatchGetItemPublisher,
+  ListTablesPublisher,
+  QueryPublisher,
+  ScanPublisher
+}
 
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.Future
 
 /**
- * Representation on an AWS dynamodb sdk operation
+ * Representation on an AWS dynamodb sdk operation.
+ *
+ * See https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/basics-async.html
  * @param sdkExecute function to be executed on the AWS client
  * @tparam In dynamodb request type
  * @tparam Out dynamodb response type
@@ -29,6 +36,8 @@ sealed class DynamoDbOp[In <: DynamoDbRequest, Out <: DynamoDbResponse](
 
 /**
  * Representation on an AWS dynamodb sdk paginated operation
+ *
+ * See https://docs.aws.amazon.com/en_pv/sdk-for-java/v2/developer-guide/examples-pagination.html
  * @param sdkExecute function to be executed on the AWS client
  * @param sdkPublisher publisher to be called on the AWS client
  * @tparam In dynamodb request type
@@ -45,7 +54,7 @@ object DynamoDbOp {
 
   // format: off
   // lower case names on purpose for nice Java API
-  implicit val batchGetItem :DynamoDbOp[BatchGetItemRequest, BatchGetItemResponse] = new DynamoDbOp[BatchGetItemRequest, BatchGetItemResponse](_.batchGetItem)
+  implicit val batchGetItem :DynamoDbPaginatedOp[BatchGetItemRequest, BatchGetItemResponse, BatchGetItemPublisher] = new DynamoDbPaginatedOp[BatchGetItemRequest, BatchGetItemResponse, BatchGetItemPublisher](_.batchGetItem, _.batchGetItemPaginator)
   implicit val batchWriteItem :DynamoDbOp[BatchWriteItemRequest, BatchWriteItemResponse] = new DynamoDbOp[BatchWriteItemRequest, BatchWriteItemResponse](_.batchWriteItem)
   implicit val createTable :DynamoDbOp[CreateTableRequest, CreateTableResponse] = new DynamoDbOp[CreateTableRequest, CreateTableResponse](_.createTable)
   implicit val deleteItem :DynamoDbOp[DeleteItemRequest, DeleteItemResponse] = new DynamoDbOp[DeleteItemRequest, DeleteItemResponse](_.deleteItem)

@@ -52,8 +52,23 @@ Scala
 Java
 : @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #flow }
 
-Some DynamoDB operations, such as ListTables, Query and Scan, are paginated by nature.
-This is how you can get a stream of all result pages:
+
+### Flow with context
+
+The `flowWithContext` allows to send an arbitrary value, such as commit handles for JMS or Kafka, past the DynamoDb operation.
+The responses are wrapped in a @scaladoc[Try](scala.util.Try)] to differentiate between successful operations and errors in-stream.
+
+Scala
+: @@snip [snip](/dynamodb/src/test/scala/docs/scaladsl/ExampleSpec.scala) { #withContext }
+
+Java
+: @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #withContext }
+
+
+### Pagination
+
+The DynamoDB operations `BatchGetItem`, `ListTables`, `Query` and `Scan` allow paginating of results.
+The requests with paginated results can be used as source or in a flow with `flowPaginated`:
 
 Scala
 : @@snip [snip](/dynamodb/src/test/scala/docs/scaladsl/ExampleSpec.scala) { #paginated }
