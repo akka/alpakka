@@ -36,6 +36,14 @@ import scala.util.{Failure, Success, Try}
       }(exec)
     }
 
+    private[this] def fetch(rs: ResultSet): Unit = {
+      isFetching = true
+      // fetch next page
+      val gFut = rs.fetchMoreResults()
+      val exec = materializer.executionContext
+      GuavaFutures.invokeTryCallback(gFut, exec)(futFetchedCallback)
+    }
+
     setHandler(
       out,
       new OutHandler {
@@ -43,11 +51,7 @@ import scala.util.{Failure, Success, Try}
           val currentlyAvailableRows = rs.getAvailableWithoutFetching
 
           if (!isFetching && currentlyAvailableRows < minimumPreFetchSize) {
-            isFetching = true
-            // fetch next page
-            val gFut = rs.fetchMoreResults()
-            val exec = materializer.executionContext
-            GuavaFutures.invokeTryCallback(gFut, exec)(futFetchedCallback)
+            fetch(rs)
           }
 
           if (currentlyAvailableRows > 0)
@@ -69,8 +73,13 @@ import scala.util.{Failure, Success, Try}
           if (isAvailable(out)) {
             push(out, rs.one())
           }
-        } else {
+        } else if (rs.isFullyFetched) {
+          // Only once the rs has no results left can we complete.
           completeStage()
+        } else {
+          // It can happen that `getAvailableWithoutFetching` is 0, but the result set has more
+          // rows available. E.g. when fetchSize is relativley small and downstream consumer is fast.
+          fetch(rs)
         }
 
       case Failure(failure) => failStage(failure)
