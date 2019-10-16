@@ -96,7 +96,7 @@ public class ExampleTest {
     assertNotNull(result.tableNames());
   }
 
-  @Test
+  @Test(expected = ExecutionException.class)
   public void allowMultipleRequests() throws Exception {
     // #flow
     Source<DescribeTableResponse, NotUsed> tableArnSource =
@@ -112,16 +112,11 @@ public class ExampleTest {
 
     CompletionStage<List<DescribeTableResponse>> streamCompletion =
         tableArnSource.runWith(Sink.seq(), materializer);
-    try {
-      List<DescribeTableResponse> responses =
-          streamCompletion.toCompletableFuture().get(5, TimeUnit.SECONDS);
-      fail("expected missing schema");
-    } catch (ExecutionException expected) {
-      // expected
-    }
+    // exception expected
+    streamCompletion.toCompletableFuture().get(5, TimeUnit.SECONDS);
   }
 
-  @Test
+  @Test(expected = ExecutionException.class)
   public void flowWithContext() throws Throwable {
     class SomeContext {}
 
@@ -148,16 +143,11 @@ public class ExampleTest {
 
     CompletionStage<Pair<PutItemResponse, SomeContext>> streamCompletion =
         writtenSource.runWith(Sink.head(), materializer);
-    try {
-      Pair<PutItemResponse, SomeContext> response =
-          streamCompletion.toCompletableFuture().get(1, TimeUnit.SECONDS);
-      fail("expected missing schema");
-    } catch (ExecutionException expected) {
-      // expected
-    }
+    // exception expected
+    streamCompletion.toCompletableFuture().get(1, TimeUnit.SECONDS);
   }
 
-  @Test
+  @Test(expected = ExecutionException.class)
   public void paginated() throws Exception {
     // #paginated
     ScanRequest scanRequest = ScanRequest.builder().tableName("testTable").build();
@@ -168,15 +158,11 @@ public class ExampleTest {
     // #paginated
     CompletionStage<List<ScanResponse>> streamCompletion =
         scanPages.runWith(Sink.seq(), materializer);
-    try {
-      List<ScanResponse> strings = streamCompletion.toCompletableFuture().get(1, TimeUnit.SECONDS);
-      fail("expected missing schema");
-    } catch (ExecutionException expected) {
-      // expected
-    }
+    // exception expected
+    streamCompletion.toCompletableFuture().get(1, TimeUnit.SECONDS);
   }
 
-  @Test
+  @Test(expected = ExecutionException.class)
   public void flowPaginated() throws Exception {
     ScanRequest scanRequest = ScanRequest.builder().tableName("testTable").build();
     // #paginated
@@ -185,11 +171,7 @@ public class ExampleTest {
     // #paginated
     CompletionStage<List<ScanResponse>> streamCompletion2 =
         scanPageInFlow.runWith(Sink.seq(), materializer);
-    try {
-      List<ScanResponse> strings = streamCompletion2.toCompletableFuture().get(1, TimeUnit.SECONDS);
-      fail("expected missing schema");
-    } catch (ExecutionException expected) {
-      // expected
-    }
+    // exception expected
+    streamCompletion2.toCompletableFuture().get(1, TimeUnit.SECONDS);
   }
 }
