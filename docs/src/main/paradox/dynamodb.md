@@ -31,7 +31,7 @@ Java
 
 This connector is set up to use @extref:[Akka HTTP](akka-http:) as default HTTP client via the thin adapter library [AWS Akka-Http SPI implementation](https://github.com/matsluni/aws-spi-akka-http). By setting the `httpClient` explicitly (as above) the Akka actor system is reused, if not set explicitly a separate actor system will be created internally.
 
-It is possible to configure the use of Netty instead, which is Amazon's default. Add an appropriate Netty version to the dependencies and configure @javadoc[`NettyNioAsyncHttpClient`](software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient).
+It is possible to configure the use of Netty instead, which is Amazon's default. Add an appropriate Netty version to the dependencies and configure @javadoc[NettyNioAsyncHttpClient](software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient).
 
 
 ## Sending requests and receiving responses
@@ -64,7 +64,7 @@ Java
 
 ## Error Retries and Exponential Backoff
 
-The AWS SDK 2 implements error retrying with exponential backoff which is configurable via the `DynamoDbAsyncClient` configuration.
+The AWS SDK 2 implements error retrying with exponential backoff which is configurable via the @javadoc[DynamoDbAsyncClient](software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient) configuration by using the @javadoc[RetryPolicy](software.amazon.awssdk.core.retry.RetryPolicy) in `overrideConfiguration`.
 
 Scala
 : @@snip [snip](/dynamodb/src/test/scala/docs/scaladsl/RetrySpec.scala) { #clientRetryConfig }

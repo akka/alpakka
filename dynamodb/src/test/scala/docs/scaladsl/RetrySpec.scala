@@ -30,6 +30,7 @@ class RetrySpec extends TestKit(ActorSystem("RetrySpec")) with WordSpecLike with
         .builder()
         .retryPolicy(
           // This example shows the AWS SDK 2 `RetryPolicy.defaultRetryPolicy()`
+          // See https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/core/retry/RetryPolicy.html
           RetryPolicy.builder
             .backoffStrategy(BackoffStrategy.defaultStrategy)
             .throttlingBackoffStrategy(BackoffStrategy.defaultThrottlingStrategy)
