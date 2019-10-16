@@ -16,6 +16,7 @@ import akka.stream.alpakka.dynamodb.javadsl.DynamoDb;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.javadsl.StreamTestKit;
+import akka.testkit.javadsl.TestKit;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -57,7 +58,9 @@ public class ExampleTest {
                 StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
             .region(Region.AWS_GLOBAL)
             .httpClient(AkkaHttpClient.builder().withActorSystem(system).build())
+            // #init-client
             .endpointOverride(new URI("http://localhost:8001/"))
+            // #init-client
             .build();
 
     system.registerOnTermination(() -> client.close());
@@ -71,7 +74,8 @@ public class ExampleTest {
 
   @AfterClass
   public static void tearDown() {
-    system.terminate();
+    client.close();
+    TestKit.shutdownActorSystem(system);
   }
 
   @After

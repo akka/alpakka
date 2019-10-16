@@ -31,7 +31,7 @@ Java
 
 This connector is set up to use @extref:[Akka HTTP](akka-http:) as default HTTP client via the thin adapter library [AWS Akka-Http SPI implementation](https://github.com/matsluni/aws-spi-akka-http). By setting the `httpClient` explicitly (as above) the Akka actor system is reused, if not set explicitly a separate actor system will be created internally.
 
-It is possible to configure the use of Netty instead, which is Amazon's default. Add an appropriate Netty version to the dependencies and configure @javadoc[`NettyNioAsyncHttpClient`](software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient).
+It is possible to configure the use of Netty instead, which is Amazon's default. Add an appropriate Netty version to the dependencies and configure @javadoc[NettyNioAsyncHttpClient](software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient).
 
 
 ## Sending requests and receiving responses
@@ -62,47 +62,12 @@ Java
 : @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #paginated }
 
 
-## Handling failed requests
+## Error Retries and Exponential Backoff
 
-By default the stream is stopped if a request fails with server error, or the response can not be parsed.
-
-To handle failed requests later in the stream use @scala[@scaladoc[DynamoDb.tryFlow](akka.stream.alpakka.dynamodb.scaladsl.DynamoDb$)]@java[@scaladoc[DynamoDb.tryFlow](akka.stream.alpakka.dynamodb.javadsl.DynamoDb$)]. The responses will be wrapped with a @scaladoc[Try](scala.util.Try).
-
-This flow composes easily with a Akka Stream RetryFlow, that allows to selectively retry requests with a backoff.
-
-For example to retry all of the failed requests, wrap the `DynamoDb.tryFlow` with `RetryFlow.withBackoff` like so:
+The AWS SDK 2 implements error retrying with exponential backoff which is configurable via the @javadoc[DynamoDbAsyncClient](software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient) configuration by using the @javadoc[RetryPolicy](software.amazon.awssdk.core.retry.RetryPolicy) in `overrideConfiguration`.
 
 Scala
-: @@snip [snip](/dynamodb/src/test/scala/docs/scaladsl/RetrySpec.scala) { #create-retry-flow }
+: @@snip [snip](/dynamodb/src/test/scala/docs/scaladsl/RetrySpec.scala) { #clientRetryConfig }
 
 Java
-: @@snip [snip](/dynamodb/src/test/java/docs/javadsl/RetryTest.java) { #create-retry-flow }
-
-And then use the new flow to send the requests through:
-
-Scala
-: @@snip [snip](/dynamodb/src/test/scala/docs/scaladsl/RetrySpec.scala) { #use-retry-flow }
-
-Java
-: @@snip [snip](/dynamodb/src/test/java/docs/javadsl/RetryTest.java) { #use-retry-flow }
-
-
-## Running the example code
-
-The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
-
-> Test code requires DynamoDB running in the background. You can start one quickly using docker:
->
-> `docker-compose up dynamodb`
-
-Scala
-:   ```
-    sbt
-    > dynamodb/testOnly *Spec
-    ```
-
-Java
-:   ```
-    sbt
-    > dynamodb/testOnly *Test
-    ```
+: @@snip [snip](/dynamodb/src/test/java/docs/javadsl/RetryTest.java) { #clientRetryConfig }
