@@ -56,7 +56,7 @@ Java
 ### Flow with context
 
 The `flowWithContext` allows to send an arbitrary value, such as commit handles for JMS or Kafka, past the DynamoDb operation.
-The responses are wrapped in a @scaladoc[Try](scala.util.Try)] to differentiate between successful operations and errors in-stream.
+The responses are wrapped in a @scaladoc[Try](scala.util.Try) to differentiate between successful operations and errors in-stream.
 
 Scala
 : @@snip [snip](/dynamodb/src/test/scala/docs/scaladsl/ExampleSpec.scala) { #withContext }
