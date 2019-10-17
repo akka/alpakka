@@ -60,6 +60,17 @@ object DynamoDb {
     scaladsl.DynamoDb.source(request)(client, operation).asJava
 
   /**
+   * Sends requests to DynamoDB and emits the paginated responses.
+   *
+   * Pagination is available for `BatchGetItem`, `ListTables`, `Query` and `Scan` requests.
+   */
+  def flowPaginated[In <: DynamoDbRequest, Out <: DynamoDbResponse](
+      client: DynamoDbAsyncClient,
+      operation: DynamoDbPaginatedOp[In, Out, _]
+  ): Flow[In, Out, NotUsed] =
+    scaladsl.DynamoDb.flowPaginated()(client, operation).asJava
+
+  /**
    * Create a CompletionStage that will be completed with a response to a given request.
    */
   def single[In <: DynamoDbRequest, Out <: DynamoDbResponse](client: DynamoDbAsyncClient,

@@ -9,7 +9,6 @@ import akka.dispatch.ExecutionContexts
 import akka.stream.Materializer
 import akka.stream.alpakka.dynamodb.{DynamoDbOp, DynamoDbPaginatedOp}
 import akka.stream.scaladsl.{Flow, FlowWithContext, Sink, Source}
-import software.amazon.awssdk.core.async.SdkPublisher
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
 import software.amazon.awssdk.services.dynamodb.model._
 
@@ -59,10 +58,20 @@ object DynamoDb {
   /**
    * Create a Source that will emit potentially multiple responses for a given request.
    */
-  def source[In <: DynamoDbRequest, Out <: DynamoDbResponse, Pub <: SdkPublisher[Out]](
+  def source[In <: DynamoDbRequest, Out <: DynamoDbResponse](
       request: In
-  )(implicit client: DynamoDbAsyncClient, operation: DynamoDbPaginatedOp[In, Out, Pub]): Source[Out, NotUsed] =
+  )(implicit client: DynamoDbAsyncClient, operation: DynamoDbPaginatedOp[In, Out, _]): Source[Out, NotUsed] =
     Source.fromPublisher(operation.publisher(request))
+
+  /**
+   * Sends requests to DynamoDB and emits the paginated responses.
+   *
+   * Pagination is available for `BatchGetItem`, `ListTables`, `Query` and `Scan` requests.
+   */
+  def flowPaginated[In <: DynamoDbRequest, Out <: DynamoDbResponse]()(
+      implicit client: DynamoDbAsyncClient,
+      operation: DynamoDbPaginatedOp[In, Out, _]
+  ): Flow[In, Out, NotUsed] = Flow[In].flatMapConcat(source(_))
 
   /**
    * Create a Future that will be completed with a response to a given request.
