@@ -200,9 +200,8 @@ lazy val ironmq = alpakkaProject(
   "ironmq",
   "ironmq",
   Dependencies.IronMq,
-  fork in Test := true,
-  crossScalaVersions -= Dependencies.Scala213, // https://github.com/hseeberger/akka-http-json/issues/253
-  fatalWarnings := false
+  Test / fork := true,
+  crossScalaVersions -= Dependencies.Scala211 // hseeberger/akka-http-json does not support Scala 2.11 anymore
 )
 
 lazy val jms =
