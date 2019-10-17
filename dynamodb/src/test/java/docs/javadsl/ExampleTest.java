@@ -144,7 +144,7 @@ public class ExampleTest {
     CompletionStage<Pair<PutItemResponse, SomeContext>> streamCompletion =
         writtenSource.runWith(Sink.head(), materializer);
     // exception expected
-    streamCompletion.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    streamCompletion.toCompletableFuture().get(5, TimeUnit.SECONDS);
   }
 
   @Test(expected = ExecutionException.class)
