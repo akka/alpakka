@@ -27,7 +27,7 @@ class UntypedMqttFlowSpec
 class TypedMqttFlowSpec
     extends ParametrizedTestKit("typed-flow-spec/flow",
                                 "typed-flow-spec/topic1",
-                                akka.actor.typed.ActorSystem(Behaviors.ignore, "TypedMqttFlowSpec").toUntyped)
+                                akka.actor.typed.ActorSystem(Behaviors.ignore, "TypedMqttFlowSpec").toClassic)
     with MqttFlowSpec
 
 class ParametrizedTestKit(val clientId: String, val topic: String, system: ActorSystem) extends TestKit(system)
