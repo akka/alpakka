@@ -1,5 +1,12 @@
 # Couchbase
 
+## 1.1.2
+
+- Add bucket replace functionality [#1888](https://github.com/akka/alpakka/issues/1888) by [@maxrem](https://github.com/maxrem) backported in [#1975](https://github.com/akka/alpakka/pull/1975)
+
+[*closed in 1.1.2*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.1.2+label%3Ap%3Acouchbase)
+
+
 ## 1.1.1
 
 No changes.

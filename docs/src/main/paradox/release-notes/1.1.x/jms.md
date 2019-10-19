@@ -1,5 +1,13 @@
 # JMS
 
+## 1.1.2
+
+- Added withHeader(s) withProperty(-ies) and withoutDestination methods… [#1830](https://github.com/akka/alpakka/issues/1830) by [@WellingR](https://github.com/WellingR) backported in [#1974](https://github.com/akka/alpakka/pull/1974) 
+- Java API for JmsMessages withProperties [#1904](https://github.com/akka/alpakka/issues/1904) by [@dotbg](https://github.com/dotbg) backported in [#1977](https://github.com/akka/alpakka/pull/1977)
+
+[*closed in 1.1.2*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.1.2+label%3Ap%3Ajms)
+
+
 ## 1.1.1
 
 - JMS transactions: fail stream or log on ack timeouts  [#1857](https://github.com/akka/alpakka/issues/1857) by [@ennru](https://github.com/ennru) (problem reported by [@WellingR](https://github.com/WellingR) in [#1831](https://github.com/akka/alpakka/pull/1831)) 

@@ -1,5 +1,12 @@
 # Unix Domain Socket
 
+## 1.1.2
+
+No changes.
+
+[*closed in 1.1.2*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A1.1.2+label%3Ap%3Aunix-domain-socket)
+
+
 ## 1.1.1
 
 No changes.
