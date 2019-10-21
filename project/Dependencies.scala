@@ -195,7 +195,9 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.google.api.grpc" % "grpc-google-cloud-pubsub-v1" % "1.68.0" % "protobuf", // ApacheV2
         "io.grpc" % "grpc-auth" % "1.22.1", // ApacheV2
-        "com.google.auth" % "google-auth-library-oauth2-http" % "0.16.2" // BSD 3-clause
+        "com.google.auth" % "google-auth-library-oauth2-http" % "0.16.2", // BSD 3-clause
+        // pull in Akka Discovery for our Akka version
+        "com.typesafe.akka" %% "akka-discovery" % AkkaVersion
       ) ++ Silencer
   )
 
