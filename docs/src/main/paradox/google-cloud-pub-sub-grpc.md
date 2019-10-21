@@ -18,11 +18,11 @@ As Akka gRPC uses Akka Discovery internally, make sure to add Akka Discovery of 
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-google-cloud-pub-sub-grpc_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-google-cloud-pub-sub-grpc_$scala.binary.version$
+  version=$project.version$
   group2=com.typesafe.akka
-  artifact2=akka-discovery_$scalaBinaryVersion$
-  version2=$akka.version$
+  artifact2=akka-discovery_$scala.binary.version$
+  version2=Your-Akka-version
 }
 
 The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
