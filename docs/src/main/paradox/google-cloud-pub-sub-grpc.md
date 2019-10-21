@@ -14,10 +14,15 @@ look at the alternative @ref[Alpakka Google Cloud Pub/Sub](google-cloud-pub-sub.
 
 ## Artifacts
 
+As Akka gRPC uses Akka Discovery internally, make sure to add Akka Discovery of the same Akka version as the application uses.
+
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
   artifact=akka-stream-alpakka-google-cloud-pub-sub-grpc_$scalaBinaryVersion$
   version=$version$
+  group2=com.typesafe.akka
+  artifact2=akka-discovery_$scalaBinaryVersion$
+  version2=$akka.version$
 }
 
 The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
