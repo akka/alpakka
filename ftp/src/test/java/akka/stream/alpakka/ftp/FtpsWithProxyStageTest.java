@@ -21,7 +21,8 @@ import java.util.function.Function;
 public class FtpsWithProxyStageTest extends BaseFtpSupport implements CommonFtpStageTest {
 
   private final Integer PROXYPORT = 3128;
-  private final Proxy PROXY = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(HOSTNAME, PROXYPORT));
+  private final Proxy PROXY =
+      new Proxy(Proxy.Type.HTTP, new InetSocketAddress(HOSTNAME, PROXYPORT));
 
   @Test
   public void listFiles() throws Exception {
