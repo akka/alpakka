@@ -93,8 +93,8 @@ Java
 
 The parser function is a `JsObject => Option[T]` function. 
 This is needed, because there is a possibility that the response doesn't contain any data, and in that case we need to retry the request with some delay.
-Your parser function needs to be bulletproof and the codes in the examples are not the good practices for this.
-If you returns `None` in every error case; your stream will be polling forever!
+Your parser function needs to be bulletproof and the code in the examples are not the good practices for this.
+If you return `None` in every error case; your stream will be polling forever!
 
 ## Running the examples
 
