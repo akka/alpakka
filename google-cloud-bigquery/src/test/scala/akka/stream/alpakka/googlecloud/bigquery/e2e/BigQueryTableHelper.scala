@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.google.cloud.bigquery.e2e
+package akka.stream.alpakka.googlecloud.bigquery.e2e
 import java.util.UUID
 
 import org.scalatest.{BeforeAndAfterAll, WordSpecLike}

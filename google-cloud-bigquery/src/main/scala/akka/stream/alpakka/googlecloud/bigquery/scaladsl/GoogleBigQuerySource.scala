@@ -2,18 +2,18 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.google.cloud.bigquery.scaladsl
+package akka.stream.alpakka.googlecloud.bigquery.scaladsl
 
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
 import akka.stream.Materializer
-import akka.stream.alpakka.google.cloud.bigquery.BigQueryFlowModels.BigQueryProjectConfig
-import akka.stream.alpakka.google.cloud.bigquery.client._
-import akka.stream.alpakka.google.cloud.bigquery.impl.parser.Parser.PagingInfo
-import akka.stream.alpakka.google.cloud.bigquery.impl.util.ConcatWithHeaders
-import akka.stream.alpakka.google.cloud.bigquery.impl.{BigQueryStreamSource, GoogleSession, GoogleTokenApi}
+import akka.stream.alpakka.googlecloud.bigquery.BigQueryFlowModels.BigQueryProjectConfig
+import akka.stream.alpakka.googlecloud.bigquery.client._
+import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
+import akka.stream.alpakka.googlecloud.bigquery.impl.util.ConcatWithHeaders
+import akka.stream.alpakka.googlecloud.bigquery.impl.{BigQueryStreamSource, GoogleSession, GoogleTokenApi}
 import akka.stream.scaladsl.{Sink, Source}
 import spray.json.JsObject
 

@@ -2,13 +2,13 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.google.cloud.bigquery.impl.sendrequest
+package akka.stream.alpakka.googlecloud.bigquery.impl.sendrequest
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.stream.{ActorMaterializer, Materializer}
-import akka.stream.alpakka.google.cloud.bigquery.impl.GoogleSession
-import akka.stream.alpakka.google.cloud.bigquery.impl.sendrequest.EnrichRequestWithOauth.TokenErrorException
+import akka.stream.alpakka.googlecloud.bigquery.impl.GoogleSession
+import akka.stream.alpakka.googlecloud.bigquery.impl.sendrequest.EnrichRequestWithOauth.TokenErrorException
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
 import akka.util.Timeout

@@ -2,13 +2,13 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.google.cloud.bigquery.impl.pagetoken
+package akka.stream.alpakka.googlecloud.bigquery.impl.pagetoken
 
 import java.net.URLEncoder
 
 import akka.NotUsed
 import akka.http.scaladsl.model.{HttpEntity, HttpMethods, HttpRequest, Uri}
-import akka.stream.alpakka.google.cloud.bigquery.impl.parser.Parser.PagingInfo
+import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
 import akka.stream.scaladsl.Flow
 
 object AddPageToken {

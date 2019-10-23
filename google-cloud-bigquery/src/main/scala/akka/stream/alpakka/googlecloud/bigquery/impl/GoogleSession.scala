@@ -2,10 +2,10 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.google.cloud.bigquery.impl
+package akka.stream.alpakka.googlecloud.bigquery.impl
 
 import akka.stream.Materializer
-import akka.stream.alpakka.google.cloud.bigquery.impl.GoogleTokenApi.AccessTokenExpiry
+import akka.stream.alpakka.googlecloud.bigquery.impl.GoogleTokenApi.AccessTokenExpiry
 
 import scala.concurrent.Future
 

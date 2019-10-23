@@ -2,9 +2,9 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.google.cloud.bigquery
+package akka.stream.alpakka.googlecloud.bigquery
 
-import akka.stream.alpakka.google.cloud.bigquery.impl.GoogleSession
+import akka.stream.alpakka.googlecloud.bigquery.impl.GoogleSession
 
 object BigQueryFlowModels {
 

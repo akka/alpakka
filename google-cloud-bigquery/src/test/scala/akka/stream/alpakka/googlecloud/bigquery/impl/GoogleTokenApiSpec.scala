@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.google.cloud.bigquery.impl
+package akka.stream.alpakka.googlecloud.bigquery.impl
 
 import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
@@ -11,7 +11,7 @@ import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.{HttpExt, HttpsConnectionContext}
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.google.cloud.bigquery.impl.GoogleTokenApi.AccessTokenExpiry
+import akka.stream.alpakka.googlecloud.bigquery.impl.GoogleTokenApi.AccessTokenExpiry
 import akka.testkit.TestKit
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any

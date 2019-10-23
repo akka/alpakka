@@ -11,10 +11,10 @@ package docs.scaladsl
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.google.cloud.bigquery.client.BigQueryCommunicationHelper
-import akka.stream.alpakka.google.cloud.bigquery.client.TableDataQueryJsonProtocol.Field
-import akka.stream.alpakka.google.cloud.bigquery.client.TableListQueryJsonProtocol.QueryTableModel
-import akka.stream.alpakka.google.cloud.bigquery.scaladsl.{BigQueryCallbacks, GoogleBigQuerySource}
+import akka.stream.alpakka.googlecloud.bigquery.client.BigQueryCommunicationHelper
+import akka.stream.alpakka.googlecloud.bigquery.client.TableDataQueryJsonProtocol.Field
+import akka.stream.alpakka.googlecloud.bigquery.client.TableListQueryJsonProtocol.QueryTableModel
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.{BigQueryCallbacks, GoogleBigQuerySource}
 import akka.stream.scaladsl.Source
 import spray.json.DefaultJsonProtocol._
 import spray.json.{JsObject, JsonFormat}

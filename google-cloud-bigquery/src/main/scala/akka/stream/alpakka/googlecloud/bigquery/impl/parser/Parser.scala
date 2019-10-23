@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.google.cloud.bigquery.impl.parser
+package akka.stream.alpakka.googlecloud.bigquery.impl.parser
 
 import akka.NotUsed
 import akka.http.scaladsl.model.HttpResponse

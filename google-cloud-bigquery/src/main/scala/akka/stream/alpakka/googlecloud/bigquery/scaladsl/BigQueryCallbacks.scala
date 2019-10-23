@@ -2,16 +2,16 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.google.cloud.bigquery.scaladsl
+package akka.stream.alpakka.googlecloud.bigquery.scaladsl
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
 import akka.stream.Materializer
-import akka.stream.alpakka.google.cloud.bigquery.BigQueryFlowModels.BigQueryProjectConfig
-import akka.stream.alpakka.google.cloud.bigquery.client.GoogleEndpoints
-import akka.stream.alpakka.google.cloud.bigquery.impl.parser.Parser.PagingInfo
-import akka.stream.alpakka.google.cloud.bigquery.impl.sendrequest.SendRequestWithOauthHandling
+import akka.stream.alpakka.googlecloud.bigquery.BigQueryFlowModels.BigQueryProjectConfig
+import akka.stream.alpakka.googlecloud.bigquery.client.GoogleEndpoints
+import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
+import akka.stream.alpakka.googlecloud.bigquery.impl.sendrequest.SendRequestWithOauthHandling
 import akka.stream.scaladsl.{Sink, Source}
 
 object BigQueryCallbacks {

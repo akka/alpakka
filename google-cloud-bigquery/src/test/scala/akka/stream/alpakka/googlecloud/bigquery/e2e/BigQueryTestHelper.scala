@@ -2,13 +2,13 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.google.cloud.bigquery.e2e
+package akka.stream.alpakka.googlecloud.bigquery.e2e
 import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.google.cloud.bigquery.client.GoogleEndpoints
-import akka.stream.alpakka.google.cloud.bigquery.scaladsl.{BigQueryCallbacks, GoogleBigQuerySource}
+import akka.stream.alpakka.googlecloud.bigquery.client.GoogleEndpoints
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.{BigQueryCallbacks, GoogleBigQuerySource}
 import akka.stream.scaladsl.Sink
 
 import scala.concurrent.duration._
