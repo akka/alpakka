@@ -79,7 +79,7 @@ If you call multiple bigquery sources (not likely to happen) it is worth to cach
 
 ### Cancel on timeout
 
-All off the provided functionality can fire a callback when the **downstream** signals a stop.
+All of the provided functionality can fire a callback when the **downstream** signals a stop.
 This is handful if you want to implement some timeout in the downstream, and try to lower your costs with stopping the longrunning jobs.
 (Google doesn't provide any insurance about cost reduction, but at least we could try. [Read this for more information.](https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/cancel))
 
