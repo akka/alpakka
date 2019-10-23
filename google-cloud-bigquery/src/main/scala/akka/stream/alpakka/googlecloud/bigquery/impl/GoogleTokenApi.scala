@@ -2,14 +2,14 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.google.cloud.bigquery.impl
+package akka.stream.alpakka.googlecloud.bigquery.impl
 
 import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.{FormData, HttpMethods, HttpRequest}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
-import akka.stream.alpakka.google.cloud.bigquery.impl.GoogleTokenApi.{AccessTokenExpiry, OAuthResponse}
+import akka.stream.alpakka.googlecloud.bigquery.impl.GoogleTokenApi.{AccessTokenExpiry, OAuthResponse}
 import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim, JwtTime}
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 

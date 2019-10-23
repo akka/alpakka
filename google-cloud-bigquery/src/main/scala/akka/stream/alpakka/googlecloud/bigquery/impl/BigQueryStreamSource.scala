@@ -2,17 +2,17 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.google.cloud.bigquery.impl
+package akka.stream.alpakka.googlecloud.bigquery.impl
 
 import akka.NotUsed
 import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.model.HttpRequest
 import akka.stream._
-import akka.stream.alpakka.google.cloud.bigquery.impl.pagetoken.{AddPageToken, EndOfStreamDetector}
-import akka.stream.alpakka.google.cloud.bigquery.impl.parser.Parser
-import akka.stream.alpakka.google.cloud.bigquery.impl.parser.Parser.PagingInfo
-import akka.stream.alpakka.google.cloud.bigquery.impl.sendrequest.SendRequestWithOauthHandling
-import akka.stream.alpakka.google.cloud.bigquery.impl.util.{Delay, FlowInitializer, OnFinishCallback}
+import akka.stream.alpakka.googlecloud.bigquery.impl.pagetoken.{AddPageToken, EndOfStreamDetector}
+import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser
+import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
+import akka.stream.alpakka.googlecloud.bigquery.impl.sendrequest.SendRequestWithOauthHandling
+import akka.stream.alpakka.googlecloud.bigquery.impl.util.{Delay, FlowInitializer, OnFinishCallback}
 import akka.stream.scaladsl.{GraphDSL, Source, Zip}
 import spray.json.JsObject
 

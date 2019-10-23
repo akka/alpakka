@@ -9,12 +9,12 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.http.scaladsl.model.HttpRequest;
 import akka.stream.ActorMaterializer;
-import akka.stream.alpakka.google.cloud.bigquery.BigQueryFlowModels;
-import akka.stream.alpakka.google.cloud.bigquery.client.BigQueryCommunicationHelper;
-import akka.stream.alpakka.google.cloud.bigquery.client.TableDataQueryJsonProtocol;
-import akka.stream.alpakka.google.cloud.bigquery.client.TableListQueryJsonProtocol;
-import akka.stream.alpakka.google.cloud.bigquery.javadsl.GoogleBigQuerySource;
-import akka.stream.alpakka.google.cloud.bigquery.javadsl.BigQueryCallbacks;
+import akka.stream.alpakka.googlecloud.bigquery.BigQueryFlowModels;
+import akka.stream.alpakka.googlecloud.bigquery.client.BigQueryCommunicationHelper;
+import akka.stream.alpakka.googlecloud.bigquery.client.TableDataQueryJsonProtocol;
+import akka.stream.alpakka.googlecloud.bigquery.client.TableListQueryJsonProtocol;
+import akka.stream.alpakka.googlecloud.bigquery.javadsl.GoogleBigQuerySource;
+import akka.stream.alpakka.googlecloud.bigquery.javadsl.BigQueryCallbacks;
 import akka.stream.javadsl.Source;
 import spray.json.JsObject;
 

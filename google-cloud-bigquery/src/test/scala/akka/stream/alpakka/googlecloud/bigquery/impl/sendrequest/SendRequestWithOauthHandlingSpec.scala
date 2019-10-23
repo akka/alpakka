@@ -2,14 +2,14 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.google.cloud.bigquery.impl.sendrequest
+package akka.stream.alpakka.googlecloud.bigquery.impl.sendrequest
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.google.cloud.bigquery.impl.GoogleSession
+import akka.stream.alpakka.googlecloud.bigquery.impl.GoogleSession
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
 import akka.util.Timeout

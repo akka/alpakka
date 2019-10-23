@@ -2,12 +2,12 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.google.cloud.bigquery.e2e
+package akka.stream.alpakka.googlecloud.bigquery.e2e
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.google.cloud.bigquery.client.TableDataQueryJsonProtocol.Field
-import akka.stream.alpakka.google.cloud.bigquery.client.TableListQueryJsonProtocol.{QueryTableModel, TableReference}
-import akka.stream.alpakka.google.cloud.bigquery.scaladsl.{BigQueryCallbacks, GoogleBigQuerySource}
+import akka.stream.alpakka.googlecloud.bigquery.client.TableDataQueryJsonProtocol.Field
+import akka.stream.alpakka.googlecloud.bigquery.client.TableListQueryJsonProtocol.{QueryTableModel, TableReference}
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.{BigQueryCallbacks, GoogleBigQuerySource}
 import akka.stream.scaladsl.Sink
 import org.scalatest.Matchers
 

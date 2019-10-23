@@ -2,11 +2,11 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.google.cloud.bigquery.impl.parser
+package akka.stream.alpakka.googlecloud.bigquery.impl.parser
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse}
-import akka.stream.alpakka.google.cloud.bigquery.impl.parser.Parser.PagingInfo
+import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
 import akka.stream.scaladsl.{GraphDSL, RunnableGraph, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{ActorMaterializer, ClosedShape}
