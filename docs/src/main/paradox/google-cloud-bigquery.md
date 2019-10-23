@@ -1,7 +1,7 @@
 # Google Cloud BigQuery
 
 The [Google Cloud BigQuery](https://cloud.google.com/bigquery/) connector provides a way to connect to google bigquery, 
-run querys on large datasets and get the results streamed.
+run queries on large datasets and get the results streamed.
 
 ### Reported issues
 
