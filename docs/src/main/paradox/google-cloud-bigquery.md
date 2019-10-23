@@ -84,10 +84,10 @@ This is useful if you want to implement some timeout in the downstream, and try 
 (Google doesn't provide any insurance about cost reduction, but at least we could try. [Read this for more information.](https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/cancel))
 
 Scala
-: You can use the build in @scaladoc[BigQueryCallbacks](akka.stream.alpakka.google.cloud.bigquery.scaladsl.BigQueryCallbacks)
+: You can use the build in @scala[@scaladoc[BigQueryCallbacks](akka.stream.alpakka.google.cloud.bigquery.scaladsl.BigQueryCallbacks$).]
 
 Java
-: You can use the build in @scaladoc[BigQueryCallbacks](akka.stream.alpakka.google.cloud.bigquery.javadsl.BigQueryCallbacks)
+: You can use the build in @java[@scaladoc[BigQueryCallbacks](akka.stream.alpakka.google.cloud.bigquery.javadsl.BigQueryCallbacks$).]
 
 ### Parsers
 
