@@ -8,7 +8,6 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcBackend
 import slick.jdbc.JdbcProfile
 import slick.jdbc.PositionedResult
-
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
@@ -36,17 +35,23 @@ sealed abstract class SlickSession {
  * connection pools, etc.
  */
 object SlickSession {
-  private final class SlickSessionImpl(val slick: DatabaseConfig[JdbcProfile]) extends SlickSession {
+  private final class SlickSessionConfigBackedImpl(val slick: DatabaseConfig[JdbcProfile]) extends SlickSession {
     val db: JdbcBackend#Database = slick.db
     val profile: JdbcProfile = slick.profile
   }
+  private final class SlickSessionDbAndProfileBackedImpl(val db: JdbcBackend#Database, val profile: JdbcProfile)
+      extends SlickSession
 
   def forConfig(path: String): SlickSession = forConfig(path, ConfigFactory.load())
   def forConfig(config: Config): SlickSession = forConfig("", config)
   def forConfig(path: String, config: Config): SlickSession = forConfig(
     DatabaseConfig.forConfig[JdbcProfile](path, config)
   )
-  def forConfig(databaseConfig: DatabaseConfig[JdbcProfile]): SlickSession = new SlickSessionImpl(databaseConfig)
+  def forConfig(databaseConfig: DatabaseConfig[JdbcProfile]): SlickSession =
+    new SlickSessionConfigBackedImpl(databaseConfig)
+
+  def forDbAndProfile(db: JdbcBackend#Database, profile: JdbcProfile): SlickSession =
+    new SlickSessionDbAndProfileBackedImpl(db, profile)
 }
 
 /**

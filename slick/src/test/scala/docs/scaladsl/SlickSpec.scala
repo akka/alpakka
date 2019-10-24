@@ -30,7 +30,7 @@ class SlickSpec extends WordSpec with ScalaFutures with BeforeAndAfterEach with 
   //#init-mat
 
   //#init-session
-  implicit val session = SlickSession.forConfig("slick-h2")
+  implicit val session: SlickSession = SlickSession.forConfig("slick-h2")
   //#init-session
 
   import session.profile.api._
@@ -75,6 +75,20 @@ class SlickSpec extends WordSpec with ScalaFutures with BeforeAndAfterEach with 
     //#close-session
 
     TestKit.shutdownActorSystem(system)
+  }
+
+  "SlickSession.forDbAndProfile" must {
+    "create a slick session able to talk to the db" in {
+      val db = Database.forConfig("slick-h2.db")
+      val profile = slick.jdbc.H2Profile
+      val slickSessionCreatedForDbAndProfile: SlickSession = SlickSession.forDbAndProfile(db, profile)
+      val q = sql"select true".as[Boolean]
+      val result = Slick
+        .source(q)(slickSessionCreatedForDbAndProfile)
+        .runWith(Sink.head)
+        .futureValue
+      assert(result === true)
+    }
   }
 
   "Slick.source(...)" must {
