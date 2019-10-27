@@ -25,7 +25,7 @@ object AmqpFlow {
    */
   def create[T](
       settings: AmqpWriteSettings
-  ): akka.stream.javadsl.Flow[WriteMessage[T], WriteResult[T], CompletionStage[Done]] =
+  ): akka.stream.javadsl.Flow[WriteMessage, WriteResult, CompletionStage[Done]] =
     akka.stream.alpakka.amqp.scaladsl.AmqpFlow(settings).mapMaterializedValue(f => f.toJava).asJava
 
   /**
@@ -42,7 +42,7 @@ object AmqpFlow {
   def createWithConfirm[T](
       settings: AmqpWriteSettings,
       confirmationTimeout: java.time.Duration
-  ): akka.stream.javadsl.Flow[WriteMessage[T], WriteResult[T], CompletionStage[Done]] =
+  ): akka.stream.javadsl.Flow[WriteMessage, WriteResult, CompletionStage[Done]] =
     akka.stream.alpakka.amqp.scaladsl.AmqpFlow
       .withConfirm(
         settings = settings,
@@ -69,7 +69,7 @@ object AmqpFlow {
       settings: AmqpWriteSettings,
       bufferSize: Int,
       confirmationTimeout: java.time.Duration
-  ): akka.stream.javadsl.Flow[WriteMessage[T], WriteResult[T], CompletionStage[Done]] =
+  ): akka.stream.javadsl.Flow[WriteMessage, WriteResult, CompletionStage[Done]] =
     akka.stream.alpakka.amqp.scaladsl.AmqpFlow
       .withAsyncConfirm(
         settings = settings,
@@ -97,7 +97,7 @@ object AmqpFlow {
       settings: AmqpWriteSettings,
       bufferSize: Int,
       confirmationTimeout: java.time.Duration
-  ): akka.stream.javadsl.Flow[WriteMessage[T], WriteResult[T], CompletionStage[Done]] =
+  ): akka.stream.javadsl.Flow[WriteMessage, WriteResult, CompletionStage[Done]] =
     akka.stream.alpakka.amqp.scaladsl.AmqpFlow
       .withAsyncUnorderedConfirm(
         settings = settings,

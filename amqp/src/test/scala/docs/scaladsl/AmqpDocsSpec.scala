@@ -256,22 +256,18 @@ class AmqpDocsSpec extends AmqpSpec {
         .withRoutingKey(queueName)
         .withDeclaration(queueDeclaration)
 
-      val amqpFlow: Flow[WriteMessage[String], WriteResult[String], Future[Done]] =
+      val amqpFlow: Flow[WriteMessage, WriteResult, Future[Done]] =
         AmqpFlow.withAsyncConfirm(settings, 10, 200.millis)
 
       val input = Vector("one", "two", "three", "four", "five")
-      val result: Future[Seq[WriteResult[String]]] =
+      val result: Future[Seq[WriteResult]] =
         Source(input)
-          .map(
-            message =>
-              WriteMessage(ByteString(message))
-                .withPassThrough(message)
-          )
+          .map(message => WriteMessage(ByteString(message)))
           .via(amqpFlow)
           .runWith(Sink.seq)
       //#create-flow
 
-      result.futureValue should contain theSameElementsAs input.map(WriteResult.confirmed)
+      result.futureValue should contain theSameElementsAs input.map(_ => WriteResult.confirmed)
     }
   }
 }

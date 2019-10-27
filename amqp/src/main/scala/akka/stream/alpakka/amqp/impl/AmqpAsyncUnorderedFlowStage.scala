@@ -25,22 +25,22 @@ import scala.concurrent.duration.FiniteDuration
  * given delivery tag, which means that so all messages up to (and including) this delivery tag can be safely dequeued.
  */
 @InternalApi private[amqp] final class AmqpAsyncUnorderedFlowStage[T](
-    sinkSettings: AmqpWriteSettings,
+    settings: AmqpWriteSettings,
     bufferSize: Int,
     confirmationTimeout: FiniteDuration
-) extends GraphStageWithMaterializedValue[FlowShape[WriteMessage[T], WriteResult[T]], Future[Done]] {
+) extends GraphStageWithMaterializedValue[FlowShape[(WriteMessage, T), (WriteResult, T)], Future[Done]] {
 
-  private val in: Inlet[WriteMessage[T]] = Inlet(Logging.simpleName(this) + ".in")
-  private val out: Outlet[WriteResult[T]] = Outlet(Logging.simpleName(this) + ".out")
+  private val in: Inlet[(WriteMessage, T)] = Inlet(Logging.simpleName(this) + ".in")
+  private val out: Outlet[(WriteResult, T)] = Outlet(Logging.simpleName(this) + ".out")
 
-  override val shape: FlowShape[WriteMessage[T], WriteResult[T]] = FlowShape.of(in, out)
+  override val shape: FlowShape[(WriteMessage, T), (WriteResult, T)] = FlowShape.of(in, out)
 
   override protected def initialAttributes: Attributes =
     super.initialAttributes and Attributes.name(Logging.simpleName(this)) and ActorAttributes.IODispatcher
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
     val streamCompletion = Promise[Done]()
-    (new AbstractAmqpAsyncFlowStageLogic(sinkSettings, bufferSize, confirmationTimeout, streamCompletion, shape) {
+    (new AbstractAmqpAsyncFlowStageLogic(settings, bufferSize, confirmationTimeout, streamCompletion, shape) {
 
       private val buffer = mutable.Queue.empty[AwaitingMessage[T]]
 

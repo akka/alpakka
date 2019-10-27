@@ -130,7 +130,7 @@ public class AmqpConnectorsTest {
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
 
-    final Flow<WriteMessage<NotUsed>, CommittableReadResult, CompletionStage<String>> ampqRpcFlow =
+    final Flow<WriteMessage, CommittableReadResult, CompletionStage<String>> ampqRpcFlow =
         AmqpRpcFlow.committableFlow(
             AmqpWriteSettings.create(connectionProvider)
                 .withRoutingKey(queueName)
@@ -140,7 +140,7 @@ public class AmqpConnectorsTest {
     Pair<CompletionStage<String>, TestSubscriber.Probe<ReadResult>> result =
         Source.from(input)
             .map(ByteString::fromString)
-            .map(bytes -> WriteMessage.create(bytes))
+            .map(WriteMessage::create)
             .viaMat(ampqRpcFlow, Keep.right())
             .mapAsync(1, cm -> cm.ack().thenApply(unused -> cm.message()))
             .toMat(TestSink.probe(system), Keep.both())
@@ -148,7 +148,7 @@ public class AmqpConnectorsTest {
 
     result.first().toCompletableFuture().get(5, TimeUnit.SECONDS);
 
-    Sink<WriteMessage<NotUsed>, CompletionStage<Done>> amqpSink =
+    Sink<WriteMessage, CompletionStage<Done>> amqpSink =
         AmqpSink.createReplyTo(AmqpReplyToSinkSettings.create(connectionProvider));
 
     final Source<ReadResult, NotUsed> amqpSource =
@@ -225,7 +225,7 @@ public class AmqpConnectorsTest {
     final BindingDeclaration bindingDeclaration =
         BindingDeclaration.create(queueName, exchangeName).withRoutingKey("key.*");
 
-    final Sink<WriteMessage<NotUsed>, CompletionStage<Done>> amqpSink =
+    final Sink<WriteMessage, CompletionStage<Done>> amqpSink =
         AmqpSink.create(
             AmqpWriteSettings.create(connectionProvider)
                 .withExchange(exchangeName)

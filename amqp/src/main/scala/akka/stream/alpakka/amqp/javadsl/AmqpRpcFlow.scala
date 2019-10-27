@@ -6,7 +6,6 @@ package akka.stream.alpakka.amqp.javadsl
 
 import java.util.concurrent.CompletionStage
 
-import akka.NotUsed
 import akka.stream.alpakka.amqp._
 import akka.stream.javadsl.Flow
 import akka.util.ByteString
@@ -37,7 +36,7 @@ object AmqpRpcFlow {
    * before its read result is emitted downstream.
    */
   def atMostOnceFlow(settings: AmqpWriteSettings,
-                     bufferSize: Int): Flow[WriteMessage[NotUsed], ReadResult, CompletionStage[String]] =
+                     bufferSize: Int): Flow[WriteMessage, ReadResult, CompletionStage[String]] =
     akka.stream.alpakka.amqp.scaladsl.AmqpRpcFlow
       .atMostOnceFlow(settings, bufferSize)
       .mapMaterializedValue(f => f.toJava)
@@ -50,7 +49,7 @@ object AmqpRpcFlow {
    */
   def atMostOnceFlow(settings: AmqpWriteSettings,
                      bufferSize: Int,
-                     repliesPerMessage: Int): Flow[WriteMessage[NotUsed], ReadResult, CompletionStage[String]] =
+                     repliesPerMessage: Int): Flow[WriteMessage, ReadResult, CompletionStage[String]] =
     akka.stream.alpakka.amqp.scaladsl.AmqpRpcFlow
       .atMostOnceFlow(settings, bufferSize, repliesPerMessage)
       .mapMaterializedValue(f => f.toJava)
@@ -71,7 +70,7 @@ object AmqpRpcFlow {
       settings: AmqpWriteSettings,
       bufferSize: Int,
       repliesPerMessage: Int = 1
-  ): Flow[WriteMessage[NotUsed], CommittableReadResult, CompletionStage[String]] =
+  ): Flow[WriteMessage, CommittableReadResult, CompletionStage[String]] =
     akka.stream.alpakka.amqp.scaladsl.AmqpRpcFlow
       .committableFlow(settings, bufferSize, repliesPerMessage)
       .mapMaterializedValue(f => f.toJava)

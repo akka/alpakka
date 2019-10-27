@@ -145,7 +145,7 @@ public class AmqpDocsTest {
     // #create-rpc-flow
     result.first().toCompletableFuture().get(3, TimeUnit.SECONDS);
 
-    Sink<WriteMessage<NotUsed>, CompletionStage<Done>> amqpSink =
+    Sink<WriteMessage, CompletionStage<Done>> amqpSink =
         AmqpSink.createReplyTo(AmqpReplyToSinkSettings.create(connectionProvider));
 
     UniqueKillSwitch killSwitch =
@@ -352,24 +352,22 @@ public class AmqpDocsTest {
             .withRoutingKey(queueName)
             .withDeclaration(queueDeclaration);
 
-    final Flow<WriteMessage<String>, WriteResult<String>, CompletionStage<Done>> amqpFlow =
+    final Flow<WriteMessage, WriteResult, CompletionStage<Done>> amqpFlow =
         AmqpFlow.createWithAsyncConfirm(settings, 10, Duration.ofMillis(200));
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
 
-    final List<WriteResult<String>> result =
+    final List<WriteResult> result =
         Source.from(input)
-            .map(
-                message ->
-                    WriteMessage.create(ByteString.fromString(message)).withPassThrough(message))
+            .map(message -> WriteMessage.create(ByteString.fromString(message)))
             .via(amqpFlow)
             .runWith(Sink.seq(), materializer)
             .toCompletableFuture()
             .get();
     // #create-flow
 
-    final List<WriteResult<String>> expectedResult =
-        input.stream().map(s -> WriteResult.create(true, s)).collect(Collectors.toList());
+    final List<WriteResult> expectedResult =
+        input.stream().map(s -> WriteResult.create(true)).collect(Collectors.toList());
 
     assertEquals(result, expectedResult);
   }

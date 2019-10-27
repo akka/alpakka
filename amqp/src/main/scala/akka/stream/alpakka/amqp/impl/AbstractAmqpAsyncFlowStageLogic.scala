@@ -42,7 +42,7 @@ import scala.concurrent.duration.FiniteDuration
     bufferSize: Int,
     confirmationTimeout: FiniteDuration,
     streamCompletion: Promise[Done],
-    shape: FlowShape[WriteMessage[T], WriteResult[T]]
+    shape: FlowShape[(WriteMessage, T), (WriteResult, T)]
 ) extends TimerGraphStageLogic(shape)
     with AmqpConnectorLogic
     with StageLogging {
@@ -52,7 +52,7 @@ import scala.concurrent.duration.FiniteDuration
 
   private val exchange = settings.exchange.getOrElse("")
   private val routingKey = settings.routingKey.getOrElse("")
-  private val exitQueue = mutable.Queue.empty[WriteResult[T]]
+  private val exitQueue = mutable.Queue.empty[(WriteResult, T)]
   private var upstreamException: Option[Throwable] = None
 
   override def whenConnected(): Unit = {
@@ -77,7 +77,7 @@ import scala.concurrent.duration.FiniteDuration
     dequeued.foreach(m => cancelTimer(m.tag))
 
     pushOrEnqueueResults(
-      dequeued.map(m => WriteResult.confirmed(m.passThrough))
+      dequeued.map(m => (WriteResult.confirmed, m.passThrough))
     )
   }
 
@@ -89,11 +89,11 @@ import scala.concurrent.duration.FiniteDuration
     dequeued.foreach(m => cancelTimer(m.tag))
 
     pushOrEnqueueResults(
-      dequeued.map(m => WriteResult.rejected(m.passThrough))
+      dequeued.map(m => (WriteResult.rejected, m.passThrough))
     )
   }
 
-  private def pushOrEnqueueResults(results: Iterable[WriteResult[T]]): Unit = {
+  private def pushOrEnqueueResults(results: Iterable[(WriteResult, T)]): Unit = {
     results.foreach(
       result =>
         if (isAvailable(out) && exitQueue.isEmpty) {
@@ -130,11 +130,11 @@ import scala.concurrent.duration.FiniteDuration
     new InHandler {
 
       override def onPush(): Unit = {
-        val message: WriteMessage[T] = grab(in)
+        val (message: WriteMessage, passThrough: T) = grab(in)
         val tag = publish(message)
 
         scheduleOnce(tag, confirmationTimeout)
-        enqueueMessage(tag, message.passThrough)
+        enqueueMessage(tag, passThrough)
         if (messagesAwaitingDelivery + exitQueue.size < bufferSize && !hasBeenPulled(in)) tryPull(in)
       }
 
@@ -155,7 +155,7 @@ import scala.concurrent.duration.FiniteDuration
           log.debug("Received upstream finish signal - stage will be closed when all buffered messages are processed")
         }
 
-      private def publish(message: WriteMessage[T]): DeliveryTag = {
+      private def publish(message: WriteMessage): DeliveryTag = {
         val tag: DeliveryTag = channel.getNextPublishSeqNo
 
         log.debug("Publishing message {} with deliveryTag {}.", message, tag)
@@ -211,5 +211,3 @@ import scala.concurrent.duration.FiniteDuration
 
   private def isFinished: Boolean = isClosed(in) && noAwaitingMessages && exitQueue.isEmpty
 }
-
-

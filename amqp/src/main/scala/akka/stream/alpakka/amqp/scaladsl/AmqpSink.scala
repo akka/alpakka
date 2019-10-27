@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.amqp.scaladsl
 
-import akka.{Done, NotUsed}
+import akka.Done
 import akka.stream.alpakka.amqp._
 import akka.stream.scaladsl.{Keep, Sink}
 import akka.util.ByteString
@@ -19,8 +19,8 @@ object AmqpSink {
    * This stage materializes to a [[Future]] of [[Done]], which can be used to know when the Sink completes,
    * either normally or because of an amqp failure.
    */
-  def apply(settings: AmqpWriteSettings): Sink[WriteMessage[NotUsed], Future[Done]] =
-    AmqpFlow.apply[NotUsed](settings).toMat(Sink.ignore)(Keep.right)
+  def apply(settings: AmqpWriteSettings): Sink[WriteMessage, Future[Done]] =
+    AmqpFlow.apply(settings).toMat(Sink.ignore)(Keep.right)
 
   /**
    * Creates an [[AmqpSink]] that accepts [[ByteString]] elements.
@@ -39,7 +39,7 @@ object AmqpSink {
    * This stage materializes to a [[Future]] of [[Done]], which can be used to know when the Sink completes,
    * either normally or because of an amqp failure.
    */
-  def replyTo(settings: AmqpReplyToSinkSettings): Sink[WriteMessage[NotUsed], Future[Done]] =
+  def replyTo(settings: AmqpReplyToSinkSettings): Sink[WriteMessage, Future[Done]] =
     Sink.fromGraph(new impl.AmqpReplyToSinkStage(settings))
 
 }

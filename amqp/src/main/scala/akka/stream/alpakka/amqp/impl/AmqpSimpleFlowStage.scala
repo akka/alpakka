@@ -22,32 +22,32 @@ import scala.concurrent.{Future, Promise}
  * instead of complete [[WriteResult]] (possibly it would be less confusing for users), but [[WriteResult]] is used
  * for consistency with other variants and to make the flow ready for any possible future [[WriteResult]] extensions.
  */
-@InternalApi private[amqp] final class AmqpSimpleFlowStage[T](writeSettings: AmqpWriteSettings)
-  extends GraphStageWithMaterializedValue[FlowShape[WriteMessage[T], WriteResult[T]], Future[Done]] { stage =>
+@InternalApi private[amqp] final class AmqpSimpleFlowStage[T](settings: AmqpWriteSettings)
+    extends GraphStageWithMaterializedValue[FlowShape[(WriteMessage, T), (WriteResult, T)], Future[Done]] { stage =>
 
-  private val in: Inlet[WriteMessage[T]] = Inlet(Logging.simpleName(this) + ".in")
-  private val out: Outlet[WriteResult[T]] = Outlet(Logging.simpleName(this) + ".out")
+  private val in: Inlet[(WriteMessage, T)] = Inlet(Logging.simpleName(this) + ".in")
+  private val out: Outlet[(WriteResult, T)] = Outlet(Logging.simpleName(this) + ".out")
 
-  override val shape: FlowShape[WriteMessage[T], WriteResult[T]] = FlowShape.of(in, out)
+  override val shape: FlowShape[(WriteMessage, T), (WriteResult, T)] = FlowShape.of(in, out)
 
   override protected def initialAttributes: Attributes =
     Attributes.name(Logging.simpleName(this)) and ActorAttributes.IODispatcher
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
     val streamCompletion = Promise[Done]()
-    (new AbstractAmqpFlowStageLogic[T](writeSettings, streamCompletion, shape) {
-      override def publish(message: WriteMessage[T]): Unit = {
+    (new AbstractAmqpFlowStageLogic[T](settings, streamCompletion, shape) {
+      override def publish(message: WriteMessage, passThrough: T): Unit = {
         log.debug("Publishing message {}.", message)
 
         channel.basicPublish(
-          writeSettings.exchange.getOrElse(""),
-          message.routingKey.orElse(writeSettings.routingKey).getOrElse(""),
+          settings.exchange.getOrElse(""),
+          message.routingKey.orElse(settings.routingKey).getOrElse(""),
           message.mandatory,
           message.immediate,
           message.properties.orNull,
           message.bytes.toArray
         )
-        push(out, WriteResult.confirmed(message.passThrough))
+        push(out, (WriteResult.confirmed, passThrough))
       }
     }, streamCompletion.future)
   }

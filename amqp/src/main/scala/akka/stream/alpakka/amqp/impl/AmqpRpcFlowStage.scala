@@ -6,7 +6,7 @@ package akka.stream.alpakka.amqp.impl
 
 import java.util.Collections
 
-import akka.{Done, NotUsed}
+import akka.Done
 import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.alpakka.amqp._
@@ -28,13 +28,13 @@ import scala.util.Success
  */
 @InternalApi
 private[amqp] final class AmqpRpcFlowStage(settings: AmqpWriteSettings, bufferSize: Int, responsesPerMessage: Int = 1)
-    extends GraphStageWithMaterializedValue[FlowShape[WriteMessage[NotUsed], CommittableReadResult], Future[String]] {
+    extends GraphStageWithMaterializedValue[FlowShape[WriteMessage, CommittableReadResult], Future[String]] {
   stage =>
 
-  val in = Inlet[WriteMessage[NotUsed]]("AmqpRpcFlow.in")
+  val in = Inlet[WriteMessage]("AmqpRpcFlow.in")
   val out = Outlet[CommittableReadResult]("AmqpRpcFlow.out")
 
-  override def shape: FlowShape[WriteMessage[NotUsed], CommittableReadResult] = FlowShape.of(in, out)
+  override def shape: FlowShape[WriteMessage, CommittableReadResult] = FlowShape.of(in, out)
 
   override protected def initialAttributes: Attributes =
     super.initialAttributes and Attributes.name("AmqpRpcFlow") and ActorAttributes.IODispatcher

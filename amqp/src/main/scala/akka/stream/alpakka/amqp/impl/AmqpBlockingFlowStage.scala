@@ -24,26 +24,26 @@ import scala.util.{Failure, Success, Try}
  * confirmation the stage is failed.
  */
 @InternalApi private[amqp] final class AmqpBlockingFlowStage[T](
-    writeSettings: AmqpWriteSettings,
+    settings: AmqpWriteSettings,
     confirmationTimeout: FiniteDuration
-) extends GraphStageWithMaterializedValue[FlowShape[WriteMessage[T], WriteResult[T]], Future[Done]] { stage =>
+) extends GraphStageWithMaterializedValue[FlowShape[(WriteMessage, T), (WriteResult, T)], Future[Done]] { stage =>
 
-  private val in: Inlet[WriteMessage[T]] = Inlet(Logging.simpleName(this) + ".in")
-  private val out: Outlet[WriteResult[T]] = Outlet(Logging.simpleName(this) + ".out")
+  private val in: Inlet[(WriteMessage, T)] = Inlet(Logging.simpleName(this) + ".in")
+  private val out: Outlet[(WriteResult, T)] = Outlet(Logging.simpleName(this) + ".out")
 
-  override val shape: FlowShape[WriteMessage[T], WriteResult[T]] = FlowShape.of(in, out)
+  override val shape: FlowShape[(WriteMessage, T), (WriteResult, T)] = FlowShape.of(in, out)
 
   override protected def initialAttributes: Attributes =
     Attributes.name(Logging.simpleName(this)) and ActorAttributes.IODispatcher
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
     val streamCompletion = Promise[Done]()
-    (new AbstractAmqpFlowStageLogic[T](writeSettings, streamCompletion, shape) {
+    (new AbstractAmqpFlowStageLogic[T](settings, streamCompletion, shape) {
 
       override def whenConnected(): Unit =
         channel.confirmSelect()
 
-      override def publish(message: WriteMessage[T]): Unit = {
+      override def publish(message: WriteMessage, passThrough: T): Unit = {
         val publicationResult: Try[Boolean] = for {
           _ <- publishWithBlockingConfirm(message)
           result <- waitForConfirmation()
@@ -52,16 +52,16 @@ import scala.util.{Failure, Success, Try}
         log.debug("Publication result: {}", publicationResult)
 
         publicationResult
-          .map(result => push(out, WriteResult(result, message.passThrough)))
+          .map(result => push(out, (WriteResult(result), passThrough)))
           .recover { case t => onFailure(t) }
       }
 
-      private def publishWithBlockingConfirm(message: WriteMessage[T]): Try[Unit] = {
+      private def publishWithBlockingConfirm(message: WriteMessage): Try[Unit] = {
         log.debug("Publishing message {}.", message)
         Try(
           channel.basicPublish(
-            writeSettings.exchange.getOrElse(""),
-            message.routingKey.orElse(writeSettings.routingKey).getOrElse(""),
+            settings.exchange.getOrElse(""),
+            message.routingKey.orElse(settings.routingKey).getOrElse(""),
             message.mandatory,
             message.immediate,
             message.properties.orNull,

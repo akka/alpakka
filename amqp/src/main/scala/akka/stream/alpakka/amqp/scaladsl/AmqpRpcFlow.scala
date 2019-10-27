@@ -4,7 +4,6 @@
 
 package akka.stream.alpakka.amqp.scaladsl
 
-import akka.NotUsed
 import akka.dispatch.ExecutionContexts
 import akka.stream.alpakka.amqp._
 import akka.stream.scaladsl.{Flow, Keep}
@@ -37,7 +36,7 @@ object AmqpRpcFlow {
    */
   def atMostOnceFlow(settings: AmqpWriteSettings,
                      bufferSize: Int,
-                     repliesPerMessage: Int = 1): Flow[WriteMessage[NotUsed], ReadResult, Future[String]] =
+                     repliesPerMessage: Int = 1): Flow[WriteMessage, ReadResult, Future[String]] =
     committableFlow(settings, bufferSize, repliesPerMessage)
       .mapAsync(1) { cm =>
         cm.ack().map(_ => cm.message)(ExecutionContexts.sameThreadExecutionContext)
@@ -56,7 +55,7 @@ object AmqpRpcFlow {
    */
   def committableFlow(settings: AmqpWriteSettings,
                       bufferSize: Int,
-                      repliesPerMessage: Int = 1): Flow[WriteMessage[NotUsed], CommittableReadResult, Future[String]] =
+                      repliesPerMessage: Int = 1): Flow[WriteMessage, CommittableReadResult, Future[String]] =
     Flow.fromGraph(new impl.AmqpRpcFlowStage(settings, bufferSize, repliesPerMessage))
 
 }

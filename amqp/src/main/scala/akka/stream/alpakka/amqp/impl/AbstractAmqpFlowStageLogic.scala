@@ -20,7 +20,7 @@ import scala.concurrent.Promise
 @InternalApi private abstract class AbstractAmqpFlowStageLogic[T](
     override val settings: AmqpWriteSettings,
     streamCompletion: Promise[Done],
-    shape: FlowShape[WriteMessage[T], WriteResult[T]]
+    shape: FlowShape[(WriteMessage, T), (WriteResult, T)]
 ) extends GraphStageLogic(shape)
     with AmqpConnectorLogic
     with StageLogging {
@@ -43,12 +43,14 @@ import scala.concurrent.Promise
         super.onUpstreamFinish()
       }
 
-      override def onPush(): Unit =
-        publish(grab(in))
+      override def onPush(): Unit = {
+        val (message, passThrough) = grab(in)
+        publish(message, passThrough)
+      }
     }
   )
 
-  protected def publish(message: WriteMessage[T]): Unit
+  protected def publish(message: WriteMessage, passThrough: T): Unit
 
   setHandler(out, new OutHandler {
     override def onPull(): Unit =
