@@ -130,7 +130,7 @@ import scala.concurrent.duration.FiniteDuration
     new InHandler {
 
       override def onPush(): Unit = {
-        val (message: WriteMessage, passThrough: T) = grab(in)
+        val (message, passThrough) = grab(in)
         val tag = publish(message)
 
         scheduleOnce(tag, confirmationTimeout)

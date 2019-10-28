@@ -1,3 +1,0 @@
-# PR #1921
-# new argument to private constructor
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.amqp.WriteMessage.this")

@@ -22,12 +22,9 @@ object AmqpFlowWithContext {
   def create[T](
       settings: AmqpWriteSettings
   ): akka.stream.javadsl.FlowWithContext[WriteMessage, T, WriteResult, T, CompletionStage[Done]] =
-    akka.stream.scaladsl.FlowWithContext
-      .fromTuples(
-        akka.stream.scaladsl.Flow
-          .fromGraph(new impl.AmqpSimpleFlowStage[T](settings))
-          .mapMaterializedValue(f => f.toJava)
-      )
+    akka.stream.alpakka.amqp.scaladsl.AmqpFlowWithContext
+      .apply(settings)
+      .mapMaterializedValue(_.toJava)
       .asJava
 
   /**
@@ -39,17 +36,9 @@ object AmqpFlowWithContext {
       settings: AmqpWriteSettings,
       confirmationTimeout: java.time.Duration
   ): akka.stream.javadsl.FlowWithContext[WriteMessage, T, WriteResult, T, CompletionStage[Done]] =
-    akka.stream.scaladsl.FlowWithContext
-      .fromTuples(
-        akka.stream.scaladsl.Flow
-          .fromGraph(
-            new impl.AmqpBlockingFlowStage[T](
-              settings = settings,
-              confirmationTimeout = JavaDurationConverters.asFiniteDuration(confirmationTimeout)
-            )
-          )
-          .mapMaterializedValue(f => f.toJava)
-      )
+    akka.stream.alpakka.amqp.scaladsl.AmqpFlowWithContext
+      .withConfirm(settings, JavaDurationConverters.asFiniteDuration(confirmationTimeout))
+      .mapMaterializedValue(_.toJava)
       .asJava
 
   /**
@@ -62,18 +51,9 @@ object AmqpFlowWithContext {
       bufferSize: Int,
       confirmationTimeout: java.time.Duration
   ): akka.stream.javadsl.FlowWithContext[WriteMessage, T, WriteResult, T, CompletionStage[Done]] =
-    akka.stream.scaladsl.FlowWithContext
-      .fromTuples(
-        akka.stream.scaladsl.Flow
-          .fromGraph(
-            new impl.AmqpAsyncFlowStage[T](
-              settings = settings,
-              bufferSize = bufferSize,
-              confirmationTimeout = JavaDurationConverters.asFiniteDuration(confirmationTimeout)
-            )
-          )
-          .mapMaterializedValue(f => f.toJava)
-      )
+    akka.stream.alpakka.amqp.scaladsl.AmqpFlowWithContext
+      .withAsyncConfirm(settings, bufferSize, JavaDurationConverters.asFiniteDuration(confirmationTimeout))
+      .mapMaterializedValue(_.toJava)
       .asJava
 
   /**
@@ -86,17 +66,8 @@ object AmqpFlowWithContext {
       bufferSize: Int,
       confirmationTimeout: java.time.Duration
   ): akka.stream.javadsl.FlowWithContext[WriteMessage, T, WriteResult, T, CompletionStage[Done]] =
-    akka.stream.scaladsl.FlowWithContext
-      .fromTuples(
-        akka.stream.scaladsl.Flow
-          .fromGraph(
-            new impl.AmqpAsyncUnorderedFlowStage[T](
-              settings = settings,
-              bufferSize = bufferSize,
-              confirmationTimeout = JavaDurationConverters.asFiniteDuration(confirmationTimeout)
-            )
-          )
-          .mapMaterializedValue(f => f.toJava)
-      )
+    akka.stream.alpakka.amqp.scaladsl.AmqpFlowWithContext
+      .withAsyncUnorderedConfirm(settings, bufferSize, JavaDurationConverters.asFiniteDuration(confirmationTimeout))
+      .mapMaterializedValue(_.toJava)
       .asJava
 }
