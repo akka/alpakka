@@ -431,7 +431,7 @@ object S3Settings {
     bufferType,
     credentialsProvider,
     s3RegionProvider,
-    false,
+    true,
     None,
     listBucketApiVersion,
     None
