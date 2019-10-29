@@ -21,7 +21,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-import scala.concurrent.duration.FiniteDuration;
+import scala.Tuple2;
 
 public class ExampleUsageJava {
 
@@ -58,13 +58,15 @@ public class ExampleUsageJava {
     PublishMessage publishMessage =
         PublishMessage.create(new String(Base64.getEncoder().encode("Hello Google!".getBytes())));
     PublishRequest publishRequest = PublishRequest.create(Lists.newArrayList(publishMessage));
+    String context = "publishRequestId";
 
-    Source<PublishRequest, NotUsed> source = Source.single(publishRequest);
+    Source<Tuple2<PublishRequest, String>, NotUsed> source =
+        Source.single(Tuple2.apply(publishRequest, context));
 
-    Flow<PublishRequest, List<String>, NotUsed> publishFlow =
+    Flow<Tuple2<PublishRequest, String>, Tuple2<List<String>, String>, NotUsed> publishFlow =
         GooglePubSub.publish(topic, config, 1, system, materializer);
 
-    CompletionStage<List<List<String>>> publishedMessageIds =
+    CompletionStage<List<Tuple2<List<String>, String>>> publishedMessageIds =
         source.via(publishFlow).runWith(Sink.seq(), materializer);
     // #publish-single
 
@@ -72,7 +74,7 @@ public class ExampleUsageJava {
     Source<PublishMessage, NotUsed> messageSource = Source.single(publishMessage);
     messageSource
         .groupedWithin(1000, Duration.ofMinutes(1))
-        .map(messages -> PublishRequest.create(messages))
+        .map(messages -> Tuple2.apply(PublishRequest.create(messages), context))
         .via(publishFlow)
         .runWith(Sink.ignore(), materializer);
     // #publish-fast
@@ -82,7 +84,7 @@ public class ExampleUsageJava {
         GooglePubSub.subscribe(subscription, config, system, materializer);
 
     Sink<AcknowledgeRequest, CompletionStage<Done>> ackSink =
-        GooglePubSub.acknowledge(subscription, config, 1, system, materializer);
+        GooglePubSub.acknowledge(subscription, config, system, materializer);
 
     subscriptionSource
         .map(

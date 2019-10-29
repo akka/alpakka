@@ -106,7 +106,8 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
     val flow = TestHttpApi.publish[Unit](config.projectId, "topic1", 1)
     val result =
       Source.single((publishRequest, Some(accessToken), ())).via(flow).toMat(Sink.head)(Keep.right).run
-    result.futureValue._1.futureValue shouldBe Seq("1")
+    result.futureValue._1 shouldBe Seq("1")
+    result.futureValue._2 shouldBe (())
   }
 
   it should "publish without Authorization header to emulator" in {
@@ -137,7 +138,8 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
     val flow = TestEmulatorHttpApi.publish[Unit](config.projectId, "topic1", 1)
     val result =
       Source.single((publishRequest, None, ())).via(flow).toMat(Sink.last)(Keep.right).run
-    result.futureValue._1.futureValue shouldBe Seq("1")
+    result.futureValue._1 shouldBe Seq("1")
+    result.futureValue._2 shouldBe (())
   }
 
   it should "Pull with results" in {
@@ -166,10 +168,10 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
         .willReturn(aResponse().withStatus(200).withBody(pullResponse).withHeader("Content-Type", "application/json"))
     )
 
-    val flow = TestHttpApi.pull[Unit](config.projectId, "sub1", true, 1000, 1)
+    val flow = TestHttpApi.pull(config.projectId, "sub1", true, 1000)
     val result =
-      Source.single((Done, Some(accessToken), ())).via(flow).toMat(Sink.last)(Keep.right).run
-    result.futureValue._1.futureValue shouldBe PullResponse(Some(Seq(ReceivedMessage("ack1", message))))
+      Source.single((Done, Some(accessToken))).via(flow).toMat(Sink.last)(Keep.right).run
+    result.futureValue shouldBe PullResponse(Some(Seq(ReceivedMessage("ack1", message))))
 
   }
 
@@ -199,10 +201,10 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
         .willReturn(aResponse().withStatus(200).withBody(pullResponse).withHeader("Content-Type", "application/json"))
     )
 
-    val flow = TestEmulatorHttpApi.pull[Unit](config.projectId, "sub1", true, 1000, 1)
+    val flow = TestEmulatorHttpApi.pull(config.projectId, "sub1", true, 1000)
     val result =
-      Source.single((Done, Some(accessToken), ())).via(flow).toMat(Sink.last)(Keep.right).run
-    result.futureValue._1.futureValue shouldBe PullResponse(Some(Seq(ReceivedMessage("ack1", message))))
+      Source.single((Done, Some(accessToken))).via(flow).toMat(Sink.last)(Keep.right).run
+    result.futureValue shouldBe PullResponse(Some(Seq(ReceivedMessage("ack1", message))))
 
   }
 
@@ -224,10 +226,10 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
         .willReturn(aResponse().withStatus(200).withBody(pullResponse).withHeader("Content-Type", "application/json"))
     )
 
-    val flow = TestHttpApi.pull[Unit](config.projectId, "sub1", true, 1000, 1)
+    val flow = TestHttpApi.pull(config.projectId, "sub1", true, 1000)
     val result =
-      Source.single((Done, Some(accessToken), ())).via(flow).toMat(Sink.last)(Keep.right).run
-    result.futureValue._1.futureValue shouldBe PullResponse(None)
+      Source.single((Done, Some(accessToken))).via(flow).toMat(Sink.last)(Keep.right).run
+    result.futureValue shouldBe PullResponse(None)
 
   }
 
@@ -249,10 +251,10 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
         .willReturn(aResponse().withStatus(418).withBody(pullResponse).withHeader("Content-Type", "application/json"))
     )
 
-    val flow = TestHttpApi.pull[Unit](config.projectId, "sub1", true, 1000, 1)
+    val flow = TestHttpApi.pull(config.projectId, "sub1", true, 1000)
     val result =
-      Source.single((Done, Some(accessToken), ())).via(flow).toMat(Sink.last)(Keep.right).run
-    val failure = result.futureValue._1.failed.futureValue
+      Source.single((Done, Some(accessToken))).via(flow).toMat(Sink.last)(Keep.right).run
+    val failure = result.failed.futureValue
     failure.getMessage should include("418 I'm a teapot")
     failure.getMessage should include(pullResponse)
   }
@@ -273,10 +275,10 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
 
     val acknowledgeRequest = AcknowledgeRequest("ack1")
 
-    val flow = TestHttpApi.acknowledge[Unit](config.projectId, "sub1", 1)
+    val flow = TestHttpApi.acknowledge(config.projectId, "sub1")
     val result =
-      Source.single((acknowledgeRequest, Some(accessToken), ())).via(flow).toMat(Sink.last)(Keep.right).run
-    result.futureValue._1.futureValue shouldBe (())
+      Source.single((acknowledgeRequest, Some(accessToken))).via(flow).toMat(Sink.last)(Keep.right).run
+    result.futureValue shouldBe Done
 
   }
 
@@ -296,10 +298,10 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
 
     val acknowledgeRequest = AcknowledgeRequest("ack1")
 
-    val flow = TestHttpApi.acknowledge[Unit](config.projectId, "sub1", 1)
+    val flow = TestHttpApi.acknowledge(config.projectId, "sub1")
     val result =
-      Source.single((acknowledgeRequest, Some(accessToken), ())).via(flow).toMat(Sink.last)(Keep.right).run
-    result.futureValue._1.failed.futureValue.getMessage should include("401")
+      Source.single((acknowledgeRequest, Some(accessToken))).via(flow).toMat(Sink.last)(Keep.right).run
+    result.failed.futureValue.getMessage should include("401")
   }
 
   it should "return exception with the meaningful error message in case of not successful publish response" in {
@@ -333,7 +335,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
     val result =
       Source.single((publishRequest, Some(accessToken), ())).via(flow).toMat(Sink.last)(Keep.right).run
 
-    val failure = result.futureValue._1.failed.futureValue
+    val failure = result.failed.futureValue
     failure shouldBe a[RuntimeException]
     failure.getMessage should include("404")
   }

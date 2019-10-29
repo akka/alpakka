@@ -6,26 +6,26 @@ package akka.stream.alpakka.googlecloud.pubsub.javadsl
 
 import java.util.concurrent.CompletionStage
 
-import akka.{Done, NotUsed}
 import akka.actor.{ActorSystem, Cancellable}
 import akka.stream.Materializer
-import akka.stream.alpakka.googlecloud.pubsub.{AcknowledgeRequest, PubSubConfig, PublishRequest, ReceivedMessage}
 import akka.stream.alpakka.googlecloud.pubsub.scaladsl.{GooglePubSub => GPubSub}
+import akka.stream.alpakka.googlecloud.pubsub.{AcknowledgeRequest, PubSubConfig, PublishRequest, ReceivedMessage}
 import akka.stream.javadsl.{Flow, Sink, Source}
+import akka.{Done, NotUsed}
 
-import scala.compat.java8.FutureConverters._
 import scala.collection.JavaConverters._
+import scala.compat.java8.FutureConverters._
 
 object GooglePubSub {
 
-  def publish(topic: String,
-              config: PubSubConfig,
-              parallelism: Int,
-              actorSystem: ActorSystem,
-              materializer: Materializer): Flow[PublishRequest, java.util.List[String], NotUsed] =
+  def publish[C](topic: String,
+                 config: PubSubConfig,
+                 parallelism: Int,
+                 actorSystem: ActorSystem,
+                 materializer: Materializer): Flow[(PublishRequest, C), (java.util.List[String], C), NotUsed] =
     GPubSub
-      .publish(topic = topic, config = config, parallelism = parallelism)(actorSystem, materializer)
-      .map(_.asJava)
+      .publish[C](topic = topic, config = config, parallelism = parallelism)(actorSystem, materializer)
+      .map { case (response, context) => response.asJava -> context }
       .asJava
 
   def subscribe(subscription: String,
@@ -38,11 +38,10 @@ object GooglePubSub {
 
   def acknowledge(subscription: String,
                   config: PubSubConfig,
-                  parallelism: Int,
                   actorSystem: ActorSystem,
                   materializer: Materializer): Sink[AcknowledgeRequest, CompletionStage[Done]] =
     GPubSub
-      .acknowledge(subscription = subscription, config = config, parallelism = parallelism)(actorSystem, materializer)
+      .acknowledge(subscription = subscription, config = config)(actorSystem, materializer)
       .mapMaterializedValue(_.toJava)
       .asJava
 }

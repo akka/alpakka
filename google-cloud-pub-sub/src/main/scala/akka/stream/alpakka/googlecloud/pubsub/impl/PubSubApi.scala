@@ -130,86 +130,84 @@ private[pubsub] trait PubSubApi {
   }
   private implicit val pullRequestFormat = DefaultJsonProtocol.jsonFormat2(PullRequest)
 
-  private def pool[T]()(implicit as: ActorSystem): Flow[(HttpRequest, T), (Try[HttpResponse], T), Http.HostConnectionPool] =
+  private def pool[T]()(
+      implicit as: ActorSystem
+  ): Flow[(HttpRequest, T), (Try[HttpResponse], T), Http.HostConnectionPool] =
     if (isEmulated) {
       Http().cachedHostConnectionPool[T](PubSubGoogleApisHost, PubSubGoogleApisPort)
     } else {
       Http().cachedHostConnectionPoolHttps[T](PubSubGoogleApisHost, PubSubGoogleApisPort)
     }
 
-  def pull[T](project: String,
-              subscription: String,
-              returnImmediately: Boolean,
-              maxMessages: Int,
-              parallelism: Int)(
+  def pull(project: String, subscription: String, returnImmediately: Boolean, maxMessages: Int)(
       implicit as: ActorSystem,
       materializer: Materializer
-  ): Flow[(Done, Option[String], T), (Future[PullResponse], T), NotUsed] = {
+  ): Flow[(Done, Option[String]), PullResponse, NotUsed] = {
     import materializer.executionContext
 
     val url: Uri = s"/v1/projects/$project/subscriptions/$subscription:pull"
 
-    Flow[(Done, Option[String], T)]
-      .mapAsyncUnordered(parallelism) {
-        case (_, maybeAccessToken, context) =>
+    Flow[(Done, Option[String])]
+      .mapAsync(1) {
+        case (_, maybeAccessToken) =>
           Marshal((HttpMethods.POST, url, PullRequest(returnImmediately, maxMessages)))
             .to[HttpRequest]
-            .map(authorize(maybeAccessToken)(_) -> context)
+            .map(request => (authorize(maybeAccessToken)(request), ()))
       }
-      .via(pool())
-      .map {
-        case (Success(response), context) =>
+      .via(pool[Unit]())
+      .mapAsync(1) {
+        case (Success(response), _) =>
           response.status match {
             case StatusCodes.Success(_) =>
-              Unmarshal(response).to[PullResponse] -> context
+              Unmarshal(response).to[PullResponse]
             case status =>
               Unmarshal(response)
                 .to[String]
                 .map { entity =>
                   throw new RuntimeException(s"Unexpected pull response. Code: [$status]. Entity: [$entity]")
-                } -> context
+                }
           }
-        case (Failure(NonFatal(ex)), context) => Future.failed(ex) -> context
+        case (Failure(NonFatal(ex)), _) => Future.failed(ex)
       }
   }
 
-  def acknowledge[T](project: String,
-                     subscription: String,
-                     parallelism: Int)(
+  def acknowledge(project: String, subscription: String)(
       implicit as: ActorSystem,
       materializer: Materializer
-  ): Flow[(AcknowledgeRequest, Option[String], T), (Future[Unit], T), NotUsed] = {
+  ): Flow[(AcknowledgeRequest, Option[String]), Done, NotUsed] = {
     import materializer.executionContext
 
     val url: Uri = s"/v1/projects/$project/subscriptions/$subscription:acknowledge"
 
-    Flow[(AcknowledgeRequest, Option[String], T)]
-      .mapAsyncUnordered(parallelism) {
-        case (request, maybeAccessToken, context) =>
-          Marshal((HttpMethods.POST, url, request)).to[HttpRequest].map(authorize(maybeAccessToken)(_) -> context)
+    Flow[(AcknowledgeRequest, Option[String])]
+      .mapAsync(1) {
+        case (request, maybeAccessToken) =>
+          Marshal((HttpMethods.POST, url, request))
+            .to[HttpRequest]
+            .map(request => (authorize(maybeAccessToken)(request), ()))
       }
-      .via(pool())
-      .map {
-        case (Success(response), context) =>
+      .via(pool[Unit]())
+      .mapAsync(1) {
+        case (Success(response), _) =>
           response.status match {
             case StatusCodes.Success(_) =>
               response.discardEntityBytes()
-              Future.successful(()) -> context
+              Future.successful(Done)
             case status =>
               Unmarshal(response)
                 .to[String]
                 .map { entity =>
                   throw new RuntimeException(s"Unexpected acknowledge response. Code: [$status]. Entity: [$entity]")
-                } -> context
+                }
           }
-        case (Failure(NonFatal(ex)), context) => Future.failed(ex) -> context
+        case (Failure(NonFatal(ex)), _) => Future.failed(ex)
       }
   }
 
   def publish[T](project: String, topic: String, parallelism: Int)(
       implicit as: ActorSystem,
       materializer: Materializer
-  ): Flow[(PublishRequest, Option[String], T), (Future[immutable.Seq[String]], T), NotUsed] = {
+  ): Flow[(PublishRequest, Option[String], T), (immutable.Seq[String], T), NotUsed] = {
     import materializer.executionContext
 
     val url: Uri = s"/v1/projects/$project/topics/$topic:publish"
@@ -221,39 +219,52 @@ private[pubsub] trait PubSubApi {
       .log("beforePool")
       .via(pool())
       .log("afterPool")
-      .map {
+      .mapAsyncUnordered(parallelism) {
         case (Success(response), context) =>
           response.status match {
             case StatusCodes.Success(_) =>
-              Unmarshal(response.entity).to[PublishResponse].map(_.messageIds) -> context
+              Unmarshal(response.entity).to[PublishResponse].map(_.messageIds).map(_ -> context)
             case status =>
               Unmarshal(response)
                 .to[String]
                 .map { entity =>
                   throw new RuntimeException(s"Unexpected publish response. Code: [$status]. Entity: [$entity]")
-                } -> context
+                }
           }
         case (Failure(NonFatal(ex)), context) =>
-          Future.failed(ex) -> context
+          Future.failed(ex)
       }
   }
 
-  def accessToken[T](config: PubSubConfig, parallelism: Int)(
+  def accessToken[T](config: PubSubConfig)(
       implicit materializer: Materializer
-  ): Flow[T, (T, Option[String], Unit), NotUsed] = {
+  ): Flow[T, (T, Option[String]), NotUsed] =
+    Flow[T]
+      .map((_, ()))
+      .via(
+        accessTokenWithContext[T, Unit](config).map {
+          case (request, token, _) => request -> token
+        }
+      )
+
+  def accessTokenWithContext[T, C](config: PubSubConfig)(
+      implicit materializer: Materializer
+  ): Flow[(T, C), (T, Option[String], C), NotUsed] = {
     import materializer.executionContext
     if (isEmulated) {
-      Flow[T].map { request =>
-        (request, None: Option[String], ())
+      Flow[(T, C)].map {
+        case (request, context) =>
+          (request, None: Option[String], context)
       }
     } else {
-      Flow[T].mapAsyncUnordered(parallelism) { request =>
-        config.session.getToken().map(token => (request, Some(token): Option[String], ()))
+      Flow[(T, C)].mapAsync(1) {
+        case (request, context) =>
+          config.session.getToken().map(token => (request, Some(token): Option[String], context))
       }
     }
   }
 
-  private[this] def authorize(maybeAccessToken: Option[String])(request: HttpRequest) =
+  private[this] def authorize(maybeAccessToken: Option[String])(request: HttpRequest): HttpRequest =
     maybeAccessToken.map(accessToken => request.addCredentials(OAuth2BearerToken(accessToken))).getOrElse(request)
 
 }
