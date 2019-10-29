@@ -7,13 +7,13 @@ package akka.stream.alpakka.googlecloud.pubsub
 import java.time.Instant
 import java.util.Base64
 
-import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
-import akka.http.scaladsl.{HttpExt, HttpsConnectionContext}
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.http.scaladsl.HttpExt
 import akka.stream.alpakka.googlecloud.pubsub.impl.{GoogleSession, PubSubApi, TestCredentials}
 import akka.stream.alpakka.googlecloud.pubsub.scaladsl.GooglePubSub
 import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.{ActorMaterializer, Materializer}
+import akka.{Done, NotUsed}
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FlatSpec, Matchers}
@@ -76,8 +76,7 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
       override def publish[T](
           project: String,
           topic: String,
-          parallelism: Int,
-          hcc: Option[HttpsConnectionContext] = None
+          parallelism: Int
       )(implicit as: ActorSystem,
         materializer: Materializer): Flow[(PublishRequest, Option[String], T), (Future[Seq[String]], T), NotUsed] =
         Flow[(PublishRequest, Option[String], T)].map {
@@ -157,8 +156,7 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
       override def isEmulated: Boolean = true
       override def acknowledge[T](project: String,
                                   subscription: String,
-                                  parallelism: Int,
-                                  hcc: Option[HttpsConnectionContext] = None)(
+                                  parallelism: Int)(
           implicit as: ActorSystem,
           materializer: Materializer
       ): Flow[(AcknowledgeRequest, Option[String], T), (Future[Unit], T), NotUsed] =

@@ -8,7 +8,7 @@ import java.time.Instant
 
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
-import akka.http.scaladsl.{Http, HttpsConnectionContext}
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
@@ -130,23 +130,18 @@ private[pubsub] trait PubSubApi {
   }
   private implicit val pullRequestFormat = DefaultJsonProtocol.jsonFormat2(PullRequest)
 
-  private def pool[T](hcc: Option[HttpsConnectionContext])(
-      implicit as: ActorSystem
-  ): Flow[(HttpRequest, T), (Try[HttpResponse], T), Http.HostConnectionPool] =
+  private def pool[T]()(implicit as: ActorSystem): Flow[(HttpRequest, T), (Try[HttpResponse], T), Http.HostConnectionPool] =
     if (isEmulated) {
       Http().cachedHostConnectionPool[T](PubSubGoogleApisHost, PubSubGoogleApisPort)
     } else {
-      Http().cachedHostConnectionPoolHttps[T](PubSubGoogleApisHost,
-                                              PubSubGoogleApisPort,
-                                              hcc.getOrElse(Http().defaultClientHttpsContext))
+      Http().cachedHostConnectionPoolHttps[T](PubSubGoogleApisHost, PubSubGoogleApisPort)
     }
 
   def pull[T](project: String,
               subscription: String,
               returnImmediately: Boolean,
               maxMessages: Int,
-              parallelism: Int,
-              hcc: Option[HttpsConnectionContext] = None)(
+              parallelism: Int)(
       implicit as: ActorSystem,
       materializer: Materializer
   ): Flow[(Done, Option[String], T), (Future[PullResponse], T), NotUsed] = {
@@ -161,7 +156,7 @@ private[pubsub] trait PubSubApi {
             .to[HttpRequest]
             .map(authorize(maybeAccessToken)(_) -> context)
       }
-      .via(pool(hcc))
+      .via(pool())
       .map {
         case (Success(response), context) =>
           response.status match {
@@ -180,8 +175,7 @@ private[pubsub] trait PubSubApi {
 
   def acknowledge[T](project: String,
                      subscription: String,
-                     parallelism: Int,
-                     hcc: Option[HttpsConnectionContext] = None)(
+                     parallelism: Int)(
       implicit as: ActorSystem,
       materializer: Materializer
   ): Flow[(AcknowledgeRequest, Option[String], T), (Future[Unit], T), NotUsed] = {
@@ -194,7 +188,7 @@ private[pubsub] trait PubSubApi {
         case (request, maybeAccessToken, context) =>
           Marshal((HttpMethods.POST, url, request)).to[HttpRequest].map(authorize(maybeAccessToken)(_) -> context)
       }
-      .via(pool(hcc))
+      .via(pool())
       .map {
         case (Success(response), context) =>
           response.status match {
@@ -212,7 +206,7 @@ private[pubsub] trait PubSubApi {
       }
   }
 
-  def publish[T](project: String, topic: String, parallelism: Int, hcc: Option[HttpsConnectionContext] = None)(
+  def publish[T](project: String, topic: String, parallelism: Int)(
       implicit as: ActorSystem,
       materializer: Materializer
   ): Flow[(PublishRequest, Option[String], T), (Future[immutable.Seq[String]], T), NotUsed] = {
@@ -225,7 +219,7 @@ private[pubsub] trait PubSubApi {
           Marshal((HttpMethods.POST, url, request)).to[HttpRequest].map(authorize(maybeAccessToken)(_) -> context)
       }
       .log("beforePool")
-      .via(pool(hcc))
+      .via(pool())
       .log("afterPool")
       .map {
         case (Success(response), context) =>

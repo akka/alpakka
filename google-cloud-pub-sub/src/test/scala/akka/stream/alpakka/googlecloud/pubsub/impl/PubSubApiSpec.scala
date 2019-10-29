@@ -10,7 +10,7 @@ import java.util.Base64
 
 import akka.Done
 import akka.actor.ActorSystem
-import akka.http.scaladsl.ConnectionContext
+import akka.http.scaladsl.{ConnectionContext, Http}
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.pubsub._
 import akka.stream.scaladsl.{Keep, Sink, Source}
@@ -50,7 +50,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
   val sslContext: SSLContext = SSLContext.getInstance("TLS")
   sslContext.init(null, Array(new NoopTrustManager()), null)
 
-  val hcc = Some(ConnectionContext.https(sslContext))
+  Http().setDefaultClientHttpsContext(ConnectionContext.https(sslContext))
 
   val wiremockServer = new WireMockServer(
     wireMockConfig().dynamicPort().dynamicHttpsPort().notifier(new ConsoleNotifier(false))
@@ -103,7 +103,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
             .withHeader("Content-Type", "application/json")
         )
     )
-    val flow = TestHttpApi.publish[Unit](config.projectId, "topic1", 1, hcc)
+    val flow = TestHttpApi.publish[Unit](config.projectId, "topic1", 1)
     val result =
       Source.single((publishRequest, Some(accessToken), ())).via(flow).toMat(Sink.head)(Keep.right).run
     result.futureValue._1.futureValue shouldBe Seq("1")
@@ -134,7 +134,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
         )
     )
 
-    val flow = TestEmulatorHttpApi.publish[Unit](config.projectId, "topic1", 1, hcc)
+    val flow = TestEmulatorHttpApi.publish[Unit](config.projectId, "topic1", 1)
     val result =
       Source.single((publishRequest, None, ())).via(flow).toMat(Sink.last)(Keep.right).run
     result.futureValue._1.futureValue shouldBe Seq("1")
@@ -166,7 +166,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
         .willReturn(aResponse().withStatus(200).withBody(pullResponse).withHeader("Content-Type", "application/json"))
     )
 
-    val flow = TestHttpApi.pull[Unit](config.projectId, "sub1", true, 1000, 1, hcc)
+    val flow = TestHttpApi.pull[Unit](config.projectId, "sub1", true, 1000, 1)
     val result =
       Source.single((Done, Some(accessToken), ())).via(flow).toMat(Sink.last)(Keep.right).run
     result.futureValue._1.futureValue shouldBe PullResponse(Some(Seq(ReceivedMessage("ack1", message))))
@@ -199,7 +199,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
         .willReturn(aResponse().withStatus(200).withBody(pullResponse).withHeader("Content-Type", "application/json"))
     )
 
-    val flow = TestEmulatorHttpApi.pull[Unit](config.projectId, "sub1", true, 1000, 1, hcc)
+    val flow = TestEmulatorHttpApi.pull[Unit](config.projectId, "sub1", true, 1000, 1)
     val result =
       Source.single((Done, Some(accessToken), ())).via(flow).toMat(Sink.last)(Keep.right).run
     result.futureValue._1.futureValue shouldBe PullResponse(Some(Seq(ReceivedMessage("ack1", message))))
@@ -224,7 +224,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
         .willReturn(aResponse().withStatus(200).withBody(pullResponse).withHeader("Content-Type", "application/json"))
     )
 
-    val flow = TestHttpApi.pull[Unit](config.projectId, "sub1", true, 1000, 1, hcc)
+    val flow = TestHttpApi.pull[Unit](config.projectId, "sub1", true, 1000, 1)
     val result =
       Source.single((Done, Some(accessToken), ())).via(flow).toMat(Sink.last)(Keep.right).run
     result.futureValue._1.futureValue shouldBe PullResponse(None)
@@ -249,7 +249,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
         .willReturn(aResponse().withStatus(418).withBody(pullResponse).withHeader("Content-Type", "application/json"))
     )
 
-    val flow = TestHttpApi.pull[Unit](config.projectId, "sub1", true, 1000, 1, hcc)
+    val flow = TestHttpApi.pull[Unit](config.projectId, "sub1", true, 1000, 1)
     val result =
       Source.single((Done, Some(accessToken), ())).via(flow).toMat(Sink.last)(Keep.right).run
     val failure = result.futureValue._1.failed.futureValue
@@ -273,7 +273,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
 
     val acknowledgeRequest = AcknowledgeRequest("ack1")
 
-    val flow = TestHttpApi.acknowledge[Unit](config.projectId, "sub1", 1, hcc)
+    val flow = TestHttpApi.acknowledge[Unit](config.projectId, "sub1", 1)
     val result =
       Source.single((acknowledgeRequest, Some(accessToken), ())).via(flow).toMat(Sink.last)(Keep.right).run
     result.futureValue._1.futureValue shouldBe (())
@@ -296,7 +296,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
 
     val acknowledgeRequest = AcknowledgeRequest("ack1")
 
-    val flow = TestHttpApi.acknowledge[Unit](config.projectId, "sub1", 1, hcc)
+    val flow = TestHttpApi.acknowledge[Unit](config.projectId, "sub1", 1)
     val result =
       Source.single((acknowledgeRequest, Some(accessToken), ())).via(flow).toMat(Sink.last)(Keep.right).run
     result.futureValue._1.failed.futureValue.getMessage should include("401")
@@ -329,7 +329,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
         )
     )
 
-    val flow = TestHttpApi.publish[Unit](config.projectId, "topic1", 1, hcc)
+    val flow = TestHttpApi.publish[Unit](config.projectId, "topic1", 1)
     val result =
       Source.single((publishRequest, Some(accessToken), ())).via(flow).toMat(Sink.last)(Keep.right).run
 
