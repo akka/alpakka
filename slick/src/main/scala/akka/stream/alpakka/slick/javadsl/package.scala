@@ -27,19 +27,12 @@ sealed abstract class SlickSession {
   def close(): Unit = db.close()
 }
 
-/**
- * Java API: Methods for "opening" Slick databases for use.
- *
- * <b>NOTE</b>: databases created through these methods will need to be
- * closed after creation to avoid leaking database resources like active
- * connection pools, etc.
- */
-object SlickSession {
-  private final class SlickSessionConfigBackedImpl(val slick: DatabaseConfig[JdbcProfile]) extends SlickSession {
+private[slick] abstract class SlickSessionFactory {
+  protected final class SlickSessionConfigBackedImpl(val slick: DatabaseConfig[JdbcProfile]) extends SlickSession {
     val db: JdbcBackend#Database = slick.db
     val profile: JdbcProfile = slick.profile
   }
-  private final class SlickSessionDbAndProfileBackedImpl(val db: JdbcBackend#Database, val profile: JdbcProfile)
+  protected final class SlickSessionDbAndProfileBackedImpl(val db: JdbcBackend#Database, val profile: JdbcProfile)
       extends SlickSession
 
   def forConfig(path: String): SlickSession = forConfig(path, ConfigFactory.load())
@@ -49,10 +42,16 @@ object SlickSession {
   )
   def forConfig(databaseConfig: DatabaseConfig[JdbcProfile]): SlickSession =
     new SlickSessionConfigBackedImpl(databaseConfig)
-
-  def forDbAndProfile(db: JdbcBackend#Database, profile: JdbcProfile): SlickSession =
-    new SlickSessionDbAndProfileBackedImpl(db, profile)
 }
+
+/**
+ * Java API: Methods for "opening" Slick databases for use.
+ *
+ * <b>NOTE</b>: databases created through these methods will need to be
+ * closed after creation to avoid leaking database resources like active
+ * connection pools, etc.
+ */
+object SlickSession extends SlickSessionFactory
 
 /**
  * Java API: A class representing a slick resultset row, which is used
