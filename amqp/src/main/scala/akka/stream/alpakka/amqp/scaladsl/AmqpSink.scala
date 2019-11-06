@@ -14,18 +14,18 @@ import scala.concurrent.Future
 object AmqpSink {
 
   /**
-   * Creates an [[AmqpSink]] that accepts [[WriteMessage]] elements.
+   * Creates an `AmqpSink` that accepts `WriteMessage` elements.
    *
-   * This stage materializes to a [[Future]] of [[Done]], which can be used to know when the Sink completes,
+   * This stage materializes to a `Future` of `Done`, which can be used to know when the Sink completes,
    * either normally or because of an amqp failure.
    */
   def apply(settings: AmqpWriteSettings): Sink[WriteMessage, Future[Done]] =
     AmqpFlow.apply(settings).toMat(Sink.ignore)(Keep.right)
 
   /**
-   * Creates an [[AmqpSink]] that accepts [[ByteString]] elements.
+   * Creates an `AmqpSink` that accepts `ByteString` elements.
    *
-   * This stage materializes to a [[Future]] of [[Done]], which can be used to know when the Sink completes,
+   * This stage materializes to a `Future` of `Done`, which can be used to know when the Sink completes,
    * either normally or because of an amqp failure.
    */
   def simple(settings: AmqpWriteSettings): Sink[ByteString, Future[Done]] =
@@ -36,7 +36,7 @@ object AmqpSink {
    * Each materialized sink will create one connection to the broker. This stage sends messages to
    * the queue named in the replyTo options of the message instead of from settings declared at construction.
    *
-   * This stage materializes to a [[Future]] of [[Done]], which can be used to know when the Sink completes,
+   * This stage materializes to a `Future` of `Done`, which can be used to know when the Sink completes,
    * either normally or because of an amqp failure.
    */
   def replyTo(settings: AmqpReplyToSinkSettings): Sink[WriteMessage, Future[Done]] =

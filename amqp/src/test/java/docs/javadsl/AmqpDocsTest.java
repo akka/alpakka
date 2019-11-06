@@ -27,7 +27,6 @@ import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.stream.testkit.javadsl.TestSink;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
-import scala.collection.JavaConverters;
 
 import org.junit.After;
 import org.junit.AfterClass;
