@@ -49,59 +49,91 @@ object WriteMessage {
     new WriteMessage(PassThrough).withPassThrough(passThrough)
 }
 
-// Left for backwards compatibility, might become deprecated after 1.0
+@deprecated("use `WriteMessage` instead", since = "2.0.0")
 object IncomingUpsertMessage {
+
+  @deprecated("use `WriteMessage.createUpsertMessage` instead", since = "2.0.0")
   def apply[T](source: T): WriteMessage[T, NotUsed] =
     WriteMessage.createUpsertMessage(source)
 
+  @deprecated("use `WriteMessage.createUpsertMessage().withPassThrough` instead", since = "2.0.0")
   def apply[T, C](source: T, passThrough: C): WriteMessage[T, C] =
     WriteMessage.createUpsertMessage(source).withPassThrough(passThrough)
 
-  /** Java API */
+  /**
+   * Java API
+   * @deprecated use `WriteMessage.createUpsertMessage` instead (since 2.0.0)
+   */
+  @Deprecated
   def create[T](source: T): WriteMessage[T, NotUsed] =
     WriteMessage.createUpsertMessage(source)
 
-  /** Java API */
+  /**
+   * Java API
+   * @deprecated use `WriteMessage.createUpsertMessage().withPassThrough` instead (since 2.0.0)
+   */
+  @Deprecated
   def create[T, C](source: T, passThrough: C): WriteMessage[T, C] =
     WriteMessage.createUpsertMessage(source).withPassThrough(passThrough)
 }
 
-// Left for backwards compatibility, might become deprecated after 1.0
+@deprecated("use `WriteMessage` instead", since = "2.0.0")
 object IncomingDeleteMessageByIds {
+  @deprecated("use `WriteMessage.createDeleteMessage` instead", since = "2.0.0")
   def apply[T](id: String): WriteMessage[T, NotUsed] =
     WriteMessage.createDeleteMessage(id)
 
+  @deprecated("use `WriteMessage.createDeleteMessage().withPassThrough` instead", since = "2.0.0")
   def apply[T, C](id: String, passThrough: C): WriteMessage[T, C] =
     WriteMessage.createDeleteMessage(id).withPassThrough(passThrough)
 
-  /** Java API */
+  /**
+   * Java API
+   * @deprecated use `WriteMessage.createDeleteMessage` instead (since 2.0.0)
+   */
+  @Deprecated
   def create[T](id: String): WriteMessage[T, NotUsed] =
     WriteMessage.createDeleteMessage(id)
 
-  /** Java API */
+  /**
+   * Java API
+   * @deprecated use `WriteMessage.createDeleteMessage().withPassThrough` instead (since 2.0.0)
+   */
+  @Deprecated
   def create[T, C](id: String, passThrough: C): WriteMessage[T, C] =
     WriteMessage.createDeleteMessage(id).withPassThrough(passThrough)
 }
 
-// Left for backwards compatibility, might become deprecated after 1.0
+@deprecated("use `WriteMessage` instead", since = "2.0.0")
 object IncomingDeleteMessageByQuery {
+  @deprecated("use `WriteMessage.createDeleteByQueryMessage` instead", since = "2.0.0")
   def apply[T](query: String): WriteMessage[T, NotUsed] =
     WriteMessage.createDeleteByQueryMessage(query)
 
+  @deprecated("use `WriteMessage.createDeleteByQueryMessage.withPassThrough` instead", since = "2.0.0")
   def apply[T, C](query: String, passThrough: C): WriteMessage[T, C] =
     WriteMessage.createDeleteByQueryMessage(query).withPassThrough(passThrough)
 
-  /** Java API */
+  /**
+   * Java API
+   * @deprecated use `WriteMessage.createDeleteByQueryMessage` instead (since 2.0.0)
+   */
+  @Deprecated
   def create[T](query: String): WriteMessage[T, NotUsed] =
     WriteMessage.createDeleteByQueryMessage(query)
 
-  /** Java API */
+  /**
+   * Java API
+   * @deprecated use `WriteMessage.createDeleteByQueryMessage().withPassThrough` instead (since 2.0.0)
+   */
+  @Deprecated
   def create[T, C](query: String, passThrough: C): WriteMessage[T, C] =
     WriteMessage.createDeleteByQueryMessage(query).withPassThrough(passThrough)
 }
 
-// Left for backwards compatibility, might become deprecated after 1.0
+@deprecated("use `WriteMessage` instead", since = "2.0.0")
 object IncomingAtomicUpdateMessage {
+  @deprecated("use `WriteMessage.createUpdateMessage` instead", since = "2.0.0")
   def apply[T](idField: String,
                idValue: String,
                routingFieldValue: Option[String],
@@ -113,6 +145,7 @@ object IncomingAtomicUpdateMessage {
     }
   }
 
+  @deprecated("use `WriteMessage.createUpdateMessage().withPassthrough` instead", since = "2.0.0")
   def apply[T, C](idField: String,
                   idValue: String,
                   routingFieldValue: Option[String],
@@ -127,7 +160,9 @@ object IncomingAtomicUpdateMessage {
 
   /**
    * Java API
+   * @deprecated use `WriteMessage.createUpdateMessage` instead (since 2.0.0)
    */
+  @Deprecated
   def create[T](idField: String,
                 idValue: String,
                 updates: java.util.Map[String, java.util.Map[String, Object]]): WriteMessage[T, NotUsed] =
@@ -135,7 +170,9 @@ object IncomingAtomicUpdateMessage {
 
   /**
    * Java API
+   * @deprecated use `WriteMessage.createUpdateMessage` instead (since 2.0.0)
    */
+  @Deprecated
   def create[T](idField: String,
                 idValue: String,
                 routingFieldValue: String,
@@ -144,7 +181,9 @@ object IncomingAtomicUpdateMessage {
 
   /**
    * Java API
+   * @deprecated use `WriteMessage.createUpdateMessage().withPassThrough` instead (since 2.0.0)
    */
+  @Deprecated
   def create[T, C](idField: String,
                    idValue: String,
                    updates: java.util.Map[String, java.util.Map[String, Object]],
@@ -155,7 +194,9 @@ object IncomingAtomicUpdateMessage {
 
   /**
    * Java API
+   * @deprecated use `WriteMessage.createUpdateMessage().withPassThrough` instead (since 2.0.0)
    */
+  @Deprecated
   def create[T, C](idField: String,
                    idValue: String,
                    routingFieldValue: String,
