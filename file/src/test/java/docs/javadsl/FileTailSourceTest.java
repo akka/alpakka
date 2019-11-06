@@ -128,35 +128,30 @@ public class FileTailSourceTest {
 
     final Duration checkInterval = Duration.ofSeconds(1);
     final Source<String, NotUsed> fileCheckSource =
-            akka.stream.alpakka.file.javadsl.DirectoryChangesSource.create(
-                    path.getParent(),
-                    checkInterval,
-                    8192
-            )
-            .mapConcat(pair -> {
-              if (pair.first().equals(path) && pair.second() == DirectoryChange.Deletion) {
-                throw new FileNotFoundException();
-              }
-              return Collections.<String>emptyList();
-            })
-            .recoverWith(new PFBuilder<Throwable, Source<String, NotUsed>>()
+        akka.stream.alpakka.file.javadsl.DirectoryChangesSource.create(
+                path.getParent(), checkInterval, 8192)
+            .mapConcat(
+                pair -> {
+                  if (pair.first().equals(path) && pair.second() == DirectoryChange.Deletion) {
+                    throw new FileNotFoundException();
+                  }
+                  return Collections.<String>emptyList();
+                })
+            .recoverWith(
+                new PFBuilder<Throwable, Source<String, NotUsed>>()
                     .match(FileNotFoundException.class, t -> Source.empty())
-                    .build()
-            );
+                    .build());
 
     final Source<String, NotUsed> source =
-            akka.stream.alpakka.file.javadsl.FileTailSource
-                    .createLines(
-                      path,
-                      8192, // chunk size
-                      Duration.ofMillis(250))
-                    .merge(fileCheckSource, true);
+        akka.stream.alpakka.file.javadsl.FileTailSource.createLines(
+                path,
+                8192, // chunk size
+                Duration.ofMillis(250))
+            .merge(fileCheckSource, true);
 
     // #shutdown-on-delete
 
-    source
-            .to(Sink.fromSubscriber(subscriber))
-            .run(materializer);
+    source.to(Sink.fromSubscriber(subscriber)).run(materializer);
 
     String result1 = subscriber.requestNext();
     assertEquals("a", result1);
@@ -176,22 +171,20 @@ public class FileTailSourceTest {
 
     // #shutdown-on-idle-timeout
 
-    Source<String, NotUsed> stream = akka.stream.alpakka.file.javadsl.FileTailSource
-            .createLines(
-              path,
-              8192, // chunk size
-              Duration.ofMillis(250))
+    Source<String, NotUsed> stream =
+        akka.stream.alpakka.file.javadsl.FileTailSource.createLines(
+                path,
+                8192, // chunk size
+                Duration.ofMillis(250))
             .idleTimeout(Duration.ofSeconds(5))
-            .recoverWith(new PFBuilder<Throwable, Source<String, NotUsed>>()
+            .recoverWith(
+                new PFBuilder<Throwable, Source<String, NotUsed>>()
                     .match(TimeoutException.class, t -> Source.empty())
-                    .build()
-            );
+                    .build());
 
     // #shutdown-on-idle-timeout
 
-    stream
-            .to(Sink.fromSubscriber(subscriber))
-            .run(materializer);
+    stream.to(Sink.fromSubscriber(subscriber)).run(materializer);
 
     String result1 = subscriber.requestNext();
     assertEquals("a", result1);
