@@ -341,7 +341,7 @@ object Dependencies {
         "com.fasterxml.jackson.core" % "jackson-databind" % JacksonDatabindVersion,
         // in-memory filesystem for file related tests
         "com.google.jimfs" % "jimfs" % "1.1" % Test, // ApacheV2
-        "com.github.tomakehurst" % "wiremock" % "2.18.0" % Test // ApacheV2
+        "com.github.tomakehurst" % "wiremock" % "2.25.1" % Test // ApacheV2
       )
   )
 
