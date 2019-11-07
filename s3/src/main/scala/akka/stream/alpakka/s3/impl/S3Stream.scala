@@ -270,6 +270,7 @@ import akka.util.ByteString
               s3Headers: Seq[HttpHeader] = Seq.empty): Source[HttpResponse, NotUsed] =
     Source
       .setup { (mat, attr) =>
+        implicit val materializer = mat
         implicit val attributes = attr
         implicit val sys = mat.system
         implicit val conf = resolveSettings(attr, mat.system)
@@ -325,6 +326,7 @@ import akka.util.ByteString
   ): Source[T, NotUsed] =
     Source
       .setup { (mat, attr) =>
+        implicit val materializer = mat
         implicit val attributes = attr
         implicit val sys: ActorSystem = mat.system
         implicit val conf: S3Settings = resolveSettings(attr, mat.system)
@@ -614,7 +616,7 @@ import akka.util.ByteString
                   )
                 }
               } else {
-                r.entity.dataBytes.runWith(Sink.ignore)
+                r.entity.discardBytes()
                 val etag = r.headers.find(_.lowercaseName() == "etag").map(_.value)
                 etag
                   .map(t => Future.successful(SuccessfulUploadPart(upload, index, t)))
@@ -690,14 +692,15 @@ import akka.util.ByteString
   private def signAndRequest(
       request: HttpRequest,
       retries: Int = 3
-  )(implicit sys: ActorSystem, attr: Attributes): Source[HttpResponse, NotUsed] = {
+  )(implicit sys: ActorSystem, mat: ActorMaterializer, attr: Attributes): Source[HttpResponse, NotUsed] = {
     implicit val conf = resolveSettings(attr, sys)
 
     Signer
       .signedRequest(request, signingKey)
       .mapAsync(parallelism = 1)(req => singleRequest(req))
       .flatMapConcat {
-        case HttpResponse(status, _, _, _) if (retries > 0) && (500 to 599 contains status.intValue()) =>
+        case HttpResponse(status, _, entity, _) if (retries > 0) && (500 to 599 contains status.intValue()) =>
+          entity.discardBytes()
           signAndRequest(request, retries - 1)
         case res => Source.single(res)
       }
