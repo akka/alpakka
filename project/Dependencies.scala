@@ -27,9 +27,6 @@ object Dependencies {
 
   val JwtCoreVersion = "3.0.1"
 
-  // Releases https://github.com/FasterXML/jackson-databind/releases
-  // CVE issues https://github.com/FasterXML/jackson-databind/issues?utf8=%E2%9C%93&q=+label%3ACVE
-  val JacksonDatabindVersion = "2.10.0"
 
   val log4jOverSlf4jVersion = "1.7.29"
   val jclOverSlf4jVersion = "1.7.29"
@@ -58,6 +55,16 @@ object Dependencies {
       )
   )
 
+  // Releases https://github.com/FasterXML/jackson-databind/releases
+  // CVE issues https://github.com/FasterXML/jackson-databind/issues?utf8=%E2%9C%93&q=+label%3ACVE
+  // This should align with the version used in Akka 2.6.x
+  // https://github.com/akka/akka/blob/master/project/Dependencies.scala#L24
+  val JacksonDatabindVersion = "2.10.0"
+  val JacksonDatabindDependencies = Seq(
+    "com.fasterxml.jackson.core" % "jackson-core" % JacksonDatabindVersion,
+    "com.fasterxml.jackson.core" % "jackson-databind" % JacksonDatabindVersion
+  )
+
   val Amqp = Seq(
     libraryDependencies ++= Seq(
         "com.rabbitmq" % "amqp-client" % "5.3.0" // APLv2
@@ -67,10 +74,8 @@ object Dependencies {
   val AwsLambda = Seq(
     libraryDependencies ++= Seq(
         "software.amazon.awssdk" % "lambda" % AwsSdk2Version, // ApacheV2
-        // overriding AWS SDK version to avoid security issues
-        "com.fasterxml.jackson.core" % "jackson-databind" % JacksonDatabindVersion,
         "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
-      )
+      ) ++ JacksonDatabindDependencies
   )
 
   val AzureStorageQueue = Seq(
@@ -115,7 +120,7 @@ object Dependencies {
         "org.slf4j" % "log4j-over-slf4j" % log4jOverSlf4jVersion,
         "org.slf4j" % "jcl-over-slf4j" % jclOverSlf4jVersion,
         "ch.qos.logback" % "logback-classic" % "1.2.3" // Eclipse Public License 1.0
-      )
+      ) ++ JacksonDatabindDependencies
   )
 
   val DynamoDB = Seq(
@@ -129,20 +134,17 @@ object Dependencies {
           ExclusionRule("software.amazon.awssdk", "apache-client"),
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         ),
-        // overriding AWS SDK version to avoid security issues
-        "com.fasterxml.jackson.core" % "jackson-databind" % JacksonDatabindVersion,
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion // ApacheV2
-      )
+      ) ++ JacksonDatabindDependencies
   )
 
   val Elasticsearch = Seq(
     libraryDependencies ++= Seq(
         "org.elasticsearch.client" % "elasticsearch-rest-client" % "6.3.1", // ApacheV2
         "io.spray" %% "spray-json" % "1.3.5", // ApacheV2
-        "com.fasterxml.jackson.core" % "jackson-databind" % JacksonDatabindVersion, // ApacheV2
         "org.codelibs" % "elasticsearch-cluster-runner" % "6.3.2.1" % Test, // ApacheV2
         "org.slf4j" % "jcl-over-slf4j" % jclOverSlf4jVersion % Test
-      )
+      ) ++ JacksonDatabindDependencies
   )
 
   val File = Seq(
@@ -177,10 +179,8 @@ object Dependencies {
         .map("org.apache.geode" % _ % GeodeVersion) ++
       Seq(
         "com.chuusai" %% "shapeless" % "2.3.3",
-        // overriding version from geode to avoid some security vulnerabilities
-        "com.fasterxml.jackson.core" % "jackson-databind" % JacksonDatabindVersion,
         "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.12.1" % Test
-      )
+      ) ++ JacksonDatabindDependencies
   )
 
   val GooglePubSub = Seq(
@@ -280,9 +280,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.github.jsurfer" % "jsurfer" % "1.4.3", // MIT,
         "com.github.jsurfer" % "jsurfer-jackson" % "1.4.3", // MIT
-        // overriding version from jsurfer-jackson to avoid some security vulnerabilities
-        "com.fasterxml.jackson.core" % "jackson-databind" % JacksonDatabindVersion
-      )
+      ) ++ JacksonDatabindDependencies
   )
 
   val Kinesis = Seq(
@@ -339,12 +337,10 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-xml" % AkkaHttpVersion,
         "software.amazon.awssdk" % "auth" % AwsSdk2Version,
-        // overriding AWS SDK version to avoid security issues
-        "com.fasterxml.jackson.core" % "jackson-databind" % JacksonDatabindVersion,
         // in-memory filesystem for file related tests
         "com.google.jimfs" % "jimfs" % "1.1" % Test, // ApacheV2
         "com.github.tomakehurst" % "wiremock" % "2.25.1" % Test // ApacheV2
-      )
+      ) ++ JacksonDatabindDependencies
   )
 
   val SpringWeb = {
@@ -382,11 +378,9 @@ object Dependencies {
           ExclusionRule("software.amazon.awssdk", "apache-client"),
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         ),
-        // overriding AWS SDK version to avoid security issues
-        "com.fasterxml.jackson.core" % "jackson-databind" % JacksonDatabindVersion,
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
         "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
-      )
+      ) ++ JacksonDatabindDependencies
   )
 
   val SolrjVersion = "7.7.2"
@@ -412,12 +406,10 @@ object Dependencies {
           ExclusionRule("software.amazon.awssdk", "apache-client"),
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         ),
-        // overriding AWS SDK version to avoid security issues
-        "com.fasterxml.jackson.core" % "jackson-databind" % JacksonDatabindVersion,
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
         "org.mockito" % "mockito-core" % mockitoVersion % Test, // MIT
         "org.mockito" % "mockito-inline" % mockitoVersion % Test // MIT
-      )
+      ) ++ JacksonDatabindDependencies
   )
 
   val Sse = Seq(
