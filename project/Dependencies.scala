@@ -27,7 +27,6 @@ object Dependencies {
 
   val JwtCoreVersion = "3.0.1"
 
-
   val log4jOverSlf4jVersion = "1.7.29"
   val jclOverSlf4jVersion = "1.7.29"
 
@@ -279,7 +278,7 @@ object Dependencies {
   val JsonStreaming = Seq(
     libraryDependencies ++= Seq(
         "com.github.jsurfer" % "jsurfer" % "1.4.3", // MIT,
-        "com.github.jsurfer" % "jsurfer-jackson" % "1.4.3", // MIT
+        "com.github.jsurfer" % "jsurfer-jackson" % "1.4.3" // MIT
       ) ++ JacksonDatabindDependencies
   )
 
