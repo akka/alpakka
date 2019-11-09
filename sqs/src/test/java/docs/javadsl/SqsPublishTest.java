@@ -18,7 +18,9 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
@@ -274,9 +276,12 @@ public class SqsPublishTest extends BaseSqsTest {
   public void sendMessageWithBatchesAsFlow() throws Exception {
     final String queueUrl = randomQueueUrl();
 
-    List<SendMessageRequest> messagesToSend = new ArrayList<>();
+    Set<SendMessageRequest> messagesToSend = new HashSet<>();
+    Set<String> messageMd5s = new HashSet<>();
     for (int i = 0; i < 10; i++) {
-      messagesToSend.add(SendMessageRequest.builder().messageBody("Message - " + i).build());
+      String message = "Message - " + i;
+      messagesToSend.add(SendMessageRequest.builder().messageBody(message).build());
+      messageMd5s.add(toMd5(message));
     }
 
     CompletionStage<List<SqsPublishResultEntry>> stage =
@@ -286,13 +291,15 @@ public class SqsPublishTest extends BaseSqsTest {
 
     List<SqsPublishResultEntry> results = stage.toCompletableFuture().get(10, TimeUnit.SECONDS);
     assertEquals(10, results.size());
-    for (int i = 0; i < 10; i++) {
-      SqsPublishResultEntry r = results.get(i);
-      SendMessageRequest req = messagesToSend.get(i);
-
-      assertEquals(req, r.request());
-      assertEquals(toMd5(req.messageBody()), r.result().md5OfMessageBody());
-    }
+    Set<SendMessageRequest> resultRequests = new HashSet<>();
+    Set<String> resultMd5s = new HashSet<>();
+    results.forEach(
+        e -> {
+          resultRequests.add(e.request());
+          resultMd5s.add(e.result().md5OfMessageBody());
+        });
+    assertEquals(messagesToSend, resultRequests);
+    assertEquals(messageMd5s, resultMd5s);
 
     List<Message> messagesFirstBatch =
         sqsClient
@@ -308,29 +315,34 @@ public class SqsPublishTest extends BaseSqsTest {
   public void sendBatchesAsFlow() throws Exception {
     final String queueUrl = randomQueueUrl();
 
-    List<SendMessageRequest> messagesToSend = new ArrayList<>();
+    Set<SendMessageRequest> messagesToSend = new HashSet<>();
+    Set<String> messageMd5s = new HashSet<>();
     for (int i = 0; i < 10; i++) {
-      messagesToSend.add(SendMessageRequest.builder().messageBody("Message - " + i).build());
+      String message = "Message - " + i;
+      messagesToSend.add(SendMessageRequest.builder().messageBody(message).build());
+      messageMd5s.add(toMd5(message));
     }
     Iterable<SendMessageRequest> it = messagesToSend;
 
     CompletionStage<List<SqsPublishResultEntry>> stage =
         Source.single(it)
             .via(SqsPublishFlow.batch(queueUrl, SqsPublishBatchSettings.create(), sqsClient))
-            .mapConcat(x -> x)
+            .mapConcat(x -> x.getEntries())
             .runWith(Sink.seq(), materializer);
 
     List<SqsPublishResultEntry> results = new ArrayList<>();
 
     results.addAll(stage.toCompletableFuture().get(1, TimeUnit.SECONDS));
     assertEquals(10, results.size());
-    for (int i = 0; i < 10; i++) {
-      SqsPublishResultEntry r = results.get(i);
-      SendMessageRequest req = messagesToSend.get(i);
-
-      assertEquals(req, r.request());
-      assertEquals(toMd5(req.messageBody()), r.result().md5OfMessageBody());
-    }
+    Set<SendMessageRequest> resultRequests = new HashSet<>();
+    Set<String> resultMd5s = new HashSet<>();
+    results.forEach(
+        e -> {
+          resultRequests.add(e.request());
+          resultMd5s.add(e.result().md5OfMessageBody());
+        });
+    assertEquals(messagesToSend, resultRequests);
+    assertEquals(messageMd5s, resultMd5s);
 
     List<Message> messagesFirstBatch =
         sqsClient

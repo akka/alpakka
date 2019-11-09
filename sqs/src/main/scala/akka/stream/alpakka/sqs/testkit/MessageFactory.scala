@@ -9,7 +9,7 @@ import akka.stream.alpakka.sqs.SqsAckResultEntry.{
   SqsDeleteResultEntry,
   SqsIgnoreResultEntry
 }
-import akka.stream.alpakka.sqs.{MessageAction, SqsPublishResult, SqsPublishResultEntry, SqsResult}
+import akka.stream.alpakka.sqs._
 import software.amazon.awssdk.services.sqs.model._
 
 /**
@@ -38,6 +38,10 @@ object MessageFactory {
   ): SqsChangeMessageVisibilityResult =
     new SqsChangeMessageVisibilityResult(messageAction, response)
 
+  def createSqsBatchResult[T <: SqsResultEntry](successful: Seq[T],
+                                                failed: Seq[SqsResultErrorEntry[T#Request]] = List.empty): Unit =
+    new SqsBatchResult(successful.toList, failed.toList)
+
   def createSqsDeleteResultEntry(
       messageAction: MessageAction.Delete,
       result: DeleteMessageBatchResultEntry,
@@ -54,4 +58,15 @@ object MessageFactory {
       responseMetadata: SqsResponseMetadata = SqsResult.EmptySqsResponseMetadata
   ): SqsChangeMessageVisibilityResultEntry =
     new SqsChangeMessageVisibilityResultEntry(messageAction, result, responseMetadata)
+
+  def createSqsResultErrorEntry[T <: AnyRef](
+      request: T,
+      result: BatchResultErrorEntry,
+      responseMetadata: SqsResponseMetadata = SqsResult.EmptySqsResponseMetadata
+  ): SqsResultErrorEntry[T] =
+    new SqsResultErrorEntry(request, result, responseMetadata)
+
+  def createSqsBatchException[T <: AnyRef](errors: Seq[SqsResultErrorEntry[T]]): SqsBatchException[T] =
+    new SqsBatchException(errors.toList)
+
 }

@@ -7,6 +7,7 @@ package akka.stream.alpakka.sqs.javadsl
 import akka.NotUsed
 import akka.annotation.ApiMayChange
 import akka.stream.alpakka.sqs.{
+  SqsBatchResult,
   SqsPublishBatchSettings,
   SqsPublishGroupedSettings,
   SqsPublishResult,
@@ -61,10 +62,9 @@ object SqsPublishFlow {
       queueUrl: String,
       settings: SqsPublishBatchSettings,
       sqsClient: SqsAsyncClient
-  ): Flow[java.lang.Iterable[SendMessageRequest], java.util.List[SqsPublishResultEntry], NotUsed] =
+  ): Flow[java.lang.Iterable[SendMessageRequest], SqsBatchResult[SqsPublishResultEntry], NotUsed] =
     SFlow[java.lang.Iterable[SendMessageRequest]]
       .map(_.asScala)
       .via(akka.stream.alpakka.sqs.scaladsl.SqsPublishFlow.batch(queueUrl, settings)(sqsClient))
-      .map(_.asJava)
       .asJava
 }

@@ -14,7 +14,6 @@ import software.amazon.awssdk.services.sqs.model._
 
 import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters._
-import scala.util.{Failure, Success}
 
 /**
  * Scala API to create publishing SQS flows.
@@ -66,14 +65,14 @@ object SqsPublishFlow {
     Flow[SendMessageRequest]
       .groupedWithin(settings.maxBatchSize, settings.maxBatchWait)
       .via(batch(queueUrl, SqsPublishBatchSettings.create().withConcurrentRequests(settings.concurrentRequests)))
-      .mapConcat(identity)
+      .mapConcat(_.entries)
 
   /**
    * creates a [[akka.stream.scaladsl.Flow Flow]] to publish messages in batches to a SQS queue using an [[software.amazon.awssdk.services.sqs.SqsAsyncClient SqsAsyncClient]]
    */
   def batch(queueUrl: String, settings: SqsPublishBatchSettings = SqsPublishBatchSettings.Defaults)(
       implicit sqsClient: SqsAsyncClient
-  ): Flow[Iterable[SendMessageRequest], List[SqsPublishResultEntry], NotUsed] =
+  ): Flow[Iterable[SendMessageRequest], SqsBatchResult[SqsPublishResultEntry], NotUsed] =
     Flow[Iterable[SendMessageRequest]]
       .mapAsync(settings.concurrentRequests) { requests =>
         val entries = requests.zipWithIndex.map {
@@ -99,28 +98,22 @@ object SqsPublishFlow {
           .toScala
           .map(response => requests -> response)(sameThreadExecutionContext)
       }
-      .mapConcat {
+      .map {
         case (requests, response) =>
           val responseMetadata = response.responseMetadata()
           val idToRequest = requests.zipWithIndex.map(_.swap).toMap
           val successful = response
             .successful()
             .asScala
-            .map { e =>
-              Success(new SqsPublishResultEntry(idToRequest(e.id.toInt), e, responseMetadata))
-            }
+            .map(e => new SqsPublishResultEntry(idToRequest(e.id.toInt), e, responseMetadata))
             .toList
+
           val failed = response
             .failed()
             .asScala
-            .map { e =>
-              Failure(new SqsBatchException(requests.size, e.message()))
-            }
+            .map(e => new SqsResultErrorEntry(idToRequest(e.id.toInt), e, responseMetadata))
             .toList
-          List(successful, failed)
+
+          new SqsBatchResult[SqsPublishResultEntry](successful, failed)
       }
-      .map(_.map {
-        case Success(result) => result
-        case Failure(e) => throw e
-      })
 }

@@ -19,7 +19,6 @@ import software.amazon.awssdk.services.sqs.model._
 import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
 
 /**
  * Scala API to create acknowledging SQS flows.
@@ -98,7 +97,7 @@ object SqsAckFlow {
 
   private def groupedDelete(queueUrl: String, settings: SqsAckGroupedSettings)(
       implicit sqsClient: SqsAsyncClient
-  ): Flow[MessageAction.Delete, SqsDeleteResultEntry, NotUsed] =
+  ) =
     Flow[MessageAction.Delete]
       .groupedWithin(settings.maxBatchSize, settings.maxBatchWait)
       .mapAsync(settings.concurrentRequests) { actions =>
@@ -122,31 +121,27 @@ object SqsAckFlow {
           .toScala
           .map(response => actions -> response)(sameThreadExecutionContext)
       }
-      .mapConcat {
+      .map {
         case (actions, response) =>
           val responseMetadata = response.responseMetadata()
           val idToAction = actions.zipWithIndex.map(_.swap).toMap
           val successful = response
             .successful()
             .asScala
-            .map(e => Success(new SqsDeleteResultEntry(idToAction(e.id.toInt), e, responseMetadata)))
+            .map(e => new SqsDeleteResultEntry(idToAction(e.id.toInt), e, responseMetadata))
             .toList
           val failed = response
             .failed()
             .asScala
-            .map(e => Failure(new SqsBatchException(actions.size, e.message)))
+            .map(e => new SqsResultErrorEntry(idToAction(e.id.toInt), e, responseMetadata))
             .toList
 
-          successful ++ failed
+          new SqsBatchResult[SqsDeleteResultEntry](successful, failed)
       }
-      .map {
-        case Success(result) => result
-        case Failure(e) => throw e
-      }
+      .mapConcat(_.entries)
 
-  private def groupedChangeMessageVisibility(queueUrl: String, settings: SqsAckGroupedSettings)(
-      implicit sqsClient: SqsAsyncClient
-  ): Flow[MessageAction.ChangeMessageVisibility, SqsChangeMessageVisibilityResultEntry, NotUsed] =
+  private def groupedChangeMessageVisibility(queueUrl: String,
+                                             settings: SqsAckGroupedSettings)(implicit sqsClient: SqsAsyncClient) =
     Flow[MessageAction.ChangeMessageVisibility]
       .groupedWithin(settings.maxBatchSize, settings.maxBatchWait)
       .mapAsync(settings.concurrentRequests) { actions =>
@@ -171,25 +166,23 @@ object SqsAckFlow {
           .toScala
           .map(response => actions -> response)(sameThreadExecutionContext)
       }
-      .mapConcat {
+      .map {
         case (actions, response) =>
           val responseMetadata = response.responseMetadata()
           val idToAction = actions.zipWithIndex.map(_.swap).toMap
           val successful = response
             .successful()
             .asScala
-            .map(e => Success(new SqsChangeMessageVisibilityResultEntry(idToAction(e.id.toInt), e, responseMetadata)))
+            .map(e => new SqsChangeMessageVisibilityResultEntry(idToAction(e.id.toInt), e, responseMetadata))
             .toList
+
           val failed = response
             .failed()
             .asScala
-            .map(e => Failure(new SqsBatchException(actions.size, e.message)))
+            .map(e => new SqsResultErrorEntry(idToAction(e.id.toInt), e, responseMetadata))
             .toList
 
-          successful ++ failed
+          new SqsBatchResult[SqsChangeMessageVisibilityResultEntry](successful, failed)
       }
-      .map {
-        case Success(result) => result
-        case Failure(e) => throw e
-      }
+      .mapConcat(_.entries)
 }

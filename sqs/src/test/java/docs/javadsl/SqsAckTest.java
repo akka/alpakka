@@ -315,14 +315,16 @@ public class SqsAckTest extends BaseSqsTest {
 
     Source<Message, NotUsed> source = Source.fromIterator(messages::iterator);
     PartialFunction<Throwable, Source<SqsAckResultEntry, NotUsed>> stop =
-            new PFBuilder().match(SqsBatchException.class, ex -> Source.empty(SqsAckResultEntry.class)).build();
+        new PFBuilder()
+            .match(SqsBatchException.class, ex -> Source.empty(SqsAckResultEntry.class))
+            .build();
 
     CompletionStage<List<SqsAckResultEntry>> stage =
-    source
-      .map(m -> MessageAction.delete(m))
-      .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings.create(), awsClient))
-      .recoverWith(stop)
-      .runWith(Sink.seq(), materializer);
+        source
+            .map(m -> MessageAction.delete(m))
+            .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings.create(), awsClient))
+            .recoverWith(stop)
+            .runWith(Sink.seq(), materializer);
 
     List<SqsAckResultEntry> results = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
     assertEquals(9, results.size());

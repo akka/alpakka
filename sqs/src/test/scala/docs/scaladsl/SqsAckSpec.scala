@@ -8,11 +8,13 @@ import java.util.concurrent.{CompletableFuture, TimeUnit}
 import java.util.function.Supplier
 
 import akka.Done
-import akka.stream.alpakka.sqs.scaladsl._
-import akka.stream.alpakka.sqs._
 import akka.stream.alpakka.sqs.SqsAckResult._
 import akka.stream.alpakka.sqs.SqsAckResultEntry._
+import akka.stream.alpakka.sqs._
+import akka.stream.alpakka.sqs.scaladsl._
+import akka.stream.alpakka.sqs.testkit.MessageFactory
 import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.testkit.scaladsl.TestSink
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{spy, times, verify, when}
 import org.scalatest.{FlatSpec, Matchers}
@@ -224,7 +226,12 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
   }
 
   it should "fail if any of the messages in the batch request failed" in {
-    val messages = for (i <- 0 until 10) yield Message.builder().body(s"Message - $i").build()
+    val messages = for (i <- 0 until 10) yield Message.builder().messageId(i.toString).body(s"Message - $i").build()
+    val failed = messages.take(2).map(m => BatchResultErrorEntry.builder().id(m.messageId()).build())
+    val successful = messages.drop(2).map(m => DeleteMessageBatchResultEntry.builder().id(m.messageId()).build())
+    val errors = failed.zip(messages).map {
+      case (e, m) => MessageFactory.createSqsResultErrorEntry(MessageAction.Delete(m), e)
+    }
 
     implicit val mockAwsSqsClient = mock[SqsAsyncClient]
 
@@ -232,16 +239,20 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
       .thenReturn(CompletableFuture.completedFuture {
         DeleteMessageBatchResponse
           .builder()
-          .failed(BatchResultErrorEntry.builder().build())
+          .successful(successful: _*)
+          .failed(failed: _*)
           .build()
       })
 
-    val future = Source(messages)
+    val probe = Source(messages)
       .take(10)
       .map(MessageAction.Delete(_))
       .via(SqsAckFlow.grouped("queue", SqsAckGroupedSettings.Defaults))
-      .runWith(Sink.ignore)
-    future.failed.futureValue shouldBe a[SqsBatchException]
+      .runWith(TestSink.probe[SqsResultEntry])
+
+    probe.request(10)
+    probe.expectNextN(8)
+    probe.expectError(MessageFactory.createSqsBatchException(errors))
   }
 
   it should "fail if the batch request failed" in {

@@ -209,7 +209,7 @@ class SqsPublishSinkSpec extends FlatSpec with Matchers with DefaultTestContext 
       .sendNext("notused - 5")
       .sendComplete()
 
-    a[SqsBatchException] should be thrownBy {
+    a[SqsBatchException[_]] should be thrownBy {
       Await.result(future, 1.second)
     }
 

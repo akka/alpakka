@@ -6,21 +6,20 @@ package akka.stream.alpakka.sqs
 
 import akka.annotation.InternalApi
 
-final class SqsBatchException @InternalApi private[sqs] (val batchSize: Int, message: String)
-    extends Exception(message) {
+import scala.collection.JavaConverters._
 
-  @InternalApi
-  private[sqs] def this(batchSize: Int, cause: Throwable) {
-    this(batchSize, cause.getMessage)
-    initCause(cause)
-  }
-
-  @InternalApi
-  private[sqs] def this(batchSize: Int, message: String, cause: Throwable) {
-    this(batchSize, message)
-    initCause(cause)
-  }
+final class SqsBatchException[T <: AnyRef] @InternalApi private[sqs] (val errors: List[SqsResultErrorEntry[T]])
+    extends Exception(s"SQS batch operation failed with ${errors.size} errors") {
 
   /** Java API */
-  def getBatchSize: Int = batchSize
+  def getErrors: java.util.List[SqsResultErrorEntry[T]] = errors.asJava
+
+  override def toString: String = s"SqsBatchException(errors=$errors)"
+
+  override def equals(other: Any): Boolean = other match {
+    case that: SqsBatchException[T] => java.util.Objects.equals(this.errors, that.errors)
+    case _ => false
+  }
+
+  override def hashCode(): Int = java.util.Objects.hash(errors)
 }
