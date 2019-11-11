@@ -315,7 +315,7 @@ public class SqsAckTest extends BaseSqsTest {
 
     Source<Message, NotUsed> source = Source.fromIterator(messages::iterator);
     PartialFunction<Throwable, Source<SqsAckResultEntry, NotUsed>> stop =
-        new PFBuilder()
+        new PFBuilder<Throwable, Source<SqsAckResultEntry, NotUsed>>()
             .match(SqsBatchException.class, ex -> Source.empty(SqsAckResultEntry.class))
             .build();
 
