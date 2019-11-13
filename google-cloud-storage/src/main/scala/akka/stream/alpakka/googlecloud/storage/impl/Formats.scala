@@ -41,7 +41,14 @@ object Formats extends DefaultJsonProtocol {
       etag: String,
       md5Hash: String,
       crc32c: String,
-      mediaLink: String
+      mediaLink: String,
+      selfLink: String,
+      updated: String,
+      timeCreated: String,
+      retentionExpirationTime: String,
+      storageClass: String,
+      contentEncoding: String,
+      contentLanguage: String
   )
 
   /**
@@ -73,7 +80,7 @@ object Formats extends DefaultJsonProtocol {
   )
 
   private implicit val bucketInfoJsonFormat = jsonFormat6(BucketInfoJson)
-  private implicit val storageObjectJsonFormat = jsonFormat11(StorageObjectJson)
+  private implicit val storageObjectJsonFormat = jsonFormat18(StorageObjectJson)
   private implicit val bucketListResultJsonReads = jsonFormat4(BucketListResultJson)
   private implicit val rewriteReponseFormat = jsonFormat6(RewriteResponseJson)
 
@@ -141,9 +148,9 @@ object Formats extends DefaultJsonProtocol {
   }
 
   private def storageObjectJsonToStorageObject(storageObjectJson: StorageObjectJson): StorageObject = {
-    val size =
-      Try(storageObjectJson.size.toLong)
-        .getOrElse(throw new RuntimeException("Storage object size is not of Long type"))
+    def strToLongOrThrow(str: String, fieldName: String) =
+      Try(str.toLong)
+        .getOrElse(throw new RuntimeException(s"Storage object $fieldName is not of Long type"))
 
     StorageObject(
       storageObjectJson.kind,
@@ -152,11 +159,18 @@ object Formats extends DefaultJsonProtocol {
       storageObjectJson.bucket,
       storageObjectJson.generation.toLong,
       storageObjectJson.contentType.map(parseContentType).getOrElse(ContentTypes.`application/octet-stream`),
-      size,
+      strToLongOrThrow(storageObjectJson.size, "size"),
       storageObjectJson.etag,
       storageObjectJson.md5Hash,
       storageObjectJson.crc32c,
-      storageObjectJson.mediaLink
+      storageObjectJson.mediaLink,
+      storageObjectJson.selfLink,
+      strToLongOrThrow(storageObjectJson.updated, "updated"),
+      strToLongOrThrow(storageObjectJson.timeCreated, "timeCreated"),
+      strToLongOrThrow(storageObjectJson.retentionExpirationTime, "retentionExpirationTime"),
+      storageObjectJson.storageClass,
+      storageObjectJson.contentEncoding,
+      storageObjectJson.contentLanguage
     )
   }
 
