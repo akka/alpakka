@@ -7,6 +7,9 @@ package docs.scaladsl
 import java.net.URI
 
 import akka.NotUsed
+import akka.stream.scaladsl.{FlowWithContext, SourceWithContext}
+
+import scala.util.{Failure, Success, Try}
 //#init-client
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
@@ -68,24 +71,50 @@ class ExampleSpec
 
     "provide a simple usage example" in {
 
-      //##simple-request
+      // #simple-request
       val listTablesResult: Future[ListTablesResponse] =
         DynamoDb.single(ListTablesRequest.builder().build())
-      //##simple-request
+      // #simple-request
 
       listTablesResult.futureValue
     }
 
     "allow multiple requests" in assertAllStagesStopped {
-      //##flow
+      // #flow
       val source: Source[DescribeTableResponse, NotUsed] = Source
         .single(CreateTableRequest.builder().tableName("testTable").build())
-        .via(DynamoDb.flow(1))
+        .via(DynamoDb.flow(parallelism = 1))
         .map(response => DescribeTableRequest.builder().tableName(response.tableDescription.tableName).build())
-        .via(DynamoDb.flow(1))
+        .via(DynamoDb.flow(parallelism = 1))
 
-      //##flow
+      // #flow
       source.runWith(Sink.ignore).failed.futureValue
+    }
+
+    "flow with context" in assertAllStagesStopped {
+      case class SomeContext()
+
+      // #withContext
+      val source: SourceWithContext[PutItemRequest, SomeContext, NotUsed] = // ???
+        // #withContext
+        SourceWithContext.fromTuples(
+          Source.single(PutItemRequest.builder().build() -> SomeContext())
+        )
+
+      // #withContext
+
+      val flow: FlowWithContext[PutItemRequest, SomeContext, Try[PutItemResponse], SomeContext, NotUsed] =
+        DynamoDb.flowWithContext(parallelism = 1)
+
+      val writtenSource: SourceWithContext[PutItemResponse, SomeContext, NotUsed] = source
+        .via(flow)
+        .map {
+          case Success(response) => response
+          case Failure(exception) => throw exception
+        }
+      // #withContext
+
+      writtenSource.runWith(Sink.ignore).failed.futureValue
     }
 
     "allow multiple requests - single source" in assertAllStagesStopped {
@@ -97,12 +126,26 @@ class ExampleSpec
       } yield describe.table.itemCount).failed.futureValue
     }
 
-    "provide a paginated requests example" in assertAllStagesStopped {
-      //##paginated
+    "provide a paginated requests source" in assertAllStagesStopped {
+      // #paginated
+      val scanRequest = ScanRequest.builder().tableName("testTable").build()
+
       val scanPages: Source[ScanResponse, NotUsed] =
-        DynamoDb.source(ScanRequest.builder().tableName("testTable").build())
-      //##paginated
+        DynamoDb.source(scanRequest)
+
+      // #paginated
       scanPages.runWith(Sink.ignore).failed.futureValue
+    }
+
+    "provide a paginated flow" in assertAllStagesStopped {
+      val scanRequest = ScanRequest.builder().tableName("testTable").build()
+      // #paginated
+      val scanPageInFlow: Source[ScanResponse, NotUsed] =
+        Source
+          .single(scanRequest)
+          .via(DynamoDb.flowPaginated())
+      // #paginated
+      scanPageInFlow.runWith(Sink.ignore).failed.futureValue
     }
   }
 }

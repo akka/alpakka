@@ -326,8 +326,10 @@ object Ftp extends FtpApi[FTPClient, FtpSettings] with FtpSourceParams {
   def mkdir(basePath: String, name: String, connectionSettings: S): Source[Done, NotUsed] =
     Source.fromGraph(createMkdirGraph(basePath, name, connectionSettings)).map(func(_ => Done))
 
-  def mkdirAsync(basePath: String, name: String, connectionSettings: S, mat: Materializer): CompletionStage[Done] =
-    mkdir(basePath, name, connectionSettings).runWith(Sink.head(), mat)
+  def mkdirAsync(basePath: String, name: String, connectionSettings: S, mat: Materializer): CompletionStage[Done] = {
+    val sink: Sink[Done, CompletionStage[Done]] = Sink.head()
+    mkdir(basePath, name, connectionSettings).runWith(sink, mat)
+  }
 
   def toPath(path: String, connectionSettings: S, append: Boolean): Sink[ByteString, CompletionStage[IOResult]] = {
     import scala.compat.java8.FutureConverters._
@@ -414,8 +416,10 @@ object Ftps extends FtpApi[FTPSClient, FtpsSettings] with FtpsSourceParams {
   def mkdir(basePath: String, name: String, connectionSettings: S): Source[Done, NotUsed] =
     Source.fromGraph(createMkdirGraph(basePath, name, connectionSettings)).map(func(_ => Done))
 
-  def mkdirAsync(basePath: String, name: String, connectionSettings: S, mat: Materializer): CompletionStage[Done] =
-    mkdir(basePath, name, connectionSettings).runWith(Sink.head(), mat)
+  def mkdirAsync(basePath: String, name: String, connectionSettings: S, mat: Materializer): CompletionStage[Done] = {
+    val sink: Sink[Done, CompletionStage[Done]] = Sink.head()
+    mkdir(basePath, name, connectionSettings).runWith(sink, mat)
+  }
 
   def toPath(path: String, connectionSettings: S, append: Boolean): Sink[ByteString, CompletionStage[IOResult]] = {
     import scala.compat.java8.FutureConverters._
@@ -503,8 +507,10 @@ class SftpApi extends FtpApi[SSHClient, SftpSettings] with SftpSourceParams {
   def mkdir(basePath: String, name: String, connectionSettings: S): Source[Done, NotUsed] =
     Source.fromGraph(createMkdirGraph(basePath, name, connectionSettings)).map(func(_ => Done))
 
-  def mkdirAsync(basePath: String, name: String, connectionSettings: S, mat: Materializer): CompletionStage[Done] =
-    mkdir(basePath, name, connectionSettings).runWith(Sink.head(), mat)
+  def mkdirAsync(basePath: String, name: String, connectionSettings: S, mat: Materializer): CompletionStage[Done] = {
+    val sink: Sink[Done, CompletionStage[Done]] = Sink.head()
+    mkdir(basePath, name, connectionSettings).runWith(sink, mat)
+  }
 
   def toPath(path: String, connectionSettings: S, append: Boolean): Sink[ByteString, CompletionStage[IOResult]] = {
     import scala.compat.java8.FutureConverters._

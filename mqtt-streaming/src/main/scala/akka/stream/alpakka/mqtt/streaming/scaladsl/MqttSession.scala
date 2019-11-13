@@ -172,11 +172,11 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
   }
 
   override def shutdown(): Unit = {
-    system.stop(clientConnector.toUntyped)
-    system.stop(consumerPacketRouter.toUntyped)
-    system.stop(producerPacketRouter.toUntyped)
-    system.stop(subscriberPacketRouter.toUntyped)
-    system.stop(unsubscriberPacketRouter.toUntyped)
+    system.stop(clientConnector.toClassic)
+    system.stop(consumerPacketRouter.toClassic)
+    system.stop(producerPacketRouter.toClassic)
+    system.stop(subscriberPacketRouter.toClassic)
+    system.stop(unsubscriberPacketRouter.toClassic)
   }
 
   private val pingReqBytes = PingReq.encode(ByteString.newBuilder).result()
@@ -188,7 +188,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
 
         Future.successful(
           Flow[Command[A]]
-            .watch(clientConnector.toUntyped)
+            .watch(clientConnector.toClassic)
             .watchTermination() {
               case (_, terminated) =>
                 terminated.onComplete {
@@ -300,7 +300,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
 
   private[streaming] override def eventFlow[A](connectionId: ByteString): EventFlow[A] =
     Flow[ByteString]
-      .watch(clientConnector.toUntyped)
+      .watch(clientConnector.toClassic)
       .watchTermination() {
         case (_, terminated) =>
           terminated.onComplete {
@@ -514,11 +514,11 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
   }
 
   override def shutdown(): Unit = {
-    system.stop(serverConnector.toUntyped)
-    system.stop(consumerPacketRouter.toUntyped)
-    system.stop(producerPacketRouter.toUntyped)
-    system.stop(publisherPacketRouter.toUntyped)
-    system.stop(unpublisherPacketRouter.toUntyped)
+    system.stop(serverConnector.toClassic)
+    system.stop(consumerPacketRouter.toClassic)
+    system.stop(producerPacketRouter.toClassic)
+    system.stop(publisherPacketRouter.toClassic)
+    system.stop(unpublisherPacketRouter.toClassic)
     terminations.complete()
   }
 
@@ -531,7 +531,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
 
         Future.successful(
           Flow[Command[A]]
-            .watch(serverConnector.toUntyped)
+            .watch(serverConnector.toClassic)
             .watchTermination() {
               case (_, terminated) =>
                 terminated.onComplete {
@@ -658,7 +658,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
 
   override def eventFlow[A](connectionId: ByteString): EventFlow[A] =
     Flow[ByteString]
-      .watch(serverConnector.toUntyped)
+      .watch(serverConnector.toClassic)
       .watchTermination() {
         case (_, terminated) =>
           terminated.onComplete {

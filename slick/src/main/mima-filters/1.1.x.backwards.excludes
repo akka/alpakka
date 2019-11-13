@@ -1,0 +1,3 @@
+# New classes introduced for adding an extra factory method for SlickSession in #1509
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.alpakka.slick.javadsl.SlickSession$SlickSessionImpl")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.slick.scaladsl.package.SlickSession")

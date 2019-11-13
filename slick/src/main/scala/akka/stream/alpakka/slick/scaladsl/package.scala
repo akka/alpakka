@@ -4,6 +4,8 @@
 
 package akka.stream.alpakka.slick
 
+import slick.jdbc.{JdbcBackend, JdbcProfile}
+
 package object scaladsl {
 
   /**
@@ -21,5 +23,8 @@ package object scaladsl {
    * closed after creation to avoid leaking database resources like active
    * connection pools, etc.
    */
-  val SlickSession = javadsl.SlickSession
+  object SlickSession extends javadsl.SlickSessionFactory {
+    def forDbAndProfile(db: JdbcBackend#Database, profile: JdbcProfile): SlickSession =
+      new SlickSessionDbAndProfileBackedImpl(db, profile)
+  }
 }

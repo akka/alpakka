@@ -9,7 +9,7 @@ import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream.Attributes.name
 import akka.stream._
 import akka.stream.impl.fusing.MapAsync
-import akka.stream.impl.{Buffer => BufferImpl}
+import akka.stream.impl.{BoundedBuffer, Buffer, FixedSizeBuffer}
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 
 import scala.annotation.tailrec
@@ -17,7 +17,28 @@ import scala.concurrent.Future
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
-@InternalApi private[akka] final case class BalancingMapAsync[In, Out](
+/**
+ * Internal API.
+ *
+ * Imported from `akka.stream.impl` for Akka 2.5/2.6 cross-compilation.
+ */
+@InternalApi private[impl] object BufferImpl {
+  val FixedQueueSize = 128
+  val FixedQueueMask = 127
+
+  def apply[T](size: Int, materializer: Materializer): Buffer[T] =
+    materializer match {
+      case m: ActorMaterializer =>
+        apply(size, m.settings.maxFixedBufferSize)
+      case _ => apply(size, 1000000000)
+    }
+
+  private def apply[T](size: Int, max: Int): Buffer[T] =
+    if (size < FixedQueueSize || size < max) FixedSizeBuffer(size)
+    else new BoundedBuffer(size)
+}
+
+@InternalApi private[sqs] final case class BalancingMapAsync[In, Out](
     maxParallelism: Int,
     f: In => Future[Out],
     balancingF: (Out, Int) ⇒ Int
@@ -36,7 +57,7 @@ import scala.util.{Failure, Success}
     new GraphStageLogic(shape) with InHandler with OutHandler {
 
       lazy val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
-      var buffer: BufferImpl[Holder[Out]] = _
+      var buffer: Buffer[Holder[Out]] = _
       var parallelism = maxParallelism
 
       private val futureCB = getAsyncCallback[Holder[Out]](

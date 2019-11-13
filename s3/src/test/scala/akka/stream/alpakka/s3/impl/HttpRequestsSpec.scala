@@ -373,7 +373,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     val req =
       HttpRequests.listBucket(location.bucket, Some("random/prefix"), Some("randomToken"))
 
-    Http().singleRequest(req)
+    Http().singleRequest(req).futureValue
 
     probe.expectMsgType[HttpRequest]
 

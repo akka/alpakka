@@ -34,7 +34,8 @@ public class RetryTest {
                 ClientOverrideConfiguration.builder()
                     .retryPolicy(
                         // This example shows the AWS SDK 2 `RetryPolicy.defaultRetryPolicy()`
-                        // See https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/core/retry/RetryPolicy.html
+                        // See
+                        // https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/core/retry/RetryPolicy.html
                         RetryPolicy.builder()
                             .backoffStrategy(BackoffStrategy.defaultStrategy())
                             .throttlingBackoffStrategy(BackoffStrategy.defaultThrottlingStrategy())

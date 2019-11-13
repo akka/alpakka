@@ -4,43 +4,64 @@
 
 package docs.javadsl;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.util.Arrays;
-import java.util.Optional;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import akka.Done;
+import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.http.javadsl.model.*;
+import akka.http.javadsl.Http;
+import akka.http.javadsl.model.ContentTypes;
+import akka.http.javadsl.model.HttpEntities;
+import akka.http.javadsl.model.HttpResponse;
+import akka.http.javadsl.model.Uri;
+import akka.http.javadsl.model.headers.ByteRange;
+import akka.japi.Pair;
+import akka.stream.ActorMaterializer;
 import akka.stream.Attributes;
+import akka.stream.Materializer;
 import akka.stream.alpakka.s3.*;
 import akka.stream.alpakka.s3.headers.CustomerKeys;
 import akka.stream.alpakka.s3.headers.ServerSideEncryption;
 import akka.stream.alpakka.s3.javadsl.S3;
-import akka.stream.javadsl.Sink$;
-import org.junit.Test;
-import akka.NotUsed;
-import akka.http.javadsl.model.headers.ByteRange;
-import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.alpakka.s3.scaladsl.S3WireMockBase;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
-import scala.Option;
-import scala.collection.immutable.List;
+import com.github.tomakehurst.wiremock.WireMockServer;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class S3Test extends S3WireMockBase {
+
+  private static ActorSystem actorSystemForShutdown;
+  private static WireMockServer wireMockServerForShutdown;
 
   private final Materializer materializer = ActorMaterializer.create(system());
 
   private final S3Settings sampleSettings = S3Ext.get(system()).settings();
+  private final String prefix = listPrefix();
+
+  @Before
+  public void before() {
+    wireMockServerForShutdown = _wireMockServer();
+    actorSystemForShutdown = system();
+  }
+
+  @AfterClass
+  public static void afterAll() throws Exception {
+    wireMockServerForShutdown.stop();
+    Http.get(actorSystemForShutdown)
+        .shutdownAllConnectionPools()
+        .thenRun(() -> TestKit.shutdownActorSystem(actorSystemForShutdown));
+  }
 
   @Test
   public void multipartUpload() throws Exception {
@@ -221,25 +242,20 @@ public class S3Test extends S3WireMockBase {
         sourceAndMeta =
             S3.download(bucket(), bucketKey(), null, Optional.of(versionId), sseCustomerKeys());
 
-    final Source<ByteString, NotUsed> source =
+    final Pair<Source<ByteString, NotUsed>, ObjectMetadata> p =
         sourceAndMeta
             .runWith(Sink.head(), materializer)
             .toCompletableFuture()
             .get(5, TimeUnit.SECONDS)
-            .get()
-            .first();
+            .orElseThrow(() -> new RuntimeException("empty Optional from S3.download"));
+
+    final Source<ByteString, NotUsed> source = p.first();
     final CompletionStage<String> resultCompletionStage =
         source.map(ByteString::utf8String).runWith(Sink.head(), materializer);
-    final ObjectMetadata metadata =
-        sourceAndMeta
-            .runWith(Sink.head(), materializer)
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS)
-            .get()
-            .second();
-    final String result = resultCompletionStage.toCompletableFuture().get();
-
+    final String result = resultCompletionStage.toCompletableFuture().get(2, TimeUnit.SECONDS);
     assertEquals(bodySSE(), result);
+
+    final ObjectMetadata metadata = p.second();
     assertEquals(Optional.of(versionId), metadata.getVersionId());
   }
 
@@ -305,7 +321,7 @@ public class S3Test extends S3WireMockBase {
 
     // #list-bucket
     final Source<ListBucketResultContents, NotUsed> keySource =
-        S3.listBucket(bucket(), Option.apply(listPrefix()));
+        S3.listBucket(bucket(), Optional.of(prefix));
     // #list-bucket
 
     final CompletionStage<ListBucketResultContents> resultCompletionStage =
@@ -326,7 +342,7 @@ public class S3Test extends S3WireMockBase {
         S3Ext.get(system()).settings().withListBucketApiVersion(ApiVersion.getListBucketVersion1());
 
     final Source<ListBucketResultContents, NotUsed> keySource =
-        S3.listBucket(bucket(), Option.apply(listPrefix()))
+        S3.listBucket(bucket(), Optional.of(prefix))
             .withAttributes(S3Attributes.settings(useVersion1Api));
     // #list-bucket-attributes
 

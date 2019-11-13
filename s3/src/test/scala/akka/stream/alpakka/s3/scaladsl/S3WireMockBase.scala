@@ -19,7 +19,7 @@ import com.github.tomakehurst.wiremock.stubbing.Scenario
 import com.typesafe.config.ConfigFactory
 import software.amazon.awssdk.regions.Region
 
-abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockServer) extends TestKit(_system) {
+abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMockServer) extends TestKit(_system) {
 
   private def this(mock: WireMockServer) =
     this(ActorSystem(getCallerName(getClass), config(mock.port()).withFallback(ConfigFactory.load())), mock)
@@ -295,7 +295,7 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
 
     mock.register(
       put(urlEqualTo(s"/$bucketKey?partNumber=1&uploadId=$uploadId"))
-        .withRequestBody(matching(expectedBody))
+        .withRequestBody(if (expectedBody.isEmpty) absent() else matching(expectedBody))
         .willReturn(
           aResponse()
             .withStatus(200)
