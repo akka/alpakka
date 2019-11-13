@@ -9,17 +9,24 @@ import akka.http.scaladsl.model.ContentType
 /**
  * Represents an object within Google Cloud Storage.
  *
- * @param kind The kind of item this is, for objects, this is always storage#object
- * @param id The ID of the object, including the bucket name, object name, and generation number
- * @param name The name of the object
- * @param bucket The name of the bucket containing this object
- * @param generation The content generation of this object, used for object versioning
- * @param contentType Content-Type of the object data, if an object is stored without a Content-Type, it is served as application/octet-stream
- * @param size Content-Length of the data in bytes
- * @param etag HTTP 1.1 Entity tag for the object.
- * @param md5Hash MD5 hash of the data; encoded using base64
- * @param crc32c CRC32c checksum, encoded using base64 in big-endian byte order
- * @param mediaLink Media download link
+ * @param kind                    The kind of item this is, for objects, this is always storage#object
+ * @param id                      The ID of the object, including the bucket name, object name, and generation number
+ * @param name                    The name of the object
+ * @param bucket                  The name of the bucket containing this object
+ * @param generation              The content generation of this object, used for object versioning
+ * @param contentType             The Content-Type of the object data, if an object is stored without a Content-Type, it is served as application/octet-stream
+ * @param size                    The Content-Length of the data in bytes
+ * @param etag                    The HTTP 1.1 Entity tag for the object.
+ * @param md5Hash                 The MD5 hash of the data; encoded using base64
+ * @param crc32c                  The CRC32c checksum, encoded using base64 in big-endian byte order
+ * @param mediaLink               The Media download link
+ * @param selfLink                The link to this object
+ * @param timeCreated             The creation time of the object in RFC 3339 format.
+ * @param updated                 The modification time of the object metadata in RFC 3339 format.
+ * @param retentionExpirationTime The earliest time that the object can be deleted, based on a bucket's retention policy, in RFC 3339 format.
+ * @param storageClass            The storage class of the object
+ * @param contentEncoding         The Content Encoding of the object data
+ * @param contentLanguage         The content language of the objcet data
  */
 final class StorageObject private (
     val kind: String,
@@ -32,7 +39,14 @@ final class StorageObject private (
     val etag: String,
     val md5Hash: String,
     val crc32c: String,
-    val mediaLink: String
+    val mediaLink: String,
+    val selfLink: String,
+    val updated: Long,
+    val timeCreated: Long,
+    val retentionExpirationTime: Long,
+    val storageClass: String,
+    val contentEncoding: String,
+    val contentLanguage: String
 ) {
 
   /** Java API */
@@ -55,6 +69,13 @@ final class StorageObject private (
   def withMd5Hash(value: String): StorageObject = copy(md5Hash = value)
   def withCrc32c(value: String): StorageObject = copy(crc32c = value)
   def withMediaLink(value: String): StorageObject = copy(mediaLink = value)
+  def withSelfLink(value: String): StorageObject = copy(selfLink = value)
+  def withUpdated(value: Long): StorageObject = copy(updated = value)
+  def withTimeCreated(value: Long): StorageObject = copy(timeCreated = value)
+  def withRetentionExpirationTime(value: Long): StorageObject = copy(retentionExpirationTime = value)
+  def withStorageClass(value: String): StorageObject = copy(storageClass = value)
+  def withContentEncoding(value: String): StorageObject = copy(contentEncoding = value)
+  def withContentLanguage(value: String): StorageObject = copy(contentLanguage = value)
 
   private def copy(
       kind: String = kind,
@@ -67,7 +88,14 @@ final class StorageObject private (
       etag: String = etag,
       md5Hash: String = md5Hash,
       crc32c: String = crc32c,
-      mediaLink: String = mediaLink
+      mediaLink: String = mediaLink,
+      selfLink: String = selfLink,
+      updated: Long = updated,
+      timeCreated: Long = timeCreated,
+      retentionExpirationTime: Long = retentionExpirationTime,
+      storageClass: String = storageClass,
+      contentEncoding: String = contentEncoding,
+      contentLanguage: String = contentLanguage
   ): StorageObject = new StorageObject(
     kind = kind,
     id = id,
@@ -79,7 +107,14 @@ final class StorageObject private (
     etag = etag,
     md5Hash = md5Hash,
     crc32c = crc32c,
-    mediaLink = mediaLink
+    mediaLink = mediaLink,
+    selfLink = selfLink,
+    updated = updated,
+    timeCreated = timeCreated,
+    retentionExpirationTime = retentionExpirationTime,
+    storageClass = storageClass,
+    contentEncoding = contentEncoding,
+    contentLanguage = contentLanguage
   )
 
   override def toString =
@@ -94,7 +129,14 @@ final class StorageObject private (
     s"etag=$etag," +
     s"md5Hash=$md5Hash," +
     s"crc32c=$crc32c," +
-    s"mediaLink=$mediaLink" +
+    s"mediaLink=$mediaLink," +
+    s"selfLink=$selfLink," +
+    s"updated=$updated," +
+    s"timeCreated=$timeCreated," +
+    s"retentionExpirationTime=$retentionExpirationTime," +
+    s"storageClass=$storageClass," +
+    s"contentEncoding=$contentEncoding," +
+    s"contentLanguage=$contentLanguage" +
     ")"
 
   override def equals(other: Any): Boolean = other match {
@@ -109,22 +151,38 @@ final class StorageObject private (
       java.util.Objects.equals(this.etag, that.etag) &&
       java.util.Objects.equals(this.md5Hash, that.md5Hash) &&
       java.util.Objects.equals(this.crc32c, that.crc32c) &&
-      java.util.Objects.equals(this.mediaLink, that.mediaLink)
+      java.util.Objects.equals(this.mediaLink, that.mediaLink) &&
+      java.util.Objects.equals(this.selfLink, that.selfLink) &&
+      java.util.Objects.equals(this.updated, that.updated) &&
+      java.util.Objects.equals(this.timeCreated, that.timeCreated) &&
+      java.util.Objects.equals(this.retentionExpirationTime, that.retentionExpirationTime) &&
+      java.util.Objects.equals(this.storageClass, that.storageClass) &&
+      java.util.Objects.equals(this.contentEncoding, that.contentEncoding) &&
+      java.util.Objects.equals(this.contentLanguage, that.contentLanguage)
     case _ => false
   }
 
   override def hashCode(): Int =
-    java.util.Objects.hash(kind,
-                           id,
-                           name,
-                           bucket,
-                           Long.box(generation),
-                           contentType,
-                           Long.box(size),
-                           etag,
-                           md5Hash,
-                           crc32c,
-                           mediaLink)
+    java.util.Objects.hash(
+      kind,
+      id,
+      name,
+      bucket,
+      Long.box(generation),
+      contentType,
+      Long.box(size),
+      etag,
+      md5Hash,
+      crc32c,
+      mediaLink,
+      selfLink,
+      Long.box(updated),
+      Long.box(timeCreated),
+      Long.box(retentionExpirationTime),
+      storageClass,
+      contentEncoding,
+      contentLanguage
+    )
 }
 object StorageObject {
 
@@ -140,7 +198,14 @@ object StorageObject {
       etag: String,
       md5Hash: String,
       crc32c: String,
-      mediaLink: String
+      mediaLink: String,
+      selfLink: String,
+      updated: Long,
+      timeCreated: Long,
+      retentionExpirationTime: Long,
+      storageClass: String,
+      contentEncoding: String,
+      contentLanguage: String
   ): StorageObject = new StorageObject(
     kind,
     id,
@@ -152,7 +217,14 @@ object StorageObject {
     etag,
     md5Hash,
     crc32c,
-    mediaLink
+    mediaLink,
+    selfLink,
+    updated,
+    timeCreated,
+    retentionExpirationTime,
+    storageClass,
+    contentEncoding,
+    contentLanguage
   )
 
   /** Java API */
@@ -167,7 +239,14 @@ object StorageObject {
       etag: String,
       md5Hash: String,
       crc32c: String,
-      mediaLink: String
+      mediaLink: String,
+      selfLink: String,
+      updated: Long,
+      timeCreated: Long,
+      retentionExpirationTime: Long,
+      storageClass: String,
+      contentEncoding: String,
+      contentLanguage: String
   ): StorageObject = new StorageObject(
     kind,
     id,
@@ -179,6 +258,13 @@ object StorageObject {
     etag,
     md5Hash,
     crc32c,
-    mediaLink
+    mediaLink,
+    selfLink,
+    updated,
+    timeCreated,
+    retentionExpirationTime,
+    storageClass,
+    contentEncoding,
+    contentLanguage
   )
 }
