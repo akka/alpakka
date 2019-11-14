@@ -1,0 +1,2 @@
+# Add more metadata about storage objects to google-cloud-storage api #2009
+ProblemFilters.exclude[Problem]("akka.stream.alpakka.google-cloud-storage.impl.*")
