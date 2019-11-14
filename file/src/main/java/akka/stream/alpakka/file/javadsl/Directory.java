@@ -5,6 +5,8 @@
 package akka.stream.alpakka.file.javadsl;
 
 import akka.NotUsed;
+import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.FlowWithContext;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.StreamConverters;
 
@@ -32,5 +34,17 @@ public final class Directory {
   public static Source<Path, NotUsed> walk(
       Path directory, int maxDepth, FileVisitOption... options) {
     return StreamConverters.fromJavaStream(() -> Files.walk(directory, maxDepth, options));
+  }
+
+  /** Create local directories, including any parent directories. */
+  public static Flow<Path, Path, NotUsed> mkdirs() {
+    return akka.stream.alpakka.file.scaladsl.Directory.mkdirs().asJava();
+  }
+
+  /**
+   * Create local directories, including any parent directories. Passes arbitrary data as context.
+   */
+  public static <Ctx> FlowWithContext<Path, Ctx, Path, Ctx, NotUsed> mkdirsWithContext() {
+    return akka.stream.alpakka.file.scaladsl.Directory.mkdirsWithContext().asJava();
   }
 }
