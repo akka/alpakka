@@ -23,7 +23,6 @@ import akka.http.scaladsl.model.ContentType
  * @param selfLink                The link to this object
  * @param timeCreated             The creation time of the object in RFC 3339 format.
  * @param updated                 The modification time of the object metadata in RFC 3339 format.
- * @param retentionExpirationTime The earliest time that the object can be deleted, based on a bucket's retention policy, in RFC 3339 format.
  * @param storageClass            The storage class of the object
  * @param contentEncoding         The Content Encoding of the object data
  * @param contentLanguage         The content language of the objcet data
@@ -43,7 +42,6 @@ final class StorageObject private (
     val selfLink: String,
     val updated: Long,
     val timeCreated: Long,
-    val retentionExpirationTime: Long,
     val storageClass: String,
     val contentEncoding: String,
     val contentLanguage: String
@@ -72,7 +70,6 @@ final class StorageObject private (
   def withSelfLink(value: String): StorageObject = copy(selfLink = value)
   def withUpdated(value: Long): StorageObject = copy(updated = value)
   def withTimeCreated(value: Long): StorageObject = copy(timeCreated = value)
-  def withRetentionExpirationTime(value: Long): StorageObject = copy(retentionExpirationTime = value)
   def withStorageClass(value: String): StorageObject = copy(storageClass = value)
   def withContentEncoding(value: String): StorageObject = copy(contentEncoding = value)
   def withContentLanguage(value: String): StorageObject = copy(contentLanguage = value)
@@ -92,7 +89,6 @@ final class StorageObject private (
       selfLink: String = selfLink,
       updated: Long = updated,
       timeCreated: Long = timeCreated,
-      retentionExpirationTime: Long = retentionExpirationTime,
       storageClass: String = storageClass,
       contentEncoding: String = contentEncoding,
       contentLanguage: String = contentLanguage
@@ -111,7 +107,6 @@ final class StorageObject private (
     selfLink = selfLink,
     updated = updated,
     timeCreated = timeCreated,
-    retentionExpirationTime = retentionExpirationTime,
     storageClass = storageClass,
     contentEncoding = contentEncoding,
     contentLanguage = contentLanguage
@@ -133,7 +128,6 @@ final class StorageObject private (
     s"selfLink=$selfLink," +
     s"updated=$updated," +
     s"timeCreated=$timeCreated," +
-    s"retentionExpirationTime=$retentionExpirationTime," +
     s"storageClass=$storageClass," +
     s"contentEncoding=$contentEncoding," +
     s"contentLanguage=$contentLanguage" +
@@ -155,7 +149,6 @@ final class StorageObject private (
       java.util.Objects.equals(this.selfLink, that.selfLink) &&
       java.util.Objects.equals(this.updated, that.updated) &&
       java.util.Objects.equals(this.timeCreated, that.timeCreated) &&
-      java.util.Objects.equals(this.retentionExpirationTime, that.retentionExpirationTime) &&
       java.util.Objects.equals(this.storageClass, that.storageClass) &&
       java.util.Objects.equals(this.contentEncoding, that.contentEncoding) &&
       java.util.Objects.equals(this.contentLanguage, that.contentLanguage)
@@ -178,7 +171,6 @@ final class StorageObject private (
       selfLink,
       Long.box(updated),
       Long.box(timeCreated),
-      Long.box(retentionExpirationTime),
       storageClass,
       contentEncoding,
       contentLanguage
@@ -202,7 +194,6 @@ object StorageObject {
       selfLink: String,
       updated: Long,
       timeCreated: Long,
-      retentionExpirationTime: Long,
       storageClass: String,
       contentEncoding: String,
       contentLanguage: String
@@ -221,7 +212,6 @@ object StorageObject {
     selfLink,
     updated,
     timeCreated,
-    retentionExpirationTime,
     storageClass,
     contentEncoding,
     contentLanguage
@@ -243,7 +233,6 @@ object StorageObject {
       selfLink: String,
       updated: Long,
       timeCreated: Long,
-      retentionExpirationTime: Long,
       storageClass: String,
       contentEncoding: String,
       contentLanguage: String
@@ -262,7 +251,6 @@ object StorageObject {
     selfLink,
     updated,
     timeCreated,
-    retentionExpirationTime,
     storageClass,
     contentEncoding,
     contentLanguage

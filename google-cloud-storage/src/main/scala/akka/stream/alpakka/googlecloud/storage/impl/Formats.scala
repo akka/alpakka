@@ -45,7 +45,6 @@ object Formats extends DefaultJsonProtocol {
       selfLink: String,
       updated: String,
       timeCreated: String,
-      retentionExpirationTime: String,
       storageClass: String,
       contentEncoding: String,
       contentLanguage: String
@@ -80,7 +79,7 @@ object Formats extends DefaultJsonProtocol {
   )
 
   private implicit val bucketInfoJsonFormat = jsonFormat6(BucketInfoJson)
-  private implicit val storageObjectJsonFormat = jsonFormat18(StorageObjectJson)
+  private implicit val storageObjectJsonFormat = jsonFormat17(StorageObjectJson)
   private implicit val bucketListResultJsonReads = jsonFormat4(BucketListResultJson)
   private implicit val rewriteReponseFormat = jsonFormat6(RewriteResponseJson)
 
@@ -167,7 +166,6 @@ object Formats extends DefaultJsonProtocol {
       storageObjectJson.selfLink,
       strToLongOrThrow(storageObjectJson.updated, "updated"),
       strToLongOrThrow(storageObjectJson.timeCreated, "timeCreated"),
-      strToLongOrThrow(storageObjectJson.retentionExpirationTime, "retentionExpirationTime"),
       storageObjectJson.storageClass,
       storageObjectJson.contentEncoding,
       storageObjectJson.contentLanguage
