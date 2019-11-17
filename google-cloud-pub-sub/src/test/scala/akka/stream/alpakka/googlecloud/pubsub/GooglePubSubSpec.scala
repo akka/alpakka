@@ -50,7 +50,7 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
 
     val request = PublishRequest(Seq(PublishMessage(data = base64String("Hello Google!"))))
 
-    val source = Source(List((request, ())))
+    val source = Source(List(request))
 
     when(mockHttpApi.isEmulated).thenReturn(false)
     when(mockHttpApi.accessTokenWithContext(config = config)).thenReturn(tokenFlowWithContext)
@@ -58,13 +58,34 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
       mockHttpApi.publish[Unit](project = TestCredentials.projectId, topic = "topic1", parallelism = 1)
     ).thenReturn(Flow[(PublishRequest, Option[String], Unit)].map(_ => (Seq("id1"), ())))
 
-    val flow = googlePubSub.publish[Unit](
+    val flow = googlePubSub.publish(
       topic = "topic1",
       config = config
     )
     val result = source.via(flow).runWith(Sink.seq)
 
-    result.futureValue shouldBe Seq((Seq("id1"), ()))
+    result.futureValue shouldBe Seq(Seq("id1"))
+  }
+
+  it should "auth and publish the message with context" in new Fixtures {
+
+    val request = PublishRequest(Seq(PublishMessage(data = base64String("Hello Google!"))))
+
+    val source = Source(List((request, "correlationId")))
+
+    when(mockHttpApi.isEmulated).thenReturn(false)
+    when(mockHttpApi.accessTokenWithContext(config = config)).thenReturn(tokenFlowWithContext)
+    when(
+      mockHttpApi.publish[String](project = TestCredentials.projectId, topic = "topic1", parallelism = 1)
+    ).thenReturn(Flow[(PublishRequest, Option[String], String)].map { case (_, _, context) => (Seq("id1"), context) })
+
+    val flow = googlePubSub.publishWithContext[String](
+      topic = "topic1",
+      config = config
+    )
+    val result = source.via(flow).runWith(Sink.seq)
+
+    result.futureValue shouldBe Seq((Seq("id1"), "correlationId"))
   }
 
   it should "publish the message without auth when emulated" in new Fixtures {
@@ -86,7 +107,7 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
         }
     }
 
-    val flow = googlePubSub.publish[Unit](
+    val flow = googlePubSub.publishWithContext[Unit](
       topic = "topic2",
       config = config
     )

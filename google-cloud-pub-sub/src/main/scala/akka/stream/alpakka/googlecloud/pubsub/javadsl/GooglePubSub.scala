@@ -18,13 +18,25 @@ import scala.compat.java8.FutureConverters._
 
 object GooglePubSub {
 
-  def publish[C](topic: String,
-                 config: PubSubConfig,
-                 parallelism: Int,
-                 actorSystem: ActorSystem,
-                 materializer: Materializer): Flow[(PublishRequest, C), (java.util.List[String], C), NotUsed] =
+  def publish(topic: String,
+              config: PubSubConfig,
+              parallelism: Int,
+              actorSystem: ActorSystem,
+              materializer: Materializer): Flow[PublishRequest, java.util.List[String], NotUsed] =
     GPubSub
-      .publish[C](topic = topic, config = config, parallelism = parallelism)(actorSystem, materializer)
+      .publish(topic = topic, config = config, parallelism = parallelism)(actorSystem, materializer)
+      .map(response => response.asJava)
+      .asJava
+
+  def publishWithContext[C](
+      topic: String,
+      config: PubSubConfig,
+      parallelism: Int,
+      actorSystem: ActorSystem,
+      materializer: Materializer
+  ): Flow[(PublishRequest, C), (java.util.List[String], C), NotUsed] =
+    GPubSub
+      .publishWithContext[C](topic = topic, config = config, parallelism = parallelism)(actorSystem, materializer)
       .map { case (response, context) => response.asJava -> context }
       .asJava
 

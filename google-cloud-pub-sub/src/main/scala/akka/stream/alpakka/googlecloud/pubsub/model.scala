@@ -244,7 +244,7 @@ object PublishResponse {
 }
 
 @InternalApi
-final case class PullRequest(returnImmediately: Boolean, maxMessages: Int)
+private[pubsub] final case class PullRequest(returnImmediately: Boolean, maxMessages: Int)
 
 @InternalApi
 private final class PullResponse private[pubsub] (val receivedMessages: Option[immutable.Seq[ReceivedMessage]]) {

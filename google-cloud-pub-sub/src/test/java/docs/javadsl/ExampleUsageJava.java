@@ -58,24 +58,40 @@ public class ExampleUsageJava {
     PublishMessage publishMessage =
         PublishMessage.create(new String(Base64.getEncoder().encode("Hello Google!".getBytes())));
     PublishRequest publishRequest = PublishRequest.create(Lists.newArrayList(publishMessage));
-    String context = "publishRequestId";
 
-    Source<Tuple2<PublishRequest, String>, NotUsed> source =
-        Source.single(Tuple2.apply(publishRequest, context));
+    Source<PublishRequest, NotUsed> source = Source.single(publishRequest);
 
-    Flow<Tuple2<PublishRequest, String>, Tuple2<List<String>, String>, NotUsed> publishFlow =
+    Flow<PublishRequest, List<String>, NotUsed> publishFlow =
         GooglePubSub.publish(topic, config, 1, system, materializer);
 
-    CompletionStage<List<Tuple2<List<String>, String>>> publishedMessageIds =
+    CompletionStage<List<List<String>>> publishedMessageIds =
         source.via(publishFlow).runWith(Sink.seq(), materializer);
     // #publish-single
+
+    // #publish-single-with-context
+    PublishMessage publishMessageWithContext =
+        PublishMessage.create(new String(Base64.getEncoder().encode("Hello Google!".getBytes())));
+    PublishRequest publishRequestWithContext =
+        PublishRequest.create(Lists.newArrayList(publishMessageWithContext));
+    String context = "publishRequestId";
+
+    Source<Tuple2<PublishRequest, String>, NotUsed> sourceWithContext =
+        Source.single(Tuple2.apply(publishRequestWithContext, context));
+
+    Flow<Tuple2<PublishRequest, String>, Tuple2<List<String>, String>, NotUsed>
+        publishFlowWithContext =
+            GooglePubSub.publishWithContext(topic, config, 1, system, materializer);
+
+    CompletionStage<List<Tuple2<List<String>, String>>> publishedMessageIdsWithContext =
+        sourceWithContext.via(publishFlowWithContext).runWith(Sink.seq(), materializer);
+    // #publish-single-with-context
 
     // #publish-fast
     Source<PublishMessage, NotUsed> messageSource = Source.single(publishMessage);
     messageSource
         .groupedWithin(1000, Duration.ofMinutes(1))
         .map(messages -> Tuple2.apply(PublishRequest.create(messages), context))
-        .via(publishFlow)
+        .via(publishFlowWithContext)
         .runWith(Sink.ignore(), materializer);
     // #publish-fast
 

@@ -25,7 +25,17 @@ protected[pubsub] trait GooglePubSub {
   /**
    * Creates a flow to that publish messages to a topic and emits the message ids
    */
-  def publish[C](topic: String, config: PubSubConfig, parallelism: Int = 1)(
+  def publish(topic: String, config: PubSubConfig, parallelism: Int = 1)(
+      implicit actorSystem: ActorSystem,
+      materializer: Materializer
+  ): Flow[PublishRequest, immutable.Seq[String], NotUsed] =
+    Flow[PublishRequest]
+      .map((_, ()))
+      .via(
+        publishWithContext[Unit](topic, config, parallelism).map(_._1)
+      )
+
+  def publishWithContext[C](topic: String, config: PubSubConfig, parallelism: Int = 1)(
       implicit actorSystem: ActorSystem,
       materializer: Materializer
   ): Flow[(PublishRequest, C), (immutable.Seq[String], C), NotUsed] =

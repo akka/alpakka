@@ -50,22 +50,38 @@ class ExampleUsage {
   val publishMessage =
     PublishMessage(new String(Base64.getEncoder.encode("Hello Google!".getBytes)))
   val publishRequest = PublishRequest(Seq(publishMessage))
+
+  val source: Source[PublishRequest, NotUsed] = Source.single(publishRequest)
+
+  val publishFlow: Flow[PublishRequest, Seq[String], NotUsed] =
+    GooglePubSub.publish(topic, config)
+
+  val publishedMessageIds: Future[Seq[Seq[String]]] = source.via(publishFlow).runWith(Sink.seq)
+  //#publish-single
+
+  //#publish-single-with-context
+  val publishMessageWithContext =
+    PublishMessage(new String(Base64.getEncoder.encode("Hello Google!".getBytes)))
+  val publishRequestWithContext = PublishRequest(Seq(publishMessage))
   val resultPromise = Promise[Seq[String]]
 
-  val source: Source[(PublishRequest, Promise[Seq[String]]), NotUsed] = Source.single(publishRequest -> resultPromise)
+  val sourceWithContext: Source[(PublishRequest, Promise[Seq[String]]), NotUsed] =
+    Source.single(publishRequest -> resultPromise)
 
-  val publishFlow: Flow[(PublishRequest, Promise[Seq[String]]), (Seq[String], Promise[Seq[String]]), NotUsed] =
-    GooglePubSub.publish[Promise[Seq[String]]](topic, config)
+  val publishFlowWithContext
+      : Flow[(PublishRequest, Promise[Seq[String]]), (Seq[String], Promise[Seq[String]]), NotUsed] =
+    GooglePubSub.publishWithContext[Promise[Seq[String]]](topic, config)
 
-  val publishedMessageIds: Future[Seq[(Seq[String], Promise[Seq[String]])]] = source.via(publishFlow).runWith(Sink.seq)
-  //#publish-single
+  val publishedMessageIdsWithContext: Future[Seq[(Seq[String], Promise[Seq[String]])]] =
+    sourceWithContext.via(publishFlowWithContext).runWith(Sink.seq)
+  //#publish-single-with-context
 
   //#publish-fast
   val messageSource: Source[PublishMessage, NotUsed] = Source(List(publishMessage, publishMessage))
   messageSource
     .groupedWithin(1000, 1.minute)
     .map(grouped => PublishRequest(grouped) -> resultPromise)
-    .via(publishFlow)
+    .via(publishFlowWithContext)
     .to(Sink.seq)
   //#publish-fast
 
