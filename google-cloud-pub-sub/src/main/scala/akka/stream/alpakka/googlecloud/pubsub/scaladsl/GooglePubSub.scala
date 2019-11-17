@@ -11,9 +11,9 @@ import akka.stream.alpakka.googlecloud.pubsub.impl._
 import akka.stream.scaladsl.{Flow, FlowWithContext, Keep, Sink, Source}
 import akka.{Done, NotUsed}
 
-import scala.concurrent.duration._
 import scala.collection.immutable
 import scala.concurrent.Future
+import scala.concurrent.duration._
 
 object GooglePubSub extends GooglePubSub {
   private[pubsub] override val httpApi = PubSubApi
@@ -61,6 +61,16 @@ protected[pubsub] trait GooglePubSub {
           .pull(config.projectId, subscription, config.pullReturnImmediately, config.pullMaxMessagesPerInternalBatch)
       )
       .mapConcat(_.receivedMessages.getOrElse(Seq.empty[ReceivedMessage]).toIndexedSeq)
+
+  /**
+   * Creates a sink for acknowledging messages on subscription
+   */
+  @deprecated("Use `acknowledge` without `parallelism` param", since = "2.0.0")
+  def acknowledge(subscription: String, config: PubSubConfig, parallelism: Int)(
+      implicit actorSystem: ActorSystem,
+      materializer: Materializer
+  ): Sink[AcknowledgeRequest, Future[Done]] =
+    acknowledge(subscription, config)
 
   /**
    * Creates a sink for acknowledging messages on subscription

@@ -22,8 +22,6 @@ import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-import scala.Tuple2;
-
 public class ExampleUsageJava {
 
   private static void example() throws NoSuchAlgorithmException, InvalidKeySpecException {

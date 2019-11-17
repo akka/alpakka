@@ -48,6 +48,14 @@ object GooglePubSub {
       .subscribe(subscription = subscription, config = config)(actorSystem, materializer)
       .asJava
 
+  @deprecated("Use `acknowledge` without `parallelism` param", since = "2.0.0")
+  def acknowledge(subscription: String,
+                  config: PubSubConfig,
+                  parallelism: Int,
+                  actorSystem: ActorSystem,
+                  materializer: Materializer): Sink[AcknowledgeRequest, CompletionStage[Done]] =
+    acknowledge(subscription, config, actorSystem, materializer)
+
   def acknowledge(subscription: String,
                   config: PubSubConfig,
                   actorSystem: ActorSystem,

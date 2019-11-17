@@ -124,7 +124,7 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
         ackId = "1",
         message = PubSubMessage(messageId = "1", data = Some(base64String("Hello Google!")), publishTime = publishTime)
       )
-    private def flow(messages: Seq[ReceivedMessage]) =
+    private def flow(messages: Seq[ReceivedMessage]): Flow[(Done, Option[String]), PullResponse, NotUsed] =
       Flow[(Done, Option[String])]
         .map(_ => PullResponse(receivedMessages = Some(messages)))
 
