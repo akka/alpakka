@@ -11,7 +11,7 @@ import akka.actor.{ActorSystem, Cancellable}
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.pubsub._
 import akka.stream.alpakka.googlecloud.pubsub.scaladsl.GooglePubSub
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl.{Flow, FlowWithContext, Sink, Source}
 import akka.{Done, NotUsed}
 
 import scala.collection.immutable.Seq
@@ -69,7 +69,7 @@ class ExampleUsage {
     Source.single(publishRequest -> resultPromise)
 
   val publishFlowWithContext
-      : Flow[(PublishRequest, Promise[Seq[String]]), (Seq[String], Promise[Seq[String]]), NotUsed] =
+      : FlowWithContext[PublishRequest, Promise[Seq[String]], Seq[String], Promise[Seq[String]], NotUsed] =
     GooglePubSub.publishWithContext[Promise[Seq[String]]](topic, config)
 
   val publishedMessageIdsWithContext: Future[Seq[(Seq[String], Promise[Seq[String]])]] =

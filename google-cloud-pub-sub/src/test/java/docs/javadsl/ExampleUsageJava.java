@@ -8,6 +8,7 @@ import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
+import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.googlecloud.pubsub.*;
 import akka.stream.alpakka.googlecloud.pubsub.javadsl.GooglePubSub;
@@ -75,14 +76,13 @@ public class ExampleUsageJava {
         PublishRequest.create(Lists.newArrayList(publishMessageWithContext));
     String context = "publishRequestId";
 
-    Source<Tuple2<PublishRequest, String>, NotUsed> sourceWithContext =
-        Source.single(Tuple2.apply(publishRequestWithContext, context));
+    Source<Pair<PublishRequest, String>, NotUsed> sourceWithContext =
+        Source.single(Pair.apply(publishRequestWithContext, context));
 
-    Flow<Tuple2<PublishRequest, String>, Tuple2<List<String>, String>, NotUsed>
-        publishFlowWithContext =
-            GooglePubSub.publishWithContext(topic, config, 1, system, materializer);
+    FlowWithContext<PublishRequest, String, List<String>, String, NotUsed> publishFlowWithContext =
+        GooglePubSub.publishWithContext(topic, config, 1, system, materializer);
 
-    CompletionStage<List<Tuple2<List<String>, String>>> publishedMessageIdsWithContext =
+    CompletionStage<List<Pair<List<String>, String>>> publishedMessageIdsWithContext =
         sourceWithContext.via(publishFlowWithContext).runWith(Sink.seq(), materializer);
     // #publish-single-with-context
 
@@ -90,7 +90,7 @@ public class ExampleUsageJava {
     Source<PublishMessage, NotUsed> messageSource = Source.single(publishMessage);
     messageSource
         .groupedWithin(1000, Duration.ofMinutes(1))
-        .map(messages -> Tuple2.apply(PublishRequest.create(messages), context))
+        .map(messages -> Pair.apply(PublishRequest.create(messages), context))
         .via(publishFlowWithContext)
         .runWith(Sink.ignore(), materializer);
     // #publish-fast

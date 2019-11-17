@@ -10,7 +10,7 @@ import akka.actor.{ActorSystem, Cancellable}
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.pubsub.scaladsl.{GooglePubSub => GPubSub}
 import akka.stream.alpakka.googlecloud.pubsub.{AcknowledgeRequest, PubSubConfig, PublishRequest, ReceivedMessage}
-import akka.stream.javadsl.{Flow, Sink, Source}
+import akka.stream.javadsl.{Flow, FlowWithContext, Sink, Source}
 import akka.{Done, NotUsed}
 
 import scala.collection.JavaConverters._
@@ -34,10 +34,10 @@ object GooglePubSub {
       parallelism: Int,
       actorSystem: ActorSystem,
       materializer: Materializer
-  ): Flow[(PublishRequest, C), (java.util.List[String], C), NotUsed] =
+  ): FlowWithContext[PublishRequest, C, java.util.List[String], C, NotUsed] =
     GPubSub
       .publishWithContext[C](topic = topic, config = config, parallelism = parallelism)(actorSystem, materializer)
-      .map { case (response, context) => response.asJava -> context }
+      .map(response => response.asJava)
       .asJava
 
   def subscribe(subscription: String,

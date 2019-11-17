@@ -8,7 +8,7 @@ import akka.actor.{ActorSystem, Cancellable}
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.pubsub._
 import akka.stream.alpakka.googlecloud.pubsub.impl._
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.scaladsl.{Flow, FlowWithContext, Keep, Sink, Source}
 import akka.{Done, NotUsed}
 
 import scala.concurrent.duration._
@@ -32,13 +32,14 @@ protected[pubsub] trait GooglePubSub {
     Flow[PublishRequest]
       .map((_, ()))
       .via(
-        publishWithContext[Unit](topic, config, parallelism).map(_._1)
+        publishWithContext[Unit](topic, config, parallelism).asFlow
       )
+      .map(_._1)
 
   def publishWithContext[C](topic: String, config: PubSubConfig, parallelism: Int = 1)(
       implicit actorSystem: ActorSystem,
       materializer: Materializer
-  ): Flow[(PublishRequest, C), (immutable.Seq[String], C), NotUsed] =
+  ): FlowWithContext[PublishRequest, C, immutable.Seq[String], C, NotUsed] =
     httpApi
       .accessTokenWithContext[PublishRequest, C](config)
       .via(

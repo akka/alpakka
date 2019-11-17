@@ -105,7 +105,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
     )
     val flow = TestHttpApi.publish[Unit](config.projectId, "topic1", 1)
     val result =
-      Source.single((publishRequest, Some(accessToken), ())).via(flow).toMat(Sink.head)(Keep.right).run
+      Source.single(((publishRequest, Some(accessToken)), ())).via(flow).toMat(Sink.head)(Keep.right).run
     result.futureValue._1 shouldBe Seq("1")
     result.futureValue._2 shouldBe (())
   }
@@ -137,7 +137,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
 
     val flow = TestEmulatorHttpApi.publish[Unit](config.projectId, "topic1", 1)
     val result =
-      Source.single((publishRequest, None, ())).via(flow).toMat(Sink.last)(Keep.right).run
+      Source.single(((publishRequest, None), ())).via(flow).toMat(Sink.last)(Keep.right).run
     result.futureValue._1 shouldBe Seq("1")
     result.futureValue._2 shouldBe (())
   }
@@ -333,7 +333,7 @@ class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures wi
 
     val flow = TestHttpApi.publish[Unit](config.projectId, "topic1", 1)
     val result =
-      Source.single((publishRequest, Some(accessToken), ())).via(flow).toMat(Sink.last)(Keep.right).run
+      Source.single(((publishRequest, Some(accessToken)), ())).via(flow).toMat(Sink.last)(Keep.right).run
 
     val failure = result.failed.futureValue
     failure shouldBe a[RuntimeException]

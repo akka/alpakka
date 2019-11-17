@@ -16,6 +16,7 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.pubsub._
+import akka.stream.scaladsl.FlowWithContext
 import akka.stream.scaladsl.Flow
 import akka.{Done, NotUsed}
 import spray.json.DefaultJsonProtocol._
@@ -207,23 +208,23 @@ private[pubsub] trait PubSubApi {
   def publish[T](project: String, topic: String, parallelism: Int)(
       implicit as: ActorSystem,
       materializer: Materializer
-  ): Flow[(PublishRequest, Option[String], T), (immutable.Seq[String], T), NotUsed] = {
+  ): FlowWithContext[(PublishRequest, Option[String]), T, immutable.Seq[String], T, NotUsed] = {
     import materializer.executionContext
 
     val url: Uri = s"/v1/projects/$project/topics/$topic:publish"
-    Flow[(PublishRequest, Option[String], T)]
-      .mapAsyncUnordered(parallelism) {
-        case (request, maybeAccessToken, context) =>
-          Marshal((HttpMethods.POST, url, request)).to[HttpRequest].map(authorize(maybeAccessToken)(_) -> context)
+    FlowWithContext[(PublishRequest, Option[String]), T]
+      .mapAsync(parallelism) {
+        case (request, maybeAccessToken) =>
+          Marshal((HttpMethods.POST, url, request)).to[HttpRequest].map(authorize(maybeAccessToken))
       }
       .log("beforePool")
       .via(pool())
       .log("afterPool")
-      .mapAsyncUnordered(parallelism) {
-        case (Success(response), context) =>
+      .mapAsync(parallelism) {
+        case Success(response) =>
           response.status match {
             case StatusCodes.Success(_) =>
-              Unmarshal(response.entity).to[PublishResponse].map(_.messageIds).map(_ -> context)
+              Unmarshal(response.entity).to[PublishResponse].map(_.messageIds)
             case status =>
               Unmarshal(response)
                 .to[String]
@@ -231,7 +232,7 @@ private[pubsub] trait PubSubApi {
                   throw new RuntimeException(s"Unexpected publish response. Code: [$status]. Entity: [$entity]")
                 }
           }
-        case (Failure(NonFatal(ex)), context) =>
+        case Failure(NonFatal(ex)) =>
           Future.failed(ex)
       }
   }
@@ -242,25 +243,19 @@ private[pubsub] trait PubSubApi {
     Flow[T]
       .map((_, ()))
       .via(
-        accessTokenWithContext[T, Unit](config).map {
-          case (request, token, _) => request -> token
-        }
+        accessTokenWithContext[T, Unit](config).asFlow.map(_._1)
       )
 
   def accessTokenWithContext[T, C](config: PubSubConfig)(
       implicit materializer: Materializer
-  ): Flow[(T, C), (T, Option[String], C), NotUsed] = {
+  ): FlowWithContext[T, C, (T, Option[String]), C, NotUsed] = {
     import materializer.executionContext
     if (isEmulated) {
-      Flow[(T, C)].map {
-        case (request, context) =>
-          (request, None: Option[String], context)
-      }
+      FlowWithContext[T, C].map(request => (request, None: Option[String]))
     } else {
-      Flow[(T, C)].mapAsync(1) {
-        case (request, context) =>
-          config.session.getToken().map(token => (request, Some(token): Option[String], context))
-      }
+      FlowWithContext[T, C].mapAsync(1)(
+        request => config.session.getToken().map(token => (request, Some(token): Option[String]))
+      )
     }
   }
 

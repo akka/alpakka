@@ -11,7 +11,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.HttpExt
 import akka.stream.alpakka.googlecloud.pubsub.impl.{GoogleSession, PubSubApi, TestCredentials}
 import akka.stream.alpakka.googlecloud.pubsub.scaladsl.GooglePubSub
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl.{Flow, FlowWithContext, Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.{Done, NotUsed}
 import org.mockito.Mockito._
@@ -35,8 +35,8 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
     lazy val googlePubSub = new GooglePubSub {
       override val httpApi = mockHttpApi
     }
-    def tokenFlowWithContext[T, C]: Flow[(T, C), (T, Some[String], C), NotUsed] =
-      Flow[(T, C)].map { case (request, context) => (request, Some("ok"), context) }
+    def tokenFlowWithContext[T, C]: FlowWithContext[T, C, (T, Option[String]), C, NotUsed] =
+      FlowWithContext[T, C].map((_, Some("ok")))
 
     def tokenFlow[T]: Flow[T, (T, Option[String]), NotUsed] =
       Flow[T].map(request => (request, Some("ok")))
@@ -56,7 +56,7 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
     when(mockHttpApi.accessTokenWithContext(config = config)).thenReturn(tokenFlowWithContext)
     when(
       mockHttpApi.publish[Unit](project = TestCredentials.projectId, topic = "topic1", parallelism = 1)
-    ).thenReturn(Flow[(PublishRequest, Option[String], Unit)].map(_ => (Seq("id1"), ())))
+    ).thenReturn(FlowWithContext[(PublishRequest, Option[String]), Unit].map(_ => Seq("id1")))
 
     val flow = googlePubSub.publish(
       topic = "topic1",
@@ -77,7 +77,7 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
     when(mockHttpApi.accessTokenWithContext(config = config)).thenReturn(tokenFlowWithContext)
     when(
       mockHttpApi.publish[String](project = TestCredentials.projectId, topic = "topic1", parallelism = 1)
-    ).thenReturn(Flow[(PublishRequest, Option[String], String)].map { case (_, _, context) => (Seq("id1"), context) })
+    ).thenReturn(FlowWithContext[(PublishRequest, Option[String]), String].map(_ => Seq("id1")))
 
     val flow = googlePubSub.publishWithContext[String](
       topic = "topic1",
@@ -101,10 +101,8 @@ class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with
           topic: String,
           parallelism: Int
       )(implicit as: ActorSystem,
-        materializer: Materializer): Flow[(PublishRequest, Option[String], T), (Seq[String], T), NotUsed] =
-        Flow[(PublishRequest, Option[String], T)].map {
-          case (_, _, context) => (Seq("id2"), context)
-        }
+        materializer: Materializer): FlowWithContext[(PublishRequest, Option[String]), T, Seq[String], T, NotUsed] =
+        FlowWithContext[(PublishRequest, Option[String]), T].map(_ => Seq("id2"))
     }
 
     val flow = googlePubSub.publishWithContext[Unit](
