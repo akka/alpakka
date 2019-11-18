@@ -45,9 +45,7 @@ Please have a look at our [contributor advice](contributor-advice.md).
 Binary compatibility rules and guarantees are described in depth in the [Binary Compatibility Rules
 ](https://doc.akka.io/docs/akka/snapshot/common/binary-compatibility-rules.html) section of the Akka documentation.
 
-Akka projects use [MiMa](https://github.com/lightbend/mima) (which originally was called Lightbend Migration Manager) to
-validate binary compatibility of incoming pull requests. In the Travis build step "Check binary compatibility", you may see
-an error like this:
+Akka projects use [MiMa](https://github.com/lightbend/mima) to validate binary compatibility of incoming pull requests. If your PR fails due to binary compatibility issues, you may see an error like this:
 
 ```
 [info] akka-stream: found 1 potential binary incompatibilities while checking against com.typesafe.akka:akka-stream_2.12:2.4.2  (filtered 222)
@@ -55,15 +53,21 @@ an error like this:
 [error]    filter with: ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.foldAsync")
 ```
 
-In such situations it's good to consult with a core team member if the violation can be safely ignored (by adding the above snippet to `<module>/src/main/mima-filters/<latest-version>.backwards.excludes`), or if it would indeed break binary compatibility.
+In such situations, it's good to consult with a core team member about whether the violation can be safely ignored or if it would indeed
+break binary compatibility. If the violation can be ignored add exclude statements from the MiMa output to
+a new file named `<module>/src/main/mima-filters/<last-version>.backwards.excludes/<pr-or-issue>-<issue-number>-<description>.excludes`,
+e.g. `s3/src/main/mima-filters/1.1.x.backwards.excludes/pr-12345-rename-internal-classes.excludes`. Make sure to add a comment
+in the file that describes briefly why the incompatibility can be ignored.
 
 Situations when it may be fine to ignore a MiMa issued warning include:
 
-- if it is concerning internal classes in package `impl` or `internal`
-    - add eg. `1.0.x.backwards.excludes` with `ProblemFilters.exclude[Problem]("akka.stream.alpakka.<module>.impl.*")` to ignore all internal changes
-- if it is touching anything marked as `@InternalApi`
+- if it is touching any class marked as `private[alpakka]`, `@InternalApi`, `/** INTERNAL API*/` or similar markers
+- if it is concerning internal classes (often recognisable by package names like `impl`, `internal` etc.)
+- if it is adding API to classes / traits which are only meant for extension by Akka itself, i.e. should not be extended by end-users (often marked as `@DoNotInherit` or `sealed`)
+- other tricky situations
 
-The binary compatibility of the current changes can be checked by running `mimaReportBinaryIssues` in sbt.
+The binary compatibility of the current changes can be checked by running `sbt +mimaReportBinaryIssues`.
+
 
 ## Pull Request Requirements
 
