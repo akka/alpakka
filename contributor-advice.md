@@ -96,7 +96,30 @@ See [Binary Compatibilty Rules](https://doc.akka.io/docs/akka/current/common/bin
 
 See [Binary Compatibility for library authors](https://docs.scala-lang.org/overviews/core/binary-compatibility-for-library-authors.html)
 
-Use [MigrationManager (MiMa)](https://github.com/lightbend/migration-manager) to validate, if versions are binary compatible. MiMa is part of the Alpakka build and its checks can be triggered by `mimaReportBinaryIssues`.
+### Using MiMa
+
+Alpakka uses [MiMa](https://github.com/lightbend/mima) to validate binary compatibility of incoming pull requests. If your PR fails due to binary compatibility issues, you may see an error like this:
+
+```
+[info] akka-stream: found 1 potential binary incompatibilities while checking against com.typesafe.akka:akka-stream_2.12:2.4.2  (filtered 222)
+[error]  * method foldAsync(java.lang.Object,scala.Function2)akka.stream.scaladsl.FlowOps in trait akka.stream.scaladsl.FlowOps is present only in current version
+[error]    filter with: ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.foldAsync")
+```
+
+In such situations it's good to consult with a core team member whether the violation can be safely ignored or if it would indeed
+break binary compatibility. If the violation can be ignored add exclude statements from the mima output to
+a new file named `<module>/src/main/mima-filters/<last-version>.backwards.excludes/<pr-or-issue>-<issue-number>-<description>.excludes`,
+e.g. `s3/src/main/mima-filters/1.1.x.backwards.excludes/pr-12345-rename-internal-classes.excludes`. Make sure to add a comment
+in the file that describes briefly why the incompatibility can be ignored.
+
+Situations when it may be fine to ignore a MiMa issued warning include:
+
+- if it is touching any class marked as `private[alpakka]`, `@InternalApi`, `/** INTERNAL API*/` or similar markers
+- if it is concerning internal classes (often recognisable by package names like `impl`, `internal` etc.)
+- if it is adding API to classes / traits which are only meant for extension by Akka itself, i.e. should not be extended by end-users (often marked as `@DoNotInherit` or `sealed`)
+- other tricky situations
+
+The binary compatibility of the current changes can be checked by running `sbt +mimaReportBinaryIssues`.
 
 
 ### External Dependencies
