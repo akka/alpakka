@@ -28,7 +28,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Setup
 
-Prepare an @scaladoc[`ActorSystem`](akka.actor.ActorSystem) and a @scaladoc[`Materializer`](akka.stream.Materializer).
+Prepare an @scaladoc[ActorSystem](akka.actor.ActorSystem) and a @scaladoc[Materializer](akka.stream.Materializer).
 
 Scala
 : @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/DefaultTestContext.scala) { #init-mat }
@@ -37,7 +37,7 @@ Java
 : @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/BaseSqsTest.java) { #init-mat }
 
 
-This connector requires an implicit @javadoc[`SqsAsyncClient`](software.amazon.awssdk.services.sqs.SqsAsyncClient) instance to communicate with AWS SQS.
+This connector requires an implicit @javadoc[SqsAsyncClient](software.amazon.awssdk.services.sqs.SqsAsyncClient) instance to communicate with AWS SQS.
 
 It is your code's responsibility to call `close` to free any resources held by the client. In this example it will be called when the actor system is terminated.
 
@@ -51,7 +51,7 @@ Java
 
 Alpakka SQS and SNS are set up to use @extref:[Akka HTTP](akka-http:) as default HTTP client via the thin adapter library [AWS Akka-Http SPI implementation](https://github.com/matsluni/aws-spi-akka-http). By setting the `httpClient` explicitly (as above) the Akka actor system is reused, if not set explicitly a separate actor system will be created internally.
 
-It is possible to configure the use of Netty instead, which is Amazon's default. Add an appropriate Netty version to the dependencies and configure @javadoc[`NettyNioAsyncHttpClient`](software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient).
+It is possible to configure the use of Netty instead, which is Amazon's default. Add an appropriate Netty version to the dependencies and configure @javadoc[NettyNioAsyncHttpClient](software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient).
 
 Scala
 : @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsSourceSpec.scala) { #init-custom-client }
@@ -131,7 +131,7 @@ Java
 : @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsPublishTest.java) { #run-send-request }
 
 You can also build flow stages which publish messages to SQS queues, backpressure on queue response, and then forward 
-@scaladoc[`SqsPublishResult`](akka.stream.alpakka.sqs.SqsPublishResult) further down the stream.
+@scaladoc[SqsPublishResult](akka.stream.alpakka.sqs.SqsPublishResult) further down the stream.
 
 Scala
 : @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsPublishSpec.scala) { #flow }
@@ -145,7 +145,7 @@ Java
 ### Group messages and publish batches to an SQS queue
 
 Create a sink, that forwards `String` to the SQS queue. However, the main difference from the previous use case, 
-it batches items and sends as a one request and forwards a @scaladoc[`SqsPublishResultEntry`](akka.stream.alpakka.sqs.SqsPublishResultEntry)
+it batches items and sends as a one request and forwards a @scaladoc[SqsPublishResultEntry](akka.stream.alpakka.sqs.SqsPublishResultEntry)
 further down the stream for each item processed.
 
 Note: There is also another option to send batch of messages to SQS which is using `AmazonSQSBufferedAsyncClient`.
@@ -219,7 +219,7 @@ Options:
 ## Updating message statuses
 
 `SqsAckSink` and `SqsAckFlow` provide the possibility to acknowledge (delete), ignore, or postpone messages on an SQS queue.
-They accept @scaladoc[`MessageAction`](akka.stream.alpakka.sqs.MessageAction) sub-classes to select the action to be taken.
+They accept @scaladoc[MessageAction](akka.stream.alpakka.sqs.MessageAction) sub-classes to select the action to be taken.
 
 For every message you may decide which action to take and push it together with message back to the queue:
 
@@ -259,7 +259,7 @@ Java
 
 ### Update message status in a flow
 
-The `SqsAckFlow` forwards a @scaladoc[`SqsAckResult`](akka.stream.alpakka.sqs.SqsAckResult) sub-class down the stream:
+The `SqsAckFlow` forwards a @scaladoc[SqsAckResult](akka.stream.alpakka.sqs.SqsAckResult) sub-class down the stream:
 
 - `DeleteResult` to acknowledge message deletion
 - `ChangeMessageVisibilityResult` to acknowledge message visibility change
@@ -289,7 +289,7 @@ Options:
 
 ### Updating message statuses in batches with grouping
 
-`SqsAckFlow.grouped` batches actions on their type and forwards a @scaladoc[`SqsAckResultEntry`](akka.stream.alpakka.sqs.SqsAckResultEntry) 
+`SqsAckFlow.grouped` batches actions on their type and forwards a @scaladoc[SqsAckResultEntry](akka.stream.alpakka.sqs.SqsAckResultEntry) 
 sub-class for each item processed:
 
 - `DeleteResultEntry` to acknowledge message deletion
