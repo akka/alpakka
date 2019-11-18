@@ -47,10 +47,10 @@ Java
 ### Shutdown stream when file is deleted
 
 The `FileTailSource` stream will not shutdown or throw an error when the file it is tailing is deleted from the filesystem. 
-If you would like to shutdown the stream, or throw an error, you can do so by merging in a @scala[@scaladoc[`DirectoryChangesSource`](akka.stream.alpakka.file.scaladsl.DirectoryChangesSource)]@java[@javadoc[`DirectoryChangesSource`](akka.stream.alpakka.file.javadsl.DirectoryChangesSource)] that listens to filesystem events in the directory that contains the file. 
+If you would like to shutdown the stream, or throw an error, you can do so by merging in a @scala[@scaladoc[DirectoryChangesSource](akka.stream.alpakka.file.scaladsl.DirectoryChangesSource)]@java[@javadoc[DirectoryChangesSource](akka.stream.alpakka.file.javadsl.DirectoryChangesSource)] that listens to filesystem events in the directory that contains the file.
 
 In the following example, a `DirectoryChangesSource` is used to watch for events in a directory. 
-If a file delete event is observed for the file we are tailing then we shutdown the stream gracefully by using a @scala[@scaladoc[`Flow.recoverWithRetries`](akka.stream.scaladsl.Flow$)]@java[@javadoc[`Flow.recoverWith`](akka.stream.javadsl.Flow$)] to switch to a @scala[@scaladoc[`Source.empty`](akka.stream.scaladsl.Source$)]@java[@javadoc[`Source.empty`](akka.stream.javadsl.Source$)], which with immediately send an `OnComplete` signal and shutdown the stream.
+If a file delete event is observed for the file we are tailing then we shutdown the stream gracefully by using a @scala[@scaladoc[Flow.recoverWithRetries](akka.stream.scaladsl.Flow$)]@java[@javadoc[Flow.recoverWith](akka.stream.javadsl.Flow$)] to switch to a @scala[@scaladoc[Source.empty](akka.stream.scaladsl.Source$)]@java[@javadoc[Source.empty](akka.stream.javadsl.Source$)], which with immediately send an `OnComplete` signal and shutdown the stream.
 
 Scala
 : @@snip [snip](/file/src/test/scala/docs/scaladsl/FileTailSourceExtrasSpec.scala) { #shutdown-on-delete }
@@ -68,7 +68,7 @@ If the file is detected as deleted and the stream is shutdown before the last el
 ### Shutdown stream after an idle timeout
 
 It may be useful to shutdown the stream when no new data has been added for awhile to a file being tailed by `FileTailSource`.
-In the following example, a @scala[@scaladoc[`Flow.idleTimeout`](akka.stream.scaladsl.Flow$)]@java[@javadoc[`Flow.idleTimeout`](akka.stream.javadsl.Flow$)] operator is used to trigger a `TimeoutException` that can be recovered with @scala[@scaladoc[`Flow.recoverWithRetries`](akka.stream.scaladsl.Flow$)]@java[@javadoc[`Flow.recoverWith`](akka.stream.javadsl.Flow$)] and a @scala[@scaladoc[`Source.empty`](akka.stream.scaladsl.Source$)]@java[@javadoc[`Source.empty`](akka.stream.javadsl.Source$)] to successfully shutdown the stream.
+In the following example, a @scala[@scaladoc[Flow.idleTimeout](akka.stream.scaladsl.Flow$)]@java[@javadoc[Flow.idleTimeout](akka.stream.javadsl.Flow$)] operator is used to trigger a `TimeoutException` that can be recovered with @scala[@scaladoc[Flow.recoverWithRetries](akka.stream.scaladsl.Flow$)]@java[@javadoc[Flow.recoverWith](akka.stream.javadsl.Flow$)] and a @scala[@scaladoc[Source.empty](akka.stream.scaladsl.Source$)]@java[@javadoc[Source.empty](akka.stream.javadsl.Source$)] to successfully shutdown the stream.
 
 Scala
 : @@snip [snip](/file/src/test/scala/docs/scaladsl/FileTailSourceExtrasSpec.scala) { #shutdown-on-idle-timeout }
