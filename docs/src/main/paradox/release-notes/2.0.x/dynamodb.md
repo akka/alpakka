@@ -7,6 +7,6 @@
 - DynamoDB: flow with pagination [#1985](https://github.com/akka/alpakka/issues/1985) by [@ennru](https://github.com/ennru)
 - DynamoDB: document retry configuration [#1986](https://github.com/akka/alpakka/issues/1986) by [@ennru](https://github.com/ennru)
 
-[*closed in 2.2.0-M1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0-M1+label%3Ap%3Adynamodb)
+[*closed in 2.0.0-M1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0-M1+label%3Ap%3Adynamodb)
 
 For earlier changes see @ref:[1.1.x versions](../1.1.x/dynamodb.md)
