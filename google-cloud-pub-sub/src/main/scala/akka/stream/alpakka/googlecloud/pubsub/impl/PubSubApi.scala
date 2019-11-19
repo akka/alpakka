@@ -153,9 +153,9 @@ private[pubsub] trait PubSubApi {
         case (_, maybeAccessToken) =>
           Marshal((HttpMethods.POST, url, PullRequest(returnImmediately, maxMessages)))
             .to[HttpRequest]
-            .map(request => (authorize(maybeAccessToken)(request), ()))
+            .map(request => (authorize(maybeAccessToken)(request), NotUsed))
       }
-      .via(pool[Unit]())
+      .via(pool[NotUsed]())
       .mapAsync(1) {
         case (Success(response), _) =>
           response.status match {
@@ -185,9 +185,9 @@ private[pubsub] trait PubSubApi {
         case (request, maybeAccessToken) =>
           Marshal((HttpMethods.POST, url, request))
             .to[HttpRequest]
-            .map(request => (authorize(maybeAccessToken)(request), ()))
+            .map(request => (authorize(maybeAccessToken)(request), NotUsed))
       }
-      .via(pool[Unit]())
+      .via(pool[NotUsed]())
       .mapAsync(1) {
         case (Success(response), _) =>
           response.status match {
@@ -217,9 +217,7 @@ private[pubsub] trait PubSubApi {
         case (request, maybeAccessToken) =>
           Marshal((HttpMethods.POST, url, request)).to[HttpRequest].map(authorize(maybeAccessToken))
       }
-      .log("beforePool")
       .via(pool())
-      .log("afterPool")
       .mapAsync(parallelism) {
         case Success(response) =>
           response.status match {
@@ -240,23 +238,26 @@ private[pubsub] trait PubSubApi {
   def accessToken[T](config: PubSubConfig)(
       implicit materializer: Materializer
   ): Flow[T, (T, Option[String]), NotUsed] =
-    Flow[T]
-      .map((_, ()))
-      .via(
-        accessTokenWithContext[T, Unit](config).asFlow.map(_._1)
-      )
+    if (isEmulated) {
+      Flow[T].map(request => (request, None: Option[String]))
+    } else {
+      Flow[T].mapAsync(1)(requestToken(config))
+    }
 
   def accessTokenWithContext[T, C](config: PubSubConfig)(
       implicit materializer: Materializer
-  ): FlowWithContext[T, C, (T, Option[String]), C, NotUsed] = {
-    import materializer.executionContext
+  ): FlowWithContext[T, C, (T, Option[String]), C, NotUsed] =
     if (isEmulated) {
       FlowWithContext[T, C].map(request => (request, None: Option[String]))
     } else {
-      FlowWithContext[T, C].mapAsync(1)(
-        request => config.session.getToken().map(token => (request, Some(token): Option[String]))
-      )
+      FlowWithContext[T, C].mapAsync(1)(requestToken(config))
     }
+
+  private[this] def requestToken[T](
+      config: PubSubConfig
+  )(request: T)(implicit materializer: Materializer): Future[(T, Option[String])] = {
+    import materializer.executionContext
+    config.session.getToken().map(token => (request, Some(token): Option[String]))
   }
 
   private[this] def authorize(maybeAccessToken: Option[String])(request: HttpRequest): HttpRequest =
