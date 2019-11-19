@@ -1,0 +1,4 @@
+# PR #1908
+# https://github.com/akka/alpakka/pull/1908
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.alpakka.mqtt.streaming.javadsl.MqttSession.ask")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.alpakka.mqtt.streaming.scaladsl.MqttSession.?")
