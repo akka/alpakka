@@ -79,7 +79,7 @@ Java
 
 ## Creating directories
 
-`Directory.mkdirs()` and `Directory.mkdirsWithContext()` create directories for @javadoc[Path](java.nio.file.Path) elements in the stream. The `withContext`-variant allows to pass through other information with every path.
+`Directory.mkdirs()` and `Directory.mkdirsWithContext()` create directories for @javadoc[Path](java.nio.file.Path) elements in the stream. The `withContext`-variant allows the user to pass through additional information with every path.
 
 Scala
 : @@snip [snip](/file/src/test/scala/docs/scaladsl/DirectorySpec.scala) { #mkdirs }
