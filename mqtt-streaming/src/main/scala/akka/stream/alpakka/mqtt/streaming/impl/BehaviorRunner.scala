@@ -9,6 +9,7 @@ import akka.actor.typed.{Behavior, Signal}
 
 import scala.collection.immutable.Seq
 
+// FIXME would it be possible to use ordinary StashBuffer instead of this?
 object BehaviorRunner {
   sealed trait Interpretable[T]
 
