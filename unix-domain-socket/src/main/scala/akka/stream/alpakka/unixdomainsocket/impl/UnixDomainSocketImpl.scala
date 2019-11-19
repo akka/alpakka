@@ -8,7 +8,7 @@ package impl
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.channels.{SelectionKey, Selector}
-import java.nio.file.{Path, Paths}
+import java.nio.file.{Files, Path, Paths}
 
 import akka.actor.{Cancellable, CoordinatedShutdown, ExtendedActorSystem, Extension}
 import akka.annotation.InternalApi
@@ -405,7 +405,7 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
                     .andThen {
                       case _ =>
                         try {
-                          path.toFile.delete()
+                          Files.delete(path)
                         } catch {
                           case NonFatal(_) =>
                         }
