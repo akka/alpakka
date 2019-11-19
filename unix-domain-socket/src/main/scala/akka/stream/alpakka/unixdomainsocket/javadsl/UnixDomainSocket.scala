@@ -100,7 +100,7 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
 
 final class UnixDomainSocket(system: ExtendedActorSystem) extends akka.actor.Extension {
   import UnixDomainSocket._
-  import akka.dispatch.ExecutionContexts.{sameThreadExecutionContext ⇒ ec}
+  import akka.dispatch.ExecutionContexts.{sameThreadExecutionContext => ec}
 
   private lazy val delegate: ScalaUnixDomainSocket = ScalaUnixDomainSocket(system)
 
