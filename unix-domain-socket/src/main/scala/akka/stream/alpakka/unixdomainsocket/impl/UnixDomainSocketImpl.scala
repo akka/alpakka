@@ -259,11 +259,11 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
       } catch { case _: IOException => }
       incomingConnectionQueue.offer(
         IncomingConnection(
-          UnixSocketAddress(Paths.get(localAddress.path())),
-          UnixSocketAddress(
+          localAddress = UnixSocketAddress(Paths.get(localAddress.path())),
+          remoteAddress = UnixSocketAddress(
             Paths.get(Option(acceptingChannel.getRemoteSocketAddress).getOrElse(new JnrUnixSocketAddress("")).path())
           ),
-          connectionFlow
+          flow = connectionFlow
         )
       )
     }
