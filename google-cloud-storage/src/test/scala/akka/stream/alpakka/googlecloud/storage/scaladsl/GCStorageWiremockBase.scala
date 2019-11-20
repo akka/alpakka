@@ -51,7 +51,15 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
        |  "mediaLink":"https://www.googleapis.com/download/storage/v1/b/alpakka/o/$fileName?generation=1543055053992768&alt=media",
        |  "bucket":"alpakka",
        |  "kind":"storage#object",
-       |  "metageneration":"1"
+       |  "metageneration":"1",
+       |  "timeDeleted": "2018-11-24T10:24:13.992Z",
+       |  "temporaryHold": false,
+       |  "eventBasedHold": false,
+       |  "retentionExpirationTime": "2018-11-24T10:24:13.992Z",
+       |  "contentEncoding": "identity",
+       |  "contentDisposition": "inline",
+       |  "contentLanguage": "en-GB",
+       |  "cacheControl": "no-cache"
        |}""".stripMargin
 
   def getRandomString(size: Int): String =
@@ -396,7 +404,15 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
          |  "mediaLink":"https://www.googleapis.com/download/storage/v1/b/alpakka/o/$firstFileName?generation=1543055053992768&alt=media",
          |  "bucket":"alpakka",
          |  "kind":"storage#object",
-         |   "metageneration":"1"
+         |   "metageneration":"1",
+         |  "timeDeleted": "2018-11-24T10:24:13.992Z",
+         |  "temporaryHold": false,
+         |  "eventBasedHold": false,
+         |  "retentionExpirationTime": "2018-11-24T10:24:13.992Z",
+         |  "contentEncoding": "identity",
+         |  "contentDisposition": "inline",
+         |  "contentLanguage": "en-GB",
+         |  "cacheControl": "no-cache"
          |}""".stripMargin
 
     val firstFileArchived =
@@ -417,7 +433,15 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
          |  "mediaLink":"https://www.googleapis.com/download/storage/v1/b/alpakka/o/$firstFileName?generation=1543055053992768&alt=media",
          |  "bucket":"alpakka",
          |  "kind":"storage#object",
-         |  "metageneration":"1"
+         |  "metageneration":"1",
+         |  "timeDeleted": "2018-11-24T10:24:13.992Z",
+         |  "temporaryHold": false,
+         |  "eventBasedHold": false,
+         |  "retentionExpirationTime": "2018-11-24T10:24:13.992Z",
+         |  "contentEncoding": "identity",
+         |  "contentDisposition": "inline",
+         |  "contentLanguage": "en-GB",
+         |  "cacheControl": "no-cache"
          |}""".stripMargin
 
     val listJsonItemsPageOne =
@@ -450,7 +474,15 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
          |      "mediaLink":"https://www.googleapis.com/download/storage/v1/b/alpakka/o/$secondFileName?generation=1543055053992768&alt=media",
          |      "bucket":"alpakka",
          |      "kind":"storage#object",
-         |      "metageneration":"1"
+         |      "metageneration":"1",
+         |      "timeDeleted": "2018-11-24T10:24:13.992Z",
+         |      "temporaryHold": false,
+         |      "eventBasedHold": false,
+         |      "retentionExpirationTime": "2018-11-24T10:24:13.992Z",
+         |      "contentEncoding": "identity",
+         |      "contentDisposition": "inline",
+         |      "contentLanguage": "en-GB",
+         |      "cacheControl": "no-cache"
          |    }
          |  ]
          |}""".stripMargin
@@ -773,7 +805,15 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
          |  "mediaLink":"https://www.googleapis.com/download/storage/v1/b/alpakka/o/$fileName?generation=1543055053992768&alt=media",
          |  "bucket":"$rewriteBucketName",
          |  "kind":"storage#object",
-         |  "metageneration":"1"
+         |  "metageneration":"1",
+         |  "timeDeleted": "2018-11-24T10:24:13.992Z",
+         |  "temporaryHold": false,
+         |  "eventBasedHold": false,
+         |  "retentionExpirationTime": "2018-11-24T10:24:13.992Z",
+         |  "contentEncoding": "identity",
+         |  "contentDisposition": "inline",
+         |  "contentLanguage": "en-GB",
+         |  "cacheControl": "no-cache"
          |}""".stripMargin
 
     val firstRewriteResponse =
