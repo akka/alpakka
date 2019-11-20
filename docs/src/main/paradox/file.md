@@ -76,6 +76,19 @@ Scala
 Java
 : @@snip [snip](/file/src/test/java/docs/javadsl/FileTailSourceTest.java) { #shutdown-on-idle-timeout }
 
+
+## Creating directories
+
+`Directory.mkdirs()` and `Directory.mkdirsWithContext()` create directories for @javadoc[Path](java.nio.file.Path) elements in the stream. The `withContext`-variant allows the user to pass through additional information with every path.
+
+Scala
+: @@snip [snip](/file/src/test/scala/docs/scaladsl/DirectorySpec.scala) { #mkdirs }
+
+Java
+: @@snip [snip](/file/src/test/java/docs/javadsl/DirectoryTest.java) { #mkdirs }
+
+
+
 ## Listing directory contents
 
 `Directory.ls(path)` lists all files and directories
