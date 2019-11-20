@@ -4,28 +4,30 @@
 
 package akka.stream.alpakka.googlecloud.storage
 
+import java.time.OffsetDateTime
+
 import akka.http.scaladsl.model.ContentType
 
 /**
  * Represents an object within Google Cloud Storage.
  *
- * @param kind                    The kind of item this is, for objects, this is always storage#object
- * @param id                      The ID of the object, including the bucket name, object name, and generation number
- * @param name                    The name of the object
- * @param bucket                  The name of the bucket containing this object
- * @param generation              The content generation of this object, used for object versioning
- * @param contentType             The Content-Type of the object data, if an object is stored without a Content-Type, it is served as application/octet-stream
- * @param size                    The Content-Length of the data in bytes
- * @param etag                    The HTTP 1.1 Entity tag for the object.
- * @param md5Hash                 The MD5 hash of the data; encoded using base64
- * @param crc32c                  The CRC32c checksum, encoded using base64 in big-endian byte order
- * @param mediaLink               The Media download link
- * @param selfLink                The link to this object
- * @param timeCreated             The creation time of the object in RFC 3339 format.
- * @param updated                 The modification time of the object metadata in RFC 3339 format.
- * @param storageClass            The storage class of the object
- * @param contentEncoding         The Content Encoding of the object data
- * @param contentLanguage         The content language of the objcet data
+ * @param kind            The kind of item this is, for objects, this is always storage#object
+ * @param id              The ID of the object, including the bucket name, object name, and generation number
+ * @param name            The name of the object
+ * @param bucket          The name of the bucket containing this object
+ * @param generation      The content generation of this object, used for object versioning
+ * @param contentType     The Content-Type of the object data, if an object is stored without a Content-Type, it is served as application/octet-stream
+ * @param size            The Content-Length of the data in bytes
+ * @param etag            The HTTP 1.1 Entity tag for the object.
+ * @param md5Hash         The MD5 hash of the data; encoded using base64
+ * @param crc32c          The CRC32c checksum, encoded using base64 in big-endian byte order
+ * @param mediaLink       The Media download link
+ * @param selfLink        The link to this object
+ * @param timeCreated     The creation time of the object in RFC 3339 format.
+ * @param updated         The modification time of the object metadata in RFC 3339 format.
+ * @param storageClass    The storage class of the object
+ * @param contentEncoding The Content Encoding of the object data
+ * @param contentLanguage The content language of the objcet data
  */
 final class StorageObject private (
     val kind: String,
@@ -40,8 +42,8 @@ final class StorageObject private (
     val crc32c: String,
     val mediaLink: String,
     val selfLink: String,
-    val updated: Long,
-    val timeCreated: Long,
+    val updated: OffsetDateTime,
+    val timeCreated: OffsetDateTime,
     val storageClass: String,
     val contentEncoding: String,
     val contentLanguage: String
@@ -68,8 +70,8 @@ final class StorageObject private (
   def withCrc32c(value: String): StorageObject = copy(crc32c = value)
   def withMediaLink(value: String): StorageObject = copy(mediaLink = value)
   def withSelfLink(value: String): StorageObject = copy(selfLink = value)
-  def withUpdated(value: Long): StorageObject = copy(updated = value)
-  def withTimeCreated(value: Long): StorageObject = copy(timeCreated = value)
+  def withUpdated(value: OffsetDateTime): StorageObject = copy(updated = value)
+  def withTimeCreated(value: OffsetDateTime): StorageObject = copy(timeCreated = value)
   def withStorageClass(value: String): StorageObject = copy(storageClass = value)
   def withContentEncoding(value: String): StorageObject = copy(contentEncoding = value)
   def withContentLanguage(value: String): StorageObject = copy(contentLanguage = value)
@@ -87,8 +89,8 @@ final class StorageObject private (
       crc32c: String = crc32c,
       mediaLink: String = mediaLink,
       selfLink: String = selfLink,
-      updated: Long = updated,
-      timeCreated: Long = timeCreated,
+      updated: OffsetDateTime = updated,
+      timeCreated: OffsetDateTime = timeCreated,
       storageClass: String = storageClass,
       contentEncoding: String = contentEncoding,
       contentLanguage: String = contentLanguage
@@ -169,13 +171,14 @@ final class StorageObject private (
       crc32c,
       mediaLink,
       selfLink,
-      Long.box(updated),
-      Long.box(timeCreated),
+      updated,
+      timeCreated,
       storageClass,
       contentEncoding,
       contentLanguage
     )
 }
+
 object StorageObject {
 
   /** Scala API */
@@ -192,8 +195,8 @@ object StorageObject {
       crc32c: String,
       mediaLink: String,
       selfLink: String,
-      updated: Long,
-      timeCreated: Long,
+      updated: OffsetDateTime,
+      timeCreated: OffsetDateTime,
       storageClass: String,
       contentEncoding: String,
       contentLanguage: String
@@ -231,8 +234,8 @@ object StorageObject {
       crc32c: String,
       mediaLink: String,
       selfLink: String,
-      updated: Long,
-      timeCreated: Long,
+      updated: OffsetDateTime,
+      timeCreated: OffsetDateTime,
       storageClass: String,
       contentEncoding: String,
       contentLanguage: String

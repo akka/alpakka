@@ -8,6 +8,8 @@ import akka.http.scaladsl.model.{ContentType, ContentTypes}
 import akka.stream.alpakka.googlecloud.storage._
 import spray.json.{DefaultJsonProtocol, JsValue, RootJsonReader}
 
+import java.time.OffsetDateTime
+
 import scala.util.Try
 
 @akka.annotation.InternalApi
@@ -149,7 +151,11 @@ object Formats extends DefaultJsonProtocol {
   private def storageObjectJsonToStorageObject(storageObjectJson: StorageObjectJson): StorageObject = {
     def strToLongOrThrow(str: String, fieldName: String) =
       Try(str.toLong)
-        .getOrElse(throw new RuntimeException(s"Storage object $fieldName is not of Long type"))
+        .getOrElse(throw new RuntimeException(s"Storage object $fieldName is not of type Long"))
+
+    def strToDateTimeOrThrow(str: String, fieldName: String) =
+      Try(OffsetDateTime.parse(str))
+        .getOrElse(throw new RuntimeException(s"Storage object $fieldName is not a valid OffsetDateTime"))
 
     StorageObject(
       storageObjectJson.kind,
@@ -164,8 +170,8 @@ object Formats extends DefaultJsonProtocol {
       storageObjectJson.crc32c,
       storageObjectJson.mediaLink,
       storageObjectJson.selfLink,
-      strToLongOrThrow(storageObjectJson.updated, "updated"),
-      strToLongOrThrow(storageObjectJson.timeCreated, "timeCreated"),
+      strToDateTimeOrThrow(storageObjectJson.updated, "updated"),
+      strToDateTimeOrThrow(storageObjectJson.timeCreated, "timeCreated"),
       storageObjectJson.storageClass,
       storageObjectJson.contentEncoding,
       storageObjectJson.contentLanguage
