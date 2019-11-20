@@ -32,6 +32,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -48,6 +49,7 @@ public class S3Test extends S3WireMockBase {
 
   private final S3Settings sampleSettings = S3Ext.get(system()).settings();
   private final String prefix = listPrefix();
+  private final String delimiter = listDelimiter();
 
   @Before
   public void before() {
@@ -353,6 +355,49 @@ public class S3Test extends S3WireMockBase {
         resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     assertEquals(result.key(), listKey());
+  }
+
+  @Test
+  public void listObjects() throws Exception {
+
+    mockListObjects();
+
+    // #list-bucket
+    final Source<ListBucketResultBase, NotUsed> keySource =
+        S3.listObjects(bucket(), Optional.of(prefix), Optional.of(delimiter), S3Headers.empty());
+    // #list-bucket
+
+    final CompletionStage<List<ListBucketResultBase>> resultsCompletionStage =
+        keySource.runWith(Sink.seq(), materializer);
+
+    List<ListBucketResultBase> results =
+        resultsCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+    assertEquals(((ListBucketResultContents) results.get(0)).key(), listKey());
+    assertEquals(((ListBucketResultCommonPrefixes) results.get(1)).prefix(), listCommonPrefix());
+  }
+
+  @Test
+  public void listObjectsVersion1() throws Exception {
+    mockListObjectsVersion1();
+
+    // #list-bucket-attributes
+    final S3Settings useVersion1Api =
+        S3Ext.get(system()).settings().withListBucketApiVersion(ApiVersion.getListBucketVersion1());
+
+    final Source<ListBucketResultBase, NotUsed> keySource =
+        S3.listObjects(bucket(), Optional.of(prefix), Optional.of(delimiter), S3Headers.empty())
+            .withAttributes(S3Attributes.settings(useVersion1Api));
+    // #list-bucket-attributes
+
+    final CompletionStage<List<ListBucketResultBase>> resultsCompletionStage =
+        keySource.runWith(Sink.seq(), materializer);
+
+    List<ListBucketResultBase> results =
+        resultsCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+    assertEquals(((ListBucketResultContents) results.get(0)).key(), listKey());
+    assertEquals(((ListBucketResultCommonPrefixes) results.get(1)).prefix(), listCommonPrefix());
   }
 
   @Test

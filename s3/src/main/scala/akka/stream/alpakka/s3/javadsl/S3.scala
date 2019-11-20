@@ -484,6 +484,27 @@ object S3 {
       .asJava
 
   /**
+   * Will return a source of object metadata and common prefixes for a given bucket with optional prefix and delimiter using version 2 of the List Bucket API.
+   * This will automatically page through all keys with the given parameters.
+   *
+   * The `alpakka.s3.list-bucket-api-version` can be set to 1 to use the older API version 1
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/v2-RESTBucketGET.html  (version 1 API)
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGET.html (version 1 API)
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/dev/ListingKeysHierarchy.html (prefix and delimiter documentation)
+   * @param bucket    Which bucket that you list object metadata for
+   * @param prefix    Prefix of the keys you want to list under passed bucket
+   * @param delimiter Delimiter to use for listing only one level of hierarchy
+   * @param s3Headers any headers you want to add
+   * @return [[akka.stream.scaladsl.Source Source]] of [[ListBucketResultBase]]
+   */
+  def listObjects(bucket: String,
+                  prefix: Optional[String],
+                  delimiter: Optional[String],
+                  s3Headers: S3Headers): Source[ListBucketResultBase, NotUsed] =
+    S3Stream.listObjects(bucket, prefix.asScala, delimiter.asScala, s3Headers).asJava
+
+  /**
    * Uploads a S3 Object by making multiple requests
    *
    * @param bucket the s3 bucket name

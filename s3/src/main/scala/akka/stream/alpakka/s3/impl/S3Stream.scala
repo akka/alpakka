@@ -70,7 +70,8 @@ import akka.util.ByteString
 /** Internal Api */
 @InternalApi private[impl] final case class ListBucketResult(isTruncated: Boolean,
                                                              continuationToken: Option[String],
-                                                             contents: Seq[ListBucketResultContents])
+                                                             contents: Seq[ListBucketResultContents],
+                                                             commonPrefixes: Seq[ListBucketResultCommonPrefixes])
 
 /** Internal Api */
 @InternalApi private[impl] final case class CopyPartResult(lastModified: Instant, eTag: String)
@@ -141,15 +142,16 @@ import akka.util.ByteString
       import mat.executionContext
       implicit val conf = resolveSettings(attr, mat.system)
 
-      signAndGetAs[ListBucketResult](HttpRequests.listBucket(bucket, prefix, token, s3Headers.headersFor(ListBucket)))
-        .map { (res: ListBucketResult) =>
-          Some(
-            res.continuationToken
-              .fold[(ListBucketState, Seq[ListBucketResultContents])]((Finished, res.contents))(
-                t => (Running(t), res.contents)
-              )
-          )
-        }
+      signAndGetAs[ListBucketResult](
+        HttpRequests.listBucket(bucket, prefix, token, headers = s3Headers.headersFor(ListBucket))
+      ).map { (res: ListBucketResult) =>
+        Some(
+          res.continuationToken
+            .fold[(ListBucketState, Seq[ListBucketResultContents])]((Finished, res.contents))(
+              t => (Running(t), res.contents)
+            )
+        )
+      }
     }
 
     Source
@@ -161,6 +163,49 @@ import akka.util.ByteString
             case Finished => Future.successful(None)
             case Starting => listBucketCall(None)
             case Running(token) => listBucketCall(Some(token))
+          }
+          .mapConcat(identity)
+      }
+      .mapMaterializedValue(_ => NotUsed)
+  }
+
+  def listObjects(bucket: String,
+                  prefix: Option[String] = None,
+                  delimiter: Option[String] = None,
+                  s3Headers: S3Headers): Source[ListBucketResultBase, NotUsed] = {
+    sealed trait ListBucketState
+    case object Starting extends ListBucketState
+    case class Running(continuationToken: String) extends ListBucketState
+    case object Finished extends ListBucketState
+
+    def listObjectsCall(
+        token: Option[String]
+    )(implicit mat: ActorMaterializer,
+      attr: Attributes): Future[Option[(ListBucketState, Seq[ListBucketResultBase])]] = {
+      import mat.executionContext
+      implicit val conf = resolveSettings(attr, mat.system)
+
+      signAndGetAs[ListBucketResult](
+        HttpRequests.listBucket(bucket, prefix, token, delimiter, s3Headers.headersFor(ListBucket))
+      ).map { (res: ListBucketResult) =>
+        Some(
+          res.continuationToken
+            .fold[(ListBucketState, Seq[ListBucketResultBase])]((Finished, res.contents ++ res.commonPrefixes))(
+              t => (Running(t), res.contents ++ res.commonPrefixes)
+            )
+        )
+      }
+    }
+
+    Source
+      .setup { (mat, attr) =>
+        implicit val materializer = mat
+        implicit val attributes = attr
+        Source
+          .unfoldAsync[ListBucketState, Seq[ListBucketResultBase]](Starting) {
+            case Finished => Future.successful(None)
+            case Starting => listObjectsCall(None)
+            case Running(token) => listObjectsCall(Some(token))
           }
           .mapConcat(identity)
       }

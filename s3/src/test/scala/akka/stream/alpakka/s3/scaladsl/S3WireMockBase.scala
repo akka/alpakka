@@ -98,6 +98,8 @@ abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMoc
   val rangeOfBody = body.getBytes.slice(bytesRangeStart, bytesRangeEnd + 1)
   val rangeOfBodySSE = bodySSE.getBytes.slice(bytesRangeStart, bytesRangeEnd + 1)
   val listPrefix = "testPrefix"
+  val listDelimiter = "/"
+  val listCommonPrefix = "commonPrefix/"
   val listKey = "testingKey.txt"
 
   val sseCustomerKey = "key"
@@ -272,6 +274,62 @@ abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMoc
                         |        <StorageClass>STANDARD</StorageClass>
                         |    </Contents>
                         |</ListBucketResult>""".stripMargin)
+        )
+      )
+
+  def mockListObjects(): Unit =
+    mock
+      .register(
+        get(urlEqualTo(s"/?list-type=2&prefix=$listPrefix&delimiter=$listDelimiter")).willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/xml")
+            .withBody(s"""|<?xml version="1.0" encoding="UTF-8"?>
+                          |<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                          |    <Name>bucket</Name>
+                          |    <Prefix>$listPrefix</Prefix>
+                          |    <KeyCount>1</KeyCount>
+                          |    <MaxKeys>1000</MaxKeys>
+                          |    <IsTruncated>false</IsTruncated>
+                          |    <Contents>
+                          |        <Key>$listKey</Key>
+                          |        <LastModified>2009-10-12T17:50:30.000Z</LastModified>
+                          |        <ETag>&quot;fba9dede5f27731c9771645a39863328&quot;</ETag>
+                          |        <Size>434234</Size>
+                          |        <StorageClass>STANDARD</StorageClass>
+                          |    </Contents>
+                          |    <CommonPrefixes>
+                          |        <Prefix>$listCommonPrefix</Prefix>
+                          |    </CommonPrefixes>
+                          |</ListBucketResult>""".stripMargin)
+        )
+      )
+
+  def mockListObjectsVersion1(): Unit =
+    mock
+      .register(
+        get(urlEqualTo(s"/?prefix=$listPrefix&delimiter=$listDelimiter")).willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/xml")
+            .withBody(s"""|<?xml version="1.0" encoding="UTF-8"?>
+                          |<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                          |    <Name>bucket</Name>
+                          |    <Prefix>$listPrefix</Prefix>
+                          |    <Marker/>
+                          |    <MaxKeys>1000</MaxKeys>
+                          |    <IsTruncated>false</IsTruncated>
+                          |    <Contents>
+                          |        <Key>$listKey</Key>
+                          |        <LastModified>2009-10-12T17:50:30.000Z</LastModified>
+                          |        <ETag>&quot;fba9dede5f27731c9771645a39863328&quot;</ETag>
+                          |        <Size>434234</Size>
+                          |        <StorageClass>STANDARD</StorageClass>
+                          |    </Contents>
+                          |    <CommonPrefixes>
+                          |        <Prefix>$listCommonPrefix</Prefix>
+                          |    </CommonPrefixes>
+                          |</ListBucketResult>""".stripMargin)
         )
       )
 
