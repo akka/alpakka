@@ -135,7 +135,7 @@ object FailedUpload {
 /**
  * Base class for listObjects endpoint
  */
-trait ListBucketResultBase
+sealed trait ListBucketResultBase
 
 /**
  * @param bucketName The name of the bucket in which this object is stored
