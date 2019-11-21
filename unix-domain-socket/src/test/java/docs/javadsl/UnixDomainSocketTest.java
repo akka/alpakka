@@ -16,13 +16,11 @@ import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import akka.japi.Pair;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.util.concurrent.CompletionStage;
 
@@ -41,7 +39,7 @@ public class UnixDomainSocketTest {
   }
 
   @BeforeClass
-  public static void setup() throws Exception {
+  public static void setup() {
     final Pair<ActorSystem, Materializer> sysmat = setupMaterializer();
     system = sysmat.first();
     materializer = sysmat.second();
@@ -55,15 +53,14 @@ public class UnixDomainSocketTest {
   @Test
   public void aUnixDomainSocketShouldReceiveWhatIsSent() throws Exception {
     // #binding
-    java.io.File file = // ...
+    java.nio.file.Path path = // ...
         // #binding
-        Files.createTempFile("aUnixDomainSocketShouldReceiveWhatIsSent1", ".sock").toFile();
-    Assert.assertTrue(file.delete());
-    file.deleteOnExit();
+        Files.createTempFile("aUnixDomainSocketShouldReceiveWhatIsSent1", ".sock");
+    path.toFile().deleteOnExit();
 
     // #binding
     final Source<IncomingConnection, CompletionStage<ServerBinding>> connections =
-        UnixDomainSocket.get(system).bind(file);
+        UnixDomainSocket.get(system).bind(path);
     // #binding
 
     // #outgoingConnection
