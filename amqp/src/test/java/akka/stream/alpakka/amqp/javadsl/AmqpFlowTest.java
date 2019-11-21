@@ -6,15 +6,12 @@ package akka.stream.alpakka.amqp.javadsl;
 
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import akka.Done;
 import akka.actor.ActorSystem;
@@ -36,27 +33,15 @@ import akka.util.ByteString;
 import scala.collection.JavaConverters;
 
 /** Needs a local running AMQP server on the default port with no password. */
-@RunWith(Parameterized.class)
 public class AmqpFlowTest {
 
   private static ActorSystem system;
   private static Materializer materializer;
 
-  private final Flow<WriteMessage, WriteResult, CompletionStage<Done>> flow;
-  private final FlowWithContext<WriteMessage, String, WriteResult, String, CompletionStage<Done>> flowWithContext;
-
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create();
     materializer = ActorMaterializer.create(system);
-  }
-
-  public AmqpFlowTest(
-    Flow<WriteMessage, WriteResult, CompletionStage<Done>> flow,
-    FlowWithContext<WriteMessage, String, WriteResult, String, CompletionStage<Done>> flowWithContext
-  ) {
-    this.flow = flow;
-    this.flowWithContext = flowWithContext;
   }
 
   private static AmqpWriteSettings settings() {
@@ -65,34 +50,33 @@ public class AmqpFlowTest {
 
     return AmqpWriteSettings.create(AmqpLocalConnectionProvider.getInstance())
         .withRoutingKey(queueName)
-        .withDeclaration(queueDeclaration);
-  }
-
-  @Parameterized.Parameters
-  public static Collection<Object[]> data() {
-    return Arrays.asList(
-        new Object[][] {
-          {
-            AmqpFlow.create(settings()),
-            AmqpFlowWithContext.create(settings())
-          },
-          {
-            AmqpFlow.createWithConfirm(settings(), Duration.ofMillis(200)),
-            AmqpFlowWithContext.createWithConfirm(settings(), Duration.ofMillis(200))
-          },
-          {
-            AmqpFlow.createWithAsyncConfirm(settings(), 10, Duration.ofMillis(200)),
-            AmqpFlowWithContext.createWithAsyncConfirm(settings(), 10, Duration.ofMillis(200)),
-          },
-          {
-            AmqpFlow.createWithAsyncUnorderedConfirm(settings(), 10, Duration.ofMillis(200)),
-            AmqpFlowWithContext.createWithAsyncUnorderedConfirm(settings(), 10, Duration.ofMillis(200))
-          }
-        });
+        .withDeclaration(queueDeclaration)
+        .withBufferSize(10)
+        .withConfirmationTimeout(Duration.ofMillis(200));
   }
 
   @Test
-  public void shouldEmitConfirmationForPublishedMessages() {
+  public void shouldEmitConfirmationForPublishedMessagesInSimpleFlow() {
+    shouldEmitConfirmationForPublishedMessages(
+            AmqpFlow.create(settings())
+    );
+  }
+
+  @Test
+  public void shouldEmitConfirmationForPublishedMessagesInFlowWithConfirm() {
+    shouldEmitConfirmationForPublishedMessages(
+            AmqpFlow.createWithConfirm(settings())
+    );
+  }
+
+  @Test
+  public void shouldEmitConfirmationForPublishedMessagesInFlowWithUnorderedConfirm() {
+    shouldEmitConfirmationForPublishedMessages(
+            AmqpFlow.createWithUnorderedConfirm(settings())
+    );
+  }
+
+  private void shouldEmitConfirmationForPublishedMessages(final Flow<WriteMessage, WriteResult, CompletionStage<Done>> flow) {
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
     final List<WriteResult> expectedOutput =
@@ -111,7 +95,21 @@ public class AmqpFlowTest {
   }
 
   @Test
-  public void shouldPropagateContext() {
+  public void shouldPropagateContextInSimpleFlow() {
+    shouldPropagateContext(
+            AmqpFlowWithContext.create(settings())
+    );
+  }
+
+  @Test
+  public void shouldPropagateContextInFlowWithConfirm() {
+    shouldPropagateContext(
+            AmqpFlowWithContext.createWithConfirm(settings())
+    );
+  }
+
+  private void shouldPropagateContext(
+          FlowWithContext<WriteMessage, String, WriteResult, String, CompletionStage<Done>> flowWithContext) {
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
     final List<Pair<WriteResult, String>> expectedOutput =
@@ -129,5 +127,27 @@ public class AmqpFlowTest {
     result
         .request(input.size())
         .expectNextN(JavaConverters.asScalaBufferConverter(expectedOutput).asScala().toList());
+  }
+
+
+  @Test
+  public void shouldPropagatePassThrough() {
+    Flow<Pair<WriteMessage, String>, Pair<WriteResult, String>, CompletionStage<Done>> flow =
+            AmqpFlow.createWithUnorderedConfirmAndPassThrough(settings());
+
+    final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
+    final List<Pair<WriteResult, String>> expectedOutput =
+            input.stream().map(pt -> Pair.create(WriteResult.create(true), pt)).collect(Collectors.toList());
+
+    final TestSubscriber.Probe<Pair<WriteResult, String>> result =
+            Source.from(input)
+                    .map(s -> Pair.create(WriteMessage.create(ByteString.fromString(s)), s))
+                    .via(flow)
+                    .toMat(TestSink.probe(system), Keep.right())
+                    .run(materializer);
+
+    result
+            .request(input.size())
+            .expectNextN(JavaConverters.asScalaBufferConverter(expectedOutput).asScala().toList());
   }
 }

@@ -4,8 +4,6 @@
 
 package akka.stream.alpakka.amqp.scaladsl
 
-import java.util.concurrent.TimeoutException
-
 import akka.Done
 import akka.stream.alpakka.amqp._
 import akka.stream.scaladsl.{Flow, FlowWithContext, Keep, Sink, Source}
@@ -48,6 +46,8 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
     AmqpWriteSettings(connectionProvider)
       .withRoutingKey(queueName)
       .withDeclaration(queueDeclaration)
+      .withBufferSize(10)
+      .withConfirmationTimeout(200.millis)
   }
 
   def localAmqpWriteSettings: AmqpWriteSettings =
@@ -58,12 +58,12 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
 
   "The AMQP simple flow" should {
     "emit confirmation for published messages" in assertAllStagesStopped {
-      val localSimpleFlow = AmqpFlow.apply[String](localAmqpWriteSettings)
+      val localSimpleFlow = AmqpFlow.apply(localAmqpWriteSettings)
       shouldEmitConfirmationForPublishedMessages(localSimpleFlow)
     }
 
     "fail stage on publication error" in assertAllStagesStopped {
-      val mockedSimpleFlow = AmqpFlow.apply[String](mockAmqpWriteSettings)
+      val mockedSimpleFlow = AmqpFlow.apply(mockAmqpWriteSettings)
       shouldFailStageOnPublicationError(mockedSimpleFlow)
     }
 
@@ -74,105 +74,46 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
   }
 
   "The AMQP confirmation flow" should {
-
-    val mockedBlockingFlow = AmqpFlow.withConfirm[String](mockAmqpWriteSettings, 200.millis)
+    val mockedFlowWithConfirm = AmqpFlow.withConfirm(mockAmqpWriteSettings)
 
     "emit confirmation for published messages" in assertAllStagesStopped {
-      val localBlockingFlow = AmqpFlow.withConfirm[String](localAmqpWriteSettings, 200.millis)
-      shouldEmitConfirmationForPublishedMessages(localBlockingFlow)
+      val localFlowWithConfirm = AmqpFlow.withConfirm(localAmqpWriteSettings)
+      shouldEmitConfirmationForPublishedMessages(localFlowWithConfirm)
     }
 
     "fail stage on publication error" in assertAllStagesStopped {
-      shouldFailStageOnPublicationError(mockedBlockingFlow)
+      shouldFailStageOnPublicationError(mockedFlowWithConfirm)
     }
 
     "propagate context" in assertAllStagesStopped {
-      val localSimpleFlowWithContext = AmqpFlowWithContext.apply[String](localAmqpWriteSettings)
-      shouldPropagateContext(localSimpleFlowWithContext)
+      val localFlowWithContextAndConfirm =
+        AmqpFlowWithContext.withConfirm[String](localAmqpWriteSettings)
+      shouldPropagateContext(localFlowWithContextAndConfirm)
     }
 
     "emit rejected result on message rejection" in assertAllStagesStopped {
-      when(channelMock.waitForConfirms(any[Long]))
-        .thenReturn(true)
-        .thenReturn(false)
-
-      val input = Vector("one", "two")
-
-      val (completion, probe) =
-        Source(input)
-          .map(s => WriteMessage(ByteString(s)))
-          .viaMat(mockedBlockingFlow)(Keep.right)
-          .toMat(TestSink.probe)(Keep.both)
-          .run
-
-      val messages = probe.request(input.size).expectNextN(input.size)
-
-      messages should contain inOrder (WriteResult.confirmed, WriteResult.rejected)
-      completion.futureValue shouldBe an[Done]
+      shouldEmitRejectedResultOnMessageRejection(mockedFlowWithConfirm)
     }
 
     "emit rejected result on confirmation timeout" in assertAllStagesStopped {
-      when(channelMock.waitForConfirms(any[Long]))
-        .thenReturn(true)
-        .thenThrow(new TimeoutException())
-
-      val input = Vector("one", "two")
-
-      val (completion, probe) =
-        Source(input)
-          .map(s => WriteMessage(ByteString(s)))
-          .viaMat(mockedBlockingFlow)(Keep.right)
-          .toMat(TestSink.probe)(Keep.both)
-          .run
-
-      val messages = probe.request(input.size).expectNextN(input.size)
-
-      messages should contain inOrder (WriteResult.confirmed, WriteResult.rejected)
-      completion.futureValue shouldBe an[Done]
-    }
-  }
-
-  "The AMQP async confirmation flow" should {
-    val mockedAsyncFlow = AmqpFlow.withAsyncConfirm(mockAmqpWriteSettings, 10, 200.millis)
-
-    "emit confirmation for published messages" in assertAllStagesStopped {
-      val localAsyncFlow = AmqpFlow.withAsyncConfirm(localAmqpWriteSettings, 10, 200.millis)
-      shouldEmitConfirmationForPublishedMessages(localAsyncFlow)
-    }
-
-    "fail stage on publication error" in assertAllStagesStopped {
-      shouldFailStageOnPublicationError(mockedAsyncFlow)
-    }
-
-    "propagate context" in assertAllStagesStopped {
-      val localAsyncFlowWithContext =
-        AmqpFlowWithContext.withAsyncConfirm[String](localAmqpWriteSettings, 10, 200.millis)
-      shouldPropagateContext(localAsyncFlowWithContext)
-    }
-
-    "emit rejected result on message rejection" in assertAllStagesStopped {
-      shouldEmitRejectedResultOnMessageRejection(mockedAsyncFlow)
-    }
-
-    "emit rejected result on confirmation timeout" in assertAllStagesStopped {
-      shouldEmitRejectedResultOnConfirmationTimeout(mockedAsyncFlow)
+      shouldEmitRejectedResultOnConfirmationTimeout(mockedFlowWithConfirm)
     }
 
     "emit multiple results on batch confirmation" in assertAllStagesStopped {
-      shouldEmitMultipleResultsOnBatchConfirmation(mockedAsyncFlow)
+      shouldEmitMultipleResultsOnBatchConfirmation(mockedFlowWithConfirm)
     }
 
     "not pull when message buffer is full" in assertAllStagesStopped {
-      shouldNotPullWhenMessageBufferIsFull(mockedAsyncFlow)
+      shouldNotPullWhenMessageBufferIsFull(mockedFlowWithConfirm)
     }
 
     "process all buffered messages on upstream finish" in assertAllStagesStopped {
-      shouldProcessAllBufferedMessagesOnUpstreamFinish(mockedAsyncFlow)
+      shouldProcessAllBufferedMessagesOnUpstreamFinish(mockedFlowWithConfirm)
     }
 
     "preserve upstream order in emitted messages" in assertAllStagesStopped {
-      val mockedAsyncFlowWithContext =
-        AmqpFlowWithContext.withAsyncConfirm[String](mockAmqpWriteSettings, 10, 200.millis)
+      val mockedFlowWithContextAndConfirm =
+        AmqpFlowWithContext.withConfirm[String](mockAmqpWriteSettings)
 
       val deliveryTags = 1L to 7L
       when(channelMock.getNextPublishSeqNo).thenReturn(deliveryTags.head, deliveryTags.tail: _*)
@@ -183,7 +124,7 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
         Source(input)
           .asSourceWithContext(identity)
           .map(s => WriteMessage(ByteString(s)))
-          .viaMat(mockedAsyncFlowWithContext)(Keep.right)
+          .viaMat(mockedFlowWithContextAndConfirm)(Keep.right)
           .asSource
           .toMat(TestSink.probe)(Keep.both)
           .run
@@ -217,49 +158,49 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
     }
   }
 
-  "AMQP unordered async confirmation flow" should {
-    val mockedAsyncUnorderedFlow =
-      AmqpFlow.withAsyncUnorderedConfirm[String](mockAmqpWriteSettings, 10, 200.millis)
+  "AMQP unordered confirmation flow" should {
+    val mockedFlowWithUnorderedConfirm =
+      AmqpFlow.withUnorderedConfirm(mockAmqpWriteSettings)
 
     "emit confirmation for published messages" in assertAllStagesStopped {
-      val localAsyncUnorderedFlow =
-        AmqpFlow.withAsyncUnorderedConfirm[String](localAmqpWriteSettings, 10, 200.millis)
-      shouldEmitConfirmationForPublishedMessages(localAsyncUnorderedFlow)
+      val localFlowWithUnorderedConfirm =
+        AmqpFlow.withUnorderedConfirm(localAmqpWriteSettings)
+      shouldEmitConfirmationForPublishedMessages(localFlowWithUnorderedConfirm)
     }
 
     "fail stage on publication error" in assertAllStagesStopped {
-      shouldFailStageOnPublicationError(mockedAsyncUnorderedFlow)
+      shouldFailStageOnPublicationError(mockedFlowWithUnorderedConfirm)
     }
 
-    "propagate context" in assertAllStagesStopped {
-      val localAsyncUnorderedFlowWithContext =
-        AmqpFlowWithContext.withAsyncUnorderedConfirm[String](localAmqpWriteSettings, 10, 200.millis)
-      shouldPropagateContext(localAsyncUnorderedFlowWithContext)
+    "propagate pass-through" in assertAllStagesStopped {
+      val localFlowWithUnorderedConfirmAndPassThrough =
+        AmqpFlow.withUnorderedConfirmAndPassThrough[String](localAmqpWriteSettings)
+      shouldPropagatePassThrough(localFlowWithUnorderedConfirmAndPassThrough)
     }
 
     "emit rejected result on message rejection" in assertAllStagesStopped {
-      shouldEmitRejectedResultOnMessageRejection(mockedAsyncUnorderedFlow)
+      shouldEmitRejectedResultOnMessageRejection(mockedFlowWithUnorderedConfirm)
     }
 
     "emit rejected result on confirmation timeout" in assertAllStagesStopped {
-      shouldEmitRejectedResultOnConfirmationTimeout(mockedAsyncUnorderedFlow)
+      shouldEmitRejectedResultOnConfirmationTimeout(mockedFlowWithUnorderedConfirm)
     }
 
     "emit multiple results on batch confirmation" in assertAllStagesStopped {
-      shouldEmitMultipleResultsOnBatchConfirmation(mockedAsyncUnorderedFlow)
+      shouldEmitMultipleResultsOnBatchConfirmation(mockedFlowWithUnorderedConfirm)
     }
 
     "not pull when message buffer is full" in assertAllStagesStopped {
-      shouldNotPullWhenMessageBufferIsFull(mockedAsyncUnorderedFlow)
+      shouldNotPullWhenMessageBufferIsFull(mockedFlowWithUnorderedConfirm)
     }
 
     "process all buffered messages on upstream finish" in assertAllStagesStopped {
-      shouldProcessAllBufferedMessagesOnUpstreamFinish(mockedAsyncUnorderedFlow)
+      shouldProcessAllBufferedMessagesOnUpstreamFinish(mockedFlowWithUnorderedConfirm)
     }
 
     "emit messages in order of received confirmations" in assertAllStagesStopped {
-      val mockedAsyncUnorderedFlowWithContext =
-        AmqpFlowWithContext.withAsyncUnorderedConfirm[String](mockAmqpWriteSettings, 10, 200.millis)
+      val mockedUnorderedFlowWithPassThrough =
+        AmqpFlow.withUnorderedConfirmAndPassThrough[String](mockAmqpWriteSettings)
 
       val deliveryTags = 1L to 7L
       when(channelMock.getNextPublishSeqNo).thenReturn(deliveryTags.head, deliveryTags.tail: _*)
@@ -270,7 +211,7 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
         Source(input)
           .asSourceWithContext(identity)
           .map(s => WriteMessage(ByteString(s)))
-          .viaMat(mockedAsyncUnorderedFlowWithContext)(Keep.right)
+          .viaMat(mockedUnorderedFlowWithPassThrough)(Keep.right)
           .asSource
           .toMat(TestSink.probe)(Keep.both)
           .run
@@ -329,6 +270,23 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
       Source(input)
         .asSourceWithContext(identity)
         .map(s => WriteMessage(ByteString(s)))
+        .viaMat(flow)(Keep.right)
+        .toMat(TestSink.probe)(Keep.both)
+        .run
+
+    val messages = probe.request(input.size).expectNextN(input.size)
+
+    messages should contain theSameElementsAs expectedOutput
+    completion.futureValue shouldBe an[Done]
+  }
+
+  def shouldPropagatePassThrough(flow: Flow[(WriteMessage, String), (WriteResult, String), Future[Done]]) = {
+    val input = Vector("one", "two", "three", "four", "five")
+    val expectedOutput = input.map(s => (WriteResult.confirmed, s))
+
+    val (completion, probe) =
+      Source(input)
+        .map(s => (WriteMessage(ByteString(s)), s))
         .viaMat(flow)(Keep.right)
         .toMat(TestSink.probe)(Keep.both)
         .run

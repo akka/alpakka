@@ -7,8 +7,9 @@ package akka.stream.alpakka.amqp.javadsl
 import java.util.concurrent.CompletionStage
 
 import akka.Done
+import akka.japi.Pair
 import akka.stream.alpakka.amqp._
-import akka.util.JavaDurationConverters
+import akka.stream.scaladsl.Keep
 
 import scala.compat.java8.FutureConverters._
 
@@ -22,34 +23,13 @@ object AmqpFlow {
    *
    * This stage materializes to a `CompletionStage` of `Done`, which can be used to know when the Flow completes,
    * either normally or because of an amqp failure.
+   *
+   * @param settings `bufferSize` and `confirmationTimeout` properties are ignored by this connector
    */
-  def create[T](
+  def create(
       settings: AmqpWriteSettings
   ): akka.stream.javadsl.Flow[WriteMessage, WriteResult, CompletionStage[Done]] =
     akka.stream.alpakka.amqp.scaladsl.AmqpFlow(settings).mapMaterializedValue(f => f.toJava).asJava
-
-  /**
-   * Creates an `AmqpFlow` that accepts `WriteMessage` elements and emits `WriteResult`.
-   *
-   * This variant of `AmqpFlow` waits for confirmation after every single message publication.
-   * It can be used to ensure order of messages accepted by queue at the cost of significantly lower publication
-   * throughput. Please note that such strict ordering guarantee is rarely needed, and in most cases it's perfectly
-   * sufficient to use `createWithAsyncConfirm` or `createWithAsyncUnorderedConfirm` for better performance.
-   *
-   * This stage materializes to a `CompletionStage` of `Done`, which can be used to know when the Flow completes,
-   * either normally or because of an amqp failure.
-   */
-  def createWithConfirm[T](
-      settings: AmqpWriteSettings,
-      confirmationTimeout: java.time.Duration
-  ): akka.stream.javadsl.Flow[WriteMessage, WriteResult, CompletionStage[Done]] =
-    akka.stream.alpakka.amqp.scaladsl.AmqpFlow
-      .withConfirm(
-        settings = settings,
-        confirmationTimeout = JavaDurationConverters.asFiniteDuration(confirmationTimeout)
-      )
-      .mapMaterializedValue(f => f.toJava)
-      .asJava
 
   /**
    * Creates an `AmqpFlow` that accepts `WriteMessage` elements and emits `WriteResult`.
@@ -64,18 +44,18 @@ object AmqpFlow {
    *
    * This stage materializes to a `CompletionStage` of `Done`, which can be used to know when the Flow completes,
    * either normally or because of an amqp failure.
+   *
+   * NOTE: This connector uses RabbitMQ's extension to AMQP protocol
+   * ([[https://www.rabbitmq.com/confirms.html#publisher-confirms Publisher Confirms]]), therefore it is not
+   * supposed to be used with another AMQP brokers.
+   *
+   * @param settings default value is 20 for `bufferSize` and 100ms for `confirmationTimeout`
    */
-  def createWithAsyncConfirm[T](
-      settings: AmqpWriteSettings,
-      bufferSize: Int,
-      confirmationTimeout: java.time.Duration
+  def createWithConfirm(
+      settings: AmqpWriteSettings
   ): akka.stream.javadsl.Flow[WriteMessage, WriteResult, CompletionStage[Done]] =
     akka.stream.alpakka.amqp.scaladsl.AmqpFlow
-      .withAsyncConfirm(
-        settings = settings,
-        bufferSize = bufferSize,
-        confirmationTimeout = JavaDurationConverters.asFiniteDuration(confirmationTimeout)
-      )
+      .withConfirm(settings = settings)
       .mapMaterializedValue(_.toJava)
       .asJava
 
@@ -92,18 +72,41 @@ object AmqpFlow {
    *
    * This stage materializes to a `CompletionStage` of `Done`, which can be used to know when the Flow completes,
    * either normally or because of an amqp failure.
+   *
+   * NOTE: This connector uses RabbitMQ's extension to AMQP protocol
+   * ([[https://www.rabbitmq.com/confirms.html#publisher-confirms Publisher Confirms]]), therefore it is not
+   * supposed to be used with another AMQP brokers.
+   *
+   * @param settings default value is 20 for `bufferSize` and 100ms for `confirmationTimeout`
    */
-  def createWithAsyncUnorderedConfirm[T](
-      settings: AmqpWriteSettings,
-      bufferSize: Int,
-      confirmationTimeout: java.time.Duration
+  def createWithUnorderedConfirm(
+      settings: AmqpWriteSettings
   ): akka.stream.javadsl.Flow[WriteMessage, WriteResult, CompletionStage[Done]] =
     akka.stream.alpakka.amqp.scaladsl.AmqpFlow
-      .withAsyncUnorderedConfirm(
-        settings = settings,
-        bufferSize = bufferSize,
-        confirmationTimeout = JavaDurationConverters.asFiniteDuration(confirmationTimeout)
-      )
+      .withUnorderedConfirm(settings)
+      .mapMaterializedValue(_.toJava)
+      .asJava
+
+  /**
+   * Variant of `AmqpFlow.createWithUnorderedConfirm` with additional support for pass-through elements.
+   *
+   * @see [[AmqpFlow.createWithUnorderedConfirm]]
+   *
+   * NOTE: This connector uses RabbitMQ's extension to AMQP protocol
+   * ([[https://www.rabbitmq.com/confirms.html#publisher-confirms Publisher Confirms]]), therefore it is not
+   * supposed to be used with another AMQP brokers.
+   */
+  def createWithUnorderedConfirmAndPassThrough[T](
+      settings: AmqpWriteSettings
+  ): akka.stream.javadsl.Flow[Pair[WriteMessage, T], Pair[WriteResult, T], CompletionStage[Done]] =
+    akka.stream.scaladsl
+      .Flow[Pair[WriteMessage, T]]
+      .map((p: Pair[WriteMessage, T]) => p.toScala)
+      .viaMat(
+        akka.stream.alpakka.amqp.scaladsl.AmqpFlow
+          .withUnorderedConfirmAndPassThrough[T](settings = settings)
+      )(Keep.right)
+      .map { case (writeResult, passThrough) => Pair(writeResult, passThrough) }
       .mapMaterializedValue(_.toJava)
       .asJava
 }

@@ -8,7 +8,6 @@ import java.util.concurrent.CompletionStage
 
 import akka.Done
 import akka.stream.alpakka.amqp._
-import akka.util.JavaDurationConverters
 
 import scala.compat.java8.FutureConverters._
 
@@ -31,43 +30,16 @@ object AmqpFlowWithContext {
    * Creates a contextual variant of corresponding [[AmqpFlow]].
    *
    * @see [[AmqpFlow.createWithConfirm]]
+   *
+   * NOTE: This connector uses RabbitMQ's extension to AMQP protocol
+   * ([[https://www.rabbitmq.com/confirms.html#publisher-confirms Publisher Confirms]]), therefore it is not
+   * supposed to be used with another AMQP brokers.
    */
   def createWithConfirm[T](
-      settings: AmqpWriteSettings,
-      confirmationTimeout: java.time.Duration
+      settings: AmqpWriteSettings
   ): akka.stream.javadsl.FlowWithContext[WriteMessage, T, WriteResult, T, CompletionStage[Done]] =
     akka.stream.alpakka.amqp.scaladsl.AmqpFlowWithContext
-      .withConfirm(settings, JavaDurationConverters.asFiniteDuration(confirmationTimeout))
-      .mapMaterializedValue(_.toJava)
-      .asJava
-
-  /**
-   * Creates a contextual variant of corresponding [[AmqpFlow]].
-   *
-   * @see [[AmqpFlow.createWithAsyncConfirm]]
-   */
-  def createWithAsyncConfirm[T](
-      settings: AmqpWriteSettings,
-      bufferSize: Int,
-      confirmationTimeout: java.time.Duration
-  ): akka.stream.javadsl.FlowWithContext[WriteMessage, T, WriteResult, T, CompletionStage[Done]] =
-    akka.stream.alpakka.amqp.scaladsl.AmqpFlowWithContext
-      .withAsyncConfirm(settings, bufferSize, JavaDurationConverters.asFiniteDuration(confirmationTimeout))
-      .mapMaterializedValue(_.toJava)
-      .asJava
-
-  /**
-   * Creates a contextual variant of corresponding [[AmqpFlow]].
-   *
-   * @see [[AmqpFlow.createWithAsyncUnorderedConfirm]]
-   */
-  def createWithAsyncUnorderedConfirm[T](
-      settings: AmqpWriteSettings,
-      bufferSize: Int,
-      confirmationTimeout: java.time.Duration
-  ): akka.stream.javadsl.FlowWithContext[WriteMessage, T, WriteResult, T, CompletionStage[Done]] =
-    akka.stream.alpakka.amqp.scaladsl.AmqpFlowWithContext
-      .withAsyncUnorderedConfirm(settings, bufferSize, JavaDurationConverters.asFiniteDuration(confirmationTimeout))
+      .withConfirm(settings)
       .mapMaterializedValue(_.toJava)
       .asJava
 }

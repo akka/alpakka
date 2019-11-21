@@ -349,10 +349,12 @@ public class AmqpDocsTest {
     final AmqpWriteSettings settings =
         AmqpWriteSettings.create(connectionProvider)
             .withRoutingKey(queueName)
-            .withDeclaration(queueDeclaration);
+            .withDeclaration(queueDeclaration)
+            .withBufferSize(10)
+            .withConfirmationTimeout(Duration.ofMillis(200));
 
     final Flow<WriteMessage, WriteResult, CompletionStage<Done>> amqpFlow =
-        AmqpFlow.createWithAsyncConfirm(settings, 10, Duration.ofMillis(200));
+        AmqpFlow.createWithConfirm(settings);
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
 

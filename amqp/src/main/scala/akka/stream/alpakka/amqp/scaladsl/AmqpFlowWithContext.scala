@@ -9,7 +9,6 @@ import akka.stream.alpakka.amqp._
 import akka.stream.scaladsl.{Flow, FlowWithContext}
 
 import scala.concurrent.Future
-import scala.concurrent.duration._
 
 object AmqpFlowWithContext {
 
@@ -29,40 +28,15 @@ object AmqpFlowWithContext {
    * Creates a contextual variant of corresponding [[AmqpFlow]].
    *
    * @see [[AmqpFlow.withConfirm]]
+   *
+   * NOTE: This connector uses RabbitMQ's extension to AMQP protocol
+   * ([[https://www.rabbitmq.com/confirms.html#publisher-confirms Publisher Confirms]]), therefore it is not
+   * supposed to be used with another AMQP brokers.
    */
   def withConfirm[T](
-      settings: AmqpWriteSettings,
-      confirmationTimeout: FiniteDuration
+      settings: AmqpWriteSettings
   ): FlowWithContext[WriteMessage, T, WriteResult, T, Future[Done]] =
     FlowWithContext.fromTuples(
-      Flow.fromGraph(new impl.AmqpBlockingFlowStage[T](settings, confirmationTimeout))
-    )
-
-  /**
-   * Creates a contextual variant of corresponding [[AmqpFlow]].
-   *
-   * @see [[AmqpFlow.withAsyncConfirm]]
-   */
-  def withAsyncConfirm[T](
-      settings: AmqpWriteSettings,
-      bufferSize: Int,
-      confirmationTimeout: FiniteDuration
-  ): FlowWithContext[WriteMessage, T, WriteResult, T, Future[Done]] =
-    FlowWithContext.fromTuples(
-      Flow.fromGraph(new impl.AmqpAsyncFlowStage(settings, bufferSize, confirmationTimeout))
-    )
-
-  /**
-   * Creates a contextual variant of corresponding [[AmqpFlow]].
-   *
-   * @see [[AmqpFlow.withAsyncUnorderedConfirm]]
-   */
-  def withAsyncUnorderedConfirm[T](
-      settings: AmqpWriteSettings,
-      bufferSize: Int,
-      confirmationTimeout: FiniteDuration
-  ): FlowWithContext[WriteMessage, T, WriteResult, T, Future[Done]] =
-    FlowWithContext.fromTuples(
-      Flow.fromGraph(new impl.AmqpAsyncUnorderedFlowStage(settings, bufferSize, confirmationTimeout))
+      Flow.fromGraph(new impl.AmqpAsyncFlowStage(settings))
     )
 }

@@ -4,12 +4,11 @@
 
 package akka.stream.alpakka.amqp.scaladsl
 
-import akka.{Done, NotUsed}
 import akka.stream.alpakka.amqp._
 import akka.stream.scaladsl.{Flow, Keep}
+import akka.{Done, NotUsed}
 
 import scala.concurrent.Future
-import scala.concurrent.duration._
 
 object AmqpFlow {
 
@@ -21,31 +20,14 @@ object AmqpFlow {
    *
    * This stage materializes to a `Future` of `Done`, which can be used to know when the Flow completes,
    * either normally or because of an amqp failure.
+   *
+   * @param settings `bufferSize` and `confirmationTimeout` properties are ignored by this connector
    */
-  def apply[T](
+  def apply(
       settings: AmqpWriteSettings
   ): Flow[WriteMessage, WriteResult, Future[Done]] =
     asFlowWithoutContext(
       Flow.fromGraph(new impl.AmqpSimpleFlowStage(settings))
-    )
-
-  /**
-   * Creates an `AmqpFlow` that accepts `WriteMessage` elements and emits `WriteResult`.
-   *
-   * This variant of `AmqpFlow` waits for confirmation after every single message publication.
-   * It can be used to ensure order of messages accepted by queue at the cost of significantly lower publication
-   * throughput. Please note that such strict ordering guarantee is rarely needed, and in most cases it's perfectly
-   * sufficient to use `createWithAsyncConfirm` or `createWithAsyncUnorderedConfirm` for better performance.
-   *
-   * This stage materializes to a `Future` of `Done`, which can be used to know when the Flow completes,
-   * either normally or because of an amqp failure.
-   */
-  def withConfirm[T](
-      settings: AmqpWriteSettings,
-      confirmationTimeout: FiniteDuration
-  ): Flow[WriteMessage, WriteResult, Future[Done]] =
-    asFlowWithoutContext(
-      Flow.fromGraph(new impl.AmqpBlockingFlowStage(settings, confirmationTimeout))
     )
 
   /**
@@ -61,14 +43,14 @@ object AmqpFlow {
    *
    * This stage materializes to a `Future` of `Done`, which can be used to know when the Flow completes,
    * either normally or because of an amqp failure.
+   *
+   * @param settings default value is 20 for `bufferSize` and 100ms for `confirmationTimeout`
    */
-  def withAsyncConfirm(
-      settings: AmqpWriteSettings,
-      bufferSize: Int,
-      confirmationTimeout: FiniteDuration
+  def withConfirm(
+      settings: AmqpWriteSettings
   ): Flow[WriteMessage, WriteResult, Future[Done]] =
     asFlowWithoutContext(
-      Flow.fromGraph(new impl.AmqpAsyncFlowStage(settings, bufferSize, confirmationTimeout))
+      Flow.fromGraph(new impl.AmqpAsyncFlowStage(settings))
     )
 
   /**
@@ -84,15 +66,33 @@ object AmqpFlow {
    *
    * This stage materializes to a `Future` of `Done`, which can be used to know when the Flow completes,
    * either normally or because of an amqp failure.
+   *
+   * NOTE: This connector uses RabbitMQ's extension to AMQP protocol
+   * ([[https://www.rabbitmq.com/confirms.html#publisher-confirms Publisher Confirms]]), therefore it is not
+   * supposed to be used with another AMQP brokers.
+   *
+   * @param settings default value is 20 for `bufferSize` and 100ms for `confirmationTimeout`
    */
-  def withAsyncUnorderedConfirm[T](
-      settings: AmqpWriteSettings,
-      bufferSize: Int,
-      confirmationTimeout: FiniteDuration
+  def withUnorderedConfirm(
+      settings: AmqpWriteSettings
   ): Flow[WriteMessage, WriteResult, Future[Done]] =
     asFlowWithoutContext(
-      Flow.fromGraph(new impl.AmqpAsyncUnorderedFlowStage(settings, bufferSize, confirmationTimeout))
+      Flow.fromGraph(new impl.AmqpAsyncUnorderedFlowStage(settings))
     )
+
+  /**
+   * Variant of `AmqpFlow.withUnorderedConfirm` with additional support for pass-through elements.
+   *
+   * @see [[AmqpFlow.withUnorderedConfirm]]
+   *
+   * NOTE: This connector uses RabbitMQ's extension to AMQP protocol
+   * ([[https://www.rabbitmq.com/confirms.html#publisher-confirms Publisher Confirms]]), therefore it is not
+   * supposed to be used with another AMQP brokers.
+   */
+  def withUnorderedConfirmAndPassThrough[T](
+      settings: AmqpWriteSettings
+  ): Flow[(WriteMessage, T), (WriteResult, T), Future[Done]] =
+    Flow.fromGraph(new impl.AmqpAsyncUnorderedFlowStage(settings))
 
   private def asFlowWithoutContext(flow: Flow[(WriteMessage, NotUsed), (WriteResult, NotUsed), Future[Done]]) =
     Flow[WriteMessage]

@@ -255,9 +255,11 @@ class AmqpDocsSpec extends AmqpSpec {
       val settings = AmqpWriteSettings(connectionProvider)
         .withRoutingKey(queueName)
         .withDeclaration(queueDeclaration)
+        .withBufferSize(10)
+        .withConfirmationTimeout(200.millis)
 
       val amqpFlow: Flow[WriteMessage, WriteResult, Future[Done]] =
-        AmqpFlow.withAsyncConfirm(settings, 10, 200.millis)
+        AmqpFlow.withConfirm(settings)
 
       val input = Vector("one", "two", "three", "four", "five")
       val result: Future[Seq[WriteResult]] =

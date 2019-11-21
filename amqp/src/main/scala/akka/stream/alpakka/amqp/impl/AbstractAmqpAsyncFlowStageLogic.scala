@@ -14,7 +14,7 @@ import com.rabbitmq.client.ConfirmCallback
 
 import scala.collection.mutable
 import scala.concurrent.Promise
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 
 /**
  * Internal API.
@@ -30,6 +30,9 @@ import scala.concurrent.duration.FiniteDuration
  */
 @InternalApi private object AbstractAmqpAsyncFlowStageLogic {
   type DeliveryTag = Long
+  val DefaultBufferSize: Int = 10
+  val DefaultConfirmationTimeout: FiniteDuration = 100.millis
+
 }
 
 /**
@@ -39,19 +42,30 @@ import scala.concurrent.duration.FiniteDuration
  */
 @InternalApi private abstract class AbstractAmqpAsyncFlowStageLogic[T](
     override val settings: AmqpWriteSettings,
-    bufferSize: Int,
-    confirmationTimeout: FiniteDuration,
     streamCompletion: Promise[Done],
     shape: FlowShape[(WriteMessage, T), (WriteResult, T)]
 ) extends TimerGraphStageLogic(shape)
     with AmqpConnectorLogic
     with StageLogging {
 
+  import AbstractAmqpAsyncFlowStageLogic._
+
   private def in = shape.in
   private def out = shape.out
 
   private val exchange = settings.exchange.getOrElse("")
   private val routingKey = settings.routingKey.getOrElse("")
+
+  if (settings.bufferSize.isEmpty)
+    log.warning("Buffer size not specified, defaults to {}.", DefaultBufferSize)
+
+  private val bufferSize = settings.bufferSize.getOrElse(DefaultBufferSize)
+
+  if (settings.confirmationTimeout.isEmpty)
+    log.warning("Confirmation timeout not specified, defaults to {}.", DefaultConfirmationTimeout)
+
+  private val confirmationTimeout = settings.confirmationTimeout.getOrElse(DefaultConfirmationTimeout)
+
   private val exitQueue = mutable.Queue.empty[(WriteResult, T)]
   private var upstreamException: Option[Throwable] = None
 

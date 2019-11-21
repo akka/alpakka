@@ -7,14 +7,13 @@ package akka.stream.alpakka.amqp.impl
 import akka.Done
 import akka.annotation.InternalApi
 import akka.event.Logging
-import akka.stream.{ActorAttributes, Attributes, FlowShape, Inlet, Outlet}
-import akka.stream.alpakka.amqp.{AmqpWriteSettings, WriteMessage, WriteResult}
 import akka.stream.alpakka.amqp.impl.AbstractAmqpAsyncFlowStageLogic.DeliveryTag
+import akka.stream.alpakka.amqp.{AmqpWriteSettings, WriteMessage, WriteResult}
 import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue}
+import akka.stream._
 
 import scala.collection.immutable.TreeMap
 import scala.concurrent.{Future, Promise}
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * Internal API.
@@ -28,9 +27,7 @@ import scala.concurrent.duration.FiniteDuration
  * this delivery tag can be safely dequeued.
  */
 @InternalApi private[amqp] final class AmqpAsyncFlowStage[T](
-    settings: AmqpWriteSettings,
-    bufferSize: Int,
-    confirmationTimeout: FiniteDuration
+    settings: AmqpWriteSettings
 ) extends GraphStageWithMaterializedValue[FlowShape[(WriteMessage, T), (WriteResult, T)], Future[Done]] {
 
   val in: Inlet[(WriteMessage, T)] = Inlet(Logging.simpleName(this) + ".in")
@@ -43,7 +40,7 @@ import scala.concurrent.duration.FiniteDuration
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
     val streamCompletion = Promise[Done]()
-    (new AbstractAmqpAsyncFlowStageLogic(settings, bufferSize, confirmationTimeout, streamCompletion, shape) {
+    (new AbstractAmqpAsyncFlowStageLogic(settings, streamCompletion, shape) {
 
       private var buffer = TreeMap[DeliveryTag, AwaitingMessage[T]]()
 
