@@ -4,13 +4,13 @@
 
 package docs.scaladsl
 
-import akka.{Done, NotUsed}
 import akka.http.scaladsl.model.ContentTypes
 import akka.stream.alpakka.googlecloud.storage.scaladsl.{GCStorage, GCStorageWiremockBase}
 import akka.stream.alpakka.googlecloud.storage.{Bucket, GCStorageAttributes, GCStorageExt, StorageObject}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, Attributes}
 import akka.util.ByteString
+import akka.{Done, NotUsed}
 import org.scalatest._
 import org.scalatest.concurrent._
 
@@ -343,6 +343,26 @@ class GCStorageSourceSpec
         .failed
         .futureValue
         .getMessage shouldBe "[400] File download failed"
+    }
+
+    "automatically retry when file downloads fail" in {
+      val bucketName = "alpakka"
+      val fileName = "file1.txt"
+      val fileContent = "This is the file content"
+
+      mockFileDownloadFailureThenSuccess(500, "Internal server error", fileContent)
+
+      val downloadSource = GCStorage.download(bucketName, fileName)
+
+      val data: Future[Option[Source[ByteString, NotUsed]]] =
+        downloadSource.runWith(Sink.head)
+
+      import system.dispatcher
+
+      val result: Future[Seq[String]] = data
+        .flatMap(_.getOrElse(Source.empty).map(_.utf8String).runWith(Sink.seq[String]))
+
+      result.futureValue.mkString shouldBe fileContent
     }
 
     "upload small file" in {
