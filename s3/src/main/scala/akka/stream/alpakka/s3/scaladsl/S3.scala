@@ -182,8 +182,8 @@ object S3 {
    *
    * The `alpakka.s3.list-bucket-api-version` can be set to 1 to use the older API version 1
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/v2-RESTBucketGET.html  (version 1 API)
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGET.html (version 1 API)
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html  (version 2 API)
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html (version 1 API)
    * @param bucket Which bucket that you list object metadata for
    * @param prefix Prefix of the keys you want to list under passed bucket
    * @return [[akka.stream.scaladsl.Source Source]] of [[ListBucketResultContents]]
@@ -197,8 +197,8 @@ object S3 {
    *
    * The `alpakka.s3.list-bucket-api-version` can be set to 1 to use the older API version 1
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/v2-RESTBucketGET.html  (version 1 API)
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGET.html (version 1 API)
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html  (version 2 API)
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html (version 1 API)
    * @param bucket Which bucket that you list object metadata for
    * @param prefix Prefix of the keys you want to list under passed bucket
    * @param s3Headers any headers you want to add
@@ -215,8 +215,8 @@ object S3 {
    *
    * The `alpakka.s3.list-bucket-api-version` can be set to 1 to use the older API version 1
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/v2-RESTBucketGET.html  (version 1 API)
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGET.html (version 1 API)
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html  (version 2 API)
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html (version 1 API)
    * @see https://docs.aws.amazon.com/AmazonS3/latest/dev/ListingKeysHierarchy.html (prefix and delimiter documentation)
    * @param bucket    Which bucket that you list object metadata for
    * @param prefix    Prefix of the keys you want to list under passed bucket
@@ -324,7 +324,7 @@ object S3 {
   /**
    * Create new bucket with a given name
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketPUT.html
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
    *
    * @param bucketName bucket name
    * @return [[scala.concurrent.Future Future]] with type [[Done]] as API doesn't return any additional information
@@ -335,7 +335,7 @@ object S3 {
   /**
    * Create new bucket with a given name
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketPUT.html
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
    *
    * @param bucketName bucket name
    * @param s3Headers any headers you want to add
@@ -347,7 +347,7 @@ object S3 {
   /**
    * Create new bucket with a given name
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketPUT.html
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
    *
    * @param bucketName bucket name
    * @return [[akka.stream.scaladsl.Source Source]] of type [[Done]] as API doesn't return any additional information
@@ -358,7 +358,7 @@ object S3 {
   /**
    * Create new bucket with a given name
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketPUT.html
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
    *
    * @param bucketName bucket name
    * @param s3Headers any headers you want to add
@@ -370,7 +370,7 @@ object S3 {
   /**
    * Delete bucket with a given name
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketDELETE.html
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteBucket.html
    *
    * @param bucketName bucket name
    * @return [[scala.concurrent.Future Future]] of type [[Done]] as API doesn't return any additional information
@@ -382,7 +382,7 @@ object S3 {
   /**
    * Delete bucket with a given name
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketDELETE.html
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteBucket.html
    *
    * @param bucketName bucket name
    * @param s3Headers any headers you want to add
@@ -397,7 +397,7 @@ object S3 {
   /**
    * Delete bucket with a given name
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketDELETE.html
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteBucket.html
    *
    * @param bucketName bucket name
    * @return [[akka.stream.scaladsl.Source Source]] of type [[Done]] as API doesn't return any additional information
@@ -408,7 +408,7 @@ object S3 {
   /**
    * Delete bucket with a given name
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketDELETE.html
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteBucket.html
    *
    * @param bucketName bucket name
    * @param s3Headers any headers you want to add
@@ -420,7 +420,7 @@ object S3 {
   /**
    *   Checks whether the bucket exits and user has rights to perform ListBucket operation
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketHEAD.html
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadBucket.html
    *
    * @param bucketName bucket name
    * @return [[scala.concurrent.Future Future]] of type [[BucketAccess]]
@@ -432,7 +432,7 @@ object S3 {
   /**
    *   Checks whether the bucket exits and user has rights to perform ListBucket operation
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketHEAD.html
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadBucket.html
    *
    * @param bucketName bucket name
    * @param s3Headers any headers you want to add
@@ -447,7 +447,7 @@ object S3 {
   /**
    *   Checks whether the bucket exits and user has rights to perform ListBucket operation
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketHEAD.html
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadBucket.html
    *
    * @param bucketName bucket name
    * @return [[akka.stream.scaladsl.Source Source]] of type [[BucketAccess]]
@@ -458,7 +458,7 @@ object S3 {
   /**
    *   Checks whether the bucket exits and user has rights to perform ListBucket operation
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketHEAD.html
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadBucket.html
    *
    * @param bucketName bucket name
    * @param s3Headers any headers you want to add
