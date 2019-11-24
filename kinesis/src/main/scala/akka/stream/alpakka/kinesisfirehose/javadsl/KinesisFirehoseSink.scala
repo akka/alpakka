@@ -7,17 +7,17 @@ package akka.stream.alpakka.kinesisfirehose.javadsl
 import akka.NotUsed
 import akka.stream.alpakka.kinesisfirehose.{scaladsl, KinesisFirehoseFlowSettings}
 import akka.stream.javadsl.Sink
-import com.amazonaws.services.kinesisfirehose.AmazonKinesisFirehoseAsync
-import com.amazonaws.services.kinesisfirehose.model.Record
+import software.amazon.awssdk.services.firehose.FirehoseAsyncClient
+import software.amazon.awssdk.services.firehose.model.Record
 
 object KinesisFirehoseSink {
 
-  def apply(streamName: String, kinesisClient: AmazonKinesisFirehoseAsync): Sink[Record, NotUsed] =
+  def apply(streamName: String, kinesisClient: FirehoseAsyncClient): Sink[Record, NotUsed] =
     apply(streamName, KinesisFirehoseFlowSettings.Defaults, kinesisClient)
 
   def apply(streamName: String,
             settings: KinesisFirehoseFlowSettings,
-            kinesisClient: AmazonKinesisFirehoseAsync): Sink[Record, NotUsed] =
+            kinesisClient: FirehoseAsyncClient): Sink[Record, NotUsed] =
     (scaladsl.KinesisFirehoseSink.apply(streamName, settings)(kinesisClient)).asJava
 
 }

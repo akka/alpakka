@@ -16,11 +16,11 @@ import akka.stream.alpakka.kinesis.javadsl.KinesisSource;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder;
-import com.amazonaws.services.kinesis.model.PutRecordsRequestEntry;
-import com.amazonaws.services.kinesis.model.PutRecordsResultEntry;
-import com.amazonaws.services.kinesis.model.Record;
-import com.amazonaws.services.kinesis.model.ShardIteratorType;
+import software.amazon.awssdk.services.kinesis.KinesisAsyncClient;
+import software.amazon.awssdk.services.kinesis.model.PutRecordsRequestEntry;
+import software.amazon.awssdk.services.kinesis.model.PutRecordsResultEntry;
+import software.amazon.awssdk.services.kinesis.model.Record;
+import software.amazon.awssdk.services.kinesis.model.ShardIteratorType;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -32,14 +32,14 @@ public class KinesisSnippets {
   final ActorSystem system = ActorSystem.create();
   final ActorMaterializer materializer = ActorMaterializer.create(system);
 
-  final com.amazonaws.services.kinesis.AmazonKinesisAsync amazonKinesisAsync =
-      AmazonKinesisAsyncClientBuilder.defaultClient();
+  final software.amazon.awssdk.services.kinesis.KinesisAsyncClient amazonKinesisAsync =
+      KinesisAsyncClient.create();
   // #init-client
 
   {
     // #init-client
 
-    system.registerOnTermination(amazonKinesisAsync::shutdown);
+    system.registerOnTermination(amazonKinesisAsync::close);
     // #init-client
   }
 
@@ -52,7 +52,7 @@ public class KinesisSnippets {
   // #source-settings
 
   // #source-single
-  final Source<com.amazonaws.services.kinesis.model.Record, NotUsed> source =
+  final Source<software.amazon.awssdk.services.kinesis.model.Record, NotUsed> source =
       KinesisSource.basic(settings, amazonKinesisAsync);
   // #source-single
 

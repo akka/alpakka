@@ -51,10 +51,10 @@ The table below shows direct dependencies of this module and the second tab show
 
 ### Create the Kinesis client
 
-Sources and Flows provided by this connector need a `AmazonKinesisAsync` instance to consume messages from a shard.
+Sources and Flows provided by this connector need a `KinesisAsyncClient` instance to consume messages from a shard.
 
 @@@ note
-The `AmazonKinesisAsync` instance you supply is thread-safe and can be shared amongst multiple `GraphStages`. 
+The `KinesisAsyncClient` instance you supply is thread-safe and can be shared amongst multiple `GraphStages`. 
 As a result, individual `GraphStages` will not automatically shutdown the supplied client when they complete.
 It is recommended to shut the client instance down on Actor system termination.
 @@@
@@ -139,10 +139,10 @@ Java
 
 ### Create the Kinesis Firehose client
 
-Flows provided by this connector need a `AmazonKinesisFirehoseAsync` instance to publish messages.
+Flows provided by this connector need a `FirehoseAsyncClient` instance to publish messages.
 
 @@@ note
-The `AmazonKinesisFirehoseAsync` instance you supply is thread-safe and can be shared amongst multiple `GraphStages`.
+The `FirehoseAsyncClient` instance you supply is thread-safe and can be shared amongst multiple `GraphStages`.
 As a result, individual `GraphStages` will not automatically shutdown the supplied client when they complete.
 It is recommended to shut the client instance down on Actor system termination.
 @@@

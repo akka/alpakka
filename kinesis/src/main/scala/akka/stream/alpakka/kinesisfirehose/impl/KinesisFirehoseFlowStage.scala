@@ -5,24 +5,26 @@
 package akka.stream.alpakka.kinesisfirehose.impl
 
 import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 import akka.stream.alpakka.kinesisfirehose.KinesisFirehoseErrors.{ErrorPublishingRecords, FailurePublishingRecords}
 import akka.stream.alpakka.kinesisfirehose.KinesisFirehoseFlowSettings.{Exponential, Linear, RetryBackoffStrategy}
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
-import com.amazonaws.handlers.AsyncHandler
-import com.amazonaws.services.kinesisfirehose.AmazonKinesisFirehoseAsync
-import com.amazonaws.services.kinesisfirehose.model.{
+import software.amazon.awssdk.services.firehose.FirehoseAsyncClient
+import software.amazon.awssdk.services.firehose.model.{
   PutRecordBatchRequest,
+  PutRecordBatchResponse,
   PutRecordBatchResponseEntry,
-  PutRecordBatchResult,
   Record
 }
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
+
+import scala.compat.java8.FutureConverters._
 
 /**
  * Internal API
@@ -33,13 +35,13 @@ private[kinesisfirehose] final class KinesisFirehoseFlowStage(
     maxRetries: Int,
     backoffStrategy: RetryBackoffStrategy,
     retryInitialTimeout: FiniteDuration
-)(implicit kinesisClient: AmazonKinesisFirehoseAsync)
-    extends GraphStage[FlowShape[Seq[Record], Future[PutRecordBatchResult]]] {
+)(implicit kinesisClient: FirehoseAsyncClient)
+    extends GraphStage[FlowShape[Seq[Record], Future[PutRecordBatchResponse]]] {
 
   import KinesisFirehoseFlowStage._
 
   private val in = Inlet[Seq[Record]]("KinesisFirehoseFlowStage.in")
-  private val out = Outlet[Future[PutRecordBatchResult]]("KinesisFirehoseFlowStage.out")
+  private val out = Outlet[Future[PutRecordBatchResponse]]("KinesisFirehoseFlowStage.out")
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
@@ -157,37 +159,34 @@ private[kinesisfirehose] object KinesisFirehoseFlowStage {
       streamName: String,
       recordEntries: Seq[Record],
       retryRecordsCallback: Seq[(PutRecordBatchResponseEntry, Record)] => Unit
-  )(implicit kinesisClient: AmazonKinesisFirehoseAsync): Future[PutRecordBatchResult] = {
+  )(implicit kinesisClient: FirehoseAsyncClient): Future[PutRecordBatchResponse] = {
 
-    val p = Promise[PutRecordBatchResult]
+    val request = PutRecordBatchRequest
+      .builder()
+      .deliveryStreamName(streamName)
+      .records(recordEntries.asJavaCollection)
+      .build()
+
+    val handlePutRecordBatch: Try[PutRecordBatchResponse] => Try[PutRecordBatchResponse] = {
+      case Failure(exception) => Failure(FailurePublishingRecords(exception))
+      case Success(result) =>
+        if (result.failedPutCount > 0) {
+          retryRecordsCallback(
+            result.requestResponses.asScala
+              .zip(request.records.asScala)
+              .filter(_._1.errorCode != null)
+              .toIndexedSeq
+          )
+        } else {
+          retryRecordsCallback(Nil)
+        }
+        Success(result)
+    }
 
     kinesisClient
-      .putRecordBatchAsync(
-        new PutRecordBatchRequest()
-          .withDeliveryStreamName(streamName)
-          .withRecords(recordEntries.asJavaCollection),
-        new AsyncHandler[PutRecordBatchRequest, PutRecordBatchResult] {
-
-          override def onError(exception: Exception): Unit =
-            p.failure(FailurePublishingRecords(exception))
-
-          override def onSuccess(request: PutRecordBatchRequest, result: PutRecordBatchResult): Unit = {
-            if (result.getFailedPutCount > 0) {
-              retryRecordsCallback(
-                result.getRequestResponses.asScala
-                  .zip(request.getRecords.asScala)
-                  .filter(_._1.getErrorCode != null)
-                  .toIndexedSeq
-              )
-            } else {
-              retryRecordsCallback(Nil)
-            }
-            p.success(result)
-          }
-        }
-      )
-
-    p.future
+      .putRecordBatch(request)
+      .toScala
+      .transform(handlePutRecordBatch)(sameThreadExecutionContext)
   }
 
   private case class Result(attempt: Int, recordsToRetry: Seq[(PutRecordBatchResponseEntry, Record)])

@@ -9,8 +9,8 @@ import akka.stream.ThrottleMode
 import akka.stream.alpakka.kinesisfirehose.KinesisFirehoseFlowSettings
 import akka.stream.alpakka.kinesisfirehose.impl.KinesisFirehoseFlowStage
 import akka.stream.scaladsl.Flow
-import com.amazonaws.services.kinesisfirehose.AmazonKinesisFirehoseAsync
-import com.amazonaws.services.kinesisfirehose.model.{PutRecordBatchResponseEntry, Record}
+import software.amazon.awssdk.services.firehose.FirehoseAsyncClient
+import software.amazon.awssdk.services.firehose.model.{PutRecordBatchResponseEntry, Record}
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Queue
@@ -18,7 +18,7 @@ import scala.concurrent.duration._
 
 object KinesisFirehoseFlow {
   def apply(streamName: String, settings: KinesisFirehoseFlowSettings = KinesisFirehoseFlowSettings.Defaults)(
-      implicit kinesisClient: AmazonKinesisFirehoseAsync
+      implicit kinesisClient: FirehoseAsyncClient
   ): Flow[Record, PutRecordBatchResponseEntry, NotUsed] =
     Flow[Record]
       .throttle(settings.maxRecordsPerSecond, 1.second, settings.maxRecordsPerSecond, ThrottleMode.Shaping)
@@ -33,9 +33,9 @@ object KinesisFirehoseFlow {
         )
       )
       .mapAsync(settings.parallelism)(identity)
-      .mapConcat(_.getRequestResponses.asScala.toIndexedSeq)
-      .filter(_.getErrorCode == null)
+      .mapConcat(_.requestResponses.asScala.toIndexedSeq)
+      .filter(_.errorCode == null)
 
-  private def getByteSize(record: Record): Int = record.getData.position
+  private def getByteSize(record: Record): Int = record.data.asByteBuffer.position
 
 }

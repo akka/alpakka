@@ -12,9 +12,9 @@ import akka.stream.alpakka.kinesisfirehose.javadsl.KinesisFirehoseFlow;
 import akka.stream.alpakka.kinesisfirehose.javadsl.KinesisFirehoseSink;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
-import com.amazonaws.services.kinesisfirehose.AmazonKinesisFirehoseAsyncClientBuilder;
-import com.amazonaws.services.kinesisfirehose.model.PutRecordBatchResponseEntry;
-import com.amazonaws.services.kinesisfirehose.model.Record;
+import software.amazon.awssdk.services.firehose.FirehoseAsyncClient;
+import software.amazon.awssdk.services.firehose.model.PutRecordBatchResponseEntry;
+import software.amazon.awssdk.services.firehose.model.Record;
 
 import java.time.Duration;
 
@@ -24,14 +24,14 @@ public class KinesisFirehoseSnippets {
   final ActorSystem system = ActorSystem.create();
   final ActorMaterializer materializer = ActorMaterializer.create(system);
 
-  final com.amazonaws.services.kinesisfirehose.AmazonKinesisFirehoseAsync
-      amazonKinesisFirehoseAsync = AmazonKinesisFirehoseAsyncClientBuilder.defaultClient();
+  final software.amazon.awssdk.services.firehose.FirehoseAsyncClient amazonFirehoseAsync =
+      FirehoseAsyncClient.create();
   // #init-client
 
   {
     // #init-client
 
-    system.registerOnTermination(amazonKinesisFirehoseAsync::shutdown);
+    system.registerOnTermination(amazonFirehoseAsync::close);
     // #init-client
   }
 
@@ -51,16 +51,16 @@ public class KinesisFirehoseSnippets {
 
   // #flow-sink
   final Flow<Record, PutRecordBatchResponseEntry, NotUsed> flow =
-      KinesisFirehoseFlow.apply("streamName", flowSettings, amazonKinesisFirehoseAsync);
+      KinesisFirehoseFlow.apply("streamName", flowSettings, amazonFirehoseAsync);
 
   final Flow<Record, PutRecordBatchResponseEntry, NotUsed> defaultSettingsFlow =
-      KinesisFirehoseFlow.apply("streamName", amazonKinesisFirehoseAsync);
+      KinesisFirehoseFlow.apply("streamName", amazonFirehoseAsync);
 
   final Sink<Record, NotUsed> sink =
-      KinesisFirehoseSink.apply("streamName", flowSettings, amazonKinesisFirehoseAsync);
+      KinesisFirehoseSink.apply("streamName", flowSettings, amazonFirehoseAsync);
 
   final Sink<Record, NotUsed> defaultSettingsSink =
-      KinesisFirehoseSink.apply("streamName", amazonKinesisFirehoseAsync);
+      KinesisFirehoseSink.apply("streamName", amazonFirehoseAsync);
   // #flow-sink
 
 }

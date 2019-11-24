@@ -12,8 +12,9 @@ import akka.stream.alpakka.kinesis.KinesisFlowSettings
 import akka.stream.alpakka.kinesis.impl.KinesisFlowStage
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
-import com.amazonaws.services.kinesis.AmazonKinesisAsync
-import com.amazonaws.services.kinesis.model.{PutRecordsRequestEntry, PutRecordsResultEntry}
+import software.amazon.awssdk.core.SdkBytes
+import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
+import software.amazon.awssdk.services.kinesis.model.{PutRecordsRequestEntry, PutRecordsResultEntry}
 
 import scala.collection.immutable.Queue
 import scala.concurrent.duration._
@@ -21,7 +22,7 @@ import scala.concurrent.duration._
 object KinesisFlow {
 
   def apply(streamName: String, settings: KinesisFlowSettings = KinesisFlowSettings.Defaults)(
-      implicit kinesisClient: AmazonKinesisAsync
+      implicit kinesisClient: KinesisAsyncClient
   ): Flow[PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed] =
     Flow[PutRecordsRequestEntry]
       .map((_, ()))
@@ -29,7 +30,7 @@ object KinesisFlow {
       .map(_._1)
 
   def withUserContext[T](streamName: String, settings: KinesisFlowSettings = KinesisFlowSettings.Defaults)(
-      implicit kinesisClient: AmazonKinesisAsync
+      implicit kinesisClient: KinesisAsyncClient
   ): Flow[(PutRecordsRequestEntry, T), (PutRecordsResultEntry, T), NotUsed] =
     Flow[(PutRecordsRequestEntry, T)]
       .throttle(settings.maxRecordsPerSecond, 1.second, settings.maxRecordsPerSecond, ThrottleMode.Shaping)
@@ -51,21 +52,23 @@ object KinesisFlow {
       .mapConcat(identity)
 
   private def getPayloadByteSize[T](record: (PutRecordsRequestEntry, T)): Int = record match {
-    case (request, _) => request.getPartitionKey.length + request.getData.position()
+    case (request, _) => request.partitionKey.length + request.data.asByteBuffer.position()
   }
 
   def byPartitionAndData(
       streamName: String,
       settings: KinesisFlowSettings = KinesisFlowSettings.Defaults
   )(
-      implicit kinesisClient: AmazonKinesisAsync
+      implicit kinesisClient: KinesisAsyncClient
   ): Flow[(String, ByteBuffer), PutRecordsResultEntry, NotUsed] =
     Flow[(String, ByteBuffer)]
       .map {
         case (partitionKey, data) =>
-          new PutRecordsRequestEntry()
-            .withPartitionKey(partitionKey)
-            .withData(data)
+          PutRecordsRequestEntry
+            .builder()
+            .partitionKey(partitionKey)
+            .data(SdkBytes.fromByteBuffer(data))
+            .build()
       }
       .via(apply(streamName, settings))
 
@@ -73,7 +76,7 @@ object KinesisFlow {
       streamName: String,
       settings: KinesisFlowSettings = KinesisFlowSettings.Defaults
   )(
-      implicit kinesisClient: AmazonKinesisAsync
+      implicit kinesisClient: KinesisAsyncClient
   ): Flow[(String, ByteString), PutRecordsResultEntry, NotUsed] =
     Flow[(String, ByteString)]
       .map {

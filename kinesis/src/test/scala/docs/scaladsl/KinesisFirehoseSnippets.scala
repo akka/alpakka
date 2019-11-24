@@ -10,8 +10,8 @@ import akka.stream.alpakka.kinesisfirehose.KinesisFirehoseFlowSettings
 import akka.stream.alpakka.kinesisfirehose.scaladsl.{KinesisFirehoseFlow, KinesisFirehoseSink}
 import akka.stream.scaladsl.{Flow, Sink}
 import akka.stream.{ActorMaterializer, Materializer}
-import com.amazonaws.services.kinesisfirehose.AmazonKinesisFirehoseAsyncClientBuilder
-import com.amazonaws.services.kinesisfirehose.model.{PutRecordBatchResponseEntry, Record}
+import software.amazon.awssdk.services.firehose.FirehoseAsyncClient
+import software.amazon.awssdk.services.firehose.model.{PutRecordBatchResponseEntry, Record}
 
 import scala.concurrent.duration._
 
@@ -21,10 +21,10 @@ object KinesisFirehoseSnippets {
   implicit val system: ActorSystem = ActorSystem()
   implicit val materializer: Materializer = ActorMaterializer()
 
-  implicit val amazonKinesisFirehoseAsync: com.amazonaws.services.kinesisfirehose.AmazonKinesisFirehoseAsync =
-    AmazonKinesisFirehoseAsyncClientBuilder.defaultClient()
+  implicit val amazonKinesisFirehoseAsync: software.amazon.awssdk.services.firehose.FirehoseAsyncClient =
+    FirehoseAsyncClient.create()
 
-  system.registerOnTermination(amazonKinesisFirehoseAsync.shutdown())
+  system.registerOnTermination(amazonKinesisFirehoseAsync.close())
   //#init-client
 
   //#flow-settings

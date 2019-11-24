@@ -13,8 +13,13 @@ import akka.stream.alpakka.kinesis.{KinesisFlowSettings, ShardSettings}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.ByteString
-import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder
-import com.amazonaws.services.kinesis.model.{PutRecordsRequestEntry, PutRecordsResultEntry, Record, ShardIteratorType}
+import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
+import software.amazon.awssdk.services.kinesis.model.{
+  PutRecordsRequestEntry,
+  PutRecordsResultEntry,
+  Record,
+  ShardIteratorType
+}
 
 import scala.concurrent.duration._
 
@@ -24,10 +29,10 @@ object KinesisSnippets {
   implicit val system: ActorSystem = ActorSystem()
   implicit val materializer: Materializer = ActorMaterializer()
 
-  implicit val amazonKinesisAsync: com.amazonaws.services.kinesis.AmazonKinesisAsync =
-    AmazonKinesisAsyncClientBuilder.defaultClient()
+  implicit val amazonKinesisAsync: software.amazon.awssdk.services.kinesis.KinesisAsyncClient =
+    KinesisAsyncClient.create()
 
-  system.registerOnTermination(amazonKinesisAsync.shutdown())
+  system.registerOnTermination(amazonKinesisAsync.close())
   //#init-client
 
   //#source-settings
@@ -39,7 +44,7 @@ object KinesisSnippets {
   //#source-settings
 
   //#source-single
-  val source: Source[com.amazonaws.services.kinesis.model.Record, NotUsed] =
+  val source: Source[software.amazon.awssdk.services.kinesis.model.Record, NotUsed] =
     KinesisSource.basic(settings, amazonKinesisAsync)
   //#source-single
 

@@ -12,13 +12,13 @@ import akka.stream.scaladsl.Keep
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.{TestSink, TestSource}
 import akka.util.ByteString
-import com.amazonaws.handlers.AsyncHandler
-import com.amazonaws.services.kinesisfirehose.model._
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.scalatest.{Matchers, WordSpecLike}
+import software.amazon.awssdk.core.SdkBytes
+import software.amazon.awssdk.services.firehose.model._
 
 import scala.collection.JavaConverters._
 
@@ -47,21 +47,20 @@ class KinesisFirehoseFlowSpec extends WordSpecLike with Matchers with KinesisFir
 
     "publish records with retries" in assertAllStagesStopped {
       new DefaultSettings with KinesisFirehoseFlowProbe {
-        when(amazonKinesisFirehoseAsync.putRecordBatchAsync(any(), any()))
+        when(amazonKinesisFirehoseAsync.putRecordBatch(any[PutRecordBatchRequest]))
           .thenAnswer(new Answer[AnyRef] {
             override def answer(invocation: InvocationOnMock) = {
               val request = invocation
                 .getArgument[PutRecordBatchRequest](0)
-              val result = new PutRecordBatchResult()
-                .withFailedPutCount(request.getRecords.size())
-                .withRequestResponses(
-                  request.getRecords.asScala
+              val result = PutRecordBatchResponse
+                .builder()
+                .failedPutCount(request.records.size())
+                .requestResponses(
+                  request.records.asScala
                     .map(_ => failingRecord)
                     .asJava
                 )
-              invocation
-                .getArgument[AsyncHandler[PutRecordBatchRequest, PutRecordBatchResult]](1)
-                .onSuccess(request, result)
+                .build()
               CompletableFuture.completedFuture(result)
             }
           })
@@ -69,12 +68,11 @@ class KinesisFirehoseFlowSpec extends WordSpecLike with Matchers with KinesisFir
             override def answer(invocation: InvocationOnMock) = {
               val request = invocation
                 .getArgument[PutRecordBatchRequest](0)
-              val result = new PutRecordBatchResult()
-                .withFailedPutCount(0)
-                .withRequestResponses(request.getRecords.asScala.map(_ => publishedRecord).asJava)
-              invocation
-                .getArgument[AsyncHandler[PutRecordBatchRequest, PutRecordBatchResult]](1)
-                .onSuccess(request, result)
+              val result = PutRecordBatchResponse
+                .builder()
+                .failedPutCount(0)
+                .requestResponses(request.records.asScala.map(_ => publishedRecord).asJava)
+                .build()
               CompletableFuture.completedFuture(result)
             }
           })
@@ -129,9 +127,10 @@ class KinesisFirehoseFlowSpec extends WordSpecLike with Matchers with KinesisFir
   trait KinesisFirehoseFlowProbe { self: Settings =>
     val streamName = "stream-name"
     val record =
-      new Record().withData(ByteString("data").asByteBuffer)
-    val publishedRecord = new PutRecordBatchResponseEntry()
-    val failingRecord = new PutRecordBatchResponseEntry().withErrorCode("error-code").withErrorMessage("error-message")
+      Record.builder().data(SdkBytes.fromByteBuffer(ByteString("data").asByteBuffer)).build()
+    val publishedRecord = PutRecordBatchResponseEntry.builder().build()
+    val failingRecord =
+      PutRecordBatchResponseEntry.builder().errorCode("error-code").errorMessage("error-message").build()
     val requestError = new RuntimeException("kinesisfirehose-error")
 
     val (sourceProbe, sinkProbe) =
@@ -143,48 +142,43 @@ class KinesisFirehoseFlowSpec extends WordSpecLike with Matchers with KinesisFir
   }
 
   trait WithPutRecordsSuccess { self: KinesisFirehoseFlowProbe =>
-    when(amazonKinesisFirehoseAsync.putRecordBatchAsync(any(), any())).thenAnswer(new Answer[AnyRef] {
+    when(amazonKinesisFirehoseAsync.putRecordBatch(any[PutRecordBatchRequest])).thenAnswer(new Answer[AnyRef] {
       override def answer(invocation: InvocationOnMock) = {
         val request = invocation
           .getArgument[PutRecordBatchRequest](0)
-        val result = new PutRecordBatchResult()
-          .withFailedPutCount(0)
-          .withRequestResponses(request.getRecords.asScala.map(_ => publishedRecord).asJava)
-        invocation
-          .getArgument[AsyncHandler[PutRecordBatchRequest, PutRecordBatchResult]](1)
-          .onSuccess(request, result)
+        val result = PutRecordBatchResponse
+          .builder()
+          .failedPutCount(0)
+          .requestResponses(request.records.asScala.map(_ => publishedRecord).asJava)
+          .build()
         CompletableFuture.completedFuture(result)
       }
     })
   }
 
   trait WithPutRecordsWithPartialErrors { self: KinesisFirehoseFlowProbe =>
-    when(amazonKinesisFirehoseAsync.putRecordBatchAsync(any(), any()))
+    when(amazonKinesisFirehoseAsync.putRecordBatch(any[PutRecordBatchRequest]))
       .thenAnswer(new Answer[AnyRef] {
         override def answer(invocation: InvocationOnMock) = {
           val request = invocation
             .getArgument[PutRecordBatchRequest](0)
-          val result = new PutRecordBatchResult()
-            .withFailedPutCount(request.getRecords.size())
-            .withRequestResponses(
-              request.getRecords.asScala
+          val result = PutRecordBatchResponse
+            .builder()
+            .failedPutCount(request.records.size())
+            .requestResponses(
+              request.records.asScala
                 .map(_ => failingRecord)
                 .asJava
             )
-          invocation
-            .getArgument[AsyncHandler[PutRecordBatchRequest, PutRecordBatchResult]](1)
-            .onSuccess(request, result)
+            .build()
           CompletableFuture.completedFuture(result)
         }
       })
   }
 
   trait WithPutRecordsFailure { self: KinesisFirehoseFlowProbe =>
-    when(amazonKinesisFirehoseAsync.putRecordBatchAsync(any(), any())).thenAnswer(new Answer[AnyRef] {
+    when(amazonKinesisFirehoseAsync.putRecordBatch(any[PutRecordBatchRequest])).thenAnswer(new Answer[AnyRef] {
       override def answer(invocation: InvocationOnMock) = {
-        invocation
-          .getArgument[AsyncHandler[PutRecordBatchRequest, PutRecordBatchResult]](1)
-          .onError(requestError)
         val future = new CompletableFuture()
         future.completeExceptionally(requestError)
         future
