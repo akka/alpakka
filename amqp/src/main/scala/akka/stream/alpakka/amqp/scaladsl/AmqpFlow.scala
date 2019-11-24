@@ -43,8 +43,6 @@ object AmqpFlow {
    *
    * This stage materializes to a `Future` of `Done`, which can be used to know when the Flow completes,
    * either normally or because of an amqp failure.
-   *
-   * @param settings default value is 20 for `bufferSize` and 100ms for `confirmationTimeout`
    */
   def withConfirm(
       settings: AmqpWriteSettings
@@ -70,8 +68,6 @@ object AmqpFlow {
    * NOTE: This connector uses RabbitMQ's extension to AMQP protocol
    * ([[https://www.rabbitmq.com/confirms.html#publisher-confirms Publisher Confirms]]), therefore it is not
    * supposed to be used with another AMQP brokers.
-   *
-   * @param settings default value is 20 for `bufferSize` and 100ms for `confirmationTimeout`
    */
   def withUnorderedConfirm(
       settings: AmqpWriteSettings

@@ -57,30 +57,25 @@ public class AmqpFlowTest {
 
   @Test
   public void shouldEmitConfirmationForPublishedMessagesInSimpleFlow() {
-    shouldEmitConfirmationForPublishedMessages(
-            AmqpFlow.create(settings())
-    );
+    shouldEmitConfirmationForPublishedMessages(AmqpFlow.create(settings()));
   }
 
   @Test
   public void shouldEmitConfirmationForPublishedMessagesInFlowWithConfirm() {
-    shouldEmitConfirmationForPublishedMessages(
-            AmqpFlow.createWithConfirm(settings())
-    );
+    shouldEmitConfirmationForPublishedMessages(AmqpFlow.createWithConfirm(settings()));
   }
 
   @Test
   public void shouldEmitConfirmationForPublishedMessagesInFlowWithUnorderedConfirm() {
-    shouldEmitConfirmationForPublishedMessages(
-            AmqpFlow.createWithUnorderedConfirm(settings())
-    );
+    shouldEmitConfirmationForPublishedMessages(AmqpFlow.createWithUnorderedConfirm(settings()));
   }
 
-  private void shouldEmitConfirmationForPublishedMessages(final Flow<WriteMessage, WriteResult, CompletionStage<Done>> flow) {
+  private void shouldEmitConfirmationForPublishedMessages(
+      final Flow<WriteMessage, WriteResult, CompletionStage<Done>> flow) {
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
     final List<WriteResult> expectedOutput =
-            input.stream().map(pt -> WriteResult.create(true)).collect(Collectors.toList());
+        input.stream().map(pt -> WriteResult.create(true)).collect(Collectors.toList());
 
     final TestSubscriber.Probe<WriteResult> result =
         Source.from(input)
@@ -96,24 +91,23 @@ public class AmqpFlowTest {
 
   @Test
   public void shouldPropagateContextInSimpleFlow() {
-    shouldPropagateContext(
-            AmqpFlowWithContext.create(settings())
-    );
+    shouldPropagateContext(AmqpFlowWithContext.create(settings()));
   }
 
   @Test
   public void shouldPropagateContextInFlowWithConfirm() {
-    shouldPropagateContext(
-            AmqpFlowWithContext.createWithConfirm(settings())
-    );
+    shouldPropagateContext(AmqpFlowWithContext.createWithConfirm(settings()));
   }
 
   private void shouldPropagateContext(
-          FlowWithContext<WriteMessage, String, WriteResult, String, CompletionStage<Done>> flowWithContext) {
+      FlowWithContext<WriteMessage, String, WriteResult, String, CompletionStage<Done>>
+          flowWithContext) {
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
     final List<Pair<WriteResult, String>> expectedOutput =
-        input.stream().map(pt -> Pair.create(WriteResult.create(true), pt)).collect(Collectors.toList());
+        input.stream()
+            .map(pt -> Pair.create(WriteResult.create(true), pt))
+            .collect(Collectors.toList());
 
     final TestSubscriber.Probe<Pair<WriteResult, String>> result =
         Source.from(input)
@@ -129,25 +123,26 @@ public class AmqpFlowTest {
         .expectNextN(JavaConverters.asScalaBufferConverter(expectedOutput).asScala().toList());
   }
 
-
   @Test
   public void shouldPropagatePassThrough() {
     Flow<Pair<WriteMessage, String>, Pair<WriteResult, String>, CompletionStage<Done>> flow =
-            AmqpFlow.createWithUnorderedConfirmAndPassThrough(settings());
+        AmqpFlow.createWithUnorderedConfirmAndPassThrough(settings());
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
     final List<Pair<WriteResult, String>> expectedOutput =
-            input.stream().map(pt -> Pair.create(WriteResult.create(true), pt)).collect(Collectors.toList());
+        input.stream()
+            .map(pt -> Pair.create(WriteResult.create(true), pt))
+            .collect(Collectors.toList());
 
     final TestSubscriber.Probe<Pair<WriteResult, String>> result =
-            Source.from(input)
-                    .map(s -> Pair.create(WriteMessage.create(ByteString.fromString(s)), s))
-                    .via(flow)
-                    .toMat(TestSink.probe(system), Keep.right())
-                    .run(materializer);
+        Source.from(input)
+            .map(s -> Pair.create(WriteMessage.create(ByteString.fromString(s)), s))
+            .via(flow)
+            .toMat(TestSink.probe(system), Keep.right())
+            .run(materializer);
 
     result
-            .request(input.size())
-            .expectNextN(JavaConverters.asScalaBufferConverter(expectedOutput).asScala().toList());
+        .request(input.size())
+        .expectNextN(JavaConverters.asScalaBufferConverter(expectedOutput).asScala().toList());
   }
 }

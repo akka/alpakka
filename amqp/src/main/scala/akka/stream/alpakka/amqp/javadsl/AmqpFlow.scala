@@ -48,8 +48,6 @@ object AmqpFlow {
    * NOTE: This connector uses RabbitMQ's extension to AMQP protocol
    * ([[https://www.rabbitmq.com/confirms.html#publisher-confirms Publisher Confirms]]), therefore it is not
    * supposed to be used with another AMQP brokers.
-   *
-   * @param settings default value is 20 for `bufferSize` and 100ms for `confirmationTimeout`
    */
   def createWithConfirm(
       settings: AmqpWriteSettings
@@ -76,8 +74,6 @@ object AmqpFlow {
    * NOTE: This connector uses RabbitMQ's extension to AMQP protocol
    * ([[https://www.rabbitmq.com/confirms.html#publisher-confirms Publisher Confirms]]), therefore it is not
    * supposed to be used with another AMQP brokers.
-   *
-   * @param settings default value is 20 for `bufferSize` and 100ms for `confirmationTimeout`
    */
   def createWithUnorderedConfirm(
       settings: AmqpWriteSettings
