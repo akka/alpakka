@@ -100,8 +100,7 @@ public class AmqpFlowTest {
   }
 
   private void shouldPropagateContext(
-      FlowWithContext<WriteMessage, String, WriteResult, String, CompletionStage<Done>>
-          flowWithContext) {
+          FlowWithContext<WriteMessage, String, WriteResult, String, CompletionStage<Done>> flowWithContext) {
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
     final List<Pair<WriteResult, String>> expectedOutput =

@@ -42,20 +42,6 @@ Java
 
 Here we used @apidoc[QueueDeclaration] configuration class to create a queue declaration.
 
-### With sink
-
-Create a sink, that accepts and forwards @apidoc[akka.util.ByteString]s to the AMQP server.
-
-@apidoc[AmqpSink$] is a collection of factory methods that facilitates creation of sinks. Here we created a *simple* sink, which means that we are able to pass `ByteString`s to the sink instead of wrapping data into @apidoc[amqp.WriteMessage]s.
-
-Last step is to @extref:[materialize](akka:stream/stream-flows-and-basics.html) and run the sink we have created.
-
-Scala
-: @@snip [snip](/amqp/src/test/scala/docs/scaladsl/AmqpDocsSpec.scala) { #create-sink }
-
-Java
-: @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #create-sink }
-
 ### With flow
 
 Similarly as with Sink, the first step is to create Flow which accepts @apidoc[amqp.WriteMessage]s and forwards it's content to the AMQP server. Flow emits @apidoc[amqp.WriteResult]s informing about publication result (see below for summary of delivery guarantees for different Flow variants).
@@ -83,6 +69,20 @@ For @apidoc[FlowWithContext$] counterparts of above flows see @apidoc[AmqpFlowWi
 @@@ warning
 `AmqpFlow.withConfirm` and `AmqpFlow.withUnorderedConfirm` are implemented using RabbitMQ's extension to AMQP protocol ([Publisher Confirms](https://www.rabbitmq.com/confirms.html#publisher-confirms)), therefore they are not intended to work with another AMQP brokers.
 @@@
+
+### With sink
+
+Create a sink, that accepts and forwards @apidoc[akka.util.ByteString]s to the AMQP server.
+
+@apidoc[AmqpSink$] is a collection of factory methods that facilitates creation of sinks. Here we created a *simple* sink, which means that we are able to pass `ByteString`s to the sink instead of wrapping data into @apidoc[amqp.WriteMessage]s.
+
+Last step is to @extref:[materialize](akka:stream/stream-flows-and-basics.html) and run the sink we have created.
+
+Scala
+: @@snip [snip](/amqp/src/test/scala/docs/scaladsl/AmqpDocsSpec.scala) { #create-sink }
+
+Java
+: @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #create-sink }
 
 ## Receiving messages
 
