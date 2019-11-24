@@ -287,7 +287,16 @@ object Dependencies {
 
   val Kinesis = Seq(
     libraryDependencies ++= Seq(
-        "com.amazonaws" % "aws-java-sdk-kinesis" % AwsSdkVersion, // ApacheV2
+        "software.amazon.awssdk" % "kinesis" % AwsSdk2Version excludeAll // ApacheV2
+        (
+          ExclusionRule("software.amazon.awssdk", "apache-client"),
+          ExclusionRule("software.amazon.awssdk", "netty-nio-client")
+        ),
+        "software.amazon.awssdk" % "firehose" % AwsSdk2Version excludeAll // ApacheV2
+        (
+          ExclusionRule("software.amazon.awssdk", "apache-client"),
+          ExclusionRule("software.amazon.awssdk", "netty-nio-client")
+        ),
         "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
       )
   )
