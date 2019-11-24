@@ -167,26 +167,26 @@ private[kinesisfirehose] object KinesisFirehoseFlowStage {
       .records(recordEntries.asJavaCollection)
       .build()
 
-    val handlePutRecordBatch: Try[PutRecordBatchResponse] => Try[PutRecordBatchResponse] = {
-      case Failure(exception) => Failure(FailurePublishingRecords(exception))
-      case Success(result) =>
-        if (result.failedPutCount > 0) {
-          retryRecordsCallback(
-            result.requestResponses.asScala
-              .zip(request.records.asScala)
-              .filter(_._1.errorCode != null)
-              .toIndexedSeq
-          )
-        } else {
-          retryRecordsCallback(Nil)
-        }
-        Success(result)
+    val handlePutRecordBatchSuccess: PutRecordBatchResponse => PutRecordBatchResponse = { result =>
+      if (result.failedPutCount > 0) {
+        retryRecordsCallback(
+          result.requestResponses.asScala
+            .zip(request.records.asScala)
+            .filter(_._1.errorCode != null)
+            .toIndexedSeq
+        )
+      } else {
+        retryRecordsCallback(Nil)
+      }
+      result
     }
+
+    val handlePutRecordBatchFailure: Throwable => Throwable = exception => FailurePublishingRecords(exception)
 
     kinesisClient
       .putRecordBatch(request)
       .toScala
-      .transform(handlePutRecordBatch)(sameThreadExecutionContext)
+      .transform(handlePutRecordBatchSuccess, handlePutRecordBatchFailure)(sameThreadExecutionContext)
   }
 
   private case class Result(attempt: Int, recordsToRetry: Seq[(PutRecordBatchResponseEntry, Record)])

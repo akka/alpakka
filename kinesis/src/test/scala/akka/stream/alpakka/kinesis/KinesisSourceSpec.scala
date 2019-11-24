@@ -163,7 +163,7 @@ class KinesisSourceSpec extends WordSpecLike with Matchers with KinesisMock {
     def describeStreamResult =
       DescribeStreamResponse
         .builder()
-        .streamDescription(builder => builder.shards(shards).hasMoreShards(false).build())
+        .streamDescription(StreamDescription.builder().shards(shards).hasMoreShards(false).build())
         .build()
 
     when(amazonKinesisAsync.describeStream(any[DescribeStreamRequest]))
