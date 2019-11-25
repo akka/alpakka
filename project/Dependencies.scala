@@ -272,7 +272,7 @@ object Dependencies {
         "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
       ),
     // Having JBoss as a first resolver is a workaround for https://github.com/coursier/coursier/issues/200
-    externalResolvers := ("jboss" at "http://repository.jboss.org/nexus/content/groups/public") +: externalResolvers.value
+    externalResolvers := ("jboss" at "https://repository.jboss.org/nexus/content/groups/public") +: externalResolvers.value
   )
 
   val JsonStreaming = Seq(
