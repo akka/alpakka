@@ -44,11 +44,9 @@ private[kinesis] final class KinesisFlowStage[T](streamName: String)(implicit ki
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new TimerGraphStageLogic(shape) with StageLogging with InHandler with OutHandler {
+    new GraphStageLogic(shape) with StageLogging with InHandler with OutHandler {
 
       type Token = Int
-      type RetryCount = Int
-
       private var completionState: Option[Try[Unit]] = None
 
       private val pendingRequests: mutable.Queue[Job[T]] = mutable.Queue.empty
