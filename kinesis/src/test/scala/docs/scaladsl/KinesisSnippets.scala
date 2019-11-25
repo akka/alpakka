@@ -63,9 +63,6 @@ object KinesisSnippets {
     .withMaxBatchSize(500)
     .withMaxRecordsPerSecond(1000)
     .withMaxBytesPerSecond(1000000)
-    .withMaxRetries(5)
-    .withBackoffStrategy(KinesisFlowSettings.Exponential)
-    .withRetryInitialTimeout(100.milli)
 
   val defaultFlowSettings = KinesisFlowSettings.Defaults
 

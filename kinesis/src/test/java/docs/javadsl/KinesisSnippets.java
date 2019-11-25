@@ -71,9 +71,7 @@ public class KinesisSnippets {
           .withMaxBatchSize(500)
           .withMaxRecordsPerSecond(1_000)
           .withMaxBytesPerSecond(1_000_000)
-          .withMaxRecordsPerSecond(5)
-          .withBackoffStrategyExponential()
-          .withRetryInitialTimeout(Duration.ofMillis(100));
+          .withMaxRecordsPerSecond(5);
 
   final KinesisFlowSettings defaultFlowSettings = KinesisFlowSettings.create();
 

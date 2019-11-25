@@ -27,7 +27,7 @@ class KinesisFlowSpec extends WordSpecLike with Matchers with KinesisMock {
   "KinesisFlow" must {
 
     "publish records" in assertAllStagesStopped {
-      new DefaultSettings with KinesisFlowProbe with WithPutRecordsSuccess {
+      new Settings with KinesisFlowProbe with WithPutRecordsSuccess {
         sourceProbe.sendNext(record)
         sourceProbe.sendNext(record)
         sourceProbe.sendNext(record)
@@ -45,37 +45,17 @@ class KinesisFlowSpec extends WordSpecLike with Matchers with KinesisMock {
       }
     }
 
-    "publish records with retries" in assertAllStagesStopped {
-      new DefaultSettings with KinesisFlowProbe with WithPutRecordsInitialErrorsSuccessfulRetry {
-        sourceProbe.sendNext(record)
-
-        sinkProbe.requestNext(settings.retryInitialTimeout * 2) shouldBe publishedRecord
-
-        sourceProbe.sendComplete()
-        sinkProbe.expectComplete()
-      }
-    }
-
-    "fail after trying to publish records with no retries" in assertAllStagesStopped {
-      new NoRetries with KinesisFlowProbe with WithPutRecordsWithPartialErrors {
+    "fail after trying to publish records" in assertAllStagesStopped {
+      new Settings with KinesisFlowProbe with WithPutRecordsWithPartialErrors {
         sourceProbe.sendNext(record)
 
         sinkProbe.request(1)
-        sinkProbe.expectError(ErrorPublishingRecords(1, Seq((failingRecord, ()))))
-      }
-    }
-
-    "fail after trying to publish records with several retries" in assertAllStagesStopped {
-      new DefaultSettings with KinesisFlowProbe with WithPutRecordsWithPartialErrors {
-        sourceProbe.sendNext(record)
-
-        sinkProbe.request(1)
-        sinkProbe.expectError(ErrorPublishingRecords(settings.maxRetries + 1, Seq((failingRecord, ()))))
+        sinkProbe.expectError(ErrorPublishingRecords(Seq((failingRecord, ()))))
       }
     }
 
     "fail when request returns an error" in assertAllStagesStopped {
-      new DefaultSettings with KinesisFlowProbe with WithPutRecordsFailure {
+      new Settings with KinesisFlowProbe with WithPutRecordsFailure {
         sourceProbe.sendNext(record)
 
         sinkProbe.request(1)
@@ -86,7 +66,7 @@ class KinesisFlowSpec extends WordSpecLike with Matchers with KinesisMock {
 
   "KinesisFlowWithUserContext" must {
     "return token in result" in assertAllStagesStopped {
-      new DefaultSettings with KinesisFlowWithUserContextProbe with WithPutRecordsSuccess {
+      new Settings with KinesisFlowWithUserContextProbe with WithPutRecordsSuccess {
         val records = recordStream.take(5)
         records.foreach(sourceProbe.sendNext)
         val results = for (_ <- 1 to records.size) yield sinkProbe.requestNext()
@@ -96,28 +76,10 @@ class KinesisFlowSpec extends WordSpecLike with Matchers with KinesisMock {
         sinkProbe.expectComplete()
       }
     }
-
-    "return token in retried result" in assertAllStagesStopped {
-      new DefaultSettings with KinesisFlowWithUserContextProbe with WithPutRecordsInitialErrorsSuccessfulRetry {
-        val record = recordStream.take(1).head
-        sourceProbe.sendNext(record)
-
-        sinkProbe.requestNext(settings.retryInitialTimeout * 2) shouldBe resultStream.take(1).head
-
-        sourceProbe.sendComplete()
-        sinkProbe.expectComplete()
-      }
-    }
   }
 
   sealed trait Settings {
-    val settings: KinesisFlowSettings
-  }
-  trait DefaultSettings extends Settings {
-    val settings = KinesisFlowSettings.Defaults.withMaxRetries(1)
-  }
-  trait NoRetries extends Settings {
-    val settings = KinesisFlowSettings.Defaults.withMaxRetries(0)
+    val settings: KinesisFlowSettings = KinesisFlowSettings.Defaults
   }
 
   trait KinesisFlowProbe { self: Settings =>
@@ -193,40 +155,6 @@ class KinesisFlowSpec extends WordSpecLike with Matchers with KinesisMock {
                 .map(_ => failingRecord)
                 .asJava
             )
-            .build()
-          CompletableFuture.completedFuture(result)
-        }
-      })
-  }
-
-  trait WithPutRecordsInitialErrorsSuccessfulRetry { self: Settings =>
-    val publishedRecord = PutRecordsResultEntry.builder().build()
-    val failingRecord = PutRecordsResultEntry.builder().errorCode("error-code").errorMessage("error-message").build()
-    when(amazonKinesisAsync.putRecords(any[PutRecordsRequest]))
-      .thenAnswer(new Answer[AnyRef] {
-        override def answer(invocation: InvocationOnMock) = {
-          val request = invocation
-            .getArgument[PutRecordsRequest](0)
-          val result = PutRecordsResponse
-            .builder()
-            .failedRecordCount(request.records.size())
-            .records(
-              request.records.asScala
-                .map(_ => failingRecord)
-                .asJava
-            )
-            .build()
-          CompletableFuture.completedFuture(result)
-        }
-      })
-      .thenAnswer(new Answer[AnyRef] {
-        override def answer(invocation: InvocationOnMock) = {
-          val request = invocation
-            .getArgument[PutRecordsRequest](0)
-          val result = PutRecordsResponse
-            .builder()
-            .failedRecordCount(0)
-            .records(request.records.asScala.map(_ => publishedRecord).asJava)
             .build()
           CompletableFuture.completedFuture(result)
         }

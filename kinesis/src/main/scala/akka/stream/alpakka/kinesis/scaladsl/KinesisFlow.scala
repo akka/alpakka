@@ -42,10 +42,7 @@ object KinesisFlow {
       .batch(settings.maxBatchSize, Queue(_))(_ :+ _)
       .via(
         new KinesisFlowStage(
-          streamName,
-          settings.maxRetries,
-          settings.backoffStrategy,
-          settings.retryInitialTimeout
+          streamName
         )
       )
       .mapAsync(settings.parallelism)(identity)
