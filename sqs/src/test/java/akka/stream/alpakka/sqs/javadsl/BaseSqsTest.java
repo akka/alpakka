@@ -29,6 +29,7 @@ public abstract class BaseSqsTest {
 
   protected static ActorSystem system;
   protected static Materializer materializer;
+  private static SqsAsyncClient sqsClientForClose;
 
   private boolean initialized = false;
   protected String sqsEndpoint = "http://localhost:9324";
@@ -44,6 +45,9 @@ public abstract class BaseSqsTest {
 
   @AfterClass
   public static void teardown() {
+    if (sqsClientForClose != null) {
+      sqsClientForClose.close();
+    }
     TestKit.shutdownActorSystem(system);
   }
 
@@ -51,6 +55,7 @@ public abstract class BaseSqsTest {
   public void setupBefore() {
     if (!initialized) {
       sqsClient = createAsyncClient(sqsEndpoint);
+      sqsClientForClose = sqsClient;
       initialized = true;
     }
   }

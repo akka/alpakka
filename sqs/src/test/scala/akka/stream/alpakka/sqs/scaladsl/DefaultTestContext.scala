@@ -61,6 +61,7 @@ trait DefaultTestContext extends Matchers with BeforeAndAfterAll with ScalaFutur
 
   override protected def afterAll(): Unit =
     try {
+      sqsClient.close()
       system.terminate().futureValue shouldBe a[Terminated]
     } finally {
       super.afterAll()

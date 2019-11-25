@@ -75,9 +75,9 @@ object SqsPublishSink {
    * creates a [[akka.stream.javadsl.Sink Sink]] that accepts an iterable of strings and publish them as messages in batches to a SQS queue using an [[software.amazon.awssdk.services.sqs.SqsAsyncClient SqsAsyncClient]]
    * @see https://doc.akka.io/docs/akka/current/stream/operators/Source-or-Flow/groupedWithin.html#groupedwithin
    */
-  def batch(queueUrl: String,
-            settings: SqsPublishBatchSettings,
-            sqsClient: SqsAsyncClient): Sink[java.lang.Iterable[String], CompletionStage[Done]] =
+  def batch[B <: java.lang.Iterable[String]](queueUrl: String,
+                                             settings: SqsPublishBatchSettings,
+                                             sqsClient: SqsAsyncClient): Sink[B, CompletionStage[Done]] =
     Flow[java.lang.Iterable[String]]
       .map(_.asScala)
       .toMat(scaladsl.SqsPublishSink.batch(queueUrl, settings)(sqsClient))(Keep.right)
@@ -87,11 +87,11 @@ object SqsPublishSink {
   /**
    * creates a [[akka.stream.javadsl.Sink Sink]] to publish messages in batches to a SQS queue using an [[software.amazon.awssdk.services.sqs.SqsAsyncClient SqsAsyncClient]]
    */
-  def batchedMessageSink(
+  def batchedMessageSink[B <: java.lang.Iterable[SendMessageRequest]](
       queueUrl: String,
       settings: SqsPublishBatchSettings,
       sqsClient: SqsAsyncClient
-  ): Sink[java.lang.Iterable[SendMessageRequest], CompletionStage[Done]] =
+  ): Sink[B, CompletionStage[Done]] =
     Flow[java.lang.Iterable[SendMessageRequest]]
       .map(_.asScala)
       .toMat(scaladsl.SqsPublishSink.batchedMessageSink(queueUrl, settings)(sqsClient))(Keep.right)
