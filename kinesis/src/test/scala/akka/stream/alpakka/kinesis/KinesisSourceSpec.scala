@@ -169,9 +169,7 @@ class KinesisSourceSpec extends WordSpecLike with Matchers with KinesisMock {
     when(amazonKinesisAsync.describeStream(any[DescribeStreamRequest]))
       .thenReturn(CompletableFuture.completedFuture(describeStreamResult))
 
-    val getShardIteratorRequest = GetShardIteratorRequest.builder().build()
     val getShardIteratorResult = GetShardIteratorResponse.builder().shardIterator(shardIterator).build()
-    val getRecordsRequest = GetRecordsRequest.builder().build()
 
     def getRecordsResult =
       GetRecordsResponse.builder().records(records).nextShardIterator(nextShardIterator.get()).build()

@@ -17,16 +17,16 @@ object KinesisSource {
   /**
    * Read from one shard into a stream.
    */
-  def basic(shardSettings: ShardSettings, KinesisAsyncClient: KinesisAsyncClient): Source[Record, NotUsed] =
-    Source.fromGraph(new KinesisSourceStage(shardSettings, KinesisAsyncClient))
+  def basic(shardSettings: ShardSettings, amazonKinesisAsync: KinesisAsyncClient): Source[Record, NotUsed] =
+    Source.fromGraph(new KinesisSourceStage(shardSettings, amazonKinesisAsync))
 
   /**
    * Read from multiple shards into a single stream.
    */
   def basicMerge(shardSettings: List[ShardSettings],
-                 KinesisAsyncClient: KinesisAsyncClient): Source[Record, NotUsed] = {
+                 amazonKinesisAsync: KinesisAsyncClient): Source[Record, NotUsed] = {
     require(shardSettings.nonEmpty, "shard settings need to be specified")
-    val create: ShardSettings => Source[Record, NotUsed] = basic(_, KinesisAsyncClient)
+    val create: ShardSettings => Source[Record, NotUsed] = basic(_, amazonKinesisAsync)
     shardSettings match {
       case Nil => Source.failed(NoShardsError)
       case first :: Nil => create(first)

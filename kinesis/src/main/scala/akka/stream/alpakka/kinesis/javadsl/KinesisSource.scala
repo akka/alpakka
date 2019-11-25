@@ -17,14 +17,14 @@ object KinesisSource {
   /**
    * Read from one shard into a stream.
    */
-  def basic(shardSettings: ShardSettings, KinesisAsyncClient: KinesisAsyncClient): Source[Record, NotUsed] =
-    scaladsl.KinesisSource.basic(shardSettings, KinesisAsyncClient).asJava
+  def basic(shardSettings: ShardSettings, amazonKinesisAsync: KinesisAsyncClient): Source[Record, NotUsed] =
+    scaladsl.KinesisSource.basic(shardSettings, amazonKinesisAsync).asJava
 
   /**
    * Read from multiple shards into a single stream.
    */
   def basicMerge(shardSettings: java.util.List[ShardSettings],
-                 KinesisAsyncClient: KinesisAsyncClient): Source[Record, NotUsed] =
-    scaladsl.KinesisSource.basicMerge(shardSettings.asScala.toList, KinesisAsyncClient).asJava
+                 amazonKinesisAsync: KinesisAsyncClient): Source[Record, NotUsed] =
+    scaladsl.KinesisSource.basicMerge(shardSettings.asScala.toList, amazonKinesisAsync).asJava
 
 }
