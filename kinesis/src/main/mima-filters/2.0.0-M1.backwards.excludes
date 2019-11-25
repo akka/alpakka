@@ -1,0 +1,15 @@
+# PR2029
+ProblemFilters.exclude[Problem]("akka.stream.alpakka.kinesis.KinesisErrors*")
+ProblemFilters.exclude[Problem]("akka.stream.alpakka.kinesis.ShardSettings.*")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.kinesis.javadsl.KinesisSource.*")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.kinesis.javadsl.KinesisSink.*")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.kinesis.javadsl.KinesisFlow.*")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.kinesis.scaladsl.KinesisSource.*")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.kinesis.scaladsl.KinesisSink.*")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.kinesis.scaladsl.KinesisFlow.*")
+
+ProblemFilters.exclude[Problem]("akka.stream.alpakka.kinesisfirehose.KinesisFirehoseErrors*")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.kinesisfirehose.javadsl.KinesisFirehoseFlow.*")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.kinesisfirehose.javadsl.KinesisFirehoseSink.*")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.kinesisfirehose.scaladsl.KinesisFirehoseFlow.*")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.kinesisfirehose.scaladsl.KinesisFirehoseSink.*")
