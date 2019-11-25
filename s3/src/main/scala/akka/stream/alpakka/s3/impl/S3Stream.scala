@@ -169,10 +169,12 @@ import akka.util.ByteString
       .mapMaterializedValue(_ => NotUsed)
   }
 
-  def listObjects(bucket: String,
-                  prefix: Option[String] = None,
-                  delimiter: Option[String] = None,
-                  s3Headers: S3Headers): Source[ListBucketResultBase, NotUsed] = {
+  def listBucketAndCommonPrefixes(
+      bucket: String,
+      prefix: Option[String] = None,
+      delimiter: Option[String] = None,
+      s3Headers: S3Headers
+  ): Source[(Seq[ListBucketResultContents], Seq[ListBucketResultCommonPrefixes]), NotUsed] = {
     sealed trait ListBucketState
     case object Starting extends ListBucketState
     case class Running(continuationToken: String) extends ListBucketState
@@ -180,18 +182,20 @@ import akka.util.ByteString
 
     def listObjectsCall(
         token: Option[String]
-    )(implicit mat: ActorMaterializer,
-      attr: Attributes): Future[Option[(ListBucketState, Seq[ListBucketResultBase])]] = {
+    )(implicit mat: ActorMaterializer, attr: Attributes)
+        : Future[Option[(ListBucketState, (Seq[ListBucketResultContents], Seq[ListBucketResultCommonPrefixes]))]] = {
       import mat.executionContext
       implicit val conf = resolveSettings(attr, mat.system)
 
       signAndGetAs[ListBucketResult](
         HttpRequests.listBucket(bucket, prefix, token, delimiter, s3Headers.headersFor(ListBucket))
-      ).map { (res: ListBucketResult) =>
+      ).map { res: ListBucketResult =>
         Some(
           res.continuationToken
-            .fold[(ListBucketState, Seq[ListBucketResultBase])]((Finished, res.contents ++ res.commonPrefixes))(
-              t => (Running(t), res.contents ++ res.commonPrefixes)
+            .fold[(ListBucketState, (Seq[ListBucketResultContents], Seq[ListBucketResultCommonPrefixes]))](
+              (Finished, (res.contents, res.commonPrefixes))
+            )(
+              t => (Running(t), (res.contents, res.commonPrefixes))
             )
         )
       }
@@ -202,12 +206,11 @@ import akka.util.ByteString
         implicit val materializer = mat
         implicit val attributes = attr
         Source
-          .unfoldAsync[ListBucketState, Seq[ListBucketResultBase]](Starting) {
+          .unfoldAsync[ListBucketState, (Seq[ListBucketResultContents], Seq[ListBucketResultCommonPrefixes])](Starting) {
             case Finished => Future.successful(None)
             case Starting => listObjectsCall(None)
             case Running(token) => listObjectsCall(Some(token))
           }
-          .mapConcat(identity)
       }
       .mapMaterializedValue(_ => NotUsed)
   }
