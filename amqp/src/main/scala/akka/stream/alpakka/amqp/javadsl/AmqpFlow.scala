@@ -75,24 +75,24 @@ object AmqpFlow {
    * ([[https://www.rabbitmq.com/confirms.html#publisher-confirms Publisher Confirms]]), therefore it is not
    * supposed to be used with another AMQP brokers.
    */
-  def createWithUnorderedConfirm(
+  def createWithConfirmUnordered(
       settings: AmqpWriteSettings
   ): akka.stream.javadsl.Flow[WriteMessage, WriteResult, CompletionStage[Done]] =
     akka.stream.alpakka.amqp.scaladsl.AmqpFlow
-      .withUnorderedConfirm(settings)
+      .withConfirmUnordered(settings)
       .mapMaterializedValue(_.toJava)
       .asJava
 
   /**
-   * Variant of `AmqpFlow.createWithUnorderedConfirm` with additional support for pass-through elements.
+   * Variant of `AmqpFlow.createWithConfirmUnordered` with additional support for pass-through elements.
    *
-   * @see [[AmqpFlow.createWithUnorderedConfirm]]
+   * @see [[AmqpFlow.createWithConfirmUnordered]]
    *
    * NOTE: This connector uses RabbitMQ's extension to AMQP protocol
    * ([[https://www.rabbitmq.com/confirms.html#publisher-confirms Publisher Confirms]]), therefore it is not
    * supposed to be used with another AMQP brokers.
    */
-  def createWithUnorderedConfirmAndPassThrough[T](
+  def createWithConfirmAndPassThroughUnordered[T](
       settings: AmqpWriteSettings
   ): akka.stream.javadsl.Flow[Pair[WriteMessage, T], Pair[WriteResult, T], CompletionStage[Done]] =
     akka.stream.scaladsl
@@ -100,7 +100,7 @@ object AmqpFlow {
       .map((p: Pair[WriteMessage, T]) => p.toScala)
       .viaMat(
         akka.stream.alpakka.amqp.scaladsl.AmqpFlow
-          .withUnorderedConfirmAndPassThrough[T](settings = settings)
+          .withConfirmAndPassThroughUnordered[T](settings = settings)
       )(Keep.right)
       .map { case (writeResult, passThrough) => Pair(writeResult, passThrough) }
       .mapMaterializedValue(_.toJava)

@@ -69,7 +69,7 @@ object AmqpFlow {
    * ([[https://www.rabbitmq.com/confirms.html#publisher-confirms Publisher Confirms]]), therefore it is not
    * supposed to be used with another AMQP brokers.
    */
-  def withUnorderedConfirm(
+  def withConfirmUnordered(
       settings: AmqpWriteSettings
   ): Flow[WriteMessage, WriteResult, Future[Done]] =
     asFlowWithoutContext(
@@ -77,15 +77,15 @@ object AmqpFlow {
     )
 
   /**
-   * Variant of `AmqpFlow.withUnorderedConfirm` with additional support for pass-through elements.
+   * Variant of `AmqpFlow.withConfirmUnordered` with additional support for pass-through elements.
    *
-   * @see [[AmqpFlow.withUnorderedConfirm]]
+   * @see [[AmqpFlow.withConfirmUnordered]]
    *
    * NOTE: This connector uses RabbitMQ's extension to AMQP protocol
    * ([[https://www.rabbitmq.com/confirms.html#publisher-confirms Publisher Confirms]]), therefore it is not
    * supposed to be used with another AMQP brokers.
    */
-  def withUnorderedConfirmAndPassThrough[T](
+  def withConfirmAndPassThroughUnordered[T](
       settings: AmqpWriteSettings
   ): Flow[(WriteMessage, T), (WriteResult, T), Future[Done]] =
     Flow.fromGraph(new impl.AmqpAsyncUnorderedFlowStage(settings))

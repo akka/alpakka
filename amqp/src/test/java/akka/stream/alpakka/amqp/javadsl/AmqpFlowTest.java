@@ -66,8 +66,8 @@ public class AmqpFlowTest {
   }
 
   @Test
-  public void shouldEmitConfirmationForPublishedMessagesInFlowWithUnorderedConfirm() {
-    shouldEmitConfirmationForPublishedMessages(AmqpFlow.createWithUnorderedConfirm(settings()));
+  public void shouldEmitConfirmationForPublishedMessagesInFlowWithConfirmUnordered() {
+    shouldEmitConfirmationForPublishedMessages(AmqpFlow.createWithConfirmUnordered(settings()));
   }
 
   private void shouldEmitConfirmationForPublishedMessages(
@@ -125,7 +125,7 @@ public class AmqpFlowTest {
   @Test
   public void shouldPropagatePassThrough() {
     Flow<Pair<WriteMessage, String>, Pair<WriteResult, String>, CompletionStage<Done>> flow =
-        AmqpFlow.createWithUnorderedConfirmAndPassThrough(settings());
+        AmqpFlow.createWithConfirmAndPassThroughUnordered(settings());
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
     final List<Pair<WriteResult, String>> expectedOutput =

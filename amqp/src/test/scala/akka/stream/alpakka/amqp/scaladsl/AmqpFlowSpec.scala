@@ -159,48 +159,48 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
   }
 
   "AMQP unordered confirmation flow" should {
-    val mockedFlowWithUnorderedConfirm =
-      AmqpFlow.withUnorderedConfirm(mockAmqpWriteSettings)
+    val mockedFlowWithConfirmUnordered =
+      AmqpFlow.withConfirmUnordered(mockAmqpWriteSettings)
 
     "emit confirmation for published messages" in assertAllStagesStopped {
-      val localFlowWithUnorderedConfirm =
-        AmqpFlow.withUnorderedConfirm(localAmqpWriteSettings)
-      shouldEmitConfirmationForPublishedMessages(localFlowWithUnorderedConfirm)
+      val localFlowWithConfirmUnordered =
+        AmqpFlow.withConfirmUnordered(localAmqpWriteSettings)
+      shouldEmitConfirmationForPublishedMessages(localFlowWithConfirmUnordered)
     }
 
     "fail stage on publication error" in assertAllStagesStopped {
-      shouldFailStageOnPublicationError(mockedFlowWithUnorderedConfirm)
+      shouldFailStageOnPublicationError(mockedFlowWithConfirmUnordered)
     }
 
     "propagate pass-through" in assertAllStagesStopped {
-      val localFlowWithUnorderedConfirmAndPassThrough =
-        AmqpFlow.withUnorderedConfirmAndPassThrough[String](localAmqpWriteSettings)
-      shouldPropagatePassThrough(localFlowWithUnorderedConfirmAndPassThrough)
+      val localFlowWithConfirmAndPassThroughUnordered =
+        AmqpFlow.withConfirmAndPassThroughUnordered[String](localAmqpWriteSettings)
+      shouldPropagatePassThrough(localFlowWithConfirmAndPassThroughUnordered)
     }
 
     "emit rejected result on message rejection" in assertAllStagesStopped {
-      shouldEmitRejectedResultOnMessageRejection(mockedFlowWithUnorderedConfirm)
+      shouldEmitRejectedResultOnMessageRejection(mockedFlowWithConfirmUnordered)
     }
 
     "emit rejected result on confirmation timeout" in assertAllStagesStopped {
-      shouldEmitRejectedResultOnConfirmationTimeout(mockedFlowWithUnorderedConfirm)
+      shouldEmitRejectedResultOnConfirmationTimeout(mockedFlowWithConfirmUnordered)
     }
 
     "emit multiple results on batch confirmation" in assertAllStagesStopped {
-      shouldEmitMultipleResultsOnBatchConfirmation(mockedFlowWithUnorderedConfirm)
+      shouldEmitMultipleResultsOnBatchConfirmation(mockedFlowWithConfirmUnordered)
     }
 
     "not pull when message buffer is full" in assertAllStagesStopped {
-      shouldNotPullWhenMessageBufferIsFull(mockedFlowWithUnorderedConfirm)
+      shouldNotPullWhenMessageBufferIsFull(mockedFlowWithConfirmUnordered)
     }
 
     "process all buffered messages on upstream finish" in assertAllStagesStopped {
-      shouldProcessAllBufferedMessagesOnUpstreamFinish(mockedFlowWithUnorderedConfirm)
+      shouldProcessAllBufferedMessagesOnUpstreamFinish(mockedFlowWithConfirmUnordered)
     }
 
     "emit messages in order of received confirmations" in assertAllStagesStopped {
       val mockedUnorderedFlowWithPassThrough =
-        AmqpFlow.withUnorderedConfirmAndPassThrough[String](mockAmqpWriteSettings)
+        AmqpFlow.withConfirmAndPassThroughUnordered[String](mockAmqpWriteSettings)
 
       val deliveryTags = 1L to 7L
       when(channelMock.getNextPublishSeqNo).thenReturn(deliveryTags.head, deliveryTags.tail: _*)

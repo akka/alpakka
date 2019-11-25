@@ -62,12 +62,12 @@ Various variants of AMQP flow offer different delivery and ordering guarantees:
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | AmqpFlow.apply                     | The most basic type of flow. Does not impose delivery guarantees, messages are published in a fire-and-forget manner. Emitted results have `confirmed` always set to true.
 | AmqpFlow.withConfirm          | Variant that uses asynchronous confirmations. Maximum number of messages simultaneously waiting for confirmation before signaling backpressure is configured with a `bufferSize` parameter. Emitted results preserve the order of messages pulled from upstream - due to that restriction this flow is expected to be slightly less effective than it's unordered counterpart.
-| AmqpFlow.withUnorderedConfirm | The same as `AmqpFlow.withConfirm` with the exception of ordering guarantee - results are emitted downstream as soon as confirmation is received, meaning that there is no ordering guarantee of any sort.
+| AmqpFlow.withConfirmUnordered | The same as `AmqpFlow.withConfirm` with the exception of ordering guarantee - results are emitted downstream as soon as confirmation is received, meaning that there is no ordering guarantee of any sort.
 
 For @apidoc[FlowWithContext$] counterparts of above flows see @apidoc[AmqpFlowWithContext$].
 
 @@@ warning
-`AmqpFlow.withConfirm` and `AmqpFlow.withUnorderedConfirm` are implemented using RabbitMQ's extension to AMQP protocol ([Publisher Confirms](https://www.rabbitmq.com/confirms.html#publisher-confirms)), therefore they are not intended to work with another AMQP brokers.
+`AmqpFlow.withConfirm` and `AmqpFlow.withConfirmUnordered` are implemented using RabbitMQ's extension to AMQP protocol ([Publisher Confirms](https://www.rabbitmq.com/confirms.html#publisher-confirms)), therefore they are not intended to work with another AMQP brokers.
 @@@
 
 ### With sink
