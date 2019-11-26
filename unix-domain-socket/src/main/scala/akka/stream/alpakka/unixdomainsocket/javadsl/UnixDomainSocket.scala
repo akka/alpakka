@@ -2,9 +2,10 @@
  * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.unixdomainsocket.javadsl
+package akka.stream.alpakka.unixdomainsocket
+package javadsl
 
-import java.io.File
+import java.nio.file.Path
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 
@@ -16,7 +17,6 @@ import akka.stream.alpakka.unixdomainsocket.scaladsl.{UnixDomainSocket => ScalaU
 import akka.stream.javadsl.{Flow, Source}
 import akka.stream.Materializer
 import akka.util.ByteString
-import jnr.unixsocket.UnixSocketAddress
 
 import scala.concurrent.duration.Duration
 
@@ -100,7 +100,7 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
 
 final class UnixDomainSocket(system: ExtendedActorSystem) extends akka.actor.Extension {
   import UnixDomainSocket._
-  import akka.dispatch.ExecutionContexts.{sameThreadExecutionContext ⇒ ec}
+  import akka.dispatch.ExecutionContexts.{sameThreadExecutionContext => ec}
 
   private lazy val delegate: ScalaUnixDomainSocket = ScalaUnixDomainSocket(system)
 
@@ -113,7 +113,7 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends akka.actor.Ext
    *
    * TODO: Support idleTimeout as per Tcp.
    *
-   * @param file      The file to listen on
+   * @param path      The path to listen on
    * @param backlog   Controls the size of the connection backlog
    * @param halfClose
    *                  Controls whether the connection is kept open even after writing has been completed to the accepted
@@ -125,10 +125,10 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends akka.actor.Ext
    *                  independently whether the client is still attempting to write. This setting is recommended
    *                  for servers, and therefore it is the default setting.
    */
-  def bind(file: File, backlog: Int, halfClose: Boolean): Source[IncomingConnection, CompletionStage[ServerBinding]] =
+  def bind(path: Path, backlog: Int, halfClose: Boolean): Source[IncomingConnection, CompletionStage[ServerBinding]] =
     Source.fromGraph(
       delegate
-        .bind(file, backlog, halfClose)
+        .bind(path, backlog, halfClose)
         .map(new IncomingConnection(_))
         .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava)
     )
@@ -141,10 +141,10 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends akka.actor.Ext
    * [[akka.stream.scaladsl.RunnableGraph]] the server is not immediately available. Only after the materialized future
    * completes is the server ready to accept client connections.
    */
-  def bind(file: File): Source[IncomingConnection, CompletionStage[ServerBinding]] =
+  def bind(path: Path): Source[IncomingConnection, CompletionStage[ServerBinding]] =
     Source.fromGraph(
       delegate
-        .bind(file)
+        .bind(path)
         .map(new IncomingConnection(_))
         .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava)
     )
@@ -190,10 +190,10 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends akka.actor.Ext
    * to achieve application level chunks you have to introduce explicit framing in your streams,
    * for example using the [[akka.stream.javadsl.Framing]] stages.
    */
-  def outgoingConnection(file: File): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]] =
+  def outgoingConnection(path: Path): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]] =
     Flow.fromGraph(
       delegate
-        .outgoingConnection(new UnixSocketAddress(file))
+        .outgoingConnection(new UnixSocketAddress(path))
         .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec).toJava)
     )
 
