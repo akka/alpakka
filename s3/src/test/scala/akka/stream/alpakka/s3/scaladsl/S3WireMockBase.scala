@@ -277,7 +277,7 @@ abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMoc
         )
       )
 
-  def mockListObjects(): Unit =
+  def mockListBucketAndCommonPrefixes(): Unit =
     mock
       .register(
         get(urlEqualTo(s"/?list-type=2&prefix=$listPrefix&delimiter=$listDelimiter")).willReturn(
@@ -305,7 +305,7 @@ abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMoc
         )
       )
 
-  def mockListObjectsVersion1(): Unit =
+  def mockListBucketAndCommonPrefixesVersion1(): Unit =
     mock
       .register(
         get(urlEqualTo(s"/?prefix=$listPrefix&delimiter=$listDelimiter")).willReturn(

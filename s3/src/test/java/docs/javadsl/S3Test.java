@@ -360,15 +360,15 @@ public class S3Test extends S3WireMockBase {
   @Test
   public void listBucketAndCommonPrefixes() throws Exception {
 
-    mockListObjects();
+    mockListBucketAndCommonPrefixes();
 
-    // #list-bucket
+    // #list-bucket-and-common-prefixes
     final Source<
             Pair<List<ListBucketResultContents>, List<ListBucketResultCommonPrefixes>>, NotUsed>
         keySource =
             S3.listBucketAndCommonPrefixes(
                 bucket(), delimiter, Optional.of(prefix), S3Headers.empty());
-    // #list-bucket
+    // #list-bucket-and-common-prefixes
 
     final CompletionStage<
             List<Pair<List<ListBucketResultContents>, List<ListBucketResultCommonPrefixes>>>>
@@ -386,9 +386,9 @@ public class S3Test extends S3WireMockBase {
 
   @Test
   public void listBucketAndCommonPrefixesVersion1() throws Exception {
-    mockListObjectsVersion1();
+    mockListBucketAndCommonPrefixesVersion1();
 
-    // #list-bucket-attributes
+    // #list-bucket-and-common-prefixes-attributes
     final S3Settings useVersion1Api =
         S3Ext.get(system()).settings().withListBucketApiVersion(ApiVersion.getListBucketVersion1());
 
@@ -398,7 +398,7 @@ public class S3Test extends S3WireMockBase {
             S3.listBucketAndCommonPrefixes(
                     bucket(), delimiter, Optional.of(prefix), S3Headers.empty())
                 .withAttributes(S3Attributes.settings(useVersion1Api));
-    // #list-bucket-attributes
+    // #list-bucket-and-common-prefixes-attributes
 
     final CompletionStage<
             List<Pair<List<ListBucketResultContents>, List<ListBucketResultCommonPrefixes>>>>
