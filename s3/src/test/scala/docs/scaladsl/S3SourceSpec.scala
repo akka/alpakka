@@ -263,7 +263,6 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
   it should "list keys and common prefixes for a given bucket with a prefix and delimiter using the version 1 api" in {
     mockListBucketAndCommonPrefixesVersion1()
 
-    //#list-bucket-and-common-prefixes-attributes
     val useVersion1Api = S3Ext(system).settings
       .withListBucketApiVersion(ApiVersion.ListBucketVersion1)
 
@@ -271,7 +270,6 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
         : Source[(Seq[ListBucketResultContents], Seq[ListBucketResultCommonPrefixes]), NotUsed] =
       S3.listBucketAndCommonPrefixes(bucket, listDelimiter, Some(listPrefix))
         .withAttributes(S3Attributes.settings(useVersion1Api))
-    //#list-bucket-and-common-prefixes-attributes
 
     val result = keyAndCommonPrefixSource.runWith(Sink.head)
     val contents = result.futureValue._1
