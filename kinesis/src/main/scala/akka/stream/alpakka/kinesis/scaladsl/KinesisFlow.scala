@@ -57,7 +57,7 @@ object KinesisFlow {
             .toScala
             .transform(handlePutRecordsSuccess(entries), FailurePublishingRecords(_))(sameThreadExecutionContext)
       )
-      .mapConcat(identity(_))
+      .mapConcat(identity)
 
   private def handlePutRecordsSuccess[T](
       entries: Iterable[(PutRecordsRequestEntry, T)]
