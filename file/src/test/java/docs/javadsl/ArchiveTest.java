@@ -11,6 +11,7 @@ import akka.stream.ActorMaterializer;
 import akka.stream.IOResult;
 import akka.stream.Materializer;
 import akka.stream.alpakka.file.ArchiveMetadata;
+import akka.stream.alpakka.file.ArchiveMetadataWithSize;
 import akka.stream.alpakka.file.javadsl.Archive;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.FileIO;
@@ -20,9 +21,9 @@ import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import org.junit.*;
-import scala.concurrent.duration.FiniteDuration;
 import static akka.util.ByteString.emptyByteString;
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -66,13 +67,14 @@ public class ArchiveTest {
     Source<ByteString, NotUsed> source2 = toSource(fileContent2);
 
     /*
-    // #sample
+    // #sample-zip
     Source<ByteString, NotUsed> source1 = ...
     Source<ByteString, NotUsed> source2 = ...
-    // #sample
+
+    // #sample-zip
     */
 
-    // #sample
+    // #sample-zip
     Pair<ArchiveMetadata, Source<ByteString, NotUsed>> pair1 =
         Pair.create(ArchiveMetadata.create("akka_full_color.svg"), source1);
     Pair<ArchiveMetadata, Source<ByteString, NotUsed>> pair2 =
@@ -84,7 +86,7 @@ public class ArchiveTest {
     Sink<ByteString, CompletionStage<IOResult>> fileSink = FileIO.toPath(Paths.get("logo.zip"));
     CompletionStage<IOResult> ioResult = source.via(Archive.zip()).runWith(fileSink, mat);
 
-    // #sample
+    // #sample-zip
 
     ioResult.toCompletableFuture().get(3, TimeUnit.SECONDS);
 
@@ -103,6 +105,59 @@ public class ArchiveTest {
 
     // cleanup
     new File("logo.zip").delete();
+  }
+
+  @Test
+  public void flowShouldCreateTARArchive() throws Exception {
+    Path filePath1 = getFileFromResource("akka_full_color.svg");
+    Path filePath2 = getFileFromResource("akka_icon_reverse.svg");
+
+    ByteString fileContent1 = readFileAsByteString(filePath1);
+    ByteString fileContent2 = readFileAsByteString(filePath2);
+
+    Source<ByteString, NotUsed> source1 = toSource(fileContent1);
+    Long size1 = Files.size(filePath1);
+    Source<ByteString, NotUsed> source2 = toSource(fileContent2);
+    Long size2 = Files.size(filePath2);
+
+    /*
+    // #sample-tar
+    Source<ByteString, NotUsed> source1 = ...
+    Source<ByteString, NotUsed> source2 = ...
+    Long size1 = ...
+    Long size2 = ...
+
+    // #sample-tar
+    */
+
+    // #sample-tar
+    Pair<ArchiveMetadataWithSize, Source<ByteString, NotUsed>> pair1 =
+        Pair.create(ArchiveMetadataWithSize.create("akka_full_color.svg", size1), source1);
+    Pair<ArchiveMetadataWithSize, Source<ByteString, NotUsed>> pair2 =
+        Pair.create(ArchiveMetadataWithSize.create("akka_icon_reverse.svg", size2), source2);
+
+    Source<Pair<ArchiveMetadataWithSize, Source<ByteString, NotUsed>>, NotUsed> source =
+        Source.from(Arrays.asList(pair1, pair2));
+
+    Sink<ByteString, CompletionStage<IOResult>> fileSink = FileIO.toPath(Paths.get("logo.tar"));
+    CompletionStage<IOResult> ioResult = source.via(Archive.tar()).runWith(fileSink, mat);
+    // #sample-tar
+
+    // #sample-tar-gz
+    Sink<ByteString, CompletionStage<IOResult>> fileSinkGz =
+        FileIO.toPath(Paths.get("logo.tar.gz"));
+    CompletionStage<IOResult> ioResultGz =
+        source
+            .via(Archive.tar().via(akka.stream.javadsl.Compression.gzip()))
+            .runWith(fileSinkGz, mat);
+    // #sample-tar-gz
+
+    ioResult.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    ioResultGz.toCompletableFuture().get(3, TimeUnit.SECONDS);
+
+    // cleanup
+    new File("logo.tar").delete();
+    new File("logo.tar.gz").delete();
   }
 
   @After

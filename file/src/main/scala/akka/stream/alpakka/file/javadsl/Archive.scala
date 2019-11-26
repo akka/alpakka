@@ -5,7 +5,7 @@
 package akka.stream.alpakka.file.javadsl
 
 import akka.NotUsed
-import akka.stream.alpakka.file.{scaladsl, ArchiveMetadata}
+import akka.stream.alpakka.file.{scaladsl, ArchiveMetadata, ArchiveMetadataWithSize}
 import akka.stream.javadsl.Flow
 import akka.util.ByteString
 import akka.japi.Pair
@@ -24,6 +24,15 @@ object Archive {
       .create[Pair[ArchiveMetadata, Source[ByteString, NotUsed]]]()
       .map(func(pair => (pair.first, pair.second.asScala)))
       .via(scaladsl.Archive.zip().asJava)
+
+  /**
+   * Flow for packaging multiple files into one TAR file.
+   */
+  def tar(): Flow[Pair[ArchiveMetadataWithSize, Source[ByteString, NotUsed]], ByteString, NotUsed] =
+    Flow
+      .create[Pair[ArchiveMetadataWithSize, Source[ByteString, NotUsed]]]()
+      .map(func(pair => (pair.first, pair.second.asScala)))
+      .via(scaladsl.Archive.tar().asJava)
 
   private def func[T, R](f: T => R) = new akka.japi.function.Function[T, R] {
     override def apply(param: T): R = f(param)
