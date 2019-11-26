@@ -228,7 +228,7 @@ object S3 {
                  s3Headers: S3Headers = S3Headers.empty): Source[ListBucketResultContents, NotUsed] =
     S3Stream
       .listBucketAndCommonPrefixes(bucket, delimiter, prefix, s3Headers)
-      .mapConcat(_._1.to[scala.collection.immutable.Iterable])
+      .mapConcat(_._1.to[scala.collection.immutable.Iterable[ListBucketResultContents]])
 
   /**
    * Will return a source of object metadata and common prefixes for a given bucket and delimiter with optional prefix using version 2 of the List Bucket API.
