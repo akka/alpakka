@@ -485,6 +485,48 @@ object S3 {
       .asJava
 
   /**
+   * Will return a source of object metadata for a given bucket with delimiter and optional prefix using version 2 of the List Bucket API.
+   * This will automatically page through all keys with the given parameters.
+   *
+   * The <code>akka.stream.alpakka.s3.list-bucket-api-version</code> can be set to 1 to use the older API version 1
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html  (version 2 API)
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html (version 1 API)
+   * @param bucket    Which bucket that you list object metadata for
+   * @param delimiter Delimiter to use for listing only one level of hierarchy
+   * @param prefix    Prefix of the keys you want to list under passed bucket
+   * @return Source of object metadata
+   */
+  def listBucket(bucket: String,
+                 delimiter: String,
+                 prefix: Optional[String]): Source[ListBucketResultContents, NotUsed] =
+    scaladsl.S3
+      .listBucket(bucket, delimiter, prefix.asScala)
+      .asJava
+
+  /**
+   * Will return a source of object metadata for a given bucket with delimiter and optional prefix using version 2 of the List Bucket API.
+   * This will automatically page through all keys with the given parameters.
+   *
+   * The <code>akka.stream.alpakka.s3.list-bucket-api-version</code> can be set to 1 to use the older API version 1
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html  (version 2 API)
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html (version 1 API)
+   * @param bucket    Which bucket that you list object metadata for
+   * @param delimiter Delimiter to use for listing only one level of hierarchy
+   * @param prefix    Prefix of the keys you want to list under passed bucket
+   * @param s3Headers any headers you want to add
+   * @return Source of object metadata
+   */
+  def listBucket(bucket: String,
+                 delimiter: String,
+                 prefix: Optional[String],
+                 s3Headers: S3Headers): Source[ListBucketResultContents, NotUsed] =
+    scaladsl.S3
+      .listBucket(bucket, delimiter, prefix.asScala, s3Headers)
+      .asJava
+
+  /**
    * Will return a source of object metadata and common prefixes for a given bucket and delimiter with optional prefix using version 2 of the List Bucket API.
    * This will automatically page through all keys with the given parameters.
    *

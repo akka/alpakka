@@ -358,6 +358,25 @@ public class S3Test extends S3WireMockBase {
   }
 
   @Test
+  public void listBucketWithDelimiter() throws Exception {
+
+    mockListBucketAndCommonPrefixes();
+
+    // #list-bucket-delimiter
+    final Source<ListBucketResultContents, NotUsed> keySource =
+        S3.listBucket(bucket(), delimiter, Optional.of(prefix));
+    // #list-bucket-delimiter
+
+    final CompletionStage<ListBucketResultContents> resultCompletionStage =
+        keySource.runWith(Sink.head(), materializer);
+
+    ListBucketResultContents result =
+        resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+    assertEquals(result.key(), listKey());
+  }
+
+  @Test
   public void listBucketAndCommonPrefixes() throws Exception {
 
     mockListBucketAndCommonPrefixes();
