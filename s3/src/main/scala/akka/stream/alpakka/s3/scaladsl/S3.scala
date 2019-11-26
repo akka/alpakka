@@ -210,7 +210,7 @@ object S3 {
     S3Stream.listBucket(bucket, prefix, s3Headers)
 
   /**
-   * Will return a source of object metadata and common prefixes for a given bucket with optional prefix and delimiter using version 2 of the List Bucket API.
+   * Will return a source of object metadata and common prefixes for a given bucket and delimiter with optional prefix using version 2 of the List Bucket API.
    * This will automatically page through all keys with the given parameters.
    *
    * The `alpakka.s3.list-bucket-api-version` can be set to 1 to use the older API version 1
@@ -219,18 +219,18 @@ object S3 {
    * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html (version 1 API)
    * @see https://docs.aws.amazon.com/AmazonS3/latest/dev/ListingKeysHierarchy.html (prefix and delimiter documentation)
    * @param bucket    Which bucket that you list object metadata for
-   * @param prefix    Prefix of the keys you want to list under passed bucket
    * @param delimiter Delimiter to use for listing only one level of hierarchy
+   * @param prefix    Prefix of the keys you want to list under passed bucket
    * @param s3Headers any headers you want to add
    * @return [[akka.stream.scaladsl.Source Source]] of [[ListBucketResultBase]]
    */
   def listBucketAndCommonPrefixes(
       bucket: String,
+      delimiter: String,
       prefix: Option[String] = None,
-      delimiter: Option[String] = None,
       s3Headers: S3Headers = S3Headers.empty
   ): Source[(Seq[ListBucketResultContents], Seq[ListBucketResultCommonPrefixes]), NotUsed] =
-    S3Stream.listBucketAndCommonPrefixes(bucket, prefix, delimiter, s3Headers)
+    S3Stream.listBucketAndCommonPrefixes(bucket, delimiter, prefix, s3Headers)
 
   /**
    * Uploads a S3 Object by making multiple requests

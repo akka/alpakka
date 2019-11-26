@@ -367,7 +367,7 @@ public class S3Test extends S3WireMockBase {
             Pair<List<ListBucketResultContents>, List<ListBucketResultCommonPrefixes>>, NotUsed>
         keySource =
             S3.listBucketAndCommonPrefixes(
-                bucket(), Optional.of(prefix), Optional.of(delimiter), S3Headers.empty());
+                bucket(), delimiter, Optional.of(prefix), S3Headers.empty());
     // #list-bucket
 
     final CompletionStage<
@@ -380,8 +380,8 @@ public class S3Test extends S3WireMockBase {
     final List<ListBucketResultContents> contents = results.get(0).first();
     final List<ListBucketResultCommonPrefixes> commonPrefixes = results.get(0).second();
 
-    assertEquals(contents.get(0), listKey());
-    assertEquals(commonPrefixes.get(0), listCommonPrefix());
+    assertEquals(contents.get(0).key(), listKey());
+    assertEquals(commonPrefixes.get(0).prefix(), listCommonPrefix());
   }
 
   @Test
@@ -396,7 +396,7 @@ public class S3Test extends S3WireMockBase {
             Pair<List<ListBucketResultContents>, List<ListBucketResultCommonPrefixes>>, NotUsed>
         keySource =
             S3.listBucketAndCommonPrefixes(
-                    bucket(), Optional.of(prefix), Optional.of(delimiter), S3Headers.empty())
+                    bucket(), delimiter, Optional.of(prefix), S3Headers.empty())
                 .withAttributes(S3Attributes.settings(useVersion1Api));
     // #list-bucket-attributes
 
@@ -410,8 +410,8 @@ public class S3Test extends S3WireMockBase {
     final List<ListBucketResultContents> contents = results.get(0).first();
     final List<ListBucketResultCommonPrefixes> commonPrefixes = results.get(0).second();
 
-    assertEquals(contents.get(0), listKey());
-    assertEquals(commonPrefixes.get(0), listCommonPrefix());
+    assertEquals(contents.get(0).key(), listKey());
+    assertEquals(commonPrefixes.get(0).prefix(), listCommonPrefix());
   }
 
   @Test

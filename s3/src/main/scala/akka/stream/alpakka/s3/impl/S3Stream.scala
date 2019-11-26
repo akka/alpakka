@@ -171,8 +171,8 @@ import akka.util.ByteString
 
   def listBucketAndCommonPrefixes(
       bucket: String,
+      delimiter: String,
       prefix: Option[String] = None,
-      delimiter: Option[String] = None,
       s3Headers: S3Headers
   ): Source[(Seq[ListBucketResultContents], Seq[ListBucketResultCommonPrefixes]), NotUsed] = {
     sealed trait ListBucketState
@@ -188,7 +188,7 @@ import akka.util.ByteString
       implicit val conf = resolveSettings(attr, mat.system)
 
       signAndGetAs[ListBucketResult](
-        HttpRequests.listBucket(bucket, prefix, token, delimiter, s3Headers.headersFor(ListBucket))
+        HttpRequests.listBucket(bucket, prefix, token, Some(delimiter), s3Headers.headersFor(ListBucket))
       ).map { res: ListBucketResult =>
         Some(
           res.continuationToken
