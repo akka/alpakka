@@ -37,4 +37,4 @@ jabba install "$JDK"
 jabba use "$JDK"
 java -version
 $PRE_CMD
-sbt -Dsbt.color=always -sbt-jvm-opts .jvmopts-travis "$CMD"
+sbt -sbt-jvm-opts .jvmopts-travis "$CMD"
