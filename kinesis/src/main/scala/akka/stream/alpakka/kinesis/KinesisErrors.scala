@@ -23,10 +23,4 @@ object KinesisErrors {
   case class FailurePublishingRecords(e: Throwable)
       extends RuntimeException("Failure publishing records to Kinesis", e)
       with KinesisFlowErrors
-  case class ErrorPublishingRecords[T](recordsWithContext: Seq[(PutRecordsResultEntry, T)])
-      extends RuntimeException(s"Unable to publish records")
-      with KinesisFlowErrors {
-    val records = recordsWithContext.map(_._1)
-  }
-
 }
