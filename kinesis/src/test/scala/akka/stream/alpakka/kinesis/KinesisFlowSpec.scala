@@ -45,15 +45,6 @@ class KinesisFlowSpec extends WordSpecLike with Matchers with KinesisMock {
       }
     }
 
-    "fail after trying to publish records" in assertAllStagesStopped {
-      new Settings with KinesisFlowProbe with WithPutRecordsWithPartialErrors {
-        sourceProbe.sendNext(record)
-
-        sinkProbe.request(1)
-        sinkProbe.expectError(ErrorPublishingRecords(Seq((failingRecord, ()))))
-      }
-    }
-
     "fail when request returns an error" in assertAllStagesStopped {
       new Settings with KinesisFlowProbe with WithPutRecordsFailure {
         sourceProbe.sendNext(record)
@@ -138,27 +129,6 @@ class KinesisFlowSpec extends WordSpecLike with Matchers with KinesisMock {
         CompletableFuture.completedFuture(result)
       }
     })
-  }
-
-  trait WithPutRecordsWithPartialErrors { self: Settings =>
-    val failingRecord = PutRecordsResultEntry.builder().errorCode("error-code").errorMessage("error-message").build()
-    when(amazonKinesisAsync.putRecords(any[PutRecordsRequest]))
-      .thenAnswer(new Answer[AnyRef] {
-        override def answer(invocation: InvocationOnMock) = {
-          val request = invocation
-            .getArgument[PutRecordsRequest](0)
-          val result = PutRecordsResponse
-            .builder()
-            .failedRecordCount(request.records.size())
-            .records(
-              request.records.asScala
-                .map(_ => failingRecord)
-                .asJava
-            )
-            .build()
-          CompletableFuture.completedFuture(result)
-        }
-      })
   }
 
   trait WithPutRecordsFailure { self: Settings =>

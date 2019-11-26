@@ -7,17 +7,25 @@ package akka.stream.alpakka.kinesis.scaladsl
 import java.nio.ByteBuffer
 
 import akka.NotUsed
+import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 import akka.stream.ThrottleMode
 import akka.stream.alpakka.kinesis.KinesisFlowSettings
-import akka.stream.alpakka.kinesis.impl.KinesisFlowStage
+import akka.stream.alpakka.kinesis.KinesisErrors.FailurePublishingRecords
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
-import software.amazon.awssdk.services.kinesis.model.{PutRecordsRequestEntry, PutRecordsResultEntry}
+import software.amazon.awssdk.services.kinesis.model.{
+  PutRecordsRequest,
+  PutRecordsRequestEntry,
+  PutRecordsResponse,
+  PutRecordsResultEntry
+}
 
+import scala.collection.JavaConverters._
 import scala.collection.immutable.Queue
 import scala.concurrent.duration._
+import scala.compat.java8.FutureConverters._
 
 object KinesisFlow {
 
@@ -40,13 +48,21 @@ object KinesisFlow {
                 getPayloadByteSize,
                 ThrottleMode.Shaping)
       .batch(settings.maxBatchSize, Queue(_))(_ :+ _)
-      .via(
-        new KinesisFlowStage(
-          streamName
-        )
+      .mapAsync(settings.parallelism)(
+        entries =>
+          kinesisClient
+            .putRecords(
+              PutRecordsRequest.builder().streamName(streamName).records(entries.map(_._1).asJavaCollection).build
+            )
+            .toScala
+            .transform(handlePutRecordsSuccess(entries), FailurePublishingRecords(_))(sameThreadExecutionContext)
       )
-      .mapAsync(settings.parallelism)(identity)
-      .mapConcat(identity)
+      .mapConcat(identity(_))
+
+  private def handlePutRecordsSuccess[T](
+      entries: Iterable[(PutRecordsRequestEntry, T)]
+  )(result: PutRecordsResponse): List[(PutRecordsResultEntry, T)] =
+    result.records.asScala.toList.zip(entries).map { case (res, (_, t)) => (res, t) }
 
   private def getPayloadByteSize[T](record: (PutRecordsRequestEntry, T)): Int = record match {
     case (request, _) => request.partitionKey.length + request.data.asByteBuffer.position()
