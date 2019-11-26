@@ -127,32 +127,40 @@ import akka.util.ByteString
       }
   }.mapMaterializedValue(_ => NotUsed)
 
+  sealed trait ListBucketState
+  case object Starting extends ListBucketState
+  case class Running(continuationToken: String) extends ListBucketState
+  case object Finished extends ListBucketState
+
+  def listBucketCall[T](
+      bucket: String,
+      prefix: Option[String],
+      delimiter: Option[String],
+      s3Headers: S3Headers,
+      token: Option[String],
+      resultTransformer: ListBucketResult => T
+  )(implicit mat: ActorMaterializer, attr: Attributes): Future[Option[(ListBucketState, T)]] = {
+    import mat.executionContext
+    implicit val conf = resolveSettings(attr, mat.system)
+
+    signAndGetAs[ListBucketResult](
+      HttpRequests.listBucket(bucket, prefix, token, delimiter, s3Headers.headersFor(ListBucket))
+    ).map { (res: ListBucketResult) =>
+      Some(
+        res.continuationToken
+          .fold[(ListBucketState, T)]((Finished, resultTransformer(res)))(
+            t => (Running(t), resultTransformer(res))
+          )
+      )
+    }
+  }
+
   def listBucket(bucket: String,
                  prefix: Option[String] = None,
                  s3Headers: S3Headers): Source[ListBucketResultContents, NotUsed] = {
-    sealed trait ListBucketState
-    case object Starting extends ListBucketState
-    case class Running(continuationToken: String) extends ListBucketState
-    case object Finished extends ListBucketState
 
-    def listBucketCall(
-        token: Option[String]
-    )(implicit mat: ActorMaterializer,
-      attr: Attributes): Future[Option[(ListBucketState, Seq[ListBucketResultContents])]] = {
-      import mat.executionContext
-      implicit val conf = resolveSettings(attr, mat.system)
-
-      signAndGetAs[ListBucketResult](
-        HttpRequests.listBucket(bucket, prefix, token, headers = s3Headers.headersFor(ListBucket))
-      ).map { (res: ListBucketResult) =>
-        Some(
-          res.continuationToken
-            .fold[(ListBucketState, Seq[ListBucketResultContents])]((Finished, res.contents))(
-              t => (Running(t), res.contents)
-            )
-        )
-      }
-    }
+    def listBucketCallOnlyContents(token: Option[String])(implicit mat: ActorMaterializer, attr: Attributes) =
+      listBucketCall(bucket, prefix, None, s3Headers, token, _.contents)
 
     Source
       .setup { (mat, attr) =>
@@ -161,8 +169,8 @@ import akka.util.ByteString
         Source
           .unfoldAsync[ListBucketState, Seq[ListBucketResultContents]](Starting) {
             case Finished => Future.successful(None)
-            case Starting => listBucketCall(None)
-            case Running(token) => listBucketCall(Some(token))
+            case Starting => listBucketCallOnlyContents(None)
+            case Running(token) => listBucketCallOnlyContents(Some(token))
           }
           .mapConcat(identity)
       }
@@ -175,31 +183,15 @@ import akka.util.ByteString
       prefix: Option[String] = None,
       s3Headers: S3Headers
   ): Source[(Seq[ListBucketResultContents], Seq[ListBucketResultCommonPrefixes]), NotUsed] = {
-    sealed trait ListBucketState
-    case object Starting extends ListBucketState
-    case class Running(continuationToken: String) extends ListBucketState
-    case object Finished extends ListBucketState
 
-    def listObjectsCall(
-        token: Option[String]
-    )(implicit mat: ActorMaterializer, attr: Attributes)
-        : Future[Option[(ListBucketState, (Seq[ListBucketResultContents], Seq[ListBucketResultCommonPrefixes]))]] = {
-      import mat.executionContext
-      implicit val conf = resolveSettings(attr, mat.system)
-
-      signAndGetAs[ListBucketResult](
-        HttpRequests.listBucket(bucket, prefix, token, Some(delimiter), s3Headers.headersFor(ListBucket))
-      ).map { res: ListBucketResult =>
-        Some(
-          res.continuationToken
-            .fold[(ListBucketState, (Seq[ListBucketResultContents], Seq[ListBucketResultCommonPrefixes]))](
-              (Finished, (res.contents, res.commonPrefixes))
-            )(
-              t => (Running(t), (res.contents, res.commonPrefixes))
-            )
-        )
-      }
-    }
+    def listBucketCallContentsAndCommonPrefixes(token: Option[String])(implicit mat: ActorMaterializer,
+                                                                       attr: Attributes) =
+      listBucketCall(bucket,
+                     prefix,
+                     Some(delimiter),
+                     s3Headers,
+                     token,
+                     listBucketResult => (listBucketResult.contents, listBucketResult.commonPrefixes))
 
     Source
       .setup { (mat, attr) =>
@@ -208,8 +200,8 @@ import akka.util.ByteString
         Source
           .unfoldAsync[ListBucketState, (Seq[ListBucketResultContents], Seq[ListBucketResultCommonPrefixes])](Starting) {
             case Finished => Future.successful(None)
-            case Starting => listObjectsCall(None)
-            case Running(token) => listObjectsCall(Some(token))
+            case Starting => listBucketCallContentsAndCommonPrefixes(None)
+            case Running(token) => listBucketCallContentsAndCommonPrefixes(Some(token))
           }
       }
       .mapMaterializedValue(_ => NotUsed)
