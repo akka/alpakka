@@ -224,11 +224,13 @@ object S3 {
    * @param s3Headers any headers you want to add
    * @return [[akka.stream.scaladsl.Source Source]] of [[ListBucketResultBase]]
    */
-  def listObjects(bucket: String,
-                  prefix: Option[String] = None,
-                  delimiter: Option[String] = None,
-                  s3Headers: S3Headers = S3Headers.empty): Source[ListBucketResultBase, NotUsed] =
-    S3Stream.listObjects(bucket, prefix, delimiter, s3Headers)
+  def listBucketAndCommonPrefixes(
+      bucket: String,
+      prefix: Option[String] = None,
+      delimiter: Option[String] = None,
+      s3Headers: S3Headers = S3Headers.empty
+  ): Source[(Seq[ListBucketResultContents], Seq[ListBucketResultCommonPrefixes]), NotUsed] =
+    S3Stream.listBucketAndCommonPrefixes(bucket, prefix, delimiter, s3Headers)
 
   /**
    * Uploads a S3 Object by making multiple requests

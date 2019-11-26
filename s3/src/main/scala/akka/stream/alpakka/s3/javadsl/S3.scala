@@ -19,6 +19,7 @@ import akka.stream.alpakka.s3.impl._
 import akka.stream.javadsl.{RunnableGraph, Sink, Source}
 import akka.util.ByteString
 
+import scala.collection.JavaConverters._
 import scala.compat.java8.OptionConverters._
 import scala.compat.java8.FutureConverters._
 
@@ -498,11 +499,19 @@ object S3 {
    * @param s3Headers any headers you want to add
    * @return [[akka.stream.scaladsl.Source Source]] of [[ListBucketResultBase]]
    */
-  def listObjects(bucket: String,
-                  prefix: Optional[String],
-                  delimiter: Optional[String],
-                  s3Headers: S3Headers): Source[ListBucketResultBase, NotUsed] =
-    S3Stream.listObjects(bucket, prefix.asScala, delimiter.asScala, s3Headers).asJava
+  def listBucketAndCommonPrefixes(
+      bucket: String,
+      prefix: Optional[String],
+      delimiter: Optional[String],
+      s3Headers: S3Headers
+  ): Source[akka.japi.Pair[java.util.List[ListBucketResultContents], java.util.List[ListBucketResultCommonPrefixes]],
+            NotUsed] =
+    S3Stream
+      .listBucketAndCommonPrefixes(bucket, prefix.asScala, delimiter.asScala, s3Headers)
+      .map {
+        case (contents, commonPrefixes) => akka.japi.Pair(contents.asJava, commonPrefixes.asJava)
+      }
+      .asJava
 
   /**
    * Uploads a S3 Object by making multiple requests
