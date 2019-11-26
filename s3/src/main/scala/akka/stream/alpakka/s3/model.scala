@@ -133,11 +133,6 @@ object FailedUpload {
 }
 
 /**
- * Base class for listObjects endpoint
- */
-sealed trait ListBucketResultBase
-
-/**
  * @param bucketName The name of the bucket in which this object is stored
  * @param key The key under which this object is stored
  * @param eTag Hex encoded MD5 hash of this object's contents, as computed by Amazon S3
@@ -152,7 +147,7 @@ final class ListBucketResultContents private (
     val size: Long,
     val lastModified: java.time.Instant,
     val storageClass: String
-) extends ListBucketResultBase {
+) {
 
   /** Java API */
   def getBucketName: String = bucketName
@@ -264,7 +259,7 @@ object ListBucketResultContents {
 final class ListBucketResultCommonPrefixes private (
     val bucketName: String,
     val prefix: String
-) extends ListBucketResultBase {
+) {
 
   /** Java API */
   def getBucketName: String = bucketName
