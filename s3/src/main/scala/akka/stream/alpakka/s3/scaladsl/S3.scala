@@ -222,7 +222,7 @@ object S3 {
    * @param delimiter Delimiter to use for listing only one level of hierarchy
    * @param prefix    Prefix of the keys you want to list under passed bucket
    * @param s3Headers any headers you want to add
-   * @return [[akka.stream.scaladsl.Source Source]] of [[(Seq[ListBucketResultContents], Seq[ListBucketResultCommonPrefixes])]]
+   * @return [[akka.stream.scaladsl.Source Source]] of ([[scala.collection.Seq Seq]] of [[akka.stream.alpakka.s3.ListBucketResultContents ListBucketResultContents]], [[scala.collection.Seq Seq]] of [[akka.stream.alpakka.s3.ListBucketResultContents ListBucketResultContents]])
    */
   def listBucketAndCommonPrefixes(
       bucket: String,
