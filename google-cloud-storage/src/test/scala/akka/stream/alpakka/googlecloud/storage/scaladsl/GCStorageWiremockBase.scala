@@ -12,6 +12,7 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, matching, urlEqualTo}
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
+import com.github.tomakehurst.wiremock.stubbing.Scenario
 import com.typesafe.config.ConfigFactory
 
 import scala.util.Random
@@ -606,6 +607,39 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
             .withBody("File download failed")
         )
     )
+
+  def mockFileDownloadFailureThenSuccess(failureStatus: Int, failureMessage: String, fileContent: String): Unit = {
+    mock.register(
+      WireMock
+        .get(
+          urlEqualTo(s"/b/$bucketName/o/$fileName?alt=media")
+        )
+        .inScenario("Retry scenario")
+        .whenScenarioStateIs(Scenario.STARTED)
+        .willSetStateTo("after error")
+        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+        .willReturn(
+          aResponse()
+            .withStatus(failureStatus)
+            .withBody(failureMessage)
+        )
+    )
+
+    mock.register(
+      WireMock
+        .get(
+          urlEqualTo(s"/b/$bucketName/o/$fileName?alt=media")
+        )
+        .inScenario("Retry scenario")
+        .whenScenarioStateIs("after error")
+        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withBody(fileContent.getBytes)
+        )
+    )
+  }
 
   def mockUploadSmallFile(fileContent: String): Unit =
     mock.register(
