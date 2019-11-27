@@ -4,8 +4,6 @@
 
 package akka.stream.alpakka.kinesisfirehose
 
-import software.amazon.awssdk.services.firehose.model.PutRecordBatchResponseEntry
-
 import scala.util.control.NoStackTrace
 
 object KinesisFirehoseErrors {
@@ -16,8 +14,5 @@ object KinesisFirehoseErrors {
 
   sealed trait KinesisFlowErrors extends NoStackTrace
   case class FailurePublishingRecords(e: Throwable) extends RuntimeException(e) with KinesisFlowErrors
-  case class ErrorPublishingRecords(attempts: Int, records: Seq[PutRecordBatchResponseEntry])
-      extends RuntimeException(s"Unable to publish records after $attempts attempts")
-      with KinesisFlowErrors
 
 }

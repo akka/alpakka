@@ -13,8 +13,6 @@ import akka.stream.{ActorMaterializer, Materializer}
 import software.amazon.awssdk.services.firehose.FirehoseAsyncClient
 import software.amazon.awssdk.services.firehose.model.{PutRecordBatchResponseEntry, Record}
 
-import scala.concurrent.duration._
-
 object KinesisFirehoseSnippets {
 
   //#init-client
@@ -34,9 +32,6 @@ object KinesisFirehoseSnippets {
     .withMaxBatchSize(500)
     .withMaxRecordsPerSecond(5000)
     .withMaxBytesPerSecond(4000000)
-    .withMaxRetries(5)
-    .withBackoffStrategy(KinesisFirehoseFlowSettings.Exponential)
-    .withRetryInitialTimeout(100.millis)
 
   val defaultFlowSettings = KinesisFirehoseFlowSettings.Defaults
   //#flow-settings
@@ -49,5 +44,15 @@ object KinesisFirehoseSnippets {
   val sink1: Sink[Record, NotUsed] = KinesisFirehoseSink("myStreamName")
   val sink2: Sink[Record, NotUsed] = KinesisFirehoseSink("myStreamName", flowSettings)
   //#flow-sink
+
+  //#error-handling
+  val flowWithErrors: Flow[Record, PutRecordBatchResponseEntry, NotUsed] = KinesisFirehoseFlow("streamName")
+    .map { response =>
+      if (response.errorCode() != null) {
+        throw new RuntimeException(response.errorCode())
+      }
+      response
+    }
+  //#error-handling
 
 }

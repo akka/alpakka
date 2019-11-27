@@ -136,7 +136,7 @@ Java
 : @@snip [snip](/kinesis/src/test/java/docs/javadsl/KinesisSnippets.java) { #flow-sink }
 
 @@@ warning
-As of version 2, the library will not retry failed requests: this is handled by the underlying KinesisAsyncClient. This means that you may have to inspect individual responses to make sure they have been successful:
+As of version 2, the library will not retry failed requests: this is handled by the underlying `KinesisAsyncClient` (see [client configuration](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/core/client/builder/SdkDefaultClientBuilder.html#overrideConfiguration-software.amazon.awssdk.core.client.config.ClientOverrideConfiguration-)). This means that you may have to inspect individual responses to make sure they have been successful:
 
 Scala
 : @@snip [snip](/kinesis/src/test/scala/docs/scaladsl/KinesisSnippets.scala) { #error-handling }
@@ -168,7 +168,7 @@ Java
 The
 @scala[@scaladoc[KinesisFirehoseFlow](akka.stream.alpakka.kinesisfirehose.scaladsl.KinesisFirehoseFlow$) (or @scaladoc[KinesisFirehoseSink](akka.stream.alpakka.kinesisfirehose.scaladsl.KinesisFirehoseSink$))]
 @java[@scaladoc[KinesisFirehoseFlow](akka.stream.alpakka.kinesisfirehose.javadsl.KinesisFirehoseFlow$) (or @scaladoc[KinesisFirehoseSink](akka.stream.alpakka.kinesisfirehose.javadsl.KinesisFirehoseSink$))]
-publishes messages into a Kinesis Firehose stream using its message body. It uses dynamic size batches, can perform several requests in parallel and retries failed records. These features are necessary to achieve the best possible write throughput to the stream. The Flow outputs the result of publishing each record.
+publishes messages into a Kinesis Firehose stream using its message body. It uses dynamic size batches and can perform several requests in parallel. These features are necessary to achieve the best possible write throughput to the stream. The Flow outputs the result of publishing each record.
 
 @@@ warning
 Batching has a drawback: message order cannot be guaranteed, as some records within a single batch may fail to be published. That also means that the Flow output may not match the same input order.
@@ -195,3 +195,13 @@ Scala
 
 Java
 : @@snip [snip](/kinesis/src/test/java/docs/javadsl/KinesisFirehoseSnippets.java) { #flow-sink }
+
+@@@ warning
+As of version 2, the library will not retry failed requests: this can be handled by the underlying `FirehoseAsyncClient` (see [client configuration](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/core/client/builder/SdkDefaultClientBuilder.html#overrideConfiguration-software.amazon.awssdk.core.client.config.ClientOverrideConfiguration-)). This means that you may have to inspect individual responses to make sure they have been successful: 
+
+Scala
+: @@snip [snip](/kinesis/src/test/scala/docs/scaladsl/KinesisFirehoseSnippets.scala) { #error-handling }
+
+Java
+: @@snip [snip](/kinesis/src/test/java/docs/javadsl/KinesisFirehoseSnippets.java) { #error-handling }
+@@@

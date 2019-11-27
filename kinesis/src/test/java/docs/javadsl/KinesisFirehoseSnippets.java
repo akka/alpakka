@@ -42,9 +42,7 @@ public class KinesisFirehoseSnippets {
           .withMaxBatchSize(500)
           .withMaxRecordsPerSecond(1_000)
           .withMaxBytesPerSecond(1_000_000)
-          .withMaxRecordsPerSecond(5)
-          .withBackoffStrategyExponential()
-          .withRetryInitialTimeout(Duration.ofMillis(100L));
+          .withMaxRecordsPerSecond(5);
 
   final KinesisFirehoseFlowSettings defaultFlowSettings = KinesisFirehoseFlowSettings.create();
   // #flow-settings
@@ -62,5 +60,17 @@ public class KinesisFirehoseSnippets {
   final Sink<Record, NotUsed> defaultSettingsSink =
       KinesisFirehoseSink.apply("streamName", amazonFirehoseAsync);
   // #flow-sink
+
+  // #error-handling
+  final Flow<Record, PutRecordBatchResponseEntry, NotUsed> flowWithErrors =
+      KinesisFirehoseFlow.apply("streamName", flowSettings, amazonFirehoseAsync)
+          .map(
+              response -> {
+                if (response.errorCode() != null) {
+                  throw new RuntimeException(response.errorCode());
+                }
+                return response;
+              });
+  // #error-handling
 
 }
