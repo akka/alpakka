@@ -35,6 +35,8 @@ import akka.stream.alpakka.s3.headers.ServerSideEncryption
 import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source}
 import akka.util.ByteString
 
+import scala.collection.immutable
+
 /** Internal Api */
 @InternalApi private[s3] final case class S3Location(bucket: String, key: String)
 
@@ -182,7 +184,7 @@ import akka.util.ByteString
       delimiter: String,
       prefix: Option[String] = None,
       s3Headers: S3Headers
-  ): Source[(Seq[ListBucketResultContents], Seq[ListBucketResultCommonPrefixes]), NotUsed] = {
+  ): Source[(immutable.Seq[ListBucketResultContents], immutable.Seq[ListBucketResultCommonPrefixes]), NotUsed] = {
 
     def listBucketCallContentsAndCommonPrefixes(token: Option[String])(implicit mat: ActorMaterializer,
                                                                        attr: Attributes) =
