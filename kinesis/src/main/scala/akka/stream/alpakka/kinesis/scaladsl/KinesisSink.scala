@@ -10,13 +10,13 @@ import akka.NotUsed
 import akka.stream.alpakka.kinesis.KinesisFlowSettings
 import akka.stream.scaladsl.Sink
 import akka.util.ByteString
-import com.amazonaws.services.kinesis.AmazonKinesisAsync
-import com.amazonaws.services.kinesis.model.PutRecordsRequestEntry
+import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
+import software.amazon.awssdk.services.kinesis.model.PutRecordsRequestEntry
 
 object KinesisSink {
 
   def apply(streamName: String, settings: KinesisFlowSettings = KinesisFlowSettings.Defaults)(
-      implicit kinesisClient: AmazonKinesisAsync
+      implicit kinesisClient: KinesisAsyncClient
   ): Sink[PutRecordsRequestEntry, NotUsed] =
     KinesisFlow(streamName, settings).to(Sink.ignore)
 
@@ -24,7 +24,7 @@ object KinesisSink {
       streamName: String,
       settings: KinesisFlowSettings = KinesisFlowSettings.Defaults
   )(
-      implicit kinesisClient: AmazonKinesisAsync
+      implicit kinesisClient: KinesisAsyncClient
   ): Sink[(String, ByteBuffer), NotUsed] =
     KinesisFlow.byPartitionAndData(streamName, settings).to(Sink.ignore)
 
@@ -32,7 +32,7 @@ object KinesisSink {
       streamName: String,
       settings: KinesisFlowSettings = KinesisFlowSettings.Defaults
   )(
-      implicit kinesisClient: AmazonKinesisAsync
+      implicit kinesisClient: KinesisAsyncClient
   ): Sink[(String, ByteString), NotUsed] =
     KinesisFlow.byPartitionAndBytes(streamName, settings).to(Sink.ignore)
 

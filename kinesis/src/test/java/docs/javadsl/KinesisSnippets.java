@@ -14,13 +14,14 @@ import akka.stream.alpakka.kinesis.javadsl.KinesisFlow;
 import akka.stream.alpakka.kinesis.javadsl.KinesisSink;
 import akka.stream.alpakka.kinesis.javadsl.KinesisSource;
 import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.FlowWithContext;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder;
-import com.amazonaws.services.kinesis.model.PutRecordsRequestEntry;
-import com.amazonaws.services.kinesis.model.PutRecordsResultEntry;
-import com.amazonaws.services.kinesis.model.Record;
-import com.amazonaws.services.kinesis.model.ShardIteratorType;
+import software.amazon.awssdk.services.kinesis.KinesisAsyncClient;
+import software.amazon.awssdk.services.kinesis.model.PutRecordsRequestEntry;
+import software.amazon.awssdk.services.kinesis.model.PutRecordsResultEntry;
+import software.amazon.awssdk.services.kinesis.model.Record;
+import software.amazon.awssdk.services.kinesis.model.ShardIteratorType;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -32,14 +33,14 @@ public class KinesisSnippets {
   final ActorSystem system = ActorSystem.create();
   final ActorMaterializer materializer = ActorMaterializer.create(system);
 
-  final com.amazonaws.services.kinesis.AmazonKinesisAsync amazonKinesisAsync =
-      AmazonKinesisAsyncClientBuilder.defaultClient();
+  final software.amazon.awssdk.services.kinesis.KinesisAsyncClient amazonKinesisAsync =
+      KinesisAsyncClient.create();
   // #init-client
 
   {
     // #init-client
 
-    system.registerOnTermination(amazonKinesisAsync::shutdown);
+    system.registerOnTermination(amazonKinesisAsync::close);
     // #init-client
   }
 
@@ -52,7 +53,7 @@ public class KinesisSnippets {
   // #source-settings
 
   // #source-single
-  final Source<com.amazonaws.services.kinesis.model.Record, NotUsed> source =
+  final Source<software.amazon.awssdk.services.kinesis.model.Record, NotUsed> source =
       KinesisSource.basic(settings, amazonKinesisAsync);
   // #source-single
 
@@ -71,9 +72,7 @@ public class KinesisSnippets {
           .withMaxBatchSize(500)
           .withMaxRecordsPerSecond(1_000)
           .withMaxBytesPerSecond(1_000_000)
-          .withMaxRecordsPerSecond(5)
-          .withBackoffStrategyExponential()
-          .withRetryInitialTimeout(Duration.ofMillis(100));
+          .withMaxRecordsPerSecond(5);
 
   final KinesisFlowSettings defaultFlowSettings = KinesisFlowSettings.create();
 
@@ -87,13 +86,13 @@ public class KinesisSnippets {
   final Flow<PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed> defaultSettingsFlow =
       KinesisFlow.create("streamName", amazonKinesisAsync);
 
-  final Flow<Pair<PutRecordsRequestEntry, String>, Pair<PutRecordsResultEntry, String>, NotUsed>
+  final FlowWithContext<PutRecordsRequestEntry, String, PutRecordsResultEntry, String, NotUsed>
       flowWithStringContext =
-          KinesisFlow.withUserContext("streamName", flowSettings, amazonKinesisAsync);
+          KinesisFlow.createWithContext("streamName", flowSettings, amazonKinesisAsync);
 
-  final Flow<Pair<PutRecordsRequestEntry, String>, Pair<PutRecordsResultEntry, String>, NotUsed>
+  final FlowWithContext<PutRecordsRequestEntry, String, PutRecordsResultEntry, String, NotUsed>
       defaultSettingsFlowWithStringContext =
-          KinesisFlow.withUserContext("streamName", flowSettings, amazonKinesisAsync);
+          KinesisFlow.createWithContext("streamName", flowSettings, amazonKinesisAsync);
 
   final Sink<PutRecordsRequestEntry, NotUsed> sink =
       KinesisSink.create("streamName", flowSettings, amazonKinesisAsync);
@@ -101,5 +100,18 @@ public class KinesisSnippets {
   final Sink<PutRecordsRequestEntry, NotUsed> defaultSettingsSink =
       KinesisSink.create("streamName", amazonKinesisAsync);
   // #flow-sink
+
+  // #error-handling
+  final Flow<PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed> flowWithErrors =
+      KinesisFlow.create("streamName", flowSettings, amazonKinesisAsync)
+          .map(
+              response -> {
+                if (response.errorCode() != null) {
+                  throw new RuntimeException(response.errorCode());
+                }
+
+                return response;
+              });
+  // #error-handling
 
 }
