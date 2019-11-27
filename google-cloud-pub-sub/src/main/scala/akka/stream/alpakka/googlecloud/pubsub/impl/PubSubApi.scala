@@ -16,11 +16,10 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.pubsub._
-import akka.stream.scaladsl.FlowWithContext
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.{Flow, FlowWithContext, Keep}
 import akka.{Done, NotUsed}
 import spray.json.DefaultJsonProtocol._
-import spray.json.{DefaultJsonProtocol, JsObject, JsString, JsValue, RootJsonFormat, deserializationError, _}
+import spray.json._
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -140,6 +139,12 @@ private[pubsub] trait PubSubApi {
       Http().cachedHostConnectionPoolHttps[T](PubSubGoogleApisHost, PubSubGoogleApisPort)
     }
 
+  private def poolSimple(implicit as: ActorSystem): Flow[HttpRequest, Try[HttpResponse], Http.HostConnectionPool] =
+    Flow[HttpRequest]
+      .map(_ -> NotUsed)
+      .viaMat(pool())(Keep.right)
+      .map(_._1)
+
   def pull(project: String, subscription: String, returnImmediately: Boolean, maxMessages: Int)(
       implicit as: ActorSystem,
       materializer: Materializer
@@ -153,11 +158,11 @@ private[pubsub] trait PubSubApi {
         case (_, maybeAccessToken) =>
           Marshal((HttpMethods.POST, url, PullRequest(returnImmediately, maxMessages)))
             .to[HttpRequest]
-            .map(request => (authorize(maybeAccessToken)(request), NotUsed))
+            .map(request => authorize(maybeAccessToken)(request))
       }
-      .via(pool[NotUsed]())
+      .via(poolSimple)
       .mapAsync(1) {
-        case (Success(response), _) =>
+        case Success(response) =>
           response.status match {
             case StatusCodes.Success(_) =>
               Unmarshal(response).to[PullResponse]
@@ -168,7 +173,7 @@ private[pubsub] trait PubSubApi {
                   throw new RuntimeException(s"Unexpected pull response. Code: [$status]. Entity: [$entity]")
                 }
           }
-        case (Failure(NonFatal(ex)), _) => Future.failed(ex)
+        case Failure(NonFatal(ex)) => Future.failed(ex)
       }
   }
 
@@ -185,11 +190,11 @@ private[pubsub] trait PubSubApi {
         case (request, maybeAccessToken) =>
           Marshal((HttpMethods.POST, url, request))
             .to[HttpRequest]
-            .map(request => (authorize(maybeAccessToken)(request), NotUsed))
+            .map(request => authorize(maybeAccessToken)(request))
       }
-      .via(pool[NotUsed]())
+      .via(poolSimple)
       .mapAsync(1) {
-        case (Success(response), _) =>
+        case Success(response) =>
           response.status match {
             case StatusCodes.Success(_) =>
               response.discardEntityBytes()
@@ -201,7 +206,7 @@ private[pubsub] trait PubSubApi {
                   throw new RuntimeException(s"Unexpected acknowledge response. Code: [$status]. Entity: [$entity]")
                 }
           }
-        case (Failure(NonFatal(ex)), _) => Future.failed(ex)
+        case Failure(NonFatal(ex)) => Future.failed(ex)
       }
   }
 

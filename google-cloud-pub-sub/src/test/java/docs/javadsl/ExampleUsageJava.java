@@ -88,8 +88,8 @@ public class ExampleUsageJava {
     Source<PublishMessage, NotUsed> messageSource = Source.single(publishMessage);
     messageSource
         .groupedWithin(1000, Duration.ofMinutes(1))
-        .map(messages -> Pair.apply(PublishRequest.create(messages), context))
-        .via(publishFlowWithContext)
+        .map(messages -> PublishRequest.create(messages))
+        .via(publishFlow)
         .runWith(Sink.ignore(), materializer);
     // #publish-fast
 

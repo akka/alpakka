@@ -80,8 +80,8 @@ class ExampleUsage {
   val messageSource: Source[PublishMessage, NotUsed] = Source(List(publishMessage, publishMessage))
   messageSource
     .groupedWithin(1000, 1.minute)
-    .map(grouped => PublishRequest(grouped) -> resultPromise)
-    .via(publishFlowWithContext)
+    .map(grouped => PublishRequest(grouped))
+    .via(publishFlow)
     .to(Sink.seq)
   //#publish-fast
 
