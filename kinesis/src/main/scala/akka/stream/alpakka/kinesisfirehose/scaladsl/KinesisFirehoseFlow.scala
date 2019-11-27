@@ -41,7 +41,6 @@ object KinesisFirehoseFlow {
             .transform(identity, FailurePublishingRecords(_))(sameThreadExecutionContext)
       )
       .mapConcat(_.requestResponses.asScala.toIndexedSeq)
-      .filter(_.errorCode == null)
 
   private def getByteSize(record: Record): Int = record.data.asByteBuffer.position
 
