@@ -4,8 +4,6 @@
 
 package akka.stream.alpakka.kinesis
 
-import software.amazon.awssdk.services.kinesis.model.PutRecordsResultEntry
-
 import scala.util.control.NoStackTrace
 
 object KinesisErrors {

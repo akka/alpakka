@@ -5,11 +5,11 @@
 package akka.stream.alpakka.kinesis.javadsl
 
 import akka.NotUsed
-import akka.japi.Pair
 import akka.stream.alpakka.kinesis.{scaladsl, KinesisFlowSettings}
 import akka.stream.javadsl.Flow
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 import software.amazon.awssdk.services.kinesis.model.{PutRecordsRequestEntry, PutRecordsResultEntry}
+import akka.stream.javadsl.FlowWithContext
 
 object KinesisFlow {
 
@@ -24,21 +24,19 @@ object KinesisFlow {
       .apply(streamName, settings)(kinesisClient)
       .asJava
 
-  def withUserContext[T](
+  def createWithContext[T](
       streamName: String,
       kinesisClient: KinesisAsyncClient
-  ): Flow[Pair[PutRecordsRequestEntry, T], Pair[PutRecordsResultEntry, T], NotUsed] =
-    withUserContext(streamName, KinesisFlowSettings.Defaults, kinesisClient)
+  ): FlowWithContext[PutRecordsRequestEntry, T, PutRecordsResultEntry, T, NotUsed] =
+    createWithContext(streamName, KinesisFlowSettings.Defaults, kinesisClient)
 
-  def withUserContext[T](
+  def createWithContext[T](
       streamName: String,
       settings: KinesisFlowSettings,
       kinesisClient: KinesisAsyncClient
-  ): Flow[Pair[PutRecordsRequestEntry, T], Pair[PutRecordsResultEntry, T], NotUsed] =
+  ): FlowWithContext[PutRecordsRequestEntry, T, PutRecordsResultEntry, T, NotUsed] =
     akka.stream.scaladsl
-      .Flow[Pair[PutRecordsRequestEntry, T]]
-      .map(_.toScala)
-      .via(scaladsl.KinesisFlow.withUserContext[T](streamName, settings)(kinesisClient))
-      .map { case (res, ctx) => Pair.create(res, ctx) }
+      .FlowWithContext[PutRecordsRequestEntry, T]
+      .via(scaladsl.KinesisFlow.withContext[T](streamName, settings)(kinesisClient))
       .asJava
 }

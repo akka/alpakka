@@ -6,7 +6,7 @@ package akka.stream.alpakka.kinesis
 
 import java.util.concurrent.CompletableFuture
 
-import akka.stream.alpakka.kinesis.KinesisErrors.{ErrorPublishingRecords, FailurePublishingRecords}
+import akka.stream.alpakka.kinesis.KinesisErrors.FailurePublishingRecords
 import akka.stream.alpakka.kinesis.scaladsl.KinesisFlow
 import akka.stream.scaladsl.Keep
 import akka.stream.testkit.scaladsl.{TestSink, TestSource}
@@ -57,7 +57,7 @@ class KinesisFlowSpec extends WordSpecLike with Matchers with KinesisMock {
 
   "KinesisFlowWithUserContext" must {
     "return token in result" in assertAllStagesStopped {
-      new Settings with KinesisFlowWithUserContextProbe with WithPutRecordsSuccess {
+      new Settings with KinesisFlowWithContextProbe with WithPutRecordsSuccess {
         val records = recordStream.take(5)
         records.foreach(sourceProbe.sendNext)
         val results = for (_ <- 1 to records.size) yield sinkProbe.requestNext()
@@ -90,7 +90,7 @@ class KinesisFlowSpec extends WordSpecLike with Matchers with KinesisMock {
         .run()
   }
 
-  trait KinesisFlowWithUserContextProbe { self: Settings =>
+  trait KinesisFlowWithContextProbe { self: Settings =>
     val streamName = "stream-name"
     val recordStream = Stream
       .from(1)
@@ -110,7 +110,7 @@ class KinesisFlowSpec extends WordSpecLike with Matchers with KinesisMock {
     val (sourceProbe, sinkProbe) =
       TestSource
         .probe[(PutRecordsRequestEntry, Int)]
-        .via(KinesisFlow.withUserContext(streamName, settings))
+        .via(KinesisFlow.withContext(streamName, settings))
         .toMat(TestSink.probe)(Keep.both)
         .run()
   }

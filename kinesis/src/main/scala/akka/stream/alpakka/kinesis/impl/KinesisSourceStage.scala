@@ -36,6 +36,8 @@ private[kinesis] object KinesisSourceStage {
 
   private[kinesis] final case object Pump
 
+  private[kinesis] final case object GetRecords
+
 }
 
 /**
@@ -98,7 +100,7 @@ private[kinesis] class KinesisSourceStage(shardSettings: ShardSettings, amazonKi
             self.become(ready)
             self.ref ! Pump
           } else {
-            scheduleOnce('GET_RECORDS, refreshInterval)
+            scheduleOnce(GetRecords, refreshInterval)
           }
 
         case (_, GetRecordsFailure(ex)) =>
@@ -126,7 +128,7 @@ private[kinesis] class KinesisSourceStage(shardSettings: ShardSettings, amazonKi
       }
 
       override protected def onTimer(timerKey: Any): Unit = timerKey match {
-        case 'GET_RECORDS => requestRecords()
+        case GetRecords => requestRecords()
       }
 
       private[this] val handleGetRecords: Try[GetRecordsResponse] => Unit = {

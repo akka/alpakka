@@ -11,7 +11,7 @@ import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 import akka.stream.ThrottleMode
 import akka.stream.alpakka.kinesis.KinesisFlowSettings
 import akka.stream.alpakka.kinesis.KinesisErrors.FailurePublishingRecords
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.{Flow, FlowWithContext}
 import akka.util.ByteString
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
@@ -34,30 +34,32 @@ object KinesisFlow {
   ): Flow[PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed] =
     Flow[PutRecordsRequestEntry]
       .map((_, ()))
-      .via(withUserContext(streamName, settings))
+      .via(withContext(streamName, settings))
       .map(_._1)
 
-  def withUserContext[T](streamName: String, settings: KinesisFlowSettings = KinesisFlowSettings.Defaults)(
+  def withContext[T](streamName: String, settings: KinesisFlowSettings = KinesisFlowSettings.Defaults)(
       implicit kinesisClient: KinesisAsyncClient
-  ): Flow[(PutRecordsRequestEntry, T), (PutRecordsResultEntry, T), NotUsed] =
-    Flow[(PutRecordsRequestEntry, T)]
-      .throttle(settings.maxRecordsPerSecond, 1.second, settings.maxRecordsPerSecond, ThrottleMode.Shaping)
-      .throttle(settings.maxBytesPerSecond,
-                1.second,
-                settings.maxBytesPerSecond,
-                getPayloadByteSize,
-                ThrottleMode.Shaping)
-      .batch(settings.maxBatchSize, Queue(_))(_ :+ _)
-      .mapAsync(settings.parallelism)(
-        entries =>
-          kinesisClient
-            .putRecords(
-              PutRecordsRequest.builder().streamName(streamName).records(entries.map(_._1).asJavaCollection).build
-            )
-            .toScala
-            .transform(handlePutRecordsSuccess(entries), FailurePublishingRecords(_))(sameThreadExecutionContext)
-      )
-      .mapConcat(identity)
+  ): FlowWithContext[PutRecordsRequestEntry, T, PutRecordsResultEntry, T, NotUsed] =
+    FlowWithContext.fromTuples(
+      Flow[(PutRecordsRequestEntry, T)]
+        .throttle(settings.maxRecordsPerSecond, 1.second, settings.maxRecordsPerSecond, ThrottleMode.Shaping)
+        .throttle(settings.maxBytesPerSecond,
+                  1.second,
+                  settings.maxBytesPerSecond,
+                  getPayloadByteSize,
+                  ThrottleMode.Shaping)
+        .batch(settings.maxBatchSize, Queue(_))(_ :+ _)
+        .mapAsync(settings.parallelism)(
+          entries =>
+            kinesisClient
+              .putRecords(
+                PutRecordsRequest.builder().streamName(streamName).records(entries.map(_._1).asJavaCollection).build
+              )
+              .toScala
+              .transform(handlePutRecordsSuccess(entries), FailurePublishingRecords(_))(sameThreadExecutionContext)
+        )
+        .mapConcat(identity)
+    )
 
   private def handlePutRecordsSuccess[T](
       entries: Iterable[(PutRecordsRequestEntry, T)]

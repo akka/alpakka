@@ -14,6 +14,7 @@ import akka.stream.alpakka.kinesis.javadsl.KinesisFlow;
 import akka.stream.alpakka.kinesis.javadsl.KinesisSink;
 import akka.stream.alpakka.kinesis.javadsl.KinesisSource;
 import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.FlowWithContext;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient;
@@ -85,13 +86,13 @@ public class KinesisSnippets {
   final Flow<PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed> defaultSettingsFlow =
       KinesisFlow.create("streamName", amazonKinesisAsync);
 
-  final Flow<Pair<PutRecordsRequestEntry, String>, Pair<PutRecordsResultEntry, String>, NotUsed>
+  final FlowWithContext<PutRecordsRequestEntry, String, PutRecordsResultEntry, String, NotUsed>
       flowWithStringContext =
-          KinesisFlow.withUserContext("streamName", flowSettings, amazonKinesisAsync);
+          KinesisFlow.createWithContext("streamName", flowSettings, amazonKinesisAsync);
 
-  final Flow<Pair<PutRecordsRequestEntry, String>, Pair<PutRecordsResultEntry, String>, NotUsed>
+  final FlowWithContext<PutRecordsRequestEntry, String, PutRecordsResultEntry, String, NotUsed>
       defaultSettingsFlowWithStringContext =
-          KinesisFlow.withUserContext("streamName", flowSettings, amazonKinesisAsync);
+          KinesisFlow.createWithContext("streamName", flowSettings, amazonKinesisAsync);
 
   final Sink<PutRecordsRequestEntry, NotUsed> sink =
       KinesisSink.create("streamName", flowSettings, amazonKinesisAsync);
@@ -99,5 +100,18 @@ public class KinesisSnippets {
   final Sink<PutRecordsRequestEntry, NotUsed> defaultSettingsSink =
       KinesisSink.create("streamName", amazonKinesisAsync);
   // #flow-sink
+
+  // #error-handling
+  final Flow<PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed> flowWithErrors =
+      KinesisFlow.create("streamName", flowSettings, amazonKinesisAsync)
+          .map(
+              response -> {
+                if (response.errorCode() != null) {
+                  throw new RuntimeException(response.errorCode());
+                }
+
+                return response;
+              });
+  // #error-handling
 
 }
