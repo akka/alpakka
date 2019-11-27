@@ -9,7 +9,7 @@ import java.time.Instant
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{MediaTypes, _}
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
-import akka.stream.alpakka.s3.ListBucketResultContents
+import akka.stream.alpakka.s3.{ListBucketResultCommonPrefixes, ListBucketResultContents}
 import akka.testkit.TestKit
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
@@ -51,6 +51,12 @@ class MarshallingSpec(_system: ActorSystem)
                     |        <Size>1234</Size>
                     |        <StorageClass>REDUCED_REDUNDANCY</StorageClass>
                     |    </Contents>
+                    |    <CommonPrefixes>
+                    |        <Prefix>prefix1/</Prefix>
+                    |    </CommonPrefixes>
+                    |    <CommonPrefixes>
+                    |        <Prefix>prefix2/</Prefix>
+                    |    </CommonPrefixes>
                     |</ListBucketResult>""".stripMargin
 
   it should "initiate multipart upload when the region is us-east-1" in {
@@ -74,6 +80,10 @@ class MarshallingSpec(_system: ActorSystem)
                                  1234,
                                  Instant.parse("2009-10-12T17:50:31Z"),
                                  "REDUCED_REDUNDANCY")
+      ),
+      Seq(
+        ListBucketResultCommonPrefixes("bucket", "prefix1/"),
+        ListBucketResultCommonPrefixes("bucket", "prefix2/")
       )
     )
   }
@@ -123,7 +133,8 @@ class MarshallingSpec(_system: ActorSystem)
                                  1234,
                                  Instant.parse("2009-10-12T17:50:31Z"),
                                  "REDUCED_REDUNDANCY")
-      )
+      ),
+      Nil
     )
   }
 
@@ -171,7 +182,8 @@ class MarshallingSpec(_system: ActorSystem)
                                  1234,
                                  Instant.parse("2009-10-12T17:50:31Z"),
                                  "REDUCED_REDUNDANCY")
-      )
+      ),
+      Nil
     )
   }
 

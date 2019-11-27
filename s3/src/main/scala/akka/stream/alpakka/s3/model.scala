@@ -253,6 +253,70 @@ object ListBucketResultContents {
 }
 
 /**
+ * @param bucketName The name of the bucket in which this object is stored
+ * @param prefix The common prefix of keys between Prefix and the next occurrence of the string specified by a delimiter.
+ */
+final class ListBucketResultCommonPrefixes private (
+    val bucketName: String,
+    val prefix: String
+) {
+
+  /** Java API */
+  def getBucketName: String = bucketName
+
+  /** Java API */
+  def getPrefix: String = prefix
+
+  def withBucketName(value: String): ListBucketResultCommonPrefixes = copy(bucketName = value)
+  def withPrefix(value: String): ListBucketResultCommonPrefixes = copy(prefix = value)
+
+  private def copy(
+      bucketName: String = bucketName,
+      prefix: String = prefix
+  ): ListBucketResultCommonPrefixes = new ListBucketResultCommonPrefixes(
+    bucketName = bucketName,
+    prefix = prefix
+  )
+
+  override def toString =
+    "ListBucketResultCommonPrefixes(" +
+    s"bucketName=$bucketName," +
+    s"prefix=$prefix" +
+    ")"
+
+  override def equals(other: Any): Boolean = other match {
+    case that: ListBucketResultCommonPrefixes =>
+      Objects.equals(this.bucketName, that.bucketName) &&
+      Objects.equals(this.prefix, that.prefix)
+    case _ => false
+  }
+
+  override def hashCode(): Int =
+    Objects.hash(bucketName, prefix)
+}
+
+object ListBucketResultCommonPrefixes {
+
+  /** Scala API */
+  def apply(
+      bucketName: String,
+      prefix: String
+  ): ListBucketResultCommonPrefixes = new ListBucketResultCommonPrefixes(
+    bucketName,
+    prefix
+  )
+
+  /** Java API */
+  def create(
+      bucketName: String,
+      prefix: String
+  ): ListBucketResultCommonPrefixes = apply(
+    bucketName,
+    prefix
+  )
+}
+
+/**
  * Modelled after com.amazonaws.services.s3.model.ObjectMetadata
  *
  * @param metadata the raw http headers

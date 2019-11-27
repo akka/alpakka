@@ -243,6 +243,70 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     result.futureValue.key shouldBe listKey
   }
 
+  it should "list keys and common prefixes for a given bucket with a prefix and delimiter" in {
+    mockListBucketAndCommonPrefixes()
+
+    //#list-bucket-and-common-prefixes
+    val keyAndCommonPrefixSource
+        : Source[(Seq[ListBucketResultContents], Seq[ListBucketResultCommonPrefixes]), NotUsed] =
+      S3.listBucketAndCommonPrefixes(bucket, listDelimiter, Some(listPrefix))
+    //#list-bucket-and-common-prefixes
+
+    val result = keyAndCommonPrefixSource.runWith(Sink.head)
+    val contents = result.futureValue._1
+    val commonPrefixes = result.futureValue._2
+
+    contents.head.key shouldBe listKey
+    commonPrefixes.head.prefix shouldBe listCommonPrefix
+  }
+
+  it should "list keys and common prefixes for a given bucket with a prefix and delimiter using the version 1 api" in {
+    mockListBucketAndCommonPrefixesVersion1()
+
+    val useVersion1Api = S3Ext(system).settings
+      .withListBucketApiVersion(ApiVersion.ListBucketVersion1)
+
+    val keyAndCommonPrefixSource
+        : Source[(Seq[ListBucketResultContents], Seq[ListBucketResultCommonPrefixes]), NotUsed] =
+      S3.listBucketAndCommonPrefixes(bucket, listDelimiter, Some(listPrefix))
+        .withAttributes(S3Attributes.settings(useVersion1Api))
+
+    val result = keyAndCommonPrefixSource.runWith(Sink.head)
+    val contents = result.futureValue._1
+    val commonPrefixes = result.futureValue._2
+
+    contents.head.key shouldBe listKey
+    commonPrefixes.head.prefix shouldBe listCommonPrefix
+  }
+
+  it should "list keys for a given bucket with a delimiter and prefix" in {
+    mockListBucketAndCommonPrefixes()
+
+    //#list-bucket-delimiter
+    val keySource: Source[ListBucketResultContents, NotUsed] =
+      S3.listBucket(bucket, listDelimiter, Some(listPrefix))
+    //#list-bucket-delimiter
+
+    val result = keySource.runWith(Sink.head)
+
+    result.futureValue.key shouldBe listKey
+  }
+
+  it should "list keys for a given bucket with a delimiter and prefix using the version 1 api" in {
+    mockListBucketAndCommonPrefixesVersion1()
+
+    val useVersion1Api = S3Ext(system).settings
+      .withListBucketApiVersion(ApiVersion.ListBucketVersion1)
+
+    val keySource: Source[ListBucketResultContents, NotUsed] =
+      S3.listBucket(bucket, listDelimiter, Some(listPrefix))
+        .withAttributes(S3Attributes.settings(useVersion1Api))
+
+    val result = keySource.runWith(Sink.head)
+
+    result.futureValue.key shouldBe listKey
+  }
+
   it should "make a bucket with given name" in {
     mockMakingBucket()
 

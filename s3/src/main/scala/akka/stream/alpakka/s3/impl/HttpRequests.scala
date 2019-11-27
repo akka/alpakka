@@ -30,6 +30,7 @@ import scala.concurrent.{ExecutionContext, Future}
       bucket: String,
       prefix: Option[String] = None,
       continuationToken: Option[String] = None,
+      delimiter: Option[String] = None,
       headers: Seq[HttpHeader] = Nil
   )(implicit conf: S3Settings): HttpRequest = {
 
@@ -42,6 +43,7 @@ import scala.concurrent.{ExecutionContext, Future}
       Seq(
         "list-type" -> listType,
         "prefix" -> prefix,
+        "delimiter" -> delimiter,
         continuationTokenName -> continuationToken
       ).collect { case (k, Some(v)) => k -> v }.toMap
     )
