@@ -13,3 +13,11 @@ ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.kinesis
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.kinesisfirehose.javadsl.KinesisFirehoseSink.*")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.kinesisfirehose.scaladsl.KinesisFirehoseFlow.*")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.kinesisfirehose.scaladsl.KinesisFirehoseSink.*")
+
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.alpakka.kinesis.KinesisFlowSettings*")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.kinesis.KinesisFlowSettings.*")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.kinesis.javadsl.KinesisFlow.withUserContext")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.kinesis.scaladsl.KinesisFlow.withUserContext*")
+
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.alpakka.kinesisfirehose.KinesisFirehoseFlowSettings*")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.kinesisfirehose.KinesisFirehoseFlowSettings.*")
