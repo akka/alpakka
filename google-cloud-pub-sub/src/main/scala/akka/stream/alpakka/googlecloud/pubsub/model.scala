@@ -244,6 +244,9 @@ object PublishResponse {
 }
 
 @InternalApi
+private[pubsub] final case class PullRequest(returnImmediately: Boolean, maxMessages: Int)
+
+@InternalApi
 private final class PullResponse private[pubsub] (val receivedMessages: Option[immutable.Seq[ReceivedMessage]]) {
 
   override def equals(other: Any): Boolean = other match {

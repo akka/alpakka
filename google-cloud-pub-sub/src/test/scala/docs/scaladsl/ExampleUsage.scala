@@ -7,15 +7,15 @@ package docs.scaladsl
 import java.time.Instant
 import java.util.Base64
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Cancellable}
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.pubsub._
 import akka.stream.alpakka.googlecloud.pubsub.scaladsl.GooglePubSub
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl.{Flow, FlowWithContext, Sink, Source}
 import akka.{Done, NotUsed}
 
 import scala.collection.immutable.Seq
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
 import scala.concurrent.duration._
 
 class ExampleUsage {
@@ -59,13 +59,34 @@ class ExampleUsage {
   val publishedMessageIds: Future[Seq[Seq[String]]] = source.via(publishFlow).runWith(Sink.seq)
   //#publish-single
 
+  //#publish-single-with-context
+  val publishMessageWithContext =
+    PublishMessage(new String(Base64.getEncoder.encode("Hello Google!".getBytes)))
+  val publishRequestWithContext = PublishRequest(Seq(publishMessage))
+  val resultPromise = Promise[Seq[String]]
+
+  val sourceWithContext: Source[(PublishRequest, Promise[Seq[String]]), NotUsed] =
+    Source.single(publishRequest -> resultPromise)
+
+  val publishFlowWithContext
+      : FlowWithContext[PublishRequest, Promise[Seq[String]], Seq[String], Promise[Seq[String]], NotUsed] =
+    GooglePubSub.publishWithContext[Promise[Seq[String]]](topic, config)
+
+  val publishedMessageIdsWithContext: Future[Seq[(Seq[String], Promise[Seq[String]])]] =
+    sourceWithContext.via(publishFlowWithContext).runWith(Sink.seq)
+  //#publish-single-with-context
+
   //#publish-fast
   val messageSource: Source[PublishMessage, NotUsed] = Source(List(publishMessage, publishMessage))
-  messageSource.groupedWithin(1000, 1.minute).map(PublishRequest.apply).via(publishFlow).to(Sink.seq)
+  messageSource
+    .groupedWithin(1000, 1.minute)
+    .map(grouped => PublishRequest(grouped))
+    .via(publishFlow)
+    .to(Sink.seq)
   //#publish-fast
 
   //#subscribe
-  val subscriptionSource: Source[ReceivedMessage, NotUsed] =
+  val subscriptionSource: Source[ReceivedMessage, Cancellable] =
     GooglePubSub.subscribe(subscription, config)
 
   val ackSink: Sink[AcknowledgeRequest, Future[Done]] =
