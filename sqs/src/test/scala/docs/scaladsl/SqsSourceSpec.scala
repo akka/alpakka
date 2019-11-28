@@ -231,7 +231,9 @@ class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with Defaul
     implicit val customSqsClient = SqsAsyncClient
       .builder()
       .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
+      //#init-custom-client
       .endpointOverride(URI.create(sqsEndpoint))
+      //#init-custom-client
       .region(Region.EU_CENTRAL_1)
       .httpClient(customClient)
       .build()

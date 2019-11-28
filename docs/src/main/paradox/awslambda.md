@@ -18,15 +18,21 @@ The table below shows direct dependencies of this module and the second tab show
 
 @@dependencies { projectId="awslambda" }
 
-## Sending messages
+## Setup
 
-Flow provided by this connector needs a prepared `LambdaAsyncClient` to be able to invoke lambda functions.
+Flow provided by this connector needs a prepared @javadoc[LambdaAsyncClient](software.amazon.awssdk.services.lambda.LambdaAsyncClient) to be able to invoke lambda functions.
 
 Scala
 : @@snip (/awslambda/src/test/scala/docs/scaladsl/Examples.scala) { #init-client }
 
 Java
 : @@snip (/awslambda/src/test/java/docs/javadsl/Examples.java) { #init-client }
+
+This connector is set up to use @extref:[Akka HTTP](akka-http:) as default HTTP client via the thin adapter library [AWS Akka-Http SPI implementation](https://github.com/matsluni/aws-spi-akka-http). By setting the `httpClient` explicitly (as above) the Akka actor system is reused, if not set explicitly a separate actor system will be created internally.
+
+The client has built-in support for retrying with exponential backoff, see @ref[AWS Retry configuration](aws-retry-configuration.md) for more details.
+
+It is possible to configure the use of Netty instead, which is Amazon's default. Add an appropriate Netty version to the dependencies and configure @javadoc[NettyNioAsyncHttpClient](software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient).
 
 We will also need an @scaladoc[ActorSystem](akka.actor.ActorSystem) and an @scaladoc[ActorMaterializer](akka.stream.ActorMaterializer).
 
@@ -38,8 +44,10 @@ Java
 
 This is all preparation that we are going to need.
 
+## Sending messages
+
 Now we can stream AWS Java SDK Lambda `InvokeRequest` to AWS Lambda functions
-@scaladoc[AwsLambdaFlow](akka.stream.alpakka.awslambda.scaladsl.AwsLambdaFlow$) factory.
+@apidoc[AwsLambdaFlow$] factory.
 
 Scala
 : @@snip (/awslambda/src/test/scala/docs/scaladsl/Examples.scala) { #run }
@@ -53,3 +61,8 @@ Options:
 
  - `parallelism` - Number of parallel executions. Should be less or equal to number of threads in ExecutorService for LambdaAsyncClient 
 
+@@@ index
+
+* [retry conf](aws-retry-configuration.md)
+
+@@@

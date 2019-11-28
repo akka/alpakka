@@ -8,15 +8,20 @@ import akka.actor.ActorSystem;
 import akka.testkit.javadsl.TestKit;
 import com.github.matsluni.akkahttpspi.AkkaHttpClient;
 import org.junit.Test;
+// #clientRetryConfig
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
+// #awsRetryConfiguration
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.core.internal.retry.SdkDefaultRetrySetting;
 import software.amazon.awssdk.core.retry.RetryPolicy;
 import software.amazon.awssdk.core.retry.backoff.BackoffStrategy;
 import software.amazon.awssdk.core.retry.conditions.RetryCondition;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
+// #clientRetryConfig
+
+// #awsRetryConfiguration
 
 public class RetryTest {
 
@@ -30,6 +35,7 @@ public class RetryTest {
             .credentialsProvider(
                 StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
             .httpClient(AkkaHttpClient.builder().withActorSystem(system).build())
+            // #awsRetryConfiguration
             .overrideConfiguration(
                 ClientOverrideConfiguration.builder()
                     .retryPolicy(
@@ -43,7 +49,9 @@ public class RetryTest {
                             .retryCondition(RetryCondition.defaultRetryCondition())
                             .build())
                     .build())
+            // #awsRetryConfiguration
             .build();
+    system.registerOnTermination(client::close);
     // #clientRetryConfig
 
     client.close();

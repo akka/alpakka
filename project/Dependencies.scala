@@ -10,7 +10,7 @@ object Dependencies {
   val Scala213 = "2.13.1"
   val ScalaVersions = Seq(Scala212, Scala211, Scala213).filterNot(_ == Scala211 && Nightly)
 
-  val AkkaVersion = if (Nightly) "2.6.0-RC1" else "2.5.26"
+  val AkkaVersion = if (Nightly) "2.6.0" else "2.5.26"
   val AkkaBinaryVersion = if (Nightly) "2.6" else "2.5"
 
   val InfluxDBJavaVersion = "2.15"
@@ -73,7 +73,15 @@ object Dependencies {
 
   val AwsLambda = Seq(
     libraryDependencies ++= Seq(
-        "software.amazon.awssdk" % "lambda" % AwsSdk2Version, // ApacheV2
+        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll // ApacheV2
+        (
+          ExclusionRule(organization = "com.typesafe.akka")
+        ),
+        "software.amazon.awssdk" % "lambda" % AwsSdk2Version excludeAll // ApacheV2
+        (
+          ExclusionRule("software.amazon.awssdk", "apache-client"),
+          ExclusionRule("software.amazon.awssdk", "netty-nio-client")
+        ),
         "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
       ) ++ JacksonDatabindDependencies
   )
@@ -285,6 +293,10 @@ object Dependencies {
 
   val Kinesis = Seq(
     libraryDependencies ++= Seq(
+        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll // ApacheV2
+        (
+          ExclusionRule(organization = "com.typesafe.akka")
+        ),
         "software.amazon.awssdk" % "kinesis" % AwsSdk2Version excludeAll // ApacheV2
         (
           ExclusionRule("software.amazon.awssdk", "apache-client"),
@@ -296,7 +308,7 @@ object Dependencies {
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         ),
         "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
-      )
+      ) ++ JacksonDatabindDependencies
   )
 
   val KuduVersion = "1.7.1"

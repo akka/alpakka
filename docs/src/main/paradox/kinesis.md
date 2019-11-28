@@ -1,4 +1,4 @@
-# AWS Kinesis
+# AWS Kinesis and Firehose
 
 The AWS Kinesis connector provides flows for streaming data to and from Kinesis Data streams and to Kinesis Firehose streams.
 
@@ -64,6 +64,12 @@ Scala
 
 Java
 : @@snip [snip](/kinesis/src/test/java/docs/javadsl/KinesisSnippets.java) { #init-client }
+
+This connector is set up to use @extref:[Akka HTTP](akka-http:) as default HTTP client via the thin adapter library [AWS Akka-Http SPI implementation](https://github.com/matsluni/aws-spi-akka-http). By setting the `httpClient` explicitly (as above) the Akka actor system is reused, if not set explicitly a separate actor system will be created internally.
+
+The client has built-in support for retrying with exponential backoff, see @ref[AWS Retry configuration](aws-retry-configuration.md) for more details.
+
+It is possible to configure the use of Netty instead, which is Amazon's default. Add an appropriate Netty version to the dependencies and configure @javadoc[NettyNioAsyncHttpClient](software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient).
 
 ### Kinesis as Source
 
@@ -163,6 +169,12 @@ Scala
 Java
 : @@snip [snip](/kinesis/src/test/java/docs/javadsl/KinesisFirehoseSnippets.java) { #init-client }
 
+This connector is set up to use @extref:[Akka HTTP](akka-http:) as default HTTP client via the thin adapter library [AWS Akka-Http SPI implementation](https://github.com/matsluni/aws-spi-akka-http). By setting the `httpClient` explicitly (as above) the Akka actor system is reused, if not set explicitly a separate actor system will be created internally.
+
+It is possible to configure the use of Netty instead, which is Amazon's default. Add an appropriate Netty version to the dependencies and configure @javadoc[NettyNioAsyncHttpClient](software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient).
+
+The client has built-in support for retrying with exponential backoff, see @ref[AWS Retry configuration](aws-retry-configuration.md) for more details.
+
 ### Kinesis Firehose Put via Flow or as Sink
 
 The
@@ -197,11 +209,19 @@ Java
 : @@snip [snip](/kinesis/src/test/java/docs/javadsl/KinesisFirehoseSnippets.java) { #flow-sink }
 
 @@@ warning
-As of version 2, the library will not retry failed requests: this can be handled by the underlying `FirehoseAsyncClient` (see [client configuration](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/core/client/builder/SdkDefaultClientBuilder.html#overrideConfiguration-software.amazon.awssdk.core.client.config.ClientOverrideConfiguration-)). This means that you may have to inspect individual responses to make sure they have been successful: 
+As of version 2, the library will not retry failed requests. See @ref[AWS Retry Configuration](aws-retry-configuration.md) how to configure it for the @javadoc[FirehoseAsyncClient](software.amazon.awssdk.services.firehose.FirehoseAsyncClient). 
+
+This means that you may have to inspect individual responses to make sure they have been successful: 
 
 Scala
 : @@snip [snip](/kinesis/src/test/scala/docs/scaladsl/KinesisFirehoseSnippets.scala) { #error-handling }
 
 Java
 : @@snip [snip](/kinesis/src/test/java/docs/javadsl/KinesisFirehoseSnippets.java) { #error-handling }
+@@@
+
+@@@ index
+
+* [retry conf](aws-retry-configuration.md)
+
 @@@

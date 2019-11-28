@@ -47,9 +47,11 @@ Scala
 Java
 : @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/BaseSqsTest.java) { #init-client }
 
-### Underlying HTTP client
+This connector is set up to use @extref:[Akka HTTP](akka-http:) as default HTTP client via the thin adapter library [AWS Akka-Http SPI implementation](https://github.com/matsluni/aws-spi-akka-http). By setting the `httpClient` explicitly (as above) the Akka actor system is reused, if not set explicitly a separate actor system will be created internally.
 
-Alpakka SQS and SNS are set up to use @extref:[Akka HTTP](akka-http:) as default HTTP client via the thin adapter library [AWS Akka-Http SPI implementation](https://github.com/matsluni/aws-spi-akka-http). By setting the `httpClient` explicitly (as above) the Akka actor system is reused, if not set explicitly a separate actor system will be created internally.
+The client has built-in support for retrying with exponential backoff, see @ref[AWS Retry configuration](aws-retry-configuration.md) for more details.
+
+### Underlying HTTP client
 
 It is possible to configure the use of Netty instead, which is Amazon's default. Add an appropriate Netty version to the dependencies and configure @javadoc[NettyNioAsyncHttpClient](software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient).
 
@@ -341,23 +343,11 @@ Options:
 
 ## Integration testing
 
-For integration testing without touching Amazon SQS, Alpakka uses [ElasticMQ](https://github.com/adamw/elasticmq), 
+For integration testing without touching Amazon SQS, Alpakka uses [ElasticMQ](https://github.com/softwaremill/elasticmq), 
 a queuing service which serves an AWS SQS compatible API.
 
-### Running the example code
+@@@ index
 
-The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
+* [retry conf](aws-retry-configuration.md)
 
-> The code requires ElasticMQ running in the background. You can start it quickly using docker:
->
-> `docker-compose up elasticmq`
-
-Scala
-:   ```
-    sbt 'project sqs' test
-    ```
-
-Java
-:   ```
-    sbt 'project sqs' test
-    ```
+@@@

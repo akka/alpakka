@@ -13,29 +13,34 @@ import akka.stream.alpakka.kinesis.{KinesisFlowSettings, ShardSettings}
 import akka.stream.scaladsl.{Flow, FlowWithContext, Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.ByteString
-import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
-import software.amazon.awssdk.services.kinesis.model.{
-  PutRecordsRequestEntry,
-  PutRecordsResultEntry,
-  Record,
-  ShardIteratorType
-}
+import software.amazon.awssdk.services.kinesis.model.{PutRecordsRequestEntry, PutRecordsResultEntry, Record}
 
 import scala.concurrent.duration._
 
 object KinesisSnippets {
 
   //#init-client
+  import com.github.matsluni.akkahttpspi.AkkaHttpClient
+  import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
+
   implicit val system: ActorSystem = ActorSystem()
   implicit val materializer: Materializer = ActorMaterializer()
 
   implicit val amazonKinesisAsync: software.amazon.awssdk.services.kinesis.KinesisAsyncClient =
-    KinesisAsyncClient.create()
+    KinesisAsyncClient
+      .builder()
+      .httpClient(AkkaHttpClient.builder().withActorSystem(system).build())
+      // Possibility to configure the retry policy
+      // see https://doc.akka.io/docs/alpakka/current/aws-retry-configuration.html
+      // .overrideConfiguration(...)
+      .build()
 
   system.registerOnTermination(amazonKinesisAsync.close())
   //#init-client
 
   //#source-settings
+  import software.amazon.awssdk.services.kinesis.model.ShardIteratorType
+
   val settings =
     ShardSettings(streamName = "myStreamName", shardId = "shard-id")
       .withRefreshInterval(1.second)

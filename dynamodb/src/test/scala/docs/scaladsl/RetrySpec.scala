@@ -9,11 +9,14 @@ import akka.testkit.TestKit
 import com.github.matsluni.akkahttpspi.AkkaHttpClient
 import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
+// #awsRetryConfiguration
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration
 import software.amazon.awssdk.core.internal.retry.SdkDefaultRetrySetting
 import software.amazon.awssdk.core.retry.RetryPolicy
 import software.amazon.awssdk.core.retry.backoff.BackoffStrategy
 import software.amazon.awssdk.core.retry.conditions.RetryCondition
+
+// #awsRetryConfiguration
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
 
@@ -25,6 +28,7 @@ class RetrySpec extends TestKit(ActorSystem("RetrySpec")) with WordSpecLike with
     .region(Region.AWS_GLOBAL)
     .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
     .httpClient(AkkaHttpClient.builder().withActorSystem(system).build())
+    // #awsRetryConfiguration
     .overrideConfiguration(
       ClientOverrideConfiguration
         .builder()
@@ -40,6 +44,7 @@ class RetrySpec extends TestKit(ActorSystem("RetrySpec")) with WordSpecLike with
         )
         .build()
     )
+    // #awsRetryConfiguration
     .build()
   // #clientRetryConfig
 
