@@ -73,6 +73,7 @@ object Dependencies {
 
   val AwsLambda = Seq(
     libraryDependencies ++= Seq(
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
         "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll // ApacheV2
         (
           ExclusionRule(organization = "com.typesafe.akka")
@@ -293,6 +294,7 @@ object Dependencies {
 
   val Kinesis = Seq(
     libraryDependencies ++= Seq(
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
         "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll // ApacheV2
         (
           ExclusionRule(organization = "com.typesafe.akka")
