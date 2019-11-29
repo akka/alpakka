@@ -6,6 +6,7 @@ package docs.scaladsl
 
 import akka.stream.alpakka.couchbase.scaladsl.CouchbaseSession
 import akka.stream.alpakka.couchbase.testing.CouchbaseSupport
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import com.couchbase.client.java.document.JsonDocument
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.BeforeAndAfterAll
@@ -20,7 +21,8 @@ class CouchbaseSessionExamplesSpec
     with CouchbaseSupport
     with Matchers
     with BeforeAndAfterAll
-    with ScalaFutures {
+    with ScalaFutures
+    with LogCapturing {
 
   override implicit def patienceConfig: PatienceConfig = PatienceConfig(10.seconds, 250.millis)
 

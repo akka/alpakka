@@ -8,6 +8,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.cassandra.CassandraBatchSettings
 import akka.stream.alpakka.cassandra.scaladsl.{CassandraFlow, CassandraSink, CassandraSource}
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import com.datastax.driver.core.{Cluster, PreparedStatement, SimpleStatement}
@@ -28,7 +29,8 @@ class CassandraSourceSpec
     with ScalaFutures
     with BeforeAndAfterEach
     with BeforeAndAfterAll
-    with Matchers {
+    with Matchers
+    with LogCapturing {
 
   //#element-to-insert
   case class ToInsert(id: Integer, cc: Integer)

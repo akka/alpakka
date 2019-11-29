@@ -8,6 +8,7 @@ import akka.Done
 import akka.stream.alpakka.couchbase.{CouchbaseDeleteFailure, CouchbaseDeleteResult}
 import akka.stream.alpakka.couchbase.scaladsl.CouchbaseFlow
 import akka.stream.alpakka.couchbase.testing.{CouchbaseSupport, TestObject}
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import com.couchbase.client.java.error.DocumentDoesNotExistException
 import org.scalatest.concurrent.ScalaFutures
@@ -40,7 +41,8 @@ class CouchbaseFlowSpec
     with CouchbaseSupport
     with Matchers
     with ScalaFutures
-    with Inspectors {
+    with Inspectors
+    with LogCapturing {
 
   override implicit def patienceConfig: PatienceConfig = PatienceConfig(10.seconds, 250.millis)
 

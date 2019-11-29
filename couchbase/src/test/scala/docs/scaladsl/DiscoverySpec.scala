@@ -5,6 +5,7 @@
 package docs.scaladsl
 
 import akka.actor.ActorSystem
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.{ActorMaterializer, Materializer}
 import com.couchbase.client.java.document.JsonDocument
 import com.typesafe.config.{Config, ConfigFactory}
@@ -16,7 +17,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class DiscoverySpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
+class DiscoverySpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with LogCapturing {
 
   val config: Config = ConfigFactory.parseResources("discovery.conf")
 

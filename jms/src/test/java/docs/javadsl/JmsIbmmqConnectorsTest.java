@@ -15,6 +15,7 @@ import akka.stream.alpakka.jms.TxEnvelope;
 import akka.stream.alpakka.jms.javadsl.JmsConsumer;
 import akka.stream.alpakka.jms.javadsl.JmsConsumerControl;
 import akka.stream.alpakka.jms.javadsl.JmsProducer;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
@@ -25,6 +26,7 @@ import com.ibm.mq.jms.MQTopicConnectionFactory;
 import com.ibm.msg.client.wmq.common.CommonConstants;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 import javax.jms.Destination;
@@ -44,6 +46,8 @@ import java.util.function.Function;
 import static org.junit.Assert.assertEquals;
 
 public class JmsIbmmqConnectorsTest {
+
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem system;
   private static Materializer materializer;

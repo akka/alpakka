@@ -17,6 +17,7 @@ import akka.stream.alpakka.amqp.{
   AmqpWriteSettings,
   QueueDeclaration
 }
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.rabbitmq.client.{AddressResolver, Connection, ConnectionFactory, ShutdownListener}
@@ -37,7 +38,8 @@ class AmqpGraphStageLogicConnectionShutdownSpec
     extends AnyWordSpec
     with Matchers
     with ScalaFutures
-    with BeforeAndAfterEach {
+    with BeforeAndAfterEach
+    with LogCapturing {
 
   override implicit val patienceConfig = PatienceConfig(10.seconds)
   private implicit val executionContext = ExecutionContexts.sameThreadExecutionContext

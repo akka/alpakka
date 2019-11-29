@@ -16,6 +16,7 @@ import akka.stream.alpakka.jms.javadsl.JmsConsumer;
 import akka.stream.alpakka.jms.javadsl.JmsConsumerControl;
 import akka.stream.alpakka.jms.javadsl.JmsProducer;
 import akka.stream.alpakka.jms.javadsl.JmsProducerStatus;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
@@ -29,6 +30,7 @@ import org.apache.activemq.command.ActiveMQQueue;
 import org.apache.activemq.command.ActiveMQTextMessage;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import scala.util.Failure;
 import scala.util.Success;
@@ -77,6 +79,8 @@ final class DummyJavaTests implements java.io.Serializable {
 }
 
 public class JmsConnectorsTest {
+
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem system;
   private static Materializer materializer;

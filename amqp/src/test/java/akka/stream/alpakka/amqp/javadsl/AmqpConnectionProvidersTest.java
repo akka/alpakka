@@ -7,15 +7,19 @@ package akka.stream.alpakka.amqp.javadsl;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.*;
 
-import akka.japi.Pair;
 import akka.stream.alpakka.amqp.*;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.net.ConnectException;
 
 public class AmqpConnectionProvidersTest {
+
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
+
   @Test
   public void LocalAmqpConnectionCreatesNewConnection() throws Exception {
     AmqpConnectionProvider connectionProvider = AmqpLocalConnectionProvider.getInstance();

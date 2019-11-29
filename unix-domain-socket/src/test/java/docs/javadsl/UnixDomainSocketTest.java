@@ -8,6 +8,7 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.alpakka.unixdomainsocket.javadsl.UnixDomainSocket;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Framing;
@@ -17,6 +18,7 @@ import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 import akka.japi.Pair;
@@ -28,6 +30,9 @@ import akka.stream.alpakka.unixdomainsocket.javadsl.UnixDomainSocket.IncomingCon
 import akka.stream.alpakka.unixdomainsocket.javadsl.UnixDomainSocket.ServerBinding;
 
 public class UnixDomainSocketTest {
+
+  @Rule
+  public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem system;
   private static Materializer materializer;

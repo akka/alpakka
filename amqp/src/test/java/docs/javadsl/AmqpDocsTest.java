@@ -18,6 +18,7 @@ import akka.stream.alpakka.amqp.javadsl.AmqpRpcFlow;
 import akka.stream.alpakka.amqp.javadsl.AmqpSink;
 import akka.stream.alpakka.amqp.javadsl.AmqpSource;
 import akka.stream.alpakka.amqp.javadsl.CommittableReadResult;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
@@ -28,10 +29,7 @@ import akka.stream.testkit.javadsl.TestSink;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import java.time.Duration;
 import java.util.*;
@@ -44,6 +42,8 @@ import static org.junit.Assert.assertEquals;
 
 /** Needs a local running AMQP server on the default port with no password. */
 public class AmqpDocsTest {
+
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem system;
   private static Materializer materializer;

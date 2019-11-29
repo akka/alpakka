@@ -19,6 +19,7 @@ import akka.stream.alpakka.couchbase.javadsl.CouchbaseFlow;
 import akka.stream.alpakka.couchbase.javadsl.CouchbaseSource;
 import akka.stream.alpakka.couchbase.testing.CouchbaseSupportClass;
 import akka.stream.alpakka.couchbase.testing.TestObject;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.javadsl.StreamTestKit;
@@ -40,10 +41,7 @@ import com.couchbase.client.java.query.N1qlQuery;
 // #n1ql
 import com.couchbase.client.java.query.SimpleN1qlQuery;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -74,6 +72,8 @@ import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 
 public class CouchbaseExamplesTest {
+
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static final CouchbaseSupportClass support = new CouchbaseSupportClass();
   private static final CouchbaseSessionSettings sessionSettings = support.sessionSettings();

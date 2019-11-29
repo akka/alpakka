@@ -13,6 +13,7 @@ import akka.stream.KillSwitches;
 import akka.stream.Materializer;
 import akka.stream.UniqueKillSwitch;
 import akka.stream.alpakka.amqp.*;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
@@ -23,10 +24,7 @@ import akka.stream.testkit.javadsl.TestSink;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import com.rabbitmq.client.AuthenticationFailureException;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import scala.collection.JavaConverters;
 import scala.concurrent.duration.Duration;
 
@@ -44,6 +42,8 @@ import static org.junit.Assert.fail;
 
 /** Needs a local running AMQP server on the default port with no password. */
 public class AmqpConnectorsTest {
+
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem system;
   private static Materializer materializer;

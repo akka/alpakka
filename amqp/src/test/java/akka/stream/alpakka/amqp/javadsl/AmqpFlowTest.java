@@ -10,7 +10,9 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 import akka.Done;
@@ -34,6 +36,8 @@ import scala.collection.JavaConverters;
 
 /** Needs a local running AMQP server on the default port with no password. */
 public class AmqpFlowTest {
+
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem system;
   private static Materializer materializer;
