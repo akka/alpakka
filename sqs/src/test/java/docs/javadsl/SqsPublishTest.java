@@ -219,10 +219,9 @@ public class SqsPublishTest extends BaseSqsTest {
     for (int i = 0; i < 10; i++) {
       messagesToSend.add("Message - " + i);
     }
-    Iterable<String> it = messagesToSend;
 
     CompletionStage<Done> done =
-        Source.single(it)
+        Source.single(messagesToSend)
             .runWith(
                 SqsPublishSink.batch(queueUrl, SqsPublishBatchSettings.create(), sqsClient),
                 materializer);
@@ -249,10 +248,8 @@ public class SqsPublishTest extends BaseSqsTest {
       messagesToSend.add(SendMessageRequest.builder().messageBody("Message - " + i).build());
     }
 
-    Iterable<SendMessageRequest> it = messagesToSend;
-
     CompletionStage<Done> done =
-        Source.single(it)
+        Source.single(messagesToSend)
             .runWith(
                 SqsPublishSink.batchedMessageSink(
                     queueUrl, SqsPublishBatchSettings.create(), sqsClient),
@@ -312,10 +309,9 @@ public class SqsPublishTest extends BaseSqsTest {
     for (int i = 0; i < 10; i++) {
       messagesToSend.add(SendMessageRequest.builder().messageBody("Message - " + i).build());
     }
-    Iterable<SendMessageRequest> it = messagesToSend;
 
     CompletionStage<List<SqsPublishResultEntry>> stage =
-        Source.single(it)
+        Source.single(messagesToSend)
             .via(SqsPublishFlow.batch(queueUrl, SqsPublishBatchSettings.create(), sqsClient))
             .mapConcat(x -> x)
             .runWith(Sink.seq(), materializer);

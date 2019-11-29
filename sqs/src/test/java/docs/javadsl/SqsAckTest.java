@@ -13,8 +13,6 @@ import akka.stream.alpakka.sqs.javadsl.SqsAckSink;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.Sink;
 import org.junit.Test;
-import scala.Option;
-import software.amazon.awssdk.core.SdkPojo;
 import software.amazon.awssdk.services.sqs.SqsAsyncClient;
 import software.amazon.awssdk.services.sqs.model.*;
 

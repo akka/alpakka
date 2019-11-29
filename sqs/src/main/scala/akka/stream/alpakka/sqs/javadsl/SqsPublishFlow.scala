@@ -57,11 +57,11 @@ object SqsPublishFlow {
   /**
    * creates a [[akka.stream.javadsl.Flow Flow]] to publish messages in batches to a SQS queue using an [[software.amazon.awssdk.services.sqs.SqsAsyncClient AmazonSQSAsync]]
    */
-  def batch(
+  def batch[B <: java.lang.Iterable[SendMessageRequest]](
       queueUrl: String,
       settings: SqsPublishBatchSettings,
       sqsClient: SqsAsyncClient
-  ): Flow[java.lang.Iterable[SendMessageRequest], java.util.List[SqsPublishResultEntry], NotUsed] =
+  ): Flow[B, java.util.List[SqsPublishResultEntry], NotUsed] =
     SFlow[java.lang.Iterable[SendMessageRequest]]
       .map(_.asScala)
       .via(akka.stream.alpakka.sqs.scaladsl.SqsPublishFlow.batch(queueUrl, settings)(sqsClient))
