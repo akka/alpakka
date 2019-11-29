@@ -205,7 +205,12 @@ lazy val ironmq = alpakkaProject(
 )
 
 lazy val jms =
-  alpakkaProject("jms", "jms", Dependencies.Jms, parallelExecution in Test := false, fatalWarnings := false)
+  alpakkaProject("jms",
+                 "jms",
+                 Dependencies.Jms,
+                 Test / parallelExecution := false,
+                 fatalWarnings := false,
+                 Test / fork := true)
 
 lazy val jsonStreaming = alpakkaProject("json-streaming", "json.streaming", Dependencies.JsonStreaming)
 
@@ -218,7 +223,7 @@ lazy val kinesis = alpakkaProject(
   fatalWarnings := false
 )
 
-lazy val kudu = alpakkaProject("kudu", "kudu", Dependencies.Kudu, fork in Test := false)
+lazy val kudu = alpakkaProject("kudu", "kudu", Dependencies.Kudu)
 
 lazy val mongodb =
   alpakkaProject("mongodb", "mongodb", Dependencies.MongoDb)
