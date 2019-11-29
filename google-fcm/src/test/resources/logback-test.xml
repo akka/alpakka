@@ -1,6 +1,6 @@
 <configuration>
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-        <file>target/xml.log</file>
+        <file>target/google-fcm.log</file>
         <append>false</append>
         <encoder>
             <pattern>%d{ISO8601} %-5level [%thread] [%logger{36}]  %msg%n</pattern>
@@ -20,8 +20,9 @@
     </logger>
 
     <logger name="akka" level="DEBUG"/>
+    <logger name="org.eclipse.jetty.servlet" level="warn"/>
 
-    <root level="debug">
+    <root level="DEBUG">
         <appender-ref ref="CapturingAppender"/>
         <appender-ref ref="FILE" />
     </root>
