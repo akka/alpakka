@@ -264,6 +264,7 @@ lazy val orientdb = alpakkaProject("orientdb",
                                    fatalWarnings := false)
 
 lazy val reference = internalProject("reference", Dependencies.Reference)
+  .dependsOn(testkit % Test)
 
 lazy val s3 = alpakkaProject("s3", "aws.s3", Dependencies.S3)
 
@@ -364,6 +365,8 @@ lazy val docs = project
     apidocRootPackage := "akka"
   )
 
+lazy val testkit = internalProject("testkit", Dependencies.testkit)
+
 lazy val whitesourceSupported = project
   .in(file("tmp"))
   .settings(whitesourceGroup := Whitesource.Group.Supported)
@@ -401,6 +404,7 @@ def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sb
       mimaBinaryIssueFilters += ProblemFilters.exclude[Problem]("*.impl.*")
     )
     .settings(additionalSettings: _*)
+    .dependsOn(testkit % Test)
 }
 
 def internalProject(projectId: String, additionalSettings: sbt.Def.SettingsDefinition*): Project =
