@@ -82,7 +82,7 @@ Oracle
 SQL Server
 : @@snip [snip](/slick/src/test/resources/application.conf) { #config-sqlserver }
 
-Of course these are just examples. Please visit the @extref[Slick documentation for `DatabaseConfig.fromConfig`](slick:api/index.html#slick.jdbc.JdbcBackend$DatabaseFactoryDef@forConfig(String,Config,Driver,ClassLoader%29:Database) for the full list of things to configure.
+Of course these are just examples. Please visit the @extref[Slick documentation for `DatabaseConfig.fromConfig`](slick:api/index.html#slick.jdbc.JdbcBackend$DatabaseFactoryDef@forConfig(String,Config,Driver,ClassLoader%29:Database)) for the full list of things to configure.
 
 You also have the option to create a SlickSession from Slick Database and Profile objects.
 
