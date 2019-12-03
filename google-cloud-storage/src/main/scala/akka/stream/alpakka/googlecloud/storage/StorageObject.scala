@@ -10,24 +10,34 @@ import akka.http.scaladsl.model.ContentType
 
 /**
  * Represents an object within Google Cloud Storage.
+ * Refer to https://cloud.google.com/storage/docs/json_api/v1/objects#resource-representations for more in depth docs
  *
- * @param kind            The kind of item this is, for objects, this is always storage#object
- * @param id              The ID of the object, including the bucket name, object name, and generation number
- * @param name            The name of the object
- * @param bucket          The name of the bucket containing this object
- * @param generation      The content generation of this object, used for object versioning
- * @param contentType     The Content-Type of the object data, if an object is stored without a Content-Type, it is served as application/octet-stream
- * @param size            The Content-Length of the data in bytes
- * @param etag            The HTTP 1.1 Entity tag for the object.
- * @param md5Hash         The MD5 hash of the data; encoded using base64
- * @param crc32c          The CRC32c checksum, encoded using base64 in big-endian byte order
- * @param mediaLink       The Media download link
- * @param selfLink        The link to this object
- * @param timeCreated     The creation time of the object in RFC 3339 format.
- * @param updated         The modification time of the object metadata in RFC 3339 format.
- * @param storageClass    The storage class of the object
- * @param contentEncoding The Content Encoding of the object data
- * @param contentLanguage The content language of the objcet data
+ * @param kind                    The kind of item this is, for objects, this is always storage#object
+ * @param id                      The ID of the object, including the bucket name, object name, and generation number
+ * @param name                    The name of the object
+ * @param bucket                  The name of the bucket containing this object
+ * @param generation              The content generation of this object, used for object versioning
+ * @param contentType             The Content-Type of the object data, if an object is stored without a Content-Type, it is served as application/octet-stream
+ * @param size                    The Content-Length of the data in bytes
+ * @param etag                    The HTTP 1.1 Entity tag for the object.
+ * @param md5Hash                 The MD5 hash of the data; encoded using base64
+ * @param crc32c                  The CRC32c checksum, encoded using base64 in big-endian byte order
+ * @param mediaLink               The Media download link
+ * @param selfLink                The link to this object
+ * @param timeCreated             The creation time of the object in RFC 3339 format.
+ * @param updated                 The modification time of the object metadata in RFC 3339 format.
+ * @param storageClass            The storage class of the object
+ * @param contentEncoding         The Content Encoding of the object data
+ * @param contentLanguage         The content language of the objcet data
+ * @param metageneration          The version of the metadata for this object at this generation.
+ * @param temporaryHold           Whether or not the object is subject to a temporary hold
+ * @param eventBasedHold          Whether or not the object is subject to an event-based hold.
+ * @param retentionExpirationTime The earliest time that the object can be deleted, based on a bucket's retention policy, in RFC 3339 format.
+ * @param timeStorageClassUpdated The time at which the object's storage class was last changed.
+ * @param cacheControl            Cache-Control directive for the object data.
+ * @param metadata                User-provided metadata, in key/value pairs.
+ * @param componentCount          Number of underlying components that make up a composite object.
+ * @param kmsKeyName              Cloud KMS Key used to encrypt this object, if the object is encrypted by such a key.
  */
 final class StorageObject private (
     val kind: String,
@@ -46,7 +56,16 @@ final class StorageObject private (
     val timeCreated: OffsetDateTime,
     val storageClass: String,
     val contentEncoding: String,
-    val contentLanguage: String
+    val contentLanguage: String,
+    val metageneration: Long,
+    val temporaryHold: Boolean,
+    val eventBasedHold: Boolean,
+    val retentionExpirationTime: OffsetDateTime,
+    val timeStorageClassUpdated: OffsetDateTime,
+    val cacheControl: String,
+    val metadata: Map[String, String],
+    val componentCount: Int,
+    val kmsKeyName: String
 ) {
 
   /** Java API */
@@ -75,6 +94,15 @@ final class StorageObject private (
   def withStorageClass(value: String): StorageObject = copy(storageClass = value)
   def withContentEncoding(value: String): StorageObject = copy(contentEncoding = value)
   def withContentLanguage(value: String): StorageObject = copy(contentLanguage = value)
+  def withMetageneration(value: Long): StorageObject = copy(metageneration = value)
+  def withTemporaryHold(value: Boolean): StorageObject = copy(temporaryHold = value)
+  def withEventBasedHold(value: Boolean): StorageObject = copy(eventBasedHold = value)
+  def withRetentionExpirationTime(value: OffsetDateTime): StorageObject = copy(retentionExpirationTime = value)
+  def withTimeStorageClassUpdated(value: OffsetDateTime): StorageObject = copy(timeStorageClassUpdated = value)
+  def withCacheControl(value: String): StorageObject = copy(cacheControl = value)
+  def withMetadata(value: Map[String, String]): StorageObject = copy(metadata = value)
+  def withComponentCount(value: Int): StorageObject = copy(componentCount = value)
+  def withKmsKeyName(value: String): StorageObject = copy(kmsKeyName = value)
 
   private def copy(
       kind: String = kind,
@@ -93,7 +121,16 @@ final class StorageObject private (
       timeCreated: OffsetDateTime = timeCreated,
       storageClass: String = storageClass,
       contentEncoding: String = contentEncoding,
-      contentLanguage: String = contentLanguage
+      contentLanguage: String = contentLanguage,
+      metageneration: Long = metageneration,
+      temporaryHold: Boolean = temporaryHold,
+      eventBasedHold: Boolean = eventBasedHold,
+      retentionExpirationTime: OffsetDateTime = retentionExpirationTime,
+      timeStorageClassUpdated: OffsetDateTime = timeStorageClassUpdated,
+      cacheControl: String = cacheControl,
+      metadata: Map[String, String] = metadata,
+      componentCount: Int = componentCount,
+      kmsKeyName: String = kmsKeyName
   ): StorageObject = new StorageObject(
     kind = kind,
     id = id,
@@ -111,7 +148,16 @@ final class StorageObject private (
     timeCreated = timeCreated,
     storageClass = storageClass,
     contentEncoding = contentEncoding,
-    contentLanguage = contentLanguage
+    contentLanguage = contentLanguage,
+    metageneration = metageneration,
+    temporaryHold = temporaryHold,
+    eventBasedHold = eventBasedHold,
+    retentionExpirationTime = retentionExpirationTime,
+    timeStorageClassUpdated = timeStorageClassUpdated,
+    cacheControl = cacheControl,
+    metadata = metadata,
+    componentCount = componentCount,
+    kmsKeyName = kmsKeyName
   )
 
   override def toString =
@@ -133,6 +179,15 @@ final class StorageObject private (
     s"storageClass=$storageClass," +
     s"contentEncoding=$contentEncoding," +
     s"contentLanguage=$contentLanguage" +
+    s"metageneration = $metageneration," +
+    s"temporaryHold = $temporaryHold," +
+    s"eventBasedHold = $eventBasedHold," +
+    s"retentionExpirationTime = $retentionExpirationTime," +
+    s"timeStorageClassUpdated = $timeStorageClassUpdated," +
+    s"cacheControl = $cacheControl," +
+    s"metadata = $metadata," +
+    s"componentCount = $componentCount," +
+    s"kmsKeyName = $kmsKeyName" +
     ")"
 
   override def equals(other: Any): Boolean = other match {
@@ -153,7 +208,16 @@ final class StorageObject private (
       java.util.Objects.equals(this.timeCreated, that.timeCreated) &&
       java.util.Objects.equals(this.storageClass, that.storageClass) &&
       java.util.Objects.equals(this.contentEncoding, that.contentEncoding) &&
-      java.util.Objects.equals(this.contentLanguage, that.contentLanguage)
+      java.util.Objects.equals(this.contentLanguage, that.contentLanguage) &&
+      java.util.Objects.equals(this.metageneration, that.metageneration) &&
+      java.util.Objects.equals(this.temporaryHold, that.temporaryHold) &&
+      java.util.Objects.equals(this.eventBasedHold, that.eventBasedHold) &&
+      java.util.Objects.equals(this.retentionExpirationTime, that.retentionExpirationTime) &&
+      java.util.Objects.equals(this.timeStorageClassUpdated, that.timeStorageClassUpdated) &&
+      java.util.Objects.equals(this.cacheControl, that.cacheControl) &&
+      java.util.Objects.equals(this.metadata, that.metadata) &&
+      java.util.Objects.equals(this.componentCount, that.componentCount) &&
+      java.util.Objects.equals(this.kmsKeyName, that.kmsKeyName)
     case _ => false
   }
 
@@ -175,7 +239,16 @@ final class StorageObject private (
       timeCreated,
       storageClass,
       contentEncoding,
-      contentLanguage
+      contentLanguage,
+      Long.box(metageneration),
+      Boolean.box(temporaryHold),
+      Boolean.box(eventBasedHold),
+      retentionExpirationTime,
+      timeStorageClassUpdated,
+      cacheControl,
+      metadata,
+      Int.box(componentCount),
+      kmsKeyName
     )
 }
 
@@ -199,7 +272,16 @@ object StorageObject {
       timeCreated: OffsetDateTime,
       storageClass: String,
       contentEncoding: String,
-      contentLanguage: String
+      contentLanguage: String,
+      metageneration: Long,
+      temporaryHold: Boolean,
+      eventBasedHold: Boolean,
+      retentionExpirationTime: OffsetDateTime,
+      timeStorageClassUpdated: OffsetDateTime,
+      cacheControl: String,
+      metadata: Map[String, String],
+      componentCount: Int,
+      kmsKeyName: String
   ): StorageObject = new StorageObject(
     kind,
     id,
@@ -217,7 +299,16 @@ object StorageObject {
     timeCreated,
     storageClass,
     contentEncoding,
-    contentLanguage
+    contentLanguage,
+    metageneration,
+    temporaryHold,
+    eventBasedHold,
+    retentionExpirationTime,
+    timeStorageClassUpdated,
+    cacheControl,
+    metadata,
+    componentCount,
+    kmsKeyName
   )
 
   /** Java API */
@@ -238,7 +329,16 @@ object StorageObject {
       timeCreated: OffsetDateTime,
       storageClass: String,
       contentEncoding: String,
-      contentLanguage: String
+      contentLanguage: String,
+      metageneration: Long,
+      temporaryHold: Boolean,
+      eventBasedHold: Boolean,
+      retentionExpirationTime: OffsetDateTime,
+      timeStorageClassUpdated: OffsetDateTime,
+      cacheControl: String,
+      metadata: Map[String, String],
+      componentCount: Int,
+      kmsKeyName: String
   ): StorageObject = new StorageObject(
     kind,
     id,
@@ -256,6 +356,15 @@ object StorageObject {
     timeCreated,
     storageClass,
     contentEncoding,
-    contentLanguage
+    contentLanguage,
+    metageneration,
+    temporaryHold,
+    eventBasedHold,
+    retentionExpirationTime,
+    timeStorageClassUpdated,
+    cacheControl,
+    metadata,
+    componentCount,
+    kmsKeyName
   )
 }

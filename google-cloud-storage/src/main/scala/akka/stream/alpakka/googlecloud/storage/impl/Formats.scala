@@ -49,7 +49,16 @@ object Formats extends DefaultJsonProtocol {
       timeCreated: String,
       storageClass: String,
       contentEncoding: String,
-      contentLanguage: String
+      contentLanguage: String,
+      metageneration: String,
+      temporaryHold: Boolean,
+      eventBasedHold: Boolean,
+      retentionExpirationTime: String,
+      timeStorageClassUpdated: String,
+      cacheControl: String,
+      metadata: Map[String, String],
+      componentCount: String,
+      kmsKeyName: String
   )
 
   /**
@@ -81,9 +90,9 @@ object Formats extends DefaultJsonProtocol {
   )
 
   private implicit val bucketInfoJsonFormat = jsonFormat6(BucketInfoJson)
-  private implicit val storageObjectJsonFormat = jsonFormat17(StorageObjectJson)
+  private implicit val storageObjectJsonFormat = jsonFormat26(StorageObjectJson)
   private implicit val bucketListResultJsonReads = jsonFormat4(BucketListResultJson)
-  private implicit val rewriteReponseFormat = jsonFormat6(RewriteResponseJson)
+  private implicit val rewriteResponseFormat = jsonFormat6(RewriteResponseJson)
 
   implicit val bucketInfoFormat = jsonFormat2(BucketInfo)
 
@@ -110,7 +119,7 @@ object Formats extends DefaultJsonProtocol {
 
   implicit object RewriteResponseReads extends RootJsonReader[RewriteResponse] {
     override def read(json: JsValue): RewriteResponse = {
-      val res = rewriteReponseFormat.read(json)
+      val res = rewriteResponseFormat.read(json)
 
       val totalBytesRewritten =
         Try(res.totalBytesRewritten.toLong)
@@ -174,7 +183,16 @@ object Formats extends DefaultJsonProtocol {
       strToDateTimeOrThrow(storageObjectJson.timeCreated, "timeCreated"),
       storageObjectJson.storageClass,
       storageObjectJson.contentEncoding,
-      storageObjectJson.contentLanguage
+      storageObjectJson.contentLanguage,
+      storageObjectJson.metageneration,
+      storageObjectJson.temporaryHold,
+      storageObjectJson.eventBasedHold,
+      strToDateTimeOrThrow(storageObjectJson.retentionExpirationTime, "retentionExpirationTime"),
+      strToDateTimeOrThrow(storageObjectJson.timeStorageClassUpdated, "retentionExpirationTime"),
+      storageObjectJson.cacheControl,
+      storageObjectJson.metadata,
+      storageObjectJson.componentCount,
+      storageObjectJson.kmsKeyName
     )
   }
 
