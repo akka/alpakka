@@ -4,16 +4,88 @@
 
 package akka.stream.alpakka.googlecloud.storage.impl
 
+import java.time.OffsetDateTime
+
 import akka.http.scaladsl.model.{ContentType, ContentTypes}
 import akka.stream.alpakka.googlecloud.storage._
-import spray.json.{DefaultJsonProtocol, JsValue, RootJsonReader}
-
-import java.time.OffsetDateTime
+import spray.json.{DefaultJsonProtocol, JsObject, JsValue, RootJsonFormat, RootJsonReader}
 
 import scala.util.Try
 
 @akka.annotation.InternalApi
 object Formats extends DefaultJsonProtocol {
+
+  private final case class CustomerEncryption(encryptionAlgorithm: String, keySha256: String)
+
+  private implicit val customerEncryptionJsonFormat = jsonFormat2(CustomerEncryption)
+
+  /**
+   * Google API storage response object
+   *
+   * https://cloud.google.com/storage/docs/json_api/v1/objects#resource
+   */
+  private final case class StorageObjectJson(readable: StorageObjectReadOnlyJson, writeable: StorageObjectWriteableJson)
+
+  // private sub class of StorageObjectJson used to workaround 22 field jsonFormat issue
+  private final case class StorageObjectReadOnlyJson(
+      bucket: String,
+      componentCount: Int,
+      customerEncryption: CustomerEncryption,
+      etag: String,
+      generation: String,
+      id: String,
+      kind: String,
+      kmsKeyName: String,
+      mediaLink: String,
+      metageneration: String,
+      retentionExpirationTime: String,
+      selfLink: String,
+      size: String,
+      timeCreated: String,
+      timeDeleted: String,
+      timeStorageClassUpdated: String,
+      updated: String
+  )
+
+  private implicit val storageObjectReadOnlyJson = jsonFormat17(StorageObjectReadOnlyJson)
+
+  // private sub class of StorageObjectJson used to workaround 22 field jsonFormat issue
+  private final case class StorageObjectWriteableJson(
+      cacheControl: String,
+      contentDisposition: String,
+      contentEncoding: String,
+      contentLanguage: String,
+      contentType: Option[String],
+      crc32c: String,
+      eventBasedHold: Boolean,
+      md5Hash: String,
+      metadata: Map[String, String],
+      name: String,
+      storageClass: String,
+      temporaryHold: Boolean
+  )
+
+  private implicit val storageObjectWritableJson = jsonFormat12(StorageObjectWriteableJson)
+
+  private implicit object StorageObjectJsonFormat extends RootJsonFormat[StorageObjectJson] {
+    override def read(value: JsValue): StorageObjectJson = {
+      val readOnlyFields = value.convertTo[StorageObjectReadOnlyJson]
+      val writeableFields = value.convertTo[StorageObjectWriteableJson]
+      StorageObjectJson(readOnlyFields, writeableFields)
+    }
+    override def write(obj: StorageObjectJson): JsValue = {
+      val fields1 = obj.readable.toJson.asJsObject.fields
+      val fields2 = obj.writeable.toJson.asJsObject.fields
+      JsObject(fields1 ++ fields2)
+    }
+  }
+
+  implicit object StorageObjectReads extends RootJsonReader[StorageObject] {
+    override def read(json: JsValue): StorageObject = {
+      val res = StorageObjectJsonFormat.read(json)
+      storageObjectJsonToStorageObject(res)
+    }
+  }
 
   /**
    * Google API list bucket response
@@ -27,39 +99,7 @@ object Formats extends DefaultJsonProtocol {
       items: Option[List[StorageObjectJson]]
   )
 
-  /**
-   * Google API storage response object
-   *
-   * https://cloud.google.com/storage/docs/json_api/v1/objects#resource
-   */
-  private final case class StorageObjectJson(
-      kind: String,
-      id: String,
-      name: String,
-      bucket: String,
-      generation: String,
-      contentType: Option[String],
-      size: String,
-      etag: String,
-      md5Hash: String,
-      crc32c: String,
-      mediaLink: String,
-      selfLink: String,
-      updated: String,
-      timeCreated: String,
-      storageClass: String,
-      contentEncoding: String,
-      contentLanguage: String,
-      metageneration: String,
-      temporaryHold: Boolean,
-      eventBasedHold: Boolean,
-      retentionExpirationTime: String,
-      timeStorageClassUpdated: String,
-      cacheControl: String,
-      metadata: Map[String, String],
-      componentCount: String,
-      kmsKeyName: String
-  )
+  private implicit val bucketInfoJsonFormat = jsonFormat6(BucketInfoJson)
 
   /**
    * Google API rewrite response object
@@ -75,6 +115,8 @@ object Formats extends DefaultJsonProtocol {
       resource: Option[StorageObjectJson]
   )
 
+  private implicit val rewriteResponseFormat = jsonFormat6(RewriteResponseJson)
+
   /**
    * Google API bucket response object
    *
@@ -88,11 +130,6 @@ object Formats extends DefaultJsonProtocol {
       selfLink: String,
       etag: String
   )
-
-  private implicit val bucketInfoJsonFormat = jsonFormat6(BucketInfoJson)
-  private implicit val storageObjectJsonFormat = jsonFormat26(StorageObjectJson)
-  private implicit val bucketListResultJsonReads = jsonFormat4(BucketListResultJson)
-  private implicit val rewriteResponseFormat = jsonFormat6(RewriteResponseJson)
 
   implicit val bucketInfoFormat = jsonFormat2(BucketInfo)
 
@@ -108,14 +145,7 @@ object Formats extends DefaultJsonProtocol {
     }
   }
 
-  implicit object StorageObjectReads extends RootJsonReader[StorageObject] {
-    override def read(
-        json: JsValue
-    ): StorageObject = {
-      val res = storageObjectJsonFormat.read(json)
-      storageObjectJsonToStorageObject(res)
-    }
-  }
+  private implicit val bucketListResultJsonReads = jsonFormat4(BucketListResultJson)
 
   implicit object RewriteResponseReads extends RootJsonReader[RewriteResponse] {
     override def read(json: JsValue): RewriteResponse = {
@@ -166,33 +196,35 @@ object Formats extends DefaultJsonProtocol {
       Try(OffsetDateTime.parse(str))
         .getOrElse(throw new RuntimeException(s"Storage object $fieldName is not a valid OffsetDateTime"))
 
+    import storageObjectJson.readable._
+    import storageObjectJson.writeable._
     StorageObject(
-      storageObjectJson.kind,
-      storageObjectJson.id,
-      storageObjectJson.name,
-      storageObjectJson.bucket,
-      storageObjectJson.generation.toLong,
-      storageObjectJson.contentType.map(parseContentType).getOrElse(ContentTypes.`application/octet-stream`),
-      strToLongOrThrow(storageObjectJson.size, "size"),
-      storageObjectJson.etag,
-      storageObjectJson.md5Hash,
-      storageObjectJson.crc32c,
-      storageObjectJson.mediaLink,
-      storageObjectJson.selfLink,
-      strToDateTimeOrThrow(storageObjectJson.updated, "updated"),
-      strToDateTimeOrThrow(storageObjectJson.timeCreated, "timeCreated"),
-      storageObjectJson.storageClass,
-      storageObjectJson.contentEncoding,
-      storageObjectJson.contentLanguage,
-      storageObjectJson.metageneration,
-      storageObjectJson.temporaryHold,
-      storageObjectJson.eventBasedHold,
-      strToDateTimeOrThrow(storageObjectJson.retentionExpirationTime, "retentionExpirationTime"),
-      strToDateTimeOrThrow(storageObjectJson.timeStorageClassUpdated, "retentionExpirationTime"),
-      storageObjectJson.cacheControl,
-      storageObjectJson.metadata,
-      storageObjectJson.componentCount,
-      storageObjectJson.kmsKeyName
+      kind,
+      id,
+      name,
+      bucket,
+      generation.toLong,
+      contentType.map(parseContentType).getOrElse(ContentTypes.`application/octet-stream`),
+      strToLongOrThrow(size, "size"),
+      etag,
+      md5Hash,
+      crc32c,
+      mediaLink,
+      selfLink,
+      strToDateTimeOrThrow(updated, "updated"),
+      strToDateTimeOrThrow(timeCreated, "timeCreated"),
+      storageClass,
+      contentEncoding,
+      contentLanguage,
+      strToLongOrThrow(metageneration, "metageneration"),
+      temporaryHold,
+      eventBasedHold,
+      strToDateTimeOrThrow(retentionExpirationTime, "retentionExpirationTime"),
+      strToDateTimeOrThrow(timeStorageClassUpdated, "retentionExpirationTime"),
+      cacheControl,
+      metadata,
+      componentCount,
+      kmsKeyName
     )
   }
 
