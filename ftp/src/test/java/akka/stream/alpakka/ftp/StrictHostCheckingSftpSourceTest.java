@@ -7,9 +7,11 @@ package akka.stream.alpakka.ftp;
 import akka.NotUsed;
 import akka.stream.IOResult;
 import akka.stream.alpakka.ftp.javadsl.Sftp;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
+import org.junit.Rule;
 import org.junit.Test;
 import java.net.InetAddress;
 import java.util.concurrent.CompletionStage;
@@ -17,6 +19,9 @@ import java.util.function.Function;
 
 public class StrictHostCheckingSftpSourceTest extends BaseSftpSupport
     implements CommonFtpStageTest {
+
+  @Rule
+  public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   @Test
   public void listFiles() throws Exception {

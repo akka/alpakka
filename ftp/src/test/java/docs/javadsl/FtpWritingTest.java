@@ -9,6 +9,7 @@ package docs.javadsl;
 import akka.stream.alpakka.ftp.javadsl.Ftp;
 // #create-settings
 import akka.stream.IOResult;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Compression;
 import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.util.ByteString;
@@ -36,6 +37,9 @@ import java.util.concurrent.TimeUnit;
 import static org.hamcrest.CoreMatchers.is;
 
 public class FtpWritingTest extends BaseFtpSupport {
+
+  @Rule
+  public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   @After
   public void afterEach() {
