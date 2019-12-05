@@ -15,7 +15,7 @@
 
     <appender name="CapturingAppender" class="akka.stream.alpakka.testkit.CapturingAppender"/>
 
-    <logger name="akka.kafka.tests.CapturingAppenderDelegate">
+    <logger name="akka.stream.alpakka.testkit.CapturingAppenderDelegate">
         <appender-ref ref="STDOUT"/>
     </logger>
 
