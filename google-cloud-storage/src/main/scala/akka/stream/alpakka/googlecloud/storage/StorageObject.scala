@@ -7,7 +7,6 @@ package akka.stream.alpakka.googlecloud.storage
 import java.time.OffsetDateTime
 
 import akka.http.scaladsl.model.ContentType
-import com.sun.xml.internal.messaging.saaj.packaging.mime.internet.ContentDisposition
 import main.scala.akka.stream.alpakka.googlecloud.storage.{CustomerEncryption, Owner}
 
 /**
