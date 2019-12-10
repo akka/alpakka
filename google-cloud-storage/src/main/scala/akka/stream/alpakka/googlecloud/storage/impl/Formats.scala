@@ -40,16 +40,17 @@ object Formats extends DefaultJsonProtocol {
       kmsKeyName: String,
       mediaLink: String,
       metageneration: String,
+      owner: Option[Owner],
       retentionExpirationTime: String,
       selfLink: String,
       size: String,
       timeCreated: String,
-      timeDeleted: String,
+      timeDeleted: Option[String],
       timeStorageClassUpdated: String,
       updated: String
   )
 
-  private implicit val storageObjectReadOnlyJson = jsonFormat17(StorageObjectReadOnlyJson)
+  private implicit val storageObjectReadOnlyJson = jsonFormat18(StorageObjectReadOnlyJson)
 
   // private sub class of StorageObjectJson used to workaround 22 field jsonFormat issue
   private final case class StorageObjectWriteableJson(
@@ -215,7 +216,7 @@ object Formats extends DefaultJsonProtocol {
       selfLink,
       strToDateTimeOrThrow(updated, "updated"),
       strToDateTimeOrThrow(timeCreated, "timeCreated"),
-      Some(strToDateTimeOrThrow(timeDeleted, "timeDeleted")),
+      timeDeleted.map(td => strToDateTimeOrThrow(td, "timeDeleted")),
       storageClass,
       contentDisposition,
       contentEncoding,
@@ -228,7 +229,9 @@ object Formats extends DefaultJsonProtocol {
       cacheControl,
       metadata,
       componentCount,
-      kmsKeyName
+      kmsKeyName,
+      customerEncryption,
+      owner
     )
   }
 

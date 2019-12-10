@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package main.scala.akka.stream.alpakka.googlecloud.storage
 
 final class Owner private (entity: String, entityId: String) {
