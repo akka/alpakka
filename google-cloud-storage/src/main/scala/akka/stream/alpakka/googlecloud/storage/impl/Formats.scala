@@ -9,6 +9,7 @@ import java.time.OffsetDateTime
 import akka.http.scaladsl.model.{ContentType, ContentTypes}
 import akka.stream.alpakka.googlecloud.storage._
 import spray.json.{DefaultJsonProtocol, JsObject, JsValue, RootJsonFormat, RootJsonReader}
+import main.scala.akka.stream.alpakka.googlecloud.storage.{CustomerEncryption, Owner}
 
 import java.time.OffsetDateTime
 
@@ -17,9 +18,8 @@ import scala.util.Try
 @akka.annotation.InternalApi
 object Formats extends DefaultJsonProtocol {
 
-  private final case class CustomerEncryption(encryptionAlgorithm: String, keySha256: String)
-
   private implicit val customerEncryptionJsonFormat = jsonFormat2(CustomerEncryption)
+  private implicit val OwnerJsonFormat = jsonFormat2(Owner)
 
   /**
    * Google API storage response object
@@ -215,7 +215,9 @@ object Formats extends DefaultJsonProtocol {
       selfLink,
       strToDateTimeOrThrow(updated, "updated"),
       strToDateTimeOrThrow(timeCreated, "timeCreated"),
+      Some(strToDateTimeOrThrow(timeDeleted, "timeDeleted")),
       storageClass,
+      contentDisposition,
       contentEncoding,
       contentLanguage,
       strToLongOrThrow(metageneration, "metageneration"),

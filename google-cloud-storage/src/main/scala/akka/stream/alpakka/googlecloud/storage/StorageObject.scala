@@ -7,6 +7,8 @@ package akka.stream.alpakka.googlecloud.storage
 import java.time.OffsetDateTime
 
 import akka.http.scaladsl.model.ContentType
+import com.sun.xml.internal.messaging.saaj.packaging.mime.internet.ContentDisposition
+import main.scala.akka.stream.alpakka.googlecloud.storage.{CustomerEncryption, Owner}
 
 /**
  * Represents an object within Google Cloud Storage.
@@ -25,8 +27,10 @@ import akka.http.scaladsl.model.ContentType
  * @param mediaLink               The Media download link
  * @param selfLink                The link to this object
  * @param timeCreated             The creation time of the object in RFC 3339 format.
+ * @param timeDeleted             The deletion time of the object in RFC 3339 format. Returned if and only if this version of the object is no longer a live version, but remains in the bucket as a noncurrent version.
  * @param updated                 The modification time of the object metadata in RFC 3339 format.
  * @param storageClass            The storage class of the object
+ * @param contentDisposition      The Content-Disposition of the object data.
  * @param contentEncoding         The Content Encoding of the object data
  * @param contentLanguage         The content language of the objcet data
  * @param metageneration          The version of the metadata for this object at this generation.
@@ -38,7 +42,13 @@ import akka.http.scaladsl.model.ContentType
  * @param metadata                User-provided metadata, in key/value pairs.
  * @param componentCount          Number of underlying components that make up a composite object.
  * @param kmsKeyName              Cloud KMS Key used to encrypt this object, if the object is encrypted by such a key.
+ * @param customerEncryption      Metadata of customer-supplied encryption key, if the object is encrypted by such a key.
+ * @param owner                   The owner of the object. This will always be the uploader of the object
  */
+//"acl": [
+//objectAccessControls Resource
+//],
+
 final class StorageObject private (
     val kind: String,
     val id: String,
@@ -54,7 +64,9 @@ final class StorageObject private (
     val selfLink: String,
     val updated: OffsetDateTime,
     val timeCreated: OffsetDateTime,
+    val timeDeleted: Option[OffsetDateTime],
     val storageClass: String,
+    val contentDisposition: String,
     val contentEncoding: String,
     val contentLanguage: String,
     val metageneration: Long,
@@ -65,7 +77,9 @@ final class StorageObject private (
     val cacheControl: String,
     val metadata: Map[String, String],
     val componentCount: Int,
-    val kmsKeyName: String
+    val kmsKeyName: String,
+    val customerEncryption: CustomerEncryption,
+    val owner: Option[Owner]
 ) {
 
   /** Java API */
@@ -91,7 +105,9 @@ final class StorageObject private (
   def withSelfLink(value: String): StorageObject = copy(selfLink = value)
   def withUpdated(value: OffsetDateTime): StorageObject = copy(updated = value)
   def withTimeCreated(value: OffsetDateTime): StorageObject = copy(timeCreated = value)
+  def withTimeDeleted(value: OffsetDateTime): StorageObject = copy(timeDeleted = Some(value))
   def withStorageClass(value: String): StorageObject = copy(storageClass = value)
+  def withContentDisposition(value: String): StorageObject = copy(contentDisposition = value)
   def withContentEncoding(value: String): StorageObject = copy(contentEncoding = value)
   def withContentLanguage(value: String): StorageObject = copy(contentLanguage = value)
   def withMetageneration(value: Long): StorageObject = copy(metageneration = value)
@@ -103,6 +119,8 @@ final class StorageObject private (
   def withMetadata(value: Map[String, String]): StorageObject = copy(metadata = value)
   def withComponentCount(value: Int): StorageObject = copy(componentCount = value)
   def withKmsKeyName(value: String): StorageObject = copy(kmsKeyName = value)
+  def withCustomerEncryption(value: CustomerEncryption): StorageObject = copy(customerEncryption = value)
+  def withOwner(value: Owner): StorageObject = copy(owner = Some(value))
 
   private def copy(
       kind: String = kind,
@@ -119,7 +137,9 @@ final class StorageObject private (
       selfLink: String = selfLink,
       updated: OffsetDateTime = updated,
       timeCreated: OffsetDateTime = timeCreated,
+      timeDeleted: Option[OffsetDateTime] = timeDeleted,
       storageClass: String = storageClass,
+      contentDisposition: String = contentDisposition,
       contentEncoding: String = contentEncoding,
       contentLanguage: String = contentLanguage,
       metageneration: Long = metageneration,
@@ -130,7 +150,9 @@ final class StorageObject private (
       cacheControl: String = cacheControl,
       metadata: Map[String, String] = metadata,
       componentCount: Int = componentCount,
-      kmsKeyName: String = kmsKeyName
+      kmsKeyName: String = kmsKeyName,
+      customerEncryption: CustomerEncryption = customerEncryption,
+      owner: Option[Owner] = owner
   ): StorageObject = new StorageObject(
     kind = kind,
     id = id,
@@ -146,7 +168,9 @@ final class StorageObject private (
     selfLink = selfLink,
     updated = updated,
     timeCreated = timeCreated,
+    timeDeleted = Some(timeCreated),
     storageClass = storageClass,
+    contentDisposition = contentDisposition,
     contentEncoding = contentEncoding,
     contentLanguage = contentLanguage,
     metageneration = metageneration,
@@ -157,7 +181,9 @@ final class StorageObject private (
     cacheControl = cacheControl,
     metadata = metadata,
     componentCount = componentCount,
-    kmsKeyName = kmsKeyName
+    kmsKeyName = kmsKeyName,
+    customerEncryption = customerEncryption,
+    owner = owner
   )
 
   override def toString =
@@ -176,7 +202,9 @@ final class StorageObject private (
     s"selfLink=$selfLink," +
     s"updated=$updated," +
     s"timeCreated=$timeCreated," +
+    timeDeleted.fold("")(td => s"timeDeleted=$td,") +
     s"storageClass=$storageClass," +
+    s"contentDisposition=$contentDisposition," +
     s"contentEncoding=$contentEncoding," +
     s"contentLanguage=$contentLanguage" +
     s"metageneration = $metageneration," +
@@ -187,7 +215,9 @@ final class StorageObject private (
     s"cacheControl = $cacheControl," +
     s"metadata = $metadata," +
     s"componentCount = $componentCount," +
-    s"kmsKeyName = $kmsKeyName" +
+    s"kmsKeyName = $kmsKeyName," +
+    s"customerEncryption = $customerEncryption," +
+    owner.fold("")(o => s"owner = $o") +
     ")"
 
   override def equals(other: Any): Boolean = other match {
@@ -206,7 +236,9 @@ final class StorageObject private (
       java.util.Objects.equals(this.selfLink, that.selfLink) &&
       java.util.Objects.equals(this.updated, that.updated) &&
       java.util.Objects.equals(this.timeCreated, that.timeCreated) &&
+      java.util.Objects.equals(this.timeDeleted, that.timeDeleted) &&
       java.util.Objects.equals(this.storageClass, that.storageClass) &&
+      java.util.Objects.equals(this.contentDisposition, that.contentDisposition) &&
       java.util.Objects.equals(this.contentEncoding, that.contentEncoding) &&
       java.util.Objects.equals(this.contentLanguage, that.contentLanguage) &&
       java.util.Objects.equals(this.metageneration, that.metageneration) &&
@@ -218,6 +250,8 @@ final class StorageObject private (
       java.util.Objects.equals(this.metadata, that.metadata) &&
       java.util.Objects.equals(this.componentCount, that.componentCount) &&
       java.util.Objects.equals(this.kmsKeyName, that.kmsKeyName)
+      java.util.Objects.equals(this.customerEncryption, that.customerEncryption)
+      java.util.Objects.equals(this.owner, that.owner)
     case _ => false
   }
 
@@ -237,7 +271,9 @@ final class StorageObject private (
       selfLink,
       updated,
       timeCreated,
+      timeDeleted,
       storageClass,
+      contentDisposition,
       contentEncoding,
       contentLanguage,
       Long.box(metageneration),
@@ -248,7 +284,9 @@ final class StorageObject private (
       cacheControl,
       metadata,
       Int.box(componentCount),
-      kmsKeyName
+      kmsKeyName,
+      customerEncryption,
+      owner
     )
 }
 
@@ -270,7 +308,9 @@ object StorageObject {
       selfLink: String,
       updated: OffsetDateTime,
       timeCreated: OffsetDateTime,
+      timeDeleted: Option[OffsetDateTime],
       storageClass: String,
+      contentDisposition: String,
       contentEncoding: String,
       contentLanguage: String,
       metageneration: Long,
@@ -281,7 +321,9 @@ object StorageObject {
       cacheControl: String,
       metadata: Map[String, String],
       componentCount: Int,
-      kmsKeyName: String
+      kmsKeyName: String,
+      customerEncryption: CustomerEncryption,
+      owner: Option[Owner]
   ): StorageObject = new StorageObject(
     kind,
     id,
@@ -297,7 +339,9 @@ object StorageObject {
     selfLink,
     updated,
     timeCreated,
+    timeDeleted,
     storageClass,
+    contentDisposition,
     contentEncoding,
     contentLanguage,
     metageneration,
@@ -308,7 +352,9 @@ object StorageObject {
     cacheControl,
     metadata,
     componentCount,
-    kmsKeyName
+    kmsKeyName,
+    customerEncryption,
+    owner
   )
 
   /** Java API */
@@ -327,7 +373,9 @@ object StorageObject {
       selfLink: String,
       updated: OffsetDateTime,
       timeCreated: OffsetDateTime,
+      timeDeleted: Option[OffsetDateTime],
       storageClass: String,
+      contentDisposition: String,
       contentEncoding: String,
       contentLanguage: String,
       metageneration: Long,
@@ -338,7 +386,9 @@ object StorageObject {
       cacheControl: String,
       metadata: Map[String, String],
       componentCount: Int,
-      kmsKeyName: String
+      kmsKeyName: String,
+      customerEncryption: CustomerEncryption,
+      owner: Option[Owner]
   ): StorageObject = new StorageObject(
     kind,
     id,
@@ -354,7 +404,9 @@ object StorageObject {
     selfLink,
     updated,
     timeCreated,
+    timeDeleted,
     storageClass,
+    contentDisposition,
     contentEncoding,
     contentLanguage,
     metageneration,
@@ -365,6 +417,8 @@ object StorageObject {
     cacheControl,
     metadata,
     componentCount,
-    kmsKeyName
+    kmsKeyName,
+    customerEncryption,
+    owner
   )
 }
