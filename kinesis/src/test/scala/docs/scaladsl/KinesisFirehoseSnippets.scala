@@ -10,10 +10,8 @@ import akka.stream.alpakka.kinesisfirehose.KinesisFirehoseFlowSettings
 import akka.stream.alpakka.kinesisfirehose.scaladsl.{KinesisFirehoseFlow, KinesisFirehoseSink}
 import akka.stream.scaladsl.{Flow, Sink}
 import akka.stream.{ActorMaterializer, Materializer}
-import com.amazonaws.services.kinesisfirehose.AmazonKinesisFirehoseAsyncClientBuilder
-import com.amazonaws.services.kinesisfirehose.model.{PutRecordBatchResponseEntry, Record}
-
-import scala.concurrent.duration._
+import software.amazon.awssdk.services.firehose.FirehoseAsyncClient
+import software.amazon.awssdk.services.firehose.model.{PutRecordBatchResponseEntry, Record}
 
 object KinesisFirehoseSnippets {
 
@@ -21,10 +19,10 @@ object KinesisFirehoseSnippets {
   implicit val system: ActorSystem = ActorSystem()
   implicit val materializer: Materializer = ActorMaterializer()
 
-  implicit val amazonKinesisFirehoseAsync: com.amazonaws.services.kinesisfirehose.AmazonKinesisFirehoseAsync =
-    AmazonKinesisFirehoseAsyncClientBuilder.defaultClient()
+  implicit val amazonKinesisFirehoseAsync: software.amazon.awssdk.services.firehose.FirehoseAsyncClient =
+    FirehoseAsyncClient.create()
 
-  system.registerOnTermination(amazonKinesisFirehoseAsync.shutdown())
+  system.registerOnTermination(amazonKinesisFirehoseAsync.close())
   //#init-client
 
   //#flow-settings
@@ -34,9 +32,6 @@ object KinesisFirehoseSnippets {
     .withMaxBatchSize(500)
     .withMaxRecordsPerSecond(5000)
     .withMaxBytesPerSecond(4000000)
-    .withMaxRetries(5)
-    .withBackoffStrategy(KinesisFirehoseFlowSettings.Exponential)
-    .withRetryInitialTimeout(100.millis)
 
   val defaultFlowSettings = KinesisFirehoseFlowSettings.Defaults
   //#flow-settings
@@ -49,5 +44,15 @@ object KinesisFirehoseSnippets {
   val sink1: Sink[Record, NotUsed] = KinesisFirehoseSink("myStreamName")
   val sink2: Sink[Record, NotUsed] = KinesisFirehoseSink("myStreamName", flowSettings)
   //#flow-sink
+
+  //#error-handling
+  val flowWithErrors: Flow[Record, PutRecordBatchResponseEntry, NotUsed] = KinesisFirehoseFlow("streamName")
+    .map { response =>
+      if (response.errorCode() != null) {
+        throw new RuntimeException(response.errorCode())
+      }
+      response
+    }
+  //#error-handling
 
 }

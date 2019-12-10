@@ -7,8 +7,8 @@ package docs.scaladsl
 import akka.{Done, NotUsed}
 import akka.stream.KillSwitches
 import akka.stream.alpakka.amqp._
-import akka.stream.alpakka.amqp.scaladsl.{AmqpRpcFlow, AmqpSink, AmqpSource, CommittableReadResult}
-import akka.stream.scaladsl.{Keep, Sink, Source}
+import akka.stream.alpakka.amqp.scaladsl.{AmqpFlow, AmqpRpcFlow, AmqpSink, AmqpSource, CommittableReadResult}
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSink
@@ -245,6 +245,31 @@ class AmqpDocsSpec extends AmqpSpec {
         .runWith(Sink.seq)
 
       result2.futureValue.map(_.message.bytes.utf8String) shouldEqual input
+    }
+
+    "publish with flow" in assertAllStagesStopped {
+      val queueName = "amqp-conn-it-spec-flow-" + System.currentTimeMillis()
+      val queueDeclaration = QueueDeclaration(queueName)
+
+      //#create-flow
+      val settings = AmqpWriteSettings(connectionProvider)
+        .withRoutingKey(queueName)
+        .withDeclaration(queueDeclaration)
+        .withBufferSize(10)
+        .withConfirmationTimeout(200.millis)
+
+      val amqpFlow: Flow[WriteMessage, WriteResult, Future[Done]] =
+        AmqpFlow.withConfirm(settings)
+
+      val input = Vector("one", "two", "three", "four", "five")
+      val result: Future[Seq[WriteResult]] =
+        Source(input)
+          .map(message => WriteMessage(ByteString(message)))
+          .via(amqpFlow)
+          .runWith(Sink.seq)
+      //#create-flow
+
+      result.futureValue should contain theSameElementsAs input.map(_ => WriteResult.confirmed)
     }
   }
 }

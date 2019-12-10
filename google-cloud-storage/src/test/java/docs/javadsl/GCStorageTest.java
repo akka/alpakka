@@ -552,6 +552,35 @@ public class GCStorageTest extends GCStorageWiremockBase {
   }
 
   @Test
+  public void retryWhenFileDownloadFailsWithServerError() throws Exception {
+
+    final String fileContent = "SomeFileContent";
+
+    this.mockTokenApi();
+    this.mockFileDownloadFailureThenSuccess(500, "Internal server error", fileContent);
+
+    final Source<Optional<Source<ByteString, NotUsed>>, NotUsed> downloadSource =
+        GCStorage.download(bucketName(), fileName());
+
+    Source<ByteString, NotUsed> data =
+        downloadSource
+            .runWith(Sink.head(), materializer)
+            .toCompletableFuture()
+            .get(500, TimeUnit.SECONDS)
+            .get();
+
+    final CompletionStage<List<String>> resultCompletionStage =
+        data.map(ByteString::utf8String).runWith(Sink.seq(), materializer);
+
+    final List<String> result =
+        resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+    final String content = String.join("", result);
+
+    assertEquals(fileContent, content);
+  }
+
+  @Test
   public void uploadSmallFile() throws Exception {
     final String fileContent = "chunk1";
     final ContentType contentType = ContentTypes.APPLICATION_OCTET_STREAM;

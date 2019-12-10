@@ -7,6 +7,8 @@ package docs.javadsl;
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
+import akka.actor.Cancellable;
+import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.googlecloud.pubsub.*;
 import akka.stream.alpakka.googlecloud.pubsub.javadsl.GooglePubSub;
@@ -19,8 +21,6 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
-
-import scala.concurrent.duration.FiniteDuration;
 
 public class ExampleUsageJava {
 
@@ -67,6 +67,23 @@ public class ExampleUsageJava {
         source.via(publishFlow).runWith(Sink.seq(), materializer);
     // #publish-single
 
+    // #publish-single-with-context
+    PublishMessage publishMessageWithContext =
+        PublishMessage.create(new String(Base64.getEncoder().encode("Hello Google!".getBytes())));
+    PublishRequest publishRequestWithContext =
+        PublishRequest.create(Lists.newArrayList(publishMessageWithContext));
+    String context = "publishRequestId";
+
+    Source<Pair<PublishRequest, String>, NotUsed> sourceWithContext =
+        Source.single(Pair.apply(publishRequestWithContext, context));
+
+    FlowWithContext<PublishRequest, String, List<String>, String, NotUsed> publishFlowWithContext =
+        GooglePubSub.publishWithContext(topic, config, 1, system, materializer);
+
+    CompletionStage<List<Pair<List<String>, String>>> publishedMessageIdsWithContext =
+        sourceWithContext.via(publishFlowWithContext).runWith(Sink.seq(), materializer);
+    // #publish-single-with-context
+
     // #publish-fast
     Source<PublishMessage, NotUsed> messageSource = Source.single(publishMessage);
     messageSource
@@ -77,11 +94,11 @@ public class ExampleUsageJava {
     // #publish-fast
 
     // #subscribe
-    Source<ReceivedMessage, NotUsed> subscriptionSource =
-        GooglePubSub.subscribe(subscription, config, system);
+    Source<ReceivedMessage, Cancellable> subscriptionSource =
+        GooglePubSub.subscribe(subscription, config, system, materializer);
 
     Sink<AcknowledgeRequest, CompletionStage<Done>> ackSink =
-        GooglePubSub.acknowledge(subscription, config, 1, system, materializer);
+        GooglePubSub.acknowledge(subscription, config, system, materializer);
 
     subscriptionSource
         .map(

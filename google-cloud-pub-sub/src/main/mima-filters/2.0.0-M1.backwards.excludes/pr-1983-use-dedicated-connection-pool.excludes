@@ -1,0 +1,7 @@
+# Add implicit materializer as param which is required and change return materialized type from NotUsed to Cancellable
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.googlecloud.pubsub.javadsl.GooglePubSub.subscribe")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.googlecloud.pubsub.scaladsl.GooglePubSub.subscribe")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.alpakka.googlecloud.pubsub.scaladsl.GooglePubSub.publishWithContext")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.alpakka.googlecloud.pubsub.scaladsl.GooglePubSub.publishWithContext$default$3")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.alpakka.googlecloud.pubsub.scaladsl.GooglePubSub.subscribe")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.alpakka.googlecloud.pubsub.scaladsl.GooglePubSub.acknowledge")

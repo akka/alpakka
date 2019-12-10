@@ -33,7 +33,7 @@ The table below shows direct dependencies of this module and the second tab show
 ## Configuration
 
 The connector comes with the default settings configured to work with the Google Pub Sub endpoint and uses the default way of
-locating credentials by looking at the `GOOGLE_APPLICATION_CREDENTIAL` environment variable. Please check
+locating credentials by looking at the `GOOGLE_APPLICATION_CREDENTIALS` environment variable. Please check
 [Google official documentation](https://cloud.google.com/pubsub/docs/reference/libraries#setting_up_authentication) for more details
 on how to obtain credentials for your application.
 

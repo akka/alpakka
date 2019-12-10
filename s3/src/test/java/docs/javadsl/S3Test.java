@@ -32,6 +32,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -48,6 +49,7 @@ public class S3Test extends S3WireMockBase {
 
   private final S3Settings sampleSettings = S3Ext.get(system()).settings();
   private final String prefix = listPrefix();
+  private final String delimiter = listDelimiter();
 
   @Before
   public void before() {
@@ -353,6 +355,82 @@ public class S3Test extends S3WireMockBase {
         resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     assertEquals(result.key(), listKey());
+  }
+
+  @Test
+  public void listBucketWithDelimiter() throws Exception {
+
+    mockListBucketAndCommonPrefixes();
+
+    // #list-bucket-delimiter
+    final Source<ListBucketResultContents, NotUsed> keySource =
+        S3.listBucket(bucket(), delimiter, Optional.of(prefix));
+    // #list-bucket-delimiter
+
+    final CompletionStage<ListBucketResultContents> resultCompletionStage =
+        keySource.runWith(Sink.head(), materializer);
+
+    ListBucketResultContents result =
+        resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+    assertEquals(result.key(), listKey());
+  }
+
+  @Test
+  public void listBucketAndCommonPrefixes() throws Exception {
+
+    mockListBucketAndCommonPrefixes();
+
+    // #list-bucket-and-common-prefixes
+    final Source<
+            Pair<List<ListBucketResultContents>, List<ListBucketResultCommonPrefixes>>, NotUsed>
+        keySource =
+            S3.listBucketAndCommonPrefixes(
+                bucket(), delimiter, Optional.of(prefix), S3Headers.empty());
+    // #list-bucket-and-common-prefixes
+
+    final CompletionStage<
+            List<Pair<List<ListBucketResultContents>, List<ListBucketResultCommonPrefixes>>>>
+        resultsCompletionStage = keySource.runWith(Sink.seq(), materializer);
+
+    final List<Pair<List<ListBucketResultContents>, List<ListBucketResultCommonPrefixes>>> results =
+        resultsCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+    final List<ListBucketResultContents> contents = results.get(0).first();
+    final List<ListBucketResultCommonPrefixes> commonPrefixes = results.get(0).second();
+
+    assertEquals(contents.get(0).key(), listKey());
+    assertEquals(commonPrefixes.get(0).prefix(), listCommonPrefix());
+  }
+
+  @Test
+  public void listBucketAndCommonPrefixesVersion1() throws Exception {
+    mockListBucketAndCommonPrefixesVersion1();
+
+    // #list-bucket-and-common-prefixes-attributes
+    final S3Settings useVersion1Api =
+        S3Ext.get(system()).settings().withListBucketApiVersion(ApiVersion.getListBucketVersion1());
+
+    final Source<
+            Pair<List<ListBucketResultContents>, List<ListBucketResultCommonPrefixes>>, NotUsed>
+        keySource =
+            S3.listBucketAndCommonPrefixes(
+                    bucket(), delimiter, Optional.of(prefix), S3Headers.empty())
+                .withAttributes(S3Attributes.settings(useVersion1Api));
+    // #list-bucket-and-common-prefixes-attributes
+
+    final CompletionStage<
+            List<Pair<List<ListBucketResultContents>, List<ListBucketResultCommonPrefixes>>>>
+        resultsCompletionStage = keySource.runWith(Sink.seq(), materializer);
+
+    final List<Pair<List<ListBucketResultContents>, List<ListBucketResultCommonPrefixes>>> results =
+        resultsCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+    final List<ListBucketResultContents> contents = results.get(0).first();
+    final List<ListBucketResultCommonPrefixes> commonPrefixes = results.get(0).second();
+
+    assertEquals(contents.get(0).key(), listKey());
+    assertEquals(commonPrefixes.get(0).prefix(), listCommonPrefix());
   }
 
   @Test

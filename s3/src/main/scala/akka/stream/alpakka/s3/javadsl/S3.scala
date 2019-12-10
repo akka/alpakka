@@ -19,6 +19,7 @@ import akka.stream.alpakka.s3.impl._
 import akka.stream.javadsl.{RunnableGraph, Sink, Source}
 import akka.util.ByteString
 
+import scala.collection.JavaConverters._
 import scala.compat.java8.OptionConverters._
 import scala.compat.java8.FutureConverters._
 
@@ -415,8 +416,8 @@ object S3 {
    *
    * The <code>akka.stream.alpakka.s3.list-bucket-api-version</code> can be set to 1 to use the older API version 1
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/v2-RESTBucketGET.html  (version 1 API)
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGET.html (version 1 API)
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html  (version 2 API)
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html (version 1 API)
    * @param bucket Which bucket that you list object metadata for
    * @param prefix Prefix of the keys you want to list under passed bucket
    * @return Source of object metadata
@@ -433,8 +434,8 @@ object S3 {
    *
    * The <code>akka.stream.alpakka.s3.list-bucket-api-version</code> can be set to 1 to use the older API version 1
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/v2-RESTBucketGET.html  (version 1 API)
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGET.html (version 1 API)
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html  (version 2 API)
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html (version 1 API)
    * @param bucket Which bucket that you list object metadata for
    * @param prefix Prefix of the keys you want to list under passed bucket
    * @return Source of object metadata
@@ -455,8 +456,8 @@ object S3 {
    *
    * The <code>akka.stream.alpakka.s3.list-bucket-api-version</code> can be set to 1 to use the older API version 1
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/v2-RESTBucketGET.html  (version 1 API)
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGET.html (version 1 API)
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html  (version 2 API)
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html (version 1 API)
    * @param bucket Which bucket that you list object metadata for
    * @param prefix Prefix of the keys you want to list under passed bucket
    * @return Source of object metadata
@@ -470,8 +471,8 @@ object S3 {
    *
    * The <code>akka.stream.alpakka.s3.list-bucket-api-version</code> can be set to 1 to use the older API version 1
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/v2-RESTBucketGET.html  (version 1 API)
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGET.html (version 1 API)
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html  (version 2 API)
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html (version 1 API)
    * @param bucket Which bucket that you list object metadata for
    * @param prefix Prefix of the keys you want to list under passed bucket
    * @return Source of object metadata
@@ -481,6 +482,77 @@ object S3 {
                  s3Headers: S3Headers): Source[ListBucketResultContents, NotUsed] =
     S3Stream
       .listBucket(bucket, prefix.asScala, s3Headers)
+      .asJava
+
+  /**
+   * Will return a source of object metadata for a given bucket with delimiter and optional prefix using version 2 of the List Bucket API.
+   * This will automatically page through all keys with the given parameters.
+   *
+   * The <code>akka.stream.alpakka.s3.list-bucket-api-version</code> can be set to 1 to use the older API version 1
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html  (version 2 API)
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html (version 1 API)
+   * @param bucket    Which bucket that you list object metadata for
+   * @param delimiter Delimiter to use for listing only one level of hierarchy
+   * @param prefix    Prefix of the keys you want to list under passed bucket
+   * @return Source of object metadata
+   */
+  def listBucket(bucket: String,
+                 delimiter: String,
+                 prefix: Optional[String]): Source[ListBucketResultContents, NotUsed] =
+    scaladsl.S3
+      .listBucket(bucket, delimiter, prefix.asScala)
+      .asJava
+
+  /**
+   * Will return a source of object metadata for a given bucket with delimiter and optional prefix using version 2 of the List Bucket API.
+   * This will automatically page through all keys with the given parameters.
+   *
+   * The <code>akka.stream.alpakka.s3.list-bucket-api-version</code> can be set to 1 to use the older API version 1
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html  (version 2 API)
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html (version 1 API)
+   * @param bucket    Which bucket that you list object metadata for
+   * @param delimiter Delimiter to use for listing only one level of hierarchy
+   * @param prefix    Prefix of the keys you want to list under passed bucket
+   * @param s3Headers any headers you want to add
+   * @return Source of object metadata
+   */
+  def listBucket(bucket: String,
+                 delimiter: String,
+                 prefix: Optional[String],
+                 s3Headers: S3Headers): Source[ListBucketResultContents, NotUsed] =
+    scaladsl.S3
+      .listBucket(bucket, delimiter, prefix.asScala, s3Headers)
+      .asJava
+
+  /**
+   * Will return a source of object metadata and common prefixes for a given bucket and delimiter with optional prefix using version 2 of the List Bucket API.
+   * This will automatically page through all keys with the given parameters.
+   *
+   * The `alpakka.s3.list-bucket-api-version` can be set to 1 to use the older API version 1
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html  (version 2 API)
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html (version 1 API)
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/dev/ListingKeysHierarchy.html (prefix and delimiter documentation)
+   * @param bucket    Which bucket that you list object metadata for
+   * @param delimiter Delimiter to use for listing only one level of hierarchy
+   * @param prefix    Prefix of the keys you want to list under passed bucket
+   * @param s3Headers any headers you want to add
+   * @return [[akka.stream.scaladsl.Source Source]] of [[akka.japi.Pair Pair]] of ([[java.util.List List]] of [[akka.stream.alpakka.s3.ListBucketResultContents ListBucketResultContents]], [[java.util.List List]] of [[akka.stream.alpakka.s3.ListBucketResultCommonPrefixes ListBucketResultCommonPrefixes]]
+   */
+  def listBucketAndCommonPrefixes(
+      bucket: String,
+      delimiter: String,
+      prefix: Optional[String],
+      s3Headers: S3Headers
+  ): Source[akka.japi.Pair[java.util.List[ListBucketResultContents], java.util.List[ListBucketResultCommonPrefixes]],
+            NotUsed] =
+    S3Stream
+      .listBucketAndCommonPrefixes(bucket, delimiter, prefix.asScala, s3Headers)
+      .map {
+        case (contents, commonPrefixes) => akka.japi.Pair(contents.asJava, commonPrefixes.asJava)
+      }
       .asJava
 
   /**
@@ -640,7 +712,7 @@ object S3 {
   /**
    * Create new bucket with a given name
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketPUT.html
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
    * @param bucketName bucket name
    * @param materializer materializer to run with
    * @param attributes attributes to run request with
@@ -652,7 +724,7 @@ object S3 {
   /**
    * Create new bucket with a given name
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketPUT.html
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
    * @param bucketName bucket name
    * @param materializer materializer to run with
    * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
@@ -663,7 +735,7 @@ object S3 {
   /**
    * Create new bucket with a given name
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketPUT.html
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
    * @param bucketName bucket name
    * @param materializer materializer to run with
    * @param attributes attributes to run request with
@@ -679,7 +751,7 @@ object S3 {
   /**
    * Create new bucket with a given name
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketPUT.html
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
    * @param bucketName bucket name
    * @return [[akka.stream.javadsl.Source Source]] of type [[Done]] as API doesn't return any additional information
    */
@@ -689,7 +761,7 @@ object S3 {
   /**
    * Create new bucket with a given name
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketPUT.html
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
    * @param bucketName bucket name
    * @param s3Headers any headers you want to add
    * @return [[akka.stream.javadsl.Source Source]] of type [[Done]] as API doesn't return any additional information
@@ -700,7 +772,7 @@ object S3 {
   /**
    * Delete bucket with a given name
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketDELETE.html
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteBucket.html
    * @param bucketName   bucket name
    * @param materializer materializer to run with
    * @param attributes attributes to run request with
@@ -712,7 +784,7 @@ object S3 {
   /**
    * Delete bucket with a given name
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketDELETE.html
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteBucket.html
    * @param bucketName   bucket name
    * @param materializer materializer to run with
    * @param attributes attributes to run request with
@@ -728,7 +800,7 @@ object S3 {
   /**
    * Delete bucket with a given name
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketDELETE.html
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteBucket.html
    * @param bucketName   bucket name
    * @param materializer materializer to run with
    * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
@@ -739,7 +811,7 @@ object S3 {
   /**
    * Delete bucket with a given name
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketDELETE.html
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteBucket.html
    * @param bucketName   bucket name
    * @return [[akka.stream.javadsl.Source Source]] of type [[Done]] as API doesn't return any additional information
    */
@@ -749,7 +821,7 @@ object S3 {
   /**
    * Delete bucket with a given name
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketDELETE.html
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteBucket.html
    * @param bucketName   bucket name
    * @param s3Headers any headers you want to add
    * @return [[akka.stream.javadsl.Source Source]] of type [[Done]] as API doesn't return any additional information
@@ -760,7 +832,7 @@ object S3 {
   /**
    * Checks whether the bucket exists and the user has rights to perform the `ListBucket` operation
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketHEAD.html
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadBucket.html
    * @param bucketName   bucket name
    * @param materializer materializer to run with
    * @param attributes attributes to run request with
@@ -774,7 +846,7 @@ object S3 {
   /**
    * Checks whether the bucket exists and the user has rights to perform the `ListBucket` operation
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketHEAD.html
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadBucket.html
    * @param bucketName   bucket name
    * @param materializer materializer to run with
    * @param attributes attributes to run request with
@@ -790,7 +862,7 @@ object S3 {
   /**
    * Checks whether the bucket exits and user has rights to perform ListBucket operation
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketHEAD.html
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadBucket.html
    * @param bucketName   bucket name
    * @param materializer materializer to run with
    * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[BucketAccess]]
@@ -801,7 +873,7 @@ object S3 {
   /**
    * Checks whether the bucket exits and user has rights to perform ListBucket operation
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketHEAD.html
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadBucket.html
    * @param bucketName   bucket name
    * @return [[akka.stream.javadsl.Source Source]] of type [[BucketAccess]]
    */
@@ -811,7 +883,7 @@ object S3 {
   /**
    * Checks whether the bucket exits and user has rights to perform ListBucket operation
    *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketHEAD.html
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadBucket.html
    * @param bucketName   bucket name
    * @param s3Headers any headers you want to add
    * @return [[akka.stream.javadsl.Source Source]] of type [[BucketAccess]]

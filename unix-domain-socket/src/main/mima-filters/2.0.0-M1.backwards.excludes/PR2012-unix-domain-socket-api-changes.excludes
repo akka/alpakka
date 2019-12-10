@@ -1,0 +1,7 @@
+# PR #2012 - API changes to abstract out implementation details
+# https://github.com/akka/alpakka/pull/2012
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.unixdomainsocket.javadsl.*")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.unixdomainsocket.scaladsl.*")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.unixdomainsocket.javadsl.*")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.unixdomainsocket.scaladsl.*")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.unixdomainsocket.scaladsl.*")

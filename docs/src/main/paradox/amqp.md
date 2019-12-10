@@ -42,6 +42,36 @@ Java
 
 Here we used @apidoc[QueueDeclaration] configuration class to create a queue declaration.
 
+### With flow
+
+Similarly as with Sink, the first step is to create Flow which accepts @apidoc[amqp.WriteMessage]s and forwards it's content to the AMQP server. Flow emits @apidoc[amqp.WriteResult]s informing about publication result (see below for summary of delivery guarantees for different Flow variants).
+
+@apidoc[AmqpFlow$] is a collection of factory methods that facilitates creation of flows. Here we created a *simple* sink, which means that we are able to pass `ByteString`s to the sink instead of wrapping data into @apidoc[amqp.WriteMessage]s.
+
+Last step is to @extref:[materialize](akka:stream/stream-flows-and-basics.html) and run the flow we have created.
+
+Scala
+: @@snip [snip](/amqp/src/test/scala/docs/scaladsl/AmqpDocsSpec.scala) { #create-flow }
+
+Java
+: @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #create-flow }
+
+Various variants of AMQP flow offer different delivery and ordering guarantees:
+
+| AMQP flow factory                  | Description                                                                                          |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| AmqpFlow.apply                     | The most basic type of flow. Does not impose delivery guarantees, messages are published in a fire-and-forget manner. Emitted results have `confirmed` always set to true.
+| AmqpFlow.withConfirm          | Variant that uses asynchronous confirmations. Maximum number of messages simultaneously waiting for confirmation before signaling backpressure is configured with a `bufferSize` parameter. Emitted results preserve the order of messages pulled from upstream - due to that restriction this flow is expected to be slightly less effective than it's unordered counterpart.
+| AmqpFlow.withConfirmUnordered | The same as `AmqpFlow.withConfirm` with the exception of ordering guarantee - results are emitted downstream as soon as confirmation is received, meaning that there is no ordering guarantee of any sort.
+
+For @apidoc[FlowWithContext$] counterparts of above flows see @apidoc[AmqpFlowWithContext$].
+
+@@@ warning
+`AmqpFlow.withConfirm` and `AmqpFlow.withConfirmUnordered` are implemented using RabbitMQ's extension to AMQP protocol ([Publisher Confirms](https://www.rabbitmq.com/confirms.html#publisher-confirms)), therefore they are not intended to work with another AMQP brokers.
+@@@
+
+### With sink
+
 Create a sink, that accepts and forwards @apidoc[akka.util.ByteString]s to the AMQP server.
 
 @apidoc[AmqpSink$] is a collection of factory methods that facilitates creation of sinks. Here we created a *simple* sink, which means that we are able to pass `ByteString`s to the sink instead of wrapping data into @apidoc[amqp.WriteMessage]s.
@@ -53,7 +83,6 @@ Scala
 
 Java
 : @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #create-sink }
-
 
 ## Receiving messages
 

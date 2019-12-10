@@ -9,12 +9,15 @@ import java.nio.file.{Files, Path}
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.{Flow, FlowWithContext, Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
 import com.google.common.jimfs.{Configuration, Jimfs}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+
+import scala.collection.immutable
+import scala.concurrent.Future
 
 class DirectorySpec
     extends TestKit(ActorSystem("directoryspec"))
@@ -72,8 +75,52 @@ class DirectorySpec
       val result2 = files2.runWith(Sink.seq).futureValue
       result2 shouldEqual List(root, subdir1, subdir2)
     }
+
+    "create directories" in {
+      val dir = fs.getPath("mkdirsScaladsl")
+      Files.deleteIfExists(dir)
+      Files.createDirectories(dir)
+      // #mkdirs
+      import akka.stream.alpakka.file.scaladsl.Directory
+
+      val flow: Flow[Path, Path, NotUsed] = Directory.mkdirs()
+
+      val created: Future[immutable.Seq[Path]] =
+        Source(immutable.Seq(dir.resolve("dirA"), dir.resolve("dirB")))
+          .via(flow)
+          .runWith(Sink.seq)
+      // #mkdirs
+
+      created.futureValue should have size (2)
+      Files.isDirectory(dir.resolve("dirA")) shouldBe true
+      Files.isDirectory(dir.resolve("dirB")) shouldBe true
+    }
+
+    "create directories with context" in {
+      val dir = fs.getPath("mkdirsScaladsl2")
+      Files.deleteIfExists(dir)
+      Files.createDirectories(dir)
+      import akka.stream.alpakka.file.scaladsl.Directory
+      // #mkdirs
+
+      val flowWithContext: FlowWithContext[Path, SomeContext, Path, SomeContext, NotUsed] =
+        Directory.mkdirsWithContext[SomeContext]()
+      // #mkdirs
+      val created: Future[immutable.Seq[(Any, Any)]] =
+        Source(immutable.Seq(dir.resolve("dirA"), dir.resolve("dirB")))
+          .asSourceWithContext(_ => SomeContext())
+          .via(flowWithContext)
+          .runWith(Sink.seq)
+
+      created.futureValue should have size (2)
+      Files.isDirectory(dir.resolve("dirA")) shouldBe true
+      Files.isDirectory(dir.resolve("dirB")) shouldBe true
+    }
+
   }
 
   override protected def afterAll(): Unit =
     fs.close()
 }
+
+case class SomeContext()

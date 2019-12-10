@@ -310,7 +310,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     req.headers should contain(RawHeader("Cache-Control", "no-cache"))
   }
 
-  it should "properly construct the list bucket request with no prefix or continuation token passed" in {
+  it should "properly construct the list bucket request with no prefix, continuation token or delimiter passed" in {
     implicit val settings = getSettings(s3Region = Region.US_EAST_2).withPathStyleAccess(true)
 
     val req =
@@ -328,6 +328,15 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     req.uri.query() shouldEqual Query("list-type" -> "2",
                                       "prefix" -> "random/prefix",
                                       "continuation-token" -> "randomToken")
+  }
+
+  it should "properly construct the list bucket request with a delimiter and token passed" in {
+    implicit val settings = getSettings(s3Region = Region.US_EAST_2).withPathStyleAccess(true)
+
+    val req =
+      HttpRequests.listBucket(location.bucket, delimiter = Some("/"), continuationToken = Some("randomToken"))
+
+    req.uri.query() shouldEqual Query("list-type" -> "2", "delimiter" -> "/", "continuation-token" -> "randomToken")
   }
 
   it should "properly construct the list bucket request when using api version 1" in {

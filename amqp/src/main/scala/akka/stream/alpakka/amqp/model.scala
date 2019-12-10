@@ -4,6 +4,8 @@
 
 package akka.stream.alpakka.amqp
 
+import java.util.Objects
+
 import akka.util.ByteString
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client.Envelope
@@ -28,11 +30,13 @@ object ReadResult {
     ReadResult(bytes, envelope, properties)
 }
 
-final class WriteMessage private (val bytes: ByteString,
-                                  val immediate: Boolean,
-                                  val mandatory: Boolean,
-                                  val properties: Option[BasicProperties] = None,
-                                  val routingKey: Option[String] = None) {
+final class WriteMessage private (
+    val bytes: ByteString,
+    val immediate: Boolean,
+    val mandatory: Boolean,
+    val properties: Option[BasicProperties] = None,
+    val routingKey: Option[String] = None
+) {
 
   def withImmediate(value: Boolean): WriteMessage =
     if (value == immediate) this
@@ -81,4 +85,37 @@ object WriteMessage {
    */
   def create(bytes: ByteString, immediate: Boolean, mandatory: Boolean): WriteMessage =
     WriteMessage(bytes, immediate, mandatory)
+}
+
+final class WriteResult private (val confirmed: Boolean) {
+  def rejected: Boolean = !confirmed
+
+  override def toString: String =
+    s"WriteResult(confirmed=$confirmed)"
+
+  override def equals(other: Any): Boolean = other match {
+    case that: WriteResult =>
+      Objects.equals(this.confirmed, that.confirmed)
+    case _ => false
+  }
+
+  override def hashCode(): Int =
+    Objects.hash(Boolean.box(confirmed))
+}
+
+object WriteResult {
+  def apply(confirmed: Boolean): WriteResult =
+    new WriteResult(confirmed)
+
+  /**
+   * Java API
+   */
+  def create(confirmed: Boolean): WriteResult =
+    WriteResult(confirmed)
+
+  def confirmed: WriteResult =
+    WriteResult(confirmed = true)
+
+  def rejected: WriteResult =
+    WriteResult(confirmed = false)
 }

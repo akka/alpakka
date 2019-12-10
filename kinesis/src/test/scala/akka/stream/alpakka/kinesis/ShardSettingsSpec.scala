@@ -6,8 +6,8 @@ package akka.stream.alpakka.kinesis
 
 import java.time.Instant
 
-import com.amazonaws.services.kinesis.model.ShardIteratorType
 import org.scalatest.{Matchers, WordSpec}
+import software.amazon.awssdk.services.kinesis.model.ShardIteratorType
 
 class ShardSettingsSpec extends WordSpec with Matchers {
   val baseSettings = ShardSettings("name", "shardid")

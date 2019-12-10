@@ -66,7 +66,8 @@ object Dependencies {
 
   val Amqp = Seq(
     libraryDependencies ++= Seq(
-        "com.rabbitmq" % "amqp-client" % "5.3.0" // APLv2
+        "com.rabbitmq" % "amqp-client" % "5.3.0", // APLv2
+        "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
       )
   )
 
@@ -272,7 +273,7 @@ object Dependencies {
         "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
       ),
     // Having JBoss as a first resolver is a workaround for https://github.com/coursier/coursier/issues/200
-    externalResolvers := ("jboss" at "http://repository.jboss.org/nexus/content/groups/public") +: externalResolvers.value
+    externalResolvers := ("jboss" at "https://repository.jboss.org/nexus/content/groups/public") +: externalResolvers.value
   )
 
   val JsonStreaming = Seq(
@@ -284,7 +285,16 @@ object Dependencies {
 
   val Kinesis = Seq(
     libraryDependencies ++= Seq(
-        "com.amazonaws" % "aws-java-sdk-kinesis" % AwsSdkVersion, // ApacheV2
+        "software.amazon.awssdk" % "kinesis" % AwsSdk2Version excludeAll // ApacheV2
+        (
+          ExclusionRule("software.amazon.awssdk", "apache-client"),
+          ExclusionRule("software.amazon.awssdk", "netty-nio-client")
+        ),
+        "software.amazon.awssdk" % "firehose" % AwsSdk2Version excludeAll // ApacheV2
+        (
+          ExclusionRule("software.amazon.awssdk", "apache-client"),
+          ExclusionRule("software.amazon.awssdk", "netty-nio-client")
+        ),
         "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
       )
   )
