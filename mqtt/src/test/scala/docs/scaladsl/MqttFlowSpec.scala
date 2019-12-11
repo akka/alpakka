@@ -5,44 +5,16 @@
 package docs.scaladsl
 
 import akka.Done
-import akka.actor.ActorSystem
 import akka.stream.alpakka.mqtt._
 import akka.stream.alpakka.mqtt.scaladsl.{MqttFlow, MqttMessageWithAck}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
-import akka.stream.{ActorMaterializer, Materializer}
-import akka.testkit.TestKit
 import akka.util.ByteString
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
-import org.scalatest._
-import org.scalatest.concurrent.{Eventually, IntegrationPatience, ScalaFutures}
 import org.scalatest.time.{Seconds, Span}
 
-import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
-class MqttFlowSpec
-    extends TestKit(ActorSystem("MqttFlowSpec"))
-    with AnyWordSpecLike
-    with Matchers
-    with BeforeAndAfterAll
-    with ScalaFutures
-    with Eventually
-    with IntegrationPatience {
-
-  val timeout = 5.seconds
-  implicit val defaultPatience =
-    PatienceConfig(timeout = 5.seconds, interval = 100.millis)
-
-  implicit val mat: Materializer = ActorMaterializer()
-  val connectionSettings = MqttConnectionSettings(
-    "tcp://localhost:1883",
-    "test-client",
-    new MemoryPersistence
-  )
-
-  override def afterAll() = TestKit.shutdownActorSystem(system)
+class MqttFlowSpec extends MqttSpecBase("MqttFlowSpec") {
 
   "mqtt flow" should {
     "establish a bidirectional connection and subscribe to a topic" in {
