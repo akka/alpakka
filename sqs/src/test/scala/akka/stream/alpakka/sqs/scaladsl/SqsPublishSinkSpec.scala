@@ -10,6 +10,7 @@ import java.util.function.Supplier
 
 import akka.Done
 import akka.stream.alpakka.sqs._
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Keep
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSource
@@ -24,7 +25,7 @@ import software.amazon.awssdk.services.sqs.model._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class SqsPublishSinkSpec extends AnyFlatSpec with Matchers with DefaultTestContext {
+class SqsPublishSinkSpec extends AnyFlatSpec with Matchers with DefaultTestContext with LogCapturing {
 
   "SqsPublishSink" should "send a message" in assertAllStagesStopped {
     implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
