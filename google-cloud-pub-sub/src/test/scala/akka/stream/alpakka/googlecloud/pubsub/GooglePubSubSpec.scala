@@ -11,6 +11,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.HttpExt
 import akka.stream.alpakka.googlecloud.pubsub.impl.{GoogleSession, PubSubApi, TestCredentials}
 import akka.stream.alpakka.googlecloud.pubsub.scaladsl.GooglePubSub
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Flow, FlowWithContext, Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.{Done, NotUsed}
@@ -23,7 +24,7 @@ import org.scalatestplus.mockito.MockitoSugar
 import scala.collection.immutable.Seq
 import scala.concurrent.duration._
 
-class GooglePubSubSpec extends AnyFlatSpec with MockitoSugar with ScalaFutures with Matchers {
+class GooglePubSubSpec extends AnyFlatSpec with MockitoSugar with ScalaFutures with Matchers with LogCapturing {
 
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 100.millis)
