@@ -18,7 +18,7 @@ object Dependencies {
   val AwsSdkVersion = "1.11.476"
   val AwsSdk2Version = "2.7.18"
   val AwsSpiAkkaHttpVersion = "0.0.7"
-  val AkkaHttpVersion = "10.1.10"
+  val AkkaHttpVersion = "10.1.11"
   val AkkaHttpBinaryVersion = "10.1"
   val mockitoVersion = "3.1.0"
 
