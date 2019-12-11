@@ -65,10 +65,11 @@ object Formats extends DefaultJsonProtocol {
       metadata: Map[String, String],
       name: String,
       storageClass: String,
-      temporaryHold: Boolean
+      temporaryHold: Boolean,
+      acl: Option[List[String]]
   )
 
-  private implicit val storageObjectWritableJson = jsonFormat12(StorageObjectWriteableJson)
+  private implicit val storageObjectWritableJson = jsonFormat13(StorageObjectWriteableJson)
 
   private implicit object StorageObjectJsonFormat extends RootJsonFormat[StorageObjectJson] {
     override def read(value: JsValue): StorageObjectJson = {
@@ -231,7 +232,8 @@ object Formats extends DefaultJsonProtocol {
       componentCount,
       kmsKeyName,
       customerEncryption,
-      owner
+      owner,
+      acl
     )
   }
 

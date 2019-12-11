@@ -8,6 +8,7 @@ import java.time.OffsetDateTime
 
 import akka.http.scaladsl.model.ContentType
 import main.scala.akka.stream.alpakka.googlecloud.storage.{CustomerEncryption, Owner}
+import com.google.api.services.storage.model.ObjectAccessControls
 
 /**
  * Represents an object within Google Cloud Storage.
@@ -43,10 +44,8 @@ import main.scala.akka.stream.alpakka.googlecloud.storage.{CustomerEncryption, O
  * @param kmsKeyName              Cloud KMS Key used to encrypt this object, if the object is encrypted by such a key.
  * @param customerEncryption      Metadata of customer-supplied encryption key, if the object is encrypted by such a key.
  * @param owner                   The owner of the object. This will always be the uploader of the object
+ * @param acl                     Access controls on the object, containing one or more objectAccessControls Resources. If iamConfiguration.uniformBucketLevelAccess.enabled is set to true, this field is omitted in responses, and requests that specify this field fail.
  */
-//"acl": [
-//objectAccessControls Resource
-//],
 
 final class StorageObject private (
     val kind: String,
@@ -78,7 +77,8 @@ final class StorageObject private (
     val componentCount: Int,
     val kmsKeyName: String,
     val customerEncryption: CustomerEncryption,
-    val owner: Option[Owner]
+    val owner: Option[Owner],
+    val acl: Option[List[ObjectAccessControl]]
 ) {
 
   /** Java API */
@@ -120,6 +120,7 @@ final class StorageObject private (
   def withKmsKeyName(value: String): StorageObject = copy(kmsKeyName = value)
   def withCustomerEncryption(value: CustomerEncryption): StorageObject = copy(customerEncryption = value)
   def withOwner(value: Owner): StorageObject = copy(owner = Some(value))
+  def withAcl(value: List[ObjectAccessControls]): StorageObject = copy(acl = Some(value))
 
   private def copy(
       kind: String = kind,
@@ -151,7 +152,8 @@ final class StorageObject private (
       componentCount: Int = componentCount,
       kmsKeyName: String = kmsKeyName,
       customerEncryption: CustomerEncryption = customerEncryption,
-      owner: Option[Owner] = owner
+      owner: Option[Owner] = owner,
+      acl: Option[List[ObjectAccessControls]] = acl
   ): StorageObject = new StorageObject(
     kind = kind,
     id = id,
@@ -182,7 +184,8 @@ final class StorageObject private (
     componentCount = componentCount,
     kmsKeyName = kmsKeyName,
     customerEncryption = customerEncryption,
-    owner = owner
+    owner = owner,
+    acl = acl
   )
 
   override def toString =
@@ -216,7 +219,8 @@ final class StorageObject private (
     s"componentCount = $componentCount," +
     s"kmsKeyName = $kmsKeyName," +
     s"customerEncryption = $customerEncryption," +
-    owner.fold("")(o => s"owner = $o") +
+    owner.fold("")(o => s"owner = $o,") +
+    acl.fold("")(acls => acls.mkString("[", ",", "]")) +
     ")"
 
   override def equals(other: Any): Boolean = other match {
@@ -251,6 +255,7 @@ final class StorageObject private (
       java.util.Objects.equals(this.kmsKeyName, that.kmsKeyName)
       java.util.Objects.equals(this.customerEncryption, that.customerEncryption)
       java.util.Objects.equals(this.owner, that.owner)
+      java.util.Objects.equals(this.acl, that.acl)
     case _ => false
   }
 
@@ -285,7 +290,8 @@ final class StorageObject private (
       Int.box(componentCount),
       kmsKeyName,
       customerEncryption,
-      owner
+      owner,
+      acl
     )
 }
 
@@ -322,7 +328,8 @@ object StorageObject {
       componentCount: Int,
       kmsKeyName: String,
       customerEncryption: CustomerEncryption,
-      owner: Option[Owner]
+      owner: Option[Owner],
+      acl: Option[List[ObjectAccessControls]]
   ): StorageObject = new StorageObject(
     kind,
     id,
@@ -353,7 +360,8 @@ object StorageObject {
     componentCount,
     kmsKeyName,
     customerEncryption,
-    owner
+    owner,
+    acl
   )
 
   /** Java API */
@@ -387,7 +395,8 @@ object StorageObject {
       componentCount: Int,
       kmsKeyName: String,
       customerEncryption: CustomerEncryption,
-      owner: Option[Owner]
+      owner: Option[Owner],
+      acl: Option[List[ObjectAccessControls]]
   ): StorageObject = new StorageObject(
     kind,
     id,
@@ -418,6 +427,7 @@ object StorageObject {
     componentCount,
     kmsKeyName,
     customerEncryption,
-    owner
+    owner,
+    acl
   )
 }
