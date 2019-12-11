@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory
  *
  * JUnit `TestRule` to make log lines appear only when the test failed.
  *
- * Use this in test by adding a public field annotated with `@TestRule`:
+ * Use this in test by adding a public field annotated with `@Rule`:
  * {{{
  *   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
  * }}}

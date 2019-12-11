@@ -12,6 +12,7 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.alpakka.file.ArchiveMetadata
 import akka.stream.alpakka.file.scaladsl.Archive
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{FileIO, Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
@@ -30,7 +31,8 @@ class ArchiveSpec
     with AnyWordSpecLike
     with Matchers
     with ScalaFutures
-    with BeforeAndAfterAll {
+    with BeforeAndAfterAll
+    with LogCapturing {
 
   implicit val mat: Materializer = ActorMaterializer()
 

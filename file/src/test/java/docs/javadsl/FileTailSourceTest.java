@@ -12,6 +12,7 @@ import akka.stream.KillSwitches;
 import akka.stream.Materializer;
 import akka.stream.UniqueKillSwitch;
 import akka.stream.alpakka.file.DirectoryChange;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -21,9 +22,7 @@ import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
 import java.io.FileNotFoundException;
 import java.nio.charset.StandardCharsets;
@@ -42,15 +41,27 @@ import static org.junit.Assert.assertEquals;
 
 public class FileTailSourceTest {
 
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
+
+  private static ActorSystem system;
+  private static Materializer materializer;
+
+  @BeforeClass
+  public static void beforeAll() throws Exception {
+    system = ActorSystem.create();
+    materializer = ActorMaterializer.create(system);
+  }
+
+  @AfterClass
+  public static void afterAll() throws Exception {
+    TestKit.shutdownActorSystem(system);
+  }
+
   private FileSystem fs;
-  private ActorSystem system;
-  private Materializer materializer;
 
   @Before
   public void setup() {
     fs = Jimfs.newFileSystem(Configuration.unix());
-    system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
   }
 
   @Test
@@ -199,9 +210,6 @@ public class FileTailSourceTest {
     fs.close();
     fs = null;
     StreamTestKit.assertAllStagesStopped(materializer);
-    TestKit.shutdownActorSystem(system);
-    system = null;
-    materializer = null;
   }
 
   // small sample of usage, tails the first argument file path

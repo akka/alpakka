@@ -11,6 +11,7 @@ import java.time.format.DateTimeFormatter
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.alpakka.file.scaladsl.LogRotatorSink
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Compression, FileIO, Flow, Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSource
@@ -33,7 +34,8 @@ class LogRotatorSinkSpec
     with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
-    with ScalaFutures {
+    with ScalaFutures
+    with LogCapturing {
 
   implicit val patience: PatienceConfig = PatienceConfig(5.seconds, 100.millis)
 

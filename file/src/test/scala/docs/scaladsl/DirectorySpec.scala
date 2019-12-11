@@ -9,6 +9,7 @@ import java.nio.file.{Files, Path}
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Flow, FlowWithContext, Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
@@ -26,7 +27,8 @@ class DirectorySpec
     with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
-    with ScalaFutures {
+    with ScalaFutures
+    with LogCapturing {
 
   private val fs = Jimfs.newFileSystem(Configuration.forCurrentPlatform.toBuilder.build)
   private implicit val mat = ActorMaterializer()

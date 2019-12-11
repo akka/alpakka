@@ -12,13 +12,12 @@ import akka.japi.function.Function;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.file.javadsl.LogRotatorSink;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.*;
 import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Test;
+import org.junit.*;
 
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -34,11 +33,19 @@ import static org.junit.Assert.assertEquals;
 
 public class LogRotatorSinkTest {
 
-  private static final ActorSystem system = ActorSystem.create();
-  private static final Materializer materializer = ActorMaterializer.create(system);
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
+
+  private static ActorSystem system;
+  private static Materializer materializer;
+
+  @BeforeClass
+  public static void beforeAll() throws Exception {
+    system = ActorSystem.create();
+    materializer = ActorMaterializer.create(system);
+  }
 
   @AfterClass
-  public static void afterAll() {
+  public static void afterAll() throws Exception {
     TestKit.shutdownActorSystem(system);
   }
 
