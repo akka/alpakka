@@ -21,8 +21,7 @@ import java.util.function.Function;
 
 public class RawKeySftpSourceTest extends BaseSftpSupport implements CommonFtpStageTest {
 
-  @Rule
-  public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   @Test
   public void listFiles() throws Exception {

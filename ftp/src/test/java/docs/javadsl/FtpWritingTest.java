@@ -38,8 +38,7 @@ import static org.hamcrest.CoreMatchers.is;
 
 public class FtpWritingTest extends BaseFtpSupport {
 
-  @Rule
-  public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   @After
   public void afterEach() {

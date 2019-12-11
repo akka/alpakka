@@ -22,8 +22,7 @@ import java.util.function.Function;
 
 public class FtpWithProxyStageTest extends BaseFtpSupport implements CommonFtpStageTest {
 
-  @Rule
-  public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private final Integer PROXYPORT = 3128;
   private final Proxy PROXY =
