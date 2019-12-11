@@ -7,6 +7,7 @@ package akka.stream.alpakka.testkit
 import akka.annotation.InternalApi
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.AppenderBase
+import org.slf4j.LoggerFactory
 
 /**
  * See https://doc.akka.io/docs/akka/current/typed/testing-async.html#silence-logging-output-from-tests
@@ -16,7 +17,11 @@ import ch.qos.logback.core.AppenderBase
 @InternalApi private[akka] object CapturingAppender {
   import LogbackUtil._
 
+  // make sure logging is booted
+  private val dummy = LoggerFactory.getLogger("logcapture")
   private val CapturingAppenderName = "CapturingAppender"
+
+  dummy.debug("enabling CapturingAppender")
 
   def get(loggerName: String): CapturingAppender = {
     val logbackLogger = getLogbackLogger(loggerName)
