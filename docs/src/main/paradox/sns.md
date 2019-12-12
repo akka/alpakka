@@ -31,9 +31,7 @@ Scala
 Java
 : @@snip [snip](/sns/src/test/java/docs/javadsl/SnsPublisherTest.java) { #init-client }
 
-Alpakka SQS and SNS are set up to use @extref:[Akka HTTP](akka-http:) as default HTTP client via the thin adapter library [AWS Akka-Http SPI implementation](https://github.com/matsluni/aws-spi-akka-http). By setting the `httpClient` explicitly (as above) the Akka actor system is reused, if not set explicitly a separate actor system will be created internally.
-
-It is possible to configure the use of Netty instead, which is Amazon's default. Add an appropriate Netty version to the dependencies and configure @javadoc[NettyNioAsyncHttpClient](software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient).
+The example above uses @extref:[Akka HTTP](akka-http:) as the default HTTP client implementation. For more details about the HTTP client, configuring request retrying and best practices for credentials, see @ref[AWS client configuration](aws-shared-configuration.md) for more details.
 
 We will also need an @scaladoc[ActorSystem](akka.actor.ActorSystem) and an @scaladoc[ActorMaterializer](akka.stream.ActorMaterializer).
 
@@ -72,3 +70,9 @@ Java
 : @@snip [snip](/sns/src/test/java/docs/javadsl/SnsPublisherTest.java) { #use-sink }
 
 As you can see, this would publish the messages from the source to the specified AWS SNS topic.
+
+@@@ index
+
+* [retry conf](aws-shared-configuration.md)
+
+@@@

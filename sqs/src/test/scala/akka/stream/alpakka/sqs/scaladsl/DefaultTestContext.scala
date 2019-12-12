@@ -70,12 +70,20 @@ trait DefaultTestContext extends Matchers with BeforeAndAfterAll with ScalaFutur
   def createAsyncClient(sqsEndpoint: String): SqsAsyncClient = {
     //#init-client
 
+    // Don't encode credentials in your source code!
+    // see https://doc.akka.io/docs/alpakka/current/aws-shared-configuration.html
+    val credentialsProvider = StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x"))
     implicit val awsSqsClient = SqsAsyncClient
       .builder()
-      .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
+      .credentialsProvider(credentialsProvider)
+      // #init-client
       .endpointOverride(URI.create(sqsEndpoint))
+      // #init-client
       .region(Region.EU_CENTRAL_1)
       .httpClient(AkkaHttpClient.builder().withActorSystem(system).build())
+      // Possibility to configure the retry policy
+      // see https://doc.akka.io/docs/alpakka/current/aws-shared-configuration.html
+      // .overrideConfiguration(...)
       .build()
 
     system.registerOnTermination(awsSqsClient.close())

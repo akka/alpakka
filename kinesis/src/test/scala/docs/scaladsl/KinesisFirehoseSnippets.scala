@@ -10,17 +10,25 @@ import akka.stream.alpakka.kinesisfirehose.KinesisFirehoseFlowSettings
 import akka.stream.alpakka.kinesisfirehose.scaladsl.{KinesisFirehoseFlow, KinesisFirehoseSink}
 import akka.stream.scaladsl.{Flow, Sink}
 import akka.stream.{ActorMaterializer, Materializer}
-import software.amazon.awssdk.services.firehose.FirehoseAsyncClient
 import software.amazon.awssdk.services.firehose.model.{PutRecordBatchResponseEntry, Record}
 
 object KinesisFirehoseSnippets {
 
   //#init-client
+  import com.github.matsluni.akkahttpspi.AkkaHttpClient
+  import software.amazon.awssdk.services.firehose.FirehoseAsyncClient
+
   implicit val system: ActorSystem = ActorSystem()
   implicit val materializer: Materializer = ActorMaterializer()
 
   implicit val amazonKinesisFirehoseAsync: software.amazon.awssdk.services.firehose.FirehoseAsyncClient =
-    FirehoseAsyncClient.create()
+    FirehoseAsyncClient
+      .builder()
+      .httpClient(AkkaHttpClient.builder().withActorSystem(system).build())
+      // Possibility to configure the retry policy
+      // see https://doc.akka.io/docs/alpakka/current/aws-shared-configuration.html
+      // .overrideConfiguration(...)
+      .build()
 
   system.registerOnTermination(amazonKinesisFirehoseAsync.close())
   //#init-client

@@ -42,7 +42,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
 
 public class ExampleTest {
 
@@ -56,12 +55,19 @@ public class ExampleTest {
     // #init-client
     final ActorSystem system = ActorSystem.create();
     final Materializer materializer = ActorMaterializer.create(system);
+
+    // Don't encode credentials in your source code!
+    // see https://doc.akka.io/docs/alpakka/current/aws-shared-configuration.html
+    StaticCredentialsProvider credentialsProvider =
+        StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x"));
     final DynamoDbAsyncClient client =
         DynamoDbAsyncClient.builder()
-            .credentialsProvider(
-                StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
+            .credentialsProvider(credentialsProvider)
             .region(Region.AWS_GLOBAL)
             .httpClient(AkkaHttpClient.builder().withActorSystem(system).build())
+            // Possibility to configure the retry policy
+            // see https://doc.akka.io/docs/alpakka/current/aws-shared-configuration.html
+            // .overrideConfiguration(...)
             // #init-client
             .endpointOverride(new URI("http://localhost:8001/"))
             // #init-client
