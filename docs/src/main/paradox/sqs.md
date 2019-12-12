@@ -47,7 +47,7 @@ Scala
 Java
 : @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/BaseSqsTest.java) { #init-client }
 
-This connector is set up to use @extref:[Akka HTTP](akka-http:) as default HTTP client via the thin adapter library [AWS Akka-Http SPI implementation](https://github.com/matsluni/aws-spi-akka-http). By setting the `httpClient` explicitly (as above) the Akka actor system is reused, if not set explicitly a separate actor system will be created internally.
+This connector is setup to use @extref:[Akka HTTP](akka-http:) as the default HTTP client implementation via the thin adapter library [AWS Akka-Http SPI implementation](https://github.com/matsluni/aws-spi-akka-http). By setting the `httpClient` explicitly (as above) the Akka actor system is reused.  If it is not set explicitly then a separate actor system will be created internally.
 
 The client has built-in support for retrying with exponential backoff, see @ref[AWS Retry configuration](aws-retry-configuration.md) for more details.
 
