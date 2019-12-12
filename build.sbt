@@ -329,6 +329,11 @@ lazy val docs = project
         "javadoc.akka.stream.alpakka.base_url" -> ""
       ),
     paradoxGroups := Map("Language" -> Seq("Java", "Scala")),
+    paradoxRoots := List("examples/elasticsearch-samples.html",
+                         "examples/ftp-samples.html",
+                         "examples/jms-samples.html",
+                         "examples/mqtt-samples.html",
+                         "index.html"),
     resolvers += Resolver.jcenterRepo,
     publishRsyncArtifact := makeSite.value -> "www/",
     publishRsyncHost := "akkarepo@gustav.akka.io",
@@ -346,11 +351,6 @@ lazy val whitesourceSupported = project
 lazy val `doc-examples` = project
   .enablePlugins(AutomateHeaderPlugin)
   .disablePlugins(BintrayPlugin, MimaPlugin, SitePlugin)
-  .dependsOn(
-    files,
-    ftp,
-    mqtt
-  )
   .settings(
     name := s"akka-stream-alpakka-doc-examples",
     publish / skip := true,

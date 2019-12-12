@@ -111,25 +111,9 @@ object Dependencies {
 
   val `Doc-examples` = Seq(
     libraryDependencies ++= Seq(
-        "com.typesafe.akka" %% "akka-discovery" % AkkaVersion,
-        // https://mina.apache.org/ftpserver-project/downloads.html
-        "org.apache.ftpserver" % "ftpserver-core" % "1.1.1", // ApacheV2
-        "org.apache.sshd" % "sshd-scp" % "2.1.0", // ApacheV2
-        "org.apache.sshd" % "sshd-sftp" % "2.1.0", // ApacheV2
-        "com.google.jimfs" % "jimfs" % "1.1", // ApacheV2
         "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
-        "com.typesafe.akka" %% "akka-http-xml" % AkkaHttpVersion,
-        "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        // https://github.com/akka/alpakka-kafka/releases
-        "com.typesafe.akka" %% "akka-stream-kafka" % "1.0.5",
-        "io.netty" % "netty-all" % "4.1.29.Final", // ApacheV2
-        "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % JacksonDatabindVersion,
-        "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % JacksonDatabindVersion,
-        "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.11.2", // ApacheV2
-        "org.slf4j" % "log4j-over-slf4j" % log4jOverSlf4jVersion,
-        "org.slf4j" % "jcl-over-slf4j" % jclOverSlf4jVersion,
-        "ch.qos.logback" % "logback-classic" % "1.2.3" // Eclipse Public License 1.0
-      ) ++ JacksonDatabindDependencies
+        "com.typesafe.akka" %% "akka-stream-kafka" % "1.1.0"
+      )
   )
 
   val DynamoDB = Seq(
