@@ -47,24 +47,7 @@ Scala
 Java
 : @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/BaseSqsTest.java) { #init-client }
 
-This connector is setup to use @extref:[Akka HTTP](akka-http:) as the default HTTP client implementation via the thin adapter library [AWS Akka-Http SPI implementation](https://github.com/matsluni/aws-spi-akka-http). By setting the `httpClient` explicitly (as above) the Akka actor system is reused.  If it is not set explicitly then a separate actor system will be created internally.
-
-The client has built-in support for retrying with exponential backoff, see @ref[AWS Retry configuration](aws-retry-configuration.md) for more details.
-
-### Underlying HTTP client
-
-It is possible to configure the use of Netty instead, which is Amazon's default. Add an appropriate Netty version to the dependencies and configure @javadoc[NettyNioAsyncHttpClient](software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient).
-
-Scala
-: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsSourceSpec.scala) { #init-custom-client }
-
-Java
-: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsSourceTest.java) { #init-custom-client }
-
-Please make sure to configure a big enough thread pool for the Netty client to avoid resource starvation. This is especially important,
-if you share the client between multiple Sources, Sinks and Flows. For the SQS Sinks and Sources the sum of all
-`parallelism` (Source) and `maxInFlight` (Sink) must be less than or equal to the thread pool size.
-
+The example above uses @extref:[Akka HTTP](akka-http:) as the default HTTP client implementation. For more details about the HTTP client, configuring request retrying and best practices for credentials, see @ref[AWS client configuration](aws-shared-configuration.md) for more details.
 
 ## Read from an SQS queue
 
@@ -348,6 +331,6 @@ a queuing service which serves an AWS SQS compatible API.
 
 @@@ index
 
-* [retry conf](aws-retry-configuration.md)
+* [retry conf](aws-shared-configuration.md)
 
 @@@

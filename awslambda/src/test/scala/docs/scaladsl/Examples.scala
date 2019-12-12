@@ -4,8 +4,6 @@
 
 package docs.scaladsl
 
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.awslambda.scaladsl.AwsLambdaFlow
 import akka.stream.scaladsl.{Sink, Source}
 import software.amazon.awssdk.services.lambda.LambdaAsyncClient
@@ -13,8 +11,11 @@ import software.amazon.awssdk.services.lambda.LambdaAsyncClient
 object Examples {
 
   //#init-mat
-  implicit val system = ActorSystem()
-  implicit val mat = ActorMaterializer()
+  import akka.actor.ActorSystem
+  import akka.stream.{ActorMaterializer, Materializer}
+
+  implicit val system: ActorSystem = ActorSystem()
+  implicit val mat: Materializer = ActorMaterializer()
   //#init-mat
 
   def initClient(): Unit = {
@@ -23,13 +24,15 @@ object Examples {
     import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
     import software.amazon.awssdk.services.lambda.LambdaAsyncClient
 
-    val credentials = AwsBasicCredentials.create("x", "x")
+    // Don't encode credentials in your source code!
+    // see https://doc.akka.io/docs/alpakka/current/aws-shared-configuration.html
+    val credentialsProvider = StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x"))
     implicit val lambdaClient: LambdaAsyncClient = LambdaAsyncClient
       .builder()
-      .credentialsProvider(StaticCredentialsProvider.create(credentials))
+      .credentialsProvider(credentialsProvider)
       .httpClient(AkkaHttpClient.builder().withActorSystem(system).build())
       // Possibility to configure the retry policy
-      // see https://doc.akka.io/docs/alpakka/current/aws-retry-configuration.html
+      // see https://doc.akka.io/docs/alpakka/current/aws-shared-configuration.html
       // .overrideConfiguration(...)
       .build()
 

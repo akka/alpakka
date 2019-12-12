@@ -5,9 +5,11 @@
 package docs.javadsl;
 
 import akka.NotUsed;
+// #init-mat
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+// #init-mat
 import akka.stream.alpakka.awslambda.javadsl.AwsLambdaFlow;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
@@ -30,6 +32,7 @@ import java.util.concurrent.CompletionStage;
 public class Examples {
 
   // #init-mat
+
   ActorSystem system = ActorSystem.create();
   Materializer materializer = ActorMaterializer.create(system);
   // #init-mat
@@ -37,13 +40,16 @@ public class Examples {
   public void initClient() {
     // #init-client
 
-    AwsBasicCredentials credentials = AwsBasicCredentials.create("x", "x");
+    // Don't encode credentials in your source code!
+    // see https://doc.akka.io/docs/alpakka/current/aws-shared-configuration.html
+    StaticCredentialsProvider credentialsProvider =
+        StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x"));
     LambdaAsyncClient awsLambdaClient =
         LambdaAsyncClient.builder()
-            .credentialsProvider(StaticCredentialsProvider.create(credentials))
+            .credentialsProvider(credentialsProvider)
             .httpClient(AkkaHttpClient.builder().withActorSystem(system).build())
             // Possibility to configure the retry policy
-            // see https://doc.akka.io/docs/alpakka/current/aws-retry-configuration.html
+            // see https://doc.akka.io/docs/alpakka/current/aws-shared-configuration.html
             // .overrideConfiguration(...)
             .build();
 

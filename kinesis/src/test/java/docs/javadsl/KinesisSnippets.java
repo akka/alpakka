@@ -43,7 +43,7 @@ public class KinesisSnippets {
         KinesisAsyncClient.builder()
             .httpClient(AkkaHttpClient.builder().withActorSystem(system).build())
             // Possibility to configure the retry policy
-            // see https://doc.akka.io/docs/alpakka/current/aws-retry-configuration.html
+            // see https://doc.akka.io/docs/alpakka/current/aws-shared-configuration.html
             // .overrideConfiguration(...)
             .build();
 

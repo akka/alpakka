@@ -54,17 +54,20 @@ trait IntegrationTestContext extends BeforeAndAfterAll with ScalaFutures {
     import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
     import software.amazon.awssdk.regions.Region
 
+    // Don't encode credentials in your source code!
+    // see https://doc.akka.io/docs/alpakka/current/aws-shared-configuration.html
+    val credentialsProvider = StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x"))
     implicit val awsSnsClient: SnsAsyncClient =
       SnsAsyncClient
         .builder()
-        .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
+        .credentialsProvider(credentialsProvider)
         //#init-client
         .endpointOverride(URI.create(endEndpoint))
         //#init-client
         .region(Region.EU_CENTRAL_1)
         .httpClient(AkkaHttpClient.builder().withActorSystem(system).build())
         // Possibility to configure the retry policy
-        // see https://doc.akka.io/docs/alpakka/current/aws-retry-configuration.html
+        // see https://doc.akka.io/docs/alpakka/current/aws-shared-configuration.html
         // .overrideConfiguration(...)
         .build()
 
