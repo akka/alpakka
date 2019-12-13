@@ -618,5 +618,44 @@ class JmsTxConnectorsSpec extends JmsSpec {
         publishKillSwitch.shutdown()
       }
     }
+
+    // Illustrates https://github.com/akka/alpakka/issues/2039
+    "close the JMS session" ignore withConnectionFactory() { connectionFactory =>
+      val queueName = "test"
+      val jmsSink: Sink[String, Future[Done]] = JmsProducer.textSink(
+        JmsProducerSettings(producerConfig, connectionFactory).withQueue(queueName)
+      )
+
+      Source.single("a").runWith(jmsSink)
+
+      val jmsSource =
+        JmsConsumer.txSource(
+          JmsConsumerSettings(consumerConfig, connectionFactory)
+            .withSessionCount(1)
+            .withAckTimeout(1.second)
+            .withQueue(queueName)
+            .withFailStreamOnAckTimeout(true)
+        )
+
+      val streamCompletion = jmsSource
+      // Let the ack timeout kick in
+        .delay(2.seconds)
+        .map { txEnvelope =>
+          txEnvelope.commit()
+          txEnvelope.message.asInstanceOf[TextMessage]
+        }
+        .runWith(Sink.head)
+
+      streamCompletion.failed.futureValue shouldBe a[akka.stream.alpakka.jms.JmsTxAckTimeout]
+
+      val streamCompletion2 = jmsSource
+        .map { txEnvelope =>
+          txEnvelope.commit()
+          txEnvelope.message.asInstanceOf[TextMessage]
+        }
+        .runWith(Sink.head)
+
+      streamCompletion2.futureValue.getText shouldBe "a"
+    }
   }
 }
