@@ -61,7 +61,7 @@ public class ExampleUsageJava {
     Source<PublishRequest, NotUsed> source = Source.single(publishRequest);
 
     Flow<PublishRequest, List<String>, NotUsed> publishFlow =
-        GooglePubSub.publish(topic, config, 1, system, materializer);
+        GooglePubSub.publish(topic, config, 1);
 
     CompletionStage<List<List<String>>> publishedMessageIds =
         source.via(publishFlow).runWith(Sink.seq(), materializer);
@@ -78,7 +78,7 @@ public class ExampleUsageJava {
         Source.single(Pair.apply(publishRequestWithContext, context));
 
     FlowWithContext<PublishRequest, String, List<String>, String, NotUsed> publishFlowWithContext =
-        GooglePubSub.publishWithContext(topic, config, 1, system, materializer);
+        GooglePubSub.publishWithContext(topic, config, 1);
 
     CompletionStage<List<Pair<List<String>, String>>> publishedMessageIdsWithContext =
         sourceWithContext.via(publishFlowWithContext).runWith(Sink.seq(), materializer);
@@ -95,10 +95,10 @@ public class ExampleUsageJava {
 
     // #subscribe
     Source<ReceivedMessage, Cancellable> subscriptionSource =
-        GooglePubSub.subscribe(subscription, config, system, materializer);
+        GooglePubSub.subscribe(subscription, config);
 
     Sink<AcknowledgeRequest, CompletionStage<Done>> ackSink =
-        GooglePubSub.acknowledge(subscription, config, system, materializer);
+        GooglePubSub.acknowledge(subscription, config);
 
     subscriptionSource
         .map(
