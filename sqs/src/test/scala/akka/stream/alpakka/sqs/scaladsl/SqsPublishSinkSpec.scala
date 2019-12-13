@@ -11,6 +11,7 @@ import java.util.function.Supplier
 import akka.Done
 import akka.stream.alpakka.sqs._
 import akka.stream.scaladsl.Keep
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSource
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
@@ -24,7 +25,7 @@ import scala.concurrent.duration._
 
 class SqsPublishSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
 
-  "SqsPublishSink" should "send a message" in {
+  "SqsPublishSink" should "send a message" in assertAllStagesStopped {
     implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
     when(sqsClient.sendMessage(any[SendMessageRequest]))
       .thenReturn(CompletableFuture.completedFuture(SendMessageResponse.builder().build()))
@@ -37,7 +38,7 @@ class SqsPublishSinkSpec extends FlatSpec with Matchers with DefaultTestContext 
       .sendMessage(any[SendMessageRequest]())
   }
 
-  it should "fail stage on client failure and fail the promise" in {
+  it should "fail stage on client failure and fail the promise" in assertAllStagesStopped {
     implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
 
     when(sqsClient.sendMessage(any[SendMessageRequest]()))
@@ -58,7 +59,7 @@ class SqsPublishSinkSpec extends FlatSpec with Matchers with DefaultTestContext 
       .sendMessage(any[SendMessageRequest]())
   }
 
-  it should "pull a message and publish it to another queue" taggedAs Integration in {
+  it should "pull a message and publish it to another queue" taggedAs Integration in assertAllStagesStopped {
     val queue1 = randomQueueUrl()
     val queue2 = randomQueueUrl()
     implicit val awsSqsClient = sqsClient
@@ -84,7 +85,7 @@ class SqsPublishSinkSpec extends FlatSpec with Matchers with DefaultTestContext 
     result.messages().get(0).body() shouldBe "alpakka"
   }
 
-  it should "failure the promise on upstream failure" in {
+  it should "failure the promise on upstream failure" in assertAllStagesStopped {
     implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
     val (probe, future) = TestSource.probe[String].toMat(SqsPublishSink("notused"))(Keep.both).run()
 
@@ -95,7 +96,7 @@ class SqsPublishSinkSpec extends FlatSpec with Matchers with DefaultTestContext 
     }
   }
 
-  it should "complete promise after all messages have been sent" in {
+  it should "complete promise after all messages have been sent" in assertAllStagesStopped {
     implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
 
     when(sqsClient.sendMessage(any[SendMessageRequest]))
@@ -115,7 +116,7 @@ class SqsPublishSinkSpec extends FlatSpec with Matchers with DefaultTestContext 
       .sendMessage(any[SendMessageRequest]())
   }
 
-  it should "send batch of messages" in {
+  it should "send batch of messages" in assertAllStagesStopped {
     implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
 
     when(sqsClient.sendMessageBatch(any[SendMessageBatchRequest]))
@@ -139,7 +140,7 @@ class SqsPublishSinkSpec extends FlatSpec with Matchers with DefaultTestContext 
     )
   }
 
-  it should "send all messages in batches of given size" in {
+  it should "send all messages in batches of given size" in assertAllStagesStopped {
     implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
 
     when(sqsClient.sendMessageBatch(any[SendMessageBatchRequest]))
@@ -181,7 +182,7 @@ class SqsPublishSinkSpec extends FlatSpec with Matchers with DefaultTestContext 
     )
   }
 
-  it should "fail if any of the messages in batch failed" in {
+  it should "fail if any of the messages in batch failed" in assertAllStagesStopped {
     implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
 
     when(sqsClient.sendMessageBatch(any[SendMessageBatchRequest]))
@@ -218,7 +219,7 @@ class SqsPublishSinkSpec extends FlatSpec with Matchers with DefaultTestContext 
     )
   }
 
-  it should "fail if whole batch is failed" in {
+  it should "fail if whole batch is failed" in assertAllStagesStopped {
     implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
     when(
       sqsClient.sendMessageBatch(any[SendMessageBatchRequest]())
@@ -247,7 +248,7 @@ class SqsPublishSinkSpec extends FlatSpec with Matchers with DefaultTestContext 
     )
   }
 
-  it should "send all batches of messages" in {
+  it should "send all batches of messages" in assertAllStagesStopped {
     implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
 
     when(sqsClient.sendMessageBatch(any[SendMessageBatchRequest]))
