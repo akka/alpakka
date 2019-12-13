@@ -13,6 +13,7 @@ import akka.stream.alpakka.sqs._
 import akka.stream.alpakka.sqs.SqsAckResult._
 import akka.stream.alpakka.sqs.SqsAckResultEntry._
 import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{spy, times, verify, when}
 import org.scalatest.{FlatSpec, Matchers}
@@ -100,107 +101,121 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
     batchSettings.maxBatchSize should be(10)
   }
 
-  "AckSink" should "pull and delete message" taggedAs Integration in new IntegrationFixture {
-    sendMessage("alpakka-2")
+  "AckSink" should "pull and delete message" taggedAs Integration in assertAllStagesStopped {
+    new IntegrationFixture {
+      sendMessage("alpakka-2")
 
-    val future =
+      val future =
+        //#ack
+        SqsSource(queueUrl, sqsSourceSettings)
+          .take(1)
+          .map(MessageAction.Delete(_))
+          .runWith(SqsAckSink(queueUrl))
       //#ack
-      SqsSource(queueUrl, sqsSourceSettings)
-        .take(1)
-        .map(MessageAction.Delete(_))
-        .runWith(SqsAckSink(queueUrl))
-    //#ack
 
-    future.futureValue shouldBe Done
-    verify(awsSqsClient).deleteMessage(
-      any[DeleteMessageRequest]
-    )
-  }
-
-  it should "pull and delay a message" taggedAs Integration in new IntegrationFixture {
-    sendMessage("alpakka-3")
-
-    val future =
-      //#requeue
-      SqsSource(queueUrl, sqsSourceSettings)
-        .take(1)
-        .map(MessageAction.ChangeMessageVisibility(_, 5.minutes))
-        .runWith(SqsAckSink(queueUrl))
-    //#requeue
-
-    future.futureValue shouldBe Done
-    verify(awsSqsClient).changeMessageVisibility(
-      any[ChangeMessageVisibilityRequest]
-    )
-  }
-
-  it should "pull and ignore a message" taggedAs Integration in new IntegrationFixture {
-    sendMessage("alpakka-flow-ack")
-
-    //#ignore
-    SqsSource(queueUrl, sqsSourceSettings)
-      .map(MessageAction.Ignore(_))
-      .runWith(SqsAckSink(queueUrl))
-    //#ignore
-
-    // TODO: assertions missing
-  }
-
-  "AckFlow" should "pull and delete message via flow" taggedAs Integration in new IntegrationFixture {
-    sendMessage("alpakka-flow-ack")
-
-    val future =
-      //#flow-ack
-      SqsSource(queueUrl, sqsSourceSettings)
-        .take(1)
-        .map(MessageAction.Delete(_))
-        .via(SqsAckFlow(queueUrl))
-        .runWith(Sink.head)
-    //#flow-ack
-
-    val result = future.futureValue
-    result shouldBe a[SqsDeleteResult]
-    result.messageAction.message.body() shouldBe "alpakka-flow-ack"
-    verify(awsSqsClient).deleteMessage(any[DeleteMessageRequest])
-  }
-
-  it should "pull and ignore a message" taggedAs Integration in new IntegrationFixture {
-    sendMessage("alpakka-flow-ack")
-
-    val future =
-      SqsSource(queueUrl, sqsSourceSettings)
-        .take(1)
-        .map(MessageAction.Ignore(_))
-        .via(SqsAckFlow(queueUrl))
-        .runWith(Sink.head)
-
-    val result = future.futureValue
-    result shouldBe a[SqsIgnoreResult]
-    result.messageAction.message.body() shouldBe "alpakka-flow-ack"
-  }
-
-  it should "delete batch of messages" taggedAs Integration in new IntegrationFixture {
-    val messages = for (i <- 0 until 10) yield s"Message - $i"
-    sendMessages(messages)
-
-    val future =
-      //#batch-ack
-      SqsSource(queueUrl, sqsSourceSettings)
-        .take(10)
-        .map(MessageAction.Delete(_))
-        .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings.Defaults))
-        .runWith(Sink.seq)
-    //#batch-ack
-
-    val results = future.futureValue
-    results.size shouldBe 10
-    results.foreach { r =>
-      r shouldBe a[SqsDeleteResultEntry]
+      future.futureValue shouldBe Done
+      verify(awsSqsClient).deleteMessage(
+        any[DeleteMessageRequest]
+      )
     }
-    results.map(_.messageAction.message.body()) should contain theSameElementsAs messages
-    verify(awsSqsClient, times(1)).deleteMessageBatch(
-      any[DeleteMessageBatchRequest]
-    )
+  }
+
+  it should "pull and delay a message" taggedAs Integration in assertAllStagesStopped {
+    new IntegrationFixture {
+      sendMessage("alpakka-3")
+
+      val future =
+        //#requeue
+        SqsSource(queueUrl, sqsSourceSettings)
+          .take(1)
+          .map(MessageAction.ChangeMessageVisibility(_, 5.minutes))
+          .runWith(SqsAckSink(queueUrl))
+      //#requeue
+
+      future.futureValue shouldBe Done
+      verify(awsSqsClient).changeMessageVisibility(
+        any[ChangeMessageVisibilityRequest]
+      )
+    }
+  }
+
+  it should "pull and ignore a message" taggedAs Integration in assertAllStagesStopped {
+    new IntegrationFixture {
+      sendMessage("alpakka-flow-ack")
+
+      val future =
+        //#ignore
+        SqsSource(queueUrl, sqsSourceSettings)
+          .take(1)
+          .map(MessageAction.Ignore(_))
+          .runWith(SqsAckSink(queueUrl))
+      //#ignore
+
+      future.futureValue shouldBe Done
+    }
+  }
+
+  "AckFlow" should "pull and delete message via flow" taggedAs Integration in assertAllStagesStopped {
+    new IntegrationFixture {
+      sendMessage("alpakka-flow-ack")
+
+      val future =
+        //#flow-ack
+        SqsSource(queueUrl, sqsSourceSettings)
+          .take(1)
+          .map(MessageAction.Delete(_))
+          .via(SqsAckFlow(queueUrl))
+          .runWith(Sink.head)
+      //#flow-ack
+
+      val result = future.futureValue
+      result shouldBe a[SqsDeleteResult]
+      result.messageAction.message.body() shouldBe "alpakka-flow-ack"
+      verify(awsSqsClient).deleteMessage(any[DeleteMessageRequest])
+    }
+  }
+
+  it should "pull and ignore a message" taggedAs Integration in assertAllStagesStopped {
+    new IntegrationFixture {
+      sendMessage("alpakka-flow-ack")
+
+      val future =
+        SqsSource(queueUrl, sqsSourceSettings)
+          .take(1)
+          .map(MessageAction.Ignore(_))
+          .via(SqsAckFlow(queueUrl))
+          .runWith(Sink.head)
+
+      val result = future.futureValue
+      result shouldBe a[SqsIgnoreResult]
+      result.messageAction.message.body() shouldBe "alpakka-flow-ack"
+    }
+  }
+
+  it should "delete batch of messages" taggedAs Integration in assertAllStagesStopped {
+    new IntegrationFixture {
+      val messages = for (i <- 0 until 10) yield s"Message - $i"
+      sendMessages(messages)
+
+      val future =
+        //#batch-ack
+        SqsSource(queueUrl, sqsSourceSettings)
+          .take(10)
+          .map(MessageAction.Delete(_))
+          .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings.Defaults))
+          .runWith(Sink.seq)
+      //#batch-ack
+
+      val results = future.futureValue
+      results.size shouldBe 10
+      results.foreach { r =>
+        r shouldBe a[SqsDeleteResultEntry]
+      }
+      results.map(_.messageAction.message.body()) should contain theSameElementsAs messages
+      verify(awsSqsClient, times(1)).deleteMessageBatch(
+        any[DeleteMessageBatchRequest]
+      )
+    }
   }
 
   it should "delete all messages in batches of given size" taggedAs Integration in new IntegrationFixture {
@@ -244,7 +259,7 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
     future.failed.futureValue shouldBe a[SqsBatchException]
   }
 
-  it should "fail if the batch request failed" in {
+  it should "fail if the batch request failed" in assertAllStagesStopped {
     val messages = for (i <- 0 until 10) yield Message.builder().body(s"Message - $i").build()
 
     implicit val mockAwsSqsClient = mock[SqsAsyncClient]
@@ -265,7 +280,7 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
     future.failed.futureValue shouldBe a[SqsBatchException]
   }
 
-  it should "fail if the client invocation failed" in {
+  it should "fail if the client invocation failed" in assertAllStagesStopped {
     val messages = for (i <- 0 until 10) yield Message.builder().body(s"Message - $i").build()
 
     implicit val mockAwsSqsClient = mock[SqsAsyncClient]
@@ -283,55 +298,59 @@ class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
     future.failed.futureValue shouldBe a[RuntimeException]
   }
 
-  it should "delete, delay & ignore all messages in batches of given size" taggedAs Integration in new IntegrationFixture {
-    val messages = for (i <- 0 until 10) yield s"Message - $i"
-    sendMessages(messages)
+  it should "delete, delay & ignore all messages in batches of given size" taggedAs Integration in assertAllStagesStopped {
+    new IntegrationFixture {
+      val messages = for (i <- 0 until 10) yield s"Message - $i"
+      sendMessages(messages)
 
-    val future = SqsSource(queueUrl, sqsSourceSettings)
-      .take(10)
-      .zipWithIndex
-      .map {
-        case (m, i) if i % 3 == 0 => MessageAction.Delete(m)
-        case (m, i) if i % 3 == 1 => MessageAction.ChangeMessageVisibility(m, 5)
-        case (m, _) => MessageAction.Ignore(m)
-      }
-      .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings.Defaults))
-      .runWith(Sink.seq)
-
-    val results = future.futureValue
-    results.count(_.messageAction.isInstanceOf[MessageAction.Delete]) shouldBe 4
-    results.count(_.messageAction.isInstanceOf[MessageAction.ChangeMessageVisibility]) shouldBe 3
-    results.count(_.messageAction.isInstanceOf[MessageAction.Ignore]) shouldBe 3
-
-    verify(awsSqsClient, times(1)).deleteMessageBatch(any[DeleteMessageBatchRequest])
-    verify(awsSqsClient, times(1)).changeMessageVisibilityBatch(any[ChangeMessageVisibilityBatchRequest])
-  }
-
-  it should "delay batch of messages" taggedAs Integration in new IntegrationFixture {
-    val messages = for (i <- 0 until 10) yield s"Message - $i"
-    sendMessages(messages)
-
-    val future =
-      //#batch-requeue
-      SqsSource(queueUrl, sqsSourceSettings)
+      val future = SqsSource(queueUrl, sqsSourceSettings)
         .take(10)
-        .map(MessageAction.ChangeMessageVisibility(_, 5.minutes))
+        .zipWithIndex
+        .map {
+          case (m, i) if i % 3 == 0 => MessageAction.Delete(m)
+          case (m, i) if i % 3 == 1 => MessageAction.ChangeMessageVisibility(m, 5)
+          case (m, _) => MessageAction.Ignore(m)
+        }
         .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings.Defaults))
         .runWith(Sink.seq)
-    //#batch-requeue
 
-    val results = future.futureValue
-    results.foreach { r =>
-      r shouldBe a[SqsChangeMessageVisibilityResultEntry]
+      val results = future.futureValue
+      results.count(_.messageAction.isInstanceOf[MessageAction.Delete]) shouldBe 4
+      results.count(_.messageAction.isInstanceOf[MessageAction.ChangeMessageVisibility]) shouldBe 3
+      results.count(_.messageAction.isInstanceOf[MessageAction.Ignore]) shouldBe 3
+
+      verify(awsSqsClient, times(1)).deleteMessageBatch(any[DeleteMessageBatchRequest])
+      verify(awsSqsClient, times(1)).changeMessageVisibilityBatch(any[ChangeMessageVisibilityBatchRequest])
     }
-    results.map(_.messageAction.message.body()) should contain theSameElementsAs messages
-    verify(awsSqsClient, times(1))
-      .changeMessageVisibilityBatch(
-        any[ChangeMessageVisibilityBatchRequest]
-      )
   }
 
-  it should "ignore batch of messages" in {
+  it should "delay batch of messages" taggedAs Integration in assertAllStagesStopped {
+    new IntegrationFixture {
+      val messages = for (i <- 0 until 10) yield s"Message - $i"
+      sendMessages(messages)
+
+      val future =
+        //#batch-requeue
+        SqsSource(queueUrl, sqsSourceSettings)
+          .take(10)
+          .map(MessageAction.ChangeMessageVisibility(_, 5.minutes))
+          .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings.Defaults))
+          .runWith(Sink.seq)
+      //#batch-requeue
+
+      val results = future.futureValue
+      results.foreach { r =>
+        r shouldBe a[SqsChangeMessageVisibilityResultEntry]
+      }
+      results.map(_.messageAction.message.body()) should contain theSameElementsAs messages
+      verify(awsSqsClient, times(1))
+        .changeMessageVisibilityBatch(
+          any[ChangeMessageVisibilityBatchRequest]
+        )
+    }
+  }
+
+  it should "ignore batch of messages" in assertAllStagesStopped {
     val messages = for (i <- 0 until 10) yield Message.builder().body(s"Message - $i").build()
 
     implicit val mockAwsSqsClient = mock[SqsAsyncClient]
