@@ -1,0 +1,5 @@
+# Remove ActorSystem and Materializer from factory methods
+ProblemFilters.exclude[MissingMethodProblem]("akka.stream.alpakka.googlecloud.pubsub.javadsl.GooglePubSub.acknowledge")
+ProblemFilters.exclude[MissingMethodProblem]("akka.stream.alpakka.googlecloud.pubsub.javadsl.GooglePubSub.publish")
+ProblemFilters.exclude[MissingMethodProblem]("akka.stream.alpakka.googlecloud.pubsub.scaladsl.GooglePubSub.acknowledge")
+ProblemFilters.exclude[MissingMethodProblem]("akka.stream.alpakka.googlecloud.pubsub.scaladsl.GooglePubSub.publish")
