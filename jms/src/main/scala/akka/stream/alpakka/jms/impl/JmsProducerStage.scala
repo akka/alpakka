@@ -122,7 +122,7 @@ private[jms] final class JmsProducerStage[E <: JmsEnvelope[PassThrough], PassThr
           override def onUpstreamFinish(): Unit = if (inFlightMessages.isEmpty) publishAndCompleteStage()
 
           override def onUpstreamFailure(ex: Throwable): Unit = {
-            jmsSessions.foreach(s => Try(s.closeSession()))
+            closeSessions()
             publishAndFailStage(ex)
           }
 
@@ -149,7 +149,7 @@ private[jms] final class JmsProducerStage[E <: JmsEnvelope[PassThrough], PassThr
 
       private def publishAndCompleteStage(): Unit = {
         val previous = updateState(InternalConnectionState.JmsConnectorStopping(Success(Done)))
-        jmsSessions.foreach(_.closeSession())
+        closeSessions()
         JmsConnector.connection(previous).foreach(_.close())
         completeStage()
       }

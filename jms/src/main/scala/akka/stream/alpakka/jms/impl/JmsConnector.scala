@@ -25,14 +25,14 @@ import scala.util.{Failure, Success, Try}
  * Internal API.
  */
 @InternalApi
-trait JmsConnector[S <: JmsSession] {
+private[jms] trait JmsConnector[S <: JmsSession] {
   this: TimerGraphStageLogic with StageLogging =>
 
   import JmsConnector._
 
   implicit protected var ec: ExecutionContext = _
 
-  protected var jmsSessions = Seq.empty[S]
+  private var jmsSessions = Seq.empty[S]
 
   protected def destination: Destination
 
@@ -93,6 +93,8 @@ trait JmsConnector[S <: JmsSession] {
 
     // use type-based comparison to publish JmsConnectorInitializing only once.
     if (last.getClass != connectionState.getClass) {
+      if (log.isDebugEnabled)
+        log.debug("updateStateWith {} -> {}", last.getClass.getSimpleName, connectionState.getClass.getSimpleName)
       connectionStateQueue.offer(connectionState)
     }
 
@@ -227,6 +229,38 @@ trait JmsConnector[S <: JmsSession] {
     // wait for all sessions to successfully initialize before invoking the onSession callback.
     // reduces flakiness (start, consume, then crash) at the cost of increased latency of startup.
     allSessions.foreach(_.foreach(onSession.invoke))
+  }
+
+  protected def closeSessions(): Unit = {
+    jmsSessions.foreach(
+      s => closeSession(s)
+    )
+  }
+
+  protected def closeSessionsAsync(): Seq[Future[Unit]] = {
+    jmsSessions.map { s =>
+      Future { closeSession(s) }
+    }
+  }
+
+  private def closeSession(s: S): Unit = {
+    try {
+      s.closeSession()
+    } catch {
+      case e: Throwable => log.error(e, "Error closing jms session")
+    }
+  }
+
+  protected def abortSessionsAsync(): Seq[Future[Unit]] = {
+    jmsSessions.map { s =>
+      Future {
+        try {
+          s.abortSession()
+        } catch {
+          case e: Throwable => log.error(e, "Error aborting jms session")
+        }
+      }
+    }
   }
 
   def startConnection: Boolean

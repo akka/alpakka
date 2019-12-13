@@ -22,11 +22,7 @@ private[jms] sealed trait JmsSession {
 
   def session: jms.Session
 
-  private[jms] def closeSessionAsync()(implicit ec: ExecutionContext): Future[Unit] = Future { closeSession() }
-
   private[jms] def closeSession(): Unit = session.close()
-
-  private[jms] def abortSessionAsync()(implicit ec: ExecutionContext): Future[Unit] = Future { abortSession() }
 
   private[jms] def abortSession(): Unit = closeSession()
 }
