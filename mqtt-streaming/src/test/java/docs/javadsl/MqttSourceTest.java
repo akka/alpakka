@@ -25,7 +25,9 @@ import org.junit.Test;
 
 import java.time.LocalTime;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -59,8 +61,7 @@ public class MqttSourceTest {
   }
 
   @Test
-  public void atLeastOnceSubscription()
-      throws InterruptedException, ExecutionException, TimeoutException {
+  public void atLeastOnceSubscription() throws InterruptedException {
     String testId = "1";
     String clientId = "streaming/source-test/" + testId;
     String topic = topicPrefix + testId;

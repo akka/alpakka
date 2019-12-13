@@ -125,8 +125,7 @@ private[streaming] object HighLevelMqttSource {
 
     val connectionIdFunction: () => ByteString = {
       val counter = new AtomicLong()
-      () =>
-        ByteString(counter.incrementAndGet().toString)
+      () => ByteString(counter.incrementAndGet().toString)
     }
 
     val mqttFlow: Flow[Command[Nothing], Either[MqttCodec.DecodeError, Event[Nothing]], NotUsed] = {
