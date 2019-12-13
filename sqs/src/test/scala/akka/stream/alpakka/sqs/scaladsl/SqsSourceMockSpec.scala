@@ -7,6 +7,7 @@ package akka.stream.alpakka.sqs.scaladsl
 import java.util.concurrent.CompletableFuture
 
 import akka.stream.alpakka.sqs.SqsSourceSettings
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSink
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito.{atMost => atMostTimes, _}
@@ -21,12 +22,16 @@ import scala.compat.java8.FutureConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-class SqsSourceSpec extends FlatSpec with Matchers with DefaultTestContext {
+class SqsSourceMockSpec extends FlatSpec with Matchers with DefaultTestContext {
+
+  override def createAsyncClient(sqsEndpoint: String): SqsAsyncClient = ???
+  override def closeSqsClient(): Unit = ()
+
   val defaultMessages = (1 to 10).map { i =>
     Message.builder().body(s"message $i").build()
   }
 
-  "SqsSource" should "send a request and unwrap the response" in {
+  "SqsSource" should "send a request and unwrap the response" in assertAllStagesStopped {
     implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
     when(sqsClient.receiveMessage(any[ReceiveMessageRequest]))
       .thenReturn(
@@ -52,9 +57,10 @@ class SqsSourceSpec extends FlatSpec with Matchers with DefaultTestContext {
      * 3 - buffer proxies pull when it's not full -> async stage provides the data and executes the next call
      */
     verify(sqsClient, times(3)).receiveMessage(any[ReceiveMessageRequest])
+    probe.cancel()
   }
 
-  it should "buffer messages and acquire them fast with slow sqs" in {
+  it should "buffer messages and acquire them fast with slow sqs" in assertAllStagesStopped {
     implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
     val timeout = 1.second
     val bufferToBatchRatio = 5
@@ -88,9 +94,10 @@ class SqsSourceSpec extends FlatSpec with Matchers with DefaultTestContext {
     } {
       probe.requestNext(10.milliseconds) shouldEqual message
     }
+    probe.cancel()
   }
 
-  it should "enable throttling on emptyReceives and disable throttling when a new message arrives" in {
+  it should "enable throttling on emptyReceives and disable throttling when a new message arrives" in assertAllStagesStopped {
     implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]
     val firstWithDataCount = 30
     val thenEmptyCount = 15
@@ -146,5 +153,6 @@ class SqsSourceSpec extends FlatSpec with Matchers with DefaultTestContext {
     probe.expectNext()
 
     (1 to 1000).foreach(_ => probe.requestNext(10.milliseconds))
+    probe.cancel()
   }
 }
