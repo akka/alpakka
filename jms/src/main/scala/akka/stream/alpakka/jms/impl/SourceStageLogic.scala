@@ -114,8 +114,7 @@ private abstract class SourceStageLogic[T](shape: SourceShape[T],
       val status = updateState(JmsConnectorStopping(Success(Done)))
       val connectionFuture = JmsConnector.connection(status)
 
-      Future
-        .sequence(closeSessionsAsync())
+      closeSessionsAsync()
         .onComplete { _ =>
           connectionFuture
             .map { connection =>
@@ -140,8 +139,7 @@ private abstract class SourceStageLogic[T](shape: SourceShape[T],
       if (log.isDebugEnabled) log.debug("aborting sessions ({})", ex.toString)
       val status = updateState(JmsConnectorStopping(Failure(ex)))
       val connectionFuture = JmsConnector.connection(status)
-      Future
-        .sequence(abortSessionsAsync())
+      abortSessionsAsync()
         .onComplete { _ =>
           connectionFuture
             .map { connection =>

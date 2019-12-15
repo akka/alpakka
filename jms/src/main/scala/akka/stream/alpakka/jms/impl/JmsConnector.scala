@@ -232,35 +232,42 @@ private[jms] trait JmsConnector[S <: JmsSession] {
   }
 
   protected def closeSessions(): Unit = {
-    jmsSessions.foreach(
-      s => closeSession(s)
-    )
+    jmsSessions.foreach(s => closeSession(s))
+    jmsSessions = Seq.empty
   }
 
-  protected def closeSessionsAsync(): Seq[Future[Unit]] = {
-    jmsSessions.map { s =>
-      Future { closeSession(s) }
-    }
+  protected def closeSessionsAsync(): Future[Unit] = {
+    val closing = Future
+      .sequence {
+        jmsSessions.map(s => Future(closeSession(s)))
+      }
+      .map(_ => ())
+    jmsSessions = Seq.empty
+    closing
   }
 
   private def closeSession(s: S): Unit = {
-    try {
-      s.closeSession()
-    } catch {
+    try s.closeSession()
+    catch {
       case e: Throwable => log.error(e, "Error closing jms session")
     }
   }
 
-  protected def abortSessionsAsync(): Seq[Future[Unit]] = {
-    jmsSessions.map { s =>
-      Future {
-        try {
-          s.abortSession()
-        } catch {
-          case e: Throwable => log.error(e, "Error aborting jms session")
+  protected def abortSessionsAsync(): Future[Unit] = {
+    val aborting = Future
+      .sequence {
+        jmsSessions.map { s =>
+          Future {
+            try s.abortSession()
+            catch {
+              case e: Throwable => log.error(e, "Error aborting jms session")
+            }
+          }
         }
       }
-    }
+      .map(_ => ())
+    jmsSessions = Seq.empty
+    aborting
   }
 
   def startConnection: Boolean
