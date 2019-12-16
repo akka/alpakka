@@ -1,5 +1,12 @@
 # Cassandra
 
+## 2.0.0-M2
+
+No changes.
+
+[*closed in 2.0.0-M2*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0-M2+label%3Ap%3Acassandra)
+
+
 ## 2.0.0-M1
 
 - Cassandra driver 3.7.1 (was 3.5.1) [#1917](https://github.com/akka/alpakka/pull/1917) by [@dotbg](https://github.com/dotbg)
