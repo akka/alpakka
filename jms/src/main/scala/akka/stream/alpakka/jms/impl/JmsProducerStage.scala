@@ -122,7 +122,6 @@ private[jms] final class JmsProducerStage[E <: JmsEnvelope[PassThrough], PassThr
           override def onUpstreamFinish(): Unit = if (inFlightMessages.isEmpty) publishAndCompleteStage()
 
           override def onUpstreamFailure(ex: Throwable): Unit = {
-            closeSessions()
             publishAndFailStage(ex)
           }
 

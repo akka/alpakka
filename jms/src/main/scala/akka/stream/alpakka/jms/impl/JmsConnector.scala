@@ -67,6 +67,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
       case current => current
     }
 
+    closeSessions()
     val previous = updateStateWith(update)
     connection(previous).foreach(_.close())
     connectionStateQueue.complete()

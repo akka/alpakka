@@ -15,7 +15,6 @@ import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.{Done, NotUsed}
 
 import scala.collection.mutable
-import scala.concurrent.Future
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
@@ -67,7 +66,7 @@ private abstract class SourceStageLogic[T](shape: SourceShape[T],
 
   protected val handleError = getAsyncCallback[Throwable] { e =>
     updateState(JmsConnectorStopping(Failure(e)))
-    fail(out, e)
+    failStage(e)
   }
 
   override def preStart(): Unit = {

@@ -632,7 +632,7 @@ class JmsTxConnectorsSpec extends JmsSharedServerSpec {
     }
 
     // Illustrates https://github.com/akka/alpakka/issues/2039
-    "close the JMS session" ignore withConnectionFactory() { connectionFactory =>
+    "close the JMS session" in withConnectionFactory() { connectionFactory =>
       val queueName = createName("test")
       val jmsSink: Sink[String, Future[Done]] = JmsProducer.textSink(
         JmsProducerSettings(producerConfig, connectionFactory).withQueue(queueName)
