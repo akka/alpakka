@@ -3,7 +3,6 @@
 ## 2.0.0-M2
 
 - Google Cloud Storage: Add exponential backoff on server errors [#2026](https://github.com/akka/alpakka/issues/2026) by [@gabrielreid](https://github.com/gabrielreid)
-- GCS StorageObjectJson JsonFormat [#2](https://github.com/akka/alpakka/issues/2) by [@seglo](https://github.com/seglo)
 - Google Cloud Storage: remove local Setup implementation [#2049](https://github.com/akka/alpakka/issues/2049) by [@ennru](https://github.com/ennru)
 
 [*closed in 2.0.0-M2*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0-M2+label%3Ap%3Agoogle-cloud-storage)
