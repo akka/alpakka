@@ -32,8 +32,10 @@ import scala.util.control.NonFatal
   private val parallelism = 1
 
   def getBucketSource(bucketName: String): Source[Option[Bucket], NotUsed] =
-    Setup
-      .source { implicit mat => implicit attr =>
+    Source
+      .setup { (mat, attr) =>
+        implicit val materializer = mat
+        implicit val attribures = attr
         makeRequestSource(
           createRequestSource(
             uriFactory = (settings: GCStorageSettings) =>
@@ -47,8 +49,10 @@ import scala.util.control.NonFatal
     getBucketSource(bucketName).withAttributes(attr).runWith(Sink.head)
 
   def createBucketSource(bucketName: String, location: String): Source[Bucket, NotUsed] =
-    Setup
-      .source { implicit mat => implicit attr =>
+    Source
+      .setup { (mat, attr) =>
+        implicit val materializer = mat
+        implicit val attribures = attr
         makeRequestSource(
           createPostRequestSource(
             ContentTypes.`application/json`,
@@ -66,8 +70,10 @@ import scala.util.control.NonFatal
     createBucketSource(bucketName, location).withAttributes(attr).runWith(Sink.head)
 
   def deleteBucketSource(bucketName: String): Source[Done, NotUsed] =
-    Setup
-      .source { implicit mat => implicit attr =>
+    Source
+      .setup { (mat, attr) =>
+        implicit val materializer = mat
+        implicit val attributes = attr
         import mat.executionContext
 
         makeRequestSource(
@@ -126,8 +132,10 @@ import scala.util.control.NonFatal
         }
     }
 
-    Setup
-      .source { implicit mat => implicit attr =>
+    Source
+      .setup { (mat, attr) =>
+        implicit val materializer = mat
+        implicit val attributes = attr
         Source
           .unfoldAsync[ListBucketState, List[StorageObject]](Starting) {
             case Finished => Future.successful(None)
@@ -142,8 +150,10 @@ import scala.util.control.NonFatal
   def getObject(bucket: String,
                 objectName: String,
                 generation: Option[Long] = None): Source[Option[StorageObject], NotUsed] =
-    Setup
-      .source { implicit mat => implicit attr =>
+    Source
+      .setup { (mat, attr) =>
+        implicit val materializer = mat
+        implicit val attributes = attr
         makeRequestSource(
           createRequestSource(
             uriFactory = (settings: GCStorageSettings) =>
@@ -160,8 +170,10 @@ import scala.util.control.NonFatal
   def deleteObjectSource(bucket: String,
                          objectName: String,
                          generation: Option[Long] = None): Source[Boolean, NotUsed] =
-    Setup
-      .source { implicit mat => implicit attr =>
+    Source
+      .setup { (mat, attr) =>
+        implicit val materializer = mat
+        implicit val attribures = attr
         makeRequestSource(
           createRequestSource(
             HttpMethods.DELETE,
@@ -183,8 +195,10 @@ import scala.util.control.NonFatal
                 objectName: String,
                 data: Source[ByteString, _],
                 contentType: ContentType): Source[StorageObject, NotUsed] =
-    Setup
-      .source { implicit mat => implicit attr =>
+    Source
+      .setup { (mat, attr) =>
+        implicit val materializer = mat
+        implicit val attributes = attr
         val queryParams = Map("uploadType" -> "media", "name" -> objectName)
         makeRequestSource(
           createPostSourceRequestSource(
@@ -203,8 +217,10 @@ import scala.util.control.NonFatal
   def download(bucket: String,
                objectName: String,
                generation: Option[Long] = None): Source[Option[Source[ByteString, NotUsed]], NotUsed] =
-    Setup
-      .source { implicit mat: ActorMaterializer => implicit attr =>
+    Source
+      .setup { (mat, attr) =>
+        implicit val materializer = mat
+        implicit val attributes = attr
         val queryParams = Map("alt" -> "media") ++ generation.map("generation" -> _.toString)
         makeRequestSource(
           createRequestSource(
@@ -265,8 +281,10 @@ import scala.util.control.NonFatal
         }
     }
 
-    Setup
-      .source { implicit mat => implicit attr =>
+    Source
+      .setup { (mat, attr) =>
+        implicit val materializer = mat
+        implicit val attributes = attr
         Source
           .unfoldAsync[RewriteState, RewriteResponse](Starting) {
             case Finished => Future.successful(None)
@@ -514,8 +532,9 @@ import scala.util.control.NonFatal
                               chunkSize: Int): Flow[ByteString, UploadPartResponse, NotUsed] =
     // The individual upload part requests are processed here
     // apparently Google Cloud storage does not support parallel uploading
-    Setup
-      .flow { implicit mat => _ =>
+    Flow
+      .setup { (mat, _) =>
+        implicit val materializer = mat
         import mat.executionContext
         // Multipart upload requests are created here.
         //  The initial upload request gets executed within this function as well.
@@ -561,9 +580,11 @@ import scala.util.control.NonFatal
     //  The response is then used to construct the subsequent individual upload part requests
     val requestInfo: Source[(MultiPartUpload, Int), NotUsed] = initiateUpload(bucketName, objectName, contentType)
 
-    Setup
-      .flow { implicit mat => implicit attr =>
-        import mat.executionContext
+    Flow
+      .setup { (mat, attr) =>
+        implicit val materializer = mat
+        implicit val attributes = attr
+        import materializer.executionContext
         Flow
           .apply[ByteString]
           .via(new Chunker(chunkSize))
@@ -607,8 +628,10 @@ import scala.util.control.NonFatal
   private def initiateUpload(bucketName: String,
                              objectName: String,
                              contentType: ContentType): Source[(MultiPartUpload, Int), NotUsed] =
-    Setup
-      .source { implicit mat => implicit attr =>
+    Source
+      .setup { (mat, attr) =>
+        implicit val materializer = mat
+        implicit val attributes = attr
         import mat.executionContext
         val queryParams = Map("uploadType" -> "resumable", "name" -> objectName)
         makeRequestSource(
@@ -643,8 +666,8 @@ import scala.util.control.NonFatal
       .mapMaterializedValue(_ => NotUsed)
 
   private def completionSink(): Sink[UploadPartResponse, Future[StorageObject]] =
-    Setup
-      .sink { implicit mat => _ =>
+    Sink
+      .setup { (mat, _) =>
         import mat.executionContext
 
         Sink.seq[UploadPartResponse].mapMaterializedValue { responseFuture: Future[Seq[UploadPartResponse]] =>
