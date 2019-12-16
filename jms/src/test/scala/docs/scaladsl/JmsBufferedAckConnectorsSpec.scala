@@ -21,21 +21,22 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
-class JmsBufferedAckConnectorsSpec extends JmsSpec {
+class JmsBufferedAckConnectorsSpec extends JmsSharedServerSpec {
 
   override implicit val patienceConfig = PatienceConfig(2.minutes)
 
   "The JMS Ack Connectors" should {
     "publish and consume strings through a queue" in withConnectionFactory() { connectionFactory =>
+      val queueName = createName("test")
       val jmsSink: Sink[String, Future[Done]] = JmsProducer.textSink(
-        JmsProducerSettings(producerConfig, connectionFactory).withQueue("test")
+        JmsProducerSettings(producerConfig, connectionFactory).withQueue(queueName)
       )
 
       val in = 0 to 25 map (i => ('a' + i).asInstanceOf[Char].toString)
       Source(in).runWith(jmsSink)
 
       val jmsSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
-        JmsConsumerSettings(system, connectionFactory).withSessionCount(5).withQueue("test")
+        JmsConsumerSettings(system, connectionFactory).withSessionCount(5).withQueue(queueName)
       )
 
       val result = jmsSource
@@ -49,8 +50,9 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
 
     "publish and consume JMS text messages with properties through a queue" in withConnectionFactory() {
       connectionFactory =>
+        val queueName = createName("numbers")
         val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer.sink(
-          JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
+          JmsProducerSettings(producerConfig, connectionFactory).withQueue(queueName)
         )
 
         val msgsIn = 1 to 100 map { n =>
@@ -66,7 +68,7 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
         val jmsSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
           JmsConsumerSettings(consumerConfig, connectionFactory)
             .withSessionCount(5)
-            .withQueue("numbers")
+            .withQueue(queueName)
         )
 
         val result: Future[immutable.Seq[javax.jms.Message]] =
@@ -134,13 +136,14 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
 
     "applying backpressure when the consumer is slower than the producer" in withConnectionFactory() {
       connectionFactory =>
+        val queueName = createName("test")
         val in = 0 to 25 map (i => ('a' + i).asInstanceOf[Char].toString)
         Source(in).runWith(
-          JmsProducer.textSink(JmsProducerSettings(producerConfig, connectionFactory).withQueue("test"))
+          JmsProducer.textSink(JmsProducerSettings(producerConfig, connectionFactory).withQueue(queueName))
         )
 
         val jmsSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
-          JmsConsumerSettings(consumerConfig, connectionFactory).withSessionCount(5).withQueue("test")
+          JmsConsumerSettings(consumerConfig, connectionFactory).withSessionCount(5).withQueue(queueName)
         )
 
         val result = jmsSource
@@ -172,21 +175,22 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
     "publish and consume elements through a topic " in withConnectionFactory() { connectionFactory =>
       import system.dispatcher
 
+      val topicName = createName("topic")
       val jmsTopicSink: Sink[String, Future[Done]] = JmsProducer.textSink(
-        JmsProducerSettings(producerConfig, connectionFactory).withTopic("topic")
+        JmsProducerSettings(producerConfig, connectionFactory).withTopic(topicName)
       )
       val jmsTopicSink2: Sink[String, Future[Done]] = JmsProducer.textSink(
-        JmsProducerSettings(producerConfig, connectionFactory).withTopic("topic")
+        JmsProducerSettings(producerConfig, connectionFactory).withTopic(topicName)
       )
 
       val in = List("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
       val inNumbers = (1 to 10).map(_.toString)
 
       val jmsTopicSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
-        JmsConsumerSettings(consumerConfig, connectionFactory).withSessionCount(1).withTopic("topic")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withSessionCount(1).withTopic(topicName)
       )
       val jmsSource2: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
-        JmsConsumerSettings(consumerConfig, connectionFactory).withSessionCount(1).withTopic("topic")
+        JmsConsumerSettings(consumerConfig, connectionFactory).withSessionCount(1).withTopic(topicName)
       )
 
       val expectedSize = in.size + inNumbers.size
@@ -215,8 +219,9 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
     }
 
     "ensure no message loss when stopping a stream" in withConnectionFactory() { connectionFactory =>
+      val queueName = createName("numbers")
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer.sink(
-        JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
+        JmsProducerSettings(producerConfig, connectionFactory).withQueue(queueName)
       )
 
       val (publishKillSwitch, publishedData) = Source
@@ -230,7 +235,7 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
       val jmsSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
         JmsConsumerSettings(consumerConfig, connectionFactory)
           .withSessionCount(5)
-          .withQueue("numbers")
+          .withQueue(queueName)
       )
 
       val resultQueue = new LinkedBlockingQueue[String]()
@@ -291,8 +296,9 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
     }
 
     "ensure no message loss when aborting a stream" in withConnectionFactory() { connectionFactory =>
+      val queueName = createName("numbers")
       val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer.sink(
-        JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
+        JmsProducerSettings(producerConfig, connectionFactory).withQueue(queueName)
       )
 
       val (publishKillSwitch, publishedData) = Source
@@ -309,7 +315,7 @@ class JmsBufferedAckConnectorsSpec extends JmsSpec {
       val jmsSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
         JmsConsumerSettings(consumerConfig, connectionFactory)
           .withSessionCount(5)
-          .withQueue("numbers")
+          .withQueue(queueName)
           .withAcknowledgeMode(individualAck)
       )
 
