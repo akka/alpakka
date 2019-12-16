@@ -1,5 +1,12 @@
 # HBase
 
+## 2.0.0-M2
+
+No changes.
+
+[*closed in 2.0.0-M2*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0-M2+label%3Ap%3Ahbase)
+
+
 ## 2.0.0-M1
 
 - HBase: version 1.4.9 [#1654](https://github.com/akka/alpakka/pull/1654) by [@shimamoto](https://github.com/shimamoto)

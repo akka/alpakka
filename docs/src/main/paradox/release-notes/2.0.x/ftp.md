@@ -1,5 +1,12 @@
 # FTP
 
+## 2.0.0-M2
+
+No changes.
+
+[*closed in 2.0.0-M2*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0-M2+label%3Ap%3Aftp)
+
+
 ## 2.0.0-M1
 
 - FTP - Add proxy support to FTP, SFTP, and FTPS connectors [#1907](https://github.com/akka/alpakka/pull/1907) by [@mjp426](https://github.com/mjp426)

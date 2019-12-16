@@ -1,5 +1,12 @@
 # Google Cloud Pub/Sub gRPC
 
+## 2.0.0-M2
+
+- fix GOOGLE_APPLICATION_CREDENTIALS typo [#2035](https://github.com/akka/alpakka/issues/2035) by [@ldrygala](https://github.com/ldrygala)
+
+[*closed in 2.0.0-M2*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0-M2+label%3Ap%3Agoogle-cloud-pub-sub-grpc)
+
+
 ## 2.0.0-M1
 
 - Update to Akka gRPC 0.7.1 [#1886](https://github.com/akka/alpakka/pull/1886)
