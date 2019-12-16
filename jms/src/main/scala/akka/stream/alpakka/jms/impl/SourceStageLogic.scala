@@ -15,7 +15,6 @@ import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.{Done, NotUsed}
 
 import scala.collection.mutable
-import scala.concurrent.Future
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
@@ -65,9 +64,9 @@ private abstract class SourceStageLogic[T](shape: SourceShape[T],
     failStage(ex)
   }
 
-  private[jms] val handleError = getAsyncCallback[Throwable] { e =>
+  protected val handleError = getAsyncCallback[Throwable] { e =>
     updateState(JmsConnectorStopping(Failure(e)))
-    fail(out, e)
+    failStage(e)
   }
 
   override def preStart(): Unit = {
@@ -114,13 +113,7 @@ private abstract class SourceStageLogic[T](shape: SourceShape[T],
       val status = updateState(JmsConnectorStopping(Success(Done)))
       val connectionFuture = JmsConnector.connection(status)
 
-      val closeSessionFutures = jmsSessions.map { s =>
-        val f = s.closeSessionAsync()
-        f.failed.foreach(e => log.error(e, "Error closing jms session"))
-        f
-      }
-      Future
-        .sequence(closeSessionFutures)
+      closeSessionsAsync()
         .onComplete { _ =>
           connectionFuture
             .map { connection =>
@@ -142,15 +135,10 @@ private abstract class SourceStageLogic[T](shape: SourceShape[T],
 
   private def abortSessions(ex: Throwable): Unit =
     if (stopping.compareAndSet(false, true)) {
+      if (log.isDebugEnabled) log.debug("aborting sessions ({})", ex.toString)
       val status = updateState(JmsConnectorStopping(Failure(ex)))
       val connectionFuture = JmsConnector.connection(status)
-      val abortSessionFutures = jmsSessions.map { s =>
-        val f = s.abortSessionAsync()
-        f.failed.foreach(e => log.error(e, "Error closing jms session"))
-        f
-      }
-      Future
-        .sequence(abortSessionFutures)
+      abortSessionsAsync()
         .onComplete { _ =>
           connectionFuture
             .map { connection =>
@@ -167,7 +155,7 @@ private abstract class SourceStageLogic[T](shape: SourceShape[T],
         }
     }
 
-  def consumerControl = new JmsConsumerMatValue {
+  def consumerControl: JmsConsumerMatValue = new JmsConsumerMatValue {
     override def shutdown(): Unit = stopSessions()
     override def abort(ex: Throwable): Unit = abortSessions(ex)
     override def connected: Source[InternalConnectionState, NotUsed] =
