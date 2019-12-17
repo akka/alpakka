@@ -29,6 +29,40 @@ The table below shows direct dependencies of this module and the second tab show
 
 @@dependencies { projectId="google-cloud-pub-sub-grpc" }
 
+## Build setup
+
+The Alpakka Google Cloud Pub/Sub gRPC library contains the classes generated from [Google's protobuf specification](https://github.com/googleapis/java-pubsub/tree/master/proto-google-cloud-pubsub-v1/).
+
+To call the API via gRPC, the ALPN Java agent is required to be set up correctly.
+
+### Maven
+
+Configure your project to use the Java agent for ALPN and add `-javaagent:...` to your startup scripts as described in the @extref:[Akka gRPC documentation](akka-grpc:/buildtools/maven.html#starting-your-akka-grpc-server-from-maven).
+
+### sbt
+
+Configure your project to use the Java agent for ALPN and add `-javaagent:...` to your startup scripts.
+
+Pull in the [`sbt-javaagent`](https://github.com/sbt/sbt-javaagent) plugin.
+
+project/plugins.sbt
+: @@snip (/project/plugins.sbt) { #grpc-agent }
+
+Enable the Akka gRPC and JavaAgent plugins on the sbt project.
+
+build.sbt
+: @@snip (/build.sbt) { #grpc-plugins }
+
+Add the Java agent to the runtime configuration.
+
+build.sbt
+:   ```scala
+    javaAgents += "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.9"
+    ```
+
+### Gradle
+
+Configure your project to use the Java agent for ALPN and add `-javaagent:...` to your startup scripts as described in the @extref:[Akka gRPC documentation](akka-grpc:/buildtools/gradle.html#starting-your-akka-grpc-server-from-gradle).
 
 ## Configuration
 
