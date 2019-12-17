@@ -166,10 +166,10 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
   akkaGrpcCodeGeneratorSettings ~= { _.filterNot(_ == "flat_package") },
   akkaGrpcGeneratedSources := Seq(AkkaGrpc.Client),
   akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala, AkkaGrpc.Java),
-  javaAgents += Dependencies.GooglePubSubGrpcAlpnAgent % "test",
+  javaAgents += Dependencies.GooglePubSubGrpcAlpnAgent % Test,
   // for the ExampleApp in the tests
   connectInput in run := true,
-  Compile / compile / scalacOptions += "-P:silencer:pathFilters=src_managed",
+  scalacOptions += "-P:silencer:pathFilters=src_managed",
   crossScalaVersions --= Seq(Dependencies.Scala211) // 2.11 is not supported since Akka gRPC 0.6
 ).enablePlugins(AkkaGrpcPlugin, JavaAgent)
 

@@ -189,6 +189,7 @@ object Dependencies {
   val GooglePubSubGrpc = Seq(
     // see Akka gRPC version in plugins.sbt
     libraryDependencies ++= Seq(
+        // https://github.com/googleapis/java-pubsub/tree/master/proto-google-cloud-pubsub-v1/
         "com.google.api.grpc" % "grpc-google-cloud-pubsub-v1" % "1.84.0" % "protobuf", // ApacheV2
         "io.grpc" % "grpc-auth" % "1.25.0", // ApacheV2
         "com.google.auth" % "google-auth-library-oauth2-http" % "0.19.0", // BSD 3-clause
