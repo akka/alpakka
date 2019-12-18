@@ -18,11 +18,11 @@ import scala.collection.immutable
  * https://www.elastic.co/guide/en/elasticsearch/reference/5.6/docs-bulk.html
  */
 @InternalApi
-private[impl] final class RestApiV5[T, C](indexName: String,
-                                          typeName: String,
-                                          versionType: Option[String],
-                                          messageWriter: MessageWriter[T])
-    extends RestApi[T, C] {
+private[impl] final class RestBulkApiV5[T, C](indexName: String,
+                                              typeName: String,
+                                              versionType: Option[String],
+                                              messageWriter: MessageWriter[T])
+    extends RestBulkApi[T, C] {
 
   private lazy val typeNameTuple = "_type" -> JsString(typeName)
   private lazy val versionTypeTuple: Option[(String, JsString)] = versionType.map { versionType =>

@@ -31,15 +31,18 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
     settings: ElasticsearchWriteSettings,
     writer: MessageWriter[T]
 ) extends GraphStage[FlowShape[immutable.Seq[WriteMessage[T, C]], Try[immutable.Seq[WriteResult[T, C]]]]] {
-  require(_indexName != null, "You must define an index name")
-  require(_typeName != null, "You must define a type name")
 
   private val in = Inlet[immutable.Seq[WriteMessage[T, C]]]("messages")
   private val out = Outlet[Try[immutable.Seq[WriteResult[T, C]]]]("result")
   override val shape = FlowShape(in, out)
 
-  private val restApi: RestApi[T, C] =
-    new RestApiV5[T, C](_indexName, _typeName, settings.versionType, writer)
+  private val restApi: RestBulkApi[T, C] = settings.apiVersion match {
+    case ApiVersion.V5 =>
+      require(_indexName != null, "You must define an index name")
+      require(_typeName != null, "You must define a type name")
+      new RestBulkApiV5[T, C](_indexName, _typeName, settings.versionType, writer)
+    case other => throw new IllegalArgumentException(s"API version $other is not supported")
+  }
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new StageLogic()
 
