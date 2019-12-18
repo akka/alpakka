@@ -7,8 +7,7 @@ package akka.stream.alpakka.googlecloud.storage
 import java.time.OffsetDateTime
 
 import akka.http.scaladsl.model.ContentType
-import main.scala.akka.stream.alpakka.googlecloud.storage.{CustomerEncryption, Owner}
-import com.google.api.services.storage.model.ObjectAccessControls
+import main.scala.akka.stream.alpakka.googlecloud.storage.{CustomerEncryption, ObjectAccessControls, Owner}
 
 /**
  * Represents an object within Google Cloud Storage.
@@ -78,7 +77,7 @@ final class StorageObject private (
     val kmsKeyName: String,
     val customerEncryption: CustomerEncryption,
     val owner: Option[Owner],
-    val acl: Option[List[ObjectAccessControl]]
+    val acl: Option[List[ObjectAccessControls]]
 ) {
 
   /** Java API */
