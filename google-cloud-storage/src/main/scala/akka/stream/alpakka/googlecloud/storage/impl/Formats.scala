@@ -9,7 +9,6 @@ import java.time.OffsetDateTime
 import akka.http.scaladsl.model.{ContentType, ContentTypes}
 import akka.stream.alpakka.googlecloud.storage._
 import spray.json.{DefaultJsonProtocol, JsObject, JsValue, RootJsonFormat, RootJsonReader}
-import main.scala.akka.stream.alpakka.googlecloud.storage.{CustomerEncryption, Owner}
 
 import java.time.OffsetDateTime
 
@@ -18,8 +17,29 @@ import scala.util.Try
 @akka.annotation.InternalApi
 object Formats extends DefaultJsonProtocol {
 
+  private final case class CustomerEncryption(encryptionAlgorithm: String, keySha256: String)
   private implicit val customerEncryptionJsonFormat = jsonFormat2(CustomerEncryption)
+
+  private final case class Owner(entity: String, entityId: String)
   private implicit val OwnerJsonFormat = jsonFormat2(Owner)
+
+  private final case class ProjectTeam(projectNumber: String, team: String)
+  private implicit val ProjectTeamJsonFormat = jsonFormat2(ProjectTeam)
+
+  private final case class ObjectAccessControls(kind: String,
+                                                id: String,
+                                                selfLink: String,
+                                                bucket: String,
+                                                `object`: String,
+                                                generation: String,
+                                                entity: String,
+                                                role: String,
+                                                email: String,
+                                                entityId: String,
+                                                domain: String,
+                                                projectTeam: ProjectTeam,
+                                                etag: String)
+  private implicit val ObjectAccessControlsJsonFormat = jsonFormat13(ObjectAccessControls)
 
   /**
    * Google API storage response object
@@ -66,7 +86,7 @@ object Formats extends DefaultJsonProtocol {
       name: String,
       storageClass: String,
       temporaryHold: Boolean,
-      acl: Option[List[String]]
+      acl: Option[List[ObjectAccessControls]]
   )
 
   private implicit val storageObjectWritableJson = jsonFormat13(StorageObjectWriteableJson)
@@ -231,9 +251,30 @@ object Formats extends DefaultJsonProtocol {
       metadata,
       componentCount,
       kmsKeyName,
-      customerEncryption,
-      owner,
-      acl
+      main.scala.akka.stream.alpakka.googlecloud.storage
+        .CustomerEncryption(customerEncryption.encryptionAlgorithm, customerEncryption.keySha256),
+      owner.map(o => main.scala.akka.stream.alpakka.googlecloud.storage.Owner(o.entity, o.entityId)),
+      acl.map(
+        _.map(
+          a =>
+            main.scala.akka.stream.alpakka.googlecloud.storage.ObjectAccessControls(
+              a.kind,
+              a.id,
+              a.selfLink,
+              a.bucket,
+              a.`object`,
+              a.generation,
+              a.entity,
+              a.role,
+              a.email,
+              a.entityId,
+              a.domain,
+              main.scala.akka.stream.alpakka.googlecloud.storage
+                .ProjectTeam(a.projectTeam.projectNumber, a.projectTeam.team),
+              a.etag
+            )
+        )
+      )
     )
   }
 
