@@ -45,7 +45,6 @@ import main.scala.akka.stream.alpakka.googlecloud.storage.{CustomerEncryption, O
  * @param owner                   The owner of the object. This will always be the uploader of the object
  * @param acl                     Access controls on the object, containing one or more objectAccessControls Resources. If iamConfiguration.uniformBucketLevelAccess.enabled is set to true, this field is omitted in responses, and requests that specify this field fail.
  */
-
 final class StorageObject private (
     val kind: String,
     val id: String,

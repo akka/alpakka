@@ -9,8 +9,7 @@ final class ProjectTeam private (projectNumber: String, team: String) {
     copy(projectNumber = projectNumber)
   def withTeam(team: String): ProjectTeam = copy(team = team)
 
-  private def copy(projectNumber: String = projectNumber,
-                   team: String = team): ProjectTeam =
+  private def copy(projectNumber: String = projectNumber, team: String = team): ProjectTeam =
     new ProjectTeam(projectNumber, team)
 
   override def toString: String =
