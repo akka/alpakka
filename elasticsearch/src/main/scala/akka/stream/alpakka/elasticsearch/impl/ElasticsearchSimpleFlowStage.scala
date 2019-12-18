@@ -38,25 +38,17 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
   private val out = Outlet[Try[immutable.Seq[WriteResult[T, C]]]]("result")
   override val shape = FlowShape(in, out)
 
+  private val restApi: RestApi[T, C] =
+    new RestApiV5[T, C](_indexName, _typeName, settings.versionType, writer)
+
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new StageLogic()
 
-  private class StageLogic
-      extends GraphStageLogic(shape)
-      with ElasticsearchJsonBase[T, C]
-      with InHandler
-      with OutHandler
-      with StageLogging {
+  private class StageLogic extends GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
 
     private var inflight = false
 
     private val failureHandler = getAsyncCallback[Throwable](handleFailure)
     private val responseHandler = getAsyncCallback[(immutable.Seq[WriteMessage[T, C]], Response)](handleResponse)
-
-    // ElasticsearchJsonBase parameters
-    override val indexName: String = _indexName
-    override val typeName: String = _typeName
-    override val versionType: Option[String] = settings.versionType
-    override val messageWriter: MessageWriter[T] = writer
 
     setHandlers(in, out, this)
 
@@ -65,10 +57,11 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
     override def onPush(): Unit = {
       val messages = grab(in)
       inflight = true
-      val json: String = toJson(messages)
+      val json: String = restApi.toJson(messages)
 
       log.debug("Posting data to Elasticsearch: {}", json)
 
+      // https://www.elastic.co/guide/en/elasticsearch/client/java-rest/current/java-rest-low-usage-requests.html
       client.performRequestAsync(
         "POST",
         "/_bulk",
@@ -93,7 +86,8 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
       inflight = false
       val (messages, response) = args
       val jsonString = EntityUtils.toString(response.getEntity)
-      val messageResults = toWriteResults(messages, jsonString)
+      if (log.isDebugEnabled) log.debug("response {}", jsonString)
+      val messageResults = restApi.toWriteResults(messages, jsonString)
       push(out, Success(messageResults))
       if (isClosed(in)) completeStage()
       else tryPull()
