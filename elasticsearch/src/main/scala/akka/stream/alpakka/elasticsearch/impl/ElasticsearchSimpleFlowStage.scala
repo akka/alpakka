@@ -89,7 +89,10 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
       inflight = false
       val (messages, response) = args
       val jsonString = EntityUtils.toString(response.getEntity)
-      if (log.isDebugEnabled) log.debug("response {}", jsonString)
+      if (log.isDebugEnabled) {
+        import spray.json._
+        log.debug("response {}", jsonString.parseJson.prettyPrint)
+      }
       val messageResults = restApi.toWriteResults(messages, jsonString)
       push(out, Success(messageResults))
       if (isClosed(in)) completeStage()
