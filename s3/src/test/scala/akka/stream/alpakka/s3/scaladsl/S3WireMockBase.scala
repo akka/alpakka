@@ -26,7 +26,7 @@ abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMoc
 
   def this() = {
     this(initServer())
-    system.registerOnTermination(mock.shutdown())
+    system.registerOnTermination(stopWireMockServer())
   }
 
   val mock = new WireMock("localhost", _wireMockServer.port())
