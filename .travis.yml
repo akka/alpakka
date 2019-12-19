@@ -17,10 +17,8 @@ script:
 jobs:
   include:
     - stage: check
-      script: sbt -jvm-opts .jvmopts-travis scalafmtCheckAll || { echo "[error] Unformatted code found. Please run 'scalafmtAll' and commit the reformatted code."; false; }
-      name: "Code style check (fixed with `sbt scalafmtAll`)"
-    - script: sbt -jvm-opts .jvmopts-travis scalafmtSbtCheck || { echo "[error] Unformatted sbt code found. Please run 'scalafmtSbt' and commit the reformatted code."; false; }
-      name: "Build code style check (fixed with `sbt scalafmtSbt`)"
+      script: sbt verifyCodeStyle
+      name: "Code style check. Run locally with: sbt verifyCodeStyle"
     - env: CMD="++2.11.12 Test/compile"
       name: "Compile all code with Scala 2.11"
       if: type != cron
