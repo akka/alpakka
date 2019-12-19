@@ -5,7 +5,7 @@
 package akka.stream.alpakka.elasticsearch.impl
 
 import akka.annotation.InternalApi
-import akka.stream.alpakka.elasticsearch.{ApiVersion, WriteMessage, WriteResult}
+import akka.stream.alpakka.elasticsearch.{WriteMessage, WriteResult}
 
 import scala.collection.immutable
 
