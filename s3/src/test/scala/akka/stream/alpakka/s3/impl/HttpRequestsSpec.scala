@@ -92,6 +92,23 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
     )
   }
 
+  it should "throw an error when using `..` with path-style access" in {
+    implicit val settings = getSettings(s3Region = Region.EU_WEST_1).withPathStyleAccess(true)
+
+    assertThrows[IllegalUriException](
+      HttpRequests.getDownloadRequest(S3Location("invalid/../bucket_name", "image-1024@2x"))
+    )
+    assertThrows[IllegalUriException](
+      HttpRequests.getDownloadRequest(S3Location("../bucket_name", "image-1024@2x"))
+    )
+    assertThrows[IllegalUriException](
+      HttpRequests.getDownloadRequest(S3Location("bucket_name/..", "image-1024@2x"))
+    )
+    assertThrows[IllegalUriException](
+      HttpRequests.getDownloadRequest(S3Location("..", "image-1024@2x"))
+    )
+  }
+
   it should "initiate multipart upload with path-style access in region us-east-1" in {
     implicit val settings = getSettings(s3Region = Region.US_EAST_1).withPathStyleAccess(true)
 

@@ -5,7 +5,7 @@
 package docs.scaladsl
 
 import akka.http.scaladsl.model.headers.ByteRange
-import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpEntity, HttpResponse}
+import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpEntity, HttpResponse, IllegalUriException}
 import akka.stream.Attributes
 import akka.stream.alpakka.s3.BucketAccess.{AccessDenied, AccessGranted, NotExists}
 import akka.stream.alpakka.s3._
@@ -186,6 +186,19 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
       .futureValue
 
     download shouldBe None
+  }
+
+  it should "fail for illegal bucket names" in {
+    val dnsStyleAccess = S3Ext(system).settings
+      .withPathStyleAccess(true)
+      .withEndpointUrl(null)
+
+    val download = S3
+      .download("path/../with-dots", "unused")
+      .withAttributes(S3Attributes.settings(dnsStyleAccess))
+      .runWith(Sink.head)
+
+    download.failed.futureValue shouldBe an[IllegalUriException]
   }
 
   it should "fail if download using server side encryption returns 'Invalid Request'" in {
