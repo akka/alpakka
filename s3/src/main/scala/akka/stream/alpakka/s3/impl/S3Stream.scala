@@ -116,7 +116,7 @@ import scala.collection.immutable
     Source
       .setup { (mat, attr) =>
         implicit val materializer = mat
-        request(s3Location, rangeOption = range, versionId = versionId, s3Headers = headers)
+        issueRequest(s3Location, rangeOption = range, versionId = versionId, s3Headers = headers)(mat, attr)
           .map(response => response.withEntity(response.entity.withoutSizeLimit))
           .mapAsync(parallelism = 1)(entityForSuccess)
           .map {
@@ -218,7 +218,7 @@ import scala.collection.immutable
         implicit val materializer = mat
         import mat.executionContext
         val headers = s3Headers.headersFor(HeadObject)
-        request(S3Location(bucket, key), HttpMethods.HEAD, versionId = versionId, s3Headers = headers)
+        issueRequest(S3Location(bucket, key), HttpMethods.HEAD, versionId = versionId, s3Headers = headers)(mat, attr)
           .flatMapConcat {
             case HttpResponse(OK, headers, entity, _) =>
               Source.fromFuture {
@@ -245,16 +245,17 @@ import scala.collection.immutable
         import mat.executionContext
 
         val headers = s3Headers.headersFor(DeleteObject)
-        request(s3Location, HttpMethods.DELETE, versionId = versionId, s3Headers = headers).flatMapConcat {
-          case HttpResponse(NoContent, _, entity, _) =>
-            Source.fromFuture(entity.discardBytes().future().map(_ => Done))
-          case HttpResponse(code, _, entity, _) =>
-            Source.fromFuture {
-              Unmarshal(entity).to[String].map { err =>
-                throw new S3Exception(err, code)
+        issueRequest(s3Location, HttpMethods.DELETE, versionId = versionId, s3Headers = headers)(mat, attr)
+          .flatMapConcat {
+            case HttpResponse(NoContent, _, entity, _) =>
+              Source.fromFuture(entity.discardBytes().future().map(_ => Done))
+            case HttpResponse(code, _, entity, _) =>
+              Source.fromFuture {
+                Unmarshal(entity).to[String].map { err =>
+                  throw new S3Exception(err, code)
+                }
               }
-            }
-        }
+          }
       }
       .mapMaterializedValue(_ => NotUsed)
 
@@ -312,13 +313,21 @@ import scala.collection.immutable
               s3Headers: Seq[HttpHeader] = Seq.empty): Source[HttpResponse, NotUsed] =
     Source
       .setup { (mat, attr) =>
-        implicit val materializer = mat
-        implicit val attributes = attr
-        implicit val sys = mat.system
-        implicit val conf = resolveSettings(attr, mat.system)
-        signAndRequest(requestHeaders(getDownloadRequest(s3Location, method, s3Headers, versionId), rangeOption))
+        issueRequest(s3Location, method, rangeOption, versionId, s3Headers)(mat, attr)
       }
       .mapMaterializedValue(_ => NotUsed)
+
+  private def issueRequest(
+      s3Location: S3Location,
+      method: HttpMethod = HttpMethods.GET,
+      rangeOption: Option[ByteRange] = None,
+      versionId: Option[String],
+      s3Headers: Seq[HttpHeader]
+  )(implicit mat: ActorMaterializer, attr: Attributes): Source[HttpResponse, NotUsed] = {
+    implicit val sys = mat.system
+    implicit val conf = resolveSettings(attr, sys)
+    signAndRequest(requestHeaders(getDownloadRequest(s3Location, method, s3Headers, versionId), rangeOption))
+  }
 
   private def requestHeaders(downloadRequest: HttpRequest, rangeOption: Option[ByteRange]): HttpRequest =
     rangeOption match {
