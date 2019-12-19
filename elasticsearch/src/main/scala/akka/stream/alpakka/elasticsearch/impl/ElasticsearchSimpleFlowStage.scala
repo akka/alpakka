@@ -31,32 +31,27 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
     settings: ElasticsearchWriteSettings,
     writer: MessageWriter[T]
 ) extends GraphStage[FlowShape[immutable.Seq[WriteMessage[T, C]], Try[immutable.Seq[WriteResult[T, C]]]]] {
-  require(_indexName != null, "You must define an index name")
-  require(_typeName != null, "You must define a type name")
 
   private val in = Inlet[immutable.Seq[WriteMessage[T, C]]]("messages")
   private val out = Outlet[Try[immutable.Seq[WriteResult[T, C]]]]("result")
   override val shape = FlowShape(in, out)
 
+  private val restApi: RestBulkApi[T, C] = settings.apiVersion match {
+    case ApiVersion.V5 =>
+      require(_indexName != null, "You must define an index name")
+      require(_typeName != null, "You must define a type name")
+      new RestBulkApiV5[T, C](_indexName, _typeName, settings.versionType, writer)
+    case other => throw new IllegalArgumentException(s"API version $other is not supported")
+  }
+
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new StageLogic()
 
-  private class StageLogic
-      extends GraphStageLogic(shape)
-      with ElasticsearchJsonBase[T, C]
-      with InHandler
-      with OutHandler
-      with StageLogging {
+  private class StageLogic extends GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
 
     private var inflight = false
 
     private val failureHandler = getAsyncCallback[Throwable](handleFailure)
     private val responseHandler = getAsyncCallback[(immutable.Seq[WriteMessage[T, C]], Response)](handleResponse)
-
-    // ElasticsearchJsonBase parameters
-    override val indexName: String = _indexName
-    override val typeName: String = _typeName
-    override val versionType: Option[String] = settings.versionType
-    override val messageWriter: MessageWriter[T] = writer
 
     setHandlers(in, out, this)
 
@@ -65,10 +60,11 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
     override def onPush(): Unit = {
       val messages = grab(in)
       inflight = true
-      val json: String = toJson(messages)
+      val json: String = restApi.toJson(messages)
 
       log.debug("Posting data to Elasticsearch: {}", json)
 
+      // https://www.elastic.co/guide/en/elasticsearch/client/java-rest/current/java-rest-low-usage-requests.html
       client.performRequestAsync(
         "POST",
         "/_bulk",
@@ -93,7 +89,11 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
       inflight = false
       val (messages, response) = args
       val jsonString = EntityUtils.toString(response.getEntity)
-      val messageResults = toWriteResults(messages, jsonString)
+      if (log.isDebugEnabled) {
+        import spray.json._
+        log.debug("response {}", jsonString.parseJson.prettyPrint)
+      }
+      val messageResults = restApi.toWriteResults(messages, jsonString)
       push(out, Success(messageResults))
       if (isClosed(in)) completeStage()
       else tryPull()

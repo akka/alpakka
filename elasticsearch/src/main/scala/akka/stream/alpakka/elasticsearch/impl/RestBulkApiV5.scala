@@ -5,32 +5,31 @@
 package akka.stream.alpakka.elasticsearch.impl
 
 import akka.annotation.InternalApi
-import akka.stream.alpakka.elasticsearch.Operation.{Create, Delete, Index, Update, Upsert}
+import akka.stream.alpakka.elasticsearch.Operation._
 import akka.stream.alpakka.elasticsearch.{MessageWriter, WriteMessage, WriteResult}
-import akka.stream.stage.StageLogging
 import spray.json._
 
 import scala.collection.immutable
 
 /**
  * Internal API.
+ *
+ * REST API implementation for some Elasticsearch 5 version.
+ * https://www.elastic.co/guide/en/elasticsearch/reference/5.6/docs-bulk.html
  */
 @InternalApi
-trait ElasticsearchJsonBase[T, C] {
-
-  self: StageLogging =>
-
-  def indexName: String
-  def typeName: String
-  def versionType: Option[String]
-  def messageWriter: MessageWriter[T]
+private[impl] final class RestBulkApiV5[T, C](indexName: String,
+                                              typeName: String,
+                                              versionType: Option[String],
+                                              messageWriter: MessageWriter[T])
+    extends RestBulkApi[T, C] {
 
   private lazy val typeNameTuple = "_type" -> JsString(typeName)
   private lazy val versionTypeTuple: Option[(String, JsString)] = versionType.map { versionType =>
     "version_type" -> JsString(versionType)
   }
 
-  protected def toJson(messages: immutable.Seq[WriteMessage[T, C]]): String =
+  def toJson(messages: immutable.Seq[WriteMessage[T, C]]): String =
     messages
       .map { message =>
         val sharedFields: Seq[(String, JsString)] = Seq(
@@ -104,10 +103,9 @@ trait ElasticsearchJsonBase[T, C] {
         ""
     }
 
-  protected def toWriteResults(messages: immutable.Seq[WriteMessage[T, C]],
-                               jsonString: String): immutable.Seq[WriteResult[T, C]] = {
+  def toWriteResults(messages: immutable.Seq[WriteMessage[T, C]],
+                     jsonString: String): immutable.Seq[WriteResult[T, C]] = {
     val responseJson = jsonString.parseJson
-    if (log.isDebugEnabled) log.debug("response {}", responseJson.prettyPrint)
 
     // If some commands in bulk request failed, pass failed messages to follows.
     val items = responseJson.asJsObject.fields("items").asInstanceOf[JsArray]

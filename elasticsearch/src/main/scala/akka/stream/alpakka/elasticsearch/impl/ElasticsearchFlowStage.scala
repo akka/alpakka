@@ -29,21 +29,22 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
     settings: ElasticsearchWriteSettings,
     writer: MessageWriter[T]
 ) extends GraphStage[FlowShape[immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]]]] {
-  require(_indexName != null, "You must define an index name")
-  require(_typeName != null, "You must define a type name")
 
   private val in = Inlet[immutable.Seq[WriteMessage[T, C]]]("messages")
   private val out = Outlet[immutable.Seq[WriteResult[T, C]]]("result")
   override val shape = FlowShape(in, out)
 
+  private val restApi: RestBulkApi[T, C] = settings.apiVersion match {
+    case ApiVersion.V5 =>
+      require(_indexName != null, "You must define an index name")
+      require(_typeName != null, "You must define a type name")
+      new RestBulkApiV5[T, C](_indexName, _typeName, settings.versionType, writer)
+    case other => throw new IllegalArgumentException(s"API version $other is not supported")
+  }
+
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new StageLogic()
 
-  private class StageLogic
-      extends TimerGraphStageLogic(shape)
-      with ElasticsearchJsonBase[T, C]
-      with InHandler
-      with OutHandler
-      with StageLogging {
+  private class StageLogic extends TimerGraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
 
     private var upstreamFinished = false
     private var inflight = 0
@@ -52,12 +53,6 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
     private val responseHandler = getAsyncCallback[(immutable.Seq[WriteMessage[T, C]], Response)](handleResponse)
     private var failedMessages: immutable.Seq[WriteMessage[T, C]] = Nil
     private var retryCount: Int = 0
-
-    // ElasticsearchJsonBase parameters
-    override val indexName: String = _indexName
-    override val typeName: String = _typeName
-    override val versionType: Option[String] = settings.versionType
-    override val messageWriter: MessageWriter[T] = writer
 
     private def tryPull(): Unit =
       if (!isClosed(in) && !hasBeenPulled(in)) {
@@ -92,7 +87,11 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
     private def handleResponse(args: (immutable.Seq[WriteMessage[T, C]], Response)): Unit = {
       val (messages, response) = args
       val jsonString = EntityUtils.toString(response.getEntity)
-      val messageResults = toWriteResults(messages, jsonString)
+      if (log.isDebugEnabled) {
+        import spray.json._
+        log.debug("response {}", jsonString.parseJson.prettyPrint)
+      }
+      val messageResults = restApi.toWriteResults(messages, jsonString)
 
       val failedMsgs = messageResults.filterNot(_.error.isEmpty)
 
@@ -131,7 +130,7 @@ private[elasticsearch] final class ElasticsearchFlowStage[T, C](
     }
 
     private def sendBulkUpdateRequest(messages: immutable.Seq[WriteMessage[T, C]]): Unit = {
-      val json: String = toJson(messages)
+      val json: String = restApi.toJson(messages)
 
       log.debug("Posting data to Elasticsearch: {}", json)
 
