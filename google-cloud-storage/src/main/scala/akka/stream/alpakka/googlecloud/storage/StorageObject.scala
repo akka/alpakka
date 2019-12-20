@@ -71,10 +71,10 @@ final class StorageObject private (
     val retentionExpirationTime: OffsetDateTime,
     val timeStorageClassUpdated: OffsetDateTime,
     val cacheControl: String,
-    val metadata: Map[String, String],
-    val componentCount: Int,
-    val kmsKeyName: String,
-    val customerEncryption: CustomerEncryption,
+    val metadata: Option[Map[String, String]],
+    val componentCount: Option[Int],
+    val kmsKeyName: Option[String],
+    val customerEncryption: Option[CustomerEncryption],
     val owner: Option[Owner],
     val acl: Option[List[ObjectAccessControls]]
 ) {
@@ -113,10 +113,10 @@ final class StorageObject private (
   def withRetentionExpirationTime(value: OffsetDateTime): StorageObject = copy(retentionExpirationTime = value)
   def withTimeStorageClassUpdated(value: OffsetDateTime): StorageObject = copy(timeStorageClassUpdated = value)
   def withCacheControl(value: String): StorageObject = copy(cacheControl = value)
-  def withMetadata(value: Map[String, String]): StorageObject = copy(metadata = value)
-  def withComponentCount(value: Int): StorageObject = copy(componentCount = value)
-  def withKmsKeyName(value: String): StorageObject = copy(kmsKeyName = value)
-  def withCustomerEncryption(value: CustomerEncryption): StorageObject = copy(customerEncryption = value)
+  def withMetadata(value: Map[String, String]): StorageObject = copy(metadata = Some(value))
+  def withComponentCount(value: Int): StorageObject = copy(componentCount = Some(value))
+  def withKmsKeyName(value: String): StorageObject = copy(kmsKeyName = Some(value))
+  def withCustomerEncryption(value: CustomerEncryption): StorageObject = copy(customerEncryption = Some(value))
   def withOwner(value: Owner): StorageObject = copy(owner = Some(value))
   def withAcl(value: List[ObjectAccessControls]): StorageObject = copy(acl = Some(value))
 
@@ -146,10 +146,10 @@ final class StorageObject private (
       retentionExpirationTime: OffsetDateTime = retentionExpirationTime,
       timeStorageClassUpdated: OffsetDateTime = timeStorageClassUpdated,
       cacheControl: String = cacheControl,
-      metadata: Map[String, String] = metadata,
-      componentCount: Int = componentCount,
-      kmsKeyName: String = kmsKeyName,
-      customerEncryption: CustomerEncryption = customerEncryption,
+      metadata: Option[Map[String, String]] = metadata,
+      componentCount: Option[Int] = componentCount,
+      kmsKeyName: Option[String] = kmsKeyName,
+      customerEncryption: Option[CustomerEncryption] = customerEncryption,
       owner: Option[Owner] = owner,
       acl: Option[List[ObjectAccessControls]] = acl
   ): StorageObject = new StorageObject(
@@ -213,10 +213,10 @@ final class StorageObject private (
     s"retentionExpirationTime = $retentionExpirationTime," +
     s"timeStorageClassUpdated = $timeStorageClassUpdated," +
     s"cacheControl = $cacheControl," +
-    s"metadata = $metadata," +
-    s"componentCount = $componentCount," +
-    s"kmsKeyName = $kmsKeyName," +
-    s"customerEncryption = $customerEncryption," +
+    metadata.fold("")(m => s"metadata = $m,") +
+    componentCount.fold("")(cc => s"componentCount = $cc,") +
+    kmsKeyName.fold("")(kkn => s"kmsKeyName = $kkn,") +
+    customerEncryption.fold("")(ce => s"customerEncryption = $ce,") +
     owner.fold("")(o => s"owner = $o,") +
     acl.fold("")(acls => acls.mkString("[", ",", "]")) +
     ")"
@@ -285,7 +285,7 @@ final class StorageObject private (
       timeStorageClassUpdated,
       cacheControl,
       metadata,
-      Int.box(componentCount),
+      componentCount.map(Int.box),
       kmsKeyName,
       customerEncryption,
       owner,
@@ -322,10 +322,10 @@ object StorageObject {
       retentionExpirationTime: OffsetDateTime,
       timeStorageClassUpdated: OffsetDateTime,
       cacheControl: String,
-      metadata: Map[String, String],
-      componentCount: Int,
-      kmsKeyName: String,
-      customerEncryption: CustomerEncryption,
+      metadata: Option[Map[String, String]],
+      componentCount: Option[Int],
+      kmsKeyName: Option[String],
+      customerEncryption: Option[CustomerEncryption],
       owner: Option[Owner],
       acl: Option[List[ObjectAccessControls]]
   ): StorageObject = new StorageObject(
@@ -389,10 +389,10 @@ object StorageObject {
       retentionExpirationTime: OffsetDateTime,
       timeStorageClassUpdated: OffsetDateTime,
       cacheControl: String,
-      metadata: Map[String, String],
-      componentCount: Int,
-      kmsKeyName: String,
-      customerEncryption: CustomerEncryption,
+      metadata: Option[Map[String, String]],
+      componentCount: Option[Int],
+      kmsKeyName: Option[String],
+      customerEncryption: Option[CustomerEncryption],
       owner: Option[Owner],
       acl: Option[List[ObjectAccessControls]]
   ): StorageObject = new StorageObject(

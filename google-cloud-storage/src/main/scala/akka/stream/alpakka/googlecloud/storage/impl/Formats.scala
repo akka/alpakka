@@ -51,13 +51,13 @@ object Formats extends DefaultJsonProtocol {
   // private sub class of StorageObjectJson used to workaround 22 field jsonFormat issue
   private final case class StorageObjectReadOnlyJson(
       bucket: String,
-      componentCount: Int,
-      customerEncryption: CustomerEncryption,
+      componentCount: Option[Int],
+      customerEncryption: Option[CustomerEncryption],
       etag: String,
       generation: String,
       id: String,
       kind: String,
-      kmsKeyName: String,
+      kmsKeyName: Option[String],
       mediaLink: String,
       metageneration: String,
       owner: Option[Owner],
@@ -82,7 +82,7 @@ object Formats extends DefaultJsonProtocol {
       crc32c: String,
       eventBasedHold: Boolean,
       md5Hash: String,
-      metadata: Map[String, String],
+      metadata: Option[Map[String, String]],
       name: String,
       storageClass: String,
       temporaryHold: Boolean,
@@ -251,8 +251,11 @@ object Formats extends DefaultJsonProtocol {
       metadata,
       componentCount,
       kmsKeyName,
-      main.scala.akka.stream.alpakka.googlecloud.storage
-        .CustomerEncryption(customerEncryption.encryptionAlgorithm, customerEncryption.keySha256),
+      customerEncryption.map(
+        ce =>
+          main.scala.akka.stream.alpakka.googlecloud.storage
+            .CustomerEncryption(ce.encryptionAlgorithm, ce.keySha256)
+      ),
       owner.map(o => main.scala.akka.stream.alpakka.googlecloud.storage.Owner(o.entity, o.entityId)),
       acl.map(
         _.map(
