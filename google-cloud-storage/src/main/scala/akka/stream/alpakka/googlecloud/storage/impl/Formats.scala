@@ -4,14 +4,112 @@
 
 package akka.stream.alpakka.googlecloud.storage.impl
 
+import java.time.OffsetDateTime
+
 import akka.http.scaladsl.model.{ContentType, ContentTypes}
 import akka.stream.alpakka.googlecloud.storage._
-import spray.json.{DefaultJsonProtocol, JsValue, RootJsonReader}
+import spray.json.{DefaultJsonProtocol, JsObject, JsValue, RootJsonFormat, RootJsonReader}
+
+import java.time.OffsetDateTime
 
 import scala.util.Try
 
 @akka.annotation.InternalApi
 object Formats extends DefaultJsonProtocol {
+
+  private final case class CustomerEncryption(encryptionAlgorithm: String, keySha256: String)
+  private implicit val customerEncryptionJsonFormat = jsonFormat2(CustomerEncryption)
+
+  private final case class Owner(entity: String, entityId: String)
+  private implicit val OwnerJsonFormat = jsonFormat2(Owner)
+
+  private final case class ProjectTeam(projectNumber: String, team: String)
+  private implicit val ProjectTeamJsonFormat = jsonFormat2(ProjectTeam)
+
+  private final case class ObjectAccessControls(kind: String,
+                                                id: String,
+                                                selfLink: String,
+                                                bucket: String,
+                                                `object`: String,
+                                                generation: String,
+                                                entity: String,
+                                                role: String,
+                                                email: String,
+                                                entityId: String,
+                                                domain: String,
+                                                projectTeam: ProjectTeam,
+                                                etag: String)
+  private implicit val ObjectAccessControlsJsonFormat = jsonFormat13(ObjectAccessControls)
+
+  /**
+   * Google API storage response object
+   *
+   * https://cloud.google.com/storage/docs/json_api/v1/objects#resource
+   */
+  private final case class StorageObjectJson(readable: StorageObjectReadOnlyJson, writeable: StorageObjectWriteableJson)
+
+  // private sub class of StorageObjectJson used to workaround 22 field jsonFormat issue
+  private final case class StorageObjectReadOnlyJson(
+      bucket: String,
+      componentCount: Option[Int],
+      customerEncryption: Option[CustomerEncryption],
+      etag: String,
+      generation: String,
+      id: String,
+      kind: String,
+      kmsKeyName: Option[String],
+      mediaLink: String,
+      metageneration: String,
+      owner: Option[Owner],
+      retentionExpirationTime: String,
+      selfLink: String,
+      size: String,
+      timeCreated: String,
+      timeDeleted: Option[String],
+      timeStorageClassUpdated: String,
+      updated: String
+  )
+
+  private implicit val storageObjectReadOnlyJson = jsonFormat18(StorageObjectReadOnlyJson)
+
+  // private sub class of StorageObjectJson used to workaround 22 field jsonFormat issue
+  private final case class StorageObjectWriteableJson(
+      cacheControl: String,
+      contentDisposition: String,
+      contentEncoding: String,
+      contentLanguage: String,
+      contentType: Option[String],
+      crc32c: String,
+      eventBasedHold: Boolean,
+      md5Hash: String,
+      metadata: Option[Map[String, String]],
+      name: String,
+      storageClass: String,
+      temporaryHold: Boolean,
+      acl: Option[List[ObjectAccessControls]]
+  )
+
+  private implicit val storageObjectWritableJson = jsonFormat13(StorageObjectWriteableJson)
+
+  private implicit object StorageObjectJsonFormat extends RootJsonFormat[StorageObjectJson] {
+    override def read(value: JsValue): StorageObjectJson = {
+      val readOnlyFields = value.convertTo[StorageObjectReadOnlyJson]
+      val writeableFields = value.convertTo[StorageObjectWriteableJson]
+      StorageObjectJson(readOnlyFields, writeableFields)
+    }
+    override def write(obj: StorageObjectJson): JsValue = {
+      val fields1 = obj.readable.toJson.asJsObject.fields
+      val fields2 = obj.writeable.toJson.asJsObject.fields
+      JsObject(fields1 ++ fields2)
+    }
+  }
+
+  implicit object StorageObjectReads extends RootJsonReader[StorageObject] {
+    override def read(json: JsValue): StorageObject = {
+      val res = StorageObjectJsonFormat.read(json)
+      storageObjectJsonToStorageObject(res)
+    }
+  }
 
   /**
    * Google API list bucket response
@@ -25,24 +123,7 @@ object Formats extends DefaultJsonProtocol {
       items: Option[List[StorageObjectJson]]
   )
 
-  /**
-   * Google API storage response object
-   *
-   * https://cloud.google.com/storage/docs/json_api/v1/objects#resource
-   */
-  private final case class StorageObjectJson(
-      kind: String,
-      id: String,
-      name: String,
-      bucket: String,
-      generation: String,
-      contentType: Option[String],
-      size: String,
-      etag: String,
-      md5Hash: String,
-      crc32c: String,
-      mediaLink: String
-  )
+  private implicit val bucketInfoJsonFormat = jsonFormat6(BucketInfoJson)
 
   /**
    * Google API rewrite response object
@@ -58,6 +139,8 @@ object Formats extends DefaultJsonProtocol {
       resource: Option[StorageObjectJson]
   )
 
+  private implicit val rewriteResponseFormat = jsonFormat6(RewriteResponseJson)
+
   /**
    * Google API bucket response object
    *
@@ -71,11 +154,6 @@ object Formats extends DefaultJsonProtocol {
       selfLink: String,
       etag: String
   )
-
-  private implicit val bucketInfoJsonFormat = jsonFormat6(BucketInfoJson)
-  private implicit val storageObjectJsonFormat = jsonFormat11(StorageObjectJson)
-  private implicit val bucketListResultJsonReads = jsonFormat4(BucketListResultJson)
-  private implicit val rewriteReponseFormat = jsonFormat6(RewriteResponseJson)
 
   implicit val bucketInfoFormat = jsonFormat2(BucketInfo)
 
@@ -91,18 +169,11 @@ object Formats extends DefaultJsonProtocol {
     }
   }
 
-  implicit object StorageObjectReads extends RootJsonReader[StorageObject] {
-    override def read(
-        json: JsValue
-    ): StorageObject = {
-      val res = storageObjectJsonFormat.read(json)
-      storageObjectJsonToStorageObject(res)
-    }
-  }
+  private implicit val bucketListResultJsonReads = jsonFormat4(BucketListResultJson)
 
   implicit object RewriteResponseReads extends RootJsonReader[RewriteResponse] {
     override def read(json: JsValue): RewriteResponse = {
-      val res = rewriteReponseFormat.read(json)
+      val res = rewriteResponseFormat.read(json)
 
       val totalBytesRewritten =
         Try(res.totalBytesRewritten.toLong)
@@ -141,22 +212,72 @@ object Formats extends DefaultJsonProtocol {
   }
 
   private def storageObjectJsonToStorageObject(storageObjectJson: StorageObjectJson): StorageObject = {
-    val size =
-      Try(storageObjectJson.size.toLong)
-        .getOrElse(throw new RuntimeException("Storage object size is not of Long type"))
+    def strToLongOrThrow(str: String, fieldName: String) =
+      Try(str.toLong)
+        .getOrElse(throw new RuntimeException(s"Storage object $fieldName is not of type Long"))
 
+    def strToDateTimeOrThrow(str: String, fieldName: String) =
+      Try(OffsetDateTime.parse(str))
+        .getOrElse(throw new RuntimeException(s"Storage object $fieldName is not a valid OffsetDateTime"))
+
+    import storageObjectJson.readable._
+    import storageObjectJson.writeable._
     StorageObject(
-      storageObjectJson.kind,
-      storageObjectJson.id,
-      storageObjectJson.name,
-      storageObjectJson.bucket,
-      storageObjectJson.generation.toLong,
-      storageObjectJson.contentType.map(parseContentType).getOrElse(ContentTypes.`application/octet-stream`),
-      size,
-      storageObjectJson.etag,
-      storageObjectJson.md5Hash,
-      storageObjectJson.crc32c,
-      storageObjectJson.mediaLink
+      kind,
+      id,
+      name,
+      bucket,
+      generation.toLong,
+      contentType.map(parseContentType).getOrElse(ContentTypes.`application/octet-stream`),
+      strToLongOrThrow(size, "size"),
+      etag,
+      md5Hash,
+      crc32c,
+      mediaLink,
+      selfLink,
+      strToDateTimeOrThrow(updated, "updated"),
+      strToDateTimeOrThrow(timeCreated, "timeCreated"),
+      timeDeleted.map(td => strToDateTimeOrThrow(td, "timeDeleted")),
+      storageClass,
+      contentDisposition,
+      contentEncoding,
+      contentLanguage,
+      strToLongOrThrow(metageneration, "metageneration"),
+      temporaryHold,
+      eventBasedHold,
+      strToDateTimeOrThrow(retentionExpirationTime, "retentionExpirationTime"),
+      strToDateTimeOrThrow(timeStorageClassUpdated, "retentionExpirationTime"),
+      cacheControl,
+      metadata,
+      componentCount,
+      kmsKeyName,
+      customerEncryption.map(
+        ce =>
+          main.scala.akka.stream.alpakka.googlecloud.storage
+            .CustomerEncryption(ce.encryptionAlgorithm, ce.keySha256)
+      ),
+      owner.map(o => main.scala.akka.stream.alpakka.googlecloud.storage.Owner(o.entity, o.entityId)),
+      acl.map(
+        _.map(
+          a =>
+            main.scala.akka.stream.alpakka.googlecloud.storage.ObjectAccessControls(
+              a.kind,
+              a.id,
+              a.selfLink,
+              a.bucket,
+              a.`object`,
+              a.generation,
+              a.entity,
+              a.role,
+              a.email,
+              a.entityId,
+              a.domain,
+              main.scala.akka.stream.alpakka.googlecloud.storage
+                .ProjectTeam(a.projectTeam.projectNumber, a.projectTeam.team),
+              a.etag
+            )
+        )
+      )
     )
   }
 
