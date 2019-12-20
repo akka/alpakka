@@ -289,7 +289,7 @@ lazy val docs = project
   .enablePlugins(AkkaParadoxPlugin, ParadoxSitePlugin, PreprocessPlugin, PublishRsyncPlugin)
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .settings(
-    name := "Alpakka",
+    Compile / paradox / name := "Alpakka",
     publish / skip := true,
     whitesourceIgnore := true,
     makeSite := makeSite.dependsOn(LocalRootProject / ScalaUnidoc / doc).value,
