@@ -33,15 +33,19 @@ The table below shows direct dependencies of this module and the second tab show
 
 The Alpakka Google Cloud Pub/Sub gRPC library contains the classes generated from [Google's protobuf specification](https://github.com/googleapis/java-pubsub/tree/master/proto-google-cloud-pubsub-v1/).
 
-To call the API via gRPC, the ALPN Java agent is required to be set up correctly.
+@@@note { title="ALPN on JDK 8" }
+
+For use on JDK 8 the ALPN Java agent needs to be set up explicitly.
+
+@@@
 
 ### Maven
 
-Configure your project to use the Java agent for ALPN and add `-javaagent:...` to your startup scripts as described in the @extref:[Akka gRPC documentation](akka-grpc:/buildtools/maven.html#starting-your-akka-grpc-server-from-maven).
+When using JDK 8: configure your project to use the Java agent for ALPN and add `-javaagent:...` to your startup scripts as described in the @extref:[Akka gRPC documentation](akka-grpc:/buildtools/maven.html#starting-your-akka-grpc-server-from-maven).
 
 ### sbt
 
-Configure your project to use the Java agent for ALPN and add `-javaagent:...` to your startup scripts.
+When using JDK 8: Configure your project to use the Java agent for ALPN and add `-javaagent:...` to your startup scripts.
 
 Pull in the [`sbt-javaagent`](https://github.com/sbt/sbt-javaagent) plugin.
 
@@ -62,7 +66,7 @@ build.sbt
 
 ### Gradle
 
-Configure your project to use the Java agent for ALPN and add `-javaagent:...` to your startup scripts as described in the @extref:[Akka gRPC documentation](akka-grpc:/buildtools/gradle.html#starting-your-akka-grpc-server-from-gradle).
+When using JDK 8: Configure your project to use the Java agent for ALPN and add `-javaagent:...` to your startup scripts as described in the @extref:[Akka gRPC documentation](akka-grpc:/buildtools/gradle.html#starting-your-akka-grpc-server-from-gradle).
 
 ## Configuration
 
