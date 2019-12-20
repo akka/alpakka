@@ -69,11 +69,11 @@ lazy val alpakka = project
     // unidoc combines sources and jars from all connectors and that
     // might include some incompatible ones. Depending on the
     // classpath order that might lead to scaladoc compilation errors.
-    // Therefore some versions are exlcuded here.
+    // Therefore some versions are excluded here.
     ScalaUnidoc / unidoc / fullClasspath := {
       (ScalaUnidoc / unidoc / fullClasspath).value
         .filterNot(_.data.getAbsolutePath.contains("protobuf-java-2.5.0.jar"))
-        .filterNot(_.data.getAbsolutePath.contains("guava-27.1-android.jar"))
+        .filterNot(_.data.getAbsolutePath.contains("guava-28.1-android.jar"))
         .filterNot(_.data.getAbsolutePath.contains("commons-net-3.1.jar"))
     },
     ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(`doc-examples`,
