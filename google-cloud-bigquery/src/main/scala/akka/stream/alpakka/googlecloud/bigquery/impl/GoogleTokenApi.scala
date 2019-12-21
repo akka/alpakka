@@ -15,7 +15,7 @@ import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 import scala.concurrent.Future
 
-class GoogleTokenApi(http: => HttpExt) {
+private[bigquery] class GoogleTokenApi(http: => HttpExt) {
   protected val encodingAlgorithm: JwtAlgorithm.RS256.type = JwtAlgorithm.RS256
 
   private val googleTokenUrl = "https://www.googleapis.com/oauth2/v4/token"
@@ -56,7 +56,7 @@ class GoogleTokenApi(http: => HttpExt) {
   }
 }
 
-object GoogleTokenApi {
+private object GoogleTokenApi {
   case class AccessTokenExpiry(accessToken: String, expiresAt: Long)
   case class OAuthResponse(access_token: String, token_type: String, expires_in: Int)
 
