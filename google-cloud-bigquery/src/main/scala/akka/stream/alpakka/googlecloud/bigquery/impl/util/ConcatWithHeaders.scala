@@ -7,7 +7,7 @@ package akka.stream.alpakka.googlecloud.bigquery.impl.util
 import akka.NotUsed
 import akka.stream.scaladsl.Flow
 
-object ConcatWithHeaders {
+private[bigquery] object ConcatWithHeaders {
 
   def apply(): Flow[(Seq[String], Seq[Seq[String]]), Seq[String], NotUsed] =
     Flow[(Seq[String], Seq[Seq[String]])].statefulMapConcat(() => {

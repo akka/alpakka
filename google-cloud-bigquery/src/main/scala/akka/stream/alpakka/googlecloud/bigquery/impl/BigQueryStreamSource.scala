@@ -20,12 +20,12 @@ import spray.json.JsObject
 import scala.concurrent.ExecutionContext
 
 @InternalApi
-object BigQueryStreamSource {
+private[bigquery] object BigQueryStreamSource {
 
-  private[bigquery] def callbackConverter(onFinishCallback: PagingInfo => NotUsed): ((Boolean, PagingInfo)) => Unit =
+  def callbackConverter(onFinishCallback: PagingInfo => NotUsed): ((Boolean, PagingInfo)) => Unit =
     (t: (Boolean, PagingInfo)) => { onFinishCallback(t._2); {} }
 
-  private[bigquery] def apply[T](httpRequest: HttpRequest,
+  def apply[T](httpRequest: HttpRequest,
                                  parserFn: JsObject => Option[T],
                                  onFinishCallback: PagingInfo => NotUsed,
                                  googleSession: GoogleSession,

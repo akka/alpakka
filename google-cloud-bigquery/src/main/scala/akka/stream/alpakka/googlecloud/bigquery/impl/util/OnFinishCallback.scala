@@ -3,10 +3,12 @@
  */
 
 package akka.stream.alpakka.googlecloud.bigquery.impl.util
+import akka.annotation.InternalApi
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 
-case class OnFinishCallback[T](callBack: T => Unit) extends GraphStage[FlowShape[T, T]] {
+@InternalApi
+private[impl] case class OnFinishCallback[T](callBack: T => Unit) extends GraphStage[FlowShape[T, T]] {
 
   val in = Inlet[T]("OnFinishCallback.in")
   val out = Outlet[T]("OnFinishCallback.out")
