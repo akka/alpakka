@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.impl
 
+import akka.annotation.InternalApi
 import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.{FormData, HttpMethods, HttpRequest}
@@ -15,6 +16,7 @@ import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 import scala.concurrent.Future
 
+@InternalApi
 private[bigquery] class GoogleTokenApi(http: => HttpExt) {
   protected val encodingAlgorithm: JwtAlgorithm.RS256.type = JwtAlgorithm.RS256
 
@@ -56,7 +58,7 @@ private[bigquery] class GoogleTokenApi(http: => HttpExt) {
   }
 }
 
-private object GoogleTokenApi {
+object GoogleTokenApi {
   case class AccessTokenExpiry(accessToken: String, expiresAt: Long)
   case class OAuthResponse(access_token: String, token_type: String, expires_in: Int)
 
