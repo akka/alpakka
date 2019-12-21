@@ -5,13 +5,15 @@
 package akka.stream.alpakka.googlecloud.bigquery.impl.sendrequest
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.bigquery.impl.GoogleSession
 import akka.stream.scaladsl.Flow
 
-object EnrichRequestWithOauth {
+@InternalApi
+private[impl] object EnrichRequestWithOauth {
 
   case class TokenErrorException() extends Exception
 

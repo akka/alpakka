@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.impl.sendrequest
 
+import akka.annotation.InternalApi
 import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.unmarshalling.Unmarshal
@@ -13,7 +14,8 @@ import akka.stream.scaladsl.Flow
 
 import scala.concurrent.{ExecutionContext, Future}
 
-object SendRequestWithOauthHandling {
+@InternalApi
+private[bigquery] object SendRequestWithOauthHandling {
 
   def apply(googleSession: GoogleSession, http: HttpExt)(
       implicit mat: Materializer

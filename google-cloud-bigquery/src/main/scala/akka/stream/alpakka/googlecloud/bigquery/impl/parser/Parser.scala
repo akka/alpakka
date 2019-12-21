@@ -5,6 +5,7 @@
 package akka.stream.alpakka.googlecloud.bigquery.impl.parser
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Zip}
@@ -13,7 +14,8 @@ import spray.json._
 
 import scala.concurrent.ExecutionContext
 
-object Parser {
+@InternalApi
+private[impl] object Parser {
   final case class PagingInfo(pageToken: Option[String], jobId: Option[String])
 
   object ParserJsonProtocol extends DefaultJsonProtocol {
@@ -37,8 +39,8 @@ object Parser {
     val parseMap = builder.add(Flow[JsObject].map(parseFunction(_)))
     val pageInfoProvider = builder.add(Flow[JsObject].map(getPageInfo))
 
-    val broadcast1 = builder.add(Broadcast[JsObject](2, true))
-    val broadcast2 = builder.add(Broadcast[Option[T]](2, true))
+    val broadcast1 = builder.add(Broadcast[JsObject](2, eagerCancel = true))
+    val broadcast2 = builder.add(Broadcast[Option[T]](2, eagerCancel = true))
 
     val filterNone = builder.add(Flow[Option[T]].mapConcat {
       case Some(value) => List(value)
