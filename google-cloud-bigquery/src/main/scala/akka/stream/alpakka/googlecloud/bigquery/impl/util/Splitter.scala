@@ -5,10 +5,12 @@
 package akka.stream.alpakka.googlecloud.bigquery.impl.util
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL}
 import akka.stream.{Graph, UniformFanOutShape}
 
-object Splitter {
+@InternalApi
+private[impl] object Splitter {
 
   def apply[T](out0Predicate: T => Boolean)(
       out1Predicate: T => Boolean = (elem: T) => !out0Predicate(elem)

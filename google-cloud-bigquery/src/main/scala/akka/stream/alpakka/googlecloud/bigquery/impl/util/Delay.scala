@@ -28,7 +28,7 @@ private[impl] object Delay {
       val splitter = builder.add(Splitter[T](shouldDelay)())
       val delayFlow =
         builder.add(DelayFlow[T](() => new FibonacciStrategy[T](delayUnit, maxDelay)))
-      val merge = builder.add(Merge[T](2, true))
+      val merge = builder.add(Merge[T](2, eagerComplete = true))
 
       splitter.out(0) ~> delayFlow
       delayFlow ~> merge.in(0)
