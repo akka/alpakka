@@ -58,7 +58,8 @@ private[bigquery] class GoogleTokenApi(http: => HttpExt) {
   }
 }
 
-object GoogleTokenApi {
+@InternalApi
+private[bigquery] object GoogleTokenApi {
   case class AccessTokenExpiry(accessToken: String, expiresAt: Long)
   case class OAuthResponse(access_token: String, token_type: String, expires_in: Int)
 
