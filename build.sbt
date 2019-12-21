@@ -17,6 +17,7 @@ lazy val alpakka = project
     files,
     ftp,
     geode,
+    googleCloudBigQuery,
     googleCloudPubSub,
     googleCloudPubSubGrpc,
     googleCloudStorage,
