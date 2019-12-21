@@ -5,6 +5,7 @@
 package akka.stream.alpakka.googlecloud.bigquery.impl
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.model.HttpRequest
 import akka.stream._
@@ -18,6 +19,7 @@ import spray.json.JsObject
 
 import scala.concurrent.ExecutionContext
 
+@InternalApi
 object BigQueryStreamSource {
 
   private[bigquery] def callbackConverter(onFinishCallback: PagingInfo => NotUsed): ((Boolean, PagingInfo)) => Unit =
