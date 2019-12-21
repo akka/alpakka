@@ -4,12 +4,14 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.impl
 
+import akka.annotation.InternalApi
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.bigquery.impl.GoogleTokenApi.AccessTokenExpiry
 
 import scala.concurrent.Future
 
-class GoogleSession(clientEmail: String, privateKey: String, tokenApi: GoogleTokenApi) {
+@InternalApi
+private[bigquery] class GoogleSession(clientEmail: String, privateKey: String, tokenApi: GoogleTokenApi) {
   protected var maybeAccessToken: Option[Future[AccessTokenExpiry]] = None
 
   private def getNewToken()(implicit materializer: Materializer): Future[AccessTokenExpiry] = {
