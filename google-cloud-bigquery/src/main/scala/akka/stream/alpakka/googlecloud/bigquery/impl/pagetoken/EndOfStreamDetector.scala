@@ -5,10 +5,12 @@
 package akka.stream.alpakka.googlecloud.bigquery.impl.pagetoken
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
 import akka.stream.scaladsl.Flow
 
-object EndOfStreamDetector {
+@InternalApi
+private[impl] object EndOfStreamDetector {
 
   def apply(): Flow[(Boolean, PagingInfo), (Boolean, PagingInfo), NotUsed] =
     Flow[(Boolean, PagingInfo)].takeWhile {

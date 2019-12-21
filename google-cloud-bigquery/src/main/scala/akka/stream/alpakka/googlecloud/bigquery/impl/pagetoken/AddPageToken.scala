@@ -7,11 +7,13 @@ package akka.stream.alpakka.googlecloud.bigquery.impl.pagetoken
 import java.net.URLEncoder
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.http.scaladsl.model.{HttpEntity, HttpMethods, HttpRequest, Uri}
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
 import akka.stream.scaladsl.Flow
 
-object AddPageToken {
+@InternalApi
+private[impl] object AddPageToken {
   def apply(): Flow[(HttpRequest, (Boolean, PagingInfo)), HttpRequest, NotUsed] =
     Flow[(HttpRequest, (Boolean, PagingInfo))].map {
       case (request, (retry, pagingInfo)) =>
