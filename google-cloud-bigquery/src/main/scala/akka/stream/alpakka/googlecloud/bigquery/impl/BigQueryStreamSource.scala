@@ -26,10 +26,10 @@ private[bigquery] object BigQueryStreamSource {
     (t: (Boolean, PagingInfo)) => { onFinishCallback(t._2); {} }
 
   def apply[T](httpRequest: HttpRequest,
-                                 parserFn: JsObject => Option[T],
-                                 onFinishCallback: PagingInfo => NotUsed,
-                                 googleSession: GoogleSession,
-                                 http: HttpExt)(
+               parserFn: JsObject => Option[T],
+               onFinishCallback: PagingInfo => NotUsed,
+               googleSession: GoogleSession,
+               http: HttpExt)(
       implicit mat: Materializer
   ): Source[T, NotUsed] =
     Source.fromGraph(GraphDSL.create() { implicit builder =>
