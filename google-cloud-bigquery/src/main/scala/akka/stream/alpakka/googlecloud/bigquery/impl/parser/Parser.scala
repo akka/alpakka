@@ -15,7 +15,7 @@ import spray.json._
 import scala.concurrent.ExecutionContext
 
 @InternalApi
-private[impl] object Parser {
+private[bigquery] object Parser {
   final case class PagingInfo(pageToken: Option[String], jobId: Option[String])
 
   object ParserJsonProtocol extends DefaultJsonProtocol {
