@@ -4,9 +4,11 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.client
 
+import akka.annotation.InternalApi
 import spray.json.{DefaultJsonProtocol, JsBoolean, JsNull, JsObject, JsString, JsValue, JsonFormat}
 
-object QueryJsonProtocol extends DefaultJsonProtocol {
+@InternalApi
+private[bigquery] object QueryJsonProtocol extends DefaultJsonProtocol {
 
   case class QueryRequest(query: String,
                           useLegacySql: Boolean = false,

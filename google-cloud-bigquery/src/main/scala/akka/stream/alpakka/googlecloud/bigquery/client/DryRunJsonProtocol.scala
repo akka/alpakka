@@ -4,9 +4,11 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.client
 
+import akka.annotation.InternalApi
 import spray.json.{DefaultJsonProtocol, JsonFormat}
 
-object DryRunJsonProtocol extends DefaultJsonProtocol {
+@InternalApi
+private[bigquery] object DryRunJsonProtocol extends DefaultJsonProtocol {
 
   case class DryRunResponse(totalBytesProcessed: String, jobComplete: Boolean, cacheHit: Boolean)
 
