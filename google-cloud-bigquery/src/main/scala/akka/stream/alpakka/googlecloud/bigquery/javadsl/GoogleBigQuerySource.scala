@@ -8,14 +8,12 @@ import java.util.concurrent.CompletionStage
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpRequest
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.bigquery
 import akka.stream.alpakka.googlecloud.bigquery.BigQueryProjectConfig
 import akka.stream.alpakka.googlecloud.bigquery.client._
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
-import akka.stream.alpakka.googlecloud.bigquery.impl.{GoogleSession, GoogleTokenApi}
 import akka.stream.javadsl.Source
 import spray.json.JsObject
 
