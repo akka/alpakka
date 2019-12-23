@@ -144,7 +144,7 @@ public class GoogleBigQuerySourceDoc {
         request,
         GoogleBigQuerySourceDoc::dryRunResponseFromJson,
         BigQueryCallbacks.ignore(),
-        config.session(),
+        config,
         system,
         materializer);
   }

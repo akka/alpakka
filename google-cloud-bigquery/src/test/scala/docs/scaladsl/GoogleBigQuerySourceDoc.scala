@@ -11,6 +11,7 @@ package docs.scaladsl
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.stream.alpakka.googlecloud.bigquery.BigQueryProjectConfig
 import akka.stream.alpakka.googlecloud.bigquery.client.BigQueryCommunicationHelper
 import akka.stream.alpakka.googlecloud.bigquery.client.TableDataQueryJsonProtocol.Field
 import akka.stream.alpakka.googlecloud.bigquery.client.TableListQueryJsonProtocol.QueryTableModel
@@ -32,10 +33,7 @@ class GoogleBigQuerySourceDoc {
   //#init-mat
 
   //#init-config
-  val config = GoogleBigQuerySource.createProjectConfig("project@test.test",
-                                                        "privateKeyFromGoogle",
-                                                        "projectID",
-                                                        "bigQueryDatasetName")
+  val config = BigQueryProjectConfig("project@test.test", "privateKeyFromGoogle", "projectID", "bigQueryDatasetName")
   //#init-config
 
   //#list-tables-and-fields
@@ -72,6 +70,6 @@ class GoogleBigQuerySourceDoc {
                                                                config.projectId,
                                                                dryRun = true)
 
-  val dryRunStream = GoogleBigQuerySource.raw(request, dryRunParser, BigQueryCallbacks.ignore, config.session)
+  val dryRunStream = GoogleBigQuerySource.raw(request, dryRunParser, BigQueryCallbacks.ignore, config)
   //#dry-run
 }

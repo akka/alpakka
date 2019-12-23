@@ -9,6 +9,7 @@ import akka.event.LoggingAdapter
 import akka.http.scaladsl.model.{HttpRequest, _}
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.{HttpExt, HttpsConnectionContext}
+import akka.stream.alpakka.googlecloud.bigquery.BigQueryProjectConfig
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.BigQueryCallbacks
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
@@ -37,7 +38,9 @@ class BigQueryStreamSourceSpec
   implicit val materializer: Materializer = ActorMaterializer()
 
   trait Scope {
+    val bigQueryProjectConfig = mock[BigQueryProjectConfig]
     val session = mock[GoogleSession]
+    when(bigQueryProjectConfig.session) thenReturn session
     when(session.getToken()) thenReturn Future.successful("TOKEN")
 
     val http = mock[HttpExt]
@@ -73,7 +76,11 @@ class BigQueryStreamSourceSpec
       )
 
       val bigQuerySource =
-        BigQueryStreamSource(HttpRequest(), _ => Option("success"), BigQueryCallbacks.ignore, session, http)
+        BigQueryStreamSource(HttpRequest(),
+                             _ => Option("success"),
+                             BigQueryCallbacks.ignore,
+                             bigQueryProjectConfig,
+                             http)
 
       val resultF = Source.fromGraph(bigQuerySource).runWith(Sink.head)
 
@@ -108,7 +115,11 @@ class BigQueryStreamSourceSpec
       )
 
       val bigQuerySource =
-        BigQueryStreamSource(HttpRequest(), _ => Option("success"), BigQueryCallbacks.ignore, session, http)
+        BigQueryStreamSource(HttpRequest(),
+                             _ => Option("success"),
+                             BigQueryCallbacks.ignore,
+                             bigQueryProjectConfig,
+                             http)
 
       val resultF = bigQuerySource.runWith(Sink.seq)
 
@@ -120,7 +131,11 @@ class BigQueryStreamSourceSpec
     "url encode page token" in new Scope {
 
       val bigQuerySource =
-        BigQueryStreamSource(HttpRequest(), _ => Option("success"), BigQueryCallbacks.ignore, session, http)
+        BigQueryStreamSource(HttpRequest(),
+                             _ => Option("success"),
+                             BigQueryCallbacks.ignore,
+                             bigQueryProjectConfig,
+                             http)
       when(
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),
