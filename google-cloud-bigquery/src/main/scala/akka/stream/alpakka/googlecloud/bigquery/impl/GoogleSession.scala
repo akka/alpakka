@@ -4,11 +4,19 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.impl
 
+import akka.actor.ActorSystem
 import akka.annotation.InternalApi
+import akka.http.scaladsl.Http
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.bigquery.impl.GoogleTokenApi.AccessTokenExpiry
 
 import scala.concurrent.Future
+
+private[bigquery] object GoogleSession {
+  def apply(clientEmail: String, privateKey: String, actorSystem: ActorSystem): GoogleSession = {
+    new GoogleSession(clientEmail, privateKey, new GoogleTokenApi(Http()(actorSystem)))
+  }
+}
 
 @InternalApi
 private[bigquery] class GoogleSession(clientEmail: String, privateKey: String, tokenApi: GoogleTokenApi) {

@@ -12,7 +12,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpRequest
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.bigquery
-import akka.stream.alpakka.googlecloud.bigquery.BigQueryFlowModels.BigQueryProjectConfig
+import akka.stream.alpakka.googlecloud.bigquery.BigQueryProjectConfig
 import akka.stream.alpakka.googlecloud.bigquery.client._
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
 import akka.stream.alpakka.googlecloud.bigquery.impl.{GoogleSession, GoogleTokenApi}
@@ -23,15 +23,6 @@ object GoogleBigQuerySource {
   import collection.JavaConverters._
   import scala.compat.java8.FutureConverters._
   import scala.compat.java8.OptionConverters._
-
-  def createProjectConfig(clientEmail: String,
-                          privateKey: String,
-                          projectId: String,
-                          dataset: String,
-                          actorSystem: ActorSystem): BigQueryProjectConfig = {
-    val session = new GoogleSession(clientEmail, privateKey, new GoogleTokenApi(Http()(actorSystem)))
-    new BigQueryProjectConfig(projectId, dataset, session)
-  }
 
   def raw[T](httpRequest: HttpRequest,
              parserFn: java.util.function.Function[JsObject, java.util.Optional[T]],
