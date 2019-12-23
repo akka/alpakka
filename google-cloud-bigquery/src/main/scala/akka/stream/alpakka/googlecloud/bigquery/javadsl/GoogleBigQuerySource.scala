@@ -27,11 +27,11 @@ object GoogleBigQuerySource {
   def raw[T](httpRequest: HttpRequest,
              parserFn: java.util.function.Function[JsObject, java.util.Optional[T]],
              onFinishCallback: java.util.function.Function[PagingInfo, NotUsed],
-             googleSession: GoogleSession,
+             projectConfig: BigQueryProjectConfig,
              actorSystem: ActorSystem,
              materializer: Materializer): Source[T, NotUsed] =
     bigquery.scaladsl.GoogleBigQuerySource
-      .raw(httpRequest, parserFn.apply(_).asScala, onFinishCallback.apply, googleSession)(materializer, actorSystem)
+      .raw(httpRequest, parserFn.apply(_).asScala, onFinishCallback.apply, projectConfig)(materializer, actorSystem)
       .asJava
 
   def runQuery[T](query: String,
