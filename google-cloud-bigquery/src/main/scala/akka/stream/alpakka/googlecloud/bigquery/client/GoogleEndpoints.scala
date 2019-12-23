@@ -4,7 +4,10 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.client
 
-object GoogleEndpoints {
+import akka.annotation.InternalApi
+
+@InternalApi
+private[bigquery] object GoogleEndpoints {
 
   val bigQueryV2Url: String = "https://www.googleapis.com/bigquery/v2"
 
