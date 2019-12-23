@@ -8,7 +8,7 @@ import java.util.function
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.Materializer
-import akka.stream.alpakka.googlecloud.bigquery.BigQueryFlowModels.BigQueryProjectConfig
+import akka.stream.alpakka.googlecloud.bigquery.BigQueryProjectConfig
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.{BigQueryCallbacks => BigQueryCallbacksScala}
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
 

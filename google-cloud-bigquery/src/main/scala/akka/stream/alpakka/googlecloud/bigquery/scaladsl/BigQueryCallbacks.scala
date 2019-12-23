@@ -8,7 +8,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
 import akka.stream.Materializer
-import akka.stream.alpakka.googlecloud.bigquery.BigQueryFlowModels.BigQueryProjectConfig
+import akka.stream.alpakka.googlecloud.bigquery.BigQueryProjectConfig
 import akka.stream.alpakka.googlecloud.bigquery.client.GoogleEndpoints
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
 import akka.stream.alpakka.googlecloud.bigquery.impl.sendrequest.SendRequestWithOauthHandling
