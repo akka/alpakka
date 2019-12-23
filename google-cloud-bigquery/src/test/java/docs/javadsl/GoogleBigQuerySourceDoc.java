@@ -9,7 +9,7 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.http.scaladsl.model.HttpRequest;
 import akka.stream.ActorMaterializer;
-import akka.stream.alpakka.googlecloud.bigquery.BigQueryFlowModels;
+import akka.stream.alpakka.googlecloud.bigquery.BigQueryProjectConfig;
 import akka.stream.alpakka.googlecloud.bigquery.client.BigQueryCommunicationHelper;
 import akka.stream.alpakka.googlecloud.bigquery.client.TableDataQueryJsonProtocol;
 import akka.stream.alpakka.googlecloud.bigquery.client.TableListQueryJsonProtocol;
@@ -32,8 +32,8 @@ public class GoogleBigQuerySourceDoc {
     // #init-mat
 
     // #init-config
-    BigQueryFlowModels.BigQueryProjectConfig config =
-        GoogleBigQuerySource.createProjectConfig(
+    BigQueryProjectConfig config =
+        BigQueryProjectConfig.create(
             "project@test.test",
             "privateKeyFromGoogle",
             "projectID",
@@ -83,8 +83,8 @@ public class GoogleBigQuerySourceDoc {
   private static Source<User, NotUsed> example2() {
     ActorSystem system = ActorSystem.create();
     ActorMaterializer materializer = ActorMaterializer.create(system);
-    BigQueryFlowModels.BigQueryProjectConfig config =
-        GoogleBigQuerySource.createProjectConfig(
+    BigQueryProjectConfig config =
+        BigQueryProjectConfig.create(
             "project@test.test",
             "privateKeyFromGoogle",
             "projectID",
@@ -128,8 +128,8 @@ public class GoogleBigQuerySourceDoc {
   private static Source<DryRunResponse, NotUsed> example3() {
     ActorSystem system = ActorSystem.create();
     ActorMaterializer materializer = ActorMaterializer.create(system);
-    BigQueryFlowModels.BigQueryProjectConfig config =
-        GoogleBigQuerySource.createProjectConfig(
+    BigQueryProjectConfig config =
+        BigQueryProjectConfig.create(
             "project@test.test",
             "privateKeyFromGoogle",
             "projectID",
