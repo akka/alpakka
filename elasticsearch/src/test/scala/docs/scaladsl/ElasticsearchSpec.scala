@@ -437,6 +437,49 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
       )
     }
 
+    "retry ALL failed document and pass retried documents to downstream" in assertAllStagesStopped {
+      val indexName = "sink5_1"
+
+      val bookNr = 100
+      val writeMsgs = Iterator.from(0)
+        .take(bookNr)
+        .grouped(5)
+        .zipWithIndex
+        .flatMap { case (numBlock, index) =>
+          val writeMsgBlock = numBlock.map { n =>
+            WriteMessage.createCreateMessage(n.toString, Map("title" -> s"Book ${n}"))
+              .withPassThrough(n)
+          }
+
+          val writeMsgFailed = WriteMessage.createCreateMessage("0", Map("title" -> s"Failed"))
+            .withPassThrough(bookNr + index)
+
+          (writeMsgBlock ++ Iterator(writeMsgFailed)).toList
+        }.toList
+
+      val createBooks = Source(writeMsgs)
+        .via(
+          ElasticsearchFlow.createWithPassThrough(
+            indexName,
+            "_doc",
+            ElasticsearchWriteSettings()
+              .withRetryLogic(RetryAtFixedRate(5, 1.millis))
+          )
+        )
+        .runWith(Sink.seq)
+
+      val start = System.currentTimeMillis()
+      val writeResults = createBooks.futureValue
+      val end = System.currentTimeMillis()
+
+      writeResults should have size writeMsgs.size
+
+      flush(indexName)
+
+      val expectedBookTitles = Iterator.from(0).map(n => s"Book ${n}").take(bookNr).toSet
+      readTitlesFrom(indexName).futureValue should contain theSameElementsAs expectedBookTitles
+    }
+
     "kafka-example - store documents and pass Responses with passThrough" in assertAllStagesStopped {
 
       //#kafka-example
