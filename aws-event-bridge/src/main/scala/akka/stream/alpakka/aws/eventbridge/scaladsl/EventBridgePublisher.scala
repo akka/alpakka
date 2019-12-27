@@ -20,7 +20,7 @@ import scala.compat.java8.FutureConverters._
 object EventBridgePublisher {
 
   /**
-   * creates a [[akka.stream.scaladsl.Flow Flow]] to publish messages to a Event Bridge using an [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]]
+   * creates a [[akka.stream.scaladsl.Flow Flow]] to publish a message to an EventBridge using an [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]]
    */
   def flow(settings: EventBridgePublishSettings = EventBridgePublishSettings())(
       implicit eventBridgeClient: EventBridgeAsyncClient
@@ -30,7 +30,7 @@ object EventBridgePublisher {
       .via(publishFlow(settings))
 
   /**
-   * creates a [[akka.stream.scaladsl.Flow Flow]] to publish messages to a Event Bridge using an [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]]
+   * creates a [[akka.stream.scaladsl.Flow Flow]] to publish a message to an EventBridge using an [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]]
    */
   def flowSeq(settings: EventBridgePublishSettings = EventBridgePublishSettings())(
       implicit eventBridgeClient: EventBridgeAsyncClient
@@ -39,19 +39,8 @@ object EventBridgePublisher {
       .fromFunction((messages: Seq[PutEventsRequestEntry]) => PutEventsRequest.builder().entries(messages: _*).build())
       .via(publishFlow(settings))
 
-  /*
-  PutEventsRequestEntry.builder()
-
-    .time()
-    .source()
-    .resources()
-    .detail
-    .detailType
-    .eventBusName()
-   */
-
   /**
-   * creates a [[akka.stream.scaladsl.Flow Flow]] to publish messages to SNS topics based on the message topic arn using an [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]]
+   * creates a [[akka.stream.scaladsl.Flow Flow]] to publish messages to an EventBridge based on the message bus arn using an [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]]
    */
   def publishFlow(
       settings: EventBridgePublishSettings
@@ -60,7 +49,7 @@ object EventBridgePublisher {
       .mapAsyncUnordered(settings.concurrency)(eventBridgeClient.putEvents(_).toScala)
 
   /**
-   * creates a [[akka.stream.scaladsl.Flow Flow]] to publish messages to SNS topics based on the message topic arn using an [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]]
+   * creates a [[akka.stream.scaladsl.Flow Flow]] to publish messages to an EventBridge based on the message bus arn using an [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]]
    */
   def publishFlow()(
       implicit eventBridgeClient: EventBridgeAsyncClient
@@ -68,7 +57,7 @@ object EventBridgePublisher {
     publishFlow(EventBridgePublishSettings())
 
   /**
-   * creates a [[akka.stream.scaladsl.Sink Sink]] to publish messages to a SNS topic using an [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]]
+   * creates a [[akka.stream.scaladsl.Sink Sink]] to publish messages to an EventBridge using an [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]]
    */
   def sink(settings: EventBridgePublishSettings = EventBridgePublishSettings())(
       implicit eventBridgeClient: EventBridgeAsyncClient
@@ -76,7 +65,7 @@ object EventBridgePublisher {
     flow(settings).toMat(Sink.ignore)(Keep.right)
 
   /**
-   * creates a [[akka.stream.scaladsl.Sink Sink]] to publish messages to SNS topics based on the message topic arn using an [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]]
+   * creates a [[akka.stream.scaladsl.Sink Sink]] to publish messages to an EventBridge based on the message bus arn using an [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]]
    */
   def publishSink(
       settings: EventBridgePublishSettings = EventBridgePublishSettings()
@@ -84,7 +73,7 @@ object EventBridgePublisher {
     publishFlow(settings).toMat(Sink.ignore)(Keep.right)
 
   /**
-   * creates a [[akka.stream.scaladsl.Sink Sink]] to publish messages to SNS topics based on the message topic arn using an [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]]
+   * creates a [[akka.stream.scaladsl.Sink Sink]] to publish messages to an EventBridge based on the message bus arn using an [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]]
    */
   def publishSink()(implicit eventBridgeClient: EventBridgeAsyncClient): Sink[PutEventsRequest, Future[Done]] =
     publishFlow(EventBridgePublishSettings()).toMat(Sink.ignore)(Keep.right)
