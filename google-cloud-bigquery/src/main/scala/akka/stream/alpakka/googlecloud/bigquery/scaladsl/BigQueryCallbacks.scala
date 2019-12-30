@@ -8,7 +8,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
 import akka.stream.Materializer
-import akka.stream.alpakka.googlecloud.bigquery.BigQueryProjectConfig
+import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig
 import akka.stream.alpakka.googlecloud.bigquery.client.GoogleEndpoints
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
 import akka.stream.alpakka.googlecloud.bigquery.impl.sendrequest.SendRequestWithOauthHandling
@@ -17,7 +17,7 @@ import akka.stream.scaladsl.{Sink, Source}
 object BigQueryCallbacks {
   val ignore: PagingInfo => NotUsed = (_: PagingInfo) => NotUsed
   def tryToStopJob(
-      projectConfig: BigQueryProjectConfig
+      projectConfig: BigQueryConfig
   )(implicit actorSystem: ActorSystem, materializer: Materializer): PagingInfo => NotUsed = { pageInfo: PagingInfo =>
     {
       pageInfo.jobId.foreach(jobId => {

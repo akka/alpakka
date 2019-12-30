@@ -9,7 +9,7 @@ import akka.annotation.InternalApi
 import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.model.HttpRequest
 import akka.stream._
-import akka.stream.alpakka.googlecloud.bigquery.BigQueryProjectConfig
+import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig
 import akka.stream.alpakka.googlecloud.bigquery.impl.pagetoken.{AddPageToken, EndOfStreamDetector}
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
@@ -29,7 +29,7 @@ private[bigquery] object BigQueryStreamSource {
   def apply[T](httpRequest: HttpRequest,
                parserFn: JsObject => Option[T],
                onFinishCallback: PagingInfo => NotUsed,
-               projectConfig: BigQueryProjectConfig,
+               projectConfig: BigQueryConfig,
                http: HttpExt)(
       implicit mat: Materializer
   ): Source[T, NotUsed] =

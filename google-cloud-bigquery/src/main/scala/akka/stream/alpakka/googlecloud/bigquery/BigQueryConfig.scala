@@ -8,7 +8,7 @@ import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.stream.alpakka.googlecloud.bigquery.impl.GoogleSession
 
-object BigQueryProjectConfig {
+object BigQueryConfig {
 
   /**
    * Java API
@@ -17,19 +17,19 @@ object BigQueryProjectConfig {
              privateKey: String,
              projectId: String,
              dataset: String,
-             actorSystem: ActorSystem): BigQueryProjectConfig = {
+             actorSystem: ActorSystem): BigQueryConfig = {
     apply(clientEmail, privateKey, projectId, dataset)(actorSystem)
   }
 
   def apply(clientEmail: String, privateKey: String, projectId: String, dataset: String)(
       implicit actorSystem: ActorSystem
-  ): BigQueryProjectConfig = {
+  ): BigQueryConfig = {
     val session = GoogleSession(clientEmail, privateKey, actorSystem)
-    new BigQueryProjectConfig(projectId, dataset, session)
+    new BigQueryConfig(projectId, dataset, session)
   }
 
 }
 
-class BigQueryProjectConfig(val projectId: String,
-                            val dataset: String,
-                            @InternalApi private[bigquery] val session: GoogleSession)
+class BigQueryConfig(val projectId: String,
+                     val dataset: String,
+                     @InternalApi private[bigquery] val session: GoogleSession)

@@ -11,7 +11,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpRequest
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.bigquery
-import akka.stream.alpakka.googlecloud.bigquery.BigQueryProjectConfig
+import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig
 import akka.stream.alpakka.googlecloud.bigquery.client._
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
 import akka.stream.javadsl.Source
@@ -25,7 +25,7 @@ object GoogleBigQuerySource {
   def raw[T](httpRequest: HttpRequest,
              parserFn: java.util.function.Function[JsObject, java.util.Optional[T]],
              onFinishCallback: java.util.function.Function[PagingInfo, NotUsed],
-             projectConfig: BigQueryProjectConfig,
+             projectConfig: BigQueryConfig,
              actorSystem: ActorSystem,
              materializer: Materializer): Source[T, NotUsed] =
     bigquery.scaladsl.GoogleBigQuerySource
@@ -35,7 +35,7 @@ object GoogleBigQuerySource {
   def runQuery[T](query: String,
                   parserFn: java.util.function.Function[JsObject, java.util.Optional[T]],
                   onFinishCallback: java.util.function.Function[PagingInfo, NotUsed],
-                  projectConfig: BigQueryProjectConfig,
+                  projectConfig: BigQueryConfig,
                   actorSystem: ActorSystem,
                   materializer: Materializer): Source[T, NotUsed] =
     bigquery.scaladsl.GoogleBigQuerySource
@@ -44,7 +44,7 @@ object GoogleBigQuerySource {
 
   def runQueryCsvStyle(query: String,
                        onFinishCallback: java.util.function.Function[PagingInfo, NotUsed],
-                       projectConfig: BigQueryProjectConfig,
+                       projectConfig: BigQueryConfig,
                        actorSystem: ActorSystem,
                        materializer: Materializer): Source[util.List[String], NotUsed] =
     bigquery.scaladsl.GoogleBigQuerySource
@@ -52,7 +52,7 @@ object GoogleBigQuerySource {
       .map(_.asJava)
       .asJava
 
-  def listTables(projectConfig: BigQueryProjectConfig,
+  def listTables(projectConfig: BigQueryConfig,
                  actorSystem: ActorSystem,
                  materializer: Materializer): CompletionStage[util.List[TableListQueryJsonProtocol.QueryTableModel]] =
     bigquery.scaladsl.GoogleBigQuerySource
@@ -61,7 +61,7 @@ object GoogleBigQuerySource {
       .toJava
 
   def listFields(tableName: String,
-                 projectConfig: BigQueryProjectConfig,
+                 projectConfig: BigQueryConfig,
                  actorSystem: ActorSystem,
                  materializer: Materializer): CompletionStage[util.List[TableDataQueryJsonProtocol.Field]] =
     bigquery.scaladsl.GoogleBigQuerySource
