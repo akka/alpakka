@@ -9,7 +9,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
 import akka.stream.Materializer
-import akka.stream.alpakka.googlecloud.bigquery.BigQueryProjectConfig
+import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig
 import akka.stream.alpakka.googlecloud.bigquery.client._
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
 import akka.stream.alpakka.googlecloud.bigquery.impl.util.ConcatWithHeaders
@@ -25,14 +25,14 @@ object GoogleBigQuerySource {
       httpRequest: HttpRequest,
       parserFn: JsObject => Option[T],
       onFinishCallback: PagingInfo => NotUsed,
-      projectConfig: BigQueryProjectConfig
+      projectConfig: BigQueryConfig
   )(implicit mat: Materializer, actorSystem: ActorSystem): Source[T, NotUsed] =
     BigQueryStreamSource[T](httpRequest, parserFn, onFinishCallback, projectConfig, Http())
 
   def runQuery[T](query: String,
                   parserFn: JsObject => Option[T],
                   onFinishCallback: PagingInfo => NotUsed,
-                  projectConfig: BigQueryProjectConfig)(
+                  projectConfig: BigQueryConfig)(
       implicit mat: Materializer,
       actorSystem: ActorSystem
   ): Source[T, NotUsed] = {
@@ -43,14 +43,14 @@ object GoogleBigQuerySource {
   def runQueryCsvStyle(
       query: String,
       onFinishCallback: PagingInfo => NotUsed,
-      projectConfig: BigQueryProjectConfig
+      projectConfig: BigQueryConfig
   )(implicit mat: Materializer, actorSystem: ActorSystem): Source[Seq[String], NotUsed] = {
     val request = BigQueryCommunicationHelper.createQueryRequest(query, projectConfig.projectId, dryRun = false)
     BigQueryStreamSource(request, BigQueryCommunicationHelper.parseQueryResult, onFinishCallback, projectConfig, Http())
       .via(ConcatWithHeaders())
   }
 
-  def listTables(projectConfig: BigQueryProjectConfig)(
+  def listTables(projectConfig: BigQueryConfig)(
       implicit mat: Materializer,
       actorSystem: ActorSystem,
       executionContext: ExecutionContext
@@ -59,7 +59,7 @@ object GoogleBigQuerySource {
                  BigQueryCommunicationHelper.parseTableListResult,
                  projectConfig)
 
-  def listFields(tableName: String, projectConfig: BigQueryProjectConfig)(
+  def listFields(tableName: String, projectConfig: BigQueryConfig)(
       implicit mat: Materializer,
       actorSystem: ActorSystem,
       executionContext: ExecutionContext
@@ -70,7 +70,7 @@ object GoogleBigQuerySource {
       projectConfig
     )
 
-  private def runMetaQuery[T](url: String, parser: JsObject => Option[Seq[T]], projectConfig: BigQueryProjectConfig)(
+  private def runMetaQuery[T](url: String, parser: JsObject => Option[Seq[T]], projectConfig: BigQueryConfig)(
       implicit mat: Materializer,
       actorSystem: ActorSystem,
       executionContext: ExecutionContext
