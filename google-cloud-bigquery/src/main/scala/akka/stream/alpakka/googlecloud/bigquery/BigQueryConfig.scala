@@ -10,6 +10,8 @@ import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.stream.alpakka.googlecloud.bigquery.impl.GoogleSession
 
+import scala.compat.java8.OptionConverters._
+
 object ForwardProxyCredentials {
 
   /** Scala API */
@@ -105,9 +107,22 @@ final class ForwardProxy private (val host: String, val port: Int, val credentia
 
 object BigQueryConfig {
 
-  /**
-   * Java API
-   */
+  /** Scala API */
+  def apply(clientEmail: String, privateKey: String, projectId: String, dataset: String)(
+    implicit actorSystem: ActorSystem
+  ): BigQueryConfig = {
+    val session = GoogleSession(clientEmail, privateKey, actorSystem)
+    new BigQueryConfig(projectId, dataset, Option.empty, session)
+  }
+
+  def apply(clientEmail: String, privateKey: String, projectId: String, dataset: String, forwardProxy: ForwardProxy)(
+    implicit actorSystem: ActorSystem
+  ): BigQueryConfig = {
+    val session = GoogleSession(clientEmail, privateKey, actorSystem)
+    new BigQueryConfig(projectId, dataset, Option(forwardProxy), session)
+  }
+
+  /** Java API */
   def create(clientEmail: String,
              privateKey: String,
              projectId: String,
@@ -116,15 +131,25 @@ object BigQueryConfig {
     apply(clientEmail, privateKey, projectId, dataset)(actorSystem)
   }
 
-  def apply(clientEmail: String, privateKey: String, projectId: String, dataset: String)(
-      implicit actorSystem: ActorSystem
-  ): BigQueryConfig = {
-    val session = GoogleSession(clientEmail, privateKey, actorSystem)
-    new BigQueryConfig(projectId, dataset, session)
-  }
-
 }
 
-class BigQueryConfig(val projectId: String,
-                     val dataset: String,
-                     @InternalApi private[bigquery] val session: GoogleSession)
+final class BigQueryConfig(val projectId: String,
+                           val dataset: String,
+                           val forwardProxy: Option[ForwardProxy],
+                           @InternalApi private[bigquery] val session: GoogleSession) {
+
+  def withForwardProxy(value: ForwardProxy): BigQueryConfig =
+    copy(forwardProxy = Option(value))
+
+  private def copy(projectId: String = projectId,
+                    dataset: String = dataset,
+                    forwardProxy: Option[ForwardProxy] = forwardProxy,
+                    session: GoogleSession = session
+                  ): BigQueryConfig = new BigQueryConfig(
+    projectId = projectId,
+    dataset = dataset,
+    forwardProxy = forwardProxy,
+    session = session
+  )
+
+}
