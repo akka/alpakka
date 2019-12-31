@@ -111,14 +111,14 @@ object BigQueryConfig {
   def apply(clientEmail: String, privateKey: String, projectId: String, dataset: String)(
     implicit actorSystem: ActorSystem
   ): BigQueryConfig = {
-    val session = GoogleSession(clientEmail, privateKey, actorSystem)
+    val session = GoogleSession(clientEmail, privateKey, actorSystem, Option.empty)
     new BigQueryConfig(projectId, dataset, Option.empty, session)
   }
 
   def apply(clientEmail: String, privateKey: String, projectId: String, dataset: String, forwardProxy: ForwardProxy)(
     implicit actorSystem: ActorSystem
   ): BigQueryConfig = {
-    val session = GoogleSession(clientEmail, privateKey, actorSystem)
+    val session = GoogleSession(clientEmail, privateKey, actorSystem, Option(forwardProxy))
     new BigQueryConfig(projectId, dataset, Option(forwardProxy), session)
   }
 
