@@ -15,7 +15,7 @@ import scala.concurrent.Future
 @InternalApi
 private[bigquery] object GoogleSession {
   def apply(clientEmail: String, privateKey: String, actorSystem: ActorSystem): GoogleSession = {
-    new GoogleSession(clientEmail, privateKey, new GoogleTokenApi(Http()(actorSystem)))
+    new GoogleSession(clientEmail, privateKey, new GoogleTokenApi(Http()(actorSystem),actorSystem,Option.empty))
   }
 }
 
