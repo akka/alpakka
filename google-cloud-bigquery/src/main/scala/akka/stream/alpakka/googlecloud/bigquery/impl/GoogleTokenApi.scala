@@ -19,6 +19,7 @@ import akka.stream.alpakka.googlecloud.bigquery.ForwardProxy
 import akka.stream.alpakka.googlecloud.bigquery.impl.GoogleTokenApi.{AccessTokenExpiry, OAuthResponse}
 import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim, JwtTime}
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.ForwardProxyPoolSettings._
 
 import scala.concurrent.Future
 
@@ -55,7 +56,7 @@ private[impl] class GoogleTokenApi(http: => HttpExt, system: ActorSystem, forwar
     for {
       response <-
         forwardProxy match {
-          case Some(fp) => http.singleRequest(HttpRequest(HttpMethods.POST, googleTokenUrl, entity = requestEntity), settings = poolSettings(fp))
+          case Some(fp) => http.singleRequest(HttpRequest(HttpMethods.POST, googleTokenUrl, entity = requestEntity), settings = fp.poolSettings(system))
           case None => http.singleRequest(HttpRequest(HttpMethods.POST, googleTokenUrl, entity = requestEntity))
         }
       result <- Unmarshal(response.entity).to[OAuthResponse]
@@ -65,19 +66,6 @@ private[impl] class GoogleTokenApi(http: => HttpExt, system: ActorSystem, forwar
         expiresAt = expiresAt
       )
     }
-  }
-
-  private def poolSettings(forwardProxy: ForwardProxy) = {
-    val address = InetSocketAddress.createUnresolved(forwardProxy.host, forwardProxy.port)
-    val transport = forwardProxy.credentials.fold(ClientTransport.httpsProxy(address))(
-      c => ClientTransport.httpsProxy(address, BasicHttpCredentials(c.username, c.password))
-    )
-
-    ConnectionPoolSettings(system)
-      .withConnectionSettings(
-        ClientConnectionSettings(system)
-          .withTransport(transport)
-      )
   }
 
 }
