@@ -84,7 +84,7 @@ services:
       ADDED_FLAGS: "--tls=1"
   geode:
     container_name: geode
-    image: apachegeode/geode:1.10.0
+    image: apachegeode/geode:1.11.0
     hostname: geode
     mem_limit: 2g
     expose:
