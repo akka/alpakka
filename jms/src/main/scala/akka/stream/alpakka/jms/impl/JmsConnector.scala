@@ -68,7 +68,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
     // add subscription to purge queued connection status events after the configured timeout.
     val system: ActorSystem = ActorMaterializerHelper.downcast(materializer).system
     after(jmsSettings.connectionStatusSubscriptionTimeout, system.scheduler) {
-      Future(source.runWith(Sink.ignore)(this.materializer))
+      source.runWith(Sink.ignore)(this.materializer)
     }
   }
 
