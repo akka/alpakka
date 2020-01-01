@@ -18,4 +18,5 @@ trait JmsSettings {
   def destination: Option[Destination]
   def credentials: Option[Credentials]
   def sessionCount: Int
+  def connectionStatusSubscriptionTimeout: scala.concurrent.duration.FiniteDuration
 }

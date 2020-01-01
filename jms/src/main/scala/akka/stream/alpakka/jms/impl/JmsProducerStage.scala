@@ -149,7 +149,7 @@ private[jms] final class JmsProducerStage[E <: JmsEnvelope[PassThrough], PassThr
       private def publishAndCompleteStage(): Unit = {
         val previous = updateState(InternalConnectionState.JmsConnectorStopping(Success(Done)))
         closeSessions()
-        JmsConnector.connection(previous).foreach(_.close())
+        closeConnectionAsync(JmsConnector.connection(previous))
         completeStage()
       }
 

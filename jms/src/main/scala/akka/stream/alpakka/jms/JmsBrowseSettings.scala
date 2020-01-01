@@ -5,6 +5,7 @@
 package akka.stream.alpakka.jms
 
 import akka.actor.ActorSystem
+import akka.util.JavaDurationConverters._
 import com.typesafe.config.{Config, ConfigValueType}
 
 /**
@@ -16,7 +17,8 @@ final class JmsBrowseSettings private (
     val destination: Option[Destination],
     val credentials: Option[Credentials],
     val selector: Option[String],
-    val acknowledgeMode: AcknowledgeMode
+    val acknowledgeMode: AcknowledgeMode,
+    val connectionStatusSubscriptionTimeout: scala.concurrent.duration.FiniteDuration
 ) extends akka.stream.alpakka.jms.JmsSettings {
   override val sessionCount = 1
 
@@ -46,20 +48,27 @@ final class JmsBrowseSettings private (
   /** Set an explicit acknowledge mode. (Consumers have specific defaults.) */
   def withAcknowledgeMode(value: AcknowledgeMode): JmsBrowseSettings = copy(acknowledgeMode = value)
 
+  /** Java API: Timeout for connection status subscriber */
+  def withConnectionStatusSubscriptionTimeout(value: java.time.Duration): JmsBrowseSettings =
+    copy(connectionStatusSubscriptionTimeout = value.asScala)
+
   private def copy(
       connectionFactory: javax.jms.ConnectionFactory = connectionFactory,
       connectionRetrySettings: ConnectionRetrySettings = connectionRetrySettings,
       destination: Option[Destination] = destination,
       credentials: Option[Credentials] = credentials,
       selector: Option[String] = selector,
-      acknowledgeMode: AcknowledgeMode = acknowledgeMode
+      acknowledgeMode: AcknowledgeMode = acknowledgeMode,
+      connectionStatusSubscriptionTimeout: scala.concurrent.duration.FiniteDuration =
+        connectionStatusSubscriptionTimeout
   ): JmsBrowseSettings = new JmsBrowseSettings(
     connectionFactory = connectionFactory,
     connectionRetrySettings = connectionRetrySettings,
     destination = destination,
     credentials = credentials,
     selector = selector,
-    acknowledgeMode = acknowledgeMode
+    acknowledgeMode = acknowledgeMode,
+    connectionStatusSubscriptionTimeout = connectionStatusSubscriptionTimeout
   )
 
   override def toString =
@@ -69,7 +78,8 @@ final class JmsBrowseSettings private (
     s"destination=$destination," +
     s"credentials=$credentials," +
     s"selector=$selector," +
-    s"acknowledgeMode=${AcknowledgeMode.asString(acknowledgeMode)}" +
+    s"acknowledgeMode=${AcknowledgeMode.asString(acknowledgeMode)}," +
+    s"connectionStatusSubscriptionTimeout=${connectionStatusSubscriptionTimeout.toCoarsest}" +
     ")"
 }
 
@@ -96,13 +106,15 @@ object JmsBrowseSettings {
     val credentials = getOption("credentials", c => Credentials(c.getConfig("credentials")))
     val selector = getStringOption("selector")
     val acknowledgeMode = AcknowledgeMode.from(c.getString("acknowledge-mode"))
+    val connectionStatusSubscriptionTimeout = c.getDuration("connection-status-subscription-timeout").asScala
     new JmsBrowseSettings(
       connectionFactory,
       connectionRetrySettings,
       destination,
       credentials,
       selector,
-      acknowledgeMode
+      acknowledgeMode,
+      connectionStatusSubscriptionTimeout
     )
   }
 

@@ -6,19 +6,20 @@ package akka.stream.alpakka.jms.impl
 
 import java.util.concurrent.atomic.AtomicReference
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.pattern.after
 import akka.stream.alpakka.jms._
 import akka.stream.alpakka.jms.impl.InternalConnectionState._
-import akka.stream.scaladsl.{Source, SourceQueueWithComplete}
+import akka.stream.scaladsl.{BroadcastHub, Keep, Sink, Source, SourceQueueWithComplete}
 import akka.stream.stage.{AsyncCallback, StageLogging, TimerGraphStageLogic}
 import akka.stream.{ActorAttributes, ActorMaterializerHelper, Attributes, OverflowStrategy}
 import javax.jms
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -56,26 +57,40 @@ private[jms] trait JmsConnector[S <: JmsSession] {
   override def preStart(): Unit = {
     // keep two elements since the time between initializing and connected can be very short.
     // always drops the old state, and keeps the most current (two) state(s) in the queue.
-    val pair = Source.queue[InternalConnectionState](2, OverflowStrategy.dropHead).preMaterialize()(this.materializer)
-    connectionStateQueue = pair._1
-    connectionStateSourcePromise.complete(Success(pair._2))
+    val (queue, source) =
+      Source
+        .queue[InternalConnectionState](2, OverflowStrategy.dropHead)
+        .toMat(BroadcastHub.sink(1))(Keep.both)
+        .run()(this.materializer)
+    connectionStateQueue = queue
+    connectionStateSourcePromise.complete(Success(source))
+
+    // add subscription to purge queued connection status events after the configured timeout.
+    val system: ActorSystem = ActorMaterializerHelper.downcast(materializer).system
+    after(jmsSettings.connectionStatusSubscriptionTimeout, system.scheduler) {
+      Future(source.runWith(Sink.ignore)(this.materializer))
+    }
   }
 
   protected def finishStop(): Unit = {
     val update: InternalConnectionState => InternalConnectionState = {
       case JmsConnectorStopping(completion) => JmsConnectorStopped(completion)
-      case current => current
+      case stopped: JmsConnectorStopped => stopped
+      case current =>
+        JmsConnectorStopped(
+          Failure(new IllegalStateException(s"BUG: completing stage stop in unexpected state ${current.getClass}"))
+        )
     }
 
     closeSessions()
     val previous = updateStateWith(update)
-    connection(previous).foreach(_.close())
+    closeConnectionAsync(connection(previous))
     connectionStateQueue.complete()
   }
 
   protected def publishAndFailStage(ex: Throwable): Unit = {
     val previous = updateState(JmsConnectorStopping(Failure(ex)))
-    connection(previous).foreach(_.close())
+    closeConnectionAsync(connection(previous))
     failStage(ex)
   }
 
@@ -163,7 +178,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
     case Failure(ex: jms.JMSException) =>
       updateState(JmsConnectorDisconnected) match {
         case JmsConnectorInitializing(c, attempt, backoffMaxed, _) =>
-          c.foreach(_.close())
+          closeConnectionAsync(c)
           maybeReconnect(ex, attempt, backoffMaxed)
         case _ => ()
       }
@@ -193,7 +208,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
       publishAndFailStage(exception)
     } else {
       val status = updateState(JmsConnectorDisconnected)
-      connection(status).foreach(_.close())
+      closeConnectionAsync(connection(status))
       val delay = if (backoffMaxed) maxBackoff else waitTime(nextAttempt)
       val backoffNowMaxed = backoffMaxed || delay == maxBackoff
       scheduleOnce(AttemptConnect(nextAttempt, backoffNowMaxed), delay)
@@ -231,6 +246,20 @@ private[jms] trait JmsConnector[S <: JmsSession] {
     // reduces flakiness (start, consume, then crash) at the cost of increased latency of startup.
     allSessions.foreach(_.foreach(onSession.invoke))
   }
+
+  protected def closeConnection(connection: jms.Connection): Unit = {
+    // deregister exception listener to clear reference from JMS client to the Akka stage
+    Try(connection.setExceptionListener(null))
+    try {
+      connection.close()
+      log.info("JMS connection {} closed", connection)
+    } catch {
+      case NonFatal(e) => log.error(e, "Error closing JMS connection {}", connection)
+    }
+  }
+
+  protected def closeConnectionAsync(eventualConnection: Future[jms.Connection]): Future[Done] =
+    eventualConnection.map(closeConnection).map(_ => Done)
 
   protected def closeSessions(): Unit = {
     jmsSessions.foreach(s => closeSession(s))
@@ -290,7 +319,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
     jmsConnection.map { connection =>
       connection.setExceptionListener(new jms.ExceptionListener {
         override def onException(ex: jms.JMSException): Unit = {
-          Try(connection.close()) // best effort closing the connection.
+          closeConnection(connection) // best effort closing the connection.
           connectionFailedCB.invoke(ex)
         }
       })
@@ -316,7 +345,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
       }
       // ... and close if the connection is not to be used, don't return the connection
       if (!status.compareAndSet(Connecting, Connected)) {
-        connectionRef.get.foreach(_.close())
+        connectionRef.get.foreach(closeConnection)
         connectionRef.set(None)
         throw JmsConnectTimedOut("Received timed out signal trying to establish connection")
       } else connection
@@ -328,7 +357,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
       // status field and an atomic compareAndSet to see whether we should indeed time out, or just return
       // the connection. In this case it does not matter which future returns. Both will have the right answer.
       if (status.compareAndSet(Connecting, TimedOut)) {
-        connectionRef.get.foreach(_.close())
+        connectionRef.get.foreach(closeConnection)
         connectionRef.set(None)
         Future.failed(
           JmsConnectTimedOut(
