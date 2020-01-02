@@ -26,13 +26,13 @@ class BigQueryEndToEndSpec extends BigQueryTableHelper with Matchers {
 
     "list tables" in {
       assume(enableE2E, "BigQuery env-vars not configures")
-      val tables: Future[Seq[QueryTableModel]] = GoogleBigQuerySource.listTables(connection)
+      val tables: Future[Seq[QueryTableModel]] = GoogleBigQuerySource.listTables(projectConfig)
       await(tables) should contain(QueryTableModel(TableReference(tableName), "TABLE"))
     }
 
     "list fields" in {
       assume(enableE2E, "BigQuery env-vars not configures")
-      val fields: Future[Seq[Field]] = GoogleBigQuerySource.listFields(tableName, connection)
+      val fields: Future[Seq[Field]] = GoogleBigQuerySource.listFields(tableName, projectConfig)
       await(fields).map(_.name).sorted shouldBe Seq("A1", "A2", "A3")
     }
 
@@ -41,7 +41,7 @@ class BigQueryEndToEndSpec extends BigQueryTableHelper with Matchers {
       val result =
         await(
           GoogleBigQuerySource
-            .runQueryCsvStyle(s"SELECT * FROM $dataset.$tableName;", BigQueryCallbacks.ignore, connection)
+            .runQueryCsvStyle(s"SELECT * FROM $dataset.$tableName;", BigQueryCallbacks.ignore, projectConfig)
             .runWith(Sink.seq)
         )
 

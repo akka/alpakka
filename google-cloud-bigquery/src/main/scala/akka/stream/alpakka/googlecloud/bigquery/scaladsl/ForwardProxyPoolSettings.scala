@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package akka.stream.alpakka.googlecloud.bigquery.scaladsl
 
 import java.net.InetSocketAddress
@@ -27,4 +31,3 @@ private[bigquery] object ForwardProxyPoolSettings {
   }
 
 }
-

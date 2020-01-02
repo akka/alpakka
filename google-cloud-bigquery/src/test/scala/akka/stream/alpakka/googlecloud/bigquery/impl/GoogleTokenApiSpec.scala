@@ -62,6 +62,7 @@ class GoogleTokenApiSpec
   "GoogleTokenApi" should {
 
     "call the api as the docs want to" in {
+      val system = mock[ActorSystem]
       val http = mock[HttpExt]
       when(
         http.singleRequest(any[HttpRequest](),
@@ -77,7 +78,7 @@ class GoogleTokenApiSpec
         )
       )
 
-      val api = new GoogleTokenApi(http)
+      val api = new GoogleTokenApi(http, system, Option.empty)
       Await.result(api.getAccessToken("email", privateKey), defaultPatience.timeout)
 
       val captor: ArgumentCaptor[HttpRequest] = ArgumentCaptor.forClass(classOf[HttpRequest])
@@ -99,6 +100,7 @@ class GoogleTokenApiSpec
     }
 
     "return the token" in {
+      val system = mock[ActorSystem]
       val http = mock[HttpExt]
       when(
         http.singleRequest(any[HttpRequest](),
@@ -114,7 +116,7 @@ class GoogleTokenApiSpec
         )
       )
 
-      val api = new GoogleTokenApi(http)
+      val api = new GoogleTokenApi(http, system, Option.empty)
       api.getAccessToken("email", privateKey).futureValue should matchPattern {
         case AccessTokenExpiry("token", exp) if exp > (System.currentTimeMillis / 1000L + 3000L) =>
       }

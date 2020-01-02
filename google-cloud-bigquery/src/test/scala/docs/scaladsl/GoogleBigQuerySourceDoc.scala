@@ -11,10 +11,12 @@ package docs.scaladsl
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.googlecloud.bigquery.BigQueryProjectConfig
+import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig
 import akka.stream.alpakka.googlecloud.bigquery.client.BigQueryCommunicationHelper
+/*
 import akka.stream.alpakka.googlecloud.bigquery.client.TableDataQueryJsonProtocol.Field
 import akka.stream.alpakka.googlecloud.bigquery.client.TableListQueryJsonProtocol.QueryTableModel
+ */
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.{BigQueryCallbacks, GoogleBigQuerySource}
 import akka.stream.scaladsl.Source
 import spray.json.DefaultJsonProtocol._
@@ -33,12 +35,14 @@ class GoogleBigQuerySourceDoc {
   //#init-mat
 
   //#init-config
-  val config = BigQueryProjectConfig("project@test.test", "privateKeyFromGoogle", "projectID", "bigQueryDatasetName")
+  val config = BigQueryConfig("project@test.test", "privateKeyFromGoogle", "projectID", "bigQueryDatasetName")
   //#init-config
 
   //#list-tables-and-fields
+  /*
   val tables: Future[Seq[QueryTableModel]] = GoogleBigQuerySource.listTables(config)
   val fields: Future[Seq[Field]] = GoogleBigQuerySource.listFields("myTable", config)
+   */
   //#list-tables-and-fields
 
   //#csv-style
@@ -66,10 +70,12 @@ class GoogleBigQuerySourceDoc {
 
   def dryRunParser(result: JsObject): Option[DryRunResponse] = Try(result.convertTo[DryRunResponse]).toOption
 
+  /*
   val request = BigQueryCommunicationHelper.createQueryRequest("SELECT uid, name FROM bigQueryDatasetName.myTable",
                                                                config.projectId,
                                                                dryRun = true)
 
   val dryRunStream = GoogleBigQuerySource.raw(request, dryRunParser, BigQueryCallbacks.ignore, config)
+   */
   //#dry-run
 }

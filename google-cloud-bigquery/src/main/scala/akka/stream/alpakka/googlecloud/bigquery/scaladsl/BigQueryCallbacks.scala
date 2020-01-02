@@ -23,7 +23,7 @@ object BigQueryCallbacks {
       pageInfo.jobId.foreach(jobId => {
         Source
           .single(HttpRequest(HttpMethods.POST, GoogleEndpoints.cancellationUrl(projectConfig.projectId, jobId)))
-          .via(SendRequestWithOauthHandling(projectConfig.session, Http()))
+          .via(SendRequestWithOauthHandling(projectConfig, Http()))
           .runWith(Sink.ignore)
       })
       NotUsed
