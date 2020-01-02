@@ -90,8 +90,8 @@ private[jms] final class JmsProducerStage[E <: JmsEnvelope[PassThrough], PassThr
       protected val jmsSettings: JmsProducerSettings = settings
 
       override def preStart(): Unit = {
-        super.preStart()
         ec = executionContext(inheritedAttributes)
+        super.preStart()
         initSessionAsync()
       }
 

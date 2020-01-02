@@ -15,7 +15,6 @@ import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.{Done, NotUsed}
 
 import scala.collection.mutable
-import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
 import javax.jms
@@ -70,8 +69,8 @@ private abstract class SourceStageLogic[T](shape: SourceShape[T],
   }
 
   override def preStart(): Unit = {
-    super.preStart()
     ec = executionContext(inheritedAttributes)
+    super.preStart()
     initSessionAsync()
   }
 
