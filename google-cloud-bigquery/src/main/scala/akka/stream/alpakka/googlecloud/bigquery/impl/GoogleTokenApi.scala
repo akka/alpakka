@@ -54,11 +54,12 @@ private[impl] class GoogleTokenApi(http: => HttpExt, system: ActorSystem, forwar
     ).toEntity
 
     for {
-      response <-
-        forwardProxy match {
-          case Some(fp) => http.singleRequest(HttpRequest(HttpMethods.POST, googleTokenUrl, entity = requestEntity), settings = fp.poolSettings(system))
-          case None => http.singleRequest(HttpRequest(HttpMethods.POST, googleTokenUrl, entity = requestEntity))
-        }
+      response <- forwardProxy match {
+        case Some(fp) =>
+          http.singleRequest(HttpRequest(HttpMethods.POST, googleTokenUrl, entity = requestEntity),
+                             settings = fp.poolSettings(system))
+        case None => http.singleRequest(HttpRequest(HttpMethods.POST, googleTokenUrl, entity = requestEntity))
+      }
       result <- Unmarshal(response.entity).to[OAuthResponse]
     } yield {
       AccessTokenExpiry(

@@ -40,14 +40,14 @@ final class ForwardProxyCredentials private (val username: String, val password:
 
   override def toString =
     "ForwardProxyCredentials(" +
-      s"username=$username," +
-      s"password=******" +
-      ")"
+    s"username=$username," +
+    s"password=******" +
+    ")"
 
   override def equals(other: Any): Boolean = other match {
     case that: ForwardProxyCredentials =>
       Objects.equals(this.username, that.username) &&
-        Objects.equals(this.password, that.password)
+      Objects.equals(this.password, that.password)
     case _ => false
   }
 
@@ -88,16 +88,16 @@ final class ForwardProxy private (val host: String, val port: Int, val credentia
 
   override def toString =
     "ForwardProxy(" +
-      s"host=$host," +
-      s"port=$port," +
-      s"credentials=$credentials" +
-      ")"
+    s"host=$host," +
+    s"port=$port," +
+    s"credentials=$credentials" +
+    ")"
 
   override def equals(other: Any): Boolean = other match {
     case that: ForwardProxy =>
       Objects.equals(this.host, that.host) &&
-        Objects.equals(this.port, that.port) &&
-        Objects.equals(this.credentials, that.credentials)
+      Objects.equals(this.port, that.port) &&
+      Objects.equals(this.credentials, that.credentials)
     case _ => false
   }
 
@@ -109,14 +109,14 @@ object BigQueryConfig {
 
   /** Scala API */
   def apply(clientEmail: String, privateKey: String, projectId: String, dataset: String)(
-    implicit actorSystem: ActorSystem
+      implicit actorSystem: ActorSystem
   ): BigQueryConfig = {
     val session = GoogleSession(clientEmail, privateKey, actorSystem, Option.empty)
     new BigQueryConfig(projectId, dataset, Option.empty, session)
   }
 
   def apply(clientEmail: String, privateKey: String, projectId: String, dataset: String, forwardProxy: ForwardProxy)(
-    implicit actorSystem: ActorSystem
+      implicit actorSystem: ActorSystem
   ): BigQueryConfig = {
     val session = GoogleSession(clientEmail, privateKey, actorSystem, Option(forwardProxy))
     new BigQueryConfig(projectId, dataset, Option(forwardProxy), session)
@@ -142,10 +142,9 @@ final class BigQueryConfig(val projectId: String,
     copy(forwardProxy = Option(value))
 
   private def copy(projectId: String = projectId,
-                    dataset: String = dataset,
-                    forwardProxy: Option[ForwardProxy] = forwardProxy,
-                    session: GoogleSession = session
-                  ): BigQueryConfig = new BigQueryConfig(
+                   dataset: String = dataset,
+                   forwardProxy: Option[ForwardProxy] = forwardProxy,
+                   session: GoogleSession = session): BigQueryConfig = new BigQueryConfig(
     projectId = projectId,
     dataset = dataset,
     forwardProxy = forwardProxy,

@@ -7,7 +7,7 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.googlecloud.bigquery.BigQueryProjectConfig
+import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig
 import akka.stream.alpakka.googlecloud.bigquery.client.GoogleEndpoints
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.{BigQueryCallbacks, GoogleBigQuerySource}
 import akka.stream.scaladsl.Sink
@@ -33,7 +33,7 @@ trait BigQueryTestHelper {
   lazy val clientEmail = config.getString("bigquery.dbconfig.clientEmail")
   lazy val privateKey = config.getString("bigquery.dbconfig.privateKey").replace("\\n", "\n")
 
-  lazy val connection = BigQueryProjectConfig(
+  lazy val projectConfig = BigQueryConfig(
     clientEmail = clientEmail,
     privateKey = privateKey,
     projectId = projectId,
@@ -47,7 +47,7 @@ trait BigQueryTestHelper {
 
   def runRequest(httpRequest: HttpRequest): Future[Done] =
     GoogleBigQuerySource
-      .raw(httpRequest, x => Option(x), BigQueryCallbacks.ignore, connection)
+      .raw(httpRequest, x => Option(x), BigQueryCallbacks.ignore, projectConfig)
       .runWith(Sink.ignore)
 
   def createTable(schemaDefinition: String): HttpRequest = HttpRequest(

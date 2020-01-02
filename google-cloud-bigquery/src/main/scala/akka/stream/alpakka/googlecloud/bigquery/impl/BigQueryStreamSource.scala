@@ -5,6 +5,7 @@
 package akka.stream.alpakka.googlecloud.bigquery.impl
 
 import akka.NotUsed
+import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.model.HttpRequest
@@ -17,6 +18,7 @@ import akka.stream.alpakka.googlecloud.bigquery.impl.sendrequest.SendRequestWith
 import akka.stream.alpakka.googlecloud.bigquery.impl.util.{Delay, FlowInitializer, OnFinishCallback}
 import akka.stream.scaladsl.{GraphDSL, Source, Zip}
 import spray.json.JsObject
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.ForwardProxyPoolSettings._
 
 import scala.concurrent.ExecutionContext
 
@@ -31,7 +33,8 @@ private[bigquery] object BigQueryStreamSource {
                onFinishCallback: PagingInfo => NotUsed,
                projectConfig: BigQueryConfig,
                http: HttpExt)(
-      implicit mat: Materializer
+      implicit mat: Materializer,
+      system: ActorSystem
   ): Source[T, NotUsed] =
     Source.fromGraph(GraphDSL.create() { implicit builder =>
       import GraphDSL.Implicits._
@@ -39,7 +42,7 @@ private[bigquery] object BigQueryStreamSource {
       implicit val ec: ExecutionContext = mat.executionContext
 
       val in = builder.add(Source.repeat(httpRequest))
-      val requestSender = builder.add(SendRequestWithOauthHandling(projectConfig.session, http))
+      val requestSender = builder.add(SendRequestWithOauthHandling(projectConfig, http))
       val parser = builder.add(Parser(parserFn))
       val uptreamFinishHandler =
         builder.add(OnFinishCallback[(Boolean, PagingInfo)](callbackConverter(onFinishCallback)))

@@ -4,25 +4,34 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.impl.sendrequest
 
+import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
+import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig
 import akka.stream.alpakka.googlecloud.bigquery.impl.GoogleSession
 import akka.stream.scaladsl.Flow
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.ForwardProxyPoolSettings._
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @InternalApi
 private[bigquery] object SendRequestWithOauthHandling {
 
-  def apply(googleSession: GoogleSession, http: HttpExt)(
-      implicit mat: Materializer
+  def apply(bigQueryConfig: BigQueryConfig, http: HttpExt)(
+      implicit mat: Materializer,
+      system: ActorSystem
   ) =
     Flow[HttpRequest]
-      .via(EnrichRequestWithOauth(googleSession))
-      .mapAsync(1)(http.singleRequest(_))
+      .via(EnrichRequestWithOauth(bigQueryConfig.session))
+      .mapAsync(1)(
+        bigQueryConfig.forwardProxy match {
+          case Some(fp) => http.singleRequest(_, settings = fp.poolSettings(system))
+          case None => http.singleRequest(_)
+        }
+      )
       .mapAsync(1)(handleRequestError(_))
 
   private def handleRequestError(response: HttpResponse)(implicit materializer: Materializer) = {
