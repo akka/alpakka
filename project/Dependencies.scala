@@ -10,7 +10,7 @@ object Dependencies {
   val Scala213 = "2.13.1"
   val ScalaVersions = Seq(Scala212, Scala211, Scala213).filterNot(_ == Scala211 && Nightly)
 
-  val AkkaVersion = if (Nightly) "2.6.0" else "2.5.26"
+  val AkkaVersion = if (Nightly) "2.6.0" else "2.5.27"
   val AkkaBinaryVersion = if (Nightly) "2.6" else "2.5"
 
   val InfluxDBJavaVersion = "2.15"
