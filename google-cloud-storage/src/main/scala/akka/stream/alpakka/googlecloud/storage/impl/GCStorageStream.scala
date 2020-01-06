@@ -268,7 +268,7 @@ import scala.util.control.NonFatal
             Uri(settings.baseUrl)
               .withPath(Path(settings.basePath) ++ sourcePath / "rewriteTo" ++ destinationPath)
               .withQuery(Query(queryParams))
-        )
+        ).map(response => response.withEntity(response.entity.withoutSizeLimit))
       ).runWith(Sink.head)
         .flatMap(entityForSuccess)
         .flatMap(responseEntityTo[RewriteResponse])
