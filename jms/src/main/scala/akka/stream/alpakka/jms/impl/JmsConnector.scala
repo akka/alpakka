@@ -78,7 +78,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
       case stopped: JmsConnectorStopped => stopped
       case current =>
         JmsConnectorStopped(
-          Failure(new IllegalStateException(s"BUG: completing stage stop in unexpected state ${current.getClass}"))
+          Failure(new IllegalStateException(s"Completing stage stop in unexpected state ${current.getClass}"))
         )
     }
 
