@@ -170,6 +170,8 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
   // for the ExampleApp in the tests
   connectInput in run := true,
   scalacOptions += "-P:silencer:pathFilters=src_managed",
+  // compiler plugin not enabled for doc task. see https://github.com/ghik/silencer/issues/40
+  Compile / doc / scalacOptions := scalacOptions.value.filterNot(_.startsWith("-P:silencer")),
   crossScalaVersions --= Seq(Dependencies.Scala211) // 2.11 is not supported since Akka gRPC 0.6
 )
 // #grpc-plugins
