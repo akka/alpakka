@@ -66,10 +66,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
     connectionStateSourcePromise.complete(Success(source))
 
     // add subscription to purge queued connection status events after the configured timeout.
-    val system: ActorSystem = ActorMaterializerHelper.downcast(materializer).system
-    after(jmsSettings.connectionStatusSubscriptionTimeout, system.scheduler) {
-      source.runWith(Sink.ignore)(this.materializer)
-    }
+    scheduleOnce("connection-status-timeout", jmsSettings.connectionStatusSubscriptionTimeout)
   }
 
   protected def finishStop(): Unit = {
@@ -85,6 +82,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
     closeSessions()
     val previous = updateStateWith(update)
     closeConnectionAsync(connection(previous))
+    if (isTimerActive("connection-status-timeout")) drainConnectionState()
     connectionStateQueue.complete()
   }
 
@@ -219,8 +217,12 @@ private[jms] trait JmsConnector[S <: JmsSession] {
     case AttemptConnect(attempt, backoffMaxed) =>
       log.info("{} retries connecting, attempt {}", attributes.nameLifted.mkString, attempt)
       initSessionAsync(attempt, backoffMaxed)
+    case "connection-status-timeout" => drainConnectionState()
     case _ => ()
   }
+
+  private def drainConnectionState(): Unit =
+    Source.fromFuture(connectionStateSource).flatMapConcat(identity).runWith(Sink.ignore)(this.materializer)
 
   protected def executionContext(attributes: Attributes): ExecutionContext = {
     val dispatcherId = (attributes.get[ActorAttributes.Dispatcher](ActorAttributes.IODispatcher) match {
