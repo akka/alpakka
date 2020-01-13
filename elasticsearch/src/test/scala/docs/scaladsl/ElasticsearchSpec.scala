@@ -473,9 +473,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
         )
         .runWith(Sink.seq)
 
-      val start = System.currentTimeMillis()
       val writeResults = createBooks.futureValue
-      val end = System.currentTimeMillis()
 
       writeResults should have size writeMsgs.size
 
