@@ -441,21 +441,26 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
       val indexName = "sink5_1"
 
       val bookNr = 100
-      val writeMsgs = Iterator.from(0)
+      val writeMsgs = Iterator
+        .from(0)
         .take(bookNr)
         .grouped(5)
         .zipWithIndex
-        .flatMap { case (numBlock, index) =>
-          val writeMsgBlock = numBlock.map { n =>
-            WriteMessage.createCreateMessage(n.toString, Map("title" -> s"Book ${n}"))
-              .withPassThrough(n)
-          }
+        .flatMap {
+          case (numBlock, index) =>
+            val writeMsgBlock = numBlock.map { n =>
+              WriteMessage
+                .createCreateMessage(n.toString, Map("title" -> s"Book ${n}"))
+                .withPassThrough(n)
+            }
 
-          val writeMsgFailed = WriteMessage.createCreateMessage("0", Map("title" -> s"Failed"))
-            .withPassThrough(bookNr + index)
+            val writeMsgFailed = WriteMessage
+              .createCreateMessage("0", Map("title" -> s"Failed"))
+              .withPassThrough(bookNr + index)
 
-          (writeMsgBlock ++ Iterator(writeMsgFailed)).toList
-        }.toList
+            (writeMsgBlock ++ Iterator(writeMsgFailed)).toList
+        }
+        .toList
 
       val createBooks = Source(writeMsgs)
         .via(
