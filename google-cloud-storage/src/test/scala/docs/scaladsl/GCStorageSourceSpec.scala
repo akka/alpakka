@@ -365,6 +365,27 @@ class GCStorageSourceSpec
       result.futureValue.mkString shouldBe fileContent
     }
 
+    // retry for all akka-http standard server errors (5XX) https://github.com/akka/alpakka/issues/2057
+    "automatically retry when file downloads fail with a non-500 server error" in {
+      val bucketName = "alpakka"
+      val fileName = "file1.txt"
+      val fileContent = "This is the file content"
+
+      mockFileDownloadFailureThenSuccess(503, "Backend Error", fileContent)
+
+      val downloadSource = GCStorage.download(bucketName, fileName)
+
+      val data: Future[Option[Source[ByteString, NotUsed]]] =
+        downloadSource.runWith(Sink.head)
+
+      import system.dispatcher
+
+      val result: Future[Seq[String]] = data
+        .flatMap(_.getOrElse(Source.empty).map(_.utf8String).runWith(Sink.seq[String]))
+
+      result.futureValue.mkString shouldBe fileContent
+    }
+
     "upload small file" in {
       val fileContent = "chunk1"
       val contentType = ContentTypes.`application/octet-stream`

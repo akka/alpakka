@@ -362,7 +362,7 @@ import scala.util.control.NonFatal
           // We use mapConcat with an empty output here instead of throwing an exception to restart
           // the Source, as an exception causes stack traces to be logged
           .mapConcat {
-            case resp @ HttpResponse(StatusCodes.InternalServerError, _, responseEntity, _) =>
+            case resp @ HttpResponse(StatusCodes.ServerError(_), _, responseEntity, _) =>
               if (remainingAttempts.getAndDecrement() > 0) {
                 responseEntity.discardBytes()
                 List()
