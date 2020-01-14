@@ -4,7 +4,7 @@
 
 package docs.scaladsl
 
-import java.util.concurrent.{CompletableFuture, Future}
+import java.util.concurrent.CompletableFuture
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
@@ -22,7 +22,7 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 
 import scala.concurrent.Await
 import scala.concurrent.duration._

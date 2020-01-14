@@ -4,9 +4,10 @@
 
 package akka.stream.alpakka.couchbase
 
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{CompletionStage, TimeUnit}
 
 import akka.actor.ActorSystem
+import akka.annotation.InternalApi
 import com.couchbase.client.java.document.Document
 import com.couchbase.client.java.env.CouchbaseEnvironment
 import com.couchbase.client.java.{PersistTo, ReplicateTo}
@@ -14,6 +15,8 @@ import com.typesafe.config.Config
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
+import scala.concurrent.Future
+import scala.compat.java8.FutureConverters._
 import scala.concurrent.duration._
 
 /**
@@ -111,7 +114,7 @@ object CouchbaseSessionSettings {
     val username = config.getString("username")
     val password = config.getString("password")
     val nodes = config.getStringList("nodes").asScala.toList
-    new CouchbaseSessionSettings(username, password, nodes, None)
+    new CouchbaseSessionSettings(username, password, nodes, environment = None, enrichAsync = Future.successful)
   }
 
   /**
@@ -126,7 +129,7 @@ object CouchbaseSessionSettings {
    * Scala API:
    */
   def apply(username: String, password: String): CouchbaseSessionSettings =
-    new CouchbaseSessionSettings(username, password, Nil, None)
+    new CouchbaseSessionSettings(username, password, Nil, environment = None, enrichAsync = Future.successful)
 
   /**
    * Java API:
@@ -148,13 +151,15 @@ object CouchbaseSessionSettings {
    */
   def create(system: ActorSystem): CouchbaseSessionSettings =
     apply(system.settings.config.getConfig(configPath))
-
 }
 
-final class CouchbaseSessionSettings private (val username: String,
-                                              val password: String,
-                                              val nodes: immutable.Seq[String],
-                                              val environment: Option[CouchbaseEnvironment]) {
+final class CouchbaseSessionSettings private (
+    val username: String,
+    val password: String,
+    val nodes: immutable.Seq[String],
+    val environment: Option[CouchbaseEnvironment],
+    val enrichAsync: CouchbaseSessionSettings => Future[CouchbaseSessionSettings]
+) {
 
   def withUsername(username: String): CouchbaseSessionSettings =
     copy(username = username)
@@ -172,14 +177,38 @@ final class CouchbaseSessionSettings private (val username: String,
   def withNodes(nodes: java.util.List[String]): CouchbaseSessionSettings =
     copy(nodes = nodes.asScala.toList)
 
+  /** Scala API:
+   * Allows to provide an asynchronous method to update the settings.
+   */
+  def withEnrichAsync(value: CouchbaseSessionSettings => Future[CouchbaseSessionSettings]): CouchbaseSessionSettings =
+    copy(enrichAsync = value)
+
+  /** Java API:
+   * Allows to provide an asynchronous method to update the settings.
+   */
+  def withEnrichAsyncCs(
+      value: java.util.function.Function[CouchbaseSessionSettings, CompletionStage[CouchbaseSessionSettings]]
+  ): CouchbaseSessionSettings =
+    copy(enrichAsync = (s: CouchbaseSessionSettings) => value.apply(s).toScala)
+
   def withEnvironment(environment: CouchbaseEnvironment): CouchbaseSessionSettings =
     copy(environment = Some(environment))
 
-  private def copy(username: String = username,
-                   password: String = password,
-                   nodes: immutable.Seq[String] = nodes,
-                   environment: Option[CouchbaseEnvironment] = environment): CouchbaseSessionSettings =
-    new CouchbaseSessionSettings(username, password, nodes, environment)
+  /**
+   * Internal API.
+   * Used internally to apply the asynchronous settings enrichment function.
+   */
+  @InternalApi
+  def enriched: Future[CouchbaseSessionSettings] = enrichAsync(this)
+
+  private def copy(
+      username: String = username,
+      password: String = password,
+      nodes: immutable.Seq[String] = nodes,
+      environment: Option[CouchbaseEnvironment] = environment,
+      enrichAsync: CouchbaseSessionSettings => Future[CouchbaseSessionSettings] = enrichAsync
+  ): CouchbaseSessionSettings =
+    new CouchbaseSessionSettings(username, password, nodes, environment, enrichAsync)
 
   override def equals(other: Any): Boolean = other match {
     case that: CouchbaseSessionSettings =>

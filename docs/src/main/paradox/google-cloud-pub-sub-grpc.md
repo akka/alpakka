@@ -14,21 +14,64 @@ look at the alternative @ref[Alpakka Google Cloud Pub/Sub](google-cloud-pub-sub.
 
 ## Artifacts
 
+Akka gRPC uses Akka Discovery internally. Make sure to add Akka Discovery with the same Akka version that the application uses.
+
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-google-cloud-pub-sub-grpc_$scalaBinaryVersion$
-  version=$version$
+  artifact=akka-stream-alpakka-google-cloud-pub-sub-grpc_$scala.binary.version$
+  version=$project.version$
+  group2=com.typesafe.akka
+  artifact2=akka-discovery_$scala.binary.version$
+  version2=Your-Akka-version
 }
 
 The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
 
 @@dependencies { projectId="google-cloud-pub-sub-grpc" }
 
+## Build setup
+
+The Alpakka Google Cloud Pub/Sub gRPC library contains the classes generated from [Google's protobuf specification](https://github.com/googleapis/java-pubsub/tree/master/proto-google-cloud-pubsub-v1/).
+
+@@@note { title="ALPN on JDK 8" }
+
+For use on JDK 8 the ALPN Java agent needs to be set up explicitly.
+
+@@@
+
+### Maven
+
+When using JDK 8: configure your project to use the Java agent for ALPN and add `-javaagent:...` to your startup scripts as described in the @extref:[Akka gRPC documentation](akka-grpc:/buildtools/maven.html#starting-your-akka-grpc-server-from-maven).
+
+### sbt
+
+When using JDK 8: Configure your project to use the Java agent for ALPN and add `-javaagent:...` to your startup scripts.
+
+Pull in the [`sbt-javaagent`](https://github.com/sbt/sbt-javaagent) plugin.
+
+project/plugins.sbt
+: @@snip (/project/plugins.sbt) { #grpc-agent }
+
+Enable the Akka gRPC and JavaAgent plugins on the sbt project.
+
+build.sbt
+: @@snip (/build.sbt) { #grpc-plugins }
+
+Add the Java agent to the runtime configuration.
+
+build.sbt
+:   ```scala
+    javaAgents += "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.9"
+    ```
+
+### Gradle
+
+When using JDK 8: Configure your project to use the Java agent for ALPN and add `-javaagent:...` to your startup scripts as described in the @extref:[Akka gRPC documentation](akka-grpc:/buildtools/gradle.html#starting-your-akka-grpc-server-from-gradle).
 
 ## Configuration
 
 The connector comes with the default settings configured to work with the Google Pub Sub endpoint and uses the default way of
-locating credentials by looking at the `GOOGLE_APPLICATION_CREDENTIAL` environment variable. Please check
+locating credentials by looking at the `GOOGLE_APPLICATION_CREDENTIALS` environment variable. Please check
 [Google official documentation](https://cloud.google.com/pubsub/docs/reference/libraries#setting_up_authentication) for more details
 on how to obtain credentials for your application.
 

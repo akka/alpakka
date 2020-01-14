@@ -8,15 +8,10 @@ import java.time.Duration
 import java.util.concurrent.{CompletableFuture, CompletionStage}
 
 import akka.actor.Cancellable
-import akka.dispatch.ExecutionContexts
-import akka.stream.alpakka.googlecloud.pubsub.grpc.impl.Setup
 import akka.stream.{ActorMaterializer, Attributes}
 import akka.stream.javadsl.{Flow, Keep, Sink, Source}
 import akka.{Done, NotUsed}
 import com.google.pubsub.v1._
-
-import scala.compat.java8.FutureConverters._
-import scala.concurrent.Future
 
 /**
  * Google Pub/Sub Akka Stream operator factory.
@@ -30,13 +25,13 @@ object GooglePubSub {
    * @param parallelism controls how many messages can be in-flight at any given time
    */
   def publish(parallelism: Int): Flow[PublishRequest, PublishResponse, NotUsed] =
-    Setup
-      .createFlow { implicit mat => implicit attr =>
+    Flow
+      .setup { (mat, attr) =>
         Flow
           .create[PublishRequest]
-          .mapAsyncUnordered(parallelism, javaFunction(publisher().client.publish))
+          .mapAsyncUnordered(parallelism, japiFunction(publisher(mat, attr).client.publish))
       }
-      .mapMaterializedValue(javaFunction(_ => NotUsed))
+      .mapMaterializedValue(japiFunction(_ => NotUsed))
 
   /**
    * Create a source that emits messages for a given subscription.
@@ -48,8 +43,8 @@ object GooglePubSub {
    */
   def subscribe(request: StreamingPullRequest,
                 pollInterval: Duration): Source[ReceivedMessage, CompletableFuture[Cancellable]] =
-    Setup
-      .createSource { implicit mat => implicit attr =>
+    Source
+      .setup { (mat, attr) =>
         val cancellable = new CompletableFuture[Cancellable]()
 
         val subsequentRequest = request.toBuilder
@@ -57,21 +52,21 @@ object GooglePubSub {
           .setStreamAckDeadlineSeconds(0)
           .build()
 
-        subscriber().client
+        subscriber(mat, attr).client
           .streamingPull(
             Source
               .single(request)
               .concat(
                 Source
                   .tick(pollInterval, pollInterval, subsequentRequest)
-                  .mapMaterializedValue(javaFunction(cancellable.complete))
+                  .mapMaterializedValue(japiFunction(cancellable.complete))
               )
           )
-          .mapConcat(javaFunction(_.getReceivedMessagesList))
-          .mapMaterializedValue(javaFunction(_ => cancellable))
+          .mapConcat(japiFunction(_.getReceivedMessagesList))
+          .mapMaterializedValue(japiFunction(_ => cancellable))
       }
-      .mapMaterializedValue(javaFunction(flattenFutureCs))
-      .mapMaterializedValue(javaFunction(_.toCompletableFuture))
+      .mapMaterializedValue(japiFunction(flattenCs))
+      .mapMaterializedValue(japiFunction(_.toCompletableFuture))
 
   /**
    * Create a sink that accepts consumed message acknowledgements.
@@ -81,36 +76,36 @@ object GooglePubSub {
    * @param parallelism controls how many acknowledgements can be in-flight at any given time
    */
   def acknowledge(parallelism: Int): Sink[AcknowledgeRequest, CompletionStage[Done]] =
-    Setup
-      .createSink { implicit mat => implicit attr =>
+    Sink
+      .setup { (mat, attr) =>
         Flow
           .create[AcknowledgeRequest]
-          .mapAsyncUnordered(parallelism, javaFunction(subscriber().client.acknowledge))
+          .mapAsyncUnordered(parallelism, japiFunction(subscriber(mat, attr).client.acknowledge))
           .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
       }
-      .mapMaterializedValue(javaFunction(flattenFutureCs))
+      .mapMaterializedValue(japiFunction(flattenCs))
 
   /**
    * Helper for creating akka.japi.function.Function instances from Scala
    * functions as Scala 2.11 does not know about SAMs.
    */
-  private def javaFunction[A, B](f: A => B): akka.japi.function.Function[A, B] =
+  private def japiFunction[A, B](f: A => B): akka.japi.function.Function[A, B] =
     new akka.japi.function.Function[A, B]() {
       override def apply(a: A): B = f(a)
     }
 
-  private def flattenFutureCs[T](f: Future[CompletionStage[T]]): CompletionStage[T] =
-    f.map(_.toScala)(ExecutionContexts.sameThreadExecutionContext)
-      .flatMap(identity)(ExecutionContexts.sameThreadExecutionContext)
-      .toJava
+  private def flattenCs[T](f: CompletionStage[_ <: CompletionStage[T]]): CompletionStage[T] =
+    f.thenCompose(new java.util.function.Function[CompletionStage[T], CompletionStage[T]] {
+      override def apply(t: CompletionStage[T]): CompletionStage[T] = t
+    })
 
-  private def publisher()(implicit mat: ActorMaterializer, attr: Attributes) =
+  private def publisher(mat: ActorMaterializer, attr: Attributes) =
     attr
       .get[PubSubAttributes.Publisher]
       .map(_.publisher)
       .getOrElse(GrpcPublisherExt()(mat.system).publisher)
 
-  private def subscriber()(implicit mat: ActorMaterializer, attr: Attributes) =
+  private def subscriber(mat: ActorMaterializer, attr: Attributes) =
     attr
       .get[PubSubAttributes.Subscriber]
       .map(_.subscriber)

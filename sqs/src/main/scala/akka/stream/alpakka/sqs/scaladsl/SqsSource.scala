@@ -7,9 +7,10 @@ package akka.stream.alpakka.sqs.scaladsl
 import akka._
 import akka.stream._
 import akka.stream.alpakka.sqs.SqsSourceSettings
-import akka.stream.scaladsl.Source
+import akka.stream.alpakka.sqs.impl.BalancingMapAsync
+import akka.stream.scaladsl.{Flow, Source}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import software.amazon.awssdk.services.sqs.model.{Message, QueueAttributeName, ReceiveMessageRequest}
+import software.amazon.awssdk.services.sqs.model._
 
 import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters._
@@ -32,7 +33,7 @@ object SqsSource {
           ReceiveMessageRequest
             .builder()
             .queueUrl(queueUrl)
-            .attributeNames(settings.attributeNames.map(_.name).map(QueueAttributeName.fromValue).asJava)
+            .attributeNamesWithStrings(settings.attributeNames.map(_.name).asJava)
             .messageAttributeNames(settings.messageAttributeNames.map(_.name).asJava)
             .maxNumberOfMessages(settings.maxBatchSize)
             .waitTimeSeconds(settings.waitTimeSeconds)
@@ -42,9 +43,20 @@ object SqsSource {
           case Some(t) => requestBuilder.visibilityTimeout(t.toSeconds.toInt).build()
         }
       }
-      .mapAsync(settings.maxBufferSize / settings.maxBatchSize)(sqsClient.receiveMessage(_).toScala)
+      .via(resolveHandler(settings.parallelRequests))
       .map(_.messages().asScala.toList)
       .takeWhile(messages => !settings.closeOnEmptyReceive || messages.nonEmpty)
       .mapConcat(identity)
       .buffer(settings.maxBufferSize, OverflowStrategy.backpressure)
+
+  private def resolveHandler(parallelism: Int)(implicit sqsClient: SqsAsyncClient) =
+    if (parallelism == 1) {
+      Flow[ReceiveMessageRequest].mapAsyncUnordered(parallelism)(sqsClient.receiveMessage(_).toScala)
+    } else {
+      BalancingMapAsync[ReceiveMessageRequest, ReceiveMessageResponse](
+        parallelism,
+        sqsClient.receiveMessage(_).toScala,
+        (response, _) => if (response.messages().isEmpty) 1 else parallelism
+      )
+    }
 }

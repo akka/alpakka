@@ -111,7 +111,9 @@ private class JmsMessageProducer(jmsProducer: jms.MessageProducer, jmsSession: J
       case JmsType(jmsType) => message.setJMSType(jmsType)
       case JmsReplyTo(destination) => message.setJMSReplyTo(destination.create(jmsSession.session))
       case JmsCorrelationId(jmsCorrelationId) => message.setJMSCorrelationID(jmsCorrelationId)
-      case JmsDeliveryMode(_) | JmsPriority(_) | JmsTimeToLive(_) => // see #send(JmsMessage)
+      case JmsExpiration(jmsExpiration) => message.setJMSExpiration(jmsExpiration)
+      case JmsDeliveryMode(_) | JmsPriority(_) | JmsTimeToLive(_) | JmsTimestamp(_) | JmsRedelivered(_) |
+          JmsMessageId(_) => // see #send(JmsMessage)
     }
 }
 
@@ -119,7 +121,7 @@ private class JmsMessageProducer(jmsProducer: jms.MessageProducer, jmsSession: J
  * Internal API.
  */
 @InternalApi
-private object JmsMessageProducer {
+private[impl] object JmsMessageProducer {
   def apply(jmsSession: JmsProducerSession, settings: JmsProducerSettings, epoch: Int): JmsMessageProducer = {
     val producer = jmsSession.session.createProducer(null)
     if (settings.timeToLive.nonEmpty) {

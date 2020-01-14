@@ -15,6 +15,7 @@ import net.schmizz.sshj.transport.verification.PromiscuousVerifier
 import net.schmizz.sshj.userauth.keyprovider.OpenSSHKeyFile
 import net.schmizz.sshj.userauth.password.PasswordUtils
 import net.schmizz.sshj.xfer.FilePermission
+import org.apache.commons.net.DefaultSocketFactory
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
@@ -30,6 +31,8 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
 
   def connect(connectionSettings: SftpSettings)(implicit ssh: SSHClient): Try[Handler] = Try {
     import connectionSettings._
+
+    proxy.foreach(p => ssh.setSocketFactory(new DefaultSocketFactory(p)))
 
     if (!strictHostKeyChecking)
       ssh.addHostKeyVerifier(new PromiscuousVerifier)
@@ -52,7 +55,7 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
   }
 
   def listFiles(basePath: String, handler: Handler): immutable.Seq[FtpFile] = {
-    val path = if (!basePath.isEmpty && basePath.head != '/') s"/$basePath" else basePath
+    val path = if (basePath.nonEmpty && basePath.head != '/') s"/$basePath" else basePath
     val entries = handler.ls(path).asScala
     entries.map { file =>
       FtpFile(
@@ -64,6 +67,11 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
         getPosixFilePermissions(file)
       )
     }.toVector
+  }
+
+  def mkdir(path: String, name: String, handler: Handler): Unit = {
+    val updatedPath = CommonFtpOperations.concatPath(path, name)
+    handler.mkdirs(updatedPath)
   }
 
   private def getPosixFilePermissions(file: RemoteResourceInfo) = {
@@ -85,9 +93,12 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
 
   def listFiles(handler: Handler): immutable.Seq[FtpFile] = listFiles(".", handler)
 
-  def retrieveFileInputStream(name: String, handler: Handler): Try[InputStream] = Try {
+  def retrieveFileInputStream(name: String, handler: Handler): Try[InputStream] =
+    retrieveFileInputStream(name, handler, 0L)
+
+  def retrieveFileInputStream(name: String, handler: Handler, offset: Long): Try[InputStream] = Try {
     val remoteFile = handler.open(name, java.util.EnumSet.of(OpenMode.READ))
-    val is = new remoteFile.RemoteFileInputStream() {
+    val is = new remoteFile.RemoteFileInputStream(offset) {
 
       override def close(): Unit =
         try {

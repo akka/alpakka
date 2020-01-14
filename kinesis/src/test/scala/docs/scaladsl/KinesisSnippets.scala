@@ -10,27 +10,37 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.alpakka.kinesis.scaladsl.{KinesisFlow, KinesisSink, KinesisSource}
 import akka.stream.alpakka.kinesis.{KinesisFlowSettings, ShardSettings}
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl.{Flow, FlowWithContext, Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.ByteString
-import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder
-import com.amazonaws.services.kinesis.model.{PutRecordsRequestEntry, PutRecordsResultEntry, Record, ShardIteratorType}
+import software.amazon.awssdk.services.kinesis.model.{PutRecordsRequestEntry, PutRecordsResultEntry, Record}
 
 import scala.concurrent.duration._
 
 object KinesisSnippets {
 
   //#init-client
+  import com.github.matsluni.akkahttpspi.AkkaHttpClient
+  import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
+
   implicit val system: ActorSystem = ActorSystem()
   implicit val materializer: Materializer = ActorMaterializer()
 
-  implicit val amazonKinesisAsync: com.amazonaws.services.kinesis.AmazonKinesisAsync =
-    AmazonKinesisAsyncClientBuilder.defaultClient()
+  implicit val amazonKinesisAsync: software.amazon.awssdk.services.kinesis.KinesisAsyncClient =
+    KinesisAsyncClient
+      .builder()
+      .httpClient(AkkaHttpClient.builder().withActorSystem(system).build())
+      // Possibility to configure the retry policy
+      // see https://doc.akka.io/docs/alpakka/current/aws-shared-configuration.html
+      // .overrideConfiguration(...)
+      .build()
 
-  system.registerOnTermination(amazonKinesisAsync.shutdown())
+  system.registerOnTermination(amazonKinesisAsync.close())
   //#init-client
 
   //#source-settings
+  import software.amazon.awssdk.services.kinesis.model.ShardIteratorType
+
   val settings =
     ShardSettings(streamName = "myStreamName", shardId = "shard-id")
       .withRefreshInterval(1.second)
@@ -39,7 +49,7 @@ object KinesisSnippets {
   //#source-settings
 
   //#source-single
-  val source: Source[com.amazonaws.services.kinesis.model.Record, NotUsed] =
+  val source: Source[software.amazon.awssdk.services.kinesis.model.Record, NotUsed] =
     KinesisSource.basic(settings, amazonKinesisAsync)
   //#source-single
 
@@ -58,9 +68,6 @@ object KinesisSnippets {
     .withMaxBatchSize(500)
     .withMaxRecordsPerSecond(1000)
     .withMaxBytesPerSecond(1000000)
-    .withMaxRetries(5)
-    .withBackoffStrategy(KinesisFlowSettings.Exponential)
-    .withRetryInitialTimeout(100.milli)
 
   val defaultFlowSettings = KinesisFlowSettings.Defaults
 
@@ -72,11 +79,11 @@ object KinesisSnippets {
 
   val flow2: Flow[PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed] = KinesisFlow("myStreamName", flowSettings)
 
-  val flow3: Flow[(PutRecordsRequestEntry, String), (PutRecordsResultEntry, String), NotUsed] =
-    KinesisFlow.withUserContext("myStreamName")
+  val flow3: FlowWithContext[PutRecordsRequestEntry, String, PutRecordsResultEntry, String, NotUsed] =
+    KinesisFlow.withContext("myStreamName")
 
-  val flow4: Flow[(PutRecordsRequestEntry, String), (PutRecordsResultEntry, String), NotUsed] =
-    KinesisFlow.withUserContext("myStreamName", flowSettings)
+  val flow4: FlowWithContext[PutRecordsRequestEntry, String, PutRecordsResultEntry, String, NotUsed] =
+    KinesisFlow.withContext("myStreamName", flowSettings)
 
   val flow5: Flow[(String, ByteString), PutRecordsResultEntry, NotUsed] =
     KinesisFlow.byPartitionAndBytes("myStreamName")
@@ -89,5 +96,16 @@ object KinesisSnippets {
   val sink3: Sink[(String, ByteString), NotUsed] = KinesisSink.byPartitionAndBytes("myStreamName")
   val sink4: Sink[(String, ByteBuffer), NotUsed] = KinesisSink.byPartitionAndData("myStreamName")
   //#flow-sink
+
+  //#error-handling
+  val flowWithErrors: Flow[PutRecordsRequestEntry, PutRecordsResultEntry, NotUsed] = KinesisFlow("myStreamName")
+    .map { response =>
+      if (response.errorCode() ne null) {
+        throw new RuntimeException(response.errorCode())
+      }
+
+      response
+    }
+  //#error-handling
 
 }

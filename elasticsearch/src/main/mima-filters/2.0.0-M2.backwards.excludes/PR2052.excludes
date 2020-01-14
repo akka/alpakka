@@ -1,0 +1,2 @@
+# new parameter to private constructor
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.elasticsearch.ElasticsearchWriteSettings.this")

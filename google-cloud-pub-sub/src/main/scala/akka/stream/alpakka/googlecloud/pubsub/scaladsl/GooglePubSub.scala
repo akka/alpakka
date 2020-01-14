@@ -4,15 +4,16 @@
 
 package akka.stream.alpakka.googlecloud.pubsub.scaladsl
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Cancellable}
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.pubsub._
 import akka.stream.alpakka.googlecloud.pubsub.impl._
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.scaladsl.{Flow, FlowWithContext, Keep, Sink, Source}
 import akka.{Done, NotUsed}
 
 import scala.collection.immutable
 import scala.concurrent.Future
+import scala.concurrent.duration._
 
 object GooglePubSub extends GooglePubSub {
   private[pubsub] override val httpApi = PubSubApi
@@ -22,66 +23,95 @@ protected[pubsub] trait GooglePubSub {
   private[pubsub] def httpApi: PubSubApi
 
   /**
-   * Creates a flow to that publish messages to a topic and emits the message ids
+   * Creates a flow to that publishes messages to a topic and emits the message ids.
    */
-  def publish(topic: String, config: PubSubConfig, parallelism: Int = 1)(
-      implicit actorSystem: ActorSystem,
-      materializer: Materializer
-  ): Flow[PublishRequest, immutable.Seq[String], NotUsed] = {
-    import materializer.executionContext
+  def publish(topic: String,
+              config: PubSubConfig,
+              parallelism: Int = 1): Flow[PublishRequest, immutable.Seq[String], NotUsed] =
+    Flow[PublishRequest]
+      .map((_, ()))
+      .via(
+        publishWithContext[Unit](topic, config, parallelism).asFlow
+      )
+      .map(_._1)
 
-    if (httpApi.isEmulated) {
-      Flow[PublishRequest].mapAsyncUnordered(parallelism) { request =>
-        httpApi.publish(config.projectId, topic, maybeAccessToken = None, request)
-      }
-    } else {
-      Flow[PublishRequest].mapAsyncUnordered(parallelism) { request =>
-        config.session.getToken().flatMap { accessToken =>
-          httpApi.publish(config.projectId, topic, Some(accessToken), request)
+  /**
+   * Creates a flow to that publishes messages to a topic and emits the message ids and carries a context
+   * through.
+   */
+  def publishWithContext[C](
+      topic: String,
+      config: PubSubConfig,
+      parallelism: Int = 1
+  ): FlowWithContext[PublishRequest, C, immutable.Seq[String], C, NotUsed] = {
+    // some wrapping back and forth as FlowWithContext doesn't offer `setup`
+    // https://github.com/akka/akka/issues/27883
+    FlowWithContext.fromTuples {
+      Flow
+        .setup { (mat, _) =>
+          implicit val system: ActorSystem = mat.system
+          implicit val materializer: Materializer = mat
+          httpApi
+            .accessTokenWithContext[PublishRequest, C](config)
+            .via(
+              httpApi.publish[C](config.projectId, topic, parallelism)
+            )
+            .asFlow
         }
-      }
+        .mapMaterializedValue(_ => NotUsed)
     }
   }
 
-  def subscribe(subscription: String, config: PubSubConfig)(
-      implicit actorSystem: ActorSystem
-  ): Source[ReceivedMessage, NotUsed] =
-    Source.fromGraph(
-      new GooglePubSubSource(
-        projectId = config.projectId,
-        session = config.session,
-        subscription = subscription,
-        returnImmediately = config.pullReturnImmediately,
-        maxMessages = config.pullMaxMessagesPerInternalBatch,
-        httpApi = httpApi
-      )
-    )
+  /**
+   * Creates a source pulling messages from subscription
+   */
+  def subscribe(subscription: String, config: PubSubConfig): Source[ReceivedMessage, Cancellable] = {
+    val flow =
+      Flow
+        .setup { (mat, _) =>
+          implicit val system: ActorSystem = mat.system
+          implicit val materializer: Materializer = mat
+          Flow[Done]
+            .via(httpApi.accessToken[Done](config))
+            .via(
+              httpApi
+                .pull(config.projectId,
+                      subscription,
+                      config.pullReturnImmediately,
+                      config.pullMaxMessagesPerInternalBatch)
+            )
+            .mapConcat(_.receivedMessages.getOrElse(Seq.empty[ReceivedMessage]).toIndexedSeq)
+        }
 
-  def acknowledge(
-      subscription: String,
-      config: PubSubConfig,
-      parallelism: Int = 1
-  )(implicit actorSystem: ActorSystem, materializer: Materializer): Sink[AcknowledgeRequest, Future[Done]] = {
-    import materializer.executionContext
+    Source
+      .tick(0.seconds, 1.second, Done)
+      .via(flow)
+  }
 
-    (if (httpApi.isEmulated) {
-       Flow[AcknowledgeRequest].mapAsyncUnordered(parallelism) { ackReq =>
-         httpApi.acknowledge(project = config.projectId,
-                             subscription = subscription,
-                             maybeAccessToken = None,
-                             request = ackReq)
-       }
-     } else {
-       Flow[AcknowledgeRequest]
-         .mapAsyncUnordered(parallelism) { ackReq =>
-           config.session.getToken().flatMap { accessToken =>
-             httpApi.acknowledge(project = config.projectId,
-                                 subscription = subscription,
-                                 maybeAccessToken = Some(accessToken),
-                                 request = ackReq)
-           }
-         }
-     })
+  /**
+   * Creates a sink for acknowledging messages on subscription
+   */
+  @deprecated("Use `acknowledge` without `parallelism` param", since = "2.0.0")
+  def acknowledge(subscription: String,
+                  config: PubSubConfig,
+                  parallelism: Int = 1): Sink[AcknowledgeRequest, Future[Done]] =
+    acknowledge(subscription, config)
+
+  /**
+   * Creates a sink for acknowledging messages on subscription
+   */
+  def acknowledge(subscription: String, config: PubSubConfig): Sink[AcknowledgeRequest, Future[Done]] = {
+    val flow =
+      Flow
+        .setup { (mat, _) =>
+          implicit val system: ActorSystem = mat.system
+          implicit val materializer: Materializer = mat
+          Flow[AcknowledgeRequest]
+            .via(httpApi.accessToken[AcknowledgeRequest](config))
+            .via(httpApi.acknowledge(config.projectId, subscription))
+        }
+    flow
       .toMat(Sink.ignore)(Keep.right)
   }
+
 }

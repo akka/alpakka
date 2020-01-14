@@ -26,6 +26,8 @@ class SplitAfterSizeSpec(_system: ActorSystem)
 
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withDebugLogging(true))
 
+  override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
+
   final val MaxChunkSize = 1024
   "SplitAfterSize" should "yield a single empty substream on no input" in assertAllStagesStopped {
     Source

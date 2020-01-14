@@ -4,17 +4,18 @@
 
 package docs.scaladsl
 
+import java.time.Instant
 import java.util.Base64
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Cancellable}
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.pubsub._
 import akka.stream.alpakka.googlecloud.pubsub.scaladsl.GooglePubSub
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl.{Flow, FlowWithContext, Sink, Source}
 import akka.{Done, NotUsed}
 
 import scala.collection.immutable.Seq
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
 import scala.concurrent.duration._
 
 class ExampleUsage {
@@ -47,7 +48,7 @@ class ExampleUsage {
 
   //#publish-single
   val publishMessage =
-    PubSubMessage(messageId = "1", data = new String(Base64.getEncoder.encode("Hello Google!".getBytes)))
+    PublishMessage(new String(Base64.getEncoder.encode("Hello Google!".getBytes)))
   val publishRequest = PublishRequest(Seq(publishMessage))
 
   val source: Source[PublishRequest, NotUsed] = Source.single(publishRequest)
@@ -58,13 +59,34 @@ class ExampleUsage {
   val publishedMessageIds: Future[Seq[Seq[String]]] = source.via(publishFlow).runWith(Sink.seq)
   //#publish-single
 
+  //#publish-single-with-context
+  val publishMessageWithContext =
+    PublishMessage(new String(Base64.getEncoder.encode("Hello Google!".getBytes)))
+  val publishRequestWithContext = PublishRequest(Seq(publishMessage))
+  val resultPromise = Promise[Seq[String]]
+
+  val sourceWithContext: Source[(PublishRequest, Promise[Seq[String]]), NotUsed] =
+    Source.single(publishRequest -> resultPromise)
+
+  val publishFlowWithContext
+      : FlowWithContext[PublishRequest, Promise[Seq[String]], Seq[String], Promise[Seq[String]], NotUsed] =
+    GooglePubSub.publishWithContext[Promise[Seq[String]]](topic, config)
+
+  val publishedMessageIdsWithContext: Future[Seq[(Seq[String], Promise[Seq[String]])]] =
+    sourceWithContext.via(publishFlowWithContext).runWith(Sink.seq)
+  //#publish-single-with-context
+
   //#publish-fast
-  val messageSource: Source[PubSubMessage, NotUsed] = Source(List(publishMessage, publishMessage))
-  messageSource.groupedWithin(1000, 1.minute).map(PublishRequest.apply).via(publishFlow).to(Sink.seq)
+  val messageSource: Source[PublishMessage, NotUsed] = Source(List(publishMessage, publishMessage))
+  messageSource
+    .groupedWithin(1000, 1.minute)
+    .map(grouped => PublishRequest(grouped))
+    .via(publishFlow)
+    .to(Sink.seq)
   //#publish-fast
 
   //#subscribe
-  val subscriptionSource: Source[ReceivedMessage, NotUsed] =
+  val subscriptionSource: Source[ReceivedMessage, Cancellable] =
     GooglePubSub.subscribe(subscription, config)
 
   val ackSink: Sink[AcknowledgeRequest, Future[Done]] =
@@ -82,8 +104,14 @@ class ExampleUsage {
   //#subscribe
 
   //#subscribe-auto-ack
-  val subscribeMessageSoruce: Source[ReceivedMessage, NotUsed] = ???
-  val processMessage: Sink[ReceivedMessage, NotUsed] = ???
+  val subscribeMessageSoruce: Source[ReceivedMessage, NotUsed] = // ???
+    //#subscribe-auto-ack
+    Source.single(ReceivedMessage("id", PubSubMessage(Some("data"), None, "msg-id-1", Instant.now)))
+  //#subscribe-auto-ack
+  val processMessage: Sink[ReceivedMessage, NotUsed] = // ???
+    //#subscribe-auto-ack
+    Flow[ReceivedMessage].to(Sink.ignore)
+  //#subscribe-auto-ack
 
   val batchAckSink =
     Flow[ReceivedMessage].map(_.ackId).groupedWithin(1000, 1.minute).map(AcknowledgeRequest.apply).to(ackSink)

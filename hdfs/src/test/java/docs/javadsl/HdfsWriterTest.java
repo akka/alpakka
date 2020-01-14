@@ -282,8 +282,7 @@ public class HdfsWriterTest {
     assertEquals(logs, expect);
     JavaTestUtils.verifyOutputFileSize(fs, logs);
     assertEquals(
-        JavaTestUtils.readLogs(fs, logs)
-            .stream()
+        JavaTestUtils.readLogs(fs, logs).stream()
             .map(string -> string.split("\n"))
             .flatMap(Arrays::stream)
             .collect(Collectors.toList()),

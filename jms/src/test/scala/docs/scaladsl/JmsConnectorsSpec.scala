@@ -5,6 +5,7 @@
 package docs.scaladsl
 
 import java.nio.charset.Charset
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{CountDownLatch, LinkedBlockingQueue, ThreadLocalRandom, TimeUnit}
 
@@ -14,6 +15,7 @@ import akka.stream.alpakka.jms.scaladsl._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.{Done, NotUsed}
 import javax.jms._
+
 import org.apache.activemq.command.ActiveMQQueue
 import org.apache.activemq.{ActiveMQConnectionFactory, ActiveMQSession}
 import org.mockito.ArgumentMatchers._
@@ -575,7 +577,7 @@ class JmsConnectorsSpec extends JmsSpec {
             Future {
               Thread.sleep(100)
               JmsTextMessage(n.toString)
-          }
+            }
         )
         .runWith(jmsSink)
 
@@ -1205,5 +1207,66 @@ class JmsConnectorsSpec extends JmsSpec {
     Source(in).runWith(jmsTopicSink)
 
     result.futureValue shouldEqual in
+  }
+
+  "support request/reply with temporary queues" in withConnectionFactory() { connectionFactory =>
+    val connection = connectionFactory.createConnection()
+    connection.start()
+    val session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE)
+    val tempQueue = session.createTemporaryQueue()
+    val tempQueueDest = alpakka.jms.Destination(tempQueue)
+    val message = "ThisIsATest"
+    val correlationId = UUID.randomUUID().toString
+
+    val toRespondSink: Sink[JmsMessage, Future[Done]] = JmsProducer.sink(
+      JmsProducerSettings(system, connectionFactory).withQueue("test")
+    )
+
+    val toRespondStreamCompletion: Future[Done] =
+      Source
+        .single(
+          JmsTextMessage(message)
+            .withHeader(JmsCorrelationId(correlationId))
+            .withHeader(JmsReplyTo(tempQueueDest))
+        )
+        .runWith(toRespondSink)
+
+    //#request-reply
+    val respondStreamControl: JmsConsumerControl =
+      JmsConsumer(JmsConsumerSettings(system, connectionFactory).withQueue("test"))
+        .collect {
+          case message: TextMessage => JmsTextMessage(message)
+        }
+        .map { textMessage =>
+          textMessage.headers.foldLeft(JmsTextMessage(textMessage.body.reverse)) {
+            case (acc, rt: JmsReplyTo) => acc.to(rt.jmsDestination)
+            case (acc, cId: JmsCorrelationId) => acc.withHeader(cId)
+            case (acc, _) => acc
+          }
+        }
+        .via {
+          JmsProducer.flow(
+            JmsProducerSettings(system, connectionFactory).withQueue("ignored")
+          )
+        }
+        .to(Sink.ignore)
+        .run()
+    //#request-reply
+
+    // getting ConnectionRetryException when trying to listen using streams, assuming it's because
+    // a different session can't listen on the original session's TemporaryQueue
+    val consumer = session.createConsumer(tempQueue)
+    val result = Future(consumer.receive(5.seconds.toMillis))(system.dispatcher)
+
+    toRespondStreamCompletion.futureValue shouldEqual Done
+
+    val msg = result.futureValue
+    msg shouldBe a[TextMessage]
+    msg.getJMSCorrelationID shouldEqual correlationId
+    msg.asInstanceOf[TextMessage].getText shouldEqual message.reverse
+
+    respondStreamControl.shutdown()
+
+    connection.close()
   }
 }

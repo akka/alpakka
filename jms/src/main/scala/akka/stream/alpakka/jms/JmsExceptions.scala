@@ -3,7 +3,10 @@
  */
 
 package akka.stream.alpakka.jms
+import javax.jms
+
 import scala.concurrent.TimeoutException
+import scala.concurrent.duration.Duration
 import scala.util.control.NoStackTrace
 
 /**
@@ -37,6 +40,12 @@ case class NullMapMessageEntry(entryName: String, message: JmsMapMessagePassThro
     )
     with NonRetriableJmsException
 
+case class UnsupportedMessageType(message: jms.Message)
+    extends Exception(
+      s"Can't convert a ${message.getClass.getName} to a JmsMessage"
+    )
+    with NonRetriableJmsException
+
 case class ConnectionRetryException(message: String, cause: Throwable) extends Exception(message, cause)
 
 case object RetrySkippedOnMissingConnection
@@ -48,3 +57,6 @@ final case class StopMessageListenerException() extends Exception("Stopping Mess
 case object JmsNotConnected extends Exception("JmsConnector is not connected") with NoStackTrace
 
 case class JmsConnectTimedOut(message: String) extends TimeoutException(message)
+
+final class JmsTxAckTimeout(ackTimeout: Duration)
+    extends TimeoutException(s"The TxEnvelope didn't get committed or rolled back within ack-timeout ($ackTimeout)")

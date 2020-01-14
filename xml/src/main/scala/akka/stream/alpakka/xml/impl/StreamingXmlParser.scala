@@ -17,7 +17,8 @@ import scala.annotation.tailrec
 /**
  * INTERNAL API
  */
-@InternalApi private[xml] class StreamingXmlParser(ignoreInvalidChars: Boolean)
+@InternalApi private[xml] class StreamingXmlParser(ignoreInvalidChars: Boolean,
+                                                   configureFactory: AsyncXMLInputFactory => Unit)
     extends GraphStage[FlowShape[ByteString, ParseEvent]] {
   val in: Inlet[ByteString] = Inlet("XMLParser.in")
   val out: Outlet[ParseEvent] = Outlet("XMLParser.out")
@@ -28,8 +29,9 @@ import scala.annotation.tailrec
 
       import javax.xml.stream.XMLStreamConstants
 
-      private val feeder: AsyncXMLInputFactory = new InputFactoryImpl()
-      private val parser: AsyncXMLStreamReader[AsyncByteArrayFeeder] = feeder.createAsyncFor(Array.empty)
+      private val factory: AsyncXMLInputFactory = new InputFactoryImpl()
+      configureFactory(factory)
+      private val parser: AsyncXMLStreamReader[AsyncByteArrayFeeder] = factory.createAsyncFor(Array.empty)
       if (ignoreInvalidChars) {
         parser.getConfig.setIllegalCharHandler(new ReplacingIllegalCharHandler(0))
       }

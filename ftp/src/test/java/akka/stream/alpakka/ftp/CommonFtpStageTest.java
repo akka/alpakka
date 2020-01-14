@@ -17,6 +17,7 @@ import akka.stream.testkit.javadsl.TestSink;
 import akka.util.ByteString;
 import org.junit.Assert;
 
+import java.time.Instant;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -24,7 +25,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-interface CommonFtpStageTest extends FtpSupport, AkkaSupport {
+interface CommonFtpStageTest extends BaseSupport, AkkaSupport {
 
   Source<FtpFile, NotUsed> getBrowserSource(String basePath) throws Exception;
 
@@ -59,47 +60,47 @@ interface CommonFtpStageTest extends FtpSupport, AkkaSupport {
   }
 
   default void fromPath() throws Exception {
-    String fileName = "sample_io";
-    putFileOnFtp(FtpBaseSupport.FTP_ROOT_DIR, fileName);
+    String fileName = "sample_io_" + Instant.now().getNano();
+    putFileOnFtp(fileName);
 
     final ActorSystem system = getSystem();
     final Materializer materializer = getMaterializer();
 
-    Source<ByteString, CompletionStage<IOResult>> source = getIOSource("/" + fileName);
+    Source<ByteString, CompletionStage<IOResult>> source = getIOSource(fileName);
     Pair<CompletionStage<IOResult>, TestSubscriber.Probe<ByteString>> pairResult =
         source.toMat(TestSink.probe(system), Keep.both()).run(materializer);
     TestSubscriber.Probe<ByteString> probe = pairResult.second();
     probe.request(100).expectNextOrComplete();
 
-    int expectedNumOfBytes = getLoremIpsum().getBytes().length;
+    int expectedNumOfBytes = getDefaultContent().getBytes().length;
     IOResult result = pairResult.first().toCompletableFuture().get(3, TimeUnit.SECONDS);
 
     assertEquals(IOResult.createSuccessful(expectedNumOfBytes), result);
   }
 
   default void toPath() throws Exception {
-    String fileName = "sample_io";
+    String fileName = "sample_io_" + Instant.now().getNano();
 
     final Materializer materializer = getMaterializer();
 
-    final ByteString fileContent = ByteString.fromString(getLoremIpsum());
+    final ByteString fileContent = ByteString.fromString(getDefaultContent());
 
     Sink<ByteString, CompletionStage<IOResult>> sink = getIOSink("/" + fileName);
     CompletionStage<IOResult> resultCompletionStage =
         Source.single(fileContent).runWith(sink, materializer);
 
-    int expectedNumOfBytes = getLoremIpsum().getBytes().length;
+    int expectedNumOfBytes = getDefaultContent().getBytes().length;
     IOResult result = resultCompletionStage.toCompletableFuture().get(3, TimeUnit.SECONDS);
 
-    byte[] actualStoredContent = getFtpFileContents(FtpBaseSupport.FTP_ROOT_DIR, fileName);
+    byte[] actualStoredContent = getFtpFileContents(fileName);
 
     assertEquals(IOResult.createSuccessful(expectedNumOfBytes), result);
-    Assert.assertArrayEquals(actualStoredContent, getLoremIpsum().getBytes());
+    Assert.assertArrayEquals(actualStoredContent, getDefaultContent().getBytes());
   }
 
   default void remove() throws Exception {
-    final String fileName = "sample_io";
-    putFileOnFtp(FtpBaseSupport.FTP_ROOT_DIR, fileName);
+    final String fileName = "sample_io_" + Instant.now().getNano();
+    putFileOnFtp(fileName);
 
     final Materializer materializer = getMaterializer();
     Source<FtpFile, NotUsed> source = getBrowserSource("/");
@@ -108,7 +109,7 @@ interface CommonFtpStageTest extends FtpSupport, AkkaSupport {
 
     IOResult result = resultCompletionStage.toCompletableFuture().get(3, TimeUnit.SECONDS);
 
-    Boolean fileExists = fileExists(FtpBaseSupport.FTP_ROOT_DIR, fileName);
+    Boolean fileExists = fileExists(fileName);
 
     assertEquals(IOResult.createSuccessful(1), result);
     assertFalse(fileExists);
@@ -117,7 +118,7 @@ interface CommonFtpStageTest extends FtpSupport, AkkaSupport {
   default void move() throws Exception {
     final String fileName = "sample_io";
     final String fileName2 = "sample_io2";
-    putFileOnFtp(FtpBaseSupport.FTP_ROOT_DIR, fileName);
+    putFileOnFtp(fileName);
 
     final Materializer materializer = getMaterializer();
     Source<FtpFile, NotUsed> source = getBrowserSource("/");
@@ -128,8 +129,8 @@ interface CommonFtpStageTest extends FtpSupport, AkkaSupport {
 
     assertEquals(IOResult.createSuccessful(1), result);
 
-    assertFalse(fileExists(FtpBaseSupport.FTP_ROOT_DIR, fileName));
+    assertFalse(fileExists(fileName));
 
-    assertTrue(fileExists(FtpBaseSupport.FTP_ROOT_DIR, fileName2));
+    assertTrue(fileExists(fileName2));
   }
 }

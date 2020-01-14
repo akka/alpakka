@@ -26,14 +26,6 @@ The table below shows direct dependencies of this module and the second tab show
 @@dependencies { projectId="sqs" }
 
 
-@@@warning { title="API may change" }
-
-The Alpakka SQS API may change as it could support [SQS FiFo queues with little effort](https://github.com/akka/alpakka/pull/1604). That and a few other possible enhancements let us open up for API changes within the 1.0.x releases of Alpakka.
-
-See [Alpakka SQS issues](https://github.com/akka/alpakka/labels/p%3Aaws-sqs)
-
-@@@
-
 ## Setup
 
 Prepare an @scaladoc[ActorSystem](akka.actor.ActorSystem) and a @scaladoc[Materializer](akka.stream.Materializer).
@@ -45,9 +37,9 @@ Java
 : @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/BaseSqsTest.java) { #init-mat }
 
 
-This connector requires an implicit `AmazonSQSAsync` instance to communicate with AWS SQS. 
+This connector requires an implicit @javadoc[SqsAsyncClient](software.amazon.awssdk.services.sqs.SqsAsyncClient) instance to communicate with AWS SQS.
 
-It is your code's responsibility to call `shutdown` to free any resources held by the client. In this example it will be called when the actor system is terminated.
+It is your code's responsibility to call `close` to free any resources held by the client. In this example it will be called when the actor system is terminated.
 
 Scala
 : @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/DefaultTestContext.scala) { #init-client }
@@ -55,6 +47,7 @@ Scala
 Java
 : @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/BaseSqsTest.java) { #init-client }
 
+The example above uses @extref:[Akka HTTP](akka-http:) as the default HTTP client implementation. For more details about the HTTP client, configuring request retrying and best practices for credentials, see @ref[AWS client configuration](aws-shared-configuration.md) for more details.
 
 ## Read from an SQS queue
 
@@ -80,7 +73,7 @@ Java
 
 Options:
 
- - `maxBatchSize` - the maximum number of messages to return (see `MaxNumberOfMessages` in AWS docs). Default: 10
+ - `maxBatchSize` - the maximum number of messages to return per request (allowed values 1-10, see `MaxNumberOfMessages` in AWS docs). Default: 10
  - `maxBufferSize` - internal buffer size used by the `Source`. Default: 100 messages
  - `waitTimeSeconds` - the duration for which the call waits for a message to arrive in the queue before
     returning (see `WaitTimeSeconds` in AWS docs). Default: 20 seconds  
@@ -101,20 +94,7 @@ switching to long-polling (by setting `waitTimeSeconds` to a nonzero value).
 
 Be aware that the `SqsSource` runs multiple requests to Amazon SQS in parallel. The maximum number of concurrent
 requests is limited by `parallelism = maxBufferSize / maxBatchSize`. E.g.: By default `maxBatchSize` is set to 10 and
-`maxBufferSize` is set to 100 so at the maximum, `SqsSource` will run 10 concurrent requests to Amazon SQS. `AmazonSQSAsyncClient`
-uses a fixed thread pool with 50 threads by default. To tune the thread pool used by
-`AmazonSQSAsyncClient` you can supply a custom `ExecutorService` on client creation.
-
-Scala
-: @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsSourceSpec.scala) { #init-custom-client }
-
-Java
-: @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsSourceTest.java) { #init-custom-client }
-
-Please make sure to configure a big enough thread pool to avoid resource starvation. This is especially important,
-if you share the client between multiple Sources, Sinks and Flows. For the SQS Sinks and Sources the sum of all
-`parallelism` (Source) and `maxInFlight` (Sink) must be less than or equal to the thread pool size.
-
+`maxBufferSize` is set to 100 so at the maximum, `SqsSource` will run 10 concurrent requests to Amazon SQS. 
 
 ## Publish messages to an SQS queue
 
@@ -135,7 +115,8 @@ Scala
 Java
 : @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsPublishTest.java) { #run-send-request }
 
-You can also build flow stages which publish messages to SQS queues, backpressure on queue response, and then forward @scaladoc[`SqsPublishResult`](akka.stream.alpakka.sqs.SqsPublishResult) further down the stream. 
+You can also build flow stages which publish messages to SQS queues, backpressure on queue response, and then forward 
+@scaladoc[SqsPublishResult](akka.stream.alpakka.sqs.SqsPublishResult) further down the stream.
 
 Scala
 : @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsPublishSpec.scala) { #flow }
@@ -148,7 +129,9 @@ Java
 
 ### Group messages and publish batches to an SQS queue
 
-Create a sink, that forwards `String` to the SQS queue. However, the main difference from the previous use case, it batches items and sends as a one request.
+Create a sink, that forwards `String` to the SQS queue. However, the main difference from the previous use case, 
+it batches items and sends as a one request and forwards a @scaladoc[SqsPublishResultEntry](akka.stream.alpakka.sqs.SqsPublishResultEntry)
+further down the stream for each item processed.
 
 Note: There is also another option to send batch of messages to SQS which is using `AmazonSQSBufferedAsyncClient`.
 This client buffers `SendMessageRequest`s under the hood and sends them as a batch instead of sending them one by one. However, beware that `AmazonSQSBufferedAsyncClient`
@@ -182,9 +165,6 @@ Options:
 ### Publish lists as batches to an SQS queue
 
 Create a sink, that publishes @scala[`Iterable[String]`]@java[`Iterable<String>`] to the SQS queue.
-
-Be aware that the size of the batch must be less than or equal to 10 because Amazon SQS has a limit for batch request.
-If the batch has more than 10 entries, the request will fail.
 
 Scala
 : @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsPublishSpec.scala) { #batch-string }
@@ -223,7 +203,8 @@ Options:
 
 ## Updating message statuses
 
-`SqsAckSink` and `SqsAckFlow` provide the possibility to acknowledge (delete), ignore, or postpone messages on an SQS queue. They accept @scaladoc[`MessageAction`](akka.stream.alpakka.sqs.MessageAction) sub-classes to select the action to be taken.
+`SqsAckSink` and `SqsAckFlow` provide the possibility to acknowledge (delete), ignore, or postpone messages on an SQS queue.
+They accept @scaladoc[MessageAction](akka.stream.alpakka.sqs.MessageAction) sub-classes to select the action to be taken.
 
 For every message you may decide which action to take and push it together with message back to the queue:
 
@@ -263,7 +244,11 @@ Java
 
 ### Update message status in a flow
 
-The flow accepts a @scaladoc[`MessageAction`](akka.stream.alpakka.sqs.MessageAction) sub-classes, and returns @scaladoc[`SqsAckResult`](akka.stream.alpakka.sqs.SqsAckResult) .
+The `SqsAckFlow` forwards a @scaladoc[SqsAckResult](akka.stream.alpakka.sqs.SqsAckResult) sub-class down the stream:
+
+- `DeleteResult` to acknowledge message deletion
+- `ChangeMessageVisibilityResult` to acknowledge message visibility change
+- In case of `Ignore` action, nothing is performed on the sqs queue, thus no `SqsAckResult` is forwarded.
 
 Scala
 : @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsAckSpec.scala) { #flow-ack }
@@ -289,7 +274,12 @@ Options:
 
 ### Updating message statuses in batches with grouping
 
-`SqsAckFlow.grouped` is a flow that can acknowledge (delete), ignore, or postpone messages, but it batches items and sends them as one request per action.
+`SqsAckFlow.grouped` batches actions on their type and forwards a @scaladoc[SqsAckResultEntry](akka.stream.alpakka.sqs.SqsAckResultEntry) 
+sub-class for each item processed:
+
+- `DeleteResultEntry` to acknowledge message deletion
+- `ChangeMessageVisibilityResultEntry` to acknowledge message visibility change
+- In case of `Ignore` action, nothing is performed on the sqs queue, thus no `SqsAckResult` is forwarded.
 
 Acknowledge (delete) messages:
 
@@ -336,23 +326,11 @@ Options:
 
 ## Integration testing
 
-For integration testing without touching Amazon SQS, Alpakka uses [ElasticMQ](https://github.com/adamw/elasticmq), 
+For integration testing without touching Amazon SQS, Alpakka uses [ElasticMQ](https://github.com/softwaremill/elasticmq), 
 a queuing service which serves an AWS SQS compatible API.
 
-### Running the example code
+@@@ index
 
-The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
+* [retry conf](aws-shared-configuration.md)
 
-> The code requires ElasticMQ running in the background. You can start it quickly using docker:
->
-> `docker-compose up elasticmq`
-
-Scala
-:   ```
-    sbt 'project sqs' test
-    ```
-
-Java
-:   ```
-    sbt 'project sqs' test
-    ```
+@@@

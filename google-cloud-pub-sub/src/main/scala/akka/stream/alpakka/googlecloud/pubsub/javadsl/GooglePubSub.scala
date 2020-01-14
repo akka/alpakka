@@ -6,45 +6,47 @@ package akka.stream.alpakka.googlecloud.pubsub.javadsl
 
 import java.util.concurrent.CompletionStage
 
-import akka.{Done, NotUsed}
-import akka.actor.ActorSystem
-import akka.stream.Materializer
-import akka.stream.alpakka.googlecloud.pubsub.{AcknowledgeRequest, PubSubConfig, PublishRequest, ReceivedMessage}
+import akka.actor.Cancellable
 import akka.stream.alpakka.googlecloud.pubsub.scaladsl.{GooglePubSub => GPubSub}
-import akka.stream.javadsl.{Flow, Sink, Source}
+import akka.stream.alpakka.googlecloud.pubsub.{AcknowledgeRequest, PubSubConfig, PublishRequest, ReceivedMessage}
+import akka.stream.javadsl.{Flow, FlowWithContext, Sink, Source}
+import akka.{Done, NotUsed}
 
-import scala.compat.java8.FutureConverters._
 import scala.collection.JavaConverters._
+import scala.compat.java8.FutureConverters._
 
 object GooglePubSub {
 
   def publish(topic: String,
               config: PubSubConfig,
-              parallelism: Int,
-              actorSystem: ActorSystem,
-              materializer: Materializer): Flow[PublishRequest, java.util.List[String], NotUsed] =
+              parallelism: Int): Flow[PublishRequest, java.util.List[String], NotUsed] =
     GPubSub
-      .publish(topic = topic, config = config, parallelism = parallelism)(actorSystem, materializer)
-      .map(_.asJava)
+      .publish(topic = topic, config = config, parallelism = parallelism)
+      .map(response => response.asJava)
       .asJava
 
-  def subscribe(subscription: String,
-                config: PubSubConfig,
-                actorSystem: ActorSystem): Source[ReceivedMessage, NotUsed] =
+  def publishWithContext[C](topic: String,
+                            config: PubSubConfig,
+                            parallelism: Int): FlowWithContext[PublishRequest, C, java.util.List[String], C, NotUsed] =
     GPubSub
-      .subscribe(
-        subscription = subscription,
-        config = config
-      )(actorSystem)
+      .publishWithContext[C](topic = topic, config = config, parallelism = parallelism)
+      .map(response => response.asJava)
       .asJava
 
+  def subscribe(subscription: String, config: PubSubConfig): Source[ReceivedMessage, Cancellable] =
+    GPubSub
+      .subscribe(subscription = subscription, config = config)
+      .asJava
+
+  @deprecated("Use `acknowledge` without `parallelism` param", since = "2.0.0")
   def acknowledge(subscription: String,
                   config: PubSubConfig,
-                  parallelism: Int,
-                  actorSystem: ActorSystem,
-                  materializer: Materializer): Sink[AcknowledgeRequest, CompletionStage[Done]] =
+                  parallelism: Int): Sink[AcknowledgeRequest, CompletionStage[Done]] =
+    acknowledge(subscription, config)
+
+  def acknowledge(subscription: String, config: PubSubConfig): Sink[AcknowledgeRequest, CompletionStage[Done]] =
     GPubSub
-      .acknowledge(subscription = subscription, config = config, parallelism = parallelism)(actorSystem, materializer)
+      .acknowledge(subscription = subscription, config = config)
       .mapMaterializedValue(_.toJava)
       .asJava
 }

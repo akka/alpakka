@@ -19,7 +19,7 @@ import com.couchbase.client.java.document.json.JsonObject
 import com.couchbase.client.java.document.{Document, JsonDocument}
 import com.couchbase.client.java.query.util.IndexInfo
 import com.couchbase.client.java.query.{N1qlQuery, Statement}
-import com.couchbase.client.java.{AsyncBucket, Bucket}
+import com.couchbase.client.java.{AsyncBucket, AsyncCluster, Bucket}
 
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.ExecutionContext
@@ -39,14 +39,37 @@ object CouchbaseSession {
              bucketName: String,
              executor: Executor): CompletionStage[CouchbaseSession] =
     ScalaDslCouchbaseSession
-      .apply(settings, bucketName)(executor match {
-        case ec: ExecutionContext => ec
-        case _ => ExecutionContext.fromExecutor(executor)
-      })
-      .map(new CouchbaseSessionJavaAdapter(_).asInstanceOf[CouchbaseSession])(
+      .apply(settings, bucketName)(executionContext(executor))
+      .map(new CouchbaseSessionJavaAdapter(_): CouchbaseSession)(
         ExecutionContexts.sameThreadExecutionContext
       )
       .toJava
+
+  /**
+   * Create a given bucket using a pre-existing cluster client, allowing for it to be shared among
+   * multiple `CouchbaseSession`s. The cluster client's life-cycle is the user's responsibility.
+   */
+  def create(client: AsyncCluster, bucketName: String, executor: Executor): CompletionStage[CouchbaseSession] =
+    ScalaDslCouchbaseSession(client, bucketName)(executionContext(executor))
+      .map(new CouchbaseSessionJavaAdapter(_): CouchbaseSession)(
+        ExecutionContexts.sameThreadExecutionContext
+      )
+      .toJava
+
+  /**
+   * Connects to a Couchbase cluster by creating an `AsyncCluster`.
+   * The life-cycle of it is the user's responsibility.
+   */
+  def createClient(settings: CouchbaseSessionSettings, executor: Executor): CompletionStage[AsyncCluster] =
+    ScalaDslCouchbaseSession
+      .createClusterClient(settings)(executionContext(executor))
+      .toJava
+
+  private def executionContext(executor: Executor): ExecutionContext =
+    executor match {
+      case ec: ExecutionContext => ec
+      case _ => ExecutionContext.fromExecutor(executor)
+    }
 
   /**
    * Create a session against the given bucket. You are responsible for managing the lifecycle of the couchbase client
@@ -156,6 +179,41 @@ abstract class CouchbaseSession {
   def upsertDoc[T <: Document[_]](document: T, writeSettings: CouchbaseWriteSettings): CompletionStage[T]
 
   /**
+   * Replace using the default write settings
+   *
+   * For replacing other types of documents see `replaceDoc`.
+   *
+   * @return a CompletionStage that completes when the replace is done
+   */
+  def replace(document: JsonDocument): CompletionStage[JsonDocument]
+
+  /**
+   * Replace using the default write settings.
+   * Separate from `replace` to make the most common case smoother with the type inference
+   *
+   * @return a CompletionStage that completes when the replace is done
+   */
+  def replaceDoc[T <: Document[_]](document: T): CompletionStage[T]
+
+  /**
+   * Replace using the given write settings.
+   *
+   * For replacing other types of documents see `replaceDoc`.
+   *
+   * @return a CompletionStage that completes when the replace done
+   */
+  def replace(document: JsonDocument, writeSettings: CouchbaseWriteSettings): CompletionStage[JsonDocument]
+
+  /**
+   * Replace using the given write settings.
+   *
+   * Separate from `replace` to make the most common case smoother with the type inference
+   *
+   * @return a CompletionStage that completes when the replace is done
+   */
+  def replaceDoc[T <: Document[_]](document: T, writeSettings: CouchbaseWriteSettings): CompletionStage[T]
+
+  /**
    * Remove a document by id using the default write settings.
    *
    * @return CompletionStage that completes when the document has been removed, if there is no such document
@@ -211,7 +269,7 @@ abstract class CouchbaseSession {
    * @return a [[java.util.concurrent.CompletionStage]] of `true` if the index was/will be effectively created, `false`
    *      if the index existed and ignoreIfExist` is true. Completion of the `CompletionStage` does not guarantee the index
    *      is online and ready to be used.
-   */
+    **/
   def createIndex(indexName: String, ignoreIfExist: Boolean, fields: AnyRef*): CompletionStage[Boolean]
 
   /**

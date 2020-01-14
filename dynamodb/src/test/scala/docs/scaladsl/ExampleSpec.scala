@@ -4,22 +4,36 @@
 
 package docs.scaladsl
 
-import java.lang
+import java.net.URI
 
 import akka.NotUsed
+import akka.stream.scaladsl.{FlowWithContext, SourceWithContext}
+
+import scala.util.{Failure, Success, Try}
+//#init-client
 import akka.actor.ActorSystem
-import akka.stream.alpakka.dynamodb.{DynamoAttributes, DynamoClient, DynamoSettings}
 import akka.stream.{ActorMaterializer, Materializer}
+
+//#init-client
+import akka.stream.alpakka.dynamodb.DynamoDbOp._
 import akka.stream.alpakka.dynamodb.scaladsl._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
-import com.amazonaws.services.dynamodbv2.model._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+//#init-client
+import com.github.matsluni.akkahttpspi.AkkaHttpClient
+import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
 
-import scala.concurrent.duration._
+//#init-client
+import software.amazon.awssdk.services.dynamodb.model._
+
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.concurrent.duration._
 
 class ExampleSpec
     extends TestKit(ActorSystem("ExampleSpec"))
@@ -28,86 +42,116 @@ class ExampleSpec
     with BeforeAndAfterAll
     with ScalaFutures {
 
-  implicit val materializer: Materializer = ActorMaterializer()
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 100.millis)
+  implicit val materializer: Materializer = ActorMaterializer()
 
-  override def beforeAll() = {
-    System.setProperty("aws.accessKeyId", "someKeyId")
-    System.setProperty("aws.secretKey", "someSecretKey")
+  //#init-client
+
+  // Don't encode credentials in your source code!
+  // see https://doc.akka.io/docs/alpakka/current/aws-shared-configuration.html
+  private val credentialsProvider = StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x"))
+  implicit val client: DynamoDbAsyncClient = DynamoDbAsyncClient
+    .builder()
+    .region(Region.AWS_GLOBAL)
+    .credentialsProvider(credentialsProvider)
+    .httpClient(AkkaHttpClient.builder().withActorSystem(system).build())
+    // Possibility to configure the retry policy
+    // see https://doc.akka.io/docs/alpakka/current/aws-shared-configuration.html
+    // .overrideConfiguration(...)
+    //#init-client
+    .endpointOverride(new URI("http://localhost:8001/"))
+    //#init-client
+    .build()
+
+  system.registerOnTermination(client.close())
+
+  //#init-client
+
+  override def afterAll(): Unit = {
+    client.close();
+    shutdown()
+    super.afterAll()
   }
-
-  override def afterAll(): Unit = shutdown()
 
   "DynamoDB" should {
 
     "provide a simple usage example" in {
 
-      //##simple-request
-      val listTablesResult: Future[ListTablesResult] =
-        DynamoDb.single(new ListTablesRequest())
-      //##simple-request
+      // #simple-request
+      val listTablesResult: Future[ListTablesResponse] =
+        DynamoDb.single(ListTablesRequest.builder().build())
+      // #simple-request
 
       listTablesResult.futureValue
     }
 
-    "allow multiple requests - explicit types" in assertAllStagesStopped {
-      import akka.stream.alpakka.dynamodb.AwsOp._
-      val source = Source
-        .single[CreateTable](new CreateTableRequest().withTableName("testTable"))
-        .via(DynamoDb.flow)
-        .map[DescribeTable](
-          result => new DescribeTableRequest().withTableName(result.getTableDescription.getTableName)
-        )
-        .via(DynamoDb.flow)
-        .map(_.getTable.getItemCount)
-      val streamCompletion = source.runWith(Sink.seq)
-      streamCompletion.failed.futureValue shouldBe a[AmazonDynamoDBException]
+    "allow multiple requests" in assertAllStagesStopped {
+      // #flow
+      val source: Source[DescribeTableResponse, NotUsed] = Source
+        .single(CreateTableRequest.builder().tableName("testTable").build())
+        .via(DynamoDb.flow(parallelism = 1))
+        .map(response => DescribeTableRequest.builder().tableName(response.tableDescription.tableName).build())
+        .via(DynamoDb.flow(parallelism = 1))
+
+      // #flow
+      source.runWith(Sink.ignore).failed.futureValue
     }
 
-    "allow multiple requests" in assertAllStagesStopped {
-      //##flow
-      import akka.stream.alpakka.dynamodb.AwsOp._
-      val source: Source[String, NotUsed] = Source
-        .single[CreateTable](new CreateTableRequest().withTableName("testTable"))
-        .via(DynamoDb.flow)
-        .map(_.getTableDescription.getTableArn)
-      //##flow
-      val streamCompletion = source.runWith(Sink.seq)
-      streamCompletion.failed.futureValue shouldBe a[AmazonDynamoDBException]
+    "flow with context" in assertAllStagesStopped {
+      case class SomeContext()
+
+      // #withContext
+      val source: SourceWithContext[PutItemRequest, SomeContext, NotUsed] = // ???
+        // #withContext
+        SourceWithContext.fromTuples(
+          Source.single(PutItemRequest.builder().build() -> SomeContext())
+        )
+
+      // #withContext
+
+      val flow: FlowWithContext[PutItemRequest, SomeContext, Try[PutItemResponse], SomeContext, NotUsed] =
+        DynamoDb.flowWithContext(parallelism = 1)
+
+      val writtenSource: SourceWithContext[PutItemResponse, SomeContext, NotUsed] = source
+        .via(flow)
+        .map {
+          case Success(response) => response
+          case Failure(exception) => throw exception
+        }
+      // #withContext
+
+      writtenSource.runWith(Sink.ignore).failed.futureValue
     }
 
     "allow multiple requests - single source" in assertAllStagesStopped {
-      import akka.stream.alpakka.dynamodb.AwsOp._
-      val source: Source[lang.Long, NotUsed] = DynamoDb
-        .source(new CreateTableRequest().withTableName("testTable")) // creating a source from a single req is common enough to warrant a utility function
-        .map[DescribeTable](result => new DescribeTableRequest().withTableName(result.getTableDescription.getTableName))
-        .via(DynamoDb.flow)
-        .map(_.getTable.getItemCount)
-      val streamCompletion = source.runWith(Sink.seq)
-      streamCompletion.failed.futureValue shouldBe a[AmazonDynamoDBException]
+      (for {
+        create <- DynamoDb.single(CreateTableRequest.builder().tableName("testTable").build())
+        describe <- DynamoDb.single(
+          DescribeTableRequest.builder().tableName(create.tableDescription.tableName).build()
+        )
+      } yield describe.table.itemCount).failed.futureValue
     }
 
-    "provide a paginated requests example" in assertAllStagesStopped {
-      //##paginated
-      val scanPages: Source[ScanResult, NotUsed] =
-        DynamoDb.source(new ScanRequest().withTableName("testTable"))
-      //##paginated
-      val streamCompletion = scanPages.runWith(Sink.seq)
-      streamCompletion.failed.futureValue shouldBe a[AmazonDynamoDBException]
+    "provide a paginated requests source" in assertAllStagesStopped {
+      // #paginated
+      val scanRequest = ScanRequest.builder().tableName("testTable").build()
+
+      val scanPages: Source[ScanResponse, NotUsed] =
+        DynamoDb.source(scanRequest)
+
+      // #paginated
+      scanPages.runWith(Sink.ignore).failed.futureValue
     }
 
-    "use client from attributes" in assertAllStagesStopped {
-      // #attributes
-      val settings = DynamoSettings(system).withRegion("custom-region")
-      val client = DynamoClient(settings)
-
-      val source: Source[ListTablesResult, NotUsed] =
-        DynamoDb
-          .source(new ListTablesRequest())
-          .withAttributes(DynamoAttributes.client(client))
-      // #attributes
-
-      source.runWith(Sink.head).futureValue
+    "provide a paginated flow" in assertAllStagesStopped {
+      val scanRequest = ScanRequest.builder().tableName("testTable").build()
+      // #paginated
+      val scanPageInFlow: Source[ScanResponse, NotUsed] =
+        Source
+          .single(scanRequest)
+          .via(DynamoDb.flowPaginated())
+      // #paginated
+      scanPageInFlow.runWith(Sink.ignore).failed.futureValue
     }
   }
 }

@@ -96,7 +96,7 @@ See [Binary Compatibilty Rules](https://doc.akka.io/docs/akka/current/common/bin
 
 See [Binary Compatibility for library authors](https://docs.scala-lang.org/overviews/core/binary-compatibility-for-library-authors.html)
 
-Use [MigrationManager (MiMa)](https://github.com/lightbend/migration-manager) to validate, if versions are binary compatible. MiMa is part of the Alpakka build and its checks can be triggered by `mimaReportBinaryIssues`.
+Use [MigrationManager (MiMa)](https://github.com/lightbend/migration-manager) to validate, if versions are binary compatible. See [Binary compatibility (MiMa) in CONTRIBUTING.md](https://github.com/akka/alpakka/blob/master/CONTRIBUTING.md#binary-compatibility-mima) for details.
 
 
 ### External Dependencies
@@ -179,5 +179,9 @@ Prepare code snippets to be integrated by Paradox in the tests. Such example sho
 unused methods.
 
 Use ScalaDoc if you see the need to describe the API usage better than the naming does.
+The `@apidoc` Paradox directive automatically creates links to the corresponding Scaladoc page for both `scaladsl` and `javadsl`. Be sure to add a `$` at the end of the name if you point to an `object`.
+`@apidoc[AmqpSink$]` will link to `akka/stream/alpakka/amqp/scaladsl/AmqpSink$.html` when viewing "Scala" and `akka/stream/alpakka/amqp/javadsl/AmqpSink$.html` for "Java".
+
+```
 
 Run `sbt docs/previewSite` to generate reference and API docs, start an embedded web-server, and open a tab to the generated documentation while developing.

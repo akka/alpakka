@@ -6,7 +6,32 @@ If you know about more relevant resources: Please send a Pull Request to add the
 
 @@@
 
+
+## 2019
+
+[Streaming data from Cassandra using Alpakka](https://blog.knoldus.com/streaming-data-from-cassandra-using-alpakka/)
+blog by Girish Bharti, September 2019
+
+[Rethinking Streaming Workloads with Akka Streams: Part II](https://blog.colinbreck.com/rethinking-streaming-workloads-with-akka-streams-part-ii/)
+blog by Colin Breck, July 2019
+
+[Rethinking Streaming Workloads with Akka Streams: Part I](https://blog.colinbreck.com/rethinking-streaming-workloads-with-akka-streams-part-i/)
+blog by Colin Breck, May 2019
+
+[Reactive Integration with Akka Streams and Alpakka](https://www.youtube.com/watch?v=gUNiEZG8cbM)
+presentation by Jacek Kunicki, GeeCON Kraków, May 2019
+
+[Just Right Parallelism in Akka Streams](http://jesseyates.com/2019/04/07/just-right-parallelism-in-akka-streams.html)
+blog by Jesse Yates, April 2019
+
+[Backpressure over the wire - when things go wrong](https://www.youtube.com/watch?v=32RZoQOaucM)
+presentation by Zahari Dichev, Scala UA, March 2019
+
+
 ## 2018
+
+[From overnight to always-on](https://www.youtube.com/watch?v=Ab_GLQk4OLE&list=PLKKQHTLcxDVYw23SBLzqcbWkhX-cCUTr0&index=37&t=0s)
+presentation at [Reactive Summit](https://www.reactivesummit.org/) by Enno Runne, October 2018
 
 [Backoff and Retry Error-Handling for Akka Streams](https://blog.colinbreck.com/backoff-and-retry-error-handling-for-akka-streams/)
 blog by Colin Breck, October 2018
@@ -22,7 +47,7 @@ blog by Sidharth Khattri, May 2018
 
 [Alpakka (Akka Streams) vs Apache Camel: who wins?](http://www.thedevpiece.com/alpakka-akka-streams-vs-apache-camel-who-wins/) Blog by Gabriel Francisco, May 2018 
 
-[Alpakka – a new world of Connectors for Reactive Enterprise Integration](https://www.youtube.com/watch?v=EcNZ2mJZmCk)
+[Alpakka – a new world of connectors for Reactive Enterprise Integration](https://www.youtube.com/watch?v=EcNZ2mJZmCk)
 presentation by Jan Pustelnik, Actyx, ReactSphere Kraków, April 2018
 
 [Revitalizing Enterprise Integration with Reactive Streams](https://info.lightbend.com/webinar-revitalizing-enterprise-integration-with-reactive-streams-recording.html)
@@ -39,7 +64,7 @@ Presentation by Colin Breck, Tesla, February 2018
 [Build Real-Time Streaming ETL Pipelines with Akka Streams, Alpakka and Apache Kafka](https://www.lightbend.com/blog/build-real-time-streaming-etl-pipelines-with-akka-streams-alpakka-and-apache-kafka)
 Webinar by Konrad Malawski, Lightbend, October 2017
 
-[Alpakka File CSV and ElasticSearch Connectors](https://abhsrivastava.github.io/2017/10/02/Alpkka-File-CSV-Elastic/)
+[Alpakka File CSV and ElasticSearch connectors](https://abhsrivastava.github.io/2017/10/02/Alpkka-File-CSV-Elastic/)
 blog by Abhishek Srivastava, October 2017
 
 [Stream Avro Records into Kafka using Avro4s and Akka Streams Kafka](https://abhsrivastava.github.io/2017/10/02/Stream-Avro-Records-into-Kafka/)

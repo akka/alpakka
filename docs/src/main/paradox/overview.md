@@ -13,9 +13,9 @@ There are a few blog posts and presentations about Alpakka out there, we've @ref
 The code in this documentation is compiled against
 
 * Alpakka $project.version$ ([Github](https://github.com/akka/alpakka), [API docs](https://doc.akka.io/api/alpakka/current/akka/stream/alpakka/index.html))
-* Scala $scala.binary.version$ (most modules are available for Scala 2.13, and all are available for Scala 2.11)
-* Akka Streams $akka.version$ (@extref[Docs](akka-docs:stream/index.html), [Github](https://github.com/akka/akka))
-* Akka Http $akka-http.version$ (@extref[Docs Scala](akka-http-docs:scala.html), @extref[Docs Java](akka-http-docs:java.html), [Github](https://github.com/akka/akka-http))
+* Scala $scala.binary.version$ (all modules are available for Scala 2.13, and most are available for Scala 2.11)
+* Akka Streams $akka.version$ (all modules are compatible with Akka 2.6.0+) (@extref:[Reference](akka:stream/index.html), [Github](https://github.com/akka/akka))
+* Akka Http $akka-http.version$ (@extref:[Reference](akka-http:), [Github](https://github.com/akka/akka-http))
 
 Release notes are found at @ref:[Release Notes](release-notes/index.md).
 
@@ -25,7 +25,7 @@ If you want to try out a connector that has not yet been released, give @ref[sna
 
 Please feel free to contribute to Alpakka by reporting issues you identify, or by suggesting changes to the code. Please refer to our [contributing instructions](https://github.com/akka/alpakka/blob/master/CONTRIBUTING.md) and our [contributor advice](https://github.com/akka/alpakka/blob/master/contributor-advice.md) to learn how it can be done. The target structure for Alpakka connectors is illustrated by the @ref[Reference connector](reference.md).
 
-We want Akka and Alpakka to strive in a welcoming and open atmosphere and expect all contributors to respect our [code of conduct](https://github.com/akka/alpakka/blob/master/CODE_OF_CONDUCT.md).
+We want Akka and Alpakka to strive in a welcoming and open atmosphere and expect all contributors to respect our [code of conduct](https://www.lightbend.com/conduct).
 
 [![alpakka]][alpakka-scaladex] Feel free to tag your project with *akka-streams* keyword in Scaladex for easier discoverability.
 

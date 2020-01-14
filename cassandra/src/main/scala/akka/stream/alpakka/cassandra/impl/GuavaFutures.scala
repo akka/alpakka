@@ -29,6 +29,7 @@ private[cassandra] object GuavaFutures {
         override def onSuccess(a: A): Unit = p.success(a)
         override def onFailure(err: Throwable): Unit = p.failure(err)
       }
+      // Alpakka build: if this fails during `unidoc` check the filters in build.sbt
       Futures.addCallback(guavaFut, callback)
       p.future
     }

@@ -16,7 +16,7 @@ import akka.stream.alpakka.orientdb.javadsl.OrientDbSink;
 import akka.stream.alpakka.orientdb.javadsl.OrientDbSource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import com.orientechnologies.orient.client.remote.OServerAdmin;
 import com.orientechnologies.orient.core.db.ODatabaseRecordThreadLocal;
 // #init-settings
@@ -183,7 +183,7 @@ public class OrientDbTest {
 
     client.close();
     oDatabase.close();
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
   }
 
   private static void register(String className) {
@@ -346,8 +346,7 @@ public class OrientDbTest {
               ODatabaseDocumentTx db = oDatabase.acquire();
               db.setDatabaseOwner(new OObjectDatabaseTx(db));
               ODatabaseRecordThreadLocal.instance().set(db);
-              messages
-                  .stream()
+              messages.stream()
                   .forEach(
                       message -> {
                         commitToKafka.accept(((KafkaOffset) message.passThrough()));
@@ -369,8 +368,7 @@ public class OrientDbTest {
             .get(10, TimeUnit.SECONDS);
 
     assertEquals(
-        messagesFromKafkas
-            .stream()
+        messagesFromKafkas.stream()
             .map(m -> m.getBook_title())
             .sorted()
             .collect(Collectors.toList()),

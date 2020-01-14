@@ -8,7 +8,6 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcBackend
 import slick.jdbc.JdbcProfile
 import slick.jdbc.PositionedResult
-
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
@@ -28,6 +27,23 @@ sealed abstract class SlickSession {
   def close(): Unit = db.close()
 }
 
+private[slick] abstract class SlickSessionFactory {
+  protected final class SlickSessionConfigBackedImpl(val slick: DatabaseConfig[JdbcProfile]) extends SlickSession {
+    val db: JdbcBackend#Database = slick.db
+    val profile: JdbcProfile = slick.profile
+  }
+  protected final class SlickSessionDbAndProfileBackedImpl(val db: JdbcBackend#Database, val profile: JdbcProfile)
+      extends SlickSession
+
+  def forConfig(path: String): SlickSession = forConfig(path, ConfigFactory.load())
+  def forConfig(config: Config): SlickSession = forConfig("", config)
+  def forConfig(path: String, config: Config): SlickSession = forConfig(
+    DatabaseConfig.forConfig[JdbcProfile](path, config)
+  )
+  def forConfig(databaseConfig: DatabaseConfig[JdbcProfile]): SlickSession =
+    new SlickSessionConfigBackedImpl(databaseConfig)
+}
+
 /**
  * Java API: Methods for "opening" Slick databases for use.
  *
@@ -35,19 +51,7 @@ sealed abstract class SlickSession {
  * closed after creation to avoid leaking database resources like active
  * connection pools, etc.
  */
-object SlickSession {
-  private final class SlickSessionImpl(val slick: DatabaseConfig[JdbcProfile]) extends SlickSession {
-    val db: JdbcBackend#Database = slick.db
-    val profile: JdbcProfile = slick.profile
-  }
-
-  def forConfig(path: String): SlickSession = forConfig(path, ConfigFactory.load())
-  def forConfig(config: Config): SlickSession = forConfig("", config)
-  def forConfig(path: String, config: Config): SlickSession = forConfig(
-    DatabaseConfig.forConfig[JdbcProfile](path, config)
-  )
-  def forConfig(databaseConfig: DatabaseConfig[JdbcProfile]): SlickSession = new SlickSessionImpl(databaseConfig)
-}
+object SlickSession extends SlickSessionFactory
 
 /**
  * Java API: A class representing a slick resultset row, which is used

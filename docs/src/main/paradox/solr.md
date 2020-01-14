@@ -29,7 +29,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Set up a Solr client
 
-Sources, Flows and Sinks provided by this connector need a prepared @javadoc[`SolrClient`](org.apache.solr.client.solrj.SolrClient) (eg. @javadoc[`CloudSolrClient`](org.apache.solr.client.solrj.impl.CloudSolrClient)) to access to Solr.
+Sources, Flows and Sinks provided by this connector need a prepared @javadoc[SolrClient](org.apache.solr.client.solrj.SolrClient) (eg. @javadoc[CloudSolrClient](org.apache.solr.client.solrj.impl.CloudSolrClient)) to access to Solr.
 
 
 Scala
@@ -41,7 +41,7 @@ Java
 
 ## Reading from Solr
 
-Create a @javadoc[Solr `TupleStream`](org.apache.solr.client.solrj.io.stream.TupleStream) (eg. via @javadoc[`CloudSolrStream`](org.apache.solr.client.solrj.io.stream.CloudSolrStream)) and use `SolrSource.fromTupleStream` (@scala[@scaladoc[API](akka.stream.alpakka.solr.scaladsl.SolrSource$)]@java[@scaladoc[API](akka.stream.alpakka.solr.javadsl.SolrSource$)]) to create a source.
+Create a Solr @javadoc[TupleStream](org.apache.solr.client.solrj.io.stream.TupleStream) (eg. via @javadoc[CloudSolrStream](org.apache.solr.client.solrj.io.stream.CloudSolrStream)) and use `SolrSource.fromTupleStream` (@scala[@scaladoc[API](akka.stream.alpakka.solr.scaladsl.SolrSource$)]@java[@scaladoc[API](akka.stream.alpakka.solr.javadsl.SolrSource$)]) to create a source.
 
 Scala
 : @@snip [snip](/solr/src/test/scala/docs/scaladsl/SolrSpec.scala) { #tuple-stream }
@@ -56,9 +56,9 @@ Alpakka Solr batches updates to Solr by sending all updates of the same operatio
 
 Alpakka Solr offers three styles for writing to Apache Solr:
 
-1. Using @javadoc[`SolrInputDocument`](org.apache.solr.common.SolrInputDocument) (via `SolrSink.documents`, `SolrFlow.documents` and `SolrFlow.documentsWithPassThrough`)
-1. Annotated *Java Bean* classes supported by @javadoc[Solr's `DocumentObjectBinder`](org.apache.solr.client.solrj.beans.DocumentObjectBinder) (via `SolrSink.beans`, `SolrFlow.beans` and `SolrFlow.beansWithPassThrough`)
-1. Typed streams with document binders to translate to @javadoc[`SolrInputDocument`](org.apache.solr.common.SolrInputDocument) (via `SolrSink.typeds`, `SolrFlow.typeds` and `SolrFlow.typedsWithPassThrough`)
+1. Using @javadoc[SolrInputDocument](org.apache.solr.common.SolrInputDocument) (via `SolrSink.documents`, `SolrFlow.documents` and `SolrFlow.documentsWithPassThrough`)
+1. Annotated *Java Bean* classes supported by Solr's @javadoc[DocumentObjectBinder](org.apache.solr.client.solrj.beans.DocumentObjectBinder) (via `SolrSink.beans`, `SolrFlow.beans` and `SolrFlow.beansWithPassThrough`)
+1. Typed streams with document binders to translate to @javadoc[SolrInputDocument](org.apache.solr.common.SolrInputDocument) (via `SolrSink.typeds`, `SolrFlow.typeds` and `SolrFlow.typedsWithPassThrough`)
 
 In all variations the data is wrapped into `WriteMessage`s.
 
@@ -100,8 +100,6 @@ Scala
 Java
 : @@snip [snip](/solr/src/test/java/docs/javadsl/SolrTest.java) { #define-class }
 
-
-#### Writing `SolrInputDocument`s
 
 Use `SolrSink.documents`, `SolrFlow.documents` or `SolrFlow.documentsWithPassThrough` to stream `SolrInputDocument`s to Solr.
 
@@ -172,6 +170,19 @@ Scala
 Java
 : @@snip [snip](/solr/src/test/java/docs/javadsl/SolrTest.java) { #kafka-example }
 
+#### Excluding messages
+
+Failure to deserialize a kafka message is a particular case of conditional message processing.
+It is also likely that we would have no message to produce to SolR when we encounter messages that fail to deserialize.
+The solr flow will not let us pass through the corresponding committable offset without doing a request to solr.
+
+Use `WriteMessage.createPassThrough` to exclude this message without doing any change on solr inside a flow.
+
+Scala
+: @@snip [snip](/solr/src/test/scala/docs/scaladsl/SolrSpec.scala) { #kafka-example-PT }
+
+Java
+: @@snip [snip](/solr/src/test/java/docs/javadsl/SolrTest.java) { #kafka-example-PT }
 
 
 ## Update documents

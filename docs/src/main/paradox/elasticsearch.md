@@ -151,6 +151,18 @@ Java
 : @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #run-flow }
 
 
+### Storing documents from Strings
+
+Elasticsearch requires the documents to be properly formatted JSON. If your data is available as JSON in Strings, you may use the pre-defined `StringMessageWriter` to avoid any conversions. For any other JSON technologies, implement a @scala[`MessageWriter[T]`]@java[`MessageWriter<T>`].
+
+Scala
+: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchSpec.scala) { #string }
+
+Java
+: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #string }
+
+
+
 ### Passing data through ElasticsearchFlow
 
 When streaming documents from Kafka, you might want to commit to Kafka **AFTER** the document has been written to Elastic.

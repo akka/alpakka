@@ -15,7 +15,7 @@ import java.net.InetAddress;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-public class StrictHostCheckingSftpSourceTest extends SftpSupportImpl
+public class StrictHostCheckingSftpSourceTest extends BaseSftpSupport
     implements CommonFtpStageTest {
 
   @Test
@@ -29,15 +29,15 @@ public class StrictHostCheckingSftpSourceTest extends SftpSupportImpl
   }
 
   public Source<FtpFile, NotUsed> getBrowserSource(String basePath) throws Exception {
-    return Sftp.ls(basePath, settings());
+    return Sftp.ls(ROOT_PATH + basePath, settings());
   }
 
   public Source<ByteString, CompletionStage<IOResult>> getIOSource(String path) throws Exception {
-    return Sftp.fromPath(path, settings());
+    return Sftp.fromPath(ROOT_PATH + path, settings());
   }
 
   public Sink<ByteString, CompletionStage<IOResult>> getIOSink(String path) throws Exception {
-    return Sftp.toPath(path, settings());
+    return Sftp.toPath(ROOT_PATH + path, settings());
   }
 
   public Sink<FtpFile, CompletionStage<IOResult>> getRemoveSink() throws Exception {
@@ -46,20 +46,17 @@ public class StrictHostCheckingSftpSourceTest extends SftpSupportImpl
 
   public Sink<FtpFile, CompletionStage<IOResult>> getMoveSink(
       Function<FtpFile, String> destinationPath) throws Exception {
-    return Sftp.move(destinationPath, settings());
+    return Sftp.move(f -> ROOT_PATH + destinationPath.apply(f), settings());
   }
 
   private SftpSettings settings() throws Exception {
-    final SftpSettings settings =
-        SftpSettings.create(InetAddress.getByName("localhost"))
-            .withPort(getPort())
-            .withCredentials(
-                FtpCredentials.create("different user and password", "will fail password auth"))
-            .withStrictHostKeyChecking(true) // strictHostKeyChecking
-            .withKnownHosts(getKnownHostsFile().getPath())
-            .withSftpIdentity(
-                SftpIdentity.createFileSftpIdentity(
-                    getClientPrivateKeyFile().getPath(), CLIENT_PRIVATE_KEY_PASSPHRASE));
-    return settings;
+    return SftpSettings.create(InetAddress.getByName(HOSTNAME))
+        .withPort(PORT)
+        .withCredentials(FtpCredentials.create("username", "wrong password"))
+        .withStrictHostKeyChecking(true) // strictHostKeyChecking
+        .withKnownHosts(getKnownHostsFile().getPath())
+        .withSftpIdentity(
+            SftpIdentity.createFileSftpIdentity(
+                getClientPrivateKeyFile().getPath(), CLIENT_PRIVATE_KEY_PASSPHRASE));
   }
 }

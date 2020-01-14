@@ -50,6 +50,8 @@ private[ftp] trait FtpIOSourceStage[FtpClient, S <: RemoteFileSettings]
 
   def chunkSize: Int
 
+  def offset: Long = 0L
+
   val shape: SourceShape[ByteString] = SourceShape(Outlet[ByteString](s"$name.out"))
   val out: Outlet[ByteString] = shape.outlets.head.asInstanceOf[Outlet[ByteString]]
 
@@ -87,6 +89,12 @@ private[ftp] trait FtpIOSourceStage[FtpClient, S <: RemoteFileSettings]
           isOpt.foreach { os =>
             try {
               os.close()
+              ftpLike match {
+                case cfo: CommonFtpOperations =>
+                  if (!cfo.completePendingCommand(handler.get.asInstanceOf[cfo.Handler]))
+                    throw new IOException("File transfer failed.")
+                case _ =>
+              }
             } catch {
               case e: IOException =>
                 matFailure(e)
@@ -103,7 +111,12 @@ private[ftp] trait FtpIOSourceStage[FtpClient, S <: RemoteFileSettings]
         }
 
       protected[this] def doPreStart(): Unit =
-        isOpt = Some(ftpLike.retrieveFileInputStream(path, handler.get).get)
+        isOpt = ftpLike match {
+          case ro: RetrieveOffset =>
+            Some(ro.retrieveFileInputStream(path, handler.get.asInstanceOf[ro.Handler], offset).get)
+          case _ =>
+            Some(ftpLike.retrieveFileInputStream(path, handler.get).get)
+        }
 
       protected[this] def matSuccess(): Boolean =
         matValuePromise.trySuccess(IOResult.createSuccessful(readBytesTotal))
@@ -165,7 +178,7 @@ private[ftp] trait FtpIOSinkStage[FtpClient, S <: RemoteFileSettings]
               write(grab(in))
               pull(in)
             } catch {
-              case NonFatal(e) ⇒
+              case NonFatal(e) =>
                 failed = true
                 matFailure(e)
                 failStage(e)
@@ -184,6 +197,12 @@ private[ftp] trait FtpIOSinkStage[FtpClient, S <: RemoteFileSettings]
           osOpt.foreach { os =>
             try {
               os.close()
+              ftpLike match {
+                case cfo: CommonFtpOperations =>
+                  if (!cfo.completePendingCommand(handler.get.asInstanceOf[cfo.Handler]))
+                    throw new IOException("File transfer failed.")
+                case _ =>
+              }
             } catch {
               case e: IOException =>
                 matFailure(e)

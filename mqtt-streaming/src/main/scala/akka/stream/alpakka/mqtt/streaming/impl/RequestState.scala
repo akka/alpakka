@@ -9,14 +9,14 @@ import akka.NotUsed
 import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
-import akka.stream.{Materializer, OverflowStrategy}
+import akka.stream.{Materializer, OverflowStrategy, QueueOfferResult}
 import akka.stream.scaladsl.{BroadcastHub, Keep, Source, SourceQueueWithComplete}
 import akka.util.ByteString
 
 import scala.annotation.tailrec
 import scala.concurrent.Promise
 import scala.util.control.NoStackTrace
-import scala.util.{Failure, Success}
+import scala.util.{Either, Failure, Success}
 
 /*
  * A producer manages the client state in relation to publishing to a server-side topic.
@@ -67,6 +67,10 @@ import scala.util.{Failure, Success}
   final case class PubCompReceivedFromRemote(local: Promise[ForwardPubComp]) extends Event
   case object ReceiveConnect extends Event
 
+  final case class QueueOfferCompleted(result: Either[Throwable, QueueOfferResult])
+      extends Event
+      with QueueOfferState.QueueOfferCompleted
+
   sealed abstract class Command
   sealed abstract class ForwardPublishingCommand extends Command
   final case class ForwardPublish(publish: Publish, packetId: Option[PacketId]) extends ForwardPublishingCommand
@@ -91,18 +95,25 @@ import scala.util.{Failure, Success}
     requestPacketId()
 
     val (queue, source) = Source
-      .queue[ForwardPublishingCommand](1, OverflowStrategy.dropHead)
+      .queue[ForwardPublishingCommand](data.settings.clientSendBufferSize, OverflowStrategy.backpressure)
       .toMat(BroadcastHub.sink)(Keep.both)
       .run()
+
     data.remote.success(source)
 
     Behaviors
       .receiveMessagePartial[Event] {
         case AcquiredPacketId(packetId) =>
-          queue.offer(ForwardPublish(data.publish, Some(packetId)))
-          publishUnacknowledged(
-            Publishing(queue, packetId, data.publish, data.publishData, data.packetRouter, data.settings)
+          QueueOfferState.waitForQueueOfferCompleted(
+            queue
+              .offer(ForwardPublish(data.publish, Some(packetId))),
+            result => QueueOfferCompleted(result.toEither),
+            publishUnacknowledged(
+              Publishing(queue, packetId, data.publish, data.publishData, data.packetRouter, data.settings)
+            ),
+            stash = Vector.empty
           )
+
         case UnacquiredPacketId =>
           requestPacketId()
           Behaviors.same
@@ -121,26 +132,32 @@ import scala.util.{Failure, Success}
         timer.startSingleTimer(ReceivePubackrec, ReceivePubAckRecTimeout, data.settings.producerPubAckRecTimeout)
 
       Behaviors
-        .receiveMessagePartial[Event] {
-          case PubAckReceivedFromRemote(local)
+        .receive[Event] {
+          case (_, PubAckReceivedFromRemote(local))
               if data.publish.flags.contains(ControlPacketFlags.QoSAtLeastOnceDelivery) =>
             local.success(ForwardPubAck(data.publishData))
             Behaviors.stopped
-          case PubRecReceivedFromRemote(local)
-              if data.publish.flags.contains(ControlPacketFlags.QoSExactlyOnceDelivery) =>
+
+          case (_, PubRecReceivedFromRemote(local))
+              if data.publish.flags.contains(ControlPacketFlags.QoSAtMostOnceDelivery) =>
             local.success(ForwardPubRec(data.publishData))
             timer.cancel(ReceivePubackrec)
             publishAcknowledged(data)
-          case ReceivePubAckRecTimeout | ReceiveConnect =>
-            data.remote.offer(
-              ForwardPublish(data.publish.copy(flags = data.publish.flags | ControlPacketFlags.DUP),
-                             Some(data.packetId))
+
+          case (context, ReceivePubAckRecTimeout | ReceiveConnect) =>
+            QueueOfferState.waitForQueueOfferCompleted(
+              data.remote
+                .offer(
+                  ForwardPublish(data.publish.copy(flags = data.publish.flags | ControlPacketFlags.DUP),
+                                 Some(data.packetId))
+                ),
+              result => QueueOfferCompleted(result.toEither),
+              publishUnacknowledged(data),
+              stash = Vector.empty
             )
-            publishUnacknowledged(data)
         }
         .receiveSignal {
           case (_, PostStop) =>
-            data.packetRouter ! LocalPacketRouter.Unregister(data.packetId)
             data.remote.complete()
             Behaviors.same
         }
@@ -152,24 +169,35 @@ import scala.util.{Failure, Success}
       if (data.settings.producerPubCompTimeout.toNanos > 0L)
         timer.startSingleTimer(ReceivePubrel, ReceivePubCompTimeout, data.settings.producerPubCompTimeout)
 
-      data.remote.offer(ForwardPubRel(data.publish, data.packetId))
-
-      Behaviors
-        .receiveMessagePartial[Event] {
-          case PubCompReceivedFromRemote(local) =>
-            local.success(ForwardPubComp(data.publishData))
-            Behaviors.stopped
-          case ReceivePubCompTimeout | ReceiveConnect =>
-            data.remote.offer(ForwardPubRel(data.publish, data.packetId))
-            publishAcknowledged(data)
-        }
-        .receiveSignal {
-          case (_, PostStop) =>
-            data.packetRouter ! LocalPacketRouter.Unregister(data.packetId)
-            data.remote.complete()
-            Behaviors.same
-        }
+      Behaviors.setup { context =>
+        QueueOfferState.waitForQueueOfferCompleted(
+          data.remote
+            .offer(ForwardPubRel(data.publish, data.packetId)),
+          result => QueueOfferCompleted(result.toEither),
+          Behaviors
+            .receiveMessagePartial[Event] {
+              case PubCompReceivedFromRemote(local) =>
+                local.success(ForwardPubComp(data.publishData))
+                Behaviors.stopped
+              case ReceivePubCompTimeout | ReceiveConnect =>
+                QueueOfferState.waitForQueueOfferCompleted(
+                  data.remote
+                    .offer(ForwardPubRel(data.publish, data.packetId)),
+                  result => QueueOfferCompleted(result.toEither),
+                  publishAcknowledged(data),
+                  stash = Vector.empty
+                )
+            }
+            .receiveSignal {
+              case (_, PostStop) =>
+                data.remote.complete()
+                Behaviors.same
+            },
+          stash = Vector.empty
+        )
+      }
   }
+
 }
 
 /*
@@ -181,7 +209,7 @@ import scala.util.{Failure, Success}
   /*
    * No ACK received - the publication failed
    */
-  case class ConsumeFailed(publish: Publish) extends Exception with NoStackTrace
+  case class ConsumeFailed(publish: Publish) extends Exception(publish.toString) with NoStackTrace
 
   /*
    * Construct with the starting state
@@ -277,11 +305,6 @@ import scala.util.{Failure, Success}
         case ReceivePubAckRecTimeout =>
           throw ConsumeFailed(data.publish)
       }
-      .receiveSignal {
-        case (_, PostStop) =>
-          data.packetRouter ! RemotePacketRouter.Unregister(data.clientId, data.packetId)
-          Behaviors.same
-      }
   }
 
   def consumeReceived(data: ClientConsuming): Behavior[Event] = Behaviors.withTimers { timer =>
@@ -298,11 +321,6 @@ import scala.util.{Failure, Success}
           consumeUnacknowledged(data)
         case ReceivePubRelTimeout =>
           throw ConsumeFailed(data.publish)
-      }
-      .receiveSignal {
-        case (_, PostStop) =>
-          data.packetRouter ! RemotePacketRouter.Unregister(data.clientId, data.packetId)
-          Behaviors.same
       }
   }
 
@@ -321,11 +339,6 @@ import scala.util.{Failure, Success}
         case ReceivePubCompTimeout =>
           throw ConsumeFailed(data.publish)
       }
-      .receiveSignal {
-        case (_, PostStop) =>
-          data.packetRouter ! RemotePacketRouter.Unregister(data.clientId, data.packetId)
-          Behaviors.same
-      }
   }
 }
 
@@ -333,7 +346,7 @@ import scala.util.{Failure, Success}
   /*
    * Raised on routing if a packet id cannot determine an actor to route to
    */
-  case class CannotRoute(packetId: PacketId) extends Exception with NoStackTrace
+  case class CannotRoute(packetId: PacketId) extends Exception("packet id: " + packetId.underlying) with NoStackTrace
 
   /*
    * In case some brokers treat 0 as no packet id, we set our min to 1
@@ -346,7 +359,7 @@ import scala.util.{Failure, Success}
 
   sealed abstract class Request[A]
   final case class Register[A](registrant: ActorRef[A], reply: Promise[Registered]) extends Request[A]
-  final case class Unregister[A](packetId: PacketId) extends Request[A]
+  private final case class Unregister[A](packetId: PacketId) extends Request[A]
   final case class Route[A](packetId: PacketId, event: A, failureReply: Promise[_]) extends Request[A]
 
   // Replies
@@ -363,7 +376,7 @@ import scala.util.{Failure, Success}
   /**
    * Find the next free packet id after the specified one.
    */
-  def findNextPacketId[A](registrantsByPacketId: Map[PacketId, ActorRef[A]], after: PacketId): Option[PacketId] = {
+  def findNextPacketId[A](registrantsByPacketId: Map[PacketId, Registration[A]], after: PacketId): Option[PacketId] = {
     @annotation.tailrec
     def step(c: PacketId): Option[PacketId] = {
       if (c.underlying == after.underlying) {
@@ -385,36 +398,42 @@ import scala.util.{Failure, Success}
     else
       step(PacketId(after.underlying + 1))
   }
+
+  private[streaming] case class Registration[A](registrant: ActorRef[A], failureReplies: Seq[Promise[_]])
 }
 
 /*
  * Route locally generated MQTT packets based on packet identifiers.
  * Callers are able to request that they be registered for routing and,
  * in return, receive the packet identifier acquired. These
- * callers then release packet identifiers so that they may then
- * be re-used.
+ * callers are then watched for termination so that the packet identifier
+ * can be released to become reused, and for any other housekeeping. The
+ * contract is therefore for a caller to initially register, and to
+ * terminate when it has finished with the packet identifier.
  *
  * The acquisition algorithm is optimised to return newly allocated
  * packet ids fast, and take the cost when releasing them as
  * the caller isn't waiting on a reply.
  */
-@InternalApi private[streaming] class LocalPacketRouter[A] {
+@InternalApi private[streaming] final class LocalPacketRouter[A] {
 
   import LocalPacketRouter._
 
   // Processing
 
-  def main(registrantsByPacketId: Map[PacketId, ActorRef[A]],
+  def main(registrantsByPacketId: Map[PacketId, Registration[A]],
            nextPacketId: Option[PacketId],
            pendingRegistrations: Vector[Register[A]]): Behavior[Request[A]] =
     Behaviors
       .receive[Request[A]] {
-        case (_, register @ Register(registrant: ActorRef[A], reply)) =>
+        case (context, register @ Register(registrant: ActorRef[A], reply)) =>
           nextPacketId match {
             case Some(currentPacketId) =>
               reply.success(Registered(currentPacketId))
 
-              val nextRegistrations = registrantsByPacketId + (currentPacketId -> registrant)
+              val nextRegistrations = registrantsByPacketId + (currentPacketId -> Registration(registrant, List.empty))
+
+              context.watchWith(registrant, Unregister(currentPacketId))
 
               main(
                 nextRegistrations,
@@ -430,6 +449,16 @@ import scala.util.{Failure, Success}
           }
 
         case (context, Unregister(packetId)) =>
+          // We tidy up and fail any failure promises that haven't already been failed -
+          // just in case the registrant terminated abnormally and didn't get to complete
+          // the promise. We all know that uncompleted promises can lead to memory leaks.
+          // The known condition by which we'd succeed in failing the promise here is
+          // when we thought we were able to route to a registrant, but the routing
+          // subsequently failed, ending up the in the deadletter queue.
+          registrantsByPacketId.get(packetId).toList.flatMap(_.failureReplies).foreach { failureReply =>
+            failureReply.tryFailure(CannotRoute(packetId))
+          }
+
           val remainingPacketIds = registrantsByPacketId - packetId
 
           pendingRegistrations
@@ -439,10 +468,17 @@ import scala.util.{Failure, Success}
 
         case (_, Route(packetId, event, failureReply)) =>
           registrantsByPacketId.get(packetId) match {
-            case Some(reply) => reply ! event
-            case None => failureReply.failure(CannotRoute(packetId))
+            case Some(registration: Registration[A]) =>
+              registration.registrant ! event
+              main(registrantsByPacketId
+                     .updated(packetId,
+                              registration.copy(failureReplies = failureReply +: registration.failureReplies)),
+                   nextPacketId,
+                   pendingRegistrations)
+            case None =>
+              failureReply.failure(CannotRoute(packetId))
+              Behaviors.same
           }
-          Behaviors.same
       }
       .receiveSignal {
         case (_, PostStop) =>
@@ -457,7 +493,7 @@ import scala.util.{Failure, Success}
   /*
    * Raised on routing if a packet id cannot determine an actor to route to
    */
-  case class CannotRoute(packetId: PacketId) extends Exception with NoStackTrace
+  case class CannotRoute(packetId: PacketId) extends Exception("packet id: " + packetId.underlying) with NoStackTrace
 
   // Requests
 
@@ -468,7 +504,7 @@ import scala.util.{Failure, Success}
                                reply: Promise[Registered.type])
       extends Request[A]
   final case class RegisterConnection[A](connectionId: ByteString, clientId: String) extends Request[A]
-  final case class Unregister[A](clientId: Option[String], packetId: PacketId) extends Request[A]
+  private final case class Unregister[A](clientId: Option[String], packetId: PacketId) extends Request[A]
   final case class UnregisterConnection[A](connectionId: ByteString) extends Request[A]
   final case class Route[A](clientId: Option[String], packetId: PacketId, event: A, failureReply: Promise[_])
       extends Request[A]
@@ -488,52 +524,86 @@ import scala.util.{Failure, Success}
    */
   def apply[A]: Behavior[Request[A]] =
     new RemotePacketRouter[A].main(Map.empty, Map.empty)
+
+  private[streaming] case class Registration[A](registrant: ActorRef[A], failureReplies: Seq[Promise[_]])
 }
 
 /*
  * Route remotely generated MQTT packets based on packet identifiers.
  * Callers are able to request that they be registered for routing
- * along with a packet id received from the remote.
+ * along with a packet id received from the remote. These
+ * callers are then watched for termination so that housekeeping can
+ * be performed. The contract is therefore for a caller to initially register,
+ * and to terminate when it has finished with the packet identifier.
  */
-@InternalApi private[streaming] class RemotePacketRouter[A] {
+@InternalApi private[streaming] final class RemotePacketRouter[A] {
 
   import RemotePacketRouter._
 
   // Processing
 
-  def main(registrantsByPacketId: Map[(Option[String], PacketId), ActorRef[A]],
+  def main(registrantsByPacketId: Map[(Option[String], PacketId), Registration[A]],
            clientIdsByConnectionId: Map[ByteString, String]): Behavior[Request[A]] =
-    Behaviors.receiveMessage {
-      case Register(registrant: ActorRef[A], clientId, packetId, reply) =>
+    Behaviors.receive {
+      case (context, Register(registrant: ActorRef[A], clientId, packetId, reply)) =>
         reply.success(Registered)
+        context.watchWith(registrant, Unregister(clientId, packetId))
         val key = (clientId, packetId)
-        main(registrantsByPacketId + (key -> registrant), clientIdsByConnectionId)
-      case RegisterConnection(connectionId, clientId) =>
+        main(registrantsByPacketId + (key -> Registration(registrant, List.empty)), clientIdsByConnectionId)
+      case (_, RegisterConnection(connectionId, clientId)) =>
         main(registrantsByPacketId, clientIdsByConnectionId + (connectionId -> clientId))
-      case Unregister(clientId, packetId) =>
+      case (_, Unregister(clientId, packetId)) =>
+        // We tidy up and fail any failure promises that haven't already been failed -
+        // just in case the registrant terminated abnormally and didn't get to complete
+        // the promise. We all know that uncompleted promises can lead to memory leaks.
+        // The known condition by which we'd succeed in failing the promise here is
+        // when we thought we were able to route to a registrant, but the routing
+        // subsequently failed, ending up the in the deadletter queue.
+        registrantsByPacketId.get((clientId, packetId)).toList.flatMap(_.failureReplies).foreach { failureReply =>
+          failureReply.tryFailure(CannotRoute(packetId))
+        }
         val key = (clientId, packetId)
         main(registrantsByPacketId - key, clientIdsByConnectionId)
-      case UnregisterConnection(connectionId) =>
+      case (_, UnregisterConnection(connectionId)) =>
         main(registrantsByPacketId, clientIdsByConnectionId - connectionId)
-      case Route(clientId, packetId, event, failureReply) =>
+      case (_, Route(clientId, packetId, event, failureReply)) =>
         val key = (clientId, packetId)
         registrantsByPacketId.get(key) match {
-          case Some(reply) => reply ! event
-          case None => failureReply.failure(CannotRoute(packetId))
+          case Some(registration) =>
+            registration.registrant ! event
+            main(
+              registrantsByPacketId.updated(
+                (clientId, packetId),
+                registration.copy(failureReplies = failureReply +: registration.failureReplies)
+              ),
+              clientIdsByConnectionId
+            )
+          case None =>
+            failureReply.failure(CannotRoute(packetId))
+            Behaviors.same
         }
-        Behaviors.same
-      case RouteViaConnection(connectionId, packetId, event, failureReply) =>
+      case (_, RouteViaConnection(connectionId, packetId, event, failureReply)) =>
         clientIdsByConnectionId.get(connectionId) match {
           case clientId: Some[String] =>
             val key = (clientId, packetId)
             registrantsByPacketId.get(key) match {
-              case Some(reply) => reply ! event
-              case None => failureReply.failure(CannotRoute(packetId))
+              case Some(registration) =>
+                registration.registrant ! event
+                main(
+                  registrantsByPacketId.updated(
+                    (clientId, packetId),
+                    registration.copy(failureReplies = failureReply +: registration.failureReplies)
+                  ),
+                  clientIdsByConnectionId
+                )
+              case None =>
+                failureReply.failure(CannotRoute(packetId))
+                Behaviors.same
             }
           case None =>
             failureReply.failure(CannotRoute(packetId))
+            Behaviors.same
         }
-        Behaviors.same
     }
 }
 

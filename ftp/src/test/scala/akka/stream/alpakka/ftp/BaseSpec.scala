@@ -4,18 +4,29 @@
 
 package akka.stream.alpakka.ftp
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.stream.IOResult
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, Inside, Matchers, WordSpecLike}
+import org.scalatest.{
+  Args,
+  BeforeAndAfter,
+  BeforeAndAfterAll,
+  Inside,
+  Matchers,
+  Status,
+  TestSuite,
+  TestSuiteMixin,
+  WordSpecLike
+}
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
 trait BaseSpec
-    extends WordSpecLike
+    extends TestSuiteMixin
+    with WordSpecLike
     with Matchers
     with BeforeAndAfter
     with BeforeAndAfterAll
@@ -23,13 +34,17 @@ trait BaseSpec
     with IntegrationPatience
     with Inside
     with AkkaSupport
-    with FtpSupport {
+    with BaseSupport { this: TestSuite =>
 
   protected def listFiles(basePath: String): Source[FtpFile, NotUsed]
 
-  protected def listFilesWithFilter(basePath: String, branchSelector: FtpFile => Boolean): Source[FtpFile, NotUsed]
+  protected def listFilesWithFilter(basePath: String,
+                                    branchSelector: FtpFile => Boolean,
+                                    emitTraversedDirectories: Boolean = false): Source[FtpFile, NotUsed]
 
-  protected def retrieveFromPath(path: String): Source[ByteString, Future[IOResult]]
+  protected def retrieveFromPath(path: String, fromRoot: Boolean = false): Source[ByteString, Future[IOResult]]
+
+  protected def retrieveFromPathWithOffset(path: String, offset: Long): Source[ByteString, Future[IOResult]]
 
   protected def storeToPath(path: String, append: Boolean): Sink[ByteString, Future[IOResult]]
 
@@ -37,9 +52,7 @@ trait BaseSpec
 
   protected def move(destinationPath: FtpFile => String): Sink[FtpFile, Future[IOResult]]
 
-  protected def startServer(): Unit
-
-  protected def stopServer(): Unit
+  protected def mkdir(basePath: String, name: String): Source[Done, NotUsed]
 
   /** For a few tests `assertAllStagesStopped` failed on Travis, this hook allows to inject a bit more patience
    * for the check.
@@ -52,14 +65,19 @@ trait BaseSpec
     cleanFiles()
   }
 
-  override protected def beforeAll() = {
-    super.beforeAll()
-    startServer()
-  }
-
   override protected def afterAll() = {
-    stopServer()
     Await.ready(getSystem.terminate(), 42.seconds)
     super.afterAll()
+  }
+
+  // Allows to run tests n times in a row with a command line argument, useful for debugging sporadic failures
+  // e.g. ftp/testOnly *.FtpsStageSpec -- -Dtimes=20
+  // https://gist.github.com/dwickern/6ba9c5c505d2325d3737ace059302922
+  protected abstract override def runTest(testName: String, args: Args): Status = {
+    def run0(times: Int): Status = {
+      val status = super.runTest(testName, args)
+      if (times <= 1) status else status.thenRun(run0(times - 1))
+    }
+    run0(args.configMap.getWithDefault("times", "1").toInt)
   }
 }

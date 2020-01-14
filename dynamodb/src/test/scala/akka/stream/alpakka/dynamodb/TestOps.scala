@@ -4,54 +4,59 @@
 
 package akka.stream.alpakka.dynamodb
 
-import com.amazonaws.services.dynamodbv2.model._
+import software.amazon.awssdk.services.dynamodb.model._
 
 import scala.collection.JavaConverters._
 
 trait TestOps {
 
   val tableName: String
+
   val keyCol = "kkey"
   val sortCol = "sort"
 
-  def S(s: String) = new AttributeValue().withS(s)
-  def N(n: Int) = new AttributeValue().withN(n.toString)
+  def S(s: String) = AttributeValue.builder().s(s).build()
+  def N(n: Int) = AttributeValue.builder().n(n.toString).build()
   def keyMap(hash: String, sort: Int): Map[String, AttributeValue] = Map(
     keyCol -> S(hash),
     sortCol -> N(sort)
   )
 
   def keyEQ(hash: String): Map[String, Condition] = Map(
-    keyCol -> new Condition()
-      .withComparisonOperator(ComparisonOperator.EQ)
-      .withAttributeValueList(S(hash))
+    keyCol -> Condition
+      .builder()
+      .comparisonOperator(ComparisonOperator.EQ)
+      .attributeValueList(S(hash))
+      .build()
   )
 
   object common {
-    val listTablesRequest = new ListTablesRequest()
+    val listTablesRequest = ListTablesRequest.builder().build()
 
-    val createTableRequest = new CreateTableRequest()
-      .withTableName(tableName)
-      .withKeySchema(
-        new KeySchemaElement().withAttributeName(keyCol).withKeyType(KeyType.HASH),
-        new KeySchemaElement().withAttributeName(sortCol).withKeyType(KeyType.RANGE)
+    val createTableRequest = CreateTableRequest
+      .builder()
+      .tableName(tableName)
+      .keySchema(
+        KeySchemaElement.builder().attributeName(keyCol).keyType(KeyType.HASH).build(),
+        KeySchemaElement.builder().attributeName(sortCol).keyType(KeyType.RANGE).build()
       )
-      .withAttributeDefinitions(
-        new AttributeDefinition().withAttributeName(keyCol).withAttributeType("S"),
-        new AttributeDefinition().withAttributeName(sortCol).withAttributeType("N")
+      .attributeDefinitions(
+        AttributeDefinition.builder().attributeName(keyCol).attributeType(ScalarAttributeType.S).build(),
+        AttributeDefinition.builder().attributeName(sortCol).attributeType(ScalarAttributeType.N).build()
       )
-      .withProvisionedThroughput(
-        new ProvisionedThroughput().withReadCapacityUnits(10L).withWriteCapacityUnits(10L)
+      .provisionedThroughput(
+        ProvisionedThroughput.builder().readCapacityUnits(10L).writeCapacityUnits(10L).build()
       )
+      .build()
 
-    val describeTableRequest = new DescribeTableRequest().withTableName(tableName)
+    val describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build()
 
-    val deleteTableRequest = new DeleteTableRequest().withTableName(tableName)
+    val deleteTableRequest = DeleteTableRequest.builder().tableName(tableName).build()
   }
 
 }
 
-object ItemSpecOps extends TestOps {
+abstract class ItemSpecOps extends TestOps {
 
   override val tableName = "ItemSpecOps"
 
@@ -62,70 +67,151 @@ object ItemSpecOps extends TestOps {
   val test4Data = "test4data"
 
   val test4PutItemRequest =
-    new PutItemRequest().withTableName(tableName).withItem((keyMap("A", 0) + ("data" -> S(test4Data))).asJava)
+    PutItemRequest.builder().tableName(tableName).item((keyMap("A", 0) + ("data" -> S(test4Data))).asJava).build()
 
   val getItemRequest =
-    new GetItemRequest().withTableName(tableName).withKey(keyMap("A", 0).asJava).withAttributesToGet("data")
+    GetItemRequest.builder().tableName(tableName).key(keyMap("A", 0).asJava).attributesToGet("data").build()
+
+  val getItemMalformedRequest =
+    GetItemRequest.builder().tableName(tableName).attributesToGet("data").build()
 
   val test5Data = "test5Data"
 
   val test5PutItemRequest =
-    new PutItemRequest().withTableName(tableName).withItem((keyMap("A", 1) + ("data" -> S(test5Data))).asJava)
+    PutItemRequest.builder().tableName(tableName).item((keyMap("A", 1) + ("data" -> S(test5Data))).asJava).build()
 
-  val batchWriteItemRequest = new BatchWriteItemRequest().withRequestItems(
-    Map(
-      tableName ->
-      List(
-        new WriteRequest(new PutRequest().withItem((keyMap("B", 0) + ("data" -> S(test5Data))).asJava)),
-        new WriteRequest(new PutRequest().withItem((keyMap("B", 1) + ("data" -> S(test5Data))).asJava))
+  val batchWriteItemRequest = BatchWriteItemRequest
+    .builder()
+    .requestItems(
+      Map(
+        tableName ->
+        List(
+          WriteRequest
+            .builder()
+            .putRequest(PutRequest.builder().item((keyMap("B", 0) + ("data" -> S(test5Data))).asJava).build())
+            .build(),
+          WriteRequest
+            .builder()
+            .putRequest(PutRequest.builder().item((keyMap("B", 1) + ("data" -> S(test5Data))).asJava).build())
+            .build()
+        ).asJava
       ).asJava
-    ).asJava
-  )
+    )
+    .build()
 
-  val queryItemsRequest = new QueryRequest()
-    .withTableName(tableName)
-    .withKeyConditions(keyEQ("B").asJava)
-    .withLimit(1)
+  def batchWriteLargeItemRequest(from: Int, to: Int) =
+    BatchWriteItemRequest
+      .builder()
+      .requestItems(
+        Map(
+          tableName ->
+          (from to to).map { i =>
+            // 400k is the of one write request
+            WriteRequest
+              .builder()
+              .putRequest(
+                PutRequest.builder().item((keyMap(i.toString, i) + ("data1" -> S("0123456789" * 39000))).asJava).build()
+              )
+              .build()
+          }.asJava
+        ).asJava
+      )
+      .build()
 
-  val deleteItemRequest = new DeleteItemRequest().withTableName(tableName).withKey(keyMap("A", 0).asJava)
+  def batchGetLargeItemRequest(from: Int, to: Int) =
+    BatchGetItemRequest
+      .builder()
+      .requestItems(
+        Map(
+          tableName ->
+          KeysAndAttributes
+            .builder()
+            .keys {
+              (from to to).map { i =>
+                Map(keyCol -> S(i.toString), sortCol -> N(i)).asJava
+              }.asJava
+            }
+            .attributesToGet("data1")
+            .build()
+        ).asJava
+      )
+      .build()
+
+  def batchGetItemRequest(items: java.util.Map[String, KeysAndAttributes]) =
+    BatchGetItemRequest.builder().requestItems(items).build()
+
+  val queryItemsRequest = QueryRequest
+    .builder()
+    .tableName(tableName)
+    .keyConditions(keyEQ("B").asJava)
+    .limit(1)
+    .build()
+
+  val deleteItemRequest = DeleteItemRequest.builder().tableName(tableName).key(keyMap("A", 0).asJava).build()
 
   def test7PutItemRequest(n: Int) =
-    new PutItemRequest().withTableName(tableName).withItem((keyMap("A", n)).asJava)
+    PutItemRequest
+      .builder()
+      .tableName(tableName)
+      .item(keyMap("A", n).asJava)
+      .build()
 
   val querySize =
-    new QueryRequest()
-      .withTableName(tableName)
-      .withKeyConditionExpression(s"$keyCol = :k")
-      .withExpressionAttributeValues(Map(":k" -> S("A")).asJava)
+    QueryRequest
+      .builder()
+      .tableName(tableName)
+      .keyConditionExpression(s"$keyCol = :k")
+      .expressionAttributeValues(Map(":k" -> S("A")).asJava)
+      .build()
 
   val test8Data = "test8Data"
 
-  val transactPutItemsRequest = new TransactWriteItemsRequest().withTransactItems(
-    List(
-      new TransactWriteItem()
-        .withPut(new Put().withTableName(tableName).withItem((keyMap("C", 0) + ("data" -> S(test8Data))).asJava)),
-      new TransactWriteItem()
-        .withPut(new Put().withTableName(tableName).withItem((keyMap("C", 1) + ("data" -> S(test8Data))).asJava))
-    ).asJava
-  )
+  val transactPutItemsRequest = TransactWriteItemsRequest
+    .builder()
+    .transactItems(
+      List(
+        TransactWriteItem
+          .builder()
+          .put(Put.builder().tableName(tableName).item((keyMap("C", 0) + ("data" -> S(test8Data))).asJava).build())
+          .build(),
+        TransactWriteItem
+          .builder()
+          .put(Put.builder().tableName(tableName).item((keyMap("C", 1) + ("data" -> S(test8Data))).asJava).build())
+          .build()
+      ).asJava
+    )
+    .build()
 
-  val transactGetItemsRequest = new TransactGetItemsRequest().withTransactItems(
-    List(
-      new TransactGetItem().withGet(new Get().withTableName(tableName).withKey(keyMap("C", 0).asJava)),
-      new TransactGetItem().withGet(new Get().withTableName(tableName).withKey(keyMap("C", 1).asJava))
-    ).asJava
-  )
+  val transactGetItemsRequest = TransactGetItemsRequest
+    .builder()
+    .transactItems(
+      List(
+        TransactGetItem.builder().get(Get.builder().tableName(tableName).key(keyMap("C", 0).asJava).build()).build(),
+        TransactGetItem.builder().get(Get.builder().tableName(tableName).key(keyMap("C", 1).asJava).build()).build()
+      ).asJava
+    )
+    .build()
 
-  val transactDeleteItemsRequest = new TransactWriteItemsRequest().withTransactItems(
-    List(
-      new TransactWriteItem().withDelete(new Delete().withTableName(tableName).withKey(keyMap("C", 0).asJava)),
-      new TransactWriteItem().withDelete(new Delete().withTableName(tableName).withKey(keyMap("C", 1).asJava))
-    ).asJava
-  )
+  val transactDeleteItemsRequest = TransactWriteItemsRequest
+    .builder()
+    .transactItems(
+      List(
+        TransactWriteItem
+          .builder()
+          .delete(Delete.builder().tableName(tableName).key(keyMap("C", 0).asJava).build())
+          .build(),
+        TransactWriteItem
+          .builder()
+          .delete(Delete.builder().tableName(tableName).key(keyMap("C", 1).asJava).build())
+          .build()
+      ).asJava
+    )
+    .build()
 
   val deleteTableRequest = common.deleteTableRequest
-
 }
+
+object ItemSpecOps extends ItemSpecOps
 
 object TableSpecOps extends TestOps {
 
@@ -138,19 +224,21 @@ object TableSpecOps extends TestOps {
   val describeTableRequest = common.describeTableRequest
 
   val newMaxLimit = 5L
-  val describeLimitsRequest = new DescribeLimitsRequest()
-  val updateTableRequest = new UpdateTableRequest()
-    .withTableName(tableName)
-    .withProvisionedThroughput(
-      new ProvisionedThroughput().withWriteCapacityUnits(newMaxLimit).withReadCapacityUnits(newMaxLimit)
+  val describeLimitsRequest = DescribeLimitsRequest.builder().build()
+  val updateTableRequest = UpdateTableRequest
+    .builder()
+    .tableName(tableName)
+    .provisionedThroughput(
+      ProvisionedThroughput.builder().writeCapacityUnits(newMaxLimit).readCapacityUnits(newMaxLimit).build()
     )
+    .build()
 
-  val describeTimeToLiveRequest = new DescribeTimeToLiveRequest()
-  val updateTimeToLiveRequest = new UpdateTimeToLiveRequest()
-    .withTableName(tableName)
-    .withTimeToLiveSpecification(
-      new TimeToLiveSpecification().withAttributeName("expires").withEnabled(true)
-    )
+  val describeTimeToLiveRequest = DescribeTimeToLiveRequest.builder().build()
+  val updateTimeToLiveRequest = UpdateTimeToLiveRequest
+    .builder()
+    .tableName(tableName)
+    .timeToLiveSpecification(TimeToLiveSpecification.builder().attributeName("expires").enabled(true).build())
+    .build()
 
   val deleteTableRequest = common.deleteTableRequest
 

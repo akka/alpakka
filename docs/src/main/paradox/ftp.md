@@ -37,6 +37,8 @@ The example demonstrates optional use of `configureConnection` option available 
 
 For non-anonymous connection, please provide an instance of @scaladoc[NonAnonFtpCredentials](akka.stream.alpakka.ftp.FtpCredentials$$NonAnonFtpCredentials) instead.
 
+For connection via a proxy, please provide an instance of `java.net.Proxy` by using the `withProxy` method.
+
 For connection using a private key, please provide an instance of @scaladoc[SftpIdentity](akka.stream.alpakka.ftp.SftpIdentity) to @scaladoc[SftpSettings](akka.stream.alpakka.ftp.SftpSettings).
 
 In order to use a custom SSH client for SFTP please provide an instance of [SSHClient](https://static.javadoc.io/com.hierynomus/sshj/0.26.0/net/schmizz/sshj/SSHClient.html).
@@ -115,6 +117,20 @@ This sink will consume @scaladoc[FtpFile](akka.stream.alpakka.ftp.FtpFile) eleme
 
 Typical use-case for this would be listing files from a ftp location, do some processing and move the files when done. An example of this use case can be found below.
 
+## Creating directory
+
+In order to create a directory the user has to specify a parent directory (also known as base path) and directory's name.
+
+Alpakka provides a materialized API `mkdirAsync` (based on @scala[Future]@java[Completion Stage]) and unmaterialized API `mkdir` (using Sources) to let the user choose when the action will be executed.
+
+Scala
+: @@snip [snip](/ftp/src/test/scala/docs/scaladsl/scalaExamples.scala) { #mkdir-source }
+
+Java
+: @@snip [snip](/ftp/src/test/java/docs/javadsl/FtpMkdirExample.java){ #mkdir-source }
+
+Please note that to include a subdirectory in result of `ls` the `emitTraversedDirectories` has to be set to `true`.
+
 ### Example: downloading files from an FTP location and move the original files  
 
 Scala
@@ -127,14 +143,8 @@ Java
 
 The code in this guide is part of runnable tests of this project. You are welcome to browse the code, edit and run it in sbt.
 
-Scala
-:   ```
-    sbt
-    > ftp/test
     ```
-
-Java
-:   ```
+    docker-compose up -d ftp sftp
     sbt
     > ftp/test
     ```

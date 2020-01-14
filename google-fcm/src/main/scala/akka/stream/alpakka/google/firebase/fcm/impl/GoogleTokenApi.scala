@@ -11,6 +11,7 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import akka.stream.alpakka.google.firebase.fcm.impl.GoogleTokenApi.{AccessTokenExpiry, OAuthResponse}
 import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim, JwtTime}
+import java.time.Clock
 
 import scala.concurrent.Future
 
@@ -21,12 +22,14 @@ import scala.concurrent.Future
 private[fcm] class GoogleTokenApi(http: => HttpExt) {
   import FcmJsonSupport._
 
+  implicit val clock = Clock.systemUTC()
+
   protected val encodingAlgorithm: JwtAlgorithm.RS256.type = JwtAlgorithm.RS256
 
   private val googleTokenUrl = "https://www.googleapis.com/oauth2/v4/token"
   private val scope = "https://www.googleapis.com/auth/firebase.messaging"
 
-  def now: Long = JwtTime.nowSeconds
+  def now: Long = JwtTime.nowSeconds(Clock.systemUTC())
 
   private def generateJwt(clientEmail: String, privateKey: String): String = {
     val claim = JwtClaim(content = s"""{"scope":"$scope","aud":"$googleTokenUrl"}""", issuer = Option(clientEmail))

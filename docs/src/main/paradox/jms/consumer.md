@@ -14,7 +14,7 @@ The JMS message model supports several types of message bodies in (see @javadoc[
 
 @java[@scaladoc[JmsConsumer](akka.stream.alpakka.jms.javadsl.JmsConsumer$)]@scala[@scaladoc[JmsConsumer](akka.stream.alpakka.jms.scaladsl.JmsConsumer$)] offers factory methods to consume JMS messages in a number of ways.
 
-This examples shows how to listen to a JMS queue and emit @javadoc[`javax.jms.Message`](javax.jms.Message) elements into the stream.
+This examples shows how to listen to a JMS queue and emit @javadoc[javax.jms.Message](javax.jms.Message) elements into the stream.
 
 The materialized value `JmsConsumerControl` is used to shut down the consumer (it is a @scaladoc[Killswitch](akka.stream.KillSwitch)) and offers the possibility to inspect the connectivity state of the consumer. 
 
@@ -191,3 +191,15 @@ Scala
 Java
 : @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #object-source }
 
+
+## Request / Reply
+
+The request / reply pattern can be implemented by streaming a @java[@scaladoc[JmsConsumer](akka.stream.alpakka.jms.javadsl.JmsConsumer$)]@scala[@scaladoc[JmsConsumer](akka.stream.alpakka.jms.scaladsl.JmsConsumer$)]
+to a @java[@scaladoc[JmsProducer](akka.stream.alpakka.jms.javadsl.JmsProducer$)]@scala[@scaladoc[JmsProducer](akka.stream.alpakka.jms.scaladsl.JmsProducer$)],
+with a stage in between that extracts the `ReplyTo` and `CorrelationID` from the original message and adds them to the response.
+
+Scala
+: @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #request-reply }
+
+Java
+: @@snip [snip](/jms/src/test/java/docs/javadsl/JmsConnectorsTest.java) { #request-reply }

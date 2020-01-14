@@ -20,15 +20,15 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Connecting to server
 
-All the AMQP connectors are configured using a @scaladoc[AmqpConnectionProvider](akka.stream.alpakka.amqp.AmqpConnectionProvider) and a list of @scaladoc[Declaration](akka.stream.alpakka.amqp.Declaration)
+All the AMQP connectors are configured using a @apidoc[AmqpConnectionProvider] and a list of @apidoc[amqp.Declaration]
 
-There are several types of @scaladoc[AmqpConnectionProvider](akka.stream.alpakka.amqp.AmqpConnectionProvider):
+There are several types of @apidoc[AmqpConnectionProvider]:
 
-* @scaladoc[AmqpLocalConnectionProvider](akka.stream.alpakka.amqp.AmqpLocalConnectionProvider$) which connects to the default localhost. It creates a new connection for each stage.
-* @scaladoc[AmqpUriConnectionProvider](akka.stream.alpakka.amqp.AmqpUriConnectionProvider$) which connects to the given AMQP URI. It creates a new connection for each stage.
-* @scaladoc[AmqpDetailsConnectionProvider](akka.stream.alpakka.amqp.AmqpDetailsConnectionProvider$) which supports more fine-grained configuration. It creates a new connection for each stage.
-* @scaladoc[AmqpConnectionFactoryConnectionProvider](akka.stream.alpakka.amqp.AmqpConnectionFactoryConnectionProvider$) which takes a raw [ConnectionFactory](https://rabbitmq.github.io/rabbitmq-java-client/api/current/com/rabbitmq/client/ConnectionFactory.html). It creates a new connection for each stage.
-* @scaladoc[AmqpCachedConnectionProvider](akka.stream.alpakka.amqp.AmqpCachedConnectionProvider) which receive any other provider as parameter and caches the connection it provides to be used in all stages. By default it closes the connection whenever the last stage using the provider stops. Optionally, it takes `automaticRelease` boolean parameter so the connection is not automatically release and the user have to release it explicitly.
+* @apidoc[AmqpLocalConnectionProvider$] which connects to the default localhost. It creates a new connection for each stage.
+* @apidoc[AmqpUriConnectionProvider$] which connects to the given AMQP URI. It creates a new connection for each stage.
+* @apidoc[AmqpDetailsConnectionProvider$] which supports more fine-grained configuration. It creates a new connection for each stage.
+* @apidoc[AmqpConnectionFactoryConnectionProvider$] which takes a raw [ConnectionFactory](https://rabbitmq.github.io/rabbitmq-java-client/api/current/com/rabbitmq/client/ConnectionFactory.html). It creates a new connection for each stage.
+* @apidoc[AmqpCachedConnectionProvider$] which receive any other provider as parameter and caches the connection it provides to be used in all stages. By default it closes the connection whenever the last stage using the provider stops. Optionally, it takes `automaticRelease` boolean parameter so the connection is not automatically release and the user have to release it explicitly.
 
 ## Sending messages
 
@@ -40,20 +40,49 @@ Scala
 Java
 : @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #queue-declaration }
 
-Here we used @scaladoc[QueueDeclaration](akka.stream.alpakka.amqp.QueueDeclaration) configuration class to create a queue declaration.
+Here we used @apidoc[QueueDeclaration] configuration class to create a queue declaration.
 
-Create a sink, that accepts and forwards @scaladoc[ByteString](akka.util.ByteString)s to the AMQP server.
+### With flow
 
-@scala[@scaladoc[AmqpSink](akka.stream.alpakka.amqp.scaladsl.AmqpSink$)]@java[@scaladoc[AmqpSink](akka.stream.alpakka.amqp.javadsl.AmqpSink$)] is a collection of factory methods that facilitates creation of sinks. Here we created a *simple* sink, which means that we are able to pass `ByteString`s to the sink instead of wrapping data into @scaladoc[WriteMessage](akka.stream.alpakka.amqp.WriteMessage)s.
+Similarly as with Sink, the first step is to create Flow which accepts @apidoc[amqp.WriteMessage]s and forwards it's content to the AMQP server. Flow emits @apidoc[amqp.WriteResult]s informing about publication result (see below for summary of delivery guarantees for different Flow variants).
 
-Last step is to @extref[materialize](akka-docs:stream/stream-flows-and-basics.scala) and run the sink we have created.
+@apidoc[AmqpFlow$] is a collection of factory methods that facilitates creation of flows. Here we created a *simple* sink, which means that we are able to pass `ByteString`s to the sink instead of wrapping data into @apidoc[amqp.WriteMessage]s.
+
+Last step is to @extref:[materialize](akka:stream/stream-flows-and-basics.html) and run the flow we have created.
+
+Scala
+: @@snip [snip](/amqp/src/test/scala/docs/scaladsl/AmqpDocsSpec.scala) { #create-flow }
+
+Java
+: @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #create-flow }
+
+Various variants of AMQP flow offer different delivery and ordering guarantees:
+
+| AMQP flow factory                  | Description                                                                                          |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| AmqpFlow.apply                     | The most basic type of flow. Does not impose delivery guarantees, messages are published in a fire-and-forget manner. Emitted results have `confirmed` always set to true.
+| AmqpFlow.withConfirm          | Variant that uses asynchronous confirmations. Maximum number of messages simultaneously waiting for confirmation before signaling backpressure is configured with a `bufferSize` parameter. Emitted results preserve the order of messages pulled from upstream - due to that restriction this flow is expected to be slightly less effective than it's unordered counterpart.
+| AmqpFlow.withConfirmUnordered | The same as `AmqpFlow.withConfirm` with the exception of ordering guarantee - results are emitted downstream as soon as confirmation is received, meaning that there is no ordering guarantee of any sort.
+
+For @apidoc[FlowWithContext$] counterparts of above flows see @apidoc[AmqpFlowWithContext$].
+
+@@@ warning
+`AmqpFlow.withConfirm` and `AmqpFlow.withConfirmUnordered` are implemented using RabbitMQ's extension to AMQP protocol ([Publisher Confirms](https://www.rabbitmq.com/confirms.html#publisher-confirms)), therefore they are not intended to work with another AMQP brokers.
+@@@
+
+### With sink
+
+Create a sink, that accepts and forwards @apidoc[akka.util.ByteString]s to the AMQP server.
+
+@apidoc[AmqpSink$] is a collection of factory methods that facilitates creation of sinks. Here we created a *simple* sink, which means that we are able to pass `ByteString`s to the sink instead of wrapping data into @apidoc[amqp.WriteMessage]s.
+
+Last step is to @extref:[materialize](akka:stream/stream-flows-and-basics.html) and run the sink we have created.
 
 Scala
 : @@snip [snip](/amqp/src/test/scala/docs/scaladsl/AmqpDocsSpec.scala) { #create-sink }
 
 Java
 : @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #create-sink }
-
 
 ## Receiving messages
 
@@ -90,7 +119,7 @@ Scala
 Java
 : @@snip [snip](/amqp/src/test/java/docs/javadsl/AmqpDocsTest.java) { #create-exchange-sink }
 
-For the source, we are going to create multiple sources and merge them using @extref[Akka Streams operators](akka-docs:stream/operators/index.html).
+For the source, we are going to create multiple sources and merge them using @extref:[Akka Streams operators](akka:stream/operators/index.html).
 
 Scala
 : @@snip [snip](/amqp/src/test/scala/docs/scaladsl/AmqpDocsSpec.scala) { #create-exchange-source }
@@ -115,7 +144,7 @@ Java
 
 ## Acknowledging messages downstream
 
-Committable sources return @scala[@scaladoc[CommittableReadResult](akka.stream.alpakka.amqp.scaladsl.CommittableReadResult)]@java[@scaladoc[CommittableReadResult](akka.stream.alpakka.amqp.javadsl.CommittableReadResult)] which wraps the @scaladoc[ReadResult](akka.stream.alpakka.amqp.ReadResult) and exposes the methods `ack` and `nack`.
+Committable sources return @apidoc[CommittableReadResult] which wraps the @apidoc[amqp.ReadResult] and exposes the methods `ack` and `nack`.
 
 Use `ack` to acknowledge the message back to RabbitMQ. `ack` takes an optional boolean parameter `multiple` indicating whether you are acknowledging the individual message or all the messages up to it.
 

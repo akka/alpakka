@@ -11,6 +11,7 @@ import akka.stream.alpakka.solr._
 import akka.stream.stage._
 import org.apache.solr.client.solrj.SolrClient
 import org.apache.solr.client.solrj.impl.CloudSolrClient
+import org.apache.solr.client.solrj.request.UpdateRequest
 import org.apache.solr.client.solrj.response.UpdateResponse
 import org.apache.solr.common.SolrInputDocument
 
@@ -144,7 +145,11 @@ private final class SolrFlowLogic[T, C](
     val responses = messages.map { message =>
       val query = message.query.get
       if (log.isDebugEnabled) log.debug(s"Delete by the query $query")
-      client.deleteByQuery(collection, query, settings.commitWithin)
+      val req = new UpdateRequest()
+      if (message.routingFieldValue.isDefined) req.setParam("_route_", message.routingFieldValue.get)
+      req.deleteByQuery(query)
+      req.setCommitWithin(settings.commitWithin)
+      req.process(client, collection)
     }
     responses.find(_.getStatus != 0).getOrElse(responses.head)
   }
@@ -152,7 +157,7 @@ private final class SolrFlowLogic[T, C](
   private def sendBulkToSolr(messages: immutable.Seq[WriteMessage[T, C]]): Unit = {
 
     @tailrec
-    def send(toSend: immutable.Seq[WriteMessage[T, C]]): UpdateResponse = {
+    def send(toSend: immutable.Seq[WriteMessage[T, C]]): Option[UpdateResponse] = {
       val operation = toSend.head.operation
       //Just take a subset of this operation
       val (current, remaining) = toSend.span { m =>
@@ -160,10 +165,11 @@ private final class SolrFlowLogic[T, C](
       }
       //send this subset
       val response = operation match {
-        case Upsert => updateBulkToSolr(current)
-        case AtomicUpdate => atomicUpdateBulkToSolr(current)
-        case DeleteByIds => deleteBulkToSolrByIds(current)
-        case DeleteByQuery => deleteEachByQuery(current)
+        case Upsert => Option(updateBulkToSolr(current))
+        case AtomicUpdate => Option(atomicUpdateBulkToSolr(current))
+        case DeleteByIds => Option(deleteBulkToSolrByIds(current))
+        case DeleteByQuery => Option(deleteEachByQuery(current))
+        case PassThrough => None
       }
       if (remaining.nonEmpty) {
         send(remaining)
@@ -172,7 +178,8 @@ private final class SolrFlowLogic[T, C](
       }
     }
 
-    val response = if (messages.nonEmpty) send(messages).getStatus else 0
+    val response = if (messages.nonEmpty) send(messages).fold(0) { _.getStatus } else 0
+
     log.debug("Handle the response with {}", response)
     val results = messages.map(
       m =>

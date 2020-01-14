@@ -49,7 +49,7 @@ public class DocSnippetFlowWithPassThrough {
     }
 
     public <B> KafkaMessage<B> map(Function<A, B> f) {
-      return new KafkaMessage(f.apply(msg), offset);
+      return new KafkaMessage<>(f.apply(msg), offset);
     }
   }
 
@@ -67,8 +67,7 @@ public class DocSnippetFlowWithPassThrough {
             .collect(Collectors.toList());
 
     List<KafkaMessage<User>> messagesFromKafka =
-        users
-            .stream()
+        users.stream()
             .map(user -> new KafkaMessage<>(user, new CommittableOffset(users.indexOf(user))))
             .collect(Collectors.toList());
 

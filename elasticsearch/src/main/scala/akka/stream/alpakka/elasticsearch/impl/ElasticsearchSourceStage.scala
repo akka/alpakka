@@ -5,6 +5,7 @@
 package akka.stream.alpakka.elasticsearch.impl
 
 import java.io.ByteArrayOutputStream
+import java.nio.charset.StandardCharsets
 
 import akka.annotation.InternalApi
 import akka.stream.alpakka.elasticsearch.{ElasticsearchSourceSettings, ReadResult}
@@ -111,11 +112,11 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](indexName: String
         val completeParams = searchParams ++ extraParams.flatten
 
         val searchBody = "{" + completeParams
-          .map {
-            case (name, json) =>
-              "\"" + name + "\":" + json
-          }
-          .mkString(",") + "}"
+            .map {
+              case (name, json) =>
+                "\"" + name + "\":" + json
+            }
+            .mkString(",") + "}"
 
         val endpoint: String = (indexName, typeName) match {
           case (i, Some(t)) => s"/$i/$t/_search"
@@ -125,7 +126,7 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](indexName: String
           "POST",
           endpoint,
           Map("scroll" -> settings.scroll, "sort" -> "_doc").asJava,
-          new StringEntity(searchBody),
+          new StringEntity(searchBody, StandardCharsets.UTF_8),
           this,
           new BasicHeader("Content-Type", "application/json")
         )
@@ -136,7 +137,8 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](indexName: String
           "POST",
           s"/_search/scroll",
           Map[String, String]().asJava,
-          new StringEntity(Map("scroll" -> settings.scroll, "scroll_id" -> scrollId).toJson.toString),
+          new StringEntity(Map("scroll" -> settings.scroll, "scroll_id" -> scrollId).toJson.toString,
+                           StandardCharsets.UTF_8),
           this,
           new BasicHeader("Content-Type", "application/json")
         )

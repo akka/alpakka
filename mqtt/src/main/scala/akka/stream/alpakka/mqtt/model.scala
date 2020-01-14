@@ -4,8 +4,6 @@
 
 package akka.stream.alpakka.mqtt
 
-import scala.compat.java8.OptionConverters._
-
 final class MqttMessage private (val topic: String,
                                  val payload: akka.util.ByteString,
                                  val qos: Option[MqttQoS],

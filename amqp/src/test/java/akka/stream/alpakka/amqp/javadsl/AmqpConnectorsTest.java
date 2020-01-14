@@ -140,7 +140,7 @@ public class AmqpConnectorsTest {
     Pair<CompletionStage<String>, TestSubscriber.Probe<ReadResult>> result =
         Source.from(input)
             .map(ByteString::fromString)
-            .map(bytes -> WriteMessage.create(bytes))
+            .map(WriteMessage::create)
             .viaMat(ampqRpcFlow, Keep.right())
             .mapAsync(1, cm -> cm.ack().thenApply(unused -> cm.message()))
             .toMat(TestSink.probe(system), Keep.both())

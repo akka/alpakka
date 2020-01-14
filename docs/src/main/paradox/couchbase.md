@@ -32,13 +32,39 @@ The table below shows direct dependencies of this module and the second tab show
 
 # Overview
 
-Alpakka Couchbase offers both Akka Streams APIs and a more direct API to access Couchbase:
+Alpakka Couchbase offers both @ref:[Akka Streams APIs](#reading-from-couchbase-in-akka-streams) and a more @ref:[direct API](#using-couchbasesession-directly) to access Couchbase:
 
 * `CouchbaseSession` (@scala[@scaladoc[API](akka.stream.alpakka.couchbase.scaladsl.CouchbaseSession)]@java[@scaladoc[API](akka.stream.alpakka.couchbase.javadsl.CouchbaseSession)]) offers a direct API for one-off operations
 * `CouchbaseSessionRegistry` (@scaladoc[API](akka.stream.alpakka.couchbase.CouchbaseSessionRegistry$)) is an Akka extension to keep track and share `CouchbaseSession`s within an `ActorSystem`
 * `CouchbaseSource` (@scala[@scaladoc[API](akka.stream.alpakka.couchbase.scaladsl.CouchbaseSource$)]@java[@scaladoc[API](akka.stream.alpakka.couchbase.javadsl.CouchbaseSource$)]), `CouchbaseFlow` (@scala[@scaladoc[API](akka.stream.alpakka.couchbase.scaladsl.CouchbaseFlow$)]@java[@scaladoc[API](akka.stream.alpakka.couchbase.javadsl.CouchbaseFlow$)]), and `CouchbaseSink` (@scala[@scaladoc[API](akka.stream.alpakka.couchbase.scaladsl.CouchbaseSink$)]@java[@scaladoc[API](akka.stream.alpakka.couchbase.javadsl.CouchbaseSink$)]) offer factory methods to create Akka Stream operators
 
+## Configuration
+
 All operations use the `CouchbaseSession` internally. A session is configured with `CouchbaseSessionSettings` (@scaladoc[API](akka.stream.alpakka.couchbase.CouchbaseSessionSettings$)) and a Couchbase bucket name. The Akka Stream factory methods create and access the corresponding session instance behind the scenes.
+
+By default the `CouchbaseSessionSettings` are read from the `alpakka.couchbase.session` section from the configuration eg. in your `application.conf`.
+
+Settings
+: @@snip [snip](/couchbase/src/test/resources/application.conf) { #settings }
+
+## Using Akka Discovery
+
+To delegate the configuration of Couchbase nodes to any of [Akka Discovery's lookup mechanisms](https://doc.akka.io/docs/akka/current/discovery/index.html), specify a service name and lookup timeout in the Couchbase section, and pass in @scala[@scaladoc[DiscoverySupport](akka.stream.alpakka.couchbase.scaladsl.DiscoverySupport$)]@java[@scaladoc[DiscoverySupport](akka.stream.alpakka.couchbase.javadsl.DiscoverySupport)] nodes lookup to `enrichAsync` and configure Akka Discovery accordingly.
+
+**The Akka Discovery dependency has to be added explicitly**.
+
+Discovery settings (Config discovery)
+: @@snip [snip](/couchbase/src/test/resources/discovery.conf) { #discovery-settings }
+
+
+To enable Akka Discovery on the `CouchbaseSessionSettings`, use `DiscoverySupport.nodes()` as enrichment function.
+
+Scala
+: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/DiscoverySpec.scala) { #registry }
+
+Java
+: @@snip [snip](/couchbase/src/test/java/docs/javadsl/DiscoveryTest.java) { #registry }
+
 
 # Reading from Couchbase in Akka Streams
 
@@ -122,6 +148,34 @@ Scala
 Java
 : @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #upsertDocWithResult }
 
+## Replace
+
+The `CouchbaseFlow` and `CouchbaseSink` offer factories for replacing documents in Couchbase. `replace` is used for the most commonly used `JsonDocument`, and `replaceDoc` has as type parameter to support any variants of @scala[`Document[T]`]@java[`Document<T>`] which may be `RawJsonDocument`, `StringDocument` or `BinaryDocument`.
+
+The `replace` and `replaceDoc` operators fail the stream on any error when writing to Couchbase. To handle failures in-stream use `replaceDocWithResult` shown below. 
+
+A `replace` action will fail if the original Document can't be found in Couchbase with a `DocumentDoesNotExistException`.
+
+Scala
+: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #replace }
+
+Java
+: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #replace }
+
+
+@@@ note
+
+For single document modifications you may consider using the `CouchbaseSession` methods directly, they offer a @scala[future-based]@java[CompletionStage-based] API which in many cases might be simpler than using Akka Streams with just one element (see [below](#using-couchbasesession-directly))
+
+@@@
+
+Couchbase writes may fail temporarily for a particular node. If you want to handle such failures without restarting the whole stream, the `replaceDocWithResult` operator captures failures from Couchbase and emits `CouchbaseWriteResult` sub-classes `CouchbaseWriteSuccess` and `CouchbaseWriteFailure` downstream.
+
+Scala
+: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseFlowSpec.scala) { #upsertDocWithResult }
+
+Java
+: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #upsertDocWithResult }
 
 ## Delete
 
@@ -144,6 +198,20 @@ Java
 
 # Using `CouchbaseSession` directly
 
+## Access via registry
+
+The `CouchbaseSesionRegistry` is an Akka extension to manage the life-cycle of Couchbase sessions. All underlying instances are closed upon actor system termination.
+
+When accessing more than one Couchbase cluster, the `CouchbaseEnvironment` should be shared by setting a single instance for the different `CouchbaseSessionSettings`.
+
+Scala
+: @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseSessionExamplesSpec.scala) { #registry }
+
+Java
+: @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #registry }
+
+
+## Manage session life-cycle
 Use `CouchbaseSessionSettings` to get an instance of `CouchbaseSession`. These settings may be specified in `application.conf` and complemented in code. Furthermore a session requires the bucket name and needs an `ExecutionContext` as the creation is asynchronous.
 
 Scala
@@ -153,7 +221,9 @@ Java
 : @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #session }
 
 
-Alternatively a `CouchbaseSession` may be created from a Couchbase `Bucket`:
+## Manage bucket life-cycle
+
+For full control a `CouchbaseSession` may be created from a Couchbase `Bucket`. See @extref:[Scalability and Concurrency](couchbase:managing-connections.html#concurrency) in the Couchbase documentation for details.
 
 Scala
 : @@snip [snip](/couchbase/src/test/scala/docs/scaladsl/CouchbaseSessionExamplesSpec.scala) { #fromBucket }

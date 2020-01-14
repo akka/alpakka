@@ -6,7 +6,6 @@ package docs.scaladsl
 
 import java.nio.charset.StandardCharsets
 
-import akka.stream.alpakka.csv.scaladsl.{ByteOrderMark, CsvFormatting, CsvQuotingStyle}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.util.ByteString
@@ -16,6 +15,10 @@ import scala.collection.immutable
 class CsvFormattingSpec extends CsvSpec {
 
   def documentation(): Unit = {
+    // #flow-type
+    import akka.stream.alpakka.csv.scaladsl.{CsvFormatting, CsvQuotingStyle}
+
+    // #flow-type
     import CsvFormatting._
     val delimiter = Comma
     val quoteChar = DoubleQuote
@@ -33,6 +36,7 @@ class CsvFormattingSpec extends CsvSpec {
                              byteOrderMark = None)
     // #flow-type
     // format: on
+    Source.single(List("a", "b")).via(flow).runWith(Sink.ignore)
   }
 
   "CSV Formatting" should {
@@ -55,7 +59,7 @@ class CsvFormattingSpec extends CsvSpec {
 
     "include Byte Order Mark" in assertAllStagesStopped {
       // #formatting-bom
-      import akka.stream.alpakka.csv.scaladsl.CsvFormatting
+      import akka.stream.alpakka.csv.scaladsl.{ByteOrderMark, CsvFormatting}
 
       // #formatting-bom
       val fut =

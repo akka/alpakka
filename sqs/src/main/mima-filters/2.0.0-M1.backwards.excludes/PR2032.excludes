@@ -1,0 +1,4 @@
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.sqs.javadsl.SqsPublishFlow.batch")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.sqs.javadsl.SqsPublishFlow.batch")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.sqs.javadsl.SqsPublishSink.batch")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.sqs.javadsl.SqsPublishSink.batchedMessageSink")

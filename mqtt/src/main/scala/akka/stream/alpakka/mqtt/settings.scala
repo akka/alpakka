@@ -133,39 +133,6 @@ object MqttSubscriptions {
 
 }
 
-/**
- * @param subscriptions the mapping between a topic name and a [[MqttQoS]].
- * @deprecated use MqttConnectionSettings and MqttSubscriptions instead
- */
-@deprecated("use MqttConnectionSettings and MqttSubscriptions instead", "1.0-M1")
-@java.lang.Deprecated
-final case class MqttSourceSettings(
-    connectionSettings: MqttConnectionSettings,
-    subscriptions: Map[String, MqttQoS] = Map.empty
-) {
-  @annotation.varargs
-  def withSubscriptions(subscriptions: akka.japi.Pair[String, MqttQoS]*) =
-    copy(subscriptions = subscriptions.map(_.toScala).toMap)
-}
-
-/**
- * @deprecated use MqttConnectionSettings and MqttSubscriptions instead
- */
-@deprecated("use MqttConnectionSettings and MqttSubscriptions instead", "1.0-M1")
-@java.lang.Deprecated
-object MqttSourceSettings {
-
-  /**
-   * Java API: create [[MqttSourceSettings]].
-   *
-   * @deprecated use MqttConnectionSettings and MqttSubscriptions instead
-   */
-  @deprecated("use MqttConnectionSettings and MqttSubscriptions instead", "1.0-M1")
-  @java.lang.Deprecated
-  def create(connectionSettings: MqttConnectionSettings) =
-    MqttSourceSettings(connectionSettings)
-}
-
 private[mqtt] final case class MqttOfflinePersistenceSettings(
     bufferSize: Int = 5000,
     deleteOldestMessage: Boolean = false,
@@ -194,8 +161,7 @@ final class MqttConnectionSettings private (val broker: String,
                                             val serverUris: immutable.Seq[String],
                                             val sslHostnameVerifier: Option[javax.net.ssl.HostnameVerifier],
                                             val sslProperties: Map[String, String],
-                                            val offlinePersistenceSettings: Option[MqttOfflinePersistenceSettings] =
-                                              None) {
+                                            val offlinePersistenceSettings: Option[MqttOfflinePersistenceSettings]) {
 
   def withBroker(value: String): MqttConnectionSettings = copy(broker = value)
   def withClientId(clientId: String): MqttConnectionSettings = copy(clientId = clientId)
@@ -278,34 +244,6 @@ final class MqttConnectionSettings private (val broker: String,
         Option(MqttOfflinePersistenceSettings(bufferSize, deleteOldestMessage, persistBuffer))
     )
 
-  /**
-   * @deprecated use with [[java.time.Duration]] instead
-   */
-  @java.lang.Deprecated
-  def withKeepAliveInterval(keepAliveInterval: Int, unit: TimeUnit): MqttConnectionSettings =
-    copy(keepAliveInterval = FiniteDuration(keepAliveInterval, unit))
-
-  /**
-   * @deprecated use with [[java.time.Duration]] instead
-   */
-  @java.lang.Deprecated
-  def withConnectionTimeout(connectionTimeout: Int, unit: TimeUnit): MqttConnectionSettings =
-    copy(connectionTimeout = FiniteDuration(connectionTimeout, unit))
-
-  /**
-   * @deprecated use with [[java.time.Duration]] instead
-   */
-  @java.lang.Deprecated
-  def withDisconnectQuiesceTimeout(disconnectQuiesceTimeout: Int, unit: TimeUnit): MqttConnectionSettings =
-    copy(disconnectQuiesceTimeout = FiniteDuration(disconnectQuiesceTimeout, unit))
-
-  /**
-   * @deprecated use with [[java.time.Duration]] instead
-   */
-  @java.lang.Deprecated
-  def withDisconnectTimeout(disconnectTimeout: Int, unit: TimeUnit): MqttConnectionSettings =
-    copy(disconnectTimeout = FiniteDuration(disconnectTimeout, unit))
-
   private def copy(
       broker: String = broker,
       clientId: String = clientId,
@@ -348,9 +286,26 @@ final class MqttConnectionSettings private (val broker: String,
     )
 
   override def toString =
-    s"""MqttConnectionSettings(broker=$broker,clientId=$clientId,persistence=$persistence,auth(username)=${auth.map(
-      _._1
-    )},socketFactory=$socketFactory,cleanSession=$cleanSession,will=$will,automaticReconnect=$automaticReconnect,keepAliveInterval=$keepAliveInterval,connectionTimeout=$connectionTimeout,disconnectQuiesceTimeout=$disconnectQuiesceTimeout,disconnectTimeout=$disconnectTimeout,maxInFlight=$maxInFlight,mqttVersion=$mqttVersion,serverUris=$serverUris,sslHostnameVerifier=$sslHostnameVerifier,sslProperties=$sslProperties,offlinePersistenceSettings=$offlinePersistenceSettings)"""
+    "MqttConnectionSettings(" +
+    s"broker=$broker," +
+    s"clientId=$clientId," +
+    s"persistence=$persistence," +
+    s"auth(username)=${auth.map(_._1)}," +
+    s"socketFactory=$socketFactory," +
+    s"cleanSession=$cleanSession," +
+    s"will=$will," +
+    s"automaticReconnect=$automaticReconnect," +
+    s"keepAliveInterval=$keepAliveInterval," +
+    s"connectionTimeout=$connectionTimeout," +
+    s"disconnectQuiesceTimeout=$disconnectQuiesceTimeout," +
+    s"disconnectTimeout=$disconnectTimeout," +
+    s"maxInFlight=$maxInFlight," +
+    s"mqttVersion=$mqttVersion," +
+    s"serverUris=$serverUris," +
+    s"sslHostnameVerifier=$sslHostnameVerifier," +
+    s"sslProperties=$sslProperties," +
+    s"offlinePersistenceSettings=$offlinePersistenceSettings" +
+    ")"
 }
 
 /**

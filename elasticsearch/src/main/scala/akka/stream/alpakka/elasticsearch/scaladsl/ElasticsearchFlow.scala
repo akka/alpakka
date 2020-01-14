@@ -5,14 +5,15 @@
 package akka.stream.alpakka.elasticsearch.scaladsl
 
 import akka.NotUsed
-import akka.annotation.ApiMayChange
+import akka.annotation.{ApiMayChange, InternalApi}
 import akka.stream.alpakka.elasticsearch._
 import akka.stream.alpakka.elasticsearch.impl
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.{Flow, FlowWithContext}
 import org.elasticsearch.client.RestClient
 import spray.json._
 
 import scala.collection.immutable
+import scala.util.{Failure, Success}
 
 /**
  * Scala API to create Elasticsearch flows.
@@ -48,15 +49,7 @@ object ElasticsearchFlow {
   ): Flow[WriteMessage[T, NotUsed], WriteResult[T, NotUsed], NotUsed] =
     Flow[WriteMessage[T, NotUsed]]
       .batch(settings.bufferSize, immutable.Seq(_)) { case (seq, wm) => seq :+ wm }
-      .via(
-        new impl.ElasticsearchFlowStage[T, NotUsed](
-          indexName,
-          typeName,
-          elasticsearchClient,
-          settings,
-          writer
-        )
-      )
+      .via(stageFlow(indexName, typeName, settings, elasticsearchClient, writer))
       .mapConcat(identity)
 
   /**
@@ -93,15 +86,7 @@ object ElasticsearchFlow {
   ): Flow[WriteMessage[T, C], WriteResult[T, C], NotUsed] =
     Flow[WriteMessage[T, C]]
       .batch(settings.bufferSize, immutable.Seq(_)) { case (seq, wm) => seq :+ wm }
-      .via(
-        new impl.ElasticsearchFlowStage[T, C](
-          indexName,
-          typeName,
-          elasticsearchClient,
-          settings,
-          writer
-        )
-      )
+      .via(stageFlow(indexName, typeName, settings, elasticsearchClient, writer))
       .mapConcat(identity)
 
   /**
@@ -120,7 +105,7 @@ object ElasticsearchFlow {
                               settings: ElasticsearchWriteSettings = ElasticsearchWriteSettings())(
       implicit elasticsearchClient: RestClient,
       sprayJsonWriter: JsonWriter[T]
-  ): Flow[(WriteMessage[T, NotUsed], C), (WriteResult[T, C], C), NotUsed] =
+  ): FlowWithContext[WriteMessage[T, NotUsed], C, WriteResult[T, C], C, NotUsed] =
     createWithContext[T, C](indexName, typeName, settings, new SprayJsonWriter[T]()(sprayJsonWriter))
 
   /**
@@ -137,19 +122,53 @@ object ElasticsearchFlow {
                               settings: ElasticsearchWriteSettings,
                               writer: MessageWriter[T])(
       implicit elasticsearchClient: RestClient
-  ): Flow[(WriteMessage[T, NotUsed], C), (WriteResult[T, C], C), NotUsed] = {
+  ): FlowWithContext[WriteMessage[T, NotUsed], C, WriteResult[T, C], C, NotUsed] = {
     require(settings.retryLogic == RetryNever,
             "`withContext` may not be used with retrying enabled, as it disturbs element order")
-    Flow[(WriteMessage[T, NotUsed], C)]
-      .map {
-        case (wm, pt) =>
-          wm.withPassThrough(pt)
-      }
-      .via(createWithPassThrough(indexName, typeName, settings, writer))
-      .map { wr =>
-        (wr, wr.message.passThrough)
-      }
+    Flow[WriteMessage[T, C]]
+      .batch(settings.bufferSize, immutable.Seq(_)) { case (seq, wm) => seq :+ wm }
+      .via(simpleStageFlow(indexName, typeName, settings, elasticsearchClient, writer))
+      .mapConcat(identity)
+      .asFlowWithContext[WriteMessage[T, NotUsed], C, C]((res, c) => res.withPassThrough(c))(
+        p => p.message.passThrough
+      )
   }
+
+  @InternalApi
+  private def stageFlow[T, C](
+      indexName: String,
+      typeName: String,
+      settings: ElasticsearchWriteSettings,
+      elasticsearchClient: RestClient,
+      writer: MessageWriter[T]
+  ): Flow[immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]], NotUsed] =
+    if (settings.retryLogic == RetryNever) simpleStageFlow(indexName, typeName, settings, elasticsearchClient, writer)
+    else {
+      Flow.fromGraph(
+        new impl.ElasticsearchFlowStage[T, C](
+          indexName,
+          typeName,
+          elasticsearchClient,
+          settings,
+          writer
+        )
+      )
+    }
+
+  @InternalApi
+  private def simpleStageFlow[C, T](indexName: String,
+                                    typeName: String,
+                                    settings: ElasticsearchWriteSettings,
+                                    elasticsearchClient: RestClient,
+                                    writer: MessageWriter[T]) =
+    Flow
+      .fromGraph(
+        new impl.ElasticsearchSimpleFlowStage[T, C](indexName, typeName, elasticsearchClient, settings, writer)
+      )
+      .map {
+        case Success(value) => value
+        case Failure(e) => throw e
+      }
 
   private final class SprayJsonWriter[T](implicit writer: JsonWriter[T]) extends MessageWriter[T] {
     override def convert(message: T): String = message.toJson.toString()

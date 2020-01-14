@@ -14,7 +14,7 @@ final class SolrUpdateSettings private (
   def withCommitWithin(value: Int): SolrUpdateSettings = copy(commitWithin = value)
 
   private def copy(
-      commitWithin: Int = commitWithin
+      commitWithin: Int
   ): SolrUpdateSettings = new SolrUpdateSettings(
     commitWithin = commitWithin
   )

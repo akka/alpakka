@@ -11,7 +11,7 @@ import akka.annotation.InternalApi
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.model.{ContentTypes, HttpCharsets, MediaTypes, Uri}
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
-import akka.stream.alpakka.s3.ListBucketResultContents
+import akka.stream.alpakka.s3.{ListBucketResultCommonPrefixes, ListBucketResultContents}
 
 import scala.util.Try
 import scala.xml.NodeSeq
@@ -69,6 +69,12 @@ import scala.xml.NodeSeq
               (c \ "Size").text.toLong,
               Instant.parse((c \ "LastModified").text),
               (c \ "StorageClass").text
+            )
+          },
+          (x \\ "CommonPrefixes").map { c =>
+            ListBucketResultCommonPrefixes(
+              (x \ "Name").text,
+              (c \ "Prefix").text
             )
           }
         )

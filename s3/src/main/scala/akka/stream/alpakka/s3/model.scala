@@ -114,6 +114,25 @@ object MultipartUploadResult {
 }
 
 /**
+ * Thrown when multipart upload or multipart copy fails because of a server failure.
+ */
+final class FailedUpload private (
+    val reasons: Seq[Throwable]
+) extends Exception(reasons.map(_.getMessage).mkString(", ")) {
+
+  /** Java API */
+  def getReasons: java.util.List[Throwable] = reasons.asJava
+}
+
+object FailedUpload {
+
+  def apply(reasons: Seq[Throwable]) = new FailedUpload(reasons)
+
+  /** Java API */
+  def create(reasons: Seq[Throwable]) = FailedUpload(reasons)
+}
+
+/**
  * @param bucketName The name of the bucket in which this object is stored
  * @param key The key under which this object is stored
  * @param eTag Hex encoded MD5 hash of this object's contents, as computed by Amazon S3
@@ -230,6 +249,70 @@ object ListBucketResultContents {
     size,
     lastModified,
     storageClass
+  )
+}
+
+/**
+ * @param bucketName The name of the bucket in which this object is stored
+ * @param prefix The common prefix of keys between Prefix and the next occurrence of the string specified by a delimiter.
+ */
+final class ListBucketResultCommonPrefixes private (
+    val bucketName: String,
+    val prefix: String
+) {
+
+  /** Java API */
+  def getBucketName: String = bucketName
+
+  /** Java API */
+  def getPrefix: String = prefix
+
+  def withBucketName(value: String): ListBucketResultCommonPrefixes = copy(bucketName = value)
+  def withPrefix(value: String): ListBucketResultCommonPrefixes = copy(prefix = value)
+
+  private def copy(
+      bucketName: String = bucketName,
+      prefix: String = prefix
+  ): ListBucketResultCommonPrefixes = new ListBucketResultCommonPrefixes(
+    bucketName = bucketName,
+    prefix = prefix
+  )
+
+  override def toString =
+    "ListBucketResultCommonPrefixes(" +
+    s"bucketName=$bucketName," +
+    s"prefix=$prefix" +
+    ")"
+
+  override def equals(other: Any): Boolean = other match {
+    case that: ListBucketResultCommonPrefixes =>
+      Objects.equals(this.bucketName, that.bucketName) &&
+      Objects.equals(this.prefix, that.prefix)
+    case _ => false
+  }
+
+  override def hashCode(): Int =
+    Objects.hash(bucketName, prefix)
+}
+
+object ListBucketResultCommonPrefixes {
+
+  /** Scala API */
+  def apply(
+      bucketName: String,
+      prefix: String
+  ): ListBucketResultCommonPrefixes = new ListBucketResultCommonPrefixes(
+    bucketName,
+    prefix
+  )
+
+  /** Java API */
+  def create(
+      bucketName: String,
+      prefix: String
+  ): ListBucketResultCommonPrefixes = apply(
+    bucketName,
+    prefix
   )
 }
 
@@ -458,4 +541,24 @@ final class ObjectMetadata private (
 }
 object ObjectMetadata {
   def apply(metadata: Seq[HttpHeader]) = new ObjectMetadata(metadata)
+}
+
+/**
+ * While checking for bucket access those responses are available
+ * 1) AccessDenied - User does have permission to perform ListBucket operation, so bucket exits
+ * 2) AccessGranted - User doesn't have rights to perform ListBucket but bucket exits
+ * 3) NotExists - Bucket doesn't exit
+ *
+ * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketHEAD.html
+ */
+sealed class BucketAccess
+
+object BucketAccess {
+  case object AccessDenied extends BucketAccess
+  case object AccessGranted extends BucketAccess
+  case object NotExists extends BucketAccess
+
+  val accessDenied: BucketAccess = AccessDenied
+  val accessGranted: BucketAccess = AccessGranted
+  val notExists: BucketAccess = NotExists
 }

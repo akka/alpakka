@@ -8,7 +8,7 @@ ByteString snippets of valid JSON objects.
 See @scaladoc[ScalaDSL JsonFraming](akka.stream.scaladsl.JsonFraming$) or @scaladoc[JavaDSL JsonFraming](akka.stream.javadsl.JsonFraming$)
 
 
-@extref[Akka documentation](akka-docs:stream/stream-io.html#using-framing-in-your-protocol)
+@extref:[Akka documentation](akka:stream/stream-io.html#using-framing-in-your-protocol)
 
 
 

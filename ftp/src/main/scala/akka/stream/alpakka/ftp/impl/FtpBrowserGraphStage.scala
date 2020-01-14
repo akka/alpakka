@@ -6,50 +6,44 @@ package akka.stream.alpakka.ftp
 package impl
 
 import akka.annotation.InternalApi
-import akka.stream.stage.{GraphStage, OutHandler}
-import akka.stream.{Attributes, Outlet, SourceShape}
-import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
+import akka.stream.Attributes
+import akka.stream.stage.OutHandler
 
 /**
  * INTERNAL API
  */
 @InternalApi
-private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings] extends GraphStage[SourceShape[FtpFile]] {
-
-  def name: String
-
-  def basePath: String
-
-  def connectionSettings: S
-
-  def ftpClient: () => FtpClient
-
+private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings]
+    extends FtpGraphStage[FtpClient, S, FtpFile] {
   val ftpLike: FtpLike[FtpClient, S]
-
-  val shape: SourceShape[FtpFile] = SourceShape(Outlet[FtpFile](s"$name.out"))
-
-  val out = shape.outlets.head.asInstanceOf[Outlet[FtpFile]]
 
   val branchSelector: FtpFile => Boolean = (f) => true
 
-  override def initialAttributes: Attributes =
-    super.initialAttributes and Attributes.name(name) and IODispatcher
+  def emitTraversedDirectories: Boolean = false
 
   def createLogic(inheritedAttributes: Attributes) = {
     val logic = new FtpGraphStageLogic[FtpFile, FtpClient, S](shape, ftpLike, connectionSettings, ftpClient) {
 
       private[this] var buffer: Seq[FtpFile] = Seq.empty[FtpFile]
 
+      private[this] var traversed: Seq[FtpFile] = Seq.empty[FtpFile]
+
       setHandler(
         out,
         new OutHandler {
           def onPull(): Unit = {
             fillBuffer()
-            buffer match {
+            traversed match {
               case head +: tail =>
-                buffer = tail
+                traversed = tail
                 push(out, head)
-              case _ => complete(out)
+              case _ =>
+                buffer match {
+                  case head +: tail =>
+                    buffer = tail
+                    push(out, head)
+                  case _ => complete(out)
+                }
             }
           } // end of onPull
 
@@ -72,10 +66,10 @@ private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings] exte
 
       @scala.annotation.tailrec
       private[this] def fillBuffer(): Unit = buffer match {
-        case head +: tail if (head.isDirectory && branchSelector(head)) => {
+        case head +: tail if head.isDirectory && branchSelector(head) =>
           buffer = getFilesFromPath(head.path) ++ tail
+          if (emitTraversedDirectories) traversed = traversed :+ head
           fillBuffer()
-        }
         case _ => // do nothing
       }
 

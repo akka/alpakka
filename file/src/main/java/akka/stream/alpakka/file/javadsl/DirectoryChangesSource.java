@@ -9,7 +9,6 @@ import akka.japi.Pair;
 import akka.stream.alpakka.file.DirectoryChange;
 import akka.stream.javadsl.Source;
 import akka.util.JavaDurationConverters;
-import scala.concurrent.duration.FiniteDuration;
 
 import java.nio.file.Path;
 
@@ -20,22 +19,6 @@ import java.nio.file.Path;
  * happened on OSX for example)
  */
 public final class DirectoryChangesSource {
-
-  /**
-   * @param directoryPath Directory to watch
-   * @param pollInterval Interval between polls to the JDK watch service when a push comes in and
-   *     there was no changes, if the JDK implementation is slow, it will not help lowering this
-   * @param maxBufferSize Maximum number of buffered directory changes before the stage fails
-   * @deprecated Use the method taking `java.time.Duration` instead
-   */
-  @Deprecated
-  @SuppressWarnings("unchecked")
-  public static Source<Pair<Path, DirectoryChange>, NotUsed> create(
-      Path directoryPath, FiniteDuration pollInterval, int maxBufferSize) {
-    return Source.fromGraph(
-        new akka.stream.alpakka.file.impl.DirectoryChangesSource(
-            directoryPath, pollInterval, maxBufferSize, Pair::apply));
-  }
 
   /**
    * @param directoryPath Directory to watch

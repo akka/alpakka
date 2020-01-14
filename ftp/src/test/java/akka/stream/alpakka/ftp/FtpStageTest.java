@@ -15,7 +15,7 @@ import java.net.InetAddress;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-public class FtpStageTest extends PlainFtpSupportImpl implements CommonFtpStageTest {
+public class FtpStageTest extends BaseFtpSupport implements CommonFtpStageTest {
 
   @Test
   public void listFiles() throws Exception {
@@ -64,12 +64,10 @@ public class FtpStageTest extends PlainFtpSupportImpl implements CommonFtpStageT
   }
 
   private FtpSettings settings() throws Exception {
-    final FtpSettings settings =
-        FtpSettings.create(InetAddress.getByName("localhost"))
-            .withPort(getPort())
-            .withCredentials(FtpCredentials.anonymous())
-            .withBinary(false)
-            .withPassiveMode(true);
-    return settings;
+    return FtpSettings.create(InetAddress.getByName(HOSTNAME))
+        .withPort(PORT)
+        .withCredentials(CREDENTIALS)
+        .withBinary(false)
+        .withPassiveMode(true);
   }
 }

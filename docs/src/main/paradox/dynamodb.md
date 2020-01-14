@@ -19,17 +19,20 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Setup
 
-Factories provided in the @scaladoc[DynamoDb](akka.stream.alpakka.dynamodb.scaladsl.DynamoDb$) will use the client managed by the extension. The managed client will be created using the configuration resolved from `reference.conf` and with overrides from `application.conf`.
+This connector requires a @javadoc[DynamoDbAsyncClient](software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient) instance to communicate with AWS DynamoDB.
 
-Example `application.conf`
-: @@snip [snip](/dynamodb/src/test/scala/akka/stream/alpakka/dynamodb/DynamoSettingsSpec.scala) { #static-creds }
+It is your code's responsibility to call `close` to free any resources held by the client. In this example it will be called when the actor system is terminated.
 
-`reference.conf`
-: @@snip [snip](/dynamodb/src/main/resources/reference.conf)
+Scala
+: @@snip [snip](/dynamodb/src/test/scala/docs/scaladsl/ExampleSpec.scala) { #init-client }
 
-If the credentials are not set in the configuration, connector will use the [default credential provider chain](http://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html) provided by the [DynamoDB Java SDK](http://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/basics.html) to retrieve credentials.
+Java
+: @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #init-client }
 
-## Usage
+The example above uses @extref:[Akka HTTP](akka-http:) as the default HTTP client implementation. For more details about the HTTP client, configuring request retrying and best practices for credentials, see @ref[AWS client configuration](aws-shared-configuration.md) for more details.
+
+
+## Sending requests and receiving responses
 
 For simple operations you can issue a single request, and get back the result in a @scala[`Future`]@java[`CompletionStage`].
 
@@ -47,8 +50,23 @@ Scala
 Java
 : @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #flow }
 
-Some DynamoDB operations, such as Query and Scan, are paginated by nature.
-This is how you can get a stream of all result pages:
+
+### Flow with context
+
+The `flowWithContext` allows to send an arbitrary value, such as commit handles for JMS or Kafka, past the DynamoDb operation.
+The responses are wrapped in a @scaladoc[Try](scala.util.Try) to differentiate between successful operations and errors in-stream.
+
+Scala
+: @@snip [snip](/dynamodb/src/test/scala/docs/scaladsl/ExampleSpec.scala) { #withContext }
+
+Java
+: @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #withContext }
+
+
+### Pagination
+
+The DynamoDB operations `BatchGetItem`, `ListTables`, `Query` and `Scan` allow paginating of results.
+The requests with paginated results can be used as source or in a flow with `flowPaginated`:
 
 Scala
 : @@snip [snip](/dynamodb/src/test/scala/docs/scaladsl/ExampleSpec.scala) { #paginated }
@@ -56,31 +74,21 @@ Scala
 Java
 : @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #paginated }
 
-A custom configured client can be used by attaching it as an attribute to the stream:
+
+## Error Retries and Exponential Backoff
+
+The AWS SDK 2 implements error retrying with exponential backoff which is configurable via the @javadoc[DynamoDbAsyncClient](software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient) configuration by using the @javadoc[RetryPolicy](software.amazon.awssdk.core.retry.RetryPolicy) in `overrideConfiguration`.
+
+See @ref[AWS Retry configuration](aws-shared-configuration.md) for more details.
 
 Scala
-: @@snip [snip](/dynamodb/src/test/scala/docs/scaladsl/ExampleSpec.scala) { #attributes }
+: @@snip [snip](/dynamodb/src/test/scala/docs/scaladsl/RetrySpec.scala) { #clientRetryConfig }
 
 Java
-: @@snip [snip](/dynamodb/src/test/java/docs/javadsl/ExampleTest.java) { #attributes }
+: @@snip [snip](/dynamodb/src/test/java/docs/javadsl/RetryTest.java) { #clientRetryConfig }
 
+@@@ index
 
-## Running the example code
+* [retry conf](aws-shared-configuration.md)
 
-The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
-
-> Test code requires DynamoDB running in the background. You can start one quickly using docker:
->
-> `docker-compose up dynamodb`
-
-Scala
-:   ```
-    sbt
-    > dynamodb/testOnly *Spec
-    ```
-
-Java
-:   ```
-    sbt
-    > dynamodb/testOnly *Test
-    ```
+@@@

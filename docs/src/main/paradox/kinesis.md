@@ -1,4 +1,4 @@
-# AWS Kinesis
+# AWS Kinesis and Firehose
 
 The AWS Kinesis connector provides flows for streaming data to and from Kinesis Data streams and to Kinesis Firehose streams.
 
@@ -51,10 +51,10 @@ The table below shows direct dependencies of this module and the second tab show
 
 ### Create the Kinesis client
 
-Sources and Flows provided by this connector need a `AmazonKinesisAsync` instance to consume messages from a shard.
+Sources and Flows provided by this connector need a `KinesisAsyncClient` instance to consume messages from a shard.
 
 @@@ note
-The `AmazonKinesisAsync` instance you supply is thread-safe and can be shared amongst multiple `GraphStages`. 
+The `KinesisAsyncClient` instance you supply is thread-safe and can be shared amongst multiple `GraphStages`. 
 As a result, individual `GraphStages` will not automatically shutdown the supplied client when they complete.
 It is recommended to shut the client instance down on Actor system termination.
 @@@
@@ -64,6 +64,8 @@ Scala
 
 Java
 : @@snip [snip](/kinesis/src/test/java/docs/javadsl/KinesisSnippets.java) { #init-client }
+
+The example above uses @extref:[Akka HTTP](akka-http:) as the default HTTP client implementation. For more details about the HTTP client, configuring request retrying and best practices for credentials, see @ref[AWS client configuration](aws-shared-configuration.md) for more details.
 
 ### Kinesis as Source
 
@@ -105,7 +107,7 @@ objects by calling [GetRecords](http://docs.aws.amazon.com/kinesis/latest/APIRef
 The 
 @scala[@scaladoc[KinesisFlow](akka.stream.alpakka.kinesis.scaladsl.KinesisFlow$) (or @scaladoc[KinesisSink](akka.stream.alpakka.kinesis.scaladsl.KinesisSink$))] 
 @java[@scaladoc[KinesisFlow](akka.stream.alpakka.kinesis.javadsl.KinesisFlow$) (or @scaladoc[KinesisSink](akka.stream.alpakka.kinesis.javadsl.KinesisSink$))] 
-publishes messages into a Kinesis stream using its partition key and message body. It uses dynamic size batches, can perform several requests in parallel and retries failed records. These features are necessary to achieve the best possible write throughput to the stream. The Flow outputs the result of publishing each record.
+publishes messages into a Kinesis stream using its partition key and message body. It uses dynamic size batches and can perform several requests in parallel. These features are necessary to achieve the best possible write throughput to the stream. The Flow outputs the result of publishing each record.
 
 @@@ warning
 Batching has a drawback: message order cannot be guaranteed, as some records within a single batch may fail to be published. That also means that the Flow output may not match the same input order.
@@ -135,14 +137,24 @@ Scala
 Java
 : @@snip [snip](/kinesis/src/test/java/docs/javadsl/KinesisSnippets.java) { #flow-sink }
 
+@@@ warning
+As of version 2, the library will not retry failed requests: this is handled by the underlying `KinesisAsyncClient` (see [client configuration](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/core/client/builder/SdkDefaultClientBuilder.html#overrideConfiguration-software.amazon.awssdk.core.client.config.ClientOverrideConfiguration-)). This means that you may have to inspect individual responses to make sure they have been successful:
+
+Scala
+: @@snip [snip](/kinesis/src/test/scala/docs/scaladsl/KinesisSnippets.scala) { #error-handling }
+
+Java
+: @@snip [snip](/kinesis/src/test/java/docs/javadsl/KinesisSnippets.java) { #error-handling }
+@@@
+
 ## Kinesis Firehose Streams
 
 ### Create the Kinesis Firehose client
 
-Flows provided by this connector need a `AmazonKinesisFirehoseAsync` instance to publish messages.
+Flows provided by this connector need a `FirehoseAsyncClient` instance to publish messages.
 
 @@@ note
-The `AmazonKinesisFirehoseAsync` instance you supply is thread-safe and can be shared amongst multiple `GraphStages`.
+The `FirehoseAsyncClient` instance you supply is thread-safe and can be shared amongst multiple `GraphStages`.
 As a result, individual `GraphStages` will not automatically shutdown the supplied client when they complete.
 It is recommended to shut the client instance down on Actor system termination.
 @@@
@@ -153,12 +165,14 @@ Scala
 Java
 : @@snip [snip](/kinesis/src/test/java/docs/javadsl/KinesisFirehoseSnippets.java) { #init-client }
 
-### Kinesis Put via Flow or as Sink
+The example above uses @extref:[Akka HTTP](akka-http:) as the default HTTP client implementation. For more details about the HTTP client, configuring request retrying and best practices for credentials, see @ref[AWS client configuration](aws-shared-configuration.md) for more details.
+
+### Kinesis Firehose Put via Flow or as Sink
 
 The
 @scala[@scaladoc[KinesisFirehoseFlow](akka.stream.alpakka.kinesisfirehose.scaladsl.KinesisFirehoseFlow$) (or @scaladoc[KinesisFirehoseSink](akka.stream.alpakka.kinesisfirehose.scaladsl.KinesisFirehoseSink$))]
 @java[@scaladoc[KinesisFirehoseFlow](akka.stream.alpakka.kinesisfirehose.javadsl.KinesisFirehoseFlow$) (or @scaladoc[KinesisFirehoseSink](akka.stream.alpakka.kinesisfirehose.javadsl.KinesisFirehoseSink$))]
-publishes messages into a Kinesis Firehose stream using its message body. It uses dynamic size batches, can perform several requests in parallel and retries failed records. These features are necessary to achieve the best possible write throughput to the stream. The Flow outputs the result of publishing each record.
+publishes messages into a Kinesis Firehose stream using its message body. It uses dynamic size batches and can perform several requests in parallel. These features are necessary to achieve the best possible write throughput to the stream. The Flow outputs the result of publishing each record.
 
 @@@ warning
 Batching has a drawback: message order cannot be guaranteed, as some records within a single batch may fail to be published. That also means that the Flow output may not match the same input order.
@@ -185,3 +199,21 @@ Scala
 
 Java
 : @@snip [snip](/kinesis/src/test/java/docs/javadsl/KinesisFirehoseSnippets.java) { #flow-sink }
+
+@@@ warning
+As of version 2, the library will not retry failed requests. See @ref[AWS Retry Configuration](aws-shared-configuration.md) how to configure it for the @javadoc[FirehoseAsyncClient](software.amazon.awssdk.services.firehose.FirehoseAsyncClient). 
+
+This means that you may have to inspect individual responses to make sure they have been successful: 
+
+Scala
+: @@snip [snip](/kinesis/src/test/scala/docs/scaladsl/KinesisFirehoseSnippets.scala) { #error-handling }
+
+Java
+: @@snip [snip](/kinesis/src/test/java/docs/javadsl/KinesisFirehoseSnippets.java) { #error-handling }
+@@@
+
+@@@ index
+
+* [retry conf](aws-shared-configuration.md)
+
+@@@

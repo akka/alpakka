@@ -7,7 +7,7 @@ package akka.stream.alpakka.reference.scaladsl
 import akka.actor.ActorSystem
 import akka.stream.Attributes
 import akka.{Done, NotUsed}
-import akka.stream.alpakka.reference.impl.{ReferenceFlow, ReferenceSource, ReferenceWithResourceFlow, Setup}
+import akka.stream.alpakka.reference.impl.{ReferenceFlowStage, ReferenceSourceStage, ReferenceWithResourceFlowStage}
 import akka.stream.alpakka.reference._
 import akka.stream.scaladsl.{Flow, Source}
 
@@ -21,14 +21,14 @@ object Reference {
    * Also describe the significance of the materialized value.
    */
   def source(settings: SourceSettings): Source[ReferenceReadResult, Future[Done]] =
-    Source.fromGraph(new ReferenceSource(settings))
+    Source.fromGraph(new ReferenceSourceStage(settings))
 
   /**
    * API doc should describe what will be done to the incoming messages to the flow,
    * and what messages will be emitted by the flow.
    */
   def flow(): Flow[ReferenceWriteMessage, ReferenceWriteResult, NotUsed] =
-    Flow.fromGraph(new ReferenceFlow())
+    Flow.fromGraph(new ReferenceFlowStage())
 
   /**
    * If the operator needs an ExecutionContext, take it as an implicit parameter.
@@ -40,13 +40,12 @@ object Reference {
    * An implementation of a flow that needs access to materializer or attributes during materialization.
    */
   def flowWithResource(): Flow[ReferenceWriteMessage, ReferenceWriteResult, NotUsed] =
-    Setup
-      .flow { mat => implicit attr =>
-        implicit val sys = mat.system
-        Flow.fromGraph(new ReferenceWithResourceFlow(resolveResource()))
+    Flow
+      .setup { (mat, attr) =>
+        Flow.fromGraph(new ReferenceWithResourceFlowStage(resolveResource(mat.system, attr)))
       }
       .mapMaterializedValue(_ => NotUsed)
 
-  private def resolveResource()(implicit sys: ActorSystem, attr: Attributes) =
-    attr.get[ReferenceResourceValue].map(_.resource).getOrElse(ResourceExt().resource)
+  private def resolveResource(sys: ActorSystem, attr: Attributes) =
+    attr.get[ReferenceResourceValue].map(_.resource).getOrElse(ResourceExt()(sys).resource)
 }

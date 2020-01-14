@@ -4,35 +4,66 @@
 
 package docs.javadsl;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.util.Arrays;
-import java.util.Optional;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
-
+import akka.Done;
+import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.http.javadsl.model.*;
+import akka.http.javadsl.Http;
+import akka.http.javadsl.model.ContentTypes;
+import akka.http.javadsl.model.HttpEntities;
+import akka.http.javadsl.model.HttpResponse;
+import akka.http.javadsl.model.Uri;
+import akka.http.javadsl.model.headers.ByteRange;
+import akka.japi.Pair;
+import akka.stream.ActorMaterializer;
+import akka.stream.Attributes;
+import akka.stream.Materializer;
 import akka.stream.alpakka.s3.*;
 import akka.stream.alpakka.s3.headers.CustomerKeys;
 import akka.stream.alpakka.s3.headers.ServerSideEncryption;
 import akka.stream.alpakka.s3.javadsl.S3;
-import org.junit.Test;
-import akka.NotUsed;
-import akka.http.javadsl.model.headers.ByteRange;
-import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.alpakka.s3.scaladsl.S3WireMockBase;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
-import scala.Option;
+import com.github.tomakehurst.wiremock.WireMockServer;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class S3Test extends S3WireMockBase {
 
+  private static ActorSystem actorSystemForShutdown;
+  private static WireMockServer wireMockServerForShutdown;
+
   private final Materializer materializer = ActorMaterializer.create(system());
+
+  private final S3Settings sampleSettings = S3Ext.get(system()).settings();
+  private final String prefix = listPrefix();
+  private final String delimiter = listDelimiter();
+
+  @Before
+  public void before() {
+    wireMockServerForShutdown = _wireMockServer();
+    actorSystemForShutdown = system();
+  }
+
+  @AfterClass
+  public static void afterAll() throws Exception {
+    wireMockServerForShutdown.stop();
+    Http.get(actorSystemForShutdown)
+        .shutdownAllConnectionPools()
+        .thenRun(() -> TestKit.shutdownActorSystem(actorSystemForShutdown));
+  }
 
   @Test
   public void multipartUpload() throws Exception {
@@ -213,25 +244,20 @@ public class S3Test extends S3WireMockBase {
         sourceAndMeta =
             S3.download(bucket(), bucketKey(), null, Optional.of(versionId), sseCustomerKeys());
 
-    final Source<ByteString, NotUsed> source =
+    final Pair<Source<ByteString, NotUsed>, ObjectMetadata> p =
         sourceAndMeta
             .runWith(Sink.head(), materializer)
             .toCompletableFuture()
             .get(5, TimeUnit.SECONDS)
-            .get()
-            .first();
+            .orElseThrow(() -> new RuntimeException("empty Optional from S3.download"));
+
+    final Source<ByteString, NotUsed> source = p.first();
     final CompletionStage<String> resultCompletionStage =
         source.map(ByteString::utf8String).runWith(Sink.head(), materializer);
-    final ObjectMetadata metadata =
-        sourceAndMeta
-            .runWith(Sink.head(), materializer)
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS)
-            .get()
-            .second();
-    final String result = resultCompletionStage.toCompletableFuture().get();
-
+    final String result = resultCompletionStage.toCompletableFuture().get(2, TimeUnit.SECONDS);
     assertEquals(bodySSE(), result);
+
+    final ObjectMetadata metadata = p.second();
     assertEquals(Optional.of(versionId), metadata.getVersionId());
   }
 
@@ -297,7 +323,7 @@ public class S3Test extends S3WireMockBase {
 
     // #list-bucket
     final Source<ListBucketResultContents, NotUsed> keySource =
-        S3.listBucket(bucket(), Option.apply(listPrefix()));
+        S3.listBucket(bucket(), Optional.of(prefix));
     // #list-bucket
 
     final CompletionStage<ListBucketResultContents> resultCompletionStage =
@@ -318,7 +344,7 @@ public class S3Test extends S3WireMockBase {
         S3Ext.get(system()).settings().withListBucketApiVersion(ApiVersion.getListBucketVersion1());
 
     final Source<ListBucketResultContents, NotUsed> keySource =
-        S3.listBucket(bucket(), Option.apply(listPrefix()))
+        S3.listBucket(bucket(), Optional.of(prefix))
             .withAttributes(S3Attributes.settings(useVersion1Api));
     // #list-bucket-attributes
 
@@ -329,6 +355,82 @@ public class S3Test extends S3WireMockBase {
         resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     assertEquals(result.key(), listKey());
+  }
+
+  @Test
+  public void listBucketWithDelimiter() throws Exception {
+
+    mockListBucketAndCommonPrefixes();
+
+    // #list-bucket-delimiter
+    final Source<ListBucketResultContents, NotUsed> keySource =
+        S3.listBucket(bucket(), delimiter, Optional.of(prefix));
+    // #list-bucket-delimiter
+
+    final CompletionStage<ListBucketResultContents> resultCompletionStage =
+        keySource.runWith(Sink.head(), materializer);
+
+    ListBucketResultContents result =
+        resultCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+    assertEquals(result.key(), listKey());
+  }
+
+  @Test
+  public void listBucketAndCommonPrefixes() throws Exception {
+
+    mockListBucketAndCommonPrefixes();
+
+    // #list-bucket-and-common-prefixes
+    final Source<
+            Pair<List<ListBucketResultContents>, List<ListBucketResultCommonPrefixes>>, NotUsed>
+        keySource =
+            S3.listBucketAndCommonPrefixes(
+                bucket(), delimiter, Optional.of(prefix), S3Headers.empty());
+    // #list-bucket-and-common-prefixes
+
+    final CompletionStage<
+            List<Pair<List<ListBucketResultContents>, List<ListBucketResultCommonPrefixes>>>>
+        resultsCompletionStage = keySource.runWith(Sink.seq(), materializer);
+
+    final List<Pair<List<ListBucketResultContents>, List<ListBucketResultCommonPrefixes>>> results =
+        resultsCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+    final List<ListBucketResultContents> contents = results.get(0).first();
+    final List<ListBucketResultCommonPrefixes> commonPrefixes = results.get(0).second();
+
+    assertEquals(contents.get(0).key(), listKey());
+    assertEquals(commonPrefixes.get(0).prefix(), listCommonPrefix());
+  }
+
+  @Test
+  public void listBucketAndCommonPrefixesVersion1() throws Exception {
+    mockListBucketAndCommonPrefixesVersion1();
+
+    // #list-bucket-and-common-prefixes-attributes
+    final S3Settings useVersion1Api =
+        S3Ext.get(system()).settings().withListBucketApiVersion(ApiVersion.getListBucketVersion1());
+
+    final Source<
+            Pair<List<ListBucketResultContents>, List<ListBucketResultCommonPrefixes>>, NotUsed>
+        keySource =
+            S3.listBucketAndCommonPrefixes(
+                    bucket(), delimiter, Optional.of(prefix), S3Headers.empty())
+                .withAttributes(S3Attributes.settings(useVersion1Api));
+    // #list-bucket-and-common-prefixes-attributes
+
+    final CompletionStage<
+            List<Pair<List<ListBucketResultContents>, List<ListBucketResultCommonPrefixes>>>>
+        resultsCompletionStage = keySource.runWith(Sink.seq(), materializer);
+
+    final List<Pair<List<ListBucketResultContents>, List<ListBucketResultCommonPrefixes>>> results =
+        resultsCompletionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+    final List<ListBucketResultContents> contents = results.get(0).first();
+    final List<ListBucketResultCommonPrefixes> commonPrefixes = results.get(0).second();
+
+    assertEquals(contents.get(0).key(), listKey());
+    assertEquals(commonPrefixes.get(0).prefix(), listCommonPrefix());
   }
 
   @Test
@@ -483,5 +585,136 @@ public class S3Test extends S3WireMockBase {
         result,
         MultipartUploadResult.create(
             Uri.create(targetUrl()), targetBucket(), targetBucketKey(), etag(), Optional.empty()));
+  }
+
+  @Test
+  public void makeBucket() throws Exception {
+    mockMakingBucket();
+
+    // #make-bucket
+    final Attributes sampleAttributes = S3Attributes.settings(sampleSettings);
+
+    final String bucketName = "samplebucket1";
+
+    CompletionStage<Done> makeBucketRequest = S3.makeBucket(bucketName, materializer);
+    CompletionStage<Done> makeBucketRequestWithAttributes =
+        S3.makeBucket(bucketName, materializer, sampleAttributes);
+    Source<Done, NotUsed> makeBucketSourceRequest = S3.makeBucketSource(bucketName);
+    // #make-bucket
+
+    assertEquals(makeBucketRequest.toCompletableFuture().get(5, TimeUnit.SECONDS), Done.done());
+    assertEquals(
+        makeBucketRequestWithAttributes.toCompletableFuture().get(5, TimeUnit.SECONDS),
+        Done.done());
+    assertEquals(
+        makeBucketSourceRequest
+            .runWith(Sink.ignore(), materializer)
+            .toCompletableFuture()
+            .get(5, TimeUnit.SECONDS),
+        Done.done());
+  }
+
+  @Test
+  public void deleteBucket() throws Exception {
+    final String bucketName = "samplebucket1";
+
+    mockDeletingBucket();
+
+    // #delete-bucket
+    final Attributes sampleAttributes = S3Attributes.settings(sampleSettings);
+
+    CompletionStage<Done> deleteBucketRequest = S3.deleteBucket(bucketName, materializer);
+    CompletionStage<Done> deleteBucketRequestWithAttribues =
+        S3.deleteBucket(bucketName, materializer, sampleAttributes);
+
+    Source<Done, NotUsed> deleteBucketSourceRequest = S3.deleteBucketSource(bucketName);
+    // #delete-bucket
+
+    assertEquals(deleteBucketRequest.toCompletableFuture().get(5, TimeUnit.SECONDS), Done.done());
+
+    assertEquals(
+        deleteBucketRequestWithAttribues.toCompletableFuture().get(5, TimeUnit.SECONDS),
+        Done.done());
+
+    assertEquals(
+        deleteBucketSourceRequest
+            .runWith(Sink.ignore(), materializer)
+            .toCompletableFuture()
+            .get(5, TimeUnit.SECONDS),
+        Done.done());
+  }
+
+  @Test
+  public void checkIfBucketExistsForNonExisting() throws Exception {
+    mockCheckingBucketStateForNonExistingBucket();
+
+    // #check-if-bucket-exists
+    final Attributes sampleAttributes = S3Attributes.settings(sampleSettings);
+
+    final CompletionStage<BucketAccess> doesntExistRequest =
+        S3.checkIfBucketExists(bucket(), materializer);
+    final CompletionStage<BucketAccess> doesntExistRequestWithAttributes =
+        S3.checkIfBucketExists(bucket(), materializer, sampleAttributes);
+
+    final Source<BucketAccess, NotUsed> doesntExistSourceRequest =
+        S3.checkIfBucketExistsSource(bucket());
+    // #check-if-bucket-exists
+
+    assertEquals(
+        doesntExistRequest.toCompletableFuture().get(5, TimeUnit.SECONDS),
+        BucketAccess.notExists());
+
+    assertEquals(
+        doesntExistRequestWithAttributes.toCompletableFuture().get(5, TimeUnit.SECONDS),
+        BucketAccess.notExists());
+
+    assertEquals(
+        doesntExistSourceRequest
+            .runWith(Sink.head(), materializer)
+            .toCompletableFuture()
+            .get(5, TimeUnit.SECONDS),
+        BucketAccess.notExists());
+  }
+
+  @Test
+  public void checkIfBucketExistsForExisting() throws Exception {
+    mockCheckingBucketStateForExistingBucket();
+
+    final CompletionStage<BucketAccess> existRequest =
+        S3.checkIfBucketExists(bucket(), materializer);
+
+    final Source<BucketAccess, NotUsed> existSourceRequest = S3.checkIfBucketExistsSource(bucket());
+
+    assertEquals(
+        existRequest.toCompletableFuture().get(5, TimeUnit.SECONDS), BucketAccess.accessGranted());
+
+    assertEquals(
+        existSourceRequest
+            .runWith(Sink.head(), materializer)
+            .toCompletableFuture()
+            .get(5, TimeUnit.SECONDS),
+        BucketAccess.accessGranted());
+  }
+
+  @Test
+  public void checkIfBucketExistsForBucketWithoutRights() throws Exception {
+    mockCheckingBucketStateForBucketWithoutRights();
+
+    final CompletionStage<BucketAccess> noRightsRequest =
+        S3.checkIfBucketExists(bucket(), materializer);
+
+    final Source<BucketAccess, NotUsed> noRightsSourceRequest =
+        S3.checkIfBucketExistsSource(bucket());
+
+    assertEquals(
+        noRightsRequest.toCompletableFuture().get(5, TimeUnit.SECONDS),
+        BucketAccess.accessDenied());
+
+    assertEquals(
+        noRightsSourceRequest
+            .runWith(Sink.head(), materializer)
+            .toCompletableFuture()
+            .get(5, TimeUnit.SECONDS),
+        BucketAccess.accessDenied());
   }
 }

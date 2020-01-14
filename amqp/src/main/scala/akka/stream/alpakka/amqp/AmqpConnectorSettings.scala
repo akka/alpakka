@@ -5,9 +5,11 @@
 package akka.stream.alpakka.amqp
 
 import akka.annotation.InternalApi
+import akka.util.JavaDurationConverters._
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
+import scala.concurrent.duration._
 
 /**
  * Internal API
@@ -187,7 +189,9 @@ final class AmqpWriteSettings private (
     val connectionProvider: AmqpConnectionProvider,
     val exchange: Option[String] = None,
     val routingKey: Option[String] = None,
-    val declarations: immutable.Seq[Declaration] = Nil
+    val declarations: immutable.Seq[Declaration] = Nil,
+    val bufferSize: Int = 10,
+    val confirmationTimeout: FiniteDuration = 100.millis
 ) extends AmqpConnectorSettings {
 
   def withExchange(exchange: String): AmqpWriteSettings =
@@ -208,18 +212,34 @@ final class AmqpWriteSettings private (
   def withDeclarations(declarations: java.util.List[Declaration]): AmqpWriteSettings =
     copy(declarations = declarations.asScala.toIndexedSeq)
 
+  def withBufferSize(bufferSize: Int): AmqpWriteSettings =
+    copy(bufferSize = bufferSize)
+
+  def withConfirmationTimeout(confirmationTimeout: FiniteDuration): AmqpWriteSettings =
+    copy(confirmationTimeout = confirmationTimeout)
+
+  /**
+   * Java API
+   */
+  def withConfirmationTimeout(confirmationTimeout: java.time.Duration): AmqpWriteSettings =
+    copy(confirmationTimeout = confirmationTimeout.asScala)
+
   private def copy(connectionProvider: AmqpConnectionProvider = connectionProvider,
                    exchange: Option[String] = exchange,
                    routingKey: Option[String] = routingKey,
-                   declarations: immutable.Seq[Declaration] = declarations) =
-    new AmqpWriteSettings(connectionProvider, exchange, routingKey, declarations)
+                   declarations: immutable.Seq[Declaration] = declarations,
+                   bufferSize: Int = bufferSize,
+                   confirmationTimeout: FiniteDuration = confirmationTimeout) =
+    new AmqpWriteSettings(connectionProvider, exchange, routingKey, declarations, bufferSize, confirmationTimeout)
 
   override def toString: String =
     "AmqpSinkSettings(" +
     s"connectionProvider=$connectionProvider, " +
     s"exchange=$exchange, " +
     s"routingKey=$routingKey, " +
-    s"declarations=$declarations" +
+    s"declarations=$declarations, " +
+    s"bufferSize=$bufferSize, " +
+    s"confirmationTimeout=$confirmationTimeout" +
     ")"
 }
 

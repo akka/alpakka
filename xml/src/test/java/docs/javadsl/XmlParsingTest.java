@@ -18,6 +18,7 @@ import akka.stream.alpakka.xml.javadsl.XmlParsing;
 import akka.stream.javadsl.*;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
+import com.fasterxml.aalto.AsyncXMLInputFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -30,9 +31,11 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 public class XmlParsingTest {
@@ -118,6 +121,43 @@ public class XmlParsingTest {
     List<String> list = stage.toCompletableFuture().get(5, TimeUnit.SECONDS);
     assertThat(list, hasItems("elem1", "elem2"));
     // #parser-to-data
+  }
+
+  @Test
+  public void xmlParserConfigured()
+      throws InterruptedException, ExecutionException, TimeoutException {
+    boolean[] configWasCalled = {false};
+    Consumer<AsyncXMLInputFactory> configureFactory = factory -> configWasCalled[0] = true;
+    final Sink<String, CompletionStage<List<ParseEvent>>> parse =
+        Flow.<String>create()
+            .map(ByteString::fromString)
+            .via(XmlParsing.parser(configureFactory))
+            .toMat(Sink.seq(), Keep.right());
+
+    final String doc = "<doc><elem>elem1</elem><elem>elem2</elem></doc>";
+    final CompletionStage<List<ParseEvent>> resultStage =
+        Source.single(doc).runWith(parse, materializer);
+
+    resultStage
+        .thenAccept(
+            (list) -> {
+              assertThat(
+                  list,
+                  hasItems(
+                      StartDocument.getInstance(),
+                      StartElement.create("doc", Collections.emptyMap()),
+                      StartElement.create("elem", Collections.emptyMap()),
+                      Characters.create("elem1"),
+                      EndElement.create("elem"),
+                      StartElement.create("elem", Collections.emptyMap()),
+                      Characters.create("elem2"),
+                      EndElement.create("elem"),
+                      EndElement.create("doc"),
+                      EndDocument.getInstance()));
+            })
+        .toCompletableFuture()
+        .get(5, TimeUnit.SECONDS);
+    assertThat(configWasCalled[0], is(true));
   }
 
   @Test

@@ -9,19 +9,26 @@ import java.time.Instant
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{MediaTypes, _}
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
-import akka.stream.alpakka.s3.ListBucketResultContents
+import akka.stream.alpakka.s3.{ListBucketResultCommonPrefixes, ListBucketResultContents}
 import akka.testkit.TestKit
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{FlatSpecLike, Matchers}
+import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 
 import scala.collection.immutable.Seq
 
-class MarshallingSpec(_system: ActorSystem) extends TestKit(_system) with FlatSpecLike with Matchers with ScalaFutures {
+class MarshallingSpec(_system: ActorSystem)
+    extends TestKit(_system)
+    with FlatSpecLike
+    with Matchers
+    with ScalaFutures
+    with BeforeAndAfterAll {
 
   def this() = this(ActorSystem("MarshallingSpec"))
 
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withDebugLogging(true))
   implicit val ec = materializer.executionContext
+
+  override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 
   val xmlString = """<?xml version="1.0" encoding="UTF-8"?>
                     |<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
@@ -44,6 +51,12 @@ class MarshallingSpec(_system: ActorSystem) extends TestKit(_system) with FlatSp
                     |        <Size>1234</Size>
                     |        <StorageClass>REDUCED_REDUNDANCY</StorageClass>
                     |    </Contents>
+                    |    <CommonPrefixes>
+                    |        <Prefix>prefix1/</Prefix>
+                    |    </CommonPrefixes>
+                    |    <CommonPrefixes>
+                    |        <Prefix>prefix2/</Prefix>
+                    |    </CommonPrefixes>
                     |</ListBucketResult>""".stripMargin
 
   it should "initiate multipart upload when the region is us-east-1" in {
@@ -67,6 +80,10 @@ class MarshallingSpec(_system: ActorSystem) extends TestKit(_system) with FlatSp
                                  1234,
                                  Instant.parse("2009-10-12T17:50:31Z"),
                                  "REDUCED_REDUNDANCY")
+      ),
+      Seq(
+        ListBucketResultCommonPrefixes("bucket", "prefix1/"),
+        ListBucketResultCommonPrefixes("bucket", "prefix2/")
       )
     )
   }
@@ -116,7 +133,8 @@ class MarshallingSpec(_system: ActorSystem) extends TestKit(_system) with FlatSp
                                  1234,
                                  Instant.parse("2009-10-12T17:50:31Z"),
                                  "REDUCED_REDUNDANCY")
-      )
+      ),
+      Nil
     )
   }
 
@@ -164,7 +182,8 @@ class MarshallingSpec(_system: ActorSystem) extends TestKit(_system) with FlatSp
                                  1234,
                                  Instant.parse("2009-10-12T17:50:31Z"),
                                  "REDUCED_REDUNDANCY")
-      )
+      ),
+      Nil
     )
   }
 

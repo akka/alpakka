@@ -1,0 +1,2 @@
+# Allow changes to private constructor
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.sqs.SqsSourceSettings.this")

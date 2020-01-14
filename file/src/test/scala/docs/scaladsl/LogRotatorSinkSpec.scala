@@ -4,7 +4,6 @@
 
 package docs.scaladsl
 
-import java.nio.channels.NonWritableChannelException
 import java.nio.file._
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -62,18 +61,17 @@ class LogRotatorSinkSpec
     val testFunction = () => {
       val max = 2002
       var size: Long = max
-      (element: ByteString) =>
-        {
-          if (size + element.size > max) {
-            val path = Files.createTempFile(fs.getPath("/"), "test", ".log")
-            files :+= path
-            size = element.size
-            Option(path)
-          } else {
-            size += element.size
-            Option.empty[Path]
-          }
+      (element: ByteString) => {
+        if (size + element.size > max) {
+          val path = Files.createTempFile(fs.getPath("/"), "test", ".log")
+          files :+= path
+          size = element.size
+          Option(path)
+        } else {
+          size += element.size
+          Option.empty[Path]
         }
+      }
     }
     val listFiles = () => files
     (testFunction, listFiles)
@@ -82,6 +80,19 @@ class LogRotatorSinkSpec
   val testByteStrings = TestLines.map(ByteString(_))
 
   "LogRotatorSink" must {
+
+    "complete when consuming an empty source" in assertAllStagesStopped {
+      val triggerCreator: () => ByteString => Option[Path] = () => {
+        element: ByteString => fail("trigger creator should not be called")
+      }
+
+      val rotatorSink: Sink[ByteString, Future[Done]] =
+        LogRotatorSink(triggerCreator)
+
+      val completion = Source.empty[ByteString].runWith(rotatorSink)
+      completion.futureValue shouldBe Done
+    }
+
     "work for size-based rotation " in assertAllStagesStopped {
       // #size
       import akka.stream.alpakka.file.scaladsl.LogRotatorSink
@@ -118,16 +129,15 @@ class LogRotatorSinkSpec
 
       val timeBasedTriggerCreator: () => ByteString => Option[Path] = () => {
         var currentFilename: Option[String] = None
-        (_: ByteString) =>
-          {
-            val newName = LocalDateTime.now().format(formatter)
-            if (currentFilename.contains(newName)) {
-              None
-            } else {
-              currentFilename = Some(newName)
-              Some(destinationDir.resolve(newName))
-            }
+        (_: ByteString) => {
+          val newName = LocalDateTime.now().format(formatter)
+          if (currentFilename.contains(newName)) {
+            None
+          } else {
+            currentFilename = Some(newName)
+            Some(destinationDir.resolve(newName))
           }
+        }
       }
 
       val timeBasedSink: Sink[ByteString, Future[Done]] =
@@ -160,17 +170,16 @@ class LogRotatorSinkSpec
       var files = Seq.empty[Path]
       val triggerFunctionCreator = () => {
         var fileName: String = null
-        (element: ByteString) =>
-          {
-            if (fileName == null) {
-              val path = Files.createTempFile(fs.getPath("/"), "test", ".log")
-              files :+= path
-              fileName = path.toString
-              Some(path)
-            } else {
-              None
-            }
+        (element: ByteString) => {
+          if (fileName == null) {
+            val path = Files.createTempFile(fs.getPath("/"), "test", ".log")
+            files :+= path
+            fileName = path.toString
+            Some(path)
+          } else {
+            None
           }
+        }
       }
       val completion = Source(testByteStrings).runWith(LogRotatorSink(triggerFunctionCreator))
       Await.result(completion, 3.seconds)
@@ -247,8 +256,8 @@ class LogRotatorSinkSpec
 
     "function fail on path creation" in assertAllStagesStopped {
       val ex = new Exception("my-exception")
-      val triggerFunctionCreator = () => { (x: ByteString) =>
-        {
+      val triggerFunctionCreator = () => {
+        (x: ByteString) => {
           throw ex
         }
       }
@@ -260,8 +269,8 @@ class LogRotatorSinkSpec
 
     "downstream fail on file write" in assertAllStagesStopped {
       val path = Files.createTempFile(fs.getPath("/"), "test", ".log")
-      val triggerFunctionCreator = () => { (x: ByteString) =>
-        {
+      val triggerFunctionCreator = () => {
+        (x: ByteString) => {
           Option(path)
         }
       }
@@ -273,7 +282,16 @@ class LogRotatorSinkSpec
       probe.sendNext(ByteString("test"))
       probe.sendNext(ByteString("test"))
       probe.expectCancellation()
-      the[Exception] thrownBy Await.result(completion, 3.seconds) shouldBe a[NonWritableChannelException]
+
+      val exception = intercept[Exception] {
+        Await.result(completion, 3.seconds)
+      }
+
+      exactly(
+        1,
+        List(exception, // Akka 2.5 throws nio exception directly
+             exception.getCause) // Akka 2.6 wraps nio exception in a akka.stream.IOOperationIncompleteException
+      ) shouldBe a[java.nio.channels.NonWritableChannelException]
     }
 
   }

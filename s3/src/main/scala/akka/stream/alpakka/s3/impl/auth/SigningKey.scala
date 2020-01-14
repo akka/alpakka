@@ -4,34 +4,32 @@
 
 package akka.stream.alpakka.s3.impl.auth
 
-import java.time.LocalDate
+import java.time.{LocalDate, ZonedDateTime}
 import java.time.format.DateTimeFormatter
 
 import akka.annotation.InternalApi
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
-import com.amazonaws.auth.{
-  AWSCredentialsProvider,
-  AWSCredentials => AmzAWSCredentials,
-  AWSSessionCredentials => AmzAWSSessionCredentials
-}
+import software.amazon.awssdk.auth.credentials._
+import software.amazon.awssdk.regions.Region
 
-@InternalApi private[impl] final case class CredentialScope(date: LocalDate, awsRegion: String, awsService: String) {
+@InternalApi private[impl] final case class CredentialScope(date: LocalDate, awsRegion: Region, awsService: String) {
   lazy val formattedDate: String = date.format(DateTimeFormatter.BASIC_ISO_DATE)
 
   def scopeString = s"$formattedDate/$awsRegion/$awsService/aws4_request"
 }
 
-@InternalApi private[impl] final case class SigningKey(credProvider: AWSCredentialsProvider,
+@InternalApi private[impl] final case class SigningKey(requestDate: ZonedDateTime,
+                                                       credProvider: AwsCredentialsProvider,
                                                        scope: CredentialScope,
                                                        algorithm: String = "HmacSHA256") {
 
-  private val credentials: AmzAWSCredentials = credProvider.getCredentials
+  private val credentials: AwsCredentials = credProvider.resolveCredentials
 
-  val rawKey = new SecretKeySpec(s"AWS4${credentials.getAWSSecretKey}".getBytes, algorithm)
+  val rawKey = new SecretKeySpec(s"AWS4${credentials.secretAccessKey}".getBytes, algorithm)
 
   val sessionToken: Option[String] = credentials match {
-    case c: AmzAWSSessionCredentials => Some(c.getSessionToken)
+    case c: AwsSessionCredentials => Some(c.sessionToken)
     case _ => None
   }
 
@@ -39,7 +37,7 @@ import com.amazonaws.auth.{
 
   def hexEncodedSignature(message: Array[Byte]): String = encodeHex(signature(message))
 
-  def credentialString: String = s"${credentials.getAWSAccessKeyId}/${scope.scopeString}"
+  def credentialString: String = s"${credentials.accessKeyId}/${scope.scopeString}"
 
   lazy val key: SecretKeySpec =
     wrapSignature(dateRegionServiceKey, "aws4_request".getBytes)
@@ -48,7 +46,7 @@ import com.amazonaws.auth.{
     wrapSignature(dateRegionKey, scope.awsService.getBytes)
 
   lazy val dateRegionKey: SecretKeySpec =
-    wrapSignature(dateKey, scope.awsRegion.getBytes)
+    wrapSignature(dateKey, scope.awsRegion.id.getBytes)
 
   lazy val dateKey: SecretKeySpec =
     wrapSignature(rawKey, scope.formattedDate.getBytes)

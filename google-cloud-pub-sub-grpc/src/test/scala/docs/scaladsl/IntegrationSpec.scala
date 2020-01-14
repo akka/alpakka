@@ -169,7 +169,7 @@ class IntegrationSpec
       val subNoAckResp = GooglePubSub.subscribe(sub, 1.second).runWith(Sink.head)
 
       inside(subNoAckResp.futureValue.message) {
-        case Some(PubsubMessage(data, _, _, _)) => data.toStringUtf8 shouldBe msg
+        case Some(PubsubMessage(data, _, _, _, _)) => data.toStringUtf8 shouldBe msg
       }
 
       // subscribe and get the republished message, and ack this time
@@ -183,7 +183,7 @@ class IntegrationSpec
         .runWith(Sink.head)
 
       inside(subWithAckResp.futureValue.message) {
-        case Some(PubsubMessage(data, _, _, _)) => data.toStringUtf8 shouldBe msg
+        case Some(PubsubMessage(data, _, _, _, _)) => data.toStringUtf8 shouldBe msg
       }
 
       // check if the message is not republished again
@@ -205,6 +205,8 @@ class IntegrationSpec
           .publish(parallelism = 1)
           .withAttributes(PubSubAttributes.publisher(publisher))
       // #attributes
+
+      Source.single(PublishRequest()).via(publishFlow).to(Sink.ignore)
     }
   }
 

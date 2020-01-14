@@ -10,12 +10,13 @@ import akka.stream.alpakka.sqs.{
   SqsPublishBatchSettings,
   SqsPublishGroupedSettings,
   SqsPublishResult,
+  SqsPublishResultEntry,
   SqsPublishSettings
 }
 import akka.stream.javadsl.Flow
 import akka.stream.scaladsl.{Flow => SFlow}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import software.amazon.awssdk.services.sqs.model.{SendMessageBatchResponse, SendMessageRequest, SendMessageResponse}
+import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 
 import scala.collection.JavaConverters._
 
@@ -30,14 +31,14 @@ object SqsPublishFlow {
    */
   def create(queueUrl: String,
              settings: SqsPublishSettings,
-             sqsClient: SqsAsyncClient): Flow[SendMessageRequest, SqsPublishResult[SendMessageResponse], NotUsed] =
+             sqsClient: SqsAsyncClient): Flow[SendMessageRequest, SqsPublishResult, NotUsed] =
     akka.stream.alpakka.sqs.scaladsl.SqsPublishFlow.apply(queueUrl, settings)(sqsClient).asJava
 
   /**
    * creates a [[akka.stream.javadsl.Flow Flow]] to publish messages to SQS queues based on the message queue url using an [[software.amazon.awssdk.services.sqs.SqsAsyncClient AmazonSQSAsync]]
    */
   def create(settings: SqsPublishSettings,
-             sqsClient: SqsAsyncClient): Flow[SendMessageRequest, SqsPublishResult[SendMessageResponse], NotUsed] =
+             sqsClient: SqsAsyncClient): Flow[SendMessageRequest, SqsPublishResult, NotUsed] =
     akka.stream.alpakka.sqs.scaladsl.SqsPublishFlow.apply(settings)(sqsClient).asJava
 
   /**
@@ -48,7 +49,7 @@ object SqsPublishFlow {
       queueUrl: String,
       settings: SqsPublishGroupedSettings,
       sqsClient: SqsAsyncClient
-  ): Flow[SendMessageRequest, SqsPublishResult[SendMessageBatchResponse], NotUsed] =
+  ): Flow[SendMessageRequest, SqsPublishResultEntry, NotUsed] =
     akka.stream.alpakka.sqs.scaladsl.SqsPublishFlow
       .grouped(queueUrl, settings)(sqsClient)
       .asJava
@@ -56,11 +57,11 @@ object SqsPublishFlow {
   /**
    * creates a [[akka.stream.javadsl.Flow Flow]] to publish messages in batches to a SQS queue using an [[software.amazon.awssdk.services.sqs.SqsAsyncClient AmazonSQSAsync]]
    */
-  def batch(
+  def batch[B <: java.lang.Iterable[SendMessageRequest]](
       queueUrl: String,
       settings: SqsPublishBatchSettings,
       sqsClient: SqsAsyncClient
-  ): Flow[java.lang.Iterable[SendMessageRequest], java.util.List[SqsPublishResult[SendMessageBatchResponse]], NotUsed] =
+  ): Flow[B, java.util.List[SqsPublishResultEntry], NotUsed] =
     SFlow[java.lang.Iterable[SendMessageRequest]]
       .map(_.asScala)
       .via(akka.stream.alpakka.sqs.scaladsl.SqsPublishFlow.batch(queueUrl, settings)(sqsClient))

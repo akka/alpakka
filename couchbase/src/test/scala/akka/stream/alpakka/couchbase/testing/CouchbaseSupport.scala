@@ -6,7 +6,7 @@ package akka.stream.alpakka.couchbase.testing
 
 import akka.Done
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.couchbase.scaladsl._
 import akka.stream.alpakka.couchbase.{CouchbaseSessionSettings, CouchbaseWriteSettings}
 import akka.stream.scaladsl.{Sink, Source}
@@ -32,7 +32,7 @@ trait CouchbaseSupport {
 
   //#init-actor-system
   implicit val actorSystem: ActorSystem = ActorSystem()
-  implicit val mat: ActorMaterializer = ActorMaterializer()
+  implicit val mat: Materializer = ActorMaterializer()
   //#init-actor-system
 
   val sampleData = TestObject("First", "First")
@@ -74,15 +74,18 @@ trait CouchbaseSupport {
     BinaryDocument.create(testObject.id, toWrite)
   }
 
-  def upsertSampleData(): Unit = {
+  def upsertSampleData(bucketName: String): Unit = {
     val bulkUpsertResult: Future[Done] = Source(sampleSequence)
       .map(toJsonDocument)
-      .via(CouchbaseFlow.upsert(sessionSettings, CouchbaseWriteSettings.inMemory, queryBucketName))
+      .via(CouchbaseFlow.upsert(sessionSettings, CouchbaseWriteSettings.inMemory, bucketName))
       .runWith(Sink.ignore)
     Await.result(bulkUpsertResult, 5.seconds)
     //all queries are Eventual Consistent, se we need to wait for index refresh!!
     Thread.sleep(2000)
   }
+
+  def cleanAllInBucket(bucketName: String): Unit =
+    cleanAllInBucket(sampleSequence.map(_.id), bucketName)
 
   def cleanAllInBucket(ids: Seq[String], bucketName: String): Unit = {
     val result: Future[Done] =

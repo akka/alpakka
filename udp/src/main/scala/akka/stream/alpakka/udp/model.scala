@@ -14,6 +14,16 @@ final class Datagram private (val data: ByteString, val remote: InetSocketAddres
 
   def withRemote(remote: InetSocketAddress) = copy(remote = remote)
 
+  /**
+   * Java API
+   */
+  def getData(): ByteString = data
+
+  /**
+   * Java API
+   */
+  def getRemote(): InetSocketAddress = remote
+
   private def copy(data: ByteString = data, remote: InetSocketAddress = remote) =
     new Datagram(data, remote)
 

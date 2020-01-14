@@ -13,6 +13,7 @@ import akka.stream.KillSwitches;
 import akka.stream.Materializer;
 import akka.stream.UniqueKillSwitch;
 import akka.stream.alpakka.amqp.*;
+import akka.stream.alpakka.amqp.javadsl.AmqpFlow;
 import akka.stream.alpakka.amqp.javadsl.AmqpRpcFlow;
 import akka.stream.alpakka.amqp.javadsl.AmqpSink;
 import akka.stream.alpakka.amqp.javadsl.AmqpSource;
@@ -26,6 +27,7 @@ import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.stream.testkit.javadsl.TestSink;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -105,10 +107,7 @@ public class AmqpDocsTest {
 
     assertEquals(
         input,
-        result
-            .toCompletableFuture()
-            .get(3, TimeUnit.SECONDS)
-            .stream()
+        result.toCompletableFuture().get(3, TimeUnit.SECONDS).stream()
             .map(m -> m.bytes().utf8String())
             .collect(Collectors.toList()));
   }
@@ -278,10 +277,7 @@ public class AmqpDocsTest {
 
     assertEquals(
         input,
-        result
-            .toCompletableFuture()
-            .get(3, TimeUnit.SECONDS)
-            .stream()
+        result.toCompletableFuture().get(3, TimeUnit.SECONDS).stream()
             .map(m -> m.bytes().utf8String())
             .collect(Collectors.toList()));
   }
@@ -335,15 +331,45 @@ public class AmqpDocsTest {
 
     assertEquals(
         input,
-        result2
-            .toCompletableFuture()
-            .get(10, TimeUnit.SECONDS)
-            .stream()
+        result2.toCompletableFuture().get(10, TimeUnit.SECONDS).stream()
             .map(m -> m.message().bytes().utf8String())
             .collect(Collectors.toList()));
 
     // See https://github.com/akka/akka/issues/26410
     // extra wait before assertAllStagesStopped kicks in
     Thread.sleep(6 * 1000);
+  }
+
+  @Test
+  public void shouldPublishWithFlow() throws Exception {
+    final String queueName = "amqp-conn-it-test-flow-" + System.currentTimeMillis();
+    final QueueDeclaration queueDeclaration = QueueDeclaration.create(queueName);
+
+    // #create-flow
+    final AmqpWriteSettings settings =
+        AmqpWriteSettings.create(connectionProvider)
+            .withRoutingKey(queueName)
+            .withDeclaration(queueDeclaration)
+            .withBufferSize(10)
+            .withConfirmationTimeout(Duration.ofMillis(200));
+
+    final Flow<WriteMessage, WriteResult, CompletionStage<Done>> amqpFlow =
+        AmqpFlow.createWithConfirm(settings);
+
+    final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
+
+    final List<WriteResult> result =
+        Source.from(input)
+            .map(message -> WriteMessage.create(ByteString.fromString(message)))
+            .via(amqpFlow)
+            .runWith(Sink.seq(), materializer)
+            .toCompletableFuture()
+            .get();
+    // #create-flow
+
+    final List<WriteResult> expectedResult =
+        input.stream().map(s -> WriteResult.create(true)).collect(Collectors.toList());
+
+    assertEquals(result, expectedResult);
   }
 }

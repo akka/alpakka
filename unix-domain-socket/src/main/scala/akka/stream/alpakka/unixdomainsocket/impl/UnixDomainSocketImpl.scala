@@ -2,11 +2,13 @@
  * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.stream.alpakka.unixdomainsocket.impl
+package akka.stream.alpakka.unixdomainsocket
+package impl
 
-import java.io.{File, IOException}
+import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.channels.{SelectionKey, Selector}
+import java.nio.file.{Files, Path, Paths}
 
 import akka.actor.{Cancellable, CoordinatedShutdown, ExtendedActorSystem, Extension}
 import akka.annotation.InternalApi
@@ -17,7 +19,7 @@ import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
 import jnr.enxio.channels.NativeSelectorProvider
-import jnr.unixsocket.{UnixServerSocketChannel, UnixSocketAddress, UnixSocketChannel}
+import jnr.unixsocket.{UnixServerSocketChannel, UnixSocketChannel, UnixSocketAddress => JnrUnixSocketAddress}
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -237,7 +239,7 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
     }
 
   private def acceptKey(
-      localAddress: UnixSocketAddress,
+      localAddress: JnrUnixSocketAddress,
       incomingConnectionQueue: SourceQueueWithComplete[IncomingConnection],
       halfClose: Boolean,
       receiveBufferSize: Int,
@@ -245,19 +247,29 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
   )(sel: Selector, key: SelectionKey)(implicit mat: ActorMaterializer, ec: ExecutionContext): Unit = {
 
     val acceptingChannel = key.channel().asInstanceOf[UnixServerSocketChannel]
-    val acceptedChannel = try { acceptingChannel.accept() } catch { case _: IOException => null }
+    val acceptedChannel = try {
+      acceptingChannel.accept()
+    } catch { case _: IOException => null }
 
     if (acceptedChannel != null) {
       acceptedChannel.configureBlocking(false)
       val (context, connectionFlow) = sendReceiveStructures(sel, receiveBufferSize, sendBufferSize, halfClose)
-      try { acceptedChannel.register(sel, SelectionKey.OP_READ, context) } catch { case _: IOException => }
+      try {
+        acceptedChannel.register(sel, SelectionKey.OP_READ, context)
+      } catch { case _: IOException => }
       incomingConnectionQueue.offer(
-        IncomingConnection(localAddress, acceptingChannel.getRemoteSocketAddress, connectionFlow)
+        IncomingConnection(
+          localAddress = UnixSocketAddress(Paths.get(localAddress.path())),
+          remoteAddress = UnixSocketAddress(
+            Paths.get(Option(acceptingChannel.getRemoteSocketAddress).getOrElse(new JnrUnixSocketAddress("")).path())
+          ),
+          flow = connectionFlow
+        )
       )
     }
   }
 
-  private def connectKey(remoteAddress: UnixSocketAddress,
+  private def connectKey(remoteAddress: JnrUnixSocketAddress,
                          connectionFinished: Promise[Done],
                          cancellable: Option[Cancellable],
                          sendReceiveContext: SendReceiveContext)(sel: Selector, key: SelectionKey): Unit = {
@@ -376,7 +388,7 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
   private val sendBufferSize: Int =
     system.settings.config.getBytes("akka.stream.alpakka.unix-domain-socket.send-buffer-size").toInt
 
-  protected def bind(file: File,
+  protected def bind(path: Path,
                      backlog: Int = 128,
                      halfClose: Boolean = false): Source[IncomingConnection, Future[ServerBinding]] = {
 
@@ -393,7 +405,7 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
                     .andThen {
                       case _ =>
                         try {
-                          file.delete()
+                          Files.delete(path)
                         } catch {
                           case NonFatal(_) =>
                         }
@@ -408,7 +420,7 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
 
       val channel = UnixServerSocketChannel.open()
       channel.configureBlocking(false)
-      val address = new UnixSocketAddress(file)
+      val address = new JnrUnixSocketAddress(path.toFile)
       val registeredKey =
         channel.register(sel,
                          SelectionKey.OP_ACCEPT,
@@ -417,7 +429,7 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
         channel.socket().bind(address, backlog)
         sel.wakeup()
         serverBinding.success(
-          ServerBinding(address) { () =>
+          ServerBinding(UnixSocketAddress(Paths.get(address.path))) { () =>
             registeredKey.cancel()
             channel.close()
             incomingConnectionQueue.complete()
@@ -463,10 +475,11 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
             None
         }
       val (context, connectionFlow) = sendReceiveStructures(sel, receiveBufferSize, sendBufferSize, halfClose)
+      val ra = new JnrUnixSocketAddress(remoteAddress.path.toFile)
       val registeredKey =
         channel
-          .register(sel, SelectionKey.OP_CONNECT, connectKey(remoteAddress, connectionFinished, cancellable, context) _)
-      val connection = Try(channel.connect(remoteAddress))
+          .register(sel, SelectionKey.OP_CONNECT, connectKey(ra, connectionFinished, cancellable, context) _)
+      val connection = Try(channel.connect(ra))
       connection.failed.foreach(e => connectionFinished.tryFailure(e))
 
       Future.successful(
@@ -477,7 +490,7 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
             connection match {
               case Success(_) =>
                 connectionFinished.future
-                  .map(_ => OutgoingConnection(remoteAddress, localAddress.getOrElse(new UnixSocketAddress(""))))
+                  .map(_ => OutgoingConnection(remoteAddress, localAddress.getOrElse(UnixSocketAddress(Paths.get("")))))
               case Failure(e) =>
                 registeredKey.cancel()
                 channel.close()

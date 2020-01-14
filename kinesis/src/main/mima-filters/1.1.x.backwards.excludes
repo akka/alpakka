@@ -1,0 +1,2 @@
+# Remove deprecated methods
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.kinesis.ShardSettings.withAtTimestamp")

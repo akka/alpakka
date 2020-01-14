@@ -15,19 +15,20 @@ import javax.xml.stream.XMLOutputFactory
 /**
  * INTERNAL API
  */
-@InternalApi private[xml] class StreamingXmlWriter(charset: Charset)
+@InternalApi private[xml] class StreamingXmlWriter(charset: Charset, xmlOutputFactory: XMLOutputFactory)
     extends GraphStage[FlowShape[ParseEvent, ByteString]] {
+
+  def this(charset: Charset) = this(charset, XMLOutputFactory.newInstance())
+
   val in: Inlet[ParseEvent] = Inlet("XMLWriter.in")
   val out: Outlet[ByteString] = Outlet("XMLWriter.out")
   override val shape: FlowShape[ParseEvent, ByteString] = FlowShape(in, out)
-
-  private val xMLOutputFactory = XMLOutputFactory.newInstance()
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler {
       val byteStringBuilder = new ByteStringBuilder()
 
-      val output = xMLOutputFactory.createXMLStreamWriter(byteStringBuilder.asOutputStream, charset.name())
+      val output = xmlOutputFactory.createXMLStreamWriter(byteStringBuilder.asOutputStream, charset.name())
 
       setHandlers(in, out, this)
 
@@ -97,5 +98,14 @@ import javax.xml.stream.XMLOutputFactory
       }
 
       override def onPull(): Unit = pull(in)
+
+      override def onUpstreamFinish(): Unit = {
+        output.flush()
+        val finalData = byteStringBuilder.result().compact
+        if (finalData.length != 0) {
+          emit(out, finalData)
+        }
+        super.onUpstreamFinish()
+      }
     }
 }

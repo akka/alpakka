@@ -9,22 +9,38 @@ import akka.stream.alpakka.xml.ParseEvent
 import akka.stream.alpakka.xml.impl
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
+import com.fasterxml.aalto.AsyncXMLInputFactory
 import org.w3c.dom.Element
+
+import javax.xml.stream.XMLInputFactory
+import javax.xml.XMLConstants
 
 import scala.collection.immutable
 
 object XmlParsing {
 
   /**
-   * Parser Flow that takes a stream of ByteStrings and parses them to XML events similar to SAX.
+   * The default factory configuration is to enable secure processing.
    */
-  val parser: Flow[ByteString, ParseEvent, NotUsed] = parser(false)
+  val configureDefault: AsyncXMLInputFactory => Unit = { factory =>
+    factory.setProperty(XMLInputFactory.SUPPORT_DTD, false)
+    factory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false)
+    if (factory.isPropertySupported(XMLConstants.FEATURE_SECURE_PROCESSING)) {
+      factory.setProperty(XMLConstants.FEATURE_SECURE_PROCESSING, true)
+    }
+  }
 
   /**
    * Parser Flow that takes a stream of ByteStrings and parses them to XML events similar to SAX.
    */
-  def parser(ignoreInvalidChars: Boolean = false): Flow[ByteString, ParseEvent, NotUsed] =
-    Flow.fromGraph(new impl.StreamingXmlParser(ignoreInvalidChars))
+  val parser: Flow[ByteString, ParseEvent, NotUsed] = parser(false, configureDefault)
+
+  /**
+   * Parser Flow that takes a stream of ByteStrings and parses them to XML events similar to SAX.
+   */
+  def parser(ignoreInvalidChars: Boolean = false,
+             configureFactory: AsyncXMLInputFactory => Unit = configureDefault): Flow[ByteString, ParseEvent, NotUsed] =
+    Flow.fromGraph(new impl.StreamingXmlParser(ignoreInvalidChars, configureFactory))
 
   /**
    * A Flow that transforms a stream of XML ParseEvents. This stage coalesces consecutive CData and Characters

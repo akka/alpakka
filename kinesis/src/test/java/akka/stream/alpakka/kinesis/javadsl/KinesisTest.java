@@ -12,13 +12,12 @@ import akka.stream.alpakka.kinesis.ShardSettings;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
-import com.amazonaws.handlers.AsyncHandler;
-import com.amazonaws.services.kinesis.AmazonKinesisAsync;
-import com.amazonaws.services.kinesis.model.*;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
+import software.amazon.awssdk.services.kinesis.KinesisAsyncClient;
+import software.amazon.awssdk.services.kinesis.model.*;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -31,7 +30,7 @@ public class KinesisTest {
   private static ActorSystem system;
   private static ActorMaterializer materializer;
   private static ShardSettings settings;
-  private static AmazonKinesisAsync amazonKinesisAsync;
+  private static KinesisAsyncClient amazonKinesisAsync;
 
   @BeforeClass
   public static void setup() throws Exception {
@@ -42,7 +41,7 @@ public class KinesisTest {
     materializer = ActorMaterializer.create(system);
 
     settings = ShardSettings.create("my-stream", "shard-id");
-    amazonKinesisAsync = mock(AmazonKinesisAsync.class);
+    amazonKinesisAsync = mock(KinesisAsyncClient.class);
   }
 
   @AfterClass
@@ -55,42 +54,38 @@ public class KinesisTest {
   @Test
   public void PullRecord() throws Exception {
 
-    when(amazonKinesisAsync.describeStream(anyString()))
+    when(amazonKinesisAsync.describeStream((DescribeStreamRequest) any()))
         .thenReturn(
-            new DescribeStreamResult()
-                .withStreamDescription(
-                    new StreamDescription()
-                        .withShards(new Shard().withShardId("id"))
-                        .withHasMoreShards(false)));
-    when(amazonKinesisAsync.getShardIteratorAsync(any(), any()))
+            CompletableFuture.completedFuture(
+                DescribeStreamResponse.builder()
+                    .streamDescription(
+                        StreamDescription.builder()
+                            .shards(Shard.builder().shardId("id").build())
+                            .hasMoreShards(false)
+                            .build())
+                    .build()));
+    when(amazonKinesisAsync.getShardIterator((GetShardIteratorRequest) any()))
         .thenAnswer(
             (Answer)
                 invocation -> {
-                  AsyncHandler<GetShardIteratorRequest, GetShardIteratorResult> args =
-                      (AsyncHandler<GetShardIteratorRequest, GetShardIteratorResult>)
-                          invocation.getArguments()[1];
-                  args.onSuccess(new GetShardIteratorRequest(), new GetShardIteratorResult());
-                  return CompletableFuture.completedFuture(new GetShardIteratorResult());
+                  return CompletableFuture.completedFuture(
+                      GetShardIteratorResponse.builder().build());
                 });
 
-    when(amazonKinesisAsync.getRecordsAsync(any(), any()))
+    when(amazonKinesisAsync.getRecords((GetRecordsRequest) any()))
         .thenAnswer(
             (Answer)
                 invocation -> {
-                  AsyncHandler<GetRecordsRequest, GetRecordsResult> args =
-                      (AsyncHandler<GetRecordsRequest, GetRecordsResult>)
-                          invocation.getArguments()[1];
-                  args.onSuccess(
-                      new GetRecordsRequest(),
-                      new GetRecordsResult()
-                          .withRecords(new Record().withSequenceNumber("1"))
-                          .withNextShardIterator("iter"));
-                  return CompletableFuture.completedFuture(new GetRecordsResult());
+                  return CompletableFuture.completedFuture(
+                      GetRecordsResponse.builder()
+                          .records(Record.builder().sequenceNumber("1").build())
+                          .nextShardIterator("iter")
+                          .build());
                 });
 
     final Source<Record, NotUsed> source = KinesisSource.basic(settings, amazonKinesisAsync);
     final CompletionStage<Record> record = source.runWith(Sink.head(), materializer);
 
-    assertEquals("1", record.toCompletableFuture().get(10, TimeUnit.SECONDS).getSequenceNumber());
+    assertEquals("1", record.toCompletableFuture().get(10, TimeUnit.SECONDS).sequenceNumber());
   }
 }

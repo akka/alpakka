@@ -1,7 +1,7 @@
 # MongoDB
 
 The MongoDB connector allows you to read and save documents.
-You can query a stream of documents from @scala[@scaladoc[`MongoSource`](akka.stream.alpakka.mongodb.scaladsl.MongoSource$)]@java[@scaladoc[`MongoSource`](akka.stream.alpakka.mongodb.javadsl.MongoSource$)] or update documents in a collection with @scala[@scaladoc[`MongoSink`](akka.stream.alpakka.mongodb.scaladsl.MongoSink$)]@java[@scaladoc[`MongoSink`](akka.stream.alpakka.mongodb.javadsl.MongoSink$)].
+You can query a stream of documents from @scala[@scaladoc[MongoSource](akka.stream.alpakka.mongodb.scaladsl.MongoSource$)]@java[@scaladoc[MongoSource](akka.stream.alpakka.mongodb.javadsl.MongoSource$)] or update documents in a collection with @scala[@scaladoc[MongoSink](akka.stream.alpakka.mongodb.scaladsl.MongoSink$)]@java[@scaladoc[MongoSink](akka.stream.alpakka.mongodb.javadsl.MongoSink$)].
 
 This connector is based on the [Mongo Reactive Streams Driver](https://github.com/mongodb/mongo-java-driver-reactivestreams).
 
@@ -41,7 +41,7 @@ Scala
 Java
 : @@snip [snip](/mongodb/src/test/java/docs/javadsl/Number.java) { #pojo }
 
-For codec support, you first need to setup a @javadoc[`CodecRegistry`](org.bson.codecs.configuration.CodecRegistry).
+For codec support, you first need to setup a @javadoc[CodecRegistry](org.bson.codecs.configuration.CodecRegistry).
 
 Scala
 : @@snip [snip](/mongodb/src/test/scala/docs/scaladsl/MongoSourceSpec.scala) { #codecs }
@@ -58,7 +58,7 @@ Scala
 Java
 : @@snip [snip](/mongodb/src/test/java/docs/javadsl/MongoSourceTest.java) { #init-connection }
 
-We will also need an @scaladoc[`ActorSystem`](akka.actor.ActorSystem) and an @scaladoc[`ActorMaterializer`](akka.stream.ActorMaterializer).
+We will also need an @scaladoc[ActorSystem](akka.actor.ActorSystem) and an @scaladoc[ActorMaterializer](akka.stream.ActorMaterializer).
 
 Scala
 : @@snip [snip](/mongodb/src/test/scala/docs/scaladsl/MongoSourceSpec.scala) { #init-mat }
@@ -87,15 +87,15 @@ Java
 
 Here we used a basic sink to complete the stream by collecting all of the stream elements to a collection.
 The power of streams comes from building larger data pipelines which leverage backpressure to ensure efficient flow control.
-Feel free to edit the example code and build @extref[more advanced stream topologies](akka-docs:scala/stream/stream-introduction).
+Feel free to edit the example code and build @extref:[more advanced stream topologies](akka:scala/stream/stream-introduction.html).
 
 ## Flow and Sink
 
-Each of these sink factory methods have a corresponding factory in @scala[@scaladoc[`MongoFlow`](akka.stream.alpakka.mongodb.scaladsl.MongoFlow$)]@java[@scaladoc[`MongoFlow`](akka.stream.alpakka.mongodb.javadsl.MongoFlow$)] which will emit the written document or result of the operation downstream.
+Each of these sink factory methods have a corresponding factory in @scala[@scaladoc[MongoFlow](akka.stream.alpakka.mongodb.scaladsl.MongoFlow$)]@java[@scaladoc[MongoFlow](akka.stream.alpakka.mongodb.javadsl.MongoFlow$)] which will emit the written document or result of the operation downstream.
 
 ### Insert
 
-We can use a Source of documents to save them to a mongo collection using @scala[@scaladoc[`MongoSink.insertOne`](akka.stream.alpakka.mongodb.scaladsl.MongoSink$)]@java[@scaladoc[`MongoSink.insertOne`](akka.stream.alpakka.mongodb.javadsl.MongoSink$)] or @scala[@scaladoc[`MongoSink.insertMany`](akka.stream.alpakka.mongodb.scaladsl.MongoSink$)]@java[@scaladoc[`MongoSink.insertMany`](akka.stream.alpakka.mongodb.javadsl.MongoSink$)].
+We can use a Source of documents to save them to a mongo collection using @scala[@scaladoc[MongoSink.insertOne](akka.stream.alpakka.mongodb.scaladsl.MongoSink$)]@java[@scaladoc[MongoSink.insertOne](akka.stream.alpakka.mongodb.javadsl.MongoSink$)] or @scala[@scaladoc[MongoSink.insertMany](akka.stream.alpakka.mongodb.scaladsl.MongoSink$)]@java[@scaladoc[MongoSink.insertMany](akka.stream.alpakka.mongodb.javadsl.MongoSink$)].
 
 Scala
 : @@snip [snip](/mongodb/src/test/scala/docs/scaladsl/MongoSinkSpec.scala) { #insert-one }
@@ -115,8 +115,8 @@ Java
 
 ### Update
 
-We can update documents with a Source of @scaladoc[`DocumentUpdate`](akka.stream.alpakka.mongodb.DocumentUpdate) which is a filter and a update definition.
-Use either @scala[@scaladoc[`MongoSink.updateOne`](akka.stream.alpakka.mongodb.scaladsl.MongoSink$)]@java[@scaladoc[`MongoSink.updateOne`](akka.stream.alpakka.mongodb.javadsl.MongoSink$)] or @scala[@scaladoc[`MongoSink.updateMany`](akka.stream.alpakka.mongodb.scaladsl.MongoSink$)]@java[@scaladoc[`MongoSink.updateMany`](akka.stream.alpakka.mongodb.javadsl.MongoSink$)] if the filter should target one or many documents.
+We can update documents with a Source of @scaladoc[DocumentUpdate](akka.stream.alpakka.mongodb.DocumentUpdate) which is a filter and a update definition.
+Use either @scala[@scaladoc[MongoSink.updateOne](akka.stream.alpakka.mongodb.scaladsl.MongoSink$)]@java[@scaladoc[MongoSink.updateOne](akka.stream.alpakka.mongodb.javadsl.MongoSink$)] or @scala[@scaladoc[MongoSink.updateMany](akka.stream.alpakka.mongodb.scaladsl.MongoSink$)]@java[@scaladoc[MongoSink.updateMany](akka.stream.alpakka.mongodb.javadsl.MongoSink$)] if the filter should target one or many documents.
 
 Scala
 : @@snip [snip](/mongodb/src/test/scala/docs/scaladsl/MongoSinkSpec.scala) { #update-one }
@@ -127,7 +127,7 @@ Java
 ### Delete
 
 We can delete documents with a Source of filters.
-Use either @scala[@scaladoc[`MongoSink.deleteOne`](akka.stream.alpakka.mongodb.scaladsl.MongoSink$)]@java[@scaladoc[`MongoSink.deleteOne`](akka.stream.alpakka.mongodb.javadsl.MongoSink$)] or @scala[@scaladoc[`MongoSink.deleteMany`](akka.stream.alpakka.mongodb.scaladsl.MongoSink$)]@java[@scaladoc[`MongoSink.deleteMany`](akka.stream.alpakka.mongodb.javadsl.MongoSink$)] if the filter should target one or many documents.
+Use either @scala[@scaladoc[MongoSink.deleteOne](akka.stream.alpakka.mongodb.scaladsl.MongoSink$)]@java[@scaladoc[MongoSink.deleteOne](akka.stream.alpakka.mongodb.javadsl.MongoSink$)] or @scala[@scaladoc[MongoSink.deleteMany](akka.stream.alpakka.mongodb.scaladsl.MongoSink$)]@java[@scaladoc[MongoSink.deleteMany](akka.stream.alpakka.mongodb.javadsl.MongoSink$)] if the filter should target one or many documents.
 
 Scala
 : @@snip [snip](/mongodb/src/test/scala/docs/scaladsl/MongoSinkSpec.scala) { #delete-one }

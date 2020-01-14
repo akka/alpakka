@@ -17,12 +17,17 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
 import com.github.tomakehurst.wiremock.matching.{ContainsPattern, EqualToPattern}
 import com.github.tomakehurst.wiremock.stubbing.Scenario
 import com.typesafe.config.ConfigFactory
+import software.amazon.awssdk.regions.Region
 
-abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockServer) extends TestKit(_system) {
+abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMockServer) extends TestKit(_system) {
 
-  def this(mock: WireMockServer) =
+  private def this(mock: WireMockServer) =
     this(ActorSystem(getCallerName(getClass), config(mock.port()).withFallback(ConfigFactory.load())), mock)
-  def this() = this(initServer())
+
+  def this() = {
+    this(initServer())
+    system.registerOnTermination(stopWireMockServer())
+  }
 
   val mock = new WireMock("localhost", _wireMockServer.port())
   val port = _wireMockServer.port()
@@ -38,6 +43,33 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
           )
       )
     )
+
+  def mockFailureAfterInitiate(): Unit = {
+    mock
+      .register(
+        post(urlEqualTo(s"/$bucketKey?uploads")).willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("x-amz-id-2", "Uuag1LuByRx9e6j5Onimru9pO4ZVKnJ2Qz7/C1NPcfTWAtRPfTaOFg==")
+            .withHeader("x-amz-request-id", "656c76696e6727732072657175657374")
+            .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
+                 |<InitiateMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                 |  <Bucket>$bucket</Bucket>
+                 |  <Key>$bucketKey</Key>
+                 |  <UploadId>$uploadId</UploadId>
+                 |</InitiateMultipartUploadResult>""".stripMargin)
+        )
+      )
+
+    mock.register(
+      put(urlEqualTo(s"/$bucketKey?partNumber=1&uploadId=$uploadId"))
+        .withRequestBody(matching(body))
+        .willReturn(
+          aResponse()
+            .withStatus(500)
+        )
+    )
+  }
 
   def mockSSEInvalidRequest(): Unit =
     mock.register(
@@ -70,6 +102,8 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
   val rangeOfBody = body.getBytes.slice(bytesRangeStart, bytesRangeEnd + 1)
   val rangeOfBodySSE = bodySSE.getBytes.slice(bytesRangeStart, bytesRangeEnd + 1)
   val listPrefix = "testPrefix"
+  val listDelimiter = "/"
+  val listCommonPrefix = "commonPrefix/"
   val listKey = "testingKey.txt"
 
   val sseCustomerKey = "key"
@@ -88,11 +122,11 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
         )
       )
 
-  def mockDownload(region: String): Unit =
+  def mockDownload(region: Region): Unit =
     mock
       .register(
         get(urlEqualTo(s"/$bucketKey"))
-          .withHeader("Authorization", new ContainsPattern(region))
+          .withHeader("Authorization", new ContainsPattern(region.id))
           .willReturn(
             aResponse()
               .withStatus(200)
@@ -247,6 +281,62 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
         )
       )
 
+  def mockListBucketAndCommonPrefixes(): Unit =
+    mock
+      .register(
+        get(urlEqualTo(s"/?list-type=2&prefix=$listPrefix&delimiter=$listDelimiter")).willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/xml")
+            .withBody(s"""|<?xml version="1.0" encoding="UTF-8"?>
+                          |<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                          |    <Name>bucket</Name>
+                          |    <Prefix>$listPrefix</Prefix>
+                          |    <KeyCount>1</KeyCount>
+                          |    <MaxKeys>1000</MaxKeys>
+                          |    <IsTruncated>false</IsTruncated>
+                          |    <Contents>
+                          |        <Key>$listKey</Key>
+                          |        <LastModified>2009-10-12T17:50:30.000Z</LastModified>
+                          |        <ETag>&quot;fba9dede5f27731c9771645a39863328&quot;</ETag>
+                          |        <Size>434234</Size>
+                          |        <StorageClass>STANDARD</StorageClass>
+                          |    </Contents>
+                          |    <CommonPrefixes>
+                          |        <Prefix>$listCommonPrefix</Prefix>
+                          |    </CommonPrefixes>
+                          |</ListBucketResult>""".stripMargin)
+        )
+      )
+
+  def mockListBucketAndCommonPrefixesVersion1(): Unit =
+    mock
+      .register(
+        get(urlEqualTo(s"/?prefix=$listPrefix&delimiter=$listDelimiter")).willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/xml")
+            .withBody(s"""|<?xml version="1.0" encoding="UTF-8"?>
+                          |<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                          |    <Name>bucket</Name>
+                          |    <Prefix>$listPrefix</Prefix>
+                          |    <Marker/>
+                          |    <MaxKeys>1000</MaxKeys>
+                          |    <IsTruncated>false</IsTruncated>
+                          |    <Contents>
+                          |        <Key>$listKey</Key>
+                          |        <LastModified>2009-10-12T17:50:30.000Z</LastModified>
+                          |        <ETag>&quot;fba9dede5f27731c9771645a39863328&quot;</ETag>
+                          |        <Size>434234</Size>
+                          |        <StorageClass>STANDARD</StorageClass>
+                          |    </Contents>
+                          |    <CommonPrefixes>
+                          |        <Prefix>$listCommonPrefix</Prefix>
+                          |    </CommonPrefixes>
+                          |</ListBucketResult>""".stripMargin)
+        )
+      )
+
   def mockUpload(): Unit = mockUpload(body)
   def mockUpload(expectedBody: String): Unit = {
     mock
@@ -267,7 +357,7 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
 
     mock.register(
       put(urlEqualTo(s"/$bucketKey?partNumber=1&uploadId=$uploadId"))
-        .withRequestBody(matching(expectedBody))
+        .withRequestBody(if (expectedBody.isEmpty) absent() else matching(expectedBody))
         .willReturn(
           aResponse()
             .withStatus(200)
@@ -742,6 +832,36 @@ abstract class S3WireMockBase(_system: ActorSystem, _wireMockServer: WireMockSer
         )
     )
   }
+
+  def mockMakingBucket(): Unit =
+    mock.register(
+      put(urlEqualTo("/")).willReturn(
+        aResponse()
+          .withStatus(200)
+      )
+    )
+
+  def mockDeletingBucket(): Unit = mock.register(
+    delete(urlEqualTo("/")).willReturn(
+      aResponse()
+        .withStatus(200)
+    )
+  )
+
+  def mockCheckingBucketStateForNonExistingBucket(): Unit =
+    mock.register(
+      head(urlEqualTo("/")).willReturn(aResponse().withStatus(404))
+    )
+
+  def mockCheckingBucketStateForExistingBucket(): Unit =
+    mock.register(
+      head(urlEqualTo("/")).willReturn(aResponse().withStatus(200))
+    )
+
+  def mockCheckingBucketStateForBucketWithoutRights(): Unit =
+    mock.register(
+      head(urlEqualTo("/")).willReturn(aResponse().withStatus(403))
+    )
 }
 
 private object S3WireMockBase {
@@ -770,11 +890,6 @@ private object S3WireMockBase {
 
   private def config(proxyPort: Int) = ConfigFactory.parseString(s"""
     |${S3Settings.ConfigPath} {
-    |  proxy {
-    |    host = localhost
-    |    port = $proxyPort
-    |    secure = false
-    |  }
     |  aws {
     |    credentials {
     |      provider = static
@@ -787,6 +902,7 @@ private object S3WireMockBase {
     |    }
     |  }
     |  path-style-access = false
+    |  endpoint-url = "http://localhost:$proxyPort"
     |}
     """.stripMargin)
 }

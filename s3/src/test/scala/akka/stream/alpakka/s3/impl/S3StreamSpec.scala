@@ -5,22 +5,27 @@
 package akka.stream.alpakka.s3.impl
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.model.headers.ByteRange
-import akka.stream.alpakka.s3.{ApiVersion, MemoryBufferType, S3Settings}
+import akka.stream.alpakka.s3.BucketAccess.{AccessDenied, AccessGranted, NotExists}
+import akka.stream.alpakka.s3.{ApiVersion, BucketAccess, MemoryBufferType, S3Settings}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.testkit.TestKit
 import akka.util.ByteString
-import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
-import com.amazonaws.regions.AwsRegionProvider
+import software.amazon.awssdk.auth.credentials._
+import software.amazon.awssdk.regions.providers._
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatest.{FlatSpecLike, Matchers, PrivateMethodTester}
+import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers, PrivateMethodTester}
+import software.amazon.awssdk.regions.Region
+
+import scala.concurrent.Future
 
 class S3StreamSpec(_system: ActorSystem)
     extends TestKit(_system)
     with FlatSpecLike
     with Matchers
+    with BeforeAndAfterAll
     with PrivateMethodTester
     with ScalaFutures
     with IntegrationPatience {
@@ -30,64 +35,56 @@ class S3StreamSpec(_system: ActorSystem)
   def this() = this(ActorSystem("S3StreamSpec"))
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withDebugLogging(true))
 
-  "Non-ranged downloads" should "have one (host) header" in {
+  override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
+
+  "Non-ranged downloads" should "have two (host and synthetic raw-request-uri) headers" in {
 
     val requestHeaders = PrivateMethod[HttpRequest]('requestHeaders)
-    val credentialsProvider = new AWSStaticCredentialsProvider(
-      new BasicAWSCredentials(
+    val credentialsProvider = StaticCredentialsProvider.create(
+      AwsBasicCredentials.create(
         "test-Id",
         "test-key"
       )
     )
     val regionProvider = new AwsRegionProvider {
-      def getRegion = "us-east-1"
+      def getRegion = Region.US_EAST_1
     }
     val location = S3Location("test-bucket", "test-key")
 
     implicit val settings =
-      S3Settings(MemoryBufferType,
-                 None,
-                 credentialsProvider,
-                 regionProvider,
-                 false,
-                 None,
-                 ApiVersion.ListBucketVersion2)
+      S3Settings(MemoryBufferType, credentialsProvider, regionProvider, ApiVersion.ListBucketVersion2)
 
     val result: HttpRequest = S3Stream invokePrivate requestHeaders(getDownloadRequest(location), None)
-    result.headers.size shouldBe 1
+    result.headers.size shouldBe 2
     result.headers.seq.exists(_.lowercaseName() == "host")
+    result.headers.seq.exists(_.lowercaseName() == "raw-request-uri")
   }
 
-  "Ranged downloads" should "have two (host, range) headers" in {
+  "Ranged downloads" should "have three (host, range and synthetic raw-request-uri) headers" in {
 
     val requestHeaders = PrivateMethod[HttpRequest]('requestHeaders)
     val credentialsProvider =
-      new AWSStaticCredentialsProvider(
-        new BasicAWSCredentials(
+      StaticCredentialsProvider.create(
+        AwsBasicCredentials.create(
           "test-Id",
           "test-key"
         )
       )
     val regionProvider =
       new AwsRegionProvider {
-        def getRegion: String = "us-east-1"
+        def getRegion: Region = Region.US_EAST_1
       }
     val location = S3Location("test-bucket", "test-key")
     val range = ByteRange(1, 4)
 
     implicit val settings =
-      S3Settings(MemoryBufferType,
-                 None,
-                 credentialsProvider,
-                 regionProvider,
-                 false,
-                 None,
-                 ApiVersion.ListBucketVersion2)
+      S3Settings(MemoryBufferType, credentialsProvider, regionProvider, ApiVersion.ListBucketVersion2)
 
     val result: HttpRequest = S3Stream invokePrivate requestHeaders(getDownloadRequest(location), Some(range))
-    result.headers.size shouldBe 2
+    result.headers.size shouldBe 3
     result.headers.seq.exists(_.lowercaseName() == "host")
     result.headers.seq.exists(_.lowercaseName() == "range")
+    result.headers.seq.exists(_.lowercaseName() == "raw-request-uri")
 
   }
 
@@ -155,4 +152,31 @@ class S3StreamSpec(_system: ActorSystem)
     partitions should equal(List(CopyPartition(1, sourceLocation)))
   }
 
+  "processCheckIfExistsResponse" should "convert head response to BucketAccess" in {
+    def bucketStatusPreparation(response: HttpResponse): Future[BucketAccess] = {
+      val testedMethod = PrivateMethod[Future[BucketAccess]]('processCheckIfExistsResponse)
+
+      val result: Future[BucketAccess] = S3Stream invokePrivate testedMethod(response, materializer)
+
+      result
+    }
+
+    val responseWithOkCode = HttpResponse(
+      status = StatusCodes.OK
+    )
+
+    bucketStatusPreparation(responseWithOkCode).futureValue shouldEqual AccessGranted
+
+    val responseWithNotFoundCode = HttpResponse(
+      status = StatusCodes.NotFound
+    )
+
+    bucketStatusPreparation(responseWithNotFoundCode).futureValue shouldEqual NotExists
+
+    val responseWithForbiddenCode = HttpResponse(
+      status = StatusCodes.Forbidden
+    )
+
+    bucketStatusPreparation(responseWithForbiddenCode).futureValue shouldEqual AccessDenied
+  }
 }

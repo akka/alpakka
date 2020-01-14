@@ -6,16 +6,19 @@ package akka.stream.alpakka.kinesis.impl
 
 import akka.actor.ActorRef
 import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 import akka.stream.alpakka.kinesis.{ShardSettings, KinesisErrors => Errors}
 import akka.stream.stage.GraphStageLogic.StageActor
 import akka.stream.stage._
 import akka.stream.{Attributes, Outlet, SourceShape}
-import com.amazonaws.handlers.AsyncHandler
-import com.amazonaws.services.kinesis.AmazonKinesisAsync
-import com.amazonaws.services.kinesis.model._
+import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
+import software.amazon.awssdk.services.kinesis.model._
 
 import scala.collection.mutable
 import scala.collection.JavaConverters._
+import scala.util.{Failure, Success, Try}
+
+import scala.compat.java8.FutureConverters._
 
 /**
  * Internal API
@@ -23,15 +26,17 @@ import scala.collection.JavaConverters._
 @InternalApi
 private[kinesis] object KinesisSourceStage {
 
-  private[kinesis] final case class GetShardIteratorSuccess(result: GetShardIteratorResult)
+  private[kinesis] final case class GetShardIteratorSuccess(result: GetShardIteratorResponse)
 
-  private[kinesis] final case class GetShardIteratorFailure(ex: Exception)
+  private[kinesis] final case class GetShardIteratorFailure(ex: Throwable)
 
-  private[kinesis] final case class GetRecordsSuccess(records: GetRecordsResult)
+  private[kinesis] final case class GetRecordsSuccess(records: GetRecordsResponse)
 
-  private[kinesis] final case class GetRecordsFailure(ex: Exception)
+  private[kinesis] final case class GetRecordsFailure(ex: Throwable)
 
   private[kinesis] final case object Pump
+
+  private[kinesis] final case object GetRecords
 
 }
 
@@ -39,7 +44,7 @@ private[kinesis] object KinesisSourceStage {
  * Internal API
  */
 @InternalApi
-private[kinesis] class KinesisSourceStage(shardSettings: ShardSettings, amazonKinesisAsync: => AmazonKinesisAsync)
+private[kinesis] class KinesisSourceStage(shardSettings: ShardSettings, amazonKinesisAsync: => KinesisAsyncClient)
     extends GraphStage[SourceShape[Record]] {
 
   import KinesisSourceStage._
@@ -68,7 +73,7 @@ private[kinesis] class KinesisSourceStage(shardSettings: ShardSettings, amazonKi
 
       private def awaitingShardIterator(in: (ActorRef, Any)): Unit = in match {
         case (_, GetShardIteratorSuccess(result)) =>
-          currentShardIterator = result.getShardIterator
+          currentShardIterator = result.shardIterator
           self.become(awaitingRecords)
           requestRecords()
 
@@ -83,19 +88,19 @@ private[kinesis] class KinesisSourceStage(shardSettings: ShardSettings, amazonKi
 
       private def awaitingRecords(in: (ActorRef, Any)): Unit = in match {
         case (_, GetRecordsSuccess(result)) =>
-          val records = result.getRecords.asScala
-          if (result.getNextShardIterator == null) {
+          val records = result.records.asScala
+          if (result.nextShardIterator == null) {
             log.info("Shard {} returned a null iterator and will now complete.", shardId)
             completeStage()
           } else {
-            currentShardIterator = result.getNextShardIterator
+            currentShardIterator = result.nextShardIterator
           }
           if (records.nonEmpty) {
             records.foreach(buffer.enqueue(_))
             self.become(ready)
             self.ref ! Pump
           } else {
-            scheduleOnce('GET_RECORDS, refreshInterval)
+            scheduleOnce(GetRecords, refreshInterval)
           }
 
         case (_, GetRecordsFailure(ex)) =>
@@ -123,41 +128,47 @@ private[kinesis] class KinesisSourceStage(shardSettings: ShardSettings, amazonKi
       }
 
       override protected def onTimer(timerKey: Any): Unit = timerKey match {
-        case 'GET_RECORDS => requestRecords()
+        case GetRecords => requestRecords()
       }
 
-      private[this] val handleGetRecords =
-        new AsyncHandler[GetRecordsRequest, GetRecordsResult] {
-          override def onSuccess(request: GetRecordsRequest, result: GetRecordsResult): Unit =
-            self.ref ! GetRecordsSuccess(result)
-          override def onError(exception: Exception): Unit = self.ref ! GetRecordsFailure(exception)
-        }
+      private[this] val handleGetRecords: Try[GetRecordsResponse] => Unit = {
+        case Failure(exception) => self.ref ! GetRecordsFailure(exception)
+        case Success(result) => self.ref ! GetRecordsSuccess(result)
+      }
 
       private[this] def requestRecords(): Unit =
-        amazonKinesisAsync.getRecordsAsync(
-          new GetRecordsRequest().withLimit(limit).withShardIterator(currentShardIterator),
-          handleGetRecords
-        )
+        amazonKinesisAsync
+          .getRecords(
+            GetRecordsRequest.builder().limit(limit).shardIterator(currentShardIterator).build()
+          )
+          .toScala
+          .onComplete(handleGetRecords)(sameThreadExecutionContext)
 
       private[this] def requestShardIterator(): Unit = {
-        val request = Function.chain[GetShardIteratorRequest](
-          Seq(
-            r => startingSequenceNumber.fold(r)(r.withStartingSequenceNumber),
-            r => atTimestamp.fold(r)(instant => r.withTimestamp(java.util.Date.from(instant)))
+        val request = Function
+          .chain[GetShardIteratorRequest.Builder](
+            Seq(
+              r => startingSequenceNumber.fold(r)(r.startingSequenceNumber),
+              r => atTimestamp.fold(r)(instant => r.timestamp(instant))
+            )
+          )(
+            GetShardIteratorRequest
+              .builder()
+              .streamName(streamName)
+              .shardId(shardId)
+              .shardIteratorType(shardIteratorType)
           )
-        )(
-          new GetShardIteratorRequest()
-            .withStreamName(streamName)
-            .withShardId(shardId)
-            .withShardIteratorType(shardIteratorType)
-        )
-        val handleShardIterator =
-          new AsyncHandler[GetShardIteratorRequest, GetShardIteratorResult] {
-            override def onSuccess(request: GetShardIteratorRequest, result: GetShardIteratorResult): Unit =
-              self.ref ! GetShardIteratorSuccess(result)
-            override def onError(exception: Exception): Unit = self.ref ! GetShardIteratorFailure(exception)
-          }
-        amazonKinesisAsync.getShardIteratorAsync(request, handleShardIterator)
+          .build()
+
+        val handleGetShardIterator: Try[GetShardIteratorResponse] => Unit = {
+          case Success(result) => self.ref ! GetShardIteratorSuccess(result)
+          case Failure(exception) => self.ref ! GetShardIteratorFailure(exception)
+        }
+
+        amazonKinesisAsync
+          .getShardIterator(request)
+          .toScala
+          .onComplete(handleGetShardIterator)(sameThreadExecutionContext)
       }
 
     }

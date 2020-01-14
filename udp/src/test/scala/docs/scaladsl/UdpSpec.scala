@@ -60,6 +60,7 @@ class UdpSpec
         // #send-datagrams
         val destination = new InetSocketAddress("my.server", 27015)
         // #send-datagrams
+        destination
       }
 
       // #send-datagrams

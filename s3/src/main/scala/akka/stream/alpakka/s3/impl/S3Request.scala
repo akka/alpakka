@@ -39,3 +39,28 @@ import akka.annotation.InternalApi
  * Internal Api
  */
 @InternalApi private[s3] case object CopyPart extends S3Request
+
+/**
+ * Internal Api
+ */
+@InternalApi private[s3] case object DeleteObject extends S3Request
+
+/**
+ * Internal Api
+ */
+@InternalApi private[s3] case object ListBucket extends S3Request
+
+/**
+ * Internal Api
+ */
+@InternalApi private[s3] case object MakeBucket extends S3Request
+
+/**
+ * Internal Api
+ */
+@InternalApi private[s3] case object DeleteBucket extends S3Request
+
+/**
+ * Internal Api
+ */
+@InternalApi private[s3] case object CheckBucket extends S3Request

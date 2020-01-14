@@ -10,9 +10,10 @@ import java.util.Objects
 import scala.util.Try
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
-import com.amazonaws.auth._
-import com.amazonaws.regions.{AwsRegionProvider, DefaultAwsRegionProviderChain}
+import software.amazon.awssdk.auth.credentials._
+import software.amazon.awssdk.regions.providers._
 import com.typesafe.config.Config
+import software.amazon.awssdk.regions.Region
 
 import scala.compat.java8.OptionConverters._
 
@@ -68,6 +69,99 @@ object Proxy {
     apply(host, port, scheme)
 }
 
+final class ForwardProxyCredentials private (val username: String, val password: String) {
+
+  /** Java API */
+  def getUsername: String = username
+
+  /** Java API */
+  def getPassword: String = password
+
+  def withUsername(username: String) = copy(username = username)
+  def withPassword(password: String) = copy(password = password)
+
+  private def copy(username: String = username, password: String = password) =
+    new ForwardProxyCredentials(username, password)
+
+  override def toString =
+    "ForwardProxyCredentials(" +
+    s"username=$username," +
+    s"password=******" +
+    ")"
+
+  override def equals(other: Any): Boolean = other match {
+    case that: ForwardProxyCredentials =>
+      Objects.equals(this.username, that.username) &&
+      Objects.equals(this.password, that.password)
+    case _ => false
+  }
+
+  override def hashCode(): Int =
+    Objects.hash(username, password)
+
+}
+
+object ForwardProxyCredentials {
+
+  /** Scala API */
+  def apply(username: String, password: String): ForwardProxyCredentials =
+    new ForwardProxyCredentials(username, password)
+
+  /** Java API */
+  def create(username: String, password: String): ForwardProxyCredentials =
+    apply(username, password)
+
+}
+
+final class ForwardProxy private (val host: String, val port: Int, val credentials: Option[ForwardProxyCredentials]) {
+
+  /** Java API */
+  def getHost: String = host
+
+  /** Java API */
+  def getPort: Int = port
+
+  /** Java API */
+  def getCredentials: java.util.Optional[ForwardProxyCredentials] = credentials.asJava
+
+  def withHost(host: String) = copy(host = host)
+  def withPort(port: Int) = copy(port = port)
+  def withCredentials(credentials: ForwardProxyCredentials) = copy(credentials = Option(credentials))
+
+  private def copy(host: String = host, port: Int = port, credentials: Option[ForwardProxyCredentials] = credentials) =
+    new ForwardProxy(host, port, credentials)
+
+  override def toString =
+    "ForwardProxy(" +
+    s"host=$host," +
+    s"port=$port," +
+    s"credentials=$credentials" +
+    ")"
+
+  override def equals(other: Any): Boolean = other match {
+    case that: ForwardProxy =>
+      Objects.equals(this.host, that.host) &&
+      Objects.equals(this.port, that.port) &&
+      Objects.equals(this.credentials, that.credentials)
+    case _ => false
+  }
+
+  override def hashCode(): Int =
+    Objects.hash(host, Int.box(port), credentials)
+}
+
+object ForwardProxy {
+
+  /** Scala API */
+  def apply(host: String, port: Int, credentials: Option[ForwardProxyCredentials]) =
+    new ForwardProxy(host, port, credentials)
+
+  /** Java API */
+  def create(host: String, port: Int, credentials: Option[ForwardProxyCredentials]) =
+    apply(host, port, credentials)
+
+}
+
 sealed abstract class ApiVersion
 object ApiVersion {
   sealed abstract class ListBucketVersion1 extends ApiVersion
@@ -85,22 +179,25 @@ object ApiVersion {
 
 final class S3Settings private (
     val bufferType: BufferType,
-    val proxy: Option[Proxy],
-    val credentialsProvider: AWSCredentialsProvider,
+    val credentialsProvider: AwsCredentialsProvider,
     val s3RegionProvider: AwsRegionProvider,
     val pathStyleAccess: Boolean,
     val endpointUrl: Option[String],
-    val listBucketApiVersion: ApiVersion
+    val listBucketApiVersion: ApiVersion,
+    val forwardProxy: Option[ForwardProxy]
 ) {
+
+  @deprecated("Please use endpointUrl instead", since = "1.0.1") val proxy: Option[Proxy] = None
 
   /** Java API */
   def getBufferType: BufferType = bufferType
 
   /** Java API */
+  @deprecated("Please use endpointUrl instead", since = "1.0.1")
   def getProxy: java.util.Optional[Proxy] = proxy.asJava
 
   /** Java API */
-  def getCredentialsProvider: AWSCredentialsProvider = credentialsProvider
+  def getCredentialsProvider: AwsCredentialsProvider = credentialsProvider
 
   /** Java API */
   def getS3RegionProvider: AwsRegionProvider = s3RegionProvider
@@ -114,9 +211,15 @@ final class S3Settings private (
   /** Java API */
   def getListBucketApiVersion: ApiVersion = listBucketApiVersion
 
+  /** Java API */
+  def getForwardProxy: java.util.Optional[ForwardProxy] = forwardProxy.asJava
+
   def withBufferType(value: BufferType): S3Settings = copy(bufferType = value)
-  def withProxy(value: Proxy): S3Settings = copy(proxy = Option(value))
-  def withCredentialsProvider(value: AWSCredentialsProvider): S3Settings =
+
+  @deprecated("Please use endpointUrl instead", since = "1.0.1")
+  def withProxy(value: Proxy): S3Settings = copy(endpointUrl = Some(s"${value.scheme}://${value.host}:${value.port}"))
+
+  def withCredentialsProvider(value: AwsCredentialsProvider): S3Settings =
     copy(credentialsProvider = value)
   def withS3RegionProvider(value: AwsRegionProvider): S3Settings = copy(s3RegionProvider = value)
   def withPathStyleAccess(value: Boolean): S3Settings =
@@ -124,56 +227,58 @@ final class S3Settings private (
   def withEndpointUrl(value: String): S3Settings = copy(endpointUrl = Option(value))
   def withListBucketApiVersion(value: ApiVersion): S3Settings =
     copy(listBucketApiVersion = value)
+  def withForwardProxy(value: ForwardProxy): S3Settings =
+    copy(forwardProxy = Option(value))
 
   private def copy(
       bufferType: BufferType = bufferType,
-      proxy: Option[Proxy] = proxy,
-      credentialsProvider: AWSCredentialsProvider = credentialsProvider,
+      credentialsProvider: AwsCredentialsProvider = credentialsProvider,
       s3RegionProvider: AwsRegionProvider = s3RegionProvider,
       pathStyleAccess: Boolean = pathStyleAccess,
       endpointUrl: Option[String] = endpointUrl,
-      listBucketApiVersion: ApiVersion = listBucketApiVersion
+      listBucketApiVersion: ApiVersion = listBucketApiVersion,
+      forwardProxy: Option[ForwardProxy] = forwardProxy
   ): S3Settings = new S3Settings(
     bufferType = bufferType,
-    proxy = proxy,
     credentialsProvider = credentialsProvider,
     s3RegionProvider = s3RegionProvider,
     pathStyleAccess = pathStyleAccess,
     endpointUrl = endpointUrl,
-    listBucketApiVersion = listBucketApiVersion
+    listBucketApiVersion = listBucketApiVersion,
+    forwardProxy = forwardProxy
   )
 
   override def toString =
     "S3Settings(" +
     s"bufferType=$bufferType," +
-    s"proxy=$proxy," +
     s"credentialsProvider=$credentialsProvider," +
     s"s3RegionProvider=$s3RegionProvider," +
     s"pathStyleAccess=$pathStyleAccess," +
     s"endpointUrl=$endpointUrl," +
     s"listBucketApiVersion=$listBucketApiVersion" +
+    s"forwardProxy=$forwardProxy" +
     ")"
 
   override def equals(other: Any): Boolean = other match {
     case that: S3Settings =>
       java.util.Objects.equals(this.bufferType, that.bufferType) &&
-      Objects.equals(this.proxy, that.proxy) &&
       Objects.equals(this.credentialsProvider, that.credentialsProvider) &&
       Objects.equals(this.s3RegionProvider, that.s3RegionProvider) &&
       Objects.equals(this.pathStyleAccess, that.pathStyleAccess) &&
       Objects.equals(this.endpointUrl, that.endpointUrl) &&
-      Objects.equals(this.listBucketApiVersion, that.listBucketApiVersion)
+      Objects.equals(this.listBucketApiVersion, that.listBucketApiVersion) &&
+      Objects.equals(this.forwardProxy, that.forwardProxy)
     case _ => false
   }
 
   override def hashCode(): Int =
     Objects.hash(bufferType,
-                 proxy,
                  credentialsProvider,
                  s3RegionProvider,
                  Boolean.box(pathStyleAccess),
                  endpointUrl,
-                 listBucketApiVersion)
+                 listBucketApiVersion,
+                 forwardProxy)
 }
 
 object S3Settings {
@@ -206,19 +311,30 @@ object S3Settings {
       )
     }
 
+    val maybeForwardProxy = if (c.hasPath("forward-proxy")) {
+      val maybeCredentials = if (c.hasPath("forward-proxy.credentials")) {
+        Option(
+          ForwardProxyCredentials(c.getString("forward-proxy.credentials.username"),
+                                  c.getString("forward-proxy.credentials.password"))
+        )
+      } else None
+
+      Option(ForwardProxy(c.getString("forward-proxy.host"), c.getInt("forward-proxy.port"), maybeCredentials))
+    } else None
+
     val pathStyleAccess = c.getBoolean("path-style-access")
 
     val endpointUrl = if (c.hasPath("endpoint-url")) {
       Option(c.getString("endpoint-url"))
     } else {
       None
-    }
+    }.orElse(maybeProxy.map(p => s"${p.scheme}://${p.host}:${p.port}"))
 
     val regionProvider = {
       val regionProviderPath = "aws.region.provider"
 
       val staticRegionProvider = new AwsRegionProvider {
-        lazy val getRegion: String = c.getString("aws.region.default-region")
+        lazy val getRegion: Region = Region.of(c.getString("aws.region.default-region"))
       }
 
       if (c.hasPath(regionProviderPath)) {
@@ -240,27 +356,27 @@ object S3Settings {
       if (c.hasPath(credProviderPath)) {
         c.getString(credProviderPath) match {
           case "default" ⇒
-            DefaultAWSCredentialsProviderChain.getInstance()
+            DefaultCredentialsProvider.create()
 
           case "static" ⇒
             val aki = c.getString("aws.credentials.access-key-id")
             val sak = c.getString("aws.credentials.secret-access-key")
             val tokenPath = "aws.credentials.token"
             val creds = if (c.hasPath(tokenPath)) {
-              new BasicSessionCredentials(aki, sak, c.getString(tokenPath))
+              AwsSessionCredentials.create(aki, sak, c.getString(tokenPath))
             } else {
-              new BasicAWSCredentials(aki, sak)
+              AwsBasicCredentials.create(aki, sak)
             }
-            new AWSStaticCredentialsProvider(creds)
+            StaticCredentialsProvider.create(creds)
 
           case "anon" ⇒
-            new AWSStaticCredentialsProvider(new AnonymousAWSCredentials())
+            AnonymousCredentialsProvider.create()
 
           case _ ⇒
-            DefaultAWSCredentialsProviderChain.getInstance()
+            DefaultCredentialsProvider.create()
         }
       } else {
-        DefaultAWSCredentialsProviderChain.getInstance()
+        DefaultCredentialsProvider.create()
       }
     }
 
@@ -271,12 +387,12 @@ object S3Settings {
 
     new S3Settings(
       bufferType = bufferType,
-      proxy = maybeProxy,
       credentialsProvider = credentialsProvider,
       s3RegionProvider = regionProvider,
       pathStyleAccess = pathStyleAccess,
       endpointUrl = endpointUrl,
-      listBucketApiVersion = apiVersion
+      listBucketApiVersion = apiVersion,
+      forwardProxy = maybeForwardProxy
     )
   }
 
@@ -286,29 +402,47 @@ object S3Settings {
   def create(c: Config): S3Settings = apply(c)
 
   /** Scala API */
+  @deprecated("Please use the other factory method that takes only mandatory attributes", since = "1.0.1")
   def apply(
       bufferType: BufferType,
       proxy: Option[Proxy],
-      credentialsProvider: AWSCredentialsProvider,
+      credentialsProvider: AwsCredentialsProvider,
       s3RegionProvider: AwsRegionProvider,
       pathStyleAccess: Boolean,
       endpointUrl: Option[String],
       listBucketApiVersion: ApiVersion
   ): S3Settings = new S3Settings(
     bufferType,
-    proxy,
     credentialsProvider,
     s3RegionProvider,
     pathStyleAccess,
     endpointUrl,
-    listBucketApiVersion
+    listBucketApiVersion,
+    None
+  )
+
+  /** Scala API */
+  def apply(
+      bufferType: BufferType,
+      credentialsProvider: AwsCredentialsProvider,
+      s3RegionProvider: AwsRegionProvider,
+      listBucketApiVersion: ApiVersion
+  ): S3Settings = new S3Settings(
+    bufferType,
+    credentialsProvider,
+    s3RegionProvider,
+    false,
+    None,
+    listBucketApiVersion,
+    None
   )
 
   /** Java API */
+  @deprecated("Please use the other factory method that takes only mandatory attributes", since = "1.0.1")
   def create(
       bufferType: BufferType,
       proxy: java.util.Optional[Proxy],
-      credentialsProvider: AWSCredentialsProvider,
+      credentialsProvider: AwsCredentialsProvider,
       s3RegionProvider: AwsRegionProvider,
       pathStyleAccess: Boolean,
       endpointUrl: java.util.Optional[String],
@@ -320,6 +454,19 @@ object S3Settings {
     s3RegionProvider,
     pathStyleAccess,
     endpointUrl.asScala,
+    listBucketApiVersion
+  )
+
+  /** Java API */
+  def create(
+      bufferType: BufferType,
+      credentialsProvider: AwsCredentialsProvider,
+      s3RegionProvider: AwsRegionProvider,
+      listBucketApiVersion: ApiVersion
+  ): S3Settings = apply(
+    bufferType,
+    credentialsProvider,
+    s3RegionProvider,
     listBucketApiVersion
   )
 

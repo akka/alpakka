@@ -1,6 +1,6 @@
 # AWS Lambda
 
-The AWS Lambda Connector provides Akka Flow for AWS Lambda integration.
+The AWS Lambda connector provides Akka Flow for AWS Lambda integration.
 
 For more information about AWS Lambda please visit the [AWS lambda documentation](https://aws.amazon.com/documentation/lambda/).
 
@@ -18,15 +18,17 @@ The table below shows direct dependencies of this module and the second tab show
 
 @@dependencies { projectId="awslambda" }
 
-## Sending messages
+## Setup
 
-Flow provided by this connector needs a prepared `LambdaAsyncClient` to be able to invoke lambda functions.
+The flow provided by this connector needs a prepared @javadoc[LambdaAsyncClient](software.amazon.awssdk.services.lambda.LambdaAsyncClient) to be able to invoke lambda functions.
 
 Scala
 : @@snip (/awslambda/src/test/scala/docs/scaladsl/Examples.scala) { #init-client }
 
 Java
 : @@snip (/awslambda/src/test/java/docs/javadsl/Examples.java) { #init-client }
+
+The example above uses @extref:[Akka HTTP](akka-http:) as the default HTTP client implementation. For more details about the HTTP client, configuring request retrying and best practices for credentials, see @ref[AWS client configuration](aws-shared-configuration.md) for more details.
 
 We will also need an @scaladoc[ActorSystem](akka.actor.ActorSystem) and an @scaladoc[ActorMaterializer](akka.stream.ActorMaterializer).
 
@@ -38,8 +40,10 @@ Java
 
 This is all preparation that we are going to need.
 
+## Sending messages
+
 Now we can stream AWS Java SDK Lambda `InvokeRequest` to AWS Lambda functions
-@scaladoc[AwsLambdaFlow](akka.stream.alpakka.awslambda.scaladsl.AwsLambdaFlow$) factory.
+@apidoc[AwsLambdaFlow$] factory.
 
 Scala
 : @@snip (/awslambda/src/test/scala/docs/scaladsl/Examples.scala) { #run }
@@ -53,3 +57,8 @@ Options:
 
  - `parallelism` - Number of parallel executions. Should be less or equal to number of threads in ExecutorService for LambdaAsyncClient 
 
+@@@ index
+
+* [retry conf](aws-shared-configuration.md)
+
+@@@
