@@ -68,7 +68,7 @@ import akka.util.{ByteString, ByteStringBuilder}
       override def onUpstreamFinish(): Unit = {
         if (!emptyStream) {
           zip.close()
-          push(out, builder.result)
+          emit(out, builder.result)
           builder.clear()
         }
         super.onUpstreamFinish()
