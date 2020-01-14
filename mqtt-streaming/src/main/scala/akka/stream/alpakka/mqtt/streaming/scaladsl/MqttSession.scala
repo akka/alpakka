@@ -8,6 +8,7 @@ package scaladsl
 import java.util.concurrent.atomic.AtomicLong
 
 import akka.actor.ExtendedActorSystem
+import akka.actor.typed.Props
 import akka.actor.typed.internal.adapter.{ActorRefAdapter, PropsAdapter}
 import akka.{Done, NotUsed, actor => untyped}
 import akka.actor.typed.scaladsl.adapter._
@@ -119,28 +120,28 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
     ActorRefAdapter(
       system
         .asInstanceOf[ExtendedActorSystem]
-        .systemActorOf(PropsAdapter(() ⇒ RemotePacketRouter[Consumer.Event]),
+        .systemActorOf(PropsAdapter(() ⇒ RemotePacketRouter[Consumer.Event], Props.empty, true),
                        "client-consumer-packet-id-allocator-" + clientSessionId)
     )
   private val producerPacketRouter =
     ActorRefAdapter(
       system
         .asInstanceOf[ExtendedActorSystem]
-        .systemActorOf(PropsAdapter(() ⇒ LocalPacketRouter[Producer.Event]),
+        .systemActorOf(PropsAdapter(() ⇒ LocalPacketRouter[Producer.Event], Props.empty, true),
                        "client-producer-packet-id-allocator-" + clientSessionId)
     )
   private val subscriberPacketRouter =
     ActorRefAdapter(
       system
         .asInstanceOf[ExtendedActorSystem]
-        .systemActorOf(PropsAdapter(() ⇒ LocalPacketRouter[Subscriber.Event]),
+        .systemActorOf(PropsAdapter(() ⇒ LocalPacketRouter[Subscriber.Event], Props.empty, true),
                        "client-subscriber-packet-id-allocator-" + clientSessionId)
     )
   private val unsubscriberPacketRouter =
     ActorRefAdapter(
       system
         .asInstanceOf[ExtendedActorSystem]
-        .systemActorOf(PropsAdapter(() ⇒ LocalPacketRouter[Unsubscriber.Event]),
+        .systemActorOf(PropsAdapter(() ⇒ LocalPacketRouter[Unsubscriber.Event], Props.empty, true),
                        "client-unsubscriber-packet-id-allocator-" + clientSessionId)
     )
   private val clientConnector =
@@ -154,7 +155,9 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
                               producerPacketRouter,
                               subscriberPacketRouter,
                               unsubscriberPacketRouter,
-                              settings)
+                              settings),
+            Props.empty,
+            true
           ),
           "client-connector-" + clientSessionId
         )
@@ -460,28 +463,28 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
     ActorRefAdapter(
       system
         .asInstanceOf[ExtendedActorSystem]
-        .systemActorOf(PropsAdapter(() ⇒ RemotePacketRouter[Consumer.Event]),
+        .systemActorOf(PropsAdapter(() ⇒ RemotePacketRouter[Consumer.Event], Props.empty, true),
                        "server-consumer-packet-id-allocator-" + serverSessionId)
     )
   private val producerPacketRouter =
     ActorRefAdapter(
       system
         .asInstanceOf[ExtendedActorSystem]
-        .systemActorOf(PropsAdapter(() ⇒ LocalPacketRouter[Producer.Event]),
+        .systemActorOf(PropsAdapter(() ⇒ LocalPacketRouter[Producer.Event], Props.empty, true),
                        "server-producer-packet-id-allocator-" + serverSessionId)
     )
   private val publisherPacketRouter =
     ActorRefAdapter(
       system
         .asInstanceOf[ExtendedActorSystem]
-        .systemActorOf(PropsAdapter(() ⇒ RemotePacketRouter[Publisher.Event]),
+        .systemActorOf(PropsAdapter(() ⇒ RemotePacketRouter[Publisher.Event], Props.empty, true),
                        "server-publisher-packet-id-allocator-" + serverSessionId)
     )
   private val unpublisherPacketRouter =
     ActorRefAdapter(
       system
         .asInstanceOf[ExtendedActorSystem]
-        .systemActorOf(PropsAdapter(() ⇒ RemotePacketRouter[Unpublisher.Event]),
+        .systemActorOf(PropsAdapter(() ⇒ RemotePacketRouter[Unpublisher.Event], Props.empty, true),
                        "server-unpublisher-packet-id-allocator-" + serverSessionId)
     )
   private val serverConnector =
@@ -496,7 +499,9 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
                               producerPacketRouter,
                               publisherPacketRouter,
                               unpublisherPacketRouter,
-                              settings)
+                              settings),
+            Props.empty,
+            true
           ),
           "server-connector-" + serverSessionId
         )
