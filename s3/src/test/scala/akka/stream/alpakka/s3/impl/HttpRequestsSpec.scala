@@ -42,7 +42,7 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
   val contentType = MediaTypes.`image/jpeg`
   val acl = CannedAcl.PublicRead
   val metaHeaders: Map[String, String] = Map("location" -> "San Francisco", "orientation" -> "portrait")
-  val multipartUpload = MultipartUpload(S3Location("testBucket", "testKey"), "uploadId")
+  val multipartUpload = MultipartUpload(S3Location("test-bucket", "testKey"), "uploadId")
 
   it should "initiate multipart upload when the region is us-east-1" in {
     implicit val settings = getSettings()
@@ -89,6 +89,14 @@ class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
 
     assertThrows[IllegalUriException](
       HttpRequests.getDownloadRequest(S3Location("invalid_bucket_name", "image-1024@2x"))
+    )
+  }
+
+  it should "throw an error if the key uses `..`" in {
+    implicit val settings = getSettings(s3Region = Region.EU_WEST_1).withPathStyleAccess(false)
+
+    assertThrows[IllegalUriException](
+      HttpRequests.getDownloadRequest(S3Location("validbucket", "../other-bucket/image-1024@2x"))
     )
   }
 

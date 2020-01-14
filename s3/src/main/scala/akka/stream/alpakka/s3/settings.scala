@@ -184,7 +184,8 @@ final class S3Settings private (
     val pathStyleAccess: Boolean,
     val endpointUrl: Option[String],
     val listBucketApiVersion: ApiVersion,
-    val forwardProxy: Option[ForwardProxy]
+    val forwardProxy: Option[ForwardProxy],
+    val validateObjectKey: Boolean
 ) {
 
   @deprecated("Please use endpointUrl instead", since = "1.0.1") val proxy: Option[Proxy] = None
@@ -229,6 +230,8 @@ final class S3Settings private (
     copy(listBucketApiVersion = value)
   def withForwardProxy(value: ForwardProxy): S3Settings =
     copy(forwardProxy = Option(value))
+  def withValidateObjectKey(value: Boolean): S3Settings =
+    if (validateObjectKey == value) this else copy(validateObjectKey = value)
 
   private def copy(
       bufferType: BufferType = bufferType,
@@ -237,7 +240,8 @@ final class S3Settings private (
       pathStyleAccess: Boolean = pathStyleAccess,
       endpointUrl: Option[String] = endpointUrl,
       listBucketApiVersion: ApiVersion = listBucketApiVersion,
-      forwardProxy: Option[ForwardProxy] = forwardProxy
+      forwardProxy: Option[ForwardProxy] = forwardProxy,
+      validateObjectKey: Boolean = validateObjectKey
   ): S3Settings = new S3Settings(
     bufferType = bufferType,
     credentialsProvider = credentialsProvider,
@@ -245,7 +249,8 @@ final class S3Settings private (
     pathStyleAccess = pathStyleAccess,
     endpointUrl = endpointUrl,
     listBucketApiVersion = listBucketApiVersion,
-    forwardProxy = forwardProxy
+    forwardProxy = forwardProxy,
+    validateObjectKey
   )
 
   override def toString =
@@ -255,8 +260,9 @@ final class S3Settings private (
     s"s3RegionProvider=$s3RegionProvider," +
     s"pathStyleAccess=$pathStyleAccess," +
     s"endpointUrl=$endpointUrl," +
-    s"listBucketApiVersion=$listBucketApiVersion" +
-    s"forwardProxy=$forwardProxy" +
+    s"listBucketApiVersion=$listBucketApiVersion," +
+    s"forwardProxy=$forwardProxy," +
+    s"validateObjectKey=$validateObjectKey" +
     ")"
 
   override def equals(other: Any): Boolean = other match {
@@ -267,18 +273,22 @@ final class S3Settings private (
       Objects.equals(this.pathStyleAccess, that.pathStyleAccess) &&
       Objects.equals(this.endpointUrl, that.endpointUrl) &&
       Objects.equals(this.listBucketApiVersion, that.listBucketApiVersion) &&
-      Objects.equals(this.forwardProxy, that.forwardProxy)
+      Objects.equals(this.forwardProxy, that.forwardProxy) &&
+      this.validateObjectKey == that.validateObjectKey
     case _ => false
   }
 
   override def hashCode(): Int =
-    Objects.hash(bufferType,
-                 credentialsProvider,
-                 s3RegionProvider,
-                 Boolean.box(pathStyleAccess),
-                 endpointUrl,
-                 listBucketApiVersion,
-                 forwardProxy)
+    Objects.hash(
+      bufferType,
+      credentialsProvider,
+      s3RegionProvider,
+      Boolean.box(pathStyleAccess),
+      endpointUrl,
+      listBucketApiVersion,
+      forwardProxy,
+      Boolean.box(validateObjectKey)
+    )
 }
 
 object S3Settings {
@@ -384,6 +394,7 @@ object S3Settings {
       case 1 => ApiVersion.ListBucketVersion1
       case 2 => ApiVersion.ListBucketVersion2
     }).getOrElse(ApiVersion.ListBucketVersion2)
+    val validateObjectKey = c.getBoolean("validate-object-key")
 
     new S3Settings(
       bufferType = bufferType,
@@ -392,7 +403,8 @@ object S3Settings {
       pathStyleAccess = pathStyleAccess,
       endpointUrl = endpointUrl,
       listBucketApiVersion = apiVersion,
-      forwardProxy = maybeForwardProxy
+      forwardProxy = maybeForwardProxy,
+      validateObjectKey
     )
   }
 
@@ -418,7 +430,8 @@ object S3Settings {
     pathStyleAccess,
     endpointUrl,
     listBucketApiVersion,
-    None
+    None,
+    validateObjectKey = true
   )
 
   /** Scala API */
@@ -434,7 +447,8 @@ object S3Settings {
     false,
     None,
     listBucketApiVersion,
-    None
+    None,
+    validateObjectKey = true
   )
 
   /** Java API */

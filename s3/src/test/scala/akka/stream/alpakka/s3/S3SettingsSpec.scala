@@ -18,6 +18,7 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
         s"""
           |buffer = memory
           |path-style-access = false
+          |validate-object-key = true
           |$more
         """.stripMargin
       )

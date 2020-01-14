@@ -38,7 +38,13 @@ import akka.util.ByteString
 import scala.collection.immutable
 
 /** Internal Api */
-@InternalApi private[s3] final case class S3Location(bucket: String, key: String)
+@InternalApi private[s3] final case class S3Location(bucket: String, key: String) {
+  def validate(conf: S3Settings): S3Location = {
+    BucketAndKey.validateBucketName(bucket, conf)
+    BucketAndKey.validateObjectKey(key, conf)
+    this
+  }
+}
 
 /** Internal Api */
 @InternalApi private[impl] final case class MultipartUpload(s3Location: S3Location, uploadId: String)
