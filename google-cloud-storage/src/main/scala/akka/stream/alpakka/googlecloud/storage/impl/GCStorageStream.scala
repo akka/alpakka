@@ -231,7 +231,7 @@ import scala.util.control.NonFatal
           )
         ).mapAsync(parallelism)(entityForSuccessOption)
           .map {
-            _.map(_.dataBytes.mapMaterializedValue(_ => NotUsed))
+            _.map(_.withoutSizeLimit.dataBytes.mapMaterializedValue(_ => NotUsed))
           }
 
       }
