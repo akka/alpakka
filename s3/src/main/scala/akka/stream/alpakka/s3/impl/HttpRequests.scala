@@ -221,7 +221,7 @@ import scala.concurrent.{ExecutionContext, Future}
       Uri.Path.Empty
     }
     val path = key.fold(basePath) { someKey =>
-      someKey.split("/").foldLeft(basePath)((acc, p) => acc / p)
+      someKey.split("/", -1).foldLeft(basePath)((acc, p) => acc / p)
     }
     val uri = Uri(path = path, authority = requestAuthority(bucket, conf.s3RegionProvider.getRegion))
       .withHost(requestAuthority(bucket, conf.s3RegionProvider.getRegion).host)
