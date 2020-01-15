@@ -8,19 +8,17 @@ package scaladsl
 import java.util.concurrent.atomic.AtomicLong
 
 import akka.actor.ExtendedActorSystem
-import akka.actor.typed.Props
-import akka.actor.typed.internal.adapter.{ActorRefAdapter, PropsAdapter}
-import akka.{Done, NotUsed, actor => untyped}
 import akka.actor.typed.scaladsl.adapter._
 import akka.event.Logging
 import akka.stream._
 import akka.stream.alpakka.mqtt.streaming.impl._
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Source}
 import akka.util.ByteString
+import akka.{Done, NotUsed, actor => untyped}
 
 import scala.concurrent.{Future, Promise}
-import scala.util.{Failure, Success}
 import scala.util.control.NoStackTrace
+import scala.util.{Failure, Success}
 
 object MqttSession {
 
@@ -117,55 +115,50 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
 
   private val clientSessionId = clientSessionCounter.getAndIncrement()
   private val consumerPacketRouter =
-    ActorRefAdapter(
-      system
-        .asInstanceOf[ExtendedActorSystem]
-        .systemActorOf(PropsAdapter(() ⇒ RemotePacketRouter[Consumer.Event], Props.empty, true),
-                       "client-consumer-packet-id-allocator-" + clientSessionId)
-    )
+    system
+      .asInstanceOf[ExtendedActorSystem]
+      .systemActorOf(PropsAdapter(RemotePacketRouter[Consumer.Event]),
+                     "client-consumer-packet-id-allocator-" + clientSessionId)
+      .toTyped
+
   private val producerPacketRouter =
-    ActorRefAdapter(
-      system
-        .asInstanceOf[ExtendedActorSystem]
-        .systemActorOf(PropsAdapter(() ⇒ LocalPacketRouter[Producer.Event], Props.empty, true),
-                       "client-producer-packet-id-allocator-" + clientSessionId)
-    )
+    system
+      .asInstanceOf[ExtendedActorSystem]
+      .systemActorOf(PropsAdapter(LocalPacketRouter[Producer.Event]),
+                     "client-producer-packet-id-allocator-" + clientSessionId)
+      .toTyped
+
   private val subscriberPacketRouter =
-    ActorRefAdapter(
-      system
-        .asInstanceOf[ExtendedActorSystem]
-        .systemActorOf(PropsAdapter(() ⇒ LocalPacketRouter[Subscriber.Event], Props.empty, true),
-                       "client-subscriber-packet-id-allocator-" + clientSessionId)
-    )
+    system
+      .asInstanceOf[ExtendedActorSystem]
+      .systemActorOf(PropsAdapter(LocalPacketRouter[Subscriber.Event]),
+                     "client-subscriber-packet-id-allocator-" + clientSessionId)
+      .toTyped
+
   private val unsubscriberPacketRouter =
-    ActorRefAdapter(
-      system
-        .asInstanceOf[ExtendedActorSystem]
-        .systemActorOf(PropsAdapter(() ⇒ LocalPacketRouter[Unsubscriber.Event], Props.empty, true),
-                       "client-unsubscriber-packet-id-allocator-" + clientSessionId)
-    )
+    system
+      .asInstanceOf[ExtendedActorSystem]
+      .systemActorOf(PropsAdapter(LocalPacketRouter[Unsubscriber.Event]),
+                     "client-unsubscriber-packet-id-allocator-" + clientSessionId)
+      .toTyped
+
   private val clientConnector =
-    ActorRefAdapter(
-      system
-        .asInstanceOf[ExtendedActorSystem]
-        .systemActorOf(
-          PropsAdapter(
-            () ⇒
-              ClientConnector(consumerPacketRouter,
-                              producerPacketRouter,
-                              subscriberPacketRouter,
-                              unsubscriberPacketRouter,
-                              settings),
-            Props.empty,
-            true
-          ),
-          "client-connector-" + clientSessionId
-        )
-    )
+    system
+      .asInstanceOf[ExtendedActorSystem]
+      .systemActorOf(
+        PropsAdapter(
+          ClientConnector(consumerPacketRouter,
+                          producerPacketRouter,
+                          subscriberPacketRouter,
+                          unsubscriberPacketRouter,
+                          settings)
+        ),
+        "client-connector-" + clientSessionId
+      )
+      .toTyped
 
   import MqttCodec._
   import MqttSession._
-
   import system.dispatcher
 
   override def ![A](cp: Command[A]): Unit = cp match {
@@ -400,8 +393,8 @@ object MqttServerSession {
  * Represents server-only sessions
  */
 abstract class MqttServerSession extends MqttSession {
-  import MqttSession._
   import MqttServerSession._
+  import MqttSession._
 
   /**
    * Used to observe client connections being terminated
@@ -443,8 +436,8 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
                                                                   system: untyped.ActorSystem)
     extends MqttServerSession {
 
-  import MqttServerSession._
   import ActorMqttServerSession._
+  import MqttServerSession._
 
   private val serverSessionId = serverSessionCounter.getAndIncrement()
 
@@ -460,56 +453,51 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
     }
 
   private val consumerPacketRouter =
-    ActorRefAdapter(
-      system
-        .asInstanceOf[ExtendedActorSystem]
-        .systemActorOf(PropsAdapter(() ⇒ RemotePacketRouter[Consumer.Event], Props.empty, true),
-                       "server-consumer-packet-id-allocator-" + serverSessionId)
-    )
+    system
+      .asInstanceOf[ExtendedActorSystem]
+      .systemActorOf(PropsAdapter(RemotePacketRouter[Consumer.Event]),
+                     "server-consumer-packet-id-allocator-" + serverSessionId)
+      .toTyped
+
   private val producerPacketRouter =
-    ActorRefAdapter(
-      system
-        .asInstanceOf[ExtendedActorSystem]
-        .systemActorOf(PropsAdapter(() ⇒ LocalPacketRouter[Producer.Event], Props.empty, true),
-                       "server-producer-packet-id-allocator-" + serverSessionId)
-    )
+    system
+      .asInstanceOf[ExtendedActorSystem]
+      .systemActorOf(PropsAdapter(LocalPacketRouter[Producer.Event]),
+                     "server-producer-packet-id-allocator-" + serverSessionId)
+      .toTyped
+
   private val publisherPacketRouter =
-    ActorRefAdapter(
-      system
-        .asInstanceOf[ExtendedActorSystem]
-        .systemActorOf(PropsAdapter(() ⇒ RemotePacketRouter[Publisher.Event], Props.empty, true),
-                       "server-publisher-packet-id-allocator-" + serverSessionId)
-    )
+    system
+      .asInstanceOf[ExtendedActorSystem]
+      .systemActorOf(PropsAdapter(RemotePacketRouter[Publisher.Event]),
+                     "server-publisher-packet-id-allocator-" + serverSessionId)
+      .toTyped
+
   private val unpublisherPacketRouter =
-    ActorRefAdapter(
-      system
-        .asInstanceOf[ExtendedActorSystem]
-        .systemActorOf(PropsAdapter(() ⇒ RemotePacketRouter[Unpublisher.Event], Props.empty, true),
-                       "server-unpublisher-packet-id-allocator-" + serverSessionId)
-    )
+    system
+      .asInstanceOf[ExtendedActorSystem]
+      .systemActorOf(PropsAdapter(RemotePacketRouter[Unpublisher.Event]),
+                     "server-unpublisher-packet-id-allocator-" + serverSessionId)
+      .toTyped
+
   private val serverConnector =
-    ActorRefAdapter(
-      system
-        .asInstanceOf[ExtendedActorSystem]
-        .systemActorOf(
-          PropsAdapter(
-            () ⇒
-              ServerConnector(terminations,
-                              consumerPacketRouter,
-                              producerPacketRouter,
-                              publisherPacketRouter,
-                              unpublisherPacketRouter,
-                              settings),
-            Props.empty,
-            true
-          ),
-          "server-connector-" + serverSessionId
-        )
-    )
+    system
+      .asInstanceOf[ExtendedActorSystem]
+      .systemActorOf(
+        PropsAdapter(
+          ServerConnector(terminations,
+                          consumerPacketRouter,
+                          producerPacketRouter,
+                          publisherPacketRouter,
+                          unpublisherPacketRouter,
+                          settings)
+        ),
+        "server-connector-" + serverSessionId
+      )
+      .toTyped
 
   import MqttCodec._
   import MqttSession._
-
   import system.dispatcher
 
   override def ![A](cp: Command[A]): Unit = cp match {
