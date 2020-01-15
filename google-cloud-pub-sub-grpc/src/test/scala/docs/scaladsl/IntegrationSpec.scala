@@ -21,13 +21,15 @@ import com.google.pubsub.v1.pubsub._
 import akka.NotUsed
 import com.google.protobuf.ByteString
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Inside, Matchers, WordSpec}
+import org.scalatest.{BeforeAndAfterAll, Inside}
 
 import scala.concurrent.duration._
 import scala.concurrent.Future
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 class IntegrationSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
     with Inside
     with BeforeAndAfterAll

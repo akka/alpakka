@@ -28,11 +28,13 @@ import scala.concurrent.Future
 
 //#init-sourceBulk
 import com.couchbase.client.java.document.JsonDocument
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 //#init-sourceBulk
 
 class CouchbaseFlowSpec
-    extends WordSpec
+    extends AnyWordSpec
     with BeforeAndAfterAll
     with BeforeAndAfterEach
     with CouchbaseSupport

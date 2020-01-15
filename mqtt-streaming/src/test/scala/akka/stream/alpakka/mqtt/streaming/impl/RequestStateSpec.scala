@@ -8,12 +8,14 @@ package impl
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterAll
 
 import scala.concurrent.Promise
 import scala.concurrent.duration._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class RequestStateSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
+class RequestStateSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
 
   val testKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit()

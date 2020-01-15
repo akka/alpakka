@@ -10,26 +10,28 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.awslambda.scaladsl.AwsLambdaFlow
 import akka.stream.scaladsl.{Keep, Sink}
-import akka.stream.testkit.scaladsl.TestSource
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
+import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.TestKit
-import software.amazon.awssdk.services.lambda.LambdaAsyncClient
-import software.amazon.awssdk.services.lambda.model.{InvokeRequest, InvokeResponse}
-import software.amazon.awssdk.core.SdkBytes
 import org.mockito.ArgumentMatchers.{any => mockitoAny, eq => mockitoEq}
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.scalatest._
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatestplus.mockito.MockitoSugar
+import software.amazon.awssdk.core.SdkBytes
+import software.amazon.awssdk.services.lambda.LambdaAsyncClient
+import software.amazon.awssdk.services.lambda.model.{InvokeRequest, InvokeResponse}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class AwsLambdaFlowSpec
     extends TestKit(ActorSystem("AwsLambdaFlowSpec"))
-    with WordSpecLike
+    with AnyWordSpecLike
     with BeforeAndAfterAll
     with BeforeAndAfterEach
     with ScalaFutures

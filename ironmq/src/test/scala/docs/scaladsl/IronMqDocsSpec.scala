@@ -12,13 +12,20 @@ import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
 import akka.{Done, NotUsed}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterAll
 
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class IronMqDocsSpec extends WordSpec with IronMqClientForTests with Matchers with ScalaFutures with BeforeAndAfterAll {
+class IronMqDocsSpec
+    extends AnyWordSpec
+    with IronMqClientForTests
+    with Matchers
+    with ScalaFutures
+    with BeforeAndAfterAll {
 
   override implicit def patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 250.millis)
 

@@ -7,9 +7,10 @@ package akka.stream.alpakka.s3.impl
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.stream.alpakka.s3.{MetaHeaders, S3Headers}
 import akka.stream.alpakka.s3.headers.{CannedAcl, ServerSideEncryption, StorageClass}
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class S3HeadersSpec extends FlatSpec with Matchers {
+class S3HeadersSpec extends AnyFlatSpec with Matchers {
 
   "ServerSideEncryption" should "create well formed headers for AES-256 encryption" in {
     ServerSideEncryption.aes256().headers should contain(RawHeader("x-amz-server-side-encryption", "AES256"))

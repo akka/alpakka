@@ -12,12 +12,14 @@ import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import javax.xml.stream.XMLOutputFactory
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterAll
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class XmlWritingSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
+class XmlWritingSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
   implicit val system: ActorSystem = ActorSystem("Test")
   implicit val mat: Materializer = ActorMaterializer()
 

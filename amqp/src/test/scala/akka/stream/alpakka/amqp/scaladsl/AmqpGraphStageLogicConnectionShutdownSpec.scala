@@ -21,18 +21,20 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.rabbitmq.client.{AddressResolver, Connection, ConnectionFactory, ShutdownListener}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterEach
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 /**
  * see [[https://github.com/akka/alpakka/issues/883]] and
  * [[https://github.com/akka/alpakka/pull/887]]
  */
 class AmqpGraphStageLogicConnectionShutdownSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
     with ScalaFutures
     with BeforeAndAfterEach {

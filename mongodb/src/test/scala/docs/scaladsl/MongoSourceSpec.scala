@@ -19,13 +19,15 @@ import scala.collection.JavaConverters._
 import scala.collection.immutable.Seq
 import scala.concurrent._
 import scala.concurrent.duration._
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 class MongoSourceSpec
-    extends WordSpec
+    extends AnyWordSpec
     with ScalaFutures
     with BeforeAndAfterEach
     with BeforeAndAfterAll
-    with MustMatchers {
+    with Matchers {
 
   // #init-mat
   implicit val system = ActorSystem()

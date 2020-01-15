@@ -16,7 +16,8 @@ import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{spy, times, verify, when}
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.mockito.MockitoSugar.mock
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model._
@@ -24,7 +25,7 @@ import software.amazon.awssdk.services.sqs.model._
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 
-class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
+class SqsAckSpec extends AnyFlatSpec with Matchers with DefaultTestContext {
 
   trait IntegrationFixture {
     val queueUrl: String = randomQueueUrl()

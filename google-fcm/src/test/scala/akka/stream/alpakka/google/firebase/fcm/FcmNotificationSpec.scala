@@ -5,9 +5,10 @@
 package akka.stream.alpakka.google.firebase.fcm
 
 import akka.stream.alpakka.google.firebase.fcm.FcmNotificationModels.{Condition, Token, Topic}
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
 
-class FcmNotificationSpec extends WordSpecLike with Matchers {
+class FcmNotificationSpec extends AnyWordSpec with Matchers {
 
   "SendableNotification" should {
 

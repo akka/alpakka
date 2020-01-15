@@ -16,13 +16,14 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.firehose.model._
 
 import scala.collection.JavaConverters._
 
-class KinesisFirehoseFlowSpec extends WordSpecLike with Matchers with KinesisFirehoseMock {
+class KinesisFirehoseFlowSpec extends AnyWordSpec with Matchers with KinesisFirehoseMock {
 
   "KinesisFirehoseFlow" must {
 

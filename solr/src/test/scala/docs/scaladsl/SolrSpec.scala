@@ -25,13 +25,15 @@ import org.apache.solr.cloud.{MiniSolrCloudCluster, ZkTestServer}
 import org.apache.solr.common.SolrInputDocument
 import org.junit.Assert.assertTrue
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterAll
 
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class SolrSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
+class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(5.seconds)
 

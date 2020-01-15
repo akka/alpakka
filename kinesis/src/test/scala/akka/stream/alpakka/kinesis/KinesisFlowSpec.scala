@@ -16,13 +16,14 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kinesis.model._
 
 import scala.collection.JavaConverters._
 
-class KinesisFlowSpec extends WordSpecLike with Matchers with KinesisMock {
+class KinesisFlowSpec extends AnyWordSpec with Matchers with KinesisMock {
 
   "KinesisFlow" must {
 

@@ -6,11 +6,12 @@ package akka.stream.alpakka.sqs
 
 import akka.stream.alpakka.sqs.SqsAckResult._
 import akka.stream.alpakka.sqs.SqsAckResultEntry._
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import software.amazon.awssdk.awscore.DefaultAwsResponseMetadata
 import software.amazon.awssdk.services.sqs.model._
 
-class SqsModelSpec extends FlatSpec with Matchers {
+class SqsModelSpec extends AnyFlatSpec with Matchers {
 
   val msg = Message.builder().build()
   val otherMsg = Message.builder().body("other-body").build()

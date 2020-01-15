@@ -15,15 +15,17 @@ import akka.stream.alpakka.influxdb.scaladsl.{InfluxDbFlow, InfluxDbSource}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
 import org.influxdb.InfluxDB
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, MustMatchers, WordSpec}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.concurrent.ScalaFutures
 import docs.javadsl.TestUtils._
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import org.influxdb.dto.{Point, Query}
 
 import scala.concurrent.duration._
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class FlowSpec extends WordSpec with MustMatchers with BeforeAndAfterEach with BeforeAndAfterAll with ScalaFutures {
+class FlowSpec extends AnyWordSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll with ScalaFutures {
 
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()

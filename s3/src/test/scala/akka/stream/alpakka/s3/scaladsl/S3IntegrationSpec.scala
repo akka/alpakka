@@ -24,8 +24,15 @@ import software.amazon.awssdk.regions.Region
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
+import org.scalatest.flatspec.AnyFlatSpecLike
+import org.scalatest.matchers.should.Matchers
 
-trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matchers with ScalaFutures with OptionValues {
+trait S3IntegrationSpec
+    extends AnyFlatSpecLike
+    with BeforeAndAfterAll
+    with Matchers
+    with ScalaFutures
+    with OptionValues {
 
   implicit val actorSystem: ActorSystem = ActorSystem(
     "S3IntegrationSpec",

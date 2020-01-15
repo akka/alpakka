@@ -9,24 +9,16 @@ import akka.stream.IOResult
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatest.{
-  Args,
-  BeforeAndAfter,
-  BeforeAndAfterAll,
-  Inside,
-  Matchers,
-  Status,
-  TestSuite,
-  TestSuiteMixin,
-  WordSpecLike
-}
+import org.scalatest.{Args, BeforeAndAfter, BeforeAndAfterAll, Inside, Status, TestSuite, TestSuiteMixin}
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 trait BaseSpec
     extends TestSuiteMixin
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfter
     with BeforeAndAfterAll

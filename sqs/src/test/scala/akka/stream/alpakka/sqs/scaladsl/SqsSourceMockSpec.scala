@@ -13,7 +13,8 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito.{atMost => atMostTimes, _}
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.mockito.MockitoSugar.mock
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{Message, ReceiveMessageRequest, ReceiveMessageResponse}
@@ -22,7 +23,7 @@ import scala.compat.java8.FutureConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-class SqsSourceMockSpec extends FlatSpec with Matchers with DefaultTestContext {
+class SqsSourceMockSpec extends AnyFlatSpec with Matchers with DefaultTestContext {
 
   override def createAsyncClient(sqsEndpoint: String): SqsAsyncClient = ???
   override def closeSqsClient(): Unit = ()

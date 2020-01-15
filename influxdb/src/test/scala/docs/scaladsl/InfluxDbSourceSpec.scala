@@ -11,15 +11,17 @@ import akka.stream.alpakka.influxdb.scaladsl.InfluxDbSource
 import akka.stream.scaladsl.Sink
 import akka.testkit.TestKit
 import org.influxdb.{InfluxDB, InfluxDBException}
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, MustMatchers, WordSpec}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.concurrent.ScalaFutures
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import docs.javadsl.TestUtils._
 import org.influxdb.dto.Query
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 class InfluxDbSourceSpec
-    extends WordSpec
-    with MustMatchers
+    extends AnyWordSpec
+    with Matchers
     with BeforeAndAfterEach
     with BeforeAndAfterAll
     with ScalaFutures {

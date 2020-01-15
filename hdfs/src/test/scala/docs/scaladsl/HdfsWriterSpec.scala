@@ -21,8 +21,10 @@ import org.scalatest._
 
 import scala.concurrent.duration.{Duration, _}
 import scala.concurrent.{Await, ExecutionContextExecutor}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class HdfsWriterSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
+class HdfsWriterSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
 
   private var hdfsCluster: MiniDFSCluster = _
   private val destination = "/tmp/alpakka/"

@@ -20,8 +20,10 @@ import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, urlEqualTo}
 import com.github.tomakehurst.wiremock.common.ConsoleNotifier
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import javax.net.ssl.{SSLContext, X509TrustManager}
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Await
@@ -39,7 +41,7 @@ class NoopTrustManager extends X509TrustManager {
   }
 }
 
-class PubSubApiSpec extends FlatSpec with BeforeAndAfterAll with ScalaFutures with Matchers {
+class PubSubApiSpec extends AnyFlatSpec with BeforeAndAfterAll with ScalaFutures with Matchers {
 
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()
