@@ -7,7 +7,7 @@ package docs.scaladsl
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import com.github.matsluni.akkahttpspi.AkkaHttpClient
-import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 // #awsRetryConfiguration
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration
@@ -19,8 +19,9 @@ import software.amazon.awssdk.core.retry.conditions.RetryCondition
 // #awsRetryConfiguration
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class RetrySpec extends TestKit(ActorSystem("RetrySpec")) with WordSpecLike with BeforeAndAfterAll {
+class RetrySpec extends TestKit(ActorSystem("RetrySpec")) with AnyWordSpecLike with BeforeAndAfterAll {
 
   // #clientRetryConfig
   implicit val client: DynamoDbAsyncClient = DynamoDbAsyncClient

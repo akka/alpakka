@@ -13,9 +13,11 @@ import akka.stream.{ActorMaterializer, FlowShape, Graph}
 import akka.stream.scaladsl._
 import org.apache.kafka.common.serialization.{ByteArrayDeserializer, StringDeserializer}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class PassThroughExamples extends WordSpec with BeforeAndAfterAll with Matchers with ScalaFutures {
+class PassThroughExamples extends AnyWordSpec with BeforeAndAfterAll with Matchers with ScalaFutures {
 
   implicit val system = ActorSystem("Test")
   implicit val mat = ActorMaterializer()

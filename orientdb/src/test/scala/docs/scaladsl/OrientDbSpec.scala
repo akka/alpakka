@@ -27,13 +27,15 @@ import com.orientechnologies.orient.core.db.ODatabaseRecordThreadLocal
 import com.orientechnologies.orient.core.record.impl.ODocument
 import docs.javadsl.OrientDbTest
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterAll
 
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class OrientDbSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
+class OrientDbSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 100.millis)
 

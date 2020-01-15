@@ -19,10 +19,12 @@ import org.scalatest.time.{Seconds, Span}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class MqttFlowSpec
     extends TestKit(ActorSystem("MqttFlowSpec"))
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
     with ScalaFutures

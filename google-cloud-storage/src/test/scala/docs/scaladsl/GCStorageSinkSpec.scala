@@ -4,22 +4,23 @@
 
 package docs.scaladsl
 
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
-import akka.stream.alpakka.googlecloud.storage.scaladsl.{GCStorage, GCStorageWiremockBase}
 import akka.http.scaladsl.model.ContentTypes
-import org.scalatest._
-import org.scalatest.concurrent._
-
-import scala.util.Random
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.storage.StorageObject
+import akka.stream.alpakka.googlecloud.storage.scaladsl.{GCStorage, GCStorageWiremockBase}
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.concurrent._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.Future
+import scala.util.Random
 
 class GCStorageSinkSpec
     extends GCStorageWiremockBase
-    with WordSpecLike
+    with AnyWordSpecLike
     with BeforeAndAfterAll
     with ScalaFutures
     with IntegrationPatience

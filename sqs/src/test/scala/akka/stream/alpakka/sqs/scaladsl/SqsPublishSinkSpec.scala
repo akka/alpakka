@@ -15,15 +15,16 @@ import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSource
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.mockito.MockitoSugar.mock
-import org.scalatest.{FlatSpec, Matchers}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model._
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class SqsPublishSinkSpec extends FlatSpec with Matchers with DefaultTestContext {
+class SqsPublishSinkSpec extends AnyFlatSpec with Matchers with DefaultTestContext {
 
   "SqsPublishSink" should "send a message" in assertAllStagesStopped {
     implicit val sqsClient: SqsAsyncClient = mock[SqsAsyncClient]

@@ -11,12 +11,14 @@ import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import org.jsfr.json.compiler.JsonPathCompiler
 import org.jsfr.json.exception.JsonSurfingException
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterAll
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class JsonReaderTest extends WordSpec with Matchers with BeforeAndAfterAll {
+class JsonReaderTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
   implicit val system: ActorSystem = ActorSystem("Test")
   implicit val mat: Materializer = ActorMaterializer()
 

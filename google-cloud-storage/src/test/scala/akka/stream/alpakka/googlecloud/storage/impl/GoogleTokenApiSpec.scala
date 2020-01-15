@@ -15,15 +15,17 @@ import akka.stream.alpakka.googlecloud.storage.impl.GoogleTokenApi.AccessTokenEx
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{verify, when}
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 import pdi.jwt.{Jwt, JwtAlgorithm}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 
-class GoogleTokenApiSpec extends WordSpecLike with Matchers with ScalaFutures with MockitoSugar with BeforeAndAfterAll {
+class GoogleTokenApiSpec extends AnyWordSpec with Matchers with ScalaFutures with MockitoSugar with BeforeAndAfterAll {
 
   implicit val defaultPatience =
     PatienceConfig(timeout = 2.seconds, interval = 50.millis)

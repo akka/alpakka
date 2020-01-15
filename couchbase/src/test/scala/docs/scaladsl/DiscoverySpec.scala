@@ -9,12 +9,14 @@ import akka.stream.{ActorMaterializer, Materializer}
 import com.couchbase.client.java.document.JsonDocument
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterAll
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class DiscoverySpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
+class DiscoverySpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
 
   val config: Config = ConfigFactory.parseResources("discovery.conf")
 

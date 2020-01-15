@@ -15,7 +15,8 @@ import akka.stream.scaladsl.{Keep, Sink}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import com.github.matsluni.akkahttpspi.AkkaHttpClient
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.regions.Region
@@ -33,7 +34,7 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-class SqsSourceSpec extends FlatSpec with ScalaFutures with Matchers with DefaultTestContext {
+class SqsSourceSpec extends AnyFlatSpec with ScalaFutures with Matchers with DefaultTestContext {
 
   import SqsSourceSpec._
 

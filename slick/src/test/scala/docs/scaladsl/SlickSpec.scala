@@ -18,12 +18,14 @@ import slick.jdbc.{GetResult, JdbcProfile}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 /**
  * This unit test is run using a local H2 database using
  * `/tmp/alpakka-slick-h2-test` for temporary storage.
  */
-class SlickSpec extends WordSpec with ScalaFutures with BeforeAndAfterEach with BeforeAndAfterAll with MustMatchers {
+class SlickSpec extends AnyWordSpec with ScalaFutures with BeforeAndAfterEach with BeforeAndAfterAll with Matchers {
   //#init-mat
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()

@@ -19,10 +19,11 @@ import akka.testkit.{SocketUtil, TestKit, TestProbe}
 import software.amazon.awssdk.auth.credentials._
 import software.amazon.awssdk.regions.providers._
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{FlatSpec, Matchers}
 import software.amazon.awssdk.regions.Region
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class HttpRequestsSpec extends FlatSpec with Matchers with ScalaFutures {
+class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures {
 
   // test fixtures
   def getSettings(

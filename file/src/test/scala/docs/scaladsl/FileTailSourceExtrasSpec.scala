@@ -18,14 +18,16 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestKit
 import com.google.common.jimfs.{Configuration, Jimfs}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
 
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class FileTailSourceExtrasSpec
     extends TestKit(ActorSystem("filetailsourceextrasspec"))
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
     with ScalaFutures {

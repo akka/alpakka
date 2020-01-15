@@ -4,11 +4,12 @@
 
 package akka.stream.alpakka.googlecloud.pubsub
 
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 import scala.collection.immutable.Seq
 import java.time.Instant
 
-class ModelSpec extends FunSuite with Matchers {
+class ModelSpec extends AnyFunSuite with Matchers {
 
   val publishMessage1 = PublishMessage("abcde", Map("k1" -> "v1", "k2" -> "v2"))
   val publishMessage2 = PublishMessage("abcde", Map("k1" -> "v1"))

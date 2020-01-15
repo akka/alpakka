@@ -16,13 +16,14 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kinesis.model._
 
 import scala.concurrent.duration._
 
-class KinesisSourceSpec extends WordSpecLike with Matchers with KinesisMock {
+class KinesisSourceSpec extends AnyWordSpec with Matchers with KinesisMock {
 
   implicit class recordToString(r: Record) {
     def utf8String: String = ByteString(r.data.asByteBuffer).utf8String

@@ -48,10 +48,15 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,
         "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion % Test,
         "ch.qos.logback" % "logback-classic" % "1.2.3" % Test, // Eclipse Public License 1.0
-        "org.scalatest" %% "scalatest" % "3.0.8" % Test, // ApacheV2
+        "org.scalatest" %% "scalatest" % "3.1.0" % Test, // ApacheV2
         "com.novocode" % "junit-interface" % "0.11" % Test, // BSD-style
         "junit" % "junit" % "4.12" % Test // Eclipse Public License 1.0
       )
+  )
+
+  val Mockito = Seq(
+    "org.mockito" % "mockito-core" % mockitoVersion % Test,
+    "org.scalatestplus" %% "mockito-1-10" % "3.1.0.0" % Test
   )
 
   // Releases https://github.com/FasterXML/jackson-databind/releases
@@ -66,9 +71,8 @@ object Dependencies {
 
   val Amqp = Seq(
     libraryDependencies ++= Seq(
-        "com.rabbitmq" % "amqp-client" % "5.3.0", // APLv2
-        "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
-      )
+        "com.rabbitmq" % "amqp-client" % "5.3.0" // APLv2
+      ) ++ Mockito
   )
 
   val AwsLambda = Seq(
@@ -82,9 +86,9 @@ object Dependencies {
         (
           ExclusionRule("software.amazon.awssdk", "apache-client"),
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
-        ),
-        "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
+        )
       ) ++ JacksonDatabindDependencies
+      ++ Mockito
   )
 
   val AzureStorageQueue = Seq(
@@ -181,9 +185,8 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "com.pauldijou" %% "jwt-core" % JwtCoreVersion, // ApacheV2
-        "org.mockito" % "mockito-core" % mockitoVersion % Test, // MIT
         "com.github.tomakehurst" % "wiremock" % "2.25.1" % Test // ApacheV2
-      )
+      ) ++ Mockito
   )
 
   val GooglePubSubGrpc = Seq(
@@ -204,9 +207,8 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        "com.pauldijou" %% "jwt-core" % JwtCoreVersion, // ApacheV2
-        "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
-      )
+        "com.pauldijou" %% "jwt-core" % JwtCoreVersion // ApacheV2
+      ) ++ Mockito
   )
 
   val GoogleStorage = Seq(
@@ -214,9 +216,8 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "com.pauldijou" %% "jwt-core" % JwtCoreVersion, //ApacheV2
-        "org.mockito" % "mockito-core" % mockitoVersion % Test, // MIT
         "com.github.tomakehurst" % "wiremock" % "2.25.1" % Test // ApacheV2
-      )
+      ) ++ Mockito
   )
 
   val HBase = {
@@ -264,9 +265,8 @@ object Dependencies {
         "com.ibm.mq" % "com.ibm.mq.allclient" % "9.1.3.0" % Test, // IBM International Program License Agreement https://public.dhe.ibm.com/ibmdl/export/pub/software/websphere/messaging/mqdev/maven/licenses/L-APIG-AZYF2E/LI_en.html
         "org.apache.activemq" % "activemq-broker" % "5.15.9" % Test, // ApacheV2
         "org.apache.activemq" % "activemq-client" % "5.15.9" % Test, // ApacheV2
-        "io.github.sullis" %% "jms-testkit" % "0.2.8" % Test, // ApacheV2
-        "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
-      ),
+        "io.github.sullis" %% "jms-testkit" % "0.2.8" % Test // ApacheV2
+      ) ++ Mockito,
     // Having JBoss as a first resolver is a workaround for https://github.com/coursier/coursier/issues/200
     externalResolvers := ("jboss" at "https://repository.jboss.org/nexus/content/groups/public") +: externalResolvers.value
   )
@@ -294,9 +294,9 @@ object Dependencies {
         (
           ExclusionRule("software.amazon.awssdk", "apache-client"),
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
-        ),
-        "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
+        )
       ) ++ JacksonDatabindDependencies
+      ++ Mockito
   )
 
   val KuduVersion = "1.7.1"
@@ -387,9 +387,9 @@ object Dependencies {
           ExclusionRule("software.amazon.awssdk", "apache-client"),
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         ),
-        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
-        "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion // ApacheV2
       ) ++ JacksonDatabindDependencies
+      ++ Mockito
   )
 
   val SolrjVersion = "7.7.2"
@@ -416,9 +416,9 @@ object Dependencies {
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         ),
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
-        "org.mockito" % "mockito-core" % mockitoVersion % Test, // MIT
         "org.mockito" % "mockito-inline" % mockitoVersion % Test // MIT
       ) ++ JacksonDatabindDependencies
+      ++ Mockito
   )
 
   val Sse = Seq(

@@ -7,13 +7,15 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class ChunkerSpec extends WordSpec with ScalaFutures with Matchers with BeforeAndAfterAll {
+class ChunkerSpec extends AnyWordSpec with ScalaFutures with Matchers with BeforeAndAfterAll {
   implicit val system = ActorSystem("ChunkerSpec")
   implicit val mat = ActorMaterializer()
 

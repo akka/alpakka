@@ -6,10 +6,11 @@ package akka.stream.alpakka.kinesis
 
 import java.time.Instant
 
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.must.Matchers
 import software.amazon.awssdk.services.kinesis.model.ShardIteratorType
 
-class ShardSettingsSpec extends WordSpec with Matchers {
+class ShardSettingsSpec extends AnyWordSpec with Matchers {
   val baseSettings = ShardSettings("name", "shardid")
   "ShardSettings" must {
     "require a timestamp for shard iterator type is AT_TIMESTAMP" in {

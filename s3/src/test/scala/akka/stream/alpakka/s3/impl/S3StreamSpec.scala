@@ -16,14 +16,16 @@ import akka.util.ByteString
 import software.amazon.awssdk.auth.credentials._
 import software.amazon.awssdk.regions.providers._
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers, PrivateMethodTester}
+import org.scalatest.{BeforeAndAfterAll, PrivateMethodTester}
 import software.amazon.awssdk.regions.Region
 
 import scala.concurrent.Future
+import org.scalatest.flatspec.AnyFlatSpecLike
+import org.scalatest.matchers.should.Matchers
 
 class S3StreamSpec(_system: ActorSystem)
     extends TestKit(_system)
-    with FlatSpecLike
+    with AnyFlatSpecLike
     with Matchers
     with BeforeAndAfterAll
     with PrivateMethodTester

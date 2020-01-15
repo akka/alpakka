@@ -12,14 +12,16 @@ import com.couchbase.client.java.auth.PasswordAuthenticator
 import com.couchbase.client.java.{Bucket, CouchbaseCluster}
 import com.couchbase.client.java.document.json.JsonObject
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterAll
 
 import scala.collection.immutable.Seq
 import scala.concurrent.duration._
 import scala.concurrent.Future
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 class CouchbaseSourceSpec
-    extends WordSpec
+    extends AnyWordSpec
     with BeforeAndAfterAll
     with CouchbaseSupport
     with Matchers

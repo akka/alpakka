@@ -7,11 +7,12 @@ import java.nio.ByteOrder
 
 import akka.stream.alpakka.mqtt.streaming._
 import akka.util.{ByteString, ByteStringBuilder}
-import org.scalatest.{Matchers, WordSpec}
 
 import scala.concurrent.duration._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class MqttCodecSpec extends WordSpec with Matchers {
+class MqttCodecSpec extends AnyWordSpec with Matchers {
 
   private implicit val byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN
   import MqttCodec._

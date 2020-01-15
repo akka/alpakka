@@ -10,12 +10,14 @@ import akka.stream.alpakka.xml._
 import akka.stream.alpakka.xml.scaladsl.XmlParsing
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.util.ByteString
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterAll
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class XmlCoalesceSpec extends WordSpec with Matchers with BeforeAndAfterAll {
+class XmlCoalesceSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
   implicit val system: ActorSystem = ActorSystem("Test")
   implicit val mat: Materializer = ActorMaterializer()
 

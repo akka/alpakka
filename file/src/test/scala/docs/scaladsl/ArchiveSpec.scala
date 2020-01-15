@@ -17,12 +17,13 @@ import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.ByteString
 import docs.javadsl.ArchiveHelper
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{Matchers, WordSpec}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ArchiveSpec extends WordSpec with Matchers with ScalaFutures {
+class ArchiveSpec extends AnyWordSpec with Matchers with ScalaFutures {
 
   implicit val sys = ActorSystem("ArchiveSpec")
   implicit val mat: Materializer = ActorMaterializer()

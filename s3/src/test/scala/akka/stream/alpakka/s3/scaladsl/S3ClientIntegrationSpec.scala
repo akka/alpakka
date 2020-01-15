@@ -9,9 +9,11 @@ import akka.stream.ActorMaterializer
 import akka.testkit.TestKit
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest._
+import org.scalatest.flatspec.AnyFlatSpecLike
+import org.scalatest.matchers.should.Matchers
 
 trait S3ClientIntegrationSpec
-    extends FlatSpecLike
+    extends AnyFlatSpecLike
     with BeforeAndAfterAll
     with BeforeAndAfterEach
     with Matchers

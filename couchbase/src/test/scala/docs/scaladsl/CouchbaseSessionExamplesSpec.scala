@@ -8,13 +8,15 @@ import akka.stream.alpakka.couchbase.scaladsl.CouchbaseSession
 import akka.stream.alpakka.couchbase.testing.CouchbaseSupport
 import com.couchbase.client.java.document.JsonDocument
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterAll
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 class CouchbaseSessionExamplesSpec
-    extends WordSpec
+    extends AnyWordSpec
     with CouchbaseSupport
     with Matchers
     with BeforeAndAfterAll
