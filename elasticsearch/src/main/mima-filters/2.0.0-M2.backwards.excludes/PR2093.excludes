@@ -1,0 +1,4 @@
+# Changed RetryLogic trait and implementations
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.elasticsearch.RetryAtFixedRate.*")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.elasticsearch.RetryNever.*")
+ProblemFilters.exclude[Problem]("akka.stream.alpakka.elasticsearch.RetryLogic.*")

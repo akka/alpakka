@@ -16,7 +16,6 @@ import org.apache.http.util.EntityUtils
 import org.elasticsearch.client.{Response, ResponseListener, RestClient}
 
 import scala.collection.immutable
-import scala.util.{Failure, Success, Try}
 
 /**
  * INTERNAL API.
@@ -30,10 +29,13 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
     client: RestClient,
     settings: ElasticsearchWriteSettings,
     writer: MessageWriter[T]
-) extends GraphStage[FlowShape[immutable.Seq[WriteMessage[T, C]], Try[immutable.Seq[WriteResult[T, C]]]]] {
+) extends GraphStage[
+      FlowShape[(immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]]), immutable.Seq[WriteResult[T, C]]]
+    ] {
 
-  private val in = Inlet[immutable.Seq[WriteMessage[T, C]]]("messages")
-  private val out = Outlet[Try[immutable.Seq[WriteResult[T, C]]]]("result")
+  private val in =
+    Inlet[(immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]])]("messagesAndResultPassthrough")
+  private val out = Outlet[immutable.Seq[WriteResult[T, C]]]("result")
   override val shape = FlowShape(in, out)
 
   private val restApi: RestBulkApi[T, C] = settings.apiVersion match {
@@ -50,15 +52,17 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
 
     private var inflight = false
 
-    private val failureHandler = getAsyncCallback[Throwable](handleFailure)
-    private val responseHandler = getAsyncCallback[(immutable.Seq[WriteMessage[T, C]], Response)](handleResponse)
+    private val failureHandler =
+      getAsyncCallback[(immutable.Seq[WriteResult[T, C]], Throwable)](handleFailure)
+    private val responseHandler =
+      getAsyncCallback[(immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]], Response)](handleResponse)
 
     setHandlers(in, out, this)
 
     override def onPull(): Unit = tryPull()
 
     override def onPush(): Unit = {
-      val messages = grab(in)
+      val (messages, resultsPassthrough) = grab(in)
       inflight = true
       val json: String = restApi.toJson(messages)
 
@@ -71,30 +75,40 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
         java.util.Collections.emptyMap[String, String](),
         new StringEntity(json, StandardCharsets.UTF_8),
         new ResponseListener() {
-          override def onFailure(exception: Exception): Unit = failureHandler.invoke(exception)
-          override def onSuccess(response: Response): Unit = responseHandler.invoke((messages, response))
+          override def onFailure(exception: Exception): Unit =
+            failureHandler.invoke((resultsPassthrough, exception))
+
+          override def onSuccess(response: Response): Unit =
+            responseHandler.invoke((messages, resultsPassthrough, response))
         },
         new BasicHeader("Content-Type", "application/x-ndjson")
       )
     }
 
-    private def handleFailure(exception: Throwable): Unit = {
+    private def handleFailure(
+        args: (immutable.Seq[WriteResult[T, C]], Throwable)
+    ): Unit = {
       inflight = false
-      push(out, Failure(exception))
-      if (isClosed(in)) completeStage()
-      else tryPull()
+      val (resultsPassthrough, exception) = args
+
+      log.error(s"Received error from elastic after having already processed {} documents. Error: {}",
+                resultsPassthrough.size,
+                exception)
+      failStage(exception)
     }
 
-    private def handleResponse(args: (immutable.Seq[WriteMessage[T, C]], Response)): Unit = {
+    private def handleResponse(
+        args: (immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]], Response)
+    ): Unit = {
       inflight = false
-      val (messages, response) = args
+      val (messages, resultsPassthrough, response) = args
       val jsonString = EntityUtils.toString(response.getEntity)
       if (log.isDebugEnabled) {
         import spray.json._
         log.debug("response {}", jsonString.parseJson.prettyPrint)
       }
       val messageResults = restApi.toWriteResults(messages, jsonString)
-      push(out, Success(messageResults))
+      push(out, messageResults ++ resultsPassthrough)
       if (isClosed(in)) completeStage()
       else tryPull()
     }

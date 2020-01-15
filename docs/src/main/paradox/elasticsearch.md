@@ -123,18 +123,26 @@ Java
 | retryLogic | No retries | See below |
 
 
-A bulk request might fail partially for some reason. To retry failed writes to Elasticsearch, a `RetryLogic` can be specified. The provided implementation is `RetryAtFixedRate`.
+A bulk request might fail partially for some reason. To retry failed writes to Elasticsearch, a `RetryLogic` can be specified. 
 
-@@@ warning
-If using retries, you will receive messages **out of order downstream** in cases when Elasticsearch returns an error on some of the documents in a bulk request.
-@@@
+The provided implementations are:
 
+* `RetryAtFixedRate`
 
 | Parameter           | Description     |
 |---------------------|-----------------|
 | maxRetries          | The stage fails, if it gets this number of consecutive failures. | 
 | retryInterval       | Failing writes are retried after this duration. |
 
+* `RetryWithBackoff`
+
+| Parameter           | Description     |
+|---------------------|-----------------|
+| maxRetries          | The stage fails, if it gets this number of consecutive failures. | 
+| minBackoff          | Initial backoff for failing writes. |
+| maxBackoff          | Maximum backoff for failing writes. |
+
+In case of write failures the order of messages downstream is guaranteed to be preserved.
 
 
 ## Elasticsearch as Flow
