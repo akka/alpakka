@@ -10,10 +10,9 @@ import akka.stream.scaladsl.Keep
 import akka.stream.testkit.scaladsl.{TestSink, TestSource}
 import akka.testkit.TestKit
 import akka.util.ByteString
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
 
-class ZipArchiveFlowTest extends TestKit(ActorSystem("ziparchive")) with WordSpecLike with Matchers with ScalaFutures {
+class ZipArchiveFlowTest extends TestKit(ActorSystem("ziparchive")) with WordSpecLike with BeforeAndAfterAll {
 
   implicit val mat = ActorMaterializer()
 
@@ -39,5 +38,10 @@ class ZipArchiveFlowTest extends TestKit(ActorSystem("ziparchive")) with WordSpe
         downstream.expectComplete()
       }
     }
+  }
+
+  override def afterAll(): Unit = {
+    super.afterAll()
+    TestKit.shutdownActorSystem(system)
   }
 }
