@@ -10,9 +10,10 @@ import akka.stream.scaladsl.Keep
 import akka.stream.testkit.scaladsl.{TestSink, TestSource}
 import akka.testkit.TestKit
 import akka.util.ByteString
-import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class ZipArchiveFlowTest extends TestKit(ActorSystem("ziparchive")) with WordSpecLike with BeforeAndAfterAll {
+class ZipArchiveFlowTest extends TestKit(ActorSystem("ziparchive")) with AnyWordSpecLike with BeforeAndAfterAll {
 
   implicit val mat = ActorMaterializer()
 

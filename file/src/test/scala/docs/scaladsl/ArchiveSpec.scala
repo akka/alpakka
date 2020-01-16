@@ -23,11 +23,11 @@ import org.scalatest.BeforeAndAfterAll
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class ArchiveSpec
     extends TestKit(ActorSystem("ArchiveSpec"))
-    with AnyWordSpec
+    with AnyWordSpecLike
     with Matchers
     with ScalaFutures
     with BeforeAndAfterAll {
