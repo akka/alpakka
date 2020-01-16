@@ -184,6 +184,19 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures {
     req.uri.rawQueryString shouldBe empty
   }
 
+  it should "support download requests with keys ending with /" in {
+    // object with a slash at the end of the filename should be accessible
+    implicit val settings = getSettings()
+
+    val location = S3Location("bucket", "/test//")
+
+    val req = HttpRequests.getDownloadRequest(location)
+
+    req.uri.authority.host.toString shouldEqual "bucket.s3.amazonaws.com"
+    req.uri.path.toString shouldEqual "//test//"
+    req.uri.rawQueryString shouldBe empty
+  }
+
   it should "support download requests with keys containing spaces" in {
     implicit val settings = getSettings()
 
