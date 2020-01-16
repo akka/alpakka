@@ -8,6 +8,3 @@ ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.s3.S3
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.s3.S3Settings.getS3RegionProvider")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.s3.S3Settings.withS3RegionProvider")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.s3.S3Settings.this")
-
-# Object key validation #2086
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.s3.S3Settings.this")
