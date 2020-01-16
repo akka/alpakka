@@ -22,11 +22,11 @@ import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AsyncWordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class UnixDomainSocketSpec
     extends TestKit(ActorSystem("UnixDomainSocketSpec"))
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with ScalaFutures
     with BeforeAndAfterAll
