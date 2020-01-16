@@ -14,18 +14,24 @@ import akka.stream.alpakka.file.ArchiveMetadata
 import akka.stream.alpakka.file.scaladsl.Archive
 import akka.stream.scaladsl.{FileIO, Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
+import akka.testkit.TestKit
 import akka.util.ByteString
 import docs.javadsl.ArchiveHelper
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.BeforeAndAfterAll
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class ArchiveSpec extends AnyWordSpec with Matchers with ScalaFutures {
+class ArchiveSpec
+    extends TestKit(ActorSystem("ArchiveSpec"))
+    with AnyWordSpecLike
+    with Matchers
+    with ScalaFutures
+    with BeforeAndAfterAll {
 
-  implicit val sys = ActorSystem("ArchiveSpec")
   implicit val mat: Materializer = ActorMaterializer()
 
   private val archiveHelper = new ArchiveHelper()
@@ -147,5 +153,10 @@ class ArchiveSpec extends AnyWordSpec with Matchers with ScalaFutures {
       zis.close()
     }
     result
+  }
+
+  override def afterAll(): Unit = {
+    super.afterAll()
+    TestKit.shutdownActorSystem(system)
   }
 }
