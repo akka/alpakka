@@ -21,13 +21,10 @@ import org.scalatest.concurrent.ScalaFutures
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class MongoSinkSpec
-    extends WordSpec
-    with ScalaFutures
-    with BeforeAndAfterEach
-    with BeforeAndAfterAll
-    with MustMatchers {
+class MongoSinkSpec extends AnyWordSpec with ScalaFutures with BeforeAndAfterEach with BeforeAndAfterAll with Matchers {
 
   // case class and codec for mongodb macros
   case class Number(_id: Int)

@@ -11,13 +11,14 @@ import akka.stream.scaladsl.{Keep, Sink}
 import akka.stream.testkit.scaladsl.TestSource
 import org.mockito.ArgumentMatchers.{any, eq => meq}
 import org.mockito.Mockito._
-import org.scalatest._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.must.Matchers
 import software.amazon.awssdk.services.sns.model.{PublishRequest, PublishResponse}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class SnsPublishMockingSpec extends FlatSpec with DefaultTestContext with MustMatchers {
+class SnsPublishMockingSpec extends AnyFlatSpec with DefaultTestContext with Matchers {
 
   it should "publish a single PublishRequest message to sns" in {
     val publishRequest = PublishRequest.builder().topicArn("topic-arn").message("sns-message").build()

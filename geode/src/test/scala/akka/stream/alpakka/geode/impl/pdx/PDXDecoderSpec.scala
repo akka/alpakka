@@ -6,9 +6,10 @@ package akka.stream.alpakka.geode.impl.pdx
 
 import java.util.{Date, UUID}
 
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class PDXDecoderSpec extends WordSpec with Matchers {
+class PDXDecoderSpec extends AnyWordSpec with Matchers {
 
   "PDX decoder" should {
     "decode primitive type" in {

@@ -9,9 +9,11 @@ import java.nio.charset.{StandardCharsets, UnsupportedCharsetException}
 import akka.stream.alpakka.csv.impl.CsvParser
 import akka.stream.alpakka.csv.scaladsl.ByteOrderMark
 import akka.util.ByteString
-import org.scalatest.{Matchers, OptionValues, WordSpec}
+import org.scalatest.OptionValues
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class CsvParserSpec extends WordSpec with Matchers with OptionValues {
+class CsvParserSpec extends AnyWordSpec with Matchers with OptionValues {
 
   val maximumLineLength = 10 * 1024
 

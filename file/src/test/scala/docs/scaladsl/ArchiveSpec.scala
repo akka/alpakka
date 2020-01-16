@@ -18,14 +18,16 @@ import akka.testkit.TestKit
 import akka.util.ByteString
 import docs.javadsl.ArchiveHelper
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 class ArchiveSpec
     extends TestKit(ActorSystem("ArchiveSpec"))
-    with WordSpecLike
+    with AnyWordSpec
     with Matchers
     with ScalaFutures
     with BeforeAndAfterAll {

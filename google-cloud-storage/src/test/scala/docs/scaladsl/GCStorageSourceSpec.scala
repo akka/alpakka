@@ -11,14 +11,16 @@ import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, Attributes}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
-import org.scalatest._
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.concurrent._
 
 import scala.concurrent.Future
 
 class GCStorageSourceSpec
     extends GCStorageWiremockBase
-    with WordSpecLike
+    with AnyWordSpecLike
     with BeforeAndAfterAll
     with ScalaFutures
     with IntegrationPatience

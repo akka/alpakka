@@ -16,13 +16,14 @@ import akka.stream.{ActorMaterializer, Materializer}
 import akka.{Done, NotUsed}
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.mockito.MockitoSugar
 
 import scala.collection.immutable.Seq
 import scala.concurrent.duration._
 
-class GooglePubSubSpec extends FlatSpec with MockitoSugar with ScalaFutures with Matchers {
+class GooglePubSubSpec extends AnyFlatSpec with MockitoSugar with ScalaFutures with Matchers {
 
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 100.millis)

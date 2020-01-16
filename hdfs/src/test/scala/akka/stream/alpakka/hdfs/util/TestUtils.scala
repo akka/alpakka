@@ -15,11 +15,11 @@ import org.apache.hadoop.fs.{FileStatus, FileSystem, Path}
 import org.apache.hadoop.hdfs.{HdfsConfiguration, MiniDFSCluster}
 import org.apache.hadoop.io.compress.CompressionCodec
 import org.apache.hadoop.io.{SequenceFile, Text}
-import org.scalatest.Matchers
 
 import scala.collection.mutable.ListBuffer
 import scala.language.higherKinds
 import scala.util.Random
+import org.scalatest.matchers.should.Matchers
 
 sealed trait TestUtils {
 

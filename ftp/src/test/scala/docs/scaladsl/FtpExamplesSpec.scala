@@ -15,9 +15,16 @@ import org.apache.commons.net.PrintCommandListener
 import org.apache.commons.net.ftp.FTPClient
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Seconds, Span}
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class FtpExamplesSpec extends BaseFtpSupport with WordSpecLike with Matchers with BeforeAndAfterAll with ScalaFutures {
+class FtpExamplesSpec
+    extends BaseFtpSupport
+    with AnyWordSpecLike
+    with Matchers
+    with BeforeAndAfterAll
+    with ScalaFutures {
 
   implicit val materializer: Materializer = getMaterializer
 

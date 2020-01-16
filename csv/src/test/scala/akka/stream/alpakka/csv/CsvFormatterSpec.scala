@@ -8,9 +8,10 @@ import java.nio.charset.StandardCharsets
 
 import akka.stream.alpakka.csv.impl.CsvFormatter
 import akka.stream.alpakka.csv.scaladsl.CsvQuotingStyle
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class CsvFormatterSpec extends WordSpec with Matchers {
+class CsvFormatterSpec extends AnyWordSpec with Matchers {
 
   "CSV Formatter comma as delimiter" should {
     val formatter = new CsvFormatter(',', '\"', '\\', "\r\n", CsvQuotingStyle.Required)

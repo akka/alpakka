@@ -21,6 +21,8 @@ import software.amazon.awssdk.services.dynamodb.model.TableStatus
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AsyncWordSpecLike
 
 class ItemSpec extends TestKit(ActorSystem("ItemSpec")) with AsyncWordSpecLike with Matchers with BeforeAndAfterAll {
 

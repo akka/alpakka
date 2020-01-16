@@ -14,15 +14,17 @@ import akka.testkit.TestKit
 import org.apache.kudu.client.{CreateTableOptions, KuduClient, PartialRow}
 import org.apache.kudu.{ColumnSchema, Schema, Type}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class KuduTableSpec
     extends TestKit(ActorSystem())
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
     with ScalaFutures {

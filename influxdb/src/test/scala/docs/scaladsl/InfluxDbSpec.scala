@@ -8,7 +8,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.influxdb.{InfluxDB, InfluxDBFactory}
 import org.influxdb.dto.{Point, Query, QueryResult}
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, MustMatchers, WordSpec}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.concurrent.ScalaFutures
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.{Done, NotUsed}
@@ -21,8 +21,10 @@ import akka.stream.scaladsl.Sink
 import scala.collection.JavaConverters._
 
 import docs.javadsl.TestConstants.{INFLUXDB_URL, PASSWORD, USERNAME}
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class InfluxDbSpec extends WordSpec with MustMatchers with BeforeAndAfterEach with BeforeAndAfterAll with ScalaFutures {
+class InfluxDbSpec extends AnyWordSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll with ScalaFutures {
 
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()

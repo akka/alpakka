@@ -17,16 +17,18 @@ import org.scalatest.concurrent.ScalaFutures
 import scala.collection.JavaConverters._
 import scala.concurrent._
 import scala.concurrent.duration._
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 /**
  * All the tests must be run with a local Cassandra running on default port 9042.
  */
 class CassandraSourceSpec
-    extends WordSpec
+    extends AnyWordSpec
     with ScalaFutures
     with BeforeAndAfterEach
     with BeforeAndAfterAll
-    with MustMatchers {
+    with Matchers {
 
   //#element-to-insert
   case class ToInsert(id: Integer, cc: Integer)

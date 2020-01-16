@@ -10,7 +10,9 @@ import akka.http.scaladsl.model.ContentTypes
 import akka.stream.alpakka.googlecloud.storage.WithMaterializerGlobal
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
-import org.scalatest._
+import org.scalatest.BeforeAndAfter
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.Await
@@ -32,7 +34,7 @@ import scala.concurrent.Future
  * - create a rewrite `alpakka-rewrite` bucket for testing
  */
 class GCStorageStreamIntegrationSpec
-    extends WordSpec
+    extends AnyWordSpec
     with WithMaterializerGlobal
     with BeforeAndAfter
     with Matchers

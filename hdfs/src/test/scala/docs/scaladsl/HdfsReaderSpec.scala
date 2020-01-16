@@ -15,12 +15,14 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.hdfs.MiniDFSCluster
 import org.apache.hadoop.io.Text
 import org.apache.hadoop.io.compress.DefaultCodec
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers, WordSpecLike}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class HdfsReaderSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
+class HdfsReaderSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
 
   private var hdfsCluster: MiniDFSCluster = _
   private val destination = "/tmp/alpakka/"

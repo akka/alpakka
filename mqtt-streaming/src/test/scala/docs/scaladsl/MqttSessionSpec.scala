@@ -19,16 +19,18 @@ import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.{ActorMaterializer, Materializer, OverflowStrategy}
 import akka.testkit._
 import akka.util.{ByteString, Timeout}
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Millis, Span}
 
 import scala.concurrent.{ExecutionContext, Promise}
 import scala.concurrent.duration._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class MqttSessionSpec
     extends TestKit(ActorSystem("mqtt-spec"))
-    with WordSpecLike
+    with AnyWordSpecLike
     with BeforeAndAfterAll
     with ScalaFutures
     with Matchers {

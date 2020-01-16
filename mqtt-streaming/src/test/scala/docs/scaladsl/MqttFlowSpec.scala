@@ -20,6 +20,8 @@ import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class UntypedMqttFlowSpec
     extends ParametrizedTestKit("untyped-flow-spec/flow", "typed-flow-spec/topic1", ActorSystem("UntypedMqttFlowSpec"))
@@ -32,7 +34,7 @@ class TypedMqttFlowSpec
 
 class ParametrizedTestKit(val clientId: String, val topic: String, system: ActorSystem) extends TestKit(system)
 
-trait MqttFlowSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with ScalaFutures {
+trait MqttFlowSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll with ScalaFutures {
   self: ParametrizedTestKit =>
 
   private implicit val defaultPatience: PatienceConfig = PatienceConfig(timeout = 5.seconds, interval = 100.millis)
