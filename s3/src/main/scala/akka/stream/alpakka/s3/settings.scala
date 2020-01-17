@@ -223,6 +223,11 @@ final class S3Settings private (
   def withCredentialsProvider(value: AwsCredentialsProvider): S3Settings =
     copy(credentialsProvider = value)
   def withS3RegionProvider(value: AwsRegionProvider): S3Settings = copy(s3RegionProvider = value)
+
+  @deprecated(
+    "AWS S3 is going to retire path-style access https://aws.amazon.com/blogs/aws/amazon-s3-path-deprecation-plan-the-rest-of-the-story/",
+    since = "2.0.0"
+  )
   def withPathStyleAccess(value: Boolean): S3Settings =
     if (pathStyleAccess == value) this else copy(pathStyleAccess = value)
   def withEndpointUrl(value: String): S3Settings = copy(endpointUrl = Option(value))

@@ -11,11 +11,12 @@ import akka.annotation.InternalApi
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.Uri.{Authority, Query}
-import akka.http.scaladsl.model.headers.{`Raw-Request-URI`, Host, RawHeader}
+import akka.http.scaladsl.model.headers.{Host, RawHeader, `Raw-Request-URI`}
 import akka.http.scaladsl.model.{ContentTypes, RequestEntity, _}
 import akka.stream.alpakka.s3.{ApiVersion, S3Settings}
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import org.slf4j.LoggerFactory
 import software.amazon.awssdk.regions.Region
 
 import scala.collection.immutable.Seq
@@ -25,6 +26,8 @@ import scala.concurrent.{ExecutionContext, Future}
  * Internal Api
  */
 @InternalApi private[impl] object HttpRequests {
+
+  private final val log = LoggerFactory.getLogger(getClass)
 
   def listBucket(
       bucket: String,
@@ -168,7 +171,10 @@ import scala.concurrent.{ExecutionContext, Future}
   }
 
   @throws(classOf[IllegalUriException])
-  private[this] def requestAuthority(bucket: String, region: Region)(implicit conf: S3Settings): Authority =
+  private[this] def requestAuthority(bucket: String, region: Region)(implicit conf: S3Settings): Authority = {
+    if (conf.pathStyleAccess) {
+      log.warn("AWS S3 is going to retire path-style access (https://aws.amazon.com/blogs/aws/amazon-s3-path-deprecation-plan-the-rest-of-the-story/)")
+    }
     conf.endpointUrl match {
       case Some(endpointUrl) => Uri(endpointUrl).authority
       case None =>
@@ -187,6 +193,7 @@ import scala.concurrent.{ExecutionContext, Future}
             }
         }
     }
+  }
 
   private[this] def requestUri(bucket: String, key: Option[String])(implicit conf: S3Settings): Uri = {
     val basePath = if (conf.pathStyleAccess) {
