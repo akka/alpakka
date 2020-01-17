@@ -11,7 +11,7 @@ import akka.annotation.InternalApi
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.Uri.{Authority, Query}
-import akka.http.scaladsl.model.headers.{Host, RawHeader, `Raw-Request-URI`}
+import akka.http.scaladsl.model.headers.{`Raw-Request-URI`, Host, RawHeader}
 import akka.http.scaladsl.model.{ContentTypes, RequestEntity, _}
 import akka.stream.alpakka.s3.{ApiVersion, S3Settings}
 import akka.stream.scaladsl.Source
@@ -173,7 +173,9 @@ import scala.concurrent.{ExecutionContext, Future}
   @throws(classOf[IllegalUriException])
   private[this] def requestAuthority(bucket: String, region: Region)(implicit conf: S3Settings): Authority = {
     if (conf.pathStyleAccess) {
-      log.warn("AWS S3 is going to retire path-style access (https://aws.amazon.com/blogs/aws/amazon-s3-path-deprecation-plan-the-rest-of-the-story/)")
+      log.warn(
+        "AWS S3 is going to retire path-style access (https://aws.amazon.com/blogs/aws/amazon-s3-path-deprecation-plan-the-rest-of-the-story/)"
+      )
     }
     conf.endpointUrl match {
       case Some(endpointUrl) => Uri(endpointUrl).authority
