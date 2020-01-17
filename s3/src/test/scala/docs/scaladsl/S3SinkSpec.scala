@@ -79,7 +79,7 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
     val result = Source
       .single(ByteString("some contents"))
-      .runWith(S3.multipartUpload("nonexisting_bucket", "nonexisting_file.xml"))
+      .runWith(S3.multipartUpload("nonexisting-bucket", "nonexisting_file.xml"))
 
     result.failed.futureValue.getMessage shouldBe "No key found"
   }

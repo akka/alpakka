@@ -135,7 +135,7 @@ import scala.concurrent.{ExecutionContext, Future}
     val upload = multipartCopy.multipartUpload
     val copyPartition = multipartCopy.copyPartition
     val range = copyPartition.range
-    val source = copyPartition.sourceLocation
+    val source = copyPartition.sourceLocation.validate(conf)
     val sourceHeaderValuePrefix = s"/${source.bucket}/${source.key}"
     val sourceHeaderValue = sourceVersionId
       .map(versionId => s"$sourceHeaderValuePrefix?versionId=$versionId")
@@ -156,7 +156,8 @@ import scala.concurrent.{ExecutionContext, Future}
   private[this] def s3Request(s3Location: S3Location, method: HttpMethod, uriFn: Uri => Uri = identity)(
       implicit conf: S3Settings
   ): HttpRequest = {
-    val s3RequestUri = uriFn(requestUri(s3Location.bucket, Some(s3Location.key)))
+    val loc = s3Location.validate(conf)
+    val s3RequestUri = uriFn(requestUri(loc.bucket, Some(loc.key)))
 
     HttpRequest(method)
       .withHeaders(
@@ -171,7 +172,6 @@ import scala.concurrent.{ExecutionContext, Future}
     conf.endpointUrl match {
       case Some(endpointUrl) => Uri(endpointUrl).authority
       case None =>
-        validateBucketName(bucket, conf)
         region match {
           case Region.US_EAST_1 =>
             if (conf.pathStyleAccess) {
@@ -187,32 +187,6 @@ import scala.concurrent.{ExecutionContext, Future}
             }
         }
     }
-
-  private def validateBucketName(bucket: String, conf: S3Settings) = {
-    if (conf.pathStyleAccess) {
-      val bucketRegex = "(/\\.\\.)|(\\.\\./)".r
-      if (bucketRegex.findFirstIn(bucket).nonEmpty || ".." == bucket) {
-        throw IllegalUriException(
-          "The bucket name contains sub-dir selection with `..`",
-          "Selecting sub-directories with `..` is forbidden (and won't work with non-path-style access)."
-        )
-      }
-    } else {
-      // https://docs.aws.amazon.com/AmazonS3/latest/dev/BucketRestrictions.html
-      val bucketRegex = "[^a-z0-9\\-\\.]{1,255}|[\\.]{2,}".r
-      bucketRegex.findFirstIn(bucket) match {
-        case Some(illegalCharacter) =>
-          throw IllegalUriException(
-            "Bucket name contains non-LDH characters",
-            s"""The following character is not allowed: $illegalCharacter
-
-               | This may be solved by setting alpakka.s3.path-style-access to true in the configuration.
-                 """.stripMargin
-          )
-        case None => ()
-      }
-    }
-  }
 
   private[this] def requestUri(bucket: String, key: Option[String])(implicit conf: S3Settings): Uri = {
     val basePath = if (conf.pathStyleAccess) {

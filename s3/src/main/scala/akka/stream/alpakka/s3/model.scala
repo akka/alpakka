@@ -6,7 +6,7 @@ package akka.stream.alpakka.s3
 
 import java.util.{Objects, Optional}
 
-import akka.http.scaladsl.model.{DateTime, HttpHeader, Uri}
+import akka.http.scaladsl.model.{DateTime, HttpHeader, IllegalUriException, Uri}
 import akka.http.scaladsl.model.headers._
 
 import scala.collection.immutable.Seq
@@ -561,4 +561,53 @@ object BucketAccess {
   val accessDenied: BucketAccess = AccessDenied
   val accessGranted: BucketAccess = AccessGranted
   val notExists: BucketAccess = NotExists
+}
+
+/**
+ * https://docs.aws.amazon.com/AmazonS3/latest/dev/BucketRestrictions.html
+ * https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html
+ */
+object BucketAndKey {
+  private val bucketRegexPathStyle = "(/\\.\\.)|(\\.\\./)".r
+  private val bucketRegexDns = "[^a-z0-9\\-\\.]{1,255}|[\\.]{2,}".r
+
+  def pathStyleValid(bucket: String) = {
+    bucketRegexPathStyle.findFirstIn(bucket).isEmpty && ".." != bucket
+  }
+
+  def dnsValid(bucket: String) = {
+    bucketRegexDns.findFirstIn(bucket).isEmpty
+  }
+
+  private[s3] def validateBucketName(bucket: String, conf: S3Settings): Unit = {
+    if (conf.pathStyleAccess) {
+      if (!pathStyleValid(bucket)) {
+        throw IllegalUriException(
+          "The bucket name contains sub-dir selection with `..`",
+          "Selecting sub-directories with `..` is forbidden (and won't work with non-path-style access)."
+        )
+      }
+    } else {
+      bucketRegexDns.findFirstIn(bucket) match {
+        case Some(illegalCharacter) =>
+          throw IllegalUriException(
+            "Bucket name contains non-LDH characters",
+            s"The following character is not allowed: $illegalCharacter"
+          )
+        case None => ()
+      }
+    }
+  }
+
+  def objectKeyValid(key: String): Boolean = !key.split("/").contains("..")
+
+  private[s3] def validateObjectKey(key: String, conf: S3Settings): Unit = {
+    if (conf.validateObjectKey && !objectKeyValid(key))
+      throw IllegalUriException(
+        "The object key contains sub-dir selection with `..`",
+        "Selecting sub-directories with `..` is forbidden (see the `validate-object-key` setting)."
+      )
+
+  }
+
 }

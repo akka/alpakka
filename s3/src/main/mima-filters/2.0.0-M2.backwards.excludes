@@ -1,0 +1,2 @@
+# Object key validation #2086
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.s3.S3Settings.this")
