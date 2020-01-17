@@ -1,6 +1,6 @@
 <configuration>
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-        <file>target/google-cloud-pub-sub.log</file>
+        <file>target/google-cloud-pub-sub-grpc.log</file>
         <append>false</append>
         <encoder>
             <pattern>%d{ISO8601} %-5level [%thread] [%logger{36}]  %msg%n</pattern>
