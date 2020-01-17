@@ -34,6 +34,7 @@ import akka.stream.alpakka.mqtt.streaming.javadsl.ActorMqttServerSession;
 import akka.stream.alpakka.mqtt.streaming.javadsl.Mqtt;
 import akka.stream.alpakka.mqtt.streaming.javadsl.MqttClientSession;
 import akka.stream.alpakka.mqtt.streaming.javadsl.MqttServerSession;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
@@ -44,10 +45,7 @@ import akka.stream.javadsl.BroadcastHub;
 import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import scala.Tuple2;
 import scala.collection.JavaConverters;
 
@@ -64,6 +62,8 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertEquals;
 
 public class MqttFlowTest {
+
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static int TIMEOUT_SECONDS = 5;
 

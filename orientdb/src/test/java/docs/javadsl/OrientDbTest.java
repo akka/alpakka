@@ -14,6 +14,7 @@ import akka.stream.alpakka.orientdb.OrientDbWriteSettings;
 import akka.stream.alpakka.orientdb.javadsl.OrientDbFlow;
 import akka.stream.alpakka.orientdb.javadsl.OrientDbSink;
 import akka.stream.alpakka.orientdb.javadsl.OrientDbSource;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
@@ -27,6 +28,7 @@ import com.orientechnologies.orient.core.record.impl.ODocument;
 import com.orientechnologies.orient.object.db.OObjectDatabaseTx;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -42,6 +44,7 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertEquals;
 
 public class OrientDbTest {
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static OServerAdmin oServerAdmin;
   private static OPartitionedDatabasePool oDatabase;

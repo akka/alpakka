@@ -10,7 +10,6 @@ import javax.annotation.PostConstruct;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.event.LoggingAdapter;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Source;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

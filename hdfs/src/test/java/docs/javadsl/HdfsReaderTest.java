@@ -13,6 +13,7 @@ import akka.stream.alpakka.hdfs.*;
 import akka.stream.alpakka.hdfs.javadsl.HdfsFlow;
 import akka.stream.alpakka.hdfs.javadsl.HdfsSource;
 import akka.stream.alpakka.hdfs.util.JavaTestUtils;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -24,10 +25,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.DefaultCodec;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -38,6 +36,8 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertArrayEquals;
 
 public class HdfsReaderTest {
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
+
   private static MiniDFSCluster hdfsCluster = null;
   private static ActorSystem system;
   private static ActorMaterializer materializer;

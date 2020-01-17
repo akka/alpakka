@@ -6,12 +6,15 @@ package docs.javadsl;
 
 import akka.Done;
 import akka.stream.alpakka.geode.javadsl.Geode;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 
 public class GeodeFiniteSourceTestCase extends GeodeBaseTestCase {
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   @Test
   public void finiteSourceTest() throws ExecutionException, InterruptedException {
