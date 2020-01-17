@@ -25,7 +25,7 @@ trait WithMaterializerGlobal
   implicit val materializer = ActorMaterializer()
   implicit val ec = materializer.executionContext
 
-  override def afterAll(): Unit = {
+  override protected def afterAll(): Unit = {
     super.afterAll()
     Await.result(actorSystem.terminate(), 10.seconds)
   }

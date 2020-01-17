@@ -5,6 +5,7 @@
 package docs.scaladsl
 
 import akka.actor.ActorSystem
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.xml._
 import akka.stream.alpakka.xml.scaladsl.XmlWriting
@@ -19,7 +20,7 @@ import scala.concurrent.duration._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class XmlWritingSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
+class XmlWritingSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with LogCapturing {
   implicit val system: ActorSystem = ActorSystem("Test")
   implicit val mat: Materializer = ActorMaterializer()
 

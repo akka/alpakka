@@ -13,6 +13,7 @@ import akka.http.scaladsl.{HttpExt, HttpsConnectionContext}
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.google.firebase.fcm.{FcmErrorResponse, FcmSuccessResponse}
 import akka.stream.alpakka.google.firebase.fcm.FcmNotification
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
@@ -32,7 +33,8 @@ class FcmSenderSpec
     with Matchers
     with ScalaFutures
     with MockitoSugar
-    with BeforeAndAfterAll {
+    with BeforeAndAfterAll
+    with LogCapturing {
 
   import FcmJsonSupport._
 

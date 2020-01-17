@@ -5,13 +5,14 @@
 package akka.stream.alpakka.googlecloud.storage
 
 import akka.actor.ActorSystem
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import com.typesafe.config.ConfigFactory
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import scala.collection.JavaConverters._
 
-class GCStorageExtSpec extends AnyFlatSpec with Matchers {
+class GCStorageExtSpec extends AnyFlatSpec with Matchers with LogCapturing {
   "GCStorageExt" should "reuse application config from actor system" in {
     val projectId = "projectId"
     val clientEmail = "clientEmail"

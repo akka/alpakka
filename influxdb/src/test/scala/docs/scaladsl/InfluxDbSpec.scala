@@ -14,17 +14,23 @@ import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.{Done, NotUsed}
 import akka.stream.alpakka.influxdb.{InfluxDbReadSettings, InfluxDbWriteMessage}
 import akka.stream.alpakka.influxdb.scaladsl.{InfluxDbSink, InfluxDbSource}
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
 import docs.javadsl.TestUtils._
 import akka.stream.scaladsl.Sink
 
 import scala.collection.JavaConverters._
-
 import docs.javadsl.TestConstants.{INFLUXDB_URL, PASSWORD, USERNAME}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class InfluxDbSpec extends AnyWordSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll with ScalaFutures {
+class InfluxDbSpec
+    extends AnyWordSpec
+    with Matchers
+    with BeforeAndAfterEach
+    with BeforeAndAfterAll
+    with ScalaFutures
+    with LogCapturing {
 
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()

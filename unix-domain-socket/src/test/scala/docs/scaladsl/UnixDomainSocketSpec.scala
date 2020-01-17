@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.Done
 import akka.actor.ActorSystem
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.alpakka.unixdomainsocket.UnixSocketAddress
 import akka.stream.{ActorMaterializer, OverflowStrategy}
 import akka.stream.alpakka.unixdomainsocket.scaladsl.UnixDomainSocket
@@ -30,7 +31,8 @@ class UnixDomainSocketSpec
     with Matchers
     with ScalaFutures
     with BeforeAndAfterAll
-    with IntegrationPatience {
+    with IntegrationPatience
+    with LogCapturing {
 
   override def afterAll: Unit =
     TestKit.shutdownActorSystem(system)

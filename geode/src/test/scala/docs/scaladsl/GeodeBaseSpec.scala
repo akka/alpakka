@@ -9,6 +9,7 @@ import java.util.{Date, UUID}
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.geode.{GeodeSettings, RegionSettings}
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Source
 import org.scalatest.BeforeAndAfterAll
 
@@ -18,7 +19,7 @@ import scala.language.postfixOps
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class GeodeBaseSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+class GeodeBaseSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with LogCapturing {
 
   implicit val system = ActorSystem("test")
   implicit val materializer = ActorMaterializer()

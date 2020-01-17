@@ -13,6 +13,7 @@ import akka.stream.alpakka.orientdb.{
   OrientDbWriteMessage,
   OrientDbWriteSettings
 }
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
@@ -35,7 +36,7 @@ import scala.concurrent.duration._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class OrientDbSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
+class OrientDbSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with LogCapturing {
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 100.millis)
 

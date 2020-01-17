@@ -9,6 +9,7 @@ import java.time.{LocalDateTime, ZoneOffset, ZonedDateTime}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
 import akka.http.scaladsl.model.headers.{`Raw-Request-URI`, Host, RawHeader}
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Sink
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.testkit.TestKit
@@ -28,7 +29,8 @@ class SignerSpec(_system: ActorSystem)
     with AnyFlatSpecLike
     with Matchers
     with BeforeAndAfterAll
-    with ScalaFutures {
+    with ScalaFutures
+    with LogCapturing {
   def this() = this(ActorSystem("SignerSpec"))
 
   implicit val defaultPatience =

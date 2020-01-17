@@ -6,7 +6,9 @@ package akka.stream.alpakka.s3.impl
 
 import java.nio.BufferOverflowException
 import java.nio.file.Files
+
 import akka.actor.ActorSystem
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.testkit.{EventFilter, TestKit}
@@ -23,7 +25,8 @@ class DiskBufferSpec(_system: ActorSystem)
     with Matchers
     with BeforeAndAfterAll
     with ScalaFutures
-    with Eventually {
+    with Eventually
+    with LogCapturing {
 
   def this() = this(ActorSystem("DiskBufferSpec"))
 

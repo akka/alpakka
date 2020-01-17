@@ -8,6 +8,7 @@ import java.net.InetSocketAddress
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.alpakka.udp.Datagram
 import akka.stream.alpakka.udp.scaladsl.Udp
 import akka.stream.scaladsl.{Flow, Keep, Source}
@@ -27,7 +28,8 @@ class UdpSpec
     with AnyWordSpecLike
     with Matchers
     with ScalaFutures
-    with BeforeAndAfterAll {
+    with BeforeAndAfterAll
+    with LogCapturing {
 
   implicit val mat = ActorMaterializer()
   implicit val pat = PatienceConfig(3.seconds, 50.millis)

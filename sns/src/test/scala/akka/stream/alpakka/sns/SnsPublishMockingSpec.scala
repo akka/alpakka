@@ -7,6 +7,7 @@ package akka.stream.alpakka.sns
 import java.util.concurrent.CompletableFuture
 
 import akka.stream.alpakka.sns.scaladsl.SnsPublisher
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Keep, Sink}
 import akka.stream.testkit.scaladsl.TestSource
 import org.mockito.ArgumentMatchers.{any, eq => meq}
@@ -18,7 +19,7 @@ import software.amazon.awssdk.services.sns.model.{PublishRequest, PublishRespons
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class SnsPublishMockingSpec extends AnyFlatSpec with DefaultTestContext with Matchers {
+class SnsPublishMockingSpec extends AnyFlatSpec with DefaultTestContext with Matchers with LogCapturing {
 
   it should "publish a single PublishRequest message to sns" in {
     val publishRequest = PublishRequest.builder().topicArn("topic-arn").message("sns-message").build()

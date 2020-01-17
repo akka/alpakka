@@ -9,6 +9,7 @@ import akka.actor.{ActorSystem, Cancellable}
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.pubsub.grpc.PubSubSettings
 import akka.stream.alpakka.googlecloud.pubsub.grpc.scaladsl.{GrpcPublisher, PubSubAttributes}
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import org.scalatest.OptionValues
 
 //#publish-single
@@ -34,7 +35,8 @@ class IntegrationSpec
     with Inside
     with BeforeAndAfterAll
     with ScalaFutures
-    with OptionValues {
+    with OptionValues
+    with LogCapturing {
 
   implicit val system = ActorSystem("IntegrationSpec")
   implicit val materializer = ActorMaterializer()

@@ -10,6 +10,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{MediaTypes, _}
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.stream.alpakka.s3.{ListBucketResultCommonPrefixes, ListBucketResultContents}
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.BeforeAndAfterAll
@@ -23,7 +24,8 @@ class MarshallingSpec(_system: ActorSystem)
     with AnyFlatSpecLike
     with Matchers
     with ScalaFutures
-    with BeforeAndAfterAll {
+    with BeforeAndAfterAll
+    with LogCapturing {
 
   def this() = this(ActorSystem("MarshallingSpec"))
 

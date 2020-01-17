@@ -6,6 +6,7 @@ package akka.stream.alpakka.s3.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest._
@@ -18,7 +19,8 @@ trait S3ClientIntegrationSpec
     with BeforeAndAfterEach
     with Matchers
     with ScalaFutures
-    with IntegrationPatience {
+    with IntegrationPatience
+    with LogCapturing {
 
   implicit val system: ActorSystem
   implicit val materializer = ActorMaterializer()

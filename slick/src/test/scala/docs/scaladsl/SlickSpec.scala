@@ -8,6 +8,7 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.slick.scaladsl.{Slick, SlickSession}
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl._
 import akka.testkit.TestKit
 import org.scalatest._
@@ -25,7 +26,13 @@ import org.scalatest.wordspec.AnyWordSpec
  * This unit test is run using a local H2 database using
  * `/tmp/alpakka-slick-h2-test` for temporary storage.
  */
-class SlickSpec extends AnyWordSpec with ScalaFutures with BeforeAndAfterEach with BeforeAndAfterAll with Matchers {
+class SlickSpec
+    extends AnyWordSpec
+    with ScalaFutures
+    with BeforeAndAfterEach
+    with BeforeAndAfterAll
+    with Matchers
+    with LogCapturing {
   //#init-mat
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()

@@ -8,6 +8,7 @@ import java.util.concurrent.CompletableFuture
 
 import akka.stream.alpakka.kinesisfirehose.KinesisFirehoseErrors.FailurePublishingRecords
 import akka.stream.alpakka.kinesisfirehose.scaladsl.KinesisFirehoseFlow
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Keep
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.{TestSink, TestSource}
@@ -23,7 +24,7 @@ import software.amazon.awssdk.services.firehose.model._
 
 import scala.collection.JavaConverters._
 
-class KinesisFirehoseFlowSpec extends AnyWordSpec with Matchers with KinesisFirehoseMock {
+class KinesisFirehoseFlowSpec extends AnyWordSpec with Matchers with KinesisFirehoseMock with LogCapturing {
 
   "KinesisFirehoseFlow" must {
 

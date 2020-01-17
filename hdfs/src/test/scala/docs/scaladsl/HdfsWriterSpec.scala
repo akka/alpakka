@@ -9,6 +9,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.alpakka.hdfs._
 import akka.stream.alpakka.hdfs.scaladsl.HdfsFlow
 import akka.stream.alpakka.hdfs.util.ScalaTestUtils._
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.util.ByteString
 import org.apache.hadoop.fs.Path
@@ -24,7 +25,12 @@ import scala.concurrent.{Await, ExecutionContextExecutor}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class HdfsWriterSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
+class HdfsWriterSpec
+    extends AnyWordSpecLike
+    with Matchers
+    with BeforeAndAfterAll
+    with BeforeAndAfterEach
+    with LogCapturing {
 
   private var hdfsCluster: MiniDFSCluster = _
   private val destination = "/tmp/alpakka/"

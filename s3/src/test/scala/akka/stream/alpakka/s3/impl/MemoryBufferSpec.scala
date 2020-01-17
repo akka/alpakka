@@ -5,6 +5,7 @@
 package akka.stream.alpakka.s3.impl
 
 import akka.actor.ActorSystem
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
@@ -20,7 +21,8 @@ class MemoryBufferSpec(_system: ActorSystem)
     with AnyFlatSpecLike
     with Matchers
     with BeforeAndAfterAll
-    with ScalaFutures {
+    with ScalaFutures
+    with LogCapturing {
 
   def this() = this(ActorSystem("MemoryBufferSpec"))
 

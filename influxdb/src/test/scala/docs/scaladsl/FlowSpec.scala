@@ -12,6 +12,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.influxdb.{InfluxDbReadSettings, InfluxDbWriteMessage, InfluxDbWriteResult}
 import akka.stream.alpakka.influxdb.scaladsl.{InfluxDbFlow, InfluxDbSource}
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
 import org.influxdb.InfluxDB
@@ -25,7 +26,13 @@ import scala.concurrent.duration._
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class FlowSpec extends AnyWordSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll with ScalaFutures {
+class FlowSpec
+    extends AnyWordSpec
+    with Matchers
+    with BeforeAndAfterEach
+    with BeforeAndAfterAll
+    with ScalaFutures
+    with LogCapturing {
 
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()

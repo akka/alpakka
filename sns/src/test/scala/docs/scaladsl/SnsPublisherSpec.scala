@@ -7,6 +7,7 @@ package docs.scaladsl
 import akka.Done
 import akka.stream.alpakka.sns.IntegrationTestContext
 import akka.stream.alpakka.sns.scaladsl.SnsPublisher
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.flatspec.AnyFlatSpec
@@ -16,7 +17,12 @@ import software.amazon.awssdk.services.sns.model.PublishRequest
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-class SnsPublisherSpec extends AnyFlatSpec with Matchers with ScalaFutures with IntegrationTestContext {
+class SnsPublisherSpec
+    extends AnyFlatSpec
+    with Matchers
+    with ScalaFutures
+    with IntegrationTestContext
+    with LogCapturing {
 
   implicit val defaultPatience =
     PatienceConfig(timeout = 15.seconds, interval = 100.millis)

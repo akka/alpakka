@@ -14,6 +14,7 @@ import akka.stream.alpakka.mqtt.streaming.scaladsl.{
   Mqtt,
   MqttServerSession
 }
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Sink, Source, SourceQueueWithComplete}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.{ActorMaterializer, Materializer, OverflowStrategy}
@@ -33,7 +34,8 @@ class MqttSessionSpec
     with AnyWordSpecLike
     with BeforeAndAfterAll
     with ScalaFutures
-    with Matchers {
+    with Matchers
+    with LogCapturing {
 
   implicit val mat: Materializer = ActorMaterializer()
   implicit val executionContext: ExecutionContext = system.dispatcher

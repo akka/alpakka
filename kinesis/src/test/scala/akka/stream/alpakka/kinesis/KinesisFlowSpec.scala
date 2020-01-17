@@ -8,6 +8,7 @@ import java.util.concurrent.CompletableFuture
 
 import akka.stream.alpakka.kinesis.KinesisErrors.FailurePublishingRecords
 import akka.stream.alpakka.kinesis.scaladsl.KinesisFlow
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Keep
 import akka.stream.testkit.scaladsl.{TestSink, TestSource}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
@@ -23,7 +24,7 @@ import software.amazon.awssdk.services.kinesis.model._
 
 import scala.collection.JavaConverters._
 
-class KinesisFlowSpec extends AnyWordSpec with Matchers with KinesisMock {
+class KinesisFlowSpec extends AnyWordSpec with Matchers with KinesisMock with LogCapturing {
 
   "KinesisFlow" must {
 

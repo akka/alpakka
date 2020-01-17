@@ -9,6 +9,7 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.model.headers.ByteRange
 import akka.stream.alpakka.s3.BucketAccess.{AccessDenied, AccessGranted, NotExists}
 import akka.stream.alpakka.s3.{ApiVersion, BucketAccess, MemoryBufferType, S3Settings}
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.testkit.TestKit
@@ -30,7 +31,8 @@ class S3StreamSpec(_system: ActorSystem)
     with BeforeAndAfterAll
     with PrivateMethodTester
     with ScalaFutures
-    with IntegrationPatience {
+    with IntegrationPatience
+    with LogCapturing {
 
   import HttpRequests._
 

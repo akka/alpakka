@@ -9,6 +9,7 @@ import java.nio.file.{Files, Path}
 import java.security.{DigestInputStream, MessageDigest}
 
 import akka.actor.ActorSystem
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.stream.scaladsl.{Sink, Source, StreamConverters}
 import akka.testkit.TestKit
@@ -25,7 +26,8 @@ class StreamUtilsSpec(_system: ActorSystem)
     with AnyFlatSpecLike
     with Matchers
     with ScalaFutures
-    with BeforeAndAfterAll {
+    with BeforeAndAfterAll
+    with LogCapturing {
   def this() = this(ActorSystem("StreamUtilsSpec"))
 
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withDebugLogging(true))

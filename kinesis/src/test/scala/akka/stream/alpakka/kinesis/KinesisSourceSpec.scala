@@ -9,6 +9,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.stream.alpakka.kinesis.scaladsl.KinesisSource
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.util.ByteString
@@ -23,7 +24,7 @@ import software.amazon.awssdk.services.kinesis.model._
 
 import scala.concurrent.duration._
 
-class KinesisSourceSpec extends AnyWordSpec with Matchers with KinesisMock {
+class KinesisSourceSpec extends AnyWordSpec with Matchers with KinesisMock with LogCapturing {
 
   implicit class recordToString(r: Record) {
     def utf8String: String = ByteString(r.data.asByteBuffer).utf8String

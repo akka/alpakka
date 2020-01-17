@@ -6,6 +6,7 @@ package akka.stream.alpakka.mqtt.streaming
 package impl
 
 import akka.actor.ActorSystem
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Keep, Source}
 import akka.stream.testkit.javadsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
@@ -20,7 +21,8 @@ class MqttFrameStageSpec
     extends TestKit(ActorSystem("MqttFrameStageSpec"))
     with AnyWordSpecLike
     with Matchers
-    with BeforeAndAfterAll {
+    with BeforeAndAfterAll
+    with LogCapturing {
 
   implicit val mat: Materializer = ActorMaterializer()
 

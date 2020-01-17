@@ -6,6 +6,7 @@ package docs.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
@@ -17,7 +18,8 @@ abstract class CsvSpec
     with Matchers
     with BeforeAndAfterAll
     with BeforeAndAfterEach
-    with ScalaFutures {
+    with ScalaFutures
+    with LogCapturing {
 
   implicit val system = ActorSystem(this.getClass.getSimpleName)
   implicit val materializer = ActorMaterializer()

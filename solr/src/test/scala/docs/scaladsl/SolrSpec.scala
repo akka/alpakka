@@ -12,6 +12,7 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.alpakka.solr._
 import akka.stream.alpakka.solr.scaladsl.{SolrFlow, SolrSink, SolrSource}
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
@@ -33,7 +34,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
+class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with LogCapturing {
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(5.seconds)
 

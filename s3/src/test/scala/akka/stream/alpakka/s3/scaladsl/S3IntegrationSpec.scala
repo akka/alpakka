@@ -12,6 +12,7 @@ import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.s3.BucketAccess.{AccessGranted, NotExists}
 import akka.stream.alpakka.s3._
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.testkit.TestKit
 import akka.util.ByteString
@@ -32,7 +33,8 @@ trait S3IntegrationSpec
     with BeforeAndAfterAll
     with Matchers
     with ScalaFutures
-    with OptionValues {
+    with OptionValues
+    with LogCapturing {
 
   implicit val actorSystem: ActorSystem = ActorSystem(
     "S3IntegrationSpec",
