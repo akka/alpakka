@@ -8,6 +8,8 @@ import akka.annotation.InternalApi
 import ch.qos.logback.classic.Level
 import org.slf4j.LoggerFactory
 
+import scala.annotation.tailrec
+
 /**
  * See https://doc.akka.io/docs/akka/current/typed/testing-async.html#silence-logging-output-from-tests
  *
@@ -17,9 +19,17 @@ import org.slf4j.LoggerFactory
   def loggerNameOrRoot(loggerName: String): String =
     if (loggerName == "") org.slf4j.Logger.ROOT_LOGGER_NAME else loggerName
 
-  def getLogbackLogger(loggerName: String): ch.qos.logback.classic.Logger = {
+  def getLogbackLogger(loggerName: String): ch.qos.logback.classic.Logger =
+    getLogbackLoggerInternal(loggerName, 50)
+
+  @tailrec
+  private def getLogbackLoggerInternal(loggerName: String, count: Int): ch.qos.logback.classic.Logger = {
     LoggerFactory.getLogger(loggerNameOrRoot(loggerName)) match {
       case logger: ch.qos.logback.classic.Logger => logger
+      case logger: org.slf4j.helpers.SubstituteLogger if count > 0 =>
+        // Wait for logging initialisation http://www.slf4j.org/codes.html#substituteLogger
+        Thread.sleep(50)
+        getLogbackLoggerInternal(loggerName, count - 1)
       case null =>
         throw new IllegalArgumentException(s"Couldn't find logger for [$loggerName].")
       case other =>
