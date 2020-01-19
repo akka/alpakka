@@ -18,7 +18,6 @@ import akka.stream.alpakka.googlecloud.bigquery.impl.sendrequest.SendRequestWith
 import akka.stream.alpakka.googlecloud.bigquery.impl.util.{Delay, FlowInitializer, OnFinishCallback}
 import akka.stream.scaladsl.{GraphDSL, Source, Zip}
 import spray.json.JsObject
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.ForwardProxyPoolSettings._
 
 import scala.concurrent.ExecutionContext
 

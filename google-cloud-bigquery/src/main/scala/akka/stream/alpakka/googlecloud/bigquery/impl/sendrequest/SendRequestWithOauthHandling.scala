@@ -11,7 +11,6 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig
-import akka.stream.alpakka.googlecloud.bigquery.impl.GoogleSession
 import akka.stream.scaladsl.Flow
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.ForwardProxyPoolSettings._
 
