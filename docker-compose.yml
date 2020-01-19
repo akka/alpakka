@@ -5,7 +5,7 @@
 version: '2'
 services:
   amazoneventbridge:
-    image: localstack/localstack:latest
+    image: localstack/localstack:0.10.6
     environment:
       - "SERVICES=events"
       - "DEBUG=true"

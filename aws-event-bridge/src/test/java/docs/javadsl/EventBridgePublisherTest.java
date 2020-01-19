@@ -107,7 +107,7 @@ public class EventBridgePublisherTest {
     CompletionStage<Done> completion =
         // #use-sink
         Source.single(detailEntry("message"))
-            .runWith(EventBridgePublisher.createSink(eventBridgeClient), materializer);
+            .runWith(EventBridgePublisher.sink(eventBridgeClient), materializer);
 
     // #use-sink
     assertThat(completion.toCompletableFuture().get(2, TimeUnit.SECONDS), is(Done.getInstance()));
@@ -118,7 +118,7 @@ public class EventBridgePublisherTest {
     CompletionStage<Done> completion =
         // #use-sink
         Source.single(detailPutEventsRequest("message"))
-            .runWith(EventBridgePublisher.createPublishSink(eventBridgeClient), materializer);
+            .runWith(EventBridgePublisher.publishSink(eventBridgeClient), materializer);
 
     // #use-sink
     assertThat(completion.toCompletableFuture().get(2, TimeUnit.SECONDS), is(Done.getInstance()));
@@ -129,7 +129,7 @@ public class EventBridgePublisherTest {
     CompletionStage<Done> completion =
         // #use-flow
         Source.single(detailEntry("message"))
-            .via(EventBridgePublisher.createFlow(eventBridgeClient))
+            .via(EventBridgePublisher.flow(eventBridgeClient))
             .runWith(Sink.foreach(res -> System.out.println(res)), materializer);
 
     // #use-flow
@@ -141,7 +141,7 @@ public class EventBridgePublisherTest {
     CompletionStage<Done> completion =
         // #use-flow
         Source.single(detailPutEventsRequest("message"))
-            .via(EventBridgePublisher.createPublishFlow(eventBridgeClient))
+            .via(EventBridgePublisher.publishFlow(eventBridgeClient))
             .runWith(Sink.foreach(res -> System.out.println(res)), materializer);
 
     // #use-flow

@@ -4,6 +4,11 @@
 
 package akka.stream.alpakka.aws.eventbridge
 
+/**
+ * Settings of the EventBridgePublish plugin.
+ *
+ * @param concurrency maps to parallelism in in async stream operations
+ * */
 final class EventBridgePublishSettings private (val concurrency: Int) {
   require(concurrency > 0)
 

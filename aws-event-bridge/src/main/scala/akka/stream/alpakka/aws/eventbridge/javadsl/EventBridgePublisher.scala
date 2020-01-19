@@ -19,33 +19,43 @@ import software.amazon.awssdk.services.eventbridge.model._
 object EventBridgePublisher {
 
   /**
-   * creates a [[akka.stream.javadsl.Flow Flow]] to publish messages to an EventBridge using an [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]]
+   * Creates a [[akka.stream.javadsl.Flow Flow]] to publish messages to an EventBridge.
+   *
+   * @param settings [[akka.stream.alpakka.aws.eventbridge.EventBridgePublishSettings]] settings for publishing
+   * @param eventBridgeClient [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]] client for publishing
    */
-  def createFlow(settings: EventBridgePublishSettings,
-                 eventBridgeClient: EventBridgeAsyncClient): Flow[PutEventsRequestEntry, PutEventsResponse, NotUsed] =
+  def flow(settings: EventBridgePublishSettings,
+           eventBridgeClient: EventBridgeAsyncClient): Flow[PutEventsRequestEntry, PutEventsResponse, NotUsed] =
     akka.stream.alpakka.aws.eventbridge.scaladsl.EventBridgePublisher.flow(settings)(eventBridgeClient).asJava
 
   /**
-   * creates a [[akka.stream.javadsl.Flow Flow]] to publish messages to an EventBridge using an [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]]
+   * Creates a [[akka.stream.javadsl.Flow Flow]] to publish messages to an EventBridge.
+   *
+   * @param eventBridgeClient [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]] client for publishing
    */
-  def createFlow(eventBridgeClient: EventBridgeAsyncClient): Flow[PutEventsRequestEntry, PutEventsResponse, NotUsed] =
+  def flow(eventBridgeClient: EventBridgeAsyncClient): Flow[PutEventsRequestEntry, PutEventsResponse, NotUsed] =
     akka.stream.alpakka.aws.eventbridge.scaladsl.EventBridgePublisher
       .flow(EventBridgePublishSettings())(eventBridgeClient)
       .asJava
 
   /**
-   * creates a [[akka.stream.javadsl.Flow Flow]] to publish messages to an EventBridge using an [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]]
+   * Creates a [[akka.stream.javadsl.Flow Flow]] to publish messages to an EventBridge.
+   *
+   * @param settings [[akka.stream.alpakka.aws.eventbridge.EventBridgePublishSettings]] settings for publishing
+   * @param eventBridgeClient [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]] client for publishing
    */
-  def createFlowSeq(
+  def flowSeq(
       settings: EventBridgePublishSettings,
       eventBridgeClient: EventBridgeAsyncClient
   ): Flow[PutEventsRequestEntry, PutEventsResponse, NotUsed] =
     akka.stream.alpakka.aws.eventbridge.scaladsl.EventBridgePublisher.flow(settings)(eventBridgeClient).asJava
 
   /**
-   * creates a [[akka.stream.javadsl.Flow Flow]] to publish messages to an EventBridge using an [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]]
+   * Creates a [[akka.stream.javadsl.Flow Flow]] to publish messages to an EventBridge.
+   *
+   * @param eventBridgeClient [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]] client for publishing
    */
-  def createFlowSeq(
+  def flowSeq(
       eventBridgeClient: EventBridgeAsyncClient
   ): Flow[Seq[PutEventsRequestEntry], PutEventsResponse, NotUsed] =
     akka.stream.alpakka.aws.eventbridge.scaladsl.EventBridgePublisher
@@ -53,47 +63,62 @@ object EventBridgePublisher {
       .asJava
 
   /**
-   * creates a [[akka.stream.javadsl.Flow Flow]] to publish messages to an EventBridge using an [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]]
+   * Creates a [[akka.stream.javadsl.Flow Flow]] to publish messages to an EventBridge.
+   *
+   * @param settings [[akka.stream.alpakka.aws.eventbridge.EventBridgePublishSettings]] settings for publishing
+   * @param eventBridgeClient [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]] client for publishing
    */
-  def createPublishFlow(settings: EventBridgePublishSettings,
-                        eventBridgeClient: EventBridgeAsyncClient): Flow[PutEventsRequest, PutEventsResponse, NotUsed] =
+  def publishFlow(settings: EventBridgePublishSettings,
+                  eventBridgeClient: EventBridgeAsyncClient): Flow[PutEventsRequest, PutEventsResponse, NotUsed] =
     akka.stream.alpakka.aws.eventbridge.scaladsl.EventBridgePublisher.publishFlow(settings)(eventBridgeClient).asJava
 
   /**
-   * creates a [[akka.stream.javadsl.Flow Flow]] to publish a message using an [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]]
+   * Creates a [[akka.stream.javadsl.Flow Flow]] to publish a message to an EventBridge.
+   *
+   * @param eventBridgeClient [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]] client for publishing
    */
-  def createPublishFlow(eventBridgeClient: EventBridgeAsyncClient): Flow[PutEventsRequest, PutEventsResponse, NotUsed] =
+  def publishFlow(eventBridgeClient: EventBridgeAsyncClient): Flow[PutEventsRequest, PutEventsResponse, NotUsed] =
     akka.stream.alpakka.aws.eventbridge.scaladsl.EventBridgePublisher
       .publishFlow(EventBridgePublishSettings())(eventBridgeClient)
       .asJava
 
   /**
-   * creates a [[akka.stream.javadsl.Sink Sink]] to publish a message to an EventBridge using an [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]]
+   * Creates a [[akka.stream.javadsl.Sink Sink]] to publish a message to an EventBridge.
+   *
+   * @param eventBridgeClient [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]] client for publishing
    */
-  def createSink(eventBridgeClient: EventBridgeAsyncClient): Sink[PutEventsRequestEntry, CompletionStage[Done]] =
-    createFlow(EventBridgePublishSettings(), eventBridgeClient)
+  def sink(eventBridgeClient: EventBridgeAsyncClient): Sink[PutEventsRequestEntry, CompletionStage[Done]] =
+    flow(EventBridgePublishSettings(), eventBridgeClient)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
-   * creates a [[akka.stream.javadsl.Sink Sink]] to publish single message to an EventBridge using an [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]]
+   * Creates a [[akka.stream.javadsl.Sink Sink]] to publish a message to an EventBridge.
+   *
+   * @param settings [[akka.stream.alpakka.aws.eventbridge.EventBridgePublishSettings]] settings for publishing
+   * @param eventBridgeClient [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]] client for publishing
    */
-  def createSink(settings: EventBridgePublishSettings,
-                 eventBridgeClient: EventBridgeAsyncClient): Sink[PutEventsRequestEntry, CompletionStage[Done]] =
-    createFlow(settings, eventBridgeClient)
+  def sink(settings: EventBridgePublishSettings,
+           eventBridgeClient: EventBridgeAsyncClient): Sink[PutEventsRequestEntry, CompletionStage[Done]] =
+    flow(settings, eventBridgeClient)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
-   * creates a [[akka.stream.javadsl.Sink Sink]] to publish messages to an EventBridge based on the message topic arn using an [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]]
+   * Creates a [[akka.stream.javadsl.Sink Sink]] to publish messages to an EventBridge based on the message bus arn.
+   *
+   * @param settings [[akka.stream.alpakka.aws.eventbridge.EventBridgePublishSettings]] settings for publishing
+   * @param eventBridgeClient [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]] client for publishing
    */
-  def createPublishSink(settings: EventBridgePublishSettings,
-                        eventBridgeClient: EventBridgeAsyncClient): Sink[PutEventsRequest, CompletionStage[Done]] =
-    createPublishFlow(settings, eventBridgeClient)
+  def publishSink(settings: EventBridgePublishSettings,
+                  eventBridgeClient: EventBridgeAsyncClient): Sink[PutEventsRequest, CompletionStage[Done]] =
+    publishFlow(settings, eventBridgeClient)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
-   * creates a [[akka.stream.javadsl.Sink Sink]] to publish messages to an EventBridge based on the message topic arn using an [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]]
+   * Creates a [[akka.stream.javadsl.Sink Sink]] to publish messages to an EventBridge based on the message bus arn.
+   *
+   * @param eventBridgeClient [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]] client for publishing
    */
-  def createPublishSink(eventBridgeClient: EventBridgeAsyncClient): Sink[PutEventsRequest, CompletionStage[Done]] =
-    createPublishFlow(EventBridgePublishSettings(), eventBridgeClient)
+  def publishSink(eventBridgeClient: EventBridgeAsyncClient): Sink[PutEventsRequest, CompletionStage[Done]] =
+    publishFlow(EventBridgePublishSettings(), eventBridgeClient)
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
 }
