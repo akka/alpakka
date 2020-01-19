@@ -4,15 +4,11 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.impl
 
-import java.net.InetSocketAddress
-
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
-import akka.http.scaladsl.{ClientTransport, HttpExt}
+import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import akka.http.scaladsl.model.{FormData, HttpMethods, HttpRequest}
-import akka.http.scaladsl.settings.{ClientConnectionSettings, ConnectionPoolSettings}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.bigquery.ForwardProxy
