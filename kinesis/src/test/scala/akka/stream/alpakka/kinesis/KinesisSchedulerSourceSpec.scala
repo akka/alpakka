@@ -8,7 +8,6 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.concurrent.Semaphore
 
-import akka.Done
 import akka.stream.KillSwitches
 import akka.stream.alpakka.kinesis.CommittableRecord.{BatchData, ShardProcessorData}
 import akka.stream.alpakka.kinesis.KinesisSchedulerErrors.SchedulerUnexpectedShutdown
@@ -21,7 +20,8 @@ import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.scalatest.concurrent.Eventually
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kinesis.model.Record
 import software.amazon.kinesis.coordinator.Scheduler
@@ -38,9 +38,9 @@ import software.amazon.kinesis.retrieval.kpl.ExtendedSequenceNumber
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.util.{Random, Try}
+import scala.util.Random
 
-class KinesisSchedulerSourceSpec extends WordSpecLike with Matchers with DefaultTestContext with Eventually {
+class KinesisSchedulerSourceSpec extends AnyWordSpec with Matchers with DefaultTestContext with Eventually {
 
   "KinesisSchedulerSource" must {
 
@@ -229,11 +229,9 @@ class KinesisSchedulerSourceSpec extends WordSpecLike with Matchers with Default
 
     private val semaphore = new Semaphore(0)
 
-    private var recordProcessorFactory: ShardRecordProcessorFactory = _
     var recordProcessor: ShardRecordProcessor = _
     var otherRecordProcessor: ShardRecordProcessor = _
     private val schedulerBuilder = { x: ShardRecordProcessorFactory =>
-      recordProcessorFactory = x
       recordProcessor = x.shardRecordProcessor()
       otherRecordProcessor = x.shardRecordProcessor()
       semaphore.release()

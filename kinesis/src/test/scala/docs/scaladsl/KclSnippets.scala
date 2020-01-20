@@ -5,7 +5,6 @@
 package docs.scaladsl
 
 import java.util.UUID
-import java.util.concurrent.Executors
 
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Sink
@@ -19,13 +18,10 @@ import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 import software.amazon.kinesis.common.ConfigsBuilder
 import software.amazon.kinesis.coordinator.Scheduler
 import software.amazon.kinesis.processor.ShardRecordProcessorFactory
-import software.amazon.kinesis.retrieval.polling.{SimpleRecordsFetcherFactory, SynchronousBlockingRetrievalFactory}
 
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-import scala.language.postfixOps
 
-object KclSnippets {
+class KclSnippets {
 
   //#init-system
   implicit val system: ActorSystem = ActorSystem()
@@ -34,13 +30,13 @@ object KclSnippets {
 
   //#init-clients
   val region: Region = Region.EU_WEST_1
-  val kinesisClient: KinesisAsyncClient = ??? // KinesisAsyncClient.builder.region(region).build
-  val dynamoClient: DynamoDbAsyncClient = ??? // DynamoDbAsyncClient.builder.region(region).build
-  val cloudWatchClient: CloudWatchAsyncClient = ??? //  CloudWatchAsyncClient.builder.region(region).build
+  val kinesisClient: KinesisAsyncClient = KinesisAsyncClient.builder.region(region).build
+  val dynamoClient: DynamoDbAsyncClient = DynamoDbAsyncClient.builder.region(region).build
+  val cloudWatchClient: CloudWatchAsyncClient = CloudWatchAsyncClient.builder.region(region).build
   //#init-clients
 
   //#scheduler-settings
-  val schedulerSourceSettings = KinesisSchedulerSourceSettings(bufferSize = 1000, backpressureTimeout = 1 minute)
+  val schedulerSourceSettings = KinesisSchedulerSourceSettings(bufferSize = 1000, backpressureTimeout = 1.minute)
 
   val builder: ShardRecordProcessorFactory => Scheduler =
     recordProcessorFactory => {
@@ -78,7 +74,7 @@ object KclSnippets {
   //#scheduler-source
 
   //#checkpoint
-  val checkpointSettings = KinesisSchedulerCheckpointSettings(100, 30 seconds)
+  val checkpointSettings = KinesisSchedulerCheckpointSettings(100, 30.seconds)
 
   source
     .via(KinesisSchedulerSource.checkpointRecordsFlow(checkpointSettings))

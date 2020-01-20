@@ -283,7 +283,6 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
         "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll // ApacheV2
         ExclusionRule(organization = "com.typesafe.akka"),
-        "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
       ) ++ Seq(
         "software.amazon.awssdk" % "kinesis" % AwsSdk2Version, // ApacheV2
         "software.amazon.awssdk" % "firehose" % AwsSdk2Version, // ApacheV2
