@@ -38,6 +38,10 @@ interface CommonFtpStageTest extends BaseSupport, AkkaSupport {
   Sink<FtpFile, CompletionStage<IOResult>> getMoveSink(Function<FtpFile, String> destinationPath)
       throws Exception;
 
+  default IOResult await(CompletionStage<IOResult> result) throws InterruptedException, java.util.concurrent.ExecutionException, java.util.concurrent.TimeoutException {
+    return result.toCompletableFuture().get(5, TimeUnit.SECONDS);
+  }
+
   default void listFiles() throws Exception {
     final int numFiles = 30;
     final int pageSize = 10;
@@ -73,7 +77,7 @@ interface CommonFtpStageTest extends BaseSupport, AkkaSupport {
     probe.request(100).expectNextOrComplete();
 
     int expectedNumOfBytes = getDefaultContent().getBytes().length;
-    IOResult result = pairResult.first().toCompletableFuture().get(3, TimeUnit.SECONDS);
+    IOResult result = await(pairResult.first());
 
     assertEquals(IOResult.createSuccessful(expectedNumOfBytes), result);
   }
@@ -90,7 +94,7 @@ interface CommonFtpStageTest extends BaseSupport, AkkaSupport {
         Source.single(fileContent).runWith(sink, materializer);
 
     int expectedNumOfBytes = getDefaultContent().getBytes().length;
-    IOResult result = resultCompletionStage.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    IOResult result = await(resultCompletionStage);
 
     byte[] actualStoredContent = getFtpFileContents(fileName);
 
@@ -107,7 +111,7 @@ interface CommonFtpStageTest extends BaseSupport, AkkaSupport {
     Sink<FtpFile, CompletionStage<IOResult>> sink = getRemoveSink();
     CompletionStage<IOResult> resultCompletionStage = source.runWith(sink, materializer);
 
-    IOResult result = resultCompletionStage.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    IOResult result = await(resultCompletionStage);
 
     Boolean fileExists = fileExists(fileName);
 
@@ -125,7 +129,7 @@ interface CommonFtpStageTest extends BaseSupport, AkkaSupport {
     Sink<FtpFile, CompletionStage<IOResult>> sink = getMoveSink((ftpFile) -> fileName2);
     CompletionStage<IOResult> resultCompletionStage = source.runWith(sink, materializer);
 
-    IOResult result = resultCompletionStage.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    IOResult result = await(resultCompletionStage);
 
     assertEquals(IOResult.createSuccessful(1), result);
 
