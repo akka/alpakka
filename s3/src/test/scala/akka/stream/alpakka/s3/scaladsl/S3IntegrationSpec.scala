@@ -519,6 +519,8 @@ class MinioS3IntegrationSpec extends S3IntegrationSpec {
                                  |    }
                                  |  }
                                  |  endpoint-url = "$endpointUrl"
+                                 |  # Use of endpoint-url requires path-style-access
+                                 |  path-style-access = true
                                  |}
     """.stripMargin).withFallback(super.config())
 
