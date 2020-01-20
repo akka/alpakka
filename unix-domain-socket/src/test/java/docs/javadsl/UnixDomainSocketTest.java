@@ -76,7 +76,7 @@ public class UnixDomainSocketTest {
         connections
             .map(
                 connection -> {
-                  System.out.println("New connection from: " + connection.remoteAddress());
+                  log.info("New connection from: {}", connection.remoteAddress());
 
                   final Flow<ByteString, ByteString, NotUsed> echo =
                       Flow.of(ByteString.class)

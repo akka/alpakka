@@ -41,7 +41,7 @@ interface CommonFtpStageTest extends BaseSupport, AkkaSupport {
   default IOResult await(CompletionStage<IOResult> result)
       throws InterruptedException, java.util.concurrent.ExecutionException,
           java.util.concurrent.TimeoutException {
-    return result.toCompletableFuture().get(5, TimeUnit.SECONDS);
+    return result.toCompletableFuture().get(10, TimeUnit.SECONDS);
   }
 
   default void listFiles() throws Exception {
