@@ -38,7 +38,9 @@ interface CommonFtpStageTest extends BaseSupport, AkkaSupport {
   Sink<FtpFile, CompletionStage<IOResult>> getMoveSink(Function<FtpFile, String> destinationPath)
       throws Exception;
 
-  default IOResult await(CompletionStage<IOResult> result) throws InterruptedException, java.util.concurrent.ExecutionException, java.util.concurrent.TimeoutException {
+  default IOResult await(CompletionStage<IOResult> result)
+      throws InterruptedException, java.util.concurrent.ExecutionException,
+          java.util.concurrent.TimeoutException {
     return result.toCompletableFuture().get(5, TimeUnit.SECONDS);
   }
 
