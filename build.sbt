@@ -237,8 +237,7 @@ lazy val kinesis = alpakkaProject(
   "aws.kinesis",
   Dependencies.Kinesis,
   // For mockito https://github.com/akka/alpakka/issues/390
-  parallelExecution in Test := false,
-  fatalWarnings := false
+  Test / parallelExecution := false
 )
 
 lazy val kudu = alpakkaProject("kudu", "kudu", Dependencies.Kudu, fork in Test := false)

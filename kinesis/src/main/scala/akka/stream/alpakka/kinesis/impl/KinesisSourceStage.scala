@@ -54,7 +54,9 @@ private[kinesis] class KinesisSourceStage(shardSettings: ShardSettings, amazonKi
   override def shape: SourceShape[Record] = new SourceShape[Record](out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new TimerGraphStageLogic(shape) with StageLogging {
+    new TimerGraphStageLogic(shape) with StageLogging with OutHandler {
+
+      setHandler(out, this)
 
       import shardSettings._
 
@@ -67,9 +69,7 @@ private[kinesis] class KinesisSourceStage(shardSettings: ShardSettings, amazonKi
         requestShardIterator()
       }
 
-      setHandler(shape.out, new OutHandler {
-        override def onPull(): Unit = self.ref ! Pump
-      })
+      override def onPull(): Unit = self.ref ! Pump
 
       private def awaitingShardIterator(in: (ActorRef, Any)): Unit = in match {
         case (_, GetShardIteratorSuccess(result)) =>
