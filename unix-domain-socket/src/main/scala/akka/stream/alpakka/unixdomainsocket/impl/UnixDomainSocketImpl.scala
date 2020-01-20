@@ -392,7 +392,7 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
                      backlog: Int = 128,
                      halfClose: Boolean = false): Source[IncomingConnection, Future[ServerBinding]] = {
 
-    val bind = { () =>
+    val bind: () => Source[IncomingConnection, Future[ServerBinding]] = { () =>
       val (incomingConnectionQueue, incomingConnectionSource) =
         Source
           .queue[IncomingConnection](2, OverflowStrategy.backpressure)
@@ -437,6 +437,13 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
           }
         )
       } catch {
+        case e: IOException =>
+          val withAddress = new IOException(e.getMessage + s" ($address)", e)
+          registeredKey.cancel()
+          channel.close()
+          incomingConnectionQueue.fail(withAddress)
+          serverBinding.failure(withAddress)
+
         case NonFatal(e) =>
           registeredKey.cancel()
           channel.close()
