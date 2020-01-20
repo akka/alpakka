@@ -281,15 +281,15 @@ object Dependencies {
   val Kinesis = Seq(
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
-        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll // ApacheV2
-        ExclusionRule(organization = "com.typesafe.akka"),
+        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll ExclusionRule(
+          organization = "com.typesafe.akka"
+        )
       ) ++ Seq(
         "software.amazon.awssdk" % "kinesis" % AwsSdk2Version, // ApacheV2
         "software.amazon.awssdk" % "firehose" % AwsSdk2Version, // ApacheV2
         "software.amazon.kinesis" % "amazon-kinesis-client" % "2.2.7" // ApacheV2
       ).map(
-        _ excludeAll
-        (
+        _.excludeAll(
           ExclusionRule("software.amazon.awssdk", "apache-client"),
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         )
