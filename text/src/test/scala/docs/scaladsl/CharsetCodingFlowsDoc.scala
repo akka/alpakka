@@ -8,6 +8,7 @@ import java.nio.file.Paths
 
 import akka.Done
 import akka.actor.ActorSystem
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, IOResult, Materializer}
 import akka.testkit.TestKit
@@ -27,7 +28,8 @@ class CharsetCodingFlowsDoc
     with Matchers
     with BeforeAndAfterAll
     with ScalaFutures
-    with RecoverMethods {
+    with RecoverMethods
+    with LogCapturing {
 
   private implicit val mat: Materializer = ActorMaterializer()
 

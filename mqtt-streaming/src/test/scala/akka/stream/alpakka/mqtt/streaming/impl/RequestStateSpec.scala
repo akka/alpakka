@@ -6,6 +6,7 @@ package akka.stream.alpakka.mqtt.streaming
 package impl
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.BeforeAndAfterAll
@@ -15,7 +16,7 @@ import scala.concurrent.duration._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class RequestStateSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
+class RequestStateSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with LogCapturing {
 
   val testKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit()

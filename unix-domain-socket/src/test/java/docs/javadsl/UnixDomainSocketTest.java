@@ -4,31 +4,39 @@
 
 package docs.javadsl;
 
+import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
+import akka.stream.KillSwitch;
+import akka.stream.KillSwitches;
 import akka.stream.Materializer;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.alpakka.unixdomainsocket.javadsl.UnixDomainSocket;
-import akka.stream.javadsl.Flow;
-import akka.stream.javadsl.Framing;
-import akka.stream.javadsl.FramingTruncation;
-import akka.stream.javadsl.Source;
+import akka.stream.javadsl.*;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 import akka.japi.Pair;
 
 import java.nio.file.Files;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 import akka.stream.alpakka.unixdomainsocket.javadsl.UnixDomainSocket.IncomingConnection;
 import akka.stream.alpakka.unixdomainsocket.javadsl.UnixDomainSocket.ServerBinding;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UnixDomainSocketTest {
 
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
+
+  private static final Logger log = LoggerFactory.getLogger(UnixDomainSocketTest.class);
   private static ActorSystem system;
   private static Materializer materializer;
 
@@ -64,22 +72,31 @@ public class UnixDomainSocketTest {
     // #binding
 
     // #outgoingConnection
-    connections.runForeach(
-        connection -> {
-          System.out.println("New connection from: " + connection.remoteAddress());
+    CompletionStage<ServerBinding> streamCompletion =
+        connections
+            .map(
+                connection -> {
+                  log.info("New connection from: {}", connection.remoteAddress());
 
-          final Flow<ByteString, ByteString, NotUsed> echo =
-              Flow.of(ByteString.class)
-                  .via(
-                      Framing.delimiter(
-                          ByteString.fromString("\n"), 256, FramingTruncation.DISALLOW))
-                  .map(ByteString::utf8String)
-                  .map(s -> s + "!!!\n")
-                  .map(ByteString::fromString);
+                  final Flow<ByteString, ByteString, NotUsed> echo =
+                      Flow.of(ByteString.class)
+                          .via(
+                              Framing.delimiter(
+                                  ByteString.fromString("\n"), 256, FramingTruncation.DISALLOW))
+                          .map(ByteString::utf8String)
+                          .map(s -> s + "!!!\n")
+                          .map(ByteString::fromString);
 
-          connection.handleWith(echo, materializer);
-        },
-        materializer);
+                  return connection.handleWith(echo, materializer);
+                })
+            .toMat(Sink.ignore(), Keep.left())
+            .run(materializer);
     // #outgoingConnection
+    streamCompletion
+        .toCompletableFuture()
+        .get(2, TimeUnit.SECONDS)
+        .unbind()
+        .toCompletableFuture()
+        .get(5, TimeUnit.SECONDS);
   }
 }

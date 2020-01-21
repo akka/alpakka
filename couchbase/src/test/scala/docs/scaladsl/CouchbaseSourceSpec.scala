@@ -6,6 +6,7 @@ package docs.scaladsl
 
 import akka.stream.alpakka.couchbase.scaladsl.{CouchbaseSession, CouchbaseSource}
 import akka.stream.alpakka.couchbase.testing.CouchbaseSupport
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Sink
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import com.couchbase.client.java.auth.PasswordAuthenticator
@@ -25,7 +26,8 @@ class CouchbaseSourceSpec
     with BeforeAndAfterAll
     with CouchbaseSupport
     with Matchers
-    with ScalaFutures {
+    with ScalaFutures
+    with LogCapturing {
 
   override implicit def patienceConfig: PatienceConfig = PatienceConfig(10.seconds, 250.millis)
 

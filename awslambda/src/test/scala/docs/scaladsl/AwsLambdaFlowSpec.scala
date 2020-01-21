@@ -9,6 +9,7 @@ import java.util.concurrent.CompletableFuture
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.awslambda.scaladsl.AwsLambdaFlow
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Keep, Sink}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSource
@@ -36,7 +37,8 @@ class AwsLambdaFlowSpec
     with BeforeAndAfterEach
     with ScalaFutures
     with Matchers
-    with MockitoSugar {
+    with MockitoSugar
+    with LogCapturing {
 
   implicit val mat = ActorMaterializer()
 

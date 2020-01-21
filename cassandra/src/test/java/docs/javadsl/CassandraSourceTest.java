@@ -10,15 +10,13 @@ import akka.stream.alpakka.cassandra.CassandraBatchSettings;
 import akka.stream.alpakka.cassandra.javadsl.CassandraFlow;
 import akka.stream.alpakka.cassandra.javadsl.CassandraSink;
 import akka.stream.alpakka.cassandra.javadsl.CassandraSource;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
 import com.datastax.driver.core.*;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import static org.junit.Assert.*;
 
@@ -38,6 +36,8 @@ import java.util.stream.IntStream;
 
 /** All the tests must be run with a local Cassandra running on default port 9042. */
 public class CassandraSourceTest {
+
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   // #element-to-insert
   private class ToInsert {

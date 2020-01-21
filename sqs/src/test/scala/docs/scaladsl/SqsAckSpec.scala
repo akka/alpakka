@@ -12,6 +12,7 @@ import akka.stream.alpakka.sqs.scaladsl._
 import akka.stream.alpakka.sqs._
 import akka.stream.alpakka.sqs.SqsAckResult._
 import akka.stream.alpakka.sqs.SqsAckResultEntry._
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import org.mockito.ArgumentMatchers.any
@@ -25,7 +26,7 @@ import software.amazon.awssdk.services.sqs.model._
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 
-class SqsAckSpec extends AnyFlatSpec with Matchers with DefaultTestContext {
+class SqsAckSpec extends AnyFlatSpec with Matchers with DefaultTestContext with LogCapturing {
 
   trait IntegrationFixture {
     val queueUrl: String = randomQueueUrl()

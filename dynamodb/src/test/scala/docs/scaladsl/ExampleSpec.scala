@@ -7,6 +7,7 @@ package docs.scaladsl
 import java.net.URI
 
 import akka.NotUsed
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{FlowWithContext, SourceWithContext}
 
 import scala.util.{Failure, Success, Try}
@@ -42,7 +43,8 @@ class ExampleSpec
     with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
-    with ScalaFutures {
+    with ScalaFutures
+    with LogCapturing {
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 100.millis)
   implicit val materializer: Materializer = ActorMaterializer()

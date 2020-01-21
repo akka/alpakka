@@ -7,6 +7,7 @@ package docs.scaladsl
 import akka.http.scaladsl.model.ContentTypes
 import akka.stream.alpakka.googlecloud.storage.scaladsl.{GCStorage, GCStorageWiremockBase}
 import akka.stream.alpakka.googlecloud.storage.{Bucket, GCStorageAttributes, GCStorageExt, StorageObject}
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, Attributes}
 import akka.util.ByteString
@@ -24,7 +25,8 @@ class GCStorageSourceSpec
     with BeforeAndAfterAll
     with ScalaFutures
     with IntegrationPatience
-    with Matchers {
+    with Matchers
+    with LogCapturing {
 
   implicit val materializer = ActorMaterializer()
   private val sampleSettings = GCStorageExt(system).settings

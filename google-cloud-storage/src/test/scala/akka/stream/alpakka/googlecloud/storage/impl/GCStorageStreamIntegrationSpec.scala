@@ -19,6 +19,8 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Random
 import akka.stream.alpakka.googlecloud.storage.GCStorageSettings
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
+
 import scala.concurrent.Future
 
 /**
@@ -38,7 +40,8 @@ class GCStorageStreamIntegrationSpec
     with WithMaterializerGlobal
     with BeforeAndAfter
     with Matchers
-    with ScalaFutures {
+    with ScalaFutures
+    with LogCapturing {
 
   private implicit val defaultPatience =
     PatienceConfig(timeout = 60.seconds, interval = 60.millis)

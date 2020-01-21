@@ -12,6 +12,7 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.{HttpExt, HttpsConnectionContext}
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.storage.impl.GoogleTokenApi.AccessTokenExpiry
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{verify, when}
@@ -25,7 +26,13 @@ import pdi.jwt.{Jwt, JwtAlgorithm}
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 
-class GoogleTokenApiSpec extends AnyWordSpec with Matchers with ScalaFutures with MockitoSugar with BeforeAndAfterAll {
+class GoogleTokenApiSpec
+    extends AnyWordSpec
+    with Matchers
+    with ScalaFutures
+    with MockitoSugar
+    with BeforeAndAfterAll
+    with LogCapturing {
 
   implicit val defaultPatience =
     PatienceConfig(timeout = 2.seconds, interval = 50.millis)

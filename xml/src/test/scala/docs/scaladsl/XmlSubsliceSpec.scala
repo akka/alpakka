@@ -5,6 +5,7 @@
 package docs.scaladsl
 
 import akka.actor.ActorSystem
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.xml._
 import akka.stream.alpakka.xml.scaladsl.XmlParsing
@@ -17,7 +18,7 @@ import scala.concurrent.duration._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class XmlSubsliceSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+class XmlSubsliceSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with LogCapturing {
   implicit val system: ActorSystem = ActorSystem("Test")
   implicit val mat: Materializer = ActorMaterializer()
 

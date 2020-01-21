@@ -5,6 +5,7 @@
 package akka.stream.alpakka.googlecloud.storage.impl
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import org.scalatest.BeforeAndAfterAll
@@ -15,7 +16,7 @@ import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class ChunkerSpec extends AnyWordSpec with ScalaFutures with Matchers with BeforeAndAfterAll {
+class ChunkerSpec extends AnyWordSpec with ScalaFutures with Matchers with BeforeAndAfterAll with LogCapturing {
   implicit val system = ActorSystem("ChunkerSpec")
   implicit val mat = ActorMaterializer()
 

@@ -12,6 +12,7 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.{HttpExt, HttpsConnectionContext}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.google.firebase.fcm.impl.GoogleTokenApi.AccessTokenExpiry
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
@@ -32,7 +33,8 @@ class GoogleTokenApiSpec
     with Matchers
     with ScalaFutures
     with MockitoSugar
-    with BeforeAndAfterAll {
+    with BeforeAndAfterAll
+    with LogCapturing {
 
   override def afterAll: Unit =
     TestKit.shutdownActorSystem(system)

@@ -7,6 +7,7 @@ package akka.stream.alpakka.googlecloud.pubsub.impl
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.pubsub.impl.GoogleTokenApi.AccessTokenExpiry
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import org.mockito.Mockito.{when, _}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
@@ -17,7 +18,13 @@ import org.scalatestplus.mockito.MockitoSugar
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
-class GoogleSessionSpec extends AnyFlatSpec with ScalaFutures with MockitoSugar with BeforeAndAfterAll with Matchers {
+class GoogleSessionSpec
+    extends AnyFlatSpec
+    with ScalaFutures
+    with MockitoSugar
+    with BeforeAndAfterAll
+    with Matchers
+    with LogCapturing {
 
   private trait Fixtures {
     val mockTokenApi = mock[GoogleTokenApi]

@@ -6,6 +6,7 @@ package akka.stream.alpakka.jms
 
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
 import javax.jms._
 import jmstestkit.JmsBroker
@@ -24,7 +25,8 @@ abstract class JmsSpec
     with BeforeAndAfterEach
     with ScalaFutures
     with Eventually
-    with MockitoSugar {
+    with MockitoSugar
+    with LogCapturing {
 
   implicit val system = ActorSystem(this.getClass.getSimpleName)
 

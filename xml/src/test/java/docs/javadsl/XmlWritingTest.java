@@ -7,6 +7,7 @@ package docs.javadsl;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.alpakka.xml.*;
 import akka.stream.alpakka.xml.javadsl.XmlWriting;
 import akka.stream.javadsl.Flow;
@@ -17,6 +18,7 @@ import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -33,6 +35,8 @@ import javax.xml.stream.XMLOutputFactory;
 import static org.junit.Assert.assertEquals;
 
 public class XmlWritingTest {
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
+
   private static ActorSystem system;
   private static Materializer materializer;
 

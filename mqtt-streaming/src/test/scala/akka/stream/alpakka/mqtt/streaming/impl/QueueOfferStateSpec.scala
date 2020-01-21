@@ -10,8 +10,10 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
 import akka.stream.alpakka.mqtt.streaming.impl.QueueOfferState.QueueOfferCompleted
 import akka.stream.QueueOfferResult
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
 import org.scalatest.BeforeAndAfterAll
+
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
 import org.scalatest.matchers.should.Matchers
@@ -21,7 +23,8 @@ class QueueOfferStateSpec
     extends TestKit(ActorSystem("QueueOfferStateSpec"))
     with AnyWordSpecLike
     with Matchers
-    with BeforeAndAfterAll {
+    with BeforeAndAfterAll
+    with LogCapturing {
 
   sealed trait Msg
 

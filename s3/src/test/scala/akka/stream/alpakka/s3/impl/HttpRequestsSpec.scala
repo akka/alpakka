@@ -9,21 +9,22 @@ import java.util.UUID
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri.Query
-import akka.http.scaladsl.model.headers.{`Raw-Request-URI`, ByteRange, RawHeader}
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.{`Raw-Request-URI`, ByteRange, RawHeader}
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.s3.headers.{CannedAcl, ServerSideEncryption, StorageClass}
-import akka.stream.alpakka.s3.{ApiVersion, BufferType, MemoryBufferType, MetaHeaders, S3Headers, S3Settings}
+import akka.stream.alpakka.s3._
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Source
 import akka.testkit.{SocketUtil, TestKit, TestProbe}
-import software.amazon.awssdk.auth.credentials._
-import software.amazon.awssdk.regions.providers._
-import org.scalatest.concurrent.ScalaFutures
-import software.amazon.awssdk.regions.Region
+import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import software.amazon.awssdk.auth.credentials._
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.regions.providers._
 
-class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures {
+class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with IntegrationPatience with LogCapturing {
 
   // test fixtures
   def getSettings(
@@ -405,28 +406,29 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures {
     import system.dispatcher
     implicit val materializer: ActorMaterializer = ActorMaterializer()
 
-    val probe = TestProbe()
-    val address = SocketUtil.temporaryServerAddress()
+    try {
+      val probe = TestProbe()
+      val address = SocketUtil.temporaryServerAddress()
 
-    import akka.http.scaladsl.server.Directives._
+      import akka.http.scaladsl.server.Directives._
 
-    Http().bindAndHandle(extractRequestContext { ctx =>
-      probe.ref ! ctx.request
-      complete("MOCK")
-    }, address.getHostName, address.getPort)
+      Http().bindAndHandle(extractRequestContext { ctx =>
+        probe.ref ! ctx.request
+        complete("MOCK")
+      }, address.getHostName, address.getPort)
 
-    implicit val setting: S3Settings =
-      getSettings().withEndpointUrl(s"http://${address.getHostName}:${address.getPort}/")
+      implicit val setting: S3Settings =
+        getSettings().withEndpointUrl(s"http://${address.getHostName}:${address.getPort}/")
 
-    val req =
-      HttpRequests.listBucket(location.bucket, Some("random/prefix"), Some("randomToken"))
+      val req =
+        HttpRequests.listBucket(location.bucket, Some("random/prefix"), Some("randomToken"))
 
-    Http().singleRequest(req).futureValue
+      Http().singleRequest(req).futureValue shouldBe a[HttpResponse]
 
-    probe.expectMsgType[HttpRequest]
-
-    materializer.shutdown()
-    TestKit.shutdownActorSystem(system)
+      probe.expectMsgType[HttpRequest]
+    } finally {
+      TestKit.shutdownActorSystem(system)
+    }
   }
 
   it should "add two (source, range) headers to multipart upload (copy) request when byte range populated" in {

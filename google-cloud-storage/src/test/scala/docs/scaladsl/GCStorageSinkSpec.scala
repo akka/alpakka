@@ -8,6 +8,7 @@ import akka.http.scaladsl.model.ContentTypes
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.storage.StorageObject
 import akka.stream.alpakka.googlecloud.storage.scaladsl.{GCStorage, GCStorageWiremockBase}
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import org.scalatest.BeforeAndAfterAll
@@ -24,7 +25,8 @@ class GCStorageSinkSpec
     with BeforeAndAfterAll
     with ScalaFutures
     with IntegrationPatience
-    with Matchers {
+    with Matchers
+    with LogCapturing {
 
   implicit val materializer = ActorMaterializer()
 

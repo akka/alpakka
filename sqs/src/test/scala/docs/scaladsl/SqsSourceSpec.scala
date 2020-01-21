@@ -11,6 +11,7 @@ import akka.Done
 import akka.stream.KillSwitches
 import akka.stream.alpakka.sqs._
 import akka.stream.alpakka.sqs.scaladsl.{DefaultTestContext, SqsSource}
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Keep, Sink}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import com.github.matsluni.akkahttpspi.AkkaHttpClient
@@ -34,7 +35,7 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-class SqsSourceSpec extends AnyFlatSpec with ScalaFutures with Matchers with DefaultTestContext {
+class SqsSourceSpec extends AnyFlatSpec with ScalaFutures with Matchers with DefaultTestContext with LogCapturing {
 
   import SqsSourceSpec._
 

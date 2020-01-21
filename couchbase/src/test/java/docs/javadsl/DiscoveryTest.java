@@ -13,11 +13,13 @@ import akka.stream.alpakka.couchbase.CouchbaseSessionSettings;
 import akka.stream.alpakka.couchbase.javadsl.DiscoverySupport;
 import akka.stream.alpakka.couchbase.javadsl.CouchbaseSession;
 // #registry
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.CompletionStage;
@@ -28,6 +30,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 public class DiscoveryTest {
+
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem actorSystem;
   private static Materializer materializer;

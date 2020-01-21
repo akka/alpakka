@@ -14,16 +14,14 @@ import akka.stream.Materializer;
 // #init-client
 import akka.stream.alpakka.dynamodb.DynamoDbOp;
 import akka.stream.alpakka.dynamodb.javadsl.DynamoDb;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.FlowWithContext;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.SourceWithContext;
 import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 // #init-client
 import com.github.matsluni.akkahttpspi.AkkaHttpClient;
 import scala.util.Try;
@@ -44,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.assertNotNull;
 
 public class ExampleTest {
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   static ActorSystem system;
   static Materializer materializer;

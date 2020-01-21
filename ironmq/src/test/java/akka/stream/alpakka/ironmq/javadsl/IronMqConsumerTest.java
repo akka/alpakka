@@ -7,8 +7,10 @@ package akka.stream.alpakka.ironmq.javadsl;
 import akka.stream.alpakka.ironmq.IronMqSettings;
 import akka.stream.alpakka.ironmq.PushMessage;
 import akka.stream.alpakka.ironmq.UnitTest;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -17,6 +19,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class IronMqConsumerTest extends UnitTest {
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   @Test
   public void ironMqConsumerShouldBeNiceToMe() throws Exception {

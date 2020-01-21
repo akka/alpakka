@@ -15,11 +15,13 @@ import akka.stream.alpakka.ironmq.javadsl.*;
 
 // #imports
 import akka.stream.alpakka.ironmq.impl.IronMqClientForJava;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
+import org.junit.Rule;
 import org.junit.Test;
 import scala.concurrent.Await;
 
@@ -32,6 +34,8 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.assertEquals;
 
 public class IronMqDocsTest extends IronMqClientForJava {
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
+
   private static final ActorSystem system = ActorSystem.create();
   private static final Materializer materializer = ActorMaterializer.create(system);
   private static final scala.concurrent.duration.Duration awaiting =

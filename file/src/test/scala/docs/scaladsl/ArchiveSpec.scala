@@ -8,29 +8,32 @@ import java.io._
 import java.nio.file.{Path, Paths}
 import java.util.zip.ZipInputStream
 
-import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.alpakka.file.ArchiveMetadata
 import akka.stream.alpakka.file.scaladsl.Archive
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{FileIO, Sink, Source}
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.{ActorMaterializer, IOResult, Materializer}
 import akka.testkit.TestKit
 import akka.util.ByteString
+import akka.{Done, NotUsed}
 import docs.javadsl.ArchiveHelper
-import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.BeforeAndAfterAll
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import scala.util.Success
 
 class ArchiveSpec
     extends TestKit(ActorSystem("ArchiveSpec"))
     with AnyWordSpecLike
     with Matchers
     with ScalaFutures
-    with BeforeAndAfterAll {
+    with BeforeAndAfterAll
+    with LogCapturing {
 
   implicit val mat: Materializer = ActorMaterializer()
 
@@ -77,7 +80,7 @@ class ArchiveSpec
           .via(Archive.zip())
           .runWith(FileIO.toPath(Paths.get("result.zip")))
         // #sample
-        result.futureValue
+        result.futureValue shouldBe IOResult(1178, Success(Done))
 
         archiveHelper.createReferenceZipFile(List(filePath1, filePath2).asJava, "reference.zip")
 
@@ -87,7 +90,11 @@ class ArchiveSpec
         val resultFileContent = resultFile.runWith(Sink.fold(ByteString.empty)(_ ++ _)).futureValue
         val referenceFileContent = referenceFile.runWith(Sink.fold(ByteString.empty)(_ ++ _)).futureValue
 
-        resultFileContent shouldBe referenceFileContent
+        val toHex: Byte => String = b => f"${b.toHexString}%2s"
+
+        val res = resultFileContent.map(toHex).mkString("")
+        val ref = referenceFileContent.map(toHex).mkString("")
+        res shouldBe ref
 
         //cleanup
         new File("result.zip").delete()

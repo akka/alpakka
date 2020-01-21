@@ -5,49 +5,23 @@
 package docs.scaladsl
 
 import akka.Done
-import akka.actor.ActorSystem
 import akka.stream.alpakka.mqtt
-import akka.stream.{ActorMaterializer, Materializer}
-import akka.stream.alpakka.mqtt.scaladsl.{MqttSink, MqttSource}
 import akka.stream.alpakka.mqtt._
+import akka.stream.alpakka.mqtt.scaladsl.{MqttSink, MqttSource}
 import akka.stream.scaladsl.{Keep, Sink, Source}
-import akka.testkit.TestKit
 import akka.util.ByteString
-import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.eclipse.paho.client.mqttv3.{MqttException, MqttSecurityException}
-import org.scalatest._
-import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
-class MqttSinkSpec
-    extends TestKit(ActorSystem("MqttSinkSpec"))
-    with AnyWordSpecLike
-    with Matchers
-    with BeforeAndAfterAll
-    with ScalaFutures {
-
-  val timeout = 5.seconds
-  implicit val defaultPatience =
-    PatienceConfig(timeout = 5.seconds, interval = 100.millis)
-
-  implicit val mat: Materializer = ActorMaterializer()
-  val connectionSettings = MqttConnectionSettings(
-    "tcp://localhost:1883",
-    "test-client",
-    new MemoryPersistence
-  )
+class MqttSinkSpec extends MqttSpecBase("MqttSinkSpec") {
 
   val topic = "sink-spec/topic1"
   val topic2 = "sink-spec/topic2"
   val secureTopic = "sink-spec/secure-topic1"
 
   val sinkSettings = connectionSettings.withClientId(clientId = "sink-spec/sink")
-
-  override def afterAll() = TestKit.shutdownActorSystem(system)
 
   "mqtt sink" should {
     "send one message to a topic" in {

@@ -8,6 +8,7 @@ import java.net.InetAddress
 
 import akka.stream.Materializer
 import akka.stream.alpakka.ftp.{BaseFtpSupport, FtpSettings}
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
@@ -24,7 +25,8 @@ class FtpExamplesSpec
     with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
-    with ScalaFutures {
+    with ScalaFutures
+    with LogCapturing {
 
   implicit val materializer: Materializer = getMaterializer
 

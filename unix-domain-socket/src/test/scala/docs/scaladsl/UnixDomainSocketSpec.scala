@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.Done
 import akka.actor.ActorSystem
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.alpakka.unixdomainsocket.UnixSocketAddress
 import akka.stream.{ActorMaterializer, OverflowStrategy}
 import akka.stream.alpakka.unixdomainsocket.scaladsl.UnixDomainSocket
@@ -17,22 +18,27 @@ import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.testkit._
 import akka.util.ByteString
 import org.scalatest._
+import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AsyncWordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class UnixDomainSocketSpec
     extends TestKit(ActorSystem("UnixDomainSocketSpec"))
-    with AsyncWordSpecLike
+    with AnyWordSpecLike
     with Matchers
-    with BeforeAndAfterAll {
+    with ScalaFutures
+    with BeforeAndAfterAll
+    with IntegrationPatience
+    with LogCapturing {
 
   override def afterAll: Unit =
     TestKit.shutdownActorSystem(system)
 
   implicit val ma: ActorMaterializer = ActorMaterializer()
+  implicit val ec: ExecutionContext = system.dispatcher
 
   private val dir = Files.createTempDirectory("UnixDomainSocketSpec")
 
@@ -54,17 +60,16 @@ class UnixDomainSocketSpec
       //#binding
 
       //#outgoingConnection
+      val sendBytes = ByteString("Hello")
       binding.flatMap { _ => // connection
-        val sendBytes = ByteString("Hello")
         Source
           .single(sendBytes)
           .via(UnixDomainSocket().outgoingConnection(path))
           .runWith(Sink.ignore)
-        //#outgoingConnection
-        received.future.map(receiveBytes => assert(receiveBytes == sendBytes))
-        //#outgoingConnection
       }
       //#outgoingConnection
+      received.future.futureValue shouldBe sendBytes
+      binding.futureValue.unbind().futureValue should be(())
     }
 
     "send and receive more ten times the size of a buffer" ignore {
@@ -75,20 +80,17 @@ class UnixDomainSocketSpec
       val binding: Future[UnixDomainSocket.ServerBinding] =
         UnixDomainSocket().bindAndHandle(Flow.fromFunction(identity), path, halfClose = true)
 
-      binding.flatMap { connection =>
-        val sendBytes = ByteString(Array.ofDim[Byte](BufferSizeBytes * 10))
-        val result: Future[ByteString] =
+      val sendBytes = ByteString(Array.ofDim[Byte](BufferSizeBytes * 10))
+      val result: Future[ByteString] =
+        binding.flatMap { connection =>
           Source
             .single(sendBytes)
             .via(UnixDomainSocket().outgoingConnection(path))
             .runWith(Sink.fold(ByteString.empty) { case (acc, b) => acc ++ b })
-        result
-          .map(receiveBytes => assert(receiveBytes == sendBytes))
-          .flatMap {
-            case `succeed` => connection.unbind().map(_ => succeed)
-            case failedAssertion => failedAssertion
-          }
-      }
+
+        }
+      result.futureValue shouldBe sendBytes
+      binding.futureValue.unbind().futureValue should be(())
     }
 
     "allow the client to close the connection" in {
@@ -99,15 +101,14 @@ class UnixDomainSocketSpec
       val binding =
         UnixDomainSocket().bindAndHandle(Flow[ByteString].delay(5.seconds), path)
 
-      binding.flatMap { connection =>
+      val result = binding.flatMap { connection =>
         Source
           .single(sendBytes)
           .via(UnixDomainSocket().outgoingConnection(UnixSocketAddress(path), halfClose = false))
           .runWith(Sink.headOption)
-          .flatMap {
-            case e if e.isEmpty => connection.unbind().map(_ => succeed)
-          }
       }
+      result.futureValue shouldBe Symbol("empty")
+      binding.futureValue.unbind().futureValue should be(())
     }
 
     "close the server once the client is also closed" in {
@@ -123,16 +124,15 @@ class UnixDomainSocketSpec
           halfClose = true
         )
 
-      binding.flatMap { connection =>
+      val result = binding.flatMap { connection =>
         Source
           .tick(0.seconds, 1.second, sendBytes)
           .takeWhile(_ => !receiving.isCompleted)
           .via(UnixDomainSocket().outgoingConnection(path))
           .runWith(Sink.headOption)
-          .flatMap {
-            case e if e.nonEmpty => connection.unbind().map(_ => succeed)
-          }
       }
+      result.futureValue shouldNot be(Symbol("empty"))
+      binding.futureValue.unbind().futureValue should be(())
     }
 
     "be able to materialize outgoing connection flow more than once" in {
@@ -155,17 +155,13 @@ class UnixDomainSocketSpec
       materialize(connection)
 
       receivedLatch.await(5, TimeUnit.SECONDS)
-
-      succeed
     }
 
     "not be able to bind to a non-existent file" in {
       val binding =
         UnixDomainSocket().bindAndHandle(Flow.fromFunction(identity), Paths.get("/thisshouldnotexist"))
 
-      binding.failed.map {
-        case _: IOException => succeed
-      }
+      binding.failed.futureValue shouldBe an[IOException]
     }
 
     "not be able to connect to a non-existent file" in {
@@ -175,9 +171,7 @@ class UnixDomainSocketSpec
           .via(UnixDomainSocket().outgoingConnection(Paths.get("/thisshouldnotexist")))
           .runWith(Sink.head)
 
-      connection.failed.map {
-        case _: IOException => succeed
-      }
+      connection.failed.futureValue shouldBe an[IOException]
     }
 
   }

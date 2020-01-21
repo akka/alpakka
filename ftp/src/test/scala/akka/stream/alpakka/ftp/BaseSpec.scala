@@ -6,6 +6,7 @@ package akka.stream.alpakka.ftp
 
 import akka.{Done, NotUsed}
 import akka.stream.IOResult
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
@@ -26,7 +27,8 @@ trait BaseSpec
     with IntegrationPatience
     with Inside
     with AkkaSupport
-    with BaseSupport { this: TestSuite =>
+    with BaseSupport
+    with LogCapturing { this: TestSuite =>
 
   protected def listFiles(basePath: String): Source[FtpFile, NotUsed]
 

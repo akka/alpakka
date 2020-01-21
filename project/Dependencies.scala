@@ -44,13 +44,21 @@ object Dependencies {
   val Common = Seq(
     // These libraries are added to all modules via the `Common` AutoPlugin
     libraryDependencies ++= Seq(
+        "com.typesafe.akka" %% "akka-stream" % AkkaVersion
+      )
+  )
+
+  val testkit = Seq(
+    libraryDependencies := Seq(
+        "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.1",
         "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
-        "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,
-        "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion % Test,
-        "ch.qos.logback" % "logback-classic" % "1.2.3" % Test, // Eclipse Public License 1.0
-        "org.scalatest" %% "scalatest" % "3.1.0" % Test, // ApacheV2
-        "com.novocode" % "junit-interface" % "0.11" % Test, // BSD-style
-        "junit" % "junit" % "4.12" % Test // Eclipse Public License 1.0
+        "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion,
+        "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
+        "ch.qos.logback" % "logback-classic" % "1.2.3", // Eclipse Public License 1.0
+        "org.scalatest" %% "scalatest" % "3.1.0", // ApacheV2
+        "com.novocode" % "junit-interface" % "0.11", // BSD-style
+        "ch.qos.logback" % "logback-classic" % "1.2.3", // Eclipse Public License 1.0
+        "junit" % "junit" % "4.12" // Eclipse Public License 1.0
       )
   )
 
@@ -116,7 +124,10 @@ object Dependencies {
   val `Doc-examples` = Seq(
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
-        "com.typesafe.akka" %% "akka-stream-kafka" % "1.1.0"
+        "com.typesafe.akka" %% "akka-stream-kafka" % "1.1.0",
+        "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,
+        "junit" % "junit" % "4.12" % Test, // Eclipse Public License 1.0
+        "org.scalatest" %% "scalatest" % "3.1.0" % Test // ApacheV2
       )
   )
 

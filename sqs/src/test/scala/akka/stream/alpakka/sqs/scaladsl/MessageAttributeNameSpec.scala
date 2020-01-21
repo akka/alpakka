@@ -5,10 +5,11 @@
 package akka.stream.alpakka.sqs.scaladsl
 
 import akka.stream.alpakka.sqs.MessageAttributeName
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class MessageAttributeNameSpec extends AnyFlatSpec with Matchers {
+class MessageAttributeNameSpec extends AnyFlatSpec with Matchers with LogCapturing {
 
   it should "not allow names which have periods at the beginning" in {
     a[IllegalArgumentException] should be thrownBy {

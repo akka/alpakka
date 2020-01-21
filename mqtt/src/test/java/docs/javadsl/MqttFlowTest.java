@@ -10,10 +10,14 @@ import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-import akka.stream.alpakka.mqtt.*;
+import akka.stream.alpakka.mqtt.MqttConnectionSettings;
+import akka.stream.alpakka.mqtt.MqttMessage;
+import akka.stream.alpakka.mqtt.MqttQoS;
+import akka.stream.alpakka.mqtt.MqttSubscriptions;
 import akka.stream.alpakka.mqtt.javadsl.MqttFlow;
 import akka.stream.alpakka.mqtt.javadsl.MqttMessageWithAck;
 import akka.stream.alpakka.mqtt.javadsl.MqttMessageWithAckImpl;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
@@ -23,7 +27,10 @@ import akka.util.ByteString;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
@@ -33,6 +40,10 @@ import java.util.concurrent.CompletionStage;
 import static org.junit.Assert.assertFalse;
 
 public class MqttFlowTest {
+
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
+
+  private static final Logger log = LoggerFactory.getLogger(MqttFlowTest.class);
 
   private static ActorSystem system;
   private static Materializer materializer;

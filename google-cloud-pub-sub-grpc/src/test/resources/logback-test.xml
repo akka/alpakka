@@ -1,11 +1,28 @@
 <configuration>
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <file>target/google-cloud-pub-sub-grpc.log</file>
+        <append>false</append>
         <encoder>
             <pattern>%d{ISO8601} %-5level [%thread] [%logger{36}]  %msg%n</pattern>
         </encoder>
     </appender>
 
-    <root level="info">
-        <appender-ref ref="STDOUT" />
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level [%-20.20thread] %-36.36logger{36}  %msg%n%rEx</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="CapturingAppender" class="akka.stream.alpakka.testkit.CapturingAppender"/>
+
+    <logger name="akka.stream.alpakka.testkit.CapturingAppenderDelegate">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+
+    <logger name="akka" level="DEBUG"/>
+
+    <root level="DEBUG">
+        <appender-ref ref="CapturingAppender"/>
+        <appender-ref ref="FILE" />
     </root>
 </configuration>

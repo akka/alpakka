@@ -12,6 +12,7 @@ import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.elasticsearch.scaladsl._
 import akka.stream.alpakka.elasticsearch._
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
@@ -28,7 +29,13 @@ import scala.concurrent.duration._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class ElasticsearchSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with Inspectors {
+class ElasticsearchSpec
+    extends AnyWordSpec
+    with Matchers
+    with BeforeAndAfterAll
+    with ScalaFutures
+    with Inspectors
+    with LogCapturing {
 
   private implicit val patience = PatienceConfig(10.seconds)
 

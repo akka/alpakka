@@ -6,8 +6,9 @@ package docs.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.influxdb.{InfluxDbReadSettings}
+import akka.stream.alpakka.influxdb.InfluxDbReadSettings
 import akka.stream.alpakka.influxdb.scaladsl.InfluxDbSource
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Sink
 import akka.testkit.TestKit
 import org.influxdb.{InfluxDB, InfluxDBException}
@@ -24,7 +25,8 @@ class InfluxDbSourceSpec
     with Matchers
     with BeforeAndAfterEach
     with BeforeAndAfterAll
-    with ScalaFutures {
+    with ScalaFutures
+    with LogCapturing {
 
   final val DatabaseName = "InfluxDbSourceSpec"
 

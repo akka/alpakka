@@ -13,17 +13,16 @@ import akka.stream.alpakka.file.DirectoryChange;
 // #minimal-sample
 import akka.stream.alpakka.file.javadsl.DirectoryChangesSource;
 // #minimal-sample
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.TestSubscriber;
 import akka.stream.testkit.javadsl.StreamTestKit;
-import akka.testkit.TestKit;
+import akka.testkit.javadsl.TestKit;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.google.common.jimfs.WatchServiceConfiguration;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.nio.file.FileSystem;
@@ -39,16 +38,27 @@ import static org.junit.Assert.assertEquals;
 
 public class DirectoryChangesSourceTest {
 
-  private ActorSystem system;
-  private Materializer materializer;
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
+
   private FileSystem fs;
   private Path testDir;
 
-  @Before
-  public void setup() throws Exception {
+  private static ActorSystem system;
+  private static Materializer materializer;
+
+  @BeforeClass
+  public static void beforeAll() throws Exception {
     system = ActorSystem.create();
     materializer = ActorMaterializer.create(system);
+  }
 
+  @AfterClass
+  public static void afterAll() throws Exception {
+    TestKit.shutdownActorSystem(system);
+  }
+
+  @Before
+  public void setup() throws Exception {
     fs =
         Jimfs.newFileSystem(
             Configuration.forCurrentPlatform()
@@ -130,7 +140,6 @@ public class DirectoryChangesSourceTest {
   @After
   public void tearDown() throws Exception {
     StreamTestKit.assertAllStagesStopped(materializer);
-    TestKit.shutdownActorSystem(system, FiniteDuration.apply(3, TimeUnit.SECONDS), true);
     fs.close();
   }
 

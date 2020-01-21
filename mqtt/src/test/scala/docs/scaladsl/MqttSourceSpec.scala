@@ -4,55 +4,30 @@
 
 package docs.scaladsl
 
-import akka.actor.ActorSystem
 import akka.stream._
 import akka.stream.alpakka.mqtt._
 import akka.stream.alpakka.mqtt.scaladsl.{MqttMessageWithAck, MqttSink, MqttSource}
 import akka.stream.scaladsl._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.testkit.TestKit
 import akka.util.ByteString
 import akka.{Done, NotUsed}
 import javax.net.ssl.SSLContext
 import org.eclipse.paho.client.mqttv3.MqttException
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
-import org.scalatest._
-import org.scalatest.concurrent.ScalaFutures
 import org.slf4j.LoggerFactory
 
 import scala.collection.immutable.Seq
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
-class MqttSourceSpec
-    extends TestKit(ActorSystem("MqttSourceSpec"))
-    with AnyWordSpecLike
-    with Matchers
-    with BeforeAndAfterAll
-    with ScalaFutures {
+class MqttSourceSpec extends MqttSpecBase("MqttSourceSpec") {
 
   val log = LoggerFactory.getLogger(classOf[MqttSourceSpec])
-
-  val timeout = 5.seconds
-  implicit val defaultPatience =
-    PatienceConfig(timeout = 5.seconds, interval = 100.millis)
-
-  implicit val mat: Materializer = ActorMaterializer()
-
-  val connectionSettings = MqttConnectionSettings(
-    "tcp://localhost:1883", // (1)
-    "test-scala-client", // (2)
-    new MemoryPersistence // (3)
-  )
 
   val topic1 = "source-spec/topic1"
 
   val sourceSettings = connectionSettings.withClientId(clientId = "source-spec/source")
   val sinkSettings = connectionSettings.withClientId(clientId = "source-spec/sink")
-
-  override def afterAll() = TestKit.shutdownActorSystem(system)
 
   /** Wrap a source with restart logic and exposes an equivalent materialized value.
    * Could be simplified when https://github.com/akka/akka/issues/24771 is solved.

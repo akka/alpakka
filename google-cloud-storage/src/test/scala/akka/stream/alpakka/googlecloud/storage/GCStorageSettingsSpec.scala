@@ -4,12 +4,14 @@
 
 package akka.stream.alpakka.googlecloud.storage
 
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import com.typesafe.config.ConfigFactory
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+
 import scala.collection.JavaConverters._
 
-class GCStorageSettingsSpec extends AnyFlatSpec with Matchers {
+class GCStorageSettingsSpec extends AnyFlatSpec with Matchers with LogCapturing {
   "GCStorageSettings" should "create settings from application config" in {
     val projectId = "projectId"
     val clientEmail = "clientEmail"

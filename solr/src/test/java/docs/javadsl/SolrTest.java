@@ -15,6 +15,7 @@ import akka.stream.alpakka.solr.WriteMessage;
 import akka.stream.alpakka.solr.javadsl.SolrFlow;
 import akka.stream.alpakka.solr.javadsl.SolrSink;
 import akka.stream.alpakka.solr.javadsl.SolrSource;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
@@ -40,6 +41,7 @@ import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -57,6 +59,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class SolrTest {
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
+
   private static MiniSolrCloudCluster cluster;
   private static SolrClient solrClient;
   private static SolrClient cl;

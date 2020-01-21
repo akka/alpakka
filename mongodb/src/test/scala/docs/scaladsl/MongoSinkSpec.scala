@@ -8,6 +8,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.mongodb.DocumentUpdate
 import akka.stream.alpakka.mongodb.scaladsl.MongoSink
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import com.mongodb.client.model.{Filters, InsertManyOptions, Updates}
@@ -24,7 +25,13 @@ import scala.concurrent.duration._
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class MongoSinkSpec extends AnyWordSpec with ScalaFutures with BeforeAndAfterEach with BeforeAndAfterAll with Matchers {
+class MongoSinkSpec
+    extends AnyWordSpec
+    with ScalaFutures
+    with BeforeAndAfterEach
+    with BeforeAndAfterAll
+    with Matchers
+    with LogCapturing {
 
   // case class and codec for mongodb macros
   case class Number(_id: Int)

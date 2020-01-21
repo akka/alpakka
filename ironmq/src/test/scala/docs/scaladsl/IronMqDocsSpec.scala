@@ -7,6 +7,7 @@ package docs.scaladsl
 import akka.stream.alpakka.ironmq.PushMessage
 import akka.stream.alpakka.ironmq.impl.IronMqClientForTests
 import akka.stream.alpakka.ironmq.scaladsl._
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
@@ -25,7 +26,8 @@ class IronMqDocsSpec
     with IronMqClientForTests
     with Matchers
     with ScalaFutures
-    with BeforeAndAfterAll {
+    with BeforeAndAfterAll
+    with LogCapturing {
 
   override implicit def patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 250.millis)
 

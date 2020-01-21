@@ -8,6 +8,7 @@ import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.stream.alpakka.kudu.{KuduAttributes, KuduTableSettings}
 import akka.stream.alpakka.kudu.scaladsl.KuduTable
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
@@ -27,7 +28,8 @@ class KuduTableSpec
     with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
-    with ScalaFutures {
+    with ScalaFutures
+    with LogCapturing {
 
   implicit val materializer: Materializer = ActorMaterializer()
   implicit val defaultPatience: PatienceConfig =

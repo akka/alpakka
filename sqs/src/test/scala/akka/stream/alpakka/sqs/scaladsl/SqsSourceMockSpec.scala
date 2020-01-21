@@ -7,6 +7,7 @@ package akka.stream.alpakka.sqs.scaladsl
 import java.util.concurrent.CompletableFuture
 
 import akka.stream.alpakka.sqs.SqsSourceSettings
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSink
 import org.mockito.ArgumentMatchers._
@@ -23,11 +24,10 @@ import scala.compat.java8.FutureConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-class SqsSourceMockSpec extends AnyFlatSpec with Matchers with DefaultTestContext {
+class SqsSourceMockSpec extends AnyFlatSpec with Matchers with DefaultTestContext with LogCapturing {
 
   override def createAsyncClient(sqsEndpoint: String): SqsAsyncClient = ???
   override def closeSqsClient(): Unit = ()
-
   val defaultMessages = (1 to 10).map { i =>
     Message.builder().body(s"message $i").build()
   }
