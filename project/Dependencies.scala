@@ -359,6 +359,7 @@ object Dependencies {
         "com.google.jimfs" % "jimfs" % "1.1" % Test, // ApacheV2
         "com.github.tomakehurst" % "wiremock" % "2.25.1" % Test // ApacheV2
       ) ++ JacksonDatabindDependencies
+      ++ Silencer
   )
 
   val SpringWeb = {

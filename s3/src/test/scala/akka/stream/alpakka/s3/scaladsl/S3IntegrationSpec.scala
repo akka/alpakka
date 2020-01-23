@@ -67,6 +67,7 @@ trait S3IntegrationSpec
       |}
     """.stripMargin)
 
+  @com.github.ghik.silencer.silent
   def otherRegionSettings =
     S3Settings().withPathStyleAccess(true).withS3RegionProvider(otherRegionProvider)
   def listBucketVersion1Settings =
@@ -520,15 +521,19 @@ class MinioS3IntegrationSpec extends S3IntegrationSpec {
                                  |    }
                                  |  }
                                  |  endpoint-url = "$endpointUrl"
+                                 |  # Use of endpoint-url requires path-style-access
+                                 |  path-style-access = true
                                  |}
     """.stripMargin).withFallback(super.config())
 
+  @com.github.ghik.silencer.silent
   override def otherRegionSettings =
     S3Settings()
       .withCredentialsProvider(staticProvider)
       .withEndpointUrl(endpointUrl)
       .withPathStyleAccess(true)
 
+  @com.github.ghik.silencer.silent
   override def invalidCredentials: S3Settings =
     S3Settings()
       .withCredentialsProvider(invalidCredentialsProvider)
