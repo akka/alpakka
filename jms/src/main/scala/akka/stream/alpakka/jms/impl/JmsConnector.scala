@@ -325,7 +325,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
     jmsConnection.map { connection =>
       connection.setExceptionListener(new jms.ExceptionListener {
         override def onException(ex: jms.JMSException): Unit = {
-          closeConnection(connection) // best effort closing the connection.
+          closeConnection(connection)
           connectionFailedCB.invoke(ex)
         }
       })
