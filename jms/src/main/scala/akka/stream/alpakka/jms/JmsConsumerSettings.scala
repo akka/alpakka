@@ -8,6 +8,8 @@ import akka.actor.ActorSystem
 import akka.util.JavaDurationConverters._
 import com.typesafe.config.{Config, ConfigValueType}
 
+import scala.concurrent.duration.FiniteDuration
+
 /**
  * Settings for [[akka.stream.alpakka.jms.scaladsl.JmsConsumer]] and [[akka.stream.alpakka.jms.javadsl.JmsConsumer]].
  */
@@ -77,6 +79,10 @@ final class JmsConsumerSettings private (
    */
   def withFailStreamOnAckTimeout(value: Boolean): JmsConsumerSettings =
     if (failStreamOnAckTimeout == value) this else copy(failStreamOnAckTimeout = value)
+
+  /**  Timeout for connection status subscriber */
+  def withConnectionStatusSubscriptionTimeout(value: FiniteDuration): JmsConsumerSettings =
+    copy(connectionStatusSubscriptionTimeout = value)
 
   /** Java API: Timeout for connection status subscriber */
   def withConnectionStatusSubscriptionTimeout(value: java.time.Duration): JmsConsumerSettings =

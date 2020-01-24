@@ -66,7 +66,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
     connectionStateSourcePromise.complete(Success(source))
 
     // add subscription to purge queued connection status events after the configured timeout.
-    scheduleOnce("connection-status-timeout", jmsSettings.connectionStatusSubscriptionTimeout)
+    scheduleOnce(ConnectionStatusTimeout, jmsSettings.connectionStatusSubscriptionTimeout)
   }
 
   protected def finishStop(): Unit = {
@@ -217,7 +217,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
     case AttemptConnect(attempt, backoffMaxed) =>
       log.info("{} retries connecting, attempt {}", attributes.nameLifted.mkString, attempt)
       initSessionAsync(attempt, backoffMaxed)
-    case "connection-status-timeout" => drainConnectionState()
+    case ConnectionStatusTimeout => drainConnectionState()
     case _ => ()
   }
 
@@ -250,8 +250,12 @@ private[jms] trait JmsConnector[S <: JmsSession] {
   }
 
   protected def closeConnection(connection: jms.Connection): Unit = {
-    // deregister exception listener to clear reference from JMS client to the Akka stage
-    Try(connection.setExceptionListener(null))
+    try {
+      // deregister exception listener to clear reference from JMS client to the Akka stage
+      connection.setExceptionListener(null)
+    } catch {
+      case _: jms.JMSException => // ignore
+    }
     try {
       connection.close()
       log.info("JMS connection {} closed", connection)
@@ -390,6 +394,8 @@ object JmsConnector {
   case object TimedOut extends ConnectionAttemptStatus
 
   case class AttemptConnect(attempt: Int, backoffMaxed: Boolean)
+
+  case object ConnectionStatusTimeout
 
   def connection: InternalConnectionState => Future[jms.Connection] = {
     case InternalConnectionState.JmsConnectorInitializing(c, _, _, _) => c

@@ -8,6 +8,8 @@ import akka.actor.ActorSystem
 import akka.util.JavaDurationConverters._
 import com.typesafe.config.{Config, ConfigValueType}
 
+import scala.concurrent.duration.FiniteDuration
+
 /**
  * Settings for [[akka.stream.alpakka.jms.scaladsl.JmsProducer]] and [[akka.stream.alpakka.jms.javadsl.JmsProducer]].
  */
@@ -63,6 +65,10 @@ final class JmsProducerSettings private (
    * individual messages. If not set, messages will never expire.
    */
   def withTimeToLive(value: java.time.Duration): JmsProducerSettings = copy(timeToLive = Option(value).map(_.asScala))
+
+  /**  Timeout for connection status subscriber */
+  def withConnectionStatusSubscriptionTimeout(value: FiniteDuration): JmsProducerSettings =
+    copy(connectionStatusSubscriptionTimeout = value)
 
   /** Java API: Timeout for connection status subscriber */
   def withConnectionStatusSubscriptionTimeout(value: java.time.Duration): JmsProducerSettings =
