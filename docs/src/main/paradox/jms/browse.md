@@ -55,6 +55,7 @@ connectionFactory       | Factory to use for creating JMS connections           
 destination             | The queue to browse                                                  | Must be set in code |
 credentials             | JMS broker credentials                                               | Empty               |
 connectionRetrySettings | Retry characteristics if the connection failed to be established or is taking a long time. | See @ref[Connection Retries](producer.md#connection-retries) 
+connectionStatusSubscriptionTimeout | 5 seconds | Time to wait for subscriber of connection status events before starting to discard them |
 
 reference.conf
 : @@snip [snip](/jms/src/main/resources/reference.conf) { #browse }

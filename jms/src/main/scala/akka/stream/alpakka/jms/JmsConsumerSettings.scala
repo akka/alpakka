@@ -8,6 +8,8 @@ import akka.actor.ActorSystem
 import akka.util.JavaDurationConverters._
 import com.typesafe.config.{Config, ConfigValueType}
 
+import scala.concurrent.duration.FiniteDuration
+
 /**
  * Settings for [[akka.stream.alpakka.jms.scaladsl.JmsConsumer]] and [[akka.stream.alpakka.jms.javadsl.JmsConsumer]].
  */
@@ -21,7 +23,8 @@ final class JmsConsumerSettings private (
     val selector: Option[String],
     val acknowledgeMode: Option[AcknowledgeMode],
     val ackTimeout: scala.concurrent.duration.Duration,
-    val failStreamOnAckTimeout: Boolean
+    val failStreamOnAckTimeout: Boolean,
+    val connectionStatusSubscriptionTimeout: scala.concurrent.duration.FiniteDuration
 ) extends akka.stream.alpakka.jms.JmsSettings {
 
   /** Factory to use for creating JMS connections. */
@@ -77,6 +80,14 @@ final class JmsConsumerSettings private (
   def withFailStreamOnAckTimeout(value: Boolean): JmsConsumerSettings =
     if (failStreamOnAckTimeout == value) this else copy(failStreamOnAckTimeout = value)
 
+  /**  Timeout for connection status subscriber */
+  def withConnectionStatusSubscriptionTimeout(value: FiniteDuration): JmsConsumerSettings =
+    copy(connectionStatusSubscriptionTimeout = value)
+
+  /** Java API: Timeout for connection status subscriber */
+  def withConnectionStatusSubscriptionTimeout(value: java.time.Duration): JmsConsumerSettings =
+    copy(connectionStatusSubscriptionTimeout = value.asScala)
+
   private def copy(
       connectionFactory: javax.jms.ConnectionFactory = connectionFactory,
       connectionRetrySettings: ConnectionRetrySettings = connectionRetrySettings,
@@ -87,7 +98,9 @@ final class JmsConsumerSettings private (
       selector: Option[String] = selector,
       acknowledgeMode: Option[AcknowledgeMode] = acknowledgeMode,
       ackTimeout: scala.concurrent.duration.Duration = ackTimeout,
-      failStreamOnAckTimeout: Boolean = failStreamOnAckTimeout
+      failStreamOnAckTimeout: Boolean = failStreamOnAckTimeout,
+      connectionStatusSubscriptionTimeout: scala.concurrent.duration.FiniteDuration =
+        connectionStatusSubscriptionTimeout
   ): JmsConsumerSettings = new JmsConsumerSettings(
     connectionFactory = connectionFactory,
     connectionRetrySettings = connectionRetrySettings,
@@ -98,7 +111,8 @@ final class JmsConsumerSettings private (
     selector = selector,
     acknowledgeMode = acknowledgeMode,
     ackTimeout = ackTimeout,
-    failStreamOnAckTimeout = failStreamOnAckTimeout
+    failStreamOnAckTimeout = failStreamOnAckTimeout,
+    connectionStatusSubscriptionTimeout = connectionStatusSubscriptionTimeout
   )
 
   override def toString =
@@ -112,7 +126,8 @@ final class JmsConsumerSettings private (
     s"selector=$selector," +
     s"acknowledgeMode=${acknowledgeMode.map(m => AcknowledgeMode.asString(m))}," +
     s"ackTimeout=${ackTimeout.toCoarsest}," +
-    s"failStreamOnAckTimeout=$failStreamOnAckTimeout" +
+    s"failStreamOnAckTimeout=$failStreamOnAckTimeout," +
+    s"connectionStatusSubscriptionTimeout=${connectionStatusSubscriptionTimeout.toCoarsest}" +
     ")"
 }
 
@@ -144,6 +159,7 @@ object JmsConsumerSettings {
       getOption("acknowledge-mode", c => AcknowledgeMode.from(c.getString("acknowledge-mode")))
     val ackTimeout = c.getDuration("ack-timeout").asScala
     val failStreamOnAckTimeout = c.getBoolean("fail-stream-on-ack-timeout")
+    val connectionStatusSubscriptionTimeout = c.getDuration("connection-status-subscription-timeout").asScala
     new JmsConsumerSettings(
       connectionFactory,
       connectionRetrySettings,
@@ -154,7 +170,8 @@ object JmsConsumerSettings {
       selector,
       acknowledgeMode,
       ackTimeout,
-      failStreamOnAckTimeout
+      failStreamOnAckTimeout,
+      connectionStatusSubscriptionTimeout
     )
   }
 

@@ -59,6 +59,7 @@ sessionCount            | Number of parallel sessions to use for receiving JMS m
 bufferSize              | Maximum number of messages to prefetch before applying backpressure. | 100                 |
 ackTimeout              | For use with JMS transactions, only: maximum time given to a message to be committed or rolled back. | 1 second  |
 selector                | JMS selector expression (see [below](#using-jms-selectors))          | Empty               |
+connectionStatusSubscriptionTimeout | 5 seconds | Time to wait for subscriber of connection status events before starting to discard them |
 
 reference.conf
 : @@snip [snip](/jms/src/main/resources/reference.conf) { #consumer }

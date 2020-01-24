@@ -1,0 +1,6 @@
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.alpakka.jms.JmsSettings.connectionStatusSubscriptionTimeout")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.jms.JmsConsumerSettings.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.jms.JmsProducerSettings.this")
+
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.alpakka.jms.JmsBrowseSettings")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.jms.JmsBrowseSettings.sessionCount")

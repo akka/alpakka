@@ -17,8 +17,7 @@ final class JmsBrowseSettings private (
     val credentials: Option[Credentials],
     val selector: Option[String],
     val acknowledgeMode: AcknowledgeMode
-) extends akka.stream.alpakka.jms.JmsSettings {
-  override val sessionCount = 1
+) {
 
   /** Factory to use for creating JMS connections. */
   def withConnectionFactory(value: javax.jms.ConnectionFactory): JmsBrowseSettings = copy(connectionFactory = value)
