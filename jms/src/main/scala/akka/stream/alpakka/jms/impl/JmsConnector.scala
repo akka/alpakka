@@ -258,9 +258,9 @@ private[jms] trait JmsConnector[S <: JmsSession] {
     }
     try {
       connection.close()
-      log.info("JMS connection {} closed", connection)
+      log.debug("JMS connection {} closed", connection)
     } catch {
-      case NonFatal(e) => log.error(e, "Error closing JMS connection {}", connection)
+      case NonFatal(e) => log.warning("Error closing JMS connection {}: {}", connection, e)
     }
   }
 
