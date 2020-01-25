@@ -34,8 +34,8 @@ final class ForwardProxyTrustPem private (val pemPath: String) {
 
   override def toString: String =
     "ForwardProxyTrustPem(" +
-      s"pemPath=$pemPath," +
-      ")"
+    s"pemPath=$pemPath," +
+    ")"
 
   override def equals(other: Any): Boolean = other match {
     case that: ForwardProxyTrustPem =>
@@ -102,7 +102,10 @@ object ForwardProxy {
   def apply(host: String, port: Int, credentials: Option[ForwardProxyCredentials]) =
     new ForwardProxy(host, port, credentials, Option.empty)
 
-  def apply(host: String, port: Int, credentials: Option[ForwardProxyCredentials], trustPem: Option[ForwardProxyTrustPem]) =
+  def apply(host: String,
+            port: Int,
+            credentials: Option[ForwardProxyCredentials],
+            trustPem: Option[ForwardProxyTrustPem]) =
     new ForwardProxy(host, port, credentials, trustPem)
 
   /** Java API */
@@ -111,7 +114,10 @@ object ForwardProxy {
 
 }
 
-final class ForwardProxy private (val host: String, val port: Int, val credentials: Option[ForwardProxyCredentials], val trustPem: Option[ForwardProxyTrustPem]) {
+final class ForwardProxy private (val host: String,
+                                  val port: Int,
+                                  val credentials: Option[ForwardProxyCredentials],
+                                  val trustPem: Option[ForwardProxyTrustPem]) {
 
   /** Java API */
   def getHost: String = host
@@ -128,7 +134,10 @@ final class ForwardProxy private (val host: String, val port: Int, val credentia
   def withPort(port: Int) = copy(port = port)
   def withCredentials(credentials: ForwardProxyCredentials) = copy(credentials = Option(credentials))
 
-  private def copy(host: String = host, port: Int = port, credentials: Option[ForwardProxyCredentials] = credentials, trustPem: Option[ForwardProxyTrustPem] = trustPem) =
+  private def copy(host: String = host,
+                   port: Int = port,
+                   credentials: Option[ForwardProxyCredentials] = credentials,
+                   trustPem: Option[ForwardProxyTrustPem] = trustPem) =
     new ForwardProxy(host, port, credentials, trustPem)
 
   override def toString =

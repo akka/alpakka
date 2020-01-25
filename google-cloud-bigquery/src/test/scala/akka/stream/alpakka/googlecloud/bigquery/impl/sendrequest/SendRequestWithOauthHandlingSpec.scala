@@ -62,7 +62,7 @@ class SendRequestWithOauthHandlingSpec
         .via(SendRequestWithOauthHandling(projectConfig, http))
         .runWith(Sink.last)
 
-      val result = Try(Await.result(resultF, 2.second))
+      val result = Try(Await.result(resultF, 10.second))
       result.toString shouldEqual Failure(
         new IllegalStateException(s"Unexpected error in response: 500 Internal Server Error, my custom error")
       ).toString

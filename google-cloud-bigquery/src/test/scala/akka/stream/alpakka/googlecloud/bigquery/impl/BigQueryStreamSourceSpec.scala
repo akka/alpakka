@@ -10,6 +10,7 @@ import akka.http.scaladsl.model.{HttpRequest, _}
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.{HttpExt, HttpsConnectionContext}
 import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig
+import akka.stream.alpakka.googlecloud.bigquery.e2e.BigQueryTableHelper
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.BigQueryCallbacks
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
@@ -29,19 +30,18 @@ class BigQueryStreamSourceSpec
     with WordSpecLike
     with Matchers
     with BeforeAndAfterAll
+    with BigQueryTableHelper
     with MockitoSugar {
+
+  override implicit val actorSystem: ActorSystem = ActorSystem("BigQueryEndToEndSpec")
+  override implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   override def afterAll(): Unit =
     TestKit.shutdownActorSystem(system)
 
   val timeout = 3.seconds
-  implicit val materializer: Materializer = ActorMaterializer()
 
   trait Scope {
-    val bigQueryProjectConfig = mock[BigQueryConfig]
-    val session = mock[GoogleSession]
-    when(bigQueryProjectConfig.session) thenReturn session
-    when(session.getToken()) thenReturn Future.successful("TOKEN")
 
     val http = mock[HttpExt]
 
@@ -76,17 +76,12 @@ class BigQueryStreamSourceSpec
       )
 
       val bigQuerySource =
-        BigQueryStreamSource(HttpRequest(),
-                             _ => Option("success"),
-                             BigQueryCallbacks.ignore,
-                             bigQueryProjectConfig,
-                             http)
+        BigQueryStreamSource(HttpRequest(), _ => Option("success"), BigQueryCallbacks.ignore, projectConfig, http)
 
       val resultF = Source.fromGraph(bigQuerySource).runWith(Sink.head)
 
       Await.result(resultF, timeout) shouldBe "success"
-      verify(session).getToken()
-      checkUsedToken("TOKEN")
+      checkUsedToken("yyyy.c.an-access-token")
     }
 
     "return two page request" in new Scope {
@@ -115,27 +110,18 @@ class BigQueryStreamSourceSpec
       )
 
       val bigQuerySource =
-        BigQueryStreamSource(HttpRequest(),
-                             _ => Option("success"),
-                             BigQueryCallbacks.ignore,
-                             bigQueryProjectConfig,
-                             http)
+        BigQueryStreamSource(HttpRequest(), _ => Option("success"), BigQueryCallbacks.ignore, projectConfig, http)
 
       val resultF = bigQuerySource.runWith(Sink.seq)
 
       Await.result(resultF, timeout) shouldBe Seq("success", "success")
-      verify(session, times(2)).getToken()
-      checkUsedToken("TOKEN")
+      checkUsedToken("yyyy.c.an-access-token")
     }
 
     "url encode page token" in new Scope {
 
       val bigQuerySource =
-        BigQueryStreamSource(HttpRequest(),
-                             _ => Option("success"),
-                             BigQueryCallbacks.ignore,
-                             bigQueryProjectConfig,
-                             http)
+        BigQueryStreamSource(HttpRequest(), _ => Option("success"), BigQueryCallbacks.ignore, projectConfig, http)
       when(
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),
@@ -159,8 +145,7 @@ class BigQueryStreamSourceSpec
       val resultF = bigQuerySource.runWith(Sink.seq)
 
       Await.result(resultF, timeout) shouldBe Seq("success", "success")
-      verify(session, times(2)).getToken()
-      checkUsedToken("TOKEN")
+      checkUsedToken("yyyy.c.an-access-token")
     }
 
   }

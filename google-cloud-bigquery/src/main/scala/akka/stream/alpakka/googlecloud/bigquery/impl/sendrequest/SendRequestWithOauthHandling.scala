@@ -15,7 +15,6 @@ import akka.stream.scaladsl.Flow
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.ForwardProxyPoolSettings._
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.ForwardProxyHttpsContext._
 
-
 import scala.concurrent.{ExecutionContext, Future}
 
 @InternalApi
@@ -29,7 +28,8 @@ private[bigquery] object SendRequestWithOauthHandling {
       .via(EnrichRequestWithOauth(bigQueryConfig.session))
       .mapAsync(1)(
         bigQueryConfig.forwardProxy match {
-          case Some(fp) => http.singleRequest(_, connectionContext = fp.httpsContext(system) ,settings = fp.poolSettings(system))
+          case Some(fp) =>
+            http.singleRequest(_, connectionContext = fp.httpsContext(system), settings = fp.poolSettings(system))
           case None => http.singleRequest(_)
         }
       )

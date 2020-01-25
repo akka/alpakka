@@ -54,8 +54,8 @@ private[impl] class GoogleTokenApi(http: => HttpExt, system: ActorSystem, forwar
       response <- forwardProxy match {
         case Some(fp) =>
           http.singleRequest(HttpRequest(HttpMethods.POST, googleTokenUrl, entity = requestEntity),
-            connectionContext = fp.httpsContext(system),
-            settings = fp.poolSettings(system))
+                             connectionContext = fp.httpsContext(system),
+                             settings = fp.poolSettings(system))
 
         case None => http.singleRequest(HttpRequest(HttpMethods.POST, googleTokenUrl, entity = requestEntity))
       }
