@@ -40,13 +40,12 @@ class SendRequestWithOauthHandlingSpec
 
     "handle unexpected http error" in {
 
-      /*
       val bigQueryProjectConfig = mock[BigQueryConfig]
       val session = mock[GoogleSession]
       when(bigQueryProjectConfig.session) thenReturn session
       when(session.getToken()) thenReturn Future.successful("TOKEN")
 
-      val system = mock[ActorSystem]
+      implicit val system = mock[ActorSystem]
       val http = mock[HttpExt]
       when(
         http.singleRequest(
@@ -64,9 +63,6 @@ class SendRequestWithOauthHandlingSpec
       result.toString shouldEqual Failure(
         new IllegalStateException(s"Unexpected error in response: 500 Internal Server Error, my custom error")
       ).toString
-
-
-     */
     }
 
   }
