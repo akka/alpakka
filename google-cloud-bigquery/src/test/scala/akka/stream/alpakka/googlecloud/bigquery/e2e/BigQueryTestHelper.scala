@@ -30,15 +30,6 @@ trait BigQueryTestHelper {
   val proxyHost = "localhost"
   val proxyPort = 8500
 
-  val hoverflyConfig = HoverflyConfig.localConfigs
-  hoverflyConfig.proxyPort(8500)
-  hoverflyConfig.adminPort(8888)
-
-  val hoverfly = new Hoverfly(hoverflyConfig, HoverflyMode.SIMULATE)
-
-  val simulationUrl = getClass.getClassLoader.getResource("scenario.json")
-  hoverfly.start()
-  hoverfly.simulate(SimulationSource.url(simulationUrl))
 
   lazy val projectId = "bigqueryproject"
   lazy val dataset = "bigquerydataset"
