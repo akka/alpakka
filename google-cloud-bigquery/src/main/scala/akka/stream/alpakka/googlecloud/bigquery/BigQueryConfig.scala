@@ -94,12 +94,16 @@ final class ForwardProxyCredentials private (val username: String, val password:
 
 object ForwardProxy {
 
+  /** Scala API */
   def apply(host: String, port: Int) =
-    new ForwardProxy(host, port, Option.empty)
+    new ForwardProxy(host, port, Option.empty, Option.empty)
 
   /** Scala API */
   def apply(host: String, port: Int, credentials: Option[ForwardProxyCredentials]) =
-    new ForwardProxy(host, port, credentials)
+    new ForwardProxy(host, port, credentials, Option.empty)
+
+  def apply(host: String, port: Int, credentials: Option[ForwardProxyCredentials], trustPem: Option[ForwardProxyTrustPem]) =
+    new ForwardProxy(host, port, credentials, trustPem)
 
   /** Java API */
   def create(host: String, port: Int, credentials: Option[ForwardProxyCredentials]) =
