@@ -96,16 +96,13 @@ public class ArchiveTest {
           }
         };
 
-    archiveHelper.createReferenceZipFileFromMemory(inputFiles, "logo-reference.zip");
-
     ByteString resultFileContent = readFileAsByteString(Paths.get("logo.zip"));
-    ByteString referenceFileContent = readFileAsByteString(Paths.get("logo-reference.zip"));
+    Map<String, ByteString> unzip = archiveHelper.unzip(resultFileContent);
 
-    assertEquals(resultFileContent, referenceFileContent);
+    assertEquals(inputFiles, unzip);
 
     // cleanup
     new File("logo.zip").delete();
-    new File("logo-reference.zip").delete();
   }
 
   @After

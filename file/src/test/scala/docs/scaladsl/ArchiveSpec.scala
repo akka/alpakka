@@ -6,7 +6,6 @@ package docs.scaladsl
 
 import java.io._
 import java.nio.file.{Path, Paths}
-import java.util.zip.ZipInputStream
 
 import akka.actor.ActorSystem
 import akka.stream.alpakka.file.ArchiveMetadata
@@ -82,23 +81,26 @@ class ArchiveSpec
         // #sample
         result.futureValue shouldBe IOResult(1178, Success(Done))
 
-        archiveHelper.createReferenceZipFile(List(filePath1, filePath2).asJava, "reference.zip")
+        val resultFileContent =
+          FileIO.fromPath(Paths.get("result.zip")).runWith(Sink.fold(ByteString.empty)(_ ++ _)).futureValue
 
-        val resultFile = FileIO.fromPath(Paths.get("result.zip"))
-        val referenceFile = FileIO.fromPath(Paths.get("reference.zip"))
+        val unzipResultMap = archiveHelper.unzip(resultFileContent).asScala
+        unzipResultMap should have size 2
 
-        val resultFileContent = resultFile.runWith(Sink.fold(ByteString.empty)(_ ++ _)).futureValue
-        val referenceFileContent = referenceFile.runWith(Sink.fold(ByteString.empty)(_ ++ _)).futureValue
+        val refFile1 = FileIO
+          .fromPath(filePath1)
+          .runWith(Sink.fold(ByteString.empty)(_ ++ _))
+          .futureValue
+        val refFile2 = FileIO
+          .fromPath(filePath2)
+          .runWith(Sink.fold(ByteString.empty)(_ ++ _))
+          .futureValue
 
-        val toHex: Byte => String = b => f"${b.toHexString}%2s"
-
-        val res = resultFileContent.map(toHex).mkString("")
-        val ref = referenceFileContent.map(toHex).mkString("")
-        res shouldBe ref
+        unzipResultMap("akka_full_color.svg") shouldBe refFile1
+        unzipResultMap("akka_icon_reverse.svg") shouldBe refFile2
 
         //cleanup
         new File("result.zip").delete()
-        new File("reference.zip").delete()
       }
 
       "archive files" in {
@@ -111,7 +113,7 @@ class ArchiveSpec
             .via(zipFlow)
             .runWith(Sink.fold(ByteString.empty)(_ ++ _))
 
-        unzip(akkaZipped.futureValue) shouldBe inputFiles
+        archiveHelper.unzip(akkaZipped.futureValue).asScala shouldBe inputFiles
       }
     }
   }
@@ -121,7 +123,9 @@ class ArchiveSpec
 
   private def generateInputFiles(numberOfFiles: Int, lengthOfFile: Int): Map[String, Seq[Byte]] = {
     val r = new scala.util.Random(31)
-    (1 to numberOfFiles).map(number => s"file-$number" -> r.nextString(lengthOfFile).getBytes.toSeq).toMap
+    (1 to numberOfFiles)
+      .map(number => s"file-$number" -> ByteString.fromArray(r.nextString(lengthOfFile).getBytes))
+      .toMap
   }
 
   private def filesToStream(
@@ -132,34 +136,6 @@ class ArchiveSpec
         (ArchiveMetadata(title), Source(content.grouped(10).map(group => ByteString(group.toArray)).toList))
     }
     Source(sourceFiles)
-  }
-
-  private def unzip(bytes: ByteString): Map[String, Seq[Byte]] = {
-    var result: Map[String, Seq[Byte]] = Map.empty
-    val zis = new ZipInputStream(new ByteArrayInputStream(bytes.toArray))
-    val buffer = new Array[Byte](1024)
-
-    try {
-      var zipEntry = zis.getNextEntry
-      while (zipEntry != null) {
-        val baos = new ByteArrayOutputStream()
-        val name = zipEntry.getName
-
-        var len = zis.read(buffer)
-
-        while (len > 0) {
-          baos.write(buffer, 0, len)
-          len = zis.read(buffer)
-        }
-        result += (name -> baos.toByteArray.toSeq)
-        baos.close()
-        zipEntry = zis.getNextEntry
-      }
-    } finally {
-      zis.closeEntry()
-      zis.close()
-    }
-    result
   }
 
   override def afterAll(): Unit = {
