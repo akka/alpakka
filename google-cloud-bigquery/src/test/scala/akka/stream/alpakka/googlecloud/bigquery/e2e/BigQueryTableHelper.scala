@@ -3,7 +3,6 @@
  */
 
 package akka.stream.alpakka.googlecloud.bigquery.e2e
-import java.util.UUID
 
 import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
 
@@ -20,19 +19,11 @@ Sample data is:
   ("v7", NULL, NULL)
  */
 trait BigQueryTableHelper extends BigQueryTestHelper with WordSpecLike with BeforeAndAfterAll {
-  val uuid = UUID.randomUUID().toString.replace("-", "")
-  val tableName = s"bqtest_$uuid"
 
-  override def beforeAll(): Unit =
-    if (enableE2E) {
-      initDb()
-      sleep()
-    }
+  val tableName = s"bqtest_b4f8d1b2c47f4bc9ae5f0c86e439d71b"
+
   override def afterAll(): Unit =
-    if (enableE2E) {
-      cleanUpDb()
-      sleep()
-    }
+    hoverfly.close()
 
   def initDb(): Unit = {
     val createTableSql =
