@@ -12,6 +12,42 @@ import akka.stream.alpakka.googlecloud.bigquery.impl.GoogleSession
 
 import scala.compat.java8.OptionConverters._
 
+object ForwardProxyTrustPem {
+
+  /** Scala API */
+  def apply(pemPath: String): ForwardProxyTrustPem =
+    new ForwardProxyTrustPem(pemPath)
+
+  /** Java API */
+  def create(pemPath: String): ForwardProxyTrustPem =
+    apply(pemPath)
+
+}
+
+final class ForwardProxyTrustPem private (val pemPath: String) {
+
+  def getPemPath: String = pemPath
+
+  private def copy(pemPath: String): Unit = {
+    new ForwardProxyTrustPem(pemPath)
+  }
+
+  override def toString: String =
+    "ForwardProxyTrustPem(" +
+      s"pemPath=$pemPath," +
+      ")"
+
+  override def equals(other: Any): Boolean = other match {
+    case that: ForwardProxyTrustPem =>
+      Objects.equals(this.pemPath, that.pemPath)
+    case _ => false
+  }
+
+  override def hashCode(): Int =
+    Objects.hash(pemPath)
+
+}
+
 object ForwardProxyCredentials {
 
   /** Scala API */
@@ -58,6 +94,9 @@ final class ForwardProxyCredentials private (val username: String, val password:
 
 object ForwardProxy {
 
+  def apply(host: String, port: Int) =
+    new ForwardProxy(host, port, Option.empty)
+
   /** Scala API */
   def apply(host: String, port: Int, credentials: Option[ForwardProxyCredentials]) =
     new ForwardProxy(host, port, credentials)
@@ -68,7 +107,7 @@ object ForwardProxy {
 
 }
 
-final class ForwardProxy private (val host: String, val port: Int, val credentials: Option[ForwardProxyCredentials]) {
+final class ForwardProxy private (val host: String, val port: Int, val credentials: Option[ForwardProxyCredentials], val trustPem: Option[ForwardProxyTrustPem]) {
 
   /** Java API */
   def getHost: String = host
@@ -79,25 +118,29 @@ final class ForwardProxy private (val host: String, val port: Int, val credentia
   /** Java API */
   def getCredentials: java.util.Optional[ForwardProxyCredentials] = credentials.asJava
 
+  def getForwardProxyTrustPem: java.util.Optional[ForwardProxyTrustPem] = trustPem.asJava
+
   def withHost(host: String) = copy(host = host)
   def withPort(port: Int) = copy(port = port)
   def withCredentials(credentials: ForwardProxyCredentials) = copy(credentials = Option(credentials))
 
-  private def copy(host: String = host, port: Int = port, credentials: Option[ForwardProxyCredentials] = credentials) =
-    new ForwardProxy(host, port, credentials)
+  private def copy(host: String = host, port: Int = port, credentials: Option[ForwardProxyCredentials] = credentials, trustPem: Option[ForwardProxyTrustPem] = trustPem) =
+    new ForwardProxy(host, port, credentials, trustPem)
 
   override def toString =
     "ForwardProxy(" +
     s"host=$host," +
     s"port=$port," +
-    s"credentials=$credentials" +
+    s"credentials=$credentials," +
+    s"trustPem=$trustPem" +
     ")"
 
   override def equals(other: Any): Boolean = other match {
     case that: ForwardProxy =>
       Objects.equals(this.host, that.host) &&
       Objects.equals(this.port, that.port) &&
-      Objects.equals(this.credentials, that.credentials)
+      Objects.equals(this.credentials, that.credentials) &&
+      Objects.equals(this.trustPem, that.trustPem)
     case _ => false
   }
 
