@@ -25,19 +25,16 @@ class BigQueryEndToEndSpec extends BigQueryTableHelper with Matchers {
   "Google BigQuery" should {
 
     "list tables" in {
-      assume(enableE2E, "BigQuery env-vars not configures")
       val tables: Future[Seq[QueryTableModel]] = GoogleBigQuerySource.listTables(projectConfig)
       await(tables) should contain(QueryTableModel(TableReference(tableName), "TABLE"))
     }
 
     "list fields" in {
-      assume(enableE2E, "BigQuery env-vars not configures")
       val fields: Future[Seq[Field]] = GoogleBigQuerySource.listFields(tableName, projectConfig)
       await(fields).map(_.name).sorted shouldBe Seq("A1", "A2", "A3")
     }
 
     "select" in {
-      assume(enableE2E, "BigQuery env-vars not configures")
       val result =
         await(
           GoogleBigQuerySource
