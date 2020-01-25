@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package akka.stream.alpakka.googlecloud.bigquery.scaladsl
 
 import java.io.FileInputStream
@@ -7,8 +11,7 @@ import java.security.cert.{CertificateFactory, X509Certificate}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.{Http, HttpsConnectionContext}
 import akka.stream.alpakka.googlecloud.bigquery.{ForwardProxy, ForwardProxyTrustPem}
-import javax.net.ssl.{SSLContext, TrustManagerFactory}
-;
+import javax.net.ssl.{SSLContext, TrustManagerFactory};
 
 private[bigquery] object ForwardProxyHttpsContext {
 
@@ -46,7 +49,7 @@ private[bigquery] object ForwardProxyHttpsContext {
     val stream = new FileInputStream(trustPem.pemPath)
     var result: X509Certificate = null
     try result = CertificateFactory.getInstance("X509").generateCertificate(stream).asInstanceOf[X509Certificate]
-    finally if (stream!= null) stream.close()
+    finally if (stream != null) stream.close()
     result
   }
 
