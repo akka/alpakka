@@ -30,12 +30,14 @@ trait BigQueryTableHelper extends BigQueryTestHelper with WordSpecLike with Befo
 
   override protected def beforeAll(): Unit = {
     val simulationUrl = getClass.getClassLoader.getResource("scenario.json")
-    hoverfly.start()
-    hoverfly.simulate(SimulationSource.url(simulationUrl))
-  }
+    try {
+      hoverfly.start()
+      hoverfly.simulate(SimulationSource.url(simulationUrl))
+    } catch {
+      case e: IllegalStateException => println("Hoverfly already started")
+    }
 
-  override def afterAll(): Unit =
-    hoverfly.close()
+  }
 
   def initDb(): Unit = {
     val createTableSql =
