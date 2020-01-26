@@ -65,6 +65,8 @@ jobs:
       - DIR=geode
       - PRE_CMD="docker-compose up -d geode"
     - env:
+      - DIR=google-cloud-bigquery
+    - env:
       - DIR=google-cloud-pub-sub
     - env:
       - DIR=google-cloud-pub-sub-grpc
