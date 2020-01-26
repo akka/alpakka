@@ -11,7 +11,6 @@ import akka.stream.alpakka.googlecloud.bigquery.{BigQueryConfig, ForwardProxy, F
 import akka.stream.alpakka.googlecloud.bigquery.client.GoogleEndpoints
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.{BigQueryCallbacks, GoogleBigQuerySource}
 import akka.stream.scaladsl.Sink
-import io.specto.hoverfly.junit.core.{Hoverfly, HoverflyConfig, HoverflyMode, SimulationSource}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
