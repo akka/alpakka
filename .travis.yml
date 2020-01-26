@@ -55,6 +55,7 @@ jobs:
     - name: geode
       env:
       - PRE_CMD="docker-compose up -d geode"
+    - name: google-cloud-bigquery
     - name: google-cloud-pub-sub
     - name: google-cloud-pub-sub-grpc
       env:
