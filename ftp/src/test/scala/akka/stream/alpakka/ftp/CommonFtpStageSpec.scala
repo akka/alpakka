@@ -370,7 +370,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
 
       val ex = result.status.failed.get
       ex shouldBe an[IOException]
-      ex should have message s"Could not delete /$fileName"
+      ex should (have message s"Could not delete /$fileName" or have message "No such file")
 
       extraWaitForStageShutdown()
     }
@@ -415,7 +415,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
 
       val ex = result.status.failed.get
       ex shouldBe an[IOException]
-      ex should have message s"Could not move /$fileName"
+      ex should (have message s"Could not move /$fileName" or have message "No such file")
 
       extraWaitForStageShutdown()
     }
