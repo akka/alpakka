@@ -43,11 +43,16 @@ import scala.util.{Either, Failure, Success}
   /*
    * Construct with the starting state
    */
-  def apply(consumerPacketRouter: ActorRef[RemotePacketRouter.Request[Consumer.Event]],
-            producerPacketRouter: ActorRef[LocalPacketRouter.Request[Producer.Event]],
-            subscriberPacketRouter: ActorRef[LocalPacketRouter.Request[Subscriber.Event]],
-            unsubscriberPacketRouter: ActorRef[LocalPacketRouter.Request[Unsubscriber.Event]],
-            settings: MqttSessionSettings)(implicit mat: Materializer): Behavior[Event] =
+  def apply(settings: MqttSessionSettings)(implicit mat: Materializer): Behavior[Event] = Behaviors.setup { context =>
+    val consumerPacketRouter =
+      context.spawn(RemotePacketRouter[Consumer.Event], "client-consumer-packet-id-allocator")
+    val producerPacketRouter =
+      context.spawn(LocalPacketRouter[Producer.Event], "client-producer-packet-id-allocator")
+    val subscriberPacketRouter =
+      context.spawn(LocalPacketRouter[Subscriber.Event], "client-subscriber-packet-id-allocator")
+    val unsubscriberPacketRouter =
+      context.spawn(LocalPacketRouter[Unsubscriber.Event], "client-unsubscriber-packet-id-allocator")
+
     disconnected(
       Disconnected(
         Vector.empty,
@@ -62,6 +67,7 @@ import scala.util.{Either, Failure, Success}
         settings
       )
     )
+  }
 
   // Our FSM data, FSM events and commands emitted by the FSM
 
@@ -158,6 +164,16 @@ import scala.util.{Either, Failure, Success}
 
   sealed abstract class Event(val connectionId: ByteString)
 
+  final case class Routers(
+      consumerPacketRouter: ActorRef[RemotePacketRouter.Request[Consumer.Event]],
+      producerPacketRouter: ActorRef[LocalPacketRouter.Request[Producer.Event]],
+      subscriberPacketRouter: ActorRef[LocalPacketRouter.Request[Subscriber.Event]],
+      unsubscriberPacketRouter: ActorRef[LocalPacketRouter.Request[Unsubscriber.Event]]
+  )
+
+  final case class RequestRouters(override val connectionId: ByteString, replyTo: ActorRef[Routers])
+      extends Event(connectionId)
+
   final case class ConnectReceivedLocally(override val connectionId: ByteString,
                                           connect: Connect,
                                           connectData: ConnectData,
@@ -242,7 +258,15 @@ import scala.util.{Either, Failure, Success}
 
           val nextState =
             if (connect.connectFlags.contains(ConnectFlags.CleanSession)) {
-              context.children.foreach(context.stop)
+              context.children
+                .filterNot( // don't stop the routers
+                  child =>
+                    Set[ActorRef[_]](data.consumerPacketRouter,
+                                     data.producerPacketRouter,
+                                     data.subscriberPacketRouter,
+                                     data.unsubscriberPacketRouter) contains child
+                )
+                .foreach(context.stop)
 
               serverConnect(
                 ConnectReceived(
@@ -294,8 +318,16 @@ import scala.util.{Either, Failure, Success}
             data.stash
           )
 
+        case (_, RequestRouters(_, replyTo)) =>
+          replyTo ! Routers(data.consumerPacketRouter,
+                            data.producerPacketRouter,
+                            data.subscriberPacketRouter,
+                            data.unsubscriberPacketRouter)
+          Behaviors.same
+
         case (_, ConnectionLost(_)) =>
           Behaviors.same
+
         case (_, e) =>
           disconnected(data.copy(stash = data.stash :+ e))
       }
@@ -383,9 +415,18 @@ import scala.util.{Either, Failure, Success}
             data.remote.fail(ConnectFailed)
             timer.cancel(ReceiveConnAck)
             disconnect(context, data.remote, data)
+
+          case (_, RequestRouters(_, replyTo)) =>
+            replyTo ! Routers(data.consumerPacketRouter,
+                              data.producerPacketRouter,
+                              data.subscriberPacketRouter,
+                              data.unsubscriberPacketRouter)
+            Behaviors.same
+
           case (context, ConnectionLost(_)) =>
             timer.cancel(ReceiveConnAck)
             disconnect(context, data.remote, data)
+
           case (_, e) =>
             serverConnect(data.copy(stash = data.stash :+ e))
         }
@@ -583,6 +624,14 @@ import scala.util.{Either, Failure, Success}
           case (_, PingRespReceivedFromRemote(_, local)) =>
             local.success(ForwardPingResp)
             serverConnected(data.copy(pendingPingResp = false))
+
+          case (_, RequestRouters(_, replyTo)) =>
+            replyTo ! Routers(data.consumerPacketRouter,
+                              data.producerPacketRouter,
+                              data.subscriberPacketRouter,
+                              data.unsubscriberPacketRouter)
+            Behaviors.same
+
         }
         .receiveSignal {
           case (context, ChildFailed(_, failure))
