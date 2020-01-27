@@ -258,9 +258,9 @@ private[jms] trait JmsConnector[S <: JmsSession] {
     }
     try {
       connection.close()
-      log.info("JMS connection {} closed", connection)
+      log.debug("JMS connection {} closed", connection)
     } catch {
-      case NonFatal(e) => log.error(e, "Error closing JMS connection {}", connection)
+      case NonFatal(e) => log.warning("Error closing JMS connection {}: {}", connection, e)
     }
   }
 
@@ -325,7 +325,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
     jmsConnection.map { connection =>
       connection.setExceptionListener(new jms.ExceptionListener {
         override def onException(ex: jms.JMSException): Unit = {
-          closeConnection(connection) // best effort closing the connection.
+          closeConnection(connection)
           connectionFailedCB.invoke(ex)
         }
       })
