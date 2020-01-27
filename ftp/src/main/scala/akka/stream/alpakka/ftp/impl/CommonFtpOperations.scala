@@ -77,11 +77,13 @@ private[ftp] trait CommonFtpOperations {
     if (os != null) os else throw new IOException(s"Could not write to $name")
   }
 
-  def move(fromPath: String, destinationPath: String, handler: Handler): Unit =
-    handler.rename(fromPath, destinationPath)
+  def move(fromPath: String, destinationPath: String, handler: Handler): Unit = {
+    if (!handler.rename(fromPath, destinationPath)) throw new IOException(s"Could not move $fromPath")
+  }
 
-  def remove(path: String, handler: Handler): Unit =
-    handler.deleteFile(path)
+  def remove(path: String, handler: Handler): Unit = {
+    if (!handler.deleteFile(path)) throw new IOException(s"Could not delete $path")
+  }
 
   def completePendingCommand(handler: Handler): Boolean =
     handler.completePendingCommand()

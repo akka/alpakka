@@ -266,9 +266,22 @@ private[ftp] trait FtpMoveSink[FtpClient, S <: RemoteFileSettings]
           in,
           new InHandler {
             override def onPush(): Unit = {
-              val sourcePath = grab(in)
-              ftpLike.move(sourcePath.path, destinationPath(sourcePath), handler.get)
-              pull(in)
+              try {
+                val sourcePath = grab(in)
+                ftpLike.move(sourcePath.path, destinationPath(sourcePath), handler.get)
+                pull(in)
+              } catch {
+                case NonFatal(e) =>
+                  failed = true
+                  matFailure(e)
+                  failStage(e)
+              }
+            }
+
+            override def onUpstreamFailure(exception: Throwable): Unit = {
+              matFailure(exception)
+              failed = true
+              super.onUpstreamFailure(exception)
             }
           }
         )
@@ -304,12 +317,28 @@ private[ftp] trait FtpRemoveSink[FtpClient, S <: RemoteFileSettings]
     val matValuePromise = Promise[IOResult]()
     val logic = new FtpGraphStageLogic[Unit, FtpClient, S](shape, ftpLike, connectionSettings, ftpClient) {
       {
-        setHandler(in, new InHandler {
-          override def onPush(): Unit = {
-            ftpLike.remove(grab(in).path, handler.get)
-            pull(in)
+        setHandler(
+          in,
+          new InHandler {
+            override def onPush(): Unit = {
+              try {
+                ftpLike.remove(grab(in).path, handler.get)
+                pull(in)
+              } catch {
+                case NonFatal(e) =>
+                  failed = true
+                  matFailure(e)
+                  failStage(e)
+              }
+            }
+
+            override def onUpstreamFailure(exception: Throwable): Unit = {
+              matFailure(exception)
+              failed = true
+              super.onUpstreamFailure(exception)
+            }
           }
-        })
+        )
       }
 
       protected[this] def doPreStart(): Unit = pull(in)
