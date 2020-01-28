@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.ftp
 
+import java.io.IOException
 import java.net.InetAddress
 import java.nio.file.attribute.PosixFilePermission
 import java.nio.file.{Files, Paths}
@@ -350,6 +351,29 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       }
       extraWaitForStageShutdown()
     }
+
+    "fail when the file does not exist" in {
+      val fileName = "sample_io_" + Instant.now().getNano
+      val file = FtpFile(
+        name = fileName,
+        path = s"/$fileName",
+        isDirectory = false,
+        size = 999,
+        lastModified = 0,
+        permissions = Set.empty
+      )
+
+      val result = Source
+        .single(file)
+        .runWith(remove())
+        .futureValue
+
+      val ex = result.status.failed.get
+      ex shouldBe an[IOException]
+      ex should (have message s"Could not delete /$fileName" or have message "No such file")
+
+      extraWaitForStageShutdown()
+    }
   }
 
   "FtpMoveSink" should {
@@ -368,6 +392,31 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
         fileExists(fileName) shouldBe false
         fileExists(fileName2) shouldBe true
       }
+      extraWaitForStageShutdown()
+    }
+
+    "fail when the source file does not exist" in {
+      val fileName = "sample_io_" + Instant.now().getNano
+      val fileName2 = "sample_io2_" + Instant.now().getNano
+
+      val file = FtpFile(
+        name = fileName,
+        path = s"/$fileName",
+        isDirectory = false,
+        size = 999,
+        lastModified = 0,
+        permissions = Set.empty
+      )
+
+      val result = Source
+        .single(file)
+        .runWith(move(_ => fileName2))
+        .futureValue
+
+      val ex = result.status.failed.get
+      ex shouldBe an[IOException]
+      ex should (have message s"Could not move /$fileName" or have message "No such file")
+
       extraWaitForStageShutdown()
     }
   }
