@@ -17,6 +17,8 @@ The code in this documentation is compiled against
 * Akka Streams $akka.version$ (all modules are compatible with Akka 2.6.0+) (@extref:[Reference](akka:stream/index.html), [Github](https://github.com/akka/akka))
 * Akka Http $akka-http.version$ (@extref:[Reference](akka-http:), [Github](https://github.com/akka/akka-http))
 
+See @ref:[Alpakka versioning](other-docs/versioning.md) for more details.
+
 Release notes are found at @ref:[Release Notes](release-notes/index.md).
 
 If you want to try out a connector that has not yet been released, give @ref[snapshots](other-docs/snapshots.md) a spin which are published after every merged PR.

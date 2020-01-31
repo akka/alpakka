@@ -33,6 +33,14 @@ The table below shows direct dependencies of this module and the second tab show
 @@dependencies { projectId="mqtt-streaming" }
 
 
+@@@ warning
+
+The current Alpakka MQTT streaming library works **only with Akka 2.5.27+** due to non-binary-compatible changes in the Akka Typed modules. 
+See the Akka blog: [Akka 2.5.22 Brings Akka Typed To Production Ready](https://akka.io/blog/news/2019/04/10/akka-tyoed-prod-ready).  
+
+@@@
+
+
 ## Flow through a client session
 
 The following code illustrates how to establish an MQTT client session and join it with a TCP connection:
