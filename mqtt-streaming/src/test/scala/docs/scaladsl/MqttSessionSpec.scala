@@ -17,7 +17,7 @@ import akka.stream.alpakka.mqtt.streaming.scaladsl.{
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Sink, Source, SourceQueueWithComplete}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
-import akka.stream.{ActorMaterializer, Materializer, OverflowStrategy}
+import akka.stream.OverflowStrategy
 import akka.testkit._
 import akka.util.{ByteString, Timeout}
 import org.scalatest.BeforeAndAfterAll
@@ -37,7 +37,6 @@ class MqttSessionSpec
     with Matchers
     with LogCapturing {
 
-  implicit val mat: Materializer = ActorMaterializer()
   implicit val executionContext: ExecutionContext = system.dispatcher
   implicit val timeout: Timeout = Timeout(3.seconds.dilated)
 
@@ -1539,7 +1538,7 @@ class MqttSessionSpec
 
       fromClientQueue.offer(unsubscribeBytes)
 
-      unsubscribeReceived.future.foreach(_ => server.offer(Command(unsubAck)))(mat.executionContext)
+      unsubscribeReceived.future.foreach(_ => server.offer(Command(unsubAck)))(executionContext)
 
       client.fishForSpecificMessage(3.seconds.dilated) {
         case `unsubAckBytes` =>

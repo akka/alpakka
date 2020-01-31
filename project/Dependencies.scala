@@ -10,7 +10,8 @@ object Dependencies {
   val Scala213 = "2.13.1"
   val ScalaVersions = Seq(Scala212, Scala211, Scala213).filterNot(_ == Scala211 && Nightly)
 
-  val AkkaVersion = if (Nightly) "2.6.1" else "2.5.27"
+  val Akka26Version = "2.6.1"
+  val AkkaVersion = if (Nightly) Akka26Version else "2.5.27"
   val AkkaBinaryVersion = if (Nightly) "2.6" else "2.5"
 
   val InfluxDBJavaVersion = "2.15"
@@ -331,9 +332,10 @@ object Dependencies {
 
   val MqttStreaming = Seq(
     libraryDependencies ++= Seq(
-        "com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion, // ApacheV2
-        "com.typesafe.akka" %% "akka-actor-testkit-typed" % AkkaVersion % "test", // ApacheV2
-        "com.typesafe.akka" %% "akka-stream-typed" % AkkaVersion // ApacheV2
+        "com.typesafe.akka" %% "akka-actor-typed" % Akka26Version, // ApacheV2
+        "com.typesafe.akka" %% "akka-actor-testkit-typed" % Akka26Version % Test, // ApacheV2
+        "com.typesafe.akka" %% "akka-stream-typed" % Akka26Version, // ApacheV2
+        "com.typesafe.akka" %% "akka-stream-testkit" % Akka26Version % Test // ApacheV2
       )
   )
 

@@ -42,7 +42,6 @@ trait MqttFlowSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll 
 
   private implicit val defaultPatience: PatienceConfig = PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
-  private implicit val mat: Materializer = ActorMaterializer()
   private implicit val dispatcherExecutionContext: ExecutionContext = system.dispatcher
 
   override def afterAll(): Unit =
@@ -130,7 +129,6 @@ trait MqttFlowSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll 
                   case Right(Event(publish @ Publish(flags, _, Some(packetId), _), _))
                       if flags.contains(ControlPacketFlags.RETAIN) =>
                     queue.offer(Command(PubAck(packetId)))
-                    import mat.executionContext
                     subscribed.future.foreach(_ => session ! Command(publish))
                   case _ => // Ignore everything else
                 }
