@@ -63,7 +63,6 @@ public class UnixDomainSocketTest {
     // #binding
     java.nio.file.Path path = // ...
         // #binding
-        // Files.createTempFile("aUnixDomainSocketShouldReceiveWhatIsSent1", ".sock");
         Files.createTempDirectory("UnixDomainSocketSpec").resolve("sock1");
     path.toFile().deleteOnExit();
 
@@ -72,7 +71,7 @@ public class UnixDomainSocketTest {
         UnixDomainSocket.get(system).bind(path);
     // #binding
 
-    CompletableFuture<ByteString> received = new CompletableFuture<>();
+    final CompletableFuture<ByteString> received = new CompletableFuture<>();
 
     // #outgoingConnection
     ByteString sendBytes = ByteString.fromString("Hello");
