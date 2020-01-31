@@ -50,7 +50,7 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
   "S3Sink" should "retry upload after internal server error" in {
 
-    mockUploadWithInternalError(body)
+    mockUploadWithInternalErrors(body)
 
     val s3Sink: Sink[ByteString, Future[MultipartUploadResult]] = S3.multipartUpload(bucket, bucketKey)
 

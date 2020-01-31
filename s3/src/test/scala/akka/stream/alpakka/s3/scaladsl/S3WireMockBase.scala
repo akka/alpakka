@@ -388,11 +388,12 @@ abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMoc
     )
   }
 
-  def mockUploadWithInternalError(expectedBody: String): Unit = {
+  def mockUploadWithInternalErrors(expectedBody: String): Unit = {
+    val scenarioName = "UploadWithTransientErrors"
     mock
       .register(
         post(urlEqualTo(s"/$bucketKey?uploads"))
-          .inScenario("InternalError")
+          .inScenario(scenarioName)
           .whenScenarioStateIs(Scenario.STARTED)
           .willReturn(
             aResponse()
@@ -407,13 +408,13 @@ abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMoc
                          |  <RequestId>4442587FB7D0A2F9</RequestId>
                          |</Error>""".stripMargin)
           )
-          .willSetStateTo("Recover")
+          .willSetStateTo("RecoverFromErrorOnInitiate")
       )
     mock
       .register(
         post(urlEqualTo(s"/$bucketKey?uploads"))
-          .inScenario("InternalError")
-          .whenScenarioStateIs("Recover")
+          .inScenario(scenarioName)
+          .whenScenarioStateIs("RecoverFromErrorOnInitiate")
           .willReturn(
             aResponse()
               .withStatus(200)
@@ -426,10 +427,34 @@ abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMoc
                          |  <UploadId>$uploadId</UploadId>
                          |</InitiateMultipartUploadResult>""".stripMargin)
           )
+          .willSetStateTo("InternalErrorOnPartUpload")
       )
 
     mock.register(
       put(urlEqualTo(s"/$bucketKey?partNumber=1&uploadId=$uploadId"))
+        .inScenario(scenarioName)
+        .whenScenarioStateIs("InternalErrorOnPartUpload")
+        .withRequestBody(matching(expectedBody))
+        .willReturn(
+          aResponse()
+            .withStatus(500)
+            .withHeader("x-amz-id-2", "Zn8bf8aEFQ+kBnGPBc/JaAf9SoWM68QDPS9+SyFwkIZOHUG2BiRLZi5oXw4cOCEt")
+            .withHeader("x-amz-request-id", "5A37448A37622243")
+            .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
+                         |<Error>
+                         |  <Code>InternalError</Code>
+                         |  <Message>We encountered an internal error. Please try again.</Message>
+                         |  <Resource>$bucket/$bucketKey</Resource>
+                         |  <RequestId>4442587FB7D0A2F9</RequestId>
+                         |</Error>""".stripMargin)
+        )
+        .willSetStateTo("RecoverFromErrorOnPartUpload")
+    )
+
+    mock.register(
+      put(urlEqualTo(s"/$bucketKey?partNumber=1&uploadId=$uploadId"))
+        .inScenario(scenarioName)
+        .whenScenarioStateIs("RecoverFromErrorOnPartUpload")
         .withRequestBody(matching(expectedBody))
         .willReturn(
           aResponse()

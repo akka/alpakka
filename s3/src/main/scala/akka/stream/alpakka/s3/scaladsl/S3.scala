@@ -263,6 +263,7 @@ object S3 {
    * @param cannedAcl a [[CannedAcl]], defaults to [[CannedAcl.Private]]
    * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
    * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
+   * @param maxRetriesPerChunk the maximum number of times a given chunk upload will be retried on transient errors
    * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts [[ByteString]]'s and materializes to a [[scala.concurrent.Future Future]] of [[MultipartUploadResult]]
    */
   def multipartUpload(
@@ -273,11 +274,12 @@ object S3 {
       cannedAcl: CannedAcl = CannedAcl.Private,
       chunkSize: Int = MinChunkSize,
       chunkingParallelism: Int = 4,
+      maxRetriesPerChunk: Int = 3,
       sse: Option[ServerSideEncryption] = None
   ): Sink[ByteString, Future[MultipartUploadResult]] = {
     val headers =
       S3Headers.empty.withCannedAcl(cannedAcl).withMetaHeaders(metaHeaders).withOptionalServerSideEncryption(sse)
-    multipartUploadWithHeaders(bucket, key, contentType, chunkSize, chunkingParallelism, headers)
+    multipartUploadWithHeaders(bucket, key, contentType, chunkSize, chunkingParallelism, maxRetriesPerChunk, headers)
   }
 
   /**
@@ -288,6 +290,7 @@ object S3 {
    * @param contentType an optional [[akka.http.scaladsl.model.ContentType ContentType]]
    * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
    * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
+   * @param maxRetriesPerChunk the maximum number of times a given chunk upload will be retried on transient errors
    * @param s3Headers any headers you want to add
    * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[scala.concurrent.Future Future]] of [[MultipartUploadResult]]
    */
@@ -297,6 +300,7 @@ object S3 {
       contentType: ContentType = ContentTypes.`application/octet-stream`,
       chunkSize: Int = MinChunkSize,
       chunkingParallelism: Int = 4,
+      maxRetriesPerChunk: Int = 3,
       s3Headers: S3Headers = S3Headers.empty
   ): Sink[ByteString, Future[MultipartUploadResult]] =
     S3Stream
@@ -305,7 +309,8 @@ object S3 {
         contentType,
         s3Headers,
         chunkSize,
-        chunkingParallelism
+        chunkingParallelism,
+        maxRetriesPerChunk
       )
 
   /**
