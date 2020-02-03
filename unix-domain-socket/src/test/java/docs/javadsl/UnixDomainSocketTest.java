@@ -74,7 +74,6 @@ public class UnixDomainSocketTest {
     final CompletableFuture<ByteString> received = new CompletableFuture<>();
 
     // #outgoingConnection
-    ByteString sendBytes = ByteString.fromString("Hello");
     CompletionStage<ServerBinding> streamCompletion =
         connections
             .map(
@@ -95,6 +94,7 @@ public class UnixDomainSocketTest {
             .run(materializer);
 
     // #outgoingConnection
+    final ByteString sendBytes = ByteString.fromString("Hello");
     Source.single(sendBytes)
         .via(UnixDomainSocket.get(system).outgoingConnection(path))
         .runWith(Sink.ignore(), materializer);
