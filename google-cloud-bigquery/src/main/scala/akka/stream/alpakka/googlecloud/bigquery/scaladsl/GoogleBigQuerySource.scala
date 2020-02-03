@@ -13,7 +13,7 @@ import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig
 import akka.stream.alpakka.googlecloud.bigquery.client._
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
 import akka.stream.alpakka.googlecloud.bigquery.impl.util.ConcatWithHeaders
-import akka.stream.alpakka.googlecloud.bigquery.impl.{BigQueryStreamSource, GoogleSession, GoogleTokenApi}
+import akka.stream.alpakka.googlecloud.bigquery.impl.BigQueryStreamSource
 import akka.stream.scaladsl.{Sink, Source}
 import spray.json.JsObject
 
