@@ -28,10 +28,6 @@ final class ForwardProxyTrustPem private (val pemPath: String) {
 
   def getPemPath: String = pemPath
 
-  private def copy(pemPath: String): Unit = {
-    new ForwardProxyTrustPem(pemPath)
-  }
-
   override def toString: String =
     "ForwardProxyTrustPem(" +
     s"pemPath=$pemPath," +
