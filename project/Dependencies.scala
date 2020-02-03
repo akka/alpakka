@@ -59,7 +59,10 @@ object Dependencies {
         "com.novocode" % "junit-interface" % "0.11", // BSD-style
         "ch.qos.logback" % "logback-classic" % "1.2.3", // Eclipse Public License 1.0
         "junit" % "junit" % "4.12" // Eclipse Public License 1.0
-      )
+      ),
+    // The workaround in the Jms project must also be applied here until
+    // https://github.com/sbt/sbt/pull/5413 is applied upstream
+    externalResolvers := ("jboss" at "https://repository.jboss.org/nexus/content/groups/public") +: externalResolvers.value
   )
 
   val Mockito = Seq(
