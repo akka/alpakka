@@ -214,9 +214,8 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-stream-contrib" % "0.9",
         "com.pauldijou" %% "jwt-core" % "0.14.1", //ApacheV2
-        "org.mockito" % "mockito-core" % "2.7.22" % Test, //ApacheV2
         "io.specto" % "hoverfly-java" % "0.12.2" % Test //ApacheV2
-      )
+      ) ++ Mockito
   )
 
   val GooglePubSub = Seq(
