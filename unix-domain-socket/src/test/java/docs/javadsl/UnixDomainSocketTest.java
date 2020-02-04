@@ -29,7 +29,7 @@ import akka.stream.alpakka.unixdomainsocket.javadsl.UnixDomainSocket.ServerBindi
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 public class UnixDomainSocketTest {
 
@@ -63,7 +63,7 @@ public class UnixDomainSocketTest {
     // #binding
     java.nio.file.Path path = // ...
         // #binding
-        Files.createTempDirectory("UnixDomainSocketSpec").resolve("sock1");
+        Files.createTempDirectory("UnixDomainSocketTest").resolve("sock1");
     path.toFile().deleteOnExit();
 
     // #binding
@@ -74,7 +74,7 @@ public class UnixDomainSocketTest {
     final CompletableFuture<ByteString> received = new CompletableFuture<>();
 
     // #outgoingConnection
-    CompletionStage<ServerBinding> streamCompletion =
+    CompletionStage<ServerBinding> futureBinding =
         connections
             .map(
                 connection -> {
@@ -94,18 +94,17 @@ public class UnixDomainSocketTest {
             .run(materializer);
 
     // #outgoingConnection
+
+    ServerBinding serverBinding =
+        futureBinding.toCompletableFuture().get(timeoutSeconds, TimeUnit.SECONDS);
+
     final ByteString sendBytes = ByteString.fromString("Hello");
     Source.single(sendBytes)
         .via(UnixDomainSocket.get(system).outgoingConnection(path))
         .runWith(Sink.ignore(), materializer);
 
-    assertTrue(received.get(timeoutSeconds, TimeUnit.SECONDS).equals(sendBytes));
+    assertEquals(sendBytes, received.get(timeoutSeconds, TimeUnit.SECONDS));
 
-    streamCompletion
-        .toCompletableFuture()
-        .get(timeoutSeconds, TimeUnit.SECONDS)
-        .unbind()
-        .toCompletableFuture()
-        .get(timeoutSeconds, TimeUnit.SECONDS);
+    serverBinding.unbind().toCompletableFuture().get(timeoutSeconds, TimeUnit.SECONDS);
   }
 }
