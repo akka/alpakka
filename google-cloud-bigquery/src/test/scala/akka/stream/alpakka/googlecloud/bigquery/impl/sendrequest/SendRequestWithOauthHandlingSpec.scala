@@ -8,18 +8,16 @@ import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.{HttpExt, HttpsConnectionContext}
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig
 import akka.stream.alpakka.googlecloud.bigquery.e2e.BigQueryTableHelper
-import akka.stream.alpakka.googlecloud.bigquery.impl.GoogleSession
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
 import akka.util.Timeout
 import org.mockito.Mockito._
 import org.scalatestplus.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterAll, Matchers}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.BeforeAndAfterAll
 import org.mockito.ArgumentMatchers._
 import org.scalatest.wordspec.AnyWordSpecLike
 import scala.concurrent.duration._
