@@ -9,7 +9,7 @@ import akka.stream.alpakka.googlecloud.bigquery.client.TableDataQueryJsonProtoco
 import akka.stream.alpakka.googlecloud.bigquery.client.TableListQueryJsonProtocol.{QueryTableModel, TableReference}
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.{BigQueryCallbacks, GoogleBigQuerySource}
 import akka.stream.scaladsl.Sink
-import org.scalatest.Matchers
+import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.Future
 

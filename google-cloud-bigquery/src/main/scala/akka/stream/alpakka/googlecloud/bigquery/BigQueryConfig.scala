@@ -189,18 +189,4 @@ final class BigQueryConfig(val projectId: String,
                            val dataset: String,
                            val forwardProxy: Option[ForwardProxy],
                            @InternalApi private[bigquery] val session: GoogleSession) {
-
-  def withForwardProxy(value: ForwardProxy): BigQueryConfig =
-    copy(forwardProxy = Option(value))
-
-  private def copy(projectId: String = projectId,
-                   dataset: String = dataset,
-                   forwardProxy: Option[ForwardProxy] = forwardProxy,
-                   session: GoogleSession = session): BigQueryConfig = new BigQueryConfig(
-    projectId = projectId,
-    dataset = dataset,
-    forwardProxy = forwardProxy,
-    session = session
-  )
-
 }
