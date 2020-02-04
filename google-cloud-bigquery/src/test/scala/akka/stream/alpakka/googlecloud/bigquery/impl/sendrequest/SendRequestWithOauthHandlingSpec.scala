@@ -37,7 +37,7 @@ class SendRequestWithOauthHandlingSpec
   override implicit val actorSystem: ActorSystem = ActorSystem("BigQueryEndToEndSpec")
   override implicit val materializer: ActorMaterializer = ActorMaterializer()
 
-  override def afterAll {
+  override def afterAll: Unit = {
     TestKit.shutdownActorSystem(system)
   }
 
