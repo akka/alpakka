@@ -9,11 +9,10 @@ import akka.event.LoggingAdapter
 import akka.http.scaladsl.model.{HttpRequest, _}
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.{HttpExt, HttpsConnectionContext}
-import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig
 import akka.stream.alpakka.googlecloud.bigquery.e2e.BigQueryTableHelper
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.BigQueryCallbacks
 import akka.stream.scaladsl.{Sink, Source}
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.ActorMaterializer
 import akka.testkit.TestKit
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{when, _}
