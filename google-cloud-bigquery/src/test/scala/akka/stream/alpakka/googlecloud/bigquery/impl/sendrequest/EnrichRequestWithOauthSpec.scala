@@ -15,6 +15,7 @@ import akka.util.Timeout
 import org.mockito.Mockito._
 import org.scalatest.{BeforeAndAfterAll, Matchers}
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatestplus.mockito.MockitoSugar
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
