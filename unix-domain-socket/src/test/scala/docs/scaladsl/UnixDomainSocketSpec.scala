@@ -157,9 +157,9 @@ class UnixDomainSocketSpec
       receivedLatch.await(5, TimeUnit.SECONDS)
     }
 
-    "not be able to bind to a non-existent file" in {
+    "not be able to bind to socket in a non-existent directory" in {
       val binding =
-        UnixDomainSocket().bindAndHandle(Flow.fromFunction(identity), Paths.get("/thisshouldnotexist"))
+        UnixDomainSocket().bindAndHandle(Flow.fromFunction(identity), Paths.get("/nonexistentdir/socket"))
 
       binding.failed.futureValue shouldBe an[IOException]
     }
