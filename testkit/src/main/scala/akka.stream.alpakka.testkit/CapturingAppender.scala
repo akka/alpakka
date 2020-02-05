@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.testkit
@@ -79,12 +79,26 @@ import org.slf4j.LoggerFactory
    * Flush buffered logging events to the output appenders
    * Also clears the buffer..
    */
-  def flush(): Unit = synchronized {
+  def flush(): Unit = flush(None)
+
+  /**
+   * Flush buffered logging events to the output appenders
+   *
+   *  When sourceActorSystem is set, the log message is only forwarded when it
+   *  matches the MDC of the log message
+   *
+   * Also clears the buffer..
+   */
+  def flush(sourceActorSystem: Option[String]): Unit = synchronized {
     import scala.jdk.CollectionConverters._
     val logbackLogger = getLogbackLogger(classOf[CapturingAppender].getName + "Delegate")
     val appenders = logbackLogger.iteratorForAppenders().asScala.filterNot(_ == this).toList
     for (event <- buffer; appender <- appenders) {
-      appender.doAppend(event)
+      if (sourceActorSystem.isEmpty
+          || event.getMDCPropertyMap.get("sourceActorSystem") == null
+          || sourceActorSystem.contains(event.getMDCPropertyMap.get("sourceActorSystem"))) {
+        appender.doAppend(event)
+      }
     }
     clear()
   }

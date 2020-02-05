@@ -38,6 +38,8 @@ class ParametrizedTestKit(val clientId: String, val topic: String, system: Actor
 trait MqttFlowSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll with ScalaFutures with LogCapturing {
   self: ParametrizedTestKit =>
 
+  override def sourceActorSytem = Some(system.name)
+
   private implicit val defaultPatience: PatienceConfig = PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
   private implicit val mat: Materializer = ActorMaterializer()
