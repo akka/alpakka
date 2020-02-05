@@ -5,7 +5,8 @@
 package akka.stream.alpakka.googlecloud.bigquery.e2e
 
 import io.specto.hoverfly.junit.core.{Hoverfly, HoverflyConfig, HoverflyMode, SimulationSource}
-import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.Await
 /*
@@ -19,7 +20,7 @@ Sample data is:
   ("v6", 6, NULL)
   ("v7", NULL, NULL)
  */
-trait BigQueryTableHelper extends BigQueryTestHelper with WordSpecLike with BeforeAndAfterAll {
+trait BigQueryTableHelper extends BigQueryTestHelper with AnyWordSpecLike with BeforeAndAfterAll {
 
   val tableName = s"bqtest"
 

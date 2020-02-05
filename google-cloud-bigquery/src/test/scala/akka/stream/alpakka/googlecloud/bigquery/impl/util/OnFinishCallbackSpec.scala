@@ -9,13 +9,15 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
 import akka.util.Timeout
-import org.scalatest.{Matchers, WordSpecLike}
+
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Try
 
-class OnFinishCallbackSpec extends TestKit(ActorSystem("OnFinishCallbackSpec")) with WordSpecLike with Matchers {
+class OnFinishCallbackSpec extends TestKit(ActorSystem("OnFinishCallbackSpec")) with AnyWordSpecLike with Matchers {
 
   implicit val materializer = ActorMaterializer()
   implicit val timeout = Timeout(1.second)
