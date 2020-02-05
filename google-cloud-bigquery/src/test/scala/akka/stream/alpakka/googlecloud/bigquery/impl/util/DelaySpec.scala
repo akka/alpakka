@@ -11,13 +11,14 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit._
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
-
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import scala.concurrent.duration._
 
 class DelaySpec
     extends TestKit(ActorSystem("PageTokenGeneratorSpec"))
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll {
 
