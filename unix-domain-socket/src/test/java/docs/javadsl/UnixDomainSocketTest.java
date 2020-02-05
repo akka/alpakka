@@ -4,6 +4,7 @@
 
 package docs.javadsl;
 
+import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.*;
@@ -99,10 +100,12 @@ public class UnixDomainSocketTest {
         futureBinding.toCompletableFuture().get(timeoutSeconds, TimeUnit.SECONDS);
 
     final ByteString sendBytes = ByteString.fromString("Hello");
-    Source.single(sendBytes)
-        .via(UnixDomainSocket.get(system).outgoingConnection(path))
-        .runWith(Sink.ignore(), materializer);
+    final CompletionStage<Done> sent =
+        Source.single(sendBytes)
+            .via(UnixDomainSocket.get(system).outgoingConnection(path))
+            .runWith(Sink.ignore(), materializer);
 
+    sent.toCompletableFuture().get(timeoutSeconds, TimeUnit.SECONDS);
     assertEquals(sendBytes, received.get(timeoutSeconds, TimeUnit.SECONDS));
 
     serverBinding.unbind().toCompletableFuture().get(timeoutSeconds, TimeUnit.SECONDS);
