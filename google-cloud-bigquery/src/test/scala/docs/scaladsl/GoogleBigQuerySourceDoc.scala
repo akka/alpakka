@@ -12,7 +12,6 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig
-import akka.stream.alpakka.googlecloud.bigquery.client.BigQueryCommunicationHelper
 /*
 import akka.stream.alpakka.googlecloud.bigquery.client.TableDataQueryJsonProtocol.Field
 import akka.stream.alpakka.googlecloud.bigquery.client.TableListQueryJsonProtocol.QueryTableModel
@@ -22,7 +21,6 @@ import akka.stream.scaladsl.Source
 import spray.json.DefaultJsonProtocol._
 import spray.json.{JsObject, JsonFormat}
 
-import scala.concurrent.Future
 import scala.util.Try
 //#imports
 
