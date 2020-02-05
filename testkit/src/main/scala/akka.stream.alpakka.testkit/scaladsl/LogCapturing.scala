@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.testkit.scaladsl
@@ -11,6 +11,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Outcome
 import org.scalatest.TestSuite
 import org.slf4j.LoggerFactory
+import org.slf4j.MDC
 
 /**
  * See https://doc.akka.io/docs/akka/current/typed/testing-async.html#silence-logging-output-from-tests
@@ -33,6 +34,9 @@ import org.slf4j.LoggerFactory
  */
 trait LogCapturing extends BeforeAndAfterAll { self: TestSuite =>
 
+  // Can be overridden to filter on sourceActorSystem
+  def sourceActorSytem: Option[String] = None
+
   // eager access of CapturingAppender to fail fast if misconfigured
   private val capturingAppender = CapturingAppender.get("")
 
@@ -51,15 +55,19 @@ trait LogCapturing extends BeforeAndAfterAll { self: TestSuite =>
   }
 
   abstract override def withFixture(test: NoArgTest): Outcome = {
+    sourceActorSytem.foreach(MDC.put("sourceActorSystem", _))
     myLogger.info(s"Logging started for test [${self.getClass.getName}: ${test.name}]")
+    sourceActorSytem.foreach(_ => MDC.remove("sourceActorSystem"))
     val res = test()
+    sourceActorSytem.foreach(MDC.put("sourceActorSystem", _))
     myLogger.info(s"Logging finished for test [${self.getClass.getName}: ${test.name}] that [$res]")
+    sourceActorSytem.foreach(_ => MDC.remove("sourceActorSystem"))
 
     if (!(res.isSucceeded || res.isPending)) {
       println(
         s"--> [${Console.BLUE}${self.getClass.getName}: ${test.name}${Console.RESET}] Start of log messages of test that [$res]"
       )
-      capturingAppender.flush()
+      capturingAppender.flush(sourceActorSytem)
       println(
         s"<-- [${Console.BLUE}${self.getClass.getName}: ${test.name}${Console.RESET}] End of log messages of test that [$res]"
       )
