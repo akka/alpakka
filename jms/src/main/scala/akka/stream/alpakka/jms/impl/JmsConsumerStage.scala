@@ -12,6 +12,8 @@ import akka.stream.alpakka.jms._
 import akka.stream.stage._
 import javax.jms
 
+import scala.concurrent.Future
+
 /**
  * Internal API.
  */
@@ -51,9 +53,12 @@ private[jms] final class JmsConsumerStage(settings: JmsConsumerSettings, destina
       backpressure.release()
     }
 
-    override protected def onSessionOpened(jmsSession: JmsConsumerSession): Unit =
-      jmsSession
-        .createConsumer(settings.selector)
+    override protected def onSessionOpened(jmsSession: JmsConsumerSession): Unit = {
+      val asyncConsumer = settings.consumer match {
+        case Some(consumer) => Future.successful(consumer)
+        case _ => jmsSession.createConsumer(settings.selector)
+      }
+      asyncConsumer
         .map { consumer =>
           consumer.setMessageListener(new jms.MessageListener {
             def onMessage(message: jms.Message): Unit = {
@@ -63,5 +68,6 @@ private[jms] final class JmsConsumerStage(settings: JmsConsumerSettings, destina
           })
         }
         .onComplete(sessionOpenedCB.invoke)
+    }
   }
 }
