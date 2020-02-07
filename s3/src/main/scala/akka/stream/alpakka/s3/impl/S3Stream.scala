@@ -20,7 +20,8 @@ import akka.stream.alpakka.s3.BucketAccess.{AccessDenied, AccessGranted, NotExis
 import akka.stream.alpakka.s3._
 import akka.stream.alpakka.s3.headers.ServerSideEncryption
 import akka.stream.alpakka.s3.impl.auth.{CredentialScope, Signer, SigningKey}
-import akka.stream.scaladsl.{Flow, Keep, RetryFlow, RunnableGraph, Sink, Source}
+import akka.stream.alpakka.s3.impl.backport.RetryFlow
+import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source}
 import akka.stream.{ActorMaterializer, Attributes, Materializer}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
@@ -28,7 +29,6 @@ import akka.{Done, NotUsed}
 import scala.collection.immutable
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
-import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
 /** Internal Api */
@@ -133,7 +133,7 @@ import scala.util.{Failure, Success, Try}
 
   case object Starting extends ListBucketState
 
-  case class Running(continuationToken: String) extends ListBucketState
+  final case class Running(continuationToken: String) extends ListBucketState
 
   case object Finished extends ListBucketState
 
@@ -447,10 +447,9 @@ import scala.util.{Failure, Success, Try}
       contentType: ContentType = ContentTypes.`application/octet-stream`,
       s3Headers: S3Headers,
       chunkSize: Int = MinChunkSize,
-      chunkingParallelism: Int = 4,
-      maxRetriesPerChunk: Int = 3
+      chunkingParallelism: Int = 4
   ): Sink[ByteString, Future[MultipartUploadResult]] =
-    chunkAndRequest(s3Location, contentType, s3Headers, chunkSize, maxRetriesPerChunk)(chunkingParallelism)
+    chunkAndRequest(s3Location, contentType, s3Headers, chunkSize)(chunkingParallelism)
       .toMat(completionSink(s3Location, s3Headers.serverSideEncryption))(Keep.right)
 
   private def initiateMultipartUpload(s3Location: S3Location,
@@ -602,8 +601,7 @@ import scala.util.{Failure, Success, Try}
       s3Location: S3Location,
       contentType: ContentType,
       s3Headers: S3Headers,
-      chunkSize: Int,
-      maxRetriesPerChunk: Int
+      chunkSize: Int
   )(parallelism: Int): Flow[ByteString, UploadPartResponse, NotUsed] = {
 
     // Multipart upload requests (except for the completion api) are created here.
@@ -614,7 +612,6 @@ import scala.util.{Failure, Success, Try}
       chunkSize >= MinChunkSize,
       s"Chunk size must be at least 5 MB = $MinChunkSize bytes (was $chunkSize bytes). See http://docs.aws.amazon.com/AmazonS3/latest/API/mpUploadUploadPart.html"
     )
-    assert(maxRetriesPerChunk >= 0, "Max retries per chunk must be >= 0")
 
     val chunkBufferSize = chunkSize * 2
 
@@ -626,7 +623,7 @@ import scala.util.{Failure, Success, Try}
     val headers = s3Headers.serverSideEncryption.toIndexedSeq.flatMap(_.headersFor(UploadPart))
 
     Flow
-      .fromMaterializer { (mat, attr) =>
+      .setup { (mat, attr) =>
         implicit val conf: S3Settings = resolveSettings(attr, mat.system)
         implicit val sys: ActorSystem = mat.system
         implicit val materializer: Materializer = mat
@@ -643,12 +640,14 @@ import scala.util.{Failure, Success, Try}
             .flatMapConcat { case (req, info) => Signer.signedRequest(req, signingKey).zip(Source.single(info)) }
             .via(superPool[(MultipartUpload, Int)])
 
+        import conf.retrySettings._
+
         SplitAfterSize(chunkSize, chunkBufferSize)(atLeastOneByteString)
           .via(getChunkBuffer(chunkSize, chunkBufferSize)) //creates the chunks
           .concatSubstreams
           .zip(requestInfo)
           // Allow requests that fail with transient errors to be retried, using the already buffered chunk.
-          .via(RetryFlow.withBackoff(200.millis, 10.seconds, 0.0, maxRetriesPerChunk, retriableFlow) {
+          .via(RetryFlow.withBackoff(minBackoff, maxBackoff, randomFactor, maxRetriesPerChunk, retriableFlow) {
             case (chunkAndUploadInfo, (Success(r), _)) =>
               // 5xx errors from S3 can be treated as transient.
               if (r.status.intValue >= 500) Some(chunkAndUploadInfo) else None
@@ -670,26 +669,24 @@ import scala.util.{Failure, Success, Try}
     import mat.executionContext
 
     response match {
-      case Success(r) =>
-        if (r.status.isFailure()) {
-          Unmarshal(r.entity).to[String].map { errorBody =>
-            FailedUploadPart(
-              upload,
-              index,
-              new RuntimeException(
-                s"Upload part $index request failed. Response header: ($r), response body: ($errorBody)."
-              )
+      case Success(r) if r.status.isFailure() =>
+        Unmarshal(r.entity).to[String].map { errorBody =>
+          FailedUploadPart(
+            upload,
+            index,
+            new RuntimeException(
+              s"Upload part $index request failed. Response header: ($r), response body: ($errorBody)."
             )
-          }
-        } else {
-          r.entity.discardBytes()
-          val etag = r.headers.find(_.lowercaseName() == "etag").map(_.value)
-          etag
-            .map(t => Future.successful(SuccessfulUploadPart(upload, index, t)))
-            .getOrElse(
-              Future.successful(FailedUploadPart(upload, index, new RuntimeException(s"Cannot find etag in ${r}")))
-            )
+          )
         }
+      case Success(r) =>
+        r.entity.discardBytes()
+        val etag = r.headers.find(_.lowercaseName() == "etag").map(_.value)
+        etag
+          .map(t => Future.successful(SuccessfulUploadPart(upload, index, t)))
+          .getOrElse(
+            Future.successful(FailedUploadPart(upload, index, new RuntimeException(s"Cannot find etag in ${r}")))
+          )
 
       case Failure(e) => Future.successful(FailedUploadPart(upload, index, e))
     }

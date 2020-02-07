@@ -562,36 +562,16 @@ object S3 {
    * @param key the s3 object key
    * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
    * @param s3Headers any headers you want to add
-   * @param maxRetriesPerChunk the maximum number of times a given chunk upload will be retried on transient errors
-   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
-   */
-  def multipartUpload(bucket: String,
-                      key: String,
-                      contentType: ContentType,
-                      s3Headers: S3Headers,
-                      maxRetriesPerChunk: Int): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
-    S3Stream
-      .multipartUpload(S3Location(bucket, key),
-                       contentType.asInstanceOf[ScalaContentType],
-                       s3Headers,
-                       maxRetriesPerChunk = maxRetriesPerChunk)
-      .mapMaterializedValue(_.toJava)
-      .asJava
-
-  /**
-   * Uploads a S3 Object by making multiple requests
-   *
-   * @param bucket the s3 bucket name
-   * @param key the s3 object key
-   * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
-   * @param s3Headers any headers you want to add
    * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
    */
   def multipartUpload(bucket: String,
                       key: String,
                       contentType: ContentType,
                       s3Headers: S3Headers): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
-    multipartUpload(bucket, key, contentType, s3Headers, 3)
+    S3Stream
+      .multipartUpload(S3Location(bucket, key), contentType.asInstanceOf[ScalaContentType], s3Headers)
+      .mapMaterializedValue(_.toJava)
+      .asJava
 
   /**
    * Uploads a S3 Object by making multiple requests
