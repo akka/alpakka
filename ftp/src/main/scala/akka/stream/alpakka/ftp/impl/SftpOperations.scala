@@ -41,10 +41,10 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
 
     ssh.connect(host.getHostAddress, port)
 
+    sftpIdentity.foreach(setIdentity(_, credentials.username))
+
     if (credentials.password != "")
       ssh.authPassword(credentials.username, credentials.password)
-
-    sftpIdentity.foreach(setIdentity(_, credentials.username))
 
     ssh.newSFTPClient()
   }
