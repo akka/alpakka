@@ -43,7 +43,7 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
 
     ssh.connect(host.getHostAddress, port)
 
-    if(credentials.password != "" && sftpIdentity.isDefined){
+    if (credentials.password != "" && sftpIdentity.isDefined) {
       val passwordAuth: Seq[AuthPassword] = credentials.password.map { pass =>
         new AuthPassword(new PasswordFinder() {
           def reqPassword(resource: Resource[_]): Array[Char] = credentials.password.toCharArray
@@ -167,7 +167,6 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
         initKey(_.init(new File(id.privateKey), passphrase))
     }
   }
-
 
   private[this] def authPublickey(identity: SftpIdentity)(implicit ssh: SSHClient) = {
     def bats(array: Array[Byte]): String = new String(array, "UTF-8")
