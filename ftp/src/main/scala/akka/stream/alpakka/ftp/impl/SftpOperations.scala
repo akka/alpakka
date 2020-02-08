@@ -7,7 +7,6 @@ package impl
 
 import java.io.{File, IOException, InputStream, OutputStream}
 import java.nio.file.attribute.PosixFilePermission
-import java.security.KeyPair
 
 import akka.annotation.InternalApi
 import net.schmizz.sshj.SSHClient
