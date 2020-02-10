@@ -4,6 +4,8 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.impl
 
+import java.time.Clock
+
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.http.scaladsl.HttpExt
@@ -22,12 +24,15 @@ import scala.concurrent.Future
 
 @InternalApi
 private[impl] class GoogleTokenApi(http: => HttpExt, system: ActorSystem, forwardProxy: Option[ForwardProxy]) {
+
+  implicit val clock = Clock.systemUTC()
+
   protected val encodingAlgorithm: JwtAlgorithm.RS256.type = JwtAlgorithm.RS256
 
   private val googleTokenUrl = "https://www.googleapis.com/oauth2/v4/token"
   private val scope = "https://www.googleapis.com/auth/bigquery"
 
-  def now: Long = JwtTime.nowSeconds
+  def now: Long = JwtTime.nowSeconds(Clock.systemUTC())
 
   private def generateJwt(clientEmail: String, privateKey: String): String = {
     val claim = JwtClaim(content = s"""{"scope":"$scope","aud":"$googleTokenUrl"}""", issuer = Option(clientEmail))
