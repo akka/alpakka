@@ -13,8 +13,8 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.{FormData, HttpMethods, HttpRequest}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
+import GoogleTokenApi._
 import akka.stream.alpakka.googlecloud.bigquery.ForwardProxy
-import akka.stream.alpakka.googlecloud.bigquery.impl.GoogleTokenApi.{AccessTokenExpiry, OAuthResponse}
 import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim, JwtTime}
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.ForwardProxyPoolSettings._
@@ -23,7 +23,7 @@ import akka.stream.alpakka.googlecloud.bigquery.scaladsl.ForwardProxyHttpsContex
 import scala.concurrent.Future
 
 @InternalApi
-private[impl] class GoogleTokenApi(http: => HttpExt, system: ActorSystem, forwardProxy: Option[ForwardProxy]) {
+private[googlecloud] class GoogleTokenApi(http: => HttpExt, system: ActorSystem, forwardProxy: Option[ForwardProxy]) {
 
   implicit val clock = Clock.systemUTC()
 
@@ -76,7 +76,7 @@ private[impl] class GoogleTokenApi(http: => HttpExt, system: ActorSystem, forwar
 }
 
 @InternalApi
-private[bigquery] object GoogleTokenApi {
+private[googlecloud] object GoogleTokenApi {
   case class AccessTokenExpiry(accessToken: String, expiresAt: Long)
   case class OAuthResponse(access_token: String, token_type: String, expires_in: Int)
 
