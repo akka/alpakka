@@ -151,6 +151,11 @@ after_failure:
   - find . -name "*.log" -exec ./scripts/cat-log.sh {} \;
 
 before_cache:
+  - rm -rf $HOME/.cache/coursier
+  - rm -rf $HOME/.ivy2/cache
+  - rm -rf $HOME/.sbt/boot
+  - rm -rf $HOME/.sbt/launchers
+  - rm -rf $HOME/.jabba/jdk
   - find $HOME/.ivy2 -name "ivydata-*.properties" -print -delete
   - find $HOME/.sbt  -name "*.lock"               -print -delete
 
