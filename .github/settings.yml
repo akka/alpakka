@@ -1,0 +1,40 @@
+# These settings are synced to GitHub by https://probot.github.io/apps/settings/.
+repository:
+  topics: integration, reactive, akka, akka-stream, akka-streams-connectors, reactove-streams, messaging
+  private: false
+  has_issues: true
+  has_projects: true
+  has_wiki: false
+  has_downloads: false
+  default_branch: master
+  allow_squash_merge: true
+  allow_merge_commit: true
+  allow_rebase_merge: true
+
+teams:
+  - name: akka-admin-team
+    permission: admin
+  - name: akka-ci-bots
+    permission: write
+  - name: alpakka-team
+    permission: write
+
+branches:
+  - name: "master"
+    protection:
+      required_pull_request_reviews:
+        required_approving_review_count: 1
+        # Dismiss approved reviews automatically when a new commit is pushed.
+        dismiss_stale_reviews: true
+        # Blocks merge until code owners have reviewed.
+        require_code_owner_reviews: true
+      # Require status checks to pass before merging
+      required_status_checks:
+        # Required. Require branches to be up to date before merging.
+        strict: true
+        # The list of status checks to require in order to merge into this branch
+        contexts: ["typesafe-cla-validator"]
+        #contexts: ["Travis CI - Pull Request", "typesafe-cla-validator"]
+      # all settings in branches.protection must be set, if not used we must set to null  
+      restrictions: null
+      enforce_admins: null  
