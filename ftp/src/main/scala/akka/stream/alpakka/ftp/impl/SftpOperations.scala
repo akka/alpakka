@@ -23,7 +23,7 @@ import scala.collection.immutable
 import scala.util.Try
 
 /**
- * INTERNAL API
+ * INTERNAL API 
  */
 @InternalApi
 private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
