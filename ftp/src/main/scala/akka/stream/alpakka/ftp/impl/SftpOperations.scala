@@ -45,7 +45,7 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
 
     sftpIdentity match {
       case Some(identity) =>
-        if (credentials.password != "" && credentials.password != null) {
+        if (credentials.password != "") {
           val passwordAuth: Seq[AuthPassword] = credentials.password.map { pass =>
             new AuthPassword(new PasswordFinder() {
               def reqPassword(resource: Resource[_]): Array[Char] = credentials.password.toCharArray
