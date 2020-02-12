@@ -4,19 +4,19 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.impl
 
-import java.time.Clock
-
-import akka.actor.ActorSystem
-import akka.annotation.InternalApi
 import akka.http.scaladsl.HttpExt
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.{FormData, HttpMethods, HttpRequest}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import GoogleTokenApi._
-import akka.stream.alpakka.googlecloud.bigquery.ForwardProxy
-import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim, JwtTime}
+import akka.annotation.InternalApi
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
+import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim, JwtTime}
+import java.time.Clock
+
+import akka.actor.ActorSystem
+import akka.stream.alpakka.googlecloud.bigquery.ForwardProxy
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.ForwardProxyPoolSettings._
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.ForwardProxyHttpsContext._
 
