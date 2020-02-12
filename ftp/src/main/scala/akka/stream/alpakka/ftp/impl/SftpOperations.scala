@@ -7,6 +7,7 @@ package impl
 
 import java.io.{File, IOException, InputStream, OutputStream}
 import java.nio.file.attribute.PosixFilePermission
+import java.nio.charset.StandardCharsets
 
 import akka.annotation.InternalApi
 import net.schmizz.sshj.SSHClient
@@ -42,21 +43,24 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
 
     ssh.connect(host.getHostAddress, port)
 
-    if (credentials.password != "" && sftpIdentity.isDefined) {
-      val passwordAuth: Seq[AuthPassword] = credentials.password.map { pass =>
-        new AuthPassword(new PasswordFinder() {
-          def reqPassword(resource: Resource[_]): Array[Char] = credentials.password.toCharArray
-          def shouldRetry(resource: Resource[_]) = false
-        })
-      }
+    sftpIdentity match {
+      case Some(identity) =>
+        if (credentials.password != "" && credentials.password != null) {
+          val passwordAuth: Seq[AuthPassword] = credentials.password.map { pass =>
+            new AuthPassword(new PasswordFinder() {
+              def reqPassword(resource: Resource[_]): Array[Char] = credentials.password.toCharArray
+              def shouldRetry(resource: Resource[_]) = false
+            })
+          }
 
-      val authenticationMethods = List(authPublickey(sftpIdentity.get)) ++ passwordAuth
-      ssh.auth(credentials.username, authenticationMethods: _*)
+          val authenticationMethods = List(authPublickey(sftpIdentity.get)) ++ passwordAuth
+          ssh.auth(credentials.username, authenticationMethods: _*)
+        }
+      case None =>
+        ssh.authPassword(credentials.username, credentials.password)
+    }
 
-    } else if (credentials.password != "" && sftpIdentity.isEmpty)
-      ssh.authPassword(credentials.username, credentials.password)
-    else
-      sftpIdentity.foreach(setIdentity(_, credentials.username))
+    sftpIdentity.foreach(setIdentity(_, credentials.username))
 
     ssh.newSFTPClient()
   }
@@ -148,7 +152,7 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
   }
 
   private[this] def setIdentity(identity: SftpIdentity, username: String)(implicit ssh: SSHClient) = {
-    def bats(array: Array[Byte]): String = new String(array, "UTF-8")
+    def bats(array: Array[Byte]): String = new String(array, StandardCharsets.UTF_8)
 
     def initKey(f: OpenSSHKeyFile => Unit) = {
       val key = new OpenSSHKeyFile
@@ -168,20 +172,16 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
   }
 
   private[this] def authPublickey(identity: SftpIdentity)(implicit ssh: SSHClient) = {
-    def bats(array: Array[Byte]): String = new String(array, "UTF-8")
-
-    def initKey(kp: KeyProvider) = {
-      new AuthPublickey(kp)
-    }
+    def bats(array: Array[Byte]): String = new String(array, StandardCharsets.UTF_8)
 
     val passphrase =
       identity.privateKeyFilePassphrase.map(pass => PasswordUtils.createOneOff(bats(pass).toCharArray)).orNull
 
     identity match {
       case id: RawKeySftpIdentity =>
-        initKey(ssh.loadKeys(bats(id.privateKey), id.publicKey.map(bats).orNull, passphrase))
+        new AuthPublickey(ssh.loadKeys(bats(id.privateKey), id.publicKey.map(bats).orNull, passphrase))
       case id: KeyFileSftpIdentity =>
-        initKey(ssh.loadKeys(id.privateKey, passphrase))
+        new AuthPublickey(ssh.loadKeys(id.privateKey, passphrase))
     }
   }
 
