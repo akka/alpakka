@@ -53,7 +53,7 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
             })
           }
 
-          val authenticationMethods = List(authPublickey(sftpIdentity.get)) ++ passwordAuth
+          val authenticationMethods = List(authPublickey(identity)) ++ passwordAuth
           ssh.auth(credentials.username, authenticationMethods: _*)
         }
       case None =>
