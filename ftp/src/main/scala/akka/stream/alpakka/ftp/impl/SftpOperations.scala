@@ -13,7 +13,7 @@ import akka.annotation.InternalApi
 import net.schmizz.sshj.SSHClient
 import net.schmizz.sshj.sftp.{OpenMode, RemoteResourceInfo, SFTPClient}
 import net.schmizz.sshj.transport.verification.PromiscuousVerifier
-import net.schmizz.sshj.userauth.keyprovider.{KeyProvider, OpenSSHKeyFile}
+import net.schmizz.sshj.userauth.keyprovider.OpenSSHKeyFile
 import net.schmizz.sshj.userauth.method.{AuthPassword, AuthPublickey}
 import net.schmizz.sshj.userauth.password.{PasswordFinder, PasswordUtils, Resource}
 import net.schmizz.sshj.xfer.FilePermission
