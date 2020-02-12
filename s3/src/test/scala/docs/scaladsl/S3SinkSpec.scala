@@ -48,9 +48,20 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     result.futureValue shouldBe MultipartUploadResult(url, bucket, bucketKey, etag, None)
   }
 
-  "S3Sink" should "retry upload after internal server error" in {
+  "S3Sink" should "retry upload after a transient internal server error" in {
 
-    mockUploadWithInternalErrors(body)
+    mockMultipartPartUploadWithTransient500Error(body)
+
+    val s3Sink: Sink[ByteString, Future[MultipartUploadResult]] = S3.multipartUpload(bucket, bucketKey)
+
+    val result: Future[MultipartUploadResult] = Source.single(ByteString(body)).runWith(s3Sink)
+
+    result.futureValue shouldBe MultipartUploadResult(url, bucket, bucketKey, etag, None)
+  }
+
+  "S3Sink" should "retry upload after a transient downstream connection error" in {
+
+    mockMultipartPartUploadWithTransientConnectionError(body)
 
     val s3Sink: Sink[ByteString, Future[MultipartUploadResult]] = S3.multipartUpload(bucket, bucketKey)
 
@@ -84,9 +95,9 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     result.failed.futureValue.getMessage shouldBe "No key found"
   }
 
-  it should "fail if response is a failure after initiation" in {
+  it should "fail if part upload requests fail perpetually" in {
 
-    mockFailureAfterInitiate()
+    mockUnrecoverableMultipartPartUploadFailure()
 
     val result = Source
       .single(ByteString(body))

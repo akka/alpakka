@@ -11,9 +11,10 @@ import akka.stream.alpakka.s3.impl.S3Stream
 import akka.stream.alpakka.s3.scaladsl.S3WireMockBase._
 import akka.testkit.TestKit
 import com.github.tomakehurst.wiremock.WireMockServer
-import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.client.{ResponseDefinitionBuilder, WireMock}
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
+import com.github.tomakehurst.wiremock.http.Fault
 import com.github.tomakehurst.wiremock.matching.{ContainsPattern, EqualToPattern}
 import com.github.tomakehurst.wiremock.stubbing.Scenario
 import com.typesafe.config.ConfigFactory
@@ -43,33 +44,6 @@ abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMoc
           )
       )
     )
-
-  def mockFailureAfterInitiate(): Unit = {
-    mock
-      .register(
-        post(urlEqualTo(s"/$bucketKey?uploads")).willReturn(
-          aResponse()
-            .withStatus(200)
-            .withHeader("x-amz-id-2", "Uuag1LuByRx9e6j5Onimru9pO4ZVKnJ2Qz7/C1NPcfTWAtRPfTaOFg==")
-            .withHeader("x-amz-request-id", "656c76696e6727732072657175657374")
-            .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
-                 |<InitiateMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-                 |  <Bucket>$bucket</Bucket>
-                 |  <Key>$bucketKey</Key>
-                 |  <UploadId>$uploadId</UploadId>
-                 |</InitiateMultipartUploadResult>""".stripMargin)
-        )
-      )
-
-    mock.register(
-      put(urlEqualTo(s"/$bucketKey?partNumber=1&uploadId=$uploadId"))
-        .withRequestBody(matching(body))
-        .willReturn(
-          aResponse()
-            .withStatus(500)
-        )
-    )
-  }
 
   def mockSSEInvalidRequest(): Unit =
     mock.register(
@@ -338,7 +312,16 @@ abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMoc
       )
 
   def mockUpload(): Unit = mockUpload(body)
+
   def mockUpload(expectedBody: String): Unit = {
+    mockMultipartInitiation()
+
+    mockPartUpload(expectedBody)
+
+    mockMultipartCompletion()
+  }
+
+  def mockMultipartInitiation(): Unit = {
     mock
       .register(
         post(urlEqualTo(s"/$bucketKey?uploads")).willReturn(
@@ -354,7 +337,9 @@ abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMoc
                          |</InitiateMultipartUploadResult>""".stripMargin)
         )
       )
+  }
 
+  def mockPartUpload(expectedBody: String): Unit = {
     mock.register(
       put(urlEqualTo(s"/$bucketKey?partNumber=1&uploadId=$uploadId"))
         .withRequestBody(if (expectedBody.isEmpty) absent() else matching(expectedBody))
@@ -366,7 +351,9 @@ abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMoc
             .withHeader("ETag", "\"" + etag + "\"")
         )
     )
+  }
 
+  def mockMultipartCompletion(): Unit = {
     mock.register(
       post(urlEqualTo(s"/$bucketKey?uploadId=$uploadId"))
         .withRequestBody(containing("CompleteMultipartUpload"))
@@ -388,7 +375,7 @@ abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMoc
     )
   }
 
-  def mockUploadWithInternalErrors(expectedBody: String): Unit = {
+  def mockMultipartUploadInitiationWithTransientError(expectedBody: String): Unit = {
     val scenarioName = "UploadWithTransientErrors"
     mock
       .register(
@@ -401,15 +388,16 @@ abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMoc
               .withHeader("x-amz-id-2", "Uuag1LuByRx9e6j5Onimru9pO4ZVKnJ2Qz7/C1NPcfTWAtRPfTaOFg==")
               .withHeader("x-amz-request-id", "656c76696e6727732072657175657374")
               .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
-                         |<Error>
-                         |  <Code>InternalError</Code>
-                         |  <Message>We encountered an internal error. Please try again.</Message>
-                         |  <Resource>$bucket/$bucketKey</Resource>
-                         |  <RequestId>4442587FB7D0A2F9</RequestId>
-                         |</Error>""".stripMargin)
+                           |<Error>
+                           |  <Code>InternalError</Code>
+                           |  <Message>We encountered an internal error. Please try again.</Message>
+                           |  <Resource>$bucket/$bucketKey</Resource>
+                           |  <RequestId>4442587FB7D0A2F9</RequestId>
+                           |</Error>""".stripMargin)
           )
           .willSetStateTo("RecoverFromErrorOnInitiate")
       )
+
     mock
       .register(
         post(urlEqualTo(s"/$bucketKey?uploads"))
@@ -421,32 +409,55 @@ abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMoc
               .withHeader("x-amz-id-2", "Uuag1LuByRx9e6j5Onimru9pO4ZVKnJ2Qz7/C1NPcfTWAtRPfTaOFg==")
               .withHeader("x-amz-request-id", "656c76696e6727732072657175657374")
               .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
-                         |<InitiateMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-                         |  <Bucket>$bucket</Bucket>
-                         |  <Key>$bucketKey</Key>
-                         |  <UploadId>$uploadId</UploadId>
-                         |</InitiateMultipartUploadResult>""".stripMargin)
+                           |<InitiateMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                           |  <Bucket>$bucket</Bucket>
+                           |  <Key>$bucketKey</Key>
+                           |  <UploadId>$uploadId</UploadId>
+                           |</InitiateMultipartUploadResult>""".stripMargin)
           )
-          .willSetStateTo("InternalErrorOnPartUpload")
       )
+
+    mockPartUpload(expectedBody)
+
+    mockMultipartCompletion()
+  }
+
+  def mockMultipartPartUploadWithTransient500Error(expectedBody: String): Unit = {
+
+    val response = aResponse()
+      .withStatus(500)
+      .withHeader("x-amz-id-2", "Zn8bf8aEFQ+kBnGPBc/JaAf9SoWM68QDPS9+SyFwkIZOHUG2BiRLZi5oXw4cOCEt")
+      .withHeader("x-amz-request-id", "5A37448A37622243")
+      .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
+                   |<Error>
+                   |  <Code>InternalError</Code>
+                   |  <Message>We encountered an internal error. Please try again.</Message>
+                   |  <Resource>$bucket/$bucketKey</Resource>
+                   |  <RequestId>4442587FB7D0A2F9</RequestId>
+                   |</Error>""".stripMargin)
+
+    mockMultipartPartUploadWithTransientError(expectedBody, response)
+  }
+
+  def mockMultipartPartUploadWithTransientConnectionError(expectedBody: String): Unit = {
+
+    val response = aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)
+    mockMultipartPartUploadWithTransientError(expectedBody, response)
+  }
+
+  private def mockMultipartPartUploadWithTransientError(expectedBody: String,
+                                                        response: ResponseDefinitionBuilder): Unit = {
+    val scenarioName = "UploadWithTransientErrors"
+
+    mockMultipartInitiation()
 
     mock.register(
       put(urlEqualTo(s"/$bucketKey?partNumber=1&uploadId=$uploadId"))
         .inScenario(scenarioName)
-        .whenScenarioStateIs("InternalErrorOnPartUpload")
+        .whenScenarioStateIs(Scenario.STARTED)
         .withRequestBody(matching(expectedBody))
         .willReturn(
-          aResponse()
-            .withStatus(500)
-            .withHeader("x-amz-id-2", "Zn8bf8aEFQ+kBnGPBc/JaAf9SoWM68QDPS9+SyFwkIZOHUG2BiRLZi5oXw4cOCEt")
-            .withHeader("x-amz-request-id", "5A37448A37622243")
-            .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
-                         |<Error>
-                         |  <Code>InternalError</Code>
-                         |  <Message>We encountered an internal error. Please try again.</Message>
-                         |  <Resource>$bucket/$bucketKey</Resource>
-                         |  <RequestId>4442587FB7D0A2F9</RequestId>
-                         |</Error>""".stripMargin)
+          response
         )
         .willSetStateTo("RecoverFromErrorOnPartUpload")
     )
@@ -465,23 +476,32 @@ abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMoc
         )
     )
 
-    mock.register(
-      post(urlEqualTo(s"/$bucketKey?uploadId=$uploadId"))
-        .withRequestBody(containing("CompleteMultipartUpload"))
-        .withRequestBody(containing(etag))
-        .willReturn(
+    mockMultipartCompletion()
+  }
+
+  def mockUnrecoverableMultipartPartUploadFailure(): Unit = {
+    mock
+      .register(
+        post(urlEqualTo(s"/$bucketKey?uploads")).willReturn(
           aResponse()
             .withStatus(200)
-            .withHeader("Content-Type", "application/xml; charset=UTF-8")
-            .withHeader("x-amz-id-2", "Zn8bf8aEFQ+kBnGPBc/JaAf9SoWM68QDPS9+SyFwkIZOHUG2BiRLZi5oXw4cOCEt")
-            .withHeader("x-amz-request-id", "5A37448A3762224333")
+            .withHeader("x-amz-id-2", "Uuag1LuByRx9e6j5Onimru9pO4ZVKnJ2Qz7/C1NPcfTWAtRPfTaOFg==")
+            .withHeader("x-amz-request-id", "656c76696e6727732072657175657374")
             .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
-                         |<CompleteMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-                         |  <Location>$url</Location>
+                         |<InitiateMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                          |  <Bucket>$bucket</Bucket>
                          |  <Key>$bucketKey</Key>
-                         |  <ETag>"$etag"</ETag>
-                         |</CompleteMultipartUploadResult>""".stripMargin)
+                         |  <UploadId>$uploadId</UploadId>
+                         |</InitiateMultipartUploadResult>""".stripMargin)
+        )
+      )
+
+    mock.register(
+      put(urlEqualTo(s"/$bucketKey?partNumber=1&uploadId=$uploadId"))
+        .withRequestBody(matching(body))
+        .willReturn(
+          aResponse()
+            .withStatus(500)
         )
     )
   }
