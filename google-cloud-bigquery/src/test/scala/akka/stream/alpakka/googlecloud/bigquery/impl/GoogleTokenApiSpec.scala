@@ -95,9 +95,10 @@ class GoogleTokenApiSpec
       val jwt = data.replace("grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=", "")
       val decoded = Jwt.decode(jwt, publicKey, Seq(JwtAlgorithm.RS256))
       decoded.isSuccess shouldBe true
-      decoded.get should include(""""aud":"https://www.googleapis.com/oauth2/v4/token"""")
-      decoded.get should include(""""scope":"https://www.googleapis.com/auth/bigquery"""")
-      decoded.get should include(""""iss":"email"""")
+      val claimsJson = decoded.get.toJson
+      claimsJson should include(""""aud":"https://www.googleapis.com/oauth2/v4/token"""")
+      claimsJson should include(""""scope":"https://www.googleapis.com/auth/bigquery"""")
+      claimsJson should include(""""iss":"email"""")
 
     }
 
