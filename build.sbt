@@ -322,6 +322,7 @@ lazy val docs = project
     Paradox / siteSubdirName := s"docs/alpakka/${projectInfoVersion.value}",
     paradoxProperties ++= Map(
         "akka.version" -> Dependencies.AkkaVersion,
+        "akka26.version" -> Dependencies.Akka26Version,
         "akka-http.version" -> Dependencies.AkkaHttpVersion,
         "couchbase.version" -> Dependencies.CouchbaseVersion,
         "hadoop.version" -> Dependencies.HadoopVersion,

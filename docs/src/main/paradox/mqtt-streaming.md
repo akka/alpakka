@@ -32,6 +32,12 @@ The table below shows direct dependencies of this module and the second tab show
 
 @@dependencies { projectId="mqtt-streaming" }
 
+@@@ note
+
+Unlike most Alpakka modules, mqtt-streaming requires at least Akka $akka26.version$.
+
+@@@
+
 ## Flow through a client session
 
 The following code illustrates how to establish an MQTT client session and join it with a TCP connection:
