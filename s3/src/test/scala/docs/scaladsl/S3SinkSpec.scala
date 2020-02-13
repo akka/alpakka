@@ -5,15 +5,23 @@
 package docs.scaladsl
 
 import akka.NotUsed
+import akka.actor.ActorSystem
+import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Materializer}
 import akka.stream.alpakka.s3.headers.{CannedAcl, ServerSideEncryption}
+import akka.stream.alpakka.s3.scaladsl.S3WireMockBase.{config, getCallerName}
 import akka.stream.alpakka.s3.scaladsl.{S3, S3ClientIntegrationSpec, S3WireMockBase}
-import akka.stream.alpakka.s3.{FailedUpload, MultipartUploadResult, S3Headers}
+import akka.stream.alpakka.s3.{FailedUpload, MultipartUploadResult, S3Headers, S3Settings}
 import akka.stream.scaladsl.{Sink, Source}
+import akka.testkit.TestKit
 import akka.util.ByteString
+import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
+import org.scalatest.{Assertion, OptionValues}
+import org.scalatest.exceptions.TestFailedException
 
 import scala.concurrent.Future
+import scala.util.Try
 
-class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
+class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec with OptionValues {
 
   override protected def afterEach(): Unit =
     mock.removeMappings()
@@ -48,7 +56,7 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     result.futureValue shouldBe MultipartUploadResult(url, bucket, bucketKey, etag, None)
   }
 
-  "S3Sink" should "retry upload after a transient internal server error" in {
+  "S3Sink" should "retry part upload after a transient internal server error" in {
 
     mockMultipartPartUploadWithTransient500Error(body)
 
@@ -59,7 +67,7 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     result.futureValue shouldBe MultipartUploadResult(url, bucket, bucketKey, etag, None)
   }
 
-  "S3Sink" should "retry upload after a transient downstream connection error" in {
+  "S3Sink" should "retry part upload after a transient downstream connection error" in {
 
     mockMultipartPartUploadWithTransientConnectionError(body)
 
@@ -68,6 +76,38 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     val result: Future[MultipartUploadResult] = Source.single(ByteString(body)).runWith(s3Sink)
 
     result.futureValue shouldBe MultipartUploadResult(url, bucket, bucketKey, etag, None)
+  }
+
+  "S3Sink" should "retry part upload no more than the configured number of times" in {
+
+    testWithConfig(s"${S3Settings.ConfigPath}.retry-settings.max-retries-per-chunk" -> 1) { materializer =>
+      mockMultipartPartUploadWithTransient500Error(body, 2)
+
+      val s3Sink: Sink[ByteString, Future[MultipartUploadResult]] = S3.multipartUpload(bucket, bucketKey)
+
+      val result: Future[MultipartUploadResult] = Source.single(ByteString(body)).runWith(s3Sink)(materializer)
+
+      val failure = intercept[TestFailedException] {
+        result.futureValue
+      }
+
+      failure.cause.value.getClass shouldBe classOf[FailedUpload]
+    }
+  }
+
+  "S3Sink" should "be able to retry a disk-buffered part upload an arbitrary number of times" in {
+
+    val numFailures = 5
+    testWithConfig(s"${S3Settings.ConfigPath}.retry-settings.max-retries-per-chunk" -> numFailures,
+                   s"${S3Settings.ConfigPath}.buffer" -> "disk") { materializer =>
+      mockMultipartPartUploadWithTransient500Error(body, numFailures)
+
+      val s3Sink: Sink[ByteString, Future[MultipartUploadResult]] = S3.multipartUpload(bucket, bucketKey)
+
+      val result: Future[MultipartUploadResult] = Source.single(ByteString(body)).runWith(s3Sink)(materializer)
+
+      result.futureValue shouldBe MultipartUploadResult(url, bucket, bucketKey, etag, None)
+    }
   }
 
   it should "upload a stream of bytes to S3 with custom headers" in {
@@ -193,6 +233,25 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
       etag,
       Some("43jfkodU8493jnFJD9fjj3HHNVfdsQUIFDNsidf038jfdsjGFDSIRp")
     )
+  }
+
+  private def testWithConfig(configOverrides: (String, Any)*)(test: Materializer => Assertion): Assertion = {
+
+    val baseConfig = config(port).withFallback(ConfigFactory.load())
+
+    val modifiedConfig = configOverrides.foldLeft[Config](baseConfig) {
+      case (config, (path, value)) =>
+        config.withValue(path, ConfigValueFactory.fromAnyRef(value))
+    }
+
+    implicit val system: ActorSystem = ActorSystem(getCallerName(getClass), modifiedConfig)
+    val materializer = ActorMaterializer(ActorMaterializerSettings(system))
+
+    val result = Try(test(materializer))
+
+    TestKit.shutdownActorSystem(system)
+
+    result.get
   }
 
   override protected def afterAll(): Unit = {

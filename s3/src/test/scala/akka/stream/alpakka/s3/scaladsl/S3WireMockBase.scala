@@ -17,7 +17,7 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
 import com.github.tomakehurst.wiremock.http.Fault
 import com.github.tomakehurst.wiremock.matching.{ContainsPattern, EqualToPattern}
 import com.github.tomakehurst.wiremock.stubbing.Scenario
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 import software.amazon.awssdk.regions.Region
 
 abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMockServer) extends TestKit(_system) {
@@ -422,7 +422,7 @@ abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMoc
     mockMultipartCompletion()
   }
 
-  def mockMultipartPartUploadWithTransient500Error(expectedBody: String): Unit = {
+  def mockMultipartPartUploadWithTransient500Error(expectedBody: String, numFailures: Int = 1): Unit = {
 
     val response = aResponse()
       .withStatus(500)
@@ -436,31 +436,37 @@ abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMoc
                    |  <RequestId>4442587FB7D0A2F9</RequestId>
                    |</Error>""".stripMargin)
 
-    mockMultipartPartUploadWithTransientError(expectedBody, response)
+    mockMultipartPartUploadWithTransientError(expectedBody, response, numFailures)
   }
 
   def mockMultipartPartUploadWithTransientConnectionError(expectedBody: String): Unit = {
 
     val response = aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)
-    mockMultipartPartUploadWithTransientError(expectedBody, response)
+    mockMultipartPartUploadWithTransientError(expectedBody, response, 1)
   }
 
   private def mockMultipartPartUploadWithTransientError(expectedBody: String,
-                                                        response: ResponseDefinitionBuilder): Unit = {
+                                                        response: ResponseDefinitionBuilder,
+                                                        numFailures: Int): Unit = {
     val scenarioName = "UploadWithTransientErrors"
 
     mockMultipartInitiation()
 
-    mock.register(
-      put(urlEqualTo(s"/$bucketKey?partNumber=1&uploadId=$uploadId"))
-        .inScenario(scenarioName)
-        .whenScenarioStateIs(Scenario.STARTED)
-        .withRequestBody(matching(expectedBody))
-        .willReturn(
-          response
-        )
-        .willSetStateTo("RecoverFromErrorOnPartUpload")
-    )
+    for (i <- 1 to numFailures) {
+      val initialState = if (i == 1) Scenario.STARTED else s"Failure#$i"
+      val nextState = if (i == numFailures) "RecoverFromErrorOnPartUpload" else s"Failure#${i + 1}"
+
+      mock.register(
+        put(urlEqualTo(s"/$bucketKey?partNumber=1&uploadId=$uploadId"))
+          .inScenario(scenarioName)
+          .whenScenarioStateIs(initialState)
+          .withRequestBody(matching(expectedBody))
+          .willReturn(
+            response
+          )
+          .willSetStateTo(nextState)
+      )
+    }
 
     mock.register(
       put(urlEqualTo(s"/$bucketKey?partNumber=1&uploadId=$uploadId"))
@@ -909,7 +915,7 @@ abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMoc
     )
 }
 
-private object S3WireMockBase {
+object S3WireMockBase {
 
   def getCallerName(clazz: Class[_]): String = {
     val s = (Thread.currentThread.getStackTrace map (_.getClassName) drop 1)
@@ -933,7 +939,7 @@ private object S3WireMockBase {
     server
   }
 
-  private def config(proxyPort: Int) = ConfigFactory.parseString(s"""
+  def config(proxyPort: Int): Config = ConfigFactory.parseString(s"""
     |${S3Settings.ConfigPath} {
     |  aws {
     |    credentials {

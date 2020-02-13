@@ -569,12 +569,12 @@ import scala.util.{Failure, Success, Try}
 
   val atLeastOneByteString = Flow[ByteString].orElse(Source.single(ByteString.empty))
 
-  private def getChunkBuffer(chunkSize: Int, bufferSize: Int)(implicit settings: S3Settings) =
+  private def getChunkBuffer(chunkSize: Int, bufferSize: Int, maxRetriesPerChunk: Int)(implicit settings: S3Settings) =
     settings.bufferType match {
       case MemoryBufferType =>
         new MemoryBuffer(bufferSize)
       case d: DiskBufferType =>
-        new DiskBuffer(2, bufferSize, d.path)
+        new DiskBuffer((maxRetriesPerChunk + 1) * 2, bufferSize, d.path)
     }
 
   private def poolSettings(implicit settings: S3Settings, system: ActorSystem) =
@@ -643,7 +643,7 @@ import scala.util.{Failure, Success, Try}
         import conf.retrySettings._
 
         SplitAfterSize(chunkSize, chunkBufferSize)(atLeastOneByteString)
-          .via(getChunkBuffer(chunkSize, chunkBufferSize)) //creates the chunks
+          .via(getChunkBuffer(chunkSize, chunkBufferSize, maxRetriesPerChunk)) //creates the chunks
           .concatSubstreams
           .zip(requestInfo)
           // Allow requests that fail with transient errors to be retried, using the already buffered chunk.
