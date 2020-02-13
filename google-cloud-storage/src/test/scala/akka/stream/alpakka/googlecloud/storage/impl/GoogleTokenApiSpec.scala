@@ -141,5 +141,48 @@ class GoogleTokenApiSpec
         case AccessTokenExpiry("token", exp) if exp > (System.currentTimeMillis / 1000L + 3000L) =>
       }
     }
+
+    "recover from a 5xx response" in {
+      val http = mock[HttpExt]
+      when(
+        http.singleRequest(any[HttpRequest](),
+                           any[HttpsConnectionContext](),
+                           any[ConnectionPoolSettings](),
+                           any[LoggingAdapter]())
+      ).thenReturn(
+        Future.successful(
+          HttpResponse(
+            status = StatusCodes.ServiceUnavailable,
+            entity = HttpEntity(
+              ContentTypes.`application/json`,
+              """{
+                | "error": {
+                |  "errors": [
+                |   {
+                |    "domain": "global",
+                |    "reason": "backendError",
+                |    "message": "Backend Error"
+                |   }
+                |  ],
+                |  "code": 503,
+                |  "message": "Backend Error"
+                | }
+                |}""".stripMargin
+            )
+          )
+        ),
+        Future.successful(
+          HttpResponse(
+            entity = HttpEntity(ContentTypes.`application/json`,
+                                """{"access_token": "token", "token_type": "String", "expires_in": 3600}""")
+          )
+        )
+      )
+
+      val api = new GoogleTokenApi(http, settings)
+      api.getAccessToken("email", privateKey).futureValue should matchPattern {
+        case AccessTokenExpiry("token", exp) if exp > (System.currentTimeMillis / 1000L + 3000L) =>
+      }
+    }
   }
 }

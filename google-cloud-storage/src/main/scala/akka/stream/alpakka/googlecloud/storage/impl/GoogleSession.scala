@@ -5,7 +5,7 @@
 package akka.stream.alpakka.googlecloud.storage.impl
 
 import akka.annotation.InternalApi
-import akka.stream.Materializer
+import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.storage.impl.GoogleTokenApi.AccessTokenExpiry
 
 import scala.concurrent.Future
@@ -14,7 +14,7 @@ import scala.concurrent.Future
 private[impl] class GoogleSession(clientEmail: String, privateKey: String, tokenApi: GoogleTokenApi) {
   protected var maybeAccessToken: Option[Future[AccessTokenExpiry]] = None
 
-  private def getNewToken()(implicit materializer: Materializer): Future[AccessTokenExpiry] = {
+  private def getNewToken()(implicit materializer: ActorMaterializer): Future[AccessTokenExpiry] = {
     val accessToken = tokenApi.getAccessToken(clientEmail = clientEmail, privateKey = privateKey)
     maybeAccessToken = Some(accessToken)
     accessToken
@@ -23,7 +23,7 @@ private[impl] class GoogleSession(clientEmail: String, privateKey: String, token
   private def expiresSoon(g: AccessTokenExpiry): Boolean =
     g.expiresAt < (tokenApi.now + 60)
 
-  def getToken()(implicit materializer: Materializer): Future[String] = {
+  def getToken()(implicit materializer: ActorMaterializer): Future[String] = {
     import materializer.executionContext
     maybeAccessToken
       .getOrElse(getNewToken())

@@ -7,14 +7,14 @@ package akka.stream.alpakka.googlecloud.storage.impl
 import akka.annotation.InternalApi
 import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import akka.http.scaladsl.model.{FormData, HttpMethods, HttpRequest}
+import akka.http.scaladsl.model.{FormData, HttpMethods, HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.Materializer
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.googlecloud.storage.impl.GoogleTokenApi.{AccessTokenExpiry, OAuthResponse}
 import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim, JwtTime}
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
-
 import java.time.Clock
+
 import scala.concurrent.Future
 
 @InternalApi
@@ -36,10 +36,10 @@ private[impl] class GoogleTokenApi(http: => HttpExt, settings: TokenApiSettings)
   }
 
   def getAccessToken(clientEmail: String, privateKey: String)(
-      implicit materializer: Materializer
+      implicit mat: ActorMaterializer
   ): Future[AccessTokenExpiry] = {
     import SprayJsonSupport._
-    import materializer.executionContext
+    import mat.executionContext
 
     val expiresAt = now + oneHour
     val jwt = generateJwt(clientEmail, privateKey)
@@ -50,13 +50,28 @@ private[impl] class GoogleTokenApi(http: => HttpExt, settings: TokenApiSettings)
     ).toEntity
 
     for {
-      response <- http.singleRequest(HttpRequest(HttpMethods.POST, settings.url, entity = requestEntity))
-      result <- Unmarshal(response.entity).to[OAuthResponse]
+      response <- GoogleRetry.retryingRequestToResponse(
+        http,
+        HttpRequest(HttpMethods.POST, settings.url, entity = requestEntity)
+      )
+      validatedResponse <- validateResponse(response)
+      result <- Unmarshal(validatedResponse.entity).to[OAuthResponse]
     } yield {
       AccessTokenExpiry(
         accessToken = result.access_token,
         expiresAt = expiresAt
       )
+    }
+  }
+
+  private def validateResponse(response: HttpResponse)(implicit mat: Materializer): Future[HttpResponse] = {
+    import mat.executionContext
+    response match {
+      case resp @ HttpResponse(StatusCodes.ServerError(status), _, responseEntity, _) =>
+        Unmarshal(responseEntity).to[String].map[HttpResponse] { body =>
+          throw new RuntimeException(s"Failed to request token, got $status with body: $body")
+        }
+      case other => Future.successful(other)
     }
   }
 }

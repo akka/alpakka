@@ -5,9 +5,9 @@
 package akka.stream.alpakka.googlecloud.pubsub.impl
 
 import akka.http.scaladsl.HttpExt
-import akka.http.scaladsl.model.{FormData, HttpMethods, HttpRequest}
+import akka.http.scaladsl.model.{FormData, HttpMethods, HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.Materializer
+import akka.stream.{ActorMaterializer, Materializer}
 import GoogleTokenApi._
 import akka.annotation.InternalApi
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
@@ -37,7 +37,7 @@ private[googlecloud] class GoogleTokenApi(http: => HttpExt) {
   }
 
   def getAccessToken(clientEmail: String, privateKey: String)(
-      implicit materializer: Materializer
+      implicit materializer: ActorMaterializer
   ): Future[AccessTokenExpiry] = {
     import materializer.executionContext
     import SprayJsonSupport._
@@ -51,13 +51,28 @@ private[googlecloud] class GoogleTokenApi(http: => HttpExt) {
     ).toEntity
 
     for {
-      response <- http.singleRequest(HttpRequest(HttpMethods.POST, googleTokenUrl, entity = requestEntity))
-      result <- Unmarshal(response.entity).to[OAuthResponse]
+      response <- GoogleRetry.retryingRequestToResponse(
+        http,
+        HttpRequest(HttpMethods.POST, googleTokenUrl, entity = requestEntity)
+      )
+      validatedResponse <- validateResponse(response)
+      result <- Unmarshal(validatedResponse.entity).to[OAuthResponse]
     } yield {
       AccessTokenExpiry(
         accessToken = result.access_token,
         expiresAt = expiresAt
       )
+    }
+  }
+
+  private def validateResponse(response: HttpResponse)(implicit mat: Materializer): Future[HttpResponse] = {
+    import mat.executionContext
+    response match {
+      case resp @ HttpResponse(StatusCodes.ServerError(status), _, responseEntity, _) =>
+        Unmarshal(responseEntity).to[String].map[HttpResponse] { body =>
+          throw new RuntimeException(s"Failed to request token, got $status with body: $body")
+        }
+      case other => Future.successful(other)
     }
   }
 }
