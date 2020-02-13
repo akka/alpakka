@@ -44,15 +44,13 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
     ssh.connect(host.getHostAddress, port)
 
     if (credentials.password != "" && sftpIdentity.isDefined) {
-      val passwordAuth: Seq[AuthPassword] = credentials.password.map { pass =>
-        new AuthPassword(new PasswordFinder() {
-          def reqPassword(resource: Resource[_]): Array[Char] = credentials.password.toCharArray
+      val passwordAuth: AuthPassword = new AuthPassword(new PasswordFinder() {
+        def reqPassword(resource: Resource[_]): Array[Char] = credentials.password.toCharArray
 
-          def shouldRetry(resource: Resource[_]) = false
-        })
-      }
+        def shouldRetry(resource: Resource[_]) = false
+      })
 
-      val authenticationMethods = List(authPublickey(sftpIdentity.get)) ++ passwordAuth
+      val authenticationMethods = List(authPublickey(sftpIdentity.get), passwordAuth)
       ssh.auth(credentials.username, authenticationMethods: _*)
     } else if (credentials.password != "" && sftpIdentity.isEmpty) {
       ssh.authPassword(credentials.username, credentials.password)
