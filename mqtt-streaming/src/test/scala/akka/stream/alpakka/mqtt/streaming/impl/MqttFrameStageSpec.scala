@@ -10,7 +10,6 @@ import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Keep, Source}
 import akka.stream.testkit.javadsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
-import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
 import akka.util.ByteString
 import org.scalatest.BeforeAndAfterAll
@@ -23,8 +22,6 @@ class MqttFrameStageSpec
     with Matchers
     with BeforeAndAfterAll
     with LogCapturing {
-
-  implicit val mat: Materializer = ActorMaterializer()
 
   val MaxPacketSize = 100
 

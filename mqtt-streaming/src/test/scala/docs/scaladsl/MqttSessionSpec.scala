@@ -17,7 +17,7 @@ import akka.stream.alpakka.mqtt.streaming.scaladsl.{
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Sink, Source, SourceQueueWithComplete}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
-import akka.stream.{ActorMaterializer, Materializer, OverflowStrategy}
+import akka.stream.OverflowStrategy
 import akka.testkit._
 import akka.util.{ByteString, Timeout}
 import org.scalatest.BeforeAndAfterAll
@@ -37,7 +37,6 @@ class MqttSessionSpec
     with Matchers
     with LogCapturing {
 
-  implicit val mat: Materializer = ActorMaterializer()
   implicit val executionContext: ExecutionContext = system.dispatcher
   implicit val timeout: Timeout = Timeout(3.seconds.dilated)
 
@@ -469,7 +468,7 @@ class MqttSessionSpec
 
       val publishReceived = Promise[Done]
 
-      val client = Source
+      val (client, result) = Source
         .queue(1, OverflowStrategy.fail)
         .via(
           Mqtt
@@ -480,7 +479,7 @@ class MqttSessionSpec
           case Right(Event(cp: Publish, None)) => cp
         }
         .wireTap(_ => publishReceived.success(Done))
-        .toMat(Sink.ignore)(Keep.left)
+        .toMat(Sink.ignore)(Keep.both)
         .run()
 
       val connectBytes = connect.encode(ByteString.newBuilder).result()
@@ -513,6 +512,7 @@ class MqttSessionSpec
 
       server.expectMsg(pubAckBytes)
       client.complete()
+      result.futureValue shouldBe Done
       client.watchCompletion().foreach(_ => session.shutdown())
     }
 
@@ -574,6 +574,7 @@ class MqttSessionSpec
 
       deliverPubAck1.future.futureValue shouldBe Done
       server.expectMsg(pubAckBytes)
+      server.reply(ByteString.empty)
 
       val deliverPubAck2 = Promise[Done]
       client.offer(Command(pubAck, Some(deliverPubAck2), None))
@@ -1539,7 +1540,7 @@ class MqttSessionSpec
 
       fromClientQueue.offer(unsubscribeBytes)
 
-      unsubscribeReceived.future.foreach(_ => server.offer(Command(unsubAck)))(mat.executionContext)
+      unsubscribeReceived.future.foreach(_ => server.offer(Command(unsubAck)))(executionContext)
 
       client.fishForSpecificMessage(3.seconds.dilated) {
         case `unsubAckBytes` =>

@@ -507,7 +507,7 @@ import scala.util.{Either, Failure, Success}
               val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]
 
               Source
-                .fromFutureSource(reply.future)
+                .futureSource(reply.future)
                 .runForeach(msg => context.self ! ReceivedProducerPublishingCommand(msg))
 
               val producer =
@@ -529,7 +529,7 @@ import scala.util.{Either, Failure, Success}
               val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]
 
               Source
-                .fromFutureSource(reply.future)
+                .futureSource(reply.future)
                 .runForeach(msg => context.self ! ReceivedProducerPublishingCommand(msg))
 
               val producer = context.spawn(
