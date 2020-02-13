@@ -43,26 +43,22 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
 
     ssh.connect(host.getHostAddress, port)
 
-    if (credentials.password != "") {
+    if (credentials.password != "" && sftpIdentity.isDefined) {
+      val passwordAuth: Seq[AuthPassword] = credentials.password.map { pass =>
+        new AuthPassword(new PasswordFinder() {
+          def reqPassword(resource: Resource[_]): Array[Char] = credentials.password.toCharArray
 
-      sftpIdentity match {
-        case Some(identity) =>
-          val passwordAuth: Seq[AuthPassword] = credentials.password.map { pass =>
-            new AuthPassword(new PasswordFinder() {
-              def reqPassword(resource: Resource[_]): Array[Char] = credentials.password.toCharArray
-
-              def shouldRetry(resource: Resource[_]) = false
-            })
-          }
-
-          val authenticationMethods = List(authPublickey(identity)) ++ passwordAuth
-          ssh.auth(credentials.username, authenticationMethods: _*)
-        case None =>
-          ssh.authPassword(credentials.username, credentials.password)
+          def shouldRetry(resource: Resource[_]) = false
+        })
       }
-    }
 
-    sftpIdentity.foreach(setIdentity(_, credentials.username))
+      val authenticationMethods = List(authPublickey(sftpIdentity.get)) ++ passwordAuth
+      ssh.auth(credentials.username, authenticationMethods: _*)
+    } else if (credentials.password != "" && sftpIdentity.isEmpty) {
+      ssh.authPassword(credentials.username, credentials.password)
+    } else {
+      sftpIdentity.foreach(setIdentity(_, credentials.username))
+    }
 
     ssh.newSFTPClient()
   }
