@@ -4,15 +4,14 @@
 
 package akka.stream.alpakka.googlecloud.pubsub.impl
 
-import java.util.concurrent.atomic.AtomicInteger
-
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
+import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.pubsub.impl.backport.RetryFlow
-import akka.stream.scaladsl.{Flow, RestartSource, Sink, Source}
+import akka.stream.scaladsl.{Flow, Sink, Source}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -33,7 +32,8 @@ private[googlecloud] object GoogleRetry {
       .runWith(Sink.head)
   }
 
-  def singleRequestFlow(http: HttpExt)(implicit mat: Materializer): Flow[HttpRequest, HttpResponse, NotUsed] =
+  def singleRequestFlow(http: HttpExt)(implicit mat: Materializer): Flow[HttpRequest, HttpResponse, NotUsed] = {
+    implicit val ec = mat.executionContext
     RetryFlow.withBackoff(
       minBackoff = 1.second,
       maxBackoff = 32.seconds,
@@ -48,5 +48,12 @@ private[googlecloud] object GoogleRetry {
         case _ =>
           None
       }
+    }.mapAsync(1){
+      case HttpResponse(StatusCodes.ServerError(status), _, responseEntity, _) =>
+        Unmarshal(responseEntity).to[String].map[HttpResponse] { body =>
+          throw new RuntimeException(s"Request failed, got $status with body: $body")
+        }
+      case other => Future.successful(other)
     }
+  }
 }

@@ -55,24 +55,12 @@ private[impl] class GoogleTokenApi(http: => HttpExt) {
         http,
         HttpRequest(HttpMethods.POST, googleTokenUrl, entity = requestEntity)
       )
-      validatedResponse <- validateResponse(response)
-      result <- Unmarshal(validatedResponse.entity).to[OAuthResponse]
+      result <- Unmarshal(response.entity).to[OAuthResponse]
     } yield {
       AccessTokenExpiry(
         accessToken = result.access_token,
         expiresAt = expiresAt
       )
-    }
-  }
-
-  private def validateResponse(response: HttpResponse)(implicit mat: Materializer): Future[HttpResponse] = {
-    import mat.executionContext
-    response match {
-      case HttpResponse(StatusCodes.ServerError(status), _, responseEntity, _) =>
-        Unmarshal(responseEntity).to[String].map[HttpResponse] { body =>
-          throw new RuntimeException(s"Failed to request token, got $status with body: $body")
-        }
-      case other => Future.successful(other)
     }
   }
 }
