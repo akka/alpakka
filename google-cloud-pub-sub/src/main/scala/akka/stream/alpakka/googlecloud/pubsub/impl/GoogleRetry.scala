@@ -23,7 +23,7 @@ private[googlecloud] object GoogleRetry {
   // Exponential backoff as specified in the GCS SLA: https://cloud.google.com/storage/sla
   // 1 initial attempt, plus 2^5 exponential requests to get to 32 seconds
 
-  def retryingRequestToResponse(
+  def singleRequest(
       http: HttpExt,
       request: HttpRequest
   )(implicit mat: Materializer): Future[HttpResponse] = {

@@ -51,7 +51,7 @@ private[impl] class GoogleTokenApi(http: => HttpExt) {
     ).toEntity
 
     for {
-      response <- GoogleRetry.retryingRequestToResponse(
+      response <- GoogleRetry.singleRequest(
         http,
         HttpRequest(HttpMethods.POST, googleTokenUrl, entity = requestEntity)
       )

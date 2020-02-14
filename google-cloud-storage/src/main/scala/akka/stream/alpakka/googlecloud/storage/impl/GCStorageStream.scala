@@ -507,7 +507,7 @@ import scala.util.control.NonFatal
           .mapAsync(parallelism) {
             case (req, (upload, index)) =>
               GoogleRetry
-                .retryingRequestToResponse(Http(), req)
+                .singleRequest(Http(), req)
                 .map(resp => (Success(resp), (upload, index)))
                 .recoverWith {
                   case NonFatal(e) => Future.successful((Failure(e), (upload, index)))
