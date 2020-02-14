@@ -5,7 +5,7 @@
 package akka.stream.alpakka.googlecloud.pubsub.scaladsl
 
 import akka.actor.{ActorSystem, Cancellable}
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.pubsub._
 import akka.stream.alpakka.googlecloud.pubsub.impl._
 import akka.stream.scaladsl.{Flow, FlowWithContext, Keep, Sink, Source}
@@ -50,7 +50,7 @@ protected[pubsub] trait GooglePubSub {
       Flow
         .setup { (mat, _) =>
           implicit val system: ActorSystem = mat.system
-          implicit val materializer: ActorMaterializer = mat
+          implicit val materializer: Materializer = mat
           httpApi
             .accessTokenWithContext[PublishRequest, C](config)
             .via(
@@ -70,7 +70,7 @@ protected[pubsub] trait GooglePubSub {
       Flow
         .setup { (mat, _) =>
           implicit val system: ActorSystem = mat.system
-          implicit val materializer: ActorMaterializer = mat
+          implicit val materializer: Materializer = mat
           Flow[Done]
             .via(httpApi.accessToken[Done](config))
             .via(
@@ -105,7 +105,7 @@ protected[pubsub] trait GooglePubSub {
       Flow
         .setup { (mat, _) =>
           implicit val system: ActorSystem = mat.system
-          implicit val materializer: ActorMaterializer = mat
+          implicit val materializer: Materializer = mat
           Flow[AcknowledgeRequest]
             .via(httpApi.accessToken[AcknowledgeRequest](config))
             .via(httpApi.acknowledge(config.projectId, subscription))
