@@ -334,9 +334,7 @@ import scala.util.control.NonFatal
       requestSource: Source[HttpRequest, NotUsed]
   )(implicit mat: ActorMaterializer): Source[HttpResponse, NotUsed] = {
     implicit val sys = mat.system
-    requestSource.mapAsync(parallelism)(
-      GoogleRetry.retryingRequestToResponse(Http(), _)
-    )
+    requestSource.via(GoogleRetry.singleRequestFlow(Http()))
   }
 
   class RetryableInternalServerError extends Exception
