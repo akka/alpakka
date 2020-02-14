@@ -14,7 +14,7 @@ import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.pubsub._
 import akka.stream.scaladsl.{Flow, FlowWithContext, Keep}
 import akka.{Done, NotUsed}
@@ -241,7 +241,7 @@ private[pubsub] trait PubSubApi {
   }
 
   def accessToken[T](config: PubSubConfig)(
-      implicit materializer: ActorMaterializer
+      implicit materializer: Materializer
   ): Flow[T, (T, Option[String]), NotUsed] =
     if (isEmulated) {
       Flow[T].map(request => (request, None: Option[String]))
@@ -250,7 +250,7 @@ private[pubsub] trait PubSubApi {
     }
 
   def accessTokenWithContext[T, C](config: PubSubConfig)(
-      implicit materializer: ActorMaterializer
+      implicit materializer: Materializer
   ): FlowWithContext[T, C, (T, Option[String]), C, NotUsed] =
     if (isEmulated) {
       FlowWithContext[T, C].map(request => (request, None: Option[String]))
@@ -260,7 +260,7 @@ private[pubsub] trait PubSubApi {
 
   private[this] def requestToken[T](
       config: PubSubConfig
-  )(request: T)(implicit materializer: ActorMaterializer): Future[(T, Option[String])] = {
+  )(request: T)(implicit materializer: Materializer): Future[(T, Option[String])] = {
     import materializer.executionContext
     config.session.getToken().map(token => (request, Some(token): Option[String]))
   }
