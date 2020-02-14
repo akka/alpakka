@@ -13,7 +13,7 @@ import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.pubsub.impl.backport.RetryFlow
 import akka.stream.scaladsl.{Flow, Sink, Source}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
 /**
@@ -35,26 +35,32 @@ private[googlecloud] object GoogleRetry {
 
   def singleRequestFlow(http: HttpExt)(implicit mat: Materializer): Flow[HttpRequest, HttpResponse, NotUsed] = {
     implicit val ec = mat.executionContext
-    RetryFlow.withBackoff(
-      minBackoff = 1.second,
-      maxBackoff = 32.seconds,
-      randomFactor = 0,
-      maxRetries = 6,
-      Flow[HttpRequest].mapAsync(1)(http.singleRequest(_))
-    ) { (req, resp) =>
-      resp match {
-        case HttpResponse(StatusCodes.ServerError(_), _, responseEntity, _) =>
+    RetryFlow
+      .withBackoff(
+        minBackoff = 1.second,
+        maxBackoff = 32.seconds,
+        randomFactor = 0,
+        maxRetries = 6,
+        singleRequestResponseFlow(http)
+      ) {
+        case (_, (req, HttpResponse(StatusCodes.ServerError(_), _, responseEntity, _))) =>
           responseEntity.discardBytes()
           Some(req)
         case _ =>
           None
       }
-    }.mapAsync(1){
-      case HttpResponse(StatusCodes.ServerError(status), _, responseEntity, _) =>
-        Unmarshal(responseEntity).to[String].map[HttpResponse] { body =>
-          throw new RuntimeException(s"Request failed, got $status with body: $body")
-        }
-      case other => Future.successful(other)
-    }
+      .mapAsync(1) {
+        case (req, HttpResponse(StatusCodes.ServerError(status), _, responseEntity, _)) =>
+          Unmarshal(responseEntity).to[String].map[HttpResponse] { body =>
+            throw new RuntimeException(s"Request failed for ${req.method} ${req.uri}, got $status with body: $body")
+          }
+        case (_, other) => Future.successful(other)
+      }
+  }
+
+  private def singleRequestResponseFlow(
+      http: HttpExt
+  )(implicit ec: ExecutionContext): Flow[HttpRequest, (HttpRequest, HttpResponse), NotUsed] = {
+    Flow[HttpRequest].mapAsync(1)(req => http.singleRequest(req).map(resp => (req, resp)))
   }
 }

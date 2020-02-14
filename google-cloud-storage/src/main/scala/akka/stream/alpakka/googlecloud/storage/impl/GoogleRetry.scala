@@ -2,9 +2,7 @@
  * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.stream.alpakka.googlecloud.storage.impl
-
-import java.util.concurrent.atomic.AtomicInteger
+package akka.stream.alpakka.googlecloud.pubsub.impl
 
 import akka.NotUsed
 import akka.annotation.InternalApi
@@ -13,9 +11,9 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.storage.impl.backport.RetryFlow
-import akka.stream.scaladsl.{Flow, RestartSource, Sink, Source}
+import akka.stream.scaladsl.{Flow, Sink, Source}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
 /**
@@ -43,22 +41,26 @@ private[googlecloud] object GoogleRetry {
         maxBackoff = 32.seconds,
         randomFactor = 0,
         maxRetries = 6,
-        Flow[HttpRequest].mapAsync(1)(http.singleRequest(_))
-      ) { (req, resp) =>
-        resp match {
-          case HttpResponse(StatusCodes.ServerError(_), _, responseEntity, _) =>
-            responseEntity.discardBytes()
-            Some(req)
-          case _ =>
-            None
-        }
+        singleRequestResponseFlow(http)
+      ) {
+        case (_, (req, HttpResponse(StatusCodes.ServerError(_), _, responseEntity, _))) =>
+          responseEntity.discardBytes()
+          Some(req)
+        case _ =>
+          None
       }
       .mapAsync(1) {
-        case HttpResponse(StatusCodes.ServerError(status), _, responseEntity, _) =>
+        case (req, HttpResponse(StatusCodes.ServerError(status), _, responseEntity, _)) =>
           Unmarshal(responseEntity).to[String].map[HttpResponse] { body =>
-            throw new RuntimeException(s"Request failed, got $status with body: $body")
+            throw new RuntimeException(s"Request failed for ${req.method} ${req.uri}, got $status with body: $body")
           }
-        case other => Future.successful(other)
+        case (_, other) => Future.successful(other)
       }
+  }
+
+  private def singleRequestResponseFlow(
+      http: HttpExt
+  )(implicit ec: ExecutionContext): Flow[HttpRequest, (HttpRequest, HttpResponse), NotUsed] = {
+    Flow[HttpRequest].mapAsync(1)(req => http.singleRequest(req).map(resp => (req, resp)))
   }
 }
