@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.annotation.InternalApi
 import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.stream.scaladsl.{RestartSource, Sink, Source}
 
 import scala.concurrent.Future
@@ -21,7 +21,7 @@ private[googlecloud] object GoogleRetry {
   def retryingRequestToResponse(
       http: HttpExt,
       request: HttpRequest
-  )(implicit mat: ActorMaterializer): Future[HttpResponse] = {
+  )(implicit mat: Materializer): Future[HttpResponse] = {
     // Exponential backoff as specified in the GCS SLA: https://cloud.google.com/storage/sla
 
     // 1 initial attempt, plus 2^5 exponential requests to get to 32 seconds
