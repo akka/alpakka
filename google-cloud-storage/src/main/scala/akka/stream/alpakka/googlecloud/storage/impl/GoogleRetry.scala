@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.stream.alpakka.googlecloud.pubsub.impl
+package akka.stream.alpakka.googlecloud.storage.impl
 
 import akka.NotUsed
 import akka.annotation.InternalApi
@@ -21,7 +21,7 @@ import scala.concurrent.duration._
  * 1 initial attempt, plus 2^^5 exponential requests to get to 32 seconds
  */
 @InternalApi
-private[googlecloud] object GoogleRetry {
+private[impl] object GoogleRetry {
 
   def singleRequest(
       http: HttpExt,

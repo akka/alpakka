@@ -15,8 +15,6 @@ import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim, JwtTime}
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 import java.time.Clock
 
-import akka.stream.alpakka.googlecloud.pubsub.impl.GoogleRetry
-
 import scala.concurrent.Future
 
 @InternalApi

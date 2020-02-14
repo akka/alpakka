@@ -21,7 +21,7 @@ import scala.concurrent.duration._
  * 1 initial attempt, plus 2^^5 exponential requests to get to 32 seconds
  */
 @InternalApi
-private[googlecloud] object GoogleRetry {
+private[impl] object GoogleRetry {
 
   def singleRequest(
       http: HttpExt,
