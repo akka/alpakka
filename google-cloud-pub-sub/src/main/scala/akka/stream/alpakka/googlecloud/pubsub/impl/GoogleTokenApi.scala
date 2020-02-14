@@ -18,7 +18,7 @@ import java.time.Clock
 import scala.concurrent.Future
 
 @InternalApi
-private[impl] class GoogleTokenApi(http: => HttpExt) {
+private[googlecloud] class GoogleTokenApi(http: => HttpExt) {
   implicit val clock: Clock = Clock.systemUTC()
 
   protected val encodingAlgorithm: JwtAlgorithm.RS256.type = JwtAlgorithm.RS256
