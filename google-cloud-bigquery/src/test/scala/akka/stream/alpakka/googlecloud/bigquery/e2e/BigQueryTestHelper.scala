@@ -33,8 +33,23 @@ trait BigQueryTestHelper {
   lazy val dataset = "bigquerydataset"
   lazy val clientEmail = "big-query-sa@bigqueryproject.iam.gserviceaccount.com"
   lazy val privateKey =
-    "-----BEGIN PRIVATE KEY-----\nMIIEowIBAAKCAQEAq8G78M3QSgZH6TWz3/HIzOgzfUxgEjto41iYoV76msgGubjR\nkbCUsWggUR9Us4yR13IeoR9Pbw7aG4RxJ+xms4kKW6v0ZyPqtgV7HDbW78ECtKM0\nzoYSQ/OF7eAz08o4KV7/YKMYLC8GIIsWyViBb1Bne806+1N7GMhN2xhCiq9bINcb\nD+qkZl/Gk/mnKb4e23UqwU+MC6tI6TXFXKQ49z8HH/09wwLzAS1bjrszfNuLtEBJ\nXRV5qEqZ7DTK4rUTGEO1zSj9WFujEKQpHUDyJDgcpYvMbsC91idcKBrqXLnxbfg/\nuoq9OwJi+bJVryawOrLUKL58/u+c4gkXonBt4wIDAQABAoIBAFAgi3slqRw/neCw\nSwAYniLp2MuFi/Q1fxNAy8PMuYDn/Cs8i5g6FsRE3X667RruY0NtW9iy8K3Q8fOQ\nb/G+GZN8RTbLG7PaT68nE23wL4meM5Lt6L7IUVEeFMcKp2MQne6/AMimjapfLa6U\n9MZt4cR6cCyTbAa/xVekap3hzXlA3bpW3FrXhoKdDpTLaUKYaeCggXdVsg0riK8c\n9Uts14Wz4ZehpJOhEDvoA3dL1yebA4XKBZcvMe4oKn9K/qgVHVKBnUcrbnuYcTB9\nqW5QF5/yKveKLnppPzr8jHov8B12Itag4ocmtTBf0f6YLASjDQtfEDbd/LJeh0jq\nGKddS5ECgYEA1661tNG1gllhcRDJvq2n800Ac0GSpCIlruCWzK21VJENo0U91pz+\n/mkXOPUhodgflDL9pPL4DHFtFd4f3o/qI8oX7earM9+NbHtw316bAHDOxIHupF0C\ngT7hbBkycJadBnOO+tzenz/2I3JhD3pEgksSVQYUzHHBqm9fw2QUiHcCgYEAy90A\nCPgGZk6tCac1WaflxP5ierYeudYEFl6D+RlJmUVbx94AunNRtZ67j1bWnzq2WO2L\noKuE7Qb0FZWhUvxVbmmghVPSW8Z70KhEZ0TBl71YARgzODUuNIRrM9/Y/+ZQXCBP\nb8T+qBP1M8Ts8TqzxzpMLsVNALZ7c53OEvANzPUCgYBJ4g1YvaXB20Bn7OpPKUmp\nLK2Ezeef1hq2hzThNHgzWeUkEuoWBH3NRM6xsjctK83VhIoi4SBbktddcFPWd9Ir\nJGWCF0x6XpAhoz+NJOlQA1SxOBk5sKrU/2dVEmSW8OElfpxyDwsr3ktA5UOee7HQ\nOEs1WPny9tzyt2hElJn8DQKBgBG4r2UYMm44TqB1MZUOnFGoj2T9aeRbr1VGeBBy\nW0yAk/7m1IdguOyh1MocEWIcF3fZhna8Ej0MirFJpZFyL/b+JZ8Rb0rdESxNREz5\n1B5drkXCFcnADbkw/aSvw8xS+A9aG62qoTx5J6qNZs99e91IuxChxBTYyBh/0kch\nKQH1AoGBANRbcrLyF41TYgpOA7z3xLcnL+h2AS14syk4PTPFzuukNvbYprlBq4Ls\nphLss+UJwK5L6VB4EJVkjZdbQ1c+AX9IPft62f2oDbFK9C8x2VG0b6T2i/zNDfu1\nRo4OWAxRttntrc/qfimdvgVtvCSFsCpkqaj9lCTyJqgbYh+aUCdx\n-----END PRIVATE KEY-----\\n"
-      .replace("\\n", "\n")
+    """-----BEGIN PRIVATE KEY-----
+      |MIICeAIBADANBgkqhkiG9w0BAQEFAASCAmIwggJeAgEAAoGBAMwkmdwrWp+LLlsf
+      |bVE+neFjZtUNuaD4/tpQ2UIh2u+qU6sr4bG8PPuqSdrt5b0/0vfMZA11mQWmKpg5
+      |PK98kEkhbSvC08fG0TtpR9+vflghOuuvcw6kCniwNbHlOXnE8DwtKQp1DbTUPzMD
+      |hhsIjJaUtv19Xk7gh4MqYgANTm6lAgMBAAECgYEAwBXIeHSKxwiNS8ycbg//Oq7v
+      |eZV6j077bq0YYLO+cDjSlYOq0DSRJTSsXcXvoE1H00aM9mUq4TfjaGyi/3SzxYsr
+      |rSzu/qpYC58MJsnprIjlLgFZmZGe5MOSoul/u6JsBTJGkYPV0xGrtXJY103aSYzC
+      |xthpY0BHy9eO9I/pNlkCQQD/64g4INAiBdM4R5iONQvh8LLvqbb8Bw4vVwVFFnAr
+      |YHcomxtT9TunMad6KPgbOCd/fTttDADrv54htBrFGXeXAkEAzDTtisPKXPByJnUd
+      |jKO2oOg0Fs9IjGeWbnkrsN9j0134ldARE+WbT5S8G5EFo+bQi4ffU3+Y/4ly6Amm
+      |OAAzIwJBANV2GAD5HaHDShK/ZTf4dxjWM+pDnSVKnUJPS039EUKdC8cK2RiGjGNA
+      |v3jdg1Tw2cE1K8QhJwN8qOFj4JBWVbECQQCwcntej9bnf4vi1wd1YnCHkJyRqQIS
+      |7974DhNGfYAQPv5w1JwtCRSuKuJvH1w0R1ijd//scjCNfQKgpNXPRbzpAkAQ8MFA
+      |MLpOLGqezUQthJWmVtnXEXaAlb3yFSRTZQVEselObiIc6EvYzNXv780IDT4pyKjg
+      |8DS9i5jJDIVWr7mA
+      |-----END PRIVATE KEY-----
+  """.stripMargin
 
   val certPath = getClass.getClassLoader.getResource("cert.pem").getPath
   val forwardProxy = ForwardProxy(proxyHost, proxyPort, Option.empty, Option(ForwardProxyTrustPem(certPath)))
