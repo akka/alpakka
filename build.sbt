@@ -177,7 +177,6 @@ lazy val googleCloudBigQuery = alpakkaProject(
   "google-cloud-bigquery",
   "google.cloud.bigquery",
   Dependencies.GoogleBigQuery,
-  crossScalaVersions -= Dependencies.Scala211,
   fork in Test := true
 )
 
