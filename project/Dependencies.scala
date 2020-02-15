@@ -196,7 +196,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        "com.typesafe.akka" %% "akka-stream-contrib" % "0.9",
+        "com.typesafe.akka" %% "akka-stream-contrib" % "0.10",
         "com.pauldijou" %% "jwt-core" % JwtCoreVersion, //ApacheV2
         "io.specto" % "hoverfly-java" % "0.12.2" % Test //ApacheV2
       ) ++ Mockito
