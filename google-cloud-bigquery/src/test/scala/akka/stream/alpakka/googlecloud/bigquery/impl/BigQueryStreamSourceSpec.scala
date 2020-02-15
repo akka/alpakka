@@ -23,6 +23,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
 
+import scala.jdk.CollectionConverters._
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
@@ -49,7 +50,6 @@ class BigQueryStreamSourceSpec
     def checkUsedToken(expected: String) = {
       import org.mockito.ArgumentCaptor
 
-      import collection.JavaConverters._
       val argument: ArgumentCaptor[HttpRequest] = ArgumentCaptor.forClass(classOf[HttpRequest])
       verify(http, atLeastOnce).singleRequest(argument.capture,
                                               any[HttpsConnectionContext](),
