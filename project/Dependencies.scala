@@ -156,6 +156,22 @@ object Dependencies {
       ) ++ JacksonDatabindDependencies
   )
 
+  val Eventbridge = Seq(
+    libraryDependencies ++= Seq(
+        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll // ApacheV2
+        (
+          ExclusionRule(organization = "com.typesafe.akka")
+        ),
+        "software.amazon.awssdk" % "eventbridge" % AwsSdk2Version excludeAll // ApacheV2
+        (
+          ExclusionRule("software.amazon.awssdk", "apache-client"),
+          ExclusionRule("software.amazon.awssdk", "netty-nio-client")
+        ),
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion // ApacheV2
+      ) ++ JacksonDatabindDependencies
+      ++ Mockito
+  )
+
   val File = Seq(
     libraryDependencies ++= Seq(
         "com.google.jimfs" % "jimfs" % "1.1" % Test // ApacheV2

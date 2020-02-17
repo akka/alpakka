@@ -14,6 +14,7 @@ lazy val alpakka = project
     csv,
     dynamodb,
     elasticsearch,
+    eventbridge,
     files,
     ftp,
     geode,
@@ -140,6 +141,14 @@ lazy val elasticsearch = alpakkaProject(
   "elasticsearch",
   Dependencies.Elasticsearch,
   // For elasticsearch-cluster-runner https://github.com/akka/alpakka/issues/479
+  parallelExecution in Test := false
+)
+
+lazy val eventbridge = alpakkaProject(
+  "eventbridge",
+  "aws.eventbridge",
+  Dependencies.Eventbridge,
+  // For mockito https://github.com/akka/alpakka/issues/390
   parallelExecution in Test := false
 )
 
