@@ -569,14 +569,6 @@ import scala.util.{Failure, Success, Try}
 
   val atLeastOneByteString = Flow[ByteString].orElse(Source.single(ByteString.empty))
 
-  private def getChunkBuffer(chunkSize: Int, bufferSize: Int, maxRetriesPerChunk: Int)(implicit settings: S3Settings) =
-    settings.bufferType match {
-      case MemoryBufferType =>
-        new MemoryBuffer(bufferSize)
-      case d: DiskBufferType =>
-        new DiskBuffer((maxRetriesPerChunk + 1) * 2, bufferSize, d.path)
-    }
-
   private def poolSettings(implicit settings: S3Settings, system: ActorSystem) =
     settings.forwardProxy.map(proxy => {
       val address = InetSocketAddress.createUnresolved(proxy.host, proxy.port)
@@ -603,6 +595,17 @@ import scala.util.{Failure, Success, Try}
       s3Headers: S3Headers,
       chunkSize: Int
   )(parallelism: Int): Flow[ByteString, UploadPartResponse, NotUsed] = {
+
+    def getChunkBuffer(chunkSize: Int, bufferSize: Int, maxRetriesPerChunk: Int)(implicit settings: S3Settings) =
+      settings.bufferType match {
+        case MemoryBufferType =>
+          new MemoryBuffer(bufferSize)
+        case d: DiskBufferType =>
+          // Number of materializations required will be total number of upload attempts (max retries + 1) multiplied
+          // by the number of materializations per attempt (currently once for request signing, and then again for the
+          // actual upload).
+          new DiskBuffer((maxRetriesPerChunk + 1) * 2, bufferSize, d.path)
+      }
 
     // Multipart upload requests (except for the completion api) are created here.
     //  The initial upload request gets executed within this function as well.
@@ -640,29 +643,32 @@ import scala.util.{Failure, Success, Try}
             .flatMapConcat { case (req, info) => Signer.signedRequest(req, signingKey).zip(Source.single(info)) }
             .via(superPool[(MultipartUpload, Int)])
 
-        import conf.retrySettings._
+        import conf.multipartUploadSettings.retrySettings._
 
         SplitAfterSize(chunkSize, chunkBufferSize)(atLeastOneByteString)
-          .via(getChunkBuffer(chunkSize, chunkBufferSize, maxRetriesPerChunk)) //creates the chunks
+          .via(getChunkBuffer(chunkSize, chunkBufferSize, maxRetries)) //creates the chunks
           .concatSubstreams
           .zip(requestInfo)
           // Allow requests that fail with transient errors to be retried, using the already buffered chunk.
-          .via(RetryFlow.withBackoff(minBackoff, maxBackoff, randomFactor, maxRetriesPerChunk, retriableFlow) {
+          .via(RetryFlow.withBackoff(minBackoff, maxBackoff, randomFactor, maxRetries, retriableFlow) {
             case (chunkAndUploadInfo, (Success(r), _)) =>
-              // 5xx errors from S3 can be treated as transient.
-              if (r.status.intValue >= 500) Some(chunkAndUploadInfo) else None
+              if (isTransientError(r.status)) Some(chunkAndUploadInfo) else None
             case (chunkAndUploadInfo, (Failure(_), _)) =>
               // Treat any exception as transient.
               Some(chunkAndUploadInfo)
           })
           .mapAsync(parallelism) {
-            case (response, (upload, index)) => handleChunkResponse(response, upload, index)
+            case (response, (upload, index)) =>
+              handleChunkResponse(response, upload, index, conf.multipartUploadSettings.retrySettings)
           }
       }
       .mapMaterializedValue(_ => NotUsed)
   }
 
-  private def handleChunkResponse(response: Try[HttpResponse], upload: MultipartUpload, index: Int)(
+  private def handleChunkResponse(response: Try[HttpResponse],
+                                  upload: MultipartUpload,
+                                  index: Int,
+                                  retrySettings: RetrySettings)(
       implicit mat: Materializer
   ) = {
 
@@ -670,12 +676,15 @@ import scala.util.{Failure, Success, Try}
 
     response match {
       case Success(r) if r.status.isFailure() =>
+        val retryInfo =
+          if (isTransientError(r.status)) s" after exhausting all retry attempts (settings: $retrySettings)" else ""
+
         Unmarshal(r.entity).to[String].map { errorBody =>
           FailedUploadPart(
             upload,
             index,
             new RuntimeException(
-              s"Upload part $index request failed. Response header: ($r), response body: ($errorBody)."
+              s"Upload part $index request failed$retryInfo. Response header: ($r), response body: ($errorBody)."
             )
           )
         }
@@ -690,6 +699,11 @@ import scala.util.{Failure, Success, Try}
 
       case Failure(e) => Future.successful(FailedUploadPart(upload, index, e))
     }
+  }
+
+  private def isTransientError(status: StatusCode): Boolean = {
+    // 5xx errors from S3 can be treated as transient.
+    status.intValue >= 500
   }
 
   private def completionSink(
