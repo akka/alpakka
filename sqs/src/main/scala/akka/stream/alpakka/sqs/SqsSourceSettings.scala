@@ -135,7 +135,7 @@ final class SqsSourceSettings private (
     s"attributeNames=${attributeNames.mkString(",")}, " +
     s"messageAttributeNames=${messageAttributeNames.mkString(",")}, " +
     s"closeOnEmptyReceive=$closeOnEmptyReceive," +
-    s"visibilityTomeout=${visibilityTimeout.map(_.toCoarsest)}" +
+    s"visibilityTimeout=${visibilityTimeout.map(_.toCoarsest)}" +
     ")"
 }
 
