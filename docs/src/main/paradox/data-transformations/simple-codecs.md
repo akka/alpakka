@@ -35,7 +35,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Usage
 
-The flow factory `RecordIOFraming` (@scala[@scaladoc[API](akka.stream.alpakka.recordio.scaladsl.RecordIOFraming$)]@java[@scaladoc[API](akka.stream.alpakka.recordio.javadsl.RecordIOFraming$)]) provides a `scanner`
+The flow factory @apidoc[RecordIOFraming$] provides a `scanner`
 factory method for a @scala[`Flow[ByteString, ByteString, _]`]@java[`Flow<ByteString, ByteString, ?>`] which parses out RecordIO frames.
 
 Scala

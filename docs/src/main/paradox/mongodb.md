@@ -58,7 +58,7 @@ Scala
 Java
 : @@snip [snip](/mongodb/src/test/java/docs/javadsl/MongoSourceTest.java) { #init-connection }
 
-We will also need an @scaladoc[ActorSystem](akka.actor.ActorSystem) and an @scaladoc[ActorMaterializer](akka.stream.ActorMaterializer).
+We will also need an @apidoc[akka.actor.ActorSystem] and an @apidoc[akka.stream.Materializer].
 
 Scala
 : @@snip [snip](/mongodb/src/test/scala/docs/scaladsl/MongoSourceSpec.scala) { #init-mat }

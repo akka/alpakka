@@ -38,8 +38,8 @@ The created @javadoc[ConnectionFactory](javax.jms.ConnectionFactory) is then use
 
 ### A `JmsMessage` sub-type sink
 
-Use a case class with the subtype of @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage) to wrap the messages you want to send and optionally set message specific properties or headers.
-@java[@scaladoc[JmsProducer](akka.stream.alpakka.jms.javadsl.JmsProducer$)]@scala[@scaladoc[JmsProducer](akka.stream.alpakka.jms.scaladsl.JmsProducer$)] contains factory methods to facilitate the creation of sinks according to the message type.
+Use a case class with the subtype of @apidoc[JmsMessage] to wrap the messages you want to send and optionally set message specific properties or headers.
+@apidoc[JmsProducer$] contains factory methods to facilitate the creation of sinks according to the message type.
 
 Scala
 : @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-jms-sink }
@@ -50,7 +50,7 @@ Java
 
 #### Setting JMS message properties
 
-For every @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage) you can set JMS message properties.
+For every @apidoc[JmsMessage] you can set JMS message properties.
 
 Scala
 : @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-messages-with-properties }
@@ -60,7 +60,7 @@ Java
 
 
 #### Setting JMS message header attributes
-For every @scaladoc[JmsMessage](akka.stream.alpakka.jms.JmsMessage) you can set also JMS message headers.
+For every @apidoc[JmsMessage] you can set also JMS message headers.
 
 Scala
 : @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #create-messages-with-headers }
@@ -73,7 +73,7 @@ Java
 
 #### Text sinks
 
-Create a sink, that accepts and forwards @scaladoc[JmsTextMessage](akka.stream.alpakka.jms.JmsTextMessage$)s to the JMS provider:
+Create a sink, that accepts and forwards @apidoc[JmsTextMessage$]s to the JMS provider:
 
 Scala
 : @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #text-sink }
@@ -83,7 +83,7 @@ Java
 
 #### Byte array sinks
 
-Create a sink, that accepts and forwards @scaladoc[JmsByteMessage](akka.stream.alpakka.jms.JmsByteMessage$)s to the JMS provider.
+Create a sink, that accepts and forwards @apidoc[JmsByteMessage$]s to the JMS provider.
 
 Scala
 : @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #bytearray-sink }
@@ -94,7 +94,7 @@ Java
 
 #### Map message sink
 
-Create a sink, that accepts and forwards @scaladoc[JmsMapMessage](akka.stream.alpakka.jms.JmsMapMessage$)s to the JMS provider:
+Create a sink, that accepts and forwards @apidoc[JmsMapMessage$]s to the JMS provider:
 
 Scala
 : @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #map-sink }
@@ -107,7 +107,7 @@ Java
 
 Create and configure ActiveMQ connection factory to support serialization.
 See [ActiveMQ Security](http://activemq.apache.org/objectmessage.html) for more information on this.
-Create a sink, that accepts and forwards @scaladoc[JmsObjectMessage](akka.stream.alpakka.jms.JmsObjectMessage$)s to the JMS provider:
+Create a sink, that accepts and forwards @apidoc[JmsObjectMessage$]s to the JMS provider:
 
 Scala
 : @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #object-sink }
