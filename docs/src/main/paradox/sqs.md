@@ -19,6 +19,16 @@ The AWS SQS connector provides Akka Stream sources and sinks for AWS SQS queues.
   group=com.lightbend.akka
   artifact=akka-stream-alpakka-sqs_$scala.binary.version$
   version=$project.version$
+  symbol2=AkkaVersion
+  value2=$akka.version$
+  group2=com.typesafe.akka
+  artifact2=akka-stream_$scala.binary.version$
+  version2=AkkaVersion
+  symbol3=AkkaHttpVersion
+  value3=$akka-http.version$
+  group3=com.typesafe.akka
+  artifact3=akka-http_$scala.binary.version$
+  version3=AkkaHttpVersion
 }
 
 The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
