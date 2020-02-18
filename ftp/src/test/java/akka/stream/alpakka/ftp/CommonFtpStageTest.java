@@ -38,7 +38,7 @@ interface CommonFtpStageTest extends BaseSupport, AkkaSupport {
   Sink<FtpFile, CompletionStage<IOResult>> getMoveSink(Function<FtpFile, String> destinationPath)
       throws Exception;
 
-  default IOResult await(CompletionStage<IOResult> result)
+  default <T> T await(CompletionStage<T> result)
       throws InterruptedException, java.util.concurrent.ExecutionException,
           java.util.concurrent.TimeoutException {
     return result.toCompletableFuture().get(10, TimeUnit.SECONDS);
@@ -110,6 +110,9 @@ interface CommonFtpStageTest extends BaseSupport, AkkaSupport {
 
     final Materializer materializer = getMaterializer();
     Source<FtpFile, NotUsed> source = getBrowserSource("/");
+    // check that the file is listed
+    await(source.runWith(Sink.head(), materializer));
+
     Sink<FtpFile, CompletionStage<IOResult>> sink = getRemoveSink();
     CompletionStage<IOResult> resultCompletionStage = source.runWith(sink, materializer);
 
@@ -128,6 +131,9 @@ interface CommonFtpStageTest extends BaseSupport, AkkaSupport {
 
     final Materializer materializer = getMaterializer();
     Source<FtpFile, NotUsed> source = getBrowserSource("/");
+    // check that the file is listed
+    await(source.runWith(Sink.head(), materializer));
+
     Sink<FtpFile, CompletionStage<IOResult>> sink = getMoveSink((ftpFile) -> fileName2);
     CompletionStage<IOResult> resultCompletionStage = source.runWith(sink, materializer);
 
