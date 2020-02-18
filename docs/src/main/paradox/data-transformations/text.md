@@ -18,6 +18,11 @@ parser does only support UTF-8.
   group=com.lightbend.akka
   artifact=akka-stream-alpakka-text_$scala.binary.version$
   version=$project.version$
+  symbol2=AkkaVersion
+  value2=$akka.version$
+  group2=com.typesafe.akka
+  artifact2=akka-stream_$scala.binary.version$
+  version2=AkkaVersion
 }
 
 
