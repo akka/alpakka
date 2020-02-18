@@ -12,11 +12,11 @@ The JMS message model supports several types of message bodies in (see @javadoc[
 
 ## Receiving messages
 
-@java[@scaladoc[JmsConsumer](akka.stream.alpakka.jms.javadsl.JmsConsumer$)]@scala[@scaladoc[JmsConsumer](akka.stream.alpakka.jms.scaladsl.JmsConsumer$)] offers factory methods to consume JMS messages in a number of ways.
+@apidoc[JmsConsumer$] offers factory methods to consume JMS messages in a number of ways.
 
 This examples shows how to listen to a JMS queue and emit @javadoc[javax.jms.Message](javax.jms.Message) elements into the stream.
 
-The materialized value `JmsConsumerControl` is used to shut down the consumer (it is a @scaladoc[Killswitch](akka.stream.KillSwitch)) and offers the possibility to inspect the connectivity state of the consumer. 
+The materialized value @apidoc[JmsConsumerControl] is used to shut down the consumer (it is a @apidoc[KillSwitch]) and offers the possibility to inspect the connectivity state of the consumer. 
 
 Scala
 : @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #jms-source }
@@ -38,7 +38,7 @@ Java
 
 The created @javadoc[ConnectionFactory](javax.jms.ConnectionFactory) is then used for the creation of the different JMS sources.
 
-The `JmsConsumerSettings` factories allow for passing the actor system to read from the default `alpakka.jms.consumer` section, or you may pass a `Config` instance which is resolved to a section of the same structure. 
+The @apidoc[JmsConsumerSettings$] factories allow for passing the actor system to read from the default `alpakka.jms.consumer` section, or you may pass a `Config` instance which is resolved to a section of the same structure. 
 
 Scala
 : @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsSettingsSpec.scala) { #consumer-settings }
@@ -195,8 +195,8 @@ Java
 
 ## Request / Reply
 
-The request / reply pattern can be implemented by streaming a @java[@scaladoc[JmsConsumer](akka.stream.alpakka.jms.javadsl.JmsConsumer$)]@scala[@scaladoc[JmsConsumer](akka.stream.alpakka.jms.scaladsl.JmsConsumer$)]
-to a @java[@scaladoc[JmsProducer](akka.stream.alpakka.jms.javadsl.JmsProducer$)]@scala[@scaladoc[JmsProducer](akka.stream.alpakka.jms.scaladsl.JmsProducer$)],
+The request / reply pattern can be implemented by streaming a @apidoc[JmsConsumer$]
+to a @apidoc[JmsProducer$],
 with a stage in between that extracts the `ReplyTo` and `CorrelationID` from the original message and adds them to the response.
 
 Scala

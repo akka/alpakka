@@ -34,13 +34,13 @@ The table below shows direct dependencies of this module and the second tab show
 
 Alpakka Couchbase offers both @ref:[Akka Streams APIs](#reading-from-couchbase-in-akka-streams) and a more @ref:[direct API](#using-couchbasesession-directly) to access Couchbase:
 
-* `CouchbaseSession` (@scala[@scaladoc[API](akka.stream.alpakka.couchbase.scaladsl.CouchbaseSession)]@java[@scaladoc[API](akka.stream.alpakka.couchbase.javadsl.CouchbaseSession)]) offers a direct API for one-off operations
-* `CouchbaseSessionRegistry` (@scaladoc[API](akka.stream.alpakka.couchbase.CouchbaseSessionRegistry$)) is an Akka extension to keep track and share `CouchbaseSession`s within an `ActorSystem`
-* `CouchbaseSource` (@scala[@scaladoc[API](akka.stream.alpakka.couchbase.scaladsl.CouchbaseSource$)]@java[@scaladoc[API](akka.stream.alpakka.couchbase.javadsl.CouchbaseSource$)]), `CouchbaseFlow` (@scala[@scaladoc[API](akka.stream.alpakka.couchbase.scaladsl.CouchbaseFlow$)]@java[@scaladoc[API](akka.stream.alpakka.couchbase.javadsl.CouchbaseFlow$)]), and `CouchbaseSink` (@scala[@scaladoc[API](akka.stream.alpakka.couchbase.scaladsl.CouchbaseSink$)]@java[@scaladoc[API](akka.stream.alpakka.couchbase.javadsl.CouchbaseSink$)]) offer factory methods to create Akka Stream operators
+* @apidoc[CouchbaseSession] offers a direct API for one-off operations
+* @apidoc[CouchbaseSessionRegistry$] is an Akka extension to keep track and share `CouchbaseSession`s within an `ActorSystem`
+* @apidoc[CouchbaseSource$], @apidoc[CouchbaseFlow$], and @apidoc[CouchbaseSink$] offer factory methods to create Akka Stream operators
 
 ## Configuration
 
-All operations use the `CouchbaseSession` internally. A session is configured with `CouchbaseSessionSettings` (@scaladoc[API](akka.stream.alpakka.couchbase.CouchbaseSessionSettings$)) and a Couchbase bucket name. The Akka Stream factory methods create and access the corresponding session instance behind the scenes.
+All operations use the `CouchbaseSession` internally. A session is configured with @apidoc[CouchbaseSessionSettings$] and a Couchbase bucket name. The Akka Stream factory methods create and access the corresponding session instance behind the scenes.
 
 By default the `CouchbaseSessionSettings` are read from the `alpakka.couchbase.session` section from the configuration eg. in your `application.conf`.
 
@@ -49,7 +49,7 @@ Settings
 
 ## Using Akka Discovery
 
-To delegate the configuration of Couchbase nodes to any of [Akka Discovery's lookup mechanisms](https://doc.akka.io/docs/akka/current/discovery/index.html), specify a service name and lookup timeout in the Couchbase section, and pass in @scala[@scaladoc[DiscoverySupport](akka.stream.alpakka.couchbase.scaladsl.DiscoverySupport$)]@java[@scaladoc[DiscoverySupport](akka.stream.alpakka.couchbase.javadsl.DiscoverySupport)] nodes lookup to `enrichAsync` and configure Akka Discovery accordingly.
+To delegate the configuration of Couchbase nodes to any of @extref:[Akka Discovery's lookup mechanisms](akka:discovery/index.html), specify a service name and lookup timeout in the Couchbase section, and pass in @apidoc[DiscoverySupport$] nodes lookup to `enrichAsync` and configure Akka Discovery accordingly.
 
 **The Akka Discovery dependency has to be added explicitly**.
 
@@ -103,7 +103,7 @@ Java
 
 # Writing to Couchbase in Akka Streams
 
-For each mutation operation we need to create `CouchbaseWriteSettings` instance which consists of the following parameters
+For each mutation operation we need to create @apidoc[CouchbaseWriteSettings] instance which consists of the following parameters
 
 - Parallelism in access to Couchbase (default 1)
 - Couchbase Replication Factor (default `ReplicateTo.NONE`) 
@@ -231,4 +231,4 @@ Scala
 Java
 : @@snip [snip](/couchbase/src/test/java/docs/javadsl/CouchbaseExamplesTest.java) { #sessionFromBucket }
 
-To learn about the full range of operations on `CouchbaseSession`, read the @scala[@scaladoc[API docs](akka.stream.alpakka.couchbase.scaladsl.CouchbaseSession)]@java[@scaladoc[API docs](akka.stream.alpakka.couchbase.javadsl.CouchbaseSession)].
+To learn about the full range of operations on `CouchbaseSession`, read the @apidoc[CouchbaseSession] API documentation.

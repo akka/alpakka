@@ -20,7 +20,7 @@ The table below shows direct dependencies of this module and the second tab show
 ## Sending
 
 Datagrams can be sent to remote destinations by using a `Udp.sendFlow` or `Udp.sendSink` which can be found in the
-@scaladoc[Udp](akka.stream.alpakka.udp.scaladsl.Udp$) factory object.
+@apidoc[(javadsl|scaladsl).Udp$] factory object.
 
 Scala
 : @@snip [snip](/udp/src/test/scala/docs/scaladsl/UdpSpec.scala) { #send-datagrams }

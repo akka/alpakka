@@ -32,7 +32,7 @@ HOCON:
 
 ## Store a file in Google Cloud Storage
 
-A file can be uploaded to Google Cloud Storage by creating a source of @scala[@scaladoc[ByteString](akka.util.ByteString)]@java[@javadoc[ByteString](akka.util.ByteString)] and running that with a sink created from @scala[@scaladoc[GCStorage.resumableUpload](akka.stream.alpakka.googlecloud.storage.scaladsl.GCStorage$)]@java[@scaladoc[GCStorage.resumableUpload](akka.stream.alpakka.googlecloud.storage.javadsl.GCStorage$)].
+A file can be uploaded to Google Cloud Storage by creating a source of @apidoc[akka.util.ByteString] and running that with a sink created from @scala[@scaladoc[GCStorage.resumableUpload](akka.stream.alpakka.googlecloud.storage.scaladsl.GCStorage$)]@java[@scaladoc[GCStorage.resumableUpload](akka.stream.alpakka.googlecloud.storage.javadsl.GCStorage$)].
 
 Scala
 : @@snip [snip](/google-cloud-storage/src/test/scala/docs/scaladsl/GCStorageSinkSpec.scala) { #upload }

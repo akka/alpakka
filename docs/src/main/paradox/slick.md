@@ -21,7 +21,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Initialization
 
-As always, before we get started we will need an @scaladoc[ActorSystem](akka.actor.ActorSystem) and a @scaladoc[Materializer](akka.stream.Materializer).
+As always, before we get started we will need an @apidoc[akka.actor.ActorSystem] and a @scaladoc[Materializer](akka.stream.Materializer).
 
 Scala
 : @@snip [snip](/slick/src/test/scala/docs/scaladsl/SlickSpec.scala) { #init-mat }

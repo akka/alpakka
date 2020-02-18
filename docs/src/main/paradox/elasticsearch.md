@@ -33,11 +33,7 @@ Java
 ## Elasticsearch as Source and Sink
 
 Now we can stream messages from or to Elasticsearch by providing the `RestClient` to the
-@scala[@scaladoc[ElasticsearchSource](akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSource$)]
-@java[@scaladoc[ElasticsearchSource](akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSource$)]
-or the
-@scala[@scaladoc[ElasticsearchSink](akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSink$).]
-@java[@scaladoc[ElasticsearchSink](akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSink$).]
+@apidoc[ElasticsearchSource$], @apidoc[ElasticsearchFlow$] or the @apidoc[ElasticsearchSink$].
 
 
 Scala
@@ -147,9 +143,7 @@ In case of write failures the order of messages downstream is guaranteed to be p
 
 ## Elasticsearch as Flow
 
-You can also build flow stages with
-@scala[@scaladoc[ElasticsearchFlow](akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchFlow$).]
-@java[@scaladoc[ElasticsearchFlow](akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchFlow$).]
+You can also build flow stages with @apidoc[ElasticsearchFlow$].
 The API is similar to creating Sinks.
 
 Scala

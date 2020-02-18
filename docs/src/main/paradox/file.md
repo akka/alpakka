@@ -2,7 +2,7 @@
 
 The File connectors provide additional connectors for filesystems complementing
 the sources and sinks for files already included in core Akka Streams
-(which can be found in @java[@javadoc[akka.stream.javadsl.FileIO](akka.stream.javadsl.FileIO$)]@scala[@scaladoc[akka.stream.scaladsl.FileIO](akka.stream.scaladsl.FileIO$)]).
+(which can be found in @aipdoc[FileIO$]).
 
 @@project-info{ projectId="file" }
 
@@ -47,10 +47,10 @@ Java
 ### Shutdown stream when file is deleted
 
 The `FileTailSource` stream will not shutdown or throw an error when the file it is tailing is deleted from the filesystem. 
-If you would like to shutdown the stream, or throw an error, you can do so by merging in a @scala[@scaladoc[DirectoryChangesSource](akka.stream.alpakka.file.scaladsl.DirectoryChangesSource)]@java[@javadoc[DirectoryChangesSource](akka.stream.alpakka.file.javadsl.DirectoryChangesSource)] that listens to filesystem events in the directory that contains the file.
+If you would like to shutdown the stream, or throw an error, you can do so by merging in a @apidoc[(javadsl|scaladsl).DirectoryChangesSource$] that listens to filesystem events in the directory that contains the file.
 
 In the following example, a `DirectoryChangesSource` is used to watch for events in a directory. 
-If a file delete event is observed for the file we are tailing then we shutdown the stream gracefully by using a @scala[@scaladoc[Flow.recoverWithRetries](akka.stream.scaladsl.Flow$)]@java[@javadoc[Flow.recoverWith](akka.stream.javadsl.Flow$)] to switch to a @scala[@scaladoc[Source.empty](akka.stream.scaladsl.Source$)]@java[@javadoc[Source.empty](akka.stream.javadsl.Source$)], which with immediately send an `OnComplete` signal and shutdown the stream.
+If a file delete event is observed for the file we are tailing then we shutdown the stream gracefully by using a @apidoc[Flow.recoverWithRetries](Flow$) to switch to a @apidoc[Source.empty](Source$), which with immediately send an `OnComplete` signal and shutdown the stream.
 
 Scala
 : @@snip [snip](/file/src/test/scala/docs/scaladsl/FileTailSourceExtrasSpec.scala) { #shutdown-on-delete }
@@ -68,7 +68,7 @@ If the file is detected as deleted and the stream is shutdown before the last el
 ### Shutdown stream after an idle timeout
 
 It may be useful to shutdown the stream when no new data has been added for awhile to a file being tailed by `FileTailSource`.
-In the following example, a @scala[@scaladoc[Flow.idleTimeout](akka.stream.scaladsl.Flow$)]@java[@javadoc[Flow.idleTimeout](akka.stream.javadsl.Flow$)] operator is used to trigger a `TimeoutException` that can be recovered with @scala[@scaladoc[Flow.recoverWithRetries](akka.stream.scaladsl.Flow$)]@java[@javadoc[Flow.recoverWith](akka.stream.javadsl.Flow$)] and a @scala[@scaladoc[Source.empty](akka.stream.scaladsl.Source$)]@java[@javadoc[Source.empty](akka.stream.javadsl.Source$)] to successfully shutdown the stream.
+In the following example, a @apidoc[Flow.idleTimeout](Flow$) operator is used to trigger a `TimeoutException` that can be recovered with @apidoc[Flow.recoverWithRetries](Flow$) and a @apidoc[Source.empty](Source$) to successfully shutdown the stream.
 
 Scala
 : @@snip [snip](/file/src/test/scala/docs/scaladsl/FileTailSourceExtrasSpec.scala) { #shutdown-on-idle-timeout }
@@ -125,8 +125,7 @@ Java
 
 ## Rotating the file to stream into 
 
-The @scala[@scaladoc[LogRotatatorSink](akka.stream.alpakka.file.scaladsl.LogRotatorSink$)]
- @java[@scaladoc[LogRotatatorSink](akka.stream.alpakka.file.javadsl.LogRotatorSink$)] will create and 
+The @apidoc[LogRotatorSink$] will create and 
  write to multiple files.  
 This sink takes a creator as parameter which returns a
  @scala[`Bytestring => Option[Path]` function]@java[`Function<ByteString, Optional<Path>>`]. If the generated function returns a path
@@ -134,7 +133,7 @@ This sink takes a creator as parameter which returns a
   written to this new file too.
  With this approach the user can define a custom stateful file generation implementation.
 
-This example usage shows the built-in target file creation and a custom sink factory which is required to use @scala[@scaladoc[Compression](akka.stream.scaladsl.Compression$)]@java[@scaladoc[Compression](akka.stream.javadsl.Compression$)] for the target files.
+This example usage shows the built-in target file creation and a custom sink factory which is required to use @apidoc[Compression$] for the target files.
 
 Scala
 : @@snip [snip](/file/src/test/scala/docs/scaladsl/LogRotatorSinkSpec.scala) { #sample }
@@ -164,7 +163,7 @@ This example can be found in the @ref:[self-contained example documentation sect
 
 ## ZIP Archive
 
-The @scala[@scaladoc[Archive](akka.stream.alpakka.file.scaladsl.Archive$)]  @java[@scaladoc[Archive](akka.stream.alpakka.file.javadsl.Archive$)]
+The @apidoc[Archive$]
 contains flow for compressing multiple files into one ZIP file.
 
 Result of flow can be send to sink even before whole ZIP file is created, so size of resulting ZIP archive

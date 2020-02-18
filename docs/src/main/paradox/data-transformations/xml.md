@@ -20,7 +20,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## XML parsing
 
-XML processing pipeline starts with an @scaladoc[XmlParsing.parser](akka.stream.alpakka.xml.scaladsl.XmlParsing$) flow which parses a stream of @scaladoc[ByteString](akka.util.ByteString)s to XML parser events.
+XML processing pipeline starts with an @apidoc[XmlParsing.parser](XmlParsing$) flow which parses a stream of @apidoc[akka.util.ByteString]s to XML parser events.
 
 Scala
 : @@snip [snip](/xml/src/test/scala/docs/scaladsl/XmlProcessingSpec.scala) { #parser }
@@ -47,7 +47,7 @@ Java
 
 ## XML writing
 
-XML processing pipeline ends with an @scaladoc[XmlWriting.writer](akka.stream.alpakka.xml.scaladsl.XmlWriting$) flow which writes a stream of XML parser events to @scaladoc[ByteString](akka.util.ByteString)s.
+XML processing pipeline ends with an @apidoc[XmlWriting.writer](XmlWriting$) flow which writes a stream of XML parser events to @apidoc[akka.util.ByteString]s.
 
 Scala
 : @@snip [snip](/xml/src/test/scala/docs/scaladsl/XmlWritingSpec.scala) { #writer }
@@ -65,7 +65,7 @@ Java
 
 ## XML Subslice
 
-Use @scaladoc[XmlParsing.subslice](akka.stream.alpakka.xml.scaladsl.XmlParsing$) to filter out all elements not corresponding to a certain path.
+Use @apidoc[XmlParsing.subslice](XmlParsing$) to filter out all elements not corresponding to a certain path.
 
 Scala
 : @@snip [snip](/xml/src/test/scala/docs/scaladsl/XmlSubsliceSpec.scala) { #subslice }
@@ -83,7 +83,7 @@ Java
 
 ## XML Subtree
 
-Use @scaladoc[XmlParsing.subtree](akka.stream.alpakka.xml.scaladsl.XmlParsing$) to handle elements matched to a certain path and their child nodes as `org.w3c.dom.Element`.
+Use @apidoc[XmlParsing.subtree](XmlParsing$) to handle elements matched to a certain path and their child nodes as `org.w3c.dom.Element`.
 
 Scala
 : @@snip [snip](/xml/src/test/scala/docs/scaladsl/XmlSubtreeSpec.scala) { #subtree }

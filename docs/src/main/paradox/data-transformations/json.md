@@ -2,10 +2,10 @@
 
 ## JSON Framing
 
-Use Akka Stream JsonFraming to split a stream of @scaladoc[ByteString](akka.util.ByteString) elements into 
+Use Akka Stream JsonFraming to split a stream of @apidoc[akka.util.ByteString] elements into 
 ByteString snippets of valid JSON objects. 
 
-See @scaladoc[ScalaDSL JsonFraming](akka.stream.scaladsl.JsonFraming$) or @scaladoc[JavaDSL JsonFraming](akka.stream.javadsl.JsonFraming$)
+See @apidoc[JsonFraming$]
 
 
 @extref:[Akka documentation](akka:stream/stream-io.html#using-framing-in-your-protocol)

@@ -33,7 +33,7 @@ Java
 
 The example above uses @extref:[Akka HTTP](akka-http:) as the default HTTP client implementation. For more details about the HTTP client, configuring request retrying and best practices for credentials, see @ref[AWS client configuration](aws-shared-configuration.md) for more details.
 
-We will also need an @scaladoc[ActorSystem](akka.actor.ActorSystem) and an @scaladoc[ActorMaterializer](akka.stream.ActorMaterializer).
+We will also need an @apidoc[akka.actor.ActorSystem] and an @apidoc[akka.stream.Materializer].
 
 Scala
 : @@snip [snip](/sns/src/test/scala/akka/stream/alpakka/sns/IntegrationTestContext.scala) { #init-system }
@@ -46,7 +46,7 @@ This is all preparation that we are going to need.
 ## Publish messages to an SNS topic
 
 Now we can publish a message to any SNS topic where we have access to by providing the topic ARN to the
-@scaladoc[SnsPublisher](akka.stream.alpakka.sns.scaladsl.SnsPublisher$) Flow or Sink factory method.
+@apidoc[SnsPublisher$] Flow or Sink factory method.
 
 ### Using a Flow
 

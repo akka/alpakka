@@ -20,7 +20,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Source Initiation
 
-We will need an @scaladoc[ActorSystem](akka.actor.ActorSystem) and an @scaladoc[ActorMaterializer](akka.stream.ActorMaterializer).
+We will need an @apidoc[akka.actor.ActorSystem] and an @apidoc[akka.stream.Materializer].
 
 Scala
 : @@snip (/avroparquet/src/test/scala/docs/scaladsl/AbstractAvroParquet.scala) { #init-system }
