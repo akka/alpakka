@@ -1,5 +1,12 @@
 # AWS SQS
 
+## 2.0.0-M3
+
+- SQS:spelling of visibilityTimeout in SqsSourceSettings#toString [#2153](https://github.com/akka/alpakka/issues/2153) by [@wi101](https://github.com/wi101)
+- AWS SDK 2.10.60 [#2136](https://github.com/akka/alpakka/issues/2136) by [@sullis](https://github.com/sullis)
+
+[*closed in 2.0.0-M3*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0-M3+label%3Ap%3Aaws-sqs)
+
 ## 2.0.0-M2
 
 - AWS SQS: assert stage stopping [#2046](https://github.com/akka/alpakka/issues/2046) by [@ennru](https://github.com/ennru)
