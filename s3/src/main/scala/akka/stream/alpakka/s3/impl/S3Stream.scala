@@ -647,20 +647,27 @@ import scala.util.{Failure, Success, Try}
 
         SplitAfterSize(chunkSize, chunkBufferSize)(atLeastOneByteString)
           .via(getChunkBuffer(chunkSize, chunkBufferSize, maxRetries)) //creates the chunks
-          .concatSubstreams
+          .mergeSubstreamsWithParallelism(parallelism)
           .zip(requestInfo)
+          .groupBy(parallelism, { case (_, (_, chunkIndex)) => chunkIndex % parallelism })
           // Allow requests that fail with transient errors to be retried, using the already buffered chunk.
           .via(RetryFlow.withBackoff(minBackoff, maxBackoff, randomFactor, maxRetries, retriableFlow) {
             case (chunkAndUploadInfo, (Success(r), _)) =>
-              if (isTransientError(r.status)) Some(chunkAndUploadInfo) else None
+              if (isTransientError(r.status)) {
+                r.entity.discardBytes()
+                Some(chunkAndUploadInfo)
+              } else {
+                None
+              }
             case (chunkAndUploadInfo, (Failure(_), _)) =>
               // Treat any exception as transient.
               Some(chunkAndUploadInfo)
           })
-          .mapAsync(parallelism) {
+          .mapAsync(1) {
             case (response, (upload, index)) =>
               handleChunkResponse(response, upload, index, conf.multipartUploadSettings.retrySettings)
           }
+          .mergeSubstreamsWithParallelism(parallelism)
       }
       .mapMaterializedValue(_ => NotUsed)
   }
