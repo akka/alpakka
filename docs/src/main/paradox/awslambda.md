@@ -12,6 +12,11 @@ For more information about AWS Lambda please visit the [AWS lambda documentation
   group=com.lightbend.akka
   artifact=akka-stream-alpakka-awslambda_$scala.binary.version$
   version=$project.version$
+  symbol2=AkkaVersion
+  value2=$akka.version$
+  group2=com.typesafe.akka
+  artifact2=akka-stream_$scala.binary.version$
+  version2=AkkaVersion
 }
 
 The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
