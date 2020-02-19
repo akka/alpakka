@@ -1,5 +1,11 @@
 # File
 
+## 2.0.0-M3
+
+- File: Used emit instead of push in onUpstreamFinish [#2090](https://github.com/akka/alpakka/issues/2090) by [@michalbogacz](https://github.com/michalbogacz)
+
+[*closed in 2.0.0-M3*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0-M3+label%3Ap%3Afile)
+
 ## 2.0.0-M2
 
 - File: mkdir flow [#2019](https://github.com/akka/alpakka/issues/2019) by [@ennru](https://github.com/ennru)

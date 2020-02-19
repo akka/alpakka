@@ -1,5 +1,14 @@
 # Elasticsearch
 
+## 2.0.0-M3
+
+- Elasticsearch: Flow implementation using RetryFlow [#2093](https://github.com/akka/alpakka/issues/2093) by [@nivox](https://github.com/nivox)
+- Elasticsearch - #1566 - ElasticsearchFlowStage retry logic improvement [#2062](https://github.com/akka/alpakka/issues/2062) by [@nivox](https://github.com/nivox)
+- Elasticsearch: support multiple REST versions [#2052](https://github.com/akka/alpakka/issues/2052) by [@ennru](https://github.com/ennru)
+
+[*closed in 2.0.0-M3*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0-M3+label%3Ap%3Aelasticsearch)
+
+
 ## 2.0.0-M2
 
 - Elasticsearch: Add charset [#2008](https://github.com/akka/alpakka/issues/2008) by [@pecorarista](https://github.com/pecorarista)

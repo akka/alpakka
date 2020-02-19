@@ -1,5 +1,12 @@
 # AWS Kinesis
 
+## 2.0.0-M3
+
+- AWS Kinesis KCL streams support [#1667](https://github.com/akka/alpakka/issues/1667) by [@aserrallerios](https://github.com/aserrallerios)
+- AWS SDK 2.10.60 [#2136](https://github.com/akka/alpakka/issues/2136) by [@sullis](https://github.com/sullis)
+
+[*closed in 2.0.0-M3*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0-M3+label%3Ap%3Akinesis)
+
 ## 2.0.0-M2
 
 - AWS SDK 2.10.34 [#2006](https://github.com/akka/alpakka/issues/2006) by [@sullis](https://github.com/sullis)
