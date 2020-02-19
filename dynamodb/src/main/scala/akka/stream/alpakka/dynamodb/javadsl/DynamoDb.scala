@@ -7,6 +7,7 @@ package akka.stream.alpakka.dynamodb.javadsl
 import java.util.concurrent.CompletionStage
 
 import akka.NotUsed
+import akka.annotation.ApiMayChange
 import akka.stream.Materializer
 import akka.stream.alpakka.dynamodb.{scaladsl, DynamoDbOp, DynamoDbPaginatedOp}
 import akka.stream.javadsl.{Flow, FlowWithContext, Sink, Source}
@@ -41,6 +42,7 @@ object DynamoDb {
    * @param parallelism maximum number of in-flight requests at any given time
    * @tparam Ctx context (or pass-through)
    */
+  @ApiMayChange(issue = "https://github.com/akka/alpakka/issues/1987")
   def flowWithContext[In <: DynamoDbRequest, Out <: DynamoDbResponse, Ctx](
       client: DynamoDbAsyncClient,
       operation: DynamoDbOp[In, Out],
