@@ -200,3 +200,5 @@ env:
 branches:
   only:
     - master
+    # allow release tags
+    - /^v\d+\.\d+(\.\d+)?(-\S*)?$/
