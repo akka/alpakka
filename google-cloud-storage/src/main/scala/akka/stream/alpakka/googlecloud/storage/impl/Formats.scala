@@ -61,7 +61,7 @@ object Formats extends DefaultJsonProtocol {
       mediaLink: String,
       metageneration: String,
       owner: Option[Owner],
-      retentionExpirationTime: String,
+      retentionExpirationTime: Option[String],
       selfLink: String,
       size: String,
       timeCreated: String,
@@ -74,18 +74,18 @@ object Formats extends DefaultJsonProtocol {
 
   // private sub class of StorageObjectJson used to workaround 22 field jsonFormat issue
   private final case class StorageObjectWriteableJson(
-      cacheControl: String,
-      contentDisposition: String,
-      contentEncoding: String,
-      contentLanguage: String,
+      cacheControl: Option[String],
+      contentDisposition: Option[String],
+      contentEncoding: Option[String],
+      contentLanguage: Option[String],
       contentType: Option[String],
       crc32c: String,
-      eventBasedHold: Boolean,
+      eventBasedHold: Option[Boolean],
       md5Hash: String,
       metadata: Option[Map[String, String]],
       name: String,
       storageClass: String,
-      temporaryHold: Boolean,
+      temporaryHold: Option[Boolean],
       acl: Option[List[ObjectAccessControls]]
   )
 
@@ -245,7 +245,7 @@ object Formats extends DefaultJsonProtocol {
       strToLongOrThrow(metageneration, "metageneration"),
       temporaryHold,
       eventBasedHold,
-      strToDateTimeOrThrow(retentionExpirationTime, "retentionExpirationTime"),
+      retentionExpirationTime.map(ret => strToDateTimeOrThrow(ret, "retentionExpirationTime")),
       strToDateTimeOrThrow(timeStorageClassUpdated, "retentionExpirationTime"),
       cacheControl,
       metadata,
