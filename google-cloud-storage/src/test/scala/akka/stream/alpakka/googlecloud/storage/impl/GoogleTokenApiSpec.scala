@@ -142,6 +142,33 @@ class GoogleTokenApiSpec
       }
     }
 
+    "return a useful error in case of invalid credentials" in {
+      val http = mock[HttpExt]
+      val errorBody = """{"error":"invalid_grant","error_description":"Invalid grant: account not found"}"""
+      when(
+        http.singleRequest(any[HttpRequest](),
+                           any[HttpsConnectionContext](),
+                           any[ConnectionPoolSettings](),
+                           any[LoggingAdapter]())
+      ).thenReturn(
+        Future.successful(
+          HttpResponse(
+            status = StatusCodes.BadRequest,
+            entity = HttpEntity(
+              ContentTypes.`application/json`,
+              errorBody
+            )
+          )
+        )
+      )
+
+      val api = new GoogleTokenApi(http, settings)
+      val caught = intercept[RuntimeException] {
+        api.getAccessToken("email", privateKey).futureValue
+      }
+      assert(caught.getMessage.contains(errorBody))
+    }
+
     "recover from a 5xx response" in {
       val http = mock[HttpExt]
       when(
