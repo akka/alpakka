@@ -1,0 +1,11 @@
+# Make some fields optional https://github.com/akka/alpakka/issues/2163
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.googlecloud.storage.StorageObject.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.googlecloud.storage.StorageObject.apply")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.googlecloud.storage.StorageObject.create")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.googlecloud.storage.StorageObject.cacheControl")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.googlecloud.storage.StorageObject.retentionExpirationTime")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.googlecloud.storage.StorageObject.eventBasedHold")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.googlecloud.storage.StorageObject.temporaryHold")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.googlecloud.storage.StorageObject.contentLanguage")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.googlecloud.storage.StorageObject.contentEncoding")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.googlecloud.storage.StorageObject.contentDisposition")
