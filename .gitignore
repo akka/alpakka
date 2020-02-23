@@ -19,3 +19,4 @@ ext-lib-src/
 /activemq-data
 .bloop/
 .metals/
+metals.sbt
