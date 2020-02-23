@@ -1,13 +1,15 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.javadsl;
 
 import akka.Done;
+// #init-system
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+// #init-system
 import akka.stream.alpakka.aws.eventbridge.javadsl.EventBridgePublisher;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -105,46 +107,46 @@ public class EventBridgePublisherTest {
   @Test
   public void sinkShouldPutDetailEntry() throws Exception {
     CompletionStage<Done> completion =
-        // #use-sink
+        // #run-events-entry
         Source.single(detailEntry("message"))
             .runWith(EventBridgePublisher.sink(eventBridgeClient), materializer);
 
-    // #use-sink
+        // #run-events-entry
     assertThat(completion.toCompletableFuture().get(2, TimeUnit.SECONDS), is(Done.getInstance()));
   }
 
   @Test
   public void sinkShouldPutEventsRequest() throws Exception {
     CompletionStage<Done> completion =
-        // #use-sink
+        // #run-events-request
         Source.single(detailPutEventsRequest("message"))
             .runWith(EventBridgePublisher.publishSink(eventBridgeClient), materializer);
 
-    // #use-sink
+        // #run-events-request
     assertThat(completion.toCompletableFuture().get(2, TimeUnit.SECONDS), is(Done.getInstance()));
   }
 
   @Test
   public void flowShouldPutDetailEntry() throws Exception {
     CompletionStage<Done> completion =
-        // #use-flow
+        // #flow-events-entry
         Source.single(detailEntry("message"))
             .via(EventBridgePublisher.flow(eventBridgeClient))
             .runWith(Sink.foreach(res -> System.out.println(res)), materializer);
 
-    // #use-flow
+        // #flow-events-entry
     assertThat(completion.toCompletableFuture().get(2, TimeUnit.SECONDS), is(Done.getInstance()));
   }
 
   @Test
   public void flowShouldPutEventsRequest() throws Exception {
     CompletionStage<Done> completion =
-        // #use-flow
+        // #flow-request-entry
         Source.single(detailPutEventsRequest("message"))
             .via(EventBridgePublisher.publishFlow(eventBridgeClient))
             .runWith(Sink.foreach(res -> System.out.println(res)), materializer);
 
-    // #use-flow
+        // #flow-reqest-entry 
     assertThat(completion.toCompletableFuture().get(2, TimeUnit.SECONDS), is(Done.getInstance()));
   }
 }

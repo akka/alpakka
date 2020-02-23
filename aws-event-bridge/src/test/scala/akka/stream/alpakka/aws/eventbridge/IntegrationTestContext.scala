@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.stream.alpakka.aws.eventbridge
@@ -31,7 +31,7 @@ trait IntegrationTestContext extends BeforeAndAfterAll with ScalaFutures {
 
   private val eventBusNumber = new AtomicInteger()
 
-  def createTopic(): String =
+  def createEventBus(): String =
     eventBridgeClient
       .createEventBus(
         CreateEventBusRequest.builder().name(s"alpakka-topic-${eventBusNumber.incrementAndGet()}").build()
@@ -41,7 +41,7 @@ trait IntegrationTestContext extends BeforeAndAfterAll with ScalaFutures {
 
   override protected def beforeAll(): Unit = {
     eventBridgeClient = createAsyncClient(eventBusEndpoint)
-    eventBusArn = createTopic()
+    eventBusArn = createEventBus()
   }
 
   override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)

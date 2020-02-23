@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -22,47 +22,45 @@ class EventBridgePublisherSpec extends FlatSpec with Matchers with ScalaFutures 
 
   "EventBridge Publisher sink" should "send PutEventsEntry message" in {
     val published: Future[Done] =
-      //#use-sink
+      // #run-events-entry
       Source
         .single(PutEventsRequestEntry.builder().detail("string").build())
         .runWith(EventBridgePublisher.sink())
 
-    //#use-sink
+      // #run-events-entry
     published.futureValue should be(Done)
   }
 
   it should "send put events request" in {
     val published: Future[Done] =
-      //#use-sink
+      // #run-events-request
       Source
         .single(PutEventsRequest.builder().entries(PutEventsRequestEntry.builder().detail("string").build()).build())
         .runWith(EventBridgePublisher.publishSink())
 
-    //#use-sink
+      // #run-events-request
     published.futureValue should be(Done)
   }
 
   "EventBridge put flow" should "send PutEventsRequestEntry message" in {
     val published: Future[Done] =
-      //#use-flow
+      // #flow-events-entry
       Source
         .single(PutEventsRequestEntry.builder().detail("string").build())
         .via(EventBridgePublisher.flow())
         .runWith(Sink.foreach(res => println(res)))
-
-    //#use-flow
+      // #flow-events-entry
     published.futureValue should be(Done)
   }
 
   it should "send publish request" in {
     val published: Future[Done] =
-      //#use-flow
+      // #flow-events-request
       Source
         .single(PutEventsRequest.builder().entries(PutEventsRequestEntry.builder().detail("string").build()).build())
         .via(EventBridgePublisher.publishFlow())
         .runWith(Sink.foreach(res => println(res)))
-
-    //#use-flow
+      // #flow-events-request
     published.futureValue should be(Done)
   }
 
