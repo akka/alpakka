@@ -7,7 +7,7 @@ package akka.stream.alpakka.googlecloud.pubsub.impl
 import akka.annotation.InternalApi
 import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import akka.http.scaladsl.model.{FormData, HttpMethods, HttpRequest}
+import akka.http.scaladsl.model.{FormData, HttpMethods, HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import GoogleTokenApi.{AccessTokenExpiry, OAuthResponse}
@@ -40,7 +40,6 @@ private[googlecloud] class GoogleTokenApi(http: => HttpExt) {
       implicit materializer: Materializer
   ): Future[AccessTokenExpiry] = {
     import materializer.executionContext
-    import SprayJsonSupport._
 
     val expiresAt = now + oneHour
     val jwt = generateJwt(clientEmail, privateKey)
@@ -55,12 +54,25 @@ private[googlecloud] class GoogleTokenApi(http: => HttpExt) {
         http,
         HttpRequest(HttpMethods.POST, googleTokenUrl, entity = requestEntity)
       )
-      result <- Unmarshal(response.entity).to[OAuthResponse]
+      result <- readResponse(response)
     } yield {
       AccessTokenExpiry(
         accessToken = result.access_token,
         expiresAt = expiresAt
       )
+    }
+  }
+
+  private def readResponse(response: HttpResponse)(implicit mat: Materializer): Future[OAuthResponse] = {
+    import SprayJsonSupport._
+    import mat.executionContext
+    response match {
+      case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
+        Unmarshal(responseEntity).to[OAuthResponse]
+      case HttpResponse(status, _, responseEntity, _) =>
+        Unmarshal(responseEntity).to[String].map[OAuthResponse] { body =>
+          throw new RuntimeException(s"Request failed for POST $googleTokenUrl, got $status with body: $body")
+        }
     }
   }
 }
