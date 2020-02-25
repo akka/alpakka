@@ -5,9 +5,12 @@
 package akka.stream.alpakka.googlecloud.storage
 
 import java.time.OffsetDateTime
+import java.util.Optional
 
 import akka.http.scaladsl.model.ContentType
 import main.scala.akka.stream.alpakka.googlecloud.storage.{CustomerEncryption, ObjectAccessControls, Owner}
+import scala.compat.java8.OptionConverters._
+import scala.collection.JavaConverters._
 
 /**
  * Represents an object within Google Cloud Storage.
@@ -62,15 +65,15 @@ final class StorageObject private (
     val timeCreated: OffsetDateTime,
     val timeDeleted: Option[OffsetDateTime],
     val storageClass: String,
-    val contentDisposition: String,
-    val contentEncoding: String,
-    val contentLanguage: String,
+    val contentDisposition: Option[String],
+    val contentEncoding: Option[String],
+    val contentLanguage: Option[String],
     val metageneration: Long,
-    val temporaryHold: Boolean,
-    val eventBasedHold: Boolean,
-    val retentionExpirationTime: OffsetDateTime,
+    val temporaryHold: Option[Boolean],
+    val eventBasedHold: Option[Boolean],
+    val retentionExpirationTime: Option[OffsetDateTime],
     val timeStorageClassUpdated: OffsetDateTime,
-    val cacheControl: String,
+    val cacheControl: Option[String],
     val metadata: Option[Map[String, String]],
     val componentCount: Option[Int],
     val kmsKeyName: Option[String],
@@ -81,6 +84,20 @@ final class StorageObject private (
 
   /** Java API */
   def getContentType: akka.http.javadsl.model.ContentType = contentType.asInstanceOf[ContentType]
+  def getTimeDeleted: Optional[OffsetDateTime] = timeDeleted.asJava
+  def getContentDisposition: Optional[String] = contentDisposition.asJava
+  def getContentEncoding: Optional[String] = contentEncoding.asJava
+  def getContentLanguage: Optional[String] = contentLanguage.asJava
+  def getTemporaryHold: Optional[Boolean] = temporaryHold.asJava
+  def getEventBasedHold: Optional[Boolean] = eventBasedHold.asJava
+  def getRetentionExpirationTime: Optional[OffsetDateTime] = retentionExpirationTime.asJava
+  def getCacheControl: Optional[String] = cacheControl.asJava
+  def getMetadata: Optional[java.util.Map[String, String]] = metadata.map(_.asJava).asJava
+  def getComponentCount: Optional[Integer] = componentCount.map(Int.box).asJava
+  def getKmsKeyName: Optional[String] = kmsKeyName.asJava
+  def getCustomerEncryption: Optional[CustomerEncryption] = customerEncryption.asJava
+  def getOwner: Optional[Owner] = owner.asJava
+  def getAcl: Optional[java.util.List[ObjectAccessControls]] = acl.map(_.asJava).asJava
 
   def withKind(value: String): StorageObject = copy(kind = value)
   def withId(value: String): StorageObject = copy(id = value)
@@ -102,23 +119,23 @@ final class StorageObject private (
   def withSelfLink(value: String): StorageObject = copy(selfLink = value)
   def withUpdated(value: OffsetDateTime): StorageObject = copy(updated = value)
   def withTimeCreated(value: OffsetDateTime): StorageObject = copy(timeCreated = value)
-  def withTimeDeleted(value: OffsetDateTime): StorageObject = copy(timeDeleted = Some(value))
+  def withTimeDeleted(value: OffsetDateTime): StorageObject = copy(timeDeleted = Option(value))
   def withStorageClass(value: String): StorageObject = copy(storageClass = value)
-  def withContentDisposition(value: String): StorageObject = copy(contentDisposition = value)
-  def withContentEncoding(value: String): StorageObject = copy(contentEncoding = value)
-  def withContentLanguage(value: String): StorageObject = copy(contentLanguage = value)
+  def withContentDisposition(value: String): StorageObject = copy(contentDisposition = Option(value))
+  def withContentEncoding(value: String): StorageObject = copy(contentEncoding = Option(value))
+  def withContentLanguage(value: String): StorageObject = copy(contentLanguage = Option(value))
   def withMetageneration(value: Long): StorageObject = copy(metageneration = value)
-  def withTemporaryHold(value: Boolean): StorageObject = copy(temporaryHold = value)
-  def withEventBasedHold(value: Boolean): StorageObject = copy(eventBasedHold = value)
-  def withRetentionExpirationTime(value: OffsetDateTime): StorageObject = copy(retentionExpirationTime = value)
+  def withTemporaryHold(value: Boolean): StorageObject = copy(temporaryHold = Option(value))
+  def withEventBasedHold(value: Boolean): StorageObject = copy(eventBasedHold = Option(value))
+  def withRetentionExpirationTime(value: OffsetDateTime): StorageObject = copy(retentionExpirationTime = Option(value))
   def withTimeStorageClassUpdated(value: OffsetDateTime): StorageObject = copy(timeStorageClassUpdated = value)
-  def withCacheControl(value: String): StorageObject = copy(cacheControl = value)
-  def withMetadata(value: Map[String, String]): StorageObject = copy(metadata = Some(value))
-  def withComponentCount(value: Int): StorageObject = copy(componentCount = Some(value))
-  def withKmsKeyName(value: String): StorageObject = copy(kmsKeyName = Some(value))
-  def withCustomerEncryption(value: CustomerEncryption): StorageObject = copy(customerEncryption = Some(value))
-  def withOwner(value: Owner): StorageObject = copy(owner = Some(value))
-  def withAcl(value: List[ObjectAccessControls]): StorageObject = copy(acl = Some(value))
+  def withCacheControl(value: String): StorageObject = copy(cacheControl = Option(value))
+  def withMetadata(value: Map[String, String]): StorageObject = copy(metadata = Option(value))
+  def withComponentCount(value: Int): StorageObject = copy(componentCount = Option(value))
+  def withKmsKeyName(value: String): StorageObject = copy(kmsKeyName = Option(value))
+  def withCustomerEncryption(value: CustomerEncryption): StorageObject = copy(customerEncryption = Option(value))
+  def withOwner(value: Owner): StorageObject = copy(owner = Option(value))
+  def withAcl(value: List[ObjectAccessControls]): StorageObject = copy(acl = Option(value))
 
   private def copy(
       kind: String = kind,
@@ -137,15 +154,15 @@ final class StorageObject private (
       timeCreated: OffsetDateTime = timeCreated,
       timeDeleted: Option[OffsetDateTime] = timeDeleted,
       storageClass: String = storageClass,
-      contentDisposition: String = contentDisposition,
-      contentEncoding: String = contentEncoding,
-      contentLanguage: String = contentLanguage,
+      contentDisposition: Option[String] = contentDisposition,
+      contentEncoding: Option[String] = contentEncoding,
+      contentLanguage: Option[String] = contentLanguage,
       metageneration: Long = metageneration,
-      temporaryHold: Boolean = temporaryHold,
-      eventBasedHold: Boolean = eventBasedHold,
-      retentionExpirationTime: OffsetDateTime = retentionExpirationTime,
+      temporaryHold: Option[Boolean] = temporaryHold,
+      eventBasedHold: Option[Boolean] = eventBasedHold,
+      retentionExpirationTime: Option[OffsetDateTime] = retentionExpirationTime,
       timeStorageClassUpdated: OffsetDateTime = timeStorageClassUpdated,
-      cacheControl: String = cacheControl,
+      cacheControl: Option[String] = cacheControl,
       metadata: Option[Map[String, String]] = metadata,
       componentCount: Option[Int] = componentCount,
       kmsKeyName: Option[String] = kmsKeyName,
@@ -279,8 +296,8 @@ final class StorageObject private (
       contentEncoding,
       contentLanguage,
       Long.box(metageneration),
-      Boolean.box(temporaryHold),
-      Boolean.box(eventBasedHold),
+      temporaryHold.map(Boolean.box),
+      eventBasedHold.map(Boolean.box),
       retentionExpirationTime,
       timeStorageClassUpdated,
       cacheControl,
@@ -313,15 +330,15 @@ object StorageObject {
       timeCreated: OffsetDateTime,
       timeDeleted: Option[OffsetDateTime],
       storageClass: String,
-      contentDisposition: String,
-      contentEncoding: String,
-      contentLanguage: String,
+      contentDisposition: Option[String],
+      contentEncoding: Option[String],
+      contentLanguage: Option[String],
       metageneration: Long,
-      temporaryHold: Boolean,
-      eventBasedHold: Boolean,
-      retentionExpirationTime: OffsetDateTime,
+      temporaryHold: Option[Boolean],
+      eventBasedHold: Option[Boolean],
+      retentionExpirationTime: Option[OffsetDateTime],
       timeStorageClassUpdated: OffsetDateTime,
-      cacheControl: String,
+      cacheControl: Option[String],
       metadata: Option[Map[String, String]],
       componentCount: Option[Int],
       kmsKeyName: Option[String],
@@ -378,23 +395,23 @@ object StorageObject {
       selfLink: String,
       updated: OffsetDateTime,
       timeCreated: OffsetDateTime,
-      timeDeleted: Option[OffsetDateTime],
+      timeDeleted: Optional[OffsetDateTime],
       storageClass: String,
-      contentDisposition: String,
-      contentEncoding: String,
-      contentLanguage: String,
+      contentDisposition: Optional[String],
+      contentEncoding: Optional[String],
+      contentLanguage: Optional[String],
       metageneration: Long,
-      temporaryHold: Boolean,
-      eventBasedHold: Boolean,
-      retentionExpirationTime: OffsetDateTime,
+      temporaryHold: Optional[Boolean],
+      eventBasedHold: Optional[Boolean],
+      retentionExpirationTime: Optional[OffsetDateTime],
       timeStorageClassUpdated: OffsetDateTime,
-      cacheControl: String,
-      metadata: Option[Map[String, String]],
-      componentCount: Option[Int],
-      kmsKeyName: Option[String],
-      customerEncryption: Option[CustomerEncryption],
-      owner: Option[Owner],
-      acl: Option[List[ObjectAccessControls]]
+      cacheControl: Optional[String],
+      metadata: Optional[Map[String, String]],
+      componentCount: Optional[Int],
+      kmsKeyName: Optional[String],
+      customerEncryption: Optional[CustomerEncryption],
+      owner: Optional[Owner],
+      acl: Optional[List[ObjectAccessControls]]
   ): StorageObject = new StorageObject(
     kind,
     id,
@@ -410,22 +427,22 @@ object StorageObject {
     selfLink,
     updated,
     timeCreated,
-    timeDeleted,
+    timeDeleted.asScala,
     storageClass,
-    contentDisposition,
-    contentEncoding,
-    contentLanguage,
+    contentDisposition.asScala,
+    contentEncoding.asScala,
+    contentLanguage.asScala,
     metageneration,
-    temporaryHold,
-    eventBasedHold,
-    retentionExpirationTime,
+    temporaryHold.asScala,
+    eventBasedHold.asScala,
+    retentionExpirationTime.asScala,
     timeStorageClassUpdated,
-    cacheControl,
-    metadata,
-    componentCount,
-    kmsKeyName,
-    customerEncryption,
-    owner,
-    acl
+    cacheControl.asScala,
+    metadata.asScala,
+    componentCount.asScala,
+    kmsKeyName.asScala,
+    customerEncryption.asScala,
+    owner.asScala,
+    acl.asScala
   )
 }

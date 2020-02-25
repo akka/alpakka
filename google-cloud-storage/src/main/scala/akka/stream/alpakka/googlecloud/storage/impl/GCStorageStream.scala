@@ -118,6 +118,7 @@ import scala.util.control.NonFatal
               .withQuery(Query(queryParams))
         )
       ).runWith(Sink.head)
+        .map(response => response.withEntity(response.entity.withoutSizeLimit))
         .flatMap(entityForSuccessOption)
         .flatMap(responseEntityOptionTo[BucketListResult])
         .map { bucketListResultOption =>
