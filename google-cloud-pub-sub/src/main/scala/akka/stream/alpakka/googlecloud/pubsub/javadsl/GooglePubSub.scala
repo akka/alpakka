@@ -14,6 +14,7 @@ import akka.{Done, NotUsed}
 
 import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters._
+import scala.concurrent.Future
 
 object GooglePubSub {
 
@@ -36,6 +37,11 @@ object GooglePubSub {
   def subscribe(subscription: String, config: PubSubConfig): Source[ReceivedMessage, Cancellable] =
     GPubSub
       .subscribe(subscription = subscription, config = config)
+      .asJava
+
+  def subscribeFlow(subscription: String, config: PubSubConfig): Flow[Done, ReceivedMessage, Future[NotUsed]] =
+    GPubSub
+      .subscribeFlow(subscription = subscription, config = config)
       .asJava
 
   @deprecated("Use `acknowledge` without `parallelism` param", since = "2.0.0")
