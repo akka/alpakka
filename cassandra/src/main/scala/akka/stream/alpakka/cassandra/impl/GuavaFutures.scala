@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.cassandra.impl
 
-import com.google.common.util.concurrent.{FutureCallback, Futures, ListenableFuture}
+import com.google.common.util.concurrent.{FutureCallback, Futures, ListenableFuture, MoreExecutors}
 
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}
@@ -30,7 +30,7 @@ private[cassandra] object GuavaFutures {
         override def onFailure(err: Throwable): Unit = p.failure(err)
       }
       // Alpakka build: if this fails during `unidoc` check the filters in build.sbt
-      Futures.addCallback(guavaFut, callback)
+      Futures.addCallback(guavaFut, callback, MoreExecutors.directExecutor())
       p.future
     }
   }
