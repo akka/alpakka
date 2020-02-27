@@ -73,7 +73,7 @@ lazy val alpakka = project
     ScalaUnidoc / unidoc / fullClasspath := {
       (ScalaUnidoc / unidoc / fullClasspath).value
         .filterNot(_.data.getAbsolutePath.contains("protobuf-java-2.5.0.jar"))
-        .filterNot(_.data.getAbsolutePath.contains("guava-28.1-android.jar"))
+        .filterNot(_.data.getAbsolutePath.contains("guava-28.2-android.jar"))
         .filterNot(_.data.getAbsolutePath.contains("commons-net-3.1.jar"))
         .filterNot(_.data.getAbsolutePath.contains("protobuf-java-2.6.1.jar"))
         // Some projects require (and introduce) Akka 2.6:
