@@ -38,8 +38,10 @@ class BigQueryStreamSourceSpec
   override implicit val actorSystem: ActorSystem = ActorSystem("BigQueryEndToEndSpec")
   override implicit val materializer: ActorMaterializer = ActorMaterializer()
 
-  override def afterAll(): Unit =
+  override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
+    super.afterAll()
+  }
 
   val timeout = 3.seconds
 
