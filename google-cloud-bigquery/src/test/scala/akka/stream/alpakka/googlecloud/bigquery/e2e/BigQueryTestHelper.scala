@@ -32,6 +32,10 @@ trait BigQueryTestHelper {
   lazy val projectId = "bigqueryproject"
   lazy val dataset = "bigquerydataset"
   lazy val clientEmail = "big-query-sa@bigqueryproject.iam.gserviceaccount.com"
+
+  // openssl genrsa -out mykey.pem 1024
+  // openssl pkcs8 -topk8 -nocrypt -in mykey.pem -out myrsakey_pcks8
+  // openssl rsa -in mykey.pem -pubout > mykey.pub
   lazy val privateKey =
     """-----BEGIN PRIVATE KEY-----
       |MIICeAIBADANBgkqhkiG9w0BAQEFAASCAmIwggJeAgEAAoGBAMwkmdwrWp+LLlsf
