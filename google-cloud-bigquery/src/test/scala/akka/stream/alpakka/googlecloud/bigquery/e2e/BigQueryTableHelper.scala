@@ -37,7 +37,11 @@ trait BigQueryTableHelper extends BigQueryTestHelper with AnyWordSpecLike with B
     } catch {
       case e: IllegalStateException => println("Hoverfly already started")
     }
+  }
 
+  override protected def afterAll(): Unit = {
+    hoverfly.close()
+    super.afterAll()
   }
 
   def initDb(): Unit = {
