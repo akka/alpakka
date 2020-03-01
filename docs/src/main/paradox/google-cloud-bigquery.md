@@ -34,7 +34,7 @@ Java
 : @@snip [snip](/google-cloud-bigquery/src/test/java/docs/javadsl/GoogleBigQuerySourceDoc.java) { #init-config }
 
 
-The connector has some fire and forget style API for meta data requests. 
+The connector has a fire and forget style API for meta data requests. 
 (These give back basic information about the tables and the fields. If you need more information, sadly you need to write some parsers yourself (see below).)
 
 Scala
