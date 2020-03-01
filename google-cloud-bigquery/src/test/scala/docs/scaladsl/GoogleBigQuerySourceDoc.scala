@@ -4,9 +4,6 @@
 
 package docs.scaladsl
 
-/*
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com>
- */
 //#imports
 import akka.NotUsed
 import akka.actor.ActorSystem
