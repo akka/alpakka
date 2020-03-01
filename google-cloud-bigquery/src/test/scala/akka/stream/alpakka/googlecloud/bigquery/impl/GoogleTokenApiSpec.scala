@@ -49,7 +49,7 @@ class GoogleTokenApiSpec
   }
 
   lazy val publicKey = {
-    Source.fromResource("public.pem").getLines().mkString("\n").stripMargin
+    Source.fromResource("key.pub").getLines().mkString("\n").stripMargin
   }
 
   "GoogleTokenApi" should {
