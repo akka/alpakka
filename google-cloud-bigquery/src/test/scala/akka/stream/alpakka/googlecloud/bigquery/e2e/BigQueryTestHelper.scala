@@ -35,7 +35,7 @@ trait BigQueryTestHelper {
   lazy val clientEmail = "big-query-sa@bigqueryproject.iam.gserviceaccount.com"
 
   lazy val privateKey = {
-    val inputStream = getClass.getResourceAsStream("private_pcks8.pem")
+    val inputStream = getClass.getClassLoader.getResourceAsStream("private_pcks8.pem")
     Source.fromInputStream(inputStream).getLines().mkString("\n").stripMargin
   }
 

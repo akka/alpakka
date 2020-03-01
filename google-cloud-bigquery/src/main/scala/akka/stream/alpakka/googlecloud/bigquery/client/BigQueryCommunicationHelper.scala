@@ -3,7 +3,6 @@
  */
 
 package akka.stream.alpakka.googlecloud.bigquery.client
-import akka.annotation.InternalApi
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest}
 import akka.stream.alpakka.googlecloud.bigquery.client.QueryJsonProtocol.{QueryRequest, QueryResponse}
 import akka.stream.alpakka.googlecloud.bigquery.client.TableDataQueryJsonProtocol.TableDataQueryResponse
@@ -12,8 +11,7 @@ import spray.json.JsObject
 
 import scala.util.Try
 
-@InternalApi
-private[bigquery] object BigQueryCommunicationHelper {
+object BigQueryCommunicationHelper {
 
   def createQueryRequest(query: String, projectId: String, dryRun: Boolean) =
     HttpRequest(HttpMethods.POST, GoogleEndpoints.queryUrl(projectId), entity = createQueryBody(query, dryRun))

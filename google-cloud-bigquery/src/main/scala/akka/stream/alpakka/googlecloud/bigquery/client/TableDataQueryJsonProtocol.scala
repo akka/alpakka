@@ -4,11 +4,9 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.client
 
-import akka.annotation.InternalApi
 import spray.json.{DefaultJsonProtocol, JsonFormat}
 
-@InternalApi
-private[bigquery] object TableDataQueryJsonProtocol extends DefaultJsonProtocol {
+object TableDataQueryJsonProtocol extends DefaultJsonProtocol {
 
   case class TableDataQueryResponse(schema: TableSchema)
   case class TableSchema(fields: Seq[Field])

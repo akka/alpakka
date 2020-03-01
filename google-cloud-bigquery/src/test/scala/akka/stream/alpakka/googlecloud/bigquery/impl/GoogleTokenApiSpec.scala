@@ -45,12 +45,12 @@ class GoogleTokenApiSpec
   implicit val materializer = ActorMaterializer()
 
   lazy val privateKey = {
-    val inputStream = getClass.getResourceAsStream("private_pcks8.pem")
+    val inputStream = getClass.getClassLoader.getResourceAsStream("private_pcks8.pem")
     Source.fromInputStream(inputStream).getLines().mkString("\n").stripMargin
   }
 
   lazy val publicKey = {
-    val inputStream = getClass.getResourceAsStream("key.pub")
+    val inputStream = getClass.getClassLoader.getResourceAsStream("key.pub")
     Source.fromInputStream(inputStream).getLines().mkString("\n").stripMargin
   }
 
