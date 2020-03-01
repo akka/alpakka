@@ -38,7 +38,7 @@ trait BigQueryTestHelper {
   // openssl pkcs8 -topk8 -nocrypt -in mykey.pem -out myrsakey_pcks8
   // openssl rsa -in mykey.pem -pubout > mykey.pub
   lazy val privateKey = {
-    Source.fromResource("private.pem").getLines().mkString("\n").stripMargin
+    Source.fromResource("private_pcks8.pem").getLines().mkString("\n").stripMargin
   }
 
   val certPath = getClass.getClassLoader.getResource("cert.pem").getPath
