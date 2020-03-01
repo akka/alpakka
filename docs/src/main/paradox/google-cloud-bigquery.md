@@ -1,7 +1,6 @@
 # Google Cloud BigQuery
 
-The [Google Cloud BigQuery](https://cloud.google.com/bigquery/) connector provides a way to connect to google bigquery, 
-run queries on large datasets and get the results streamed.
+The [Google Cloud BigQuery](https://cloud.google.com/bigquery/) connector provides connectivity to google BigQuery by running queries on large datasets and streaming the results.
 
 ### Reported issues
 
@@ -17,7 +16,7 @@ run queries on large datasets and get the results streamed.
 
 ## Usage
 
-Possibly needed imports for the following codes
+Add the imports
 
 Scala
 : @@snip [snip](/google-cloud-bigquery/src/test/scala/docs/scaladsl/GoogleBigQuerySourceDoc.scala) { #imports }
@@ -25,7 +24,7 @@ Scala
 Java
 : @@snip [snip](/google-cloud-bigquery/src/test/java/docs/javadsl/GoogleBigQuerySourceDoc.java) { #imports }
 
-At the beginning you will need a config to work with. 
+Create the BigQuery configuration
 
 Scala
 : @@snip [snip](/google-cloud-bigquery/src/test/scala/docs/scaladsl/GoogleBigQuerySourceDoc.scala) { #init-config }
@@ -34,8 +33,9 @@ Java
 : @@snip [snip](/google-cloud-bigquery/src/test/java/docs/javadsl/GoogleBigQuerySourceDoc.java) { #init-config }
 
 
-The connector has a fire and forget style API for meta data requests. 
-(These give back basic information about the tables and the fields. If you need more information, sadly you need to write some parsers yourself (see below).)
+The connector expects to receive the data in the expected format and returns part of the payload information received. 
+In order to retrieve the full payload content a custom parser has to be implemented. 
+In cases or errors, empty responses or api changes a custom parser has to be implemented.
 
 Scala
 : @@snip [snip](/google-cloud-bigquery/src/test/scala/docs/scaladsl/GoogleBigQuerySourceDoc.scala) { #list-tables-and-fields }
@@ -61,8 +61,8 @@ Scala
 Java
 : @@snip [snip](/google-cloud-bigquery/src/test/java/docs/javadsl/GoogleBigQuerySourceDoc.java) { #run-query }
 
-If you just want to use the built in paging implementation, or you have some specific need you can call the raw api.
-The next example shows how you can access some [dryRun](https://cloud.google.com/bigquery/query-plan-explanation) data with the raw api and helpers.
+If you want to use the built in paging implementation, or you have some specific needs you can call the raw api.
+The next example shows how you can access [dryRun](https://cloud.google.com/bigquery/query-plan-explanation) data with the raw api and helpers.
 
 Scala
 : @@snip [snip](/google-cloud-bigquery/src/test/scala/docs/scaladsl/GoogleBigQuerySourceDoc.scala) { #dry-run }
@@ -92,8 +92,8 @@ Java
 ### Parsers
 
 The parser function is a `JsObject => Option[T]` function. 
-This is needed, because there is a possibility that the response doesn't contain any data, and in that case we need to retry the request with some delay.
-Your parser function needs to be bulletproof and the code in the examples are not the good practices for this.
+This is needed because there is a possibility, the response not to contain any data. In this case we need to retry the request with some delay.
+Your parser function needs to be bulletproof and the code in the examples represents the happy path.
 If you return `None` in every error case; your stream will be polling forever!
 
 ## Running the examples
