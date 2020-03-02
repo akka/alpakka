@@ -12,7 +12,7 @@ import java.nio.file.{Files, Path, Paths}
 
 import akka.actor.{Cancellable, CoordinatedShutdown, ExtendedActorSystem, Extension}
 import akka.annotation.InternalApi
-import akka.event.LoggingAdapter
+import akka.event.{Logging, LoggingAdapter}
 import akka.stream._
 import akka.stream.alpakka.unixdomainsocket.scaladsl
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
@@ -372,9 +372,12 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
 
   private val sel = NativeSelectorProvider.getInstance.openSelector
 
+  /** Override to customise reported log source */
+  protected def logSource: Class[_] = this.getClass
+
   private val ioThread = new Thread(new Runnable {
     override def run(): Unit =
-      nioEventLoop(sel, system.log)
+      nioEventLoop(sel, Logging(system, logSource))
   }, "unix-domain-socket-io")
   ioThread.start()
 
