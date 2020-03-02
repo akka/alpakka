@@ -18,7 +18,7 @@ object Formats extends DefaultJsonProtocol {
   private final case class CustomerEncryption(encryptionAlgorithm: String, keySha256: String)
   private implicit val customerEncryptionJsonFormat = jsonFormat2(CustomerEncryption)
 
-  private final case class Owner(entity: String, entityId: String)
+  private final case class Owner(entity: String, entityId: Option[String])
   private implicit val OwnerJsonFormat = jsonFormat2(Owner)
 
   private final case class ProjectTeam(projectNumber: String, team: String)

@@ -2,6 +2,8 @@
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.googlecloud.storage.StorageObject.this")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.googlecloud.storage.StorageObject.apply")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.googlecloud.storage.StorageObject.create")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.googlecloud.storage.StorageObject.withCustomerEncryption")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.googlecloud.storage.StorageObject.withOwner")
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.googlecloud.storage.StorageObject.cacheControl")
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.googlecloud.storage.StorageObject.retentionExpirationTime")
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.googlecloud.storage.StorageObject.eventBasedHold")
