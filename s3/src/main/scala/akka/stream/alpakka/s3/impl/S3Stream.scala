@@ -865,7 +865,10 @@ import scala.collection.immutable
       .get[S3SettingsValue]
       .map(_.settings)
       .getOrElse {
-        val configPath = attr.get[S3SettingsPath](S3SettingsPath.Default).path
-        S3Ext(sys).settings(configPath)
+        val s3Extension = S3Ext(sys)
+        attr
+          .get[S3SettingsPath]
+          .map(settingsPath => s3Extension.settings(settingsPath.path))
+          .getOrElse(s3Extension.settings)
       }
 }

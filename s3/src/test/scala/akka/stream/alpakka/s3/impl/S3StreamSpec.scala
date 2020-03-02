@@ -11,7 +11,7 @@ import akka.stream.alpakka.s3.BucketAccess.{AccessDenied, AccessGranted, NotExis
 import akka.stream.alpakka.s3.{ApiVersion, BucketAccess, MemoryBufferType, S3Settings}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Keep, Sink, Source}
-import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
+import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Attributes}
 import akka.testkit.TestKit
 import akka.util.ByteString
 import software.amazon.awssdk.auth.credentials._
@@ -182,5 +182,15 @@ class S3StreamSpec(_system: ActorSystem)
     )
 
     bucketStatusPreparation(responseWithForbiddenCode).futureValue shouldEqual AccessDenied
+  }
+
+  it should "only resolve the default S3 settings once per actor system" in {
+
+    val attr = Attributes()
+    val resolveSettings = PrivateMethod[S3Settings]('resolveSettings)
+    val settings1 = S3Stream invokePrivate resolveSettings(attr, system)
+    val settings2 = S3Stream invokePrivate resolveSettings(attr, system)
+
+    settings1 eq settings2 shouldBe true
   }
 }
