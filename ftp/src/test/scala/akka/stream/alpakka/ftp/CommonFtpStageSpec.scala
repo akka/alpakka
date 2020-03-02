@@ -342,6 +342,10 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
 
       val source = listFiles("/")
 
+      eventually {
+        source.map(_.name).runWith(Sink.head).futureValue shouldBe fileName
+      }
+
       val result = source.runWith(remove()).futureValue
 
       result shouldBe IOResult.createSuccessful(1)
@@ -383,6 +387,10 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       putFileOnFtp(fileName)
 
       val source = listFiles("/")
+
+      eventually {
+        source.map(_.name).runWith(Sink.head).futureValue shouldBe fileName
+      }
 
       val result = source.runWith(move(_ => fileName2)).futureValue
 
