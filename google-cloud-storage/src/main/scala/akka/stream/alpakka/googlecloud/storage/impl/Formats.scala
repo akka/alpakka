@@ -10,8 +10,6 @@ import akka.http.scaladsl.model.{ContentType, ContentTypes}
 import akka.stream.alpakka.googlecloud.storage._
 import spray.json.{DefaultJsonProtocol, JsObject, JsValue, RootJsonFormat, RootJsonReader}
 
-import java.time.OffsetDateTime
-
 import scala.util.Try
 
 @akka.annotation.InternalApi
@@ -253,14 +251,14 @@ object Formats extends DefaultJsonProtocol {
       kmsKeyName,
       customerEncryption.map(
         ce =>
-          main.scala.akka.stream.alpakka.googlecloud.storage
+          akka.stream.alpakka.googlecloud.storage
             .CustomerEncryption(ce.encryptionAlgorithm, ce.keySha256)
       ),
-      owner.map(o => main.scala.akka.stream.alpakka.googlecloud.storage.Owner(o.entity, o.entityId)),
+      owner.map(o => akka.stream.alpakka.googlecloud.storage.Owner(o.entity, o.entityId)),
       acl.map(
         _.map(
           a =>
-            main.scala.akka.stream.alpakka.googlecloud.storage.ObjectAccessControls(
+            akka.stream.alpakka.googlecloud.storage.ObjectAccessControls(
               a.kind,
               a.id,
               a.selfLink,
@@ -272,7 +270,7 @@ object Formats extends DefaultJsonProtocol {
               a.email,
               a.entityId,
               a.domain,
-              main.scala.akka.stream.alpakka.googlecloud.storage
+              akka.stream.alpakka.googlecloud.storage
                 .ProjectTeam(a.projectTeam.projectNumber, a.projectTeam.team),
               a.etag
             )
