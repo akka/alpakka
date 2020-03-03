@@ -8,7 +8,6 @@ import java.time.OffsetDateTime
 import java.util.Optional
 
 import akka.http.scaladsl.model.ContentType
-import main.scala.akka.stream.alpakka.googlecloud.storage.{CustomerEncryption, ObjectAccessControls, Owner}
 import scala.compat.java8.OptionConverters._
 import scala.collection.JavaConverters._
 

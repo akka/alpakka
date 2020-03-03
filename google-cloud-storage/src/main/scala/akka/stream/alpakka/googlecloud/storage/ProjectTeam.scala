@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package main.scala.akka.stream.alpakka.googlecloud.storage
+package akka.stream.alpakka.googlecloud.storage
 
 final class ProjectTeam private (projectNumber: String, team: String) {
   def withProjectNumber(projectNumber: String): ProjectTeam =
