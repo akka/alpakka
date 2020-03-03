@@ -9,3 +9,9 @@ ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.googl
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.googlecloud.storage.StorageObject.contentLanguage")
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.googlecloud.storage.StorageObject.contentEncoding")
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.googlecloud.storage.StorageObject.contentDisposition")
+
+# move classes that ended up in wrong package https://github.com/akka/alpakka/pull/2177
+ProblemFilters.exclude[MissingClassProblem]("main.scala.*")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.googlecloud.storage.StorageObject.*")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.googlecloud.storage.StorageObject.withCustomerEncryption")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.googlecloud.storage.StorageObject.withOwner")
