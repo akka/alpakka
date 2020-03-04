@@ -119,18 +119,42 @@ Java
 
 ## Subscribing
 
+To receive messages from a subscription, there are two options: `StreamingPullRequest`s or synchronous `PullRequest`s.
+To decide whether you should use `StreamingPullRequest` or `PullRequest`, see [StreamingPull: Dealing with large backlogs of small messages](https://cloud.google.com/pubsub/docs/pull#streamingpull_dealing_with_large_backlogs_of_small_messages) and [Synchronous Pull](https://cloud.google.com/pubsub/docs/pull#synchronous_pull) from Google Cloud PubSub's documentation
+
+### StreamingPullRequest
 To receive message from a subscription, first we create a `StreamingPullRequest` with a FQRS of a subscription and
 a deadline for acknowledgements in seconds. Google requires that only the first `StreamingPullRequest` has the subscription
 and the deadline set. This connector takes care of that and clears up the subscription FQRS and the deadline for subsequent
 `StreamingPullRequest` messages.
 
 Scala
-: @@snip (/google-cloud-pub-sub-grpc/src/test/scala/docs/scaladsl/IntegrationSpec.scala) { #subscribe }
+: @@snip (/google-cloud-pub-sub-grpc/src/test/scala/docs/scaladsl/IntegrationSpec.scala) { #subscribe-stream }
 
 Java
-: @@snip (/google-cloud-pub-sub-grpc/src/test/java/docs/javadsl/IntegrationTest.java) { #subscribe }
+: @@snip (/google-cloud-pub-sub-grpc/src/test/java/docs/javadsl/IntegrationTest.java) { #subscribe-stream }
 
 Here `pollInterval` is the time between `StreamingPullRequest`s are sent when there are no messages in the subscription.
+
+### PullRequest
+
+With `PullRequest`, each request receives a batch of messages, up to a maximum specified by the `maxMessages`.
+
+Scala
+: @@snip (/google-cloud-pub-sub-grpc/src/test/scala/docs/scaladsl/IntegrationSpec.scala) { #subscribe-sync }
+
+Java
+: @@snip (/google-cloud-pub-sub-grpc/src/test/java/docs/javadsl/IntegrationTest.java) { #subscribe-sync }
+
+Here `pollInterval` is the time between `PullRequest` messages.
+
+In order to minimise latency between requests you can set a buffer on the source. The buffer size depends on the usual
+number of messages you receive per each request, if you usually receive the maximum number of messages, it's a good idea
+to set the buffer size to be the same as the `maxMessages` parameter. Please note that by having a buffer, you are allowing
+messages to spend some of their lease time in the buffer, hence reducing the time to process them before the acknowledgement
+deadline is reached. This will depend on your acknowledgement deadline and processing time.
+
+### Acknowledge
 
 Messages received from the subscription need to be acknowledged or they will be sent again. To do that create
 `AcknowledgeRequest` that contains `ackId`s of the messages to be acknowledged and send them to a sink
@@ -141,7 +165,6 @@ Scala
 
 Java
 : @@snip (/google-cloud-pub-sub-grpc/src/test/java/docs/javadsl/IntegrationTest.java) { #acknowledge }
-
 
 ## Running the test code
 
