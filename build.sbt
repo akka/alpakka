@@ -19,6 +19,7 @@ lazy val alpakka = project
     geode,
     googleCloudPubSub,
     googleCloudPubSubGrpc,
+    googleCloudBigQueryStorage,
     googleCloudStorage,
     googleFcm,
     hbase,
@@ -197,6 +198,20 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
 )
 // #grpc-plugins
   .enablePlugins(AkkaGrpcPlugin, JavaAgent)
+// #grpc-plugins
+
+lazy val googleCloudBigQueryStorage = alpakkaProject(
+  "google-cloud-bigquery-storage",
+  "google.cloud.bigquery.storage",
+  Dependencies.GoogleBigQueryStorage,
+  akkaGrpcCodeGeneratorSettings ~= { _.filterNot(_ == "flat_package") },
+  akkaGrpcGeneratedSources := Seq(AkkaGrpc.Client),
+  akkaGrpcGeneratedSources in Test := Seq(AkkaGrpc.Server),
+  akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala, AkkaGrpc.Java),
+  crossScalaVersions --= Seq(Dependencies.Scala211) // 2.11 is not supported since Akka gRPC 0.6
+)
+  // #grpc-plugins
+  .enablePlugins(AkkaGrpcPlugin)
 // #grpc-plugins
 
 lazy val googleCloudStorage =

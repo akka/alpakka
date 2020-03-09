@@ -215,6 +215,19 @@ object Dependencies {
 
   val GooglePubSubGrpcAlpnAgent = "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.9"
 
+  val GoogleBigQueryStorage = Seq(
+    // see Akka gRPC version in plugins.sbt
+    libraryDependencies ++= Seq(
+      // https://github.com/googleapis/java-bigquerystorage/tree/master/proto-google-cloud-bigquerystorage-v1
+      "com.google.api.grpc" % "proto-google-cloud-bigquerystorage-v1" % "0.90.0" % "protobuf", // ApacheV2
+      "io.grpc" % "grpc-auth" % "1.25.0", // ApacheV2
+      "com.google.auth" % "google-auth-library-oauth2-http" % "0.19.0", // BSD 3-clause
+      // pull in Akka Discovery for our Akka version
+      "com.typesafe.akka" %% "akka-discovery" % AkkaVersion,
+      "org.apache.avro" % "avro" % "1.9.2"
+    ) ++ Silencer
+  )
+
   val GoogleFcm = Seq(
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
