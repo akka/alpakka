@@ -18,6 +18,7 @@ lazy val alpakka = project
     geode,
     googleCommon,
     googleCloudBigQuery,
+    googleCloudBigQueryStorage,
     googleCloudPubSub,
     googleCloudPubSubGrpc,
     googleCloudStorage,
@@ -180,6 +181,19 @@ lazy val googleCloudBigQuery = alpakkaProject(
   Test / fork := true
 ).dependsOn(googleCommon).enablePlugins(spray.boilerplate.BoilerplatePlugin)
 
+lazy val googleCloudBigQueryStorage = alpakkaProject(
+  "google-cloud-bigquery-storage",
+  "google.cloud.bigquery.storage",
+  Dependencies.GoogleBigQueryStorage,
+  akkaGrpcCodeGeneratorSettings ~= { _.filterNot(_ == "flat_package") },
+  akkaGrpcCodeGeneratorSettings += "server_power_apis",
+  akkaGrpcGeneratedSources := Seq(AkkaGrpc.Client),
+  akkaGrpcGeneratedSources in Test := Seq(AkkaGrpc.Server),
+  akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala, AkkaGrpc.Java),
+  Compile / scalacOptions += "-P:silencer:pathFilters=src_managed",
+  crossScalaVersions --= Seq(Dependencies.Scala211) // 2.11 is not supported since Akka gRPC 0.6
+).enablePlugins(AkkaGrpcPlugin)
+
 lazy val googleCloudPubSub = alpakkaProject(
   "google-cloud-pub-sub",
   "google.cloud.pubsub",
@@ -197,6 +211,7 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
   akkaGrpcGeneratedSources := Seq(AkkaGrpc.Client),
   akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala, AkkaGrpc.Java),
   Compile / PB.protoSources += (Compile / PB.externalIncludePath).value,
+  javaAgents += Dependencies.GooglePubSubGrpcAlpnAgent % Test,
   // for the ExampleApp in the tests
   connectInput in run := true,
   Compile / scalacOptions ++= Seq(

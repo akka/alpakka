@@ -226,6 +226,23 @@ object Dependencies {
         "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % JacksonDatabindVersion % Test,
         "io.specto" % "hoverfly-java" % hoverflyVersion % Test //ApacheV2
       ) ++ Mockito ++ Silencer
+
+  val GoogleBigQueryStorage = Seq(
+    // see Akka gRPC version in plugins.sbt
+    libraryDependencies ++= Seq(
+        // https://github.com/googleapis/java-bigquerystorage/tree/master/proto-google-cloud-bigquerystorage-v1
+        "com.google.api.grpc" % "proto-google-cloud-bigquerystorage-v1" % "0.95.0" % "protobuf-src" exclude ("com.google.api.grpc", "proto-google-common-protos"), // ApacheV2
+        "org.apache.avro" % "avro" % "1.9.2"
+      ) ++ GoogleGrpcCommonDependencies ++ Silencer
+  )
+
+  val GoogleGrpcCommonDependencies = Seq(
+    "com.thesamet.scalapb.common-protos" %% "proto-google-common-protos-scalapb_0.10" % "1.17.0-0",
+    "com.thesamet.scalapb.common-protos" %% "proto-google-common-protos-scalapb_0.10" % "1.17.0-0" % "protobuf",
+    "io.grpc" % "grpc-auth" % "1.28.0", // ApacheV2
+    "com.google.auth" % "google-auth-library-oauth2-http" % "0.20.0", // BSD 3-clause
+    // pull in Akka Discovery for our Akka version
+    "com.typesafe.akka" %% "akka-discovery" % AkkaVersion
   )
 
   val GooglePubSub = Seq(
@@ -240,12 +257,8 @@ object Dependencies {
     // see Akka gRPC version in plugins.sbt
     libraryDependencies ++= Seq(
         // https://github.com/googleapis/java-pubsub/tree/master/proto-google-cloud-pubsub-v1/
-        "com.google.api.grpc" % "grpc-google-cloud-pubsub-v1" % "1.85.1" % "protobuf-src", // ApacheV2
-        "io.grpc" % "grpc-auth" % akka.grpc.gen.BuildInfo.grpcVersion, // ApacheV2
-        "com.google.auth" % "google-auth-library-oauth2-http" % "0.20.0", // BSD 3-clause
-        // pull in Akka Discovery for our Akka version
-        "com.typesafe.akka" %% "akka-discovery" % AkkaVersion
-      ) ++ Silencer
+        "com.google.api.grpc" % "grpc-google-cloud-pubsub-v1" % "1.85.1" % "protobuf-src" exclude ("com.google.api.grpc", "proto-google-common-protos") // ApacheV2
+      ) ++ GoogleGrpcCommonDependencies ++ Silencer
   )
 
   val GoogleFcm = Seq(
