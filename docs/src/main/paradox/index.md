@@ -44,6 +44,7 @@ The [Alpakka project](https://doc.akka.io/docs/alpakka/current/) is an open sour
 * [InfluxDB](influxdb.md)
 * [IronMQ](ironmq.md)
 * [JMS](jms/index.md)
+* [MapR Database](external/mapr.md)
 * [MongoDB](mongodb.md)
 * [MQTT](mqtt.md)
 * [MQTT Streaming](mqtt-streaming.md)
