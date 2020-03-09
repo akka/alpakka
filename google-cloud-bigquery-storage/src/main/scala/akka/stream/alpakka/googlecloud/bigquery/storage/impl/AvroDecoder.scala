@@ -20,7 +20,7 @@ import scala.collection.mutable
   val datumReader = new GenericDatumReader[GenericRecord](schema)
 
   def decodeRows(avroRows: ByteString): List[GenericRecord] = {
-    val result = new mutable.MutableList[org.apache.avro.generic.GenericRecord]
+    val result = new mutable.ListBuffer[GenericRecord]
 
     val inputStream = new SeekableByteArrayInput(avroRows.toByteArray)
     val decoder = DecoderFactory.get.binaryDecoder(inputStream, null)
