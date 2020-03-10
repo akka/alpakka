@@ -44,6 +44,7 @@ jobs:
       env:
       - PRE_CMD="docker-compose up -d cassandra"
     - name: couchbase
+      env:
       - PRE_CMD="docker-compose up -d couchbase_prep"
     - name: csv
     - name: dynamodb
