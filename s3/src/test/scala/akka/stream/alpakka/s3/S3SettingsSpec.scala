@@ -19,6 +19,12 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
           |buffer = memory
           |path-style-access = false
           |validate-object-key = true
+          |multipart-upload.retry-settings {
+          |  max-retries = 3
+          |  min-backoff = 0s
+          |  max-backoff = 0s
+          |  random-factor = 0.0
+          |}
           |$more
         """.stripMargin
       )
