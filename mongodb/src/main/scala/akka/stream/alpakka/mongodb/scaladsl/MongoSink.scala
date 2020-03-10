@@ -6,14 +6,15 @@ package akka.stream.alpakka.mongodb.scaladsl
 
 import akka.stream.scaladsl.{Keep, Sink}
 import akka.Done
-import akka.stream.alpakka.mongodb.DocumentUpdate
+import akka.stream.alpakka.mongodb.{DocumentReplace, DocumentUpdate}
 import akka.stream.alpakka.mongodb.scaladsl.MongoFlow.{
   DefaultDeleteOptions,
   DefaultInsertManyOptions,
   DefaultInsertOneOptions,
+  DefaultReplaceOptions,
   DefaultUpdateOptions
 }
-import com.mongodb.client.model.{DeleteOptions, InsertManyOptions, InsertOneOptions, UpdateOptions}
+import com.mongodb.client.model.{DeleteOptions, InsertManyOptions, InsertOneOptions, ReplaceOptions, UpdateOptions}
 import com.mongodb.reactivestreams.client.MongoCollection
 import org.bson.conversions.Bson
 
@@ -62,6 +63,18 @@ object MongoSink {
       options: UpdateOptions = DefaultUpdateOptions
   ): Sink[DocumentUpdate, Future[Done]] =
     MongoFlow.updateMany(collection, options).toMat(Sink.ignore)(Keep.right)
+
+  /**
+   * A [[akka.stream.scaladsl.Sink Sink]] that will replace document as defined by a [[akka.stream.alpakka.mongodb.DocumentReplace]].
+   *
+   * @param collection the mongo db collection to update.
+   * @param options options to apply to the operation
+   */
+  def replaceOne[T](
+      collection: MongoCollection[T],
+      options: ReplaceOptions = DefaultReplaceOptions
+  ): Sink[DocumentReplace[T], Future[Done]] =
+    MongoFlow.replaceOne(collection, options).toMat(Sink.ignore)(Keep.right)
 
   /**
    * A [[akka.stream.scaladsl.Sink Sink]] that will delete individual documents as defined by a [[org.bson.conversions.Bson Bson]] filter query.
