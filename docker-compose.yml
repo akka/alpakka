@@ -15,7 +15,7 @@ services:
     ports:
       - "5672:5672"
   cassandra:
-    image: cassandra:3.0.15
+    image: cassandra:latest
     ports:
       - "9042:9042"
   couchbase:

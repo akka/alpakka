@@ -1,15 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
         <file>target/cassandra.log</file>
         <append>false</append>
         <encoder>
-            <pattern>%d{ISO8601} %-5level [%thread] [%logger{36}]  %msg%n</pattern>
+            <pattern>%d{ISO8601} %-5level [%thread] [%logger{36}] [%X{akkaSource}] %msg%n</pattern>
         </encoder>
     </appender>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <target>System.out</target>
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} %-5level [%-20.20thread] %-36.36logger{36}  %msg%n%rEx</pattern>
+            <pattern>%d{HH:mm:ss.SSS} %-5level [%-20.20thread] %-36.36logger{36} [%X{akkaSource}] %msg%n%rEx</pattern>
         </encoder>
     </appender>
 
@@ -19,10 +21,11 @@
         <appender-ref ref="STDOUT"/>
     </logger>
 
-    <logger name="akka" level="DEBUG"/>
-
-    <logger name="com.datastax.driver" level="info" />
-    <logger name="io.netty" level="info" />
+    <logger name="akka" level="INFO" />
+    <logger name="akka.stream.alpakka" level="DEBUG" />
+    <logger name="org.apache.cassandra" level="ERROR" />
+    <logger name="com.datastax" level="INFO" />
+    <logger name="io.netty" level="ERROR" />
 
     <root level="debug">
         <appender-ref ref="CapturingAppender"/>
