@@ -9,10 +9,7 @@ before_install:
   - git remote set-branches --add origin master && git fetch --unshallow
 
 # default script for jobs, that do not have any specified
-script:
-  - |
-    [ "$TRAVIS_EVENT_TYPE" == "cron" ] && JDK="adopt@~1.11.0-4" || JDK="adopt@~1.8.0-222"
-  - ./scripts/buildChanged.sh ${TRAVIS_JOB_NAME:=.} "$JDK" "${PRE_CMD:=echo NOOP}" "${CMD:=+$TRAVIS_JOB_NAME/testChanged}"
+script: ./scripts/travis.sh
 
 jobs:
   include:
@@ -119,12 +116,12 @@ jobs:
       script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt whitesourceCheckPolicies whitesourceUpdate whitesourceSupported/whitesourceUpdate
 
     - stage: publish
-      env: CMD="++2.11.12 publish"
       name: "Publish artifacts for Scala 2.11.12"
-    - env: CMD="++2.12.10 publish"
-      name: "Publish artifacts for Scala 2.12.10"
-    - env: CMD="++2.13.1 publish"
-      name: "Publish artifacts for Scala 2.13.1"
+      env: CMD="++2.11.12 publish"
+    - name: "Publish artifacts for Scala 2.12.10"
+      env: CMD="++2.12.10 publish"
+    - name: "Publish artifacts for Scala 2.13.1"
+      env: CMD="++2.13.1 publish"
     - script: openssl aes-256-cbc -K $encrypted_bbf1dc4f2a07_key -iv $encrypted_bbf1dc4f2a07_iv -in .travis/travis_alpakka_rsa.enc -out .travis/id_rsa -d && eval "$(ssh-agent -s)" && chmod 600 .travis/id_rsa && ssh-add .travis/id_rsa && sbt -jvm-opts .jvmopts-travis docs/publishRsync
       name: "Publish API and reference documentation"
 
