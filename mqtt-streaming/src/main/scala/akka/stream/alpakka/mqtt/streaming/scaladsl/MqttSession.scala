@@ -664,7 +664,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
       .via(new MqttFrameStage(settings.maxPacketSize))
       .map(_.iterator.decodeControlPacket(settings.maxPacketSize))
       .log("server-events")
-      .mapAsync[Either[MqttCodec.DecodeError, Event[A]]](settings.eventParallelism) {
+      .mapAsyncUnordered[Either[MqttCodec.DecodeError, Event[A]]](settings.eventParallelism) {
         case Right(cp: Connect) =>
           val reply = Promise[ClientConnection.ForwardConnect.type]
           serverConnector ! ServerConnector.ConnectReceivedFromRemote(connectionId, cp, reply)
