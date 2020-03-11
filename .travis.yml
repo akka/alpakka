@@ -12,7 +12,7 @@ before_install:
 script:
   - |
     [ "$TRAVIS_EVENT_TYPE" == "cron" ] && JDK="adopt@~1.11.0-4" || JDK="adopt@~1.8.0-222"
-  - ./scripts/buildChanged.sh ${DIR:=.} "$JDK" "${PRE_CMD:=echo NOOP}" "${CMD:=+$DIR/testChanged}"
+  - ./scripts/buildChanged.sh ${TRAVIS_JOB_NAME:=.} "$JDK" "${PRE_CMD:=echo NOOP}" "${CMD:=+$TRAVIS_JOB_NAME/testChanged}"
 
 jobs:
   include:
@@ -34,107 +34,85 @@ jobs:
       name: "Check binary compatibility (MiMa)"
 
     - stage: test
+      name: amqp
       env:
-      - DIR=amqp
       - PRE_CMD="docker-compose up -d amqp"
-    - env:
-      - DIR=avroparquet
-    - env:
-      - DIR=awslambda
-    - env:
-      - DIR=azure-storage-queue
-    - env:
-      - DIR=cassandra
+    - name: avroparquet
+    - name: awslambda
+    - name: azure-storage-queue
+    - name: cassandra
+      env:
       - PRE_CMD="docker-compose up -d cassandra"
-    - env:
-      - DIR=couchbase
+    - name: couchbase
+      env:
       - PRE_CMD="docker-compose up -d couchbase_prep"
-    - env:
-      - DIR=csv
-    - env:
-      - DIR=dynamodb
+    - name: csv
+    - name: dynamodb
+      env:
       - PRE_CMD="docker-compose up -d dynamodb"
-    - env:
-      - DIR=elasticsearch
-    - env:
-      - DIR=file
-    - env:
-      - DIR=ftp
+    - name: elasticsearch
+    - name: file
+    - name: ftp
+      env:
       - PRE_CMD="docker-compose up -d ftp sftp squid"
-    - env:
-      - DIR=geode
+    - name: geode
+      env:
       - PRE_CMD="docker-compose up -d geode"
-    - env:
-      - DIR=google-cloud-pub-sub
-    - env:
-      - DIR=google-cloud-pub-sub-grpc
+    - name: google-cloud-pub-sub
+    - name: google-cloud-pub-sub-grpc
+      env:
       - PRE_CMD="docker-compose up -d gcloud-pubsub-emulator_prep"
-    - env:
-      - DIR=google-cloud-storage
-    - env:
-      - DIR=google-fcm
-    - env:
-      - DIR=hbase
+    - name: google-cloud-storage
+    - name: google-fcm
+    - name: hbase
+      env:
       - PRE_CMD="docker-compose up -d hbase"
-    - env:
-      - DIR=hdfs
-    - env:
-      - DIR=influxdb
+    - name: hdfs
+    - name: influxdb
+      env:
       - PRE_CMD="docker-compose up -d influxdb"
-    - env:
-      - DIR=ironmq
+    - name: ironmq
+      env:
       - PRE_CMD="docker-compose up -d ironauth ironmq"
-    - env:
-      - DIR=jms
+    - name: jms
+      env:
       - PRE_CMD="docker-compose up -d ibmmq"
-    - env:
-      - DIR=json-streaming
-    - env:
-      - DIR=kinesis
-    - env:
-      - DIR=kudu
+    - name: json-streaming
+    - name: kinesis
+    - name: kudu
+      env:
       - PRE_CMD="docker-compose up -d kudu-master-data kudu-tserver-data kudu-master kudu-tserver"
-    - env:
-      - DIR=mongodb
+    - name: mongodb
+      env:
       - PRE_CMD="docker-compose up -d mongo"
-    - env:
-      - DIR=mqtt
+    - name: mqtt
+      env:
       - PRE_CMD="docker-compose up -d mqtt"
-    - env:
-      - DIR=mqtt-streaming
+    - name: mqtt-streaming
+      env:
       - PRE_CMD="docker-compose up -d mqtt"
-    - env:
-      - DIR=orientdb
+    - name: orientdb
+      env:
       - PRE_CMD="docker-compose up -d orientdb"
-    - env:
-      - DIR=reference
-    - env:
-      - DIR=s3
+    - name: reference
+    - name: s3
+      env:
       - PRE_CMD="docker-compose up -d minio_prep"
-    - env:
-      - DIR=spring-web
-    - env:
-      - DIR=simple-codecs
-    - env:
-      - DIR=slick
-    - env:
-      - DIR=sns
+    - name: spring-web
+    - name: simple-codecs
+    - name: slick
+    - name: sns
+      env:
       - PRE_CMD="docker-compose up -d amazonsns"
-    - env:
-      - DIR=solr
-    - env:
-      - DIR=sqs
+    - name: solr
+    - name: sqs
+      env:
       - PRE_CMD="docker-compose up -d elasticmq"
-    - env:
-      - DIR=sse
-    - env:
-      - DIR=text
-    - env:
-      - DIR=udp
-    - env:
-      - DIR=unix-domain-socket
-    - env:
-      - DIR=xml
+    - name: sse
+    - name: text
+    - name: udp
+    - name: unix-domain-socket
+    - name: xml
 
     - stage: whitesource
       script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt whitesourceCheckPolicies whitesourceUpdate whitesourceSupported/whitesourceUpdate
