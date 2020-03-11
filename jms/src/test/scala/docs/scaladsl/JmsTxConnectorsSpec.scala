@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -10,17 +10,20 @@ import akka.Done
 import akka.stream._
 import akka.stream.alpakka.jms._
 import akka.stream.alpakka.jms.scaladsl.{JmsConsumer, JmsConsumerControl, JmsProducer}
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.scaladsl.{Flow, Keep, RestartSource, Sink, Source}
 import javax.jms.{JMSException, TextMessage}
 import org.scalatest.Inspectors._
+import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
 import scala.collection.{immutable, mutable}
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future, Promise}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 class JmsTxConnectorsSpec extends JmsSharedServerSpec {
+
+  private final val log = LoggerFactory.getLogger(classOf[JmsTxConnectorsSpec])
 
   override implicit val patienceConfig = PatienceConfig(2.minutes)
 
@@ -208,6 +211,52 @@ class JmsTxConnectorsSpec extends JmsSharedServerSpec {
       val ex = result.failed.futureValue
       ex shouldBe a[ConnectionRetryException]
       ex.getCause shouldBe a[JMSException]
+    }
+
+    // Trying to illustrate https://github.com/akka/alpakka/issues/2103
+    // Unfinished: this requires a broker persisting its data
+    "read messages after broker restart" ignore withServer() { server =>
+      val queueName = createName("restarting")
+      val connectionFactory = server.createConnectionFactory
+
+      val in = 0 to 25 map (i => ('a' + i).asInstanceOf[Char].toString)
+      Source(in)
+        .runWith(
+          JmsProducer.textSink(JmsProducerSettings(producerConfig, connectionFactory).withQueue(queueName))
+        )
+        .futureValue shouldBe Done
+
+      val triggerRestart = Promise[Done]
+
+      val result = RestartSource
+        .onFailuresWithBackoff(5.seconds, 1.minute, 0.25) { () =>
+          JmsConsumer
+            .txSource(
+              JmsConsumerSettings(consumerConfig, connectionFactory)
+                .withQueue(queueName)
+            )
+            .map(env => (env, env.message.asInstanceOf[TextMessage].getText))
+            .log("received", _._2)
+            .map {
+              case tup @ (_, "e") =>
+                triggerRestart.success(Done)
+                tup
+              case tup =>
+                tup
+            }
+            .map { case (env, text) => env.commit(); text }
+        }
+        .take(in.size)
+        .runWith(Sink.seq)
+
+      Await.result(triggerRestart.future, 20.seconds)
+      log.debug("-- Stopping broker")
+      server.stop()
+      Thread.sleep(1000)
+      log.debug("-- Re-starting broker")
+      server.start()
+
+      result.futureValue should contain theSameElementsAs in
     }
 
     "publish and consume elements through a topic " in withConnectionFactory() { connectionFactory =>

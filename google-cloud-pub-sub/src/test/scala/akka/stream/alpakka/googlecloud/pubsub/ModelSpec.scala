@@ -1,14 +1,17 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.googlecloud.pubsub
 
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 import scala.collection.immutable.Seq
 import java.time.Instant
 
-class ModelSpec extends FunSuite with Matchers {
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
+
+class ModelSpec extends AnyFunSuite with Matchers with LogCapturing {
 
   val publishMessage1 = PublishMessage("abcde", Map("k1" -> "v1", "k2" -> "v2"))
   val publishMessage2 = PublishMessage("abcde", Map("k1" -> "v1"))

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -7,22 +7,26 @@ package docs.scaladsl
 import akka.http.scaladsl.model.ContentTypes
 import akka.stream.alpakka.googlecloud.storage.scaladsl.{GCStorage, GCStorageWiremockBase}
 import akka.stream.alpakka.googlecloud.storage.{Bucket, GCStorageAttributes, GCStorageExt, StorageObject}
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, Attributes}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
-import org.scalatest._
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.concurrent._
 
 import scala.concurrent.Future
 
 class GCStorageSourceSpec
     extends GCStorageWiremockBase
-    with WordSpecLike
+    with AnyWordSpecLike
     with BeforeAndAfterAll
     with ScalaFutures
     with IntegrationPatience
-    with Matchers {
+    with Matchers
+    with LogCapturing {
 
   implicit val materializer = ActorMaterializer()
   private val sampleSettings = GCStorageExt(system).settings

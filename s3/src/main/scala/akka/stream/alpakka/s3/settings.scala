@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.s3
 
 import java.nio.file.{Path, Paths}
 import java.util.Objects
+import java.util.concurrent.TimeUnit
 
 import scala.util.Try
 import akka.actor.ActorSystem
@@ -16,6 +17,7 @@ import com.typesafe.config.Config
 import software.amazon.awssdk.regions.Region
 
 import scala.compat.java8.OptionConverters._
+import scala.concurrent.duration._
 
 final class Proxy private (
     val host: String,
@@ -184,7 +186,9 @@ final class S3Settings private (
     val pathStyleAccess: Boolean,
     val endpointUrl: Option[String],
     val listBucketApiVersion: ApiVersion,
-    val forwardProxy: Option[ForwardProxy]
+    val forwardProxy: Option[ForwardProxy],
+    val validateObjectKey: Boolean,
+    val multipartUploadSettings: MultipartUploadSettings
 ) {
 
   @deprecated("Please use endpointUrl instead", since = "1.0.1") val proxy: Option[Proxy] = None
@@ -222,6 +226,11 @@ final class S3Settings private (
   def withCredentialsProvider(value: AwsCredentialsProvider): S3Settings =
     copy(credentialsProvider = value)
   def withS3RegionProvider(value: AwsRegionProvider): S3Settings = copy(s3RegionProvider = value)
+
+  @deprecated(
+    "AWS S3 is going to retire path-style access https://aws.amazon.com/blogs/aws/amazon-s3-path-deprecation-plan-the-rest-of-the-story/",
+    since = "2.0.0"
+  )
   def withPathStyleAccess(value: Boolean): S3Settings =
     if (pathStyleAccess == value) this else copy(pathStyleAccess = value)
   def withEndpointUrl(value: String): S3Settings = copy(endpointUrl = Option(value))
@@ -229,6 +238,10 @@ final class S3Settings private (
     copy(listBucketApiVersion = value)
   def withForwardProxy(value: ForwardProxy): S3Settings =
     copy(forwardProxy = Option(value))
+  def withValidateObjectKey(value: Boolean): S3Settings =
+    if (validateObjectKey == value) this else copy(validateObjectKey = value)
+
+  def withMultipartUploadSettings(value: MultipartUploadSettings): S3Settings = copy(multipartUploadSettings = value)
 
   private def copy(
       bufferType: BufferType = bufferType,
@@ -237,7 +250,9 @@ final class S3Settings private (
       pathStyleAccess: Boolean = pathStyleAccess,
       endpointUrl: Option[String] = endpointUrl,
       listBucketApiVersion: ApiVersion = listBucketApiVersion,
-      forwardProxy: Option[ForwardProxy] = forwardProxy
+      forwardProxy: Option[ForwardProxy] = forwardProxy,
+      validateObjectKey: Boolean = validateObjectKey,
+      multipartUploadSettings: MultipartUploadSettings = multipartUploadSettings
   ): S3Settings = new S3Settings(
     bufferType = bufferType,
     credentialsProvider = credentialsProvider,
@@ -245,7 +260,9 @@ final class S3Settings private (
     pathStyleAccess = pathStyleAccess,
     endpointUrl = endpointUrl,
     listBucketApiVersion = listBucketApiVersion,
-    forwardProxy = forwardProxy
+    forwardProxy = forwardProxy,
+    validateObjectKey,
+    multipartUploadSettings
   )
 
   override def toString =
@@ -255,8 +272,9 @@ final class S3Settings private (
     s"s3RegionProvider=$s3RegionProvider," +
     s"pathStyleAccess=$pathStyleAccess," +
     s"endpointUrl=$endpointUrl," +
-    s"listBucketApiVersion=$listBucketApiVersion" +
-    s"forwardProxy=$forwardProxy" +
+    s"listBucketApiVersion=$listBucketApiVersion," +
+    s"forwardProxy=$forwardProxy," +
+    s"validateObjectKey=$validateObjectKey" +
     ")"
 
   override def equals(other: Any): Boolean = other match {
@@ -267,18 +285,22 @@ final class S3Settings private (
       Objects.equals(this.pathStyleAccess, that.pathStyleAccess) &&
       Objects.equals(this.endpointUrl, that.endpointUrl) &&
       Objects.equals(this.listBucketApiVersion, that.listBucketApiVersion) &&
-      Objects.equals(this.forwardProxy, that.forwardProxy)
+      Objects.equals(this.forwardProxy, that.forwardProxy) &&
+      this.validateObjectKey == that.validateObjectKey
     case _ => false
   }
 
   override def hashCode(): Int =
-    Objects.hash(bufferType,
-                 credentialsProvider,
-                 s3RegionProvider,
-                 Boolean.box(pathStyleAccess),
-                 endpointUrl,
-                 listBucketApiVersion,
-                 forwardProxy)
+    Objects.hash(
+      bufferType,
+      credentialsProvider,
+      s3RegionProvider,
+      Boolean.box(pathStyleAccess),
+      endpointUrl,
+      listBucketApiVersion,
+      forwardProxy,
+      Boolean.box(validateObjectKey)
+    )
 }
 
 object S3Settings {
@@ -384,6 +406,12 @@ object S3Settings {
       case 1 => ApiVersion.ListBucketVersion1
       case 2 => ApiVersion.ListBucketVersion2
     }).getOrElse(ApiVersion.ListBucketVersion2)
+    val validateObjectKey = c.getBoolean("validate-object-key")
+
+    val multipartUploadConfig = c.getConfig("multipart-upload")
+    val multipartUploadSettings = MultipartUploadSettings(
+      RetrySettings(multipartUploadConfig.getConfig("retry-settings"))
+    )
 
     new S3Settings(
       bufferType = bufferType,
@@ -392,7 +420,9 @@ object S3Settings {
       pathStyleAccess = pathStyleAccess,
       endpointUrl = endpointUrl,
       listBucketApiVersion = apiVersion,
-      forwardProxy = maybeForwardProxy
+      forwardProxy = maybeForwardProxy,
+      validateObjectKey,
+      multipartUploadSettings
     )
   }
 
@@ -418,7 +448,9 @@ object S3Settings {
     pathStyleAccess,
     endpointUrl,
     listBucketApiVersion,
-    None
+    None,
+    validateObjectKey = true,
+    MultipartUploadSettings(RetrySettings.default)
   )
 
   /** Scala API */
@@ -434,7 +466,9 @@ object S3Settings {
     false,
     None,
     listBucketApiVersion,
-    None
+    None,
+    validateObjectKey = true,
+    MultipartUploadSettings(RetrySettings.default)
   )
 
   /** Java API */
@@ -501,4 +535,24 @@ case object DiskBufferType {
 
   /** Java API */
   def create(path: Path): DiskBufferType = DiskBufferType(path)
+}
+
+final case class MultipartUploadSettings(retrySettings: RetrySettings)
+
+final case class RetrySettings(maxRetries: Int,
+                               minBackoff: FiniteDuration,
+                               maxBackoff: FiniteDuration,
+                               randomFactor: Double)
+
+object RetrySettings {
+  val default: RetrySettings = RetrySettings(3, 200.milliseconds, 10.seconds, 0.0)
+
+  def apply(config: Config): RetrySettings = {
+    RetrySettings(
+      config.getInt("max-retries"),
+      FiniteDuration(config.getDuration("min-backoff").toNanos, TimeUnit.NANOSECONDS),
+      FiniteDuration(config.getDuration("max-backoff").toNanos, TimeUnit.NANOSECONDS),
+      config.getDouble("random-factor")
+    )
+  }
 }

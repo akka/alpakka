@@ -1,19 +1,24 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.scaladsl
 
+import java.nio.file.Paths
+
 import akka.NotUsed
 import akka.stream.alpakka.s3.headers.{CannedAcl, ServerSideEncryption}
 import akka.stream.alpakka.s3.scaladsl.{S3, S3ClientIntegrationSpec, S3WireMockBase}
-import akka.stream.alpakka.s3.{FailedUpload, MultipartUploadResult, S3Headers}
+import akka.stream.alpakka.s3._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
+import org.scalatest.OptionValues
+import org.scalatest.exceptions.TestFailedException
 
 import scala.concurrent.Future
+import scala.concurrent.duration._
 
-class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
+class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec with OptionValues {
 
   override protected def afterEach(): Unit =
     mock.removeMappings()
@@ -48,13 +53,65 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     result.futureValue shouldBe MultipartUploadResult(url, bucket, bucketKey, etag, None)
   }
 
-  "S3Sink" should "retry upload after internal server error" in {
+  "S3Sink" should "retry part upload after a transient internal server error" in {
 
-    mockUploadWithInternalError(body)
+    mockMultipartPartUploadWithTransient500Error(body)
 
     val s3Sink: Sink[ByteString, Future[MultipartUploadResult]] = S3.multipartUpload(bucket, bucketKey)
 
     val result: Future[MultipartUploadResult] = Source.single(ByteString(body)).runWith(s3Sink)
+
+    result.futureValue shouldBe MultipartUploadResult(url, bucket, bucketKey, etag, None)
+  }
+
+  "S3Sink" should "retry part upload after a transient downstream connection error" in {
+
+    mockMultipartPartUploadWithTransientConnectionError(body)
+
+    val s3Sink: Sink[ByteString, Future[MultipartUploadResult]] = S3.multipartUpload(bucket, bucketKey)
+
+    val result: Future[MultipartUploadResult] = Source.single(ByteString(body)).runWith(s3Sink)
+
+    result.futureValue shouldBe MultipartUploadResult(url, bucket, bucketKey, etag, None)
+  }
+
+  "S3Sink" should "retry part upload no more than the configured number of times" in {
+
+    mockMultipartPartUploadWithTransient500Error(body, 2)
+
+    val s3Sink: Sink[ByteString, Future[MultipartUploadResult]] = S3
+      .multipartUpload(bucket, bucketKey)
+      .withAttributes(
+        S3Attributes.settings(
+          S3Settings().withMultipartUploadSettings(MultipartUploadSettings(RetrySettings(1, 0.seconds, 0.seconds, 0.0)))
+        )
+      )
+
+    val result: Future[MultipartUploadResult] = Source.single(ByteString(body)).runWith(s3Sink)(materializer)
+
+    val failure = intercept[TestFailedException] {
+      result.futureValue
+    }
+
+    failure.cause.value.getClass shouldBe classOf[FailedUpload]
+  }
+
+  "S3Sink" should "be able to retry a disk-buffered part upload an arbitrary number of times" in {
+
+    val numFailures = 5
+    mockMultipartPartUploadWithTransient500Error(body, numFailures)
+
+    val s3Sink: Sink[ByteString, Future[MultipartUploadResult]] = S3
+      .multipartUpload(bucket, bucketKey)
+      .withAttributes(
+        S3Attributes.settings(
+          S3Settings()
+            .withMultipartUploadSettings(MultipartUploadSettings(RetrySettings(numFailures, 0.seconds, 0.seconds, 0.0)))
+            .withBufferType(DiskBufferType(Paths.get("")))
+        )
+      )
+
+    val result: Future[MultipartUploadResult] = Source.single(ByteString(body)).runWith(s3Sink)(materializer)
 
     result.futureValue shouldBe MultipartUploadResult(url, bucket, bucketKey, etag, None)
   }
@@ -79,14 +136,14 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec {
 
     val result = Source
       .single(ByteString("some contents"))
-      .runWith(S3.multipartUpload("nonexisting_bucket", "nonexisting_file.xml"))
+      .runWith(S3.multipartUpload("nonexisting-bucket", "nonexisting_file.xml"))
 
     result.failed.futureValue.getMessage shouldBe "No key found"
   }
 
-  it should "fail if response is a failure after initiation" in {
+  it should "fail if part upload requests fail perpetually" in {
 
-    mockFailureAfterInitiate()
+    mockUnrecoverableMultipartPartUploadFailure()
 
     val result = Source
       .single(ByteString(body))

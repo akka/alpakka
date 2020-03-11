@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.sqs.javadsl;
@@ -7,9 +7,11 @@ package akka.stream.alpakka.sqs.javadsl;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.testkit.javadsl.TestKit;
 // #init-client
 import com.github.matsluni.akkahttpspi.AkkaHttpClient;
+import org.junit.Rule;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -26,6 +28,8 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 public abstract class BaseSqsTest {
+
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   protected static ActorSystem system;
   protected static Materializer materializer;

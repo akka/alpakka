@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.google.firebase.fcm.impl
@@ -12,13 +12,16 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.{HttpExt, HttpsConnectionContext}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.google.firebase.fcm.impl.GoogleTokenApi.AccessTokenExpiry
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{verify, when}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.matchers.should.Matchers
 import pdi.jwt.{Jwt, JwtAlgorithm}
 
 import scala.concurrent.duration._
@@ -26,11 +29,12 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 
 class GoogleTokenApiSpec
     extends TestKit(ActorSystem())
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with ScalaFutures
     with MockitoSugar
-    with BeforeAndAfterAll {
+    with BeforeAndAfterAll
+    with LogCapturing {
 
   override def afterAll: Unit =
     TestKit.shutdownActorSystem(system)

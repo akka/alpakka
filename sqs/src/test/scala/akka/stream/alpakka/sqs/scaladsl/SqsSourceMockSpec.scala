@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.sqs.scaladsl
@@ -7,13 +7,15 @@ package akka.stream.alpakka.sqs.scaladsl
 import java.util.concurrent.CompletableFuture
 
 import akka.stream.alpakka.sqs.SqsSourceSettings
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSink
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito.{atMost => atMostTimes, _}
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.mockito.MockitoSugar.mock
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{Message, ReceiveMessageRequest, ReceiveMessageResponse}
@@ -22,11 +24,10 @@ import scala.compat.java8.FutureConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-class SqsSourceMockSpec extends FlatSpec with Matchers with DefaultTestContext {
+class SqsSourceMockSpec extends AnyFlatSpec with Matchers with DefaultTestContext with LogCapturing {
 
   override def createAsyncClient(sqsEndpoint: String): SqsAsyncClient = ???
   override def closeSqsClient(): Unit = ()
-
   val defaultMessages = (1 to 10).map { i =>
     Message.builder().body(s"message $i").build()
   }

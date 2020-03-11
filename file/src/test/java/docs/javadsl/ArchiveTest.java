@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.javadsl;
@@ -12,15 +12,14 @@ import akka.stream.IOResult;
 import akka.stream.Materializer;
 import akka.stream.alpakka.file.ArchiveMetadata;
 import akka.stream.alpakka.file.javadsl.Archive;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.FileIO;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.javadsl.StreamTestKit;
-import akka.testkit.TestKit;
+import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import scala.concurrent.duration.FiniteDuration;
 import static akka.util.ByteString.emptyByteString;
 import java.io.File;
@@ -35,14 +34,26 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.assertEquals;
 
 public class ArchiveTest {
-  private ActorSystem system;
-  private Materializer mat;
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
+
+  private static ActorSystem system;
+  private static Materializer mat;
+
+  @BeforeClass
+  public static void beforeAll() throws Exception {
+    system = ActorSystem.create();
+    mat = ActorMaterializer.create(system);
+  }
+
+  @AfterClass
+  public static void afterAll() throws Exception {
+    TestKit.shutdownActorSystem(system);
+  }
+
   private ArchiveHelper archiveHelper;
 
   @Before
   public void setup() throws Exception {
-    system = ActorSystem.create();
-    mat = ActorMaterializer.create(system);
     archiveHelper = new ArchiveHelper();
   }
 
@@ -85,22 +96,18 @@ public class ArchiveTest {
           }
         };
 
-    archiveHelper.createReferenceZipFileFromMemory(inputFiles, "logo-reference.zip");
-
     ByteString resultFileContent = readFileAsByteString(Paths.get("logo.zip"));
-    ByteString referenceFileContent = readFileAsByteString(Paths.get("logo-reference.zip"));
+    Map<String, ByteString> unzip = archiveHelper.unzip(resultFileContent);
 
-    assertEquals(resultFileContent, referenceFileContent);
+    assertEquals(inputFiles, unzip);
 
     // cleanup
     new File("logo.zip").delete();
-    new File("logo-reference.zip").delete();
   }
 
   @After
   public void tearDown() throws Exception {
     StreamTestKit.assertAllStagesStopped(mat);
-    TestKit.shutdownActorSystem(system, FiniteDuration.apply(3, TimeUnit.SECONDS), true);
   }
 
   private Path getFileFromResource(String fileName) {

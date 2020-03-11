@@ -1,5 +1,13 @@
 # Google Cloud Pub/Sub gRPC
 
+## 2.0.0-M3
+
+- Google Pub/Sub gRPC: remove bundled certificate [#2107](https://github.com/akka/alpakka/issues/2107) by [@ennru](https://github.com/ennru)
+- Google Cloud Pub/Sub gRPC: latest versions [#2050](https://github.com/akka/alpakka/issues/2050) by [@ennru](https://github.com/ennru)
+
+[*closed in 2.0.0-M3*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0-M3+label%3Ap%3Agoogle-cloud-pub-sub-grpc)
+
+
 ## 2.0.0-M2
 
 - fix GOOGLE_APPLICATION_CREDENTIALS typo [#2035](https://github.com/akka/alpakka/issues/2035) by [@ldrygala](https://github.com/ldrygala)

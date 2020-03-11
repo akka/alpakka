@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.s3.scaladsl
@@ -12,6 +12,7 @@ import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.s3.BucketAccess.{AccessGranted, NotExists}
 import akka.stream.alpakka.s3._
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.testkit.TestKit
 import akka.util.ByteString
@@ -24,8 +25,16 @@ import software.amazon.awssdk.regions.Region
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
+import org.scalatest.flatspec.AnyFlatSpecLike
+import org.scalatest.matchers.should.Matchers
 
-trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matchers with ScalaFutures with OptionValues {
+trait S3IntegrationSpec
+    extends AnyFlatSpecLike
+    with BeforeAndAfterAll
+    with Matchers
+    with ScalaFutures
+    with OptionValues
+    with LogCapturing {
 
   implicit val actorSystem: ActorSystem = ActorSystem(
     "S3IntegrationSpec",
@@ -58,6 +67,7 @@ trait S3IntegrationSpec extends FlatSpecLike with BeforeAndAfterAll with Matcher
       |}
     """.stripMargin)
 
+  @com.github.ghik.silencer.silent
   def otherRegionSettings =
     S3Settings().withPathStyleAccess(true).withS3RegionProvider(otherRegionProvider)
   def listBucketVersion1Settings =
@@ -511,15 +521,19 @@ class MinioS3IntegrationSpec extends S3IntegrationSpec {
                                  |    }
                                  |  }
                                  |  endpoint-url = "$endpointUrl"
+                                 |  # Use of endpoint-url requires path-style-access
+                                 |  path-style-access = true
                                  |}
     """.stripMargin).withFallback(super.config())
 
+  @com.github.ghik.silencer.silent
   override def otherRegionSettings =
     S3Settings()
       .withCredentialsProvider(staticProvider)
       .withEndpointUrl(endpointUrl)
       .withPathStyleAccess(true)
 
+  @com.github.ghik.silencer.silent
   override def invalidCredentials: S3Settings =
     S3Settings()
       .withCredentialsProvider(invalidCredentialsProvider)

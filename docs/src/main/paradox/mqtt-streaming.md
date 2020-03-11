@@ -16,7 +16,9 @@ This library also differs in that it separates out the concern of how MQTT is co
 
 @@@
 
-The Alpakka MQTT connector provides an Akka Stream flow to connect to MQTT brokers. In addition, a flow is provided so that you can implement your own MQTT server in the case where you do not wish to use a broker--MQTT is a fine protocol for directed client/server interactions, as well as having an intermediary broker.
+The Alpakka MQTT Streaming connector provides an Akka Stream flow to connect to MQTT brokers. In addition, a flow is provided so that you can implement your own MQTT server in the case where you do not wish to use a broker--MQTT is a fine protocol for directed client/server interactions, as well as having an intermediary broker.
+
+Alpakka MQTT Streaming implements the [MQTT 3.1.1](https://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html) protocol.
 
 @@project-info{ projectId="mqtt-streaming" }
 
@@ -26,12 +28,25 @@ The Alpakka MQTT connector provides an Akka Stream flow to connect to MQTT broke
   group=com.lightbend.akka
   artifact=akka-stream-alpakka-mqtt-streaming_$scala.binary.version$
   version=$project.version$
+  symbol2=AkkaVersion
+  value2=$akka26.version$
+  group2=com.typesafe.akka
+  artifact2=akka-stream_$scala.binary.version$
+  version2=AkkaVersion
+  group3=com.typesafe.akka
+  artifact3=akka-actor-typed_$scala.binary.version$
+  version3=AkkaVersion
 }
 
 The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
 
 @@dependencies { projectId="mqtt-streaming" }
 
+@@@ note
+
+Unlike most Alpakka modules, mqtt-streaming requires at least Akka $akka26.version$.
+
+@@@
 
 ## Flow through a client session
 

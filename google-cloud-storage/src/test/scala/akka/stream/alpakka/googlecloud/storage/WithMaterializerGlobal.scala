@@ -1,19 +1,21 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.googlecloud.storage
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers, WordSpecLike}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
 trait WithMaterializerGlobal
-    extends WordSpecLike
+    extends AnyWordSpecLike
     with BeforeAndAfterAll
     with BeforeAndAfterEach
     with ScalaFutures
@@ -23,7 +25,7 @@ trait WithMaterializerGlobal
   implicit val materializer = ActorMaterializer()
   implicit val ec = materializer.executionContext
 
-  override def afterAll(): Unit = {
+  override protected def afterAll(): Unit = {
     super.afterAll()
     Await.result(actorSystem.terminate(), 10.seconds)
   }

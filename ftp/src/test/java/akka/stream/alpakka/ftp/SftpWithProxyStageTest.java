@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.ftp;
@@ -7,9 +7,11 @@ package akka.stream.alpakka.ftp;
 import akka.NotUsed;
 import akka.stream.IOResult;
 import akka.stream.alpakka.ftp.javadsl.Sftp;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.net.InetAddress;
@@ -19,6 +21,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 public class SftpWithProxyStageTest extends BaseSftpSupport implements CommonFtpStageTest {
+
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private final Integer PROXYPORT = 3128;
   private final Proxy PROXY =

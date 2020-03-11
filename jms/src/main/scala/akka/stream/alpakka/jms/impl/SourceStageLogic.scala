@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.jms.impl
@@ -15,7 +15,6 @@ import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.{Done, NotUsed}
 
 import scala.collection.mutable
-import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
 import javax.jms
@@ -70,8 +69,8 @@ private abstract class SourceStageLogic[T](shape: SourceShape[T],
   }
 
   override def preStart(): Unit = {
-    super.preStart()
     ec = executionContext(inheritedAttributes)
+    super.preStart()
     initSessionAsync()
   }
 
@@ -113,24 +112,15 @@ private abstract class SourceStageLogic[T](shape: SourceShape[T],
       val status = updateState(JmsConnectorStopping(Success(Done)))
       val connectionFuture = JmsConnector.connection(status)
 
-      closeSessionsAsync()
-        .onComplete { _ =>
-          connectionFuture
-            .map { connection =>
-              try {
-                connection.close()
-              } catch {
-                case NonFatal(e) => log.error(e, "Error closing JMS connection {}", connection)
-              }
-            }
-            .onComplete { _ =>
-              // By this time, after stopping connection, closing sessions, all async message submissions to this
-              // stage should have been invoked. We invoke markStopped as the last item so it gets delivered after
-              // all JMS messages are delivered. This will allow the stage to complete after all pending messages
-              // are delivered, thus preventing message loss due to premature stage completion.
-              markStopped.invoke(Done)
-            }
+      closeSessionsAsync().onComplete { _ =>
+        closeConnectionAsync(connectionFuture).onComplete { _ =>
+          // By this time, after stopping connection, closing sessions, all async message submissions to this
+          // stage should have been invoked. We invoke markStopped as the last item so it gets delivered after
+          // all JMS messages are delivered. This will allow the stage to complete after all pending messages
+          // are delivered, thus preventing message loss due to premature stage completion.
+          markStopped.invoke(Done)
         }
+      }
     }
 
   private def abortSessions(ex: Throwable): Unit =
@@ -138,21 +128,11 @@ private abstract class SourceStageLogic[T](shape: SourceShape[T],
       if (log.isDebugEnabled) log.debug("aborting sessions ({})", ex.toString)
       val status = updateState(JmsConnectorStopping(Failure(ex)))
       val connectionFuture = JmsConnector.connection(status)
-      abortSessionsAsync()
-        .onComplete { _ =>
-          connectionFuture
-            .map { connection =>
-              try {
-                connection.close()
-                log.info("JMS connection {} closed", connection)
-              } catch {
-                case NonFatal(e) => log.error(e, "Error closing JMS connection {}", connection)
-              }
-            }
-            .onComplete { _ =>
-              markAborted.invoke(ex)
-            }
+      abortSessionsAsync().onComplete { _ =>
+        closeConnectionAsync(connectionFuture).onComplete { _ =>
+          markAborted.invoke(ex)
         }
+      }
     }
 
   def consumerControl: JmsConsumerMatValue = new JmsConsumerMatValue {

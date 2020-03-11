@@ -1,29 +1,33 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.scaladsl
 
 import akka.stream.alpakka.couchbase.scaladsl.{CouchbaseSession, CouchbaseSource}
 import akka.stream.alpakka.couchbase.testing.CouchbaseSupport
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Sink
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import com.couchbase.client.java.auth.PasswordAuthenticator
 import com.couchbase.client.java.{Bucket, CouchbaseCluster}
 import com.couchbase.client.java.document.json.JsonObject
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterAll
 
 import scala.collection.immutable.Seq
 import scala.concurrent.duration._
 import scala.concurrent.Future
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 class CouchbaseSourceSpec
-    extends WordSpec
+    extends AnyWordSpec
     with BeforeAndAfterAll
     with CouchbaseSupport
     with Matchers
-    with ScalaFutures {
+    with ScalaFutures
+    with LogCapturing {
 
   override implicit def patienceConfig: PatienceConfig = PatienceConfig(10.seconds, 250.millis)
 

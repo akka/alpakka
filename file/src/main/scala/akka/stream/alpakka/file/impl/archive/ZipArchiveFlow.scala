@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.file.impl.archive
@@ -68,7 +68,7 @@ import akka.util.{ByteString, ByteStringBuilder}
       override def onUpstreamFinish(): Unit = {
         if (!emptyStream) {
           zip.close()
-          push(out, builder.result)
+          emit(out, builder.result)
           builder.clear()
         }
         super.onUpstreamFinish()

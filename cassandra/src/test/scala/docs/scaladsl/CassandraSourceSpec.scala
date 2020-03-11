@@ -1,220 +1,113 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.scaladsl
 
+import akka.Done
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.stream.alpakka.cassandra.CassandraBatchSettings
-import akka.stream.alpakka.cassandra.scaladsl.{CassandraFlow, CassandraSink, CassandraSource}
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.alpakka.cassandra.scaladsl.{CassandraSession, CassandraSource, CassandraSpecBase}
+import akka.stream.scaladsl.Sink
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
-import com.datastax.driver.core.{Cluster, PreparedStatement, SimpleStatement}
-import org.scalatest._
-import org.scalatest.concurrent.ScalaFutures
 
-import scala.collection.JavaConverters._
-import scala.concurrent._
-import scala.concurrent.duration._
+import scala.collection.immutable
+import scala.concurrent.Future
 
-/**
- * All the tests must be run with a local Cassandra running on default port 9042.
- */
-class CassandraSourceSpec
-    extends WordSpec
-    with ScalaFutures
-    with BeforeAndAfterEach
-    with BeforeAndAfterAll
-    with MustMatchers {
+class CassandraSourceSpec extends CassandraSpecBase(ActorSystem("CassandraSourceSpec")) {
 
   //#element-to-insert
   case class ToInsert(id: Integer, cc: Integer)
   //#element-to-insert
 
-  //#init-mat
-  implicit val system = ActorSystem()
-  implicit val mat = ActorMaterializer()
-  //#init-mat
+  val sessionSettings = akka.stream.alpakka.cassandra.CassandraSessionSettings()
+  val data = 1 until 103
+  def intTable = keyspaceName + ".idtable"
 
-  implicit val ec = system.dispatcher
+  override val lifecycleSession: CassandraSession = sessionRegistry.sessionFor(sessionSettings)
 
-  //#init-session
-  implicit val session = Cluster.builder
-    .addContactPoint("127.0.0.1")
-    .withPort(9042)
-    .build
-    .connect()
-  //#init-session
-
-  implicit val defaultPatience =
-    PatienceConfig(timeout = 2.seconds, interval = 50.millis)
-
-  var keyspaceName: String = _
-
-  override def beforeEach(): Unit = {
-    keyspaceName = s"akka${System.nanoTime()}"
-    session.execute(
-      s"""
-        |CREATE KEYSPACE $keyspaceName WITH replication = {
-        |  'class': 'SimpleStrategy',
-        |  'replication_factor': '1'
-        |};
-      """.stripMargin
-    )
-    session.execute(
-      s"""
-        |CREATE TABLE IF NOT EXISTS $keyspaceName.test (
-        |    id int PRIMARY KEY
-        |);
-      """.stripMargin
-    )
-
-    session.execute(
-      s"""
-         |CREATE TABLE IF NOT EXISTS $keyspaceName.test_batch (
-         |	id int,
-         |	cc int,
-         |	PRIMARY KEY (id, cc)
-         |);
-      """.stripMargin
-    )
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    prepareIntTable(intTable)
   }
 
-  override def afterEach(): Unit =
-    session.execute(s"DROP KEYSPACE IF EXISTS $keyspaceName;")
+  "Retrieving a session" must {
+    "be documented" in {
+      // #init-session
+      import akka.stream.alpakka.cassandra.CassandraSessionSettings
+      import akka.stream.alpakka.cassandra.scaladsl.CassandraSession
+      import akka.stream.alpakka.cassandra.scaladsl.CassandraSessionRegistry
 
-  override def afterAll(): Unit =
-    Await.result(system.terminate(), 5.seconds)
+      val system: ActorSystem = // ???
+        // #init-session
+        this.system
+      // #init-session
+      val sessionSettings = CassandraSessionSettings()
+      implicit val cassandraSession: CassandraSession =
+        CassandraSessionRegistry.get(system).sessionFor(sessionSettings)
 
-  def populate() =
-    (1 until 103).map { i =>
-      session.execute(s"INSERT INTO $keyspaceName.test(id) VALUES ($i)")
-      i
+      val version: Future[String] =
+        cassandraSession
+          .select("SELECT release_version FROM system.local;")
+          .map(_.getString("release_version"))
+          .runWith(Sink.head)
+      // #init-session
+      version.futureValue must not be empty
     }
+  }
 
   "CassandraSourceSpec" must {
+    implicit val session: CassandraSession = sessionRegistry.sessionFor(sessionSettings)
 
     "stream the result of a Cassandra statement with one page" in assertAllStagesStopped {
-      val data = populate()
-      val stmt = new SimpleStatement(s"SELECT * FROM $keyspaceName.test").setFetchSize(200)
+      // #cql
+      import akka.stream.alpakka.cassandra.scaladsl.CassandraSource
 
-      val rows = CassandraSource(stmt).runWith(Sink.seq).futureValue
+      val ids: Future[immutable.Seq[Int]] =
+        CassandraSource(s"SELECT id FROM $intTable").map(row => row.getInt("id")).runWith(Sink.seq)
 
-      rows.map(_.getInt("id")) must contain theSameElementsAs data
+      // #cql
+      ids.futureValue must contain theSameElementsAs data
     }
 
-    "stream the result of a Cassandra statement with several pages" in {
-      val data = populate()
+    "support parameters" in assertAllStagesStopped {
+      val value: Integer = 5
+      // #cql
+      val idsWhere: Future[Int] =
+        CassandraSource(s"SELECT * FROM $intTable WHERE id = ?", value).map(_.getInt("id")).runWith(Sink.head)
+      // #cql
+      idsWhere.futureValue mustBe value
+    }
 
-      //#statement
-      val stmt = new SimpleStatement(s"SELECT * FROM $keyspaceName.test").setFetchSize(20)
-      //#statement
+    "stream the result of a Cassandra statement with several pages" in assertAllStagesStopped {
+      // #statement
+      import com.datastax.oss.driver.api.core.cql.{Row, SimpleStatement}
 
-      //#run-source
-      val rows = CassandraSource(stmt).runWith(Sink.seq)
-      //#run-source
+      val stmt = SimpleStatement.newInstance(s"SELECT * FROM $intTable").setPageSize(20)
+
+      val rows: Future[immutable.Seq[Row]] = CassandraSource(stmt).runWith(Sink.seq)
+      // #statement
 
       rows.futureValue.map(_.getInt("id")) must contain theSameElementsAs data
     }
 
-    "support multiple materializations" in assertAllStagesStopped {
-      val data = populate()
-      val stmt = new SimpleStatement(s"SELECT * FROM $keyspaceName.test")
+    "allow prepared statements" in assertAllStagesStopped {
+      val stmt = session.prepare(s"SELECT * FROM $intTable").map(_.bind())
+      val rows = CassandraSource.fromFuture(stmt).runWith(Sink.seq)
 
-      val source = CassandraSource(stmt)
-
-      source.runWith(Sink.seq).futureValue.map(_.getInt("id")) must contain theSameElementsAs data
-      source.runWith(Sink.seq).futureValue.map(_.getInt("id")) must contain theSameElementsAs data
+      rows.futureValue.map(_.getInt("id")) must contain theSameElementsAs data
     }
 
-    "stream the result of Cassandra statement that results in no data" in assertAllStagesStopped {
-      val stmt = new SimpleStatement(s"SELECT * FROM $keyspaceName.test")
+  }
 
-      val rows = CassandraSource(stmt).runWith(Sink.seq).futureValue
-
-      rows mustBe empty
-    }
-
-    "write to the table using the flow and emit the elements in order" in assertAllStagesStopped {
-      val source = Source(0 to 10).map(i => i: Integer)
-
-      //#prepared-statement-flow
-      val preparedStatement = session.prepare(s"INSERT INTO $keyspaceName.test(id) VALUES (?)")
-      //#prepared-statement-flow
-
-      //#statement-binder-flow
-      val statementBinder = (myInteger: Integer, statement: PreparedStatement) => statement.bind(myInteger)
-      //#statement-binder-flow
-
-      //#run-flow
-      val flow = CassandraFlow.createWithPassThrough[Integer](parallelism = 2, preparedStatement, statementBinder)
-
-      val result = source.via(flow).runWith(Sink.seq)
-      //#run-flow
-
-      val resultToAssert = result.futureValue
-      val found = session.execute(s"select id from $keyspaceName.test").all().asScala.map(_.getInt("id"))
-
-      resultToAssert mustBe (0 to 10).toList
-      found.toSet mustBe (0 to 10).toSet
-    }
-
-    "write to the table using the batching flow emitting the elements in any order" in assertAllStagesStopped {
-      val source = Source(0 to 100).map(i => ToInsert(i % 2, i))
-
-      //#prepared-statement-batching-flow
-      val preparedStatement = session.prepare(s"INSERT INTO $keyspaceName.test_batch(id, cc) VALUES (?, ?)")
-      //#prepared-statement-batching-flow
-
-      //#statement-binder-batching-flow
-      val statementBinder =
-        (elemToInsert: ToInsert, statement: PreparedStatement) => statement.bind(elemToInsert.id, elemToInsert.cc)
-      //#statement-binder-batching-flow
-
-      //#settings-batching-flow
-      val settings: CassandraBatchSettings = CassandraBatchSettings()
-      //#settings-batching-flow
-
-      //#run-batching-flow
-      val flow = CassandraFlow.createUnloggedBatchWithPassThrough[ToInsert, Integer](parallelism = 2,
-                                                                                     preparedStatement,
-                                                                                     statementBinder,
-                                                                                     ti => ti.id,
-                                                                                     settings)
-
-      val result = source.via(flow).runWith(Sink.seq)
-      //#run-batching-flow
-
-      val resultToAssert = result.futureValue
-      val found = session.execute(s"select cc from $keyspaceName.test_batch").all().asScala.map(_.getInt("cc"))
-
-      resultToAssert.map(_.cc) must contain theSameElementsAs (0 to 100).toList
-      found.toSet mustBe (0 to 100).toSet
-    }
-
-    "write to the table using the sink" in assertAllStagesStopped {
-      val source = Source(0 to 10).map(i => i: Integer)
-
-      //#prepared-statement
-      val preparedStatement = session.prepare(s"INSERT INTO $keyspaceName.test(id) VALUES (?)")
-      //#prepared-statement
-
-      //#statement-binder
-      val statementBinder = (myInteger: Integer, statement: PreparedStatement) => statement.bind(myInteger)
-      //#statement-binder
-
-      //#run-sink
-      val sink = CassandraSink[Integer](parallelism = 2, preparedStatement, statementBinder)
-
-      val result = source.runWith(sink)
-      //#run-sink
-
-      result.futureValue
-
-      val found = session.execute(s"select id from $keyspaceName.test").all().asScala.map(_.getInt("id"))
-
-      found.toSet mustBe (0 to 10).toSet
-    }
+  private def prepareIntTable(table: String) = {
+    withSchemaMetadataDisabled {
+      for {
+        _ <- lifecycleSession.executeDDL(s"""
+             |CREATE TABLE IF NOT EXISTS $table (
+             |    id int PRIMARY KEY
+             |);""".stripMargin)
+        _ <- executeCql(data.map(i => s"INSERT INTO $table(id) VALUES ($i)"))
+      } yield Done
+    }.futureValue mustBe Done
   }
 }

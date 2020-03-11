@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -9,6 +9,7 @@ import akka.actor.{ActorSystem, Cancellable}
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.pubsub.grpc.PubSubSettings
 import akka.stream.alpakka.googlecloud.pubsub.grpc.scaladsl.{GrpcPublisher, PubSubAttributes}
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import org.scalatest.OptionValues
 
 //#publish-single
@@ -21,18 +22,21 @@ import com.google.pubsub.v1.pubsub._
 import akka.NotUsed
 import com.google.protobuf.ByteString
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Inside, Matchers, WordSpec}
+import org.scalatest.{BeforeAndAfterAll, Inside}
 
 import scala.concurrent.duration._
 import scala.concurrent.Future
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 class IntegrationSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
     with Inside
     with BeforeAndAfterAll
     with ScalaFutures
-    with OptionValues {
+    with OptionValues
+    with LogCapturing {
 
   implicit val system = ActorSystem("IntegrationSpec")
   implicit val materializer = ActorMaterializer()

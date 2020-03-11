@@ -1,14 +1,20 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package main.scala.akka.stream.alpakka.googlecloud.storage
+package akka.stream.alpakka.googlecloud.storage
 
-final class Owner private (entity: String, entityId: String) {
+import java.util.Optional
+import scala.compat.java8.OptionConverters._
+
+final class Owner private (entity: String, entityId: Option[String]) {
   def withEntity(entity: String): Owner = copy(entity = entity)
-  def withEntityId(entityId: String): Owner = copy(entityId = entityId)
+  def withEntityId(entityId: String): Owner = copy(entityId = Option(entityId))
 
-  private def copy(entity: String = entity, entityId: String = entityId): Owner =
+  /** Java API */
+  def getEntityId: Optional[String] = entityId.asJava
+
+  private def copy(entity: String = entity, entityId: Option[String] = entityId): Owner =
     new Owner(entity, entityId)
 
   override def toString: String =
@@ -16,9 +22,12 @@ final class Owner private (entity: String, entityId: String) {
 }
 
 object Owner {
-  def apply(entity: String, entityId: String): Owner =
+
+  /** Scala API */
+  def apply(entity: String, entityId: Option[String]): Owner =
     new Owner(entity, entityId)
 
-  def create(entity: String, entityId: String): Owner =
-    new Owner(entity, entityId)
+  /** Java API */
+  def create(entity: String, entityId: Optional[String]): Owner =
+    new Owner(entity, entityId.asScala)
 }

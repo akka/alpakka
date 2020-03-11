@@ -12,6 +12,11 @@ For more information about Elasticsearch, please visit the [Elasticsearch docume
   group=com.lightbend.akka
   artifact=akka-stream-alpakka-elasticsearch_$scala.binary.version$
   version=$project.version$
+  symbol2=AkkaVersion
+  value2=$akka.version$
+  group2=com.typesafe.akka
+  artifact2=akka-stream_$scala.binary.version$
+  version2=AkkaVersion
 }
 
 The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
@@ -33,11 +38,7 @@ Java
 ## Elasticsearch as Source and Sink
 
 Now we can stream messages from or to Elasticsearch by providing the `RestClient` to the
-@scala[@scaladoc[ElasticsearchSource](akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSource$)]
-@java[@scaladoc[ElasticsearchSource](akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSource$)]
-or the
-@scala[@scaladoc[ElasticsearchSink](akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSink$).]
-@java[@scaladoc[ElasticsearchSink](akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSink$).]
+@apidoc[ElasticsearchSource$], @apidoc[ElasticsearchFlow$] or the @apidoc[ElasticsearchSink$].
 
 
 Scala
@@ -123,25 +124,31 @@ Java
 | retryLogic | No retries | See below |
 
 
-A bulk request might fail partially for some reason. To retry failed writes to Elasticsearch, a `RetryLogic` can be specified. The provided implementation is `RetryAtFixedRate`.
+A bulk request might fail partially for some reason. To retry failed writes to Elasticsearch, a `RetryLogic` can be specified. 
 
-@@@ warning
-If using retries, you will receive messages **out of order downstream** in cases when Elasticsearch returns an error on some of the documents in a bulk request.
-@@@
+The provided implementations are:
 
+* `RetryAtFixedRate`
 
 | Parameter           | Description     |
 |---------------------|-----------------|
 | maxRetries          | The stage fails, if it gets this number of consecutive failures. | 
 | retryInterval       | Failing writes are retried after this duration. |
 
+* `RetryWithBackoff`
+
+| Parameter           | Description     |
+|---------------------|-----------------|
+| maxRetries          | The stage fails, if it gets this number of consecutive failures. | 
+| minBackoff          | Initial backoff for failing writes. |
+| maxBackoff          | Maximum backoff for failing writes. |
+
+In case of write failures the order of messages downstream is guaranteed to be preserved.
 
 
 ## Elasticsearch as Flow
 
-You can also build flow stages with
-@scala[@scaladoc[ElasticsearchFlow](akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchFlow$).]
-@java[@scaladoc[ElasticsearchFlow](akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchFlow$).]
+You can also build flow stages with @apidoc[ElasticsearchFlow$].
 The API is similar to creating Sinks.
 
 Scala

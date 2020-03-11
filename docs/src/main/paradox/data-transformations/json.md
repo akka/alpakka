@@ -2,10 +2,10 @@
 
 ## JSON Framing
 
-Use Akka Stream JsonFraming to split a stream of @scaladoc[ByteString](akka.util.ByteString) elements into 
+Use Akka Stream JsonFraming to split a stream of @apidoc[akka.util.ByteString] elements into 
 ByteString snippets of valid JSON objects. 
 
-See @scaladoc[ScalaDSL JsonFraming](akka.stream.scaladsl.JsonFraming$) or @scaladoc[JavaDSL JsonFraming](akka.stream.javadsl.JsonFraming$)
+See @apidoc[JsonFraming$]
 
 
 @extref:[Akka documentation](akka:stream/stream-io.html#using-framing-in-your-protocol)
@@ -67,6 +67,11 @@ even: only the `doc` inside each element of the array.
   group=com.lightbend.akka
   artifact=akka-stream-alpakka-json-streaming_$scala.binary.version$
   version=$project.version$
+  symbol2=AkkaVersion
+  value2=$akka.version$
+  group2=com.typesafe.akka
+  artifact2=akka-stream_$scala.binary.version$
+  version2=AkkaVersion
 }
 
 The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.

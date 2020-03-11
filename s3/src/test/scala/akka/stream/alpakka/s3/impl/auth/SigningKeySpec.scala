@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.s3.impl.auth
@@ -7,10 +7,11 @@ package akka.stream.alpakka.s3.impl.auth
 import java.time.{ZoneId, ZonedDateTime}
 
 import software.amazon.awssdk.auth.credentials._
-import org.scalatest.{FlatSpec, Matchers}
 import software.amazon.awssdk.regions.Region
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class SigningKeySpec extends FlatSpec with Matchers {
+class SigningKeySpec extends AnyFlatSpec with Matchers {
   behavior of "A Signing Key"
 
   val credentials = StaticCredentialsProvider.create(

@@ -1,12 +1,14 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.javadsl;
 
 import akka.actor.ActorSystem;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.testkit.javadsl.TestKit;
 import com.github.matsluni.akkahttpspi.AkkaHttpClient;
+import org.junit.Rule;
 import org.junit.Test;
 // #clientRetryConfig
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -24,6 +26,7 @@ import software.amazon.awssdk.core.retry.conditions.RetryCondition;
 // #awsRetryConfiguration
 
 public class RetryTest {
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   @Test
   public void setup() throws Exception {

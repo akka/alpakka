@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.javadsl;
@@ -10,6 +10,7 @@ import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.azure.storagequeue.*;
 import akka.stream.alpakka.azure.storagequeue.javadsl.*;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.javadsl.StreamTestKit;
@@ -28,6 +29,8 @@ import java.util.function.Supplier;
 import org.junit.*;
 
 public class JavaDslTest {
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
+
   private static ActorSystem system;
   private static ActorMaterializer materializer;
   private static final String storageConnectionString = System.getenv("AZURE_CONNECTION_STRING");

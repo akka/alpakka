@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.ironmq;
@@ -8,11 +8,13 @@ import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.ironmq.impl.IronMqClient;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 
 import java.util.List;
 import java.util.UUID;
@@ -23,6 +25,7 @@ import static scala.collection.JavaConverters.*;
 import static scala.compat.java8.FutureConverters.*;
 
 public abstract class UnitTest {
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private ActorSystem system;
   private ActorMaterializer materializer;

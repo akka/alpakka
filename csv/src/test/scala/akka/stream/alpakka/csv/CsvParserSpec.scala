@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.csv
@@ -8,10 +8,13 @@ import java.nio.charset.{StandardCharsets, UnsupportedCharsetException}
 
 import akka.stream.alpakka.csv.impl.CsvParser
 import akka.stream.alpakka.csv.scaladsl.ByteOrderMark
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.util.ByteString
-import org.scalatest.{Matchers, OptionValues, WordSpec}
+import org.scalatest.OptionValues
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class CsvParserSpec extends WordSpec with Matchers with OptionValues {
+class CsvParserSpec extends AnyWordSpec with Matchers with OptionValues with LogCapturing {
 
   val maximumLineLength = 10 * 1024
 

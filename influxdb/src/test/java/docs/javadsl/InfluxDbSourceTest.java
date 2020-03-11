@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.javadsl;
@@ -7,15 +7,11 @@ package docs.javadsl;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import org.influxdb.InfluxDB;
 import org.influxdb.dto.Query;
 import org.influxdb.dto.QueryResult;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
@@ -32,6 +28,7 @@ import static docs.javadsl.TestUtils.populateDatabase;
 import static docs.javadsl.TestUtils.setupConnection;
 
 public class InfluxDbSourceTest {
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem system;
   private static Materializer materializer;

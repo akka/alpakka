@@ -1,17 +1,19 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.scaladsl
 import java.nio.ByteOrder
 
 import akka.stream.alpakka.mqtt.streaming._
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.util.{ByteString, ByteStringBuilder}
-import org.scalatest.{Matchers, WordSpec}
 
 import scala.concurrent.duration._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class MqttCodecSpec extends WordSpec with Matchers {
+class MqttCodecSpec extends AnyWordSpec with Matchers with LogCapturing {
 
   private implicit val byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN
   import MqttCodec._

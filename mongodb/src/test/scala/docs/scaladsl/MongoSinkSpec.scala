@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -8,6 +8,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.mongodb.DocumentUpdate
 import akka.stream.alpakka.mongodb.scaladsl.MongoSink
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import com.mongodb.client.model.{Filters, InsertManyOptions, Updates}
@@ -21,13 +22,16 @@ import org.scalatest.concurrent.ScalaFutures
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 class MongoSinkSpec
-    extends WordSpec
+    extends AnyWordSpec
     with ScalaFutures
     with BeforeAndAfterEach
     with BeforeAndAfterAll
-    with MustMatchers {
+    with Matchers
+    with LogCapturing {
 
   // case class and codec for mongodb macros
   case class Number(_id: Int)

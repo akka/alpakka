@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.googlecloud.pubsub.impl
@@ -12,25 +12,29 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.{HttpExt, HttpsConnectionContext}
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.pubsub.impl.GoogleTokenApi.AccessTokenExpiry
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{verify, when}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
-
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.matchers.should.Matchers
 import pdi.jwt.{Jwt, JwtAlgorithm}
+
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 
 class GoogleTokenApiSpec
     extends TestKit(ActorSystem())
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with ScalaFutures
     with MockitoSugar
-    with BeforeAndAfterAll {
+    with BeforeAndAfterAll
+    with LogCapturing {
 
   override def afterAll: Unit =
     TestKit.shutdownActorSystem(system)
@@ -119,6 +123,76 @@ class GoogleTokenApiSpec
                            any[ConnectionPoolSettings](),
                            any[LoggingAdapter]())
       ).thenReturn(
+        Future.successful(
+          HttpResponse(
+            entity = HttpEntity(ContentTypes.`application/json`,
+                                """{"access_token": "token", "token_type": "String", "expires_in": 3600}""")
+          )
+        )
+      )
+
+      val api = new GoogleTokenApi(http)
+      api.getAccessToken("email", privateKey).futureValue should matchPattern {
+        case AccessTokenExpiry("token", exp) if exp > (System.currentTimeMillis / 1000L + 3000L) =>
+      }
+    }
+
+    "return a useful error in case of invalid credentials" in {
+      val http = mock[HttpExt]
+      val errorBody = """{"error":"invalid_grant","error_description":"Invalid grant: account not found"}"""
+      when(
+        http.singleRequest(any[HttpRequest](),
+                           any[HttpsConnectionContext](),
+                           any[ConnectionPoolSettings](),
+                           any[LoggingAdapter]())
+      ).thenReturn(
+        Future.successful(
+          HttpResponse(
+            status = StatusCodes.BadRequest,
+            entity = HttpEntity(
+              ContentTypes.`application/json`,
+              errorBody
+            )
+          )
+        )
+      )
+
+      val api = new GoogleTokenApi(http)
+      val caught = intercept[RuntimeException] {
+        api.getAccessToken("email", privateKey).futureValue
+      }
+      assert(caught.getMessage.contains(errorBody))
+    }
+
+    "recover from a 5xx response" in {
+      val http = mock[HttpExt]
+      when(
+        http.singleRequest(any[HttpRequest](),
+                           any[HttpsConnectionContext](),
+                           any[ConnectionPoolSettings](),
+                           any[LoggingAdapter]())
+      ).thenReturn(
+        Future.successful(
+          HttpResponse(
+            status = StatusCodes.ServiceUnavailable,
+            entity = HttpEntity(
+              ContentTypes.`application/json`,
+              """{
+                | "error": {
+                |  "errors": [
+                |   {
+                |    "domain": "global",
+                |    "reason": "backendError",
+                |    "message": "Backend Error"
+                |   }
+                |  ],
+                |  "code": 503,
+                |  "message": "Backend Error"
+                | }
+                |}""".stripMargin
+            )
+          )
+        ),
         Future.successful(
           HttpResponse(
             entity = HttpEntity(ContentTypes.`application/json`,

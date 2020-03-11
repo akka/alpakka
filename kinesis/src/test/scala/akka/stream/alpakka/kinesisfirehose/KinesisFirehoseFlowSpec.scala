@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.kinesisfirehose
@@ -8,6 +8,7 @@ import java.util.concurrent.CompletableFuture
 
 import akka.stream.alpakka.kinesisfirehose.KinesisFirehoseErrors.FailurePublishingRecords
 import akka.stream.alpakka.kinesisfirehose.scaladsl.KinesisFirehoseFlow
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Keep
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.{TestSink, TestSource}
@@ -16,13 +17,14 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.firehose.model._
 
 import scala.collection.JavaConverters._
 
-class KinesisFirehoseFlowSpec extends WordSpecLike with Matchers with KinesisFirehoseMock {
+class KinesisFirehoseFlowSpec extends AnyWordSpec with Matchers with KinesisFirehoseMock with LogCapturing {
 
   "KinesisFirehoseFlow" must {
 

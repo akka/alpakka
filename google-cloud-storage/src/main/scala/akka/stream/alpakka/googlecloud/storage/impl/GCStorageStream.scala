@@ -1,10 +1,8 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.googlecloud.storage.impl
-
-import java.util.concurrent.atomic.AtomicInteger
 
 import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
@@ -19,12 +17,11 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.{ActorMaterializer, Attributes, Materializer}
 import akka.stream.alpakka.googlecloud.storage._
 import akka.stream.alpakka.googlecloud.storage.impl.Formats._
-import akka.stream.scaladsl.{Flow, Keep, RestartSource, RunnableGraph, Sink, Source}
+import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source}
 import akka.util.ByteString
 import spray.json._
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 import scala.util.control.NonFatal
 
@@ -121,6 +118,7 @@ import scala.util.control.NonFatal
               .withQuery(Query(queryParams))
         )
       ).runWith(Sink.head)
+        .map(response => response.withEntity(response.entity.withoutSizeLimit))
         .flatMap(entityForSuccessOption)
         .flatMap(responseEntityOptionTo[BucketListResult])
         .map { bucketListResultOption =>
@@ -336,46 +334,11 @@ import scala.util.control.NonFatal
   private def makeRequestSource(
       requestSource: Source[HttpRequest, NotUsed]
   )(implicit mat: ActorMaterializer): Source[HttpResponse, NotUsed] = {
-    requestSource.mapAsync(parallelism)(
-      retryingRequestToResponse(_)
-    )
+    implicit val sys = mat.system
+    requestSource.via(GoogleRetry.singleRequestFlow(Http()))
   }
 
   class RetryableInternalServerError extends Exception
-
-  private def retryingRequestToResponse(
-      request: HttpRequest
-  )(implicit mat: ActorMaterializer): Future[HttpResponse] = {
-    implicit val sys = mat.system
-    // Exponential backoff as specified in the GCS SLA: https://cloud.google.com/storage/sla
-
-    // 1 initial attempt, plus 2^5 exponential requests to get to 32 seconds
-    val remainingAttempts = new AtomicInteger(6)
-    RestartSource
-      .withBackoff(
-        minBackoff = 1.second,
-        maxBackoff = 32.seconds,
-        randomFactor = 0
-      ) { () =>
-        Source
-          .fromFuture(Http().singleRequest(request))
-          // We use mapConcat with an empty output here instead of throwing an exception to restart
-          // the Source, as an exception causes stack traces to be logged
-          .mapConcat {
-            case resp @ HttpResponse(StatusCodes.ServerError(_), _, responseEntity, _) =>
-              if (remainingAttempts.getAndDecrement() > 0) {
-                responseEntity.discardBytes()
-                List()
-              } else {
-                // We've run out of restarts, so just propagate the error response
-                List(resp)
-              }
-            case other =>
-              List(other)
-          }
-      }
-      .runWith(Sink.head)
-  }
 
   private def createRequestSource(
       method: HttpMethod = HttpMethods.GET,
@@ -535,6 +498,7 @@ import scala.util.control.NonFatal
     Flow
       .setup { (mat, _) =>
         implicit val materializer = mat
+        implicit val sys = mat.system
         import mat.executionContext
         // Multipart upload requests are created here.
         //  The initial upload request gets executed within this function as well.
@@ -543,7 +507,8 @@ import scala.util.control.NonFatal
         createRequests(bucket, objectName, contentType, chunkSize)
           .mapAsync(parallelism) {
             case (req, (upload, index)) =>
-              retryingRequestToResponse(req)
+              GoogleRetry
+                .singleRequest(Http(), req)
                 .map(resp => (Success(resp), (upload, index)))
                 .recoverWith {
                   case NonFatal(e) => Future.successful((Failure(e), (upload, index)))

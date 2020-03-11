@@ -1,20 +1,18 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.s3.scaladsl
 
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{FlatSpecLike, Matchers}
 import akka.stream.alpakka.s3.S3Ext
 
 import scala.collection.JavaConverters._
+import org.scalatest.flatspec.AnyFlatSpecLike
+import org.scalatest.matchers.should.Matchers
 
-/*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
- */
-class S3ExtSpec extends FlatSpecLike with Matchers {
+class S3ExtSpec extends AnyFlatSpecLike with Matchers {
   it should "reuse application config from actor system" in {
     val config = ConfigFactory.parseMap(
       Map(

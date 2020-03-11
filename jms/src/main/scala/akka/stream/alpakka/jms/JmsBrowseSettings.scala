@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.jms
@@ -17,8 +17,7 @@ final class JmsBrowseSettings private (
     val credentials: Option[Credentials],
     val selector: Option[String],
     val acknowledgeMode: AcknowledgeMode
-) extends akka.stream.alpakka.jms.JmsSettings {
-  override val sessionCount = 1
+) {
 
   /** Factory to use for creating JMS connections. */
   def withConnectionFactory(value: javax.jms.ConnectionFactory): JmsBrowseSettings = copy(connectionFactory = value)

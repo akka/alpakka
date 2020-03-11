@@ -1,50 +1,41 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.javadsl;
 
 import akka.util.ByteString;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.nio.file.Path;
-import java.util.List;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
+import java.util.zip.ZipInputStream;
 
 public class ArchiveHelper {
 
-  public void createReferenceZipFile(List<Path> inputFilePaths, String resultFileName)
-      throws Exception {
-    FileOutputStream fout = new FileOutputStream(resultFileName);
-    ZipOutputStream zout = new ZipOutputStream(fout);
-    for (Path inputFilePath : inputFilePaths) {
-      File fileToZip = inputFilePath.toFile();
-      FileInputStream fis = new FileInputStream(fileToZip);
-      ZipEntry zipEntry = new ZipEntry(fileToZip.getName());
-      zout.putNextEntry(zipEntry);
-      byte[] bytes = new byte[1024];
-      int length;
-      while ((length = fis.read(bytes)) >= 0) {
-        zout.write(bytes, 0, length);
-      }
-      fis.close();
-    }
-    zout.close();
-  }
+  public Map<String, ByteString> unzip(ByteString zipArchive) throws Exception {
+    ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(zipArchive.toArray()));
+    ZipEntry entry;
+    Map<String, ByteString> result = new HashMap<>();
+    try {
+      while ((entry = zis.getNextEntry()) != null) {
+        int count;
+        byte[] data = new byte[1024];
 
-  public void createReferenceZipFileFromMemory(
-      Map<String, ByteString> inputFilePaths, String resultFileName) throws Exception {
-    FileOutputStream fout = new FileOutputStream(resultFileName);
-    ZipOutputStream zout = new ZipOutputStream(fout);
-    for (Map.Entry<String, ByteString> file : inputFilePaths.entrySet()) {
-      ZipEntry zipEntry = new ZipEntry(file.getKey());
-      zout.putNextEntry(zipEntry);
-      zout.write(file.getValue().toArray(), 0, file.getValue().toArray().length);
+        ByteArrayOutputStream dest = new ByteArrayOutputStream();
+        while ((count = zis.read(data, 0, 1024)) != -1) {
+          dest.write(data, 0, count);
+        }
+        dest.flush();
+        dest.close();
+        zis.closeEntry();
+        result.putIfAbsent(entry.getName(), ByteString.fromArray(dest.toByteArray()));
+      }
+    } finally {
+      zis.close();
     }
-    zout.close();
+    return result;
   }
 }

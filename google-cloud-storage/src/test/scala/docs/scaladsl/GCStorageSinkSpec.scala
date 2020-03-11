@@ -1,29 +1,32 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.scaladsl
 
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
-import akka.stream.alpakka.googlecloud.storage.scaladsl.{GCStorage, GCStorageWiremockBase}
 import akka.http.scaladsl.model.ContentTypes
-import org.scalatest._
-import org.scalatest.concurrent._
-
-import scala.util.Random
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.storage.StorageObject
+import akka.stream.alpakka.googlecloud.storage.scaladsl.{GCStorage, GCStorageWiremockBase}
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.concurrent._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.Future
+import scala.util.Random
 
 class GCStorageSinkSpec
     extends GCStorageWiremockBase
-    with WordSpecLike
+    with AnyWordSpecLike
     with BeforeAndAfterAll
     with ScalaFutures
     with IntegrationPatience
-    with Matchers {
+    with Matchers
+    with LogCapturing {
 
   implicit val materializer = ActorMaterializer()
 

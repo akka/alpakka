@@ -7,6 +7,19 @@
         </encoder>
     </appender>
 
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level [%-20.20thread] %-36.36logger{36}  %msg%n%rEx</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="CapturingAppender" class="akka.stream.alpakka.testkit.CapturingAppender"/>
+
+    <logger name="akka.stream.alpakka.testkit.CapturingAppenderDelegate">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+
+    <logger name="akka" level="DEBUG"/>
     <logger name="net.schmizz.sshj.DefaultConfig" level="error"/>
     <logger name="net.schmizz" level="warn"/>
     <logger name="org.apache.ftpserver" level="info"/>
@@ -15,6 +28,7 @@
     <logger name="org.apache.sshd" level="warn"/>
 
     <root level="debug">
+        <appender-ref ref="CapturingAppender"/>
         <appender-ref ref="FILE" />
     </root>
 </configuration>

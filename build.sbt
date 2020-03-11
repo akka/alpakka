@@ -75,12 +75,35 @@ lazy val alpakka = project
         .filterNot(_.data.getAbsolutePath.contains("protobuf-java-2.5.0.jar"))
         .filterNot(_.data.getAbsolutePath.contains("guava-28.1-android.jar"))
         .filterNot(_.data.getAbsolutePath.contains("commons-net-3.1.jar"))
+        .filterNot(_.data.getAbsolutePath.contains("protobuf-java-2.6.1.jar"))
+        // Some projects require (and introduce) Akka 2.6:
+        .filterNot(_.data.getAbsolutePath.contains("akka-stream_2.12-2.5.27.jar"))
     },
     ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(`doc-examples`,
                                                                              csvBench,
                                                                              mqttStreamingBench),
     crossScalaVersions := List() // workaround for https://github.com/sbt/sbt/issues/3465
   )
+
+TaskKey[Unit]("verifyCodeFmt") := {
+  javafmtCheckAll.all(ScopeFilter(inAnyProject)).result.value.toEither.left.foreach { _ =>
+    throw new MessageOnlyException(
+      "Unformatted Java code found. Please run 'javafmtAll' and commit the reformatted code"
+    )
+  }
+  scalafmtCheckAll.all(ScopeFilter(inAnyProject)).result.value.toEither.left.foreach { _ =>
+    throw new MessageOnlyException(
+      "Unformatted Scala code found. Please run 'scalafmtAll' and commit the reformatted code"
+    )
+  }
+  (Compile / scalafmtSbtCheck).result.value.toEither.left.foreach { _ =>
+    throw new MessageOnlyException(
+      "Unformatted sbt code found. Please run 'scalafmtSbt' and commit the reformatted code"
+    )
+  }
+}
+
+addCommandAlias("verifyCodeStyle", "headerCheck; verifyCodeFmt")
 
 lazy val amqp = alpakkaProject("amqp", "amqp", Dependencies.Amqp)
 
@@ -95,7 +118,11 @@ lazy val awslambda = alpakkaProject("awslambda",
 
 lazy val azureStorageQueue = alpakkaProject("azure-storage-queue", "azure.storagequeue", Dependencies.AzureStorageQueue)
 
-lazy val cassandra = alpakkaProject("cassandra", "cassandra", Dependencies.Cassandra)
+lazy val cassandra = alpakkaProject("cassandra",
+                                    "cassandra",
+                                    Dependencies.Cassandra,
+                                    crossScalaVersions -= Dependencies.Scala211,
+                                    Test / parallelExecution := false)
 
 lazy val couchbase =
   alpakkaProject("couchbase",
@@ -217,8 +244,7 @@ lazy val kinesis = alpakkaProject(
   "aws.kinesis",
   Dependencies.Kinesis,
   // For mockito https://github.com/akka/alpakka/issues/390
-  parallelExecution in Test := false,
-  fatalWarnings := false
+  Test / parallelExecution := false
 )
 
 lazy val kudu = alpakkaProject("kudu", "kudu", Dependencies.Kudu, fork in Test := false)
@@ -244,6 +270,7 @@ lazy val orientdb = alpakkaProject("orientdb",
                                    fatalWarnings := false)
 
 lazy val reference = internalProject("reference", Dependencies.Reference)
+  .dependsOn(testkit % Test)
 
 lazy val s3 = alpakkaProject("s3", "aws.s3", Dependencies.S3)
 
@@ -299,6 +326,7 @@ lazy val docs = project
     Paradox / siteSubdirName := s"docs/alpakka/${projectInfoVersion.value}",
     paradoxProperties ++= Map(
         "akka.version" -> Dependencies.AkkaVersion,
+        "akka26.version" -> Dependencies.Akka26Version,
         "akka-http.version" -> Dependencies.AkkaHttpVersion,
         "couchbase.version" -> Dependencies.CouchbaseVersion,
         "hadoop.version" -> Dependencies.HadoopVersion,
@@ -315,6 +343,10 @@ lazy val docs = project
         "extref.javaee-api.base_url" -> "https://docs.oracle.com/javaee/7/api/index.html?%s.html",
         "extref.paho-api.base_url" -> "https://www.eclipse.org/paho/files/javadoc/index.html?%s.html",
         "extref.slick.base_url" -> s"https://slick.lightbend.com/doc/${Dependencies.SlickVersion}/%s",
+        // Cassandra
+        "extref.cassandra.base_url" -> s"https://cassandra.apache.org/doc/${Dependencies.CassandraVersionInDocs}/%s",
+        "extref.cassandra-driver.base_url" -> s"https://docs.datastax.com/en/developer/java-driver/${Dependencies.CassandraDriverVersionInDocs}/%s",
+        "javadoc.com.datastax.oss.base_url" -> s"https://docs.datastax.com/en/drivers/java/${Dependencies.CassandraDriverVersionInDocs}/",
         // Solr
         "extref.solr.base_url" -> s"https://lucene.apache.org/solr/guide/${Dependencies.SolrVersionForDocs}/%s",
         "javadoc.org.apache.solr.base_url" -> s"https://lucene.apache.org/solr/${Dependencies.SolrVersionForDocs}_0/solr-solrj/",
@@ -343,6 +375,8 @@ lazy val docs = project
     publishRsyncHost := "akkarepo@gustav.akka.io",
     apidocRootPackage := "akka"
   )
+
+lazy val testkit = internalProject("testkit", Dependencies.testkit)
 
 lazy val whitesourceSupported = project
   .in(file("tmp"))
@@ -381,6 +415,7 @@ def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sb
       mimaBinaryIssueFilters += ProblemFilters.exclude[Problem]("*.impl.*")
     )
     .settings(additionalSettings: _*)
+    .dependsOn(testkit % Test)
 }
 
 def internalProject(projectId: String, additionalSettings: sbt.Def.SettingsDefinition*): Project =

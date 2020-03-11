@@ -1,19 +1,22 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.mqtt.streaming
 package impl
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterAll
 
 import scala.concurrent.Promise
 import scala.concurrent.duration._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class RequestStateSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
+class RequestStateSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with LogCapturing {
 
   val testKit = ActorTestKit()
   override def afterAll(): Unit = testKit.shutdownTestKit()

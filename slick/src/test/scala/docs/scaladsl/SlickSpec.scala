@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -8,6 +8,7 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.slick.scaladsl.{Slick, SlickSession}
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl._
 import akka.testkit.TestKit
 import org.scalatest._
@@ -18,12 +19,20 @@ import slick.jdbc.{GetResult, JdbcProfile}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 /**
  * This unit test is run using a local H2 database using
  * `/tmp/alpakka-slick-h2-test` for temporary storage.
  */
-class SlickSpec extends WordSpec with ScalaFutures with BeforeAndAfterEach with BeforeAndAfterAll with MustMatchers {
+class SlickSpec
+    extends AnyWordSpec
+    with ScalaFutures
+    with BeforeAndAfterEach
+    with BeforeAndAfterAll
+    with Matchers
+    with LogCapturing {
   //#init-mat
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()

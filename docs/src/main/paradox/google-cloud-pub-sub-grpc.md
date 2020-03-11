@@ -20,9 +20,14 @@ Akka gRPC uses Akka Discovery internally. Make sure to add Akka Discovery with t
   group=com.lightbend.akka
   artifact=akka-stream-alpakka-google-cloud-pub-sub-grpc_$scala.binary.version$
   version=$project.version$
+  symbol2=AkkaVersion
+  value2=$akka.version$
   group2=com.typesafe.akka
-  artifact2=akka-discovery_$scala.binary.version$
-  version2=Your-Akka-version
+  artifact2=akka-stream_$scala.binary.version$
+  version2=AkkaVersion
+  group3=com.typesafe.akka
+  artifact3=akka-discovery_$scala.binary.version$
+  version3=AkkaVersion
 }
 
 The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
@@ -82,6 +87,8 @@ reference.conf
 
 Test Configuration
 : @@snip (/google-cloud-pub-sub-grpc/src/test/resources/application.conf)
+
+For more configuration details consider the underlying configuration for @extref:[Akka gRPC](akka-grpc:/client/configuration.html).
 
 A manually initialized @scala[@scaladoc[GrpcPublisher](akka.stream.alpakka.googlecloud.pubsub.grpc.scaladsl.GrpcPublisher)]@java[@scaladoc[GrpcPublisher](akka.stream.alpakka.googlecloud.pubsub.grpc.javadsl.GrpcPublisher)] or @scala[@scaladoc[GrpcSubscriber](akka.stream.alpakka.googlecloud.pubsub.grpc.scaladsl.GrpcSubscriber)]@java[@scaladoc[GrpcSubscriber](akka.stream.alpakka.googlecloud.pubsub.grpc.javadsl.GrpcSubscriber)] can be used by providing it as an attribute to the stream:
 

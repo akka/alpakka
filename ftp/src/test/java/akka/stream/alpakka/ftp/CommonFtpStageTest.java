@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.ftp;
@@ -20,6 +20,7 @@ import org.junit.Assert;
 import java.time.Instant;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -37,6 +38,12 @@ interface CommonFtpStageTest extends BaseSupport, AkkaSupport {
 
   Sink<FtpFile, CompletionStage<IOResult>> getMoveSink(Function<FtpFile, String> destinationPath)
       throws Exception;
+
+  default <T> T await(CompletionStage<T> result)
+      throws InterruptedException, java.util.concurrent.ExecutionException,
+          java.util.concurrent.TimeoutException {
+    return result.toCompletableFuture().get(10, TimeUnit.SECONDS);
+  }
 
   default void listFiles() throws Exception {
     final int numFiles = 30;
@@ -73,7 +80,7 @@ interface CommonFtpStageTest extends BaseSupport, AkkaSupport {
     probe.request(100).expectNextOrComplete();
 
     int expectedNumOfBytes = getDefaultContent().getBytes().length;
-    IOResult result = pairResult.first().toCompletableFuture().get(3, TimeUnit.SECONDS);
+    IOResult result = await(pairResult.first());
 
     assertEquals(IOResult.createSuccessful(expectedNumOfBytes), result);
   }
@@ -90,7 +97,7 @@ interface CommonFtpStageTest extends BaseSupport, AkkaSupport {
         Source.single(fileContent).runWith(sink, materializer);
 
     int expectedNumOfBytes = getDefaultContent().getBytes().length;
-    IOResult result = resultCompletionStage.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    IOResult result = await(resultCompletionStage);
 
     byte[] actualStoredContent = getFtpFileContents(fileName);
 
@@ -104,15 +111,27 @@ interface CommonFtpStageTest extends BaseSupport, AkkaSupport {
 
     final Materializer materializer = getMaterializer();
     Source<FtpFile, NotUsed> source = getBrowserSource("/");
+    // check that the file is listed
+    assertEquals(fileName, await(source.runWith(Sink.head(), materializer)).name());
+
     Sink<FtpFile, CompletionStage<IOResult>> sink = getRemoveSink();
     CompletionStage<IOResult> resultCompletionStage = source.runWith(sink, materializer);
 
-    IOResult result = resultCompletionStage.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    try {
+      IOResult result = await(resultCompletionStage);
 
-    Boolean fileExists = fileExists(fileName);
+      Boolean fileExists = fileExists(fileName);
 
-    assertEquals(IOResult.createSuccessful(1), result);
-    assertFalse(fileExists);
+      assertEquals(IOResult.createSuccessful(1), result);
+      assertFalse(fileExists);
+    } catch (TimeoutException e) {
+      Thread.getAllStackTraces()
+          .keySet()
+          .forEach(
+              (t) ->
+                  System.out.println(
+                      t.getName() + "\nIs Daemon " + t.isDaemon() + "\nIs Alive " + t.isAlive()));
+    }
   }
 
   default void move() throws Exception {
@@ -122,15 +141,27 @@ interface CommonFtpStageTest extends BaseSupport, AkkaSupport {
 
     final Materializer materializer = getMaterializer();
     Source<FtpFile, NotUsed> source = getBrowserSource("/");
+    // check that the file is listed
+    assertEquals(fileName, await(source.runWith(Sink.head(), materializer)).name());
+
     Sink<FtpFile, CompletionStage<IOResult>> sink = getMoveSink((ftpFile) -> fileName2);
     CompletionStage<IOResult> resultCompletionStage = source.runWith(sink, materializer);
 
-    IOResult result = resultCompletionStage.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    try {
+      IOResult result = await(resultCompletionStage);
 
-    assertEquals(IOResult.createSuccessful(1), result);
+      assertEquals(IOResult.createSuccessful(1), result);
 
-    assertFalse(fileExists(fileName));
+      assertFalse(fileExists(fileName));
 
-    assertTrue(fileExists(fileName2));
+      assertTrue(fileExists(fileName2));
+    } catch (TimeoutException e) {
+      Thread.getAllStackTraces()
+          .keySet()
+          .forEach(
+              (t) ->
+                  System.out.println(
+                      t.getName() + "\nIs Daemon " + t.isDaemon() + "\nIs Alive " + t.isAlive()));
+    }
   }
 }

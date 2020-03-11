@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -12,6 +12,7 @@ import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.elasticsearch.scaladsl._
 import akka.stream.alpakka.elasticsearch._
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
@@ -19,14 +20,22 @@ import org.apache.http.entity.StringEntity
 import org.apache.http.message.BasicHeader
 import org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Inspectors, Matchers, WordSpec}
+import org.scalatest.{BeforeAndAfterAll, Inspectors}
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with Inspectors {
+class ElasticsearchSpec
+    extends AnyWordSpec
+    with Matchers
+    with BeforeAndAfterAll
+    with ScalaFutures
+    with Inspectors
+    with LogCapturing {
 
   private implicit val patience = PatienceConfig(10.seconds)
 
@@ -348,16 +357,6 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
       }
     }
 
-    "fail on using `withContext` with retries" in assertAllStagesStopped {
-      intercept[IllegalArgumentException] {
-        ElasticsearchFlow.createWithContext[Book, String](
-          "shouldFail",
-          "_doc",
-          ElasticsearchWriteSettings().withRetryLogic(RetryAtFixedRate(2, 1.seconds))
-        )
-      }
-    }
-
     "not post invalid encoded JSON" in assertAllStagesStopped {
       val books = immutable.Seq(
         "Akka in Action",
@@ -387,7 +386,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
       )
     }
 
-    "retry a failed document and pass retried documents to downstream" in assertAllStagesStopped {
+    "retry a failed document and pass retried documents to downstream (create)" in assertAllStagesStopped {
       val indexName = "sink5"
 
       // Create strict mapping to prevent invalid documents
@@ -437,7 +436,7 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
       )
     }
 
-    "retry ALL failed document and pass retried documents to downstream" in assertAllStagesStopped {
+    "retry ALL failed document and pass retried documents to downstream (createWithPassThrough)" in assertAllStagesStopped {
       val indexName = "sink5_1"
 
       val bookNr = 100
@@ -476,6 +475,107 @@ class ElasticsearchSpec extends WordSpec with Matchers with BeforeAndAfterAll wi
       val writeResults = createBooks.futureValue
 
       writeResults should have size writeMsgs.size
+
+      flush(indexName)
+
+      val expectedBookTitles = Iterator.from(0).map(n => s"Book ${n}").take(bookNr).toSet
+      readTitlesFrom(indexName).futureValue should contain theSameElementsAs expectedBookTitles
+    }
+
+    "retry a failed document and pass retried documents to downstream (createWithContext)" in assertAllStagesStopped {
+      val indexName = "sink5b"
+
+      // Create strict mapping to prevent invalid documents
+      createStrictMapping(indexName)
+
+      val createBooks = Source(
+        immutable
+          .Seq(
+            Map("title" -> "Akka in Action").toJson,
+            Map("subject" -> "Akka Concurrency").toJson,
+            Map("title" -> "Learning Scala").toJson
+          )
+          .zipWithIndex
+      ).map {
+          case (book: JsObject, index: Int) =>
+            WriteMessage.createIndexMessage(index.toString, book) -> index
+          case _ => ??? // Keep the compiler from complaining
+        }
+        .via(
+          ElasticsearchFlow.createWithContext(
+            indexName,
+            "_doc",
+            ElasticsearchWriteSettings()
+              .withRetryLogic(RetryAtFixedRate(5, 100.millis))
+          )
+        )
+        .runWith(Sink.seq)
+
+      val start = System.currentTimeMillis()
+      val writeResults = createBooks.futureValue
+      val end = System.currentTimeMillis()
+
+      writeResults should have size 3
+
+      // Assert retired documents
+      writeResults.map(_._2) should contain theSameElementsInOrderAs Seq(0, 1, 2)
+
+      val (failed, _) = writeResults.filter(!_._1.success).head
+      failed.message shouldBe WriteMessage
+        .createIndexMessage("1", Map("subject" -> "Akka Concurrency").toJson)
+        .withPassThrough(1)
+      failed.errorReason shouldBe Some(
+        "mapping set to strict, dynamic introduction of [subject] within [_doc] is not allowed"
+      )
+
+      // Assert retried 5 times by looking duration
+      assert(end - start > 5 * 100)
+
+      flush(indexName)
+      readTitlesFrom(indexName).futureValue should contain theSameElementsAs Seq(
+        "Akka in Action",
+        "Learning Scala"
+      )
+    }
+
+    "retry ALL failed document and pass retried documents to downstream (createWithContext)" in assertAllStagesStopped {
+      val indexName = "sink5_1b"
+
+      val bookNr = 100
+      val writeMsgs = Iterator
+        .from(0)
+        .take(bookNr)
+        .grouped(5)
+        .zipWithIndex
+        .flatMap {
+          case (numBlock, index) =>
+            val writeMsgBlock = numBlock.map { n =>
+              WriteMessage
+                .createCreateMessage(n.toString, Map("title" -> s"Book ${n}")) -> n
+            }
+
+            val writeMsgFailed = WriteMessage
+                .createCreateMessage("0", Map("title" -> s"Failed")) -> (bookNr + index)
+
+            (writeMsgBlock ++ Iterator(writeMsgFailed)).toList
+        }
+        .toList
+
+      val createBooks = Source(writeMsgs)
+        .via(
+          ElasticsearchFlow.createWithContext(
+            indexName,
+            "_doc",
+            ElasticsearchWriteSettings()
+              .withRetryLogic(RetryAtFixedRate(5, 1.millis))
+          )
+        )
+        .runWith(Sink.seq)
+
+      val writeResults = createBooks.futureValue
+
+      writeResults should have size writeMsgs.size
+      writeResults.map(_._2) should contain theSameElementsInOrderAs writeMsgs.map(_._2)
 
       flush(indexName)
 

@@ -11,6 +11,11 @@ XML parsing module offers Flows for parsing, processing and writing XML document
   group=com.lightbend.akka
   artifact=akka-stream-alpakka-xml_$scala.binary.version$
   version=$project.version$
+  symbol2=AkkaVersion
+  value2=$akka.version$
+  group2=com.typesafe.akka
+  artifact2=akka-stream_$scala.binary.version$
+  version2=AkkaVersion
 }
 
 The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
@@ -20,7 +25,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## XML parsing
 
-XML processing pipeline starts with an @scaladoc[XmlParsing.parser](akka.stream.alpakka.xml.scaladsl.XmlParsing$) flow which parses a stream of @scaladoc[ByteString](akka.util.ByteString)s to XML parser events.
+XML processing pipeline starts with an @apidoc[XmlParsing.parser](XmlParsing$) flow which parses a stream of @apidoc[akka.util.ByteString]s to XML parser events.
 
 Scala
 : @@snip [snip](/xml/src/test/scala/docs/scaladsl/XmlProcessingSpec.scala) { #parser }
@@ -47,7 +52,7 @@ Java
 
 ## XML writing
 
-XML processing pipeline ends with an @scaladoc[XmlWriting.writer](akka.stream.alpakka.xml.scaladsl.XmlWriting$) flow which writes a stream of XML parser events to @scaladoc[ByteString](akka.util.ByteString)s.
+XML processing pipeline ends with an @apidoc[XmlWriting.writer](XmlWriting$) flow which writes a stream of XML parser events to @apidoc[akka.util.ByteString]s.
 
 Scala
 : @@snip [snip](/xml/src/test/scala/docs/scaladsl/XmlWritingSpec.scala) { #writer }
@@ -65,7 +70,7 @@ Java
 
 ## XML Subslice
 
-Use @scaladoc[XmlParsing.subslice](akka.stream.alpakka.xml.scaladsl.XmlParsing$) to filter out all elements not corresponding to a certain path.
+Use @apidoc[XmlParsing.subslice](XmlParsing$) to filter out all elements not corresponding to a certain path.
 
 Scala
 : @@snip [snip](/xml/src/test/scala/docs/scaladsl/XmlSubsliceSpec.scala) { #subslice }
@@ -83,7 +88,7 @@ Java
 
 ## XML Subtree
 
-Use @scaladoc[XmlParsing.subtree](akka.stream.alpakka.xml.scaladsl.XmlParsing$) to handle elements matched to a certain path and their child nodes as `org.w3c.dom.Element`.
+Use @apidoc[XmlParsing.subtree](XmlParsing$) to handle elements matched to a certain path and their child nodes as `org.w3c.dom.Element`.
 
 Scala
 : @@snip [snip](/xml/src/test/scala/docs/scaladsl/XmlSubtreeSpec.scala) { #subtree }

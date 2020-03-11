@@ -26,6 +26,11 @@ is parsed into frames:
   group=com.lightbend.akka
   artifact=akka-stream-alpakka-simple-codecs_$scala.binary.version$
   version=$project.version$
+  symbol2=AkkaVersion
+  value2=$akka.version$
+  group2=com.typesafe.akka
+  artifact2=akka-stream_$scala.binary.version$
+  version2=AkkaVersion
 }
 
 The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
@@ -35,7 +40,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Usage
 
-The flow factory `RecordIOFraming` (@scala[@scaladoc[API](akka.stream.alpakka.recordio.scaladsl.RecordIOFraming$)]@java[@scaladoc[API](akka.stream.alpakka.recordio.javadsl.RecordIOFraming$)]) provides a `scanner`
+The flow factory @apidoc[RecordIOFraming$] provides a `scanner`
 factory method for a @scala[`Flow[ByteString, ByteString, _]`]@java[`Flow<ByteString, ByteString, ?>`] which parses out RecordIO frames.
 
 Scala

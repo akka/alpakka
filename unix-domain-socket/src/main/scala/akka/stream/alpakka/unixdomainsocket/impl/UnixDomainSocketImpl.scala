@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.unixdomainsocket
@@ -12,7 +12,7 @@ import java.nio.file.{Files, Path, Paths}
 
 import akka.actor.{Cancellable, CoordinatedShutdown, ExtendedActorSystem, Extension}
 import akka.annotation.InternalApi
-import akka.event.LoggingAdapter
+import akka.event.{Logging, LoggingAdapter}
 import akka.stream._
 import akka.stream.alpakka.unixdomainsocket.scaladsl
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
@@ -372,9 +372,12 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
 
   private val sel = NativeSelectorProvider.getInstance.openSelector
 
+  /** Override to customise reported log source */
+  protected def logSource: Class[_] = this.getClass
+
   private val ioThread = new Thread(new Runnable {
     override def run(): Unit =
-      nioEventLoop(sel, system.log)
+      nioEventLoop(sel, Logging(system, logSource))
   }, "unix-domain-socket-io")
   ioThread.start()
 
@@ -392,7 +395,7 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
                      backlog: Int = 128,
                      halfClose: Boolean = false): Source[IncomingConnection, Future[ServerBinding]] = {
 
-    val bind = { () =>
+    val bind: () => Source[IncomingConnection, Future[ServerBinding]] = { () =>
       val (incomingConnectionQueue, incomingConnectionSource) =
         Source
           .queue[IncomingConnection](2, OverflowStrategy.backpressure)
@@ -437,6 +440,13 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
           }
         )
       } catch {
+        case e: IOException =>
+          val withAddress = new IOException(e.getMessage + s" ($address)", e)
+          registeredKey.cancel()
+          channel.close()
+          incomingConnectionQueue.fail(withAddress)
+          serverBinding.failure(withAddress)
+
         case NonFatal(e) =>
           registeredKey.cancel()
           channel.close()

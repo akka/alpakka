@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.hdfs.util
@@ -15,11 +15,11 @@ import org.apache.hadoop.fs.{FileStatus, FileSystem, Path}
 import org.apache.hadoop.hdfs.{HdfsConfiguration, MiniDFSCluster}
 import org.apache.hadoop.io.compress.CompressionCodec
 import org.apache.hadoop.io.{SequenceFile, Text}
-import org.scalatest.Matchers
 
 import scala.collection.mutable.ListBuffer
 import scala.language.higherKinds
 import scala.util.Random
+import org.scalatest.matchers.should.Matchers
 
 sealed trait TestUtils {
 

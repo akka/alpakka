@@ -7,11 +7,25 @@
         </encoder>
     </appender>
 
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level [%-20.20thread] %-36.36logger{36}  %msg%n%rEx</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="CapturingAppender" class="akka.stream.alpakka.testkit.CapturingAppender"/>
+
+    <logger name="akka.stream.alpakka.testkit.CapturingAppenderDelegate">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+
+    <logger name="akka" level="DEBUG"/>
     <logger name="org.eclipse.jetty.io" level="info"/>
     <logger name="org.eclipse.jetty.util" level="info"/>
     <logger name="org.eclipse.jetty.servlet" level="warn"/>
 
     <root level="warn">
+        <appender-ref ref="CapturingAppender"/>
         <appender-ref ref="FILE" />
     </root>
 </configuration>

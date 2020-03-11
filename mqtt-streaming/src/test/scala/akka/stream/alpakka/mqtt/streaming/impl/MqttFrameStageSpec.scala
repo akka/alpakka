@@ -1,26 +1,27 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.mqtt.streaming
 package impl
 
 import akka.actor.ActorSystem
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Keep, Source}
 import akka.stream.testkit.javadsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
-import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
 import akka.util.ByteString
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class MqttFrameStageSpec
     extends TestKit(ActorSystem("MqttFrameStageSpec"))
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
-    with BeforeAndAfterAll {
-
-  implicit val mat: Materializer = ActorMaterializer()
+    with BeforeAndAfterAll
+    with LogCapturing {
 
   val MaxPacketSize = 100
 

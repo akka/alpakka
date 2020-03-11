@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.javadsl;
@@ -7,16 +7,19 @@ package docs.javadsl;
 import akka.Done;
 import akka.NotUsed;
 import akka.stream.alpakka.geode.javadsl.Geode;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.RunnableGraph;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 
 public class GeodeSinkTestCase extends GeodeBaseTestCase {
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   @Test
   public void sinkTest() throws ExecutionException, InterruptedException {

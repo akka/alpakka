@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.javadsl;
@@ -9,6 +9,7 @@ import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 
 // #encoding
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.alpakka.text.javadsl.TextFlow;
 import akka.stream.IOResult;
 import akka.stream.javadsl.FileIO;
@@ -21,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 // #encoding
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.nio.file.Path;
@@ -35,6 +37,7 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.*;
 
 public class CharsetCodingFlowsDoc {
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static final ActorSystem system = ActorSystem.create();
   private static final Materializer materializer = ActorMaterializer.create(system);

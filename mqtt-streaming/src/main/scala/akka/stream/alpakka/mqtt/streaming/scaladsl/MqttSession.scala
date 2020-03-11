@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.mqtt.streaming
@@ -179,7 +179,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
 
   private[streaming] override def commandFlow[A](connectionId: ByteString): CommandFlow[A] =
     Flow
-      .lazyInitAsync { () =>
+      .lazyFutureFlow { () =>
         val killSwitch = KillSwitches.shared("command-kill-switch-" + clientSessionId)
 
         Future.successful(
@@ -200,7 +200,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
                 case Command(cp: Connect, _, carry) =>
                   val reply = Promise[Source[ClientConnector.ForwardConnectCommand, NotUsed]]
                   clientConnector ! ClientConnector.ConnectReceivedLocally(connectionId, cp, carry, reply)
-                  Source.fromFutureSource(
+                  Source.futureSource(
                     reply.future.map(_.map {
                       case ClientConnector.ForwardConnect => cp.encode(ByteString.newBuilder).result()
                       case ClientConnector.ForwardPingReq => pingReqBytes
@@ -232,7 +232,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
                       .foreach(_.complete(result.map(_ => Done)))
                   }
 
-                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
+                  Source.future(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
                     case _: RemotePacketRouter.CannotRoute => ByteString.empty
                   }
                 case Command(cp: PubRec, completed, _) =>
@@ -247,7 +247,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
                       .foreach(_.complete(result.map(_ => Done)))
                   }
 
-                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
+                  Source.future(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
                     case _: RemotePacketRouter.CannotRoute => ByteString.empty
                   }
                 case Command(cp: PubComp, completed, _) =>
@@ -262,25 +262,25 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
                       .foreach(_.complete(result.map(_ => Done)))
                   }
 
-                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
+                  Source.future(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
                     case _: RemotePacketRouter.CannotRoute => ByteString.empty
                   }
                 case Command(cp: Subscribe, _, carry) =>
                   val reply = Promise[Subscriber.ForwardSubscribe]
                   clientConnector ! ClientConnector.SubscribeReceivedLocally(connectionId, cp, carry, reply)
-                  Source.fromFuture(
+                  Source.future(
                     reply.future.map(command => cp.encode(ByteString.newBuilder, command.packetId).result())
                   )
                 case Command(cp: Unsubscribe, _, carry) =>
                   val reply = Promise[Unsubscriber.ForwardUnsubscribe]
                   clientConnector ! ClientConnector.UnsubscribeReceivedLocally(connectionId, cp, carry, reply)
-                  Source.fromFuture(
+                  Source.future(
                     reply.future.map(command => cp.encode(ByteString.newBuilder, command.packetId).result())
                   )
                 case Command(cp: Disconnect.type, _, _) =>
                   val reply = Promise[ClientConnector.ForwardDisconnect.type]
                   clientConnector ! ClientConnector.DisconnectReceivedLocally(connectionId, reply)
-                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result()))
+                  Source.future(reply.future.map(_ => cp.encode(ByteString.newBuilder).result()))
                 case c: Command[A] => throw new IllegalStateException(c + " is not a client command")
               }
             )
@@ -519,7 +519,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
 
   override def commandFlow[A](connectionId: ByteString): CommandFlow[A] =
     Flow
-      .lazyInitAsync { () =>
+      .lazyFutureFlow { () =>
         val killSwitch = KillSwitches.shared("command-kill-switch-" + serverSessionId)
 
         Future.successful(
@@ -540,7 +540,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
                 case Command(cp: ConnAck, _, _) =>
                   val reply = Promise[Source[ClientConnection.ForwardConnAckCommand, NotUsed]]
                   serverConnector ! ServerConnector.ConnAckReceivedLocally(connectionId, cp, reply)
-                  Source.fromFutureSource(
+                  Source.futureSource(
                     reply.future.map(_.map {
                       case ClientConnection.ForwardConnAck =>
                         cp.encode(ByteString.newBuilder).result()
@@ -573,7 +573,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
                   }
 
                   Source
-                    .fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result()))
+                    .future(reply.future.map(_ => cp.encode(ByteString.newBuilder).result()))
                     .recover {
                       case _: RemotePacketRouter.CannotRoute => ByteString.empty
                     }
@@ -588,7 +588,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
                       .foreach(_.complete(result.map(_ => Done)))
                   }
 
-                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
+                  Source.future(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
                     case _: RemotePacketRouter.CannotRoute => ByteString.empty
                   }
                 case Command(cp: PubAck, completed, _) =>
@@ -603,7 +603,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
                       .foreach(_.complete(result.map(_ => Done)))
                   }
 
-                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
+                  Source.future(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
                     case _: RemotePacketRouter.CannotRoute => ByteString.empty
                   }
                 case Command(cp: PubRec, completed, _) =>
@@ -618,7 +618,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
                       .foreach(_.complete(result.map(_ => Done)))
                   }
 
-                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
+                  Source.future(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
                     case _: RemotePacketRouter.CannotRoute => ByteString.empty
                   }
                 case Command(cp: PubComp, completed, _) =>
@@ -633,7 +633,7 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
                       .foreach(_.complete(result.map(_ => Done)))
                   }
 
-                  Source.fromFuture(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
+                  Source.future(reply.future.map(_ => cp.encode(ByteString.newBuilder).result())).recover {
                     case _: RemotePacketRouter.CannotRoute => ByteString.empty
                   }
                 case c: Command[A] => throw new IllegalStateException(c + " is not a server command")

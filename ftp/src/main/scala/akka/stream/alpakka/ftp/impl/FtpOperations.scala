@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.ftp
@@ -19,7 +19,16 @@ private[ftp] trait FtpOperations extends CommonFtpOperations { _: FtpLike[FTPCli
   def connect(connectionSettings: FtpSettings)(implicit ftpClient: FTPClient): Try[Handler] = Try {
     connectionSettings.proxy.foreach(ftpClient.setProxy)
 
-    ftpClient.connect(connectionSettings.host, connectionSettings.port)
+    try {
+      ftpClient.connect(connectionSettings.host, connectionSettings.port)
+    } catch {
+      case e: java.net.ConnectException =>
+        throw new java.net.ConnectException(
+          e.getMessage + s" host=[${connectionSettings.host}], port=${connectionSettings.port} ${connectionSettings.proxy
+            .map("proxy=" + _.toString)
+            .getOrElse("")}"
+        )
+    }
 
     connectionSettings.configureConnection(ftpClient)
 

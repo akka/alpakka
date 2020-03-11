@@ -1,13 +1,15 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.sqs.scaladsl
 
 import akka.stream.alpakka.sqs.MessageAttributeName
-import org.scalatest.{FlatSpec, Matchers}
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class MessageAttributeNameSpec extends FlatSpec with Matchers {
+class MessageAttributeNameSpec extends AnyFlatSpec with Matchers with LogCapturing {
 
   it should "not allow names which have periods at the beginning" in {
     a[IllegalArgumentException] should be thrownBy {

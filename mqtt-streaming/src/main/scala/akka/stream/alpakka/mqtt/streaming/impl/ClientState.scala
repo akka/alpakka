@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.mqtt.streaming
@@ -507,7 +507,7 @@ import scala.util.{Either, Failure, Success}
               val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]
 
               Source
-                .fromFutureSource(reply.future)
+                .futureSource(reply.future)
                 .runForeach(msg => context.self ! ReceivedProducerPublishingCommand(msg))
 
               val producer =
@@ -529,7 +529,7 @@ import scala.util.{Either, Failure, Success}
               val reply = Promise[Source[Producer.ForwardPublishingCommand, NotUsed]]
 
               Source
-                .fromFutureSource(reply.future)
+                .futureSource(reply.future)
                 .runForeach(msg => context.self ! ReceivedProducerPublishingCommand(msg))
 
               val producer = context.spawn(

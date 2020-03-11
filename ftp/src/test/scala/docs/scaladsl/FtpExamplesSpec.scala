@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -8,6 +8,7 @@ import java.net.InetAddress
 
 import akka.stream.Materializer
 import akka.stream.alpakka.ftp.{BaseFtpSupport, FtpSettings}
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
@@ -15,9 +16,17 @@ import org.apache.commons.net.PrintCommandListener
 import org.apache.commons.net.ftp.FTPClient
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Seconds, Span}
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class FtpExamplesSpec extends BaseFtpSupport with WordSpecLike with Matchers with BeforeAndAfterAll with ScalaFutures {
+class FtpExamplesSpec
+    extends BaseFtpSupport
+    with AnyWordSpecLike
+    with Matchers
+    with BeforeAndAfterAll
+    with ScalaFutures
+    with LogCapturing {
 
   implicit val materializer: Materializer = getMaterializer
 

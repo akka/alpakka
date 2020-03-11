@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.sqs.scaladsl
@@ -11,7 +11,8 @@ import akka.actor.{ActorSystem, Terminated}
 import akka.stream.alpakka.sqs.SqsSourceSettings
 import akka.stream.{ActorMaterializer, Materializer}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, Suite, Tag}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.{BeforeAndAfterAll, Suite, Tag}
 //#init-client
 import com.github.matsluni.akkahttpspi.AkkaHttpClient
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}

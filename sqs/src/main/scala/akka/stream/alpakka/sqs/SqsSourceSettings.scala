@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.sqs
@@ -135,7 +135,7 @@ final class SqsSourceSettings private (
     s"attributeNames=${attributeNames.mkString(",")}, " +
     s"messageAttributeNames=${messageAttributeNames.mkString(",")}, " +
     s"closeOnEmptyReceive=$closeOnEmptyReceive," +
-    s"visibilityTomeout=${visibilityTimeout.map(_.toCoarsest)}" +
+    s"visibilityTimeout=${visibilityTimeout.map(_.toCoarsest)}" +
     ")"
 }
 

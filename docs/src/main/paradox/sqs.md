@@ -19,6 +19,16 @@ The AWS SQS connector provides Akka Stream sources and sinks for AWS SQS queues.
   group=com.lightbend.akka
   artifact=akka-stream-alpakka-sqs_$scala.binary.version$
   version=$project.version$
+  symbol2=AkkaVersion
+  value2=$akka.version$
+  group2=com.typesafe.akka
+  artifact2=akka-stream_$scala.binary.version$
+  version2=AkkaVersion
+  symbol3=AkkaHttpVersion
+  value3=$akka-http.version$
+  group3=com.typesafe.akka
+  artifact3=akka-http_$scala.binary.version$
+  version3=AkkaHttpVersion
 }
 
 The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
@@ -28,7 +38,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Setup
 
-Prepare an @scaladoc[ActorSystem](akka.actor.ActorSystem) and a @scaladoc[Materializer](akka.stream.Materializer).
+Prepare an @apidoc[akka.actor.ActorSystem] and a @apidoc[Materializer].
 
 Scala
 : @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/DefaultTestContext.scala) { #init-mat }
@@ -51,7 +61,7 @@ The example above uses @extref:[Akka HTTP](akka-http:) as the default HTTP clien
 
 ## Read from an SQS queue
 
-The @scala[@scaladoc[SqsSource](akka.stream.alpakka.sqs.scaladsl.SqsSource$)]@java[@scaladoc[SqsSource](akka.stream.alpakka.sqs.javadsl.SqsSource$)] created source reads AWS Java SDK SQS `Message` objects from any SQS queue given by the queue URL.
+The @apidoc[SqsSource$] created source reads AWS Java SDK SQS `Message` objects from any SQS queue given by the queue URL.
 
 Scala
 : @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsSourceSpec.scala) { #run }
@@ -116,7 +126,7 @@ Java
 : @@snip [snip](/sqs/src/test/java/docs/javadsl/SqsPublishTest.java) { #run-send-request }
 
 You can also build flow stages which publish messages to SQS queues, backpressure on queue response, and then forward 
-@scaladoc[SqsPublishResult](akka.stream.alpakka.sqs.SqsPublishResult) further down the stream.
+@apidoc[SqsPublishResult] further down the stream.
 
 Scala
 : @@snip [snip](/sqs/src/test/scala/docs/scaladsl/SqsPublishSpec.scala) { #flow }
@@ -130,7 +140,7 @@ Java
 ### Group messages and publish batches to an SQS queue
 
 Create a sink, that forwards `String` to the SQS queue. However, the main difference from the previous use case, 
-it batches items and sends as a one request and forwards a @scaladoc[SqsPublishResultEntry](akka.stream.alpakka.sqs.SqsPublishResultEntry)
+it batches items and sends as a one request and forwards a @apidoc[SqsPublishResultEntry]
 further down the stream for each item processed.
 
 Note: There is also another option to send batch of messages to SQS which is using `AmazonSQSBufferedAsyncClient`.
@@ -204,7 +214,7 @@ Options:
 ## Updating message statuses
 
 `SqsAckSink` and `SqsAckFlow` provide the possibility to acknowledge (delete), ignore, or postpone messages on an SQS queue.
-They accept @scaladoc[MessageAction](akka.stream.alpakka.sqs.MessageAction) sub-classes to select the action to be taken.
+They accept @apidoc[MessageAction] sub-classes to select the action to be taken.
 
 For every message you may decide which action to take and push it together with message back to the queue:
 
@@ -244,7 +254,7 @@ Java
 
 ### Update message status in a flow
 
-The `SqsAckFlow` forwards a @scaladoc[SqsAckResult](akka.stream.alpakka.sqs.SqsAckResult) sub-class down the stream:
+The `SqsAckFlow` forwards a @apidoc[SqsAckResult] sub-class down the stream:
 
 - `DeleteResult` to acknowledge message deletion
 - `ChangeMessageVisibilityResult` to acknowledge message visibility change
@@ -274,7 +284,7 @@ Options:
 
 ### Updating message statuses in batches with grouping
 
-`SqsAckFlow.grouped` batches actions on their type and forwards a @scaladoc[SqsAckResultEntry](akka.stream.alpakka.sqs.SqsAckResultEntry) 
+`SqsAckFlow.grouped` batches actions on their type and forwards a @apidoc[SqsAckResultEntry] 
 sub-class for each item processed:
 
 - `DeleteResultEntry` to acknowledge message deletion

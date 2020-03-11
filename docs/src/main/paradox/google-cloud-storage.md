@@ -13,6 +13,19 @@ This connector communicates to Cloud Storage via HTTP requests.
   group=com.lightbend.akka
   artifact=akka-stream-alpakka-google-cloud-storage_$scala.binary.version$
   version=$project.version$
+  symbol2=AkkaVersion
+  value2=$akka.version$
+  group2=com.typesafe.akka
+  artifact2=akka-stream_$scala.binary.version$
+  version2=AkkaVersion
+  symbol3=AkkaHttpVersion
+  value3=$akka-http.version$
+  group3=com.typesafe.akka
+  artifact3=akka-http_$scala.binary.version$
+  version3=AkkaHttpVersion
+  group4=com.typesafe.akka
+  artifact4=akka-http-spray-json_$scala.binary.version$
+  version4=AkkaHttpVersion
 }
 
 The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
@@ -32,7 +45,7 @@ HOCON:
 
 ## Store a file in Google Cloud Storage
 
-A file can be uploaded to Google Cloud Storage by creating a source of @scala[@scaladoc[ByteString](akka.util.ByteString)]@java[@javadoc[ByteString](akka.util.ByteString)] and running that with a sink created from @scala[@scaladoc[GCStorage.resumableUpload](akka.stream.alpakka.googlecloud.storage.scaladsl.GCStorage$)]@java[@scaladoc[GCStorage.resumableUpload](akka.stream.alpakka.googlecloud.storage.javadsl.GCStorage$)].
+A file can be uploaded to Google Cloud Storage by creating a source of @apidoc[akka.util.ByteString] and running that with a sink created from @scala[@scaladoc[GCStorage.resumableUpload](akka.stream.alpakka.googlecloud.storage.scaladsl.GCStorage$)]@java[@scaladoc[GCStorage.resumableUpload](akka.stream.alpakka.googlecloud.storage.javadsl.GCStorage$)].
 
 Scala
 : @@snip [snip](/google-cloud-storage/src/test/scala/docs/scaladsl/GCStorageSinkSpec.scala) { #upload }

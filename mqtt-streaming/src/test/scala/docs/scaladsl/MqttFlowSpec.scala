@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -13,6 +13,7 @@ import akka.stream.alpakka.mqtt.streaming.scaladsl.{ActorMqttClientSession, Acto
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Sink, Source, SourceQueueWithComplete, Tcp}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream._
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
 import akka.util.ByteString
 import org.scalatest._
@@ -20,6 +21,8 @@ import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class UntypedMqttFlowSpec
     extends ParametrizedTestKit("untyped-flow-spec/flow", "typed-flow-spec/topic1", ActorSystem("UntypedMqttFlowSpec"))
@@ -32,12 +35,13 @@ class TypedMqttFlowSpec
 
 class ParametrizedTestKit(val clientId: String, val topic: String, system: ActorSystem) extends TestKit(system)
 
-trait MqttFlowSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with ScalaFutures {
+trait MqttFlowSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll with ScalaFutures with LogCapturing {
   self: ParametrizedTestKit =>
+
+  override def sourceActorSytem = Some(system.name)
 
   private implicit val defaultPatience: PatienceConfig = PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
-  private implicit val mat: Materializer = ActorMaterializer()
   private implicit val dispatcherExecutionContext: ExecutionContext = system.dispatcher
 
   override def afterAll(): Unit =
@@ -125,7 +129,6 @@ trait MqttFlowSpec extends WordSpecLike with Matchers with BeforeAndAfterAll wit
                   case Right(Event(publish @ Publish(flags, _, Some(packetId), _), _))
                       if flags.contains(ControlPacketFlags.RETAIN) =>
                     queue.offer(Command(PubAck(packetId)))
-                    import mat.executionContext
                     subscribed.future.foreach(_ => session ! Command(publish))
                   case _ => // Ignore everything else
                 }

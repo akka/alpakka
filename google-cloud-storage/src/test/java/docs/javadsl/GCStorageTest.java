@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.javadsl;
@@ -14,22 +14,25 @@ import akka.stream.Materializer;
 import akka.stream.alpakka.googlecloud.storage.*;
 import akka.stream.alpakka.googlecloud.storage.javadsl.GCStorage;
 import akka.stream.alpakka.googlecloud.storage.scaladsl.GCStorageWiremockBase;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import com.google.common.collect.Lists;
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
 public class GCStorageTest extends GCStorageWiremockBase {
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
+
   private final Materializer materializer = ActorMaterializer.create(system());
   private final GCStorageSettings sampleSettings = GCStorageExt.get(system()).settings();
 

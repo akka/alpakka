@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.s3.impl.auth
@@ -7,9 +7,10 @@ package akka.stream.alpakka.s3.impl.auth
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class CanonicalRequestSpec extends FlatSpec with Matchers {
+class CanonicalRequestSpec extends AnyFlatSpec with Matchers {
 
   it should "correctly build a canonicalString for eu-central-1" in {
     val req = HttpRequest(

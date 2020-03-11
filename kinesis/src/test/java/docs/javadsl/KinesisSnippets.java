@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.javadsl;
@@ -51,7 +51,6 @@ public class KinesisSnippets {
     // #init-client
 
     // #source-settings
-
     final ShardSettings settings =
         ShardSettings.create("streamName", "shard-id")
             .withRefreshInterval(Duration.ofSeconds(1))

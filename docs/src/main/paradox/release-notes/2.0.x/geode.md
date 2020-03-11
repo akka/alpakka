@@ -1,5 +1,12 @@
 # Geode
 
+## 2.0.0-M3
+
+- geode 1.11.0 [#2065](https://github.com/akka/alpakka/issues/2065) by [@cheleb](https://github.com/cheleb)
+
+[*closed in 2.0.0-M3*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0-M3+label%3Ap%3Ageode)
+
+
 ## 2.0.0-M2
 
 No changes.

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -20,6 +20,7 @@ import scala.collection.JavaConverters._
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util.Properties
+import org.scalatest.flatspec.AsyncFlatSpecLike
 
 // These tests are all live since the Azure Storage Emulator
 // does not run on Linux/Docker yet

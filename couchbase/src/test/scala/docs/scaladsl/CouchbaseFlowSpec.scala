@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -8,6 +8,7 @@ import akka.Done
 import akka.stream.alpakka.couchbase.{CouchbaseDeleteFailure, CouchbaseDeleteResult}
 import akka.stream.alpakka.couchbase.scaladsl.CouchbaseFlow
 import akka.stream.alpakka.couchbase.testing.{CouchbaseSupport, TestObject}
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import com.couchbase.client.java.error.DocumentDoesNotExistException
 import org.scalatest.concurrent.ScalaFutures
@@ -28,17 +29,20 @@ import scala.concurrent.Future
 
 //#init-sourceBulk
 import com.couchbase.client.java.document.JsonDocument
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 //#init-sourceBulk
 
 class CouchbaseFlowSpec
-    extends WordSpec
+    extends AnyWordSpec
     with BeforeAndAfterAll
     with BeforeAndAfterEach
     with CouchbaseSupport
     with Matchers
     with ScalaFutures
-    with Inspectors {
+    with Inspectors
+    with LogCapturing {
 
   override implicit def patienceConfig: PatienceConfig = PatienceConfig(10.seconds, 250.millis)
 

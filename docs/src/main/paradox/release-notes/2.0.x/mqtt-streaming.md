@@ -1,5 +1,13 @@
 # MQTT Streaming
 
+## 2.0.0-M3
+
+- MQTT streaming: target Akka 2.6 [#2118](https://github.com/akka/alpakka/issues/2118) by [@raboof](https://github.com/raboof)
+- MQTT streaming: Using public PropsAdapter API [#2087](https://github.com/akka/alpakka/issues/2087) by [@jcroig](https://github.com/jcroig)
+
+[*closed in 2.0.0-M3*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0-M3+label%3Ap%3Amqtt-streaming)
+
+
 ## 2.0.0-M2
 
 No changes.

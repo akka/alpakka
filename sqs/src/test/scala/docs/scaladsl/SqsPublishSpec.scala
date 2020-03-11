@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -9,16 +9,18 @@ import java.util.concurrent.TimeUnit
 import akka.Done
 import akka.stream.alpakka.sqs._
 import akka.stream.alpakka.sqs.scaladsl._
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{Message, ReceiveMessageRequest, SendMessageRequest}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 
-class SqsPublishSpec extends FlatSpec with Matchers with DefaultTestContext {
+class SqsPublishSpec extends AnyFlatSpec with Matchers with DefaultTestContext with LogCapturing {
 
   abstract class IntegrationFixture(fifo: Boolean = false) {
     val queueUrl: String = if (fifo) randomFifoQueueUrl() else randomQueueUrl()

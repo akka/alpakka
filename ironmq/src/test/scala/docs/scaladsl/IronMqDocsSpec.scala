@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -7,18 +7,27 @@ package docs.scaladsl
 import akka.stream.alpakka.ironmq.PushMessage
 import akka.stream.alpakka.ironmq.impl.IronMqClientForTests
 import akka.stream.alpakka.ironmq.scaladsl._
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
 import akka.{Done, NotUsed}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterAll
 
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class IronMqDocsSpec extends WordSpec with IronMqClientForTests with Matchers with ScalaFutures with BeforeAndAfterAll {
+class IronMqDocsSpec
+    extends AnyWordSpec
+    with IronMqClientForTests
+    with Matchers
+    with ScalaFutures
+    with BeforeAndAfterAll
+    with LogCapturing {
 
   override implicit def patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 250.millis)
 

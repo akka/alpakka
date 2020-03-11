@@ -1,36 +1,45 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.javadsl;
 
+import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
+import akka.stream.*;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.alpakka.unixdomainsocket.javadsl.UnixDomainSocket;
-import akka.stream.javadsl.Flow;
-import akka.stream.javadsl.Framing;
-import akka.stream.javadsl.FramingTruncation;
-import akka.stream.javadsl.Source;
+import akka.stream.javadsl.*;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 import akka.japi.Pair;
 
 import java.nio.file.Files;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 import akka.stream.alpakka.unixdomainsocket.javadsl.UnixDomainSocket.IncomingConnection;
 import akka.stream.alpakka.unixdomainsocket.javadsl.UnixDomainSocket.ServerBinding;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.junit.Assert.assertEquals;
 
 public class UnixDomainSocketTest {
 
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
+
+  private static final Logger log = LoggerFactory.getLogger(UnixDomainSocketTest.class);
   private static ActorSystem system;
   private static Materializer materializer;
+  private static int timeoutSeconds = 10;
 
   private static Pair<ActorSystem, Materializer> setupMaterializer() {
     final ActorSystem system = ActorSystem.create();
@@ -55,7 +64,7 @@ public class UnixDomainSocketTest {
     // #binding
     java.nio.file.Path path = // ...
         // #binding
-        Files.createTempFile("aUnixDomainSocketShouldReceiveWhatIsSent1", ".sock");
+        Files.createTempDirectory("UnixDomainSocketTest").resolve("sock1");
     path.toFile().deleteOnExit();
 
     // #binding
@@ -63,23 +72,42 @@ public class UnixDomainSocketTest {
         UnixDomainSocket.get(system).bind(path);
     // #binding
 
-    // #outgoingConnection
-    connections.runForeach(
-        connection -> {
-          System.out.println("New connection from: " + connection.remoteAddress());
+    final CompletableFuture<ByteString> received = new CompletableFuture<>();
 
-          final Flow<ByteString, ByteString, NotUsed> echo =
-              Flow.of(ByteString.class)
-                  .via(
-                      Framing.delimiter(
-                          ByteString.fromString("\n"), 256, FramingTruncation.DISALLOW))
-                  .map(ByteString::utf8String)
-                  .map(s -> s + "!!!\n")
-                  .map(ByteString::fromString);
-
-          connection.handleWith(echo, materializer);
-        },
-        materializer);
     // #outgoingConnection
+    CompletionStage<ServerBinding> futureBinding =
+        connections
+            .map(
+                connection -> {
+                  log.info("New connection from: {}", connection.remoteAddress());
+
+                  final Flow<ByteString, ByteString, NotUsed> echo =
+                      Flow.of(ByteString.class)
+                          // server logic ...
+                          // #outgoingConnection
+                          .buffer(1, OverflowStrategy.backpressure())
+                          .wireTap(received::complete);
+                  // #outgoingConnection
+
+                  return connection.handleWith(echo, materializer);
+                })
+            .toMat(Sink.ignore(), Keep.left())
+            .run(materializer);
+
+    // #outgoingConnection
+
+    ServerBinding serverBinding =
+        futureBinding.toCompletableFuture().get(timeoutSeconds, TimeUnit.SECONDS);
+
+    final ByteString sendBytes = ByteString.fromString("Hello");
+    final CompletionStage<Done> sent =
+        Source.single(sendBytes)
+            .via(UnixDomainSocket.get(system).outgoingConnection(path))
+            .runWith(Sink.ignore(), materializer);
+
+    sent.toCompletableFuture().get(timeoutSeconds, TimeUnit.SECONDS);
+    assertEquals(sendBytes, received.get(timeoutSeconds, TimeUnit.SECONDS));
+
+    serverBinding.unbind().toCompletableFuture().get(timeoutSeconds, TimeUnit.SECONDS);
   }
 }

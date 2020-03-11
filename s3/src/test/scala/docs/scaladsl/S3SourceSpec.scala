@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -181,7 +181,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
     mock404s()
 
     val download = S3
-      .download("nonexisting_bucket", "nonexisting_file.xml")
+      .download("nonexisting-bucket", "nonexisting_file.xml")
       .runWith(Sink.head)
       .futureValue
 
@@ -189,6 +189,7 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
   }
 
   it should "fail for illegal bucket names" in {
+    @com.github.ghik.silencer.silent
     val dnsStyleAccess = S3Ext(system).settings
       .withPathStyleAccess(true)
       .withEndpointUrl(null)

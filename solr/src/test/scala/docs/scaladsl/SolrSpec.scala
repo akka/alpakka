@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -12,6 +12,7 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.alpakka.solr._
 import akka.stream.alpakka.solr.scaladsl.{SolrFlow, SolrSink, SolrSource}
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
@@ -25,13 +26,15 @@ import org.apache.solr.cloud.{MiniSolrCloudCluster, ZkTestServer}
 import org.apache.solr.common.SolrInputDocument
 import org.junit.Assert.assertTrue
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterAll
 
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class SolrSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
+class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with LogCapturing {
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(5.seconds)
 

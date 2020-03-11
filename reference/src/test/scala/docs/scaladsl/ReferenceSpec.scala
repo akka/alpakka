@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -9,19 +9,22 @@ import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.reference.scaladsl.Reference
 import akka.stream.alpakka.reference._
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.testkit.TestKit
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterAll
 
 import scala.collection.immutable
 import scala.concurrent.Future
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 /**
  * Append "Spec" to every Scala test suite.
  */
-class ReferenceSpec extends WordSpec with BeforeAndAfterAll with ScalaFutures with Matchers {
+class ReferenceSpec extends AnyWordSpec with BeforeAndAfterAll with ScalaFutures with Matchers with LogCapturing {
 
   implicit val sys = ActorSystem("ReferenceSpec")
   implicit val mat: Materializer = ActorMaterializer()

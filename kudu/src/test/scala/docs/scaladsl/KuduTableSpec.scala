@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -8,24 +8,28 @@ import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.stream.alpakka.kudu.{KuduAttributes, KuduTableSettings}
 import akka.stream.alpakka.kudu.scaladsl.KuduTable
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
 import org.apache.kudu.client.{CreateTableOptions, KuduClient, PartialRow}
 import org.apache.kudu.{ColumnSchema, Schema, Type}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class KuduTableSpec
     extends TestKit(ActorSystem())
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
-    with ScalaFutures {
+    with ScalaFutures
+    with LogCapturing {
 
   implicit val materializer: Materializer = ActorMaterializer()
   implicit val defaultPatience: PatienceConfig =

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -8,24 +8,28 @@ import java.nio.file.Paths
 
 import akka.Done
 import akka.actor.ActorSystem
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, IOResult, Materializer}
 import akka.testkit.TestKit
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, RecoverMethods, WordSpecLike}
+import org.scalatest.{BeforeAndAfterAll, RecoverMethods}
 
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.Success
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class CharsetCodingFlowsDoc
     extends TestKit(ActorSystem("charset"))
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
     with ScalaFutures
-    with RecoverMethods {
+    with RecoverMethods
+    with LogCapturing {
 
   private implicit val mat: Materializer = ActorMaterializer()
 

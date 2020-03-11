@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.ftp.impl
@@ -77,11 +77,13 @@ private[ftp] trait CommonFtpOperations {
     if (os != null) os else throw new IOException(s"Could not write to $name")
   }
 
-  def move(fromPath: String, destinationPath: String, handler: Handler): Unit =
-    handler.rename(fromPath, destinationPath)
+  def move(fromPath: String, destinationPath: String, handler: Handler): Unit = {
+    if (!handler.rename(fromPath, destinationPath)) throw new IOException(s"Could not move $fromPath")
+  }
 
-  def remove(path: String, handler: Handler): Unit =
-    handler.deleteFile(path)
+  def remove(path: String, handler: Handler): Unit = {
+    if (!handler.deleteFile(path)) throw new IOException(s"Could not delete $path")
+  }
 
   def completePendingCommand(handler: Handler): Boolean =
     handler.completePendingCommand()

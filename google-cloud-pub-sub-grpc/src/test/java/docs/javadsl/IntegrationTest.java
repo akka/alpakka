@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.javadsl;
@@ -16,6 +16,7 @@ import akka.stream.alpakka.googlecloud.pubsub.grpc.PubSubSettings;
 import akka.stream.alpakka.googlecloud.pubsub.grpc.javadsl.GooglePubSub;
 import akka.stream.alpakka.googlecloud.pubsub.grpc.javadsl.GrpcPublisher;
 import akka.stream.alpakka.googlecloud.pubsub.grpc.javadsl.PubSubAttributes;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.*;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.*;
@@ -24,6 +25,7 @@ import com.google.pubsub.v1.*;
 
 import akka.stream.Materializer;
 import org.junit.AfterClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -38,6 +40,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class IntegrationTest {
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   static final ActorSystem system = ActorSystem.create("IntegrationTest");
   static final Materializer materializer = ActorMaterializer.create(system);

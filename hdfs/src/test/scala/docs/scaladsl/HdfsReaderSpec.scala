@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -9,18 +9,26 @@ import akka.stream.ActorMaterializer
 import akka.stream.alpakka.hdfs._
 import akka.stream.alpakka.hdfs.scaladsl.{HdfsFlow, HdfsSource}
 import akka.stream.alpakka.hdfs.util.ScalaTestUtils._
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.hdfs.MiniDFSCluster
 import org.apache.hadoop.io.Text
 import org.apache.hadoop.io.compress.DefaultCodec
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers, WordSpecLike}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class HdfsReaderSpec extends WordSpecLike with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
+class HdfsReaderSpec
+    extends AnyWordSpecLike
+    with Matchers
+    with BeforeAndAfterAll
+    with BeforeAndAfterEach
+    with LogCapturing {
 
   private var hdfsCluster: MiniDFSCluster = _
   private val destination = "/tmp/alpakka/"

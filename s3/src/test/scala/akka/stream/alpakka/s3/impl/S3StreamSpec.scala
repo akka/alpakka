@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.s3.impl
@@ -9,26 +9,30 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.model.headers.ByteRange
 import akka.stream.alpakka.s3.BucketAccess.{AccessDenied, AccessGranted, NotExists}
 import akka.stream.alpakka.s3.{ApiVersion, BucketAccess, MemoryBufferType, S3Settings}
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Keep, Sink, Source}
-import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
+import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Attributes}
 import akka.testkit.TestKit
 import akka.util.ByteString
 import software.amazon.awssdk.auth.credentials._
 import software.amazon.awssdk.regions.providers._
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers, PrivateMethodTester}
+import org.scalatest.{BeforeAndAfterAll, PrivateMethodTester}
 import software.amazon.awssdk.regions.Region
 
 import scala.concurrent.Future
+import org.scalatest.flatspec.AnyFlatSpecLike
+import org.scalatest.matchers.should.Matchers
 
 class S3StreamSpec(_system: ActorSystem)
     extends TestKit(_system)
-    with FlatSpecLike
+    with AnyFlatSpecLike
     with Matchers
     with BeforeAndAfterAll
     with PrivateMethodTester
     with ScalaFutures
-    with IntegrationPatience {
+    with IntegrationPatience
+    with LogCapturing {
 
   import HttpRequests._
 
@@ -178,5 +182,15 @@ class S3StreamSpec(_system: ActorSystem)
     )
 
     bucketStatusPreparation(responseWithForbiddenCode).futureValue shouldEqual AccessDenied
+  }
+
+  it should "only resolve the default S3 settings once per actor system" in {
+
+    val attr = Attributes()
+    val resolveSettings = PrivateMethod[S3Settings]('resolveSettings)
+    val settings1 = S3Stream invokePrivate resolveSettings(attr, system)
+    val settings2 = S3Stream invokePrivate resolveSettings(attr, system)
+
+    settings1 eq settings2 shouldBe true
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -12,11 +12,13 @@ import akka.stream.alpakka.sqs.scaladsl._
 import akka.stream.alpakka.sqs._
 import akka.stream.alpakka.sqs.SqsAckResult._
 import akka.stream.alpakka.sqs.SqsAckResultEntry._
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{spy, times, verify, when}
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.mockito.MockitoSugar.mock
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model._
@@ -24,7 +26,7 @@ import software.amazon.awssdk.services.sqs.model._
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 
-class SqsAckSpec extends FlatSpec with Matchers with DefaultTestContext {
+class SqsAckSpec extends AnyFlatSpec with Matchers with DefaultTestContext with LogCapturing {
 
   trait IntegrationFixture {
     val queueUrl: String = randomQueueUrl()

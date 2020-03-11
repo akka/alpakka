@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.sns
@@ -7,17 +7,19 @@ package akka.stream.alpakka.sns
 import java.util.concurrent.CompletableFuture
 
 import akka.stream.alpakka.sns.scaladsl.SnsPublisher
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Keep, Sink}
 import akka.stream.testkit.scaladsl.TestSource
 import org.mockito.ArgumentMatchers.{any, eq => meq}
 import org.mockito.Mockito._
-import org.scalatest._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.must.Matchers
 import software.amazon.awssdk.services.sns.model.{PublishRequest, PublishResponse}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class SnsPublishMockingSpec extends FlatSpec with DefaultTestContext with MustMatchers {
+class SnsPublishMockingSpec extends AnyFlatSpec with DefaultTestContext with Matchers with LogCapturing {
 
   it should "publish a single PublishRequest message to sns" in {
     val publishRequest = PublishRequest.builder().topicArn("topic-arn").message("sns-message").build()

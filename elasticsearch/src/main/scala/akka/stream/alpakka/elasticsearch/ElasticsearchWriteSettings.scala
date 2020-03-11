@@ -1,33 +1,29 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.elasticsearch
 
 import scala.concurrent.duration._
-import scala.collection.immutable
 import akka.util.JavaDurationConverters._
 
 trait RetryLogic {
-  def shouldRetry(retries: Int, errors: immutable.Seq[String]): Boolean
-  def nextRetry(retries: Int): FiniteDuration
+  def maxRetries: Int
+  def minBackoff: scala.concurrent.duration.FiniteDuration
+  def maxBackoff: scala.concurrent.duration.FiniteDuration
 }
 
 object RetryNever extends RetryLogic {
-  override def shouldRetry(retries: Int, errors: immutable.Seq[String]): Boolean = false
-  override def nextRetry(retries: Int): FiniteDuration = Duration.Zero
+  override def maxRetries: Int = 0
+  override def minBackoff: scala.concurrent.duration.FiniteDuration = Duration.Zero
+  override def maxBackoff: scala.concurrent.duration.FiniteDuration = Duration.Zero
 }
 
-/**
- * Note: If using retries, you will receive
- * messages out of order downstream in cases where
- * elastic returns error one some of the documents in a
- * bulk request.
- */
-final class RetryAtFixedRate private (maxRetries: Int, retryInterval: scala.concurrent.duration.FiniteDuration)
+final class RetryAtFixedRate(_maxRetries: Int, retryInterval: scala.concurrent.duration.FiniteDuration)
     extends RetryLogic {
-  override def shouldRetry(retries: Int, errors: immutable.Seq[String]): Boolean = retries < maxRetries
-  override def nextRetry(retries: Int): FiniteDuration = retryInterval
+  override val maxRetries: Int = _maxRetries
+  override val minBackoff: scala.concurrent.duration.FiniteDuration = retryInterval
+  override def maxBackoff: scala.concurrent.duration.FiniteDuration = retryInterval
 }
 
 object RetryAtFixedRate {
@@ -37,6 +33,26 @@ object RetryAtFixedRate {
 
   def create(maxRetries: Int, retryInterval: java.time.Duration): RetryAtFixedRate =
     new RetryAtFixedRate(maxRetries, retryInterval.asScala)
+}
+
+final class RetryWithBackoff(_maxRetries: Int,
+                             _minBackoff: scala.concurrent.duration.FiniteDuration,
+                             _maxBackoff: scala.concurrent.duration.FiniteDuration)
+    extends RetryLogic {
+  override val maxRetries: Int = _maxRetries
+  override val minBackoff: scala.concurrent.duration.FiniteDuration = _minBackoff
+  override def maxBackoff: scala.concurrent.duration.FiniteDuration = _maxBackoff
+}
+
+object RetryWithBackoff {
+
+  def apply(maxRetries: Int,
+            minBackoff: scala.concurrent.duration.FiniteDuration,
+            maxBackoff: scala.concurrent.duration.FiniteDuration): RetryWithBackoff =
+    new RetryWithBackoff(maxRetries, minBackoff, maxBackoff)
+
+  def create(maxRetries: Int, minBackoff: java.time.Duration, maxBackoff: java.time.Duration): RetryWithBackoff =
+    new RetryWithBackoff(maxRetries, minBackoff.asScala, maxBackoff.asScala)
 }
 
 /**

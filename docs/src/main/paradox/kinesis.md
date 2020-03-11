@@ -8,22 +8,12 @@ For more information about Kinesis please visit the [Kinesis documentation](http
 
 Another Kinesis connector which is based on the Kinesis Client Library is available.
 
-The KCL Source can read from several shards and rebalance automatically when other Workers are started or stopped. It also handles record sequence checkpoints.
-
-Please read more about it at [GitHub aserrallerios/kcl-akka-stream](https://github.com/aserrallerios/kcl-akka-stream).
-@@@
-
-
-@@@ note { title="Alternative connector 2" }
-
-Another Kinesis connector which is based on the Kinesis Client Library is available.
-
 This library combines the convenience of Akka Streams with KCL checkpoint management, failover, load-balancing, and re-sharding capabilities.
 
 Please read more about it at [GitHub StreetContxt/kcl-akka-stream](https://github.com/StreetContxt/kcl-akka-stream).
 @@@
 
-@@@ note { title="Alternative connector 3" }
+@@@ note { title="Alternative connector 2" }
 
 Another Kinesis connector which is based on the Kinesis Client Library 2.x is available.
 
@@ -40,6 +30,16 @@ Please read more about it at [GitHub 500px/kinesis-stream](https://github.com/50
   group=com.lightbend.akka
   artifact=akka-stream-alpakka-kinesis_$scala.binary.version$
   version=$project.version$
+  symbol2=AkkaVersion
+  value2=$akka.version$
+  group2=com.typesafe.akka
+  artifact2=akka-stream_$scala.binary.version$
+  version2=AkkaVersion
+  symbol3=AkkaHttpVersion
+  value3=$akka-http.version$
+  group3=com.typesafe.akka
+  artifact3=akka-http_$scala.binary.version$
+  version3=AkkaHttpVersion
 }
 
 The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
@@ -54,7 +54,7 @@ The table below shows direct dependencies of this module and the second tab show
 Sources and Flows provided by this connector need a `KinesisAsyncClient` instance to consume messages from a shard.
 
 @@@ note
-The `KinesisAsyncClient` instance you supply is thread-safe and can be shared amongst multiple `GraphStages`. 
+The `KinesisAsyncClient` instance you supply is thread-safe and can be shared amongst multiple `GraphStages`.
 As a result, individual `GraphStages` will not automatically shutdown the supplied client when they complete.
 It is recommended to shut the client instance down on Actor system termination.
 @@@
@@ -104,10 +104,10 @@ objects by calling [GetRecords](http://docs.aws.amazon.com/kinesis/latest/APIRef
 
 ### Kinesis Put via Flow or as Sink
 
-The 
-@scala[@scaladoc[KinesisFlow](akka.stream.alpakka.kinesis.scaladsl.KinesisFlow$) (or @scaladoc[KinesisSink](akka.stream.alpakka.kinesis.scaladsl.KinesisSink$))] 
-@java[@scaladoc[KinesisFlow](akka.stream.alpakka.kinesis.javadsl.KinesisFlow$) (or @scaladoc[KinesisSink](akka.stream.alpakka.kinesis.javadsl.KinesisSink$))] 
-publishes messages into a Kinesis stream using its partition key and message body. It uses dynamic size batches and can perform several requests in parallel. These features are necessary to achieve the best possible write throughput to the stream. The Flow outputs the result of publishing each record.
+The
+@scala[@scaladoc[KinesisFlow](akka.stream.alpakka.kinesis.scaladsl.KinesisFlow$) (or @scaladoc[KinesisSink](akka.stream.alpakka.kinesis.scaladsl.KinesisSink$))]
+@java[@scaladoc[KinesisFlow](akka.stream.alpakka.kinesis.javadsl.KinesisFlow$) (or @scaladoc[KinesisSink](akka.stream.alpakka.kinesis.javadsl.KinesisSink$))]
+publishes messages into a Kinesis stream using its partition key and message body. It uses dynamic size batches, can perform several requests in parallel and retries failed records. These features are necessary to achieve the best possible write throughput to the stream. The Flow outputs the result of publishing each record.
 
 @@@ warning
 Batching has a drawback: message order cannot be guaranteed, as some records within a single batch may fail to be published. That also means that the Flow output may not match the same input order.
@@ -146,6 +146,46 @@ Scala
 Java
 : @@snip [snip](/kinesis/src/test/java/docs/javadsl/KinesisSnippets.java) { #error-handling }
 @@@
+
+# AWS KCL Scheduler Source & checkpointer
+
+The KCL Source can read from several shards and rebalance automatically when other Schedulers are started or stopped. It also handles record sequence checkpoints.
+
+For more information about KCL please visit the [official documentation](http://docs.aws.amazon.com/streams/latest/dev/developing-consumers-with-kcl-v2.html).
+
+## Usage
+
+The KCL Scheduler Source needs to create and manage Scheduler instances in order to consume records from Kinesis Streams.
+
+In order to use it, you need to provide a Scheduler builder and the Source settings:
+
+Scala
+: @@snip (/kinesis/src/test/scala/docs/scaladsl/KclSnippets.scala) { #scheduler-settings }
+
+Java
+: @@snip (/kinesis/src/test/java/docs/javadsl/KclSnippets.java) { #scheduler-settings }
+
+Then the Source can be created as usual:
+
+Scala
+: @@snip (/kinesis/src/test/scala/docs/scaladsl/KclSnippets.scala) { #scheduler-source }
+
+Java
+: @@snip (/kinesis/src/test/java/docs/javadsl/KclSnippets.java) { #scheduler-source }
+
+## Committing records
+
+The KCL Scheduler Source publishes messages downstream that can be committed in order to mark progression of consumers by shard. This process can be done manually or using the provided checkpointer Flow/Sink.
+
+In order to use the Flow/Sink you must provide additional checkpoint settings:
+
+Scala
+: @@snip (/kinesis/src/test/scala/docs/scaladsl/KclSnippets.scala) { #checkpoint }
+
+Java
+: @@snip (/kinesis/src/test/java/docs/javadsl/KclSnippets.java) { #checkpoint }
+
+Note that checkpointer Flow may not maintain the input order of records of different shards.
 
 ## Kinesis Firehose Streams
 
@@ -201,9 +241,9 @@ Java
 : @@snip [snip](/kinesis/src/test/java/docs/javadsl/KinesisFirehoseSnippets.java) { #flow-sink }
 
 @@@ warning
-As of version 2, the library will not retry failed requests. See @ref[AWS Retry Configuration](aws-shared-configuration.md) how to configure it for the @javadoc[FirehoseAsyncClient](software.amazon.awssdk.services.firehose.FirehoseAsyncClient). 
+As of version 2, the library will not retry failed requests. See @ref[AWS Retry Configuration](aws-shared-configuration.md) how to configure it for the @javadoc[FirehoseAsyncClient](software.amazon.awssdk.services.firehose.FirehoseAsyncClient).
 
-This means that you may have to inspect individual responses to make sure they have been successful: 
+This means that you may have to inspect individual responses to make sure they have been successful:
 
 Scala
 : @@snip [snip](/kinesis/src/test/scala/docs/scaladsl/KinesisFirehoseSnippets.scala) { #error-handling }

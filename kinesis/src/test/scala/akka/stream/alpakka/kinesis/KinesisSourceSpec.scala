@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.kinesis
@@ -9,6 +9,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.stream.alpakka.kinesis.scaladsl.KinesisSource
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.util.ByteString
@@ -16,13 +17,14 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kinesis.model._
 
 import scala.concurrent.duration._
 
-class KinesisSourceSpec extends WordSpecLike with Matchers with KinesisMock {
+class KinesisSourceSpec extends AnyWordSpec with Matchers with KinesisMock with LogCapturing {
 
   implicit class recordToString(r: Record) {
     def utf8String: String = ByteString(r.data.asByteBuffer).utf8String

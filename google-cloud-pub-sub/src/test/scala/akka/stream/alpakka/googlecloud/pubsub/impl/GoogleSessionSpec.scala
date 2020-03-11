@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.googlecloud.pubsub.impl
@@ -7,15 +7,24 @@ package akka.stream.alpakka.googlecloud.pubsub.impl
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.pubsub.impl.GoogleTokenApi.AccessTokenExpiry
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import org.mockito.Mockito.{when, _}
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
-class GoogleSessionSpec extends FlatSpec with ScalaFutures with MockitoSugar with BeforeAndAfterAll with Matchers {
+class GoogleSessionSpec
+    extends AnyFlatSpec
+    with ScalaFutures
+    with MockitoSugar
+    with BeforeAndAfterAll
+    with Matchers
+    with LogCapturing {
 
   private trait Fixtures {
     val mockTokenApi = mock[GoogleTokenApi]

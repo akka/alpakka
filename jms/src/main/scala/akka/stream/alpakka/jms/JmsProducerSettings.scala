@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.jms
@@ -7,6 +7,8 @@ package akka.stream.alpakka.jms
 import akka.actor.ActorSystem
 import akka.util.JavaDurationConverters._
 import com.typesafe.config.{Config, ConfigValueType}
+
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * Settings for [[akka.stream.alpakka.jms.scaladsl.JmsProducer]] and [[akka.stream.alpakka.jms.javadsl.JmsProducer]].
@@ -18,7 +20,8 @@ final class JmsProducerSettings private (
     val destination: Option[Destination],
     val credentials: Option[Credentials],
     val sessionCount: Int,
-    val timeToLive: Option[scala.concurrent.duration.Duration]
+    val timeToLive: Option[scala.concurrent.duration.Duration],
+    val connectionStatusSubscriptionTimeout: scala.concurrent.duration.FiniteDuration
 ) extends akka.stream.alpakka.jms.JmsSettings {
 
   /** Factory to use for creating JMS connections. */
@@ -63,6 +66,14 @@ final class JmsProducerSettings private (
    */
   def withTimeToLive(value: java.time.Duration): JmsProducerSettings = copy(timeToLive = Option(value).map(_.asScala))
 
+  /**  Timeout for connection status subscriber */
+  def withConnectionStatusSubscriptionTimeout(value: FiniteDuration): JmsProducerSettings =
+    copy(connectionStatusSubscriptionTimeout = value)
+
+  /** Java API: Timeout for connection status subscriber */
+  def withConnectionStatusSubscriptionTimeout(value: java.time.Duration): JmsProducerSettings =
+    copy(connectionStatusSubscriptionTimeout = value.asScala)
+
   private def copy(
       connectionFactory: javax.jms.ConnectionFactory = connectionFactory,
       connectionRetrySettings: ConnectionRetrySettings = connectionRetrySettings,
@@ -70,7 +81,9 @@ final class JmsProducerSettings private (
       destination: Option[Destination] = destination,
       credentials: Option[Credentials] = credentials,
       sessionCount: Int = sessionCount,
-      timeToLive: Option[scala.concurrent.duration.Duration] = timeToLive
+      timeToLive: Option[scala.concurrent.duration.Duration] = timeToLive,
+      connectionStatusSubscriptionTimeout: scala.concurrent.duration.FiniteDuration =
+        connectionStatusSubscriptionTimeout
   ): JmsProducerSettings = new JmsProducerSettings(
     connectionFactory = connectionFactory,
     connectionRetrySettings = connectionRetrySettings,
@@ -78,7 +91,8 @@ final class JmsProducerSettings private (
     destination = destination,
     credentials = credentials,
     sessionCount = sessionCount,
-    timeToLive = timeToLive
+    timeToLive = timeToLive,
+    connectionStatusSubscriptionTimeout = connectionStatusSubscriptionTimeout
   )
 
   override def toString =
@@ -89,7 +103,8 @@ final class JmsProducerSettings private (
     s"destination=$destination," +
     s"credentials=$credentials," +
     s"sessionCount=$sessionCount," +
-    s"timeToLive=${timeToLive.map(_.toCoarsest)}" +
+    s"timeToLive=${timeToLive.map(_.toCoarsest)}," +
+    s"connectionStatusSubscriptionTimeout=${connectionStatusSubscriptionTimeout.toCoarsest}" +
     ")"
 }
 
@@ -114,6 +129,7 @@ object JmsProducerSettings {
     val credentials = getOption("credentials", c => Credentials(c.getConfig("credentials")))
     val sessionCount = c.getInt("session-count")
     val timeToLive = getOption("time-to-live", _.getDuration("time-to-live").asScala)
+    val connectionStatusSubscriptionTimeout = c.getDuration("connection-status-subscription-timeout").asScala
     new JmsProducerSettings(
       connectionFactory,
       connectionRetrySettings,
@@ -121,7 +137,8 @@ object JmsProducerSettings {
       destination = None,
       credentials,
       sessionCount,
-      timeToLive
+      timeToLive,
+      connectionStatusSubscriptionTimeout
     )
   }
 

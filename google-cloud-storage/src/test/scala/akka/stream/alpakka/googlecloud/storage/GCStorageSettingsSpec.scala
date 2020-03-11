@@ -1,14 +1,17 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.googlecloud.storage
 
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{FlatSpecLike, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
+
 import scala.collection.JavaConverters._
 
-class GCStorageSettingsSpec extends FlatSpecLike with Matchers {
+class GCStorageSettingsSpec extends AnyFlatSpec with Matchers with LogCapturing {
   "GCStorageSettings" should "create settings from application config" in {
     val projectId = "projectId"
     val clientEmail = "clientEmail"

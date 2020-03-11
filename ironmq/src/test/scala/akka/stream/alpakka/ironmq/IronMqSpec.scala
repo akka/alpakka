@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.ironmq
@@ -8,16 +8,24 @@ import java.util.UUID
 
 import akka.actor.ActorSystem
 import akka.stream.alpakka.ironmq.impl.IronMqClient
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.{ActorMaterializer, Materializer}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterEach
 
 import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration._
 import scala.util.hashing.MurmurHash3
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-abstract class IronMqSpec extends WordSpec with Matchers with ScalaFutures with BeforeAndAfterEach {
+abstract class IronMqSpec
+    extends AnyWordSpec
+    with Matchers
+    with ScalaFutures
+    with BeforeAndAfterEach
+    with LogCapturing {
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(timeout = 15.seconds, interval = 1.second)
   val DefaultActorSystemTerminateTimeout: Duration = 10.seconds

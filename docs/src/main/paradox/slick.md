@@ -10,6 +10,11 @@ The Slick connector provides Scala and Java DSLs to create a `Source` to stream 
   group=com.lightbend.akka
   artifact=akka-stream-alpakka-slick_$scala.binary.version$
   version=$project.version$
+  symbol2=AkkaVersion
+  value2=$akka.version$
+  group2=com.typesafe.akka
+  artifact2=akka-stream_$scala.binary.version$
+  version2=AkkaVersion
 }
 
 You will also need to add the JDBC driver(s) for the specific relational database(s) to your project. Most of those database have drivers that are not available from public repositories so unfortunately some manual steps will probably be required. The Slick documentation has @extref[information on where to download the drivers](slick:supported-databases.html).
@@ -21,7 +26,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Initialization
 
-As always, before we get started we will need an @scaladoc[ActorSystem](akka.actor.ActorSystem) and a @scaladoc[Materializer](akka.stream.Materializer).
+As always, before we get started we will need an @apidoc[akka.actor.ActorSystem] and a @scaladoc[Materializer](akka.stream.Materializer).
 
 Scala
 : @@snip [snip](/slick/src/test/scala/docs/scaladsl/SlickSpec.scala) { #init-mat }

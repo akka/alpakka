@@ -1,32 +1,25 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.ftp
 
 import akka.{Done, NotUsed}
 import akka.stream.IOResult
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatest.{
-  Args,
-  BeforeAndAfter,
-  BeforeAndAfterAll,
-  Inside,
-  Matchers,
-  Status,
-  TestSuite,
-  TestSuiteMixin,
-  WordSpecLike
-}
+import org.scalatest.{Args, BeforeAndAfter, BeforeAndAfterAll, Inside, Status, TestSuite, TestSuiteMixin}
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 trait BaseSpec
     extends TestSuiteMixin
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfter
     with BeforeAndAfterAll
@@ -34,7 +27,8 @@ trait BaseSpec
     with IntegrationPatience
     with Inside
     with AkkaSupport
-    with BaseSupport { this: TestSuite =>
+    with BaseSupport
+    with LogCapturing { this: TestSuite =>
 
   protected def listFiles(basePath: String): Source[FtpFile, NotUsed]
 

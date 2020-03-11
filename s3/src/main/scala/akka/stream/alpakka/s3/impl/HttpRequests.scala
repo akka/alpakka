@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.s3.impl
@@ -16,6 +16,7 @@ import akka.http.scaladsl.model.{ContentTypes, RequestEntity, _}
 import akka.stream.alpakka.s3.{ApiVersion, S3Settings}
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import org.slf4j.LoggerFactory
 import software.amazon.awssdk.regions.Region
 
 import scala.collection.immutable.Seq
@@ -25,6 +26,8 @@ import scala.concurrent.{ExecutionContext, Future}
  * Internal Api
  */
 @InternalApi private[impl] object HttpRequests {
+
+  private final val log = LoggerFactory.getLogger(getClass)
 
   def listBucket(
       bucket: String,
@@ -135,7 +138,7 @@ import scala.concurrent.{ExecutionContext, Future}
     val upload = multipartCopy.multipartUpload
     val copyPartition = multipartCopy.copyPartition
     val range = copyPartition.range
-    val source = copyPartition.sourceLocation
+    val source = copyPartition.sourceLocation.validate(conf)
     val sourceHeaderValuePrefix = s"/${source.bucket}/${source.key}"
     val sourceHeaderValue = sourceVersionId
       .map(versionId => s"$sourceHeaderValuePrefix?versionId=$versionId")
@@ -156,7 +159,8 @@ import scala.concurrent.{ExecutionContext, Future}
   private[this] def s3Request(s3Location: S3Location, method: HttpMethod, uriFn: Uri => Uri = identity)(
       implicit conf: S3Settings
   ): HttpRequest = {
-    val s3RequestUri = uriFn(requestUri(s3Location.bucket, Some(s3Location.key)))
+    val loc = s3Location.validate(conf)
+    val s3RequestUri = uriFn(requestUri(loc.bucket, Some(loc.key)))
 
     HttpRequest(method)
       .withHeaders(
@@ -167,11 +171,15 @@ import scala.concurrent.{ExecutionContext, Future}
   }
 
   @throws(classOf[IllegalUriException])
-  private[this] def requestAuthority(bucket: String, region: Region)(implicit conf: S3Settings): Authority =
+  private[this] def requestAuthority(bucket: String, region: Region)(implicit conf: S3Settings): Authority = {
+    if (conf.pathStyleAccess) {
+      log.warn(
+        "AWS S3 is going to retire path-style access (https://aws.amazon.com/blogs/aws/amazon-s3-path-deprecation-plan-the-rest-of-the-story/)"
+      )
+    }
     conf.endpointUrl match {
       case Some(endpointUrl) => Uri(endpointUrl).authority
       case None =>
-        validateBucketName(bucket, conf)
         region match {
           case Region.US_EAST_1 =>
             if (conf.pathStyleAccess) {
@@ -187,31 +195,6 @@ import scala.concurrent.{ExecutionContext, Future}
             }
         }
     }
-
-  private def validateBucketName(bucket: String, conf: S3Settings) = {
-    if (conf.pathStyleAccess) {
-      val bucketRegex = "(/\\.\\.)|(\\.\\./)".r
-      if (bucketRegex.findFirstIn(bucket).nonEmpty || ".." == bucket) {
-        throw IllegalUriException(
-          "The bucket name contains sub-dir selection with `..`",
-          "Selecting sub-directories with `..` is forbidden (and won't work with non-path-style access)."
-        )
-      }
-    } else {
-      // https://docs.aws.amazon.com/AmazonS3/latest/dev/BucketRestrictions.html
-      val bucketRegex = "[^a-z0-9\\-\\.]{1,255}|[\\.]{2,}".r
-      bucketRegex.findFirstIn(bucket) match {
-        case Some(illegalCharacter) =>
-          throw IllegalUriException(
-            "Bucket name contains non-LDH characters",
-            s"""The following character is not allowed: $illegalCharacter
-
-               | This may be solved by setting alpakka.s3.path-style-access to true in the configuration.
-                 """.stripMargin
-          )
-        case None => ()
-      }
-    }
   }
 
   private[this] def requestUri(bucket: String, key: Option[String])(implicit conf: S3Settings): Uri = {
@@ -221,7 +204,7 @@ import scala.concurrent.{ExecutionContext, Future}
       Uri.Path.Empty
     }
     val path = key.fold(basePath) { someKey =>
-      someKey.split("/").foldLeft(basePath)((acc, p) => acc / p)
+      someKey.split("/", -1).foldLeft(basePath)((acc, p) => acc / p)
     }
     val uri = Uri(path = path, authority = requestAuthority(bucket, conf.s3RegionProvider.getRegion))
       .withHost(requestAuthority(bucket, conf.s3RegionProvider.getRegion).host)

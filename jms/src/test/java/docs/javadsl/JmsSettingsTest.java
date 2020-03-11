@@ -1,12 +1,14 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.javadsl;
 
 import akka.stream.alpakka.jms.*;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import com.typesafe.config.ConfigFactory;
 import org.apache.activemq.ActiveMQConnectionFactory;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -22,6 +24,8 @@ import scala.Option;
 // #retry-settings #send-retry-settings
 
 public class JmsSettingsTest {
+
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   @Test
   public void producerSettings() throws Exception {

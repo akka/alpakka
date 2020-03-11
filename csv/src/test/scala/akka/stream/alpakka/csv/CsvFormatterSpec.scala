@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.csv
@@ -8,9 +8,11 @@ import java.nio.charset.StandardCharsets
 
 import akka.stream.alpakka.csv.impl.CsvFormatter
 import akka.stream.alpakka.csv.scaladsl.CsvQuotingStyle
-import org.scalatest.{Matchers, WordSpec}
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class CsvFormatterSpec extends WordSpec with Matchers {
+class CsvFormatterSpec extends AnyWordSpec with Matchers with LogCapturing {
 
   "CSV Formatter comma as delimiter" should {
     val formatter = new CsvFormatter(',', '\"', '\\', "\r\n", CsvQuotingStyle.Required)

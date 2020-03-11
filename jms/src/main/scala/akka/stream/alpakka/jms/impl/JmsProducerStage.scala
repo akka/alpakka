@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.jms.impl
@@ -90,8 +90,8 @@ private[jms] final class JmsProducerStage[E <: JmsEnvelope[PassThrough], PassThr
       protected val jmsSettings: JmsProducerSettings = settings
 
       override def preStart(): Unit = {
-        super.preStart()
         ec = executionContext(inheritedAttributes)
+        super.preStart()
         initSessionAsync()
       }
 
@@ -149,7 +149,7 @@ private[jms] final class JmsProducerStage[E <: JmsEnvelope[PassThrough], PassThr
       private def publishAndCompleteStage(): Unit = {
         val previous = updateState(InternalConnectionState.JmsConnectorStopping(Success(Done)))
         closeSessions()
-        JmsConnector.connection(previous).foreach(_.close())
+        closeConnectionAsync(JmsConnector.connection(previous))
         completeStage()
       }
 
