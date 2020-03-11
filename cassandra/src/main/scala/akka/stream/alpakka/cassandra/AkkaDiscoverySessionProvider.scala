@@ -24,7 +24,7 @@ import scala.concurrent.{ExecutionContext, Future}
  * provided by the configured Akka Discovery mechanism.
  *
  * Example using config-based Akka Discovery:
- * ```
+ * {{{
  * akka {
  *   discovery.method = config
  * }
@@ -45,14 +45,14 @@ import scala.concurrent.{ExecutionContext, Future}
  * alpakka.cassandra {
  *   service-discovery.name ="cassandra-service"
  * }
- * ```
+ * }}}
  *
- * Look up this  `CassandraSession` with
- * ```
+ * Look up this `CassandraSession` with
+ * {{{
  * CassandraSessionRegistry
  *   .get(system)
  *   .sessionFor(CassandraSessionSettings.create())
- * ```
+ * }}}
  */
 private[cassandra] object AkkaDiscoverySessionProvider {
 

@@ -20,7 +20,7 @@ object CassandraFlow {
 
   /**
    * A flow writing to Cassandra for every stream element.
-   * The element is emitted unchanged.
+   * The element to be persisted is emitted unchanged.
    *
    * @param writeSettings settings to configure the write operation
    * @param cqlStatement raw CQL statement
@@ -49,7 +49,7 @@ object CassandraFlow {
 
   /**
    * A flow writing to Cassandra for every stream element, passing context along.
-   * The element and context are emitted unchanged.
+   * The element (to be persisted) and the context are emitted unchanged.
    *
    * @param writeSettings settings to configure the write operation
    * @param cqlStatement raw CQL statement

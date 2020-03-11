@@ -17,7 +17,7 @@ object CassandraFlow {
 
   /**
    * A flow writing to Cassandra for every stream element.
-   * The element is emitted unchanged.
+   * The element to be persisted is emitted unchanged.
    *
    * @param session Cassandra session from `CassandraSessionRegistry`
    * @param writeSettings settings to configure the write operation
@@ -37,7 +37,7 @@ object CassandraFlow {
 
   /**
    * A flow writing to Cassandra for every stream element, passing context along.
-   * The element and context are emitted unchanged.
+   * The element (to be persisted) and the context are emitted unchanged.
    *
    * @param session Cassandra session from `CassandraSessionRegistry`
    * @param writeSettings settings to configure the write operation
