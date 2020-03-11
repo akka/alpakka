@@ -64,9 +64,10 @@ jobs:
       - PRE_CMD="docker-compose up -d gcloud-pubsub-emulator_prep"
     - name: google-cloud-storage
     - name: google-fcm
-    - name: hbase
-      env:
-      - PRE_CMD="docker-compose up -d hbase"
+# hbase disabled until we resolve why new docker image fails our build: https://github.com/akka/alpakka/issues/2185
+#    - name: hbase
+#      env:
+#      - PRE_CMD="docker-compose up -d hbase"
     - name: hdfs
     - name: influxdb
       env:
