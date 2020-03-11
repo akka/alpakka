@@ -147,7 +147,7 @@ class CassandraFlowSpec extends CassandraSpecBase(ActorSystem("CassandraFlowSpec
       rows must contain theSameElementsAs persons.map(_._1)
     }
 
-    "allow unlogged batches" in assertAllStagesStopped {
+    "allow batches" in assertAllStagesStopped {
       val table = createTableName()
       withSchemaMetadataDisabled {
         lifecycleSession.executeDDL(s"""
