@@ -106,9 +106,20 @@ object Dependencies {
       )
   )
 
+  val CassandraVersionInDocs = "4.0"
+  val CassandraDriverVersion = "4.5.0"
+  val CassandraDriverVersionInDocs = "4.5"
+  // Performance dropped by ~40% when the driver upgraded to latest netty version
+  // override for now https://datastax-oss.atlassian.net/browse/JAVA-2676
+  val CassandraOverrideNettyVersion = "4.1.39.Final"
+
   val Cassandra = Seq(
     libraryDependencies ++= Seq(
-        "com.datastax.cassandra" % "cassandra-driver-core" % "3.7.1" // ApacheV2
+        ("com.datastax.oss" % "java-driver-core" % CassandraDriverVersion).exclude("com.github.spotbugs",
+                                                                                   "spotbugs-annotations"),
+        "io.netty" % "netty-handler" % CassandraOverrideNettyVersion,
+        "io.netty" % "netty-all" % CassandraOverrideNettyVersion,
+        "com.typesafe.akka" %% "akka-discovery" % AkkaVersion % Provided
       )
   )
 

@@ -5,26 +5,38 @@
 package akka.stream.alpakka.cassandra.scaladsl
 
 import akka.NotUsed
-import akka.annotation.ApiMayChange
-import akka.stream.alpakka.cassandra.impl.CassandraSourceStage
 import akka.stream.scaladsl.Source
-import com.datastax.driver.core._
+import com.datastax.oss.driver.api.core.cql.{Row, Statement}
 
 import scala.concurrent.Future
 
-@ApiMayChange // https://github.com/akka/alpakka/issues/1213
+/**
+ * Scala API.
+ */
 object CassandraSource {
 
   /**
-   * Scala API: creates a [[CassandraSourceStage]] from a given statement.
+   * Prepare, bind and execute a select statement in one go.
+   *
+   * See <a href="https://docs.datastax.com/en/dse/6.7/cql/cql/cql_using/queriesTOC.html">Querying data</a>.
    */
-  def apply(stmt: Statement)(implicit session: Session): Source[Row, NotUsed] =
-    Source.fromGraph(new CassandraSourceStage(Future.successful(stmt), session))
+  def apply(cqlStatement: String, bindValues: AnyRef*)(implicit session: CassandraSession): Source[Row, NotUsed] =
+    session.select(cqlStatement, bindValues: _*)
 
   /**
-   * Scala API: creates a [[CassandraSourceStage]] from the result of a given Future.
+   * Create a [[akka.stream.scaladsl.Source Source]] from a given statement.
+   *
+   * See <a href="https://docs.datastax.com/en/dse/6.7/cql/cql/cql_using/queriesTOC.html">Querying data</a>.
    */
-  def fromFuture(futStmt: Future[Statement])(implicit session: Session): Source[Row, NotUsed] =
-    Source.fromGraph(new CassandraSourceStage(futStmt, session))
+  def apply(stmt: Statement[_])(implicit session: CassandraSession): Source[Row, NotUsed] =
+    session.select(stmt)
+
+  /**
+   * Create a [[akka.stream.scaladsl.Source Source]] from a given statement.
+   *
+   * See <a href="https://docs.datastax.com/en/dse/6.7/cql/cql/cql_using/queriesTOC.html">Querying data</a>.
+   */
+  def fromFuture(stmt: Future[Statement[_]])(implicit session: CassandraSession): Source[Row, NotUsed] =
+    session.select(stmt)
 
 }

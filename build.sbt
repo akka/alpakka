@@ -118,7 +118,11 @@ lazy val awslambda = alpakkaProject("awslambda",
 
 lazy val azureStorageQueue = alpakkaProject("azure-storage-queue", "azure.storagequeue", Dependencies.AzureStorageQueue)
 
-lazy val cassandra = alpakkaProject("cassandra", "cassandra", Dependencies.Cassandra)
+lazy val cassandra = alpakkaProject("cassandra",
+                                    "cassandra",
+                                    Dependencies.Cassandra,
+                                    crossScalaVersions -= Dependencies.Scala211,
+                                    Test / parallelExecution := false)
 
 lazy val couchbase =
   alpakkaProject("couchbase",
@@ -339,6 +343,10 @@ lazy val docs = project
         "extref.javaee-api.base_url" -> "https://docs.oracle.com/javaee/7/api/index.html?%s.html",
         "extref.paho-api.base_url" -> "https://www.eclipse.org/paho/files/javadoc/index.html?%s.html",
         "extref.slick.base_url" -> s"https://slick.lightbend.com/doc/${Dependencies.SlickVersion}/%s",
+        // Cassandra
+        "extref.cassandra.base_url" -> s"https://cassandra.apache.org/doc/${Dependencies.CassandraVersionInDocs}/%s",
+        "extref.cassandra-driver.base_url" -> s"https://docs.datastax.com/en/developer/java-driver/${Dependencies.CassandraDriverVersionInDocs}/%s",
+        "javadoc.com.datastax.oss.base_url" -> s"https://docs.datastax.com/en/drivers/java/${Dependencies.CassandraDriverVersionInDocs}/",
         // Solr
         "extref.solr.base_url" -> s"https://lucene.apache.org/solr/guide/${Dependencies.SolrVersionForDocs}/%s",
         "javadoc.org.apache.solr.base_url" -> s"https://lucene.apache.org/solr/${Dependencies.SolrVersionForDocs}_0/solr-solrj/",

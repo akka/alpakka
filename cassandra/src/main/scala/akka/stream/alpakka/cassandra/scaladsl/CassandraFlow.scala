@@ -5,76 +5,122 @@
 package akka.stream.alpakka.cassandra.scaladsl
 
 import akka.NotUsed
-import akka.annotation.ApiMayChange
 import akka.dispatch.ExecutionContexts
-import akka.stream.FlowShape
-import akka.stream.alpakka.cassandra.CassandraBatchSettings
-import akka.stream.scaladsl.{Flow, GraphDSL}
-import com.datastax.driver.core.{BatchStatement, BoundStatement, PreparedStatement, Session}
-import akka.stream.alpakka.cassandra.impl.GuavaFutures._
+import akka.stream.alpakka.cassandra.CassandraWriteSettings
+import akka.stream.scaladsl.{Flow, FlowWithContext}
+import com.datastax.oss.driver.api.core.cql.{BatchStatement, BoundStatement, PreparedStatement}
 
 import scala.collection.JavaConverters._
+import scala.concurrent.Future
 
 /**
  * Scala API to create Cassandra flows.
  */
-@ApiMayChange // https://github.com/akka/alpakka/issues/1213
 object CassandraFlow {
-  def createWithPassThrough[T](
-      parallelism: Int,
-      statement: PreparedStatement,
-      statementBinder: (T, PreparedStatement) => BoundStatement
-  )(implicit session: Session): Flow[T, T, NotUsed] =
-    Flow[T].mapAsync(parallelism)(
-      t ⇒
-        session
-          .executeAsync(statementBinder(t, statement))
-          .asScala()
-          .map(_ => t)(ExecutionContexts.sameThreadExecutionContext)
-    )
 
   /**
-   * Creates a flow that batches using an unlogged batch. Use this when most of the elements in the stream
-   * share the same partition key. Cassandra unlogged batches that share the same partition key will only
+   * A flow writing to Cassandra for every stream element.
+   * The element to be persisted is emitted unchanged.
+   *
+   * @param writeSettings settings to configure the write operation
+   * @param cqlStatement raw CQL statement
+   * @param statementBinder function to bind data from the stream element to the prepared statement
+   * @param session implicit Cassandra session from `CassandraSessionRegistry`
+   * @tparam T stream element type
+   */
+  def create[T](
+      writeSettings: CassandraWriteSettings,
+      cqlStatement: String,
+      statementBinder: (T, PreparedStatement) => BoundStatement
+  )(implicit session: CassandraSession): Flow[T, T, NotUsed] = {
+    Flow
+      .lazyInitAsync { () =>
+        val prepare = session.prepare(cqlStatement)
+        prepare.map { preparedStatement =>
+          Flow[T].mapAsync(writeSettings.parallelism) { element =>
+            session
+              .executeWrite(statementBinder(element, preparedStatement))
+              .map(_ => element)(ExecutionContexts.sameThreadExecutionContext)
+          }
+        }(session.ec)
+      }
+      .mapMaterializedValue(_ => NotUsed)
+  }
+
+  /**
+   * A flow writing to Cassandra for every stream element, passing context along.
+   * The element (to be persisted) and the context are emitted unchanged.
+   *
+   * @param writeSettings settings to configure the write operation
+   * @param cqlStatement raw CQL statement
+   * @param statementBinder function to bind data from the stream element to the prepared statement
+   * @param session implicit Cassandra session from `CassandraSessionRegistry`
+   * @tparam T stream element type
+   * @tparam Ctx context type
+   */
+  def withContext[T, Ctx](
+      writeSettings: CassandraWriteSettings,
+      cqlStatement: String,
+      statementBinder: (T, PreparedStatement) => BoundStatement
+  )(implicit session: CassandraSession): FlowWithContext[T, Ctx, T, Ctx, NotUsed] = {
+    FlowWithContext.fromTuples {
+      Flow
+        .lazyInitAsync { () =>
+          val prepare = session.prepare(cqlStatement)
+          prepare.map { preparedStatement =>
+            Flow[(T, Ctx)].mapAsync(writeSettings.parallelism) {
+              case tuple @ (element, _) =>
+                session
+                  .executeWrite(statementBinder(element, preparedStatement))
+                  .map(_ => tuple)(ExecutionContexts.sameThreadExecutionContext)
+            }
+          }(session.ec)
+        }
+        .mapMaterializedValue(_ => NotUsed)
+    }
+  }
+
+  /**
+   * Creates a flow that uses [[com.datastax.oss.driver.api.core.cql.BatchStatement]] and groups the
+   * elements internally into batches using the `writeSettings` and per `groupingKey`.
+   * Use this when most of the elements in the stream share the same partition key.
+   *
+   * Cassandra batches that share the same partition key will only
    * resolve to one write internally in Cassandra, boosting write performance.
    *
-   * Be aware that this stage does not preserve the upstream order.
+   * "A LOGGED batch to a single partition will be converted to an UNLOGGED batch as an optimization."
+   * ([[http://cassandra.apache.org/doc/latest/cql/dml.html#batch Batch CQL]])
+   *
+   * Be aware that this stage does NOT preserve the upstream order.
+   *
+   * @param writeSettings settings to configure the batching and the write operation
+   * @param cqlStatement raw CQL statement
+   * @param statementBinder function to bind data from the stream element to the prepared statement
+   * @param groupingKey groups the elements to go into the same batch
+   * @param session implicit Cassandra session from `CassandraSessionRegistry`
+   * @tparam T stream element type
+   * @tparam K extracted key type for grouping into batches
    */
-  def createUnloggedBatchWithPassThrough[T, K](
-      parallelism: Int,
-      statement: PreparedStatement,
-      statementBinder: (T, PreparedStatement) => BoundStatement,
-      partitionKey: T => K,
-      settings: CassandraBatchSettings = CassandraBatchSettings()
-  )(implicit session: Session): Flow[T, T, NotUsed] = {
-    val graph = GraphDSL.create() { implicit builder =>
-      import GraphDSL.Implicits._
-
-      val groupStage: FlowShape[T, Seq[T]] =
-        builder.add(Flow[T].groupedWithin(settings.maxGroupSize, settings.maxGroupWait))
-
-      val groupByKeyStage: FlowShape[Seq[T], Seq[T]] =
-        builder.add(Flow[Seq[T]].map(_.groupBy(partitionKey).values.toList).mapConcat(identity))
-
-      val batchStatementStage: FlowShape[Seq[T], Seq[T]] = builder.add(
-        Flow[Seq[T]].mapAsyncUnordered(parallelism)(
-          list => {
-            val boundStatements = list.map(t => statementBinder(t, statement))
-            val batchStatement = new BatchStatement(BatchStatement.Type.UNLOGGED).addAll(boundStatements.asJava)
-            session
-              .executeAsync(batchStatement)
-              .asScala()
-              .map(_ => list)(ExecutionContexts.sameThreadExecutionContext)
-          }
-        )
-      )
-
-      val flattenResults: FlowShape[Seq[T], T] = builder.add(Flow[Seq[T]].mapConcat(_.toList))
-
-      groupStage ~> groupByKeyStage ~> batchStatementStage ~> flattenResults
-
-      FlowShape(groupStage.in, flattenResults.out)
-    }
-    Flow.fromGraph(graph)
+  def createBatch[T, K](writeSettings: CassandraWriteSettings,
+                        cqlStatement: String,
+                        statementBinder: (T, PreparedStatement) => BoundStatement,
+                        groupingKey: T => K)(implicit session: CassandraSession): Flow[T, T, NotUsed] = {
+    Flow
+      .lazyInitAsync { () =>
+        val prepareStatement: Future[PreparedStatement] = session.prepare(cqlStatement)
+        prepareStatement.map { preparedStatement =>
+          Flow[T]
+            .groupedWithin(writeSettings.maxBatchSize, writeSettings.maxBatchWait)
+            .map(_.groupBy(groupingKey).values.toList)
+            .mapConcat(identity)
+            .mapAsyncUnordered(writeSettings.parallelism) { list =>
+              val boundStatements = list.map(t => statementBinder(t, preparedStatement))
+              val batchStatement = BatchStatement.newInstance(writeSettings.batchType).addAll(boundStatements.asJava)
+              session.executeWriteBatch(batchStatement).map(_ => list)(ExecutionContexts.sameThreadExecutionContext)
+            }
+            .mapConcat(_.toList)
+        }(session.ec)
+      }
+      .mapMaterializedValue(_ => NotUsed)
   }
 }
