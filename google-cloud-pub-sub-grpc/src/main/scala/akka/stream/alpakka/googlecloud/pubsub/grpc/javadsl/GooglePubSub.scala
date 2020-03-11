@@ -76,7 +76,7 @@ object GooglePubSub {
    * @param request the subscription FQRS field is mandatory for the request
    * @param pollInterval time between PullRequest messages are being sent
    */
-  def subscribe(
+  def subscribePolling(
       request: PullRequest,
       pollInterval: Duration
   ): Source[ReceivedMessage, CompletableFuture[Cancellable]] =

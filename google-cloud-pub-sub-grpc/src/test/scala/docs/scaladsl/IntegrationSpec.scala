@@ -136,7 +136,7 @@ class IntegrationSpec
         .withMaxMessages(10)
 
       val subscriptionSource: Source[ReceivedMessage, Future[Cancellable]] =
-        GooglePubSub.subscribe(request, pollInterval = 1.second)
+        GooglePubSub.subscribePolling(request, pollInterval = 1.second)
       //#subscribe-sync
 
       val first = subscriptionSource.runWith(Sink.head)

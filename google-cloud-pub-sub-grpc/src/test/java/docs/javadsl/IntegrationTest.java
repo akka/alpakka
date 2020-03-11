@@ -158,7 +158,7 @@ public class IntegrationTest {
 
     final Duration pollInterval = Duration.ofSeconds(1);
     final Source<ReceivedMessage, CompletableFuture<Cancellable>> subscriptionSource =
-        GooglePubSub.subscribe(request, pollInterval);
+        GooglePubSub.subscribePolling(request, pollInterval);
     // #subscribe-sync
 
     final CompletionStage<ReceivedMessage> first =
