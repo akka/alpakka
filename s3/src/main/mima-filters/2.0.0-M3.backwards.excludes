@@ -1,0 +1,2 @@
+# MiMa upgrade
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.s3.S3Settings.this")
