@@ -123,7 +123,7 @@ services:
         python subscriber.py alpakka create testTopic testSubscription
       "
   hbase:
-    image: harisekhon/hbase:1.4
+    image: seglo/hbase:1.4
     hostname: hbase
     ports:
       - 2181:2181
