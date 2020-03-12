@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.s3.scaladsl
 
+import java.net.{InetAddress, UnknownHostException}
 import java.util.concurrent.TimeUnit
 
 import akka.{Done, NotUsed}
@@ -45,13 +46,11 @@ trait S3IntegrationSpec
 
   implicit val defaultPatience: PatienceConfig = PatienceConfig(90.seconds, 30.millis)
 
-  val defaultRegionBucket = "my-test-us-east-1"
+  val defaultBucket = "my-test-us-east-1"
+  val nonExistingBucket = "nowhere"
 
-  val otherRegion = Region.EU_CENTRAL_1
-  val otherRegionProvider = new AwsRegionProvider {
-    val getRegion: Region = otherRegion
-  }
-  val otherRegionBucket = "my.test.frankfurt" // with dots forcing path style access
+  // with dots forcing path style access
+  val bucketWithDots = "my.test.frankfurt"
 
   val objectKey = "test"
 
@@ -67,9 +66,13 @@ trait S3IntegrationSpec
       |}
     """.stripMargin)
 
-  @com.github.ghik.silencer.silent
-  def otherRegionSettings =
-    S3Settings().withPathStyleAccess(true).withS3RegionProvider(otherRegionProvider)
+  @com.github.ghik.silencer.silent("path-style access")
+  def otherRegionSettingsPathStyleAccess =
+    S3Settings()
+      .withPathStyleAccess(true)
+      .withS3RegionProvider(new AwsRegionProvider {
+        val getRegion: Region = Region.EU_CENTRAL_1
+      })
   def listBucketVersion1Settings =
     S3Settings().withListBucketApiVersion(ApiVersion.ListBucketVersion1)
   def invalidCredentials = S3Settings() //Empty settings to be override in MinioSpec
@@ -79,7 +82,7 @@ trait S3IntegrationSpec
 
   it should "list with real credentials" in {
     val result = S3
-      .listBucket(defaultRegionBucket, None)
+      .listBucket(defaultBucket, None)
       .runWith(Sink.seq)
 
     val listingResult = result.futureValue
@@ -88,7 +91,7 @@ trait S3IntegrationSpec
 
   it should "list with real credentials using the Version 1 API" in {
     val result = S3
-      .listBucket(defaultRegionBucket, None)
+      .listBucket(defaultBucket, None)
       .withAttributes(S3Attributes.settings(listBucketVersion1Settings))
       .runWith(Sink.seq)
 
@@ -98,8 +101,8 @@ trait S3IntegrationSpec
 
   it should "list with real credentials in non us-east-1 zone" in {
     val result = S3
-      .listBucket(otherRegionBucket, None)
-      .withAttributes(S3Attributes.settings(otherRegionSettings))
+      .listBucket(bucketWithDots, None)
+      .withAttributes(S3Attributes.settings(otherRegionSettingsPathStyleAccess))
       .runWith(Sink.seq)
 
     val listingResult = result.futureValue
@@ -112,7 +115,7 @@ trait S3IntegrationSpec
     val data = Source.single(ByteString(objectValue))
 
     val result =
-      S3.putObject(defaultRegionBucket,
+      S3.putObject(defaultBucket,
                    objectKey,
                    data,
                    bytes.length,
@@ -130,15 +133,15 @@ trait S3IntegrationSpec
 
     val result = for {
       put <- S3
-        .putObject(defaultRegionBucket,
+        .putObject(defaultBucket,
                    objectKey,
                    data,
                    bytes.length,
                    s3Headers = S3Headers().withMetaHeaders(MetaHeaders(metaHeaders)))
         .runWith(Sink.head)
-      metaBefore <- S3.getObjectMetadata(defaultRegionBucket, objectKey).runWith(Sink.head)
-      delete <- S3.deleteObject(defaultRegionBucket, objectKey).runWith(Sink.head)
-      metaAfter <- S3.getObjectMetadata(defaultRegionBucket, objectKey).runWith(Sink.head)
+      metaBefore <- S3.getObjectMetadata(defaultBucket, objectKey).runWith(Sink.head)
+      delete <- S3.deleteObject(defaultBucket, objectKey).runWith(Sink.head)
+      metaAfter <- S3.getObjectMetadata(defaultBucket, objectKey).runWith(Sink.head)
     } yield {
       (put, delete, metaBefore, metaAfter)
     }
@@ -156,17 +159,17 @@ trait S3IntegrationSpec
     val result =
       source
         .runWith(
-          S3.multipartUpload(defaultRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
+          S3.multipartUpload(defaultBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
         )
 
     val multipartUploadResult = Await.ready(result, 90.seconds).futureValue
-    multipartUploadResult.bucket shouldBe defaultRegionBucket
+    multipartUploadResult.bucket shouldBe defaultBucket
     multipartUploadResult.key shouldBe objectKey
   }
 
   it should "download with real credentials" in {
     val Some((source, meta)) =
-      Await.ready(S3.download(defaultRegionBucket, objectKey).runWith(Sink.head), 5.seconds).futureValue
+      Await.ready(S3.download(defaultBucket, objectKey).runWith(Sink.head), 5.seconds).futureValue
 
     val bodyFuture = source
       .map(_.decodeString("utf8"))
@@ -180,7 +183,7 @@ trait S3IntegrationSpec
   }
 
   it should "delete with real credentials" in {
-    val delete = S3.deleteObject(defaultRegionBucket, objectKey).runWith(Sink.head)
+    val delete = S3.deleteObject(defaultBucket, objectKey).runWith(Sink.head)
     delete.futureValue shouldEqual akka.Done
   }
 
@@ -191,11 +194,11 @@ trait S3IntegrationSpec
       Source
         .single(ByteString(hugeString))
         .runWith(
-          S3.multipartUpload(defaultRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
+          S3.multipartUpload(defaultBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
         )
 
     val multipartUploadResult = result.futureValue
-    multipartUploadResult.bucket shouldBe defaultRegionBucket
+    multipartUploadResult.bucket shouldBe defaultBucket
     multipartUploadResult.key shouldBe objectKey
   }
 
@@ -206,9 +209,9 @@ trait S3IntegrationSpec
     val results = for {
       upload <- source
         .runWith(
-          S3.multipartUpload(defaultRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
+          S3.multipartUpload(defaultBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
         )
-      download <- S3.download(defaultRegionBucket, objectKey).runWith(Sink.head).flatMap {
+      download <- S3.download(defaultBucket, objectKey).runWith(Sink.head).flatMap {
         case Some((downloadSource, _)) =>
           downloadSource
             .map(_.decodeString("utf8"))
@@ -219,11 +222,11 @@ trait S3IntegrationSpec
 
     val (multipartUploadResult, downloaded) = Await.result(results, 10.seconds)
 
-    multipartUploadResult.bucket shouldBe defaultRegionBucket
+    multipartUploadResult.bucket shouldBe defaultBucket
     multipartUploadResult.key shouldBe objectKey
     downloaded shouldBe objectValue
 
-    S3.deleteObject(defaultRegionBucket, objectKey).runWith(Sink.head).futureValue shouldEqual akka.Done
+    S3.deleteObject(defaultBucket, objectKey).runWith(Sink.head).futureValue shouldEqual akka.Done
   }
 
   it should "upload, download and delete with brackets in the key" in {
@@ -233,9 +236,9 @@ trait S3IntegrationSpec
     val results = for {
       upload <- source
         .runWith(
-          S3.multipartUpload(defaultRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
+          S3.multipartUpload(defaultBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
         )
-      download <- S3.download(defaultRegionBucket, objectKey).runWith(Sink.head).flatMap {
+      download <- S3.download(defaultBucket, objectKey).runWith(Sink.head).flatMap {
         case Some((downloadSource, _)) =>
           downloadSource
             .map(_.decodeString("utf8"))
@@ -246,11 +249,11 @@ trait S3IntegrationSpec
 
     val (multipartUploadResult, downloaded) = Await.result(results, 10.seconds)
 
-    multipartUploadResult.bucket shouldBe defaultRegionBucket
+    multipartUploadResult.bucket shouldBe defaultBucket
     multipartUploadResult.key shouldBe objectKey
     downloaded shouldBe objectValue
 
-    S3.deleteObject(defaultRegionBucket, objectKey).runWith(Sink.head).futureValue shouldEqual akka.Done
+    S3.deleteObject(defaultBucket, objectKey).runWith(Sink.head).futureValue shouldEqual akka.Done
   }
 
   it should "upload, download and delete with spaces in the key in non us-east-1 zone" in uploadDownloadAndDeleteInOtherRegionCase(
@@ -272,9 +275,9 @@ trait S3IntegrationSpec
     val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
 
     val results = for {
-      upload <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey))
-      copy <- S3.multipartCopy(defaultRegionBucket, sourceKey, defaultRegionBucket, targetKey).run()
-      download <- S3.download(defaultRegionBucket, targetKey).runWith(Sink.head).flatMap {
+      upload <- source.runWith(S3.multipartUpload(defaultBucket, sourceKey))
+      copy <- S3.multipartCopy(defaultBucket, sourceKey, defaultBucket, targetKey).run()
+      download <- S3.download(defaultBucket, targetKey).runWith(Sink.head).flatMap {
         case Some((downloadSource, _)) =>
           downloadSource
             .map(_.decodeString("utf8"))
@@ -285,14 +288,14 @@ trait S3IntegrationSpec
 
     whenReady(results) {
       case (upload, copy, downloaded) =>
-        upload.bucket shouldEqual defaultRegionBucket
+        upload.bucket shouldEqual defaultBucket
         upload.key shouldEqual sourceKey
-        copy.bucket shouldEqual defaultRegionBucket
+        copy.bucket shouldEqual defaultBucket
         copy.key shouldEqual targetKey
         downloaded shouldBe objectValue
 
-        S3.deleteObject(defaultRegionBucket, sourceKey).runWith(Sink.head).futureValue shouldEqual akka.Done
-        S3.deleteObject(defaultRegionBucket, targetKey).runWith(Sink.head).futureValue shouldEqual akka.Done
+        S3.deleteObject(defaultBucket, sourceKey).runWith(Sink.head).futureValue shouldEqual akka.Done
+        S3.deleteObject(defaultBucket, targetKey).runWith(Sink.head).futureValue shouldEqual akka.Done
     }
   }
 
@@ -303,27 +306,27 @@ trait S3IntegrationSpec
     val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
 
     val results = for {
-      upload1 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey1))
-      upload2 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey2))
-      upload3 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey3))
+      upload1 <- source.runWith(S3.multipartUpload(defaultBucket, sourceKey1))
+      upload2 <- source.runWith(S3.multipartUpload(defaultBucket, sourceKey2))
+      upload3 <- source.runWith(S3.multipartUpload(defaultBucket, sourceKey3))
     } yield (upload1, upload2, upload3)
 
     whenReady(results) {
       case (upload1, upload2, upload3) =>
-        upload1.bucket shouldEqual defaultRegionBucket
+        upload1.bucket shouldEqual defaultBucket
         upload1.key shouldEqual sourceKey1
-        upload2.bucket shouldEqual defaultRegionBucket
+        upload2.bucket shouldEqual defaultBucket
         upload2.key shouldEqual sourceKey2
-        upload3.bucket shouldEqual defaultRegionBucket
+        upload3.bucket shouldEqual defaultBucket
         upload3.key shouldEqual sourceKey3
 
-        S3.deleteObjectsByPrefix(defaultRegionBucket, Some("original"))
+        S3.deleteObjectsByPrefix(defaultBucket, Some("original"))
           .runWith(Sink.ignore)
           .futureValue shouldEqual akka.Done
         val numOfKeysForPrefix =
-          S3.listBucket(defaultRegionBucket, Some("original")).runFold(0)((result, _) => result + 1).futureValue
+          S3.listBucket(defaultBucket, Some("original")).runFold(0)((result, _) => result + 1).futureValue
         numOfKeysForPrefix shouldEqual 0
-        S3.deleteObject(defaultRegionBucket, sourceKey3).runWith(Sink.head).futureValue shouldEqual akka.Done
+        S3.deleteObject(defaultBucket, sourceKey3).runWith(Sink.head).futureValue shouldEqual akka.Done
     }
   }
 
@@ -333,22 +336,22 @@ trait S3IntegrationSpec
     val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
 
     val results = for {
-      upload1 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey1))
-      upload2 <- source.runWith(S3.multipartUpload(defaultRegionBucket, sourceKey2))
+      upload1 <- source.runWith(S3.multipartUpload(defaultBucket, sourceKey1))
+      upload2 <- source.runWith(S3.multipartUpload(defaultBucket, sourceKey2))
     } yield (upload1, upload2)
 
     whenReady(results) {
       case (upload1, upload2) =>
-        upload1.bucket shouldEqual defaultRegionBucket
+        upload1.bucket shouldEqual defaultBucket
         upload1.key shouldEqual sourceKey1
-        upload2.bucket shouldEqual defaultRegionBucket
+        upload2.bucket shouldEqual defaultBucket
         upload2.key shouldEqual sourceKey2
 
-        S3.deleteObjectsByPrefix(defaultRegionBucket, prefix = None)
+        S3.deleteObjectsByPrefix(defaultBucket, prefix = None)
           .runWith(Sink.ignore)
           .futureValue shouldEqual akka.Done
         val numOfKeysForPrefix =
-          S3.listBucket(defaultRegionBucket, None).runFold(0)((result, _) => result + 1).futureValue
+          S3.listBucket(defaultBucket, None).runFold(0)((result, _) => result + 1).futureValue
         numOfKeysForPrefix shouldEqual 0
     }
   }
@@ -368,7 +371,7 @@ trait S3IntegrationSpec
 
   it should "throw an exception while creating a bucket with the same name" in {
     assertThrows[S3Exception] {
-      val result: Future[Done] = S3.makeBucket(defaultRegionBucket)
+      val result: Future[Done] = S3.makeBucket(defaultBucket)
 
       Await.result(result, Duration(1, TimeUnit.MINUTES))
     }
@@ -390,17 +393,15 @@ trait S3IntegrationSpec
   }
 
   it should "throw an exception while deleting bucket that doesn't exist" in {
-    val bucketName = "samplebucket4"
-
     assertThrows[S3Exception] {
-      val result: Future[Done] = S3.deleteBucket(bucketName)
+      val result: Future[Done] = S3.deleteBucket(nonExistingBucket)
 
       Await.result(result, Duration(1, TimeUnit.MINUTES))
     }
   }
 
   it should "check if bucket exists" in {
-    val checkIfBucketExits: Future[BucketAccess] = S3.checkIfBucketExists(defaultRegionBucket)
+    val checkIfBucketExits: Future[BucketAccess] = S3.checkIfBucketExists(defaultBucket)
 
     whenReady(checkIfBucketExits) { bucketState =>
       bucketState should equal(AccessGranted)
@@ -408,9 +409,7 @@ trait S3IntegrationSpec
   }
 
   it should "check for non-existing bucket" in {
-    val bucketName = "samplebucket6"
-
-    val request: Future[BucketAccess] = S3.checkIfBucketExists(bucketName)
+    val request: Future[BucketAccess] = S3.checkIfBucketExists(nonExistingBucket)
 
     whenReady(request) { response =>
       response should equal(NotExists)
@@ -420,7 +419,7 @@ trait S3IntegrationSpec
   it should "contain error code even if exception in empty" in {
     val exception = intercept[S3Exception] {
       val result = S3
-        .getObjectMetadata(defaultRegionBucket, "sample")
+        .getObjectMetadata(defaultBucket, "sample")
         .withAttributes(S3Attributes.settings(invalidCredentials))
         .runWith(Sink.head)
 
@@ -439,12 +438,12 @@ trait S3IntegrationSpec
     val results = for {
       upload <- source
         .runWith(
-          S3.multipartUpload(otherRegionBucket, objectKey, metaHeaders = MetaHeaders(metaHeaders))
-            .withAttributes(S3Attributes.settings(otherRegionSettings))
+          S3.multipartUpload(bucketWithDots, objectKey, metaHeaders = MetaHeaders(metaHeaders))
+            .withAttributes(S3Attributes.settings(otherRegionSettingsPathStyleAccess))
         )
       download <- S3
-        .download(otherRegionBucket, objectKey)
-        .withAttributes(S3Attributes.settings(otherRegionSettings))
+        .download(bucketWithDots, objectKey)
+        .withAttributes(S3Attributes.settings(otherRegionSettingsPathStyleAccess))
         .runWith(Sink.head)
         .flatMap {
           case Some((downloadSource, _)) =>
@@ -457,12 +456,12 @@ trait S3IntegrationSpec
 
     val (multipartUploadResult, downloaded) = Await.result(results, 10.seconds)
 
-    multipartUploadResult.bucket shouldBe otherRegionBucket
+    multipartUploadResult.bucket shouldBe bucketWithDots
     multipartUploadResult.key shouldBe objectKey
     downloaded shouldBe objectValue
 
-    S3.deleteObject(otherRegionBucket, objectKey)
-      .withAttributes(S3Attributes.settings(otherRegionSettings))
+    S3.deleteObject(bucketWithDots, objectKey)
+      .withAttributes(S3Attributes.settings(otherRegionSettingsPathStyleAccess))
       .runWith(Sink.head)
       .futureValue shouldEqual akka.Done
   }
@@ -499,16 +498,21 @@ class AWSS3IntegrationSpec extends S3IntegrationSpec
 class MinioS3IntegrationSpec extends S3IntegrationSpec {
   import MinioS3IntegrationSpec._
 
-  val staticProvider = StaticCredentialsProvider.create(
-    AwsBasicCredentials.create(accessKey, secret)
-  )
-
-  val invalidCredentialsProvider = StaticCredentialsProvider.create(
-    AwsBasicCredentials.create(invalidAccessKey, invalidSecret)
-  )
-
   override val defaultRegionContentCount = 0
   override val otherRegionContentCount = 0
+
+  override def beforeAll(): Unit = {
+    try {
+      InetAddress.getByName(localMinioDomain)
+    } catch {
+      case _: UnknownHostException =>
+        fail(s"""to run the DNS-style access tests, [$localMinioDomain] must be configured
+             |Add this to `/etc/hosts` 
+             |    127.0.0.1       s3minio.alpakka my-test-us-east-1.s3minio.alpakka nowhere.s3minio.alpakka samplebucket3.s3minio.alpakka samplebucket1.s3minio.alpakka
+             |and start a local Minio with `docker-compose up minio_prep`
+             |""".stripMargin)
+    }
+  }
 
   override def config() =
     ConfigFactory.parseString(s"""
@@ -520,28 +524,27 @@ class MinioS3IntegrationSpec extends S3IntegrationSpec {
                                  |      secret-access-key = $secret
                                  |    }
                                  |  }
-                                 |  endpoint-url = "$endpointUrl"
-                                 |  # Use of endpoint-url requires path-style-access
-                                 |  path-style-access = true
+                                 |  endpoint-url = "$endpointUrlDns"
+                                 |  path-style-access = false
                                  |}
     """.stripMargin).withFallback(super.config())
 
   @com.github.ghik.silencer.silent
-  override def otherRegionSettings =
+  override def otherRegionSettingsPathStyleAccess =
     S3Settings()
-      .withCredentialsProvider(staticProvider)
+      .withCredentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secret)))
       .withEndpointUrl(endpointUrl)
       .withPathStyleAccess(true)
 
-  @com.github.ghik.silencer.silent
   override def invalidCredentials: S3Settings =
     S3Settings()
-      .withCredentialsProvider(invalidCredentialsProvider)
-      .withEndpointUrl(endpointUrl)
-      .withPathStyleAccess(true)
+      .withCredentialsProvider(
+        StaticCredentialsProvider.create(AwsBasicCredentials.create(invalidAccessKey, invalidSecret))
+      )
+      .withEndpointUrl(endpointUrlDns)
 
   it should "properly set the endpointUrl" in {
-    S3Settings().endpointUrl.value shouldEqual endpointUrl
+    S3Settings().endpointUrl.value shouldEqual endpointUrlDns
   }
 }
 
@@ -549,6 +552,8 @@ object MinioS3IntegrationSpec {
   val accessKey = "TESTKEY"
   val secret = "TESTSECRET"
   val endpointUrl = "http://localhost:9000"
+  val localMinioDomain = "s3minio.alpakka"
+  val endpointUrlDns = s"http://{bucket}.$localMinioDomain:9000"
 
   val invalidAccessKey = "invalid"
   val invalidSecret = "invalid"

@@ -28,6 +28,7 @@ import scala.concurrent.{ExecutionContext, Future}
 @InternalApi private[impl] object HttpRequests {
 
   private final val log = LoggerFactory.getLogger(getClass)
+  private final val PatternBucket = "{bucket}"
 
   def listBucket(
       bucket: String,
@@ -172,13 +173,12 @@ import scala.concurrent.{ExecutionContext, Future}
 
   @throws(classOf[IllegalUriException])
   private[this] def requestAuthority(bucket: String, region: Region)(implicit conf: S3Settings): Authority = {
-    if (conf.pathStyleAccess) {
+    if (conf.pathStyleAccess && conf.pathStyleAccessWarning) {
       log.warn(
         "AWS S3 is going to retire path-style access (https://aws.amazon.com/blogs/aws/amazon-s3-path-deprecation-plan-the-rest-of-the-story/)"
       )
     }
     conf.endpointUrl match {
-      case Some(endpointUrl) => Uri(endpointUrl).authority
       case None =>
         region match {
           case Region.US_EAST_1 =>
@@ -194,6 +194,12 @@ import scala.concurrent.{ExecutionContext, Future}
               Authority(Uri.Host(s"$bucket.s3-$region.amazonaws.com"))
             }
         }
+
+      case Some(endpointUrl) if conf.pathStyleAccess =>
+        Uri(endpointUrl).authority
+
+      case Some(endpointUrl) =>
+        Uri(endpointUrl.replace(PatternBucket, bucket)).authority
     }
   }
 
@@ -207,13 +213,12 @@ import scala.concurrent.{ExecutionContext, Future}
       someKey.split("/", -1).foldLeft(basePath)((acc, p) => acc / p)
     }
     val uri = Uri(path = path, authority = requestAuthority(bucket, conf.s3RegionProvider.getRegion))
-      .withHost(requestAuthority(bucket, conf.s3RegionProvider.getRegion).host)
 
     conf.endpointUrl match {
-      case Some(endpointUri) =>
-        uri.withScheme(Uri(endpointUri).scheme)
       case None =>
         uri.withScheme("https")
+      case Some(endpointUri) =>
+        uri.withScheme(Uri(endpointUri.replace(PatternBucket, "b")).scheme)
     }
   }
 

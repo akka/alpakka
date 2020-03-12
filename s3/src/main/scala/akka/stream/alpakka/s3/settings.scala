@@ -184,6 +184,7 @@ final class S3Settings private (
     val credentialsProvider: AwsCredentialsProvider,
     val s3RegionProvider: AwsRegionProvider,
     val pathStyleAccess: Boolean,
+    val pathStyleAccessWarning: Boolean,
     val endpointUrl: Option[String],
     val listBucketApiVersion: ApiVersion,
     val forwardProxy: Option[ForwardProxy],
@@ -258,6 +259,7 @@ final class S3Settings private (
     credentialsProvider = credentialsProvider,
     s3RegionProvider = s3RegionProvider,
     pathStyleAccess = pathStyleAccess,
+    pathStyleAccessWarning,
     endpointUrl = endpointUrl,
     listBucketApiVersion = listBucketApiVersion,
     forwardProxy = forwardProxy,
@@ -271,6 +273,7 @@ final class S3Settings private (
     s"credentialsProvider=$credentialsProvider," +
     s"s3RegionProvider=$s3RegionProvider," +
     s"pathStyleAccess=$pathStyleAccess," +
+    s"pathStyleAccessWarning=$pathStyleAccessWarning," +
     s"endpointUrl=$endpointUrl," +
     s"listBucketApiVersion=$listBucketApiVersion," +
     s"forwardProxy=$forwardProxy," +
@@ -283,6 +286,7 @@ final class S3Settings private (
       Objects.equals(this.credentialsProvider, that.credentialsProvider) &&
       Objects.equals(this.s3RegionProvider, that.s3RegionProvider) &&
       Objects.equals(this.pathStyleAccess, that.pathStyleAccess) &&
+      Objects.equals(this.pathStyleAccessWarning, that.pathStyleAccessWarning) &&
       Objects.equals(this.endpointUrl, that.endpointUrl) &&
       Objects.equals(this.listBucketApiVersion, that.listBucketApiVersion) &&
       Objects.equals(this.forwardProxy, that.forwardProxy) &&
@@ -296,6 +300,7 @@ final class S3Settings private (
       credentialsProvider,
       s3RegionProvider,
       Boolean.box(pathStyleAccess),
+      Boolean.box(pathStyleAccessWarning),
       endpointUrl,
       listBucketApiVersion,
       forwardProxy,
@@ -345,6 +350,7 @@ object S3Settings {
     } else None
 
     val pathStyleAccess = c.getBoolean("path-style-access")
+    val pathStyleAccessWarning = c.getBoolean("path-style-access-warning")
 
     val endpointUrl = if (c.hasPath("endpoint-url")) {
       Option(c.getString("endpoint-url"))
@@ -418,6 +424,7 @@ object S3Settings {
       credentialsProvider = credentialsProvider,
       s3RegionProvider = regionProvider,
       pathStyleAccess = pathStyleAccess,
+      pathStyleAccessWarning,
       endpointUrl = endpointUrl,
       listBucketApiVersion = apiVersion,
       forwardProxy = maybeForwardProxy,
@@ -446,9 +453,10 @@ object S3Settings {
     credentialsProvider,
     s3RegionProvider,
     pathStyleAccess,
+    pathStyleAccessWarning = true,
     endpointUrl,
     listBucketApiVersion,
-    None,
+    forwardProxy = None,
     validateObjectKey = true,
     MultipartUploadSettings(RetrySettings.default)
   )
@@ -463,10 +471,11 @@ object S3Settings {
     bufferType,
     credentialsProvider,
     s3RegionProvider,
-    false,
-    None,
+    pathStyleAccess = false,
+    pathStyleAccessWarning = true,
+    endpointUrl = None,
     listBucketApiVersion,
-    None,
+    forwardProxy = None,
     validateObjectKey = true,
     MultipartUploadSettings(RetrySettings.default)
   )

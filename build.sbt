@@ -272,7 +272,7 @@ lazy val orientdb = alpakkaProject("orientdb",
 lazy val reference = internalProject("reference", Dependencies.Reference)
   .dependsOn(testkit % Test)
 
-lazy val s3 = alpakkaProject("s3", "aws.s3", Dependencies.S3)
+lazy val s3 = alpakkaProject("s3", "aws.s3", Dependencies.S3, Test / parallelExecution := false)
 
 lazy val springWeb = alpakkaProject("spring-web", "spring.web", Dependencies.SpringWeb)
 
