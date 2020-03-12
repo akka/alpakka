@@ -571,11 +571,13 @@ import scala.util.{Failure, Success, Try}
 
   private def poolSettings(implicit settings: S3Settings, system: ActorSystem) =
     settings.forwardProxy.map(proxy => {
-      val address = InetSocketAddress.createUnresolved(proxy.host, proxy.port)
-      val transport = proxy.credentials.fold(ClientTransport.httpsProxy(address))(
-        c => ClientTransport.httpsProxy(address, BasicHttpCredentials(c.username, c.password))
-      )
-
+      // clientTransport is used in tests to overwrite the address to connect to
+      val transport: ClientTransport = proxy.clientTransport.getOrElse {
+        val address: InetSocketAddress = InetSocketAddress.createUnresolved(proxy.host, proxy.port)
+        proxy.credentials.fold(ClientTransport.httpsProxy(address))(
+          c => ClientTransport.httpsProxy(address, BasicHttpCredentials(c.username, c.password))
+        )
+      }
       ConnectionPoolSettings(system)
         .withConnectionSettings(
           ClientConnectionSettings(system)

@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit
 
 import scala.util.Try
 import akka.actor.ActorSystem
+import akka.http.scaladsl.ClientTransport
 import akka.http.scaladsl.model.Uri
 import software.amazon.awssdk.auth.credentials._
 import software.amazon.awssdk.regions.providers._
@@ -115,7 +116,10 @@ object ForwardProxyCredentials {
 
 }
 
-final class ForwardProxy private (val host: String, val port: Int, val credentials: Option[ForwardProxyCredentials]) {
+final class ForwardProxy private (val host: String,
+                                  val port: Int,
+                                  val credentials: Option[ForwardProxyCredentials],
+                                  val clientTransport: Option[ClientTransport]) {
 
   /** Java API */
   def getHost: String = host
@@ -131,32 +135,39 @@ final class ForwardProxy private (val host: String, val port: Int, val credentia
   def withCredentials(credentials: ForwardProxyCredentials) = copy(credentials = Option(credentials))
 
   private def copy(host: String = host, port: Int = port, credentials: Option[ForwardProxyCredentials] = credentials) =
-    new ForwardProxy(host, port, credentials)
+    new ForwardProxy(host, port, credentials, clientTransport)
 
   override def toString =
     "ForwardProxy(" +
     s"host=$host," +
     s"port=$port," +
-    s"credentials=$credentials" +
-    ")"
+    s"credentials=$credentials," +
+    s"clientTransport=$clientTransport)"
 
   override def equals(other: Any): Boolean = other match {
     case that: ForwardProxy =>
       Objects.equals(this.host, that.host) &&
       Objects.equals(this.port, that.port) &&
-      Objects.equals(this.credentials, that.credentials)
+      Objects.equals(this.credentials, that.credentials) &&
+      Objects.equals(this.clientTransport, that.clientTransport)
     case _ => false
   }
 
   override def hashCode(): Int =
-    Objects.hash(host, Int.box(port), credentials)
+    Objects.hash(host, Int.box(port), credentials, clientTransport)
 }
 
 object ForwardProxy {
 
+  /**
+   * Enables overwriting the HTTP transport. Not available from config.
+   */
+  def transport(clientTransport: ClientTransport): ForwardProxy =
+    new ForwardProxy("N/A", -1, credentials = None, Some(clientTransport))
+
   /** Scala API */
   def apply(host: String, port: Int, credentials: Option[ForwardProxyCredentials]) =
-    new ForwardProxy(host, port, credentials)
+    new ForwardProxy(host, port, credentials, clientTransport = None)
 
   /** Java API */
   def create(host: String, port: Int, credentials: Option[ForwardProxyCredentials]) =
