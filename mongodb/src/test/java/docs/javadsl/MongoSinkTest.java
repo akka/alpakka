@@ -41,6 +41,7 @@ import static java.util.stream.Collectors.toList;
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class MongoSinkTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
@@ -55,8 +56,7 @@ public class MongoSinkTest {
   private final MongoCollection<Document> domainObjectsDocumentColl;
   private final MongoCollection<DomainObject> domainObjectsColl;
 
-  private final List<Integer> testRange =
-      IntStream.range(1, 10).boxed().collect(toList());
+  private final List<Integer> testRange = IntStream.range(1, 10).boxed().collect(toList());
 
   public MongoSinkTest() {
     system = ActorSystem.create();
@@ -154,8 +154,7 @@ public class MongoSinkTest {
   @Test
   public void saveWithInsertOneAndCodecSupport() throws Exception {
     // #insert-one
-    List<Number> testRangeObjects =
-        testRange.stream().map(Number::new).collect(toList());
+    List<Number> testRangeObjects = testRange.stream().map(Number::new).collect(toList());
     final CompletionStage<Done> completion =
         Source.from(testRangeObjects).runWith(MongoSink.insertOne(numbersColl), mat);
     // #insert-one
@@ -188,8 +187,7 @@ public class MongoSinkTest {
   @Test
   public void saveWithInsertManyAndCodecSupport() throws Exception {
     // #insert-many
-    final List<Number> testRangeObjects =
-        testRange.stream().map(Number::new).collect(toList());
+    final List<Number> testRangeObjects = testRange.stream().map(Number::new).collect(toList());
     final CompletionStage<Done> completion =
         Source.from(testRangeObjects).grouped(2).runWith(MongoSink.insertMany(numbersColl), mat);
     // #insert-many
@@ -225,8 +223,7 @@ public class MongoSinkTest {
 
   @Test
   public void saveWithInsertManyWithOptionsAndCodecSupport() throws Exception {
-    List<Number> testRangeObjects =
-        testRange.stream().map(Number::new).collect(toList());
+    List<Number> testRangeObjects = testRange.stream().map(Number::new).collect(toList());
     final CompletionStage<Done> completion =
         Source.from(testRangeObjects)
             .grouped(2)
@@ -305,7 +302,7 @@ public class MongoSinkTest {
     final CompletionStage<List<Document>> found =
         Source.fromPublisher(numbersDocumentColl.find()).runWith(Sink.seq(), mat);
 
-    assertEquals(true, found.toCompletableFuture().get(5, TimeUnit.SECONDS).isEmpty());
+    assertTrue(found.toCompletableFuture().get(5, TimeUnit.SECONDS).isEmpty());
   }
 
   @Test
@@ -321,7 +318,7 @@ public class MongoSinkTest {
     final CompletionStage<List<Document>> found =
         Source.fromPublisher(numbersDocumentColl.find()).runWith(Sink.seq(), mat);
 
-    assertEquals(true, found.toCompletableFuture().get(5, TimeUnit.SECONDS).isEmpty());
+    assertTrue(found.toCompletableFuture().get(5, TimeUnit.SECONDS).isEmpty());
   }
 
   @Test
