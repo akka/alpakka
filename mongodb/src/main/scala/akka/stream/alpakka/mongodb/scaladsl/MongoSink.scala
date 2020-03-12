@@ -65,18 +65,6 @@ object MongoSink {
     MongoFlow.updateMany(collection, options).toMat(Sink.ignore)(Keep.right)
 
   /**
-   * A [[akka.stream.scaladsl.Sink Sink]] that will replace document as defined by a [[akka.stream.alpakka.mongodb.DocumentReplace]].
-   *
-   * @param collection the mongo db collection to update.
-   * @param options options to apply to the operation
-   */
-  def replaceOne[T](
-      collection: MongoCollection[T],
-      options: ReplaceOptions = DefaultReplaceOptions
-  ): Sink[DocumentReplace[T], Future[Done]] =
-    MongoFlow.replaceOne(collection, options).toMat(Sink.ignore)(Keep.right)
-
-  /**
    * A [[akka.stream.scaladsl.Sink Sink]] that will delete individual documents as defined by a [[org.bson.conversions.Bson Bson]] filter query.
    *
    * @param collection the mongo db collection to update.
@@ -96,4 +84,15 @@ object MongoSink {
                     options: DeleteOptions = DefaultDeleteOptions): Sink[Bson, Future[Done]] =
     MongoFlow.deleteMany(collection, options).toMat(Sink.ignore)(Keep.right)
 
+  /**
+   * A [[akka.stream.scaladsl.Sink Sink]] that will replace document as defined by a [[akka.stream.alpakka.mongodb.DocumentReplace]].
+   *
+   * @param collection the mongo db collection to update.
+   * @param options options to apply to the operation
+   */
+  def replaceOne[T](
+      collection: MongoCollection[T],
+      options: ReplaceOptions = DefaultReplaceOptions
+  ): Sink[DocumentReplace[T], Future[Done]] =
+    MongoFlow.replaceOne(collection, options).toMat(Sink.ignore)(Keep.right)
 }
