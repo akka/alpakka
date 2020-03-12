@@ -49,15 +49,18 @@ class MongoSinkSpec
   private val db = client.getDatabase("MongoSinkSpec").withCodecRegistry(codecRegistry)
   private val numbersColl: MongoCollection[Number] =
     db.getCollection("numbersSink", classOf[Number]).withCodecRegistry(codecRegistry)
+  private val numbersDocumentColl = db.getCollection("numbersSink")
   private val domainObjectsColl: MongoCollection[DomainObject] =
     db.getCollection("domainObjectsSink", classOf[DomainObject]).withCodecRegistry(codecRegistry)
-  private val numbersDocumentColl = db.getCollection("numbersSink")
+  private val domainObjectsDocumentColl = db.getCollection("domainObjectsSink")
 
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 50.millis)
 
-  override def afterEach(): Unit =
+  override def afterEach(): Unit = {
     Source.fromPublisher(numbersDocumentColl.deleteMany(new Document())).runWith(Sink.head).futureValue
+    Source.fromPublisher(domainObjectsDocumentColl.deleteMany(new Document())).runWith(Sink.head).futureValue
+  }
 
   override def afterAll(): Unit =
     system.terminate().futureValue
@@ -241,5 +244,4 @@ class MongoSinkSpec
       found must contain theSameElementsAs updatedObjects
     }
   }
-
 }
