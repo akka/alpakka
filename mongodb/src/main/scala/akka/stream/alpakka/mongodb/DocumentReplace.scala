@@ -11,7 +11,7 @@ import org.bson.conversions.Bson
  * @param filter      a document describing the query filter, which may not be null. This can be of any type for which a { @code Codec} is registered
  * @param replacement an object to replace the previous one, which may not be null. This can be of any type for which a { @code Codec} is registered
  */
-final case class DocumentReplace[T] private (filter: Bson, replacement: T) {
+final class DocumentReplace[T] private (val filter: Bson, val replacement: T) {
 
   def withFilter(filter: Bson): DocumentReplace[T] = copy(filter = filter)
   def withReplacement[T1](replacement: T1): DocumentReplace[T1] = copy(replacement = replacement)
