@@ -6,7 +6,7 @@ package docs.javadsl;
 
 import java.util.Objects;
 
-// #pojo
+// #pojo-domain-object
 public final class DomainObject {
   private Integer id;
   private String firstProperty;
@@ -44,7 +44,7 @@ public final class DomainObject {
     this.secondProperty = secondProperty;
   }
 
-  // #pojo
+  // #pojo-domain-object
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
@@ -73,6 +73,6 @@ public final class DomainObject {
         + '\''
         + '}';
   }
-  // #pojo
+  // #pojo-domain-object
 }
-// #pojo
+// #pojo-domain-object
