@@ -266,14 +266,14 @@ final class S3Settings private (
       validateObjectKey: Boolean = validateObjectKey,
       multipartUploadSettings: MultipartUploadSettings = multipartUploadSettings
   ): S3Settings = new S3Settings(
-    bufferType = bufferType,
-    credentialsProvider = credentialsProvider,
-    s3RegionProvider = s3RegionProvider,
-    pathStyleAccess = pathStyleAccess,
+    bufferType,
+    credentialsProvider,
+    s3RegionProvider,
+    pathStyleAccess,
     pathStyleAccessWarning,
-    endpointUrl = endpointUrl,
-    listBucketApiVersion = listBucketApiVersion,
-    forwardProxy = forwardProxy,
+    endpointUrl,
+    listBucketApiVersion,
+    forwardProxy,
     validateObjectKey,
     multipartUploadSettings
   )
