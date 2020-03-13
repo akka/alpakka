@@ -176,7 +176,7 @@ public class IntegrationTest {
   public void customPublisher() {
     // #attributes
     final PubSubSettings settings = PubSubSettings.create(system);
-    final GrpcPublisher publisher = GrpcPublisher.create(settings, system, materializer);
+    final GrpcPublisher publisher = GrpcPublisher.create(settings, system);
 
     final Flow<PublishRequest, PublishResponse, NotUsed> publishFlow =
         GooglePubSub.publish(1).withAttributes(PubSubAttributes.publisher(publisher));
