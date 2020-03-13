@@ -1,0 +1,11 @@
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.mqtt.streaming.javadsl.ActorMqttServerSession.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.mqtt.streaming.javadsl.ActorMqttServerSession.create")
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.mqtt.streaming.javadsl.ActorMqttClientSession.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.mqtt.streaming.javadsl.ActorMqttClientSession.create")
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.mqtt.streaming.scaladsl.ActorMqttServerSession.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.mqtt.streaming.scaladsl.ActorMqttServerSession.this")
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.mqtt.streaming.scaladsl.ActorMqttClientSession.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.mqtt.streaming.scaladsl.ActorMqttClientSession.this")

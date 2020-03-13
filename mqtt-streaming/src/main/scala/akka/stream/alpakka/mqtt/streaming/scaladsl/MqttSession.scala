@@ -7,14 +7,14 @@ package scaladsl
 
 import java.util.concurrent.atomic.AtomicLong
 
-import akka.actor.ExtendedActorSystem
+import akka.actor.{ClassicActorSystemProvider, ExtendedActorSystem}
 import akka.actor.typed.scaladsl.adapter._
 import akka.event.{Logging, LoggingAdapter}
 import akka.stream._
 import akka.stream.alpakka.mqtt.streaming.impl._
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Source}
 import akka.util.ByteString
-import akka.{Done, NotUsed, actor => untyped}
+import akka.{Done, NotUsed}
 
 import scala.concurrent.{Future, Promise}
 import scala.util.control.NoStackTrace
@@ -78,8 +78,7 @@ abstract class MqttClientSession extends MqttSession {
 }
 
 object ActorMqttClientSession {
-  def apply(settings: MqttSessionSettings)(implicit mat: Materializer,
-                                           system: untyped.ActorSystem): ActorMqttClientSession =
+  def apply(settings: MqttSessionSettings)(implicit system: ClassicActorSystemProvider): ActorMqttClientSession =
     new ActorMqttClientSession(settings)
 
   /**
@@ -107,11 +106,12 @@ object ActorMqttClientSession {
  * Provides an actor implementation of a client session
  * @param settings session settings
  */
-final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: Materializer,
-                                                                  system: untyped.ActorSystem)
+final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit systemProvider: ClassicActorSystemProvider)
     extends MqttClientSession {
 
   import ActorMqttClientSession._
+
+  private val system = systemProvider.classicSystem
 
   private val clientSessionId = clientSessionCounter.getAndIncrement()
   private val consumerPacketRouter =
@@ -415,8 +415,7 @@ abstract class MqttServerSession extends MqttSession {
 }
 
 object ActorMqttServerSession {
-  def apply(settings: MqttSessionSettings)(implicit mat: Materializer,
-                                           system: untyped.ActorSystem): ActorMqttServerSession =
+  def apply(settings: MqttSessionSettings)(implicit system: ClassicActorSystemProvider): ActorMqttServerSession =
     new ActorMqttServerSession(settings)
 
   /**
@@ -434,13 +433,13 @@ object ActorMqttServerSession {
  * Provides an actor implementation of a server session
  * @param settings session settings
  */
-final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: Materializer,
-                                                                  system: untyped.ActorSystem)
+final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit systemProvider: ClassicActorSystemProvider)
     extends MqttServerSession {
 
   import ActorMqttServerSession._
   import MqttServerSession._
 
+  private val system = systemProvider.classicSystem
   private val serverSessionId = serverSessionCounter.getAndIncrement()
 
   private val (terminations, terminationsSource) = Source

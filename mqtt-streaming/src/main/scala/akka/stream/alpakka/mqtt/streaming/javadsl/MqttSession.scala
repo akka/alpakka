@@ -6,8 +6,7 @@ package akka.stream.alpakka.mqtt.streaming
 package javadsl
 
 import akka.NotUsed
-import akka.actor.ActorSystem
-import akka.stream.Materializer
+import akka.actor.ClassicActorSystemProvider
 import akka.stream.alpakka.mqtt.streaming.scaladsl.{
   ActorMqttClientSession => ScalaActorMqttClientSession,
   ActorMqttServerSession => ScalaActorMqttServerSession,
@@ -52,8 +51,8 @@ abstract class MqttClientSession extends MqttSession {
 }
 
 object ActorMqttClientSession {
-  def create(settings: MqttSessionSettings, mat: Materializer, system: ActorSystem): ActorMqttClientSession =
-    new ActorMqttClientSession(settings, mat, system)
+  def create(settings: MqttSessionSettings, system: ClassicActorSystemProvider): ActorMqttClientSession =
+    new ActorMqttClientSession(settings, system)
 }
 
 /**
@@ -61,10 +60,10 @@ object ActorMqttClientSession {
  *
  * @param settings session settings
  */
-final class ActorMqttClientSession(settings: MqttSessionSettings, mat: Materializer, system: ActorSystem)
+final class ActorMqttClientSession(settings: MqttSessionSettings, system: ClassicActorSystemProvider)
     extends MqttClientSession {
   override protected[javadsl] val underlying: ScalaActorMqttClientSession =
-    ScalaActorMqttClientSession(settings)(mat, system)
+    ScalaActorMqttClientSession(settings)(system)
 }
 
 object MqttServerSession {
@@ -96,8 +95,8 @@ abstract class MqttServerSession extends MqttSession {
 }
 
 object ActorMqttServerSession {
-  def create(settings: MqttSessionSettings, mat: Materializer, system: ActorSystem): ActorMqttServerSession =
-    new ActorMqttServerSession(settings, mat, system)
+  def create(settings: MqttSessionSettings, system: ClassicActorSystemProvider): ActorMqttServerSession =
+    new ActorMqttServerSession(settings, system)
 }
 
 /**
@@ -105,12 +104,12 @@ object ActorMqttServerSession {
  *
  * @param settings session settings
  */
-final class ActorMqttServerSession(settings: MqttSessionSettings, mat: Materializer, system: ActorSystem)
+final class ActorMqttServerSession(settings: MqttSessionSettings, system: ClassicActorSystemProvider)
     extends MqttServerSession {
   import MqttServerSession._
 
   override protected[javadsl] val underlying: ScalaActorMqttServerSession =
-    ScalaActorMqttServerSession(settings)(mat, system)
+    ScalaActorMqttServerSession(settings)(system)
 
   override def watchClientSessions: Source[ClientSessionTerminated, NotUsed] =
     underlying.watchClientSessions.map {
