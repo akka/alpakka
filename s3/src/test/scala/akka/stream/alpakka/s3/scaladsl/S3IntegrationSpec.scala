@@ -5,7 +5,6 @@
 package akka.stream.alpakka.s3.scaladsl
 
 import java.net.InetSocketAddress
-import java.util.concurrent.TimeUnit
 
 import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
@@ -27,7 +26,7 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest._
 import software.amazon.awssdk.regions.Region
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.matchers.should.Matchers
@@ -47,7 +46,7 @@ trait S3IntegrationSpec
   implicit val materializer = ActorMaterializer()
   implicit val ec = materializer.executionContext
 
-  implicit val defaultPatience: PatienceConfig = PatienceConfig(90.seconds, 30.millis)
+  implicit val defaultPatience: PatienceConfig = PatienceConfig(90.seconds, 100.millis)
 
   val defaultBucket = "my-test-us-east-1"
   val nonExistingBucket = "nowhere"
@@ -115,8 +114,7 @@ trait S3IntegrationSpec
       .withAttributes(attributes(otherRegionSettingsPathStyleAccess))
       .runWith(Sink.seq)
 
-    val listingResult = result.futureValue
-    listingResult.size shouldBe otherRegionContentCount
+    result.futureValue.size shouldBe otherRegionContentCount
   }
 
   it should "upload with real credentials" in {
@@ -133,8 +131,7 @@ trait S3IntegrationSpec
         .withAttributes(attributes)
         .runWith(Sink.head)
 
-    val uploadResult = Await.ready(result, 90.seconds).futureValue
-    uploadResult.eTag should not be empty
+    result.futureValue.eTag should not be empty
   }
 
   it should "upload and delete" in {
@@ -158,7 +155,7 @@ trait S3IntegrationSpec
       (put, delete, metaBefore, metaAfter)
     }
 
-    val (putResult, deleteResult, metaBefore, metaAfter) = Await.ready(result, 90.seconds).futureValue
+    val (putResult, deleteResult, metaBefore, metaAfter) = result.futureValue
     putResult.eTag should not be empty
     metaBefore should not be empty
     metaBefore.get.contentType shouldBe Some(ContentTypes.`application/octet-stream`.value)
@@ -175,27 +172,24 @@ trait S3IntegrationSpec
             .withAttributes(attributes)
         )
 
-    val multipartUploadResult = Await.ready(result, 90.seconds).futureValue
+    val multipartUploadResult = result.futureValue
     multipartUploadResult.bucket shouldBe defaultBucket
     multipartUploadResult.key shouldBe objectKey
   }
 
   it should "download with real credentials" in {
-    val Some((source, meta)) =
-      Await
-        .ready(S3.download(defaultBucket, objectKey)
-                 .withAttributes(attributes)
-                 .runWith(Sink.head),
-               5.seconds)
-        .futureValue
+    val Some((source, meta)) = S3
+      .download(defaultBucket, objectKey)
+      .withAttributes(attributes)
+      .runWith(Sink.head)
+      .futureValue
 
     val bodyFuture = source
       .map(_.decodeString("utf8"))
       .toMat(Sink.head)(Keep.right)
       .run()
 
-    val body = Await.ready(bodyFuture, 5.seconds).futureValue
-    body shouldBe objectValue
+    bodyFuture.futureValue shouldBe objectValue
     meta.eTag should not be empty
     meta.contentType shouldBe Some(ContentTypes.`application/octet-stream`.value)
   }
@@ -243,7 +237,7 @@ trait S3IntegrationSpec
       }
     } yield (upload, download)
 
-    val (multipartUploadResult, downloaded) = Await.result(results, 10.seconds)
+    val (multipartUploadResult, downloaded) = results.futureValue
 
     multipartUploadResult.bucket shouldBe defaultBucket
     multipartUploadResult.key shouldBe objectKey
@@ -278,7 +272,7 @@ trait S3IntegrationSpec
         }
     } yield (upload, download)
 
-    val (multipartUploadResult, downloaded) = Await.result(results, 10.seconds)
+    val (multipartUploadResult, downloaded) = results.futureValue
 
     multipartUploadResult.bucket shouldBe defaultBucket
     multipartUploadResult.key shouldBe objectKey
@@ -424,17 +418,13 @@ trait S3IntegrationSpec
     whenReady(request) { value =>
       value shouldEqual Done
 
-      Await.result(S3.deleteBucket(bucketName), Duration(1, TimeUnit.MINUTES))
+      S3.deleteBucket(bucketName).futureValue shouldBe Done
     }
   }
 
   it should "throw an exception while creating a bucket with the same name" in {
     implicit val attr: Attributes = attributes
-    assertThrows[S3Exception] {
-      val result: Future[Done] = S3.makeBucket(defaultBucket)
-
-      Await.result(result, Duration(1, TimeUnit.MINUTES))
-    }
+    S3.makeBucket(defaultBucket).failed.futureValue shouldBe an[S3Exception]
   }
 
   it should "create and delete bucket with a given name" in {
@@ -452,17 +442,12 @@ trait S3IntegrationSpec
       delete <- deleteRequest.runWith(Sink.ignore)
     } yield (make, delete)
 
-    val response = Await.result(request, Duration(1, TimeUnit.MINUTES))
-    response should equal((Done, Done))
+    request.futureValue should equal((Done, Done))
   }
 
   it should "throw an exception while deleting bucket that doesn't exist" in {
     implicit val attr: Attributes = attributes
-    assertThrows[S3Exception] {
-      val result: Future[Done] = S3.deleteBucket(nonExistingBucket)
-
-      Await.result(result, Duration(1, TimeUnit.MINUTES))
-    }
+    S3.deleteBucket(nonExistingBucket).failed.futureValue shouldBe an[S3Exception]
   }
 
   it should "check if bucket exists" in {
@@ -484,14 +469,13 @@ trait S3IntegrationSpec
   }
 
   it should "contain error code even if exception in empty" in {
-    val exception = intercept[S3Exception] {
-      val result = S3
-        .getObjectMetadata(defaultBucket, "sample")
+    val exception =
+      S3.getObjectMetadata(defaultBucket, "sample")
         .withAttributes(attributes(invalidCredentials))
         .runWith(Sink.head)
-
-      Await.result(result, Duration(1, TimeUnit.MINUTES))
-    }
+        .failed
+        .mapTo[S3Exception]
+        .futureValue
 
     exception.code shouldBe StatusCodes.Forbidden.toString()
   }
@@ -518,7 +502,7 @@ trait S3IntegrationSpec
         }
     } yield (upload, download)
 
-    val (multipartUploadResult, downloaded) = Await.result(results, 10.seconds)
+    val (multipartUploadResult, downloaded) = results.futureValue
 
     multipartUploadResult.bucket shouldBe bucketWithDots
     multipartUploadResult.key shouldBe objectKey
