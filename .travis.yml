@@ -27,6 +27,8 @@ jobs:
       name: "Create all API docs"
     - env: CMD="docs/paradox"
       name: "Create site with Paradox"
+    - env: CMD="mimaReportBinaryIssues"
+      name: "Check binary compatibility (MiMa)"
 
     - stage: test
       name: amqp
