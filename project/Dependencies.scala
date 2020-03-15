@@ -87,7 +87,7 @@ object Dependencies {
   val AwsLambda = Seq(
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
-        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll // ApacheV2
+        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion % Test excludeAll // ApacheV2
         (
           ExclusionRule(organization = "com.typesafe.akka")
         ),
@@ -145,7 +145,7 @@ object Dependencies {
 
   val DynamoDB = Seq(
     libraryDependencies ++= Seq(
-        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll // ApacheV2
+        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion % Test excludeAll // ApacheV2
         (
           ExclusionRule(organization = "com.typesafe.akka")
         ),
@@ -304,7 +304,7 @@ object Dependencies {
   val Kinesis = Seq(
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
-        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll ExclusionRule(
+        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion % Test excludeAll ExclusionRule(
           organization = "com.typesafe.akka"
         )
       ) ++ Seq(
@@ -401,7 +401,7 @@ object Dependencies {
 
   val Sns = Seq(
     libraryDependencies ++= Seq(
-        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll // ApacheV2
+        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion % Test excludeAll // ApacheV2
         (
           ExclusionRule(organization = "com.typesafe.akka")
         ),
@@ -429,7 +429,7 @@ object Dependencies {
 
   val Sqs = Seq(
     libraryDependencies ++= Seq(
-        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll // ApacheV2
+        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion % Test excludeAll // ApacheV2
         (
           ExclusionRule(organization = "com.typesafe.akka")
         ),
