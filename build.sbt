@@ -77,7 +77,7 @@ lazy val alpakka = project
         .filterNot(_.data.getAbsolutePath.contains("commons-net-3.1.jar"))
         .filterNot(_.data.getAbsolutePath.contains("protobuf-java-2.6.1.jar"))
         // Some projects require (and introduce) Akka 2.6:
-        .filterNot(_.data.getAbsolutePath.contains("akka-stream_2.12-2.5.27.jar"))
+        .filterNot(_.data.getAbsolutePath.contains(s"akka-stream_2.12-${Dependencies.Akka25Version}.jar"))
     },
     ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(`doc-examples`,
                                                                              csvBench,
