@@ -115,8 +115,9 @@ object Dependencies {
 
   val Cassandra = Seq(
     libraryDependencies ++= Seq(
-        ("com.datastax.oss" % "java-driver-core" % CassandraDriverVersion).exclude("com.github.spotbugs",
-                                                                                   "spotbugs-annotations"),
+        ("com.datastax.oss" % "java-driver-core" % CassandraDriverVersion)
+          .exclude("com.github.spotbugs", "spotbugs-annotations")
+          .exclude("org.apache.tinkerpop", "gremlin-core"), //https://github.com/akka/alpakka/issues/2200
         "io.netty" % "netty-handler" % CassandraOverrideNettyVersion,
         "io.netty" % "netty-all" % CassandraOverrideNettyVersion,
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion % Provided
