@@ -28,7 +28,7 @@ import scala.concurrent.{ExecutionContext, Future}
 @InternalApi private[impl] object HttpRequests {
 
   private final val log = LoggerFactory.getLogger(getClass)
-  private final val PatternBucket = "{bucket}"
+  private final val BucketPattern = "{bucket}"
 
   def listBucket(
       bucket: String,
@@ -199,7 +199,7 @@ import scala.concurrent.{ExecutionContext, Future}
         Uri(endpointUrl).authority
 
       case Some(endpointUrl) =>
-        Uri(endpointUrl.replace(PatternBucket, bucket)).authority
+        Uri(endpointUrl.replace(BucketPattern, bucket)).authority
     }
   }
 
@@ -218,7 +218,7 @@ import scala.concurrent.{ExecutionContext, Future}
       case None =>
         uri.withScheme("https")
       case Some(endpointUri) =>
-        uri.withScheme(Uri(endpointUri.replace(PatternBucket, "b")).scheme)
+        uri.withScheme(Uri(endpointUri.replace(BucketPattern, "b")).scheme)
     }
   }
 

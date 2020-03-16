@@ -360,8 +360,9 @@ object S3Settings {
       Option(ForwardProxy(c.getString("forward-proxy.host"), c.getInt("forward-proxy.port"), maybeCredentials))
     } else None
 
-    val pathStyleAccess = c.getBoolean("path-style-access")
-    val pathStyleAccessWarning = c.getBoolean("path-style-access-warning")
+    val (pathStyleAccess, pathStyleAccessWarning) =
+      if (c.getString("path-style-access") == "force") (true, false)
+      else (c.getBoolean("path-style-access"), true)
 
     val endpointUrl = if (c.hasPath("endpoint-url")) {
       Option(c.getString("endpoint-url"))
@@ -431,14 +432,14 @@ object S3Settings {
     )
 
     new S3Settings(
-      bufferType = bufferType,
-      credentialsProvider = credentialsProvider,
-      s3RegionProvider = regionProvider,
-      pathStyleAccess = pathStyleAccess,
+      bufferType,
+      credentialsProvider,
+      regionProvider,
+      pathStyleAccess,
       pathStyleAccessWarning,
-      endpointUrl = endpointUrl,
-      listBucketApiVersion = apiVersion,
-      forwardProxy = maybeForwardProxy,
+      endpointUrl,
+      apiVersion,
+      maybeForwardProxy,
       validateObjectKey,
       multipartUploadSettings
     )
