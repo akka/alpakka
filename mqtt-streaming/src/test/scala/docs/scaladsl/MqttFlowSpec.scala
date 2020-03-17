@@ -8,6 +8,7 @@ import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
+import akka.event.{Logging, LoggingAdapter}
 import akka.stream.alpakka.mqtt.streaming._
 import akka.stream.alpakka.mqtt.streaming.scaladsl.{ActorMqttClientSession, ActorMqttServerSession, Mqtt}
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Sink, Source, SourceQueueWithComplete, Tcp}
@@ -25,7 +26,9 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 class UntypedMqttFlowSpec
-    extends ParametrizedTestKit("untyped-flow-spec/flow", "typed-flow-spec/topic1", ActorSystem("UntypedMqttFlowSpec"))
+    extends ParametrizedTestKit("untyped-flow-spec/flow",
+                                "untyped-flow-spec/topic1",
+                                ActorSystem("UntypedMqttFlowSpec"))
     with MqttFlowSpec
 class TypedMqttFlowSpec
     extends ParametrizedTestKit("typed-flow-spec/flow",
@@ -43,6 +46,8 @@ trait MqttFlowSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll 
   private implicit val defaultPatience: PatienceConfig = PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
   private implicit val dispatcherExecutionContext: ExecutionContext = system.dispatcher
+
+  implicit val logAdapter: LoggingAdapter = Logging(system, this.getClass.getName)
 
   override def afterAll(): Unit =
     TestKit.shutdownActorSystem(system)
@@ -155,6 +160,7 @@ trait MqttFlowSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll 
         Source
           .queue(2, OverflowStrategy.fail)
           .via(mqttFlow)
+          .log("received")
           .collect {
             case Right(Event(p: Publish, _)) => p
           }

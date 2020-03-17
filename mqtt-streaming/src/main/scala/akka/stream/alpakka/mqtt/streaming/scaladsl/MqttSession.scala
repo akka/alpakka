@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 import akka.actor.ExtendedActorSystem
 import akka.actor.typed.scaladsl.adapter._
-import akka.event.Logging
+import akka.event.{Logging, LoggingAdapter}
 import akka.stream._
 import akka.stream.alpakka.mqtt.streaming.impl._
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Source}
@@ -160,6 +160,8 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit mat: 
   import MqttCodec._
   import MqttSession._
   import system.dispatcher
+
+  private implicit val loggingAdapter: LoggingAdapter = Logging(system, this.getClass)
 
   override def ![A](cp: Command[A]): Unit = cp match {
     case Command(cp: Publish, _, carry) =>
@@ -499,6 +501,8 @@ final class ActorMqttServerSession(settings: MqttSessionSettings)(implicit mat: 
   import MqttCodec._
   import MqttSession._
   import system.dispatcher
+
+  private implicit val loggingAdapter: LoggingAdapter = Logging(system, this.getClass)
 
   override def ![A](cp: Command[A]): Unit = cp match {
     case Command(cp: Publish, _, carry) =>
