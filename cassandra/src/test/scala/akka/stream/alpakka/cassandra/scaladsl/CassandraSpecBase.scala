@@ -11,7 +11,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
 import scala.concurrent.ExecutionContext
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.{Materializer, SystemMaterializer}
 
 /**
  * All the tests must be run with a local Cassandra running on default port 9042.
@@ -24,9 +24,9 @@ abstract class CassandraSpecBase(_system: ActorSystem)
     with Matchers
     with CassandraLifecycle {
 
-  implicit val materializer: Materializer = ActorMaterializer()(_system)
+  implicit val materializer: Materializer = SystemMaterializer(_system).materializer
   implicit val ec: ExecutionContext = system.dispatcher
 
-  lazy val sessionRegistry: CassandraSessionRegistry = CassandraSessionRegistry.get(system)
+  lazy val sessionRegistry: CassandraSessionRegistry = CassandraSessionRegistry(system)
 
 }

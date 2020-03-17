@@ -4,10 +4,10 @@
 
 package akka.stream.alpakka.cassandra.scaladsl
 
-import akka.actor.{ActorSystem, NoSerializationVerificationNeeded}
+import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
-import akka.stream.ActorMaterializer
+import akka.stream.{Materializer, SystemMaterializer}
 import akka.stream.alpakka.cassandra.{CassandraMetricsRegistry, CassandraServerMetaData, CqlSessionProvider}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.OptionVal
@@ -33,7 +33,7 @@ import scala.util.control.NonFatal
  *
  * All methods are non-blocking.
  */
-final class CassandraSession(system: ActorSystem,
+final class CassandraSession(system: akka.actor.ActorSystem,
                              sessionProvider: CqlSessionProvider,
                              executionContext: ExecutionContext,
                              log: LoggingAdapter,
@@ -42,8 +42,8 @@ final class CassandraSession(system: ActorSystem,
                              onClose: () => Unit)
     extends NoSerializationVerificationNeeded {
 
-  implicit private[akka] val ec = executionContext
-  private lazy implicit val materializer = ActorMaterializer()(system)
+  implicit private[akka] val ec: ExecutionContext = executionContext
+  private lazy implicit val materializer: Materializer = SystemMaterializer(system).materializer
 
   log.debug("Starting CassandraSession [{}]", metricsCategory)
 
