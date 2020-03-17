@@ -26,7 +26,9 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 class UntypedMqttFlowSpec
-    extends ParametrizedTestKit("untyped-flow-spec/flow", "typed-flow-spec/topic1", ActorSystem("UntypedMqttFlowSpec"))
+    extends ParametrizedTestKit("untyped-flow-spec/flow",
+                                "untyped-flow-spec/topic1",
+                                ActorSystem("UntypedMqttFlowSpec"))
     with MqttFlowSpec
 class TypedMqttFlowSpec
     extends ParametrizedTestKit("typed-flow-spec/flow",
