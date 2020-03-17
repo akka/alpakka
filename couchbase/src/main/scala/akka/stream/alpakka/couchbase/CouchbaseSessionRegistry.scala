@@ -31,26 +31,26 @@ object CouchbaseSessionRegistry extends ExtensionId[CouchbaseSessionRegistry] wi
    */
   // This is not source compatible with Akka 2.6 as it lacks `overrride`
   def apply(system: ClassicActorSystemProvider): CouchbaseSessionRegistry =
-    super.get(system.classicSystem)
+    super.apply(system.classicSystem)
 
   /**
    * Get the session registry with the classic actors API.
    */
   override def apply(system: akka.actor.ActorSystem): CouchbaseSessionRegistry =
-    super.get(system)
+    super.apply(system)
 
   /**
    * Java API: Get the session registry with new actors API.
    */
   // This is not source compatible with Akka 2.6 as it lacks `overrride`
   def get(system: ClassicActorSystemProvider): CouchbaseSessionRegistry =
-    super.get(system.classicSystem)
+    super.apply(system.classicSystem)
 
   /**
    * Java API: Get the session registry with the classic actors API.
    */
   override def get(system: akka.actor.ActorSystem): CouchbaseSessionRegistry =
-    super.get(system)
+    super.apply(system)
 
   override def lookup(): ExtensionId[CouchbaseSessionRegistry] = this
 
