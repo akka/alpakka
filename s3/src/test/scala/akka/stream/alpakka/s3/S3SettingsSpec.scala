@@ -18,7 +18,6 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
         s"""
           |buffer = memory
           |path-style-access = false
-          |path-style-access-warning = true
           |validate-object-key = true
           |multipart-upload.retry-settings {
           |  max-retries = 3
@@ -158,7 +157,23 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
     )
 
     settings.pathStyleAccess shouldBe true
+    settings.pathStyleAccessWarning shouldBe true
     settings.s3RegionProvider.getRegion shouldBe otherRegion
+    settings.endpointUrl.value shouldEqual endpointUrl
+  }
+
+  it should "force path-style-access" in {
+    val endpointUrl = "http://localhost:9000"
+
+    val settings: S3Settings = mkSettings(
+      s"""
+           |path-style-access = force
+           |endpoint-url = "$endpointUrl"
+        """
+    )
+
+    settings.pathStyleAccess shouldBe true
+    settings.pathStyleAccessWarning shouldBe false
     settings.endpointUrl.value shouldEqual endpointUrl
   }
 
