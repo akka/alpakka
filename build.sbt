@@ -382,6 +382,7 @@ lazy val whitesourceSupported = project
   .in(file("tmp"))
   .settings(whitesourceGroup := Whitesource.Group.Supported)
   .aggregate(
+    cassandra,
     couchbase,
     csv
   )
