@@ -10,6 +10,7 @@ import java.time.{Instant, ZoneOffset, ZonedDateTime}
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
+import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.model.StatusCodes.{NoContent, NotFound, OK}
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.{headers => http, _}
@@ -21,7 +22,7 @@ import akka.stream.alpakka.s3._
 import akka.stream.alpakka.s3.headers.ServerSideEncryption
 import akka.stream.alpakka.s3.impl.auth.{CredentialScope, Signer, SigningKey}
 import akka.stream.alpakka.s3.impl.backport.RetryFlow
-import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source}
+import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source, Tcp}
 import akka.stream.{ActorMaterializer, Attributes, Materializer}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
@@ -571,19 +572,33 @@ import scala.util.{Failure, Success, Try}
 
   private def poolSettings(implicit settings: S3Settings, system: ActorSystem) =
     settings.forwardProxy.map(proxy => {
-      // clientTransport is used in tests to overwrite the address to connect to
-      val transport: ClientTransport = proxy.clientTransport.getOrElse {
-        val address: InetSocketAddress = InetSocketAddress.createUnresolved(proxy.host, proxy.port)
-        proxy.credentials.fold(ClientTransport.httpsProxy(address))(
-          c => ClientTransport.httpsProxy(address, BasicHttpCredentials(c.username, c.password))
-        )
+      val address = InetSocketAddress.createUnresolved(proxy.host, proxy.port)
+      val transport: ClientTransport = proxy.scheme match {
+        case "https" =>
+          proxy.credentials.fold(ClientTransport.httpsProxy(address))(
+            c => ClientTransport.httpsProxy(address, BasicHttpCredentials(c.username, c.password))
+          )
+        case "http" =>
+          TCPTransport(address)
       }
-      ConnectionPoolSettings(system)
-        .withConnectionSettings(
-          ClientConnectionSettings(system)
-            .withTransport(transport)
-        )
+      ConnectionPoolSettings(system).withConnectionSettings(ClientConnectionSettings(system).withTransport(transport))
     })
+
+  private case class TCPTransport(address: InetSocketAddress) extends ClientTransport {
+    def connectTo(ignoredHost: String, ignoredPort: Int, settings: ClientConnectionSettings)(
+        implicit system: ActorSystem
+    ): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
+      Tcp()
+        .outgoingConnection(address,
+                            settings.localAddress,
+                            settings.socketOptions,
+                            halfClose = true,
+                            settings.connectingTimeout,
+                            settings.idleTimeout)
+        .mapMaterializedValue(
+          _.map(tcpConn => OutgoingConnection(tcpConn.localAddress, tcpConn.remoteAddress))(system.dispatcher)
+        )
+  }
 
   private def singleRequest(req: HttpRequest)(implicit settings: S3Settings, system: ActorSystem) =
     poolSettings.fold(Http().singleRequest(req))(s => Http().singleRequest(req, settings = s))

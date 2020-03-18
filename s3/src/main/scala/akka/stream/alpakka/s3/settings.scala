@@ -5,12 +5,11 @@
 package akka.stream.alpakka.s3
 
 import java.nio.file.{Path, Paths}
-import java.util.Objects
+import java.util.{Objects, Optional}
 import java.util.concurrent.TimeUnit
 
 import scala.util.Try
 import akka.actor.ActorSystem
-import akka.http.scaladsl.ClientTransport
 import akka.http.scaladsl.model.Uri
 import software.amazon.awssdk.auth.credentials._
 import software.amazon.awssdk.regions.providers._
@@ -116,10 +115,15 @@ object ForwardProxyCredentials {
 
 }
 
-final class ForwardProxy private (val host: String,
+final class ForwardProxy private (val scheme: String,
+                                  val host: String,
                                   val port: Int,
-                                  val credentials: Option[ForwardProxyCredentials],
-                                  val clientTransport: Option[ClientTransport]) {
+                                  val credentials: Option[ForwardProxyCredentials]) {
+
+  require(scheme == "http" || scheme == "https", "scheme must be either `http` or `https`")
+
+  /** Java API */
+  def getScheme: String = scheme
 
   /** Java API */
   def getHost: String = host
@@ -130,48 +134,66 @@ final class ForwardProxy private (val host: String,
   /** Java API */
   def getCredentials: java.util.Optional[ForwardProxyCredentials] = credentials.asJava
 
+  def withScheme(value: String) = copy(scheme = value)
   def withHost(host: String) = copy(host = host)
   def withPort(port: Int) = copy(port = port)
   def withCredentials(credentials: ForwardProxyCredentials) = copy(credentials = Option(credentials))
 
-  private def copy(host: String = host, port: Int = port, credentials: Option[ForwardProxyCredentials] = credentials) =
-    new ForwardProxy(host, port, credentials, clientTransport)
+  private def copy(scheme: String = scheme,
+                   host: String = host,
+                   port: Int = port,
+                   credentials: Option[ForwardProxyCredentials] = credentials) =
+    new ForwardProxy(scheme, host, port, credentials)
 
   override def toString =
     "ForwardProxy(" +
+    s"scheme=$scheme," +
     s"host=$host," +
     s"port=$port," +
-    s"credentials=$credentials," +
-    s"clientTransport=$clientTransport)"
+    s"credentials=$credentials)"
 
   override def equals(other: Any): Boolean = other match {
     case that: ForwardProxy =>
+      Objects.equals(this.scheme, that.scheme) &&
       Objects.equals(this.host, that.host) &&
       Objects.equals(this.port, that.port) &&
-      Objects.equals(this.credentials, that.credentials) &&
-      Objects.equals(this.clientTransport, that.clientTransport)
+      Objects.equals(this.credentials, that.credentials)
     case _ => false
   }
 
   override def hashCode(): Int =
-    Objects.hash(host, Int.box(port), credentials, clientTransport)
+    Objects.hash(scheme, host, Int.box(port), credentials)
 }
 
 object ForwardProxy {
 
-  /**
-   * Enables overwriting the HTTP transport. Not available from config.
-   */
-  def transport(clientTransport: ClientTransport): ForwardProxy =
-    new ForwardProxy("N/A", -1, credentials = None, Some(clientTransport))
-
   /** Scala API */
   def apply(host: String, port: Int, credentials: Option[ForwardProxyCredentials]) =
-    new ForwardProxy(host, port, credentials, clientTransport = None)
+    new ForwardProxy("https", host, port, credentials)
 
   /** Java API */
+  @deprecated("prefer overload with `java.util.Optional`", since = "2.0.0-RC1")
   def create(host: String, port: Int, credentials: Option[ForwardProxyCredentials]) =
     apply(host, port, credentials)
+
+  /** Java API */
+  def create(host: String, port: Int, credentials: Optional[ForwardProxyCredentials]) =
+    apply(host, port, credentials.asScala)
+
+  /** Use an HTTP proxy. */
+  def http(host: String, port: Int): ForwardProxy = new ForwardProxy("http", host, port, credentials = None)
+
+  def apply(c: Config): ForwardProxy = {
+    val maybeCredentials =
+      if (c.hasPath("credentials"))
+        Some(ForwardProxyCredentials(c.getString("credentials.username"), c.getString("credentials.password")))
+      else None
+
+    val scheme =
+      if (c.hasPath("scheme")) c.getString("scheme")
+      else "https"
+    new ForwardProxy(scheme, c.getString("host"), c.getInt("port"), maybeCredentials)
+  }
 
 }
 
@@ -349,16 +371,9 @@ object S3Settings {
       )
     }
 
-    val maybeForwardProxy = if (c.hasPath("forward-proxy")) {
-      val maybeCredentials = if (c.hasPath("forward-proxy.credentials")) {
-        Option(
-          ForwardProxyCredentials(c.getString("forward-proxy.credentials.username"),
-                                  c.getString("forward-proxy.credentials.password"))
-        )
-      } else None
-
-      Option(ForwardProxy(c.getString("forward-proxy.host"), c.getInt("forward-proxy.port"), maybeCredentials))
-    } else None
+    val maybeForwardProxy =
+      if (c.hasPath("forward-proxy")) Some(ForwardProxy(c.getConfig("forward-proxy")))
+      else None
 
     val (pathStyleAccess, pathStyleAccessWarning) =
       if (c.getString("path-style-access") == "force") (true, false)

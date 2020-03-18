@@ -4,32 +4,27 @@
 
 package akka.stream.alpakka.s3.scaladsl
 
-import java.net.InetSocketAddress
-
-import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
-import akka.http.scaladsl.ClientTransport
-import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
-import akka.http.scaladsl.settings.ClientConnectionSettings
-import akka.stream.{ActorMaterializer, Attributes}
 import akka.stream.alpakka.s3.BucketAccess.{AccessGranted, NotExists}
 import akka.stream.alpakka.s3._
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source, Tcp}
+import akka.stream.scaladsl.{Keep, Sink, Source}
+import akka.stream.{ActorMaterializer, Attributes}
 import akka.testkit.TestKit
 import akka.util.ByteString
-import software.amazon.awssdk.auth.credentials._
-import software.amazon.awssdk.regions.providers._
+import akka.{Done, NotUsed}
 import com.typesafe.config.ConfigFactory
-import org.scalatest.concurrent.ScalaFutures
 import org.scalatest._
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.flatspec.AnyFlatSpecLike
+import org.scalatest.matchers.should.Matchers
+import software.amazon.awssdk.auth.credentials._
 import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.regions.providers._
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import org.scalatest.flatspec.AnyFlatSpecLike
-import org.scalatest.matchers.should.Matchers
 
 trait S3IntegrationSpec
     extends AnyFlatSpecLike
@@ -559,7 +554,7 @@ class MinioS3IntegrationSpec extends S3IntegrationSpec {
                                  |      secret-access-key = $secret
                                  |    }
                                  |  }
-                                 |  endpoint-url = "$endpointUrlDns"
+                                 |  endpoint-url = "$endpointUrlVirtualHostStyle"
                                  |}
     """.stripMargin).withFallback(super.config())
 
@@ -582,31 +577,13 @@ class MinioS3IntegrationSpec extends S3IntegrationSpec {
     S3Attributes.settings(
       s3Settings
         .withForwardProxy(
-          ForwardProxy.transport(ShimTransport(InetSocketAddress.createUnresolved("localhost", 9000)))
+          ForwardProxy.http("localhost", 9000)
         )
     )
   }
 
-  private case class ShimTransport(address: InetSocketAddress) extends ClientTransport {
-    def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(
-        implicit system: ActorSystem
-    ): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
-      Tcp()(system)
-        .outgoingConnection(
-          address,
-          settings.localAddress,
-          settings.socketOptions,
-          halfClose = true,
-          settings.connectingTimeout,
-          settings.idleTimeout
-        )
-        .mapMaterializedValue(
-          _.map(tcpConn => OutgoingConnection(tcpConn.localAddress, tcpConn.remoteAddress))(system.dispatcher)
-        )
-  }
-
   it should "properly set the endpointUrl" in {
-    S3Settings().endpointUrl.value shouldEqual endpointUrlDns
+    S3Settings().endpointUrl.value shouldEqual endpointUrlVirtualHostStyle
   }
 }
 
@@ -615,5 +592,5 @@ object MinioS3IntegrationSpec {
   val secret = "TESTSECRET"
   val endpointUrlPathStyle = "http://localhost:9000"
   val localMinioDomain = "s3minio.alpakka"
-  val endpointUrlDns = s"http://{bucket}.$localMinioDomain:9000"
+  val endpointUrlVirtualHostStyle = s"http://{bucket}.$localMinioDomain:9000"
 }
