@@ -164,7 +164,7 @@ private[pubsub] trait PubSubApi {
       .mapAsync(1) {
         case Success(response) =>
           response.status match {
-            case StatusCodes.Success(_) =>
+            case StatusCodes.Success(_) if response.entity.contentType == ContentTypes.`application/json` =>
               Unmarshal(response).to[PullResponse]
             case status =>
               Unmarshal(response)
@@ -226,7 +226,7 @@ private[pubsub] trait PubSubApi {
       .mapAsync(parallelism) {
         case Success(response) =>
           response.status match {
-            case StatusCodes.Success(_) =>
+            case StatusCodes.Success(_) if response.entity.contentType == ContentTypes.`application/json` =>
               Unmarshal(response.entity).to[PublishResponse].map(_.messageIds)
             case status =>
               Unmarshal(response)

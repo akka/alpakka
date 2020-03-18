@@ -14,8 +14,10 @@ import akka.stream.alpakka.googlecloud.pubsub.scaladsl.GooglePubSub
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Flow, FlowWithContext, Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
+import akka.testkit.TestKit
 import akka.{Done, NotUsed}
 import org.mockito.Mockito._
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -24,13 +26,23 @@ import org.scalatestplus.mockito.MockitoSugar
 import scala.collection.immutable.Seq
 import scala.concurrent.duration._
 
-class GooglePubSubSpec extends AnyFlatSpec with MockitoSugar with ScalaFutures with Matchers with LogCapturing {
+class GooglePubSubSpec
+    extends AnyFlatSpec
+    with MockitoSugar
+    with ScalaFutures
+    with Matchers
+    with LogCapturing
+    with BeforeAndAfterAll {
 
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()
+
+  override protected def afterAll(): Unit = {
+    TestKit.shutdownActorSystem(system)
+  }
 
   private trait Fixtures {
     lazy val mockHttpApi = mock[PubSubApi]
