@@ -203,7 +203,9 @@ private[pubsub] trait PubSubApi {
               Unmarshal(response)
                 .to[String]
                 .map { entity =>
-                  throw new RuntimeException(s"Unexpected acknowledge response. Code: [$status]. Entity: [$entity]")
+                  throw new RuntimeException(
+                    s"Unexpected acknowledge response. Code [$status] Content-type [${response.entity.contentType}] Entity [$entity]"
+                  )
                 }
           }
         case Failure(NonFatal(ex)) => Future.failed(ex)
@@ -232,7 +234,9 @@ private[pubsub] trait PubSubApi {
               Unmarshal(response)
                 .to[String]
                 .map { entity =>
-                  throw new RuntimeException(s"Unexpected publish response. Code: [$status]. Entity: [$entity]")
+                  throw new RuntimeException(
+                    s"Unexpected publish response. Code [$status] Content-type [${response.entity.contentType}] Entity [$entity]"
+                  )
                 }
           }
         case Failure(NonFatal(ex)) =>
