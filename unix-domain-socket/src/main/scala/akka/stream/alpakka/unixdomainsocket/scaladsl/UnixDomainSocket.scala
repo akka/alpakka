@@ -8,7 +8,7 @@ package scaladsl
 import java.nio.file.Path
 
 import akka.NotUsed
-import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.actor.{ClassicActorSystemProvider, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import akka.stream._
 import akka.stream.alpakka.unixdomainsocket.impl.UnixDomainSocketImpl
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
@@ -19,7 +19,15 @@ import scala.concurrent.duration.Duration
 
 object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdProvider {
 
-  def apply()(implicit system: ActorSystem): UnixDomainSocket = super.apply(system)
+  /**
+   * Get the UnixDomainSocket extension with the classic actors API.
+   */
+  def apply()(implicit system: akka.actor.ActorSystem): UnixDomainSocket = super.apply(system)
+
+  /**
+   * Get the UnixDomainSocket extension with the new actors API.
+   */
+  def apply(system: ClassicActorSystemProvider): UnixDomainSocket = super.apply(system.classicSystem)
 
   override def createExtension(system: ExtendedActorSystem) =
     new UnixDomainSocket(system)
