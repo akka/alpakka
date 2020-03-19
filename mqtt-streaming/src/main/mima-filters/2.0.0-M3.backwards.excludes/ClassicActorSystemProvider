@@ -1,3 +1,4 @@
+# Incompatible changes for major release, now Akka 2.6 only
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.mqtt.streaming.javadsl.ActorMqttServerSession.this")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.mqtt.streaming.javadsl.ActorMqttServerSession.create")
 
