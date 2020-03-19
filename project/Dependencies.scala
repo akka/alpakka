@@ -363,7 +363,7 @@ object Dependencies {
   )
 
   val Pravega = {
-    val pravegaVersion = "0.6.2"
+    val pravegaVersion = "0.7.0"
     Seq(
       libraryDependencies ++= Seq(
           "io.pravega" % "pravega-client" % pravegaVersion,
