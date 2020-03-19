@@ -102,7 +102,7 @@ The @apidoc[DefaultSessionProvider] config section must contain:
 reference.conf
 : @@snip [snip](/cassandra/src/main/resources/reference.conf)
 
-In simple cases your `datastax-java-driver` section will need to define `contact-points` and `load-balancing-policy.local-datacenter`.
+In simple cases your `datastax-java-driver` section will need to define `contact-points` and `load-balancing-policy.local-datacenter`. To make the Cassandra driver retry its initial connection attempts, add `advanced.reconnect-on-init = true`.
 
 application.conf
 : @@snip [snip](/cassandra/src/test/resources/application.conf) { #datastax-sample }
