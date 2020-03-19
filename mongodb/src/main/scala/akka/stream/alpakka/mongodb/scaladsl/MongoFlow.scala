@@ -7,8 +7,8 @@ package akka.stream.alpakka.mongodb.scaladsl
 import akka.stream.scaladsl.{Flow, Source}
 import akka.NotUsed
 import akka.annotation.InternalApi
-import akka.stream.alpakka.mongodb.DocumentUpdate
-import com.mongodb.client.model.{DeleteOptions, InsertManyOptions, InsertOneOptions, UpdateOptions}
+import akka.stream.alpakka.mongodb.{DocumentReplace, DocumentUpdate}
+import com.mongodb.client.model.{DeleteOptions, InsertManyOptions, InsertOneOptions, ReplaceOptions, UpdateOptions}
 import com.mongodb.client.result.{DeleteResult, UpdateResult}
 import com.mongodb.reactivestreams.client.MongoCollection
 import org.bson.conversions.Bson
@@ -28,6 +28,9 @@ object MongoFlow {
 
   /** Internal Api */
   @InternalApi private[mongodb] val DefaultDeleteOptions = new DeleteOptions()
+
+  /** Internal Api */
+  @InternalApi private[mongodb] val DefaultReplaceOptions = new ReplaceOptions()
 
   /**
    * A [[akka.stream.scaladsl.Flow Flow]] that will insert documents into a collection.
@@ -103,4 +106,21 @@ object MongoFlow {
   def deleteMany[T](collection: MongoCollection[T],
                     options: DeleteOptions = DefaultDeleteOptions): Flow[Bson, (DeleteResult, Bson), NotUsed] =
     Flow[Bson].flatMapConcat(bson => Source.fromPublisher(collection.deleteMany(bson, options)).map(_ -> bson))
+
+  /**
+   * A [[akka.stream.scaladsl.Flow Flow]] that will replace document as defined by a [[DocumentReplace]].
+   *
+   * @param collection the mongo db collection to update.
+   * @param options options to apply to the operation
+   */
+  def replaceOne[T](
+      collection: MongoCollection[T],
+      options: ReplaceOptions = DefaultReplaceOptions
+  ): Flow[DocumentReplace[T], (UpdateResult, DocumentReplace[T]), NotUsed] =
+    Flow[DocumentReplace[T]].flatMapConcat(
+      documentReplace =>
+        Source
+          .fromPublisher(collection.replaceOne(documentReplace.filter, documentReplace.replacement, options))
+          .map(_ -> documentReplace)
+    )
 }

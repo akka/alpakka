@@ -6,7 +6,7 @@ package docs.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.mongodb.DocumentUpdate
+import akka.stream.alpakka.mongodb.{DocumentReplace, DocumentUpdate}
 import akka.stream.alpakka.mongodb.scaladsl.MongoSink
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
@@ -35,8 +35,9 @@ class MongoSinkSpec
 
   // case class and codec for mongodb macros
   case class Number(_id: Int)
+  case class DomainObject(_id: Int, firstProperty: String, secondProperty: String)
 
-  val codecRegistry = fromRegistries(fromProviders(classOf[Number]), DEFAULT_CODEC_REGISTRY)
+  val codecRegistry = fromRegistries(fromProviders(classOf[Number], classOf[DomainObject]), DEFAULT_CODEC_REGISTRY)
 
   implicit val system = ActorSystem()
   implicit val mat = ActorMaterializer()
@@ -49,12 +50,17 @@ class MongoSinkSpec
   private val numbersColl: MongoCollection[Number] =
     db.getCollection("numbersSink", classOf[Number]).withCodecRegistry(codecRegistry)
   private val numbersDocumentColl = db.getCollection("numbersSink")
+  private val domainObjectsColl: MongoCollection[DomainObject] =
+    db.getCollection("domainObjectsSink", classOf[DomainObject]).withCodecRegistry(codecRegistry)
+  private val domainObjectsDocumentColl = db.getCollection("domainObjectsSink")
 
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 50.millis)
 
-  override def afterEach(): Unit =
+  override def afterEach(): Unit = {
     Source.fromPublisher(numbersDocumentColl.deleteMany(new Document())).runWith(Sink.head).futureValue
+    Source.fromPublisher(domainObjectsDocumentColl.deleteMany(new Document())).runWith(Sink.head).futureValue
+  }
 
   override def afterAll(): Unit =
     system.terminate().futureValue
@@ -64,6 +70,16 @@ class MongoSinkSpec
   def insertTestRange(): Unit =
     Source
       .fromPublisher(numbersDocumentColl.insertMany(testRange.map(i => Document.parse(s"""{"value":$i}""")).asJava))
+      .runWith(Sink.head)
+      .futureValue
+
+  def insertDomainObjectsRange(): Unit =
+    Source
+      .fromPublisher(
+        domainObjectsColl.insertMany(
+          testRange.map(i => DomainObject(i, s"first-property-$i", s"second-property-$i")).asJava
+        )
+      )
       .runWith(Sink.head)
       .futureValue
 
@@ -204,6 +220,28 @@ class MongoSinkSpec
 
       found mustBe empty
     }
-  }
 
+    "replace with replaceOne and codec support" in assertAllStagesStopped {
+      insertDomainObjectsRange()
+      val updatedObjects =
+        testRange.map(i => DomainObject(i, s"updated-first-property-$i", s"updated-second-property-$i"))
+
+      // #replace-one
+      val source = Source(testRange).map(
+        i =>
+          DocumentReplace[DomainObject](
+            filter = Filters.eq("_id", i),
+            replacement = DomainObject(i, s"updated-first-property-$i", s"updated-second-property-$i")
+          )
+      )
+      val completion = source.runWith(MongoSink.replaceOne[DomainObject](domainObjectsColl))
+      // #replace-one
+
+      completion.futureValue
+
+      val found = Source.fromPublisher(domainObjectsColl.find()).runWith(Sink.seq).futureValue
+
+      found must contain theSameElementsAs updatedObjects
+    }
+  }
 }
