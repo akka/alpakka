@@ -328,7 +328,6 @@ lazy val docs = project
         "akka.version" -> Dependencies.AkkaVersion,
         "akka26.version" -> Dependencies.Akka26Version,
         "akka-http.version" -> Dependencies.AkkaHttpVersion,
-        "couchbase.version" -> Dependencies.CouchbaseVersion,
         "hadoop.version" -> Dependencies.HadoopVersion,
         "extref.akka.base_url" -> s"https://doc.akka.io/docs/akka/${Dependencies.AkkaBinaryVersion}/%s",
         "scaladoc.akka.base_url" -> s"https://doc.akka.io/api/akka/${Dependencies.AkkaBinaryVersion}",
@@ -336,8 +335,13 @@ lazy val docs = project
         "extref.akka-http.base_url" -> s"https://doc.akka.io/docs/akka-http/${Dependencies.AkkaHttpBinaryVersion}/%s",
         "scaladoc.akka.http.base_url" -> s"https://doc.akka.io/api/akka-http/${Dependencies.AkkaHttpBinaryVersion}/",
         "javadoc.akka.http.base_url" -> s"https://doc.akka.io/japi/akka-http/${Dependencies.AkkaHttpBinaryVersion}/",
-        "extref.akka-grpc.base_url" -> s"https://doc.akka.io/docs/akka-grpc/current/%s",
+        // Akka gRPC
+        "akka-grpc.version" -> Dependencies.AkkaGrpcBinaryVersion,
+        "extref.akka-grpc.base_url" -> s"https://doc.akka.io/docs/akka-grpc/${Dependencies.AkkaGrpcBinaryVersion}/%s",
+        // Couchbase
+        "couchbase.version" -> Dependencies.CouchbaseVersion,
         "extref.couchbase.base_url" -> s"https://docs.couchbase.com/java-sdk/${Dependencies.CouchbaseVersionForDocs}/%s",
+        // Java
         "extref.java-api.base_url" -> "https://docs.oracle.com/javase/8/docs/api/index.html?%s.html",
         "extref.geode.base_url" -> s"https://geode.apache.org/docs/guide/${Dependencies.GeodeVersionForDocs}/%s",
         "extref.javaee-api.base_url" -> "https://docs.oracle.com/javaee/7/api/index.html?%s.html",

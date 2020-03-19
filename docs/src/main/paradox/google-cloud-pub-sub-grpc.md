@@ -6,8 +6,8 @@ Google Cloud Pub/Sub provides many-to-many, asynchronous messaging that decouple
 Further information at the official [Google Cloud documentation website](https://cloud.google.com/pubsub/docs/overview).
 @@@
 
-This connector communicates to Pub/Sub via the gRPC protocol. The integration between Akka Stream and gRPC is handled by the
-[Akka gRPC library](https://github.com/akka/akka-grpc). For a connector that uses HTTP for the communication, take a
+This connector communicates to Pub/Sub via the gRPC protocol. The integration between Akka Stream and gRPC is handled by
+@extref[Akka gRPC $akka-grpc.version$](akka-grpc:). For a connector that uses HTTP for the communication, take a
 look at the alternative @ref[Alpakka Google Cloud Pub/Sub](google-cloud-pub-sub.md) connector.
 
 @@project-info{ projectId="google-cloud-pub-sub-grpc" }
@@ -33,6 +33,15 @@ Akka gRPC uses Akka Discovery internally. Make sure to add Akka Discovery with t
 The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
 
 @@dependencies { projectId="google-cloud-pub-sub-grpc" }
+
+## Binary compatibility
+
+@@@warning
+
+This connector contains code generated from Protobuf files which is bound to @extref:[Akka gRPC $akka-grpc.version$](akka-grpc:). This makes it @extref:[NOT binary-compatible](akka-grpc:/binary-compatibility.html) with later versions of Akka gRPC.
+You can not use a different version of Akka gRPC within the same JVM instance.
+
+@@@
 
 ## Build setup
 

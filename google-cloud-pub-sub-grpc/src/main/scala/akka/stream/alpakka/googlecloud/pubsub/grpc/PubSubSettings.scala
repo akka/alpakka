@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.googlecloud.pubsub.grpc
 
-import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.stream.alpakka.googlecloud.pubsub.grpc.impl.GrpcCredentials
 import com.typesafe.config.Config
 import io.grpc.CallCredentials
@@ -89,9 +89,14 @@ object PubSubSettings {
   }
 
   /**
-   * Create settings from ActorSystem's config.
+   * Create settings from the new actor API's ActorSystem config.
    */
-  def apply(system: ActorSystem): PubSubSettings =
+  def apply(system: ClassicActorSystemProvider): PubSubSettings = apply(system.classicSystem)
+
+  /**
+   * Create settings from a classic ActorSystem's config.
+   */
+  def apply(system: akka.actor.ActorSystem): PubSubSettings =
     PubSubSettings(system.settings.config.getConfig("alpakka.google.cloud.pubsub.grpc"))
 
   /**
@@ -116,6 +121,13 @@ object PubSubSettings {
    *
    * Create settings from ActorSystem's config.
    */
-  def create(system: ActorSystem): PubSubSettings =
+  def create(system: ClassicActorSystemProvider): PubSubSettings = PubSubSettings(system.classicSystem)
+
+  /**
+   * Java API
+   *
+   * Create settings from a classic ActorSystem's config.
+   */
+  def create(system: akka.actor.ActorSystem): PubSubSettings =
     PubSubSettings(system)
 }
