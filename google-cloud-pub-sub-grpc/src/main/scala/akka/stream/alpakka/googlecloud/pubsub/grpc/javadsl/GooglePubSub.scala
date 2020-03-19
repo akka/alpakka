@@ -58,7 +58,7 @@ object GooglePubSub {
               .single(request)
               .concat(
                 Source
-                  .tick(pollInterval, pollInterval, subsequentRequest)
+                  .tick(Duration.ZERO, pollInterval, subsequentRequest)
                   .mapMaterializedValue(japiFunction(cancellable.complete))
               )
           )
@@ -87,7 +87,7 @@ object GooglePubSub {
         val client = subscriber(mat, attr).client
 
         Source
-          .tick(pollInterval, pollInterval, request)
+          .tick(Duration.ZERO, pollInterval, request)
           .mapAsync(1, client.pull)
           .mapConcat(japiFunction(_.getReceivedMessagesList))
           .mapMaterializedValue(japiFunction(cancellable.complete))
