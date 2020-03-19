@@ -34,7 +34,7 @@ object GooglePubSub {
       .mapMaterializedValue(_ => NotUsed)
 
   /**
-   * Create a source that emits messages for a given subscription.
+   * Create a source that emits messages for a given subscription using a StreamingPullRequest.
    *
    * The materialized value can be used to cancel the source.
    *
@@ -64,6 +64,31 @@ object GooglePubSub {
                   .mapMaterializedValue(cancellable.success)
               )
           )
+          .mapConcat(_.receivedMessages.toVector)
+          .mapMaterializedValue(_ => cancellable.future)
+      }
+      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.sameThreadExecutionContext))
+
+  /**
+   * Create a source that emits messages for a given subscription using a synchronous PullRequest.
+   *
+   * The materialized value can be used to cancel the source.
+   *
+   * @param request the subscription FQRS field is mandatory for the request
+   * @param pollInterval time between PullRequest messages are being sent
+   */
+  def subscribePolling(
+      request: PullRequest,
+      pollInterval: FiniteDuration
+  ): Source[ReceivedMessage, Future[Cancellable]] =
+    Source
+      .setup { (mat, attr) =>
+        val cancellable = Promise[Cancellable]
+        val client = subscriber(mat, attr).client
+        Source
+          .tick(0.seconds, pollInterval, request)
+          .mapMaterializedValue(cancellable.success)
+          .mapAsync(1)(client.pull(_))
           .mapConcat(_.receivedMessages.toVector)
           .mapMaterializedValue(_ => cancellable.future)
       }
