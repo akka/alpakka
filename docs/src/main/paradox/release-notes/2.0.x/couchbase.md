@@ -1,5 +1,11 @@
 # Couchbase
 
+## 2.0.0-RC1
+
+- Couchbase: add methods for new actors API [#2197](https://github.com/akka/alpakka/issues/2197) by [@ennru](https://github.com/ennru)
+
+[*closed in 2.0.0-RC1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0-RC1+label%3Ap%3Acouchbase)
+
 ## 2.0.0-M2
 
 No changes.
