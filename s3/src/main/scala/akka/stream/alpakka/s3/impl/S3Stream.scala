@@ -579,12 +579,12 @@ import scala.util.{Failure, Success, Try}
             c => ClientTransport.httpsProxy(address, BasicHttpCredentials(c.username, c.password))
           )
         case "http" =>
-          TCPTransport(address)
+          ChangeTargetEndpointTransport(address)
       }
       ConnectionPoolSettings(system).withConnectionSettings(ClientConnectionSettings(system).withTransport(transport))
     })
 
-  private case class TCPTransport(address: InetSocketAddress) extends ClientTransport {
+  private case class ChangeTargetEndpointTransport(address: InetSocketAddress) extends ClientTransport {
     def connectTo(ignoredHost: String, ignoredPort: Int, settings: ClientConnectionSettings)(
         implicit system: ActorSystem
     ): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
