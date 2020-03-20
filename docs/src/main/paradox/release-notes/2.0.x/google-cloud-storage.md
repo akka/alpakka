@@ -1,5 +1,15 @@
 # Google Cloud Storage
 
+## 2.0.0-RC1
+
+- Google Cloud Storage: add access with new actors API [#2213](https://github.com/akka/alpakka/issues/2213) by [@ennru](https://github.com/ennru)
+- GCS - Owner entityId should be optional [#2176](https://github.com/akka/alpakka/issues/2176) by [@francisdb](https://github.com/francisdb)
+- Google Cloud Storage: fix package names [#2177](https://github.com/akka/alpakka/issues/2177) by [@ennru](https://github.com/ennru)
+- make some gcs object metadata fields optional [#2165](https://github.com/akka/alpakka/issues/2165) by [@francisdb](https://github.com/francisdb)
+- Better handling of invalid credentials for Google Pub Sub and Cloud Storage connectors [#2164](https://github.com/akka/alpakka/issues/2164) by [@francisdb](https://github.com/francisdb)
+
+[*closed in 2.0.0-RC1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0-RC1+label%3Ap%3Agoogle-cloud-storage)
+
 ## 2.0.0-M3
 
 - Google Storage & Pub-Sub: Retry google token requests on 5xx [#2146](https://github.com/akka/alpakka/issues/2146) by [@francisdb](https://github.com/francisdb)

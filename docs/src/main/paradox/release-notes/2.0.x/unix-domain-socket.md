@@ -1,5 +1,14 @@
 # Unix Domain Socket
 
+## 2.0.0-RC1
+
+- Unix Domain Socket: add access with new actors API [#2212](https://github.com/akka/alpakka/issues/2212) by [@ennru](https://github.com/ennru)
+- Unix Domain Socket: improve test assertions [#2208](https://github.com/akka/alpakka/issues/2208) by [@ennru](https://github.com/ennru)
+- Unix Domain Socket: use class as log source [#2174](https://github.com/akka/alpakka/issues/2174) by [@ennru](https://github.com/ennru)
+
+[*closed in 2.0.0-RC1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0-RC1+label%3Ap%3Aunix-domain-socket)
+
+
 ## 2.0.0-M3
 
 - Unix domain socket: upgrade dependencies; remove classifier [#2108](https://github.com/akka/alpakka/issues/2108) by [@ennru](https://github.com/ennru)

@@ -1,8 +1,16 @@
 # Google Cloud Pub/Sub
 
+## 2.0.0-RC1
+
+- Google Cloud Pub/Sub: require JSON responses [#2217](https://github.com/akka/alpakka/issues/2217) by [@ennru](https://github.com/ennru)
+- make some gcs object metadata fields optional [#2165](https://github.com/akka/alpakka/issues/2165) by [@francisdb](https://github.com/francisdb)
+- Better handling of invalid credentials for Google Pub Sub and Cloud Storage connectors [#2164](https://github.com/akka/alpakka/issues/2164) by [@francisdb](https://github.com/francisdb)
+
+[*closed in 2.0.0-RC1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0-RC1+label%3Ap%3Agoogle-cloud-pub-sub)
+
+
 ## 2.0.0-M3
 
-## Google Cloud Pub/Sub
 
 - Google Storage & Pub-Sub: Retry google token requests on 5xx [#2146](https://github.com/akka/alpakka/issues/2146) by [@francisdb](https://github.com/francisdb)
 

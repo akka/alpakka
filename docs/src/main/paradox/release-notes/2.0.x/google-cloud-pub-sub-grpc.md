@@ -1,5 +1,12 @@
 # Google Cloud Pub/Sub gRPC
 
+## 2.0.0-RC1
+
+- Google pub/sub gRPC: allow sync poll using PullRequest [#2166](https://github.com/akka/alpakka/pull/2166) by [@mdibaiee](https://github.com/mdibaiee)
+- Google Cloud Pub/Sub gRPC: Akka gRPC 0.8.0, hide materializer, support new actors API [#2198](https://github.com/akka/alpakka/issues/2198) by [@ennru](https://github.com/ennru)
+
+[*closed in 2.0.0-RC1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0-RC1+label%3Ap%3Agoogle-cloud-pub-sub-grpc)
+
 ## 2.0.0-M3
 
 - Google Pub/Sub gRPC: remove bundled certificate [#2107](https://github.com/akka/alpakka/issues/2107) by [@ennru](https://github.com/ennru)
