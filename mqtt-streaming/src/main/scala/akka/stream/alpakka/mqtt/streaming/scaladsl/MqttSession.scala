@@ -311,7 +311,7 @@ final class ActorMqttClientSession(settings: MqttSessionSettings)(implicit syste
       .via(new MqttFrameStage(settings.maxPacketSize))
       .map(_.iterator.decodeControlPacket(settings.maxPacketSize))
       .log("client-events")
-      .mapAsync[Either[MqttCodec.DecodeError, Event[A]]](settings.eventParallelism) {
+      .mapAsyncUnordered[Either[MqttCodec.DecodeError, Event[A]]](settings.eventParallelism) {
         case Right(cp: ConnAck) =>
           val reply = Promise[ClientConnector.ForwardConnAck]
           clientConnector ! ClientConnector.ConnAckReceivedFromRemote(connectionId, cp, reply)

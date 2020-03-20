@@ -790,6 +790,113 @@ class MqttSessionSpec
       client.watchCompletion().foreach(_ => session.shutdown())
     }
 
+    "receive two QoS 2 publications from a subscribed topic and rec and comp it one after another in order" in assertAllStagesStopped {
+      val session = ActorMqttClientSession(settings)
+
+      val server = TestProbe()
+      val pipeToServer = Flow[ByteString].mapAsyncUnordered(5)(msg => server.ref.ask(msg).mapTo[ByteString])
+
+      val connect = Connect("some-client-id", ConnectFlags.None)
+
+      val firstPublishPacketId = PacketId(1)
+      val secondPublishPacketId = PacketId(2)
+
+      val firstPublishReceived = Promise[Done]
+      val firstPubRelReceived = Promise[Done]
+      val secondPublishReceived = Promise[Done]
+      val secondPubRelReceived = Promise[Done]
+
+      val client = Source
+        .queue(1, OverflowStrategy.fail)
+        .via(
+          Mqtt
+            .clientSessionFlow(session, ByteString("1"))
+            .join(pipeToServer)
+        )
+        .collect {
+          case Right(Event(cp: Publish, None)) => cp
+          case Right(Event(cp: PubRel, None)) => cp
+        }
+        .wireTap { e =>
+          e match {
+            case Publish(_, _, Some(`firstPublishPacketId`), _) => firstPublishReceived.success(Done)
+            case Publish(_, _, Some(`secondPublishPacketId`), _) => secondPublishReceived.success(Done)
+            case PubRel(`firstPublishPacketId`) => firstPubRelReceived.success(Done)
+            case PubRel(`secondPublishPacketId`) => secondPubRelReceived.success(Done)
+            case _ =>
+          }
+        }
+        .toMat(Sink.ignore)(Keep.left)
+        .run()
+
+      val connectBytes = connect.encode(ByteString.newBuilder).result()
+      val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
+      val connAckBytes = connAck.encode(ByteString.newBuilder).result()
+
+      val subscribe = Subscribe("some-topic")
+      val subscribeBytes = subscribe.encode(ByteString.newBuilder, PacketId(1)).result()
+      val subAck = SubAck(PacketId(1), List(ControlPacketFlags.QoSAtLeastOnceDelivery))
+      val subAckBytes = subAck.encode(ByteString.newBuilder).result()
+
+      val firstPublish = Publish(ControlPacketFlags.QoSExactlyOnceDelivery, "some-topic", ByteString("some-payload"))
+      val firstPublishBytes = firstPublish.encode(ByteString.newBuilder, Some(firstPublishPacketId)).result()
+      val firstPubRec = PubRec(firstPublishPacketId)
+      val firstPubRecBytes = firstPubRec.encode(ByteString.newBuilder).result()
+      val firstPubRel = PubRel(firstPublishPacketId)
+      val firstPubRelBytes = firstPubRel.encode(ByteString.newBuilder).result()
+      val firstPubComp = PubComp(firstPublishPacketId)
+      val firstPubCompBytes = firstPubComp.encode(ByteString.newBuilder).result()
+
+      val secondPublish =
+        Publish(ControlPacketFlags.QoSExactlyOnceDelivery, "some-topic", ByteString("some-other-payload"))
+      val secondPublishBytes = secondPublish.encode(ByteString.newBuilder, Some(secondPublishPacketId)).result()
+      val secondPubRec = PubRec(secondPublishPacketId)
+      val secondPubRecBytes = secondPubRec.encode(ByteString.newBuilder).result()
+      val secondPubRel = PubRel(secondPublishPacketId)
+      val secondPubRelBytes = secondPubRel.encode(ByteString.newBuilder).result()
+      val secondPubComp = PubComp(secondPublishPacketId)
+      val secondPubCompBytes = secondPubComp.encode(ByteString.newBuilder).result()
+
+      client.offer(Command(connect))
+
+      server.expectMsg(connectBytes)
+      server.reply(connAckBytes)
+
+      client.offer(Command(subscribe))
+
+      server.expectMsg(subscribeBytes)
+      server.reply(subAckBytes ++ firstPublishBytes ++ secondPublishBytes)
+
+      firstPublishReceived.future.futureValue shouldBe Done
+
+      client.offer(Command(firstPubRec))
+
+      server.expectMsg(firstPubRecBytes)
+      server.reply(firstPubRelBytes)
+
+      firstPubRelReceived.future.futureValue shouldBe Done
+
+      client.offer(Command(firstPubComp))
+
+      server.expectMsg(firstPubCompBytes)
+
+      secondPublishReceived.future.futureValue shouldBe Done
+
+      client.offer(Command(secondPubRec))
+
+      server.expectMsg(secondPubRecBytes)
+      server.reply(secondPubRelBytes)
+
+      secondPubRelReceived.future.futureValue shouldBe Done
+
+      client.offer(Command(secondPubComp))
+
+      server.expectMsg(secondPubCompBytes)
+
+      client.complete()
+      client.watchCompletion().foreach(_ => session.shutdown())
+    }
+
     "publish with a QoS of 0" in assertAllStagesStopped {
       val session = ActorMqttClientSession(settings)
 
@@ -2080,6 +2187,137 @@ class MqttSessionSpec
         _ <- serverConnection2.watchCompletion()
       } serverSession.shutdown()
 
+    }
+
+    "process two Qos 2 publish message and rec and comp them one after another in order" in assertAllStagesStopped {
+      val serverSession = ActorMqttServerSession(settings.withProducerPubAckRecTimeout(10.millis))
+
+      val client = TestProbe()
+      val toClient = Sink.foreach[ByteString](bytes => client.ref ! bytes)
+      val (clientConnection, fromClient) = Source
+        .queue[ByteString](1, OverflowStrategy.dropHead)
+        .toMat(BroadcastHub.sink)(Keep.both)
+        .run()
+
+      val pipeToClient = Flow.fromSinkAndSource(toClient, fromClient)
+
+      val clientId = "some-client-id"
+
+      val connectReceived = Promise[Done]
+
+      val firstPublishReceived = Promise[Done]
+      val secondPublishReceived = Promise[Done]
+
+      val firstPubRelReceived = Promise[Done]
+      val secondPubRelReceived = Promise[Done]
+
+      val connect = Connect(clientId, ConnectFlags.None)
+      val connectBytes = connect.encode(ByteString.newBuilder).result()
+
+      val firstPublishPacketId = PacketId(1)
+      val secondPublishPacketId = PacketId(2)
+
+      val disconnect = Disconnect
+      val disconnectReceived = Promise[Done]
+
+      val serverConnection =
+        Source
+          .queue[Command[Nothing]](1, OverflowStrategy.fail)
+          .via(
+            Mqtt
+              .serverSessionFlow(serverSession, ByteString.empty)
+              .join(pipeToClient)
+          )
+          .wireTap(Sink.foreach[Either[DecodeError, Event[_]]] {
+            case Right(Event(`connect`, _)) =>
+              connectReceived.success(Done)
+            case Right(Event(`disconnect`, _)) =>
+              disconnectReceived.success(Done)
+            case Right(Event(p: Publish, _)) =>
+              p.packetId match {
+                case Some(`firstPublishPacketId`) =>
+                  firstPublishReceived.success(Done)
+                case Some(`secondPublishPacketId`) =>
+                  secondPublishReceived.success(Done)
+                case _ =>
+              }
+            case Right(Event(PubRel(`firstPublishPacketId`), _)) =>
+              firstPubRelReceived.success(Done)
+            case Right(Event(PubRel(`secondPublishPacketId`), _)) =>
+              secondPubRelReceived.success(Done)
+          })
+          .toMat(Sink.ignore)(Keep.left)
+          .run()
+
+      val connAck = ConnAck(ConnAckFlags.None, ConnAckReturnCode.ConnectionAccepted)
+      val connAckBytes = connAck.encode(ByteString.newBuilder).result()
+
+      val firstPublish = Publish(ControlPacketFlags.QoSExactlyOnceDelivery, "some-topic", ByteString("some-payload"))
+      val firstPublishBytes = firstPublish.encode(ByteString.newBuilder, Some(firstPublishPacketId)).result()
+      val firstPubRec = PubRec(firstPublishPacketId)
+      val firstPubRecBytes = firstPubRec.encode(ByteString.newBuilder).result()
+      val firstPubRel = PubRel(firstPublishPacketId)
+      val firstPubRelBytes = firstPubRel.encode(ByteString.newBuilder).result()
+      val firstPubComp = PubComp(firstPublishPacketId)
+      val firstPubCompBytes = firstPubComp.encode(ByteString.newBuilder).result()
+
+      val secondPublish =
+        Publish(ControlPacketFlags.QoSExactlyOnceDelivery, "some-topic", ByteString("some-other-payload"))
+      val secondPublishBytes = secondPublish.encode(ByteString.newBuilder, Some(secondPublishPacketId)).result()
+      val secondPubRec = PubRec(secondPublishPacketId)
+      val secondPubRecBytes = secondPubRec.encode(ByteString.newBuilder).result()
+      val secondPubRel = PubRel(secondPublishPacketId)
+      val secondPubRelBytes = secondPubRel.encode(ByteString.newBuilder).result()
+      val secondPubComp = PubComp(secondPublishPacketId)
+      val secondPubCompBytes = secondPubComp.encode(ByteString.newBuilder).result()
+
+      val disconnectBytes = disconnect.encode(ByteString.newBuilder).result()
+
+      clientConnection.offer(connectBytes)
+
+      connectReceived.future.futureValue shouldBe Done
+
+      serverConnection.offer(Command(connAck))
+      client.expectMsg(connAckBytes)
+
+      clientConnection.offer(firstPublishBytes ++ secondPublishBytes)
+      firstPublishReceived.future.futureValue shouldBe Done
+
+      serverConnection.offer(Command(firstPubRec))
+      client.expectMsg(firstPubRecBytes)
+
+      clientConnection.offer(firstPubRelBytes)
+      firstPubRelReceived.future.futureValue shouldBe Done
+
+      serverConnection.offer(Command(firstPubComp))
+      client.expectMsg(firstPubCompBytes)
+
+      secondPublishReceived.future.futureValue shouldBe Done
+
+      serverConnection.offer(Command(secondPubRec))
+      client.expectMsg(secondPubRecBytes)
+
+      clientConnection.offer(secondPubRelBytes)
+      secondPubRelReceived.future.futureValue shouldBe Done
+
+      serverConnection.offer(Command(secondPubComp))
+      client.expectMsg(secondPubCompBytes)
+
+      // Perform an explicit disconnect otherwise, if for example, we
+      // just completed the client connection, the session may receive
+      // the associated ConnectionLost signal for the new connection
+      // given that the new connection occurs so quickly.
+      clientConnection.offer(disconnectBytes)
+
+      disconnectReceived.future.futureValue shouldBe Done
+
+      clientConnection.complete()
+      serverConnection.complete()
+
+      for {
+        _ <- clientConnection.watchCompletion()
+        _ <- serverConnection.watchCompletion()
+      } serverSession.shutdown()
     }
   }
 
