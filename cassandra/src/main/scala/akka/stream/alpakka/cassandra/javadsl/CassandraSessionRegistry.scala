@@ -7,7 +7,7 @@ package akka.stream.alpakka.cassandra.javadsl
 import java.util.concurrent.CompletionStage
 
 import akka.Done
-import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.stream.alpakka.cassandra.{scaladsl, CassandraSessionSettings}
 import com.datastax.oss.driver.api.core.CqlSession
 
@@ -21,9 +21,15 @@ import scala.compat.java8.FutureConverters._
 object CassandraSessionRegistry {
 
   /**
-   * Java API: get the session registry
+   * Get the session registry with new actors API.
    */
-  def get(system: ActorSystem): CassandraSessionRegistry =
+  def get(system: ClassicActorSystemProvider): CassandraSessionRegistry =
+    new CassandraSessionRegistry(scaladsl.CassandraSessionRegistry(system.classicSystem))
+
+  /**
+   * Get the session registry with the classic actors API.
+   */
+  def get(system: akka.actor.ActorSystem): CassandraSessionRegistry =
     new CassandraSessionRegistry(scaladsl.CassandraSessionRegistry(system))
 
 }

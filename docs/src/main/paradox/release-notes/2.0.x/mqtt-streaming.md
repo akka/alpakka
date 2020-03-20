@@ -1,5 +1,15 @@
 # MQTT Streaming
 
+## 2.0.0-RC1
+
+**The MQTT Streaming connector does only support Akka 2.6 now.**
+
+- MQTT streaming: target Akka 2.6 [#2118](https://github.com/akka/alpakka/pull/2118) by [@raboof](https://github.com/raboof)
+- MQTT Streaming: improve logging [#2207](https://github.com/akka/alpakka/issues/2207) by [@ennru](https://github.com/ennru)
+- MQTT Streaming: protocol version [#2184](https://github.com/akka/alpakka/issues/2184) by [@ennru](https://github.com/ennru)
+
+[*closed in 2.0.0-RC1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0-RC1+label%3Ap%3Amqtt-streaming)
+
 ## 2.0.0-M3
 
 - MQTT streaming: target Akka 2.6 [#2118](https://github.com/akka/alpakka/issues/2118) by [@raboof](https://github.com/raboof)

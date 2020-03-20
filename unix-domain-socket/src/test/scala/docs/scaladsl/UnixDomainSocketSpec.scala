@@ -14,7 +14,7 @@ import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.alpakka.unixdomainsocket.UnixSocketAddress
 import akka.stream.{ActorMaterializer, OverflowStrategy}
 import akka.stream.alpakka.unixdomainsocket.scaladsl.UnixDomainSocket
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.testkit._
 import akka.util.ByteString
 import org.scalatest._
@@ -161,16 +161,22 @@ class UnixDomainSocketSpec
       val binding =
         UnixDomainSocket().bindAndHandle(Flow.fromFunction(identity), Paths.get("/nonexistentdir/socket"))
 
-      binding.failed.futureValue shouldBe an[IOException]
+      val bindingFailure = binding.failed.futureValue
+      bindingFailure shouldBe an[IOException]
+      bindingFailure.getMessage should startWith("No such file or directory")
     }
 
     "not be able to connect to a non-existent file" in {
-      val connection =
+      val (binding, connection) =
         Source
           .single(ByteString("hi"))
-          .via(UnixDomainSocket().outgoingConnection(Paths.get("/thisshouldnotexist")))
-          .runWith(Sink.head)
+          .viaMat(UnixDomainSocket().outgoingConnection(Paths.get("/thisshouldnotexist")))(Keep.right)
+          .toMat(Sink.headOption)(Keep.both)
+          .run()
 
+      val bindingFailure = binding.failed.futureValue
+      bindingFailure shouldBe an[IOException]
+      bindingFailure.getMessage shouldBe "No such file or directory"
       connection.failed.futureValue shouldBe an[IOException]
     }
 

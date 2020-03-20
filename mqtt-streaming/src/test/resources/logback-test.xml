@@ -19,8 +19,8 @@
         <appender-ref ref="STDOUT"/>
     </logger>
 
-    <logger name="akka" level="DEBUG"/>
-    <logger name="akka.stream" level="info" />
+    <logger name="akka" level="INFO"/>
+    <logger name="akka.stream" level="INFO" />
     <logger name="akka.stream.alpakka" level="debug" />
     <logger name="akka.stream.alpakka.mqtt.streaming.impl" level="info" />
 

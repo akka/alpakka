@@ -15,3 +15,6 @@ ProblemFilters.exclude[MissingClassProblem]("main.scala.*")
 ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.googlecloud.storage.StorageObject.*")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.googlecloud.storage.StorageObject.withCustomerEncryption")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.googlecloud.storage.StorageObject.withOwner")
+
+# override of apply in extension with the concrete type instead of the generic type
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.googlecloud.storage.GCStorageExt.apply")

@@ -1,9 +1,10 @@
 #!/bin/bash
 
+set -x
+
 DIR=$1
-JDK=$2
-PRE_CMD=$3
-CMD=$4
+PRE_CMD=$2
+CMD=$3
 
 if [ "$TRAVIS_PULL_REQUEST" == "false" ]
 then
@@ -30,11 +31,6 @@ else
   exit 0
 fi
 
-# using jabba for custom jdk management
-curl -sL https://raw.githubusercontent.com/shyiko/jabba/0.11.2/install.sh | bash
-. ~/.jabba/jabba.sh
-jabba install "$JDK"
-jabba use "$JDK"
-java -version
-$PRE_CMD
-sbt -jvm-opts .jvmopts-travis "$CMD"
+CURR_DIR=$(dirname "$(readlink -f "$0")")
+
+$CURR_DIR/build.sh "$PRE_CMD" "$CMD"

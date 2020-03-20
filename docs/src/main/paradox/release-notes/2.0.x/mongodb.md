@@ -1,5 +1,11 @@
 # MongoDB
 
+## 2.0.0-RC1
+
+- MongoDB: replaceOne operation [#2187](https://github.com/akka/alpakka/issues/2187) by [@jewertow](https://github.com/jewertow)
+
+[*closed in 2.0.0-RC1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0-RC1+label%3Ap%3Amongodb)
+
 ## 2.0.0-M2
 
 No changes.

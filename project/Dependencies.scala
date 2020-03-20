@@ -10,8 +10,9 @@ object Dependencies {
   val Scala213 = "2.13.1"
   val ScalaVersions = Seq(Scala212, Scala211, Scala213).filterNot(_ == Scala211 && Nightly)
 
-  val Akka26Version = "2.6.1"
-  val AkkaVersion = if (Nightly) Akka26Version else "2.5.27"
+  val Akka25Version = "2.5.30"
+  val Akka26Version = "2.6.4"
+  val AkkaVersion = if (Nightly) Akka26Version else Akka25Version
   val AkkaBinaryVersion = if (Nightly) "2.6" else "2.5"
 
   val InfluxDBJavaVersion = "2.15"
@@ -19,6 +20,8 @@ object Dependencies {
   val AwsSdkVersion = "1.11.476"
   val AwsSdk2Version = "2.10.60"
   val AwsSpiAkkaHttpVersion = "0.0.7"
+  // Sync with plugins.sbt
+  val AkkaGrpcBinaryVersion = "0.8"
   val AkkaHttpVersion = "10.1.11"
   val AkkaHttpBinaryVersion = "10.1"
   val mockitoVersion = "3.1.0"
@@ -115,8 +118,9 @@ object Dependencies {
 
   val Cassandra = Seq(
     libraryDependencies ++= Seq(
-        ("com.datastax.oss" % "java-driver-core" % CassandraDriverVersion).exclude("com.github.spotbugs",
-                                                                                   "spotbugs-annotations"),
+        ("com.datastax.oss" % "java-driver-core" % CassandraDriverVersion)
+          .exclude("com.github.spotbugs", "spotbugs-annotations")
+          .exclude("org.apache.tinkerpop", "gremlin-core"), //https://github.com/akka/alpakka/issues/2200
         "io.netty" % "netty-handler" % CassandraOverrideNettyVersion,
         "io.netty" % "netty-all" % CassandraOverrideNettyVersion,
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion % Provided
@@ -216,9 +220,9 @@ object Dependencies {
     // see Akka gRPC version in plugins.sbt
     libraryDependencies ++= Seq(
         // https://github.com/googleapis/java-pubsub/tree/master/proto-google-cloud-pubsub-v1/
-        "com.google.api.grpc" % "grpc-google-cloud-pubsub-v1" % "1.84.0" % "protobuf", // ApacheV2
-        "io.grpc" % "grpc-auth" % "1.25.0", // ApacheV2
-        "com.google.auth" % "google-auth-library-oauth2-http" % "0.19.0", // BSD 3-clause
+        "com.google.api.grpc" % "grpc-google-cloud-pubsub-v1" % "1.85.1" % "protobuf", // ApacheV2
+        "io.grpc" % "grpc-auth" % "1.28.0", // ApacheV2
+        "com.google.auth" % "google-auth-library-oauth2-http" % "0.20.0", // BSD 3-clause
         // pull in Akka Discovery for our Akka version
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion
       ) ++ Silencer

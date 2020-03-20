@@ -7,15 +7,16 @@ package akka.stream.alpakka.mongodb.javadsl
 import java.util.concurrent.CompletionStage
 
 import akka.{Done, NotUsed}
-import akka.stream.alpakka.mongodb.DocumentUpdate
+import akka.stream.alpakka.mongodb.{DocumentReplace, DocumentUpdate}
 import akka.stream.alpakka.mongodb.scaladsl.MongoFlow.{
   DefaultDeleteOptions,
   DefaultInsertManyOptions,
   DefaultInsertOneOptions,
+  DefaultReplaceOptions,
   DefaultUpdateOptions
 }
 import akka.stream.javadsl.{Keep, Sink}
-import com.mongodb.client.model.{DeleteOptions, InsertManyOptions, InsertOneOptions, UpdateOptions}
+import com.mongodb.client.model.{DeleteOptions, InsertManyOptions, InsertOneOptions, ReplaceOptions, UpdateOptions}
 import com.mongodb.reactivestreams.client.MongoCollection
 import org.bson.conversions.Bson
 
@@ -125,5 +126,25 @@ object MongoSink {
    */
   def deleteMany[T](collection: MongoCollection[T], options: DeleteOptions): Sink[Bson, CompletionStage[Done]] =
     MongoFlow.deleteMany(collection, options).toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
+
+  /**
+   * A [[akka.stream.javadsl.Sink Sink]] that will replace document as defined by a [[akka.stream.alpakka.mongodb.DocumentReplace]].
+   *
+   * @param collection the mongo db collection to update.
+   */
+  def replaceOne[T](collection: MongoCollection[T]): Sink[DocumentReplace[T], CompletionStage[Done]] =
+    replaceOne(collection, DefaultReplaceOptions)
+
+  /**
+   * A [[akka.stream.javadsl.Sink Sink]] that will replace document as defined by a [[akka.stream.alpakka.mongodb.DocumentReplace]].
+   *
+   * @param collection the mongo db collection to update.
+   * @param options options to apply to the operation
+   */
+  def replaceOne[T](
+      collection: MongoCollection[T],
+      options: ReplaceOptions
+  ): Sink[DocumentReplace[T], CompletionStage[Done]] =
+    MongoFlow.replaceOne(collection, options).toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
 
 }

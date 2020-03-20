@@ -104,8 +104,9 @@ public class IntegrationTest {
   }
 
   @Test
-  public void shouldSubscribe() throws InterruptedException, ExecutionException, TimeoutException {
-    // #subscribe
+  public void shouldSubscribeStream()
+      throws InterruptedException, ExecutionException, TimeoutException {
+    // #subscribe-stream
     final String projectId = "alpakka";
     final String subscription = "simpleSubscription";
 
@@ -118,7 +119,47 @@ public class IntegrationTest {
     final Duration pollInterval = Duration.ofSeconds(1);
     final Source<ReceivedMessage, CompletableFuture<Cancellable>> subscriptionSource =
         GooglePubSub.subscribe(request, pollInterval);
-    // #subscribe
+    // #subscribe-stream
+
+    final CompletionStage<ReceivedMessage> first =
+        subscriptionSource.runWith(Sink.head(), materializer);
+
+    final String topic = "simpleTopic";
+    final ByteString msg = ByteString.copyFromUtf8("Hello world!");
+
+    final PubsubMessage publishMessage = PubsubMessage.newBuilder().setData(msg).build();
+
+    final PublishRequest publishRequest =
+        PublishRequest.newBuilder()
+            .setTopic("projects/" + projectId + "/topics/" + topic)
+            .addMessages(publishMessage)
+            .build();
+
+    Source.single(publishRequest).via(GooglePubSub.publish(1)).runWith(Sink.ignore(), materializer);
+
+    assertEquals(
+        "received and expected messages not the same",
+        msg,
+        first.toCompletableFuture().get(2, TimeUnit.SECONDS).getMessage().getData());
+  }
+
+  @Test
+  public void shouldSubscribeSync()
+      throws InterruptedException, ExecutionException, TimeoutException {
+    // #subscribe-sync
+    final String projectId = "alpakka";
+    final String subscription = "simpleSubscription";
+
+    final PullRequest request =
+        PullRequest.newBuilder()
+            .setSubscription("projects/" + projectId + "/subscriptions/" + subscription)
+            .setMaxMessages(10)
+            .build();
+
+    final Duration pollInterval = Duration.ofSeconds(1);
+    final Source<ReceivedMessage, CompletableFuture<Cancellable>> subscriptionSource =
+        GooglePubSub.subscribePolling(request, pollInterval);
+    // #subscribe-sync
 
     final CompletionStage<ReceivedMessage> first =
         subscriptionSource.runWith(Sink.head(), materializer);
@@ -176,7 +217,7 @@ public class IntegrationTest {
   public void customPublisher() {
     // #attributes
     final PubSubSettings settings = PubSubSettings.create(system);
-    final GrpcPublisher publisher = GrpcPublisher.create(settings, system, materializer);
+    final GrpcPublisher publisher = GrpcPublisher.create(settings, system);
 
     final Flow<PublishRequest, PublishResponse, NotUsed> publishFlow =
         GooglePubSub.publish(1).withAttributes(PubSubAttributes.publisher(publisher));

@@ -164,7 +164,7 @@ private[pubsub] trait PubSubApi {
       .mapAsync(1) {
         case Success(response) =>
           response.status match {
-            case StatusCodes.Success(_) =>
+            case StatusCodes.Success(_) if response.entity.contentType == ContentTypes.`application/json` =>
               Unmarshal(response).to[PullResponse]
             case status =>
               Unmarshal(response)
@@ -203,7 +203,9 @@ private[pubsub] trait PubSubApi {
               Unmarshal(response)
                 .to[String]
                 .map { entity =>
-                  throw new RuntimeException(s"Unexpected acknowledge response. Code: [$status]. Entity: [$entity]")
+                  throw new RuntimeException(
+                    s"Unexpected acknowledge response. Code [$status] Content-type [${response.entity.contentType}] Entity [$entity]"
+                  )
                 }
           }
         case Failure(NonFatal(ex)) => Future.failed(ex)
@@ -226,13 +228,15 @@ private[pubsub] trait PubSubApi {
       .mapAsync(parallelism) {
         case Success(response) =>
           response.status match {
-            case StatusCodes.Success(_) =>
+            case StatusCodes.Success(_) if response.entity.contentType == ContentTypes.`application/json` =>
               Unmarshal(response.entity).to[PublishResponse].map(_.messageIds)
             case status =>
               Unmarshal(response)
                 .to[String]
                 .map { entity =>
-                  throw new RuntimeException(s"Unexpected publish response. Code: [$status]. Entity: [$entity]")
+                  throw new RuntimeException(
+                    s"Unexpected publish response. Code [$status] Content-type [${response.entity.contentType}] Entity [$entity]"
+                  )
                 }
           }
         case Failure(NonFatal(ex)) =>

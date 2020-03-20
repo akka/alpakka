@@ -95,8 +95,8 @@ class IntegrationSpec
       published.futureValue should not be empty
     }
 
-    "subscribe" in {
-      //#subscribe
+    "subscribe streaming" in {
+      //#subscribe-stream
       val projectId = "alpakka"
       val subscription = "simpleSubscription"
 
@@ -106,7 +106,38 @@ class IntegrationSpec
 
       val subscriptionSource: Source[ReceivedMessage, Future[Cancellable]] =
         GooglePubSub.subscribe(request, pollInterval = 1.second)
-      //#subscribe
+      //#subscribe-stream
+
+      val first = subscriptionSource.runWith(Sink.head)
+
+      val topic = "simpleTopic"
+      val msg = ByteString.copyFromUtf8("Hello world!")
+
+      val publishMessage: PubsubMessage =
+        PubsubMessage().withData(msg)
+
+      val publishRequest: PublishRequest =
+        PublishRequest()
+          .withTopic(s"projects/$projectId/topics/$topic")
+          .addMessages(publishMessage)
+
+      Source.single(publishRequest).via(GooglePubSub.publish(parallelism = 1)).runWith(Sink.ignore)
+
+      first.futureValue.message.value.data shouldBe msg
+    }
+
+    "subscribe sync" in {
+      //#subscribe-sync
+      val projectId = "alpakka"
+      val subscription = "simpleSubscription"
+
+      val request = PullRequest()
+        .withSubscription(s"projects/$projectId/subscriptions/$subscription")
+        .withMaxMessages(10)
+
+      val subscriptionSource: Source[ReceivedMessage, Future[Cancellable]] =
+        GooglePubSub.subscribePolling(request, pollInterval = 1.second)
+      //#subscribe-sync
 
       val first = subscriptionSource.runWith(Sink.head)
 
@@ -173,7 +204,7 @@ class IntegrationSpec
       val subNoAckResp = GooglePubSub.subscribe(sub, 1.second).runWith(Sink.head)
 
       inside(subNoAckResp.futureValue.message) {
-        case Some(PubsubMessage(data, _, _, _, _)) => data.toStringUtf8 shouldBe msg
+        case Some(PubsubMessage(data, _, _, _, _, _)) => data.toStringUtf8 shouldBe msg
       }
 
       // subscribe and get the republished message, and ack this time
@@ -187,7 +218,7 @@ class IntegrationSpec
         .runWith(Sink.head)
 
       inside(subWithAckResp.futureValue.message) {
-        case Some(PubsubMessage(data, _, _, _, _)) => data.toStringUtf8 shouldBe msg
+        case Some(PubsubMessage(data, _, _, _, _, _)) => data.toStringUtf8 shouldBe msg
       }
 
       // check if the message is not republished again

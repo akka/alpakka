@@ -1,5 +1,13 @@
 # FTP
 
+## 2.0.0-RC1
+
+- FTP: Add diagnostics to Java FTP move/remove tests [#2175](https://github.com/akka/alpakka/issues/2175) by [@raboof](https://github.com/raboof)
+- FTP: Harden move/remove tests [#2173](https://github.com/akka/alpakka/issues/2173) by [@raboof](https://github.com/raboof)
+
+[*closed in 2.0.0-RC1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0-RC1+label%3Ap%3Aftp)
+
+
 ## 2.0.0-M3
 
 - FTP: enrich ConnectException; track failures [#2154](https://github.com/akka/alpakka/issues/2154) by [@ennru](https://github.com/ennru)

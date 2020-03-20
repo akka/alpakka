@@ -5,7 +5,7 @@
 package akka.stream.alpakka.s3
 
 import java.nio.file.{Path, Paths}
-import java.util.Objects
+import java.util.{Objects, Optional}
 import java.util.concurrent.TimeUnit
 
 import scala.util.Try
@@ -115,7 +115,15 @@ object ForwardProxyCredentials {
 
 }
 
-final class ForwardProxy private (val host: String, val port: Int, val credentials: Option[ForwardProxyCredentials]) {
+final class ForwardProxy private (val scheme: String,
+                                  val host: String,
+                                  val port: Int,
+                                  val credentials: Option[ForwardProxyCredentials]) {
+
+  require(scheme == "http" || scheme == "https", "scheme must be either `http` or `https`")
+
+  /** Java API */
+  def getScheme: String = scheme
 
   /** Java API */
   def getHost: String = host
@@ -126,22 +134,27 @@ final class ForwardProxy private (val host: String, val port: Int, val credentia
   /** Java API */
   def getCredentials: java.util.Optional[ForwardProxyCredentials] = credentials.asJava
 
+  def withScheme(value: String) = copy(scheme = value)
   def withHost(host: String) = copy(host = host)
   def withPort(port: Int) = copy(port = port)
   def withCredentials(credentials: ForwardProxyCredentials) = copy(credentials = Option(credentials))
 
-  private def copy(host: String = host, port: Int = port, credentials: Option[ForwardProxyCredentials] = credentials) =
-    new ForwardProxy(host, port, credentials)
+  private def copy(scheme: String = scheme,
+                   host: String = host,
+                   port: Int = port,
+                   credentials: Option[ForwardProxyCredentials] = credentials) =
+    new ForwardProxy(scheme, host, port, credentials)
 
   override def toString =
     "ForwardProxy(" +
+    s"scheme=$scheme," +
     s"host=$host," +
     s"port=$port," +
-    s"credentials=$credentials" +
-    ")"
+    s"credentials=$credentials)"
 
   override def equals(other: Any): Boolean = other match {
     case that: ForwardProxy =>
+      Objects.equals(this.scheme, that.scheme) &&
       Objects.equals(this.host, that.host) &&
       Objects.equals(this.port, that.port) &&
       Objects.equals(this.credentials, that.credentials)
@@ -149,18 +162,38 @@ final class ForwardProxy private (val host: String, val port: Int, val credentia
   }
 
   override def hashCode(): Int =
-    Objects.hash(host, Int.box(port), credentials)
+    Objects.hash(scheme, host, Int.box(port), credentials)
 }
 
 object ForwardProxy {
 
   /** Scala API */
   def apply(host: String, port: Int, credentials: Option[ForwardProxyCredentials]) =
-    new ForwardProxy(host, port, credentials)
+    new ForwardProxy("https", host, port, credentials)
 
   /** Java API */
+  @deprecated("prefer overload with `java.util.Optional`", since = "2.0.0-RC1")
   def create(host: String, port: Int, credentials: Option[ForwardProxyCredentials]) =
     apply(host, port, credentials)
+
+  /** Java API */
+  def create(host: String, port: Int, credentials: Optional[ForwardProxyCredentials]) =
+    apply(host, port, credentials.asScala)
+
+  /** Use an HTTP proxy. */
+  def http(host: String, port: Int): ForwardProxy = new ForwardProxy("http", host, port, credentials = None)
+
+  def apply(c: Config): ForwardProxy = {
+    val maybeCredentials =
+      if (c.hasPath("credentials"))
+        Some(ForwardProxyCredentials(c.getString("credentials.username"), c.getString("credentials.password")))
+      else None
+
+    val scheme =
+      if (c.hasPath("scheme")) c.getString("scheme")
+      else "https"
+    new ForwardProxy(scheme, c.getString("host"), c.getInt("port"), maybeCredentials)
+  }
 
 }
 
@@ -184,6 +217,7 @@ final class S3Settings private (
     val credentialsProvider: AwsCredentialsProvider,
     val s3RegionProvider: AwsRegionProvider,
     val pathStyleAccess: Boolean,
+    val pathStyleAccessWarning: Boolean,
     val endpointUrl: Option[String],
     val listBucketApiVersion: ApiVersion,
     val forwardProxy: Option[ForwardProxy],
@@ -254,13 +288,14 @@ final class S3Settings private (
       validateObjectKey: Boolean = validateObjectKey,
       multipartUploadSettings: MultipartUploadSettings = multipartUploadSettings
   ): S3Settings = new S3Settings(
-    bufferType = bufferType,
-    credentialsProvider = credentialsProvider,
-    s3RegionProvider = s3RegionProvider,
-    pathStyleAccess = pathStyleAccess,
-    endpointUrl = endpointUrl,
-    listBucketApiVersion = listBucketApiVersion,
-    forwardProxy = forwardProxy,
+    bufferType,
+    credentialsProvider,
+    s3RegionProvider,
+    pathStyleAccess,
+    pathStyleAccessWarning,
+    endpointUrl,
+    listBucketApiVersion,
+    forwardProxy,
     validateObjectKey,
     multipartUploadSettings
   )
@@ -271,6 +306,7 @@ final class S3Settings private (
     s"credentialsProvider=$credentialsProvider," +
     s"s3RegionProvider=$s3RegionProvider," +
     s"pathStyleAccess=$pathStyleAccess," +
+    s"pathStyleAccessWarning=$pathStyleAccessWarning," +
     s"endpointUrl=$endpointUrl," +
     s"listBucketApiVersion=$listBucketApiVersion," +
     s"forwardProxy=$forwardProxy," +
@@ -283,6 +319,7 @@ final class S3Settings private (
       Objects.equals(this.credentialsProvider, that.credentialsProvider) &&
       Objects.equals(this.s3RegionProvider, that.s3RegionProvider) &&
       Objects.equals(this.pathStyleAccess, that.pathStyleAccess) &&
+      Objects.equals(this.pathStyleAccessWarning, that.pathStyleAccessWarning) &&
       Objects.equals(this.endpointUrl, that.endpointUrl) &&
       Objects.equals(this.listBucketApiVersion, that.listBucketApiVersion) &&
       Objects.equals(this.forwardProxy, that.forwardProxy) &&
@@ -296,6 +333,7 @@ final class S3Settings private (
       credentialsProvider,
       s3RegionProvider,
       Boolean.box(pathStyleAccess),
+      Boolean.box(pathStyleAccessWarning),
       endpointUrl,
       listBucketApiVersion,
       forwardProxy,
@@ -333,18 +371,13 @@ object S3Settings {
       )
     }
 
-    val maybeForwardProxy = if (c.hasPath("forward-proxy")) {
-      val maybeCredentials = if (c.hasPath("forward-proxy.credentials")) {
-        Option(
-          ForwardProxyCredentials(c.getString("forward-proxy.credentials.username"),
-                                  c.getString("forward-proxy.credentials.password"))
-        )
-      } else None
+    val maybeForwardProxy =
+      if (c.hasPath("forward-proxy")) Some(ForwardProxy(c.getConfig("forward-proxy")))
+      else None
 
-      Option(ForwardProxy(c.getString("forward-proxy.host"), c.getInt("forward-proxy.port"), maybeCredentials))
-    } else None
-
-    val pathStyleAccess = c.getBoolean("path-style-access")
+    val (pathStyleAccess, pathStyleAccessWarning) =
+      if (c.getString("path-style-access") == "force") (true, false)
+      else (c.getBoolean("path-style-access"), true)
 
     val endpointUrl = if (c.hasPath("endpoint-url")) {
       Option(c.getString("endpoint-url"))
@@ -414,13 +447,14 @@ object S3Settings {
     )
 
     new S3Settings(
-      bufferType = bufferType,
-      credentialsProvider = credentialsProvider,
-      s3RegionProvider = regionProvider,
-      pathStyleAccess = pathStyleAccess,
-      endpointUrl = endpointUrl,
-      listBucketApiVersion = apiVersion,
-      forwardProxy = maybeForwardProxy,
+      bufferType,
+      credentialsProvider,
+      regionProvider,
+      pathStyleAccess,
+      pathStyleAccessWarning,
+      endpointUrl,
+      apiVersion,
+      maybeForwardProxy,
       validateObjectKey,
       multipartUploadSettings
     )
@@ -446,9 +480,10 @@ object S3Settings {
     credentialsProvider,
     s3RegionProvider,
     pathStyleAccess,
+    pathStyleAccessWarning = true,
     endpointUrl,
     listBucketApiVersion,
-    None,
+    forwardProxy = None,
     validateObjectKey = true,
     MultipartUploadSettings(RetrySettings.default)
   )
@@ -463,10 +498,11 @@ object S3Settings {
     bufferType,
     credentialsProvider,
     s3RegionProvider,
-    false,
-    None,
+    pathStyleAccess = false,
+    pathStyleAccessWarning = true,
+    endpointUrl = None,
     listBucketApiVersion,
-    None,
+    forwardProxy = None,
     validateObjectKey = true,
     MultipartUploadSettings(RetrySettings.default)
   )
