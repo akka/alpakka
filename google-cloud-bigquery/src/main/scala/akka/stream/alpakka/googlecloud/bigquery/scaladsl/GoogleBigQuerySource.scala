@@ -19,8 +19,14 @@ import spray.json.JsObject
 
 import scala.concurrent.{ExecutionContext, Future}
 
+/**
+ * Scala API to create BigQuery sources.
+ */
 object GoogleBigQuerySource {
 
+  /**
+   * Read elements of `T` by executing HttpRequest upon BigQuery API.
+   */
   def raw[T](
       httpRequest: HttpRequest,
       parserFn: JsObject => Option[T],
@@ -29,6 +35,9 @@ object GoogleBigQuerySource {
   )(implicit mat: Materializer, actorSystem: ActorSystem): Source[T, NotUsed] =
     BigQueryStreamSource[T](httpRequest, parserFn, onFinishCallback, projectConfig, Http())
 
+  /**
+   * Read elements of `T` by executing `query`.
+   */
   def runQuery[T](query: String,
                   parserFn: JsObject => Option[T],
                   onFinishCallback: PagingInfo => NotUsed,
@@ -40,6 +49,9 @@ object GoogleBigQuerySource {
     BigQueryStreamSource(request, parserFn, onFinishCallback, projectConfig, Http())
   }
 
+  /**
+   * Read results in a csv format by executing `query`.
+   */
   def runQueryCsvStyle(
       query: String,
       onFinishCallback: PagingInfo => NotUsed,
@@ -50,6 +62,9 @@ object GoogleBigQuerySource {
       .via(ConcatWithHeaders())
   }
 
+  /**
+   * List tables on BigQueryConfig.dataset.
+   */
   def listTables(projectConfig: BigQueryConfig)(
       implicit mat: Materializer,
       actorSystem: ActorSystem,
@@ -59,6 +74,9 @@ object GoogleBigQuerySource {
                  BigQueryCommunicationHelper.parseTableListResult,
                  projectConfig)
 
+  /**
+   * List fields on tableName.
+   */
   def listFields(tableName: String, projectConfig: BigQueryConfig)(
       implicit mat: Materializer,
       actorSystem: ActorSystem,

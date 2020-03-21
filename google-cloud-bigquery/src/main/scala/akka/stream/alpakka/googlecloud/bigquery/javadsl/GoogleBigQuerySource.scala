@@ -17,11 +17,17 @@ import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
 import akka.stream.javadsl.Source
 import spray.json.JsObject
 
+/**
+ * Java API to create BigQuery sources.
+ */
 object GoogleBigQuerySource {
   import collection.JavaConverters._
   import scala.compat.java8.FutureConverters._
   import scala.compat.java8.OptionConverters._
 
+  /**
+   * Read elements of `T` by executing HttpRequest upon BigQuery API.
+   */
   def raw[T](httpRequest: HttpRequest,
              parserFn: java.util.function.Function[JsObject, java.util.Optional[T]],
              onFinishCallback: java.util.function.Function[PagingInfo, NotUsed],
@@ -32,6 +38,9 @@ object GoogleBigQuerySource {
       .raw(httpRequest, parserFn.apply(_).asScala, onFinishCallback.apply, projectConfig)(materializer, actorSystem)
       .asJava
 
+  /**
+   * Read elements of `T` by executing `query`.
+   */
   def runQuery[T](query: String,
                   parserFn: java.util.function.Function[JsObject, java.util.Optional[T]],
                   onFinishCallback: java.util.function.Function[PagingInfo, NotUsed],
@@ -42,6 +51,9 @@ object GoogleBigQuerySource {
       .runQuery(query, parserFn.apply(_).asScala, onFinishCallback.apply, projectConfig)(materializer, actorSystem)
       .asJava
 
+  /**
+   * Read results in a csv format by executing `query`.
+   */
   def runQueryCsvStyle(query: String,
                        onFinishCallback: java.util.function.Function[PagingInfo, NotUsed],
                        projectConfig: BigQueryConfig,
@@ -52,6 +64,9 @@ object GoogleBigQuerySource {
       .map(_.asJava)
       .asJava
 
+  /**
+   * List tables on BigQueryConfig.dataset.
+   */
   def listTables(projectConfig: BigQueryConfig,
                  actorSystem: ActorSystem,
                  materializer: Materializer): CompletionStage[util.List[TableListQueryJsonProtocol.QueryTableModel]] =
@@ -60,6 +75,9 @@ object GoogleBigQuerySource {
       .map(_.asJava)(actorSystem.dispatcher)
       .toJava
 
+  /**
+   * List fields on tableName.
+   */
   def listFields(tableName: String,
                  projectConfig: BigQueryConfig,
                  actorSystem: ActorSystem,
