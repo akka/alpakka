@@ -16,9 +16,10 @@ import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim, JwtTime}
 import java.time.Clock
 
 import akka.actor.ActorSystem
+
 import akka.stream.alpakka.googlecloud.bigquery.ForwardProxy
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.ForwardProxyPoolSettings._
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.ForwardProxyHttpsContext._
+import akka.stream.alpakka.googlecloud.bigquery.ForwardProxyPoolSettings._
+import akka.stream.alpakka.googlecloud.bigquery.ForwardProxyHttpsContext._
 
 import scala.concurrent.Future
 

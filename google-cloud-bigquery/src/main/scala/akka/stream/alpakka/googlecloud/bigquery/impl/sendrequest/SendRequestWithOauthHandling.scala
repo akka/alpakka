@@ -12,8 +12,8 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig
 import akka.stream.scaladsl.Flow
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.ForwardProxyPoolSettings._
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.ForwardProxyHttpsContext._
+import akka.stream.alpakka.googlecloud.bigquery.ForwardProxyPoolSettings._
+import akka.stream.alpakka.googlecloud.bigquery.ForwardProxyHttpsContext._
 
 import scala.concurrent.{ExecutionContext, Future}
 
