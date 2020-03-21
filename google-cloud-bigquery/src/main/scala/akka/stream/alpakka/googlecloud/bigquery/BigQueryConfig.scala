@@ -185,7 +185,8 @@ object BigQueryConfig {
 
 }
 
-final class BigQueryConfig(val projectId: String,
-                           val dataset: String,
-                           val forwardProxy: Option[ForwardProxy],
-                           @InternalApi private[bigquery] val session: GoogleSession) {}
+@InternalApi
+private[bigquery] final class BigQueryConfig(val projectId: String,
+                                             val dataset: String,
+                                             val forwardProxy: Option[ForwardProxy],
+                                             @InternalApi private[bigquery] val session: GoogleSession) {}
