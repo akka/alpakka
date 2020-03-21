@@ -72,9 +72,10 @@ Java
 
 ### Config
 
-The config will handle your session, and your service-token. (See the creation code above.)
+The configuration will contain the session (which includes your service-token). 
 
-If you create multiple requests to the same source (likely to happen) you should create it once and try to reuse it.
+If you create multiple requests to the same source (likely to happen) you should create a single `BigQueryConfig` instance and reuse it.
+
 If you call multiple bigquery sources (not likely to happen) it is worth to cache the configs, so you can save a lot of unneeded authorization requests.
 
 ### Cancel on timeout
