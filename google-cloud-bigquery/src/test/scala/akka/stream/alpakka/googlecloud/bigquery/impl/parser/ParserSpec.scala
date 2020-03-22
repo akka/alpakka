@@ -8,6 +8,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse}
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
 import akka.stream.scaladsl.{GraphDSL, RunnableGraph, Sink, Source}
+import akka.stream.testkit.GraphStageMessages.Failure
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{ActorMaterializer, ClosedShape}
 import akka.testkit.TestKit
@@ -18,6 +19,7 @@ import spray.json.JsObject
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 class ParserSpec extends TestKit(ActorSystem("ParserSpec")) with AnyWordSpecLike with Matchers with BeforeAndAfterAll {
 
@@ -37,7 +39,7 @@ class ParserSpec extends TestKit(ActorSystem("ParserSpec")) with AnyWordSpecLike
   def createTestGraph[Data, S1, S2](source: Source[HttpResponse, _],
                                     dataSink: Sink[Data, S1],
                                     pageSink: Sink[(Boolean, PagingInfo), S2],
-                                    parseFunction: JsObject => Option[Data]): RunnableGraph[(S1, S2)] =
+                                    parseFunction: JsObject => Try[Data]): RunnableGraph[(S1, S2)] =
     RunnableGraph.fromGraph(GraphDSL.create(dataSink, pageSink)((_, _)) { implicit builder => (s1, s2) =>
       import GraphDSL.Implicits._
 
@@ -57,7 +59,7 @@ class ParserSpec extends TestKit(ActorSystem("ParserSpec")) with AnyWordSpecLike
         createTestGraph(Source.single(response),
                         TestSink.probe[String],
                         TestSink.probe[(Boolean, PagingInfo)],
-                        _ => Option(pageToken))
+                        _ => Try(pageToken))
 
       val (dataSink, pageSink) = testGraph.run()
 
@@ -73,7 +75,7 @@ class ParserSpec extends TestKit(ActorSystem("ParserSpec")) with AnyWordSpecLike
         createTestGraph(Source.single(response),
                         TestSink.probe[JsObject],
                         TestSink.probe[(Boolean, PagingInfo)],
-                        x => Option(x))
+                        x => Try(x))
 
       val (dataSink, pageSink) = testGraph.run()
 
@@ -88,7 +90,7 @@ class ParserSpec extends TestKit(ActorSystem("ParserSpec")) with AnyWordSpecLike
       val testGraph = createTestGraph(Source.single(responseWithoutJobId),
                                       TestSink.probe[JsObject],
                                       TestSink.probe[(Boolean, PagingInfo)],
-                                      x => Option(x))
+                                      x => Try(x))
 
       val (dataSink, pageSink) = testGraph.run()
 
@@ -103,7 +105,7 @@ class ParserSpec extends TestKit(ActorSystem("ParserSpec")) with AnyWordSpecLike
       val testGraph = createTestGraph(Source.single(HttpResponse(entity = HttpEntity("{}"))),
                                       TestSink.probe[JsObject],
                                       TestSink.probe[(Boolean, PagingInfo)],
-                                      x => Option(x))
+                                      x => Try(x))
 
       val (dataSink, pageSink) = testGraph.run()
 
@@ -115,11 +117,16 @@ class ParserSpec extends TestKit(ActorSystem("ParserSpec")) with AnyWordSpecLike
     }
 
     "handles parser None" in {
+
+      def failureParser(result: JsObject): Try[String] = Try {
+        throw new Exception
+      }
+
       val testGraph =
         createTestGraph(Source.single(response),
                         TestSink.probe[String],
                         TestSink.probe[(Boolean, PagingInfo)],
-                        _ => None)
+                        failureParser)
 
       val (dataSink, pageSink) = testGraph.run()
 
@@ -129,5 +136,6 @@ class ParserSpec extends TestKit(ActorSystem("ParserSpec")) with AnyWordSpecLike
 
       result should be((true, PagingInfo(Some(pageToken), Some(jobId))))
     }
+
   }
 }

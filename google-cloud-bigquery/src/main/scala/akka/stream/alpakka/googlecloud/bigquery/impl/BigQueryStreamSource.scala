@@ -20,6 +20,7 @@ import akka.stream.scaladsl.{GraphDSL, Source, Zip}
 import spray.json.JsObject
 
 import scala.concurrent.ExecutionContext
+import scala.util.Try
 
 @InternalApi
 private[bigquery] object BigQueryStreamSource {
@@ -28,7 +29,7 @@ private[bigquery] object BigQueryStreamSource {
     (t: (Boolean, PagingInfo)) => { onFinishCallback(t._2); {} }
 
   def apply[T](httpRequest: HttpRequest,
-               parserFn: JsObject => Option[T],
+               parserFn: JsObject => Try[T],
                onFinishCallback: PagingInfo => NotUsed,
                projectConfig: BigQueryConfig,
                http: HttpExt)(

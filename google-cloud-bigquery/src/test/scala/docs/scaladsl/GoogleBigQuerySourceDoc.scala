@@ -49,7 +49,7 @@ class GoogleBigQuerySourceDoc {
   case class User(uid: String, name: String)
   implicit val userFormatter = jsonFormat2(User)
 
-  def parserFn(result: JsObject): Option[User] = Try(result.convertTo[User]).toOption
+  def parserFn(result: JsObject): Try[User] = Try(result.convertTo[User])
   val userStream: Source[User, NotUsed] =
     GoogleBigQuerySource.runQuery("SELECT uid, name FROM bigQueryDatasetName.myTable",
                                   parserFn,
@@ -61,7 +61,7 @@ class GoogleBigQuerySourceDoc {
   case class DryRunResponse(totalBytesProcessed: String, jobComplete: Boolean, cacheHit: Boolean)
   implicit val dryRunFormat: JsonFormat[DryRunResponse] = jsonFormat3(DryRunResponse)
 
-  def dryRunParser(result: JsObject): Option[DryRunResponse] = Try(result.convertTo[DryRunResponse]).toOption
+  def dryRunParser(result: JsObject): Try[DryRunResponse] = Try(result.convertTo[DryRunResponse])
 
   val request = BigQueryCommunicationHelper.createQueryRequest("SELECT uid, name FROM bigQueryDatasetName.myTable",
                                                                config.projectId,

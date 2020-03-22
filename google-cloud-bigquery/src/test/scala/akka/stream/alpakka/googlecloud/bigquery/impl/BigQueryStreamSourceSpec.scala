@@ -26,6 +26,7 @@ import org.scalatest.matchers.should.Matchers
 import scala.jdk.CollectionConverters._
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
+import scala.util.Try
 
 class BigQueryStreamSourceSpec
     extends TestKit(ActorSystem("BigQueryStreamSourceSpec"))
@@ -79,7 +80,7 @@ class BigQueryStreamSourceSpec
       )
 
       val bigQuerySource =
-        BigQueryStreamSource(HttpRequest(), _ => Option("success"), BigQueryCallbacks.ignore, projectConfig, http)
+        BigQueryStreamSource(HttpRequest(), _ => Try("success"), BigQueryCallbacks.ignore, projectConfig, http)
 
       val resultF = Source.fromGraph(bigQuerySource).runWith(Sink.head)
 
@@ -113,7 +114,7 @@ class BigQueryStreamSourceSpec
       )
 
       val bigQuerySource =
-        BigQueryStreamSource(HttpRequest(), _ => Option("success"), BigQueryCallbacks.ignore, projectConfig, http)
+        BigQueryStreamSource(HttpRequest(), _ => Try("success"), BigQueryCallbacks.ignore, projectConfig, http)
 
       val resultF = bigQuerySource.runWith(Sink.seq)
 
@@ -124,7 +125,7 @@ class BigQueryStreamSourceSpec
     "url encode page token" in new Scope {
 
       val bigQuerySource =
-        BigQueryStreamSource(HttpRequest(), _ => Option("success"), BigQueryCallbacks.ignore, projectConfig, http)
+        BigQueryStreamSource(HttpRequest(), _ => Try("success"), BigQueryCallbacks.ignore, projectConfig, http)
       when(
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),

@@ -18,6 +18,7 @@ import akka.stream.scaladsl.{Sink, Source}
 import spray.json.JsObject
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 /**
  * Scala API to create BigQuery sources.
@@ -29,7 +30,7 @@ object GoogleBigQuerySource {
    */
   def raw[T](
       httpRequest: HttpRequest,
-      parserFn: JsObject => Option[T],
+      parserFn: JsObject => Try[T],
       onFinishCallback: PagingInfo => NotUsed,
       projectConfig: BigQueryConfig
   )(implicit mat: Materializer, actorSystem: ActorSystem): Source[T, NotUsed] =
@@ -39,7 +40,7 @@ object GoogleBigQuerySource {
    * Read elements of `T` by executing `query`.
    */
   def runQuery[T](query: String,
-                  parserFn: JsObject => Option[T],
+                  parserFn: JsObject => Try[T],
                   onFinishCallback: PagingInfo => NotUsed,
                   projectConfig: BigQueryConfig)(
       implicit mat: Materializer,
@@ -88,7 +89,7 @@ object GoogleBigQuerySource {
       projectConfig
     )
 
-  private def runMetaQuery[T](url: String, parser: JsObject => Option[Seq[T]], projectConfig: BigQueryConfig)(
+  private def runMetaQuery[T](url: String, parser: JsObject => Try[Seq[T]], projectConfig: BigQueryConfig)(
       implicit mat: Materializer,
       actorSystem: ActorSystem,
       executionContext: ExecutionContext

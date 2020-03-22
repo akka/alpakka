@@ -16,6 +16,7 @@ import akka.stream.alpakka.googlecloud.bigquery.client.TableListQueryJsonProtoco
 import akka.stream.alpakka.googlecloud.bigquery.javadsl.GoogleBigQuerySource;
 import akka.stream.alpakka.googlecloud.bigquery.javadsl.BigQueryCallbacks;
 import akka.stream.javadsl.Source;
+import scala.util.Try;
 import spray.json.JsObject;
 
 import java.util.List;
@@ -70,14 +71,11 @@ public class GoogleBigQuerySourceDoc {
     }
   }
 
-  static Optional<User> userFromJson(JsObject object) {
-    try {
-      return Optional.of(
-          new User(
-              object.fields().apply("uid").toString(), object.fields().apply("name").toString()));
-    } catch (Throwable e) {
-      return Optional.empty();
-    }
+  static Try<User> userFromJson(JsObject object) {
+    return Try.apply(
+        () ->
+            new User(
+                object.fields().apply("uid").toString(), object.fields().apply("name").toString()));
   }
 
   private static Source<User, NotUsed> example2() {
@@ -113,16 +111,13 @@ public class GoogleBigQuerySourceDoc {
     }
   }
 
-  static Optional<DryRunResponse> dryRunResponseFromJson(JsObject object) {
-    try {
-      return Optional.of(
-          new DryRunResponse(
-              object.fields().apply("totalBytesProcessed").toString(),
-              object.fields().apply("jobComplete").toString(),
-              object.fields().apply("cacheHit").toString()));
-    } catch (Throwable e) {
-      return Optional.empty();
-    }
+  static Try<DryRunResponse> dryRunResponseFromJson(JsObject object) {
+    return Try.apply(
+        () ->
+            new DryRunResponse(
+                object.fields().apply("totalBytesProcessed").toString(),
+                object.fields().apply("jobComplete").toString(),
+                object.fields().apply("cacheHit").toString()));
   }
 
   private static Source<DryRunResponse, NotUsed> example3() {

@@ -19,18 +19,18 @@ object BigQueryCommunicationHelper {
   def createQueryBody(query: String, dryRun: Boolean) =
     HttpEntity(ContentTypes.`application/json`, QueryRequest(query, dryRun = Some(dryRun)).toJson.compactPrint)
 
-  def parseQueryResult(result: JsObject): Option[(Seq[String], Seq[Seq[String]])] =
+  def parseQueryResult(result: JsObject): Try[(Seq[String], Seq[Seq[String]])] =
     Try {
       val queryResponse = result.convertTo[QueryResponse]
       val fields = queryResponse.schema.fields.map(_.name)
       val rows = queryResponse.rows.fold(Seq[Seq[String]]())(rowSeq => rowSeq.map(row => row.f.map(_.v)))
 
       (fields, rows)
-    }.toOption
+    }
 
-  def parseTableListResult(result: JsObject): Option[Seq[TableListQueryJsonProtocol.QueryTableModel]] =
-    Try(result.convertTo[TableListQueryResponse].tables).toOption
+  def parseTableListResult(result: JsObject): Try[Seq[TableListQueryJsonProtocol.QueryTableModel]] =
+    Try(result.convertTo[TableListQueryResponse].tables)
 
-  def parseFieldListResults(result: JsObject): Option[Seq[TableDataQueryJsonProtocol.Field]] =
-    Try(result.convertTo[TableDataQueryResponse].schema.fields).toOption
+  def parseFieldListResults(result: JsObject): Try[Seq[TableDataQueryJsonProtocol.Field]] =
+    Try(result.convertTo[TableDataQueryResponse].schema.fields)
 }
