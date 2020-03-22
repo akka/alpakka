@@ -92,10 +92,10 @@ Java
 
 ### Parsers
 
-The parser function is a `JsObject => Option[T]` function. 
+The parser function is a `JsObject => Try[T]` function. 
 This is needed because there is a possibility, the response not to contain any data. In this case we need to retry the request with some delay.
 Your parser function needs to be bulletproof and the code in the examples represents the happy path.
-If you return `None` in every error case; your stream will be polling forever!
+In case of `Failure` ; your stream will be polling forever!
 
 ## Running the examples
 
