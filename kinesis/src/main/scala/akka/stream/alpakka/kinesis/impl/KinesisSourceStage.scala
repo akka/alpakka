@@ -78,8 +78,9 @@ private[kinesis] class KinesisSourceStage(shardSettings: ShardSettings, amazonKi
           requestRecords()
 
         case (_, GetShardIteratorFailure(ex)) =>
-          log.error(ex, "Failed to get a shard iterator for shard {}", shardId)
-          failStage(new Errors.GetShardIteratorError(shardId, ex))
+          val error = new Errors.GetShardIteratorError(shardId, ex)
+          log.error(ex, error.getMessage)
+          failStage(error)
 
         case (_, Pump) =>
         case (_, msg) =>
@@ -104,8 +105,9 @@ private[kinesis] class KinesisSourceStage(shardSettings: ShardSettings, amazonKi
           }
 
         case (_, GetRecordsFailure(ex)) =>
-          log.error(ex, "Failed to fetch records from Kinesis for shard {}", shardId)
-          failStage(new Errors.GetRecordsError(shardId, ex))
+          val error = new Errors.GetRecordsError(shardId, ex)
+          log.error(ex, error.getMessage)
+          failStage(error)
 
         case (_, Pump) =>
         case (_, msg) =>
