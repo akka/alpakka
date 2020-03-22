@@ -20,7 +20,6 @@ import scala.util.Try;
 import spray.json.JsObject;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 // #imports
 
