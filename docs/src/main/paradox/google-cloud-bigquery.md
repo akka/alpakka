@@ -99,6 +99,9 @@ This is needed because there is a possibility, the response not to contain any d
 Your parser function needs to be bulletproof and the code in the examples represents the happy path.
 In case of `Failure` ; your stream will be polling forever!
 
-## Running the examples
+## Running an End to End test case
 
-To run the example code you will need to configure a project, create/init tables in google-bigquery and provide your own credentials.
+You might want to run an End to End test case 
+
+See @ref:[BigQueryEndToEndSpec](src/test/scala/akka/stream/alpakka/googlecloud/bigquery/e2e/BigQueryEndToEndSpec.scala).
+To run this example using an actual GCP project you will need to configure a project, create/init tables in google-bigquery and provide a service account.
