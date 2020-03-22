@@ -15,6 +15,7 @@ import akka.stream.scaladsl.Sink
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.io.Source
+import scala.util.Try
 
 trait BigQueryTestHelper {
   import com.typesafe.config.ConfigFactory
@@ -57,7 +58,7 @@ trait BigQueryTestHelper {
 
   def runRequest(httpRequest: HttpRequest): Future[Done] =
     GoogleBigQuerySource
-      .raw(httpRequest, x => Option(x), BigQueryCallbacks.ignore, projectConfig)
+      .raw(httpRequest, x => Try(x), BigQueryCallbacks.ignore, projectConfig)
       .runWith(Sink.ignore)
 
   def createTable(schemaDefinition: String): HttpRequest = HttpRequest(

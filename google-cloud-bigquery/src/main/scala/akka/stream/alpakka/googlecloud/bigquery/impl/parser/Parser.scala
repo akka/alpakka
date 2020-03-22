@@ -13,6 +13,7 @@ import akka.stream.{FanOutShape2, FlowShape, Graph, Materializer}
 import spray.json._
 
 import scala.concurrent.ExecutionContext
+import scala.util.{Failure, Success, Try}
 
 @InternalApi
 private[bigquery] object Parser {
@@ -28,7 +29,7 @@ private[bigquery] object Parser {
     implicit val responseFormat: RootJsonFormat[Response] = jsonFormat3(Response)
   }
 
-  def apply[T](parseFunction: JsObject => Option[T])(
+  def apply[T](parseFunction: JsObject => Try[T])(
       implicit materializer: Materializer,
       ec: ExecutionContext
   ): Graph[FanOutShape2[HttpResponse, T, (Boolean, PagingInfo)], NotUsed] = GraphDSL.create() { implicit builder =>
@@ -40,13 +41,14 @@ private[bigquery] object Parser {
     val pageInfoProvider = builder.add(Flow[JsObject].map(getPageInfo))
 
     val broadcast1 = builder.add(Broadcast[JsObject](2, eagerCancel = true))
-    val broadcast2 = builder.add(Broadcast[Option[T]](2, eagerCancel = true))
+    val broadcast2 = builder.add(Broadcast[Try[T]](2, eagerCancel = true))
 
-    val filterNone = builder.add(Flow[Option[T]].mapConcat {
-      case Some(value) => List(value)
-      case None => List()
+    val filterNone = builder.add(Flow[Try[T]].mapConcat {
+      case Success(value) => List(value)
+      case Failure(e) => List()
     })
-    val mapOptionToBool = builder.add(Flow[Option[T]].map(_.isEmpty))
+
+    val mapOptionToBool = builder.add(Flow[Try[T]].map(_.isFailure))
 
     val zip = builder.add(Zip[Boolean, PagingInfo]())
 
