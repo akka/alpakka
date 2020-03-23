@@ -55,7 +55,7 @@ object EventBridgePublisher {
       settings: EventBridgePublishSettings
   )(implicit eventBridgeClient: EventBridgeAsyncClient): Flow[PutEventsRequest, PutEventsResponse, NotUsed] =
     Flow[PutEventsRequest]
-      .mapAsyncUnordered(settings.concurrency)(eventBridgeClient.putEvents(_).toScala)
+      .mapAsync(settings.concurrency)(eventBridgeClient.putEvents(_).toScala)
 
   /**
    * Creates a [[akka.stream.scaladsl.Flow Flow]] to publish messages to an EventBridge based on the message bus arn.
