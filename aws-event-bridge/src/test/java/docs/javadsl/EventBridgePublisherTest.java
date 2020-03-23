@@ -141,12 +141,12 @@ public class EventBridgePublisherTest {
   @Test
   public void flowShouldPutEventsRequest() throws Exception {
     CompletionStage<Done> completion =
-        // #flow-request-entry
+        // #flow-events-request
         Source.single(detailPutEventsRequest("message"))
             .via(EventBridgePublisher.publishFlow(eventBridgeClient))
             .runWith(Sink.foreach(res -> System.out.println(res)), materializer);
 
-    // #flow-reqest-entry
+    // #flow-events-request
     assertThat(completion.toCompletableFuture().get(2, TimeUnit.SECONDS), is(Done.getInstance()));
   }
 }

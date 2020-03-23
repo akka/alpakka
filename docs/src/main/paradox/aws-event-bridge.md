@@ -31,10 +31,10 @@ The table below shows direct dependencies of this module and the second tab show
 Prepare an @scaladoc[ActorSystem](akka.actor.ActorSystem) and a @scaladoc[Materializer](akka.stream.Materializer).
 
 Scala
-: @@snip [snip](/aws-event-bridge/src/test/scala/akka/stream/alpakka/aws/eventbridge/scaladsl/DefaultTestContext.scala) { #init-system }
+: @@snip [snip](/aws-event-bridge/src/test/scala/akka/stream/alpakka/aws/eventbridge/IntegrationTestContext.scala) { #init-system }
 
 Java
-: @@snip [snip](/aws-event-bridge/src/test/java/akka/stream/alpakka/aws/eventbridge/javadsl/EventBridgePublisherTest.java) { #init-system }
+: @@snip [snip](/aws-event-bridge/src/test/java/docs/javadsl/EventBridgePublisherTest.java) { #init-system }
 
 
 This connector requires an implicit @javadoc[EventBridge](software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient) instance to communicate with AWS EventBridge.
@@ -45,7 +45,7 @@ Scala
 : @@snip [snip](/aws-event-bridge/src/test/scala/akka/stream/alpakka/aws/eventbridge/IntegrationTestContext.scala) { #init-client }
 
 Java
-: @@snip [snip](/aws-event-bridge/src/test/java/akka/stream/alpakka/sqs/javadsl/EventBridgePublisherTest.java) { #init-client }
+: @@snip [snip](/aws-event-bridge/src/test/java/docs/javadsl/EventBridgePublisherTest.java) { #init-client }
 
 The example above uses @extref:[Akka HTTP](akka-http:) as the default HTTP client implementation. For more details about the HTTP client, configuring request retrying and best practices for credentials, see @ref[AWS client configuration](aws-shared-configuration.md) for more details.
 
@@ -55,7 +55,7 @@ The example above uses @extref:[Akka HTTP](akka-http:) as the default HTTP clien
 Create a `PutEventsEntry`-accepting sink, publishing to an Event Bus.
 
 Scala
-: @@snip [snip](/aws-event-bridge/src/test/java/docs/javadsl/EventBridgePublisherTest.java) { #run-events-entry }
+: @@snip [snip](/aws-event-bridge/src/test/scala/docs/scaladsl/EventBridgePublisherSpec.scala) { #run-events-entry }
 
 Java
 : @@snip [snip](/aws-event-bridge/src/test/java/docs/javadsl/EventBridgePublisherTest.java) { #run-events-entry }
@@ -64,10 +64,10 @@ Java
 Create a `PutEventsRequest`-accepting sink, that publishes to an Event Bus.
 
 Scala
-: @@snip [snip](/aws-event-bridge/src/test/java/docs/javadsl/EventBridgePublisherTest.java) { #run-send-request }
+: @@snip [snip](/aws-event-bridge/src/test/scala/docs/scaladsl/EventBridgePublisherSpec.scala) { #run-events-request }
 
 Java
-: @@snip [snip](/aws-event-bridge/src/test/java/docs/javadsl/EventBridgePublisherTest.java) { #run-send-request }
+: @@snip [snip](/aws-event-bridge/src/test/java/docs/javadsl/EventBridgePublisherTest.java) { #run-events-request }
 
 You can also build flow stages which publish messages to Event Bus and then forward 
 @scaladoc[PutEventsResponse](software.amazon.awssdk.services.eventbridge.model.PutEventsResponse) further down the stream.
@@ -75,7 +75,7 @@ You can also build flow stages which publish messages to Event Bus and then forw
 Flow for PutEventEntry 
 
 Scala
-: @@snip [snip](/aws-event-bridge/src/test/java/docs/javadsl/EventBridgePublisherTest.java) { #flow-events-entry }
+: @@snip [snip](/aws-event-bridge/src/test/scala/docs/scaladsl/EventBridgePublisherSpec.scala) { #flow-events-entry }
 
 Java
 : @@snip [snip](/aws-event-bridge/src/test/java/docs/javadsl/EventBridgePublisherTest.java) { #flow-events-entry }
@@ -83,7 +83,7 @@ Java
 Flow for PutEventsRequest 
 
 Scala
-: @@snip [snip](/aws-event-bridge/src/test/java/docs/javadsl/EventBridgePublisherTest.java) { #flow-events-request }
+: @@snip [snip](/aws-event-bridge/src/test/scala/docs/scaladsl/EventBridgePublisherSpec.scala) { #flow-events-request }
 
 Java
 : @@snip [snip](/aws-event-bridge/src/test/java/docs/javadsl/EventBridgePublisherTest.java) { #flow-events-request }
