@@ -17,7 +17,7 @@ The AWS EventBridge connector provides Akka Stream sinks for AWS EventBrigde eve
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-sqs_$scala.binary.version$
+  artifact=akka-stream-alpakka-aws-event-bridge_$scala.binary.version$
   version=$project.version$
 }
 
@@ -31,10 +31,10 @@ The table below shows direct dependencies of this module and the second tab show
 Prepare an @scaladoc[ActorSystem](akka.actor.ActorSystem) and a @scaladoc[Materializer](akka.stream.Materializer).
 
 Scala
-: @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/DefaultTestContext.scala) { #init-system }
+: @@snip [snip](/aws-event-bridge/src/test/scala/akka/stream/alpakka/aws/eventbridge/scaladsl/DefaultTestContext.scala) { #init-system }
 
 Java
-: @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/EventBridgePublisherTest.java) { #init-system }
+: @@snip [snip](/aws-event-bridge/src/test/java/akka/stream/alpakka/aws/eventbridge/javadsl/EventBridgePublisherTest.java) { #init-system }
 
 
 This connector requires an implicit @javadoc[EventBridge](software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient) instance to communicate with AWS EventBridge.
