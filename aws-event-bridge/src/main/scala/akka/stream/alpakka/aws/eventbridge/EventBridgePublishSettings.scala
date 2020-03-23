@@ -7,6 +7,10 @@ package akka.stream.alpakka.aws.eventbridge
 /**
  * Settings of the EventBridgePublish plugin.
  *
+ * Currently supports only concurrency parameter which defines how many of the events within the stream would be
+ * into the event bus using the mapAsync method - trying to keep the ordering of the request / entries as they were
+ * put into the stream.
+ *
  * @param concurrency maps to parallelism in in async stream operations
  * */
 final class EventBridgePublishSettings private (val concurrency: Int) {

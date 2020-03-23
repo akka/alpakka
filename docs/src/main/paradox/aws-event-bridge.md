@@ -6,9 +6,15 @@ Serverless event bus that connects application data from your own apps, SaaS, an
 
 For more information about AWS EventBridge please visit the [official documentation](https://aws.amazon.com/eventbridge/).
 
+The publish of the events is implemented using the AWS API PUT Events https://docs.aws.amazon.com/eventbridge/latest/userguide/add-events-putevents.html.
+The semantics of the publish are that any of the entries inside a Put Request can fail. Response containse information about which entries
+were not successfully published.
+Currently there are no retries supported apart of configuration provided by the AWS client. 
+Adding Support for configurable retry behaviour as part of the connector is possible.
+
 @@@
 
-The AWS EventBridge connector provides Akka Stream sinks for AWS EventBrigde event buses.
+The AWS EventBridge connector provides Akka Stream sinks for AWS EventBridge event buses.
 
 @@project-info{ projectId="aws-event-bridge" }
 
