@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.javadsl;
@@ -111,7 +111,7 @@ public class EventBridgePublisherTest {
         Source.single(detailEntry("message"))
             .runWith(EventBridgePublisher.sink(eventBridgeClient), materializer);
 
-        // #run-events-entry
+    // #run-events-entry
     assertThat(completion.toCompletableFuture().get(2, TimeUnit.SECONDS), is(Done.getInstance()));
   }
 
@@ -122,7 +122,7 @@ public class EventBridgePublisherTest {
         Source.single(detailPutEventsRequest("message"))
             .runWith(EventBridgePublisher.publishSink(eventBridgeClient), materializer);
 
-        // #run-events-request
+    // #run-events-request
     assertThat(completion.toCompletableFuture().get(2, TimeUnit.SECONDS), is(Done.getInstance()));
   }
 
@@ -134,7 +134,7 @@ public class EventBridgePublisherTest {
             .via(EventBridgePublisher.flow(eventBridgeClient))
             .runWith(Sink.foreach(res -> System.out.println(res)), materializer);
 
-        // #flow-events-entry
+    // #flow-events-entry
     assertThat(completion.toCompletableFuture().get(2, TimeUnit.SECONDS), is(Done.getInstance()));
   }
 
@@ -146,7 +146,7 @@ public class EventBridgePublisherTest {
             .via(EventBridgePublisher.publishFlow(eventBridgeClient))
             .runWith(Sink.foreach(res -> System.out.println(res)), materializer);
 
-        // #flow-reqest-entry 
+    // #flow-reqest-entry
     assertThat(completion.toCompletableFuture().get(2, TimeUnit.SECONDS), is(Done.getInstance()));
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.aws.eventbridge
@@ -11,13 +11,14 @@ import akka.stream.scaladsl.{Keep, Sink}
 import akka.stream.testkit.scaladsl.TestSource
 import org.mockito.ArgumentMatchers.{any, eq => meq}
 import org.mockito.Mockito._
-import org.scalatest._
+import org.scalatest.flatspec._
+import org.scalatest.matchers.must.Matchers
 import software.amazon.awssdk.services.eventbridge.model._
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class EventBridgePublishMockSpec extends FlatSpec with DefaultTestContext with MustMatchers {
+class EventBridgePublishMockSpec extends AnyFlatSpec with DefaultTestContext with Matchers {
 
   private def entryDetail(detail: String): PutEventsRequestEntry =
     PutEventsRequestEntry.builder().detail(detail).build()

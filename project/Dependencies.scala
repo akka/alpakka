@@ -430,8 +430,8 @@ object Dependencies {
           ExclusionRule("software.amazon.awssdk", "netty-nio-client")
         ),
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion, // ApacheV2
-      "org.mockito" % "mockito-core" % mockitoVersion % Test // MIT
     ) ++ JacksonDatabindDependencies
+    ++ Mockito
   )
 
   val Sns = Seq(
