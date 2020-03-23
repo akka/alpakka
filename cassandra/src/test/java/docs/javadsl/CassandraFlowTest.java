@@ -12,6 +12,7 @@ import akka.japi.Pair;
 import akka.stream.Materializer;
 import akka.stream.alpakka.cassandra.CassandraWriteSettings;
 import akka.stream.alpakka.cassandra.javadsl.CassandraFlow;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.SourceWithContext;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
@@ -23,6 +24,7 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -40,6 +42,8 @@ public class CassandraFlowTest {
   static final String TEST_NAME = "CassandraFlowTest";
 
   static CassandraTestHelper helper;
+
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   @BeforeClass
   public static void beforeAll() {

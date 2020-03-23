@@ -112,6 +112,7 @@ object Dependencies {
   val CassandraVersionInDocs = "4.0"
   val CassandraDriverVersion = "4.5.0"
   val CassandraDriverVersionInDocs = "4.5"
+  // https://github.com/akka/alpakka/issues/2226
   // Performance dropped by ~40% when the driver upgraded to latest netty version
   // override for now https://datastax-oss.atlassian.net/browse/JAVA-2676
   val CassandraOverrideNettyVersion = "4.1.39.Final"
@@ -120,9 +121,9 @@ object Dependencies {
     libraryDependencies ++= Seq(
         ("com.datastax.oss" % "java-driver-core" % CassandraDriverVersion)
           .exclude("com.github.spotbugs", "spotbugs-annotations")
-          .exclude("org.apache.tinkerpop", "gremlin-core"), //https://github.com/akka/alpakka/issues/2200
+          .exclude("org.apache.tinkerpop", "gremlin-core") //https://github.com/akka/alpakka/issues/2200
+          .exclude("io.netty", "netty-handler"), // https://github.com/akka/alpakka/issues/2226
         "io.netty" % "netty-handler" % CassandraOverrideNettyVersion,
-        "io.netty" % "netty-all" % CassandraOverrideNettyVersion,
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion % Provided
       )
   )
