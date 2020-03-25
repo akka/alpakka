@@ -13,6 +13,7 @@ import akka.stream.alpakka.kinesis.CommittableRecord.{BatchData, ShardProcessorD
 import akka.stream.alpakka.kinesis.KinesisSchedulerErrors.SchedulerUnexpectedShutdown
 import akka.stream.alpakka.kinesis.impl.ShardProcessor
 import akka.stream.alpakka.kinesis.scaladsl.KinesisSchedulerSource
+import akka.stream.alpakka.testkit.scaladsl.Repeated
 import akka.stream.scaladsl.Keep
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.{TestSink, TestSource}
@@ -40,7 +41,12 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Random
 
-class KinesisSchedulerSourceSpec extends AnyWordSpec with Matchers with DefaultTestContext with Eventually {
+class KinesisSchedulerSourceSpec
+    extends AnyWordSpec
+    with Matchers
+    with DefaultTestContext
+    with Eventually
+    with Repeated {
 
   "KinesisSchedulerSource" must {
 
