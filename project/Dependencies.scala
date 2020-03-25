@@ -110,7 +110,7 @@ object Dependencies {
   )
 
   val CassandraVersionInDocs = "4.0"
-  val CassandraDriverVersion = "4.5.0"
+  val CassandraDriverVersion = "4.5.1"
   val CassandraDriverVersionInDocs = "4.5"
   // https://github.com/akka/alpakka/issues/2226
   // Performance dropped by ~40% when the driver upgraded to latest netty version
