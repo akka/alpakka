@@ -16,6 +16,7 @@ import akka.stream.alpakka.cassandra.javadsl.CassandraSessionRegistry;
 import akka.stream.alpakka.cassandra.javadsl.CassandraSource;
 // #cql
 import akka.stream.alpakka.cassandra.scaladsl.CassandraAccess;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
 // #statement
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
@@ -23,6 +24,7 @@ import com.datastax.oss.driver.api.core.cql.Statement;
 // #statement
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -44,6 +46,8 @@ public class CassandraSourceTest {
 
   static String idtable;
   static final List<Integer> data = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8);
+
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   @BeforeClass
   public static void beforeAll() throws InterruptedException, ExecutionException, TimeoutException {

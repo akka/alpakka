@@ -5,6 +5,7 @@
 package akka.stream.alpakka.cassandra.scaladsl
 
 import akka.actor.ActorSystem
+import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -22,7 +23,8 @@ abstract class CassandraSpecBase(_system: ActorSystem)
     with BeforeAndAfterEach
     with BeforeAndAfterAll
     with Matchers
-    with CassandraLifecycle {
+    with CassandraLifecycle
+    with LogCapturing {
 
   implicit val materializer: Materializer = SystemMaterializer(_system).materializer
   implicit val ec: ExecutionContext = system.dispatcher
