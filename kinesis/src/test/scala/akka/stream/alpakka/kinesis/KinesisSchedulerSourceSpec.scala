@@ -175,38 +175,36 @@ class KinesisSchedulerSourceSpec extends AnyWordSpec with Matchers with DefaultT
     "not drop messages in case of Shard end" in assertAllStagesStopped(
       new KinesisSchedulerContext(bufferSize = 10) with TestData {
         recordProcessor.initialize(randomInitializationInput())
-        Future {
-          val records: Seq[KinesisClientRecord] = (1 to 30).map { i =>
-            val record = org.mockito.Mockito.mock(classOf[KinesisClientRecord])
-            when(record.sequenceNumber).thenReturn(i.toString)
-            record
-          }
-          recordProcessor.processRecords(sampleRecordsInput(records, isShardEnd = true))
-        }
-
         val shardEndedCheckpointer: RecordProcessorCheckpointer =
           org.mockito.Mockito.mock(classOf[software.amazon.kinesis.processor.RecordProcessorCheckpointer])
-        Future {
-          val shardEndedInput = org.mockito.Mockito.mock(classOf[ShardEndedInput])
-          when(shardEndedInput.checkpointer()).thenReturn(shardEndedCheckpointer)
-          recordProcessor.shardEnded(shardEndedInput)
-        }
 
-        Thread.sleep(100)
+        val shardEndedCallFinished = for {
+          _ <- Future {
+            val records: Seq[KinesisClientRecord] = (1 to 30).map { i =>
+              val record = org.mockito.Mockito.mock(classOf[KinesisClientRecord])
+              when(record.sequenceNumber).thenReturn(i.toString)
+              record
+            }
+            recordProcessor.processRecords(sampleRecordsInput(records, isShardEnd = true))
+          }
+          _ <- Future {
+            val shardEndedInput = org.mockito.Mockito.mock(classOf[ShardEndedInput])
+            when(shardEndedInput.checkpointer()).thenReturn(shardEndedCheckpointer)
+            recordProcessor.shardEnded(shardEndedInput)
+          }
+        } yield ()
+
         verify(shardEndedCheckpointer, never()).checkpoint()
 
-        for (_ <- 1 to 29) {
-          sinkProbe.requestNext()
-          Thread.sleep(100)
-        }
+        for (_ <- 1 to 29) sinkProbe.requestNext()
 
-        Thread.sleep(100)
         verify(shardEndedCheckpointer, never()).checkpoint()
 
         sinkProbe.requestNext().tryToCheckpoint()
 
         eventually {
           verify(shardEndedCheckpointer).checkpoint()
+          shardEndedCallFinished.isCompleted shouldBe true
         }
 
         killSwitch.shutdown()
