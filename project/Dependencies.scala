@@ -74,8 +74,8 @@ object Dependencies {
   // Releases https://github.com/FasterXML/jackson-databind/releases
   // CVE issues https://github.com/FasterXML/jackson-databind/issues?utf8=%E2%9C%93&q=+label%3ACVE
   // This should align with the version used in Akka 2.6.x
-  // https://github.com/akka/akka/blob/master/project/Dependencies.scala#L24
-  val JacksonDatabindVersion = "2.10.0"
+  // https://github.com/akka/akka/blob/master/project/Dependencies.scala#L23
+  val JacksonDatabindVersion = "2.10.3"
   val JacksonDatabindDependencies = Seq(
     "com.fasterxml.jackson.core" % "jackson-core" % JacksonDatabindVersion,
     "com.fasterxml.jackson.core" % "jackson-databind" % JacksonDatabindVersion
@@ -121,11 +121,12 @@ object Dependencies {
     libraryDependencies ++= Seq(
         ("com.datastax.oss" % "java-driver-core" % CassandraDriverVersion)
           .exclude("com.github.spotbugs", "spotbugs-annotations")
-          .exclude("org.apache.tinkerpop", "gremlin-core") //https://github.com/akka/alpakka/issues/2200
+          .exclude("org.apache.tinkerpop", "*") //https://github.com/akka/alpakka/issues/2200
+          .exclude("com.esri.geometry", "esri-geometry-api") //https://github.com/akka/alpakka/issues/2225
           .exclude("io.netty", "netty-handler"), // https://github.com/akka/alpakka/issues/2226
         "io.netty" % "netty-handler" % CassandraOverrideNettyVersion,
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion % Provided
-      )
+      ) ++ JacksonDatabindDependencies
   )
 
   val Couchbase = Seq(
