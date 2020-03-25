@@ -23,6 +23,7 @@ import akka.stream.alpakka.pravega.javadsl.Pravega;
 
 import java.util.Arrays;
 
+import java.util.List;
 import java.util.concurrent.*;
 
 public class PravegaGraphTestCase extends PravegaBaseTestCase {
@@ -42,44 +43,37 @@ public class PravegaGraphTestCase extends PravegaBaseTestCase {
   public void infiniteSourceTest()
       throws ExecutionException, InterruptedException, TimeoutException {
 
+    final List<String> events = Arrays.asList("One", "Two", "Three");
+
     Sink<String, CompletionStage<Done>> sinkWithRouting =
         Pravega.sink(scope, streamName, writerSettings);
 
     CompletionStage<Done> doneWithRouting =
-        Source.from(Arrays.asList("One", "Two", "Three"))
-            .toMat(sinkWithRouting, Keep.right())
-            .run(materializer);
+        Source.from(events).toMat(sinkWithRouting, Keep.right()).run(materializer);
 
     Sink<String, CompletionStage<Done>> sink =
         Pravega.sink(scope, streamName, writerSettingsWithRoutingKey);
 
-    CompletionStage<Done> done =
-        Source.from(Arrays.asList("One", "Two", "Three"))
-            .toMat(sink, Keep.right())
-            .run(materializer);
+    CompletionStage<Done> done = Source.from(events).toMat(sink, Keep.right()).run(materializer);
 
     CompletableFuture.allOf(done.toCompletableFuture(), doneWithRouting.toCompletableFuture())
         .get();
 
     CompletableFuture<Boolean> countTo200 = new CompletableFuture<>();
-    // #reading
+
     Pair<UniqueKillSwitch, CompletionStage<Integer>> pair =
         Pravega.source(scope, streamName, readerSettings)
             .map(e -> e.message())
             .viaMat(KillSwitches.single(), Keep.right())
             .toMat(
                 Sink.fold(
-                    0,
-                    new Function2<Integer, String, Integer>() {
-                      @Override
-                      public Integer apply(Integer acc, String str) throws Exception, Exception {
-                        if (acc == 5) countTo200.complete(true);
-                        return acc + 1;
-                      }
+                    events.size() * 2,
+                    (acc, str) -> {
+                      if (acc == 1) countTo200.complete(true);
+                      return acc - 1;
                     }),
                 Keep.both())
             .run(materializer);
-    // #reading
 
     countTo200.get(10, TimeUnit.SECONDS);
 

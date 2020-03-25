@@ -6,4 +6,4 @@ package akka.stream.alpakka.pravega
 
 import io.pravega.client.stream.{EventPointer, Position}
 
-class PravegaEvent[+A](val message: A, val position: Position, val eventPointer: EventPointer)
+class PravegaEvent[+Message](val message: Message, val position: Position, val eventPointer: EventPointer)

@@ -42,7 +42,7 @@ import akka.stream.ActorAttributes
       override def onPull(): Unit = {
         val eventRead = reader.nextEvent(readerSettings.timeout)
         if (eventRead == null)
-          log.debug("timeout")
+          log.debug("a timeout occurred while waiting for new messages")
         else {
           if (eventRead.isCheckpoint)
             log.debug(s"Checkpoint: ${eventRead.getCheckpointName}")

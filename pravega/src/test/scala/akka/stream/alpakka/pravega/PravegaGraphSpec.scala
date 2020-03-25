@@ -27,6 +27,8 @@ class PravegaGraphSpec extends PravegaBaseSpec {
     .withKeyExtractor((str: String) => str.substring(0, 2))
     .withSerializer(serializer)
 
+  val nEvent = 99
+
   "Pravega connector" should {
 
     "runs sources" in {
@@ -34,9 +36,9 @@ class PravegaGraphSpec extends PravegaBaseSpec {
       logger.info("start source")
 
       // #writing
-      Source(1 to 100).map(i => f"$i%02d_event").runWith(Pravega.sink(scope, streamName))
+      Source(1 to nEvent).map(i => f"$i%02d_event").runWith(Pravega.sink(scope, streamName))
 
-      Source(1 to 100)
+      Source(1 to nEvent)
         .map(i => f"$i%02d_event")
         .runWith(Pravega.sink(scope, streamName)(writerSettingsWithRoutingKey))
 
@@ -49,10 +51,10 @@ class PravegaGraphSpec extends PravegaBaseSpec {
       val (kill, fut) = Pravega
         .source(scope, streamName)
         .viaMat(KillSwitches.single)(Keep.right)
-        .toMat(Sink.fold(0) { (acc, e) =>
-          if (acc == 199)
+        .toMat(Sink.fold(nEvent * 2) { (acc, _) =>
+          if (acc == 1)
             finishReading.success(())
-          acc + 1
+          acc - 1
         })(Keep.both)
         .run()
 
@@ -64,8 +66,8 @@ class PravegaGraphSpec extends PravegaBaseSpec {
       kill.shutdown()
 
       whenReady(fut) { r =>
-        r mustEqual 200
-        logger.info(s"Read $r events.")
+        r mustEqual 0
+        logger.info(s"Read $nEvent events.")
       }
     }
 

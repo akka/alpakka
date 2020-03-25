@@ -11,6 +11,7 @@ import akka.testkit.TestKit
 import io.pravega.client.stream.impl.UTF8StringSerializer
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import scala.concurrent.duration._
 
 class PravegaSettingsSpec extends AnyWordSpec with PravegaAkkaSpecSupport with Matchers {
 
@@ -25,10 +26,11 @@ class PravegaSettingsSpec extends AnyWordSpec with PravegaAkkaSpecSupport with M
             .enableTlsToSegmentStore(true)
         )
         .readerConfigBuilder(_.disableTimeWindows(true)) //ReaderConfig customization
+        .withTimeout(3.seconds)
         .withSerializer(new UTF8StringSerializer)
       //#reader-settings
 
-      readerSettings.timeout mustEqual 5000
+      readerSettings.timeout mustEqual 3000
       readerSettings.clientConfig.isEnableTlsToController mustBe true
       readerSettings.clientConfig.isEnableTls mustBe true
 

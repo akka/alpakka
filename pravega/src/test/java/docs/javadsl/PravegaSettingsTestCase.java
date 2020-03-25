@@ -20,6 +20,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.function.Function;
 
 public class PravegaSettingsTestCase {
@@ -41,7 +42,7 @@ public class PravegaSettingsTestCase {
                 builder -> builder.enableTlsToController(true)) // ClientConfig customization
             .readerConfigBuilder(
                 builder -> builder.disableTimeWindows(true)) // ReaderConfig customization
-            .withTimeout(3000)
+            .withTimeout(Duration.ofSeconds(3))
             .withSerializer(new UTF8StringSerializer());
     // #reader-settings
 
@@ -57,7 +58,9 @@ public class PravegaSettingsTestCase {
 
     // #writer-settings
     WriterSettings<String> writerSettings =
-        WriterSettingsBuilder.<String>create(system).withSerializer(new UTF8StringSerializer());
+        WriterSettingsBuilder.<String>create(system)
+                .withKeyExtractor((String str) -> str.substring(0, 1))
+                .withSerializer(new UTF8StringSerializer());
     // #writer-settings
 
     Assert.assertEquals(

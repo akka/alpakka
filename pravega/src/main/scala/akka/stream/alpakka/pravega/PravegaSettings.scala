@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.pravega
 import java.net.URI
+import java.time.Duration
 
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
@@ -13,9 +14,11 @@ import io.pravega.client.ClientConfig.ClientConfigBuilder
 import io.pravega.client.stream.EventWriterConfig.EventWriterConfigBuilder
 import io.pravega.client.stream.ReaderConfig.ReaderConfigBuilder
 
-abstract class WithClientConfig(config: Config,
-                                clientConfig: Option[ClientConfig] = None,
-                                clientConfigCustomization: Option[ClientConfigBuilder => ClientConfigBuilder] = None) {
+private[pravega] abstract class WithClientConfig(
+    config: Config,
+    clientConfig: Option[ClientConfig] = None,
+    clientConfigCustomization: Option[ClientConfigBuilder => ClientConfigBuilder] = None
+) {
 
   def handleClientConfig() = {
     val rawClientConfig =
@@ -36,7 +39,7 @@ class ReaderSettingsBuilder(config: Config,
                             readerConfigBuilder: ReaderConfigBuilder,
                             readerConfigCustomizer: Option[ReaderConfigBuilder => ReaderConfigBuilder] = None,
                             groupName: Option[String],
-                            timeout: Long,
+                            timeout: Duration,
                             readerId: Option[String])
     extends WithClientConfig(config, clientConfig, clientConfigCustomization) {
 
@@ -49,18 +52,23 @@ class ReaderSettingsBuilder(config: Config,
 
   def withGroupName(name: String): ReaderSettingsBuilder = copy(groupName = Some(name))
   def withReaderId(id: String): ReaderSettingsBuilder = copy(readerId = Some(id))
-  def withTimeout(t: Long): ReaderSettingsBuilder = copy(timeout = t)
 
-  def withSerializer[A](serializer: Serializer[A]): ReaderSettings[A] = {
+  // JavaDSL
+  def withTimeout(timeout: java.time.Duration): ReaderSettingsBuilder = copy(timeout = timeout)
+  // ScalaDSL
+  def withTimeout(timeout: scala.concurrent.duration.Duration): ReaderSettingsBuilder =
+    copy(timeout = Duration.ofMillis(timeout.toMillis))
+
+  def withSerializer[Message](serializer: Serializer[Message]): ReaderSettings[Message] = {
 
     readerConfigCustomizer.foreach(_(readerConfigBuilder))
 
-    new ReaderSettings[A](handleClientConfig(),
-                          readerConfigBuilder.build(),
-                          groupName.getOrElse(throw new IllegalStateException("group-name is mandatory")),
-                          timeout,
-                          serializer,
-                          readerId)
+    new ReaderSettings[Message](handleClientConfig(),
+                                readerConfigBuilder.build(),
+                                groupName.getOrElse(throw new IllegalStateException("group-name is mandatory")),
+                                timeout.toMillis,
+                                serializer,
+                                readerId)
   }
 
   private def copy(clientConfig: Option[ClientConfig] = clientConfig,
@@ -69,7 +77,7 @@ class ReaderSettingsBuilder(config: Config,
                    readerConfigBuilder: ReaderConfigBuilder = readerConfigBuilder,
                    readerConfigCustomizer: Option[ReaderConfigBuilder => ReaderConfigBuilder] = readerConfigCustomizer,
                    groupName: Option[String] = groupName,
-                   timeout: Long = timeout,
+                   timeout: Duration = timeout,
                    readerId: Option[String] = readerId) =
     new ReaderSettingsBuilder(config,
                               clientConfig,
@@ -81,12 +89,25 @@ class ReaderSettingsBuilder(config: Config,
                               readerId)
 }
 
-class ReaderSettings[A](val clientConfig: ClientConfig,
-                        val readerConfig: ReaderConfig,
-                        val groupName: String,
-                        val timeout: Long,
-                        val serializer: Serializer[A],
-                        val readerId: Option[String])
+/**
+ * Reader settings that must be provided to @see [[akka.stream.alpakka.pravega.scaladsl.Pravega#source]]
+ *
+ * Built with @see [[ReaderSettingsBuilder]]
+ *
+ * @param clientConfig
+ * @param readerConfig
+ * @param groupName
+ * @param timeout
+ * @param serializer
+ * @param readerId
+ * @tparam Message
+ */
+class ReaderSettings[Message] private[pravega] (val clientConfig: ClientConfig,
+                                                val readerConfig: ReaderConfig,
+                                                val groupName: String,
+                                                val timeout: Long,
+                                                val serializer: Serializer[Message],
+                                                val readerId: Option[String])
 
 object ReaderSettingsBuilder {
   val configPath = "akka.alpakka.pravega.reader"
@@ -95,27 +116,27 @@ object ReaderSettingsBuilder {
    * Create reader settings from the default configuration
    * `akka.alpakka.pravega`.
    */
-  def apply[A](actorSystem: ActorSystem): ReaderSettingsBuilder =
+  def apply[Message](actorSystem: ActorSystem): ReaderSettingsBuilder =
     apply(actorSystem.settings.config.getConfig(configPath))
 
   /**
    * Java API: Create reader settings from the default configuration
    * `akka.alpakka.pravega`.
    */
-  def create[A](actorSystem: ActorSystem): ReaderSettingsBuilder =
+  def create[Message](actorSystem: ActorSystem): ReaderSettingsBuilder =
     apply(actorSystem)
 
   /**
    * Create settings from a configuration with the same layout as
    * the default configuration `akka.alpakka.pravega.reader`.
    */
-  def apply[A](implicit config: Config): ReaderSettingsBuilder = {
+  def apply[Message](implicit config: Config): ReaderSettingsBuilder = {
 
     import ConfigHelper._
 
     val readerBasicSetting = new ReaderBasicSetting()
     extractString("group-name")(readerBasicSetting.withGroupName)
-    extractLong("timeout")(readerBasicSetting.withTimeout)
+    extractDuration("timeout")(readerBasicSetting.withTimeout)
     extractString("reader-id")(readerBasicSetting.withReaderId)
 
     val readerConfigBuilder = ConfigHelper.buildReaderConfig(config)
@@ -132,29 +153,32 @@ object ReaderSettingsBuilder {
   }
 }
 
-class WriterSettingsBuilder[A](
+class WriterSettingsBuilder[Message](
     config: Config,
     clientConfig: Option[ClientConfig] = None,
     clientConfigCustomization: Option[ClientConfigBuilder => ClientConfigBuilder] = None,
     eventWriterConfigBuilder: EventWriterConfigBuilder,
     eventWriterConfigCustomizer: Option[EventWriterConfigBuilder => EventWriterConfigBuilder] = None,
     maximumInflightMessages: Int,
-    keyExtractor: Option[A => String]
+    keyExtractor: Option[Message => String]
 ) extends WithClientConfig(config, clientConfig, clientConfigCustomization) {
 
-  def eventWriterConfigBuilder(f: EventWriterConfigBuilder => EventWriterConfigBuilder): WriterSettingsBuilder[A] =
+  def eventWriterConfigBuilder(
+      f: EventWriterConfigBuilder => EventWriterConfigBuilder
+  ): WriterSettingsBuilder[Message] =
     copy(eventWriterConfigCustomizer = Some(f))
 
   def withClientConfig(clientConfig: ClientConfig) = copy(clientConfig = Some(clientConfig))
 
   def clientConfigBuilder(
       clientConfigCustomization: ClientConfigBuilder => ClientConfigBuilder
-  ): WriterSettingsBuilder[A] =
+  ): WriterSettingsBuilder[Message] =
     copy(clientConfigCustomization = Some(clientConfigCustomization))
 
-  def withMaximumInflightMessages(i: Int): WriterSettingsBuilder[A] = copy(maximumInflightMessages = i)
+  def withMaximumInflightMessages(i: Int): WriterSettingsBuilder[Message] = copy(maximumInflightMessages = i)
 
-  def withKeyExtractor(keyExtractor: A => String): WriterSettingsBuilder[A] = copy(keyExtractor = Some(keyExtractor))
+  def withKeyExtractor(keyExtractor: Message => String): WriterSettingsBuilder[Message] =
+    copy(keyExtractor = Some(keyExtractor))
 
   private def copy(clientConfig: Option[ClientConfig] = clientConfig,
                    clientConfigCustomization: Option[ClientConfigBuilder => ClientConfigBuilder] =
@@ -162,7 +186,7 @@ class WriterSettingsBuilder[A](
                    eventWriterConfigCustomizer: Option[EventWriterConfigBuilder => EventWriterConfigBuilder] =
                      eventWriterConfigCustomizer,
                    maximumInflightMessages: Int = maximumInflightMessages,
-                   keyExtractor: Option[A => String] = keyExtractor): WriterSettingsBuilder[A] =
+                   keyExtractor: Option[Message => String] = keyExtractor): WriterSettingsBuilder[Message] =
     new WriterSettingsBuilder(config,
                               clientConfig,
                               clientConfigCustomization,
@@ -174,12 +198,12 @@ class WriterSettingsBuilder[A](
   /**
     Build the settings.
    */
-  def withSerializer(serializer: Serializer[A]): WriterSettings[A] = {
+  def withSerializer(serializer: Serializer[Message]): WriterSettings[Message] = {
 
     eventWriterConfigCustomizer.foreach(_(eventWriterConfigBuilder))
 
     val eventWriterConfig = eventWriterConfigBuilder.build()
-    new WriterSettings[A](handleClientConfig(), eventWriterConfig, serializer, None, maximumInflightMessages)
+    new WriterSettings[Message](handleClientConfig(), eventWriterConfig, serializer, None, maximumInflightMessages)
   }
 
 }
@@ -193,21 +217,21 @@ object WriterSettingsBuilder {
    * Create writer settings from the default configuration
    * `akka.alpakka.pravega`.
    */
-  def apply[A](actorSystem: ActorSystem): WriterSettingsBuilder[A] =
+  def apply[Message](actorSystem: ActorSystem): WriterSettingsBuilder[Message] =
     apply(actorSystem.settings.config.getConfig(configPath))
 
   /**
    * Create writer settings from the default configuration
    * `akka.alpakka.pravega`.
    */
-  def create[A](actorSystem: ActorSystem): WriterSettingsBuilder[A] =
+  def create[Message](actorSystem: ActorSystem): WriterSettingsBuilder[Message] =
     apply(actorSystem)
 
   /**
    * Create settings from a configuration with the same layout as
    * the default configuration `akka.alpakka.pravega`.
    */
-  def apply[A](config: Config): WriterSettingsBuilder[A] =
+  def apply[Message](config: Config): WriterSettingsBuilder[Message] =
     new WriterSettingsBuilder(config,
                               None,
                               None,
@@ -233,23 +257,35 @@ object WriterSettingsBuilder {
 
 }
 
-class ReaderBasicSetting(
+private[pravega] class ReaderBasicSetting(
     var groupName: Option[String] = None,
     var readerId: Option[String] = None,
-    var timeout: Long = 0
+    var timeout: Duration = Duration.ofSeconds(5)
 ) {
   def withGroupName(name: String) = groupName = Some(name)
   def withReaderId(name: String) = readerId = Some(name)
-  def withTimeout(t: Long) = timeout = t
+  def withTimeout(t: Duration) = timeout = t
 }
 
-class WriterSettings[A](val clientConfig: ClientConfig,
-                        val eventWriterConfig: EventWriterConfig,
-                        val serializer: Serializer[A],
-                        val keyExtractor: Option[A => String],
-                        val maximumInflightMessages: Int)
+/**
+ * Writer settings that must be provided to @see Sink [[akka.stream.alpakka.pravega.scaladsl.Pravega#sink]]
+ * or @see Flow [[akka.stream.alpakka.pravega.scaladsl.Pravega#flow]]
+ *
+ * Built with @see [[WriterSettingsBuilder]]
+ *
+ * @param clientConfig
+ * @param eventWriterConfig
+ * @param serializer
+ * @param keyExtractor
+ * @param maximumInflightMessages
+ */
+private[pravega] class WriterSettings[Message](val clientConfig: ClientConfig,
+                                               val eventWriterConfig: EventWriterConfig,
+                                               val serializer: Serializer[Message],
+                                               val keyExtractor: Option[Message => String],
+                                               val maximumInflightMessages: Int)
 
-object ConfigHelper {
+private[pravega] object ConfigHelper {
   def buildReaderConfig(config: Config): ReaderConfigBuilder = {
     val builder = ReaderConfig
       .builder()
@@ -289,4 +325,7 @@ object ConfigHelper {
   def extractLong(path: String)(f: Long => Unit)(implicit config: Config): Unit =
     if (config.hasPath(path))
       f(config.getLong(path))
+  def extractDuration(path: String)(f: Duration => Unit)(implicit config: Config): Unit =
+    if (config.hasPath(path))
+      f(config.getDuration(path))
 }

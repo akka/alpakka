@@ -19,9 +19,15 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Concept
 
-Pravega store at scale stream of event organized within Scopes.   
+Pravega store at scale @extref[stream](pravega:pravega-concepts/#streams) of @extref[events](pravega:pravega-concepts/#events) organized within scopes.   
 
-http://pravega.io/docs/latest/terminology/
+Basically @extref[events](pravega:pravega-concepts/#streams) are appended in and read from @extref[streams](pravega:pravega-concepts/#streams).
+
+Pravega provides a durable storage with an unified API to access to cold events.
+
+When messages are ingested, a *routing key* can be used to insure @extref[ordering guarantees](pravega:/pravega-concepts/#ordering-guarantees) at scale.  
+
+For more information about [Pravega](http://www.pravega.io/) please visit the official @extref[documentation](pravega:/).
 
 ## Configuration
 
@@ -29,25 +35,26 @@ Two categories of properties can/must be provided to configure the connector.
 
 **Pravega internals** properties that are forwarded to Pravega configuration builders:
 
-  - ClientConfig  `akka.alpakka.pravega.defaults.client-config`
-  - EventWriterConfig `akka.alpakka.pravega.writer.config`
-  - ReaderConfig `akka.alpakka.pravega.reader.config`
+  - @javadoc[ClientConfig](io.pravega.client.ClientConfig)  `akka.alpakka.pravega.defaults.client-config`
+  - @javadoc[EventWriterConfig](io.pravega.client.stream.EventWriterConfig) `akka.alpakka.pravega.writer.config`
+  - @javadoc[ReaderConfig](io.pravega.client.stream.ReaderConfig) `akka.alpakka.pravega.reader.config`
 
 **Alpakka Connector** properties (all others).
 
 reference.conf
 : @@snip(/pravega/src/main/resources/reference.conf)
 
-
-Connectors can be configured by configuration or programmatically. To programmatically set the Pravega internals properties",
-Builder are exposed by the connector setting builder.
-
+The Pravega connector can automatically configure the Pravega client by supplying Lightbend configuration in an
+application.conf, or it can be set programmatically with @apidoc[ReaderSettingsBuilder$] or @apidoc[WriterSettingsBuilder$].
+See the following sections for examples.
 
 ### ClientConfig
 
-This configuration hold connection properties (endpoints, protocol) 
+This configuration holds connection properties (endpoints, protocol) 
 for all communication.
-It can be overridden by configuration file for:
+
+It can be overridden in an `application.conf` file at the following configuration paths:
+
  - reader: `akka.alpakka.pravega.reader.client-config`
  - writer: `akka.alpakka.pravega.writer.client-config` 
 
@@ -55,7 +62,8 @@ It can be customised programmatically, see below.
 
 ### EventReader configuration
 
-A Pravega Source needs a ReaderSettings to operate, it can be build from configuration and programmatically customized:
+A Pravega Source needs a @apidoc[ReaderSettings] to operate, it can be built from configuration and programmatically
+customized:
 
 Scala
 :   @@snip[snip](/pravega/src/test/scala/docs/scaladsl/PravegaSettingsSpec.scala) { #reader-settings }
@@ -65,10 +73,10 @@ Java
 
 ### EventWriter configuration
 
-A Pravega Flow or Sink needs a WriterSettings to operate, it can be build from configuration and
+A Pravega Flow or Sink needs a @apidoc[WriterSettings] to operate, it can be build from configuration and
 programmatically customized:
 
-If you want to use a routing key, you need to provide an extraction function from your messages.
+If you want to use a @extref[routing key](pravega:/pravega-concepts/#ordering-guarantees), you need to provide a key extractor to @apidoc[WriterSettingsBuilder] via @apidoc[withKeyExtractor](WriterSettingsBuilder){ scala="#withKeyExtractor" java="#withKeyExtractor" } for your message type Scala.
 
 Scala
 :   @@snip[snip](/pravega/src/test/scala/docs/scaladsl/PravegaSettingsSpec.scala) { #writer-settings }
@@ -77,12 +85,12 @@ Java
 :   @@snip[snip](/pravega/src/test/java/docs/javadsl/PravegaSettingsTestCase.java) { #writer-settings }
 
 
-ReaderSettingsBuilder, ReaderSettingsBuilder produce respectively ReaderSettings and ReaderSettings
-once a Serializer is provided.
+ReaderSettingsBuilder, ReaderSettingsBuilder produce respectively ReaderSettings and ReaderSettings once a
+@javadoc[serializer](io.pravega.client.stream.Serializer) is provided.
 
 ## Writing to Pravega
 
-Pravega write are done through a Flow/Sink like:
+Pravega message writes are done through a Flow/Sink like:
 
 Scala
 :   @@snip[snip](/pravega/src/test/scala/docs/scaladsl/PravegaReadWriteDocs.scala) { #writing }
@@ -90,11 +98,9 @@ Scala
 Java
 :   @@snip[snip](/pravega/src/test/java/docs/javadsl/PravegaReadWriteDocs.java) { #writing }
 
-
 ## Reading from Pravega
 
-Pravega reads from a Source:  
-
+Pravega message reads are from a Source:  
 
 Scala
 :   @@snip[snip](/pravega/src/test/scala/docs/scaladsl/PravegaReadWriteDocs.scala) { #reading }
@@ -102,5 +108,5 @@ Scala
 Java
 :   @@snip[snip](/pravega/src/test/java/docs/javadsl/PravegaReadWriteDocs.java) { #reading }
 
-It produces a stream of `PravegaEvent` a thin wrapper which embeds some Pravega metadata
-
+It produces a stream of @apidoc[PravegaEvent], a thin wrapper which includes some Pravega metadata along with the
+message.

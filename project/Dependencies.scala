@@ -362,11 +362,13 @@ object Dependencies {
       )
   )
 
+  val PravegaVersion = "0.7.0"
+  val PravegaVersionForDocs = s"v${PravegaVersion}"
+
   val Pravega = {
-    val pravegaVersion = "0.7.0"
     Seq(
       libraryDependencies ++= Seq(
-          "io.pravega" % "pravega-client" % pravegaVersion,
+          "io.pravega" % "pravega-client" % PravegaVersion,
           "org.slf4j" % "log4j-over-slf4j" % log4jOverSlf4jVersion % Test // MIT like: http://www.slf4j.org/license.html
         )
     )
