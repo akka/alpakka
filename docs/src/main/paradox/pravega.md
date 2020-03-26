@@ -73,10 +73,9 @@ Java
 
 ### EventWriter configuration
 
-A Pravega Flow or Sink needs a @apidoc[WriterSettings] to operate, it can be build from configuration and
-programmatically customized:
+A Pravega Flow or Sink needs a @apidoc[WriterSettings] to operate, it can be built from configuration and programmatically customized:
 
-If you want to use a @extref[routing key](pravega:/pravega-concepts/#ordering-guarantees), you need to provide a key extractor to @apidoc[WriterSettingsBuilder] via @apidoc[withKeyExtractor](WriterSettingsBuilder){ scala="#withKeyExtractor" java="#withKeyExtractor" } for your message type Scala.
+You may want to use a @extref[routing key](pravega:/pravega-concepts/#ordering-guarantees), you have to provide a @apidoc[key extractor function](WriterSettingsBuilder){ scala="#withKeyExtractor" java="#withKeyExtractor" } for your message type.
 
 Scala
 :   @@snip[snip](/pravega/src/test/scala/docs/scaladsl/PravegaSettingsSpec.scala) { #writer-settings }
@@ -85,8 +84,8 @@ Java
 :   @@snip[snip](/pravega/src/test/java/docs/javadsl/PravegaSettingsTestCase.java) { #writer-settings }
 
 
-ReaderSettingsBuilder, ReaderSettingsBuilder produce respectively ReaderSettings and ReaderSettings once a
-@javadoc[serializer](io.pravega.client.stream.Serializer) is provided.
+@apidoc[ReaderSettingsBuilder$], @apidoc[ReaderSettingsBuilder] produce respectively ReaderSettings and ReaderSettings once a
+@javadoc[Serializer](io.pravega.client.stream.Serializer) is provided.
 
 ## Writing to Pravega
 
