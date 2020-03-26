@@ -17,7 +17,7 @@ The table below shows direct dependencies of this module and the second tab show
 @@dependencies { projectId="pravega" }
 
 
-## Concept
+## Concepts
 
 Pravega store at scale @extref[stream](pravega:pravega-concepts/#streams) of @extref[events](pravega:pravega-concepts/#events) organized within scopes.   
 
@@ -25,7 +25,7 @@ Basically @extref[events](pravega:pravega-concepts/#streams) are appended in and
 
 Pravega provides a durable storage with an unified API to access to cold events.
 
-When messages are ingested, a *routing key* can be used to insure @extref[ordering guarantees](pravega:/pravega-concepts/#ordering-guarantees) at scale.  
+When messages are ingested, a *routing key* may be used to ensure @extref[ordering guarantees](pravega:/pravega-concepts/#ordering-guarantees) at scale. 
 
 For more information about [Pravega](http://www.pravega.io/) please visit the official @extref[documentation](pravega:/).
 
