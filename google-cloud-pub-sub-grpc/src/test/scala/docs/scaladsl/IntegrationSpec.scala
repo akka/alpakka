@@ -10,6 +10,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.pubsub.grpc.PubSubSettings
 import akka.stream.alpakka.googlecloud.pubsub.grpc.scaladsl.{GrpcPublisher, PubSubAttributes}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
+import io.grpc.StatusRuntimeException
 import org.scalatest.OptionValues
 
 //#publish-single
@@ -124,6 +125,39 @@ class IntegrationSpec
       Source.single(publishRequest).via(GooglePubSub.publish(parallelism = 1)).runWith(Sink.ignore)
 
       first.futureValue.message.value.data shouldBe msg
+    }
+
+    "subscribe streaming with non retryable error" in {
+      val projectId = "alpakka"
+      val subscription = "subscriptionWhichDoesNotExist"
+
+      val request = StreamingPullRequest()
+        .withSubscription(s"projects/$projectId/subscriptions/$subscription")
+        .withStreamAckDeadlineSeconds(10)
+
+      val subscriptionSource: Source[ReceivedMessage, Future[Cancellable]] =
+        GooglePubSub.subscribe(request, pollInterval = 1.second)
+
+      val first = subscriptionSource.runWith(Sink.head).failed.futureValue
+
+      first shouldBe a[StatusRuntimeException]
+    }
+
+    "subscribe streaming with cancellation" in {
+      val projectId = "alpakka"
+      val subscription = "simpleSubscription"
+
+      val request = StreamingPullRequest()
+        .withSubscription(s"projects/$projectId/subscriptions/$subscription")
+        .withStreamAckDeadlineSeconds(10)
+
+      val subscriptionSource: Source[ReceivedMessage, Future[Cancellable]] =
+        GooglePubSub.subscribe(request, pollInterval = 1.second)
+
+      val (cancellable, finished) = subscriptionSource.toMat(Sink.ignore)(Keep.both).run()
+      cancellable.futureValue.cancel()
+
+      finished.futureValue shouldBe Done
     }
 
     "subscribe sync" in {

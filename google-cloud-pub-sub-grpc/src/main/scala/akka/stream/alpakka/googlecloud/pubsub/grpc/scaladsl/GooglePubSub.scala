@@ -6,13 +6,15 @@ package akka.stream.alpakka.googlecloud.pubsub.grpc.scaladsl
 
 import akka.actor.Cancellable
 import akka.dispatch.ExecutionContexts
-import akka.stream.{ActorMaterializer, Attributes}
+import akka.stream.alpakka.googlecloud.pubsub.grpc.impl.StatusUtils
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.{ActorMaterializer, Attributes}
 import akka.{Done, NotUsed}
 import com.google.pubsub.v1.pubsub._
 
 import scala.concurrent.duration._
 import scala.concurrent.{Future, Promise}
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Google Pub/Sub Akka Stream operator factory.
@@ -47,27 +49,38 @@ object GooglePubSub {
   ): Source[ReceivedMessage, Future[Cancellable]] =
     Source
       .setup { (mat, attr) =>
-        val cancellable = Promise[Cancellable]
+        val sharedCancellable = new AtomicReference[Cancellable]()
 
         val subsequentRequest = request
           .withSubscription("")
           .withStreamAckDeadlineSeconds(0)
 
-        subscriber(mat, attr).client
-          .streamingPull(
-            Source
-              .single(request)
-              .concat(
-                Source
-                  .tick(0.seconds, pollInterval, ())
-                  .map(_ => subsequentRequest)
-                  .mapMaterializedValue(cancellable.success)
-              )
-          )
-          .mapConcat(_.receivedMessages.toVector)
-          .mapMaterializedValue(_ => cancellable.future)
+        val client = subscriber(mat, attr).client
+
+        def stream =
+          client
+            .streamingPull(
+              Source
+                .single(request)
+                .concat(
+                  Source.tick(0.seconds, pollInterval, subsequentRequest).mapMaterializedValue { cancellable =>
+                    sharedCancellable.set(cancellable)
+                  }
+                )
+            )
+            .mapConcat(_.receivedMessages.toVector)
+
+        stream
+          .recoverWithRetries(-1, {
+            case e if StatusUtils.isRetryable(e) => stream
+          })
+          .mapMaterializedValue[Cancellable] { _ =>
+            new Cancellable {
+              override def cancel(): Boolean = sharedCancellable.get.cancel()
+              override def isCancelled: Boolean = sharedCancellable.get.isCancelled
+            }
+          }
       }
-      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.sameThreadExecutionContext))
 
   /**
    * Create a source that emits messages for a given subscription using a synchronous PullRequest.

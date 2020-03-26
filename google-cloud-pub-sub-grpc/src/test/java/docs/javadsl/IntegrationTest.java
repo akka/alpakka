@@ -9,6 +9,7 @@ import akka.NotUsed;
 import akka.actor.Cancellable;
 
 import akka.actor.ActorSystem;
+import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 
 // #publish-single
@@ -24,10 +25,12 @@ import com.google.pubsub.v1.*;
 // #publish-single
 
 import akka.stream.Materializer;
+import io.grpc.StatusRuntimeException;
 import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.Console;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -36,8 +39,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class IntegrationTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
@@ -141,6 +143,55 @@ public class IntegrationTest {
         "received and expected messages not the same",
         msg,
         first.toCompletableFuture().get(2, TimeUnit.SECONDS).getMessage().getData());
+  }
+
+  @Test(expected = ExecutionException.class)
+  public void shouldSubscribeHandlingNonRetryableErrors()
+      throws InterruptedException, ExecutionException, TimeoutException {
+    final String projectId = "alpakka";
+    final String subscription = "subscriptionWhichDoesNotExist";
+
+    final StreamingPullRequest request =
+        StreamingPullRequest.newBuilder()
+            .setSubscription("projects/" + projectId + "/subscriptions/" + subscription)
+            .setStreamAckDeadlineSeconds(10)
+            .build();
+
+    final Duration pollInterval = Duration.ofSeconds(1);
+    final Source<ReceivedMessage, CompletableFuture<Cancellable>> subscriptionSource =
+        GooglePubSub.subscribe(request, pollInterval);
+
+    final CompletionStage<ReceivedMessage> first =
+        subscriptionSource.runWith(Sink.head(), materializer);
+
+    first.toCompletableFuture().get(2, TimeUnit.SECONDS);
+  }
+
+  @Test
+  public void shouldSubscribeAndCancel()
+      throws InterruptedException, ExecutionException, TimeoutException {
+    final String projectId = "alpakka";
+    final String subscription = "simpleSubscription";
+
+    final StreamingPullRequest request =
+        StreamingPullRequest.newBuilder()
+            .setSubscription("projects/" + projectId + "/subscriptions/" + subscription)
+            .setStreamAckDeadlineSeconds(10)
+            .build();
+
+    final Duration pollInterval = Duration.ofSeconds(1);
+    final Source<ReceivedMessage, CompletableFuture<Cancellable>> subscriptionSource =
+        GooglePubSub.subscribe(request, pollInterval);
+
+    final Pair<CompletableFuture<Cancellable>, CompletionStage<Done>> result =
+        subscriptionSource.toMat(Sink.ignore(), Keep.both()).run(materializer);
+
+    result.first().get(2, TimeUnit.SECONDS).cancel();
+
+    assertEquals(
+        "received and expected messages not the same",
+        Done.getInstance(),
+        result.second().toCompletableFuture().get(2, TimeUnit.SECONDS));
   }
 
   @Test

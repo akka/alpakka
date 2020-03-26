@@ -8,10 +8,12 @@ import java.time.Duration
 import java.util.concurrent.{CompletableFuture, CompletionStage}
 
 import akka.actor.Cancellable
+import akka.stream.alpakka.googlecloud.pubsub.grpc.impl.StatusUtils
 import akka.stream.{ActorMaterializer, Attributes}
 import akka.stream.javadsl.{Flow, Keep, Sink, Source}
 import akka.{Done, NotUsed}
 import com.google.pubsub.v1._
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Google Pub/Sub Akka Stream operator factory.
@@ -45,27 +47,44 @@ object GooglePubSub {
                 pollInterval: Duration): Source[ReceivedMessage, CompletableFuture[Cancellable]] =
     Source
       .setup { (mat, attr) =>
-        val cancellable = new CompletableFuture[Cancellable]()
+        val sharedCancellable = new AtomicReference[Cancellable]()
 
         val subsequentRequest = request.toBuilder
           .setSubscription("")
           .setStreamAckDeadlineSeconds(0)
           .build()
 
-        subscriber(mat, attr).client
-          .streamingPull(
-            Source
-              .single(request)
-              .concat(
-                Source
-                  .tick(Duration.ZERO, pollInterval, subsequentRequest)
-                  .mapMaterializedValue(japiFunction(cancellable.complete))
-              )
-          )
-          .mapConcat(japiFunction(_.getReceivedMessagesList))
-          .mapMaterializedValue(japiFunction(_ => cancellable))
+        val client = subscriber(mat, attr).client
+
+        def stream =
+          client
+            .streamingPull(
+              Source
+                .single(request)
+                .concat(
+                  Source
+                    .tick(Duration.ZERO, pollInterval, subsequentRequest)
+                    .mapMaterializedValue { cancellable =>
+                      sharedCancellable.set(cancellable)
+                    }
+                )
+            )
+            .mapConcat(japiFunction(_.getReceivedMessagesList))
+
+        stream
+          .recoverWithRetries(-1, {
+            case e if StatusUtils.isRetryable(e) => stream
+          })
+          .mapMaterializedValue[Cancellable] {
+            japiFunction { _ =>
+              new Cancellable {
+                override def cancel(): Boolean = sharedCancellable.get.cancel()
+                override def isCancelled: Boolean = sharedCancellable.get.isCancelled
+              }
+            }
+
+          }
       }
-      .mapMaterializedValue(japiFunction(flattenCs))
       .mapMaterializedValue(japiFunction(_.toCompletableFuture))
 
   /**
