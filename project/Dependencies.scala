@@ -343,7 +343,7 @@ object Dependencies {
 
   val Mqtt = Seq(
     libraryDependencies ++= Seq(
-        "org.eclipse.paho" % "org.eclipse.paho.client.mqttv3" % "1.2.0" // Eclipse Public License 1.0
+        "org.eclipse.paho" % "org.eclipse.paho.client.mqttv3" % "1.2.2" // Eclipse Public License 1.0
       )
   )
 
