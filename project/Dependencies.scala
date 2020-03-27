@@ -301,8 +301,8 @@ object Dependencies {
 
   val JsonStreaming = Seq(
     libraryDependencies ++= Seq(
-        "com.github.jsurfer" % "jsurfer" % "1.4.3", // MIT,
-        "com.github.jsurfer" % "jsurfer-jackson" % "1.4.3" // MIT
+        "com.github.jsurfer" % "jsurfer" % "1.6.0", // MIT,
+        "com.github.jsurfer" % "jsurfer-jackson" % "1.6.0" // MIT
       ) ++ JacksonDatabindDependencies
   )
 
