@@ -27,7 +27,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Sessions
 
-Cassandra is accessed through @apidoc[CassandraSession]s which are managed by the @apidoc[CassandraSessionRegistry] Akka extension. This way a session is shared across all usages within the actor system and properly shut down after the actor system is shut down.
+Cassandra is accessed through @apidoc[akka.stream.alpakka.cassandra.*.CassandraSession]s which are managed by the @apidoc[CassandraSessionRegistry] Akka extension. This way a session is shared across all usages within the actor system and properly shut down after the actor system is shut down.
 
 @scala[The `CassandraSession` is provided to the stream factory methods as an `implicit` parameter.]
 
@@ -90,7 +90,7 @@ Java
 
 ## Custom Session creation
 
-Session creation and configuration is controlled via settings in `application.conf`. The @apidoc[CassandraSessionSettings] accept a full path to a configuration section which needs to specify a `session-provider` setting. The @apidoc[CassandraSessionRegistry] expects a fully qualified class name to a class implementing @apidoc[CqlSessionProvider].
+Session creation and configuration is controlled via settings in `application.conf`. The @apidoc[akka.stream.alpakka.cassandra.CassandraSessionSettings] accept a full path to a configuration section which needs to specify a `session-provider` setting. The @apidoc[CassandraSessionRegistry] expects a fully qualified class name to a class implementing @apidoc[CqlSessionProvider].
 
 Alpakka Cassandra includes a default implementation @apidoc[DefaultSessionProvider], which is referenced in the default configuration `alpakka.cassandra`.
 
@@ -125,7 +125,7 @@ To enable @extref[Akka Discovery](akka:discovery/) with the @apidoc[DefaultSessi
 application.conf
 : @@snip [snip](/cassandra/src/test/resources/application.conf) { #akka-discovery-docs }
 
-Use the full config section path to create the @apidoc[CassandraSessionSettings$].
+Use the full config section path to create the @apidoc[akka.stream.alpakka.cassandra.CassandraSessionSettings$].
 
 Scala
 : @@snip [snip](/cassandra/src/test/scala/docs/scaladsl/AkkaDiscoverySpec.scala) { #discovery }
