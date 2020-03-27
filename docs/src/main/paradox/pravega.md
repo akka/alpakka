@@ -1,6 +1,8 @@
 # Pravega
 
-[Pravega](http://www.pravega.io/) provides a new storage abstraction - a stream - for continuous and unbounded data. A Pravega stream is a durable, elastic, append-only, unbounded sequence of bytes that has good performance and strong consistency.
+[Pravega](http://www.pravega.io/) provides a new storage abstraction - a stream - for continuous and unbounded data. 
+A Pravega stream is an elastic set of durable and append-only segments, each segment being an unbounded sequence of bytes. 
+Streams provide exactly-once semantics, and atomicity for groups of events using transactions.
 
 @@project-info{ projectId="pravega" }
 
@@ -19,13 +21,18 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Concepts
 
-Pravega store at scale @extref[stream](pravega:pravega-concepts/#streams) of @extref[events](pravega:pravega-concepts/#events) organized within scopes.   
+Pravega stores streams of @extref[events](pravega:pravega-concepts/#events), and @extref[streams](pravega:pravega-concepts/#streams) are organized using scopes. 
+A Pravega stream comprises a one or more parallel segments, and the set of parallel segments can change over time with auto-scaling. 
+Pravega is designed to operate at scale and is able to accommodate a large number of segments and streams.
 
-Basically @extref[events](pravega:pravega-concepts/#streams) are appended in and read from @extref[streams](pravega:pravega-concepts/#streams).
+Pravega has an API to write and read @extref[events](pravega:pravega-concepts/#events). 
+An application looking into ingesting data writes events to a @extref[stream](pravega:pravega-concepts/#streams), while consuming data consists of reading events from a stream. 
+In addition to the events API, Pravega has other APIs that enable an application to read and write bytes rather than events and to read events of a stream out of order (e.g., when batch processing).
 
-Pravega provides a durable storage with an unified API to access to cold events.
+Pravega stores stream data durably, and applications can access the stream data using the same API both when tailing the stream and when processing past data. 
+The system is architected so that the underlying storage is elastic and it is able to accommodate unbounded streams.
 
-When messages are ingested, a *routing key* may be used to ensure @extref[ordering guarantees](pravega:/pravega-concepts/#ordering-guarantees) at scale. 
+When writing an event, Pravega accepts a *routing key* parameter, and it @extref[guarantees order](pravega:/pravega-concepts/#ordering-guarantees) per key even in the presence of auto-scaling.
 
 For more information about [Pravega](http://www.pravega.io/) please visit the official @extref[documentation](pravega:/).
 
