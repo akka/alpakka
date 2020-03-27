@@ -30,7 +30,7 @@ object Dependencies {
 
   val JwtCoreVersion = "3.0.1"
 
-  val log4jOverSlf4jVersion = "1.7.29"
+  val log4jOverSlf4jVersion = "1.7.30"
   val jclOverSlf4jVersion = "1.7.29"
 
   // Allows to silence scalac compilation warnings selectively by code block or file path
@@ -262,7 +262,7 @@ object Dependencies {
     )
   }
 
-  val HadoopVersion = "3.1.1"
+  val HadoopVersion = "3.2.1"
   val Hdfs = Seq(
     libraryDependencies ++= Seq(
         "org.apache.hadoop" % "hadoop-client" % HadoopVersion exclude ("log4j", "log4j") exclude ("org.slf4j", "slf4j-log4j12"), // ApacheV2

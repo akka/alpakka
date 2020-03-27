@@ -19,7 +19,6 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
-import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -201,7 +200,7 @@ public class HdfsWriterTest {
 
     List<RotationMessage> logs = new ArrayList<>(resF.second().toCompletableFuture().get());
     JavaTestUtils.verifyOutputFileSize(fs, logs);
-    assertTrue(ArrayUtils.contains(new int[] {3, 4}, logs.size()));
+    assertTrue(logs.size() == 3 || logs.size() == 4);
   }
 
   @Test
