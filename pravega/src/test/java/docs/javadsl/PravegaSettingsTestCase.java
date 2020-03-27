@@ -59,8 +59,8 @@ public class PravegaSettingsTestCase {
     // #writer-settings
     WriterSettings<String> writerSettings =
         WriterSettingsBuilder.<String>create(system)
-                .withKeyExtractor((String str) -> str.substring(0, 1))
-                .withSerializer(new UTF8StringSerializer());
+            .withKeyExtractor((String str) -> str.substring(0, 1))
+            .withSerializer(new UTF8StringSerializer());
     // #writer-settings
 
     Assert.assertEquals(
