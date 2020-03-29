@@ -17,7 +17,7 @@ import io.pravega.client.stream.{EventStreamReader, ReaderGroup}
 
 import scala.util.control.NonFatal
 import akka.stream.ActorAttributes
-@InternalApi private final class PravegaSourcesStageLogic[A](
+@InternalApi private final class PravegaSourceStageLogic[A](
     shape: SourceShape[PravegaEvent[A]],
     val scope: String,
     streamName: String,
@@ -27,7 +27,7 @@ import akka.stream.ActorAttributes
     with PravegaReader
     with StageLogging {
 
-  override protected def logSource = classOf[PravegaSourcesStageLogic[A]]
+  override protected def logSource = classOf[PravegaSourceStageLogic[A]]
 
   private def out = shape.out
 
@@ -90,7 +90,7 @@ import akka.stream.ActorAttributes
   ): (GraphStageLogic, Future[Done]) = {
     val startupPromise = Promise[Done]
 
-    val logic = new PravegaSourcesStageLogic[A](
+    val logic = new PravegaSourceStageLogic[A](
       shape,
       scope,
       streamName,
