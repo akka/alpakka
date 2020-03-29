@@ -81,6 +81,6 @@ public class PravegaGraphTestCase extends PravegaBaseTestCase {
     pair.first().shutdown();
 
     Integer result = pair.second().toCompletableFuture().get();
-    Assert.assertTrue("Read 6 events", result == 6);
+    Assert.assertTrue("Read 6 events", result == 0);
   }
 }
