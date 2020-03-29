@@ -19,9 +19,10 @@ import io.pravega.client.stream.{ReaderGroup, ReaderGroupConfig, StreamCut, Stre
 
   def createReader[A](settings: ReaderSettings[A],
                       streamName: String,
+                      disableAutomaticCheckpoints: Boolean,
                       start: StreamCut = StreamCut.UNBOUNDED,
                       end: StreamCut = StreamCut.UNBOUNDED) = {
-    val readerGroup = createReaderGroup(settings, streamName)
+    val readerGroup = createReaderGroup(settings, streamName, disableAutomaticCheckpoints)
     val eventStreamReader = eventStreamClientFactory.createReader(
       settings.readerId.getOrElse(UUID.randomUUID().toString),
       settings.groupName,
@@ -33,12 +34,17 @@ import io.pravega.client.stream.{ReaderGroup, ReaderGroupConfig, StreamCut, Stre
 
   private def createReaderGroup[A](readerSettings: ReaderSettings[A],
                                    streamName: String,
+                                   disableAutomaticCheckpoints: Boolean,
                                    start: StreamCut = StreamCut.UNBOUNDED,
                                    end: StreamCut = StreamCut.UNBOUNDED): ReaderGroup = {
-    val config = ReaderGroupConfig
-      .builder()
-      .stream(PravegaStream.of(scope, streamName))
-      .build()
+    val config = {
+      val builder = ReaderGroupConfig
+        .builder()
+        .stream(PravegaStream.of(scope, streamName))
+      if (disableAutomaticCheckpoints)
+        builder.disableAutomaticCheckpoints()
+      builder
+    }.build()
 
     readerGroupManager.createReaderGroup(readerSettings.groupName, config)
     readerGroupManager.getReaderGroup(readerSettings.groupName)

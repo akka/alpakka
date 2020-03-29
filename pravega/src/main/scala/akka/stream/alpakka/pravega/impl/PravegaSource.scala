@@ -55,7 +55,7 @@ import akka.stream.ActorAttributes
   override def preStart(): Unit = {
     log.debug(s"Start consuming $streamName...")
     try {
-      reader = createReader(readerSettings, streamName)
+      reader = createReader(readerSettings, streamName, disableAutomaticCheckpoints = true)
       startupPromise.success(Done)
     } catch {
       case NonFatal(exception) =>

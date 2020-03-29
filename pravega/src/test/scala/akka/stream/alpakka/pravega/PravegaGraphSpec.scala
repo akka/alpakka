@@ -27,7 +27,7 @@ class PravegaGraphSpec extends PravegaBaseSpec {
     .withKeyExtractor((str: String) => str.substring(0, 2))
     .withSerializer(serializer)
 
-  val nEvent = 99
+  val nEvent = 1000
 
   "Pravega connector" should {
 

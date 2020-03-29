@@ -34,7 +34,7 @@ abstract class PravegaBaseSpec extends AnyWordSpec with PravegaAkkaSpecSupport w
     else
       logger.info(s"Scope [$scope] already exists.")
     val streamConfig =
-      StreamConfiguration.builder.scalingPolicy(ScalingPolicy.fixed(1)).build
+      StreamConfiguration.builder.scalingPolicy(ScalingPolicy.fixed(10)).build
     if (streamManager.createStream(scope, streamName, streamConfig))
       logger.info(s"Created stream [$streamName] in scope [$scope].")
     else
