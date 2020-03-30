@@ -104,7 +104,7 @@ class HBaseStageSpec
 
   "HBase stage" must {
 
-    "write write entries to a sink" in {
+    "write entries to a sink" in {
       //#sink
       val sink = HTableStage.sink[Person](tableSettings)
 
