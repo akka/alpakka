@@ -5,7 +5,6 @@
 package akka.stream.alpakka.aws.eventbridge
 
 import java.util.UUID
-import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
@@ -15,9 +14,7 @@ import org.scalatest.{BeforeAndAfterAll, Suite}
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient
 import software.amazon.awssdk.services.eventbridge.model.CreateEventBusRequest
 
-import scala.collection.concurrent.TrieMap
 import scala.concurrent.duration.FiniteDuration
-import scala.util.Try
 
 trait IntegrationTestContext extends BeforeAndAfterAll with ScalaFutures {
   this: Suite =>
