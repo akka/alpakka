@@ -1,12 +1,12 @@
 # Integration Patterns
 
-Many [Enterprise Integration Patterns](http://www.eaipatterns.com/toc.html) can be implemented with Akka Streams 
+Many [Enterprise Integration Patterns](https://www.enterpriseintegrationpatterns.com/patterns/messaging/toc.html) can be implemented with Akka Streams 
 (see @extref:[Akka Streams documentation](akka:stream/index.html)).
 
 
 # Splitter
 
-You can achieve a [Splitter](http://www.enterpriseintegrationpatterns.com/patterns/messaging/Sequencer.html) as described in  [EIP](http://www.enterpriseintegrationpatterns.com) using out of the box Akka Streams dsl.
+You can achieve a [Splitter](https://www.enterpriseintegrationpatterns.com/patterns/messaging/Sequencer.html) as described in  [EIP](https://www.enterpriseintegrationpatterns.com) using out of the box Akka Streams dsl.
 
 ![Splitter](img/Sequencer.gif)
 
@@ -22,7 +22,7 @@ Java
 
 ## Spliter + Aggregator
 
-Sometimes it's very useful to split a message and aggregate it's "sub-messages" into a new message (A combination of [Splitter](http://www.enterpriseintegrationpatterns.com/patterns/messaging/Sequencer.html) and [Aggregator](http://www.enterpriseintegrationpatterns.com/patterns/messaging/Aggregator.html)) 
+Sometimes it's very useful to split a message and aggregate it's "sub-messages" into a new message (A combination of [Splitter](https://www.enterpriseintegrationpatterns.com/patterns/messaging/Sequencer.html) and [Aggregator](https://www.enterpriseintegrationpatterns.com/patterns/messaging/Aggregator.html)) 
 
 Let's say that now we want to create a new stream containing the sums of the numbers in each original string. 
 

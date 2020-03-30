@@ -2,7 +2,7 @@
 
 The AWS Lambda connector provides Akka Flow for AWS Lambda integration.
 
-For more information about AWS Lambda please visit the [AWS lambda documentation](https://aws.amazon.com/documentation/lambda/).
+For more information about AWS Lambda please visit the [AWS lambda documentation](https://docs.aws.amazon.com/lambda/index.html).
 
 @@project-info{ projectId="awslambda" }
 

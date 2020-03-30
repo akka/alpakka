@@ -382,7 +382,7 @@ final class ObjectMetadata private (
    * Amazon S3.
    * </p>
    * <p>
-   * For more information on the Content-Length HTTP header, see [[http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.13]]
+   * For more information on the Content-Length HTTP header, see [[https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.13]]
    * </p>
    *
    * @return The Content-Length HTTP header indicating the size of the
@@ -413,7 +413,7 @@ final class ObjectMetadata private (
    * </p>
    * <p>
    * For more information on the Content-Length HTTP header, see
-   * [[http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.13]]
+   * [[https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.13]]
    * </p>
    *
    * @return The Content-Length HTTP header indicating the size of the
@@ -439,7 +439,7 @@ final class ObjectMetadata private (
    * </p>
    * <p>
    * For more information on the Content-Type header, see
-   * [[http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.17]]
+   * [[https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.17]]
    * </p>
    *
    * @return The HTTP Content-Type header, indicating the type of content
@@ -468,7 +468,7 @@ final class ObjectMetadata private (
    * </p>
    * <p>
    * For more information on the Content-Type header, see
-   * [[http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.17]]
+   * [[https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.17]]
    * </p>
    *
    * @return The HTTP Content-Type header, indicating the type of content
