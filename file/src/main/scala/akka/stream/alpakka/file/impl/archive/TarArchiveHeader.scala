@@ -13,9 +13,9 @@ import akka.util.ByteString
 /**
  * INTERNAL API
  */
-@InternalApi private[file] final class TarballHeader(val filePath: String,
-                                                     val size: Long,
-                                                     val lastModification: Instant = Instant.now) {
+@InternalApi private[file] final class TarArchiveHeader(val filePath: String,
+                                                        val size: Long,
+                                                        val lastModification: Instant = Instant.now) {
 
   private val filePathSegments: Array[String] = filePath.split("/")
   private val filePathPrefix = Option(filePathSegments.init).filter(_.nonEmpty).map(_.mkString("/"))

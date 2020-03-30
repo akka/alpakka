@@ -19,12 +19,14 @@ import akka.util.ByteString
     Flow[(ArchiveMetadataWithSize, Source[ByteString, Any])]
       .flatMapConcat {
         case (metadata, stream) =>
-          val header = new TarballHeader(metadata.filePath, metadata.size)
+          val header = new TarArchiveHeader(metadata.filePath, metadata.size)
           Source.single(header.bytes).concat(stream).concat(Source.single(padding(metadata.size)))
       }
   }
 
-  private def padding(fileSize: Long): ByteString =
-    ByteString(new Array[Byte](if (fileSize % 512 > 0) (512 - fileSize % 512).toInt else 0))
+  private def padding(fileSize: Long): ByteString = {
+    val paddingSize = if (fileSize % 512 > 0) (512 - fileSize % 512).toInt else 0
+    if (paddingSize > 0) ByteString(new Array[Byte](paddingSize)) else ByteString.empty
+  }
 
 }
