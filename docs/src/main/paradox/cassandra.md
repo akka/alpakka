@@ -8,7 +8,7 @@ Apache Cassandra is a free and open-source, distributed, wide column store, NoSQ
 
 @@@
 
-Alpakka Cassandra offers an @extref:[Akka Streams](akka:/streams/index.html) API on top of a @javadoc[CqlSession](com.datastax.oss.driver.api.core.CqlSession) from the @extref:[Datastax Java Driver](cassandra-driver:) version 4.0+. The @ref:[driver configuration](#custom-session-creation) is provided in the same config format as Akka uses and can be placed in the same `application.conf` as your Akka settings.
+Alpakka Cassandra offers an @extref:[Akka Streams](akka:/stream/index.html) API on top of a @javadoc[CqlSession](com.datastax.oss.driver.api.core.CqlSession) from the @extref:[Datastax Java Driver](cassandra-driver:) version 4.0+. The @ref:[driver configuration](#custom-session-creation) is provided in the same config format as Akka uses and can be placed in the same `application.conf` as your Akka settings.
 
 @@project-info{ projectId="cassandra" }
 
@@ -27,7 +27,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Sessions
 
-Cassandra is accessed through @apidoc[akka.stream.alpakka.cassandra.*.CassandraSession]s which are managed by the @apidoc[CassandraSessionRegistry] Akka extension. This way a session is shared across all usages within the actor system and properly shut down after the actor system is shut down.
+Cassandra is accessed through @apidoc[akka.stream.alpakka.cassandra.*.CassandraSession]s which are managed by the @apidoc[CassandraSessionRegistry$] Akka extension. This way a session is shared across all usages within the actor system and properly shut down after the actor system is shut down.
 
 @scala[The `CassandraSession` is provided to the stream factory methods as an `implicit` parameter.]
 
@@ -42,7 +42,7 @@ See @ref[custom session creation](#custom-session-creation) below for tweaking t
 
 ## Reading from Cassandra
 
-@apidoc[CassandraSource] provides factory methods to get Akka Streams Sources from CQL queries and from @javadoc[com.datastax.oss.driver.api.core.cql.Statement](com.datastax.oss.driver.api.core.cql.Statement)s.
+@apidoc[CassandraSource$] provides factory methods to get Akka Streams Sources from CQL queries and from @javadoc[com.datastax.oss.driver.api.core.cql.Statement](com.datastax.oss.driver.api.core.cql.Statement)s.
 
 Dynamic parameters can be provided to the CQL as variable arguments.
 
@@ -67,7 +67,7 @@ Here we used a basic sink to complete the stream by collecting all of the stream
 
 ## Writing to Cassandra
 
-@apidoc[CassandraFlow] provides factory methods to get Akka Streams flows to run CQL statements that change data (`UPDATE`, `INSERT`). Alpakka Cassandra creates a @javadoc[PreparedStatement](com.datastax.oss.driver.api.core.cql.PreparedStatement) and for every stream element the `statementBinder` function binds the CQL placeholders to data.
+@apidoc[CassandraFlow$] provides factory methods to get Akka Streams flows to run CQL statements that change data (`UPDATE`, `INSERT`). Alpakka Cassandra creates a @javadoc[PreparedStatement](com.datastax.oss.driver.api.core.cql.PreparedStatement) and for every stream element the `statementBinder` function binds the CQL placeholders to data.
 
 The incoming elements are emitted unchanged for further processing.
 

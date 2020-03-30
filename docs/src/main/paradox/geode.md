@@ -1,6 +1,6 @@
 # Apache Geode
 
-[Apache Geode](http://geode.apache.org) is a distributed datagrid (formerly called ["Gemfire" which is now Pivotal's packaging of Geode](https://pivotal.io/pivotal-gemfire)).
+[Apache Geode](https://geode.apache.org) is a distributed datagrid (formerly called ["Gemfire" which used to be Pivotal's packaging of Geode and now is VMware Tanzu](https://tanzu.vmware.com/gemfire)).
 
 Alpakka Geode provides flows and sinks to put elements into Geode, and a source to retrieve elements from it. It stores key-value-pairs. Keys and values must be serialized with Geode's support for it.
 

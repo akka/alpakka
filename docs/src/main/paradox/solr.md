@@ -10,7 +10,7 @@ Solr (pronounced "solar") is an open source enterprise search platform, written 
 
 Alpakka Solr provides Akka Stream sources and sinks for Apache Solr.
 
-For more information about Solr please visit the [Solr documentation](http://lucene.apache.org/solr/resources.html).
+For more information about Solr please visit the [Solr documentation](https://lucene.apache.org/solr/resources.html).
 
 @@project-info{ projectId="solr" }
 

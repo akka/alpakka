@@ -2,7 +2,7 @@
 
 The AWS Kinesis connector provides flows for streaming data to and from Kinesis Data streams and to Kinesis Firehose streams.
 
-For more information about Kinesis please visit the [Kinesis documentation](https://aws.amazon.com/documentation/kinesis/).
+For more information about Kinesis please visit the [Kinesis documentation](https://docs.aws.amazon.com/kinesis/index.html).
 
 @@@ note { title="Alternative connector 1" }
 
@@ -80,7 +80,7 @@ Java
 You have the choice of reading from a single shard, or reading from multiple shards. In the case of multiple shards the results of running a separate `GraphStage` for each shard will be merged together.
 
 @@@ warning
-The `GraphStage` associated with a shard will remain open until the graph is stopped, or a [GetRecords](http://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetRecords.html) result returns an empty shard iterator indicating that the shard has been closed. This means that if you wish to continue processing records after a merge or reshard, you will need to recreate the source with the results of a new [DescribeStream](http://docs.aws.amazon.com/kinesis/latest/APIReference/API_DescribeStream.html) request, which can be done by simply creating a new `KinesisSource`. You can read more about adapting to a reshard in the [AWS documentation](http://docs.aws.amazon.com/streams/latest/dev/developing-consumers-with-sdk.html).
+The `GraphStage` associated with a shard will remain open until the graph is stopped, or a [GetRecords](https://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetRecords.html) result returns an empty shard iterator indicating that the shard has been closed. This means that if you wish to continue processing records after a merge or reshard, you will need to recreate the source with the results of a new [DescribeStream](https://docs.aws.amazon.com/kinesis/latest/APIReference/API_DescribeStream.html) request, which can be done by simply creating a new `KinesisSource`. You can read more about adapting to a reshard in the [AWS documentation](https://docs.aws.amazon.com/streams/latest/dev/developing-consumers-with-sdk.html).
 @@@
 
 For a single shard you simply provide the settings for a single shard.
@@ -99,8 +99,8 @@ Scala
 Java
 : @@snip [snip](/kinesis/src/test/java/docs/javadsl/KinesisSnippets.java) { #source-list }
 
-The constructed `Source` will return [Record](http://docs.aws.amazon.com/kinesis/latest/APIReference/API_Record.html)
-objects by calling [GetRecords](http://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetRecords.html) at the specified interval and according to the downstream demand.
+The constructed `Source` will return [Record](https://docs.aws.amazon.com/kinesis/latest/APIReference/API_Record.html)
+objects by calling [GetRecords](https://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetRecords.html) at the specified interval and according to the downstream demand.
 
 ### Kinesis Put via Flow or as Sink
 
@@ -112,7 +112,7 @@ publishes messages into a Kinesis stream using its partition key and message bod
 @@@ warning
 Batching has a drawback: message order cannot be guaranteed, as some records within a single batch may fail to be published. That also means that the Flow output may not match the same input order.
 
-More information can be found in the [AWS documentation](http://docs.aws.amazon.com/streams/latest/dev/developing-producers-with-sdk.html#kinesis-using-sdk-java-putrecords) and the [AWS API reference](http://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecords.html).
+More information can be found in the [AWS documentation](https://docs.aws.amazon.com/streams/latest/dev/developing-producers-with-sdk.html#kinesis-using-sdk-java-putrecords) and the [AWS API reference](https://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecords.html).
 @@@
 
 In order to correlate the results with the original message, an optional user context object of arbitrary type can be associated with every message and will be returned with the corresponding result. This allows keeping track of which messages have been successfully sent to Kinesis even if the message order gets mixed up.
@@ -151,7 +151,7 @@ Java
 
 The KCL Source can read from several shards and rebalance automatically when other Schedulers are started or stopped. It also handles record sequence checkpoints.
 
-For more information about KCL please visit the [official documentation](http://docs.aws.amazon.com/streams/latest/dev/developing-consumers-with-kcl-v2.html).
+For more information about KCL please visit the [official documentation](https://docs.aws.amazon.com/streams/latest/dev/developing-consumers-with-kcl-v2.html).
 
 ## Usage
 

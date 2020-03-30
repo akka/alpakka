@@ -37,7 +37,7 @@ val queueFactory = () => { // Since azure storage JDK is not guaranteed to be th
 }
 ```
 
-For more details, see [Microsoft Azure Storage Docs](https://docs.microsoft.com/en-us/azure/storage/storage-java-how-to-use-queue-storage).
+For more details, see [Microsoft Azure Storage Docs](https://docs.microsoft.com/en-us/azure/storage/queues/storage-java-how-to-use-queue-storage).
 
 ## Queuing a message
 

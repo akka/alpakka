@@ -1,6 +1,6 @@
 # Apache Kudu
 
-The Alpakka Kudu connector supports writing to [Apache Kudu](http://kudu.apache.org) tables.
+The Alpakka Kudu connector supports writing to [Apache Kudu](https://kudu.apache.org) tables.
 
 Apache Kudu is a free and open source column-oriented data store in the Apache Hadoop ecosystem.
 

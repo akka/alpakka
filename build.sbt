@@ -336,6 +336,12 @@ lazy val docs = project
     previewPath := (Paradox / siteSubdirName).value,
     Preprocess / siteSubdirName := s"api/alpakka/${projectInfoVersion.value}",
     Preprocess / sourceDirectory := (LocalRootProject / ScalaUnidoc / unidoc / target).value,
+    Preprocess / preprocessRules := Seq(
+        ("https://javadoc\\.io/page/".r, _ => "https://javadoc\\.io/static/"),
+        // Add Java module name https://github.com/ThoughtWorksInc/sbt-api-mappings/issues/58
+        ("https://docs\\.oracle\\.com/en/java/javase/11/docs/api/".r,
+         _ => "https://docs\\.oracle\\.com/en/java/javase/11/docs/api/java.base/")
+      ),
     Paradox / siteSubdirName := s"docs/alpakka/${projectInfoVersion.value}",
     paradoxProperties ++= Map(
         "akka.version" -> Dependencies.AkkaVersion,

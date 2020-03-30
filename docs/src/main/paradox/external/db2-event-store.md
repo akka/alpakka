@@ -1,6 +1,6 @@
 # IBM Db2 Event Store
 
-This adapter provides an Akka Streams interface for [IBM Db2 Event Store](https://www.ibm.com/support/knowledgecenter/en/SSGNPV_1.1.2/eventstore/welcome.html). 
+This adapter provides an Akka Streams interface for [IBM Db2 Event Store](https://www.ibm.com/support/knowledgecenter/en/SSGNPV_1.1.2/eos?origURL=SSGNPV_1.1.2/eventstore/welcome.html). 
 
 
 ## External library

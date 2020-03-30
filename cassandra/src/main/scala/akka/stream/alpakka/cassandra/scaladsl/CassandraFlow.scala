@@ -89,7 +89,7 @@ object CassandraFlow {
    * resolve to one write internally in Cassandra, boosting write performance.
    *
    * "A LOGGED batch to a single partition will be converted to an UNLOGGED batch as an optimization."
-   * ([[http://cassandra.apache.org/doc/latest/cql/dml.html#batch Batch CQL]])
+   * ([[https://cassandra.apache.org/doc/latest/cql/dml.html#batch Batch CQL]])
    *
    * Be aware that this stage does NOT preserve the upstream order.
    *

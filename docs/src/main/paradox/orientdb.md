@@ -4,7 +4,7 @@
 
 OrientDB is a multi-model database, supporting graph, document, key/value, and object models, but the relationships are managed as in graph databases with direct connections between records. It supports schema-less, schema-full and schema-mixed modes. It has a strong security profiling system based on users and roles and supports querying with Gremlin along with SQL extended for graph traversal.
 
-For more information about OrientDB please visit the [official documentation](http://orientdb.com/orientdb/), more details are available in [the OrientDB manual](http://orientdb.com/docs/3.0.x/).
+For more information about OrientDB please visit the [official documentation](https://orientdb.com/why-orientdb/), more details are available in [the OrientDB manual](https://orientdb.com/docs/3.0.x/).
 
 @@@
 

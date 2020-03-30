@@ -1,7 +1,7 @@
 # RecordIO Framing
 
 The codec parses a ByteString stream in the
-[RecordIO format](http://mesos.apache.org/documentation/latest/recordio/) used by Apache Mesos into distinct frames.
+[RecordIO format](https://mesos.apache.org/documentation/latest/recordio/) used by Apache Mesos into distinct frames.
 
 For instance, the response body:
 ```

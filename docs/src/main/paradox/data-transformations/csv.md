@@ -117,7 +117,7 @@ The formatter takes care of quoting and escaping.
 Certain CSV readers (e.g. Microsoft Excel) require CSV files to indicate their character encoding with a *Byte
 Order Mark* (BOM) in the first bytes of the file. Choose an appropriate Byte Order Mark matching the
 selected character set from the constants in `ByteOrderMark`
-([Unicode FAQ on Byte Order Mark](http://www.unicode.org/faq/utf_bom.html#bom1)).
+([Unicode FAQ on Byte Order Mark](https://www.unicode.org/faq/utf_bom.html#bom1)).
 
 
 Scala

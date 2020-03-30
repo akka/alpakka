@@ -21,7 +21,7 @@ blog by Colin Breck, May 2019
 [Reactive Integration with Akka Streams and Alpakka](https://www.youtube.com/watch?v=gUNiEZG8cbM)
 presentation by Jacek Kunicki, GeeCON Kraków, May 2019
 
-[Just Right Parallelism in Akka Streams](http://jesseyates.com/2019/04/07/just-right-parallelism-in-akka-streams.html)
+[Just Right Parallelism in Akka Streams](https://www.jesseyates.com/2019/04/07/just-right-parallelism-in-akka-streams.html)
 blog by Jesse Yates, April 2019
 
 [Backpressure over the wire - when things go wrong](https://www.youtube.com/watch?v=32RZoQOaucM)
@@ -42,7 +42,7 @@ Webinar by Enno Runne, Alpakka Team @ Lightbend, August 2018
 [Patterns for Streaming Telemetry with Akka Streams](https://slideslive.com/38908774/patterns-for-streaming-telemetry-with-akka-streams)
 presentation by Colin Breck, ScalaDays New York, June 2018
 
-[Stream a file to AWS S3 using Akka Streams (via Alpakka) in Play Framework](https://blog.knoldus.com/2018/05/04/stream-a-file-to-aws-s3-using-akka-streams-via-alpakka-in-play-framework/)
+[Stream a file to AWS S3 using Akka Streams (via Alpakka) in Play Framework](https://blog.knoldus.com/stream-a-file-to-aws-s3-using-akka-streams-via-alpakka-in-play-framework/)
 blog by Sidharth Khattri, May 2018
 
 [Alpakka (Akka Streams) vs Apache Camel: who wins?](http://www.thedevpiece.com/alpakka-akka-streams-vs-apache-camel-who-wins/) Blog by Gabriel Francisco, May 2018 
@@ -53,10 +53,10 @@ presentation by Jan Pustelnik, Actyx, ReactSphere Kraków, April 2018
 [Revitalizing Enterprise Integration with Reactive Streams](https://info.lightbend.com/webinar-revitalizing-enterprise-integration-with-reactive-streams-recording.html)
 Webinar by Viktor Klang, Lightbend, March 2018
 
-[Transforming enterprise integration with reactive streams](https://www.oreilly.com/ideas/transforming-enterprise-integration-with-reactive-streams)
+[Transforming enterprise integration with reactive streams](https://www.oreilly.com/content/transforming-enterprise-integration-with-reactive-streams/)
 Article by Jonas Bonér and Viktor Klang, March 2018
 
-[From a time-series database to a key operational technology for the enterprise](https://youtu.be/3APiIht6oDY?t=1298)
+[From a time-series database to a key operational technology for the enterprise](https://www.youtube.com/watch?v=3APiIht6oDY&feature=youtu.be&t=1298)
 Presentation by Colin Breck, Tesla, February 2018
 
 ## 2017
