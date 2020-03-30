@@ -42,7 +42,7 @@ import akka.stream.ActorAttributes
       override def onPull(): Unit = {
         val eventRead = reader.nextEvent(readerSettings.timeout)
         if (eventRead.isCheckpoint) {
-          log.debug(s"Checkpoint: ${eventRead.getCheckpointName}")
+          log.debug("Checkpoint: {}", eventRead.getCheckpointName)
           onPull()
         } else {
           val event = eventRead.getEvent
@@ -56,7 +56,7 @@ import akka.stream.ActorAttributes
   )
 
   override def preStart(): Unit = {
-    log.debug(s"Start consuming $streamName...")
+    log.debug("Start consuming {}...", streamName)
     try {
       reader = createReader(readerSettings, streamName)
       startupPromise.success(Done)
