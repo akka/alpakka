@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.aws.eventbridge
 
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.ActorSystem
@@ -14,7 +15,9 @@ import org.scalatest.{BeforeAndAfterAll, Suite}
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient
 import software.amazon.awssdk.services.eventbridge.model.CreateEventBusRequest
 
+import scala.collection.concurrent.TrieMap
 import scala.concurrent.duration.FiniteDuration
+import scala.util.Try
 
 trait IntegrationTestContext extends BeforeAndAfterAll with ScalaFutures {
   this: Suite =>
@@ -29,12 +32,10 @@ trait IntegrationTestContext extends BeforeAndAfterAll with ScalaFutures {
   implicit var eventBridgeClient: EventBridgeAsyncClient = _
   var eventBusArn: String = _
 
-  private val eventBusNumber = new AtomicInteger()
-
   def createEventBus(): String =
     eventBridgeClient
       .createEventBus(
-        CreateEventBusRequest.builder().name(s"alpakka-topic-${eventBusNumber.incrementAndGet()}").build()
+        CreateEventBusRequest.builder().name(s"alpakka-topic-${UUID.randomUUID().toString}").build()
       )
       .get()
       .eventBusArn()
