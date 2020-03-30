@@ -207,6 +207,13 @@ class ArchiveSpec
         //cleanup
         new File("result.tar").delete()
       }
+
+      "fail if provided size and actual size do not match" in {
+        val file = (ArchiveMetadataWithSize("file.txt", 10L), Source.single(ByteString("too long")))
+        val filesStream = Source.single(file)
+        val result = filesStream.via(Archive.tar()).runWith(Sink.ignore)
+        an[IllegalStateException] should be thrownBy (throw result.failed.futureValue)
+      }
     }
   }
 

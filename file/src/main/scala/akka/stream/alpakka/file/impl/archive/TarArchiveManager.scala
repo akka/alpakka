@@ -20,7 +20,10 @@ import akka.util.ByteString
       .flatMapConcat {
         case (metadata, stream) =>
           val header = new TarArchiveHeader(metadata.filePath, metadata.size)
-          Source.single(header.bytes).concat(stream).concat(Source.single(padding(metadata.size)))
+          Source
+            .single(header.bytes)
+            .concat(stream.via(new EnsureByteStreamSize(header.size)))
+            .concat(Source.single(padding(metadata.size)))
       }
   }
 
