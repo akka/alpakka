@@ -41,19 +41,22 @@ import akka.stream.ActorAttributes
 
       override def onPull(): Unit = {
         val eventRead = reader.nextEvent(readerSettings.timeout)
-        if (eventRead == null)
-          log.debug("a timeout occurred while waiting for new messages")
-        else {
-          if (eventRead.isCheckpoint)
-            log.debug(s"Checkpoint: ${eventRead.getCheckpointName}")
-          else push(out, new PravegaEvent(eventRead.getEvent, eventRead.getPosition, eventRead.getEventPointer))
+        if (eventRead.isCheckpoint) {
+          log.debug("Checkpoint: {}", eventRead.getCheckpointName)
+          onPull()
+        } else {
+          val event = eventRead.getEvent
+          if (event == null) {
+            log.debug("a timeout occurred while waiting for new messages")
+          } else
+            push(out, new PravegaEvent(event, eventRead.getPosition, eventRead.getEventPointer))
         }
       }
     }
   )
 
   override def preStart(): Unit = {
-    log.debug(s"Start consuming $streamName...")
+    log.debug("Start consuming {}...", streamName)
     try {
       reader = createReader(readerSettings, streamName)
       startupPromise.success(Done)
