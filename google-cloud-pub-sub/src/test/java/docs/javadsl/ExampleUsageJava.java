@@ -111,6 +111,24 @@ public class ExampleUsageJava {
         .to(ackSink);
     // #subscribe
 
+    // #subscribe-source-control
+    Source.tick(Duration.ofSeconds(0), Duration.ofSeconds(10), Done.getInstance())
+        .via(
+            RestartFlow.withBackoff(
+                Duration.ofSeconds(1),
+                Duration.ofSeconds(30),
+                0.2,
+                () -> GooglePubSub.subscribeFlow(subscription, config)))
+        .map(
+            message -> {
+              // do something fun
+              return message.ackId();
+            })
+        .groupedWithin(1000, Duration.ofMinutes(1))
+        .map(acks -> AcknowledgeRequest.create(acks))
+        .to(ackSink);
+    // #subscribe-source-control
+
     Sink<ReceivedMessage, CompletionStage<Done>> yourProcessingSink = Sink.ignore();
 
     // #subscribe-auto-ack

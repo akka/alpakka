@@ -66,26 +66,30 @@ protected[pubsub] trait GooglePubSub {
    * Creates a source pulling messages from subscription
    */
   def subscribe(subscription: String, config: PubSubConfig): Source[ReceivedMessage, Cancellable] = {
-    val flow =
-      Flow
-        .setup { (mat, _) =>
-          implicit val system: ActorSystem = mat.system
-          implicit val materializer: Materializer = mat
-          Flow[Done]
-            .via(httpApi.accessToken[Done](config))
-            .via(
-              httpApi
-                .pull(config.projectId,
-                      subscription,
-                      config.pullReturnImmediately,
-                      config.pullMaxMessagesPerInternalBatch)
-            )
-            .mapConcat(_.receivedMessages.getOrElse(Seq.empty[ReceivedMessage]).toIndexedSeq)
-        }
-
     Source
       .tick(0.seconds, 1.second, Done)
-      .via(flow)
+      .via(subscribeFlow(subscription, config))
+  }
+
+  /**
+   * Creates a flow pulling messages from subscription
+   */
+  def subscribeFlow(subscription: String, config: PubSubConfig): Flow[Done, ReceivedMessage, Future[NotUsed]] = {
+    Flow
+      .setup { (mat, _) =>
+        implicit val system: ActorSystem = mat.system
+        implicit val materializer: Materializer = mat
+        Flow[Done]
+          .via(httpApi.accessToken[Done](config))
+          .via(
+            httpApi
+              .pull(config.projectId,
+                    subscription,
+                    config.pullReturnImmediately,
+                    config.pullMaxMessagesPerInternalBatch)
+          )
+          .mapConcat(_.receivedMessages.getOrElse(Seq.empty[ReceivedMessage]).toIndexedSeq)
+      }
   }
 
   /**
