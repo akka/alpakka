@@ -11,7 +11,7 @@ import akka.stream.ActorMaterializer;
 import akka.stream.IOResult;
 import akka.stream.Materializer;
 import akka.stream.alpakka.file.ArchiveMetadata;
-import akka.stream.alpakka.file.ArchiveMetadataWithSize;
+import akka.stream.alpakka.file.TarArchiveMetadata;
 import akka.stream.alpakka.file.javadsl.Archive;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.FileIO;
@@ -131,12 +131,12 @@ public class ArchiveTest {
     */
 
     // #sample-tar
-    Pair<ArchiveMetadataWithSize, Source<ByteString, NotUsed>> pair1 =
-        Pair.create(ArchiveMetadataWithSize.create("akka_full_color.svg", size1), source1);
-    Pair<ArchiveMetadataWithSize, Source<ByteString, NotUsed>> pair2 =
-        Pair.create(ArchiveMetadataWithSize.create("akka_icon_reverse.svg", size2), source2);
+    Pair<TarArchiveMetadata, Source<ByteString, NotUsed>> pair1 =
+        Pair.create(TarArchiveMetadata.create("akka_full_color.svg", size1), source1);
+    Pair<TarArchiveMetadata, Source<ByteString, NotUsed>> pair2 =
+        Pair.create(TarArchiveMetadata.create("akka_icon_reverse.svg", size2), source2);
 
-    Source<Pair<ArchiveMetadataWithSize, Source<ByteString, NotUsed>>, NotUsed> source =
+    Source<Pair<TarArchiveMetadata, Source<ByteString, NotUsed>>, NotUsed> source =
         Source.from(Arrays.asList(pair1, pair2));
 
     Sink<ByteString, CompletionStage<IOResult>> fileSink = FileIO.toPath(Paths.get("logo.tar"));

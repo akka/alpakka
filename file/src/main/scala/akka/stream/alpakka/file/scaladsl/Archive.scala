@@ -5,7 +5,7 @@
 package akka.stream.alpakka.file.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.file.{ArchiveMetadata, ArchiveMetadataWithSize}
+import akka.stream.alpakka.file.{ArchiveMetadata, TarArchiveMetadata}
 import akka.stream.alpakka.file.impl.archive.{TarArchiveManager, ZipArchiveManager}
 import akka.stream.scaladsl.{Flow, Source}
 import akka.util.ByteString
@@ -24,7 +24,7 @@ object Archive {
   /**
    * Flow for packaging multiple files into one TAR file.
    */
-  def tar(): Flow[(ArchiveMetadataWithSize, Source[ByteString, Any]), ByteString, NotUsed] =
+  def tar(): Flow[(TarArchiveMetadata, Source[ByteString, _]), ByteString, NotUsed] =
     TarArchiveManager.tarFlow()
 
 }

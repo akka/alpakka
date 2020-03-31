@@ -9,7 +9,7 @@ import java.nio.file.{Files, Path, Paths}
 import java.util.Comparator
 
 import akka.actor.ActorSystem
-import akka.stream.alpakka.file.{ArchiveMetadata, ArchiveMetadataWithSize}
+import akka.stream.alpakka.file.{ArchiveMetadata, TarArchiveMetadata}
 import akka.stream.alpakka.file.scaladsl.Archive
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{FileIO, Sink, Source}
@@ -154,8 +154,8 @@ class ArchiveSpec
         // #sample-tar
         val filesStream = Source(
           List(
-            (ArchiveMetadataWithSize("akka_full_color.svg", fileSize1), fileStream1),
-            (ArchiveMetadataWithSize("akka_icon_reverse.svg", fileSize2), fileStream2)
+            (TarArchiveMetadata("akka_full_color.svg", fileSize1), fileStream1),
+            (TarArchiveMetadata("akka_icon_reverse.svg", fileSize2), fileStream2)
           )
         )
 
@@ -195,7 +195,7 @@ class ArchiveSpec
         val fileName = "folder1-".padTo(40, 'x') + "/" + "folder2-".padTo(40, 'x') + "/" + "file-".padTo(80, 'x') + ".txt"
         val fileBytes = ByteString("test")
 
-        val file = (ArchiveMetadataWithSize(fileName, fileBytes.size), Source.single(fileBytes))
+        val file = (TarArchiveMetadata(fileName, fileBytes.size), Source.single(fileBytes))
         val filesStream = Source.single(file)
         val result = filesStream
           .via(Archive.tar())
@@ -209,7 +209,7 @@ class ArchiveSpec
       }
 
       "fail if provided size and actual size do not match" in {
-        val file = (ArchiveMetadataWithSize("file.txt", 10L), Source.single(ByteString("too long")))
+        val file = (TarArchiveMetadata("file.txt", 10L), Source.single(ByteString("too long")))
         val filesStream = Source.single(file)
         val result = filesStream.via(Archive.tar()).runWith(Sink.ignore)
         an[IllegalStateException] should be thrownBy (throw result.failed.futureValue)

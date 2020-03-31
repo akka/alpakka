@@ -6,7 +6,7 @@ package akka.stream.alpakka.file.impl.archive
 
 import akka.NotUsed
 import akka.annotation.InternalApi
-import akka.stream.alpakka.file.ArchiveMetadataWithSize
+import akka.stream.alpakka.file.TarArchiveMetadata
 import akka.stream.scaladsl.{Flow, Source}
 import akka.util.ByteString
 
@@ -15,21 +15,16 @@ import akka.util.ByteString
  */
 @InternalApi private[file] object TarArchiveManager {
 
-  def tarFlow(): Flow[(ArchiveMetadataWithSize, Source[ByteString, Any]), ByteString, NotUsed] = {
-    Flow[(ArchiveMetadataWithSize, Source[ByteString, Any])]
+  def tarFlow(): Flow[(TarArchiveMetadata, Source[ByteString, _]), ByteString, NotUsed] = {
+    Flow[(TarArchiveMetadata, Source[ByteString, Any])]
       .flatMapConcat {
         case (metadata, stream) =>
-          val header = new TarArchiveHeader(metadata.filePath, metadata.size)
+          val entry = new TarArchiveEntry(metadata)
           Source
-            .single(header.bytes)
-            .concat(stream.via(new EnsureByteStreamSize(header.size)))
-            .concat(Source.single(padding(metadata.size)))
+            .single(entry.headerBytes)
+            .concat(stream.via(new EnsureByteStreamSize(metadata.size)))
+            .concat(Source.single(entry.trailingBytes))
       }
-  }
-
-  private def padding(fileSize: Long): ByteString = {
-    val paddingSize = if (fileSize % 512 > 0) (512 - fileSize % 512).toInt else 0
-    if (paddingSize > 0) ByteString(new Array[Byte](paddingSize)) else ByteString.empty
   }
 
 }

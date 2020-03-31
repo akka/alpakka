@@ -5,7 +5,7 @@
 package akka.stream.alpakka.file.javadsl
 
 import akka.NotUsed
-import akka.stream.alpakka.file.{scaladsl, ArchiveMetadata, ArchiveMetadataWithSize}
+import akka.stream.alpakka.file.{scaladsl, ArchiveMetadata, TarArchiveMetadata}
 import akka.stream.javadsl.Flow
 import akka.util.ByteString
 import akka.japi.Pair
@@ -28,9 +28,9 @@ object Archive {
   /**
    * Flow for packaging multiple files into one TAR file.
    */
-  def tar(): Flow[Pair[ArchiveMetadataWithSize, Source[ByteString, NotUsed]], ByteString, NotUsed] =
+  def tar(): Flow[Pair[TarArchiveMetadata, Source[ByteString, NotUsed]], ByteString, NotUsed] =
     Flow
-      .create[Pair[ArchiveMetadataWithSize, Source[ByteString, NotUsed]]]()
+      .create[Pair[TarArchiveMetadata, Source[ByteString, NotUsed]]]()
       .map(func(pair => (pair.first, pair.second.asScala)))
       .via(scaladsl.Archive.tar().asJava)
 
