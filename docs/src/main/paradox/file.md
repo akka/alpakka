@@ -177,7 +177,31 @@ is not limited to memory size.
 This example usage shows compressing files from disk. 
 
 Scala
-: @@snip [snip](/file/src/test/scala/docs/scaladsl/ArchiveSpec.scala) { #sample }
+: @@snip [snip](/file/src/test/scala/docs/scaladsl/ArchiveSpec.scala) { #sample-zip }
 
 Java
-: @@snip [snip](/file/src/test/java/docs/javadsl/ArchiveTest.java) { #sample }
+: @@snip [snip](/file/src/test/java/docs/javadsl/ArchiveTest.java) { #sample-zip }
+
+## TAR Archive
+
+The @apidoc[Archive$]
+contains flow for packaging multiple files into one TAR file.
+
+Result of flow can be send to sink even before whole TAR file is created, so size of resulting TAR archive
+is not limited to memory size.
+
+This example usage shows packaging files from disk.
+
+Scala
+: @@snip [snip](/file/src/test/scala/docs/scaladsl/ArchiveSpec.scala) { #sample-tar }
+
+Java
+: @@snip [snip](/file/src/test/java/docs/javadsl/ArchiveTest.java) { #sample-tar }
+
+To produce a gzipped TAR file see the following example.
+
+Scala
+: @@snip [snip](/file/src/test/scala/docs/scaladsl/ArchiveSpec.scala) { #sample-tar-gz }
+
+Java
+: @@snip [snip](/file/src/test/java/docs/javadsl/ArchiveTest.java) { #sample-tar-gz }
