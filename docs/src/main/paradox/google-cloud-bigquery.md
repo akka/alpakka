@@ -37,7 +37,7 @@ You can use the connector in order to list information on the tables and their f
 The payload of the response from these requests is mapped to the models `QueryTableModel` and `Field`.
 The results are mapped partially from the payload received.
 In order to retrieve the full payload from these requests a custom parser has to be implemented. 
-In cases or errors, empty responses or api changes a custom parser has to be implemented.
+In case of error, empty response or API changes a custom parser has to be implemented.
 
 Scala
 : @@snip [snip](/google-cloud-bigquery/src/test/scala/docs/scaladsl/GoogleBigQuerySourceDoc.scala) { #list-tables-and-fields }
