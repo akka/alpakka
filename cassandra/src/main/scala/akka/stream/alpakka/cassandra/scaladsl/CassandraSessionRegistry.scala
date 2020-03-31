@@ -10,14 +10,7 @@ import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import akka.Done
-import akka.actor.{
-  ActorSystem,
-  ClassicActorSystemProvider,
-  ExtendedActorSystem,
-  Extension,
-  ExtensionId,
-  ExtensionIdProvider
-}
+import akka.actor.{ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import akka.annotation.InternalStableApi
 import akka.event.Logging
 import akka.stream.alpakka.cassandra.{CassandraSessionSettings, CqlSessionProvider}
@@ -33,12 +26,6 @@ object CassandraSessionRegistry extends ExtensionId[CassandraSessionRegistry] wi
 
   def createExtension(system: ExtendedActorSystem): CassandraSessionRegistry =
     new CassandraSessionRegistry(system)
-
-  override def apply(system: ActorSystem): CassandraSessionRegistry = super.apply(system)
-
-  // This is not source compatible with Akka 2.6 as it lacks `overrride`
-  def apply(system: ClassicActorSystemProvider): CassandraSessionRegistry =
-    apply(system.classicSystem)
 
   override def lookup(): ExtensionId[CassandraSessionRegistry] = this
 

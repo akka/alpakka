@@ -66,6 +66,7 @@ object GrpcSubscriberExt extends ExtensionId[GrpcSubscriberExt] with ExtensionId
   /**
    * Access to extension.
    */
+  @deprecated("use get() instead", since = "2.0.0")
   def apply()(implicit system: ActorSystem): GrpcSubscriberExt = super.apply(system)
 
   /**
@@ -80,5 +81,5 @@ object GrpcSubscriberExt extends ExtensionId[GrpcSubscriberExt] with ExtensionId
    *
    * Access to the extension from the new actors API.
    */
-  def get(system: ClassicActorSystemProvider): GrpcSubscriberExt = super.get(system.classicSystem)
+  override def get(system: ClassicActorSystemProvider): GrpcSubscriberExt = super.get(system.classicSystem)
 }

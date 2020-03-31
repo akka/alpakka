@@ -3,7 +3,14 @@
  */
 
 package akka.stream.alpakka.reference
-import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.actor.{
+  ActorSystem,
+  ClassicActorSystemProvider,
+  ExtendedActorSystem,
+  Extension,
+  ExtensionId,
+  ExtensionIdProvider
+}
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 import com.typesafe.config.Config
@@ -110,12 +117,17 @@ object ResourceExt extends ExtensionId[ResourceExt] with ExtensionIdProvider {
   /**
    * Access to extension.
    */
-  def apply()(implicit system: ActorSystem): ResourceExt = super.apply(system)
+  def apply()(implicit system: ClassicActorSystemProvider): ResourceExt = super.apply(system)
 
   /**
-   * Java API
-   *
    * Access to extension.
+   * Java API.
    */
   override def get(system: ActorSystem): ResourceExt = super.get(system)
+
+  /**
+   * Access to extension.
+   * Java API.
+   */
+  override def get(system: ClassicActorSystemProvider): ResourceExt = super.get(system)
 }

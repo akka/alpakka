@@ -40,16 +40,6 @@ object CassandraMetricsRegistry extends ExtensionId[CassandraMetricsRegistry] wi
     new CassandraMetricsRegistry
 
   /**
-   * Get the CassandraMetricsRegistry extension with the classic actors API.
-   */
-  override def apply(system: akka.actor.ActorSystem): CassandraMetricsRegistry = super.apply(system)
-
-  /**
-   * Get the CassandraMetricsRegistry extension with the new actors API.
-   */
-  def apply(system: ClassicActorSystemProvider): CassandraMetricsRegistry = super.apply(system.classicSystem)
-
-  /**
    * Java API.
    * Get the CassandraMetricsRegistry extension with the classic actors API.
    */
@@ -59,5 +49,5 @@ object CassandraMetricsRegistry extends ExtensionId[CassandraMetricsRegistry] wi
    * Java API.
    * Get the CassandraMetricsRegistry extension with the classic actors API.
    */
-  def get(system: ClassicActorSystemProvider): CassandraMetricsRegistry = super.apply(system.classicSystem)
+  override def get(system: ClassicActorSystemProvider): CassandraMetricsRegistry = super.apply(system)
 }

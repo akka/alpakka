@@ -51,14 +51,14 @@ object GrpcSubscriberExt extends ExtensionId[GrpcSubscriberExt] with ExtensionId
   override def createExtension(system: ExtendedActorSystem) = new GrpcSubscriberExt(system)
 
   /**
-   * Access to extension.
+   * Access to extension from the new and classic actors API.
    */
-  def apply()(implicit system: ActorSystem): GrpcSubscriberExt = super.apply(system)
+  def apply()(implicit system: ClassicActorSystemProvider): GrpcSubscriberExt = super.apply(system)
 
   /**
-   * Access to the extension from the new actors API.
+   * Access to the extension from the classic actors API.
    */
-  def apply(system: ClassicActorSystemProvider): GrpcSubscriberExt = super.apply(system.classicSystem)
+  override def apply(system: ActorSystem): GrpcSubscriberExt = super.apply(system)
 
   /**
    * Java API
@@ -66,4 +66,11 @@ object GrpcSubscriberExt extends ExtensionId[GrpcSubscriberExt] with ExtensionId
    * Access to extension.
    */
   override def get(system: ActorSystem): GrpcSubscriberExt = super.get(system)
+
+  /**
+   * Java API
+   *
+   * Access to extension.
+   */
+  override def get(system: ClassicActorSystemProvider): GrpcSubscriberExt = super.get(system)
 }

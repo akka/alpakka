@@ -95,7 +95,7 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
   /**
    * Get the UnixDomainSocket extension with the new actors API.
    */
-  def get(system: ClassicActorSystemProvider): UnixDomainSocket = super.apply(system.classicSystem)
+  override def get(system: ClassicActorSystemProvider): UnixDomainSocket = super.apply(system.classicSystem)
 
   def lookup(): ExtensionId[_ <: Extension] =
     UnixDomainSocket
@@ -108,7 +108,7 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends akka.actor.Ext
   import UnixDomainSocket._
   import akka.dispatch.ExecutionContexts.{sameThreadExecutionContext => ec}
 
-  private lazy val delegate: scaladsl.UnixDomainSocket = scaladsl.UnixDomainSocket(system)
+  private lazy val delegate: scaladsl.UnixDomainSocket = scaladsl.UnixDomainSocket.apply(system)
 
   /**
    * Creates a [[UnixDomainSocket.ServerBinding]] instance which represents a prospective UnixDomainSocket server binding on the given `endpoint`.
