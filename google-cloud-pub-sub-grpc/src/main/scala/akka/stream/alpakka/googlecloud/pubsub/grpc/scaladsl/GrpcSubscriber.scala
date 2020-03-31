@@ -32,18 +32,24 @@ final class GrpcSubscriber private (settings: PubSubSettings, sys: ActorSystem) 
 }
 
 object GrpcSubscriber {
-  def apply(settings: PubSubSettings)(implicit sys: ActorSystem): GrpcSubscriber =
+  def apply(settings: PubSubSettings)(implicit sys: ClassicActorSystemProvider): GrpcSubscriber =
+    new GrpcSubscriber(settings, sys.classicSystem)
+
+  def apply(settings: PubSubSettings, sys: ActorSystem): GrpcSubscriber =
     new GrpcSubscriber(settings, sys)
 
-  def apply()(implicit sys: ActorSystem): GrpcSubscriber =
+  def apply()(implicit sys: ClassicActorSystemProvider): GrpcSubscriber =
     apply(PubSubSettings(sys))
+
+  def apply(sys: ActorSystem): GrpcSubscriber =
+    apply(PubSubSettings(sys), sys)
 }
 
 /**
  * An extension that manages a single gRPC scala subscriber client per actor system.
  */
 final class GrpcSubscriberExt private (sys: ExtendedActorSystem) extends Extension {
-  implicit val subscriber = GrpcSubscriber()(sys)
+  implicit val subscriber = GrpcSubscriber(sys: ActorSystem)
 }
 
 object GrpcSubscriberExt extends ExtensionId[GrpcSubscriberExt] with ExtensionIdProvider {

@@ -131,11 +131,11 @@ object GooglePubSub {
     attr
       .get[PubSubAttributes.Publisher]
       .map(_.publisher)
-      .getOrElse(GrpcPublisherExt()(mat.system).publisher)
+      .getOrElse(GrpcPublisherExt.get(mat.system).publisher)
 
   private def subscriber(mat: ActorMaterializer, attr: Attributes) =
     attr
       .get[PubSubAttributes.Subscriber]
       .map(_.subscriber)
-      .getOrElse(GrpcSubscriberExt()(mat.system).subscriber)
+      .getOrElse(GrpcSubscriberExt.get(mat.system).subscriber)
 }

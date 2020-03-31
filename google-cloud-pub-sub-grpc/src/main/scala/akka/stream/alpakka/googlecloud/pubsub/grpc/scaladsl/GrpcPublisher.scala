@@ -32,18 +32,24 @@ final class GrpcPublisher private (settings: PubSubSettings, sys: ActorSystem) {
 }
 
 object GrpcPublisher {
-  def apply(settings: PubSubSettings)(implicit sys: ActorSystem): GrpcPublisher =
+  def apply(settings: PubSubSettings)(implicit sys: ClassicActorSystemProvider): GrpcPublisher =
+    new GrpcPublisher(settings, sys.classicSystem)
+
+  def apply(settings: PubSubSettings, sys: ActorSystem): GrpcPublisher =
     new GrpcPublisher(settings, sys)
 
-  def apply()(implicit sys: ActorSystem): GrpcPublisher =
+  def apply()(implicit sys: ClassicActorSystemProvider): GrpcPublisher =
     apply(PubSubSettings(sys))
+
+  def apply(sys: ActorSystem): GrpcPublisher =
+    apply(PubSubSettings(sys), sys)
 }
 
 /**
  * An extension that manages a single gRPC scala publisher client per actor system.
  */
 final class GrpcPublisherExt private (sys: ExtendedActorSystem) extends Extension {
-  implicit val publisher = GrpcPublisher()(sys)
+  implicit val publisher = GrpcPublisher(sys: ActorSystem)
 }
 
 object GrpcPublisherExt extends ExtensionId[GrpcPublisherExt] with ExtensionIdProvider {

@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.cassandra
 
-import akka.actor.{ActorSystem, ExtendedActorSystem}
+import akka.actor.{ClassicActorSystemProvider, ExtendedActorSystem}
 import com.datastax.oss.driver.api.core.CqlSession
 import com.typesafe.config.{Config, ConfigFactory}
 
@@ -36,7 +36,7 @@ trait CqlSessionProvider {
  * driver's configuration can be defined with `datastax-java-driver-config` property in the
  * given `config`.
  */
-class DefaultSessionProvider(system: ActorSystem, config: Config) extends CqlSessionProvider {
+class DefaultSessionProvider(system: ClassicActorSystemProvider, config: Config) extends CqlSessionProvider {
 
   /**
    * Check if Akka Discovery service lookup should be used. It is part of this class so it
@@ -70,7 +70,7 @@ object CqlSessionProvider {
     def instantiate(args: immutable.Seq[(Class[_], AnyRef)]) =
       dynamicAccess.createInstanceFor[CqlSessionProvider](clazz, args)
 
-    val params = List((classOf[ActorSystem], system), (classOf[Config], config))
+    val params = List((classOf[ClassicActorSystemProvider], system), (classOf[Config], config))
     instantiate(params)
       .recoverWith {
         case x: NoSuchMethodException => instantiate(params.take(1))
@@ -94,11 +94,11 @@ object CqlSessionProvider {
    * driver's configuration can be defined with `datastax-java-driver-config` property in the
    * given `config`. `datastax-java-driver` configuration section is also used as fallback.
    */
-  def driverConfig(system: ActorSystem, config: Config): Config = {
+  def driverConfig(system: ClassicActorSystemProvider, config: Config): Config = {
     val driverConfigPath = config.getString("datastax-java-driver-config")
-    system.settings.config.getConfig(driverConfigPath).withFallback {
+    system.classicSystem.settings.config.getConfig(driverConfigPath).withFallback {
       if (driverConfigPath == "datastax-java-driver") ConfigFactory.empty()
-      else system.settings.config.getConfig("datastax-java-driver")
+      else system.classicSystem.settings.config.getConfig("datastax-java-driver")
     }
   }
 }

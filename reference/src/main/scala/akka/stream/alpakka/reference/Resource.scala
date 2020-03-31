@@ -87,15 +87,15 @@ object ResourceSettings {
   /**
    * Resolves settings from the `ActorSystem`s settings.
    */
-  def apply()(implicit sys: ActorSystem): ResourceSettings =
-    ResourceSettings(sys.settings.config.getConfig(ConfigPath))
+  def apply()(implicit sys: ClassicActorSystemProvider): ResourceSettings =
+    ResourceSettings(sys.classicSystem.settings.config.getConfig(ConfigPath))
 
   /**
    * Java Api
    *
    * Resolves settings from the `ActorSystem`s settings.
    */
-  def create(sys: ActorSystem): ResourceSettings =
+  def create(sys: ClassicActorSystemProvider): ResourceSettings =
     ResourceSettings()(sys)
 }
 
