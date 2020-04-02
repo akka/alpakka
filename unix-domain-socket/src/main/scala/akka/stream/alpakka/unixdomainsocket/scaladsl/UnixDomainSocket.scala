@@ -20,14 +20,14 @@ import scala.concurrent.duration.Duration
 object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdProvider {
 
   /**
-   * Get the UnixDomainSocket extension with the classic actors API.
+   * Get the UnixDomainSocket extension with the classic or new actors API.
    */
-  def apply()(implicit system: akka.actor.ActorSystem): UnixDomainSocket = super.apply(system)
+  def apply()(implicit system: ClassicActorSystemProvider): UnixDomainSocket = super.apply(system)
 
   /**
-   * Get the UnixDomainSocket extension with the new actors API.
+   * Get the UnixDomainSocket extension with the classic actors API.
    */
-  def apply(system: ClassicActorSystemProvider): UnixDomainSocket = super.apply(system.classicSystem)
+  override def apply(system: akka.actor.ActorSystem): UnixDomainSocket = super.apply(system)
 
   override def createExtension(system: ExtendedActorSystem) =
     new UnixDomainSocket(system)

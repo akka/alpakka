@@ -24,7 +24,7 @@ object CassandraSessionRegistry {
    * Get the session registry with new actors API.
    */
   def get(system: ClassicActorSystemProvider): CassandraSessionRegistry =
-    new CassandraSessionRegistry(scaladsl.CassandraSessionRegistry(system.classicSystem))
+    new CassandraSessionRegistry(scaladsl.CassandraSessionRegistry(system))
 
   /**
    * Get the session registry with the classic actors API.

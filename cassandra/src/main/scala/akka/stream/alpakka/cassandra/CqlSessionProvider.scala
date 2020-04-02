@@ -96,9 +96,9 @@ object CqlSessionProvider {
    */
   def driverConfig(system: ActorSystem, config: Config): Config = {
     val driverConfigPath = config.getString("datastax-java-driver-config")
-    system.settings.config.getConfig(driverConfigPath).withFallback {
+    system.classicSystem.settings.config.getConfig(driverConfigPath).withFallback {
       if (driverConfigPath == "datastax-java-driver") ConfigFactory.empty()
-      else system.settings.config.getConfig("datastax-java-driver")
+      else system.classicSystem.settings.config.getConfig("datastax-java-driver")
     }
   }
 }

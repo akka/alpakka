@@ -9,7 +9,7 @@ import java.util.{Objects, Optional}
 import java.util.concurrent.TimeUnit
 
 import scala.util.Try
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, ClassicActorSystemProvider}
 import akka.http.scaladsl.model.Uri
 import software.amazon.awssdk.auth.credentials._
 import software.amazon.awssdk.regions.providers._
@@ -541,14 +541,24 @@ object S3Settings {
   )
 
   /**
+   * Scala API: Creates [[S3Settings]] from the [[com.typesafe.config.Config Config]] attached to an actor system.
+   */
+  def apply()(implicit system: ClassicActorSystemProvider): S3Settings = apply(system.classicSystem)
+
+  /**
    * Scala API: Creates [[S3Settings]] from the [[com.typesafe.config.Config Config]] attached to an [[akka.actor.ActorSystem]].
    */
-  def apply()(implicit system: ActorSystem): S3Settings = apply(system.settings.config.getConfig(ConfigPath))
+  def apply(system: ActorSystem): S3Settings = apply(system.settings.config.getConfig(ConfigPath))
+
+  /**
+   * Java API: Creates [[S3Settings]] from the [[com.typesafe.config.Config Config]] attached to an actor system.
+   */
+  def create(system: ClassicActorSystemProvider): S3Settings = apply(system.classicSystem)
 
   /**
    * Java API: Creates [[S3Settings]] from the [[com.typesafe.config.Config Config]] attached to an [[akka.actor.ActorSystem]].
    */
-  def create(system: ActorSystem): S3Settings = apply()(system)
+  def create(system: ActorSystem): S3Settings = apply(system)
 }
 
 sealed trait BufferType {

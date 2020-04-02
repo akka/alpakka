@@ -5,6 +5,7 @@
 package akka.stream.alpakka.couchbase.javadsl;
 
 import akka.actor.ActorSystem;
+import akka.actor.ClassicActorSystemProvider;
 import akka.stream.alpakka.couchbase.CouchbaseSessionSettings;
 import com.typesafe.config.Config;
 
@@ -38,6 +39,16 @@ public final class DiscoverySupport {
       getNodes(ActorSystem system) {
     return SUPPORT.getNodes(
         system.settings().config().getConfig(CouchbaseSessionSettings.configPath()), system);
+  }
+
+  /**
+   * Expects a `service` section in the given Config and reads the given service name's address to
+   * be used as Couchbase `nodes`.
+   */
+  public static final java.util.function.Function<
+          CouchbaseSessionSettings, CompletionStage<CouchbaseSessionSettings>>
+      getNodes(ClassicActorSystemProvider system) {
+    return getNodes(system.classicSystem());
   }
 
   private DiscoverySupport() {}

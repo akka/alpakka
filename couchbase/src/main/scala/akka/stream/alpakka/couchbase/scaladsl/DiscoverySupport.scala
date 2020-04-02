@@ -6,7 +6,7 @@ package akka.stream.alpakka.couchbase.scaladsl
 
 import java.util.concurrent.CompletionStage
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, ClassicActorSystemProvider}
 import akka.annotation.InternalApi
 import akka.discovery.Discovery
 import akka.stream.alpakka.couchbase.CouchbaseSessionSettings
@@ -30,8 +30,8 @@ sealed class DiscoverySupport private {
   private def readNodes(
       serviceName: String,
       lookupTimeout: FiniteDuration
-  )(implicit system: ActorSystem): Future[immutable.Seq[String]] = {
-    import system.dispatcher
+  )(implicit system: ClassicActorSystemProvider): Future[immutable.Seq[String]] = {
+    implicit val ec = system.classicSystem.dispatcher
     val discovery = Discovery(system).discovery
     discovery.lookup(serviceName, lookupTimeout).map { resolved =>
       resolved.addresses.map(_.host)
@@ -41,7 +41,7 @@ sealed class DiscoverySupport private {
   /**
    * Expect a `service` section in Config and use Akka Discovery to read the addresses for `name` within `lookup-timeout`.
    */
-  private def readNodes(config: Config)(implicit system: ActorSystem): Future[immutable.Seq[String]] =
+  private def readNodes(config: Config)(implicit system: ClassicActorSystemProvider): Future[immutable.Seq[String]] =
     if (config.hasPath("service")) {
       val serviceName = config.getString("service.name")
       val lookupTimeout = config.getDuration("service.lookup-timeout").asScala
@@ -54,8 +54,8 @@ sealed class DiscoverySupport private {
    */
   def nodes(
       config: Config
-  )(implicit system: ActorSystem): CouchbaseSessionSettings => Future[CouchbaseSessionSettings] = {
-    import system.dispatcher
+  )(implicit system: ClassicActorSystemProvider): CouchbaseSessionSettings => Future[CouchbaseSessionSettings] = {
+    implicit val ec = system.classicSystem.dispatcher
     settings =>
       readNodes(config)
         .map { nodes =>
@@ -63,13 +63,17 @@ sealed class DiscoverySupport private {
         }
   }
 
+  private[couchbase] def nodes(config: Config,
+                               system: ActorSystem): CouchbaseSessionSettings => Future[CouchbaseSessionSettings] =
+    nodes(config)(system)
+
   /**
    * Internal API: Java wrapper.
    */
   @InternalApi
   private[couchbase] def getNodes(
       config: Config,
-      system: ActorSystem
+      system: ClassicActorSystemProvider
   ): java.util.function.Function[CouchbaseSessionSettings, CompletionStage[CouchbaseSessionSettings]] =
     nodes(config)(system).andThen(_.toJava).asJava
 
@@ -77,7 +81,16 @@ sealed class DiscoverySupport private {
    * Expects a `service` section in `alpakka.couchbase.session` and reads the given service name's address
    * to be used as Couchbase `nodes`.
    */
-  def nodes()(implicit system: ActorSystem): CouchbaseSessionSettings => Future[CouchbaseSessionSettings] =
+  def nodes()(
+      implicit system: ClassicActorSystemProvider
+  ): CouchbaseSessionSettings => Future[CouchbaseSessionSettings] =
+    nodes(system.classicSystem)
+
+  /**
+   * Expects a `service` section in `alpakka.couchbase.session` and reads the given service name's address
+   * to be used as Couchbase `nodes`.
+   */
+  def nodes(system: ActorSystem): CouchbaseSessionSettings => Future[CouchbaseSessionSettings] =
     nodes(system.settings.config.getConfig(CouchbaseSessionSettings.configPath))(system)
 
 }

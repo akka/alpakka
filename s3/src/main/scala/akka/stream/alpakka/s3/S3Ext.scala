@@ -19,26 +19,14 @@ object S3Ext extends ExtensionId[S3Ext] with ExtensionIdProvider {
   override def createExtension(system: ExtendedActorSystem) = new S3Ext(system)
 
   /**
-   * Get the S3 extension with the classic actors API.
-   */
-  override def apply(system: akka.actor.ActorSystem): S3Ext = super.apply(system)
-
-  // This is not source compatible with Akka 2.6 as it lacks `overrride`
-  /**
-   * Get the S3 extension with the new actors API.
-   */
-  def apply(system: ClassicActorSystemProvider): S3Ext = super.apply(system.classicSystem)
-
-  /**
    * Java API.
    * Get the S3 extension with the classic actors API.
    */
   override def get(system: akka.actor.ActorSystem): S3Ext = super.apply(system)
 
-  // This is not source compatible with Akka 2.6 as it lacks `overrride`
   /**
    * Java API.
    * Get the S3 extension with the new actors API.
    */
-  def get(system: ClassicActorSystemProvider): S3Ext = super.apply(system.classicSystem)
+  override def get(system: ClassicActorSystemProvider): S3Ext = super.apply(system)
 }

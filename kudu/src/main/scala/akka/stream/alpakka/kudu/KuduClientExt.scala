@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.kudu
 
-import akka.actor.{ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.actor.{ClassicActorSystemProvider, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import org.apache.kudu.client.KuduClient
 
 /**
@@ -22,4 +22,16 @@ final class KuduClientExt private (sys: ExtendedActorSystem) extends Extension {
 object KuduClientExt extends ExtensionId[KuduClientExt] with ExtensionIdProvider {
   override def lookup = KuduClientExt
   override def createExtension(system: ExtendedActorSystem) = new KuduClientExt(system)
+
+  /**
+   * Get the Kudu Client extension with the classic actors API.
+   * Java API.
+   */
+  override def get(system: akka.actor.ActorSystem): KuduClientExt = super.get(system)
+
+  /**
+   * Get the Kudu Client extension with the new actors API.
+   * Java API.
+   */
+  override def get(system: ClassicActorSystemProvider): KuduClientExt = super.get(system)
 }

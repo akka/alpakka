@@ -20,16 +20,6 @@ object GCStorageExt extends ExtensionId[GCStorageExt] with ExtensionIdProvider {
   override def createExtension(system: ExtendedActorSystem) = new GCStorageExt(system)
 
   /**
-   * Get the GCS extension with the classic actors API.
-   */
-  override def apply(system: akka.actor.ActorSystem): GCStorageExt = super.apply(system)
-
-  /**
-   * Get the GCS extension with the new actors API.
-   */
-  def apply(system: ClassicActorSystemProvider): GCStorageExt = super.apply(system.classicSystem)
-
-  /**
    * Java API.
    * Get the GCS extension with the classic actors API.
    */
@@ -39,5 +29,5 @@ object GCStorageExt extends ExtensionId[GCStorageExt] with ExtensionIdProvider {
    * Java API.
    * Get the GCS extension with the new actors API.
    */
-  def get(system: ClassicActorSystemProvider): GCStorageExt = super.apply(system.classicSystem)
+  override def get(system: ClassicActorSystemProvider): GCStorageExt = super.apply(system)
 }
