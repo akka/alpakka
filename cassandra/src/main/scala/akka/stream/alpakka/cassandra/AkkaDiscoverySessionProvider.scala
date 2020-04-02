@@ -5,7 +5,7 @@
 package akka.stream.alpakka.cassandra
 
 import akka.ConfigurationException
-import akka.actor.ClassicActorSystemProvider
+import akka.actor.ActorSystem
 import akka.discovery.Discovery
 import akka.util.JavaDurationConverters._
 import com.datastax.oss.driver.api.core.CqlSession
@@ -56,7 +56,7 @@ import scala.concurrent.{ExecutionContext, Future}
  */
 private[cassandra] object AkkaDiscoverySessionProvider {
 
-  def connect(system: ClassicActorSystemProvider, config: Config)(implicit ec: ExecutionContext): Future[CqlSession] = {
+  def connect(system: ActorSystem, config: Config)(implicit ec: ExecutionContext): Future[CqlSession] = {
     readNodes(config)(system, ec).flatMap { contactPoints =>
       val driverConfigWithContactPoints = ConfigFactory.parseString(s"""
         basic.contact-points = [${contactPoints.mkString("\"", "\", \"", "\"")}]
@@ -69,7 +69,7 @@ private[cassandra] object AkkaDiscoverySessionProvider {
   /**
    * Expect a `service` section in Config and use Akka Discovery to read the addresses for `name` within `lookup-timeout`.
    */
-  private def readNodes(config: Config)(implicit system: ClassicActorSystemProvider,
+  private def readNodes(config: Config)(implicit system: ActorSystem,
                                         ec: ExecutionContext): Future[immutable.Seq[String]] = {
     val serviceConfig = config.getConfig("service-discovery")
     val serviceName = serviceConfig.getString("name")
@@ -83,7 +83,7 @@ private[cassandra] object AkkaDiscoverySessionProvider {
   private def readNodes(
       serviceName: String,
       lookupTimeout: FiniteDuration
-  )(implicit system: ClassicActorSystemProvider, ec: ExecutionContext): Future[immutable.Seq[String]] = {
+  )(implicit system: ActorSystem, ec: ExecutionContext): Future[immutable.Seq[String]] = {
     Discovery(system).discovery.lookup(serviceName, lookupTimeout).map { resolved =>
       resolved.addresses.map { target =>
         target.host + ":" + target.port.getOrElse {
