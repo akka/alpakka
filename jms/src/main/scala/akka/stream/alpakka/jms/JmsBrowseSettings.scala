@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.jms
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, ClassicActorSystemProvider}
 import com.typesafe.config.{Config, ConfigValueType}
 
 /**
@@ -123,6 +123,16 @@ object JmsBrowseSettings {
     apply(actorSystem.settings.config.getConfig(configPath), connectionFactory)
 
   /**
+   * Reads from the default config provided by the actor system at `alpakka.jms.browse`.
+   *
+   * @param actorSystem The actor system
+   * @param connectionFactory Factory to use for creating JMS connections.
+   */
+  def apply(actorSystem: ClassicActorSystemProvider,
+            connectionFactory: javax.jms.ConnectionFactory): JmsBrowseSettings =
+    apply(actorSystem.classicSystem, connectionFactory)
+
+  /**
    * Java API: Reads from the default config provided by the actor system at `alpakka.jms.browse`.
    *
    * @param actorSystem The actor system
@@ -130,5 +140,15 @@ object JmsBrowseSettings {
    */
   def create(actorSystem: ActorSystem, connectionFactory: javax.jms.ConnectionFactory): JmsBrowseSettings =
     apply(actorSystem, connectionFactory)
+
+  /**
+   * Java API: Reads from the default config provided by the actor system at `alpakka.jms.browse`.
+   *
+   * @param actorSystem The actor system
+   * @param connectionFactory Factory to use for creating JMS connections.
+   */
+  def create(actorSystem: ClassicActorSystemProvider,
+             connectionFactory: javax.jms.ConnectionFactory): JmsBrowseSettings =
+    apply(actorSystem.classicSystem, connectionFactory)
 
 }

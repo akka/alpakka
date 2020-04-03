@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.jms
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, ClassicActorSystemProvider}
 import akka.util.JavaDurationConverters._
 import com.typesafe.config.{Config, ConfigValueType}
 
@@ -185,6 +185,16 @@ object JmsConsumerSettings {
     apply(actorSystem.settings.config.getConfig(configPath), connectionFactory)
 
   /**
+   * Reads from the default config provided by the actor system at `alpakka.jms.consumer`.
+   *
+   * @param actorSystem The actor system
+   * @param connectionFactory Factory to use for creating JMS connections.
+   */
+  def apply(actorSystem: ClassicActorSystemProvider,
+            connectionFactory: javax.jms.ConnectionFactory): JmsConsumerSettings =
+    apply(actorSystem.classicSystem, connectionFactory)
+
+  /**
    * Java API: Reads from the given config.
    *
    * @param c Config instance read configuration from
@@ -201,4 +211,14 @@ object JmsConsumerSettings {
    */
   def create(actorSystem: ActorSystem, connectionFactory: javax.jms.ConnectionFactory): JmsConsumerSettings =
     apply(actorSystem, connectionFactory)
+
+  /**
+   * Java API: Reads from the default config provided by the actor system at `alpakka.jms.consumer`.
+   *
+   * @param actorSystem The actor system
+   * @param connectionFactory Factory to use for creating JMS connections.
+   */
+  def create(actorSystem: ClassicActorSystemProvider,
+             connectionFactory: javax.jms.ConnectionFactory): JmsConsumerSettings =
+    apply(actorSystem.classicSystem, connectionFactory)
 }
