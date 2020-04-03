@@ -1,5 +1,12 @@
 # Google Cloud Pub/Sub
 
+## 2.0.0-RC2
+
+- Google PubSub: subscribe as a flow [#2169](https://github.com/akka/alpakka/issues/2169) by [@btomala](https://github.com/btomala)
+
+[*closed in 2.0.0-RC2*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0-RC2+label%3Ap%3Agoogle-cloud-pub-sub)
+
+
 ## 2.0.0-RC1
 
 - Google Cloud Pub/Sub: require JSON responses [#2217](https://github.com/akka/alpakka/issues/2217) by [@ennru](https://github.com/ennru)

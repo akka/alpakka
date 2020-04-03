@@ -1,5 +1,13 @@
 # Unix Domain Socket
 
+## 2.0.0-RC2
+
+- Akka 2.5.31 and prefer `ClassicActorSystemProvider` [#2254](https://github.com/akka/alpakka/issues/2254) by [@ennru](https://github.com/ennru)
+- Unix Domain Socket: latest dependencies [#2234](https://github.com/akka/alpakka/issues/2234) by [@ennru](https://github.com/ennru)
+
+[*closed in 2.0.0-RC2*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0-RC2+label%3Ap%3Aunix-domain-socket)
+
+
 ## 2.0.0-RC1
 
 - Unix Domain Socket: add access with new actors API [#2212](https://github.com/akka/alpakka/issues/2212) by [@ennru](https://github.com/ennru)

@@ -1,5 +1,13 @@
 # Couchbase
 
+## 2.0.0-RC2
+
+- Akka 2.5.31 and prefer `ClassicActorSystemProvider` [#2254](https://github.com/akka/alpakka/issues/2254) by [@ennru](https://github.com/ennru)
+- Couchbase: use client 2.7.13 [#2239](https://github.com/akka/alpakka/issues/2239) by [@ennru](https://github.com/ennru)
+
+[*closed in 2.0.0-RC2*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0-RC2+label%3Ap%3Acouchbase)
+
+
 ## 2.0.0-RC1
 
 - Couchbase: add methods for new actors API [#2197](https://github.com/akka/alpakka/issues/2197) by [@ennru](https://github.com/ennru)
