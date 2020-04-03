@@ -1,5 +1,13 @@
 # Cassandra
 
+## 2.0.0-RC2
+
+- Akka 2.5.31 and prefer `ClassicActorSystemProvider` [#2254](https://github.com/akka/alpakka/issues/2254) by [@ennru](https://github.com/ennru)
+- Cassandra: apply Netty exclusion; exclude all Tinkerpop and Esri Geometry depenencies [#2227](https://github.com/akka/alpakka/issues/2227) by [@ennru](https://github.com/ennru)
+
+[*closed in 2.0.0-RC2*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0-RC2+label%3Ap%3Acassandra)
+
+
 ## 2.0.0-RC1
 
 **Alpakka Cassandra is completely rewritten and now based on the Cassandra Java driver version 4.6. It now becomes the base for [Akka Persistence Cassandra](https://doc.akka.io/docs/akka-persistence-cassandra/1.0/).**
