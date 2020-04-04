@@ -25,7 +25,6 @@ import scala.util.Try
 object GoogleBigQuerySource {
   import collection.JavaConverters._
   import scala.compat.java8.FutureConverters._
-  import scala.compat.java8.OptionConverters._
 
   /**
    * Read elements of `T` by executing HttpRequest upon BigQuery API.
