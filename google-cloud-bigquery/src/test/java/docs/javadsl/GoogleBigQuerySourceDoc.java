@@ -111,7 +111,7 @@ public class GoogleBigQuerySourceDoc {
   }
 
   static Try<DryRunResponse> dryRunResponseFromJson(JsObject object) {
-    scala.Function0 responseFunction =
+    scala.Function0<DryRunResponse> responseFunction =
         () ->
             new DryRunResponse(
                 object.fields().apply("totalBytesProcessed").toString(),
