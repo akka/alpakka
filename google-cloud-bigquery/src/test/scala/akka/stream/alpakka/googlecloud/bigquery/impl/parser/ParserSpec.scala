@@ -8,7 +8,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse}
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
 import akka.stream.scaladsl.{GraphDSL, RunnableGraph, Sink, Source}
-import akka.stream.testkit.GraphStageMessages.Failure
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{ActorMaterializer, ClosedShape}
 import akka.testkit.TestKit
