@@ -114,7 +114,7 @@ import scala.concurrent.Promise
 
   override def onFailure(ex: Throwable): Unit = {
     streamCompletion.tryFailure(ex)
-    onFailure(ex)
+    super.onFailure(ex)
   }
 
   def dequeueAwaitingMessages(tag: DeliveryTag, multiple: Boolean): Iterable[AwaitingMessage[T]]
