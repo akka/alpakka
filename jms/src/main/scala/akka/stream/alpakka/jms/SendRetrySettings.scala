@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.jms
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, ClassicActorSystemProvider}
 import com.typesafe.config.Config
 
 import scala.concurrent.duration._
@@ -100,10 +100,25 @@ object SendRetrySettings {
     apply(actorSystem.settings.config.getConfig(configPath))
 
   /**
+   * Reads from the default config provided by the actor system at `alpakka.jms.send-retry`.
+   *
+   * @param actorSystem The actor system
+   */
+  def apply(actorSystem: ClassicActorSystemProvider): SendRetrySettings =
+    apply(actorSystem.classicSystem)
+
+  /**
    * Java API: Reads from the default config provided by the actor system at `alpakka.jms.send-retry`.
    *
    * @param actorSystem The actor system
    */
   def create(actorSystem: ActorSystem): SendRetrySettings = apply(actorSystem)
+
+  /**
+   * Java API: Reads from the default config provided by the actor system at `alpakka.jms.send-retry`.
+   *
+   * @param actorSystem The actor system
+   */
+  def create(actorSystem: ClassicActorSystemProvider): SendRetrySettings = apply(actorSystem.classicSystem)
 
 }
