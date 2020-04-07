@@ -281,11 +281,8 @@ lazy val pravega =
                  "pravega",
                  Dependencies.Pravega,
                  fork in Test := true,
-                 crossScalaVersions --= Seq(Dependencies.Scala211) // 2.11 SAM issue for java API.
+                 crossScalaVersions -= Dependencies.Scala211 // 2.11 SAM issue for java API.
   )
-  //  TODO: enable MiMa after first release of connector
-  //  https://github.com/akka/alpakka/issues/2181
-    .disablePlugins(MimaPlugin)
 
 lazy val springWeb = alpakkaProject("spring-web", "spring.web", Dependencies.SpringWeb)
 
