@@ -5,6 +5,8 @@
 package akka.stream.alpakka.file.impl.archive
 
 import java.lang.Long.toOctalString
+import java.lang.Long.parseUnsignedLong
+import java.time.Instant
 
 import akka.annotation.InternalApi
 import akka.stream.alpakka.file.TarArchiveMetadata
@@ -13,7 +15,112 @@ import akka.util.ByteString
 /**
  * INTERNAL API
  */
+@InternalApi private[file] object TarArchiveEntry {
+
+  val fileNameLength = 100
+  val fileModeLength = 8
+  val ownerIdLength = 8
+  val groupIdLength = 8
+  val fileSizeLength = 12
+  val lastModificationLength = 12
+  val headerChecksumLength = 8
+  val linkIndicatorLength = 1
+  val linkFileNameLength = 100
+
+  val ustarIndicatorLength = 6
+  val ustarVersionLength = 2
+  val ownerNameLength = 32
+  val groupNameLength = 32
+  val deviceMajorNumberLength = 8
+  val deviceMinorNumberLength = 8
+  val fileNamePrefixLength = 155
+  val headerLength = 512
+
+  private val fixedData1 = {
+    // [108, 116)
+    padded(ByteString("0755"), fileModeLength) ++
+    empty(
+      // [100, 108)
+      ownerIdLength +
+      // [116, 124)
+      groupIdLength
+    )
+  }
+
+  private val fixedData2 = {
+    // [148, 156)
+    ByteString("        ") ++ // headerChecksumLength
+    empty(
+      // [156, 157)
+      linkIndicatorLength +
+      // [157, 257)
+      linkFileNameLength
+    ) ++
+    // [257, 263)
+    ByteString("ustar") ++
+    empty(
+      1 +
+      // [263, 265)
+      ustarVersionLength +
+      // [265, 297)
+      ownerNameLength +
+      // [297, 329)
+      groupNameLength +
+      // [329, 337)
+      deviceMajorNumberLength +
+      // [337, 345)
+      deviceMinorNumberLength
+    )
+  }
+
+  private def padded(bytes: ByteString, targetSize: Int): ByteString = {
+    require(bytes.size <= targetSize,
+            s"the padded data is ${bytes.size} bytes, which does not fit into  $targetSize bytes")
+    if (bytes.size < targetSize) bytes ++ empty(targetSize - bytes.size)
+    else bytes
+  }
+
+  private def empty(size: Int) = {
+    ByteString.fromArrayUnsafe(new Array[Byte](size))
+  }
+
+  def parse(bs: ByteString): TarArchiveMetadata = {
+    require(bs.length >= headerLength, s"the tar archive header is expected to be at least 512 bytes")
+    val filename = getString(bs, 0, fileNameLength)
+    val fileSizeString =
+      getString(bs, fileNameLength + fileModeLength + ownerIdLength + groupIdLength, fileSizeLength)
+    val size = parseUnsignedLong(fileSizeString, 8)
+    val lastModificationString =
+      getString(bs,
+                fileNameLength + fileModeLength + ownerIdLength + groupIdLength + fileSizeLength,
+                lastModificationLength)
+    val lastModification = Instant.ofEpochSecond(parseUnsignedLong(lastModificationString, 8))
+    val fileNamePrefix = getString(
+      bs,
+      fileNameLength + fileModeLength + ownerIdLength + groupIdLength + fileSizeLength +
+      lastModificationLength + headerChecksumLength + linkIndicatorLength + linkFileNameLength + ustarIndicatorLength + ustarVersionLength + ownerNameLength + groupNameLength + deviceMajorNumberLength + deviceMinorNumberLength,
+      fileNamePrefixLength
+    )
+    TarArchiveMetadata(fileNamePrefix, filename, size, lastModification)
+  }
+
+  private def getString(bs: ByteString, from: Int, maxLength: Int) = {
+    val dropped = bs.drop(from)
+    val f = Math.min(dropped.indexOf(0.toByte), maxLength)
+    dropped.take(f).utf8String
+  }
+
+  def trailerLength(metadata: TarArchiveMetadata): Int = {
+    val modulo = metadata.size % 512L
+    if (modulo > 0L) (512 - modulo).toInt else 0
+  }
+}
+
+/**
+ * INTERNAL API
+ */
 @InternalApi private[file] final class TarArchiveEntry(metadata: TarArchiveMetadata) {
+  import TarArchiveEntry._
 
   def headerBytes: ByteString = {
     val withoutChecksum = headerBytesWithoutChecksum
@@ -25,55 +132,23 @@ import akka.util.ByteString
     withChecksum.compact
   }
 
-  def trailingBytes: ByteString = {
-    val paddingSize = if (metadata.size % 512 > 0) (512 - metadata.size % 512).toInt else 0
-    padded(ByteString.empty, paddingSize)
-  }
+  def trailingBytes: ByteString = empty(trailerLength(metadata))
 
   private def headerBytesWithoutChecksum: ByteString = {
     // [0, 100)
-    val fileNameBytes = padded(ByteString(metadata.filePathName), 100)
-    // [100, 108)
-    val fileModeBytes = padded(ByteString("0755"), 8)
-    // [108, 116)
-    val ownerIdBytes = padded(ByteString.empty, 8)
-    // [116, 124)
-    val groupIdBytes = padded(ByteString.empty, 8)
+    val fileNameBytes = padded(ByteString(metadata.filePathName), fileNameLength)
     // [124, 136)
-    val fileSizeBytes = padded(ByteString("0" + toOctalString(metadata.size)), 12)
+    val fileSizeBytes = padded(ByteString("0" + toOctalString(metadata.size)), fileSizeLength)
     // [136, 148)
-    val lastModificationBytes = padded(ByteString(toOctalString(metadata.lastModification.getEpochSecond)), 12)
-    // [148, 156)
-    val checksumPlaceholderBytes = ByteString("        ")
-    // [156, 157)
-    val linkIndicatorBytes = padded(ByteString.empty, 1)
-    // [157, 257)
-    val linkFileNameBytes = padded(ByteString.empty, 100)
-    // [257, 263)
-    val ustarIndicatorBytes = ByteString("ustar") ++ ByteString(new Array[Byte](1))
-    // [263, 265)
-    val ustarVersionBytes = ByteString(new Array[Byte](2))
-    // [265, 297)
-    val ownerNameBytes = padded(ByteString.empty, 32)
-    // [297, 329)
-    val groupNameBytes = padded(ByteString.empty, 32)
-    // [329, 337)
-    val deviceMajorNumberBytes = padded(ByteString.empty, 8)
-    // [337, 345)
-    val deviceMinorNumberBytes = padded(ByteString.empty, 8)
+    val lastModificationBytes =
+      padded(ByteString(toOctalString(metadata.lastModification.getEpochSecond)), lastModificationLength)
     // [345, 500)
-    val fileNamePrefixBytes = padded(metadata.filePathPrefix.map(ByteString.apply).getOrElse(ByteString.empty), 155)
+    val fileNamePrefixBytes = padded(ByteString(metadata.filePathPrefix), fileNamePrefixLength)
 
     padded(
-      fileNameBytes ++ fileModeBytes ++ ownerIdBytes ++ groupIdBytes ++ fileSizeBytes ++ lastModificationBytes ++ checksumPlaceholderBytes ++ linkIndicatorBytes ++ linkFileNameBytes ++ ustarIndicatorBytes ++ ustarVersionBytes ++ ownerNameBytes ++ groupNameBytes ++ deviceMajorNumberBytes ++ deviceMinorNumberBytes ++ fileNamePrefixBytes,
-      512
+      fileNameBytes ++ fixedData1 ++ fileSizeBytes ++ lastModificationBytes ++ fixedData2 ++ fileNamePrefixBytes,
+      headerLength
     )
-  }
-
-  private def padded(bytes: ByteString, targetSize: Int): ByteString = {
-    require(bytes.size <= targetSize)
-    if (bytes.size < targetSize) bytes ++ ByteString(new Array[Byte](targetSize - bytes.size))
-    else bytes
   }
 
 }

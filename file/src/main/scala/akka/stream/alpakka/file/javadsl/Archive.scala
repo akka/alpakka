@@ -9,6 +9,7 @@ import akka.stream.alpakka.file.{scaladsl, ArchiveMetadata, TarArchiveMetadata}
 import akka.stream.javadsl.Flow
 import akka.util.ByteString
 import akka.japi.Pair
+import akka.stream.alpakka.file.impl.archive.TarReaderStage
 import akka.stream.javadsl.Source
 
 /**
@@ -33,6 +34,18 @@ object Archive {
       .create[Pair[TarArchiveMetadata, Source[ByteString, NotUsed]]]()
       .map(func(pair => (pair.first, pair.second.asScala)))
       .via(scaladsl.Archive.tar().asJava)
+
+  /**
+   * Parse incoming `ByteString`s into tar file entries and sources for the file contents.
+   * The file contents sources MUST be consumed to progress reading the file.
+   */
+  def tarReader(): Flow[ByteString, Pair[TarArchiveMetadata, Source[ByteString, NotUsed]], NotUsed] =
+    Flow
+      .fromGraph(new TarReaderStage())
+      .map {
+        case (metadata, source) =>
+          Pair(metadata, source.asJava)
+      }
 
   private def func[T, R](f: T => R) = new akka.japi.function.Function[T, R] {
     override def apply(param: T): R = f(param)
