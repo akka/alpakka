@@ -42,10 +42,10 @@ object Archive {
   def tarReader(): Flow[ByteString, Pair[TarArchiveMetadata, Source[ByteString, NotUsed]], NotUsed] =
     Flow
       .fromGraph(new TarReaderStage())
-      .map {
+      .map(func {
         case (metadata, source) =>
           Pair(metadata, source.asJava)
-      }
+      })
 
   private def func[T, R](f: T => R) = new akka.japi.function.Function[T, R] {
     override def apply(param: T): R = f(param)

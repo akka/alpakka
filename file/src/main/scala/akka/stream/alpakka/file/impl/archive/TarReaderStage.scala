@@ -12,6 +12,8 @@ import akka.stream.stage._
 import akka.stream._
 import akka.util.ByteString
 
+import scala.concurrent.duration.FiniteDuration
+
 /**
  * Internal API.
  */
@@ -26,6 +28,11 @@ private[file] class TarReaderStage
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with StageLogging {
+      import TarReaderStage._
+
+      private final class FileOutSubSource
+          extends SubSourceOutlet[ByteString]("fileOut")
+          with TarReaderStage.SourceWithTimeout
 
       val ignoreFlowOutPull: OutHandler = new OutHandler {
         override def onPull(): Unit = ()
@@ -87,8 +94,6 @@ private[file] class TarReaderStage
         } else new ReadPastTrailer(metadata, buffer, subSource)
       }
 
-      private final case class SubscriptionTimeout(subSource: SubSourceOutlet[_])
-
       override protected def onTimer(timerKey: Any): Unit = {
         timerKey match {
           case SubscriptionTimeout(subSource) =>
@@ -145,8 +150,8 @@ private[file] class TarReaderStage
         private var emitted: Long = 0
         private var flowInPulled = false
 
-        private val subSource: SubSourceOutlet[ByteString] = {
-          val sub = new SubSourceOutlet[ByteString]("fileOut")
+        private val subSource: FileOutSubSource = {
+          val sub = new FileOutSubSource()
           val timeoutSignal = SubscriptionTimeout(sub)
           sub.setHandler(new OutHandler {
             override def onPull(): Unit = {
@@ -233,4 +238,11 @@ private[file] class TarReaderStage
       }
 
     }
+}
+
+object TarReaderStage {
+  private trait SourceWithTimeout {
+    def timeout(d: FiniteDuration): Unit
+  }
+  private final case class SubscriptionTimeout(subSource: TarReaderStage.SourceWithTimeout)
 }
