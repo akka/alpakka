@@ -143,7 +143,8 @@ import akka.util.ByteString
     val lastModificationBytes =
       padded(ByteString(toOctalString(metadata.lastModification.getEpochSecond)), lastModificationLength)
     // [345, 500)
-    val fileNamePrefixBytes = padded(ByteString(metadata.filePathPrefix), fileNamePrefixLength)
+    val fileNamePrefixBytes =
+      padded(metadata.filePathPrefix.map(ByteString.apply).getOrElse(ByteString.empty), fileNamePrefixLength)
 
     padded(
       fileNameBytes ++ fixedData1 ++ fileSizeBytes ++ lastModificationBytes ++ fixedData2 ++ fileNamePrefixBytes,

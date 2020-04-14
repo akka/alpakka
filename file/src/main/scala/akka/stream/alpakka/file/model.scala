@@ -18,7 +18,7 @@ object ArchiveMetadata {
 }
 
 final class TarArchiveMetadata private (
-    val filePathPrefix: String,
+    val filePathPrefix: Option[String],
     val filePathName: String,
     val size: Long,
     val lastModification: Instant
@@ -51,16 +51,27 @@ object TarArchiveMetadata {
   def apply(filePath: String, size: Long): TarArchiveMetadata = apply(filePath, size, Instant.now)
   def apply(filePath: String, size: Long, lastModification: Instant): TarArchiveMetadata = {
     val filePathSegments = filePath.lastIndexOf("/")
-    val filePathPrefix = if (filePathSegments > -1) filePath.substring(0, filePathSegments) else ""
+    val filePathPrefix = if (filePathSegments > -1) {
+      Some(filePath.substring(0, filePathSegments))
+    } else None
     val filePathName = filePath.substring(filePathSegments + 1, filePath.length)
     apply(filePathPrefix, filePathName, size, lastModification)
   }
 
   def apply(filePathPrefix: String, filePathName: String, size: Long, lastModification: Instant): TarArchiveMetadata = {
-    require(
-      filePathPrefix.length <= 154,
-      "File path prefix must be between 1 and 154 characters long"
-    )
+    apply(Some(filePathPrefix), filePathName, size, lastModification)
+  }
+
+  private def apply(filePathPrefix: Option[String],
+                    filePathName: String,
+                    size: Long,
+                    lastModification: Instant): TarArchiveMetadata = {
+    filePathPrefix.foreach { value =>
+      require(
+        value.length <= 154,
+        "File path prefix must be between 1 and 154 characters long"
+      )
+    }
     require(filePathName.length > 0 && filePathName.length <= 99,
             "File path name must be between 1 and 99 characters long")
 

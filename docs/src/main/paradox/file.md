@@ -193,7 +193,7 @@ is not limited to memory size.
 This example usage shows packaging files from disk.
 
 Scala
-: @@snip [snip](/file/src/test/scala/docs/scaladsl/ArchiveSpec.scala) { #sample-tar }
+: @@snip [snip](/file/src/test/scala/docs/scaladsl/TarArchiveSpec.scala) { #sample-tar }
 
 Java
 : @@snip [snip](/file/src/test/java/docs/javadsl/ArchiveTest.java) { #sample-tar }
@@ -201,7 +201,7 @@ Java
 To produce a gzipped TAR file see the following example.
 
 Scala
-: @@snip [snip](/file/src/test/scala/docs/scaladsl/ArchiveSpec.scala) { #sample-tar-gz }
+: @@snip [snip](/file/src/test/scala/docs/scaladsl/TarArchiveSpec.scala) { #sample-tar-gz }
 
 Java
 : @@snip [snip](/file/src/test/java/docs/javadsl/ArchiveTest.java) { #sample-tar-gz }
