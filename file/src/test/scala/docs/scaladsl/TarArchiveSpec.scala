@@ -8,15 +8,15 @@ import java.io._
 import java.nio.file.{Files, Path, Paths}
 import java.util.Comparator
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.alpakka.file.scaladsl.Archive
-import akka.stream.alpakka.file.{ArchiveMetadata, TarArchiveMetadata, TarReaderException}
+import akka.stream.alpakka.file.{TarArchiveMetadata, TarReaderException}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
-import akka.stream.scaladsl.{FileIO, Keep, Sink, Source}
+import akka.stream.scaladsl.{FileIO, Sink, Source}
 import akka.stream.{ActorMaterializer, IOResult, Materializer}
 import akka.testkit.TestKit
 import akka.util.ByteString
-import akka.{Done, NotUsed}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
@@ -24,7 +24,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 
 class TarArchiveSpec

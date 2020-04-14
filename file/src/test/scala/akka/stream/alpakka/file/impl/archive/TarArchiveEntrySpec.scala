@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.stream.alpakka.file.impl.archive
 
 import java.time.{Instant, LocalDateTime, ZoneId, ZonedDateTime}

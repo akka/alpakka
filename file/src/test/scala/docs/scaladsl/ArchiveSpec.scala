@@ -5,8 +5,7 @@
 package docs.scaladsl
 
 import java.io._
-import java.nio.file.{Files, Path, Paths}
-import java.util.Comparator
+import java.nio.file.{Path, Paths}
 
 import akka.actor.ActorSystem
 import akka.stream.alpakka.file.ArchiveMetadata
@@ -138,28 +137,6 @@ class ArchiveSpec
         (ArchiveMetadata(title), Source(content.grouped(10).toList))
     }
     Source(sourceFiles)
-  }
-
-  // returns None if tar executable is not available on PATH
-  private def untar(tarPath: Path, args: String): Option[Map[String, ByteString]] = {
-    if (ExecutableUtils.isOnPath("tar")) {
-      val tmpDir = Files.createTempDirectory("ArchiveSpec")
-      try {
-        ExecutableUtils.run("tar", Seq(args, tarPath.toString, "-C", tmpDir.toString), tmpDir).futureValue
-        Some(
-          Files
-            .walk(tmpDir)
-            .sorted(Comparator.reverseOrder())
-            .iterator()
-            .asScala
-            .filter(path => Files.isRegularFile(path))
-            .map(path => tmpDir.relativize(path).toString -> ByteString(Files.readAllBytes(path)))
-            .toMap
-        )
-      } finally {
-        Files.walk(tmpDir).sorted(Comparator.reverseOrder()).iterator().asScala.foreach(p => Files.delete(p))
-      }
-    } else None
   }
 
   override def afterAll(): Unit = {

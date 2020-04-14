@@ -5,7 +5,7 @@
 package akka.stream.alpakka.file
 
 import java.time.Instant
-import java.time.temporal.{ChronoField, TemporalAdjusters, TemporalField}
+import java.time.temporal.ChronoField
 import java.util.Objects
 
 final class ArchiveMetadata private (
