@@ -47,7 +47,13 @@ private[storage] class Chunker(val chunkSize: Int) extends GraphStage[FlowShape[
     )
 
     private def emitChunk(): Unit =
-      if (isClosed(in)) {
+      if (bufferBuilder.length > chunkSize) {
+        val (chunk, nextBuffer) = bufferBuilder.result.splitAt(chunkSize)
+        bufferBuilder.clear()
+        bufferBuilder.append(nextBuffer)
+        totalSize += chunk.size
+        emit(out, Chunk(chunk))
+      } else if (isClosed(in)) {
         if (bufferBuilder.nonEmpty) {
           totalSize += bufferBuilder.length
           emit(out, Chunk(bufferBuilder.result(), Some(totalSize)))
@@ -55,17 +61,7 @@ private[storage] class Chunker(val chunkSize: Int) extends GraphStage[FlowShape[
         }
         completeStage()
       } else {
-        if (bufferBuilder.isEmpty) {
-          pull(in)
-        } else if (bufferBuilder.length > chunkSize) {
-          val (chunk, nextBuffer) = bufferBuilder.result.splitAt(chunkSize)
-          bufferBuilder.clear()
-          bufferBuilder.append(nextBuffer)
-          totalSize += chunk.size
-          emit(out, Chunk(chunk))
-        } else {
-          pull(in)
-        }
+        pull(in)
       }
 
   }
