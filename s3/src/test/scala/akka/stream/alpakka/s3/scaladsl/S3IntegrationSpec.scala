@@ -292,48 +292,15 @@ trait S3IntegrationSpec
     "1 + 2 = 3"
   )
 
-  it should "upload, copy, download the copy, and delete" in {
-    val sourceKey = "original/file.txt"
-    val targetKey = "copy/file.txt"
-    val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
+  it should "upload, copy, download the copy, and delete" in uploadCopyDownload(
+    "original/file.txt",
+    "copy/file.txt"
+  )
 
-    val results = for {
-      upload <- source.runWith(S3.multipartUpload(defaultBucket, sourceKey).withAttributes(attributes))
-      copy <- S3
-        .multipartCopy(defaultBucket, sourceKey, defaultBucket, targetKey)
-        .withAttributes(attributes)
-        .run()
-      download <- S3
-        .download(defaultBucket, targetKey)
-        .withAttributes(attributes)
-        .runWith(Sink.head)
-        .flatMap {
-          case Some((downloadSource, _)) =>
-            downloadSource
-              .map(_.decodeString("utf8"))
-              .runWith(Sink.head)
-          case None => Future.successful(None)
-        }
-    } yield (upload, copy, download)
-
-    whenReady(results) {
-      case (upload, copy, downloaded) =>
-        upload.bucket shouldEqual defaultBucket
-        upload.key shouldEqual sourceKey
-        copy.bucket shouldEqual defaultBucket
-        copy.key shouldEqual targetKey
-        downloaded shouldBe objectValue
-
-        S3.deleteObject(defaultBucket, sourceKey)
-          .withAttributes(attributes)
-          .runWith(Sink.head)
-          .futureValue shouldEqual akka.Done
-        S3.deleteObject(defaultBucket, targetKey)
-          .withAttributes(attributes)
-          .runWith(Sink.head)
-          .futureValue shouldEqual akka.Done
-    }
-  }
+  it should "upload, copy, download the copy, and delete with special characters in key" in uploadCopyDownload(
+    "original/føldęrü/1234()[]><!? .TXT",
+    "copy/1 + 2 = 3"
+  )
 
   it should "upload 2 files with common prefix, 1 with different prefix and delete by prefix" in {
     val sourceKey1 = "original/file1.txt"
@@ -507,6 +474,47 @@ trait S3IntegrationSpec
       .withAttributes(S3Attributes.settings(otherRegionSettingsPathStyleAccess))
       .runWith(Sink.head)
       .futureValue shouldEqual akka.Done
+  }
+
+  private def uploadCopyDownload(sourceKey: String, targetKey: String): Assertion = {
+    val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
+
+    val results = for {
+      upload <- source.runWith(S3.multipartUpload(defaultBucket, sourceKey).withAttributes(attributes))
+      copy <- S3
+        .multipartCopy(defaultBucket, sourceKey, defaultBucket, targetKey)
+        .withAttributes(attributes)
+        .run()
+      download <- S3
+        .download(defaultBucket, targetKey)
+        .withAttributes(attributes)
+        .runWith(Sink.head)
+        .flatMap {
+          case Some((downloadSource, _)) =>
+            downloadSource
+              .map(_.decodeString("utf8"))
+              .runWith(Sink.head)
+          case None => Future.successful(None)
+        }
+    } yield (upload, copy, download)
+
+    whenReady(results) {
+      case (upload, copy, downloaded) =>
+        upload.bucket shouldEqual defaultBucket
+        upload.key shouldEqual sourceKey
+        copy.bucket shouldEqual defaultBucket
+        copy.key shouldEqual targetKey
+        downloaded shouldBe objectValue
+
+        S3.deleteObject(defaultBucket, sourceKey)
+          .withAttributes(attributes)
+          .runWith(Sink.head)
+          .futureValue shouldEqual akka.Done
+        S3.deleteObject(defaultBucket, targetKey)
+          .withAttributes(attributes)
+          .runWith(Sink.head)
+          .futureValue shouldEqual akka.Done
+    }
   }
 }
 
