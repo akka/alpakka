@@ -4,12 +4,14 @@
 
 package docs.scaladsl
 
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 import akka.stream.alpakka.avroparquet.scaladsl.{AvroParquetSink, AvroParquetSource}
 import akka.stream.scaladsl.{Keep, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSink
+import akka.testkit.TestKit
 import akka.{Done, NotUsed}
 import org.apache.parquet.avro.AvroParquetWriter
 import org.apache.parquet.hadoop.ParquetWriter
@@ -18,6 +20,7 @@ import org.specs2.specification.{AfterAll, BeforeAll}
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
+import scala.reflect.io.Directory
 
 //#init-reader
 import org.apache.avro.generic.{GenericRecord, GenericRecordBuilder}
@@ -55,7 +58,11 @@ class AvroParquetSourceSpec extends Specification with AbstractAvroParquet with 
     }
 
   }
-
+  def afterAll(): Unit = {
+    TestKit.shutdownActorSystem(system)
+    val directory = new Directory(new File(folder))
+    directory.deleteRecursively()
+  }
   override def beforeAll(): Unit = {
     case class Document(id: String, body: String)
 

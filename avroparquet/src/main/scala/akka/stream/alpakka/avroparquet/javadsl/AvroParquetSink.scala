@@ -12,9 +12,9 @@ import org.apache.parquet.hadoop.ParquetWriter
 
 object AvroParquetSink {
 
-  def create(writer: ParquetWriter[GenericRecord]): Sink[GenericRecord, CompletionStage[Done]] =
+  def create[T <: GenericRecord](writer: ParquetWriter[T]): Sink[T, CompletionStage[Done]] =
     Flow
-      .fromGraph(new akka.stream.alpakka.avroparquet.impl.AvroParquetFlow(writer: ParquetWriter[GenericRecord]))
+      .fromGraph(new akka.stream.alpakka.avroparquet.impl.AvroParquetFlow(writer: ParquetWriter[T]))
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
 
 }

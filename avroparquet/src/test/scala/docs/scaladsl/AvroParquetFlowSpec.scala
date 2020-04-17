@@ -4,67 +4,47 @@
 
 package docs.scaladsl
 
-import java.util.concurrent.TimeUnit
-
 import akka.stream.alpakka.avroparquet.scaladsl.AvroParquetFlow
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
-import akka.{Done, NotUsed}
 import org.apache.avro.generic.GenericRecord
-import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
-import org.apache.parquet.avro.{AvroParquetReader, AvroParquetWriter, AvroReadSupport}
+import org.apache.parquet.avro.AvroParquetWriter
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import org.apache.parquet.hadoop.ParquetWriter
-import org.apache.parquet.hadoop.util.HadoopInputFile
-import org.specs2.mutable.Specification
-import org.specs2.specification.AfterAll
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.concurrent.ScalaFutures
 
-import scala.collection.mutable
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 
-class AvroParquetFlowSpec extends Specification with AbstractAvroParquet with AfterAll {
+class AvroParquetFlowSpec
+    extends AnyWordSpecLike
+    with Matchers
+    with AbstractAvroParquet
+    with ScalaFutures
+    with BeforeAndAfterAll {
 
-  "AvroParquet" should {
+  override implicit val patienceConfig = PatienceConfig(5.seconds, 50.milliseconds)
 
-    "insert records in parquet as part of Flow stage" in assertAllStagesStopped {
+  "Parquet Flow" should {
 
-      val docs = List[Document](Document("id1", "sdaada"), Document("id1", "sdaada"), Document("id3", " fvrfecefedfww"))
+    "insert avro records in parquet" in assertAllStagesStopped {
+      //given
+      val initialRecords: List[GenericRecord] = genDocuments.sample.get.map(docToRecord)
+      val writer: ParquetWriter[GenericRecord] = parquetWriter(file, conf, schema)
 
-      val source = Source.fromIterator(() => docs.iterator)
-
-      val file = folder + "/test.parquet"
-
-      val conf = new Configuration()
-      conf.setBoolean(AvroReadSupport.AVRO_COMPATIBILITY, true)
-
-      val writer: ParquetWriter[GenericRecord] =
-        AvroParquetWriter.builder[GenericRecord](new Path(file)).withConf(conf).withSchema(schema).build()
-
-      //#init-flow
-      val flow: Flow[GenericRecord, GenericRecord, NotUsed] = AvroParquetFlow(writer)
-
-      val result = source
-        .map(f => docToRecord(f))
-        .via(flow)
+      //when
+      Source
+        .fromIterator(() => initialRecords.iterator)
+        .via(AvroParquetFlow(writer))
         .runWith(Sink.ignore)
-      //#init-flow
+        .futureValue
 
-      Await.result[Done](result, Duration(5, TimeUnit.SECONDS))
-      val dataFile = new org.apache.hadoop.fs.Path(file)
-
-      val reader =
-        AvroParquetReader.builder[GenericRecord](HadoopInputFile.fromPath(dataFile, conf)).withConf(conf).build()
-
-      var r: GenericRecord = reader.read()
-
-      val b: mutable.Builder[GenericRecord, Seq[GenericRecord]] = Seq.newBuilder[GenericRecord]
-
-      while (r != null) {
-        b += r
-        r = reader.read()
-      }
-      b.result().length shouldEqual 3
+      //then
+      val parquetContent: List[GenericRecord] = fromParquet[GenericRecord](file, conf)
+      parquetContent.length shouldEqual 3
+      parquetContent should contain theSameElementsAs initialRecords
     }
 
   }
