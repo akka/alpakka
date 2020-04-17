@@ -56,10 +56,4 @@ class AvroParquetSourceSpec
 
   }
 
-  override def afterAll(): Unit = {
-    TestKit.shutdownActorSystem(system)
-    val directory = new Directory(new File(folder))
-    directory.deleteRecursively()
-  }
-
 }
