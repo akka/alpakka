@@ -110,7 +110,10 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](indexName: String
           }
         )
 
-        val completeParams = searchParams ++ extraParams.flatten
+        val baseMap = Map("scroll" -> settings.scroll, "sort" -> "_doc")
+        val routingKey = "routing"
+        val queryParams = searchParams.get(routingKey).fold(baseMap)(r => baseMap + (routingKey -> r))
+        val completeParams = searchParams ++ extraParams.flatten - routingKey
 
         val searchBody = "{" + completeParams
             .map {
@@ -126,7 +129,7 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](indexName: String
         client.performRequestAsync(
           "POST",
           endpoint,
-          Map("scroll" -> settings.scroll, "sort" -> "_doc").asJava,
+          queryParams.asJava,
           new StringEntity(searchBody, StandardCharsets.UTF_8),
           this,
           new BasicHeader("Content-Type", "application/json")
