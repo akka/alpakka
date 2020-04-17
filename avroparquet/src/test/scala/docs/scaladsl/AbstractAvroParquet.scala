@@ -6,8 +6,6 @@ package docs.scaladsl
 
 import java.io.File
 
-import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
 import org.apache.avro.Schema
 import org.apache.avro.generic.{GenericRecord, GenericRecordBuilder}
@@ -26,7 +24,7 @@ trait AbstractAvroParquet extends BeforeAndAfterAll {
   this: Suite with TestKit =>
 
   case class Document(id: String, body: String)
-  
+
   val schema: Schema = new Schema.Parser().parse(
     "{\"type\":\"record\",\"name\":\"Document\",\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"body\",\"type\":\"string\"}]}"
   )

@@ -4,8 +4,6 @@
 
 package docs.scaladsl
 
-import java.io.File
-
 import akka.actor.ActorSystem
 import akka.stream.alpakka.avroparquet.scaladsl.{AvroParquetSink, AvroParquetSource}
 import akka.stream.scaladsl.{Keep, Source}
@@ -20,7 +18,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration._
-import scala.reflect.io.Directory
 
 class AvroParquetSourceSpec
     extends TestKit(ActorSystem("SourceSpec"))
