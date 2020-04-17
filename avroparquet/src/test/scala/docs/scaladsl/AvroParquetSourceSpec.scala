@@ -6,6 +6,7 @@ package docs.scaladsl
 
 import java.io.File
 
+import akka.actor.ActorSystem
 import akka.stream.alpakka.avroparquet.scaladsl.{AvroParquetSink, AvroParquetSource}
 import akka.stream.scaladsl.{Keep, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
@@ -22,7 +23,8 @@ import scala.concurrent.duration._
 import scala.reflect.io.Directory
 
 class AvroParquetSourceSpec
-    extends AnyWordSpecLike
+    extends TestKit(ActorSystem("SourceSpec"))
+    with AnyWordSpecLike
     with AbstractAvroParquet
     with Matchers
     with ScalaFutures

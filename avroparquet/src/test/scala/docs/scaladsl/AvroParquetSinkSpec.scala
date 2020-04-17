@@ -6,8 +6,9 @@ package docs.scaladsl
 
 import java.io.File
 
+import akka.actor.ActorSystem
 import akka.stream.alpakka.avroparquet.scaladsl.AvroParquetSink
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
 import org.scalatest.concurrent.ScalaFutures
@@ -19,7 +20,8 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 class AvroParquetSinkSpec
-    extends AnyWordSpecLike
+    extends TestKit(ActorSystem("SinkSpec"))
+    with AnyWordSpecLike
     with Matchers
     with AbstractAvroParquet
     with ScalaFutures

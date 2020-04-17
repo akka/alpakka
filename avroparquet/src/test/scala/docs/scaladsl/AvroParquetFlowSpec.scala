@@ -4,9 +4,11 @@
 
 package docs.scaladsl
 
+import akka.actor.ActorSystem
 import akka.stream.alpakka.avroparquet.scaladsl.AvroParquetFlow
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
+import akka.testkit.TestKit
 import org.apache.avro.generic.GenericRecord
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -15,7 +17,8 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 
 class AvroParquetFlowSpec
-    extends AnyWordSpecLike
+    extends TestKit(ActorSystem("FlowSpec"))
+    with AnyWordSpecLike
     with Matchers
     with AbstractAvroParquet
     with ScalaFutures
