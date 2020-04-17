@@ -16,9 +16,7 @@ import org.apache.parquet.avro.{AvroParquetReader, AvroParquetWriter, AvroReadSu
 import org.apache.parquet.hadoop.ParquetWriter
 import org.apache.parquet.hadoop.util.HadoopInputFile
 import org.scalacheck.Gen
-import org.scalatest.BeforeAndAfterAll
 
-import scala.reflect.io.Directory
 import scala.util.Random
 
 trait AbstractAvroParquet {
@@ -26,7 +24,7 @@ trait AbstractAvroParquet {
 
   val genDocument: Gen[Document] =
     Gen.oneOf(Seq(Document(id = Gen.alphaStr.sample.get, body = Gen.alphaLowerStr.sample.get)))
-  val genDocuments: Gen[List[Document]] = Gen.listOfN(3, genDocument)
+  val genDocuments: Int => Gen[List[Document]] = n => Gen.listOfN(n, genDocument)
 
   val folder: String = "./" + Random.alphanumeric.take(8).mkString("")
   val file = folder + "/test.parquet"
@@ -45,7 +43,7 @@ trait AbstractAvroParquet {
   def parquetWriter(file: String, conf: Configuration, schema: Schema): ParquetWriter[GenericRecord] =
     AvroParquetWriter.builder[GenericRecord](new Path(file)).withConf(conf).withSchema(schema).build()
 
-  def parquetReader[T](file: String, conf: Configuration) =
+  def parquetReader[T <: GenericRecord](file: String, conf: Configuration) =
     AvroParquetReader.builder[T](HadoopInputFile.fromPath(new Path(file), conf)).withConf(conf).build()
 
   def docToRecord(document: Document): GenericRecord =

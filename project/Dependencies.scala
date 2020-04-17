@@ -180,12 +180,13 @@ object Dependencies {
 
   val AvroParquet = Seq(
     libraryDependencies ++= Seq(
-        "org.apache.parquet" % "parquet-avro" % "1.10.0", //Apache2
-        "org.apache.hadoop" % "hadoop-client" % "3.2.1" % Test exclude ("log4j", "log4j"), //Apache2
-        "org.apache.hadoop" % "hadoop-common" % "3.2.1" % Test exclude ("log4j", "log4j"), //Apache2
-        "org.specs2" %% "specs2-core" % "4.8.0" % Test, //MIT like: https://github.com/etorreborre/specs2/blob/master/LICENSE.txt
-        "org.slf4j" % "log4j-over-slf4j" % log4jOverSlf4jVersion % Test // MIT like: http://www.slf4j.org/license.html
-      )
+      "org.apache.parquet" % "parquet-avro" % "1.10.0", //Apache2
+      "org.apache.hadoop" % "hadoop-client" % "3.2.1" % Test exclude("log4j", "log4j"), //Apache2
+      "org.apache.hadoop" % "hadoop-common" % "3.2.1" % Test exclude("log4j", "log4j"), //Apache2
+      "org.scalacheck" %% "scalacheck" % "1.14.1" % Test,
+      "org.specs2" %% "specs2-core" % "4.8.0" % Test, //MIT like: https://github.com/etorreborre/specs2/blob/master/LICENSE.txt
+      "org.slf4j" % "log4j-over-slf4j" % log4jOverSlf4jVersion % Test // MIT like: http://www.slf4j.org/license.html
+    )
   )
 
   val Ftp = Seq(
