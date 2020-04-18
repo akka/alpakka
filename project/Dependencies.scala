@@ -28,6 +28,8 @@ object Dependencies {
   val CouchbaseVersion = "2.7.13"
   val CouchbaseVersionForDocs = "2.7"
 
+  val DebeziumVersion = "1.1.1.Final"
+
   val JwtCoreVersion = "3.0.1"
 
   val log4jOverSlf4jVersion = "1.7.30"
@@ -136,6 +138,13 @@ object Dependencies {
         "com.typesafe.play" %% "play-json" % "2.7.4" % Test, // Apache V2
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion % Test // Apache V2
       )
+  )
+
+  val Debezium = Seq(
+    libraryDependencies ++= Seq(
+      "io.debezium" % "debezium-api" % DebeziumVersion,
+      "io.debezium" % "debezium-embedded" % DebeziumVersion
+    )
   )
 
   val `Doc-examples` = Seq(

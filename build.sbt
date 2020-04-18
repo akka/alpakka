@@ -12,6 +12,7 @@ lazy val alpakka = project
     cassandra,
     couchbase,
     csv,
+    debezium,
     dynamodb,
     elasticsearch,
     files,
@@ -137,6 +138,14 @@ lazy val csv = alpakkaProject("csv", "csv", whitesourceGroup := Whitesource.Grou
 lazy val csvBench = internalProject("csv-bench")
   .dependsOn(csv)
   .enablePlugins(JmhPlugin)
+
+lazy val debezium = alpakkaProject(
+  "debezium",
+  "debezium",
+  Dependencies.Debezium,
+  // For mockito https://github.com/akka/alpakka/issues/390
+  parallelExecution in Test := false
+)
 
 lazy val dynamodb = alpakkaProject("dynamodb", "aws.dynamodb", Dependencies.DynamoDB, Test / parallelExecution := false)
 
