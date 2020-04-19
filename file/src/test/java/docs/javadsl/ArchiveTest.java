@@ -172,7 +172,7 @@ public class ArchiveTest {
     CompletionStage<ByteString> oneFileArchive =
         Source.single(Pair.create(metadata1, Source.single(tenDigits)))
             .via(Archive.tar())
-            .runWith(Sink.fold(ByteString.empty(), ByteString::concat), mat);
+            .runWith(Sink.fold(ByteString.emptyByteString(), ByteString::concat), mat);
 
     // #tar-reader
     Source<ByteString, NotUsed> bytesSource = // ???
