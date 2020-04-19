@@ -23,9 +23,10 @@ final class TarArchiveMetadata private (
     val size: Long,
     val lastModification: Instant
 ) {
-  val filePath =
-    if (filePathPrefix.isEmpty) filePathName
-    else filePathPrefix + "/" + filePathName
+  val filePath = filePathPrefix match {
+    case None => filePathName
+    case Some(prefix) => prefix + "/" + filePathName
+  }
 
   override def equals(obj: Any): Boolean = {
     obj match {
@@ -37,7 +38,7 @@ final class TarArchiveMetadata private (
     }
   }
 
-  override def hashCode(): Int = Objects.hash(filePath, Long.box(size), lastModification)
+  override def hashCode(): Int = Objects.hash(filePathPrefix, filePathName, Long.box(size), lastModification)
 
   override def toString: String =
     "TarArchiveMetadata(" +
@@ -51,7 +52,7 @@ object TarArchiveMetadata {
   def apply(filePath: String, size: Long): TarArchiveMetadata = apply(filePath, size, Instant.now)
   def apply(filePath: String, size: Long, lastModification: Instant): TarArchiveMetadata = {
     val filePathSegments = filePath.lastIndexOf("/")
-    val filePathPrefix = if (filePathSegments > -1) {
+    val filePathPrefix = if (filePathSegments > 0) {
       Some(filePath.substring(0, filePathSegments))
     } else None
     val filePathName = filePath.substring(filePathSegments + 1, filePath.length)
@@ -59,7 +60,7 @@ object TarArchiveMetadata {
   }
 
   def apply(filePathPrefix: String, filePathName: String, size: Long, lastModification: Instant): TarArchiveMetadata = {
-    apply(Some(filePathPrefix), filePathName, size, lastModification)
+    apply(if (filePathPrefix.isEmpty) None else Some(filePathPrefix), filePathName, size, lastModification)
   }
 
   private def apply(filePathPrefix: Option[String],

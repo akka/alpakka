@@ -8,9 +8,9 @@ import java.io._
 import java.nio.file.{Files, Path, Paths}
 import java.util.Comparator
 
-import akka.Done
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
-import akka.stream.alpakka.file.scaladsl.Archive
+import akka.stream.alpakka.file.scaladsl.{Archive, Directory}
 import akka.stream.alpakka.file.{TarArchiveMetadata, TarReaderException}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{FileIO, Sink, Source}
@@ -164,6 +164,37 @@ class TarArchiveSpec
           .runWith(Sink.head)
       val result = tar.futureValue
       result shouldBe metadata1 -> tenDigits
+    }
+
+    "document its use" in {
+      // #tar-reader
+      val bytesSource: Source[ByteString, NotUsed] = // ???
+        // #tar-reader
+        Source.fromFuture(oneFileArchive)
+      val target = Files.createTempDirectory("alpakka-tar-")
+
+      // #tar-reader
+      val tar =
+        bytesSource
+          .via(Archive.tarReader())
+          .mapAsync(1) {
+            case (metadata, source) =>
+              val targetFile = target.resolve(metadata.filePath)
+              // create the target directory
+              Source
+                .single(targetFile.getParent)
+                .via(Directory.mkdirs())
+                .runWith(Sink.ignore)
+                .map { _ =>
+                  // stream the file contents to a local file
+                  source.runWith(FileIO.toPath(targetFile))
+                }
+          }
+          .runWith(Sink.ignore)
+      // #tar-reader
+      tar.futureValue shouldBe Done
+      val file: File = target.resolve("dir/file1.txt").toFile
+      file.exists() shouldBe true
     }
 
     "emit empty file" in {

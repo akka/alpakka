@@ -184,8 +184,9 @@ Java
 
 ## TAR Archive
 
-The @apidoc[Archive$]
-contains flow for packaging multiple files into one TAR file.
+### Writing TAR archives
+
+@apidoc[Archive.tar()](Archive$) creates a flow for packaging multiple files into one TAR archive.
 
 Result of flow can be send to sink even before whole TAR file is created, so size of resulting TAR archive
 is not limited to memory size.
@@ -205,3 +206,16 @@ Scala
 
 Java
 : @@snip [snip](/file/src/test/java/docs/javadsl/ArchiveTest.java) { #sample-tar-gz }
+
+
+### Reading TAR archives
+
+@apidoc[Archive.tarReader()](Archive$) reads a stream of `ByteString`s as TAR format emitting the metadata entry and a `Source` for every file in the stream. It is essential to request all the emitted source's data, otherwise the stream will not reach the next file entry.
+
+The example below reads the incoming stream and stores all files in the local file system.
+
+Scala
+: @@snip [snip](/file/src/test/scala/docs/scaladsl/TarArchiveSpec.scala) { #tar-reader }
+
+Java
+: @@snip [snip](/file/src/test/java/docs/javadsl/ArchiveTest.java) { #tar-reader }
