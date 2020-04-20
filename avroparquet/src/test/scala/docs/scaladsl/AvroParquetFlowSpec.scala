@@ -40,7 +40,7 @@ class AvroParquetFlowSpec
         .futureValue
 
       //then
-      val parquetContent: List[GenericRecord] = fromParquet[GenericRecord](file, conf)
+      val parquetContent: List[GenericRecord] = fromParquet(file, conf)
       parquetContent.length shouldEqual n
       parquetContent should contain theSameElementsAs records
     }

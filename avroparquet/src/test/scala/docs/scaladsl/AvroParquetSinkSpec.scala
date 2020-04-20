@@ -10,7 +10,6 @@ import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
 import org.scalatest.concurrent.ScalaFutures
-
 import org.apache.avro.generic.GenericRecord
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
@@ -36,7 +35,7 @@ class AvroParquetSinkSpec
         .futureValue
 
       //when
-      val parquetContent: List[GenericRecord] = fromParquet[GenericRecord](file, conf)
+      val parquetContent: List[GenericRecord] = fromParquet(file, conf)
 
       //then
       parquetContent.length shouldEqual n

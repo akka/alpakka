@@ -16,7 +16,6 @@ import org.apache.parquet.hadoop.{ParquetReader, ParquetWriter}
 import org.apache.parquet.hadoop.util.HadoopInputFile
 import org.scalacheck.Gen
 import org.scalatest.{BeforeAndAfterAll, Suite}
-
 import scala.reflect.io.Directory
 import scala.util.Random
 
@@ -43,8 +42,8 @@ trait AbstractAvroParquet extends BeforeAndAfterAll {
   def parquetWriter(file: String, conf: Configuration, schema: Schema): ParquetWriter[GenericRecord] =
     AvroParquetWriter.builder[GenericRecord](new Path(file)).withConf(conf).withSchema(schema).build()
 
-  def parquetReader[T <: GenericRecord](file: String, conf: Configuration): ParquetReader[T] =
-    AvroParquetReader.builder[T](HadoopInputFile.fromPath(new Path(file), conf)).withConf(conf).build()
+  def parquetReader(file: String, conf: Configuration): ParquetReader[GenericRecord] =
+    AvroParquetReader.builder[GenericRecord](HadoopInputFile.fromPath(new Path(file), conf)).withConf(conf).build()
 
   def docToRecord(document: Document): GenericRecord =
     new GenericRecordBuilder(schema)
@@ -52,10 +51,10 @@ trait AbstractAvroParquet extends BeforeAndAfterAll {
       .set("body", document.body)
       .build()
 
-  def fromParquet[T <: GenericRecord](file: String, configuration: Configuration): List[T] = {
+  def fromParquet(file: String, configuration: Configuration): List[GenericRecord] = {
     val reader = parquetReader(file, conf)
-    var record: T = reader.read()
-    var result: List[T] = List.empty[T]
+    var record: GenericRecord = reader.read()
+    var result: List[GenericRecord] = List.empty[GenericRecord]
     while (record != null) {
       result = result ::: record :: Nil
       record = reader.read()
