@@ -30,7 +30,7 @@ Sources, Flows and Sinks provided by this connector need a prepared `org.elastic
 access to Elasticsearch.
 
 Scala
-: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchSpec.scala) { #init-client }
+: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #init-client }
 
 Java
 : @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #init-client }
@@ -42,7 +42,7 @@ Now we can stream messages from or to Elasticsearch by providing the `RestClient
 
 
 Scala
-: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchSpec.scala) { #define-class }
+: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #define-class }
 
 Java
 : @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #define-class }
@@ -54,7 +54,7 @@ Use `ElasticsearchSource.typed` and `ElasticsearchSink.create` to create source 
 @java[The data is converted to and from JSON by Jackson's ObjectMapper.]
 
 Scala
-: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchSpec.scala) { #run-typed }
+: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #run-typed }
 
 Java
 : @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #run-typed }
@@ -64,7 +64,7 @@ Java
 Use `ElasticsearchSource.create` and `ElasticsearchSink.create` to create source and sink.
 
 Scala
-: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchSpec.scala) { #run-jsobject }
+: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #run-jsobject }
 
 Java
 : @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #run-jsobject }
@@ -83,7 +83,7 @@ In the above examples, `WriteMessage` is used as the input to `ElasticsearchSink
 | WriteMessage.createDeleteMessage  | Delete an existing document. If there is no document with the specified `id`, do nothing.            |
 
 Scala
-: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchSpec.scala) { #multiple-operations }
+: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #multiple-operations }
 
 Java
 : @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #multiple-operations }
@@ -93,7 +93,7 @@ Java
 We can configure the source by `ElasticsearchSourceSettings`.
 
 Scala
-: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchSpec.scala) { #source-settings }
+: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #source-settings }
 
 Java
 : @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #source-settings }
@@ -111,17 +111,18 @@ Java
 Sinks and flows are configured with `ElasticsearchWriteSettings`.
 
 Scala
-: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchSpec.scala) { #sink-settings }
+: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #sink-settings }
 
 Java
 : @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #sink-settings }
 
 
-| Parameter           | Default | Description                                                                                            |
-| ------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
-| bufferSize          | 10      | Flow and Sink batch messages to bulk requests when back-pressure applies.                             |
-| versionType         | None    | If set, `ElasticsearchSink` uses the chosen versionType to index documents. See [Version types](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#_version_types) for accepted settings. |
-| retryLogic | No retries | See below |
+| Parameter           | Default    | Description                                                                                            |
+| ------------------- | -------    | ------------------------------------------------------------------------------------------------------ |
+| bufferSize          | 10         | Flow and Sink batch messages to bulk requests when back-pressure applies.                             |
+| versionType         | None       | If set, `ElasticsearchSink` uses the chosen versionType to index documents. See [Version types](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#_version_types) for accepted settings. |
+| retryLogic          | No retries | See below |
+| apiVersion          | V5         | See [supported versions](/elasticsearch/src/main/java/akka/stream/alpakka/elasticsearch/ApiVersion.java) |
 
 
 A bulk request might fail partially for some reason. To retry failed writes to Elasticsearch, a `RetryLogic` can be specified. 
@@ -152,7 +153,7 @@ You can also build flow stages with @apidoc[ElasticsearchFlow$].
 The API is similar to creating Sinks.
 
 Scala
-: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchSpec.scala) { #run-flow }
+: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #run-flow }
 
 Java
 : @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #run-flow }
@@ -163,7 +164,7 @@ Java
 Elasticsearch requires the documents to be properly formatted JSON. If your data is available as JSON in Strings, you may use the pre-defined `StringMessageWriter` to avoid any conversions. For any other JSON technologies, implement a @scala[`MessageWriter[T]`]@java[`MessageWriter<T>`].
 
 Scala
-: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchSpec.scala) { #string }
+: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #string }
 
 Java
 : @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #string }
@@ -175,7 +176,7 @@ Java
 When streaming documents from Kafka, you might want to commit to Kafka **AFTER** the document has been written to Elastic.
 
 Scala
-: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchSpec.scala) { #kafka-example }
+: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #kafka-example }
 
 Java
 : @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #kafka-example }
@@ -187,7 +188,7 @@ When working with index-patterns using wildcards, you might need to specify a cu
 index-name for each document:
 
 Scala
-: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchSpec.scala) { #custom-index-name-example }
+: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #custom-index-name-example }
 
 Java
 : @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #custom-index-name-example }
@@ -199,7 +200,7 @@ In some cases you might want to specify custom metadata per document you are ins
 this can be done like so:
 
 Scala
-: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchSpec.scala) { #custom-metadata-example }
+: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #custom-metadata-example }
 
 Java
 : @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #custom-metadata-example }
@@ -211,7 +212,7 @@ The easiest way of using ElasticSearch-source, is to just specify the query-para
 like specifying which fields to return and so on. In such cases you can instead use 'searchParams' instead:
 
 Scala
-: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchSpec.scala) { #custom-search-params }
+: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #custom-search-params }
 
 Java
 : @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #custom-search-params }

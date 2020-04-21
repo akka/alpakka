@@ -6,4 +6,5 @@ package akka.stream.alpakka.elasticsearch;
 
 public enum ApiVersion {
   V5,
+  V7
 }
