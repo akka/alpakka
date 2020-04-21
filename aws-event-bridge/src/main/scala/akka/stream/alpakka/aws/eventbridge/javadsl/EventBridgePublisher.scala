@@ -103,7 +103,7 @@ object EventBridgePublisher {
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
-   * Creates a [[akka.stream.javadsl.Sink Sink]] to publish messages to an EventBridge based on the message bus arn.
+   * Creates a [[akka.stream.javadsl.Sink Sink]] to publish messages to an EventBridge.
    *
    * @param settings [[akka.stream.alpakka.aws.eventbridge.EventBridgePublishSettings]] settings for publishing
    * @param eventBridgeClient [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]] client for publishing
@@ -114,7 +114,7 @@ object EventBridgePublisher {
       .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
 
   /**
-   * Creates a [[akka.stream.javadsl.Sink Sink]] to publish messages to an EventBridge based on the message bus arn.
+   * Creates a [[akka.stream.javadsl.Sink Sink]] to publish messages to an EventBridge.
    *
    * @param eventBridgeClient [[software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient EventBridgeAsyncClient]] client for publishing
    */

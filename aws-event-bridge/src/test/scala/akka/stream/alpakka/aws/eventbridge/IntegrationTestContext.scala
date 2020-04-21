@@ -54,7 +54,7 @@ trait IntegrationTestContext extends BeforeAndAfterAll with ScalaFutures {
     import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
     import software.amazon.awssdk.regions.Region
 
-    implicit val awsSnsClient: EventBridgeAsyncClient =
+    implicit val awsEventBridgeClient: EventBridgeAsyncClient =
       EventBridgeAsyncClient
         .builder()
         .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
@@ -63,9 +63,9 @@ trait IntegrationTestContext extends BeforeAndAfterAll with ScalaFutures {
         .httpClient(AkkaHttpClient.builder().withActorSystem(system).build())
         .build()
 
-    system.registerOnTermination(awsSnsClient.close())
+    system.registerOnTermination(awsEventBridgeClient.close())
     //#init-client
-    awsSnsClient
+    awsEventBridgeClient
   }
 
   def sleep(d: FiniteDuration): Unit = Thread.sleep(d.toMillis)

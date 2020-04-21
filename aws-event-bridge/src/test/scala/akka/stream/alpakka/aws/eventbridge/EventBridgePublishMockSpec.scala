@@ -20,103 +20,69 @@ import scala.concurrent.duration._
 
 class EventBridgePublishMockSpec extends AnyFlatSpec with DefaultTestContext with Matchers {
 
-  private def entryDetail(detail: String): PutEventsRequestEntry =
-    PutEventsRequestEntry.builder().detail(detail).build()
+  private def entryDetail(detail: String, eventBusName: Option[String] = None): PutEventsRequestEntry = {
+    val entry = PutEventsRequestEntry.builder().detail(detail)
+    eventBusName.map(entry.eventBusName(_))
+    entry.build()
+  }
 
-  private def requestDetail(detail: String): PutEventsRequest =
-    PutEventsRequest.builder().entries(entryDetail(detail)).build()
+  private def requestDetail(eventBusName: Option[String], details: String*): PutEventsRequest =
+    PutEventsRequest
+      .builder()
+      .entries(
+        details.map(detail => entryDetail(detail, eventBusName)): _*
+      )
+      .build()
 
   private def resultResponse(eventId: String): PutEventsResponse = {
     val putResultEntry = PutEventsResultEntry.builder().eventId(eventId).build()
     PutEventsResponse.builder().entries(putResultEntry).build()
   }
 
-  it should "publish a single PublishRequest message to eventBridge" in {
-    val putRequestEntry = PutEventsRequestEntry.builder().detail("event-bridge-message").build()
-    val putRequest = requestDetail("event-bridge-message")
+  it should "publish a single PutEventsEntry to eventBridge" in {
+    val putRequestEntry = entryDetail("event-bridge-message")
+    val putRequest = requestDetail(None, "event-bridge-message")
     val putResult = resultResponse("event-id")
 
     when(eventBridgeClient.putEvents(putRequest)).thenReturn(CompletableFuture.completedFuture(putResult))
 
     val (probe, future) =
-      TestSource.probe[PutEventsRequest].via(EventBridgePublisher.publishFlow()).toMat(Sink.seq)(Keep.both).run()
+      TestSource.probe[PutEventsRequestEntry].via(EventBridgePublisher.flow()).toMat(Sink.seq)(Keep.both).run()
 
-    probe.sendNext(PutEventsRequest.builder().entries(putRequestEntry).build()).sendComplete()
+    probe.sendNext(putRequestEntry).sendComplete()
 
     Await.result(future, 1.second) mustBe putResult :: Nil
 
     verify(eventBridgeClient, times(1)).putEvents(meq(putRequest))
   }
 
-  it should "publish multiple PutEventsRequest messages to eventbridge" in {
-    val putResultEntry = PutEventsResultEntry.builder().eventId("event-id").build()
-    val putResult = PutEventsResponse.builder().entries(putResultEntry).build()
-
-    when(eventBridgeClient.putEvents(any[PutEventsRequest]())).thenReturn(CompletableFuture.completedFuture(putResult))
-
-    val (probe, future) =
-      TestSource.probe[PutEventsRequest].via(EventBridgePublisher.publishFlow()).toMat(Sink.seq)(Keep.both).run()
-
-    probe
-      .sendNext(requestDetail("eb-message-1"))
-      .sendNext(requestDetail("eb-message-2"))
-      .sendNext(requestDetail("eb-message-3"))
-      .sendComplete()
-
-    Await.result(future, 1.second) mustBe putResult :: putResult :: putResult :: Nil
-
-    val expectedFirst = requestDetail("eb-message-1")
-    verify(eventBridgeClient, times(1)).putEvents(meq(expectedFirst))
-
-    val expectedSecond = requestDetail("eb-message-2")
-    verify(eventBridgeClient, times(1)).putEvents(meq(expectedSecond))
-
-    val expectedThird = requestDetail("eb-message-3")
-    verify(eventBridgeClient, times(1)).putEvents(meq(expectedThird))
-  }
-
-  it should "publish multiple PublishRequest messages to multiple eventbridge topics" in {
+  it should "publish multiple PutEventsRequestEntry objects with dynamic eventbus name" in {
     val putResult = resultResponse("event-id")
 
     when(eventBridgeClient.putEvents(any[PutEventsRequest]())).thenReturn(CompletableFuture.completedFuture(putResult))
-
-    val (probe, future) =
-      TestSource.probe[PutEventsRequest].via(EventBridgePublisher.publishFlow()).toMat(Sink.seq)(Keep.both).run()
-
-    probe
-      .sendNext(requestDetail("eb-message-1"))
-      .sendNext(requestDetail("eb-message-2"))
-      .sendNext(requestDetail("eb-message-3"))
-      .sendComplete()
-
-    Await.result(future, 1.second) mustBe putResult :: putResult :: putResult :: Nil
-
-    val expectedFirst = requestDetail("eb-message-1")
-    verify(eventBridgeClient, times(1)).putEvents(meq(expectedFirst))
-
-    val expectedSecond = requestDetail("eb-message-2")
-    verify(eventBridgeClient, times(1)).putEvents(meq(expectedSecond))
-
-    val expectedThird = requestDetail("eb-message-3")
-    verify(eventBridgeClient, times(1)).putEvents(meq(expectedThird))
-  }
-
-  it should "publish a single PutEventsRequestEntry message to eventbridge" in {
-    val putRequestEntry = PutEventsRequestEntry.builder().detail("event-bridge-message").build()
-    val publishRequest = requestDetail("event-bridge-message")
-    val putResult = resultResponse("event-id")
-
-    when(eventBridgeClient.putEvents(meq(publishRequest))).thenReturn(CompletableFuture.completedFuture(putResult))
 
     val (probe, future) =
       TestSource.probe[PutEventsRequestEntry].via(EventBridgePublisher.flow()).toMat(Sink.seq)(Keep.both).run()
-    probe.sendNext(putRequestEntry).sendComplete()
 
-    Await.result(future, 1.second) mustBe putResult :: Nil
-    verify(eventBridgeClient, times(1)).putEvents(meq(publishRequest))
+    probe
+      .sendNext(entryDetail("eb-message-1"))
+      .sendNext(entryDetail("eb-message-2", Some("topic2")))
+      .sendNext(entryDetail("eb-message-3", Some("topic3")))
+      .sendComplete()
+
+    Await.result(future, 1.second) mustBe putResult :: putResult :: putResult :: Nil
+
+    val expectedFirst = requestDetail(None, "eb-message-1")
+    verify(eventBridgeClient, times(1)).putEvents(meq(expectedFirst))
+
+    val expectedSecond = requestDetail(Some("topic2"), "eb-message-2")
+    verify(eventBridgeClient, times(1)).putEvents(meq(expectedSecond))
+
+    val expectedThird = requestDetail(Some("topic3"), "eb-message-3")
+    verify(eventBridgeClient, times(1)).putEvents(meq(expectedThird))
   }
 
-  it should "publish multiple PutEventsRequestEntry messages to eventbridge" in {
+  it should "publish multiple PutEventsRequestEntry objects to eventbridge in batch" in {
     val putResult = resultResponse("event-id")
 
     when(eventBridgeClient.putEvents(any[PutEventsRequest]())).thenReturn(CompletableFuture.completedFuture(putResult))
@@ -124,25 +90,18 @@ class EventBridgePublishMockSpec extends AnyFlatSpec with DefaultTestContext wit
     val (probe, future) =
       TestSource.probe[Seq[PutEventsRequestEntry]].via(EventBridgePublisher.flowSeq()).toMat(Sink.seq)(Keep.both).run()
     probe
-      .sendNext(Seq(entryDetail("eb-message-1")))
-      .sendNext(Seq(entryDetail("eb-message-2")))
-      .sendNext(Seq(entryDetail("eb-message-3")))
+      .sendNext(Seq(entryDetail("eb-message-1"), entryDetail("eb-message-2"), entryDetail("eb-message-3")))
       .sendComplete()
 
-    Await.result(future, 1.second) mustBe putResult :: putResult :: putResult :: Nil
+    Await.result(future, 1.second) mustBe putResult :: Nil
 
-    val expectedFirst = requestDetail("eb-message-1")
-    verify(eventBridgeClient, times(1)).putEvents(meq(expectedFirst))
+    val expected = requestDetail(None, "eb-message-1", "eb-message-2", "eb-message-3")
+    verify(eventBridgeClient, times(1)).putEvents(meq(expected))
 
-    val expectedSecond = requestDetail("eb-message-2")
-    verify(eventBridgeClient, times(1)).putEvents(meq(expectedSecond))
-
-    val expectedThird = requestDetail("eb-message-3")
-    verify(eventBridgeClient, times(1)).putEvents(meq(expectedThird))
   }
 
   it should "fail stage if EventBridgeAsyncClient request failed" in {
-    val publishRequest = requestDetail("eb-message")
+    val publishRequest = requestDetail(None, "eb-message")
 
     val promise = new CompletableFuture[PutEventsResponse]()
     promise.completeExceptionally(new RuntimeException("publish error"))

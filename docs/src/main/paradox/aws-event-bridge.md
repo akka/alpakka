@@ -7,10 +7,15 @@ Serverless event bus that connects application data from your own apps, SaaS, an
 For more information about AWS EventBridge please visit the [official documentation](https://aws.amazon.com/eventbridge/).
 
 The publish of the events is implemented using the AWS API PUT Events https://docs.aws.amazon.com/eventbridge/latest/userguide/add-events-putevents.html.
-The semantics of the publish are that any of the entries inside a Put Request can fail. Response containse information about which entries
+The semantics of the publish are that any of the entries inside a Put Request can fail. Response contains information about which entries
 were not successfully published.
 Currently there are no retries supported apart of configuration provided by the AWS client. 
 Adding Support for configurable retry behaviour as part of the connector is possible.
+
+By default client publishes to a default eventBus. Usually you would be publishing to your specific eventBus.
+EventBus name is per event defined as [PutRequestEntry](https://docs.aws.amazon.com/eventbridge/latest/APIReference/API_PutEventsRequestEntry.html) objects.
+It would be possible to define helper flows / sync with default values such as source and `eventBustName`. 
+The `detail` is string JSON and `detailType` is the of the event for rule matching.
 
 @@@
 
