@@ -27,6 +27,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -60,14 +63,15 @@ public class CsvFormattingTest {
   }
 
   @Test
-  public void standardCsvFormatShouldWork() {
+  public void standardCsvFormatShouldWork() throws InterruptedException, ExecutionException, TimeoutException {
     CompletionStage<ByteString> completionStage =
         // #formatting
-        Source.single(Arrays.asList("one", "two", "three", "four"))
+        Source.single(Arrays.asList("one", "two", "three"))
             .via(CsvFormatting.format())
             .runWith(Sink.head(), materializer);
     // #formatting
-    completionStage.thenAccept((bs) -> assertThat(bs.utf8String(), equalTo("one,two,three")));
+    ByteString result = completionStage.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    assertThat(result.utf8String(), equalTo("one,two,three\r\n"));
   }
 
   @BeforeClass
