@@ -63,7 +63,8 @@ public class CsvFormattingTest {
   }
 
   @Test
-  public void standardCsvFormatShouldWork() throws InterruptedException, ExecutionException, TimeoutException {
+  public void standardCsvFormatShouldWork()
+      throws InterruptedException, ExecutionException, TimeoutException {
     CompletionStage<ByteString> completionStage =
         // #formatting
         Source.single(Arrays.asList("one", "two", "three"))
