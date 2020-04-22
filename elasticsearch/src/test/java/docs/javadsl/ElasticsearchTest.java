@@ -77,10 +77,8 @@ public class ElasticsearchTest {
     container =
         new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:" + esVersion);
     container.start();
-    // #init-client
-
     client = RestClient.builder(HttpHost.create(container.getHttpHostAddress())).build();
-    // #init-client
+
     register("source", "Akka in Action");
     register("source", "Programming in Scala");
     register("source", "Learning Scala");
@@ -127,6 +125,7 @@ public class ElasticsearchTest {
 
   private void documentation() {
     // #init-client
+
     client = RestClient.builder(new HttpHost("localhost", 9201)).build();
     // #init-client
     // #source-settings

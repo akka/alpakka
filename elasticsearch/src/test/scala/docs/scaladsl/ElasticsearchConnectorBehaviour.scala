@@ -75,31 +75,6 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
         new BasicHeader("Content-Type", "application/json")
       )
 
-    def documentation(): Unit = {
-      //#init-client
-      import org.apache.http.HttpHost
-      import org.elasticsearch.client.RestClient
-
-      val client = RestClient.builder(new HttpHost("localhost", 9201)).build()
-      //#init-client
-      client.toString should not be empty
-      //#source-settings
-      val sourceSettings = ElasticsearchSourceSettings()
-        .withBufferSize(10)
-        .withScrollDuration(5.minutes)
-      //#source-settings
-      sourceSettings.toString should startWith("ElasticsearchSourceSettings(")
-      //#sink-settings
-      val sinkSettings =
-        ElasticsearchWriteSettings()
-          .withBufferSize(10)
-          .withVersionType("internal")
-          .withRetryLogic(RetryAtFixedRate(maxRetries = 5, retryInterval = 1.second))
-          .withApiVersion(ApiVersion.V5)
-      //#sink-settings
-      sinkSettings.toString should startWith("ElasticsearchWriteSettings(")
-    }
-
     def readTitlesFrom(indexName: String): Future[immutable.Seq[String]] =
       ElasticsearchSource
         .typed[Book](
@@ -1073,7 +1048,29 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
       }
     }
 
-    def compileOnlySample(): Unit = {
+    val _ = {
+      //#init-client
+      import org.apache.http.HttpHost
+      import org.elasticsearch.client.RestClient
+
+      val client = RestClient.builder(new HttpHost("localhost", 9201)).build()
+      //#init-client
+      client.toString should not be empty
+      //#source-settings
+      val sourceSettings = ElasticsearchSourceSettings()
+        .withBufferSize(10)
+        .withScrollDuration(5.minutes)
+      //#source-settings
+      sourceSettings.toString should startWith("ElasticsearchSourceSettings(")
+      //#sink-settings
+      val sinkSettings =
+        ElasticsearchWriteSettings()
+          .withBufferSize(10)
+          .withVersionType("internal")
+          .withRetryLogic(RetryAtFixedRate(maxRetries = 5, retryInterval = 1.second))
+          .withApiVersion(ApiVersion.V5)
+      //#sink-settings
+      sinkSettings.toString should startWith("ElasticsearchWriteSettings(")
       val doc = "dummy-doc"
       //#custom-metadata-example
       val msg = WriteMessage
