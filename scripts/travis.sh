@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -x
-
 CURR_DIR=$(dirname "$(readlink -f "$0")")
 
 echo "travis.sh: stage=$TRAVIS_BUILD_STAGE_NAME job=$TRAVIS_JOB_NAME"
