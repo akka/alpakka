@@ -41,7 +41,7 @@ class TarArchiveSpec
 
   private val collectByteString: Sink[ByteString, Future[ByteString]] = Sink.fold(ByteString.empty)(_ ++ _)
 
-  "tar flow is called" should {
+  "tar writer" should {
     "pass empty stream" in {
       val sources = Source.empty
       val tarFlow = Archive.tar()

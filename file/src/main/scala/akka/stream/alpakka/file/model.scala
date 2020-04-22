@@ -31,7 +31,8 @@ final class TarArchiveMetadata private (
   override def equals(obj: Any): Boolean = {
     obj match {
       case that: TarArchiveMetadata =>
-        this.filePath == that.filePath &&
+        this.filePathPrefix == that.filePathPrefix &&
+        this.filePathName == that.filePathName &&
         this.size == that.size &&
         this.lastModification == that.lastModification
       case _ => false
