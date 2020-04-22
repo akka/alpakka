@@ -1048,7 +1048,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
       }
     }
 
-    val _ = {
+    lazy val _ = {
       //#init-client
       import org.apache.http.HttpHost
       import org.elasticsearch.client.RestClient

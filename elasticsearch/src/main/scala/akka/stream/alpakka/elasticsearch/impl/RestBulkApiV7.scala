@@ -32,18 +32,18 @@ private[impl] final class RestBulkApiV7[T, C](indexName: String,
         val tuple: (String, JsObject) = message.operation match {
           case Index =>
             val fields = Seq(
-              optionalNumber(message.version, "version"),
-              optionalString(versionType, "version_type"),
-              optionalString(message.id, "_id")
+              optionalNumber("version", message.version),
+              optionalString("version_type", versionType),
+              optionalString("_id", message.id)
             ).flatten
             "index" -> JsObject(sharedFields ++ fields: _*)
-          case Create => "create" -> JsObject(sharedFields ++ optionalString(message.id, "_id"): _*)
+          case Create => "create" -> JsObject(sharedFields ++ optionalString("_id", message.id): _*)
           case Update | Upsert => "update" -> JsObject(sharedFields :+ ("_id" -> JsString(message.id.get)): _*)
           case Delete =>
             val fields =
               ("_id" -> JsString(message.id.get)) +: Seq(
-                optionalNumber(message.version, "version"),
-                optionalString(versionType, "version_type")
+                optionalNumber("version", message.version),
+                optionalString("version_type", versionType)
               ).flatten
             "delete" -> JsObject(sharedFields ++ fields: _*)
         }

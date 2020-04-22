@@ -119,12 +119,12 @@ Java
 
 | Parameter           | Default    | Description                                                                                            |
 | ------------------- | -------    | ------------------------------------------------------------------------------------------------------ |
-| bufferSize          | 10         | Flow and Sink batch messages to bulk requests when back-pressure applies.                             |
+| bufferSize          | 10         | Flow and Sink batch messages to bulk requests when back-pressure applies.                              |
 | versionType         | None       | If set, `ElasticsearchSink` uses the chosen versionType to index documents. See [Version types](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#_version_types) for accepted settings. |
 | retryLogic          | No retries | See below |
-| apiVersion          | V5         | See [supported versions](/elasticsearch/src/main/java/akka/stream/alpakka/elasticsearch/ApiVersion.java) |
+| apiVersion          | V5         | Currently supports `V5` and `V7` (see below) |
 
-
+#### Retry logic
 A bulk request might fail partially for some reason. To retry failed writes to Elasticsearch, a `RetryLogic` can be specified. 
 
 The provided implementations are:
@@ -145,6 +145,11 @@ The provided implementations are:
 | maxBackoff          | Maximum backoff for failing writes. |
 
 In case of write failures the order of messages downstream is guaranteed to be preserved.
+
+#### Supported API versions
+To support writing to multiple versions of Elasticsearch, an `ApiVersion` can be specified.
+This will be used to transform the bulk request into a format understood by the corresponding Elasticsearch server.
+Currently [`V5`](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/docs-bulk.html#docs-bulk) and [`V7`](https://www.elastic.co/guide/en/elasticsearch/reference/7.6/docs-bulk.html#docs-bulk) are supported specifically but this parameter does not need to match the server version exactly (for example, either `V5` or `V7` should work with Elasticsearch 6.x).
 
 
 ## Elasticsearch as Flow

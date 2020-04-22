@@ -35,10 +35,10 @@ private[impl] abstract class RestBulkApi[T, C] {
     messageResults
   }
 
-  def optionalString(value: Option[String], fieldName: String): Option[(String, JsString)] =
+  def optionalString(fieldName: String, value: Option[String]): Option[(String, JsString)] =
     value.map(v => fieldName -> JsString(v))
 
-  def optionalNumber(value: Option[Long], fieldName: String): Option[(String, JsNumber)] =
+  def optionalNumber(fieldName: String, value: Option[Long]): Option[(String, JsNumber)] =
     value.map(v => fieldName -> JsNumber(v))
 
   def messageToJson(message: WriteMessage[T, C], messageSource: String): String = message.operation match {
