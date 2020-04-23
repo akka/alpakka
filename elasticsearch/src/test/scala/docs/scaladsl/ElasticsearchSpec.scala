@@ -4,6 +4,8 @@
 
 package docs.scaladsl
 
+import java.time.Duration
+
 import akka.actor.ActorSystem
 import akka.stream.alpakka.elasticsearch._
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
@@ -31,9 +33,13 @@ class ElasticsearchSpec
   implicit val materializer: Materializer = ActorMaterializer()
   //#init-mat
 
-  val containerV6 = new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:6.8.0")
+  val containerV6 =
+    new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:6.8.0")
+      .withStartupTimeout(Duration.ofSeconds(240))
   lazy val clientV6 = RestClient.builder(HttpHost.create(containerV6.getHttpHostAddress)).build()
-  val containerV7 = new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:7.6.0")
+  val containerV7 =
+    new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:7.6.0")
+      .withStartupTimeout(Duration.ofSeconds(240))
   lazy val clientV7 = RestClient.builder(HttpHost.create(containerV7.getHttpHostAddress)).build()
 
   override def afterAll() = {

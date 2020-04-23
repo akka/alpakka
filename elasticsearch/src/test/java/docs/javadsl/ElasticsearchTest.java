@@ -73,7 +73,8 @@ public class ElasticsearchTest {
   public static void beforeParam(String esVersion, ApiVersion esApiVersion) throws IOException {
     apiVersion = esApiVersion;
     container =
-        new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:" + esVersion);
+        new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:" + esVersion)
+            .withStartupTimeout(Duration.ofSeconds(240));
     container.start();
     client = RestClient.builder(HttpHost.create(container.getHttpHostAddress())).build();
 
