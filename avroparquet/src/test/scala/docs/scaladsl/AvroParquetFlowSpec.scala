@@ -45,8 +45,9 @@ class AvroParquetFlowSpec
         source
           .via(avroParquet)
           .runWith(Sink.seq)
-          // #init-flow
-          .futureValue
+      // #init-flow
+
+      result.futureValue
 
       //then
       val parquetContent: List[GenericRecord] = fromParquet(file, conf)

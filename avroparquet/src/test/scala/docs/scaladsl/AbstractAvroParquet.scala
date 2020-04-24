@@ -45,7 +45,7 @@ trait AbstractAvroParquet extends BeforeAndAfterAll {
 
   // #prepare
 
-  private def documentation(): Unit = {
+  protected def documentation(): Unit = {
     // #init-writer
     val writer: ParquetWriter[GenericRecord] =
       AvroParquetWriter.builder[GenericRecord](new Path(file)).withConf(conf).withSchema(schema).build()
