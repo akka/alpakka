@@ -452,7 +452,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
     val multipartCopy = MultipartCopy(multipartUpload, copyPartition)
 
     val request = HttpRequests.uploadCopyPartRequest(multipartCopy)
-    request.headers should contain(RawHeader("x-amz-copy-source", "/source-bucket/some/source-key"))
+    request.headers should contain(RawHeader("x-amz-copy-source", "/source-bucket/some%2Fsource-key"))
     request.headers should contain(RawHeader("x-amz-copy-source-range", "bytes=0-5242879"))
   }
 
@@ -464,7 +464,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
     val multipartCopy = MultipartCopy(multipartUpload, copyPartition)
 
     val request = HttpRequests.uploadCopyPartRequest(multipartCopy)
-    request.headers should contain(RawHeader("x-amz-copy-source", "/source-bucket/some/source-key"))
+    request.headers should contain(RawHeader("x-amz-copy-source", "/source-bucket/some%2Fsource-key"))
     request.headers.map(_.lowercaseName()) should not contain "x-amz-copy-source-range"
   }
 
@@ -476,7 +476,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
     val multipartCopy = MultipartCopy(multipartUpload, copyPartition)
 
     val request = HttpRequests.uploadCopyPartRequest(multipartCopy, Some("abcdwxyz"))
-    request.headers should contain(RawHeader("x-amz-copy-source", "/source-bucket/some/source-key?versionId=abcdwxyz"))
+    request.headers should contain(RawHeader("x-amz-copy-source", "/source-bucket/some%2Fsource-key?versionId=abcdwxyz"))
     request.headers should contain(RawHeader("x-amz-copy-source-range", "bytes=0-5242879"))
   }
 
