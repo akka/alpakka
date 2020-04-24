@@ -8,7 +8,7 @@ import java.time.Duration
 
 import akka.actor.ActorSystem
 import akka.stream.alpakka.elasticsearch._
-import akka.stream.alpakka.testkit.scaladsl.LogCapturing
+//import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
 import org.apache.http.HttpHost
@@ -24,7 +24,7 @@ class ElasticsearchSpec
     with Matchers
     with ScalaFutures
     with Inspectors
-    with LogCapturing
+//    with LogCapturing
     with ElasticsearchConnectorBehaviour
     with BeforeAndAfterAll {
 

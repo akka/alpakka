@@ -9,20 +9,22 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.elasticsearch.*;
-import akka.stream.alpakka.elasticsearch.javadsl.*;
-import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
+import akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchFlow;
+import akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSink;
+import akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.http.HttpHost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHeader;
-// #init-client
-import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
-// #init-client
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -38,7 +40,7 @@ import static org.junit.Assert.assertEquals;
 
 @RunWith(value = Parameterized.class)
 public class ElasticsearchTest {
-  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
+  //  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   @Parameterized.Parameters(name = "{index}: version={0} api={1}")
   public static Iterable<Object[]> data() {
