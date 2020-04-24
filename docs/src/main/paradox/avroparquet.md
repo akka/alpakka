@@ -25,19 +25,11 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Source Initiation
 
-We will need an @apidoc[akka.actor.ActorSystem] and an @apidoc[akka.stream.Materializer].
-
-Scala
-: @@snip (/avroparquet/src/test/scala/docs/scaladsl/AbstractAvroParquet.scala) { #init-system }
-
-Java
-: @@snip (/avroparquet/src/test/java/docs/javadsl/Examples.java) { #init-system }
-
 Sometimes it might be useful to use parquet file as stream Source. For this we will need to create `AvroParquetReader` 
 instance which produces Parquet `GenericRecord` instances.
  
 Scala
-: @@snip (/avroparquet/src/test/scala/docs/scaladsl/AvroParquetSourceSpec.scala) { #init-reader } 
+: @@snip (/avroparquet/src/test/scala/docs/scaladsl/AbstractAvroParquet.scala) { #prepare #init-reader }
 
 Java
 : @@snip (/avroparquet/src/test/java/docs/javadsl/Examples.java) { #init-reader }
@@ -57,7 +49,7 @@ Parquet files on HDFS (or any other distributed file system) and perform map-red
 For this we first of all need to create `AvroParquetWriter` instance which accepts `GenericRecord`.
  
 Scala
-: @@snip (/avroparquet/src/test/scala/docs/scaladsl//AvroParquetSinkSpec.scala) { #init-writer } 
+: @@snip (/avroparquet/src/test/scala/docs/scaladsl/AbstractAvroParquet.scala) { #prepare #init-writer }
 
 Java
 : @@snip (/avroparquet/src/test/java/docs/javadsl/AvroParquetSinkTest.java) { #init-writer }

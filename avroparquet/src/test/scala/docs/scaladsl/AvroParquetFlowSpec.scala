@@ -4,9 +4,10 @@
 
 package docs.scaladsl
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.alpakka.avroparquet.scaladsl.AvroParquetFlow
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
 import org.apache.avro.generic.GenericRecord
@@ -33,11 +34,19 @@ class AvroParquetFlowSpec
       val writer: ParquetWriter[GenericRecord] = parquetWriter(file, conf, schema)
 
       //when
-      Source
-        .fromIterator(() => records.iterator)
-        .via(AvroParquetFlow(writer))
-        .runWith(Sink.ignore)
-        .futureValue
+      // #init-flow
+      val source: Source[GenericRecord, NotUsed] = // ???
+        // #init-flow
+        Source.fromIterator(() => records.iterator)
+      // #init-flow
+
+      val avroParquet: Flow[GenericRecord, GenericRecord, NotUsed] = AvroParquetFlow(writer)
+      val result =
+        source
+          .via(avroParquet)
+          .runWith(Sink.seq)
+          // #init-flow
+          .futureValue
 
       //then
       val parquetContent: List[GenericRecord] = fromParquet(file, conf)

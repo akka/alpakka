@@ -4,6 +4,7 @@
 
 package docs.scaladsl
 
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.stream.alpakka.avroparquet.scaladsl.AvroParquetSink
 import akka.stream.scaladsl.Source
@@ -14,6 +15,8 @@ import org.apache.avro.generic.GenericRecord
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import scala.concurrent.Future
 
 class AvroParquetSinkSpec
     extends TestKit(ActorSystem("SinkSpec"))
@@ -29,10 +32,16 @@ class AvroParquetSinkSpec
       //given
       val n: Int = 3
       val records: List[GenericRecord] = genDocuments(n).sample.get.map(docToRecord)
-      Source
-        .fromIterator(() => records.iterator)
-        .runWith(AvroParquetSink(parquetWriter(file, conf, schema)))
-        .futureValue
+      // #init-sink
+      val source: Source[GenericRecord, NotUsed] = // ???
+        // #init-sink
+        Source(records)
+      val writer = parquetWriter(file, conf, schema)
+      // #init-sink
+      val result: Future[Done] = source
+        .runWith(AvroParquetSink(writer))
+      // #init-sink
+      result.futureValue shouldBe Done
 
       //when
       val parquetContent: List[GenericRecord] = fromParquet(file, conf)

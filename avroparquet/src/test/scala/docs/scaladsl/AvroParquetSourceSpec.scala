@@ -4,6 +4,7 @@
 
 package docs.scaladsl
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.alpakka.avroparquet.scaladsl.{AvroParquetSink, AvroParquetSource}
 import akka.stream.scaladsl.{Keep, Source}
@@ -33,17 +34,17 @@ class AvroParquetSourceSpec
       //given
       val n: Int = 4
       val records: List[GenericRecord] = genDocuments(n).sample.get.map(docToRecord)
-      Source
-        .fromIterator(() => records.iterator)
+      Source(records)
         .toMat(AvroParquetSink(parquetWriter(file, conf, schema)))(Keep.right)
         .run()
         .futureValue
 
       //when
       val reader: ParquetReader[GenericRecord] = parquetReader(file, conf)
-      val (_, sink) = AvroParquetSource(reader)
-        .toMat(TestSink.probe)(Keep.both)
-        .run()
+      // #init-source
+      val source: Source[GenericRecord, NotUsed] = AvroParquetSource(reader)
+      // #init-source
+      val sink = source.runWith(TestSink.probe)
 
       //then
       val result: Seq[GenericRecord] = sink.toStrict(3.seconds)

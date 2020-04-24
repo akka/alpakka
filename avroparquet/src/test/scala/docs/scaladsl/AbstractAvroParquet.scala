@@ -32,12 +32,31 @@ trait AbstractAvroParquet extends BeforeAndAfterAll {
     Gen.oneOf(Seq(Document(id = Gen.alphaStr.sample.get, body = Gen.alphaLowerStr.sample.get)))
   val genDocuments: Int => Gen[List[Document]] = n => Gen.listOfN(n, genDocument)
 
-  val folder: String = "./" + Random.alphanumeric.take(8).mkString("")
+  // #prepare
+  val folder: String = // ???
+    // #prepare
+    "./" + Random.alphanumeric.take(8).mkString("")
+  // #prepare
   val file = folder + "/test.parquet"
   val filePath = new org.apache.hadoop.fs.Path(file)
 
   val conf = new Configuration()
   conf.setBoolean(AvroReadSupport.AVRO_COMPATIBILITY, true)
+
+  // #prepare
+
+  private def documentation(): Unit = {
+    // #init-writer
+    val writer: ParquetWriter[GenericRecord] =
+      AvroParquetWriter.builder[GenericRecord](new Path(file)).withConf(conf).withSchema(schema).build()
+    // #init-writer
+    // #init-reader
+    val reader: ParquetReader[GenericRecord] =
+      AvroParquetReader.builder[GenericRecord](HadoopInputFile.fromPath(new Path(file), conf)).withConf(conf).build()
+    // #init-reader
+    if (writer != null && reader != null) { // forces val usage
+    }
+  }
 
   def parquetWriter(file: String, conf: Configuration, schema: Schema): ParquetWriter[GenericRecord] =
     AvroParquetWriter.builder[GenericRecord](new Path(file)).withConf(conf).withSchema(schema).build()

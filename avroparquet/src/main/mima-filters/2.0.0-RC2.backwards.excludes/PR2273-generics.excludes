@@ -1,0 +1,7 @@
+# added generics type to the factory methods
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.avroparquet.javadsl.AvroParquetFlow.create")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.avroparquet.javadsl.AvroParquetSource.create")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.avroparquet.javadsl.AvroParquetSink.create")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.avroparquet.scaladsl.AvroParquetSink.apply")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.avroparquet.scaladsl.AvroParquetFlow.apply")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.avroparquet.scaladsl.AvroParquetSource.apply")
