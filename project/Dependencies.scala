@@ -167,7 +167,6 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "org.elasticsearch.client" % "elasticsearch-rest-client" % "6.3.1", // ApacheV2
         "io.spray" %% "spray-json" % "1.3.5", // ApacheV2
-        "org.testcontainers" % "elasticsearch" % "1.14.0" % Test,
         "org.slf4j" % "jcl-over-slf4j" % jclOverSlf4jVersion % Test
       ) ++ JacksonDatabindDependencies
   )

@@ -9,25 +9,24 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.elasticsearch.*;
-import akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchFlow;
-import akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSink;
-import akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSource;
+import akka.stream.alpakka.elasticsearch.javadsl.*;
+import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
 import com.fasterxml.jackson.databind.ObjectMapper;
+// #init-client
 import org.apache.http.HttpHost;
+// #init-client
 import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHeader;
+// #init-client
 import org.elasticsearch.client.RestClient;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+// #init-client
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -40,24 +39,23 @@ import static org.junit.Assert.assertEquals;
 
 @RunWith(value = Parameterized.class)
 public class ElasticsearchTest {
-  //  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
+  @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
-  @Parameterized.Parameters(name = "{index}: version={0} api={1}")
+  @Parameterized.Parameters(name = "{index}: port={0} api={1}")
   public static Iterable<Object[]> data() {
     return Arrays.asList(
         new Object[][] {
-          {"6.8.0", ApiVersion.V5},
-          {"7.6.0", ApiVersion.V7}
+          {9201, ApiVersion.V5},
+          {9202, ApiVersion.V7}
         });
   }
 
   private static ApiVersion apiVersion;
-  private static ElasticsearchContainer container;
   private static RestClient client;
   private static ActorSystem system;
   private static ActorMaterializer materializer;
 
-  public ElasticsearchTest(String esVersion, ApiVersion apiVersion) {}
+  public ElasticsearchTest(int port, ApiVersion apiVersion) {}
 
   // #define-class
   public static class Book {
@@ -72,13 +70,12 @@ public class ElasticsearchTest {
   // #define-class
 
   @Parameterized.BeforeParam
-  public static void beforeParam(String esVersion, ApiVersion esApiVersion) throws IOException {
+  public static void beforeParam(int port, ApiVersion esApiVersion) throws IOException {
     apiVersion = esApiVersion;
-    container =
-        new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:" + esVersion)
-            .withStartupTimeout(Duration.ofSeconds(240));
-    container.start();
-    client = RestClient.builder(HttpHost.create(container.getHttpHostAddress())).build();
+    // #init-client
+
+    client = RestClient.builder(new HttpHost("localhost", port)).build();
+    // #init-client
 
     register("source", "Akka in Action");
     register("source", "Programming in Scala");
@@ -88,6 +85,12 @@ public class ElasticsearchTest {
     register("source", "Effective Akka");
     register("source", "Akka Concurrency");
     flushAndRefresh("source");
+  }
+
+  @Parameterized.AfterParam
+  public static void afterParam() throws IOException {
+    client.performRequest("DELETE", "/_all");
+    client.close();
   }
 
   @BeforeClass
@@ -100,8 +103,6 @@ public class ElasticsearchTest {
 
   @AfterClass
   public static void teardown() throws Exception {
-    container.close();
-    client.close();
     TestKit.shutdownActorSystem(system);
   }
 
@@ -125,10 +126,6 @@ public class ElasticsearchTest {
   }
 
   private void documentation() {
-    // #init-client
-
-    client = RestClient.builder(new HttpHost("localhost", 9201)).build();
-    // #init-client
     // #source-settings
     ElasticsearchSourceSettings sourceSettings =
         ElasticsearchSourceSettings.create().withBufferSize(10);

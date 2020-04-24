@@ -66,6 +66,18 @@ services:
     image: deangiberson/aws-dynamodb-local
     ports:
       - "8001:8000"
+  elasticsearch6:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.8.0
+    ports:
+      - "9201:9200"
+    environment:
+      - "discovery.type=single-node"
+  elasticsearch7:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.6.0
+    ports:
+      - "9202:9200"
+    environment:
+      - "discovery.type=single-node"
   ftp:
     image: stilliard/pure-ftpd:latest
     ports:

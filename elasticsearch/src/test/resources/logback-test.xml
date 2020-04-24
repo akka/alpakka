@@ -21,15 +21,12 @@
 
     <logger name="akka" level="DEBUG"/>
     <logger name="akka.stream.alpakka" level="debug"/>
-    <logger name="com.github.dockerjava" level="warn"/>
     <logger name="org.apache.http" level="info"/>
     <logger name="org.apache.http.impl" level="info"/>
     <logger name="org.elasticsearch.client" level="info"/>
-    <logger name="org.testcontainers" level="info"/>
 
     <root level="debug">
-        <appender-ref ref="STDOUT"/>
-<!--        <appender-ref ref="CapturingAppender"/>-->
+        <appender-ref ref="CapturingAppender"/>
         <appender-ref ref="FILE" />
     </root>
 </configuration>

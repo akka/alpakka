@@ -558,7 +558,6 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           .map { kafkaMessage: KafkaMessage =>
             val book = kafkaMessage.book
             val id = book.title
-            println("title: " + book.title)
 
             // Transform message so that we can write to elastic
             WriteMessage.createIndexMessage(id, book).withPassThrough(kafkaMessage.offset)
@@ -1049,13 +1048,6 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
     }
 
     lazy val _ = {
-      //#init-client
-      import org.apache.http.HttpHost
-      import org.elasticsearch.client.RestClient
-
-      val client = RestClient.builder(new HttpHost("localhost", 9201)).build()
-      //#init-client
-      client.toString should not be empty
       //#source-settings
       val sourceSettings = ElasticsearchSourceSettings()
         .withBufferSize(10)

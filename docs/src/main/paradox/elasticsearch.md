@@ -30,7 +30,7 @@ Sources, Flows and Sinks provided by this connector need a prepared `org.elastic
 access to Elasticsearch.
 
 Scala
-: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #init-client }
+: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchSpec.scala) { #init-client }
 
 Java
 : @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #init-client }
