@@ -477,7 +477,7 @@ trait S3IntegrationSpec
   }
 
   private def uploadCopyDownload(sourceKey: String, targetKey: String): Assertion = {
-    val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
+    val source: Source[ByteString, Any] = Source.single(ByteString(objectValue))
 
     val results = for {
       upload <- source.runWith(S3.multipartUpload(defaultBucket, sourceKey).withAttributes(attributes))
