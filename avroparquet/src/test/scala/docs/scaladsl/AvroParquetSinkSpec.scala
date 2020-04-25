@@ -10,8 +10,10 @@ import akka.stream.alpakka.avroparquet.scaladsl.AvroParquetSink
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
+import com.sksamuel.avro4s.Record
 import org.scalatest.concurrent.ScalaFutures
 import org.apache.avro.generic.GenericRecord
+import org.apache.parquet.hadoop.ParquetWriter
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -28,13 +30,12 @@ class AvroParquetSinkSpec
 
   "Parquet Sink" should {
 
-    "create new parquet file" in assertAllStagesStopped {
+    "create new parquet file from `GenericRecords`" in assertAllStagesStopped {
       //given
       val n: Int = 3
+      val file: String = genFinalFile.sample.get
       val records: List[GenericRecord] = genDocuments(n).sample.get.map(docToRecord)
-      // #init-sink
       val source: Source[GenericRecord, NotUsed] = // ???
-        // #init-sink
         Source(records)
       val writer = parquetWriter(file, conf, schema)
       // #init-sink
@@ -49,6 +50,31 @@ class AvroParquetSinkSpec
       //then
       parquetContent.length shouldEqual n
       parquetContent should contain theSameElementsAs records
+    }
+
+    "create new parquet file from any subtype of `GenericRecord` " in assertAllStagesStopped {
+      //given
+      val n: Int = 3
+      val file: String = genFinalFile.sample.get
+      val documents: List[Document] = genDocuments(n).sample.get
+      val records: List[Record] = documents.map(format.to(_))
+      // #init-sink
+      val source: Source[Record, NotUsed] = // ???
+        // #init-sink
+        Source(records)
+      val writer: ParquetWriter[Record] = avro4sWriter[Record](file, conf, schema)
+      // #init-sink
+      val result: Future[Done] = source
+        .runWith(AvroParquetSink(writer))
+      // #init-sink
+      result.futureValue shouldBe Done
+
+      //when
+      val parquetContent: List[GenericRecord] = fromParquet(file, conf)
+
+      //then
+      parquetContent.length shouldEqual n
+      parquetContent.map(format.from(_)) should contain theSameElementsAs documents
     }
 
   }

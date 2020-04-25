@@ -31,17 +31,48 @@ class AvroParquetFlowSpec
 
   "Parquet Flow" should {
 
-    "insert avro records in parquet" in assertAllStagesStopped {
+    "insert avro records in parquet from `GenericRecord`" in assertAllStagesStopped {
       //given
       val n: Int = 2
-      val records: List[Record] = genDocuments(n).sample.get.map(format.to(_))
+      val file: String = genFinalFile.sample.get
+      val records: List[GenericRecord] = genDocuments(n).sample.get.map(docToRecord)
+      val writer: ParquetWriter[GenericRecord] = parquetWriter(file, conf, schema)
+
+      //when
+      // #init-flow
+      val source: Source[GenericRecord, NotUsed] = // ???
+        // #init-flow
+        Source.fromIterator(() => records.iterator)
+      // #init-flow
+
+      val avroParquet: Flow[GenericRecord, GenericRecord, NotUsed] = AvroParquetFlow(writer)
+      val result =
+        source
+          .via(avroParquet)
+          .runWith(Sink.seq)
+      // #init-flow
+
+      result.futureValue
+
+      //then
+      val parquetContent: List[GenericRecord] = fromParquet(file, conf)
+      parquetContent.length shouldEqual n
+      parquetContent should contain theSameElementsAs records
+    }
+
+    "insert avro records in parquet from a subtype of `GenericRecord`" in assertAllStagesStopped {
+      //given
+      val n: Int = 2
+      val file: String = genFinalFile.sample.get
+      val documents: List[Document] = genDocuments(n).sample.get
+      val avroDocuments: List[Record] = documents.map(format.to(_))
       val writer: ParquetWriter[Record] = avro4sWriter[Record](file, conf, schema)
 
       //when
       // #init-flow
       val source: Source[Record, NotUsed] = // ???
         // #init-flow
-        Source(records)
+        Source(avroDocuments)
       // #init-flow
 
       val avroParquet: Flow[Record, Record, NotUsed] = AvroParquetFlow[Record](writer)
@@ -56,7 +87,7 @@ class AvroParquetFlowSpec
       //then
       val parquetContent: List[GenericRecord] = fromParquet(file, conf)
       parquetContent.length shouldEqual n
-      parquetContent.map(format.from(_)) should contain theSameElementsAs records.map(format.from(_))
+      parquetContent.map(format.from(_)) should contain theSameElementsAs documents
     }
   }
 
