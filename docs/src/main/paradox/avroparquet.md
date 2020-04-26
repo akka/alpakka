@@ -26,7 +26,7 @@ The table below shows direct dependencies of this module and the second tab show
 ## Source Initiation
 
 Sometimes it might be useful to use parquet file as stream Source. For this we will need to create `AvroParquetReader` 
-instance which will produce records as a subtypes of `GenericRecord`, the abstract representation of a record in parquet.
+instance which will produce records as a subtypes of `GenericRecord`, the avro's record abstract representation.
  
 Scala
 : @@snip (/avroparquet/src/test/scala/docs/scaladsl/AbstractAvroParquet.scala) { #prepare-source #init-reader }
@@ -54,9 +54,8 @@ Scala
 Java
 : @@snip (/avroparquet/src/test/java/docs/javadsl/AvroParquetSinkTest.java) { #init-writer }
 
-After that, the AvroParquet Sink can already be used. [Akka HTTP](akka-http:)
-In order to demonstrate that *any* subtype of `GenericRecord` can be passed to the stream, the below Scala example 
-represents it by passing instances of `com.sksamuel.avro4s.Record`, which it is a type that implements the `GenericRecord` avro interface.
+After that, the AvroParquet Sink can already be used. 
+The below scala example demonstrates that *any* subtype of `GenericRecord` can be passed to the stream, in this case the one used is `com.sksamuel.avro4s.Record`, which it implements the `GenericRecord` avro interface.
 See [Avro4s](https://github.com/sksamuel/avro4s:) or [Avrohugger](https://github.com/julianpeeters/avrohugger:)
 ) between other ways of generating these classes.
  
