@@ -61,12 +61,12 @@ class AvroParquetSourceSpec
       val documents: List[Document] = genDocuments(n).sample.get
       val avroDocuments: List[Record] = documents.map(format.to(_))
       Source(avroDocuments)
-        .toMat(AvroParquetSink(avro4sWriter(file, conf, schema)))(Keep.right)
+        .toMat(AvroParquetSink(parquetWriter(file, conf, schema)))(Keep.right)
         .run()
         .futureValue
 
       //when
-      val reader: ParquetReader[GenericRecord] = parquetGReader(file, conf)
+      val reader: ParquetReader[GenericRecord] = parquetReader(file, conf)
       // #init-source
       val source: Source[GenericRecord, NotUsed] = AvroParquetSource(reader)
       // #init-source

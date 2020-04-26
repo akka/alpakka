@@ -7,7 +7,7 @@ package docs.scaladsl
 import java.io.File
 
 import akka.testkit.TestKit
-import com.sksamuel.avro4s.{AvroSchema, RecordFormat}
+import com.sksamuel.avro4s.RecordFormat
 import org.apache.avro.Schema
 import org.apache.avro.generic.{GenericRecord, GenericRecordBuilder}
 import org.apache.hadoop.conf.Configuration
@@ -36,8 +36,6 @@ trait AbstractAvroParquet extends BeforeAndAfterAll {
 
   val format: RecordFormat[Document] = RecordFormat[Document]
 
-  val avroSchema: Schema = AvroSchema[Document]
-
   val folder: String = "./" + Random.alphanumeric.take(8).mkString("")
 
   val genFinalFile: Gen[String] = for {
@@ -49,16 +47,10 @@ trait AbstractAvroParquet extends BeforeAndAfterAll {
   val conf: Configuration = new Configuration()
   conf.setBoolean(AvroReadSupport.AVRO_COMPATIBILITY, true)
 
-  def parquetWriter(file: String, conf: Configuration, schema: Schema): ParquetWriter[GenericRecord] =
-    AvroParquetWriter.builder[GenericRecord](new Path(file)).withConf(conf).withSchema(schema).build()
-
-  def avro4sWriter[T <: GenericRecord](file: String, conf: Configuration, schema: Schema): ParquetWriter[T] =
+  def parquetWriter[T <: GenericRecord](file: String, conf: Configuration, schema: Schema): ParquetWriter[T] =
     AvroParquetWriter.builder[T](new Path(file)).withConf(conf).withSchema(schema).build()
 
-  def parquetReader(file: String, conf: Configuration): ParquetReader[GenericRecord] =
-    AvroParquetReader.builder[GenericRecord](HadoopInputFile.fromPath(new Path(file), conf)).withConf(conf).build()
-
-  def parquetGReader[T <: GenericRecord](file: String, conf: Configuration): ParquetReader[T] =
+  def parquetReader[T <: GenericRecord](file: String, conf: Configuration): ParquetReader[T] =
     AvroParquetReader.builder[T](HadoopInputFile.fromPath(new Path(file), conf)).withConf(conf).build()
 
   def docToGenericRecord(document: Document): GenericRecord =
@@ -71,17 +63,6 @@ trait AbstractAvroParquet extends BeforeAndAfterAll {
     val reader = parquetReader(file, conf)
     var record: GenericRecord = reader.read()
     var result: List[GenericRecord] = List.empty[GenericRecord]
-    while (record != null) {
-      result = result ::: record :: Nil
-      record = reader.read()
-    }
-    result
-  }
-
-  def fromGenericParquet[T <: GenericRecord](file: String, configuration: Configuration): List[T] = {
-    val reader = parquetGReader(file, conf)
-    var record: T = reader.read()
-    var result: List[T] = List.empty[T]
     while (record != null) {
       result = result ::: record :: Nil
       record = reader.read()

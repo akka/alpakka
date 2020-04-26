@@ -18,9 +18,6 @@ import org.apache.parquet.hadoop.ParquetWriter
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 
-import scala.collection.immutable
-import scala.concurrent.Future
-
 class AvroParquetFlowSpec
     extends TestKit(ActorSystem("FlowSpec"))
     with AnyWordSpecLike
@@ -66,7 +63,7 @@ class AvroParquetFlowSpec
       val file: String = genFinalFile.sample.get
       val documents: List[Document] = genDocuments(n).sample.get
       val avroDocuments: List[Record] = documents.map(format.to(_))
-      val writer: ParquetWriter[Record] = avro4sWriter[Record](file, conf, schema)
+      val writer: ParquetWriter[Record] = parquetWriter[Record](file, conf, schema)
 
       //when
       Source(avroDocuments)
