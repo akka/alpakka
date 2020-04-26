@@ -61,7 +61,7 @@ trait AbstractAvroParquet extends BeforeAndAfterAll {
   def parquetGReader[T <: GenericRecord](file: String, conf: Configuration): ParquetReader[T] =
     AvroParquetReader.builder[T](HadoopInputFile.fromPath(new Path(file), conf)).withConf(conf).build()
 
-  def docToRecord(document: Document): GenericRecord =
+  def docToGenericRecord(document: Document): GenericRecord =
     new GenericRecordBuilder(schema)
       .set("id", document.id)
       .set("body", document.body)
@@ -89,21 +89,36 @@ trait AbstractAvroParquet extends BeforeAndAfterAll {
     result
   }
 
-  () =>
-    new { //documentation
-      // #prepare
-      import org.apache.avro.generic.GenericRecord
-      import org.apache.hadoop.conf.Configuration
-      import org.apache.hadoop.fs.Path
-      import org.apache.parquet.avro.AvroParquetReader
-      import org.apache.parquet.hadoop.util.HadoopInputFile
-      import org.apache.parquet.hadoop.ParquetReader
-      import org.apache.parquet.avro.AvroReadSupport
+  () => { //documentation
+    // #prepare-source
+    import org.apache.avro.generic.GenericRecord
+    import org.apache.hadoop.conf.Configuration
+    import org.apache.hadoop.fs.Path
+    import org.apache.parquet.avro.AvroParquetReader
+    import org.apache.parquet.hadoop.util.HadoopInputFile
+    import org.apache.parquet.hadoop.ParquetReader
+    import org.apache.parquet.avro.AvroReadSupport
 
-      val file: String = "./sample/path/test.parquet"
-      val conf: Configuration = new Configuration()
-      conf.setBoolean(AvroReadSupport.AVRO_COMPATIBILITY, true)
-      // #prepare
+    val file: String = "./sample/path/test.parquet"
+    val conf: Configuration = new Configuration()
+    conf.setBoolean(AvroReadSupport.AVRO_COMPATIBILITY, true)
+    // #prepare-source
+
+    () =>
+      {
+        // #prepare-sink
+        import com.sksamuel.avro4s.Record
+        import org.apache.hadoop.conf.Configuration
+        import org.apache.hadoop.fs.Path
+        import org.apache.parquet.avro.AvroReadSupport
+
+        val file: String = "./sample/path/test.parquet"
+        val conf: Configuration = new Configuration()
+        conf.setBoolean(AvroReadSupport.AVRO_COMPATIBILITY, true)
+        val writer: ParquetWriter[Record] =
+          AvroParquetWriter.builder[Record](new Path(file)).withConf(conf).withSchema(schema).build()
+        // #prepare-sink
+      }
 
       // #init-writer
       val writer: ParquetWriter[GenericRecord] =
@@ -115,7 +130,7 @@ trait AbstractAvroParquet extends BeforeAndAfterAll {
       // #init-reader
       if (writer != null && reader != null) { // forces val usage
       }
-    }
+  }
 
   override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)

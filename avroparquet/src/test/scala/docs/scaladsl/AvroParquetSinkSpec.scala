@@ -34,15 +34,10 @@ class AvroParquetSinkSpec
       //given
       val n: Int = 3
       val file: String = genFinalFile.sample.get
-      val records: List[GenericRecord] = genDocuments(n).sample.get.map(docToRecord)
-      val source: Source[GenericRecord, NotUsed] = // ???
-        Source(records)
+      val records: List[GenericRecord] = genDocuments(n).sample.get.map(docToGenericRecord)
+
       val writer = parquetWriter(file, conf, schema)
-      // #init-sink
-      val result: Future[Done] = source
-        .runWith(AvroParquetSink(writer))
-      // #init-sink
-      result.futureValue shouldBe Done
+      Source(records).runWith(AvroParquetSink(writer)).futureValue
 
       //when
       val parquetContent: List[GenericRecord] = fromParquet(file, conf)
@@ -57,11 +52,12 @@ class AvroParquetSinkSpec
       val n: Int = 3
       val file: String = genFinalFile.sample.get
       val documents: List[Document] = genDocuments(n).sample.get
-      val records: List[Record] = documents.map(format.to(_))
       // #init-sink
-      val source: Source[Record, NotUsed] = // ???
-        // #init-sink
-        Source(records)
+      val records: List[Record] = // ???
+        documents.map(format.to(_))
+      // #init-sink
+      val source: Source[Record, NotUsed] = Source(records)
+      // #init-sink
       val writer: ParquetWriter[Record] = avro4sWriter[Record](file, conf, schema)
       // #init-sink
       val result: Future[Done] = source
