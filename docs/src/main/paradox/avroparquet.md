@@ -60,7 +60,7 @@ See [Avro4s](https://github.com/sksamuel/avro4s:) or [Avrohugger](https://github
 ) between other ways of generating these classes.
  
 Scala
-: @@snip (/avroparquet/src/test/scala/docs/scaladsl/AvroParquetSinkSpec.scala) { #init-sink }
+: @@snip (/avroparquet/src/test/scala/docs/scaladsl//AvroParquetSinkSpec.scala) { #init-sink }
 
 Java
 : @@snip (/avroparquet/src/test/java/docs/javadsl/AvroParquetSinkTest.java) { #init-sink }

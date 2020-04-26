@@ -32,16 +32,15 @@ class AvroParquetFlowSpec
       //given
       val n: Int = 2
       val file: String = genFinalFile.sample.get
-      val records: List[GenericRecord] = genDocuments(n).sample.get.map(docToGenericRecord)
+      // #init-flow
+      val records: List[GenericRecord]
+      // #init-flow
+      = genDocuments(n).sample.get.map(docToGenericRecord)
       val writer: ParquetWriter[GenericRecord] = parquetWriter(file, conf, schema)
 
       //when
       // #init-flow
-      val source: Source[GenericRecord, NotUsed] = // ???
-        // #init-flow
-        Source.fromIterator(() => records.iterator)
-      // #init-flow
-
+      val source: Source[GenericRecord, NotUsed] = Source(records)
       val avroParquet: Flow[GenericRecord, GenericRecord, NotUsed] = AvroParquetFlow(writer)
       val result =
         source

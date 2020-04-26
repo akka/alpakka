@@ -10,7 +10,7 @@ import akka.stream.alpakka.avroparquet.scaladsl.AvroParquetSink
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
-import com.sksamuel.avro4s.Record
+import com.sksamuel.avro4s.{Record, RecordFormat}
 import org.scalatest.concurrent.ScalaFutures
 import org.apache.avro.generic.GenericRecord
 import org.apache.parquet.hadoop.ParquetWriter
@@ -51,14 +51,10 @@ class AvroParquetSinkSpec
       val n: Int = 3
       val file: String = genFinalFile.sample.get
       val documents: List[Document] = genDocuments(n).sample.get
-      // #init-sink
-      val records: List[Record] = // ???
-        documents.map(format.to(_))
-      // #init-sink
-      val source: Source[Record, NotUsed] = Source(records)
-      // #init-sink
       val writer: ParquetWriter[Record] = parquetWriter[Record](file, conf, schema)
       // #init-sink
+      val records: List[Record] = documents.map(RecordFormat[Document].to(_))
+      val source: Source[Record, NotUsed] = Source(records)
       val result: Future[Done] = source
         .runWith(AvroParquetSink(writer))
       // #init-sink

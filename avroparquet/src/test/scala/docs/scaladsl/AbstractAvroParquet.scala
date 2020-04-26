@@ -85,10 +85,10 @@ trait AbstractAvroParquet extends BeforeAndAfterAll {
     conf.setBoolean(AvroReadSupport.AVRO_COMPATIBILITY, true)
     // #prepare-source
 
-    () =>
+    () => //documentation for sink
       {
         // #prepare-sink
-        import com.sksamuel.avro4s.Record
+        import com.sksamuel.avro4s.{Record, RecordFormat}
         import org.apache.hadoop.conf.Configuration
         import org.apache.hadoop.fs.Path
         import org.apache.parquet.avro.AvroReadSupport
