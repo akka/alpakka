@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.s3.impl
 
-import java.net.URLDecoder
+import java.net.{URLDecoder, URLEncoder}
 import java.nio.charset.StandardCharsets
 
 import akka.annotation.InternalApi
@@ -140,7 +140,8 @@ import scala.concurrent.{ExecutionContext, Future}
     val copyPartition = multipartCopy.copyPartition
     val range = copyPartition.range
     val source = copyPartition.sourceLocation.validate(conf)
-    val sourceHeaderValuePrefix = s"/${source.bucket}/${source.key}"
+    val encodedKey = URLEncoder.encode(source.key, StandardCharsets.UTF_8.toString)
+    val sourceHeaderValuePrefix = s"/${source.bucket}/${encodedKey}"
     val sourceHeaderValue = sourceVersionId
       .map(versionId => s"$sourceHeaderValuePrefix?versionId=$versionId")
       .getOrElse(sourceHeaderValuePrefix)
