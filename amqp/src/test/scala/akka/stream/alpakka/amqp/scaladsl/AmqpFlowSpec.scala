@@ -86,7 +86,28 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
     }
 
     "fail stage on creating channel error" in assertAllStagesStopped {
-      shouldFailStageOnCreatingChannelError(mockedFlowWithConfirm)
+      new AmqpMocking {
+        def shouldFailStageOnCreatingChannelError(flow: Flow[WriteMessage, WriteResult, Future[Done]]) = {
+          val channelError = new RuntimeException("channel error")
+
+          when(
+            connectionMock.createChannel()
+          ).thenThrow(channelError)
+
+          val completion =
+            Source
+              .single("one")
+              .map(s => WriteMessage(ByteString(s)))
+              .via(flow)
+              .runWith(Sink.ignore)
+
+          completion.failed.futureValue shouldEqual channelError
+        }
+
+        val mockedFlowWithConfirm =
+          AmqpFlow.withConfirm(amqpWriteSettings(AmqpConnectionFactoryConnectionProvider(connectionFactoryMock)))
+        shouldFailStageOnCreatingChannelError(mockedFlowWithConfirm)
+      }
     }
 
     "propagate context" in assertAllStagesStopped {
@@ -317,23 +338,6 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
         .runWith(Sink.ignore)
 
     completion.failed.futureValue shouldEqual publicationError
-  }
-
-  def shouldFailStageOnCreatingChannelError(flow: Flow[WriteMessage, WriteResult, Future[Done]]) = {
-    val channelError = new RuntimeException("channel error")
-
-    when(
-      connectionMock.createChannel()
-    ).thenThrow(channelError)
-
-    val completion =
-      Source
-        .single("one")
-        .map(s => WriteMessage(ByteString(s)))
-        .via(flow)
-        .runWith(Sink.ignore)
-
-    completion.failed.futureValue shouldEqual channelError
   }
 
   def shouldEmitRejectedResultOnMessageRejection(flow: Flow[WriteMessage, WriteResult, Future[Done]]) = {
