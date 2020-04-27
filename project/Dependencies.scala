@@ -61,7 +61,7 @@ object Dependencies {
         "org.scalatest" %% "scalatest" % "3.1.0", // ApacheV2
         "com.novocode" % "junit-interface" % "0.11", // BSD-style
         "ch.qos.logback" % "logback-classic" % "1.2.3", // Eclipse Public License 1.0
-        "junit" % "junit" % "4.12" // Eclipse Public License 1.0
+        "junit" % "junit" % "4.13" // Eclipse Public License 1.0
       )
   )
 
@@ -167,7 +167,6 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "org.elasticsearch.client" % "elasticsearch-rest-client" % "6.3.1", // ApacheV2
         "io.spray" %% "spray-json" % "1.3.5", // ApacheV2
-        "org.codelibs" % "elasticsearch-cluster-runner" % "6.3.2.1" % Test, // ApacheV2
         "org.slf4j" % "jcl-over-slf4j" % jclOverSlf4jVersion % Test
       ) ++ JacksonDatabindDependencies
   )

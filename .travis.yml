@@ -48,6 +48,8 @@ jobs:
       env:
       - PRE_CMD="docker-compose up -d dynamodb"
     - name: elasticsearch
+      env:
+      - PRE_CMD="docker-compose up -d elasticsearch6 elasticsearch7"
     - name: file
     - name: ftp
       env:
