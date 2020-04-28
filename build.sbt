@@ -394,7 +394,7 @@ lazy val docs = project
                          "examples/mqtt-samples.html",
                          "index.html"),
     resolvers += Resolver.jcenterRepo,
-    publishRsyncArtifact := makeSite.value -> "www/",
+    publishRsyncArtifacts += makeSite.value -> "www/",
     publishRsyncHost := "akkarepo@gustav.akka.io",
     apidocRootPackage := "akka"
   )
