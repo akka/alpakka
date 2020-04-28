@@ -84,6 +84,7 @@ object EventSourceSpec {
     import Server._
     import context.dispatcher
 
+    private implicit val sys = context.system
     private implicit val mat = ActorMaterializer()
 
     context.system.scheduler.scheduleOnce(1.second, self, Bind)

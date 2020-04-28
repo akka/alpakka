@@ -3,17 +3,17 @@ import Keys._
 
 object Dependencies {
 
-  val Nightly = sys.env.get("TRAVIS_EVENT_TYPE").contains("cron")
+  val CronBuild = sys.env.get("TRAVIS_EVENT_TYPE").contains("cron")
 
   val Scala211 = "2.11.12"
   val Scala212 = "2.12.10"
   val Scala213 = "2.13.1"
-  val ScalaVersions = Seq(Scala212, Scala211, Scala213).filterNot(_ == Scala211 && Nightly)
+  val ScalaVersions = Seq(Scala212, Scala211, Scala213).filterNot(_ == Scala211 && CronBuild)
 
   val Akka25Version = "2.5.31"
   val Akka26Version = "2.6.4"
-  val AkkaVersion = if (Nightly) Akka26Version else Akka25Version
-  val AkkaBinaryVersion = if (Nightly) "2.6" else "2.5"
+  val AkkaVersion = if (CronBuild) Akka26Version else Akka25Version
+  val AkkaBinaryVersion = if (CronBuild) "2.6" else "2.5"
 
   val InfluxDBJavaVersion = "2.15"
 
@@ -21,8 +21,10 @@ object Dependencies {
   val AwsSpiAkkaHttpVersion = "0.0.8"
   // Sync with plugins.sbt
   val AkkaGrpcBinaryVersion = "0.8"
-  val AkkaHttpVersion = "10.1.11"
-  val AkkaHttpBinaryVersion = "10.1"
+  val AkkaHttp101 = "10.1.11"
+  val AkkaHttp102 = "10.2.0-M1"
+  val AkkaHttpVersion = if (CronBuild) AkkaHttp102 else AkkaHttp101
+  val AkkaHttpBinaryVersion = if (CronBuild) "10.2" else "10.1"
   val mockitoVersion = "3.1.0"
 
   val CouchbaseVersion = "2.7.13"
