@@ -33,9 +33,9 @@ class ElasticsearchSimpleFlowStageTest
   val settings = ElasticsearchWriteSettings()
   val dummyMessages = (
     immutable.Seq(
-      WriteMessage.createIndexMessage("1", """{"foo": "bar"}"""),
-      WriteMessage.createIndexMessage("2", """{"foo2": "bar2"}"""),
-      WriteMessage.createIndexMessage("3", """{"foo3": "bar3"}""")
+      WriteMessage.createIndexMessage("1", """{"title": "bar"}"""),
+      WriteMessage.createIndexMessage("2", """{"title": "bar2"}"""),
+      WriteMessage.createIndexMessage("3", """{"title": "bar3"}""")
     ),
     immutable.Seq[WriteResult[String, NotUsed]]()
   )
