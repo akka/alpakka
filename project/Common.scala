@@ -29,7 +29,7 @@ object Common extends AutoPlugin {
                             "Contributors",
                             "https://gitter.im/akka/dev",
                             url("https://github.com/akka/alpakka/graphs/contributors")),
-    licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
+    licenses := Seq(("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0"))),
     description := "Alpakka is a Reactive Enterprise Integration library for Java and Scala, based on Reactive Streams and Akka.",
     fatalWarnings := true,
     mimaReportSignatureProblems := true
@@ -56,7 +56,7 @@ object Common extends AutoPlugin {
           case _ => Seq("-Xfuture", "-Yno-adapted-args")
         }),
       scalacOptions ++= (scalaVersion.value match {
-          case Dependencies.Scala212 if insideCI.value && fatalWarnings.value && !Dependencies.Nightly =>
+          case Dependencies.Scala212 if insideCI.value && fatalWarnings.value && !Dependencies.CronBuild =>
             Seq("-Xfatal-warnings")
           case _ => Seq.empty
         }),
