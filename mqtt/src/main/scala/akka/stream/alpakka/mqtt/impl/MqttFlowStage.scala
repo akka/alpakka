@@ -94,11 +94,15 @@ abstract class MqttFlowStageLogic[I](in: Inlet[I],
   protected def handleDeliveryComplete(token: IMqttDeliveryToken): Unit = ()
 
   private val onSubscribe: AsyncCallback[Try[IMqttToken]] = getAsyncCallback[Try[IMqttToken]] { conn =>
-    subscriptionPromise.complete(conn.map(_ => {
-      log.debug("subscription established")
-      Done
-    }))
-    pull(in)
+    if (subscriptionPromise.isCompleted) {
+      log.debug("subscription re-established")
+    } else {
+      subscriptionPromise.complete(conn.map(_ => {
+        log.debug("subscription established")
+        Done
+      }))
+      pull(in)
+    }
   }
 
   private val onConnect: AsyncCallback[IMqttAsyncClient] =
