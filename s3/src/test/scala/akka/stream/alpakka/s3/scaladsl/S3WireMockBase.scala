@@ -955,8 +955,8 @@ object S3WireMockBase {
     |  path-style-access = false
     |  endpoint-url = "http://localhost:$proxyPort"
     |  retry-settings {
-    |    min-backoff = 0s
-    |    max-backoff = 0s
+    |    min-backoff = 100ms
+    |    max-backoff = 300ms
     |  }
     |}
     """.stripMargin)
