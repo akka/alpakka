@@ -33,9 +33,9 @@ class ElasticsearchSimpleFlowStageTest
   val settings = ElasticsearchWriteSettings()
   val dummyMessages = (
     immutable.Seq(
-      WriteMessage.createIndexMessage("1", """{"title": "bar"}"""),
-      WriteMessage.createIndexMessage("2", """{"title": "bar2"}"""),
-      WriteMessage.createIndexMessage("3", """{"title": "bar3"}""")
+      WriteMessage.createIndexMessage("1", """{"foo": "bar"}"""),
+      WriteMessage.createIndexMessage("2", """{"foo2": "bar2"}"""),
+      WriteMessage.createIndexMessage("3", """{"foo3": "bar3"}""")
     ),
     immutable.Seq[WriteResult[String, NotUsed]]()
   )
@@ -46,7 +46,7 @@ class ElasticsearchSimpleFlowStageTest
         val (upstream, downstream) =
           TestSource
             .probe[(immutable.Seq[WriteMessage[String, NotUsed]], immutable.Seq[WriteResult[String, NotUsed]])]
-            .via(new impl.ElasticsearchSimpleFlowStage[String, NotUsed]("source", "_doc", client, settings, writer))
+            .via(new impl.ElasticsearchSimpleFlowStage[String, NotUsed]("es-flow-stage-index", "_doc", client, settings, writer))
             .toMat(TestSink.probe)(Keep.both)
             .run()
 
