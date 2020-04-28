@@ -46,7 +46,15 @@ class ElasticsearchSimpleFlowStageTest
         val (upstream, downstream) =
           TestSource
             .probe[(immutable.Seq[WriteMessage[String, NotUsed]], immutable.Seq[WriteResult[String, NotUsed]])]
-            .via(new impl.ElasticsearchSimpleFlowStage[String, NotUsed]("es-flow-stage-index", "_doc", client, settings, writer))
+            .via(
+              new impl.ElasticsearchSimpleFlowStage[String, NotUsed](
+                "es-simple-flow-index",
+                "_doc",
+                client,
+                settings,
+                writer
+              )
+            )
             .toMat(TestSink.probe)(Keep.both)
             .run()
 
