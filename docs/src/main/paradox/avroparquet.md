@@ -55,9 +55,13 @@ Java
 : @@snip (/avroparquet/src/test/java/docs/javadsl/AvroParquetSinkTest.java) { #init-writer }
 
 After that, the AvroParquet Sink can already be used. 
+
+@@@ div { .group-scala }
+
 The below scala example demonstrates that *any* subtype of `GenericRecord` can be passed to the stream, in this case the one used is `com.sksamuel.avro4s.Record`, which it implements the `GenericRecord` avro interface.
-See [Avro4s](https://github.com/sksamuel/avro4s:) or [Avrohugger](https://github.com/julianpeeters/avrohugger:)
-) between other ways of generating these classes.
+See [Avro4s](https://github.com/sksamuel/avro4s) or [Avrohugger](https://github.com/julianpeeters/avrohugger) between other ways of generating these classes.
+
+@@@
  
 Scala
 : @@snip (/avroparquet/src/test/scala/docs/scaladsl//AvroParquetSinkSpec.scala) { #init-sink }
@@ -67,7 +71,7 @@ Java
 
 ## Flow Initiation
 
-The representation of a ParquetWriter as a Flow is also available to use as a streams flow stage, in which as well as per the other representations, it will expect subtypes of the Parquet `GenericRecord` type to be passed.
+The representation of a `ParquetWriter` as a Flow is also available to use as a streams flow stage, in which as well as per the other representations, it will expect subtypes of the Parquet `GenericRecord` type to be passed.
  In which as a result, writes into a Parquet file and return the same `GenericRecord`s. Such Flow stage can be easily created by using the `AvroParquetFlow` and providing an `AvroParquetWriter` instance as parameter.
 
 Scala
