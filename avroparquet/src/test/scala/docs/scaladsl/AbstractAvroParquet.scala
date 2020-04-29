@@ -94,7 +94,6 @@ trait AbstractAvroParquet extends BeforeAndAfterAll {
     val writer: ParquetWriter[Record] =
       AvroParquetWriter.builder[Record](new Path(file)).withConf(conf).withSchema(schema).build()
     // #prepare-sink
-    // #init-reader
     if (writer != null) { // forces val usage
     }
   }
