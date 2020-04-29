@@ -18,6 +18,7 @@ import org.apache.parquet.hadoop.util.HadoopInputFile
 import org.scalacheck.Gen
 import org.scalatest.{BeforeAndAfterAll, Suite}
 
+import scala.language.higherKinds
 import scala.reflect.io.Directory
 import scala.util.Random
 
@@ -60,7 +61,7 @@ trait AbstractAvroParquet extends BeforeAndAfterAll {
       .build()
 
   def fromParquet(file: String, configuration: Configuration): List[GenericRecord] = {
-    val reader = parquetReader(file, conf)
+    val reader = parquetReader[GenericRecord](file, conf)
     var record: GenericRecord = reader.read()
     var result: List[GenericRecord] = List.empty[GenericRecord]
     while (record != null) {
@@ -70,47 +71,52 @@ trait AbstractAvroParquet extends BeforeAndAfterAll {
     result
   }
 
-  () => { //documentation
+  def sourceDocumentation(): Unit = {
     // #prepare-source
-    import org.apache.avro.generic.GenericRecord
+    import org.apache.hadoop.conf.Configuration
+    import org.apache.parquet.avro.AvroReadSupport
+
+    val conf: Configuration = new Configuration()
+    conf.setBoolean(AvroReadSupport.AVRO_COMPATIBILITY, true)
+    // #prepare-source
+  }
+
+  def sinkDocumentation(): Unit = {
+    // #prepare-sink
+    import com.sksamuel.avro4s.Record
     import org.apache.hadoop.conf.Configuration
     import org.apache.hadoop.fs.Path
-    import org.apache.parquet.avro.AvroParquetReader
-    import org.apache.parquet.hadoop.util.HadoopInputFile
-    import org.apache.parquet.hadoop.ParquetReader
     import org.apache.parquet.avro.AvroReadSupport
 
     val file: String = "./sample/path/test.parquet"
     val conf: Configuration = new Configuration()
     conf.setBoolean(AvroReadSupport.AVRO_COMPATIBILITY, true)
-    // #prepare-source
+    val writer: ParquetWriter[Record] =
+      AvroParquetWriter.builder[Record](new Path(file)).withConf(conf).withSchema(schema).build()
+    // #prepare-sink
+    // #init-reader
+    if (writer != null) { // forces val usage
+    }
+  }
 
-    () => //documentation for sink
-      {
-        // #prepare-sink
-        import com.sksamuel.avro4s.{Record, RecordFormat}
-        import org.apache.hadoop.conf.Configuration
-        import org.apache.hadoop.fs.Path
-        import org.apache.parquet.avro.AvroReadSupport
+  def initWriterDocumentation(): Unit = {
+    // #init-writer
+    import org.apache.avro.generic.GenericRecord
+    import org.apache.hadoop.fs.Path
+    import org.apache.parquet.avro.AvroParquetReader
+    import org.apache.parquet.hadoop.util.HadoopInputFile
+    import org.apache.parquet.hadoop.ParquetReader
 
-        val file: String = "./sample/path/test.parquet"
-        val conf: Configuration = new Configuration()
-        conf.setBoolean(AvroReadSupport.AVRO_COMPATIBILITY, true)
-        val writer: ParquetWriter[Record] =
-          AvroParquetWriter.builder[Record](new Path(file)).withConf(conf).withSchema(schema).build()
-        // #prepare-sink
-      }
-
-      // #init-writer
-      val writer: ParquetWriter[GenericRecord] =
-        AvroParquetWriter.builder[GenericRecord](new Path(file)).withConf(conf).withSchema(schema).build()
-      // #init-writer
-      // #init-reader
-      val reader: ParquetReader[GenericRecord] =
-        AvroParquetReader.builder[GenericRecord](HadoopInputFile.fromPath(new Path(file), conf)).withConf(conf).build()
-      // #init-reader
-      if (writer != null && reader != null) { // forces val usage
-      }
+    val file: String = "./sample/path/test.parquet"
+    val writer: ParquetWriter[GenericRecord] =
+      AvroParquetWriter.builder[GenericRecord](new Path(file)).withConf(conf).withSchema(schema).build()
+    // #init-writer
+    // #init-reader
+    val reader: ParquetReader[GenericRecord] =
+      AvroParquetReader.builder[GenericRecord](HadoopInputFile.fromPath(new Path(file), conf)).withConf(conf).build()
+    // #init-reader
+    if (writer != null && reader != null) { // forces val usage
+    }
   }
 
   override def afterAll(): Unit = {

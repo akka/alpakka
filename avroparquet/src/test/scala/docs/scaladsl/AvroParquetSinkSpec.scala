@@ -47,6 +47,8 @@ class AvroParquetSinkSpec
     }
 
     "create new parquet file from any subtype of `GenericRecord` " in assertAllStagesStopped {
+      import scala.language.higherKinds
+
       //given
       val n: Int = 3
       val file: String = genFinalFile.sample.get
