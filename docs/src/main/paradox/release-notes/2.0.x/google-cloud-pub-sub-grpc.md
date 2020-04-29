@@ -1,5 +1,12 @@
 # Google Cloud Pub/Sub gRPC
 
+## 2.0.0
+
+- Google Cloud Pub/Sub gRPC: Akka gRPC 0.8.4 [#2290](https://github.com/akka/alpakka/issues/2290) by [@ennru](https://github.com/ennru)
+
+[*closed in 2.0.0*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0+label%3Ap%3Agoogle-cloud-pub-sub-grpc)
+
+
 ## 2.0.0-RC2
 
 - Google Cloud Pub/Sub gRPC: Update to Akka gRPC 0.8.3 [#2259](https://github.com/akka/alpakka/issues/2259) by [@raboof](https://github.com/raboof)

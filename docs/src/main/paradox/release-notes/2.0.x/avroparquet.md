@@ -1,5 +1,12 @@
 # AvroParquet
 
+## 2.0.0
+
+- Avroparquet: Lower bound higher kinded  [#2273](https://github.com/akka/alpakka/issues/2273) by [@paualarco](https://github.com/paualarco)
+
+[*closed in 2.0.0*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0+label%3Ap%3Aavroparquet)
+
+
 ## 2.0.0-M2
 
 No changes.
