@@ -39,6 +39,7 @@ public class Examples {
   ActorMaterializer materializer = ActorMaterializer.create(system);
 
   // #init-reader
+
   Configuration conf = new Configuration();
 
   ParquetReader<GenericRecord> reader =

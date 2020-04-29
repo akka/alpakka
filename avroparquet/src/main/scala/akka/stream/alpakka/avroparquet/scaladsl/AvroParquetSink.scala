@@ -12,7 +12,7 @@ import scala.concurrent.Future
 
 object AvroParquetSink {
 
-  def apply(writer: ParquetWriter[GenericRecord]): Sink[GenericRecord, Future[Done]] =
+  def apply[T <: GenericRecord](writer: ParquetWriter[T]): Sink[T, Future[Done]] =
     Flow.fromGraph(new akka.stream.alpakka.avroparquet.impl.AvroParquetFlow(writer)).toMat(Sink.ignore)(Keep.right)
 
 }

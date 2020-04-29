@@ -11,6 +11,6 @@ import org.apache.parquet.hadoop.ParquetReader
 
 object AvroParquetSource {
 
-  def create(reader: ParquetReader[GenericRecord]): Source[GenericRecord, NotUsed] =
+  def create[T <: GenericRecord](reader: ParquetReader[T]): Source[T, NotUsed] =
     Source.fromGraph(new akka.stream.alpakka.avroparquet.impl.AvroParquetSource(reader))
 }

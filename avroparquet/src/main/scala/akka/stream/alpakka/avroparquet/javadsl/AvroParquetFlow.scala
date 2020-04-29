@@ -10,6 +10,6 @@ import org.apache.parquet.hadoop.ParquetWriter
 
 object AvroParquetFlow {
 
-  def create(writer: ParquetWriter[GenericRecord]): Flow[GenericRecord, GenericRecord, NotUsed] =
+  def create[T <: GenericRecord](writer: ParquetWriter[T]): Flow[T, T, NotUsed] =
     Flow.fromGraph(new akka.stream.alpakka.avroparquet.impl.AvroParquetFlow(writer))
 }

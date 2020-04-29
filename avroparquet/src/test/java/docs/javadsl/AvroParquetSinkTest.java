@@ -74,6 +74,7 @@ public class AvroParquetSinkTest {
   public void createNewParquetFile()
       throws InterruptedException, IOException, TimeoutException, ExecutionException {
     // #init-writer
+
     Configuration conf = new Configuration();
     conf.setBoolean(AvroReadSupport.AVRO_COMPATIBILITY, true);
     ParquetWriter<GenericRecord> writer =
