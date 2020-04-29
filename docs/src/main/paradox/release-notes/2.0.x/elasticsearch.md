@@ -1,5 +1,13 @@
 # Elasticsearch
 
+## 2.0.0
+
+- Elasticsearch: replace push with emit [#2292](https://github.com/akka/alpakka/issues/2292) by [@KGoodale13](https://github.com/KGoodale13)
+- Elasticsearch: add support for version 7 [#2277](https://github.com/akka/alpakka/issues/2277) by [@r-glyde](https://github.com/r-glyde)
+
+[*closed in 2.0.0*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0+label%3Ap%3Aelasticsearch)
+
+
 ## 2.0.0-M3
 
 - Elasticsearch: Flow implementation using RetryFlow [#2093](https://github.com/akka/alpakka/issues/2093) by [@nivox](https://github.com/nivox)

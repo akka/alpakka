@@ -1,5 +1,12 @@
 # File
 
+## 2.0.0
+
+- File: TAR archive reader [#2268](https://github.com/akka/alpakka/issues/2268) by [@ennru](https://github.com/ennru)
+
+[*closed in 2.0.0*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0+label%3Ap%3Afile)
+
+
 ## 2.0.0-RC2
 
 - File: TAR archive generation [#2241](https://github.com/akka/alpakka/issues/2241) by [@choffmeister](https://github.com/choffmeister)
