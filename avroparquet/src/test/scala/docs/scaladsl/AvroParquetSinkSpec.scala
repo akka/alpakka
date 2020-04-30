@@ -4,70 +4,70 @@
 
 package docs.scaladsl
 
-import java.util.concurrent.TimeUnit
-
-import akka.Done
+import akka.{Done, NotUsed}
+import akka.actor.ActorSystem
 import akka.stream.alpakka.avroparquet.scaladsl.AvroParquetSink
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
-import org.apache.parquet.avro.AvroParquetReader
-import org.specs2.mutable.Specification
-import org.specs2.specification.AfterAll
-
-import scala.collection.mutable
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
-//#init-writer
-import org.apache.hadoop.conf.Configuration
-import org.apache.parquet.hadoop.ParquetWriter
+import akka.testkit.TestKit
+import com.sksamuel.avro4s.{Record, RecordFormat}
+import org.scalatest.concurrent.ScalaFutures
 import org.apache.avro.generic.GenericRecord
-import org.apache.hadoop.fs.Path
-import org.apache.parquet.hadoop.util.HadoopInputFile
-import org.apache.parquet.avro.{AvroParquetWriter, AvroReadSupport}
-//#init-writer
+import org.apache.parquet.hadoop.ParquetWriter
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class AvroParquetSinkSpec extends Specification with AbstractAvroParquet with AfterAll {
+import scala.concurrent.Future
 
-  "ParquetSing Sink" should {
+class AvroParquetSinkSpec
+    extends TestKit(ActorSystem("SinkSpec"))
+    with AnyWordSpecLike
+    with Matchers
+    with AbstractAvroParquet
+    with ScalaFutures
+    with BeforeAndAfterAll {
 
-    "create new Parquet file" in assertAllStagesStopped {
-      val docs = List[Document](Document("id1", "sdaada"), Document("id1", "sdaada"), Document("id3", " fvrfecefedfww"))
+  "Parquet Sink" should {
 
-      val source = Source.fromIterator(() => docs.iterator)
+    "create new parquet file from `GenericRecords`" in assertAllStagesStopped {
+      //given
+      val n: Int = 3
+      val file: String = genFinalFile.sample.get
+      val records: List[GenericRecord] = genDocuments(n).sample.get.map(docToGenericRecord)
 
-      //#init-writer
-      val file = folder + "/test.parquet"
+      Source(records).runWith(AvroParquetSink(parquetWriter(file, conf, schema))).futureValue
 
-      val conf = new Configuration()
-      conf.setBoolean(AvroReadSupport.AVRO_COMPATIBILITY, true)
+      //when
+      val parquetContent: List[GenericRecord] = fromParquet(file, conf)
 
-      val writer: ParquetWriter[GenericRecord] =
-        AvroParquetWriter.builder[GenericRecord](new Path(file)).withConf(conf).withSchema(schema).build()
-      //#init-writer
+      //then
+      parquetContent.length shouldEqual n
+      parquetContent should contain theSameElementsAs records
+    }
 
-      //#init-sink
-      val sink: Sink[GenericRecord, Future[Done]] = AvroParquetSink(writer)
-      //#init-sink
+    "create new parquet file from any subtype of `GenericRecord` " in assertAllStagesStopped {
+      import scala.language.higherKinds
 
+      //given
+      val n: Int = 3
+      val file: String = genFinalFile.sample.get
+      val documents: List[Document] = genDocuments(n).sample.get
+      val writer: ParquetWriter[Record] = parquetWriter[Record](file, conf, schema)
+      // #init-sink
+      val records: List[Record] = documents.map(RecordFormat[Document].to(_))
+      val source: Source[Record, NotUsed] = Source(records)
       val result: Future[Done] = source
-        .map(docToRecord)
-        .runWith(sink)
+        .runWith(AvroParquetSink(writer))
+      // #init-sink
+      result.futureValue shouldBe Done
 
-      Await.result[Done](result, Duration(5, TimeUnit.SECONDS))
-      val dataFile = new org.apache.hadoop.fs.Path(file)
+      //when
+      val parquetContent: List[GenericRecord] = fromParquet(file, conf)
 
-      val reader =
-        AvroParquetReader.builder[GenericRecord](HadoopInputFile.fromPath(dataFile, conf)).withConf(conf).build()
-
-      var r: GenericRecord = reader.read()
-
-      val b: mutable.Builder[GenericRecord, Seq[GenericRecord]] = Seq.newBuilder[GenericRecord]
-
-      while (r != null) {
-        b += r
-        r = reader.read()
-      }
-      b.result().length shouldEqual 3
+      //then
+      parquetContent.length shouldEqual n
+      parquetContent.map(format.from(_)) should contain theSameElementsAs documents
     }
 
   }

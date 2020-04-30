@@ -2,7 +2,7 @@
 
 The AWS SNS connector provides an Akka Stream Flow and Sink for push notifications through AWS SNS.
 
-For more information about AWS SNS please visit the [official documentation](https://aws.amazon.com/documentation/sns/).
+For more information about AWS SNS please visit the [official documentation](https://docs.aws.amazon.com/sns/index.html).
 
 @@project-info{ projectId="sns" }
 
@@ -68,7 +68,7 @@ Java
 
 As you can see, this would publish the messages from the source to the specified AWS SNS topic.
 After a message has been successfully published, a
-[PublishResult](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/sns/model/PublishResult.html)
+@javadoc[PublishResult](software.amazon.awssdk.services.sns.model.PublishRequest)
 will be pushed downstream.
 
 ### Using a Sink

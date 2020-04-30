@@ -6,6 +6,7 @@ import de.heikoseeberger.sbtheader._
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
 import com.lightbend.paradox.projectinfo.ParadoxProjectInfoPluginKeys._
 import Whitesource.whitesourceGroup
+import com.typesafe.tools.mima.plugin.MimaKeys._
 
 object Common extends AutoPlugin {
 
@@ -23,15 +24,15 @@ object Common extends AutoPlugin {
     organizationName := "Lightbend Inc.",
     organizationHomepage := Some(url("https://www.lightbend.com/")),
     homepage := Some(url("https://doc.akka.io/docs/alpakka/current")),
-    apiURL := Some(url(s"https://doc.akka.io/api/alpakka/${version.value}")),
     scmInfo := Some(ScmInfo(url("https://github.com/akka/alpakka"), "git@github.com:akka/alpakka.git")),
     developers += Developer("contributors",
                             "Contributors",
                             "https://gitter.im/akka/dev",
                             url("https://github.com/akka/alpakka/graphs/contributors")),
-    licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
+    licenses := Seq(("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0"))),
     description := "Alpakka is a Reactive Enterprise Integration library for Java and Scala, based on Reactive Streams and Akka.",
-    fatalWarnings := true
+    fatalWarnings := true,
+    mimaReportSignatureProblems := true
   )
 
   override lazy val projectSettings = Dependencies.Common ++ Seq(
@@ -55,7 +56,7 @@ object Common extends AutoPlugin {
           case _ => Seq("-Xfuture", "-Yno-adapted-args")
         }),
       scalacOptions ++= (scalaVersion.value match {
-          case Dependencies.Scala212 if insideCI.value && fatalWarnings.value && !Dependencies.Nightly =>
+          case Dependencies.Scala212 if insideCI.value && fatalWarnings.value && !Dependencies.CronBuild =>
             Seq("-Xfatal-warnings")
           case _ => Seq.empty
         }),

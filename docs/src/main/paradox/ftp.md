@@ -46,7 +46,7 @@ For connection via a proxy, please provide an instance of `java.net.Proxy` by us
 
 For connection using a private key, please provide an instance of @scaladoc[SftpIdentity](akka.stream.alpakka.ftp.SftpIdentity) to @scaladoc[SftpSettings](akka.stream.alpakka.ftp.SftpSettings).
 
-In order to use a custom SSH client for SFTP please provide an instance of [SSHClient](https://static.javadoc.io/com.hierynomus/sshj/0.26.0/net/schmizz/sshj/SSHClient.html).
+In order to use a custom SSH client for SFTP please provide an instance of [SSHClient](https://www.javadoc.io/doc/com.hierynomus/sshj/0.27.0/net/schmizz/sshj/SSHClient.html).
 
 Scala
 : @@snip [snip](/ftp/src/test/scala/docs/scaladsl/scalaExamples.scala) { #configure-custom-ssh-client }

@@ -1,5 +1,12 @@
 # AWS SQS
 
+## 2.0.0-RC2
+
+- AWS library updates [#2235](https://github.com/akka/alpakka/issues/2235) by [@ennru](https://github.com/ennru)
+
+[*closed in 2.0.0-RC2*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.0-RC2+label%3Ap%3Aaws-sqs)
+
+
 ## 2.0.0-M3
 
 - SQS:spelling of visibilityTimeout in SqsSourceSettings#toString [#2153](https://github.com/akka/alpakka/issues/2153) by [@wi101](https://github.com/wi101)

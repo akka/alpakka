@@ -1,0 +1,5 @@
+# MiMa upgrade shows new error, method is private
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.s3.S3Settings.this")
+
+# override of apply in extension with the concrete type instead of the generic type
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.s3.S3Ext.apply")

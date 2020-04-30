@@ -80,7 +80,7 @@ final class ElasticsearchWriteSettings private (val bufferSize: Int,
     new ElasticsearchWriteSettings(bufferSize, retryLogic, versionType, apiVersion)
 
   override def toString =
-    "ElasticsearchUpdateSettings(" +
+    "ElasticsearchWriteSettings(" +
     s"bufferSize=$bufferSize," +
     s"retryLogic=$retryLogic," +
     s"versionType=$versionType," +

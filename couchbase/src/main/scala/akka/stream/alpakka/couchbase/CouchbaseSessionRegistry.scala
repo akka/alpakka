@@ -7,7 +7,7 @@ package akka.stream.alpakka.couchbase
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.atomic.AtomicReference
 
-import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.actor.{ClassicActorSystemProvider, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import akka.dispatch.ExecutionContexts
 import akka.stream.alpakka.couchbase.impl.CouchbaseClusterRegistry
 import akka.stream.alpakka.couchbase.javadsl.{CouchbaseSession => JCouchbaseSession}
@@ -27,10 +27,16 @@ object CouchbaseSessionRegistry extends ExtensionId[CouchbaseSessionRegistry] wi
     new CouchbaseSessionRegistry(system)
 
   /**
-   * Java API: get the session registry
+   * Java API: Get the session registry with new actors API.
    */
-  override def get(system: ActorSystem): CouchbaseSessionRegistry =
-    super.get(system)
+  override def get(system: ClassicActorSystemProvider): CouchbaseSessionRegistry =
+    super.apply(system)
+
+  /**
+   * Java API: Get the session registry with the classic actors API.
+   */
+  override def get(system: akka.actor.ActorSystem): CouchbaseSessionRegistry =
+    super.apply(system)
 
   override def lookup(): ExtensionId[CouchbaseSessionRegistry] = this
 

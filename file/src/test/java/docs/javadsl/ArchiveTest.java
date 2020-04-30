@@ -4,6 +4,7 @@
 
 package docs.javadsl;
 
+import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
@@ -11,7 +12,9 @@ import akka.stream.ActorMaterializer;
 import akka.stream.IOResult;
 import akka.stream.Materializer;
 import akka.stream.alpakka.file.ArchiveMetadata;
+import akka.stream.alpakka.file.TarArchiveMetadata;
 import akka.stream.alpakka.file.javadsl.Archive;
+import akka.stream.alpakka.file.javadsl.Directory;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.FileIO;
 import akka.stream.javadsl.Sink;
@@ -20,9 +23,11 @@ import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import org.junit.*;
-import scala.concurrent.duration.FiniteDuration;
+
 import static akka.util.ByteString.emptyByteString;
+
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -31,7 +36,8 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.*;
 
 public class ArchiveTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
@@ -66,13 +72,14 @@ public class ArchiveTest {
     Source<ByteString, NotUsed> source2 = toSource(fileContent2);
 
     /*
-    // #sample
+    // #sample-zip
     Source<ByteString, NotUsed> source1 = ...
     Source<ByteString, NotUsed> source2 = ...
-    // #sample
+
+    // #sample-zip
     */
 
-    // #sample
+    // #sample-zip
     Pair<ArchiveMetadata, Source<ByteString, NotUsed>> pair1 =
         Pair.create(ArchiveMetadata.create("akka_full_color.svg"), source1);
     Pair<ArchiveMetadata, Source<ByteString, NotUsed>> pair2 =
@@ -84,7 +91,7 @@ public class ArchiveTest {
     Sink<ByteString, CompletionStage<IOResult>> fileSink = FileIO.toPath(Paths.get("logo.zip"));
     CompletionStage<IOResult> ioResult = source.via(Archive.zip()).runWith(fileSink, mat);
 
-    // #sample
+    // #sample-zip
 
     ioResult.toCompletableFuture().get(3, TimeUnit.SECONDS);
 
@@ -103,6 +110,100 @@ public class ArchiveTest {
 
     // cleanup
     new File("logo.zip").delete();
+  }
+
+  @Test
+  public void flowShouldCreateTARArchive() throws Exception {
+    Path filePath1 = getFileFromResource("akka_full_color.svg");
+    Path filePath2 = getFileFromResource("akka_icon_reverse.svg");
+
+    ByteString fileContent1 = readFileAsByteString(filePath1);
+    ByteString fileContent2 = readFileAsByteString(filePath2);
+
+    Source<ByteString, NotUsed> source1 = toSource(fileContent1);
+    Long size1 = Files.size(filePath1);
+    Source<ByteString, NotUsed> source2 = toSource(fileContent2);
+    Long size2 = Files.size(filePath2);
+
+    /*
+    // #sample-tar
+    Source<ByteString, NotUsed> source1 = ...
+    Source<ByteString, NotUsed> source2 = ...
+    Long size1 = ...
+    Long size2 = ...
+
+    // #sample-tar
+    */
+
+    // #sample-tar
+    Pair<TarArchiveMetadata, Source<ByteString, NotUsed>> pair1 =
+        Pair.create(TarArchiveMetadata.create("akka_full_color.svg", size1), source1);
+    Pair<TarArchiveMetadata, Source<ByteString, NotUsed>> pair2 =
+        Pair.create(TarArchiveMetadata.create("akka_icon_reverse.svg", size2), source2);
+
+    Source<Pair<TarArchiveMetadata, Source<ByteString, NotUsed>>, NotUsed> source =
+        Source.from(Arrays.asList(pair1, pair2));
+
+    Sink<ByteString, CompletionStage<IOResult>> fileSink = FileIO.toPath(Paths.get("logo.tar"));
+    CompletionStage<IOResult> ioResult = source.via(Archive.tar()).runWith(fileSink, mat);
+    // #sample-tar
+
+    // #sample-tar-gz
+    Sink<ByteString, CompletionStage<IOResult>> fileSinkGz =
+        FileIO.toPath(Paths.get("logo.tar.gz"));
+    CompletionStage<IOResult> ioResultGz =
+        source
+            .via(Archive.tar().via(akka.stream.javadsl.Compression.gzip()))
+            .runWith(fileSinkGz, mat);
+    // #sample-tar-gz
+
+    ioResult.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    ioResultGz.toCompletableFuture().get(3, TimeUnit.SECONDS);
+
+    // cleanup
+    new File("logo.tar").delete();
+    new File("logo.tar.gz").delete();
+  }
+
+  @Test
+  public void tarReader() throws Exception {
+    ByteString tenDigits = ByteString.fromString("1234567890");
+    TarArchiveMetadata metadata1 = TarArchiveMetadata.create("dir/file1.txt", tenDigits.length());
+    CompletionStage<ByteString> oneFileArchive =
+        Source.single(Pair.create(metadata1, Source.single(tenDigits)))
+            .via(Archive.tar())
+            .runWith(Sink.fold(ByteString.emptyByteString(), ByteString::concat), mat);
+
+    // #tar-reader
+    Source<ByteString, NotUsed> bytesSource = // ???
+        // #tar-reader
+        Source.fromCompletionStage(oneFileArchive);
+    Path target = Files.createTempDirectory("alpakka-tar-");
+
+    // #tar-reader
+    CompletionStage<Done> tar =
+        bytesSource
+            .via(Archive.tarReader())
+            .mapAsync(
+                1,
+                pair -> {
+                  TarArchiveMetadata metadata = pair.first();
+                  Source<ByteString, NotUsed> source = pair.second();
+                  Path targetFile = target.resolve(metadata.filePath());
+                  // create the target directory
+                  return Source.single(targetFile.getParent())
+                      .via(Directory.mkdirs())
+                      .runWith(Sink.ignore(), mat)
+                      .thenCompose(
+                          done ->
+                              // stream the file contents to a local file
+                              source.runWith(FileIO.toPath(targetFile), mat));
+                })
+            .runWith(Sink.ignore(), mat);
+    // #tar-reader
+    assertThat(tar.toCompletableFuture().get(2, TimeUnit.SECONDS), is(Done.done()));
+    File file = target.resolve("dir/file1.txt").toFile();
+    assertTrue(file.exists());
   }
 
   @After

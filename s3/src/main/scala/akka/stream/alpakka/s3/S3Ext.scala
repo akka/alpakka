@@ -3,7 +3,7 @@
  */
 
 package akka.stream.alpakka.s3
-import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.actor.{ClassicActorSystemProvider, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 
 /**
  * Manages one [[S3Settings]] per `ActorSystem`.
@@ -18,6 +18,15 @@ object S3Ext extends ExtensionId[S3Ext] with ExtensionIdProvider {
   override def lookup = S3Ext
   override def createExtension(system: ExtendedActorSystem) = new S3Ext(system)
 
-  /** Java API */
-  override def get(system: ActorSystem): S3Ext = super.get(system)
+  /**
+   * Java API.
+   * Get the S3 extension with the classic actors API.
+   */
+  override def get(system: akka.actor.ActorSystem): S3Ext = super.apply(system)
+
+  /**
+   * Java API.
+   * Get the S3 extension with the new actors API.
+   */
+  override def get(system: ClassicActorSystemProvider): S3Ext = super.apply(system)
 }

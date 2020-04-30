@@ -7,27 +7,26 @@ package docs.javadsl;
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
-// #init-client
 import akka.stream.alpakka.elasticsearch.*;
 import akka.stream.alpakka.elasticsearch.javadsl.*;
-
-// #init-client
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.message.BasicHeader;
-import org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner;
 // #init-client
-import org.elasticsearch.client.RestClient;
 import org.apache.http.HttpHost;
 // #init-client
+import org.apache.http.entity.StringEntity;
+import org.apache.http.message.BasicHeader;
+// #init-client
+import org.elasticsearch.client.RestClient;
+// #init-client
 import org.junit.*;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -38,13 +37,25 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 
+@RunWith(value = Parameterized.class)
 public class ElasticsearchTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
-  private static ElasticsearchClusterRunner runner;
+  @Parameterized.Parameters(name = "{index}: port={0} api={1}")
+  public static Iterable<Object[]> data() {
+    return Arrays.asList(
+        new Object[][] {
+          {9201, ApiVersion.V5},
+          {9202, ApiVersion.V7}
+        });
+  }
+
+  private static ApiVersion apiVersion;
   private static RestClient client;
   private static ActorSystem system;
   private static ActorMaterializer materializer;
+
+  public ElasticsearchTest(int port, ApiVersion apiVersion) {}
 
   // #define-class
   public static class Book {
@@ -58,26 +69,13 @@ public class ElasticsearchTest {
   }
   // #define-class
 
-  @BeforeClass
-  public static void setup() throws IOException {
-    runner = new ElasticsearchClusterRunner();
-    runner.build(
-        ElasticsearchClusterRunner.newConfigs()
-            .baseHttpPort(9200)
-            .baseTransportPort(9300)
-            .numOfNode(1)
-            .disableESLogger());
-    runner.ensureYellow();
-
+  @Parameterized.BeforeParam
+  public static void beforeParam(int port, ApiVersion esApiVersion) throws IOException {
+    apiVersion = esApiVersion;
     // #init-client
 
-    client = RestClient.builder(new HttpHost("localhost", 9201)).build();
+    client = RestClient.builder(new HttpHost("localhost", port)).build();
     // #init-client
-
-    // #init-mat
-    system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
-    // #init-mat
 
     register("source", "Akka in Action");
     register("source", "Programming in Scala");
@@ -86,14 +84,25 @@ public class ElasticsearchTest {
     register("source", "Scala Puzzlers");
     register("source", "Effective Akka");
     register("source", "Akka Concurrency");
-    flush("source");
+    flushAndRefresh("source");
+  }
+
+  @Parameterized.AfterParam
+  public static void afterParam() throws IOException {
+    client.performRequest("DELETE", "/_all");
+    client.close();
+  }
+
+  @BeforeClass
+  public static void setup() throws IOException {
+    // #init-mat
+    system = ActorSystem.create();
+    materializer = ActorMaterializer.create(system);
+    // #init-mat
   }
 
   @AfterClass
   public static void teardown() throws Exception {
-    runner.close();
-    runner.clean();
-    client.close();
     TestKit.shutdownActorSystem(system);
   }
 
@@ -102,8 +111,9 @@ public class ElasticsearchTest {
     StreamTestKit.assertAllStagesStopped(materializer);
   }
 
-  private static void flush(String indexName) throws IOException {
+  private static void flushAndRefresh(String indexName) throws IOException {
     client.performRequest("POST", indexName + "/_flush");
+    client.performRequest("POST", indexName + "/_refresh");
   }
 
   private static void register(String indexName, String title) throws IOException {
@@ -125,7 +135,8 @@ public class ElasticsearchTest {
         ElasticsearchWriteSettings.create()
             .withBufferSize(10)
             .withVersionType("internal")
-            .withRetryLogic(RetryAtFixedRate.create(5, Duration.ofSeconds(1)));
+            .withRetryLogic(RetryAtFixedRate.create(5, Duration.ofSeconds(1)))
+            .withApiVersion(ApiVersion.V5);
     // #sink-settings
   }
 
@@ -134,7 +145,8 @@ public class ElasticsearchTest {
     // Copy source/book to sink1/book through JsObject stream
     // #run-jsobject
     ElasticsearchSourceSettings sourceSettings = ElasticsearchSourceSettings.create();
-    ElasticsearchWriteSettings sinkSettings = ElasticsearchWriteSettings.create();
+    ElasticsearchWriteSettings sinkSettings =
+        ElasticsearchWriteSettings.create().withApiVersion(apiVersion);
 
     Source<ReadResult<Map<String, Object>>, NotUsed> source =
         ElasticsearchSource.create("source", "_doc", "{\"match_all\": {}}", sourceSettings, client);
@@ -148,7 +160,7 @@ public class ElasticsearchTest {
 
     f1.toCompletableFuture().get();
 
-    flush("sink1");
+    flushAndRefresh("sink1");
 
     // Assert docs in sink1/book
     CompletionStage<List<String>> f2 =
@@ -182,7 +194,8 @@ public class ElasticsearchTest {
     // Copy source/book to sink2/book through JsObject stream
     // #run-typed
     ElasticsearchSourceSettings sourceSettings = ElasticsearchSourceSettings.create();
-    ElasticsearchWriteSettings sinkSettings = ElasticsearchWriteSettings.create();
+    ElasticsearchWriteSettings sinkSettings =
+        ElasticsearchWriteSettings.create().withApiVersion(apiVersion);
 
     Source<ReadResult<Book>, NotUsed> source =
         ElasticsearchSource.typed(
@@ -197,7 +210,7 @@ public class ElasticsearchTest {
 
     f1.toCompletableFuture().get();
 
-    flush("sink2");
+    flushAndRefresh("sink2");
 
     // Assert docs in sink2/book
     CompletionStage<List<String>> f2 =
@@ -244,14 +257,16 @@ public class ElasticsearchTest {
                 ElasticsearchFlow.create(
                     "sink3",
                     "_doc",
-                    ElasticsearchWriteSettings.create().withBufferSize(5),
+                    ElasticsearchWriteSettings.create()
+                        .withApiVersion(apiVersion)
+                        .withBufferSize(5),
                     client,
                     new ObjectMapper()))
             .runWith(Sink.seq(), materializer);
     // #run-flow
 
     List<WriteResult<Book, NotUsed>> result1 = f1.toCompletableFuture().get();
-    flush("sink3");
+    flushAndRefresh("sink3");
 
     for (WriteResult<Book, NotUsed> aResult1 : result1) {
       assertEquals(true, aResult1.success());
@@ -301,14 +316,16 @@ public class ElasticsearchTest {
                 ElasticsearchFlow.create(
                     indexName,
                     "_doc",
-                    ElasticsearchWriteSettings.create().withBufferSize(5),
+                    ElasticsearchWriteSettings.create()
+                        .withApiVersion(apiVersion)
+                        .withBufferSize(5),
                     client,
                     StringMessageWriter.getInstance()))
             .runWith(Sink.seq(), materializer);
     // #string
 
     List<WriteResult<String, NotUsed>> result1 = write.toCompletableFuture().get();
-    flush(indexName);
+    flushAndRefresh(indexName);
 
     for (WriteResult<String, NotUsed> aResult1 : result1) {
       assertEquals(true, aResult1.success());
@@ -348,13 +365,17 @@ public class ElasticsearchTest {
     Source.from(requests)
         .via(
             ElasticsearchFlow.create(
-                "sink8", "_doc", ElasticsearchWriteSettings.create(), client, new ObjectMapper()))
+                "sink8",
+                "_doc",
+                ElasticsearchWriteSettings.create().withApiVersion(apiVersion),
+                client,
+                new ObjectMapper()))
         .runWith(Sink.seq(), materializer)
         .toCompletableFuture()
         .get();
     // #multiple-operations
 
-    flush("sink8");
+    flushAndRefresh("sink8");
 
     // Assert docs in sink8/book
     CompletionStage<List<String>> f2 =
@@ -405,7 +426,9 @@ public class ElasticsearchTest {
                 ElasticsearchFlow.createWithPassThrough(
                     "sink6",
                     "_doc",
-                    ElasticsearchWriteSettings.create().withBufferSize(5),
+                    ElasticsearchWriteSettings.create()
+                        .withApiVersion(apiVersion)
+                        .withBufferSize(5),
                     client,
                     new ObjectMapper()))
             .map(
@@ -419,7 +442,7 @@ public class ElasticsearchTest {
             .runWith(Sink.ignore(), materializer);
     // #kafka-example
     kafkaToEs.toCompletableFuture().get(5, TimeUnit.SECONDS); // Wait for it to complete
-    flush("sink6");
+    flushAndRefresh("sink6");
 
     // Make sure all messages was committed to kafka
     assertEquals(Arrays.asList(0, 1, 2), kafkaCommitter.committedOffsets);
@@ -458,14 +481,14 @@ public class ElasticsearchTest {
             ElasticsearchFlow.create(
                 indexName,
                 typeName,
-                ElasticsearchWriteSettings.create().withBufferSize(5),
+                ElasticsearchWriteSettings.create().withApiVersion(apiVersion).withBufferSize(5),
                 client,
                 new ObjectMapper()))
         .runWith(Sink.seq(), materializer)
         .toCompletableFuture()
         .get();
 
-    flush(indexName);
+    flushAndRefresh(indexName);
 
     // Search document and assert it having version 1
     ReadResult<Book> message =
@@ -482,7 +505,7 @@ public class ElasticsearchTest {
 
     assertEquals(1L, message.version().get());
 
-    flush(indexName);
+    flushAndRefresh(indexName);
 
     // Update document to version 2
     Source.single(WriteMessage.createIndexMessage("1", book).withVersion(1L))
@@ -490,14 +513,17 @@ public class ElasticsearchTest {
             ElasticsearchFlow.create(
                 indexName,
                 typeName,
-                ElasticsearchWriteSettings.create().withBufferSize(5),
+                ElasticsearchWriteSettings.create()
+                    .withApiVersion(apiVersion)
+                    .withBufferSize(5)
+                    .withVersionType("external"),
                 client,
                 new ObjectMapper()))
         .runWith(Sink.seq(), materializer)
         .toCompletableFuture()
         .get();
 
-    flush(indexName);
+    flushAndRefresh(indexName);
 
     // Try to update document with wrong version to assert that we can send it
     long oldVersion = 1;
@@ -507,7 +533,10 @@ public class ElasticsearchTest {
                 ElasticsearchFlow.create(
                     indexName,
                     typeName,
-                    ElasticsearchWriteSettings.create().withBufferSize(5),
+                    ElasticsearchWriteSettings.create()
+                        .withApiVersion(apiVersion)
+                        .withBufferSize(5)
+                        .withVersionType("external"),
                     client,
                     new ObjectMapper()))
             .runWith(Sink.seq(), materializer)
@@ -534,14 +563,17 @@ public class ElasticsearchTest {
             ElasticsearchFlow.create(
                 indexName,
                 typeName,
-                ElasticsearchWriteSettings.create().withBufferSize(5).withVersionType("external"),
+                ElasticsearchWriteSettings.create()
+                    .withApiVersion(apiVersion)
+                    .withBufferSize(5)
+                    .withVersionType("external"),
                 client,
                 new ObjectMapper()))
         .runWith(Sink.seq(), materializer)
         .toCompletableFuture()
         .get();
 
-    flush(indexName);
+    flushAndRefresh(indexName);
 
     // Assert that the document's external version is saved
     ReadResult<Book> message =
@@ -599,14 +631,14 @@ public class ElasticsearchTest {
             ElasticsearchFlow.create(
                 indexName,
                 typeName,
-                ElasticsearchWriteSettings.create().withBufferSize(5),
+                ElasticsearchWriteSettings.create().withApiVersion(apiVersion).withBufferSize(5),
                 client,
                 new ObjectMapper()))
         .runWith(Sink.seq(), materializer)
         .toCompletableFuture()
         .get();
 
-    flush(indexName);
+    flushAndRefresh(indexName);
 
     // #custom-search-params
     // Search for docs and ask elastic to only return some fields
@@ -632,7 +664,7 @@ public class ElasticsearchTest {
             .toCompletableFuture()
             .get();
     // #custom-search-params
-    flush(indexName);
+    flushAndRefresh(indexName);
 
     assertEquals(
         docs.size(),

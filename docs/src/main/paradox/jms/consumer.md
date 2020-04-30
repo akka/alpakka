@@ -184,7 +184,7 @@ Java
 
 ### Object sources
 
-The `objectSource` emits the received message body as deserialized JVM instance. As serialization may be a security concern, JMS clients require special configuration to allow this. The example shows how to configure ActiveMQ connection factory to support serialization. See [ActiveMQ Security](http://activemq.apache.org/objectmessage.html) for more information on this.
+The `objectSource` emits the received message body as deserialized JVM instance. As serialization may be a security concern, JMS clients require special configuration to allow this. The example shows how to configure ActiveMQ connection factory to support serialization. See [ActiveMQ Security](https://activemq.apache.org/objectmessage.html) for more information on this.
 
 Scala
 : @@snip [snip](/jms/src/test/scala/docs/scaladsl/JmsConnectorsSpec.scala) { #object-source }

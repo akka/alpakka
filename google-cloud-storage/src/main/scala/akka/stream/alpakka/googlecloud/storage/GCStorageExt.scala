@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.googlecloud.storage
 
-import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.actor.{ClassicActorSystemProvider, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 
 /**
  * Manages one [[GCStorageSettings]] per `ActorSystem`.
@@ -19,6 +19,15 @@ object GCStorageExt extends ExtensionId[GCStorageExt] with ExtensionIdProvider {
   override def lookup = GCStorageExt
   override def createExtension(system: ExtendedActorSystem) = new GCStorageExt(system)
 
-  /** Java API */
-  override def get(system: ActorSystem): GCStorageExt = super.get(system)
+  /**
+   * Java API.
+   * Get the GCS extension with the classic actors API.
+   */
+  override def get(system: akka.actor.ActorSystem): GCStorageExt = super.apply(system)
+
+  /**
+   * Java API.
+   * Get the GCS extension with the new actors API.
+   */
+  override def get(system: ClassicActorSystemProvider): GCStorageExt = super.apply(system)
 }

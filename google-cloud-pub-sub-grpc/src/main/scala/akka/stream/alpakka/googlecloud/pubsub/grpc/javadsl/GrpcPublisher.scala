@@ -4,40 +4,60 @@
 
 package akka.stream.alpakka.googlecloud.pubsub.grpc.javadsl
 
-import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.actor.{
+  ActorSystem,
+  ClassicActorSystemProvider,
+  ExtendedActorSystem,
+  Extension,
+  ExtensionId,
+  ExtensionIdProvider
+}
 import akka.annotation.ApiMayChange
 import akka.stream.alpakka.googlecloud.pubsub.grpc.PubSubSettings
 import akka.stream.alpakka.googlecloud.pubsub.grpc.impl.AkkaGrpcSettings
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.SystemMaterializer
 import com.google.pubsub.v1.{PublisherClient => JavaPublisherClient}
 
 /**
  * Holds the gRPC java publisher client instance.
  */
-final class GrpcPublisher private (settings: PubSubSettings, sys: ActorSystem, mat: Materializer) {
+final class GrpcPublisher private (settings: PubSubSettings, sys: ActorSystem) {
 
   @ApiMayChange
   final val client =
-    JavaPublisherClient.create(AkkaGrpcSettings.fromPubSubSettings(settings)(sys), mat, sys.dispatcher)
+    JavaPublisherClient.create(AkkaGrpcSettings.fromPubSubSettings(settings)(sys),
+                               SystemMaterializer(sys).materializer,
+                               sys.dispatcher)
 
   sys.registerOnTermination(client.close())
 }
 
 object GrpcPublisher {
-  def create(settings: PubSubSettings, sys: ActorSystem, mat: Materializer): GrpcPublisher =
-    new GrpcPublisher(settings, sys, mat)
 
-  def create(sys: ActorSystem, mat: Materializer): GrpcPublisher =
-    create(PubSubSettings(sys), sys, mat)
+  /**
+   * Creates a publisher with the new actors API.
+   */
+  def create(settings: PubSubSettings, sys: ClassicActorSystemProvider): GrpcPublisher =
+    create(settings, sys.classicSystem)
+
+  def create(settings: PubSubSettings, sys: ActorSystem): GrpcPublisher =
+    new GrpcPublisher(settings, sys)
+
+  /**
+   * Creates a publisher with the new actors API.
+   */
+  def create(sys: ClassicActorSystemProvider): GrpcPublisher =
+    create(sys.classicSystem)
+
+  def create(sys: ActorSystem): GrpcPublisher =
+    create(PubSubSettings(sys), sys)
 }
 
 /**
  * An extension that manages a single gRPC java publisher client per actor system.
  */
 final class GrpcPublisherExt private (sys: ExtendedActorSystem) extends Extension {
-  private[this] val systemMaterializer = ActorMaterializer()(sys)
-
-  implicit val publisher = GrpcPublisher.create(sys, systemMaterializer)
+  implicit val publisher = GrpcPublisher.create(sys)
 }
 
 object GrpcPublisherExt extends ExtensionId[GrpcPublisherExt] with ExtensionIdProvider {
@@ -47,6 +67,7 @@ object GrpcPublisherExt extends ExtensionId[GrpcPublisherExt] with ExtensionIdPr
   /**
    * Access to extension.
    */
+  @deprecated("use get() instead", since = "2.0.0")
   def apply()(implicit system: ActorSystem): GrpcPublisherExt = super.apply(system)
 
   /**
@@ -55,4 +76,11 @@ object GrpcPublisherExt extends ExtensionId[GrpcPublisherExt] with ExtensionIdPr
    * Access to extension.
    */
   override def get(system: ActorSystem): GrpcPublisherExt = super.get(system)
+
+  /**
+   * Java API
+   *
+   * Access to the extension from the new actors API.
+   */
+  override def get(system: ClassicActorSystemProvider): GrpcPublisherExt = super.get(system)
 }

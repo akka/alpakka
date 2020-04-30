@@ -34,6 +34,7 @@ lazy val alpakka = project
     mqtt,
     mqttStreaming,
     orientdb,
+    pravega,
     reference,
     s3,
     springWeb,
@@ -78,7 +79,7 @@ lazy val alpakka = project
         .filterNot(_.data.getAbsolutePath.contains("commons-net-3.1.jar"))
         .filterNot(_.data.getAbsolutePath.contains("protobuf-java-2.6.1.jar"))
         // Some projects require (and introduce) Akka 2.6:
-        .filterNot(_.data.getAbsolutePath.contains("akka-stream_2.12-2.5.27.jar"))
+        .filterNot(_.data.getAbsolutePath.contains(s"akka-stream_2.12-${Dependencies.Akka25Version}.jar"))
     },
     ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(`doc-examples`,
                                                                              csvBench,
@@ -109,7 +110,11 @@ addCommandAlias("verifyCodeStyle", "headerCheck; verifyCodeFmt")
 lazy val amqp = alpakkaProject("amqp", "amqp", Dependencies.Amqp)
 
 lazy val avroparquet =
-  alpakkaProject("avroparquet", "avroparquet", Dependencies.AvroParquet, parallelExecution in Test := false)
+  alpakkaProject("avroparquet",
+                 "avroparquet",
+                 Dependencies.AvroParquet,
+                 crossScalaVersions -= Dependencies.Scala211,
+                 Test / parallelExecution := false)
 
 lazy val awslambda = alpakkaProject("awslambda",
                                     "aws.lambda",
@@ -119,7 +124,11 @@ lazy val awslambda = alpakkaProject("awslambda",
 
 lazy val azureStorageQueue = alpakkaProject("azure-storage-queue", "azure.storagequeue", Dependencies.AzureStorageQueue)
 
-lazy val cassandra = alpakkaProject("cassandra", "cassandra", Dependencies.Cassandra)
+lazy val cassandra = alpakkaProject("cassandra",
+                                    "cassandra",
+                                    Dependencies.Cassandra,
+                                    crossScalaVersions -= Dependencies.Scala211,
+                                    Test / parallelExecution := false)
 
 lazy val couchbase =
   alpakkaProject("couchbase",
@@ -202,6 +211,7 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
   akkaGrpcCodeGeneratorSettings ~= { _.filterNot(_ == "flat_package") },
   akkaGrpcGeneratedSources := Seq(AkkaGrpc.Client),
   akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala, AkkaGrpc.Java),
+  Compile / PB.protoSources += (Compile / PB.externalIncludePath).value,
   javaAgents += Dependencies.GooglePubSubGrpcAlpnAgent % Test,
   // for the ExampleApp in the tests
   connectInput in run := true,
@@ -296,7 +306,15 @@ lazy val orientdb = alpakkaProject("orientdb",
 lazy val reference = internalProject("reference", Dependencies.Reference)
   .dependsOn(testkit % Test)
 
-lazy val s3 = alpakkaProject("s3", "aws.s3", Dependencies.S3)
+lazy val s3 = alpakkaProject("s3", "aws.s3", Dependencies.S3, Test / parallelExecution := false)
+
+lazy val pravega =
+  alpakkaProject("pravega",
+                 "pravega",
+                 Dependencies.Pravega,
+                 fork in Test := true,
+                 crossScalaVersions -= Dependencies.Scala211 // 2.11 SAM issue for java API.
+  )
 
 lazy val springWeb = alpakkaProject("spring-web", "spring.web", Dependencies.SpringWeb)
 
@@ -347,43 +365,60 @@ lazy val docs = project
     previewPath := (Paradox / siteSubdirName).value,
     Preprocess / siteSubdirName := s"api/alpakka/${projectInfoVersion.value}",
     Preprocess / sourceDirectory := (LocalRootProject / ScalaUnidoc / unidoc / target).value,
+    Preprocess / preprocessRules := Seq(
+        ("https://javadoc\\.io/page/".r, _ => "https://javadoc\\.io/static/"),
+        // Add Java module name https://github.com/ThoughtWorksInc/sbt-api-mappings/issues/58
+        ("https://docs\\.oracle\\.com/en/java/javase/11/docs/api/".r,
+         _ => "https://docs\\.oracle\\.com/en/java/javase/11/docs/api/java.base/")
+      ),
     Paradox / siteSubdirName := s"docs/alpakka/${projectInfoVersion.value}",
     paradoxProperties ++= Map(
-      "akka.version" -> Dependencies.AkkaVersion,
-      "akka26.version" -> Dependencies.Akka26Version,
-      "akka-http.version" -> Dependencies.AkkaHttpVersion,
-      "couchbase.version" -> Dependencies.CouchbaseVersion,
-      "hadoop.version" -> Dependencies.HadoopVersion,
-      "extref.akka.base_url" -> s"https://doc.akka.io/docs/akka/${Dependencies.AkkaBinaryVersion}/%s",
-      "scaladoc.akka.base_url" -> s"https://doc.akka.io/api/akka/${Dependencies.AkkaBinaryVersion}",
-      "javadoc.akka.base_url" -> s"https://doc.akka.io/japi/akka/${Dependencies.AkkaBinaryVersion}/",
-      "extref.akka-http.base_url" -> s"https://doc.akka.io/docs/akka-http/${Dependencies.AkkaHttpBinaryVersion}/%s",
-      "scaladoc.akka.http.base_url" -> s"https://doc.akka.io/api/akka-http/${Dependencies.AkkaHttpBinaryVersion}/",
-      "javadoc.akka.http.base_url" -> s"https://doc.akka.io/japi/akka-http/${Dependencies.AkkaHttpBinaryVersion}/",
-      "extref.akka-grpc.base_url" -> s"https://doc.akka.io/docs/akka-grpc/current/%s",
-      "extref.couchbase.base_url" -> s"https://docs.couchbase.com/java-sdk/${Dependencies.CouchbaseVersionForDocs}/%s",
-      "extref.java-api.base_url" -> "https://docs.oracle.com/javase/8/docs/api/index.html?%s.html",
-      "extref.geode.base_url" -> s"https://geode.apache.org/docs/guide/${Dependencies.GeodeVersionForDocs}/%s",
-      "extref.javaee-api.base_url" -> "https://docs.oracle.com/javaee/7/api/index.html?%s.html",
-      "extref.paho-api.base_url" -> "https://www.eclipse.org/paho/files/javadoc/index.html?%s.html",
-      "extref.slick.base_url" -> s"https://slick.lightbend.com/doc/${Dependencies.SlickVersion}/%s",
-      // Solr
-      "extref.solr.base_url" -> s"https://lucene.apache.org/solr/guide/${Dependencies.SolrVersionForDocs}/%s",
-      "javadoc.org.apache.solr.base_url" -> s"https://lucene.apache.org/solr/${Dependencies.SolrVersionForDocs}_0/solr-solrj/",
-      // Java
-      "javadoc.base_url" -> "https://docs.oracle.com/javase/8/docs/api/",
-      "javadoc.javax.jms.base_url" -> "https://docs.oracle.com/javaee/7/api/",
-      "javadoc.com.couchbase.base_url" -> s"https://docs.couchbase.com/sdk-api/couchbase-java-client-${Dependencies.CouchbaseVersion}/",
-      "javadoc.org.apache.kudu.base_url" -> s"https://kudu.apache.org/releases/${Dependencies.KuduVersion}/apidocs/",
-      "javadoc.org.apache.hadoop.base_url" -> s"https://hadoop.apache.org/docs/r${Dependencies.HadoopVersion}/api/",
-      "javadoc.software.amazon.awssdk.base_url" -> "https://sdk.amazonaws.com/java/api/latest/",
-      // Eclipse Paho client for MQTT
-      "javadoc.org.eclipse.paho.client.mqttv3.base_url" -> "https://www.eclipse.org/paho/files/javadoc/",
-      "javadoc.org.bson.codecs.configuration.base_url" -> "https://mongodb.github.io/mongo-java-driver/3.7/javadoc/",
-      "scaladoc.scala.base_url" -> s"https://www.scala-lang.org/api/${scalaBinaryVersion.value}.x/",
-      "scaladoc.akka.stream.alpakka.base_url" -> s"/${(Preprocess / siteSubdirName).value}/",
-      "javadoc.akka.stream.alpakka.base_url" -> ""
-    ),
+        "akka.version" -> Dependencies.AkkaVersion,
+        "akka26.version" -> Dependencies.Akka26Version,
+        "akka-http.version" -> Dependencies.AkkaHttpVersion,
+        "hadoop.version" -> Dependencies.HadoopVersion,
+        "extref.akka.base_url" -> s"https://doc.akka.io/docs/akka/${Dependencies.AkkaBinaryVersion}/%s",
+        "scaladoc.akka.base_url" -> s"https://doc.akka.io/api/akka/${Dependencies.AkkaBinaryVersion}",
+        "javadoc.akka.base_url" -> s"https://doc.akka.io/japi/akka/${Dependencies.AkkaBinaryVersion}/",
+        "javadoc.akka.link_style" -> "direct",
+        "extref.akka-http.base_url" -> s"https://doc.akka.io/docs/akka-http/${Dependencies.AkkaHttpBinaryVersion}/%s",
+        "scaladoc.akka.http.base_url" -> s"https://doc.akka.io/api/akka-http/${Dependencies.AkkaHttpBinaryVersion}/",
+        "javadoc.akka.http.base_url" -> s"https://doc.akka.io/japi/akka-http/${Dependencies.AkkaHttpBinaryVersion}/",
+        // Akka gRPC
+        "akka-grpc.version" -> Dependencies.AkkaGrpcBinaryVersion,
+        "extref.akka-grpc.base_url" -> s"https://doc.akka.io/docs/akka-grpc/${Dependencies.AkkaGrpcBinaryVersion}/%s",
+        // Couchbase
+        "couchbase.version" -> Dependencies.CouchbaseVersion,
+        "extref.couchbase.base_url" -> s"https://docs.couchbase.com/java-sdk/${Dependencies.CouchbaseVersionForDocs}/%s",
+        // Java
+        "extref.java-api.base_url" -> "https://docs.oracle.com/javase/8/docs/api/index.html?%s.html",
+        "extref.geode.base_url" -> s"https://geode.apache.org/docs/guide/${Dependencies.GeodeVersionForDocs}/%s",
+        "extref.javaee-api.base_url" -> "https://docs.oracle.com/javaee/7/api/index.html?%s.html",
+        "extref.paho-api.base_url" -> "https://www.eclipse.org/paho/files/javadoc/index.html?%s.html",
+        "extref.pravega.base_url" -> s"http://pravega.io/docs/${Dependencies.PravegaVersionForDocs}/%s",
+        "extref.slick.base_url" -> s"https://slick.lightbend.com/doc/${Dependencies.SlickVersion}/%s",
+        // Cassandra
+        "extref.cassandra.base_url" -> s"https://cassandra.apache.org/doc/${Dependencies.CassandraVersionInDocs}/%s",
+        "extref.cassandra-driver.base_url" -> s"https://docs.datastax.com/en/developer/java-driver/${Dependencies.CassandraDriverVersionInDocs}/%s",
+        "javadoc.com.datastax.oss.base_url" -> s"https://docs.datastax.com/en/drivers/java/${Dependencies.CassandraDriverVersionInDocs}/",
+        // Solr
+        "extref.solr.base_url" -> s"https://lucene.apache.org/solr/guide/${Dependencies.SolrVersionForDocs}/%s",
+        "javadoc.org.apache.solr.base_url" -> s"https://lucene.apache.org/solr/${Dependencies.SolrVersionForDocs}_0/solr-solrj/",
+        // Java
+        "javadoc.base_url" -> "https://docs.oracle.com/javase/8/docs/api/",
+        "javadoc.javax.jms.base_url" -> "https://docs.oracle.com/javaee/7/api/",
+        "javadoc.com.couchbase.base_url" -> s"https://docs.couchbase.com/sdk-api/couchbase-java-client-${Dependencies.CouchbaseVersion}/",
+        "javadoc.io.pravega.base_url" -> s"http://pravega.io/docs/${Dependencies.PravegaVersionForDocs}/javadoc/clients/",
+        "javadoc.org.apache.kudu.base_url" -> s"https://kudu.apache.org/releases/${Dependencies.KuduVersion}/apidocs/",
+        "javadoc.org.apache.hadoop.base_url" -> s"https://hadoop.apache.org/docs/r${Dependencies.HadoopVersion}/api/",
+        "javadoc.software.amazon.awssdk.base_url" -> "https://sdk.amazonaws.com/java/api/latest/",
+        // Eclipse Paho client for MQTT
+        "javadoc.org.eclipse.paho.client.mqttv3.base_url" -> "https://www.eclipse.org/paho/files/javadoc/",
+        "javadoc.org.bson.codecs.configuration.base_url" -> "https://mongodb.github.io/mongo-java-driver/3.7/javadoc/",
+        "scaladoc.scala.base_url" -> s"https://www.scala-lang.org/api/${scalaBinaryVersion.value}.x/",
+        "scaladoc.akka.stream.alpakka.base_url" -> s"/${(Preprocess / siteSubdirName).value}/",
+        "javadoc.akka.stream.alpakka.base_url" -> ""
+      ),
     paradoxGroups := Map("Language" -> Seq("Java", "Scala")),
     paradoxRoots := List("examples/elasticsearch-samples.html",
                          "examples/ftp-samples.html",
@@ -391,7 +426,7 @@ lazy val docs = project
                          "examples/mqtt-samples.html",
                          "index.html"),
     resolvers += Resolver.jcenterRepo,
-    publishRsyncArtifact := makeSite.value -> "www/",
+    publishRsyncArtifacts += makeSite.value -> "www/",
     publishRsyncHost := "akkarepo@gustav.akka.io",
     apidocRootPackage := "akka"
   )
@@ -402,6 +437,7 @@ lazy val whitesourceSupported = project
   .in(file("tmp"))
   .settings(whitesourceGroup := Whitesource.Group.Supported)
   .aggregate(
+    cassandra,
     couchbase,
     csv
   )

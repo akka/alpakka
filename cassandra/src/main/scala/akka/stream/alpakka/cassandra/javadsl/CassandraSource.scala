@@ -4,33 +4,42 @@
 
 package akka.stream.alpakka.cassandra.javadsl
 
-import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionStage
 
 import akka.NotUsed
-import akka.annotation.ApiMayChange
-import akka.stream.alpakka.cassandra.impl.CassandraSourceStage
 import akka.stream.javadsl.Source
-import com.datastax.driver.core.{Row, Session, Statement}
+import com.datastax.oss.driver.api.core.cql.{Row, Statement}
 
-import scala.concurrent.Future
+import scala.annotation.varargs
 
-@ApiMayChange // https://github.com/akka/alpakka/issues/1213
+/**
+ * Java API.
+ */
 object CassandraSource {
 
   /**
-   * Java API: creates a [[CassandraSource]] from a given statement.
+   * Prepare, bind and execute a select statement in one go.
+   *
+   * See <a href="https://docs.datastax.com/en/dse/6.7/cql/cql/cql_using/queriesTOC.html">Querying data</a>.
    */
-  def create(stmt: Statement, session: Session): Source[Row, NotUsed] =
-    akka.stream.javadsl.Source.fromGraph(new CassandraSourceStage(Future.successful(stmt), session))
+  @varargs
+  def create(session: CassandraSession, cqlStatement: String, bindValues: AnyRef*): Source[Row, NotUsed] =
+    session.select(cqlStatement, bindValues: _*)
 
   /**
-   * Java API: creates a [[CassandraSource]] from the result of a given CompletableFuture.
+   * Create a [[akka.stream.javadsl.Source Source]] from a given statement.
+   *
+   * See <a href="https://docs.datastax.com/en/dse/6.7/cql/cql/cql_using/queriesTOC.html">Querying data</a>.
    */
-  def createFromFuture(
-      futStmt: CompletableFuture[Statement],
-      session: Session
-  ): Source[Row, NotUsed] = {
-    import scala.compat.java8.FutureConverters._
-    akka.stream.javadsl.Source.fromGraph(new CassandraSourceStage(futStmt.toScala, session))
-  }
+  def create(session: CassandraSession, stmt: Statement[_]): Source[Row, NotUsed] =
+    session.select(stmt)
+
+  /**
+   * Create a [[akka.stream.javadsl.Source Source]] from a given statement.
+   *
+   * See <a href="https://docs.datastax.com/en/dse/6.7/cql/cql/cql_using/queriesTOC.html">Querying data</a>.
+   */
+  def fromCompletionStage(session: CassandraSession, stmt: CompletionStage[Statement[_]]): Source[Row, NotUsed] =
+    session.select(stmt)
+
 }

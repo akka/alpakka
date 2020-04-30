@@ -10,32 +10,27 @@ import java.time.{Instant, ZoneOffset, ZonedDateTime}
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
-
-import scala.collection.immutable.Seq
-import scala.concurrent.Future
-import scala.util.{Failure, Success}
-import akka.{Done, NotUsed}
-import akka.http.scaladsl.{ClientTransport, Http}
+import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.model.StatusCodes.{NoContent, NotFound, OK}
-import akka.http.scaladsl.model.headers.{
-  `Content-Length`,
-  `Content-Type`,
-  BasicHttpCredentials,
-  ByteRange,
-  CustomHeader
-}
+import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.{headers => http, _}
 import akka.http.scaladsl.settings.{ClientConnectionSettings, ConnectionPoolSettings}
 import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
+import akka.http.scaladsl.{ClientTransport, Http}
 import akka.stream.alpakka.s3.BucketAccess.{AccessDenied, AccessGranted, NotExists}
-import akka.stream.{ActorMaterializer, Attributes, Materializer}
-import akka.stream.alpakka.s3.impl.auth.{CredentialScope, Signer, SigningKey}
 import akka.stream.alpakka.s3._
 import akka.stream.alpakka.s3.headers.ServerSideEncryption
-import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source}
+import akka.stream.alpakka.s3.impl.auth.{CredentialScope, Signer, SigningKey}
+import akka.stream.alpakka.s3.impl.backport.RetryFlow
+import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source, Tcp}
+import akka.stream.{ActorMaterializer, Attributes, Materializer}
 import akka.util.ByteString
+import akka.{Done, NotUsed}
 
 import scala.collection.immutable
+import scala.collection.immutable.Seq
+import scala.concurrent.Future
+import scala.util.{Failure, Success, Try}
 
 /** Internal Api */
 @InternalApi private[s3] final case class S3Location(bucket: String, key: String) {
@@ -136,8 +131,11 @@ import scala.collection.immutable
   }.mapMaterializedValue(_ => NotUsed)
 
   sealed trait ListBucketState
+
   case object Starting extends ListBucketState
-  case class Running(continuationToken: String) extends ListBucketState
+
+  final case class Running(continuationToken: String) extends ListBucketState
+
   case object Finished extends ListBucketState
 
   def listBucketCall[T](
@@ -525,8 +523,11 @@ import scala.collection.immutable
   //header implementation to expose that
   private case class CustomContentTypeHeader(contentType: ContentType) extends CustomHeader {
     override def name(): String = "Content-Type"
+
     override def value(): String = contentType.value
+
     override def renderInRequests(): Boolean = true
+
     override def renderInResponses(): Boolean = true
   }
 
@@ -569,13 +570,63 @@ import scala.collection.immutable
 
   val atLeastOneByteString = Flow[ByteString].orElse(Source.single(ByteString.empty))
 
-  private def createRequests(
+  private def poolSettings(implicit settings: S3Settings, system: ActorSystem) =
+    settings.forwardProxy.map(proxy => {
+      val address = InetSocketAddress.createUnresolved(proxy.host, proxy.port)
+      val transport: ClientTransport = proxy.scheme match {
+        case "https" =>
+          proxy.credentials.fold(ClientTransport.httpsProxy(address))(
+            c => ClientTransport.httpsProxy(address, BasicHttpCredentials(c.username, c.password))
+          )
+        case "http" =>
+          ChangeTargetEndpointTransport(address)
+      }
+      ConnectionPoolSettings(system).withConnectionSettings(ClientConnectionSettings(system).withTransport(transport))
+    })
+
+  private case class ChangeTargetEndpointTransport(address: InetSocketAddress) extends ClientTransport {
+    def connectTo(ignoredHost: String, ignoredPort: Int, settings: ClientConnectionSettings)(
+        implicit system: ActorSystem
+    ): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
+      Tcp()
+        .outgoingConnection(address,
+                            settings.localAddress,
+                            settings.socketOptions,
+                            halfClose = true,
+                            settings.connectingTimeout,
+                            settings.idleTimeout)
+        .mapMaterializedValue(
+          _.map(tcpConn => OutgoingConnection(tcpConn.localAddress, tcpConn.remoteAddress))(system.dispatcher)
+        )
+  }
+
+  private def singleRequest(req: HttpRequest)(implicit settings: S3Settings, system: ActorSystem) =
+    poolSettings.fold(Http().singleRequest(req))(s => Http().singleRequest(req, settings = s))
+
+  private def superPool[T](implicit settings: S3Settings, sys: ActorSystem) =
+    poolSettings.fold(Http().superPool[T]())(s => Http().superPool[T](settings = s))
+
+  private def chunkAndRequest(
       s3Location: S3Location,
       contentType: ContentType,
       s3Headers: S3Headers,
-      chunkSize: Int,
-      parallelism: Int
-  ): Flow[ByteString, (HttpRequest, (MultipartUpload, Int)), NotUsed] = {
+      chunkSize: Int
+  )(parallelism: Int): Flow[ByteString, UploadPartResponse, NotUsed] = {
+
+    def getChunkBuffer(chunkSize: Int, bufferSize: Int, maxRetriesPerChunk: Int)(implicit settings: S3Settings) =
+      settings.bufferType match {
+        case MemoryBufferType =>
+          new MemoryBuffer(bufferSize)
+        case d: DiskBufferType =>
+          // Number of materializations required will be total number of upload attempts (max retries + 1) multiplied
+          // by the number of materializations per attempt (currently once for request signing, and then again for the
+          // actual upload).
+          new DiskBuffer((maxRetriesPerChunk + 1) * 2, bufferSize, d.path)
+      }
+
+    // Multipart upload requests (except for the completion api) are created here.
+    //  The initial upload request gets executed within this function as well.
+    //  The individual upload part requests are created.
 
     assert(
       chunkSize >= MinChunkSize,
@@ -593,100 +644,90 @@ import scala.collection.immutable
 
     Flow
       .setup { (mat, attr) =>
-        implicit val conf = resolveSettings(attr, mat.system)
+        implicit val conf: S3Settings = resolveSettings(attr, mat.system)
+        implicit val sys: ActorSystem = mat.system
+        implicit val materializer: Materializer = mat
+
+        val retriableFlow: Flow[(Chunk, (MultipartUpload, Int)), (Try[HttpResponse], (MultipartUpload, Int)), NotUsed] =
+          Flow[(Chunk, (MultipartUpload, Int))]
+            .map {
+              case (chunkedPayload, (uploadInfo, chunkIndex)) =>
+                //each of the payload requests are created
+                val partRequest =
+                  uploadPartRequest(uploadInfo, chunkIndex, chunkedPayload.data, chunkedPayload.size, headers)
+                (partRequest, (uploadInfo, chunkIndex))
+            }
+            .flatMapConcat { case (req, info) => Signer.signedRequest(req, signingKey).zip(Source.single(info)) }
+            .via(superPool[(MultipartUpload, Int)])
+
+        import conf.multipartUploadSettings.retrySettings._
 
         SplitAfterSize(chunkSize, chunkBufferSize)(atLeastOneByteString)
-          .via(getChunkBuffer(chunkSize, chunkBufferSize)) //creates the chunks
-          .concatSubstreams
-          .zipWith(requestInfo) {
-            case (chunkedPayload, (uploadInfo, chunkIndex)) =>
-              //each of the payload requests are created
-              val partRequest =
-                uploadPartRequest(uploadInfo, chunkIndex, chunkedPayload.data, chunkedPayload.size, headers)
-              (partRequest, (uploadInfo, chunkIndex))
+          .via(getChunkBuffer(chunkSize, chunkBufferSize, maxRetries)) //creates the chunks
+          .mergeSubstreamsWithParallelism(parallelism)
+          .zip(requestInfo)
+          .groupBy(parallelism, { case (_, (_, chunkIndex)) => chunkIndex % parallelism })
+          // Allow requests that fail with transient errors to be retried, using the already buffered chunk.
+          .via(RetryFlow.withBackoff(minBackoff, maxBackoff, randomFactor, maxRetries, retriableFlow) {
+            case (chunkAndUploadInfo, (Success(r), _)) =>
+              if (isTransientError(r.status)) {
+                r.entity.discardBytes()
+                Some(chunkAndUploadInfo)
+              } else {
+                None
+              }
+            case (chunkAndUploadInfo, (Failure(_), _)) =>
+              // Treat any exception as transient.
+              Some(chunkAndUploadInfo)
+          })
+          .mapAsync(1) {
+            case (response, (upload, index)) =>
+              handleChunkResponse(response, upload, index, conf.multipartUploadSettings.retrySettings)
           }
-          .flatMapConcat { case (req, info) => Signer.signedRequest(req, signingKey).zip(Source.single(info)) }
+          .mergeSubstreamsWithParallelism(parallelism)
       }
       .mapMaterializedValue(_ => NotUsed)
   }
 
-  private def getChunkBuffer(chunkSize: Int, bufferSize: Int)(implicit settings: S3Settings) =
-    settings.bufferType match {
-      case MemoryBufferType =>
-        new MemoryBuffer(bufferSize)
-      case d: DiskBufferType =>
-        new DiskBuffer(2, bufferSize, d.path)
+  private def handleChunkResponse(response: Try[HttpResponse],
+                                  upload: MultipartUpload,
+                                  index: Int,
+                                  retrySettings: RetrySettings)(
+      implicit mat: Materializer
+  ) = {
+
+    import mat.executionContext
+
+    response match {
+      case Success(r) if r.status.isFailure() =>
+        val retryInfo =
+          if (isTransientError(r.status)) s" after exhausting all retry attempts (settings: $retrySettings)" else ""
+
+        Unmarshal(r.entity).to[String].map { errorBody =>
+          FailedUploadPart(
+            upload,
+            index,
+            new RuntimeException(
+              s"Upload part $index request failed$retryInfo. Response header: ($r), response body: ($errorBody)."
+            )
+          )
+        }
+      case Success(r) =>
+        r.entity.discardBytes()
+        val etag = r.headers.find(_.lowercaseName() == "etag").map(_.value)
+        etag
+          .map(t => Future.successful(SuccessfulUploadPart(upload, index, t)))
+          .getOrElse(
+            Future.successful(FailedUploadPart(upload, index, new RuntimeException(s"Cannot find etag in ${r}")))
+          )
+
+      case Failure(e) => Future.successful(FailedUploadPart(upload, index, e))
     }
+  }
 
-  private def poolSettings(implicit settings: S3Settings, system: ActorSystem) =
-    settings.forwardProxy.map(proxy => {
-      val address = InetSocketAddress.createUnresolved(proxy.host, proxy.port)
-      val transport = proxy.credentials.fold(ClientTransport.httpsProxy(address))(
-        c => ClientTransport.httpsProxy(address, BasicHttpCredentials(c.username, c.password))
-      )
-
-      ConnectionPoolSettings(system)
-        .withConnectionSettings(
-          ClientConnectionSettings(system)
-            .withTransport(transport)
-        )
-    })
-
-  private def singleRequest(req: HttpRequest)(implicit settings: S3Settings, system: ActorSystem) =
-    poolSettings.fold(Http().singleRequest(req))(s => Http().singleRequest(req, settings = s))
-
-  private def superPool[T](implicit settings: S3Settings, sys: ActorSystem) =
-    poolSettings.fold(Http().superPool[T]())(s => Http().superPool[T](settings = s))
-
-  private def chunkAndRequest(
-      s3Location: S3Location,
-      contentType: ContentType,
-      s3Headers: S3Headers,
-      chunkSize: Int
-  )(parallelism: Int): Flow[ByteString, UploadPartResponse, NotUsed] = {
-
-    // Multipart upload requests (except for the completion api) are created here.
-    //  The initial upload request gets executed within this function as well.
-    //  The individual upload part requests are created.
-    val requestFlow = createRequests(s3Location, contentType, s3Headers, chunkSize, parallelism)
-
-    // The individual upload part requests are processed here
-    Flow
-      .setup { (mat, attr) =>
-        implicit val materializer = mat
-        import mat.executionContext
-        implicit val sys = mat.system
-        implicit val conf = resolveSettings(attr, mat.system)
-
-        requestFlow
-          .via(superPool[(MultipartUpload, Int)])
-          .mapAsync(parallelism) {
-            case (Success(r), (upload, index)) =>
-              if (r.status.isFailure()) {
-                Unmarshal(r.entity).to[String].map { errorBody =>
-                  FailedUploadPart(
-                    upload,
-                    index,
-                    new RuntimeException(
-                      s"Upload part $index request failed. Response header: ($r), response body: ($errorBody)."
-                    )
-                  )
-                }
-              } else {
-                r.entity.discardBytes()
-                val etag = r.headers.find(_.lowercaseName() == "etag").map(_.value)
-                etag
-                  .map(t => Future.successful(SuccessfulUploadPart(upload, index, t)))
-                  .getOrElse(
-                    Future
-                      .successful(FailedUploadPart(upload, index, new RuntimeException(s"Cannot find etag in ${r}")))
-                  )
-              }
-
-            case (Failure(e), (upload, index)) => Future.successful(FailedUploadPart(upload, index, e))
-          }
-      }
-      .mapMaterializedValue(_ => NotUsed)
+  private def isTransientError(status: StatusCode): Boolean = {
+    // 5xx errors from S3 can be treated as transient.
+    status.intValue >= 500
   }
 
   private def completionSink(

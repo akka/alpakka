@@ -1,11 +1,11 @@
 # Spring Web
 
-Spring 5.0 introduced compatibility with [Reactive Streams](http://reactive-streams.org), a library interoperability standardization effort co-lead by Lightbend (with Akka Streams) along with Kaazing, Netflix, 
+Spring 5.0 introduced compatibility with [Reactive Streams](https://www.reactive-streams.org), a library interoperability standardization effort co-lead by Lightbend (with Akka Streams) along with Kaazing, Netflix, 
 Pivotal, Red Hat, Twitter and many others.
 
 Thanks to adopting Reactive Streams, multiple libraries can now inter-op since the same interfaces are implemented by 
 all these libraries. Akka Streams by-design, hides the raw reactive-streams types from end-users, since it allows for
-detaching these types from RS and allows for a painless migration to [`java.util.concurrent.Flow`](http://download.java.net/java/jdk9/docs/api/java/util/concurrent/Flow.html) which was introduced in Java 9.
+detaching these types from RS and allows for a painless migration to @javadoc[java.util.concurrent.Flow](java.util.concurrent.Flow) which was introduced in Java 9.
 
 This Alpakka module makes it possible to directly return a `Source` in your Spring Web endpoints.
 
@@ -64,6 +64,6 @@ In case you'd like to manually configure it slightly differently.
 ## Shameless plug: Akka HTTP 
 
 While the integration presented here works, it's not quite the optimal way of using Akka in conjunction with serving HTTP apps.
-If you're new to reactive systems and picking technologies, you may want to have a look at [Akka HTTP](https://doc.akka.io/docs/akka-http/current/scala/http/).
+If you're new to reactive systems and picking technologies, you may want to have a look at @extref[Akka HTTP](akka-http:).
 
 If, for some reason, you decided use Spring MVC this integration should help you achieve the basic streaming scenarios though.

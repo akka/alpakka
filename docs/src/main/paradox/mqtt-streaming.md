@@ -16,7 +16,9 @@ This library also differs in that it separates out the concern of how MQTT is co
 
 @@@
 
-The Alpakka MQTT connector provides an Akka Stream flow to connect to MQTT brokers. In addition, a flow is provided so that you can implement your own MQTT server in the case where you do not wish to use a broker--MQTT is a fine protocol for directed client/server interactions, as well as having an intermediary broker.
+The Alpakka MQTT Streaming connector provides an Akka Stream flow to connect to MQTT brokers. In addition, a flow is provided so that you can implement your own MQTT server in the case where you do not wish to use a broker--MQTT is a fine protocol for directed client/server interactions, as well as having an intermediary broker.
+
+Alpakka MQTT Streaming implements the [MQTT 3.1.1](https://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html) protocol.
 
 @@project-info{ projectId="mqtt-streaming" }
 

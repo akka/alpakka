@@ -6,7 +6,7 @@ package akka.stream.alpakka.elasticsearch.impl
 
 import akka.annotation.InternalApi
 import akka.stream.alpakka.elasticsearch.Operation._
-import akka.stream.alpakka.elasticsearch.{MessageWriter, WriteMessage, WriteResult}
+import akka.stream.alpakka.elasticsearch.{MessageWriter, WriteMessage}
 import spray.json._
 
 import scala.collection.immutable
@@ -25,9 +25,6 @@ private[impl] final class RestBulkApiV5[T, C](indexName: String,
     extends RestBulkApi[T, C] {
 
   private lazy val typeNameTuple = "_type" -> JsString(typeName)
-  private lazy val versionTypeTuple: Option[(String, JsString)] = versionType.map { versionType =>
-    "version_type" -> JsString(versionType)
-  }
 
   def toJson(messages: immutable.Seq[WriteMessage[T, C]]): String =
     messages
@@ -39,84 +36,29 @@ private[impl] final class RestBulkApiV5[T, C](indexName: String,
         val tuple: (String, JsObject) = message.operation match {
           case Index =>
             val fields = Seq(
-              message.version.map { version =>
-                "_version" -> JsNumber(version)
-              },
-              versionTypeTuple,
-              message.id.map { id =>
-                "_id" -> JsString(id)
-              }
+              optionalNumber("_version", message.version),
+              optionalString("version_type", versionType),
+              optionalString("_id", message.id)
             ).flatten
-            "index" -> JsObject(
-              (sharedFields ++ fields): _*
-            )
-          case Create =>
-            val fields = Seq(
-              message.id.map { id =>
-                "_id" -> JsString(id)
-              }
-            ).flatten
-            "create" -> JsObject(
-              (sharedFields ++ fields): _*
-            )
+            "index" -> JsObject(sharedFields ++ fields: _*)
+          case Create => "create" -> JsObject(sharedFields ++ optionalString("_id", message.id): _*)
           case Update | Upsert =>
-            val fields = Seq(
-              message.version.map { version =>
-                "_version" -> JsNumber(version)
-              },
-              versionTypeTuple,
-              Option("_id" -> JsString(message.id.get))
-            ).flatten
-            "update" -> JsObject(
-              (sharedFields ++ fields): _*
-            )
+            val fields =
+              ("_id" -> JsString(message.id.get)) +: Seq(
+                optionalNumber("_version", message.version),
+                optionalString("version_type", versionType)
+              ).flatten
+            "update" -> JsObject(sharedFields ++ fields: _*)
           case Delete =>
-            val fields = Seq(
-              message.version.map { version =>
-                "_version" -> JsNumber(version)
-              },
-              versionTypeTuple,
-              Option("_id" -> JsString(message.id.get))
-            ).flatten
-            "delete" -> JsObject(
-              (sharedFields ++ fields): _*
-            )
+            val fields =
+              ("_id" -> JsString(message.id.get)) +: Seq(
+                optionalNumber("_version", message.version),
+                optionalString("version_type", versionType)
+              ).flatten
+            "delete" -> JsObject(sharedFields ++ fields: _*)
         }
-        JsObject(tuple).compactPrint + messageToJson(message)
+        JsObject(tuple).compactPrint + messageToJson(message, message.source.fold("")(messageWriter.convert))
       }
       .mkString("", "\n", "\n")
-
-  private def messageToJson(message: WriteMessage[T, C]): String =
-    message.operation match {
-      case Index | Create =>
-        "\n" + messageWriter.convert(message.source.get)
-      case Upsert =>
-        "\n" + JsObject(
-          "doc" -> messageWriter.convert(message.source.get).parseJson,
-          "doc_as_upsert" -> JsTrue
-        ).toString
-      case Update =>
-        "\n" + JsObject(
-          "doc" -> messageWriter.convert(message.source.get).parseJson
-        ).toString
-      case Delete =>
-        ""
-    }
-
-  def toWriteResults(messages: immutable.Seq[WriteMessage[T, C]],
-                     jsonString: String): immutable.Seq[WriteResult[T, C]] = {
-    val responseJson = jsonString.parseJson
-
-    // If some commands in bulk request failed, pass failed messages to follows.
-    val items = responseJson.asJsObject.fields("items").asInstanceOf[JsArray]
-    val messageResults: immutable.Seq[WriteResult[T, C]] = items.elements.zip(messages).map {
-      case (item, message) =>
-        val command = message.operation.command
-        val res = item.asJsObject.fields(command).asJsObject
-        val error: Option[String] = res.fields.get("error").map(_.toString())
-        new WriteResult(message, error)
-    }
-    messageResults
-  }
 
 }

@@ -85,6 +85,31 @@ class AmqpFlowSpec extends AmqpSpec with AmqpMocking with BeforeAndAfterEach {
       shouldFailStageOnPublicationError(mockedFlowWithConfirm)
     }
 
+    "fail stage on creating channel error" in assertAllStagesStopped {
+      new AmqpMocking {
+        def shouldFailStageOnCreatingChannelError(flow: Flow[WriteMessage, WriteResult, Future[Done]]) = {
+          val channelError = new RuntimeException("channel error")
+
+          when(
+            connectionMock.createChannel()
+          ).thenThrow(channelError)
+
+          val completion =
+            Source
+              .single("one")
+              .map(s => WriteMessage(ByteString(s)))
+              .via(flow)
+              .runWith(Sink.ignore)
+
+          completion.failed.futureValue shouldEqual channelError
+        }
+
+        val mockedFlowWithConfirm =
+          AmqpFlow.withConfirm(amqpWriteSettings(AmqpConnectionFactoryConnectionProvider(connectionFactoryMock)))
+        shouldFailStageOnCreatingChannelError(mockedFlowWithConfirm)
+      }
+    }
+
     "propagate context" in assertAllStagesStopped {
       val localFlowWithContextAndConfirm =
         AmqpFlowWithContext.withConfirm[String](localAmqpWriteSettings)

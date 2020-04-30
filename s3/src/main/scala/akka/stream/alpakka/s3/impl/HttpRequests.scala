@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.s3.impl
 
-import java.net.URLDecoder
+import java.net.{URLDecoder, URLEncoder}
 import java.nio.charset.StandardCharsets
 
 import akka.annotation.InternalApi
@@ -28,6 +28,7 @@ import scala.concurrent.{ExecutionContext, Future}
 @InternalApi private[impl] object HttpRequests {
 
   private final val log = LoggerFactory.getLogger(getClass)
+  private final val BucketPattern = "{bucket}"
 
   def listBucket(
       bucket: String,
@@ -139,7 +140,8 @@ import scala.concurrent.{ExecutionContext, Future}
     val copyPartition = multipartCopy.copyPartition
     val range = copyPartition.range
     val source = copyPartition.sourceLocation.validate(conf)
-    val sourceHeaderValuePrefix = s"/${source.bucket}/${source.key}"
+    val encodedKey = URLEncoder.encode(source.key, StandardCharsets.UTF_8.toString)
+    val sourceHeaderValuePrefix = s"/${source.bucket}/${encodedKey}"
     val sourceHeaderValue = sourceVersionId
       .map(versionId => s"$sourceHeaderValuePrefix?versionId=$versionId")
       .getOrElse(sourceHeaderValuePrefix)
@@ -172,13 +174,12 @@ import scala.concurrent.{ExecutionContext, Future}
 
   @throws(classOf[IllegalUriException])
   private[this] def requestAuthority(bucket: String, region: Region)(implicit conf: S3Settings): Authority = {
-    if (conf.pathStyleAccess) {
+    if (conf.pathStyleAccess && conf.pathStyleAccessWarning) {
       log.warn(
         "AWS S3 is going to retire path-style access (https://aws.amazon.com/blogs/aws/amazon-s3-path-deprecation-plan-the-rest-of-the-story/)"
       )
     }
     conf.endpointUrl match {
-      case Some(endpointUrl) => Uri(endpointUrl).authority
       case None =>
         region match {
           case Region.US_EAST_1 =>
@@ -194,6 +195,12 @@ import scala.concurrent.{ExecutionContext, Future}
               Authority(Uri.Host(s"$bucket.s3-$region.amazonaws.com"))
             }
         }
+
+      case Some(endpointUrl) if conf.pathStyleAccess =>
+        Uri(endpointUrl).authority
+
+      case Some(endpointUrl) =>
+        Uri(endpointUrl.replace(BucketPattern, bucket)).authority
     }
   }
 
@@ -207,13 +214,12 @@ import scala.concurrent.{ExecutionContext, Future}
       someKey.split("/", -1).foldLeft(basePath)((acc, p) => acc / p)
     }
     val uri = Uri(path = path, authority = requestAuthority(bucket, conf.s3RegionProvider.getRegion))
-      .withHost(requestAuthority(bucket, conf.s3RegionProvider.getRegion).host)
 
     conf.endpointUrl match {
-      case Some(endpointUri) =>
-        uri.withScheme(Uri(endpointUri).scheme)
       case None =>
         uri.withScheme("https")
+      case Some(endpointUri) =>
+        uri.withScheme(Uri(endpointUri.replace(BucketPattern, "b")).scheme)
     }
   }
 

@@ -1,3 +1,0 @@
-# Remove deprecated methods
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.cassandra.javadsl.CassandraFlow.createUnloggedBatchWithPassThrough")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.cassandra.javadsl.CassandraFlow.createWithPassThrough")

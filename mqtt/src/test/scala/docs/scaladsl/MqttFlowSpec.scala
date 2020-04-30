@@ -9,10 +9,8 @@ import akka.stream.alpakka.mqtt._
 import akka.stream.alpakka.mqtt.scaladsl.{MqttFlow, MqttMessageWithAck}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.util.ByteString
-import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
-import org.scalatest.time.{Seconds, Span}
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Future, Promise}
 
 class MqttFlowSpec extends MqttSpecBase("MqttFlowSpec") {
 
@@ -38,18 +36,13 @@ class MqttFlowSpec extends MqttSpecBase("MqttFlowSpec") {
         .run()
       //#run-flow
 
-      Await.ready(subscribed, timeout)
+      subscribed.futureValue shouldBe Done
       mqttMessagePromise.success(None)
       noException should be thrownBy result.futureValue
     }
-    "send an ack after sent confirmation" in {
 
+    "send an ack after sent confirmation" in {
       val topic = "flow-spec/topic-ack"
-      val connectionSettings = MqttConnectionSettings(
-        "tcp://localhost:1883",
-        topic,
-        new MemoryPersistence
-      )
 
       //#create-flow-ack
       val mqttFlow: Flow[MqttMessageWithAck, MqttMessageWithAck, Future[Done]] =
@@ -61,38 +54,32 @@ class MqttFlowSpec extends MqttSpecBase("MqttFlowSpec") {
         )
       //#create-flow-ack
 
+      val acked = Promise[Done]
+
       class MqttMessageWithAckFake extends MqttMessageWithAck {
-        var acked = false
         override val message: MqttMessage = MqttMessage.create(topic, ByteString.fromString("ohi"))
 
         override def ack(): Future[Done] = {
-          acked = true
-          println("[MqttMessageWithAck]")
+          acked.trySuccess(Done)
           Future.successful(Done)
         }
       }
 
       val message = new MqttMessageWithAckFake
-      message.acked shouldBe false
 
       val source = Source.single(message)
 
       //#run-flow-ack
-      val ((_, subscribed), result) = source
-        .viaMat(mqttFlow)(Keep.both)
+      val (subscribed, result) = source
+        .viaMat(mqttFlow)(Keep.right)
         .toMat(Sink.seq)(Keep.both)
         .run()
 
       //#run-flow-ack
-      Await.ready(subscribed, timeout)
-      Await.ready(result, timeout)
+      subscribed.futureValue shouldBe Done
+      result.futureValue shouldBe empty
 
-      println("[Check]")
-      eventually(timeout(Span(15, Seconds))) {
-        Thread.sleep(10)
-        message.acked should be(true)
-      }
-      message.acked shouldBe true
+      acked.future.futureValue shouldBe Done
     }
   }
 }

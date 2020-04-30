@@ -15,7 +15,7 @@ services:
     ports:
       - "5672:5672"
   cassandra:
-    image: cassandra:3.0.15
+    image: cassandra:3.11
     ports:
       - "9042:9042"
   couchbase:
@@ -66,6 +66,18 @@ services:
     image: deangiberson/aws-dynamodb-local
     ports:
       - "8001:8000"
+  elasticsearch6:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.8.0
+    ports:
+      - "9201:9200"
+    environment:
+      - "discovery.type=single-node"
+  elasticsearch7:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.6.0
+    ports:
+      - "9202:9200"
+    environment:
+      - "discovery.type=single-node"
   ftp:
     image: stilliard/pure-ftpd:latest
     ports:
@@ -84,7 +96,7 @@ services:
       ADDED_FLAGS: "--tls=1"
   geode:
     container_name: geode
-    image: apachegeode/geode:1.11.0
+    image: apachegeode/geode:1.12.0
     hostname: geode
     mem_limit: 2g
     expose:
@@ -178,12 +190,13 @@ services:
     links:
       - kudu-master
   minio:
-    image: minio/minio
+    image: minio/minio:RELEASE.2020-03-09T18-26-53Z
     ports:
       - "9000:9000"
     environment:
       - "MINIO_ACCESS_KEY=TESTKEY"
       - "MINIO_SECRET_KEY=TESTSECRET"
+      - "MINIO_DOMAIN=s3minio.alpakka"
     command: server /data
   minio_prep:
     image: mesosphere/aws-cli
@@ -237,3 +250,9 @@ services:
       - ./ftp/src/test/resources/squid.conf:/etc/squid/squid.conf
     ports:
       - "3128:3128"
+  pravega:
+    image: pravega/pravega:0.7.0
+    ports:
+      - 9090:9090
+      - 12345:12345
+    command: standalone

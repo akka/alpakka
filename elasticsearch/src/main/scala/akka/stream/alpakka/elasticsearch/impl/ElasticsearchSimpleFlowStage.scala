@@ -43,6 +43,9 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
       require(_indexName != null, "You must define an index name")
       require(_typeName != null, "You must define a type name")
       new RestBulkApiV5[T, C](_indexName, _typeName, settings.versionType, writer)
+    case ApiVersion.V7 =>
+      require(_indexName != null, "You must define an index name")
+      new RestBulkApiV7[T, C](_indexName, settings.versionType, writer)
     case other => throw new IllegalArgumentException(s"API version $other is not supported")
   }
 
@@ -108,7 +111,7 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
         log.debug("response {}", jsonString.parseJson.prettyPrint)
       }
       val messageResults = restApi.toWriteResults(messages, jsonString)
-      push(out, messageResults ++ resultsPassthrough)
+      emit(out, messageResults ++ resultsPassthrough)
       if (isClosed(in)) completeStage()
       else tryPull()
     }

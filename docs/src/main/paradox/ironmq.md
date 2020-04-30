@@ -1,6 +1,6 @@
 # IronMQ
 
-The IronMQ connector provides an Akka stream source and sink to connect to the [IronMQ](https://www.iron.io/platform/ironmq/) queue.
+The IronMQ connector provides an Akka stream source and sink to connect to the [IronMQ](https://www.iron.io/) queue.
 
 IronMQ is a simple point-to-point queue, but it is possible to implement a fan-out semantic by configure the queue as push
 queue and set other queue as subscribers. More information about that could be found on

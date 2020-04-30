@@ -1,0 +1,12 @@
+# The upgrade to Akka gRPC 0.8.0 changes the generated code, that's OK as we go for Alpakka 2.0.0
+ProblemFilters.exclude[Problem]("com.google.*")
+
+ProblemFilters.exclude[Problem]("akka.stream.alpakka.googlecloud.pubsub.grpc.javadsl.GrpcPublisher.create")
+ProblemFilters.exclude[Problem]("akka.stream.alpakka.googlecloud.pubsub.grpc.javadsl.GrpcPublisher.this")
+ProblemFilters.exclude[Problem]("akka.stream.alpakka.googlecloud.pubsub.grpc.javadsl.GrpcSubscriber.create")
+ProblemFilters.exclude[Problem]("akka.stream.alpakka.googlecloud.pubsub.grpc.javadsl.GrpcSubscriber.this")
+
+ProblemFilters.exclude[Problem]("akka.stream.alpakka.googlecloud.pubsub.grpc.scaladsl.GrpcPublisher.apply")
+ProblemFilters.exclude[Problem]("akka.stream.alpakka.googlecloud.pubsub.grpc.scaladsl.GrpcPublisher.this")
+ProblemFilters.exclude[Problem]("akka.stream.alpakka.googlecloud.pubsub.grpc.scaladsl.GrpcSubscriber.apply")
+ProblemFilters.exclude[Problem]("akka.stream.alpakka.googlecloud.pubsub.grpc.scaladsl.GrpcSubscriber.this")

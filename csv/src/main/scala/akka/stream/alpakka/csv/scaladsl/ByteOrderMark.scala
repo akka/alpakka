@@ -10,7 +10,7 @@ import akka.util.ByteString
  * Byte Order Marks may be used to indicate the used character encoding
  * in text files.
  *
- * @see http://www.unicode.org/faq/utf_bom.html#bom1
+ * @see https://www.unicode.org/faq/utf_bom.html#bom1
  */
 object ByteOrderMark {
 

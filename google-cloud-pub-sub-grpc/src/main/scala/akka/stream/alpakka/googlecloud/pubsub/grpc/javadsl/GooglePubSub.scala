@@ -34,7 +34,7 @@ object GooglePubSub {
       .mapMaterializedValue(japiFunction(_ => NotUsed))
 
   /**
-   * Create a source that emits messages for a given subscription.
+   * Create a source that emits messages for a given subscription using a StreamingPullRequest.
    *
    * The materialized value can be used to cancel the source.
    *
@@ -58,11 +58,39 @@ object GooglePubSub {
               .single(request)
               .concat(
                 Source
-                  .tick(pollInterval, pollInterval, subsequentRequest)
+                  .tick(Duration.ZERO, pollInterval, subsequentRequest)
                   .mapMaterializedValue(japiFunction(cancellable.complete))
               )
           )
           .mapConcat(japiFunction(_.getReceivedMessagesList))
+          .mapMaterializedValue(japiFunction(_ => cancellable))
+      }
+      .mapMaterializedValue(japiFunction(flattenCs))
+      .mapMaterializedValue(japiFunction(_.toCompletableFuture))
+
+  /**
+   * Create a source that emits messages for a given subscription using a synchronous PullRequest.
+   *
+   * The materialized value can be used to cancel the source.
+   *
+   * @param request the subscription FQRS field is mandatory for the request
+   * @param pollInterval time between PullRequest messages are being sent
+   */
+  def subscribePolling(
+      request: PullRequest,
+      pollInterval: Duration
+  ): Source[ReceivedMessage, CompletableFuture[Cancellable]] =
+    Source
+      .setup { (mat, attr) =>
+        val cancellable = new CompletableFuture[Cancellable]()
+
+        val client = subscriber(mat, attr).client
+
+        Source
+          .tick(Duration.ZERO, pollInterval, request)
+          .mapAsync(1, client.pull)
+          .mapConcat(japiFunction(_.getReceivedMessagesList))
+          .mapMaterializedValue(japiFunction(cancellable.complete))
           .mapMaterializedValue(japiFunction(_ => cancellable))
       }
       .mapMaterializedValue(japiFunction(flattenCs))
@@ -103,11 +131,11 @@ object GooglePubSub {
     attr
       .get[PubSubAttributes.Publisher]
       .map(_.publisher)
-      .getOrElse(GrpcPublisherExt()(mat.system).publisher)
+      .getOrElse(GrpcPublisherExt.get(mat.system).publisher)
 
   private def subscriber(mat: ActorMaterializer, attr: Attributes) =
     attr
       .get[PubSubAttributes.Subscriber]
       .map(_.subscriber)
-      .getOrElse(GrpcSubscriberExt()(mat.system).subscriber)
+      .getOrElse(GrpcSubscriberExt.get(mat.system).subscriber)
 }

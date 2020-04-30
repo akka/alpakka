@@ -13,6 +13,7 @@ import akka.stream.alpakka.kinesis.CommittableRecord.{BatchData, ShardProcessorD
 import akka.stream.alpakka.kinesis.KinesisSchedulerErrors.SchedulerUnexpectedShutdown
 import akka.stream.alpakka.kinesis.impl.ShardProcessor
 import akka.stream.alpakka.kinesis.scaladsl.KinesisSchedulerSource
+import akka.stream.alpakka.testkit.scaladsl.Repeated
 import akka.stream.scaladsl.Keep
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.{TestSink, TestSource}
@@ -40,7 +41,12 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Random
 
-class KinesisSchedulerSourceSpec extends AnyWordSpec with Matchers with DefaultTestContext with Eventually {
+class KinesisSchedulerSourceSpec
+    extends AnyWordSpec
+    with Matchers
+    with DefaultTestContext
+    with Eventually
+    with Repeated {
 
   "KinesisSchedulerSource" must {
 
@@ -175,38 +181,36 @@ class KinesisSchedulerSourceSpec extends AnyWordSpec with Matchers with DefaultT
     "not drop messages in case of Shard end" in assertAllStagesStopped(
       new KinesisSchedulerContext(bufferSize = 10) with TestData {
         recordProcessor.initialize(randomInitializationInput())
-        Future {
-          val records: Seq[KinesisClientRecord] = (1 to 30).map { i =>
-            val record = org.mockito.Mockito.mock(classOf[KinesisClientRecord])
-            when(record.sequenceNumber).thenReturn(i.toString)
-            record
-          }
-          recordProcessor.processRecords(sampleRecordsInput(records, isShardEnd = true))
-        }
-
         val shardEndedCheckpointer: RecordProcessorCheckpointer =
           org.mockito.Mockito.mock(classOf[software.amazon.kinesis.processor.RecordProcessorCheckpointer])
-        Future {
-          val shardEndedInput = org.mockito.Mockito.mock(classOf[ShardEndedInput])
-          when(shardEndedInput.checkpointer()).thenReturn(shardEndedCheckpointer)
-          recordProcessor.shardEnded(shardEndedInput)
-        }
 
-        Thread.sleep(100)
+        val shardEndedCallFinished = for {
+          _ <- Future {
+            val records: Seq[KinesisClientRecord] = (1 to 30).map { i =>
+              val record = org.mockito.Mockito.mock(classOf[KinesisClientRecord])
+              when(record.sequenceNumber).thenReturn(i.toString)
+              record
+            }
+            recordProcessor.processRecords(sampleRecordsInput(records, isShardEnd = true))
+          }
+          _ <- Future {
+            val shardEndedInput = org.mockito.Mockito.mock(classOf[ShardEndedInput])
+            when(shardEndedInput.checkpointer()).thenReturn(shardEndedCheckpointer)
+            recordProcessor.shardEnded(shardEndedInput)
+          }
+        } yield ()
+
         verify(shardEndedCheckpointer, never()).checkpoint()
 
-        for (_ <- 1 to 29) {
-          sinkProbe.requestNext()
-          Thread.sleep(100)
-        }
+        for (_ <- 1 to 29) sinkProbe.requestNext()
 
-        Thread.sleep(100)
         verify(shardEndedCheckpointer, never()).checkpoint()
 
         sinkProbe.requestNext().tryToCheckpoint()
 
         eventually {
           verify(shardEndedCheckpointer).checkpoint()
+          shardEndedCallFinished.isCompleted shouldBe true
         }
 
         killSwitch.shutdown()

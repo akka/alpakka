@@ -1,8 +1,14 @@
 # Apache Cassandra
 
-The Cassandra connector allows you to read and write to Cassandra. You can query a stream of rows from @scaladoc[CassandraSource](akka.stream.alpakka.cassandra.scaladsl.CassandraSource$) or use prepared statements to insert or update with @scaladoc[CassandraFlow](akka.stream.alpakka.cassandra.scaladsl.CassandraFlow$) or @scaladoc[CassandraSink](akka.stream.alpakka.cassandra.scaladsl.CassandraSink$).
+@@@ note { title="Cassandra"}
 
-Unlogged batches are also supported. 
+Apache Cassandra is a free and open-source, distributed, wide column store, NoSQL database management system designed to handle large amounts of data across many commodity servers, providing high availability with no single point of failure. Cassandra offers robust support for clusters spanning multiple datacenters, with asynchronous masterless replication allowing low latency operations for all clients.
+
+-- [Wikipedia](https://en.wikipedia.org/wiki/Apache_Cassandra)
+
+@@@
+
+Alpakka Cassandra offers an @extref:[Akka Streams](akka:/stream/index.html) API on top of a @javadoc[CqlSession](com.datastax.oss.driver.api.core.CqlSession) from the @extref:[Datastax Java Driver](cassandra-driver:) version 4.0+. The @ref:[driver configuration](#custom-session-creation) is provided in the same config format as Akka uses and can be placed in the same `application.conf` as your Akka settings.
 
 @@project-info{ projectId="cassandra" }
 
@@ -12,11 +18,6 @@ Unlogged batches are also supported.
   group=com.lightbend.akka
   artifact=akka-stream-alpakka-cassandra_$scala.binary.version$
   version=$project.version$
-  symbol2=AkkaVersion
-  value2=$akka.version$
-  group2=com.typesafe.akka
-  artifact2=akka-stream_$scala.binary.version$
-  version2=AkkaVersion
 }
 
 The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
@@ -24,17 +25,11 @@ The table below shows direct dependencies of this module and the second tab show
 @@dependencies { projectId="cassandra" }
 
 
-@@@warning { title="API may change" }
+## Sessions
 
-We intend to bring in the Cassandra client part of [Akka Persistence Cassandra](https://github.com/akka/akka-persistence-cassandra/) to Alpakka. This will mean changes to this API.
+Cassandra is accessed through @apidoc[akka.stream.alpakka.cassandra.*.CassandraSession]s which are managed by the @apidoc[CassandraSessionRegistry$] Akka extension. This way a session is shared across all usages within the actor system and properly shut down after the actor system is shut down.
 
-See @github[issue #1213](#1213)
-
-@@@
-
-## Source
-
-Sources provided by this connector need a prepared session to communicate with Cassandra cluster. First, let's initialize a Cassandra session.
+@scala[The `CassandraSession` is provided to the stream factory methods as an `implicit` parameter.]
 
 Scala
 : @@snip [snip](/cassandra/src/test/scala/docs/scaladsl/CassandraSourceSpec.scala) { #init-session }
@@ -42,15 +37,23 @@ Scala
 Java
 : @@snip [snip](/cassandra/src/test/java/docs/javadsl/CassandraSourceTest.java) { #init-session }
 
-We will also need an @scaladoc[ActorSystem](akka.actor.ActorSystem) and an @scaladoc[ActorMaterializer](akka.stream.ActorMaterializer).
+See @ref[custom session creation](#custom-session-creation) below for tweaking this.
+
+
+## Reading from Cassandra
+
+@apidoc[CassandraSource$] provides factory methods to get Akka Streams Sources from CQL queries and from @javadoc[com.datastax.oss.driver.api.core.cql.Statement](com.datastax.oss.driver.api.core.cql.Statement)s.
+
+Dynamic parameters can be provided to the CQL as variable arguments.
 
 Scala
-: @@snip [snip](/cassandra/src/test/scala/docs/scaladsl/CassandraSourceSpec.scala) { #init-mat }
+: @@snip [snip](/cassandra/src/test/scala/docs/scaladsl/CassandraSourceSpec.scala) { #cql }
 
 Java
-: @@snip [snip](/cassandra/src/test/java/docs/javadsl/CassandraSourceTest.java) { #init-mat }
+: @@snip [snip](/cassandra/src/test/java/docs/javadsl/CassandraSourceTest.java) { #cql }
 
-Let's create a Cassandra statement with a query that we want to execute.
+
+If the statement requires specific settings, you may pass any @javadoc[com.datastax.oss.driver.api.core.cql.Statement](com.datastax.oss.driver.api.core.cql.Statement).
 
 Scala
 : @@snip [snip](/cassandra/src/test/scala/docs/scaladsl/CassandraSourceSpec.scala) { #statement }
@@ -58,137 +61,74 @@ Scala
 Java
 : @@snip [snip](/cassandra/src/test/java/docs/javadsl/CassandraSourceTest.java) { #statement }
 
-And finally create the source using any method from the @scala[@scaladoc[CassandraSource](akka.stream.alpakka.cassandra.scaladsl.CassandraSource$)]@java[@scaladoc[CassandraSource](akka.stream.alpakka.cassandra.javadsl.CassandraSource$)] factory and run it.
+
+Here we used a basic sink to complete the stream by collecting all of the stream elements into a collection. The power of streams comes from building larger data pipelines which leverage backpressure to ensure efficient flow control. Feel free to edit the example code and build @extref:[more advanced stream topologies](akka:stream/stream-introduction.html).
+
+
+## Writing to Cassandra
+
+@apidoc[CassandraFlow$] provides factory methods to get Akka Streams flows to run CQL statements that change data (`UPDATE`, `INSERT`). Alpakka Cassandra creates a @javadoc[PreparedStatement](com.datastax.oss.driver.api.core.cql.PreparedStatement) and for every stream element the `statementBinder` function binds the CQL placeholders to data.
+
+The incoming elements are emitted unchanged for further processing.
 
 Scala
-: @@snip [snip](/cassandra/src/test/scala/docs/scaladsl/CassandraSourceSpec.scala) { #run-source }
+: @@snip [snip](/cassandra/src/test/scala/docs/scaladsl/CassandraFlowSpec.scala) { #prepared }
 
 Java
-: @@snip [snip](/cassandra/src/test/java/docs/javadsl/CassandraSourceTest.java) { #run-source }
+: @@snip [snip](/cassandra/src/test/java/docs/javadsl/CassandraFlowTest.java) { #prepared }
 
-Here we used a basic sink to complete the stream by collecting all of the stream elements to a collection. The power of streams comes from building larger data pipelines which leverage backpressure to ensure efficient flow control. Feel free to edit the example code and build @extref:[more advanced stream topologies](akka:stream/stream-introduction.html).
+### Update flows with context
 
-## Flow with passthrough
-
-Let's create a Cassandra Prepared statement with a query that we want to execute.
+Alpakka Cassandra flows offer **"With Context"**-support which integrates nicely with some other Alpakka connectors.
 
 Scala
-: @@snip [snip](/cassandra/src/test/scala/docs/scaladsl/CassandraSourceSpec.scala) { #prepared-statement-flow }
+: @@snip [snip](/cassandra/src/test/scala/docs/scaladsl/CassandraFlowSpec.scala) { #withContext }
 
 Java
-: @@snip [snip](/cassandra/src/test/java/docs/javadsl/CassandraSourceTest.java) { #prepared-statement-flow }
+: @@snip [snip](/cassandra/src/test/java/docs/javadsl/CassandraFlowTest.java) { #withContext }
 
-Now we need to create a 'statement binder', this is just a function to bind to the prepared statement. It can take in any type / data structure to fit your query values. Here we're just using one Integer, but it can just as easily be a (case) class.
+
+## Custom Session creation
+
+Session creation and configuration is controlled via settings in `application.conf`. The @apidoc[akka.stream.alpakka.cassandra.CassandraSessionSettings] accept a full path to a configuration section which needs to specify a `session-provider` setting. The @apidoc[CassandraSessionRegistry] expects a fully qualified class name to a class implementing @apidoc[CqlSessionProvider].
+
+Alpakka Cassandra includes a default implementation @apidoc[DefaultSessionProvider], which is referenced in the default configuration `alpakka.cassandra`.
+
+The @apidoc[DefaultSessionProvider] config section must contain:
+
+* a settings section `service-discovery` which may be used to discover Cassandra contact points via @ref:[Akka Discovery](#using-akka-discovery),
+* and a reference to a Cassandra config section in `datastax-java-driver-config` which is used to configure the Cassandra client. For details see the @extref:[Datastax Java Driver configuration](cassandra-driver:manual/core/configuration/#quick-overview) and the driver's @extref:[`reference.conf`](cassandra-driver:manual/core/configuration/reference/).
+
+reference.conf
+: @@snip [snip](/cassandra/src/main/resources/reference.conf)
+
+In simple cases your `datastax-java-driver` section will need to define `contact-points` and `load-balancing-policy.local-datacenter`. To make the Cassandra driver retry its initial connection attempts, add `advanced.reconnect-on-init = true`.
+
+application.conf
+: @@snip [snip](/cassandra/src/test/resources/application.conf) { #datastax-sample }
+
+
+### Using Akka Discovery
+
+To use @extref[Akka Discovery](akka:discovery/) make sure the `akka-discovery` dependency is on you classpath.
+
+@@dependency [sbt,Maven,Gradle] {
+  symbolAkka=AkkaVersion
+  valueAkka="$akka.version$"
+  group="com.typesafe.akka"
+  artifact="akka-discovery_$scala.binary.version$"
+  version=AkkaVersion
+}
+
+To enable @extref[Akka Discovery](akka:discovery/) with the @apidoc[DefaultSessionProvider], set up the desired service name in the discovery mechanism of your choice and pass that name in `service-discovery.name`. The example below extends the `alpakka.cassandra` config section and only overwrites the service name.
+
+application.conf
+: @@snip [snip](/cassandra/src/test/resources/application.conf) { #akka-discovery-docs }
+
+Use the full config section path to create the @apidoc[akka.stream.alpakka.cassandra.CassandraSessionSettings$].
 
 Scala
-: @@snip [snip](/cassandra/src/test/scala/docs/scaladsl/CassandraSourceSpec.scala) { #statement-binder-flow }
+: @@snip [snip](/cassandra/src/test/scala/docs/scaladsl/AkkaDiscoverySpec.scala) { #discovery }
 
 Java
-: @@snip [snip](/cassandra/src/test/java/docs/javadsl/CassandraSourceTest.java) { #statement-binder-flow }
-
-We run the stream persisting the elements to C* and finally folding them using a ```Sink.fold```.
-
-Scala
-: @@snip [snip](/cassandra/src/test/scala/docs/scaladsl/CassandraSourceSpec.scala) { #run-flow }
-
-Java
-: @@snip [snip](/cassandra/src/test/java/docs/javadsl/CassandraSourceTest.java) { #run-flow }
-
-## Flow with passthrough and unlogged batching
-
-Use this when most of the elements in the stream share the same partition key. 
-
-Cassandra unlogged batches that share the same partition key will only
-resolve to one write internally in Cassandra, boosting write performance.
-
-**Be aware that this stage does not preserve the upstream order!**
-
-For this example we will define a class that model the data to be inserted
-
-Scala
-: @@snip [snip](/cassandra/src/test/scala/docs/scaladsl/CassandraSourceSpec.scala) { #element-to-insert }
-
-Java
-: @@snip [snip](/cassandra/src/test/java/docs/javadsl/CassandraSourceTest.java) { #element-to-insert }
-
-
-Let's create a Cassandra Prepared statement with a query that we want to execute.
-
-Scala
-: @@snip [snip](/cassandra/src/test/scala/docs/scaladsl/CassandraSourceSpec.scala) { #prepared-statement-batching-flow }
-
-Java
-: @@snip [snip](/cassandra/src/test/java/docs/javadsl/CassandraSourceTest.java) { #prepared-statement-batching-flow }
-
-Now we need to create a 'statement binder', this is just a function to bind to the prepared statement. In this example we are using a class.
-
-Scala
-: @@snip [snip](/cassandra/src/test/scala/docs/scaladsl/CassandraSourceSpec.scala) { #statement-binder-batching-flow }
-
-Java
-: @@snip [snip](/cassandra/src/test/java/docs/javadsl/CassandraSourceTest.java) { #statement-binder-batching-flow }
-
-You can define the amount of grouped elements, in this case we will use the default ones:
-
-Scala
-: @@snip [snip](/cassandra/src/test/scala/docs/scaladsl/CassandraSourceSpec.scala) { #settings-batching-flow }
-
-Java
-: @@snip [snip](/cassandra/src/test/java/docs/javadsl/CassandraSourceTest.java) { #settings-batching-flow }
-
-
-We run the stream persisting the elements to C* and finally folding them using a ```Sink.fold```. The function T => K has to extract the Cassandra partition key from your class.
-
-Scala
-: @@snip [snip](/cassandra/src/test/scala/docs/scaladsl/CassandraSourceSpec.scala) { #run-batching-flow }
-
-Java
-: @@snip [snip](/cassandra/src/test/java/docs/javadsl/CassandraSourceTest.java) { #run-batching-flow }
-
-
-## Sink
-
-Let's create a Cassandra Prepared statement with a query that we want to execute.
-
-Scala
-: @@snip [snip](/cassandra/src/test/scala/docs/scaladsl/CassandraSourceSpec.scala) { #prepared-statement }
-
-Java
-: @@snip [snip](/cassandra/src/test/java/docs/javadsl/CassandraSourceTest.java) { #prepared-statement }
-
-Now we need to create a 'statement binder', this is just a function to bind to the prepared statement. It can take in any type / data structure to fit your query values. Here we're just using one Integer, but it can just as easily be a (case) class.
-
-Scala
-: @@snip [snip](/cassandra/src/test/scala/docs/scaladsl/CassandraSourceSpec.scala) { #statement-binder }
-
-Java
-: @@snip [snip](/cassandra/src/test/java/docs/javadsl/CassandraSourceTest.java) { #statement-binder }
-
-Finally we run the sink from any source.
-
-Scala
-: @@snip [snip](/cassandra/src/test/scala/docs/scaladsl/CassandraSourceSpec.scala) { #run-sink }
-
-Java
-: @@snip [snip](/cassandra/src/test/java/docs/javadsl/CassandraSourceTest.java) { #run-sink }
-
-
-## Running the example code
-
-The code in this guide is part of runnable tests of this project. You are welcome to edit the code and run it in sbt.
-
-> Test code requires Cassandra running in the background. You can start it quickly using docker:
->
-> `docker-compose up cassandra`
-
-Scala
-:   ```
-    sbt
-    > cassandra/testOnly *.CassandraSourceSpec
-    ```
-
-Java
-:   ```
-    sbt
-    > cassandra/testOnly *.CassandraSourceTest
-    ```
+: @@snip [snip](/cassandra/src/test/java/docs/javadsl/CassandraSourceTest.java) { #discovery }
