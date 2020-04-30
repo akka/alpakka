@@ -12,6 +12,8 @@ import org.apache.avro
 import org.apache.avro.generic.{GenericDatumWriter, GenericRecord, GenericRecordBuilder}
 import org.apache.avro.io.EncoderFactory
 
+import scala.util.Random
+
 trait BigQueryMockData {
 
   val Project = "mock-proj"
@@ -20,32 +22,61 @@ trait BigQueryMockData {
   val Dataset = "mock-dataset"
   val Table = "mock-table"
   val TableFullName = s"projects/$Project/datasets/$Dataset/tables/$Table"
-  val ReadSessionName = s"projects/$Project/locations/$Location/sessions/mock-session"
+  def readSessionName() = s"projects/$Project/locations/$Location/sessions/mock-session-${Random.nextLong()}"
 
-  val Schema: avro.Schema =
+  val Col1 = "col1"
+  val Col2 = "col2"
+
+  val FullSchema: avro.Schema =
     new avro.Schema.Parser().parse("""
-      |{
-      |  "type": "record",
-      |  "name": "TestRecord",
-      |  "fields": [
-      |    {"name": "col1", "type": "string" },
-      |    {"name": "col2", "type": "int" }
-      |  ]
-      |}
-    """.stripMargin)
+                                     |{
+                                     |  "type": "record",
+                                     |  "name": "TestRecord",
+                                     |  "fields": [
+                                     |    {"name": "col1", "type": "string" },
+                                     |    {"name": "col2", "type": "int" }
+                                     |  ]
+                                     |}
+      """.stripMargin)
+
+  val Col1Schema: avro.Schema =
+    new avro.Schema.Parser().parse("""
+                                     |{
+                                     |  "type": "record",
+                                     |  "name": "TestRecord",
+                                     |  "fields": [
+                                     |    {"name": "col1", "type": "string" }
+                                     |  ]
+                                     |}
+      """.stripMargin)
+
+  val Col2Schema: avro.Schema =
+    new avro.Schema.Parser().parse("""
+                                     |{
+                                     |  "type": "record",
+                                     |  "name": "TestRecord",
+                                     |  "fields": [
+                                     |    {"name": "col2", "type": "int" }
+                                     |  ]
+                                     |}
+      """.stripMargin)
 
   val DefaultNumStreams = 10
   val ResponsesPerStream = 10
   val RecordsPerReadRowsResponse = 10
-  val Record = new GenericRecordBuilder(Schema).set("col1", "val1").set("col2", 2).build()
+  val TotalRecords = DefaultNumStreams * ResponsesPerStream * RecordsPerReadRowsResponse
 
-  val RecordsAsRows: AvroRows = {
-    val datumWriter = new GenericDatumWriter[GenericRecord](Schema)
+  val FullRecord = new GenericRecordBuilder(FullSchema).set("col1", "val1").set("col2", 2).build()
+  val Col1Record = new GenericRecordBuilder(Col1Schema).set("col1", "val1").build()
+  val Col2Record = new GenericRecordBuilder(Col2Schema).set("col2", 2).build()
+
+  def recordsAsRows(record: GenericRecord): AvroRows = {
+    val datumWriter = new GenericDatumWriter[GenericRecord](record.getSchema)
 
     val outputStream = new ByteArrayOutputStream()
     val encoder = EncoderFactory.get.binaryEncoder(outputStream, null)
 
-    List.fill(RecordsPerReadRowsResponse)(Record).foreach(datumWriter.write(_, encoder))
+    List.fill(RecordsPerReadRowsResponse)(record).foreach(datumWriter.write(_, encoder))
 
     encoder.flush()
 

@@ -22,6 +22,8 @@ import scala.concurrent.{Future, Promise}
  */
 object GoogleBigQueryStorage {
 
+  private val RequestParamsHeader = "x-goog-request-params"
+
   /**
    * Create a source that contains a number of sources, one for each stream, or section of the table data.
    * These sources will emit one GenericRecord for each row within that stream.
@@ -52,20 +54,19 @@ object GoogleBigQueryStorage {
       )
 
       Source
-        .fromFuture(
+        .fromFuture {
+          val table = s"projects/$projectId/datasets/$datasetId/tables/$tableId"
           client
-            .createReadSession(
+            .createReadSession()
+            .addHeader(RequestParamsHeader, s"read_session.table=$table")
+            .invoke(
               CreateReadSessionRequest(
                 parent = s"projects/$projectId",
-                Some(
-                  ReadSession(dataFormat = DataFormat.AVRO,
-                              table = s"projects/$projectId/datasets/$datasetId/tables/$tableId",
-                              readOptions = readOptions)
-                ),
-                maxStreamCount = maxNumStreams
+                Some(ReadSession(dataFormat = DataFormat.AVRO, table = table, readOptions = readOptions)),
+                maxNumStreams
               )
             )
-        )
+        }
         .mapConcat { session =>
           session.schema match {
             case ReadSession.Schema.AvroSchema(avroSchema) => schemaS.success(avroSchema.schema)
@@ -77,7 +78,9 @@ object GoogleBigQueryStorage {
         .map(
           stream =>
             client
-              .readRows(ReadRowsRequest(stream.name))
+              .readRows()
+              .addHeader(RequestParamsHeader, s"read_stream=${stream.name}")
+              .invoke(ReadRowsRequest(stream.name))
               .mapConcat(_.rows.avroRows.toList)
               .via(decoderFlow)
               .mapConcat(identity)
