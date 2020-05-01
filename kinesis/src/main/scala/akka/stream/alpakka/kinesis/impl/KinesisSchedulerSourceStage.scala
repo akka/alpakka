@@ -25,10 +25,11 @@ import scala.util.{Failure, Success, Try}
 @InternalApi
 private[kinesis] object KinesisSchedulerSourceStage {
 
-  final case class NewRecord(cr: CommittableRecord)
-  final case object Pump
-  final case object Complete
-  final case class SchedulerShutdown(result: Try[_])
+  sealed trait Command
+  final case class NewRecord(cr: CommittableRecord) extends Command
+  final case object Pump extends Command
+  final case object Complete extends Command
+  final case class SchedulerShutdown(result: Try[_]) extends Command
 
 }
 
@@ -76,7 +77,7 @@ private[kinesis] class KinesisSchedulerSourceStage(
       Future(scheduler.run()).onComplete(result => callback.invoke(SchedulerShutdown(result)))
       matValue.success(scheduler)
     }
-    private val callback: AsyncCallback[Any] = getAsyncCallback(awaitingRecords)
+    private val callback: AsyncCallback[Command] = getAsyncCallback(awaitingRecords)
     private val newRecordCallback: CommittableRecord => Unit = {
       backpressureSemaphore.tryAcquire(backpressureTimeout.length, backpressureTimeout.unit)
       record => callback.invoke(NewRecord(record))
@@ -84,7 +85,7 @@ private[kinesis] class KinesisSchedulerSourceStage(
     override def onPull(): Unit = awaitingRecords(Pump)
     override def onDownstreamFinish(): Unit = awaitingRecords(Complete)
     @tailrec
-    private def awaitingRecords(in: Any): Unit = in match {
+    private def awaitingRecords(in: Command): Unit = in match {
       case NewRecord(record) =>
         buffer.enqueue(record)
         awaitingRecords(Pump)
