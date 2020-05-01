@@ -18,7 +18,7 @@ import scala.collection.JavaConverters._
 
 @InternalApi
 private[kinesis] class ShardProcessor(
-    callback: CommittableRecord => Unit
+    processRecord: CommittableRecord => Unit
 ) extends ShardRecordProcessor {
 
   // We need extra coordination in the event of a Shard End (for example, when we double
@@ -63,7 +63,7 @@ private[kinesis] class ShardProcessor(
     val numberOfRecords = processRecordsInput.records().size()
     processRecordsInput.records().asScala.zipWithIndex.foreach {
       case (record, index) =>
-        callback(
+        processRecord(
           new InternalCommittableRecord(
             record,
             batchData,
