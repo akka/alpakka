@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.kinesis.scaladsl
 
+import akka.NotUsed
 import akka.dispatch.ExecutionContexts
 import akka.stream._
 import akka.stream.alpakka.kinesis.impl.KinesisSchedulerSourceStage
@@ -12,8 +13,7 @@ import akka.stream.alpakka.kinesis.{
   KinesisSchedulerCheckpointSettings,
   KinesisSchedulerSourceSettings
 }
-import akka.stream.scaladsl.{Flow, GraphDSL, RunnableGraph, Sink, Source, SubFlow, Zip}
-import akka.{Done, NotUsed}
+import akka.stream.scaladsl.{Flow, RunnableGraph, Sink, Source, SubFlow}
 import software.amazon.kinesis.coordinator.Scheduler
 import software.amazon.kinesis.processor.ShardRecordProcessorFactory
 import software.amazon.kinesis.retrieval.KinesisClientRecord
@@ -62,36 +62,15 @@ object KinesisSchedulerSource {
       .via(checkpointRecordBatch)
       .mergeSubstreams
 
-  private val checkpointRecordBatch = GraphDSL.create() { implicit b =>
-    import GraphDSL.Implicits._
-    val split =
-      b.add(scaladsl.Broadcast[immutable.Seq[CommittableRecord]](2))
-    val join = b.add(Zip[Done, immutable.Seq[CommittableRecord]])
-    val result = b.add(Flow[KinesisClientRecord])
-    val checkpoint =
-      b.add(
-        Flow[immutable.Seq[CommittableRecord]]
-          .map(_.max(CommittableRecord.orderBySequenceNumber))
-          .via(
-            Flow[CommittableRecord]
-              .map(_.tryToCheckpoint())
-              .map(_ => Done)
-              .addAttributes(Attributes(ActorAttributes.IODispatcher))
-          )
-      )
-    val flatten = b.add(
-      Flow[(Done, immutable.Seq[CommittableRecord])]
-        .map(_._2)
-        .mapConcat(identity)
-        .map(_.record)
-    )
-
-    split.out(0) ~> checkpoint ~> join.in0
-    split.out(1) ~> join.in1
-    join.out ~> flatten ~> result
-
-    FlowShape(split.in, result.out)
-  }
+  private val checkpointRecordBatch =
+    Flow[immutable.Seq[CommittableRecord]]
+      .map(records => {
+        records.max(CommittableRecord.orderBySequenceNumber).tryToCheckpoint()
+        records
+      })
+      .mapConcat(identity)
+      .map(_.record)
+      .addAttributes(Attributes(ActorAttributes.IODispatcher))
 
   def checkpointRecordsSink(
       settings: KinesisSchedulerCheckpointSettings
