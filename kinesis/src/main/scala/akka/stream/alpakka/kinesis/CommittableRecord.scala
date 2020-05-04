@@ -39,7 +39,7 @@ abstract class CommittableRecord @InternalApi private[kinesis] (
 
   /**
    * Safe checkpoint method, that will only attempt to checkpoint
-   * it the lease has not been lost and will capture expected
+   * if the lease has not been lost and will capture expected
    * Exceptions (that may still occur due to unavoidable race
    * conditions). The method will still throw critical Exceptions.
    *
