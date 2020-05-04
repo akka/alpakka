@@ -75,7 +75,7 @@ object CommittableRecord {
   // Records that have been batched by the KPL producer all have the
   // same sequence number but will differ by subsequence number
   implicit val orderBySequenceNumber: Ordering[CommittableRecord] =
-    Ordering[(String, Long)].on(cr ⇒ (cr.sequenceNumber, cr.subSequenceNumber))
+    Ordering[(String, Long)].on(cr => (cr.sequenceNumber, cr.subSequenceNumber))
 
   /**
    * See [[akka.stream.alpakka.kinesis.impl.ShardProcessor]]
