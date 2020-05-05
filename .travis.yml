@@ -34,11 +34,11 @@ jobs:
       name: amqp
       env:
       - PRE_CMD="docker-compose up -d amqp"
-      if: alpakka-test = "amqp" OR (repo = akka/alpakka AND ( ( branch = master AND type = push ) OR tag =~ ^v ))
+      if: alpakka-test = "amqp" OR (repo = seglo/alpakka AND ( ( branch = master AND type = push ) OR tag =~ ^v ))
     - name: avroparquet
-      if: alpakka-test = "avroparquet" OR (repo = akka/alpakka AND ( ( branch = master AND type = push ) OR tag =~ ^v ))
+      if: alpakka-test = "avroparquet" OR (repo = seglo/alpakka AND ( ( branch = master AND type = push ) OR tag =~ ^v ))
     - name: awslambda
-      if: alpakka-test = "awslambda" OR (repo = akka/alpakka AND ( ( branch = master AND type = push ) OR tag =~ ^v ))
+      if: alpakka-test = "awslambda" OR (repo = seglo/alpakka AND ( ( branch = master AND type = push ) OR tag =~ ^v ))
     - name: azure-storage-queue
     - name: cassandra
       env:
@@ -144,11 +144,11 @@ stages:
 
   # runs on main repo master commits or version-tagged commits
   - name: whitesource
-    if: repo = akka/alpakka AND ( ( branch = master AND type = push ) OR tag =~ ^v )
+    if: repo = seglo/alpakka AND ( ( branch = master AND type = push ) OR tag =~ ^v )
 
   # runs on main repo master commits or version-tagged commits
   - name: publish
-    if: repo = akka/alpakka AND ( ( branch = master AND type = push ) OR tag =~ ^v )
+    if: repo = seglo/alpakka AND ( ( branch = master AND type = push ) OR tag =~ ^v )
 
 after_failure:
   - docker-compose logs
