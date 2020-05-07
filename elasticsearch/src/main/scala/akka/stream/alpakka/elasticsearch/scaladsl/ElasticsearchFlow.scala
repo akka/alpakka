@@ -110,9 +110,8 @@ object ElasticsearchFlow {
                        writer: MessageWriter[T])(
       implicit elasticsearchClient: RestClient
   ): Flow[immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]], NotUsed] =
-    Flow[WriteMessage[T, C]]
+    Flow[immutable.Seq[WriteMessage[T, C]]]
       .via(stageFlow(indexName, typeName, settings, elasticsearchClient, writer))
-      .mapConcat(identity)
 
   /**
    * Create a flow to update Elasticsearch with [[akka.stream.alpakka.elasticsearch.WriteMessage WriteMessage]]s containing type `T`
