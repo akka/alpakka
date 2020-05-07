@@ -97,7 +97,7 @@ private[kinesis] class ShardProcessor(
   final class InternalCommittableRecord(record: KinesisClientRecord, batchData: BatchData, lastRecord: Boolean)
       extends CommittableRecord(record, batchData, shardData) {
     private def checkpoint(): Unit = {
-      checkpointer.checkpoint(record.sequenceNumber(), record.subSequenceNumber())
+      checkpointer.checkpoint(sequenceNumber, subSequenceNumber)
       if (lastRecord) lastRecordSemaphore.release()
     }
     override def shutdownReason: Option[ShutdownReason] = shutdown
