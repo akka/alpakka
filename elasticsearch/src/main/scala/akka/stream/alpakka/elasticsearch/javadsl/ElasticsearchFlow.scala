@@ -95,16 +95,16 @@ object ElasticsearchFlow {
       .asJava
 
   /**
-    * Create a flow to update Elasticsearch with
-    * [[java.util.List[akka.stream.alpakka.elasticsearch.WriteMessage WriteMessage]]s containing type `T`
-    * with `passThrough` of type `C`.
-    * The result status is part of the [[java.util.List[akka.stream.alpakka.elasticsearch.WriteResult WriteResult]]]
-    * and must be checked for successful execution.
-    *
-    * Warning: When settings configure retrying, messages are emitted out-of-order when errors are detected.
-    *
-    * @param objectMapper Jackson object mapper converting type `T` to JSON
-    */
+   * Create a flow to update Elasticsearch with
+   * [[java.util.List[akka.stream.alpakka.elasticsearch.WriteMessage WriteMessage]]s containing type `T`
+   * with `passThrough` of type `C`.
+   * The result status is part of the [[java.util.List[akka.stream.alpakka.elasticsearch.WriteResult WriteResult]]]
+   * and must be checked for successful execution.
+   *
+   * Warning: When settings configure retrying, messages are emitted out-of-order when errors are detected.
+   *
+   * @param objectMapper Jackson object mapper converting type `T` to JSON
+   */
   def createBulk[T, C](
       indexName: String,
       typeName: String,
@@ -112,19 +112,19 @@ object ElasticsearchFlow {
       elasticsearchClient: RestClient,
       objectMapper: ObjectMapper
   ): akka.stream.javadsl.Flow[java.util.List[WriteMessage[T, C]], java.util.List[WriteResult[T, C]], NotUsed] =
-    createWithPassThrough(indexName, typeName, settings, elasticsearchClient, new JacksonWriter[T](objectMapper))
+    createBulk(indexName, typeName, settings, elasticsearchClient, new JacksonWriter[T](objectMapper))
 
   /**
-    * Create a flow to update Elasticsearch with
-    * [[java.util.List[akka.stream.alpakka.elasticsearch.WriteMessage WriteMessage]]s containing type `T`
-    * with `passThrough` of type `C`.
-    * The result status is part of the [[java.util.List[akka.stream.alpakka.elasticsearch.WriteResult WriteResult]]]
-    * and must be checked for successful execution.
-    *
-    * Warning: When settings configure retrying, messages are emitted out-of-order when errors are detected.
-    *
-    * @param messageWriter converts type `T` to a `String` containing valid JSON
-    */
+   * Create a flow to update Elasticsearch with
+   * [[java.util.List[akka.stream.alpakka.elasticsearch.WriteMessage WriteMessage]]s containing type `T`
+   * with `passThrough` of type `C`.
+   * The result status is part of the [[java.util.List[akka.stream.alpakka.elasticsearch.WriteResult WriteResult]]]
+   * and must be checked for successful execution.
+   *
+   * Warning: When settings configure retrying, messages are emitted out-of-order when errors are detected.
+   *
+   * @param messageWriter converts type `T` to a `String` containing valid JSON
+   */
   def createBulk[T, C](
       indexName: String,
       typeName: String,
@@ -133,13 +133,13 @@ object ElasticsearchFlow {
       messageWriter: MessageWriter[T]
   ): akka.stream.javadsl.Flow[java.util.List[WriteMessage[T, C]], java.util.List[WriteResult[T, C]], NotUsed] =
     Flow
-    .fromFunction[java.util.List[WriteMessage[T, C]], immutable.Seq[WriteMessage[T, C]]](_.asScala.toIndexedSeq)
-    .via(
-      scaladsl.ElasticsearchFlow
-      .createWithPassThrough(indexName, typeName, settings, messageWriter)(elasticsearchClient)
-    )
-    .map(_.asJava)
-    .asJava
+      .fromFunction[java.util.List[WriteMessage[T, C]], immutable.Seq[WriteMessage[T, C]]](_.asScala.toIndexedSeq)
+      .via(
+        scaladsl.ElasticsearchFlow
+          .createBulk(indexName, typeName, settings, messageWriter)(elasticsearchClient)
+      )
+      .map(_.asJava)
+      .asJava
 
   /**
    * Create a flow to update Elasticsearch with [[akka.stream.alpakka.elasticsearch.WriteMessage WriteMessage]]s containing type `T`
