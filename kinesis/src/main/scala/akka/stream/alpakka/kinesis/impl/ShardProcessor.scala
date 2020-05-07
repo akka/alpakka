@@ -73,17 +73,6 @@ private[kinesis] class ShardProcessor(
     }
   }
 
-  final class InternalCommittableRecord(record: KinesisClientRecord, batchData: BatchData, lastRecord: Boolean)
-      extends CommittableRecord(record, batchData, shardData) {
-    private def checkpoint(): Unit = {
-      checkpointer.checkpoint(sequenceNumber, subSequenceNumber)
-      if (lastRecord) lastRecordSemaphore.release()
-    }
-    override def shutdownReason: Option[ShutdownReason] = shutdown
-    override def forceCheckpoint(): Unit =
-      checkpoint()
-  }
-
   override def leaseLost(leaseLostInput: LeaseLostInput): Unit =
     // We cannot checkpoint at this point as we don't have the
     // lease anymore
@@ -105,4 +94,14 @@ private[kinesis] class ShardProcessor(
     shutdown = Some(ShutdownReason.REQUESTED)
   }
 
+  final class InternalCommittableRecord(record: KinesisClientRecord, batchData: BatchData, lastRecord: Boolean)
+      extends CommittableRecord(record, batchData, shardData) {
+    private def checkpoint(): Unit = {
+      checkpointer.checkpoint(sequenceNumber, subSequenceNumber)
+      if (lastRecord) lastRecordSemaphore.release()
+    }
+    override def shutdownReason: Option[ShutdownReason] = shutdown
+    override def forceCheckpoint(): Unit =
+      checkpoint()
+  }
 }
