@@ -134,7 +134,10 @@ object ElasticsearchFlow {
       messageWriter: MessageWriter[T]
   ): akka.stream.javadsl.Flow[java.util.List[WriteMessage[T, C]], java.util.List[WriteResult[T, C]], NotUsed] =
     akka.stream.javadsl.Flow
-      .fromFunction[java.util.List[WriteMessage[T, C]], immutable.Seq[WriteMessage[T, C]]](_.asScala.toIndexedSeq)
+      .fromFunction[java.util.List[WriteMessage[T, C]], immutable.Seq[WriteMessage[T, C]]] {
+        javaList: java.util.List[WriteMessage[T, C]] =>
+          javaList.asScala.toIndexedSeq
+      }
       .via(
         scaladsl.ElasticsearchFlow
           .createBulk(indexName, typeName, settings, messageWriter)(elasticsearchClient)
