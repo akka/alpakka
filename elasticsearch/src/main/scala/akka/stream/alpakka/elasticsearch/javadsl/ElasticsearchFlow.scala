@@ -133,13 +133,15 @@ object ElasticsearchFlow {
       elasticsearchClient: RestClient,
       messageWriter: MessageWriter[T]
   ): akka.stream.javadsl.Flow[java.util.List[WriteMessage[T, C]], java.util.List[WriteResult[T, C]], NotUsed] =
-    akka.stream.javadsl.Flow
-      .fromFunction[java.util.List[WriteMessage[T, C]], immutable.Seq[WriteMessage[T, C]]](_.asScala.toIndexedSeq)
+    akka.stream.scaladsl
+      .Flow[java.util.List[WriteMessage[T, C]]]
+      .map(_.asScala.toIndexedSeq)
       .via(
         scaladsl.ElasticsearchFlow
           .createBulk(indexName, typeName, settings, messageWriter)(elasticsearchClient)
       )
       .map(_.asJava)
+      .asJava
 
   /**
    * Create a flow to update Elasticsearch with [[akka.stream.alpakka.elasticsearch.WriteMessage WriteMessage]]s containing type `T`
