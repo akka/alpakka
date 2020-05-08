@@ -9,7 +9,6 @@ import akka.annotation.ApiMayChange
 import akka.stream.alpakka.elasticsearch.{scaladsl, _}
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.elasticsearch.client.RestClient
-import scala.collection.immutable
 import scala.collection.JavaConverters._
 
 /**
