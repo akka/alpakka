@@ -13,6 +13,7 @@ import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.Sink;
 import akka.stream.testkit.javadsl.StreamTestKit;
+import com.mongodb.client.result.InsertManyResult;
 import com.mongodb.reactivestreams.client.*;
 import org.bson.Document;
 import org.bson.codecs.ValueCodecProvider;
@@ -145,7 +146,7 @@ public class MongoSourceTest {
     final List<Document> documents =
         numbers.stream().map(i -> Document.parse("{_id:" + i + "}")).collect(Collectors.toList());
 
-    final CompletionStage<Success> completion =
+    final CompletionStage<InsertManyResult> completion =
         Source.fromPublisher(numbersDocumentColl.insertMany(documents)).runWith(Sink.head(), mat);
     completion.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
