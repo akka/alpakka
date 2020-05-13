@@ -15,41 +15,22 @@ import com.typesafe.config.ConfigFactory
  */
 @InternalApi private[grpc] object AkkaGrpcSettings {
   def fromPubSubSettings(config: PubSubSettings)(implicit sys: ActorSystem): GrpcClientSettings = {
-    val sslConfig = config.rootCa.fold("") { rootCa =>
-      s"""
-      |ssl-config {
-      |  disabledKeyAlgorithms = []
-      |  trustManager = {
-      |    stores = [
-      |      { type = "PEM", path = "$rootCa", classpath = true }
-      |    ]
-      |  }
-      |}""".stripMargin
-    }
-
     val akkaGrpcConfig = s"""
       |host = "${config.host}"
       |port = ${config.port}
-      |
-      |$sslConfig
+      |use-tls = ${config.useTls}
+      |trusted = "${config.rootCa.getOrElse("")}"
       |""".stripMargin
 
-    val settings =
-      GrpcClientSettings.fromConfig(
-        ConfigFactory
-          .parseString(akkaGrpcConfig)
-          .withFallback(sys.settings.config.getConfig("akka.grpc.client.\"*\""))
-      )
+    val settings = GrpcClientSettings.fromConfig(
+      ConfigFactory
+        .parseString(akkaGrpcConfig)
+        .withFallback(sys.settings.config.getConfig("akka.grpc.client.\"*\""))
+    )
 
-    val setTls = (settings: GrpcClientSettings) =>
-      config.rootCa
-        .fold(settings.withTls(false))(_ => settings.withTls(true))
-
-    val setCallCredentials = (settings: GrpcClientSettings) =>
-      config.callCredentials.fold(settings)(settings.withCallCredentials)
-
-    Seq(setTls, setCallCredentials).foldLeft(settings) {
-      case (s, f) => f(s)
+    config.callCredentials match {
+      case None => settings
+      case Some(creds) => settings.withCallCredentials(creds)
     }
   }
 }

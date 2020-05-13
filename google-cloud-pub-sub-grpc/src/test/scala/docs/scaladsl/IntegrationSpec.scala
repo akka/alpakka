@@ -47,7 +47,7 @@ class IntegrationSpec
 
     "publish a message" in {
       //#publish-single
-      val projectId = "alpakka"
+      val projectId = "glidebot-146516"
       val topic = "simpleTopic"
 
       val publishMessage: PubsubMessage =
@@ -73,7 +73,7 @@ class IntegrationSpec
 
     "publish batch" in {
       //#publish-fast
-      val projectId = "alpakka"
+      val projectId = "glidebot-146516"
       val topic = "simpleTopic"
 
       val publishMessage: PubsubMessage =
@@ -97,7 +97,7 @@ class IntegrationSpec
 
     "subscribe streaming" in {
       //#subscribe-stream
-      val projectId = "alpakka"
+      val projectId = "glidebot-146516"
       val subscription = "simpleSubscription"
 
       val request = StreamingPullRequest()
@@ -128,7 +128,7 @@ class IntegrationSpec
 
     "subscribe sync" in {
       //#subscribe-sync
-      val projectId = "alpakka"
+      val projectId = "glidebot-146516"
       val subscription = "simpleSubscription"
 
       val request = PullRequest()
@@ -158,7 +158,7 @@ class IntegrationSpec
     }
 
     "acknowledge" in {
-      val projectId = "alpakka"
+      val projectId = "glidebot-146516"
       val subscription = "simpleSubscription"
 
       val request = StreamingPullRequest()
@@ -186,7 +186,7 @@ class IntegrationSpec
     "republish" in {
       val msg = "Labas!"
 
-      val projectId = "alpakka"
+      val projectId = "glidebot-146516"
       val topic = "testTopic"
       val subscription = "testSubscription"
 

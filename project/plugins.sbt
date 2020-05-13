@@ -15,7 +15,8 @@ addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.3")
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.0")
 addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "1.4.0")
 // Akka gRPC -- sync with version in Dependencies.scala
-addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "0.8.4")
+resolvers += Resolver.bintrayRepo("akka", "maven")
+addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "0.8.4+42-1c7e655a")
 // #grpc-agent
 addSbtPlugin("com.lightbend.sbt" % "sbt-javaagent" % "0.1.5")
 // #grpc-agent
