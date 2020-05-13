@@ -232,7 +232,7 @@ object Dependencies {
       ) ++ Silencer
   )
 
-  val GooglePubSubGrpcAlpnAgent = "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.9"
+  val GooglePubSubGrpcAlpnAgent = "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.10"
 
   val GoogleFcm = Seq(
     libraryDependencies ++= Seq(
