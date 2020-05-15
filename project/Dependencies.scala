@@ -473,8 +473,7 @@ object Dependencies {
 
   val Text = Seq(
     libraryDependencies ++= Seq(
-      "com.ibm.icu" % "icu4j" % "67.1",
-      "com.ibm.icu" % "icu4j" % "67.1",
+      "com.ibm.icu" % "icu4j" % "67.1"
     )
   )
 
