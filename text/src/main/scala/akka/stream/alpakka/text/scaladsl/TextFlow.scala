@@ -4,10 +4,10 @@
 
 package akka.stream.alpakka.text.scaladsl
 
-import java.nio.charset.Charset
+import java.nio.charset.{Charset, StandardCharsets}
 
 import akka.NotUsed
-import akka.stream.alpakka.text.impl.{CharsetDecodingFlow, CharsetTranscodingFlow}
+import akka.stream.alpakka.text.impl.{CharsetCanonicalizingFlow, CharsetDecodingFlow, CharsetTranscodingFlow}
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 
@@ -37,4 +37,9 @@ object TextFlow {
     Flow[ByteString]
       .via(new CharsetTranscodingFlow(incoming, outgoing))
 
+  /**
+   * Do charset detection on the incoming stream and translate it to the target charset.
+   */
+  def canonicalizing(outgoing: Charset = StandardCharsets.UTF_8): Flow[ByteString, ByteString, NotUsed] =
+    new CharsetCanonicalizingFlow(outgoing).flow()
 }

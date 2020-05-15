@@ -314,7 +314,7 @@ lazy val sqs = alpakkaProject(
 
 lazy val sse = alpakkaProject("sse", "sse", Dependencies.Sse)
 
-lazy val text = alpakkaProject("text", "text")
+lazy val text = alpakkaProject("text", "text", Dependencies.Text)
 
 lazy val udp = alpakkaProject("udp", "udp")
 

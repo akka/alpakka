@@ -471,6 +471,13 @@ object Dependencies {
       )
   )
 
+  val Text = Seq(
+    libraryDependencies ++= Seq(
+      "com.ibm.icu" % "icu4j" % "67.1",
+      "com.ibm.icu" % "icu4j" % "67.1",
+    )
+  )
+
   val UnixDomainSocket = Seq(
     libraryDependencies ++= Seq(
         "com.github.jnr" % "jffi" % "1.2.23", // classifier "complete", // Is the classifier needed anymore?
