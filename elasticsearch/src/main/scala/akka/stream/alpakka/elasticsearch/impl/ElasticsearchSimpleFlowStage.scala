@@ -111,6 +111,15 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
         log.debug("response {}", jsonString.parseJson.prettyPrint)
       }
       val messageResults = restApi.toWriteResults(messages, jsonString)
+
+      if (log.isErrorEnabled) {
+        messageResults.filterNot(_.success).map { failure =>
+          failure.getError.map { errorJson =>
+            log.error(s"Received error from elastic when attempting to index documents. Error: {}", errorJson)
+          }
+        }
+      }
+
       emit(out, messageResults ++ resultsPassthrough)
       if (isClosed(in)) completeStage()
       else tryPull()
