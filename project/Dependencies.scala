@@ -113,7 +113,7 @@ object Dependencies {
   val CassandraVersionInDocs = "4.0"
   val CassandraDriverVersion = "4.6.1"
   val CassandraDriverVersionInDocs = "4.6"
- 
+
   val Cassandra = Seq(
     libraryDependencies ++= Seq(
         ("com.datastax.oss" % "java-driver-core" % CassandraDriverVersion)
