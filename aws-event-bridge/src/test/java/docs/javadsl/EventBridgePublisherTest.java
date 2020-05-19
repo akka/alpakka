@@ -36,6 +36,7 @@ import static org.junit.Assert.*;
 import static org.hamcrest.CoreMatchers.*;
 
 import java.util.Collections;
+import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -68,7 +69,7 @@ public class EventBridgePublisherTest {
                 CreateEventBusRequest.builder()
                     .build()
                     .builder()
-                    .name("alpakka-java-eventbus-1")
+                    .name("alpakka-java-eventbus-" + UUID.randomUUID().toString())
                     .build())
             .get()
             .eventBusArn();
