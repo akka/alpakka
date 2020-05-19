@@ -111,21 +111,15 @@ object Dependencies {
   )
 
   val CassandraVersionInDocs = "4.0"
-  val CassandraDriverVersion = "4.5.1"
-  val CassandraDriverVersionInDocs = "4.5"
-  // https://github.com/akka/alpakka/issues/2226
-  // Performance dropped by ~40% when the driver upgraded to latest netty version
-  // override for now https://datastax-oss.atlassian.net/browse/JAVA-2676
-  val CassandraOverrideNettyVersion = "4.1.39.Final"
-
+  val CassandraDriverVersion = "4.6.1"
+  val CassandraDriverVersionInDocs = "4.6"
+ 
   val Cassandra = Seq(
     libraryDependencies ++= Seq(
         ("com.datastax.oss" % "java-driver-core" % CassandraDriverVersion)
           .exclude("com.github.spotbugs", "spotbugs-annotations")
           .exclude("org.apache.tinkerpop", "*") //https://github.com/akka/alpakka/issues/2200
-          .exclude("com.esri.geometry", "esri-geometry-api") //https://github.com/akka/alpakka/issues/2225
-          .exclude("io.netty", "netty-handler"), // https://github.com/akka/alpakka/issues/2226
-        "io.netty" % "netty-handler" % CassandraOverrideNettyVersion,
+          .exclude("com.esri.geometry", "esri-geometry-api"), //https://github.com/akka/alpakka/issues/2225
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion % Provided
       ) ++ JacksonDatabindDependencies
   )
