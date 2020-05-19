@@ -2,24 +2,29 @@
 
 @@@ note { title="Amazon EventBridge" }
 
-Serverless event bus that connects application data from your own apps, SaaS, and AWS services. It has evolved from Amazon CloudWatch Events [official documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/WhatIsCloudWatchEvents.html). The EventBridge acts as broker so you can set up youw own rules based on which are the events routed into AWS (SNS, SQS, Kinesis, Lambda etc.) or third-party services. 
+Amazon EventBridge is a serverless event bus that allows your applications to asynchronously consume events from 3rd party SaaS offerings, AWS services, and other applications in your own infrastructure. It evolved from Amazon CloudWatch Events ([official documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/WhatIsCloudWatchEvents.html)). The EventBridge acts as broker that you can configure with your own rules	to route events to the correct service. 
 
 For more information about AWS EventBridge please visit the [official documentation](https://aws.amazon.com/eventbridge/).
 
-The publish of the events is implemented using the AWS API PUT Events https://docs.aws.amazon.com/eventbridge/latest/userguide/add-events-putevents.html.
-The semantics of the publish are that any of the entries inside a Put Request can fail. Response contains information about which entries
+The publishing of the events is implemented using the AWS API PUT Events https://docs.aws.amazon.com/eventbridge/latest/userguide/add-events-putevents.html.
+
+The semantics of the publish are that any of the entries inside a Put Request can fail. The Response contains information about which entries
+
 were not successfully published.
-Currently there are no retries supported apart of configuration provided by the AWS client. 
+Currently there are no retries supported apart from the configuration provided to the EventBridge client. 
+
 Adding Support for configurable retry behaviour as part of the connector is possible.
 
-By default client publishes to a default eventBus. Usually you would be publishing to your specific eventBus.
-EventBus name is per event defined as [PutRequestEntry](https://docs.aws.amazon.com/eventbridge/latest/APIReference/API_PutEventsRequestEntry.html) objects.
+By default the client will publish to a default event bus. Usually you would be publishing to a specific event bus that you create.
+
+An event bus name is defined per event in a [PutEventsRequestEntry](https://docs.aws.amazon.com/eventbridge/latest/APIReference/API_PutEventsRequestEntry.html) objects.
 It would be possible to define helper flows / sync with default values such as source and `eventBustName`. 
 The `detail` is string JSON and `detailType` is the of the event for rule matching.
 
 @@@
 
-The AWS EventBridge connector provides Akka Stream sinks for AWS EventBridge event buses.
+The Alpakka AWS EventBridge connector provides Akka Stream flows and sinks to publish to AWS EventBridge event buses.
+
 
 @@project-info{ projectId="aws-event-bridge" }
 
@@ -48,7 +53,8 @@ Java
 : @@snip [snip](/aws-event-bridge/src/test/java/docs/javadsl/EventBridgePublisherTest.java) { #init-system }
 
 
-This connector requires an implicit @javadoc[EventBridge](software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient) instance to communicate with AWS EventBridge.
+This connector requires an @javadoc[EventBridge](software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient) instance to communicate with AWS EventBridge.
+
 
 It is your code's responsibility to call `close` to free any resources held by the client. In this example it will be called when the actor system is terminated.
 
@@ -58,12 +64,14 @@ Scala
 Java
 : @@snip [snip](/aws-event-bridge/src/test/java/docs/javadsl/EventBridgePublisherTest.java) { #init-client }
 
-The example above uses @extref:[Akka HTTP](akka-http:) as the default HTTP client implementation. For more details about the HTTP client, configuring request retrying and best practices for credentials, see @ref[AWS client configuration](aws-shared-configuration.md) for more details.
+The example above uses @extref:[Akka HTTP](akka-http:) as the default HTTP client implementation. For more details about the HTTP client, configuring request retrying and best practices for credentials, see @ref[AWS client configuration](aws-shared-configuration.md).
+
 
 
 ## Publish messages to AWS EventBridge Event Bus
 
-Create a `PutEventsEntry`-accepting sink, publishing to an Event Bus.
+Create a `PutEventsEntry`-accepting sink, publishing to an event bus.
+
 
 Scala
 : @@snip [snip](/aws-event-bridge/src/test/scala/docs/scaladsl/EventBridgePublisherSpec.scala) { #run-events-entry }
@@ -72,7 +80,8 @@ Java
 : @@snip [snip](/aws-event-bridge/src/test/java/docs/javadsl/EventBridgePublisherTest.java) { #run-events-entry }
 
 
-Create a `PutEventsRequest`-accepting sink, that publishes to an Event Bus.
+Create a sink that accepts `PutEventsRequestEntries` to be published to an Event Bus.
+
 
 Scala
 : @@snip [snip](/aws-event-bridge/src/test/scala/docs/scaladsl/EventBridgePublisherSpec.scala) { #run-events-request }
@@ -101,11 +110,13 @@ Java
 
 Flow supporting a list of PutEventEntry objects.
 
-When using the batch mode - `flowSeq` for `PutEventEntry` objects or directly a multiple messages insithe `PutEventsRequest` the eventbridge processing is not all or nothing. Processing of each `PutEventEntry` is evaluated independently in AWS. Retries of the failed messages in the `PutEventsResponse` are not yet implemented.
+Messages published in a batch using @apidoc[EventBridgePublisher.flowSeq] are not published in an "all or nothing" manner. Event Bridge will process each event independently. Retries of the failed messages in the `PutEventsResponse` are not yet implemented.
+
 
 ## Integration testing
 
-For integration testing without touching Amazon EventBrigde, Alpakka uses [Localstack](https://github.com/localstack/localstack), 
+For integration testing without connecting directly to Amazon EventBridge, Alpakka uses [Localstack](https://github.com/localstack/localstack), 
+
 which comes as a docker image - and has a corresponding service `amazoneventbridge` in the `docker-compose.yml` file. Which needs to be started before running the integration tests `docker-compose up amazoneventbridge`.
 
 @@@ index
