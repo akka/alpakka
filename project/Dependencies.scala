@@ -390,7 +390,7 @@ object Dependencies {
         "software.amazon.awssdk" % "auth" % AwsSdk2Version,
         // in-memory filesystem for file related tests
         "com.google.jimfs" % "jimfs" % "1.1" % Test, // ApacheV2
-        "com.github.tomakehurst" % "wiremock" % "2.25.1" % Test // ApacheV2
+        "com.github.tomakehurst" % "wiremock-jre8" % "2.26.3" % Test // ApacheV2
       ) ++ JacksonDatabindDependencies
       ++ Silencer
   )
