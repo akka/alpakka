@@ -106,7 +106,7 @@ import akka.util.ByteString
 
   private def getString(bs: ByteString, from: Int, maxLength: Int) = {
     val dropped = bs.drop(from)
-    val f = Math.min(dropped.indexOf(0.toByte), maxLength)
+    val f = Math.min(dropped.indexWhere(b => b == 0.toByte || b == ' '.toByte), maxLength)
     dropped.take(f).utf8String
   }
 
