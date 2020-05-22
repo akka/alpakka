@@ -110,7 +110,7 @@ Java
 
 Flow supporting a list of PutEventEntry objects.
 
-Messages published in a batch using @apidoc[EventBridgePublisher.flowSeq] are not published in an "all or nothing" manner. Event Bridge will process each event independently. Retries of the failed messages in the `PutEventsResponse` are not yet implemented.
+Messages published in a batch using @apidoc[EventBridgePublisher.flowSeq](EventBridgePublisher$) are not published in an "all or nothing" manner. Event Bridge will process each event independently. Retries of the failed messages in the `PutEventsResponse` are not yet implemented.
 
 
 ## Integration testing
