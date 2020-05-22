@@ -21,6 +21,7 @@ import scala.collection.immutable
 private[impl] final class RestBulkApiV5[T, C](indexName: String,
                                               typeName: String,
                                               versionType: Option[String],
+                                              allowExplicitIndex: Boolean,
                                               messageWriter: MessageWriter[T])
     extends RestBulkApi[T, C] {
 
@@ -29,10 +30,7 @@ private[impl] final class RestBulkApiV5[T, C](indexName: String,
   def toJson(messages: immutable.Seq[WriteMessage[T, C]]): String =
     messages
       .map { message =>
-        val sharedFields: Seq[(String, JsString)] = Seq(
-            "_index" -> JsString(message.indexName.getOrElse(indexName)),
-            typeNameTuple
-          ) ++ message.customMetadata.map { case (field, value) => field -> JsString(value) }
+        val sharedFields = constructSharedFields(message)
         val tuple: (String, JsObject) = message.operation match {
           case Index =>
             val fields = Seq(
@@ -61,4 +59,13 @@ private[impl] final class RestBulkApiV5[T, C](indexName: String,
       }
       .mkString("", "\n", "\n")
 
+  override def constructSharedFields(message: WriteMessage[T, C]): Seq[(String, JsString)] = {
+    val operationFields = if (allowExplicitIndex) {
+      Seq("_index" -> JsString(message.indexName.getOrElse(indexName)), typeNameTuple)
+    } else {
+      Seq(typeNameTuple)
+    }
+
+    operationFields ++ message.customMetadata.map { case (field, value) => field -> JsString(value) }
+  }
 }
