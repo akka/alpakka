@@ -16,6 +16,7 @@ The [Alpakka project](https://doc.akka.io/docs/alpakka/current/) is an open sour
 * [Apache Kudu](kudu.md)
 * [Apache Solr](solr.md)
 * [Avro Parquet](avroparquet.md)
+* [AWS EventBridge](aws-event-bridge.md)
 * [AWS DynamoDB](dynamodb.md)
 * [AWS Kinesis](kinesis.md)
 * [AWS Lambda](awslambda.md)

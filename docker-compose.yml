@@ -4,6 +4,13 @@
 
 version: '2'
 services:
+  amazoneventbridge:
+    image: localstack/localstack:0.10.6
+    environment:
+      - "SERVICES=events"
+      - "DEBUG=true"
+    ports:
+      - "4587:4587"
   amazonsns:
     image: pafortin/goaws
     ports:
