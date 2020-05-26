@@ -187,7 +187,7 @@ class LogRotatorSinkSpec
       }
 
       val timeBasedSink: Sink[(String, String), Future[Done]] =
-        LogRotatorSink.withSinkFactory(
+        LogRotatorSink.withTypedSinkFactory(
           streamBasedTriggerCreator,
           (path: Path) =>
             Flow[(String, String)]

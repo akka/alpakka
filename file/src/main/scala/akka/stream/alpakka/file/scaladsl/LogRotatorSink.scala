@@ -47,7 +47,22 @@ object LogRotatorSink {
    * @tparam C criterion type (for files a `Path`)
    * @tparam R result type in materialized futures of `sinkFactory`
    **/
-  def withSinkFactory[T, C, R](
+  def withSinkFactory[C, R](
+      triggerGeneratorCreator: () => ByteString => Option[C],
+      sinkFactory: C => Sink[ByteString, Future[R]]
+  ): Sink[ByteString, Future[Done]] =
+    Sink.fromGraph(new LogRotatorSink[ByteString, C, R](triggerGeneratorCreator, sinkFactory))
+
+  /**
+   * Sink directing the incoming `T`s to a new `Sink` created by `sinkFactory` whenever `triggerGenerator` returns a value.
+   *
+   * @param triggerGeneratorCreator creates a function that triggers rotation by returning a value
+   * @param sinkFactory creates sinks for `T`s from the value returned by `triggerGenerator`
+   * @tparam T stream and sink data type
+   * @tparam C criterion type (for files a `Path`)
+   * @tparam R result type in materialized futures of `sinkFactory`
+   **/
+  def withTypedSinkFactory[T, C, R](
       triggerGeneratorCreator: () => T => Option[C],
       sinkFactory: C => Sink[T, Future[R]]
   ): Sink[T, Future[Done]] =
