@@ -296,7 +296,9 @@ lazy val simpleCodecs = alpakkaProject("simple-codecs", "simplecodecs")
 lazy val slick = alpakkaProject("slick", "slick", Dependencies.Slick)
 
 lazy val eventbridge =
-  alpakkaProject("aws-event-bridge", "aws.eventbridge", Dependencies.Eventbridge).disablePlugins(MimaPlugin)
+  alpakkaProject("aws-event-bridge", "aws.eventbridge", Dependencies.Eventbridge)
+  // Enable after first release https://github.com/akka/alpakka/issues/2230
+    .disablePlugins(MimaPlugin)
 
 lazy val sns = alpakkaProject(
   "sns",

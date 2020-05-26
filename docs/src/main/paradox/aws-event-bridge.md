@@ -2,24 +2,25 @@
 
 @@@ note { title="Amazon EventBridge" }
 
-Amazon EventBridge is a serverless event bus that allows your applications to asynchronously consume events from 3rd party SaaS offerings, AWS services, and other applications in your own infrastructure. It evolved from Amazon CloudWatch Events ([official documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/WhatIsCloudWatchEvents.html)). The EventBridge acts as broker that you can configure with your own rules	to route events to the correct service. 
+Amazon EventBridge is a serverless event bus that allows your applications to asynchronously consume events from 3rd party SaaS offerings, AWS services, and other applications in your own infrastructure. 
+It evolved from Amazon CloudWatch Events ([official documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/WhatIsCloudWatchEvents.html)). 
+The EventBridge acts as broker that you can configure with your own rules to route events to the correct service. 
 
 For more information about AWS EventBridge please visit the [official documentation](https://aws.amazon.com/eventbridge/).
 
-The publishing of the events is implemented using the AWS API PUT Events https://docs.aws.amazon.com/eventbridge/latest/userguide/add-events-putevents.html.
+The publishing of the events is implemented using the [AWS PUT Events API](https://docs.aws.amazon.com/eventbridge/latest/userguide/add-events-putevents.html).
 
-The semantics of the publish are that any of the entries inside a Put Request can fail. The Response contains information about which entries
+When publishing events any of the entries inside of the Put request can fail. 
+The response contains information about which entries were not successfully published.
+Currently, there are no retries supported apart from the configuration provided to the EventBridge client. 
 
-were not successfully published.
-Currently there are no retries supported apart from the configuration provided to the EventBridge client. 
+Adding Support for configurable retry behaviour as part of the connector may be part of a future release.
 
-Adding Support for configurable retry behaviour as part of the connector is possible.
+By default the client will publish to a default event bus, but normally you should publish to a specific event bus that you create.
 
-By default the client will publish to a default event bus. Usually you would be publishing to a specific event bus that you create.
-
-An event bus name is defined per event in a [PutEventsRequestEntry](https://docs.aws.amazon.com/eventbridge/latest/APIReference/API_PutEventsRequestEntry.html) objects.
-It would be possible to define helper flows / sync with default values such as source and `eventBustName`. 
-The `detail` is string JSON and `detailType` is the of the event for rule matching.
+An event bus name is defined per event in a [PutEventsRequestEntry](https://docs.aws.amazon.com/eventbridge/latest/APIReference/API_PutEventsRequestEntry.html) object.
+It would be possible to define helper flows/sinks with default values such as source and `eventBusName`. 
+The `detail` is JSON as a string and `detailType` is the name of the event for rule matching.
 
 @@@
 
@@ -92,7 +93,7 @@ Java
 You can also build flow stages which publish messages to Event Bus and then forward 
 @scaladoc[PutEventsResponse](software.amazon.awssdk.services.eventbridge.model.PutEventsResponse) further down the stream.
 
-Flow for PutEventEntry 
+Flow for `PutEventEntry`.
 
 Scala
 : @@snip [snip](/aws-event-bridge/src/test/scala/docs/scaladsl/EventBridgePublisherSpec.scala) { #flow-events-entry }
@@ -100,7 +101,7 @@ Scala
 Java
 : @@snip [snip](/aws-event-bridge/src/test/java/docs/javadsl/EventBridgePublisherTest.java) { #flow-events-entry }
 
-Flow for PutEventsRequest 
+Flow for `PutEventsRequest`.
 
 Scala
 : @@snip [snip](/aws-event-bridge/src/test/scala/docs/scaladsl/EventBridgePublisherSpec.scala) { #flow-events-request }
@@ -108,7 +109,7 @@ Scala
 Java
 : @@snip [snip](/aws-event-bridge/src/test/java/docs/javadsl/EventBridgePublisherTest.java) { #flow-events-request }
 
-Flow supporting a list of PutEventEntry objects.
+Flow supporting a list of `PutEventEntry` objects.
 
 Messages published in a batch using @apidoc[EventBridgePublisher.flowSeq](EventBridgePublisher$) are not published in an "all or nothing" manner. Event Bridge will process each event independently. Retries of the failed messages in the `PutEventsResponse` are not yet implemented.
 
