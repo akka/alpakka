@@ -61,7 +61,8 @@ object RetryWithBackoff {
 final class ElasticsearchWriteSettings private (val bufferSize: Int,
                                                 val retryLogic: RetryLogic,
                                                 val versionType: Option[String],
-                                                val apiVersion: ApiVersion) {
+                                                val apiVersion: ApiVersion,
+                                                val allowExplicitIndex: Boolean) {
 
   def withBufferSize(value: Int): ElasticsearchWriteSettings = copy(bufferSize = value)
 
@@ -73,18 +74,22 @@ final class ElasticsearchWriteSettings private (val bufferSize: Int,
   def withApiVersion(value: ApiVersion): ElasticsearchWriteSettings =
     if (apiVersion == value) this else copy(apiVersion = value)
 
+  def withAllowExplicitIndex(value: Boolean): ElasticsearchWriteSettings = copy(allowExplicitIndex = value)
+
   private def copy(bufferSize: Int = bufferSize,
                    retryLogic: RetryLogic = retryLogic,
                    versionType: Option[String] = versionType,
-                   apiVersion: ApiVersion = apiVersion): ElasticsearchWriteSettings =
-    new ElasticsearchWriteSettings(bufferSize, retryLogic, versionType, apiVersion)
+                   apiVersion: ApiVersion = apiVersion,
+                   allowExplicitIndex: Boolean = allowExplicitIndex): ElasticsearchWriteSettings =
+    new ElasticsearchWriteSettings(bufferSize, retryLogic, versionType, apiVersion, allowExplicitIndex)
 
   override def toString =
     "ElasticsearchWriteSettings(" +
     s"bufferSize=$bufferSize," +
     s"retryLogic=$retryLogic," +
     s"versionType=$versionType," +
-    s"apiVersion=$apiVersion)"
+    s"apiVersion=$apiVersion," +
+    s"allowExplicitIndex=$allowExplicitIndex)"
 
 }
 
@@ -92,7 +97,8 @@ object ElasticsearchWriteSettings {
   val Default = new ElasticsearchWriteSettings(bufferSize = 10,
                                                retryLogic = RetryNever,
                                                versionType = None,
-                                               apiVersion = ApiVersion.V5)
+                                               apiVersion = ApiVersion.V5,
+                                               allowExplicitIndex = true)
 
   /** Scala API */
   def apply(): ElasticsearchWriteSettings = Default

@@ -48,4 +48,5 @@ private[impl] abstract class RestBulkApi[T, C] {
     case Delete => ""
   }
 
+  def constructSharedFields(message: WriteMessage[T, C]): Seq[(String, JsString)]
 }
