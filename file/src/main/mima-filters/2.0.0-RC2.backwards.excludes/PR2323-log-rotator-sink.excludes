@@ -1,0 +1,8 @@
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.file.scaladsl.LogRotatorSink.in")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.file.scaladsl.LogRotatorSink.shape")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.file.scaladsl.LogRotatorSink.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.file.scaladsl.LogRotatorSink#Logic.checkTrigger")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.file.scaladsl.LogRotatorSink#Logic.rotate")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.file.scaladsl.LogRotatorSink#Logic.sourceOut")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.file.scaladsl.LogRotatorSink#Logic.sourceOut_=")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.file.scaladsl.LogRotatorSink#Logic.triggerGenerator")
