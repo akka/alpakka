@@ -8,7 +8,7 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.kinesis.KinesisFlowSettings;
-import akka.stream.alpakka.kinesis.ShardIterator;
+import akka.stream.alpakka.kinesis.ShardIterators;
 import akka.stream.alpakka.kinesis.ShardSettings;
 import akka.stream.alpakka.kinesis.javadsl.KinesisFlow;
 import akka.stream.alpakka.kinesis.javadsl.KinesisSink;
@@ -25,7 +25,6 @@ import software.amazon.awssdk.services.kinesis.model.PutRecordsRequestEntry;
 import software.amazon.awssdk.services.kinesis.model.PutRecordsResultEntry;
 import software.amazon.awssdk.services.kinesis.model.Record;
 // #source-settings
-import software.amazon.awssdk.services.kinesis.model.ShardIteratorType;
 // #source-settings
 
 import java.time.Duration;
@@ -56,7 +55,7 @@ public class KinesisSnippets {
         ShardSettings.create("streamName", "shard-id")
             .withRefreshInterval(Duration.ofSeconds(1))
             .withLimit(500)
-            .withShardIterator(ShardIterator.trimHorizon());
+            .withShardIterator(ShardIterators.trimHorizon());
     // #source-settings
 
     // #source-single

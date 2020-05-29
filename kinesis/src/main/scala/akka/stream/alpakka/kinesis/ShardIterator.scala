@@ -13,8 +13,8 @@ sealed trait ShardIterator {
   def startingSequenceNumber: Option[String]
   def shardIteratorType: ShardIteratorType
 }
-
 object ShardIterator {
+
   case object Latest extends ShardIterator {
     override final val timestamp: Option[Instant] = None
 
@@ -22,6 +22,7 @@ object ShardIterator {
 
     override final val shardIteratorType: ShardIteratorType = ShardIteratorType.LATEST
   }
+
   case object TrimHorizon extends ShardIterator {
     override final val timestamp: Option[Instant] = None
 
@@ -29,6 +30,7 @@ object ShardIterator {
 
     override final val shardIteratorType: ShardIteratorType = ShardIteratorType.TRIM_HORIZON
   }
+
   case class AtTimestamp private (value: Instant) extends ShardIterator {
     override final val timestamp: Option[Instant] = Some(value)
 
@@ -44,6 +46,7 @@ object ShardIterator {
 
     override final val shardIteratorType: ShardIteratorType = ShardIteratorType.AT_SEQUENCE_NUMBER
   }
+
   case class AfterSequenceNumber(sequenceNumber: String) extends ShardIterator {
     override final val timestamp: Option[Instant] = None
 
@@ -51,29 +54,40 @@ object ShardIterator {
 
     override final val shardIteratorType: ShardIteratorType = ShardIteratorType.AFTER_SEQUENCE_NUMBER
   }
+}
+
+/**
+ * Java API
+ */
+object ShardIterators {
 
   /**
    * Java API
    */
-  def latest(): ShardIterator = Latest
+  def latest(): ShardIterator =
+    ShardIterator.Latest
 
   /**
    * Java API
    */
-  def trimHorizon(): ShardIterator = TrimHorizon
+  def trimHorizon(): ShardIterator =
+    ShardIterator.TrimHorizon
 
   /**
    * Java API
    */
-  def atTimestamp(timestamp: Instant): ShardIterator = AtTimestamp(timestamp)
+  def atTimestamp(timestamp: Instant): ShardIterator =
+    ShardIterator.AtTimestamp(timestamp)
 
   /**
    * Java API
    */
-  def atSequenceNumber(value: String): ShardIterator = AtSequenceNumber(value)
+  def atSequenceNumber(value: String): ShardIterator =
+    ShardIterator.AtSequenceNumber(value)
 
   /**
    * Java API
    */
-  def afterSequenceNumber(value: String): ShardIterator = AfterSequenceNumber(value)
+  def afterSequenceNumber(value: String): ShardIterator =
+    ShardIterator.AfterSequenceNumber(value)
 }
