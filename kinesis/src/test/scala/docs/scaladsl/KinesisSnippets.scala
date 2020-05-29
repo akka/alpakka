@@ -39,7 +39,6 @@ object KinesisSnippets {
   //#init-client
 
   //#source-settings
-  import software.amazon.awssdk.services.kinesis.model.ShardIteratorType
 
   val settings =
     ShardSettings(streamName = "myStreamName", shardId = "shard-id")
