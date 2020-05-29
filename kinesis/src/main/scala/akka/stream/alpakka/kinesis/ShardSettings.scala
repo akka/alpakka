@@ -37,6 +37,12 @@ final class ShardSettings private (
   def withShardId(value: String): ShardSettings = copy(shardId = value)
   def withShardIteratorType(value: ShardIteratorType): ShardSettings = copy(shardIteratorType = value)
 
+  def withShardIterator(shardIterator: ShardIterator): ShardSettings = copy(
+    shardIteratorType = shardIterator.shardIteratorType,
+    atTimestamp = shardIterator.timestamp,
+    startingSequenceNumber = shardIterator.startingSequenceNumber
+  )
+
   /**
    * Sets `shardIteratorType` to `AT_SEQUENCE_NUMBER` and uses the given value as starting sequence number.
    */
@@ -99,13 +105,18 @@ object ShardSettings {
    * Create settings using the default configuration
    */
   def apply(streamName: String, shardId: String): ShardSettings =
-    new ShardSettings(streamName,
-                      shardId,
-                      ShardIteratorType.LATEST,
-                      startingSequenceNumber = None,
-                      atTimestamp = None,
-                      refreshInterval = 1.second,
-                      limit = 500)
+    apply(streamName, shardId, ShardIterator.Latest)
+
+  def apply(streamName: String, shardId: String, shardIterator: ShardIterator): ShardSettings =
+    new ShardSettings(
+      streamName,
+      shardId,
+      shardIterator.shardIteratorType,
+      startingSequenceNumber = shardIterator.startingSequenceNumber,
+      atTimestamp = shardIterator.timestamp,
+      refreshInterval = 1.second,
+      limit = 500
+    )
 
   /**
    * Java API: Create settings using the default configuration

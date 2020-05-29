@@ -49,5 +49,14 @@ class ShardSettingsSpec extends AnyWordSpec with Matchers with LogCapturing {
     "accept a valid limit" in {
       noException should be thrownBy baseSettings.withLimit(500)
     }
+
+    "accept all combinations of alterations with ShardIterator" in {
+      noException should be thrownBy baseSettings
+        .withShardIterator(ShardIterator.AtSequenceNumber("SQC"))
+        .withShardIterator(ShardIterator.AfterSequenceNumber("SQC"))
+        .withShardIterator(ShardIterator.AtTimestamp(Instant.EPOCH))
+        .withShardIterator(ShardIterator.Latest)
+        .withShardIterator(ShardIterator.TrimHorizon)
+    }
   }
 }
