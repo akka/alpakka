@@ -35,7 +35,6 @@ final class ShardSettings private (
 
   def withStreamName(value: String): ShardSettings = copy(streamName = value)
   def withShardId(value: String): ShardSettings = copy(shardId = value)
-  def withShardIteratorType(value: ShardIteratorType): ShardSettings = copy(shardIteratorType = value)
 
   def withShardIterator(shardIterator: ShardIterator): ShardSettings = copy(
     shardIteratorType = shardIterator.shardIteratorType,
@@ -44,20 +43,31 @@ final class ShardSettings private (
   )
 
   /**
-   * Sets `shardIteratorType` to `AT_SEQUENCE_NUMBER` and uses the given value as starting sequence number.
+   * @deprecated use `withShardIterator` passing a [[ShardIterator]] instead
+   */
+  def withShardIteratorType(value: ShardIteratorType): ShardSettings = copy(shardIteratorType = value)
+
+  /**
+   * @deprecated use `withShardIterator` with [[ShardIterator.AtSequenceNumber]]` instead.
+   *
+   * Sets shardIteratorType` to `AT_SEQUENCE_NUMBER` and uses the given value as starting sequence number.
    */
   def withStartingSequenceNumber(value: String): ShardSettings =
     copy(shardIteratorType = ShardIteratorType.AT_SEQUENCE_NUMBER, startingSequenceNumber = Option(value))
 
   /**
+   * @deprecated use `withShardIterator` with [[ShardIterator.AfterSequenceNumber]]` instead.
+   *
    * Sets `shardIteratorType` to `AFTER_SEQUENCE_NUMBER` and uses the given value as starting sequence number.
    */
   def withStartingAfterSequenceNumber(value: String): ShardSettings =
     copy(shardIteratorType = ShardIteratorType.AFTER_SEQUENCE_NUMBER, startingSequenceNumber = Option(value))
 
   /**
+   * @deprecated use `withShardIterator` with [[ShardIterator.AtTimestamp]]` instead.
+   *
    * Sets `shardIteratorType` to `AT_TIMESTAMP` and uses the given `Instant` as starting timestamp.
-   */
+   **/
   def withAtTimestamp(value: java.time.Instant): ShardSettings =
     copy(shardIteratorType = ShardIteratorType.AT_TIMESTAMP, atTimestamp = Option(value))
 
