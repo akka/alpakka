@@ -358,7 +358,7 @@ class LogRotatorSinkSpec
             sinkFactory = (_: Path) =>
               Flow[ByteString]
                 .map { data =>
-                  throw new IllegalArgumentException("The data is broken")
+                  if (data.utf8String == "test") throw new IllegalArgumentException("The data is broken")
                   data
                 }
                 .toMat(Sink.ignore)(Keep.right)
