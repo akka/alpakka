@@ -33,8 +33,14 @@ object GoogleBigQuerySource {
       parserFn: JsObject => Try[T],
       onFinishCallback: PagingInfo => NotUsed,
       projectConfig: BigQueryConfig
-  )(implicit mat: Materializer, actorSystem: ActorSystem): Source[T, NotUsed] =
-    BigQueryStreamSource[T](httpRequest, parserFn, onFinishCallback, projectConfig, Http())
+  ): Source[T, NotUsed] =
+    Source
+      .setup { (mat, attr) =>
+        implicit val system: ActorSystem = mat.system
+        implicit val materializer: Materializer = mat
+        BigQueryStreamSource[T](httpRequest, parserFn, onFinishCallback, projectConfig, Http())
+      }
+      .mapMaterializedValue(_ => NotUsed)
 
   /**
    * Read elements of `T` by executing `query`.
