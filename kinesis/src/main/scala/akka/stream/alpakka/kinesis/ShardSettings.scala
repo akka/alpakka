@@ -45,29 +45,33 @@ final class ShardSettings private (
   /**
    * @deprecated use `withShardIterator` passing a [[ShardIterator]] instead
    */
+  @deprecated("use `withShardIterator` passing a `ShardIterator` instead", "2.0.1")
   def withShardIteratorType(value: ShardIteratorType): ShardSettings = copy(shardIteratorType = value)
 
   /**
-   * @deprecated use `withShardIterator` with [[ShardIterator.AtSequenceNumber]]` instead.
+   * @deprecated use `withShardIterator` with [[ShardIterator.AtSequenceNumber]] instead.
    *
    * Sets shardIteratorType` to `AT_SEQUENCE_NUMBER` and uses the given value as starting sequence number.
    */
+  @deprecated("use `withShardIterator` with `ShardIterator.AtSequenceNumber` instead", "2.0.1")
   def withStartingSequenceNumber(value: String): ShardSettings =
     copy(shardIteratorType = ShardIteratorType.AT_SEQUENCE_NUMBER, startingSequenceNumber = Option(value))
 
   /**
-   * @deprecated use `withShardIterator` with [[ShardIterator.AfterSequenceNumber]]` instead.
+   * @deprecated use `withShardIterator` with [[ShardIterator.AfterSequenceNumber]] instead.
    *
    * Sets `shardIteratorType` to `AFTER_SEQUENCE_NUMBER` and uses the given value as starting sequence number.
    */
+  @deprecated("use `withShardIterator` with `ShardIterator.AfterSequenceNumber` instead", "2.0.1")
   def withStartingAfterSequenceNumber(value: String): ShardSettings =
     copy(shardIteratorType = ShardIteratorType.AFTER_SEQUENCE_NUMBER, startingSequenceNumber = Option(value))
 
   /**
-   * @deprecated use `withShardIterator` with [[ShardIterator.AtTimestamp]]` instead.
+   * @deprecated use `withShardIterator` with [[ShardIterator.AtTimestamp]] instead.
    *
    * Sets `shardIteratorType` to `AT_TIMESTAMP` and uses the given `Instant` as starting timestamp.
-   **/
+   */
+  @deprecated("use `withShardIterator` with `ShardIterator.AtTimestamp` instead.", "2.0.1")
   def withAtTimestamp(value: java.time.Instant): ShardSettings =
     copy(shardIteratorType = ShardIteratorType.AT_TIMESTAMP, atTimestamp = Option(value))
 
