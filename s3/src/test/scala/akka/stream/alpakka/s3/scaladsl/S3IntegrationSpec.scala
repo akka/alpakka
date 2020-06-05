@@ -540,7 +540,7 @@ class AWSS3IntegrationSpec extends S3IntegrationSpec
  * For this test, you need a local s3 mirror, for instance minio (https://github.com/minio/minio).
  * With docker and the aws cli installed, you could run something like this:
  *
- * docker run -e MINIO_ACCESS_KEY=TESTKEY -e MINIO_SECRET_KEY=TESTSECRET -p 9000:9000 minio/minio server /data
+ * docker run -e MINIO_ACCESS_KEY=TESTKEY -e MINIO_SECRET_KEY=TESTSECRET -e MINIO_DOMAIN=s3minio.alpakka -p 9000:9000 minio/minio server /data
  * AWS_ACCESS_KEY_ID=TESTKEY AWS_SECRET_ACCESS_KEY=TESTSECRET aws --endpoint-url http://localhost:9000 s3api create-bucket --bucket my-test-us-east-1
  * AWS_ACCESS_KEY_ID=TESTKEY AWS_SECRET_ACCESS_KEY=TESTSECRET aws --endpoint-url http://localhost:9000 s3api create-bucket --bucket my.test.frankfurt
  *

@@ -180,21 +180,11 @@ import scala.concurrent.{ExecutionContext, Future}
       )
     }
     conf.endpointUrl match {
+      case None if conf.pathStyleAccess =>
+        Authority(Uri.Host(s"s3.$region.amazonaws.com"))
+
       case None =>
-        region match {
-          case Region.US_EAST_1 =>
-            if (conf.pathStyleAccess) {
-              Authority(Uri.Host("s3.amazonaws.com"))
-            } else {
-              Authority(Uri.Host(s"$bucket.s3.amazonaws.com"))
-            }
-          case _ =>
-            if (conf.pathStyleAccess) {
-              Authority(Uri.Host(s"s3-$region.amazonaws.com"))
-            } else {
-              Authority(Uri.Host(s"$bucket.s3-$region.amazonaws.com"))
-            }
-        }
+        Authority(Uri.Host(s"$bucket.s3.$region.amazonaws.com"))
 
       case Some(endpointUrl) if conf.pathStyleAccess =>
         Uri(endpointUrl).authority
