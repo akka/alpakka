@@ -91,7 +91,7 @@ Java
 : @@snip [snip](/aws-event-bridge/src/test/java/docs/javadsl/EventBridgePublisherTest.java) { #run-events-request }
 
 You can also build flow stages which publish messages to Event Bus and then forward 
-@scaladoc[PutEventsResponse](software.amazon.awssdk.services.eventbridge.model.PutEventsResponse) further down the stream.
+@javadoc[PutEventsResponse](software.amazon.awssdk.services.eventbridge.model.PutEventsResponse) further down the stream.
 
 Flow for `PutEventEntry`.
 
@@ -116,9 +116,7 @@ Messages published in a batch using @apidoc[EventBridgePublisher.flowSeq](EventB
 
 ## Integration testing
 
-For integration testing without connecting directly to Amazon EventBridge, Alpakka uses [Localstack](https://github.com/localstack/localstack), 
-
-which comes as a docker image - and has a corresponding service `amazoneventbridge` in the `docker-compose.yml` file. Which needs to be started before running the integration tests `docker-compose up amazoneventbridge`.
+For integration testing without connecting directly to Amazon EventBridge, Alpakka uses [Localstack](https://github.com/localstack/localstack), which comes as a docker image - and has a corresponding service `amazoneventbridge` in the `docker-compose.yml` file. Which needs to be started before running the integration tests `docker-compose up amazoneventbridge`.
 
 @@@ index
 
