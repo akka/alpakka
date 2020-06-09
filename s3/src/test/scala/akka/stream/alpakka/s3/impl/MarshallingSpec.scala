@@ -35,7 +35,7 @@ class MarshallingSpec(_system: ActorSystem)
   override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 
   val xmlString = """<?xml version="1.0" encoding="UTF-8"?>
-                    |<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                    |<ListBucketResult xmlns="http://s3.us-east-1.amazonaws.com/doc/2006-03-01/">
                     |    <Name>bucket</Name>
                     |    <Prefix/>
                     |    <KeyCount>205</KeyCount>
@@ -93,7 +93,7 @@ class MarshallingSpec(_system: ActorSystem)
   }
 
   val listBucketV2TruncatedResponse = """<?xml version="1.0" encoding="UTF-8"?>
-                                        |<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                                        |<ListBucketResult xmlns="http://s3.us-east-1.amazonaws.com/doc/2006-03-01/">
                                         |    <Name>bucket</Name>
                                         |    <Prefix/>
                                         |    <KeyCount>205</KeyCount>
@@ -143,7 +143,7 @@ class MarshallingSpec(_system: ActorSystem)
   }
 
   val listBucketV1TruncatedResponse = """<?xml version="1.0" encoding="UTF-8"?>
-                                        |<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                                        |<ListBucketResult xmlns="http://s3.us-east-1.amazonaws.com/doc/2006-03-01/">
                                         |    <Name>bucket</Name>
                                         |    <Prefix/>
                                         |    <KeyCount>205</KeyCount>
