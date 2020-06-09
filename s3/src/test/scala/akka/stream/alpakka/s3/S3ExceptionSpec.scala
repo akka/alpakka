@@ -28,6 +28,7 @@ class S3ExceptionSpec extends AnyFlatSpecLike with Matchers {
     e.message shouldBe "The resource you requested does not exist"
     e.requestId shouldBe "4442587FB7D0A2F9"
     e.resource shouldBe "/mybucket/myfoto.jpg"
+    e.toString shouldBe "akka.stream.alpakka.s3.S3Exception: The resource you requested does not exist (Status code: 404 Not Found, Code: NoSuchKey, RequestId: 4442587FB7D0A2F9, Resource: /mybucket/myfoto.jpg)"
   }
 
   it should "survive null" in {
