@@ -5,6 +5,7 @@ dependency-change: "/project/Dependencies.scala"
 
 'p:amqp': ["/amqp"]
 'p:avroparquet': ["/avroparquet"]
+'p:aws-event-bridge': ["/aws-event-bridge"]
 'p:aws-lambda': ["/awslambda"]
 'p:aws-s3': ["/s3"]
 'p:aws-sns': ["/sns"]
