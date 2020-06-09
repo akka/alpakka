@@ -14,6 +14,8 @@ categories:
     label: 'p:kudu'
   - title: 'AvroParquet'
     label: 'p:avroparquet'
+  - title: 'AWS EventBridge'
+    label: 'p:aws-event-bridge'
   - title: 'AWS Lambda'
     label: 'p:aws-lambda'
   - title: 'AWS Kinesis'
