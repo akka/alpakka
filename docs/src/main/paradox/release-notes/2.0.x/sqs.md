@@ -1,5 +1,12 @@
 # AWS SQS
 
+## 2.0.1
+
+- Update AwsSpiAkkaHttpVersion to 0.0.9 [#2328](https://github.com/akka/alpakka/issues/2328) by [@matsluni](https://github.com/matsluni)
+
+[*closed in 2.0.1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.1+label%3Ap%3Aaws-sqs)
+
+
 ## 2.0.0-RC2
 
 - AWS library updates [#2235](https://github.com/akka/alpakka/issues/2235) by [@ennru](https://github.com/ennru)

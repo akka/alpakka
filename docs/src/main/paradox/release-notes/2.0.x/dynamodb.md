@@ -1,5 +1,12 @@
 # Dynamo DB
 
+## 2.0.1
+
+- Removed obsolete reference config for Alpakka DynamoDB [#2333](https://github.com/akka/alpakka/issues/2333) by [@vigoo](https://github.com/vigoo)
+- Update AwsSpiAkkaHttpVersion to 0.0.9 [#2328](https://github.com/akka/alpakka/issues/2328) by [@matsluni](https://github.com/matsluni)
+
+[*closed in 2.0.1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.1+label%3Ap%3Adynamodb)
+
 ## 2.0.0-M3
 
 - AWS SDK 2.10.60 [#2136](https://github.com/akka/alpakka/issues/2136) by [@sullis](https://github.com/sullis)
