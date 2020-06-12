@@ -156,6 +156,14 @@ final private class LogRotatorSink[T, C, R](triggerGeneratorCreator: () => T => 
       pull(in)
     }
 
+    override def postStop(): Unit =
+      promise.tryCompleteWith {
+        implicit val ec = materializer.executionContext
+        Future
+          .sequence(sinkCompletions)
+          .map(_ => Done)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+      }
+
     def futureCB(newFuture: Future[R]) =
       getAsyncCallback[Holder[R]](sinkCompletionCallbackHandler(newFuture))
 
