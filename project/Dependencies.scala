@@ -358,7 +358,7 @@ object Dependencies {
       )
   )
 
-  val PravegaVersion = "0.7.0"
+  val PravegaVersion = "0.7.1"
   val PravegaVersionForDocs = s"v${PravegaVersion}"
 
   val Pravega = {
