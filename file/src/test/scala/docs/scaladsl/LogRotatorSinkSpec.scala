@@ -342,6 +342,45 @@ class LogRotatorSinkSpec
 
   }
 
+  "downstream fail on exception in sink" in assertAllStagesStopped {
+    val path = Files.createTempFile(fs.getPath("/"), "test", ".log")
+    val triggerFunctionCreator = () => {
+      (x: ByteString) => {
+        Option(path)
+      }
+    }
+    val (probe, completion) =
+      TestSource
+        .probe[ByteString]
+        .toMat(
+          LogRotatorSink.withSinkFactory(
+            triggerGeneratorCreator = triggerFunctionCreator,
+            sinkFactory = (_: Path) =>
+              Flow[ByteString]
+                .map { data =>
+                  if (data.utf8String == "test") throw new IllegalArgumentException("The data is broken")
+                  data
+                }
+                .toMat(Sink.ignore)(Keep.right)
+          )
+        )(Keep.both)
+        .run()
+
+    probe.sendNext(ByteString("test"))
+    probe.sendNext(ByteString("test"))
+    probe.expectCancellation()
+
+    val exception = intercept[Exception] {
+      Await.result(completion, 3.seconds)
+    }
+
+    exactly(
+      1,
+      List(exception, // Akka 2.5 throws nio exception directly
+           exception.getCause) // Akka 2.6 wraps nio exception in a akka.stream.IOOperationIncompleteException
+    ) shouldBe a[IllegalArgumentException]
+  }
+
   def readUpFilesAndSizesThenClean(files: Seq[Path]): (Seq[String], Seq[Long]) = {
     val (bytes, sizes) = readUpFileBytesAndSizesThenClean(files)
     (bytes.map(_.utf8String), sizes)
