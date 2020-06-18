@@ -4,7 +4,6 @@
 
 package docs.scaladsl
 
-import java.util.Collections
 import java.util.concurrent.TimeUnit
 
 import akka.stream.Materializer
@@ -14,14 +13,12 @@ import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.{Done, NotUsed}
 import org.apache.http.entity.StringEntity
-import org.apache.http.message.BasicHeader
-import org.elasticsearch.client.RestClient
+import org.elasticsearch.client.{Request, RequestOptions, RestClient}
 import org.scalatest.Inspectors
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -44,36 +41,41 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
     implicit val format: JsonFormat[Book] = jsonFormat1(Book)
     //#define-class
 
-    def register(indexName: String, title: String): Unit =
-      client.performRequest("POST",
-                            s"$indexName/_doc",
-                            Map[String, String]().asJava,
-                            new StringEntity(s"""{"title": "$title"}"""),
-                            new BasicHeader("Content-Type", "application/json"))
+    def register(indexName: String, title: String): Unit = {
+      val request = new Request("POST", s"$indexName/_doc")
+      request.setEntity(new StringEntity(s"""{"title": "$title"}"""))
+      val requestOptionsBuilder = RequestOptions.DEFAULT.toBuilder
+      requestOptionsBuilder.addHeader("Content-Type", "application/json")
+      request.setOptions(requestOptionsBuilder)
 
-    def flushAndRefresh(indexName: String): Unit = {
-      client.performRequest("POST", s"$indexName/_flush")
-      client.performRequest("POST", s"$indexName/_refresh")
+      client.performRequest(request)
     }
 
-    def createStrictMapping(indexName: String): Unit =
-      client.performRequest(
-        "PUT",
-        indexName,
-        Collections.singletonMap("include_type_name", "true"),
-        new StringEntity(s"""{
-                          |  "mappings": {
-                          |    "_doc": {
-                          |      "dynamic": "strict",
-                          |      "properties": {
-                          |        "title": { "type": "text"}
-                          |      }
-                          |    }
-                          |  }
-                          |}
-         """.stripMargin),
-        new BasicHeader("Content-Type", "application/json")
-      )
+    def flushAndRefresh(indexName: String): Unit = {
+      client.performRequest(new Request("POST", s"$indexName/_flush"))
+      client.performRequest(new Request("POST", s"$indexName/_refresh"))
+    }
+
+    def createStrictMapping(indexName: String): Unit = {
+      val request = new Request("PUT", indexName)
+      request.addParameter("include_type_name", "true")
+      request.setEntity(new StringEntity(s"""{
+                                            |  "mappings": {
+                                            |    "_doc": {
+                                            |      "dynamic": "strict",
+                                            |      "properties": {
+                                            |        "title": { "type": "text"}
+                                            |      }
+                                            |    }
+                                            |  }
+                                            |}
+         """.stripMargin))
+      val requestOptionsBuilder = RequestOptions.DEFAULT.toBuilder
+      requestOptionsBuilder.addHeader("Content-Type", "application/json")
+      request.setOptions(requestOptionsBuilder.build())
+
+      client.performRequest(request)
+    }
 
     def readTitlesFrom(indexName: String): Future[immutable.Seq[String]] =
       ElasticsearchSource

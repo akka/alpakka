@@ -12,12 +12,10 @@ import akka.stream.alpakka.elasticsearch.{ElasticsearchSourceSettings, ReadResul
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler, StageLogging}
 import akka.stream.{Attributes, Outlet, SourceShape}
 import org.apache.http.entity.StringEntity
-import org.apache.http.message.BasicHeader
-import org.elasticsearch.client.{Response, ResponseListener, RestClient}
+import org.elasticsearch.client._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
-import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -126,25 +124,33 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](indexName: String
           case (i, Some(t)) => s"/$i/$t/_search"
           case (i, None) => s"/$i/_search"
         }
+
+        val request: Request = new Request("POST", endpoint)
+        request.setEntity(new StringEntity(searchBody, StandardCharsets.UTF_8))
+        queryParams.foreach(param => request.addParameter(param._1, param._2))
+        val requestOptionsBuilder = RequestOptions.DEFAULT.toBuilder
+        requestOptionsBuilder.addHeader("Content-Type", "application/json")
+        request.setOptions(requestOptionsBuilder)
+
         client.performRequestAsync(
-          "POST",
-          endpoint,
-          queryParams.asJava,
-          new StringEntity(searchBody, StandardCharsets.UTF_8),
-          this,
-          new BasicHeader("Content-Type", "application/json")
+          request,
+          this
         )
       } else {
         log.debug("Fetching next scroll")
 
-        client.performRequestAsync(
-          "POST",
-          s"/_search/scroll",
-          Map[String, String]().asJava,
+        val request: Request = new Request("POST", "/_search/scroll")
+        request.setEntity(
           new StringEntity(Map("scroll" -> settings.scroll, "scroll_id" -> scrollId).toJson.toString,
-                           StandardCharsets.UTF_8),
-          this,
-          new BasicHeader("Content-Type", "application/json")
+                           StandardCharsets.UTF_8)
+        )
+        val requestOptions = RequestOptions.DEFAULT.toBuilder
+        requestOptions.addHeader("Content-Type", "application/json")
+        request.setOptions(requestOptions)
+
+        client.performRequestAsync(
+          request,
+          this
         )
       }
     } catch {
@@ -265,11 +271,14 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](indexName: String
       }
 
       // Clear the scroll
+      val request: Request = new Request("DELETE", s"/_search/scroll/$scrollId")
+      val requestOptions = RequestOptions.DEFAULT.toBuilder
+      requestOptions.addHeader("Content-Type", "application/json")
+      request.setOptions(requestOptions)
+
       client.performRequestAsync(
-        "DELETE",
-        s"/_search/scroll/$scrollId",
-        listener,
-        new BasicHeader("Content-Type", "application/json")
+        request,
+        listener
       )
     }
   }

@@ -9,6 +9,7 @@ import akka.stream.alpakka.elasticsearch._
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
+import org.elasticsearch.client.Request
 //#init-client
 import org.apache.http.HttpHost
 import org.elasticsearch.client.RestClient
@@ -39,8 +40,8 @@ class ElasticsearchSpec
   val clientV7 = RestClient.builder(new HttpHost("localhost", 9202)).build()
 
   override def afterAll() = {
-    client.performRequest("DELETE", "/_all")
-    clientV7.performRequest("DELETE", "/_all")
+    client.performRequest(new Request("DELETE", "/_all"))
+    clientV7.performRequest(new Request("DELETE", "/_all"))
     client.close()
     clientV7.close()
     TestKit.shutdownActorSystem(system)

@@ -11,9 +11,8 @@ import akka.stream.alpakka.elasticsearch._
 import akka.stream.stage._
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import org.apache.http.entity.StringEntity
-import org.apache.http.message.BasicHeader
 import org.apache.http.util.EntityUtils
-import org.elasticsearch.client.{Response, ResponseListener, RestClient}
+import org.elasticsearch.client._
 
 import scala.collection.immutable
 
@@ -73,19 +72,21 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
       log.debug("Posting data to Elasticsearch: {}", json)
 
       // https://www.elastic.co/guide/en/elasticsearch/client/java-rest/current/java-rest-low-usage-requests.html
+      val request: Request = new Request("POST", endpoint)
+      request.setEntity(new StringEntity(json, StandardCharsets.UTF_8))
+      val requestOptionsBuilder = RequestOptions.DEFAULT.toBuilder
+      requestOptionsBuilder.addHeader("Content-Type", "application/x-ndjson")
+      request.setOptions(requestOptionsBuilder)
+
       client.performRequestAsync(
-        "POST",
-        endpoint,
-        java.util.Collections.emptyMap[String, String](),
-        new StringEntity(json, StandardCharsets.UTF_8),
+        request,
         new ResponseListener() {
           override def onFailure(exception: Exception): Unit =
             failureHandler.invoke((resultsPassthrough, exception))
 
           override def onSuccess(response: Response): Unit =
             responseHandler.invoke((messages, resultsPassthrough, response))
-        },
-        new BasicHeader("Content-Type", "application/x-ndjson")
+        }
       )
     }
 

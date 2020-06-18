@@ -22,6 +22,8 @@ import org.apache.http.HttpHost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHeader;
 // #init-client
+import org.elasticsearch.client.Request;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 // #init-client
 import org.junit.*;
@@ -89,7 +91,7 @@ public class ElasticsearchTest {
 
   @Parameterized.AfterParam
   public static void afterParam() throws IOException {
-    client.performRequest("DELETE", "/_all");
+    client.performRequest(new Request("DELETE", "/_all"));
     client.close();
   }
 
@@ -112,17 +114,18 @@ public class ElasticsearchTest {
   }
 
   private static void flushAndRefresh(String indexName) throws IOException {
-    client.performRequest("POST", indexName + "/_flush");
-    client.performRequest("POST", indexName + "/_refresh");
+    client.performRequest(new Request("POST", indexName + "/_flush"));
+    client.performRequest(new Request("POST", indexName + "/_refresh"));
   }
 
   private static void register(String indexName, String title) throws IOException {
-    client.performRequest(
-        "POST",
-        indexName + "/_doc",
-        new HashMap<>(),
-        new StringEntity(String.format("{\"title\": \"%s\"}", title)),
-        new BasicHeader("Content-Type", "application/json"));
+    Request request = new Request("POST", indexName + "/_doc");
+    request.setEntity(new StringEntity(String.format("{\"title\": \"%s\"}", title)));
+    RequestOptions.Builder requestOptionsBuilder = RequestOptions.DEFAULT.toBuilder();
+    requestOptionsBuilder.addHeader("Content-Type", "application/json");
+    request.setOptions(requestOptionsBuilder);
+
+    client.performRequest(request);
   }
 
   private void documentation() {
