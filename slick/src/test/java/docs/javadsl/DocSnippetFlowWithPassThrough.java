@@ -14,6 +14,7 @@ import akka.stream.alpakka.slick.javadsl.SlickSession;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 
+import java.sql.PreparedStatement;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -79,12 +80,14 @@ public class DocSnippetFlowWithPassThrough {
                     session,
                     system.dispatcher(),
                     // add an optional second argument to specify the parallelism factor (int)
-                    (kafkaMessage) ->
-                        "INSERT INTO ALPAKKA_SLICK_JAVADSL_TEST_USERS VALUES ("
-                            + kafkaMessage.msg.id
-                            + ", '"
-                            + kafkaMessage.msg.name
-                            + "')",
+                    (kafkaMessage, connection) -> {
+                      PreparedStatement statement =
+                          connection.prepareStatement(
+                              "INSERT INTO ALPAKKA_SLICK_JAVADSL_TEST_USERS VALUES (?, ?)");
+                      statement.setInt(1, kafkaMessage.msg.id);
+                      statement.setString(2, kafkaMessage.msg.name);
+                      return statement;
+                    },
                     (kafkaMessage, insertCount) ->
                         kafkaMessage.map(
                             user ->
