@@ -24,20 +24,9 @@ The table below shows direct dependencies of this module and the second tab show
 @@dependencies { projectId="elasticsearch" }
 
 
-## Set up REST client
-
-Sources, Flows and Sinks provided by this connector need a prepared `org.elasticsearch.client.RestClient` to
-access to Elasticsearch.
-
-Scala
-: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchSpec.scala) { #init-client }
-
-Java
-: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #init-client }
-
 ## Elasticsearch as Source and Sink
 
-Now we can stream messages from or to Elasticsearch by providing the `RestClient` to the
+You can stream messages from or to Elasticsearch using the
 @apidoc[ElasticsearchSource$], @apidoc[ElasticsearchFlow$] or the @apidoc[ElasticsearchSink$].
 
 
@@ -98,13 +87,13 @@ Scala
 Java
 : @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #source-settings }
 
-
-| Parameter              | Default | Description                                                                                                              |
-| ---------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------ |
-| bufferSize             | 10      | `ElasticsearchSource` retrieves messages from Elasticsearch by scroll scan. This buffer size is used as the scroll size. | 
-| includeDocumentVersion | false   | Tell Elasticsearch to return the documents `_version` property with the search results. See [Version](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html) and [Optimistic Concurrenct Control](https://www.elastic.co/guide/en/elasticsearch/guide/current/optimistic-concurrency-control.html) to know about this property. |
-| scrollDuration         | 5 min   | `ElasticsearchSource`  retrieves messages from Elasticsearch by scroll scan. This parameter is used as a scroll value. See [Time units](https://www.elastic.co/guide/en/elasticsearch/reference/current/common-options.html#time-units) for supported units.                |
-
+| Parameter              | Default        | Description                                                                                                              |
+| ---------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| connection             |                | The connection details and credentials to authenticate against ElasticSearch. See `ElasticsearchConnectionSettings` |
+| bufferSize             | 10             | `ElasticsearchSource` retrieves messages from Elasticsearch by scroll scan. This buffer size is used as the scroll size. | 
+| includeDocumentVersion | false          | Tell Elasticsearch to return the documents `_version` property with the search results. See [Version](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html) and [Optimistic Concurrenct Control](https://www.elastic.co/guide/en/elasticsearch/guide/current/optimistic-concurrency-control.html) to know about this property. |
+| scrollDuration         | 5 min          | `ElasticsearchSource`  retrieves messages from Elasticsearch by scroll scan. This parameter is used as a scroll value. See [Time units](https://www.elastic.co/guide/en/elasticsearch/reference/current/common-options.html#time-units) for supported units.                |
+| apiVersion             | V5             | Currently supports `V5` and `V7` (see below) |
 
 ### Sink and flow configuration
 
@@ -116,14 +105,31 @@ Scala
 Java
 : @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #sink-settings }
 
-
 | Parameter           | Default    | Description                                                                                            |
 | ------------------- | -------    | ------------------------------------------------------------------------------------------------------ |
+| connection          |            | The connection details and credentials to authenticate against ElasticSearch. See `ElasticsearchConnectionSettings` |
 | bufferSize          | 10         | Flow and Sink batch messages to bulk requests when back-pressure applies.                              |
 | versionType         | None       | If set, `ElasticsearchSink` uses the chosen versionType to index documents. See [Version types](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#_version_types) for accepted settings. |
 | retryLogic          | No retries | See below |
 | apiVersion          | V5         | Currently supports `V5` and `V7` (see below) |
 | allowExplicitIndex  | True       | When set to False, the index name will be included in the URL instead of on each document (see below) | 
+
+### ElasticSearch connection
+
+The connection and credentials to authenticate with are configured with `ElasticSearchConnectionSettings`.
+
+Scala
+: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #connection-settings }
+
+Java
+: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #connection-settings }
+
+
+| Parameter           | Default | Description                                                         |
+| --------------------| ------- | ------------------------------------------------------------------- |
+| baseUrl             | Empty   | The base URL of ElasticSearch. Should not include a trailing slash. |
+| username            | None    | The username to authenticate with                                   |
+| password            | None    | The password to authenticate with                                   |
 
 #### Retry logic
 A bulk request might fail partially for some reason. To retry failed writes to Elasticsearch, a `RetryLogic` can be specified. 
@@ -148,8 +154,12 @@ The provided implementations are:
 In case of write failures the order of messages downstream is guaranteed to be preserved.
 
 #### Supported API versions
-To support writing to multiple versions of Elasticsearch, an `ApiVersion` can be specified.
-This will be used to transform the bulk request into a format understood by the corresponding Elasticsearch server.
+To support reading and writing to multiple versions of Elasticsearch, an `ApiVersion` can be specified.
+
+This will be used to:
+1. transform the bulk request into a format understood by the corresponding Elasticsearch server.
+2. determine whether to include the index type mapping in the API calls. See [removal of types](https://www.elastic.co/guide/en/elasticsearch/reference/current/removal-of-types.html)
+
 Currently [`V5`](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/docs-bulk.html#docs-bulk) and [`V7`](https://www.elastic.co/guide/en/elasticsearch/reference/7.6/docs-bulk.html#docs-bulk) are supported specifically but this parameter does not need to match the server version exactly (for example, either `V5` or `V7` should work with Elasticsearch 6.x).
 
 ### Allow explicit index

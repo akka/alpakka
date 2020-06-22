@@ -7,23 +7,20 @@ package docs.javadsl;
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
+import akka.http.javadsl.Http;
+import akka.http.javadsl.model.ContentTypes;
+import akka.http.javadsl.model.HttpRequest;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.elasticsearch.*;
-import akka.stream.alpakka.elasticsearch.javadsl.*;
+import akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchFlow;
+import akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSink;
+import akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSource;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
 import com.fasterxml.jackson.databind.ObjectMapper;
-// #init-client
-import org.apache.http.HttpHost;
-// #init-client
-import org.apache.http.entity.StringEntity;
-import org.apache.http.message.BasicHeader;
-// #init-client
-import org.elasticsearch.client.RestClient;
-// #init-client
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -51,9 +48,10 @@ public class ElasticsearchTest {
   }
 
   private static ApiVersion apiVersion;
-  private static RestClient client;
+  private static ElasticsearchConnectionSettings connectionSettings;
   private static ActorSystem system;
   private static ActorMaterializer materializer;
+  private static Http http;
 
   public ElasticsearchTest(int port, ApiVersion apiVersion) {}
 
@@ -72,10 +70,10 @@ public class ElasticsearchTest {
   @Parameterized.BeforeParam
   public static void beforeParam(int port, ApiVersion esApiVersion) throws IOException {
     apiVersion = esApiVersion;
-    // #init-client
 
-    client = RestClient.builder(new HttpHost("localhost", port)).build();
-    // #init-client
+    connectionSettings =
+        ElasticsearchConnectionSettings.create()
+            .withBaseUrl(String.format("http://localhost:%d", port));
 
     register("source", "Akka in Action");
     register("source", "Programming in Scala");
@@ -89,8 +87,9 @@ public class ElasticsearchTest {
 
   @Parameterized.AfterParam
   public static void afterParam() throws IOException {
-    client.performRequest("DELETE", "/_all");
-    client.close();
+    HttpRequest request =
+        HttpRequest.DELETE(String.format("%s/_all", connectionSettings.baseUrl()));
+    http.singleRequest(request).toCompletableFuture().join();
   }
 
   @BeforeClass
@@ -99,6 +98,7 @@ public class ElasticsearchTest {
     system = ActorSystem.create();
     materializer = ActorMaterializer.create(system);
     // #init-mat
+    http = Http.get(system);
   }
 
   @AfterClass
@@ -112,27 +112,40 @@ public class ElasticsearchTest {
   }
 
   private static void flushAndRefresh(String indexName) throws IOException {
-    client.performRequest("POST", indexName + "/_flush");
-    client.performRequest("POST", indexName + "/_refresh");
+    HttpRequest flushRequest =
+        HttpRequest.POST(String.format("%s/%s/_flush", connectionSettings.baseUrl(), indexName));
+    http.singleRequest(flushRequest).toCompletableFuture().join();
+
+    HttpRequest refreshRequest =
+        HttpRequest.POST(String.format("%s/%s/_refresh", connectionSettings.baseUrl(), indexName));
+    http.singleRequest(refreshRequest).toCompletableFuture().join();
   }
 
-  private static void register(String indexName, String title) throws IOException {
-    client.performRequest(
-        "POST",
-        indexName + "/_doc",
-        new HashMap<>(),
-        new StringEntity(String.format("{\"title\": \"%s\"}", title)),
-        new BasicHeader("Content-Type", "application/json"));
+  private static void register(String indexName, String title) {
+    HttpRequest request =
+        HttpRequest.POST(String.format("%s/%s/_doc", connectionSettings.baseUrl(), indexName))
+            .withEntity(ContentTypes.APPLICATION_JSON, String.format("{\"title\": \"%s\"}", title));
+
+    http.singleRequest(request).toCompletableFuture().join();
   }
 
   private void documentation() {
+    // #connection-settings
+    ElasticsearchConnectionSettings connectionSettings =
+        ElasticsearchConnectionSettings.create()
+            .withBaseUrl("http://localhost:9200")
+            .withUsername("user")
+            .withPassword("password");
+    // #connection-settings
+
     // #source-settings
     ElasticsearchSourceSettings sourceSettings =
-        ElasticsearchSourceSettings.create().withBufferSize(10);
+        ElasticsearchSourceSettings.create().withConnection(connectionSettings).withBufferSize(10);
     // #source-settings
     // #sink-settings
     ElasticsearchWriteSettings settings =
         ElasticsearchWriteSettings.create()
+            .withConnection(connectionSettings)
             .withBufferSize(10)
             .withVersionType("internal")
             .withRetryLogic(RetryAtFixedRate.create(5, Duration.ofSeconds(1)))
@@ -144,17 +157,22 @@ public class ElasticsearchTest {
   public void jsObjectStream() throws Exception {
     // Copy source/book to sink1/book through JsObject stream
     // #run-jsobject
-    ElasticsearchSourceSettings sourceSettings = ElasticsearchSourceSettings.create();
+    ElasticsearchSourceSettings sourceSettings =
+        ElasticsearchSourceSettings.create()
+            .withConnection(connectionSettings)
+            .withApiVersion(apiVersion);
     ElasticsearchWriteSettings sinkSettings =
-        ElasticsearchWriteSettings.create().withApiVersion(apiVersion);
+        ElasticsearchWriteSettings.create()
+            .withConnection(connectionSettings)
+            .withApiVersion(apiVersion);
 
     Source<ReadResult<Map<String, Object>>, NotUsed> source =
-        ElasticsearchSource.create("source", "_doc", "{\"match_all\": {}}", sourceSettings, client);
+        ElasticsearchSource.create("source", "_doc", "{\"match_all\": {}}", sourceSettings);
     CompletionStage<Done> f1 =
         source
             .map(m -> WriteMessage.createIndexMessage(m.id(), m.source()))
             .runWith(
-                ElasticsearchSink.create("sink1", "_doc", sinkSettings, client, new ObjectMapper()),
+                ElasticsearchSink.create("sink1", "_doc", sinkSettings, new ObjectMapper()),
                 materializer);
     // #run-jsobject
 
@@ -162,14 +180,16 @@ public class ElasticsearchTest {
 
     flushAndRefresh("sink1");
 
-    // Assert docs in sink1/book
+    // Assert docs in sink1/_doc
     CompletionStage<List<String>> f2 =
         ElasticsearchSource.create(
                 "sink1",
                 "_doc",
                 "{\"match_all\": {}}",
-                ElasticsearchSourceSettings.create().withBufferSize(5),
-                client)
+                ElasticsearchSourceSettings.create()
+                    .withConnection(connectionSettings)
+                    .withApiVersion(apiVersion)
+                    .withBufferSize(5))
             .map(m -> (String) m.source().get("title"))
             .runWith(Sink.seq(), materializer);
 
@@ -193,18 +213,23 @@ public class ElasticsearchTest {
   public void typedStream() throws Exception {
     // Copy source/book to sink2/book through JsObject stream
     // #run-typed
-    ElasticsearchSourceSettings sourceSettings = ElasticsearchSourceSettings.create();
+    ElasticsearchSourceSettings sourceSettings =
+        ElasticsearchSourceSettings.create()
+            .withApiVersion(apiVersion)
+            .withConnection(connectionSettings);
     ElasticsearchWriteSettings sinkSettings =
-        ElasticsearchWriteSettings.create().withApiVersion(apiVersion);
+        ElasticsearchWriteSettings.create()
+            .withApiVersion(apiVersion)
+            .withConnection(connectionSettings);
 
     Source<ReadResult<Book>, NotUsed> source =
         ElasticsearchSource.typed(
-            "source", "_doc", "{\"match_all\": {}}", sourceSettings, client, Book.class);
+            "source", "_doc", "{\"match_all\": {}}", sourceSettings, Book.class);
     CompletionStage<Done> f1 =
         source
             .map(m -> WriteMessage.createIndexMessage(m.id(), m.source()))
             .runWith(
-                ElasticsearchSink.create("sink2", "_doc", sinkSettings, client, new ObjectMapper()),
+                ElasticsearchSink.create("sink2", "_doc", sinkSettings, new ObjectMapper()),
                 materializer);
     // #run-typed
 
@@ -218,8 +243,10 @@ public class ElasticsearchTest {
                 "sink2",
                 "_doc",
                 "{\"match_all\": {}}",
-                ElasticsearchSourceSettings.create().withBufferSize(5),
-                client,
+                ElasticsearchSourceSettings.create()
+                    .withApiVersion(apiVersion)
+                    .withConnection(connectionSettings)
+                    .withBufferSize(5),
                 Book.class)
             .map(m -> m.source().title)
             .runWith(Sink.seq(), materializer);
@@ -249,8 +276,10 @@ public class ElasticsearchTest {
                 "source",
                 "_doc",
                 "{\"match_all\": {}}",
-                ElasticsearchSourceSettings.create().withBufferSize(5),
-                client,
+                ElasticsearchSourceSettings.create()
+                    .withApiVersion(apiVersion)
+                    .withConnection(connectionSettings)
+                    .withBufferSize(5),
                 Book.class)
             .map(m -> WriteMessage.createIndexMessage(m.id(), m.source()))
             .via(
@@ -259,8 +288,8 @@ public class ElasticsearchTest {
                     "_doc",
                     ElasticsearchWriteSettings.create()
                         .withApiVersion(apiVersion)
+                        .withConnection(connectionSettings)
                         .withBufferSize(5),
-                    client,
                     new ObjectMapper()))
             .runWith(Sink.seq(), materializer);
     // #run-flow
@@ -278,8 +307,10 @@ public class ElasticsearchTest {
                 "sink3",
                 "_doc",
                 "{\"match_all\": {}}",
-                ElasticsearchSourceSettings.create().withBufferSize(5),
-                client,
+                ElasticsearchSourceSettings.create()
+                    .withApiVersion(apiVersion)
+                    .withConnection(connectionSettings)
+                    .withBufferSize(5),
                 Book.class)
             .map(m -> m.source().title)
             .runWith(Sink.seq(), materializer);
@@ -318,8 +349,8 @@ public class ElasticsearchTest {
                     "_doc",
                     ElasticsearchWriteSettings.create()
                         .withApiVersion(apiVersion)
+                        .withConnection(connectionSettings)
                         .withBufferSize(5),
-                    client,
                     StringMessageWriter.getInstance()))
             .runWith(Sink.seq(), materializer);
     // #string
@@ -336,8 +367,10 @@ public class ElasticsearchTest {
                 indexName,
                 "_doc",
                 "{\"match_all\": {}}",
-                ElasticsearchSourceSettings.create().withBufferSize(5),
-                client,
+                ElasticsearchSourceSettings.create()
+                    .withApiVersion(apiVersion)
+                    .withConnection(connectionSettings)
+                    .withBufferSize(5),
                 Book.class)
             .map(m -> m.source().title)
             .runWith(Sink.seq(), materializer);
@@ -367,8 +400,9 @@ public class ElasticsearchTest {
             ElasticsearchFlow.create(
                 "sink8",
                 "_doc",
-                ElasticsearchWriteSettings.create().withApiVersion(apiVersion),
-                client,
+                ElasticsearchWriteSettings.create()
+                    .withApiVersion(apiVersion)
+                    .withConnection(connectionSettings),
                 new ObjectMapper()))
         .runWith(Sink.seq(), materializer)
         .toCompletableFuture()
@@ -383,8 +417,9 @@ public class ElasticsearchTest {
                 "sink8",
                 "_doc",
                 "{\"match_all\": {}}",
-                ElasticsearchSourceSettings.create(),
-                client,
+                ElasticsearchSourceSettings.create()
+                    .withApiVersion(apiVersion)
+                    .withConnection(connectionSettings),
                 Book.class)
             .map(m -> m.source().title)
             .runWith(Sink.seq(), materializer);
@@ -428,8 +463,8 @@ public class ElasticsearchTest {
                     "_doc",
                     ElasticsearchWriteSettings.create()
                         .withApiVersion(apiVersion)
+                        .withConnection(connectionSettings)
                         .withBufferSize(5),
-                    client,
                     new ObjectMapper()))
             .map(
                 result -> {
@@ -453,8 +488,9 @@ public class ElasticsearchTest {
                 "sink6",
                 "_doc",
                 "{\"match_all\": {}}",
-                ElasticsearchSourceSettings.create(),
-                client,
+                ElasticsearchSourceSettings.create()
+                    .withApiVersion(apiVersion)
+                    .withConnection(connectionSettings),
                 Book.class)
             .map(m -> m.source().title)
             .runWith(Sink.seq(), materializer) // Run it
@@ -481,8 +517,10 @@ public class ElasticsearchTest {
             ElasticsearchFlow.create(
                 indexName,
                 typeName,
-                ElasticsearchWriteSettings.create().withApiVersion(apiVersion).withBufferSize(5),
-                client,
+                ElasticsearchWriteSettings.create()
+                    .withApiVersion(apiVersion)
+                    .withConnection(connectionSettings)
+                    .withBufferSize(5),
                 new ObjectMapper()))
         .runWith(Sink.seq(), materializer)
         .toCompletableFuture()
@@ -496,8 +534,10 @@ public class ElasticsearchTest {
                 indexName,
                 typeName,
                 "{\"match_all\": {}}",
-                ElasticsearchSourceSettings.create().withIncludeDocumentVersion(true),
-                client,
+                ElasticsearchSourceSettings.create()
+                    .withApiVersion(apiVersion)
+                    .withConnection(connectionSettings)
+                    .withIncludeDocumentVersion(true),
                 Book.class)
             .runWith(Sink.head(), materializer)
             .toCompletableFuture()
@@ -515,9 +555,9 @@ public class ElasticsearchTest {
                 typeName,
                 ElasticsearchWriteSettings.create()
                     .withApiVersion(apiVersion)
+                    .withConnection(connectionSettings)
                     .withBufferSize(5)
                     .withVersionType("external"),
-                client,
                 new ObjectMapper()))
         .runWith(Sink.seq(), materializer)
         .toCompletableFuture()
@@ -535,9 +575,9 @@ public class ElasticsearchTest {
                     typeName,
                     ElasticsearchWriteSettings.create()
                         .withApiVersion(apiVersion)
+                        .withConnection(connectionSettings)
                         .withBufferSize(5)
                         .withVersionType("external"),
-                    client,
                     new ObjectMapper()))
             .runWith(Sink.seq(), materializer)
             .toCompletableFuture()
@@ -565,9 +605,9 @@ public class ElasticsearchTest {
                 typeName,
                 ElasticsearchWriteSettings.create()
                     .withApiVersion(apiVersion)
+                    .withConnection(connectionSettings)
                     .withBufferSize(5)
                     .withVersionType("external"),
-                client,
                 new ObjectMapper()))
         .runWith(Sink.seq(), materializer)
         .toCompletableFuture()
@@ -581,8 +621,10 @@ public class ElasticsearchTest {
                 indexName,
                 typeName,
                 "{\"match_all\": {}}",
-                ElasticsearchSourceSettings.create().withIncludeDocumentVersion(true),
-                client,
+                ElasticsearchSourceSettings.create()
+                    .withApiVersion(apiVersion)
+                    .withConnection(connectionSettings)
+                    .withIncludeDocumentVersion(true),
                 Book.class)
             .runWith(Sink.seq(), materializer)
             .toCompletableFuture()
@@ -631,8 +673,10 @@ public class ElasticsearchTest {
             ElasticsearchFlow.create(
                 indexName,
                 typeName,
-                ElasticsearchWriteSettings.create().withApiVersion(apiVersion).withBufferSize(5),
-                client,
+                ElasticsearchWriteSettings.create()
+                    .withApiVersion(apiVersion)
+                    .withConnection(connectionSettings)
+                    .withBufferSize(5),
                 new ObjectMapper()))
         .runWith(Sink.seq(), materializer)
         .toCompletableFuture()
@@ -652,13 +696,14 @@ public class ElasticsearchTest {
                 indexName,
                 typeName,
                 searchParams, // <-- Using searchParams
-                ElasticsearchSourceSettings.create(),
-                client,
+                ElasticsearchSourceSettings.create()
+                    .withApiVersion(apiVersion)
+                    .withConnection(connectionSettings),
                 TestDoc.class,
                 new ObjectMapper())
             .map(
                 o -> {
-                  return o.source(); // These documents will only have property id, a and c (not b)
+                  return o.source(); // These documents will only have property id, a and c (not
                 })
             .runWith(Sink.seq(), materializer)
             .toCompletableFuture()

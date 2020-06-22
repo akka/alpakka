@@ -4,24 +4,22 @@
 
 package docs.scaladsl
 
-import java.util.Collections
 import java.util.concurrent.TimeUnit
 
+import akka.http.scaladsl.HttpExt
+import akka.http.scaladsl.model.Uri.Path
+import akka.http.scaladsl.model.{ContentTypes, HttpMethods, HttpRequest, Uri}
 import akka.stream.Materializer
 import akka.stream.alpakka.elasticsearch._
 import akka.stream.alpakka.elasticsearch.scaladsl._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.{Done, NotUsed}
-import org.apache.http.entity.StringEntity
-import org.apache.http.message.BasicHeader
-import org.elasticsearch.client.RestClient
 import org.scalatest.Inspectors
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -30,10 +28,13 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(10.seconds)
 
-  def elasticsearchConnector(apiVersion: ApiVersion, _client: RestClient)(implicit materializer: Materializer): Unit = {
+  def elasticsearchConnector(apiVersion: ApiVersion, connectionSettings: ElasticsearchConnectionSettings)(
+      implicit materializer: Materializer,
+      http: HttpExt
+  ): Unit = {
 
-    val baseWriteSettings = ElasticsearchWriteSettings().withApiVersion(apiVersion)
-    implicit val client = _client
+    val baseSourceSettings = ElasticsearchSourceSettings().withApiVersion(apiVersion).withConnection(connectionSettings)
+    val baseWriteSettings = ElasticsearchWriteSettings().withApiVersion(apiVersion).withConnection(connectionSettings)
 
     //#define-class
     import spray.json._
@@ -44,43 +45,55 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
     implicit val format: JsonFormat[Book] = jsonFormat1(Book)
     //#define-class
 
-    def register(indexName: String, title: String): Unit =
-      client.performRequest("POST",
-                            s"$indexName/_doc",
-                            Map[String, String]().asJava,
-                            new StringEntity(s"""{"title": "$title"}"""),
-                            new BasicHeader("Content-Type", "application/json"))
-
-    def flushAndRefresh(indexName: String): Unit = {
-      client.performRequest("POST", s"$indexName/_flush")
-      client.performRequest("POST", s"$indexName/_refresh")
+    def register(indexName: String, title: String): Unit = {
+      val request = HttpRequest(HttpMethods.POST)
+        .withUri(Uri(connectionSettings.baseUrl).withPath(Path(s"/$indexName/_doc")))
+        .withEntity(ContentTypes.`application/json`, s"""{"title": "$title"}""")
+      http.singleRequest(request).futureValue
     }
 
-    def createStrictMapping(indexName: String): Unit =
-      client.performRequest(
-        "PUT",
-        indexName,
-        Collections.singletonMap("include_type_name", "true"),
-        new StringEntity(s"""{
-                          |  "mappings": {
-                          |    "_doc": {
-                          |      "dynamic": "strict",
-                          |      "properties": {
-                          |        "title": { "type": "text"}
-                          |      }
-                          |    }
-                          |  }
-                          |}
-         """.stripMargin),
-        new BasicHeader("Content-Type", "application/json")
-      )
+    def flushAndRefresh(indexName: String): Unit = {
+      val flushRequest = HttpRequest(HttpMethods.POST)
+        .withUri(Uri(connectionSettings.baseUrl).withPath(Path(s"/$indexName/_flush")))
+      http.singleRequest(flushRequest).futureValue
+
+      val refreshRequest = HttpRequest(HttpMethods.POST)
+        .withUri(Uri(connectionSettings.baseUrl).withPath(Path(s"/$indexName/_refresh")))
+      http.singleRequest(refreshRequest).futureValue
+    }
+
+    def createStrictMapping(indexName: String): Unit = {
+      val uri = Uri(connectionSettings.baseUrl)
+        .withPath(Path(s"/$indexName"))
+        .withQuery(Uri.Query(Map("include_type_name" -> "true")))
+
+      val request = HttpRequest(HttpMethods.PUT)
+        .withUri(uri)
+        .withEntity(
+          ContentTypes.`application/json`,
+          s"""{
+            |  "mappings": {
+            |    "_doc": {
+            |      "dynamic": "strict",
+            |      "properties": {
+            |        "title": { "type": "text"}
+            |      }
+            |    }
+            |  }
+            |}
+         """.stripMargin
+        )
+
+      http.singleRequest(request).futureValue
+    }
 
     def readTitlesFrom(indexName: String): Future[immutable.Seq[String]] =
       ElasticsearchSource
         .typed[Book](
           indexName,
-          "_doc",
-          """{"match_all": {}}"""
+          typeName = "_doc",
+          query = """{"match_all": {}}""",
+          settings = baseSourceSettings
         )
         .map { message =>
           message.source.title
@@ -163,7 +176,8 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           .create(
             indexName = "source",
             typeName = "_doc",
-            query = """{"match_all": {}}"""
+            query = """{"match_all": {}}""",
+            settings = baseSourceSettings
           )
           .map { message: ReadResult[spray.json.JsObject] =>
             val book: Book = jsonReader[Book].read(message.source)
@@ -201,7 +215,8 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           .typed[Book](
             indexName = "source",
             typeName = "_doc",
-            query = """{"match_all": {}}"""
+            query = """{"match_all": {}}""",
+            settings = baseSourceSettings
           )
           .map { message: ReadResult[Book] =>
             WriteMessage.createIndexMessage(message.id, message.source)
@@ -238,7 +253,8 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           .typed[Book](
             indexName = "source",
             typeName = "_doc",
-            query = """{"match_all": {}}"""
+            query = """{"match_all": {}}""",
+            settings = baseSourceSettings
           )
           .map { message: ReadResult[Book] =>
             WriteMessage.createIndexMessage(message.id, message.source)
@@ -663,7 +679,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           indexName,
           "_doc",
           """{"match_all": {}}""",
-          ElasticsearchSourceSettings()
+          baseSourceSettings
         ).map { message =>
             message.source
           }
@@ -714,7 +730,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
         // Assert no errors except a missing document for a update request
         val errorMessages = results.flatMap(_.errorReason)
         errorMessages should have size 1
-        errorMessages(0) shouldEqual "[_doc][00004]: document missing"
+        errorMessages.head shouldEqual "[_doc][00004]: document missing"
         flushAndRefresh(indexName)
 
         // Assert docs in sink8/_doc
@@ -722,7 +738,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           indexName,
           "_doc",
           """{"match_all": {}}""",
-          ElasticsearchSourceSettings()
+          baseSourceSettings
         ).map { message =>
             message.source
           }
@@ -758,7 +774,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
         // Assert error
         val errorMessages = results.flatMap(_.errorReason)
         errorMessages should have size 1
-        errorMessages(0) should include("version conflict, document already exists (current version [1])")
+        errorMessages.head should include("version conflict, document already exists (current version [1])")
       }
 
       "read and write document-version if configured to do so" in assertAllStagesStopped {
@@ -784,7 +800,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
             ElasticsearchFlow.create[VersionTestDoc](
               indexName,
               typeName,
-              ElasticsearchWriteSettings().withBufferSize(5)
+              baseWriteSettings.withBufferSize(5)
             )
           )
           .runWith(Sink.seq)
@@ -801,7 +817,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
             indexName,
             typeName,
             """{"match_all": {}}""",
-            ElasticsearchSourceSettings().withIncludeDocumentVersion(true)
+            baseSourceSettings.withIncludeDocumentVersion(true)
           )
           .map { message =>
             val doc = message.source
@@ -832,7 +848,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
             indexName,
             typeName,
             """{"match_all": {}}""",
-            ElasticsearchSourceSettings().withIncludeDocumentVersion(true)
+            baseSourceSettings.withIncludeDocumentVersion(true)
           )
           .map { message =>
             val doc = message.source
@@ -900,7 +916,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
             indexName,
             typeName,
             """{"match_all": {}}""",
-            ElasticsearchSourceSettings().withIncludeDocumentVersion(true)
+            settings = baseSourceSettings.withIncludeDocumentVersion(true)
           )
           .runWith(Sink.head)
 
@@ -917,7 +933,8 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           .typed[Book](
             indexName = "source",
             typeName = "_doc",
-            query = """{"match_all": {}}"""
+            query = """{"match_all": {}}""",
+            settings = baseSourceSettings
           )
           .map { message: ReadResult[Book] =>
             WriteMessage
@@ -952,7 +969,8 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
             .create(
               indexName = null,
               typeName = "_doc",
-              query = """{"match_all": {}}"""
+              query = """{"match_all": {}}""",
+              settings = baseSourceSettings
             )
         }
       }
@@ -974,7 +992,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
             .create[Book](
               indexName = "foo",
               typeName = null,
-              settings = ElasticsearchWriteSettings().withApiVersion(ApiVersion.V5)
+              settings = baseWriteSettings.withApiVersion(ApiVersion.V5)
             )
         }
       }
@@ -987,7 +1005,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
             indexName = "source",
             typeName = None,
             query = """{"match_all": {}}""",
-            settings = ElasticsearchSourceSettings().withBufferSize(5)
+            settings = baseSourceSettings.withBufferSize(5).withApiVersion(ApiVersion.V7)
           )
           .map(_.source.title)
           .runWith(Sink.seq)
@@ -1048,7 +1066,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
                             "query" -> """ {"match_all": {}} """,
                             "_source" -> """ ["id", "a", "c"] """
                           ),
-                          ElasticsearchSourceSettings())
+                          baseSourceSettings)
           .map { message =>
             message.source
           }
@@ -1062,8 +1080,15 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
     }
 
     lazy val _ = {
+      //#connection-settings
+      val connectionSettings = ElasticsearchConnectionSettings()
+        .withBaseUrl("http://localhost:9200")
+        .withUsername("user")
+        .withPassword("password")
+      //#connection-settings
       //#source-settings
       val sourceSettings = ElasticsearchSourceSettings()
+        .withConnection(connectionSettings)
         .withBufferSize(10)
         .withScrollDuration(5.minutes)
       //#source-settings
@@ -1071,6 +1096,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
       //#sink-settings
       val sinkSettings =
         ElasticsearchWriteSettings()
+          .withConnection(connectionSettings)
           .withBufferSize(10)
           .withVersionType("internal")
           .withRetryLogic(RetryAtFixedRate(maxRetries = 5, retryInterval = 1.second))

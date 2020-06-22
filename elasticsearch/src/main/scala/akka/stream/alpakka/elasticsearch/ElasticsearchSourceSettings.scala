@@ -12,9 +12,13 @@ import akka.util.JavaDurationConverters._
  * Configure Elastiscsearch sources.
  *
  */
-final class ElasticsearchSourceSettings private (val bufferSize: Int,
+final class ElasticsearchSourceSettings private (val connection: ElasticsearchConnectionSettings,
+                                                 val bufferSize: Int,
                                                  val includeDocumentVersion: Boolean,
-                                                 val scrollDuration: FiniteDuration) {
+                                                 val scrollDuration: FiniteDuration,
+                                                 val apiVersion: ApiVersion) {
+
+  def withConnection(value: ElasticsearchConnectionSettings): ElasticsearchSourceSettings = copy(connection = value)
 
   def withBufferSize(value: Int): ElasticsearchSourceSettings = copy(bufferSize = value)
 
@@ -30,12 +34,19 @@ final class ElasticsearchSourceSettings private (val bufferSize: Int,
   def withIncludeDocumentVersion(value: Boolean): ElasticsearchSourceSettings =
     if (includeDocumentVersion == value) this else copy(includeDocumentVersion = value)
 
-  private def copy(bufferSize: Int = bufferSize,
+  def withApiVersion(value: ApiVersion): ElasticsearchSourceSettings =
+    if (apiVersion == value) this else copy(apiVersion = value)
+
+  private def copy(connection: ElasticsearchConnectionSettings = connection,
+                   bufferSize: Int = bufferSize,
                    includeDocumentVersion: Boolean = includeDocumentVersion,
-                   scrollDuration: FiniteDuration = scrollDuration): ElasticsearchSourceSettings =
-    new ElasticsearchSourceSettings(bufferSize = bufferSize,
+                   scrollDuration: FiniteDuration = scrollDuration,
+                   apiVersion: ApiVersion = apiVersion): ElasticsearchSourceSettings =
+    new ElasticsearchSourceSettings(connection = connection,
+                                    bufferSize = bufferSize,
                                     includeDocumentVersion = includeDocumentVersion,
-                                    scrollDuration = scrollDuration)
+                                    scrollDuration = scrollDuration,
+                                    apiVersion = apiVersion)
 
   def scroll: String = {
     val scrollString = scrollDuration.unit match {
@@ -52,16 +63,18 @@ final class ElasticsearchSourceSettings private (val bufferSize: Int,
   }
 
   override def toString =
-    s"""ElasticsearchSourceSettings(bufferSize=$bufferSize,includeDocumentVersion=$includeDocumentVersion,scrollDuration=$scrollDuration)"""
+    s"""ElasticsearchSourceSettings(connection=$connection,bufferSize=$bufferSize,includeDocumentVersion=$includeDocumentVersion,scrollDuration=$scrollDuration,apiVersion=$apiVersion)"""
 
 }
 
 object ElasticsearchSourceSettings {
 
   val Default = new ElasticsearchSourceSettings(
+    connection = ElasticsearchConnectionSettings.Default,
     bufferSize = 10,
     includeDocumentVersion = false,
-    scrollDuration = FiniteDuration(5, TimeUnit.MINUTES)
+    scrollDuration = FiniteDuration(5, TimeUnit.MINUTES),
+    apiVersion = ApiVersion.V5
   )
 
   /** Scala API */

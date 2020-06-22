@@ -58,11 +58,14 @@ object RetryWithBackoff {
 /**
  * Configure Elasticsearch sinks and flows.
  */
-final class ElasticsearchWriteSettings private (val bufferSize: Int,
+final class ElasticsearchWriteSettings private (val connection: ElasticsearchConnectionSettings,
+                                                val bufferSize: Int,
                                                 val retryLogic: RetryLogic,
                                                 val versionType: Option[String],
                                                 val apiVersion: ApiVersion,
                                                 val allowExplicitIndex: Boolean) {
+
+  def withConnection(value: ElasticsearchConnectionSettings): ElasticsearchWriteSettings = copy(connection = value)
 
   def withBufferSize(value: Int): ElasticsearchWriteSettings = copy(bufferSize = value)
 
@@ -76,15 +79,17 @@ final class ElasticsearchWriteSettings private (val bufferSize: Int,
 
   def withAllowExplicitIndex(value: Boolean): ElasticsearchWriteSettings = copy(allowExplicitIndex = value)
 
-  private def copy(bufferSize: Int = bufferSize,
+  private def copy(connection: ElasticsearchConnectionSettings = connection,
+                   bufferSize: Int = bufferSize,
                    retryLogic: RetryLogic = retryLogic,
                    versionType: Option[String] = versionType,
                    apiVersion: ApiVersion = apiVersion,
                    allowExplicitIndex: Boolean = allowExplicitIndex): ElasticsearchWriteSettings =
-    new ElasticsearchWriteSettings(bufferSize, retryLogic, versionType, apiVersion, allowExplicitIndex)
+    new ElasticsearchWriteSettings(connection, bufferSize, retryLogic, versionType, apiVersion, allowExplicitIndex)
 
-  override def toString =
+  override def toString: String =
     "ElasticsearchWriteSettings(" +
+    s"connection=$connection," +
     s"bufferSize=$bufferSize," +
     s"retryLogic=$retryLogic," +
     s"versionType=$versionType," +
@@ -94,7 +99,8 @@ final class ElasticsearchWriteSettings private (val bufferSize: Int,
 }
 
 object ElasticsearchWriteSettings {
-  val Default = new ElasticsearchWriteSettings(bufferSize = 10,
+  val Default = new ElasticsearchWriteSettings(connection = ElasticsearchConnectionSettings.Default,
+                                               bufferSize = 10,
                                                retryLogic = RetryNever,
                                                versionType = None,
                                                apiVersion = ApiVersion.V5,

@@ -4,17 +4,20 @@
 
 package akka.stream.alpakka.elasticsearch.javadsl
 
+import java.util.function.BiFunction
+
 import akka.NotUsed
 import akka.stream.alpakka.elasticsearch._
 import akka.stream.javadsl.Source
-import org.elasticsearch.client.RestClient
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.{ArrayNode, NumericNode}
-import java.util.{Map => JMap}
-
+import akka.actor.ActorSystem
+import akka.http.scaladsl.{Http, HttpExt}
+import akka.stream.{ActorMaterializer, Attributes}
 import akka.stream.alpakka.elasticsearch.impl
 
 import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext
 
 /**
  * Java API to create Elasticsearch sources.
@@ -28,9 +31,8 @@ object ElasticsearchSource {
   def create(indexName: String,
              typeName: String,
              query: String,
-             settings: ElasticsearchSourceSettings,
-             elasticsearchClient: RestClient): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
-    create(indexName, typeName, query, settings, elasticsearchClient, new ObjectMapper())
+             settings: ElasticsearchSourceSettings): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
+    create(indexName, typeName, query, settings, new ObjectMapper())
 
   /**
    * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[ReadResult]]s of [[java.util.Map]].
@@ -40,18 +42,29 @@ object ElasticsearchSource {
              typeName: String,
              query: String,
              settings: ElasticsearchSourceSettings,
-             elasticsearchClient: RestClient,
-             objectMapper: ObjectMapper): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
-    Source.fromGraph(
-      new impl.ElasticsearchSourceStage(
-        indexName,
-        Option(typeName),
-        Map("query" -> query),
-        elasticsearchClient,
-        settings,
-        new JacksonReader[java.util.Map[String, Object]](objectMapper, classOf[java.util.Map[String, Object]])
-      )
-    )
+             objectMapper: ObjectMapper): Source[ReadResult[java.util.Map[String, Object]], NotUsed] = {
+    val indexType = ElasticsearchIndexType(indexName, Option(typeName), settings.apiVersion)
+
+    Source
+      .setup {
+        japiBiFunction((mat: ActorMaterializer, _: Attributes) => {
+          implicit val system: ActorSystem = mat.system
+          implicit val http: HttpExt = Http()
+          implicit val ec: ExecutionContext = mat.executionContext
+
+          Source
+            .fromGraph(
+              new impl.ElasticsearchSourceStage(
+                indexType,
+                Map("query" -> query),
+                settings,
+                new JacksonReader[java.util.Map[String, Object]](objectMapper, classOf[java.util.Map[String, Object]])
+              )
+            )
+        })
+      }
+      .mapMaterializedValue(japiFunction(_ => NotUsed))
+  }
 
   /**
    * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[ReadResult]]s of [[java.util.Map]].
@@ -65,20 +78,30 @@ object ElasticsearchSource {
    */
   def create(indexName: String,
              typeName: String,
-             searchParams: JMap[String, String],
+             searchParams: java.util.Map[String, String],
              settings: ElasticsearchSourceSettings,
-             elasticsearchClient: RestClient,
-             objectMapper: ObjectMapper): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
-    Source.fromGraph(
-      new impl.ElasticsearchSourceStage(
-        indexName,
-        Option(typeName),
-        searchParams.asScala.toMap,
-        elasticsearchClient,
-        settings,
-        new JacksonReader[java.util.Map[String, Object]](objectMapper, classOf[java.util.Map[String, Object]])
-      )
-    )
+             objectMapper: ObjectMapper): Source[ReadResult[java.util.Map[String, Object]], NotUsed] = {
+    val indexType = ElasticsearchIndexType(indexName, Option(typeName), settings.apiVersion)
+
+    Source
+      .setup {
+        japiBiFunction((mat: ActorMaterializer, _: Attributes) => {
+          implicit val system: ActorSystem = mat.system
+          implicit val http: HttpExt = Http()
+          implicit val ec: ExecutionContext = mat.executionContext
+
+          Source.fromGraph(
+            new impl.ElasticsearchSourceStage(
+              indexType,
+              searchParams.asScala.toMap,
+              settings,
+              new JacksonReader[java.util.Map[String, Object]](objectMapper, classOf[java.util.Map[String, Object]])
+            )
+          )
+        })
+      }
+      .mapMaterializedValue(japiFunction(_ => NotUsed))
+  }
 
   /**
    * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[ReadResult]]s of type `T`.
@@ -88,9 +111,8 @@ object ElasticsearchSource {
                typeName: String,
                query: String,
                settings: ElasticsearchSourceSettings,
-               elasticsearchClient: RestClient,
                clazz: Class[T]): Source[ReadResult[T], NotUsed] =
-    typed[T](indexName, typeName, query, settings, elasticsearchClient, clazz, new ObjectMapper())
+    typed[T](indexName, typeName, query, settings, clazz, new ObjectMapper())
 
   /**
    * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[ReadResult]]s of type `T`.
@@ -100,19 +122,29 @@ object ElasticsearchSource {
                typeName: String,
                query: String,
                settings: ElasticsearchSourceSettings,
-               elasticsearchClient: RestClient,
                clazz: Class[T],
-               objectMapper: ObjectMapper): Source[ReadResult[T], NotUsed] =
-    Source.fromGraph(
-      new impl.ElasticsearchSourceStage(
-        indexName,
-        Option(typeName),
-        Map("query" -> query),
-        elasticsearchClient,
-        settings,
-        new JacksonReader[T](objectMapper, clazz)
-      )
-    )
+               objectMapper: ObjectMapper): Source[ReadResult[T], NotUsed] = {
+    val indexType = ElasticsearchIndexType(indexName, Option(typeName), settings.apiVersion)
+
+    Source
+      .setup {
+        japiBiFunction((mat: ActorMaterializer, _: Attributes) => {
+          implicit val system: ActorSystem = mat.system
+          implicit val http: HttpExt = Http()
+          implicit val ec: ExecutionContext = mat.executionContext
+
+          Source.fromGraph(
+            new impl.ElasticsearchSourceStage(
+              indexType,
+              Map("query" -> query),
+              settings,
+              new JacksonReader[T](objectMapper, clazz)
+            )
+          )
+        })
+      }
+      .mapMaterializedValue(japiFunction(_ => NotUsed))
+  }
 
   /**
    * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[ReadResult]]s of type `T`.
@@ -126,21 +158,31 @@ object ElasticsearchSource {
    */
   def typed[T](indexName: String,
                typeName: String,
-               searchParams: JMap[String, String],
+               searchParams: java.util.Map[String, String],
                settings: ElasticsearchSourceSettings,
-               elasticsearchClient: RestClient,
                clazz: Class[T],
-               objectMapper: ObjectMapper): Source[ReadResult[T], NotUsed] =
-    Source.fromGraph(
-      new impl.ElasticsearchSourceStage(
-        indexName,
-        Option(typeName),
-        searchParams.asScala.toMap,
-        elasticsearchClient,
-        settings,
-        new JacksonReader[T](objectMapper, clazz)
-      )
-    )
+               objectMapper: ObjectMapper): Source[ReadResult[T], NotUsed] = {
+    val indexType = ElasticsearchIndexType(indexName, Option(typeName), settings.apiVersion)
+
+    Source
+      .setup {
+        japiBiFunction((mat: ActorMaterializer, _: Attributes) => {
+          implicit val system: ActorSystem = mat.system
+          implicit val http: HttpExt = Http()
+          implicit val ec: ExecutionContext = mat.executionContext
+
+          Source.fromGraph(
+            new impl.ElasticsearchSourceStage(
+              indexType,
+              searchParams.asScala.toMap,
+              settings,
+              new JacksonReader[T](objectMapper, clazz)
+            )
+          )
+        })
+      }
+      .mapMaterializedValue(japiFunction(_ => NotUsed))
+  }
 
   private final class JacksonReader[T](mapper: ObjectMapper, clazz: Class[T]) extends impl.MessageReader[T] {
 
@@ -168,4 +210,22 @@ object ElasticsearchSource {
     }
   }
 
+  /**
+   * Helper for creating BiFunction instances from Scala
+   * functions as Scala 2.11 does not know about SAMs.
+   */
+  private def japiBiFunction[T, U, R](op: (T, U) => R): BiFunction[T, U, R] = {
+    new BiFunction[T, U, R] {
+      override def apply(t: T, u: U): R = op.apply(t, u)
+    }
+  }
+
+  /**
+   * Helper for creating akka.japi.function.Function instances from Scala
+   * functions as Scala 2.11 does not know about SAMs.
+   */
+  private def japiFunction[A, B](f: A => B): akka.japi.function.Function[A, B] =
+    new akka.japi.function.Function[A, B]() {
+      override def apply(a: A): B = f(a)
+    }
 }
