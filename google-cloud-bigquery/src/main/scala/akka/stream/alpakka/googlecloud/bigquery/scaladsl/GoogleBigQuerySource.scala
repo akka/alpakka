@@ -36,9 +36,11 @@ object GoogleBigQuerySource {
   ): Source[T, NotUsed] =
     Source
       .setup { (mat, attr) =>
-        implicit val system: ActorSystem = mat.system
-        implicit val materializer: Materializer = mat
-        BigQueryStreamSource[T](httpRequest, parserFn, onFinishCallback, projectConfig, Http())
+        {
+          implicit val system: ActorSystem = mat.system
+          implicit val materializer: Materializer = mat
+          BigQueryStreamSource[T](httpRequest, parserFn, onFinishCallback, projectConfig, Http())
+        }
       }
       .mapMaterializedValue(_ => NotUsed)
 

@@ -139,9 +139,7 @@ public class GoogleBigQuerySourceDoc {
         request,
         GoogleBigQuerySourceDoc::dryRunResponseFromJson,
         BigQueryCallbacks.ignore(),
-        config,
-        system,
-        materializer);
+        config);
   }
   // #dry-run
 }

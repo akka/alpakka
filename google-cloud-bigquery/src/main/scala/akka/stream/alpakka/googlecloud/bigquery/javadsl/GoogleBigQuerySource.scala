@@ -32,16 +32,14 @@ object GoogleBigQuerySource {
   def raw[T](httpRequest: HttpRequest,
              parserFn: java.util.function.Function[JsObject, Try[T]],
              onFinishCallback: java.util.function.Function[PagingInfo, NotUsed],
-             projectConfig: BigQueryConfig,
-             actorSystem: ActorSystem,
-             materializer: Materializer): Source[T, NotUsed] =
+             projectConfig: BigQueryConfig): Source[T, NotUsed] =
     bigquery.scaladsl.GoogleBigQuerySource
       .raw(
         httpRequest,
         parserFn.apply(_),
         onFinishCallback.apply,
         projectConfig
-      )(materializer, actorSystem)
+      )
       .asJava
 
   /**
