@@ -48,11 +48,9 @@ object GoogleBigQuerySource {
   def runQuery[T](query: String,
                   parserFn: java.util.function.Function[JsObject, Try[T]],
                   onFinishCallback: java.util.function.Function[PagingInfo, NotUsed],
-                  projectConfig: BigQueryConfig,
-                  actorSystem: ActorSystem,
-                  materializer: Materializer): Source[T, NotUsed] =
+                  projectConfig: BigQueryConfig): Source[T, NotUsed] =
     bigquery.scaladsl.GoogleBigQuerySource
-      .runQuery(query, parserFn.apply(_), onFinishCallback.apply, projectConfig)(materializer, actorSystem)
+      .runQuery(query, parserFn.apply(_), onFinishCallback.apply, projectConfig)
       .asJava
 
   /**

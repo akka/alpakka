@@ -51,12 +51,17 @@ object GoogleBigQuerySource {
                   parserFn: JsObject => Try[T],
                   onFinishCallback: PagingInfo => NotUsed,
                   projectConfig: BigQueryConfig)(
-      implicit mat: Materializer,
-      actorSystem: ActorSystem
-  ): Source[T, NotUsed] = {
-    val request = BigQueryCommunicationHelper.createQueryRequest(query, projectConfig.projectId, dryRun = false)
-    BigQueryStreamSource(request, parserFn, onFinishCallback, projectConfig, Http())
-  }
+      ): Source[T, NotUsed] =
+    Source
+      .setup { (mat, attr) =>
+        {
+          implicit val system: ActorSystem = mat.system
+          implicit val materializer: Materializer = mat
+          val request = BigQueryCommunicationHelper.createQueryRequest(query, projectConfig.projectId, dryRun = false)
+          BigQueryStreamSource(request, parserFn, onFinishCallback, projectConfig, Http())
+        }
+      }
+      .mapMaterializedValue(_ => NotUsed)
 
   /**
    * Read results in a csv format by executing `query`.

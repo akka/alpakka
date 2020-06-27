@@ -91,9 +91,7 @@ public class GoogleBigQuerySourceDoc {
         "SELECT uid, name FROM bigQueryDatasetName.myTable",
         GoogleBigQuerySourceDoc::userFromJson,
         BigQueryCallbacks.ignore(),
-        config,
-        system,
-        materializer);
+        config);
   }
   // #run-query
 
