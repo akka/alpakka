@@ -8,8 +8,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.NotUsed
 import akka.annotation.InternalApi
-import akka.stream.contrib.DelayFlow
-import akka.stream.contrib.DelayFlow.DelayStrategy
+import akka.stream.alpakka.googlecloud.bigquery.impl.util.DelayFlow.DelayStrategy
 import akka.stream.scaladsl.{GraphDSL, Merge}
 import akka.stream.{FlowShape, Graph}
 
