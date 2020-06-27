@@ -53,9 +53,7 @@ public class GoogleBigQuerySourceDoc {
         GoogleBigQuerySource.runQueryCsvStyle(
             "SELECT uid, name FROM bigQueryDatasetName.myTable",
             BigQueryCallbacks.tryToStopJob(config, system, materializer),
-            config,
-            system,
-            materializer);
+            config);
     // #csv-style
   }
 

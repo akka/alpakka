@@ -70,11 +70,22 @@ object GoogleBigQuerySource {
       query: String,
       onFinishCallback: PagingInfo => NotUsed,
       projectConfig: BigQueryConfig
-  )(implicit mat: Materializer, actorSystem: ActorSystem): Source[Seq[String], NotUsed] = {
-    val request = BigQueryCommunicationHelper.createQueryRequest(query, projectConfig.projectId, dryRun = false)
-    BigQueryStreamSource(request, BigQueryCommunicationHelper.parseQueryResult, onFinishCallback, projectConfig, Http())
-      .via(ConcatWithHeaders())
-  }
+  ): Source[Seq[String], NotUsed] =
+    Source
+      .setup { (mat, attr) =>
+        {
+          implicit val system: ActorSystem = mat.system
+          implicit val materializer: Materializer = mat
+          val request = BigQueryCommunicationHelper.createQueryRequest(query, projectConfig.projectId, dryRun = false)
+          BigQueryStreamSource(request,
+                               BigQueryCommunicationHelper.parseQueryResult,
+                               onFinishCallback,
+                               projectConfig,
+                               Http())
+            .via(ConcatWithHeaders())
+        }
+      }
+      .mapMaterializedValue(_ => NotUsed)
 
   /**
    * List tables on BigQueryConfig.dataset.

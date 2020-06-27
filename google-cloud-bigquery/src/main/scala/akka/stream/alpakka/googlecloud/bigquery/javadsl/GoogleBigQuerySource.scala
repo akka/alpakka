@@ -58,11 +58,9 @@ object GoogleBigQuerySource {
    */
   def runQueryCsvStyle(query: String,
                        onFinishCallback: java.util.function.Function[PagingInfo, NotUsed],
-                       projectConfig: BigQueryConfig,
-                       actorSystem: ActorSystem,
-                       materializer: Materializer): Source[util.List[String], NotUsed] =
+                       projectConfig: BigQueryConfig): Source[util.List[String], NotUsed] =
     bigquery.scaladsl.GoogleBigQuerySource
-      .runQueryCsvStyle(query, onFinishCallback.apply, projectConfig)(materializer, actorSystem)
+      .runQueryCsvStyle(query, onFinishCallback.apply, projectConfig)
       .map(_.asJava)
       .asJava
 
