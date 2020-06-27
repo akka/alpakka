@@ -11,9 +11,9 @@ import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig
 import akka.stream.alpakka.googlecloud.bigquery.client._
+import akka.stream.alpakka.googlecloud.bigquery.impl.BigQueryStreamSource
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
 import akka.stream.alpakka.googlecloud.bigquery.impl.util.ConcatWithHeaders
-import akka.stream.alpakka.googlecloud.bigquery.impl.BigQueryStreamSource
 import akka.stream.scaladsl.{Sink, Source}
 import spray.json.JsObject
 
@@ -120,9 +120,9 @@ object GoogleBigQuerySource {
   ): Future[Seq[T]] = {
     val request = HttpRequest(HttpMethods.GET, url)
     val bigQuerySource = BigQueryStreamSource(request, parser, BigQueryCallbacks.ignore, projectConfig, Http())
-
     bigQuerySource
       .runWith(Sink.seq)
       .map(_.flatten)
   }
+
 }
