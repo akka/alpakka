@@ -4,12 +4,9 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.javadsl
 import java.util
-import java.util.concurrent.CompletionStage
 
 import akka.NotUsed
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpRequest
-import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.bigquery
 import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig
 import akka.stream.alpakka.googlecloud.bigquery.client._
@@ -67,23 +64,21 @@ object GoogleBigQuerySource {
   /**
    * List tables on BigQueryConfig.dataset.
    */
-  def listTables(projectConfig: BigQueryConfig,
-                 actorSystem: ActorSystem,
-                 materializer: Materializer): CompletionStage[util.List[TableListQueryJsonProtocol.QueryTableModel]] =
+  def listTables(
+      projectConfig: BigQueryConfig
+  ): Source[util.List[TableListQueryJsonProtocol.QueryTableModel], NotUsed] =
     bigquery.scaladsl.GoogleBigQuerySource
-      .listTables(projectConfig)(materializer, actorSystem, actorSystem.dispatcher)
-      .map(_.asJava)(actorSystem.dispatcher)
-      .toJava
+      .listTables(projectConfig)
+      .map(_.asJava)
+      .asJava
 
   /**
    * List fields on tableName.
    */
   def listFields(tableName: String,
-                 projectConfig: BigQueryConfig,
-                 actorSystem: ActorSystem,
-                 materializer: Materializer): CompletionStage[util.List[TableDataQueryJsonProtocol.Field]] =
+                 projectConfig: BigQueryConfig): Source[util.List[TableDataQueryJsonProtocol.Field], NotUsed] =
     bigquery.scaladsl.GoogleBigQuerySource
-      .listFields(tableName, projectConfig)(materializer, actorSystem, actorSystem.dispatcher)
-      .map(_.asJava)(actorSystem.dispatcher)
-      .toJava
+      .listFields(tableName, projectConfig)
+      .map(_.asJava)
+      .asJava
 }

@@ -90,11 +90,7 @@ object GoogleBigQuerySource {
   /**
    * List tables on BigQueryConfig.dataset.
    */
-  def listTables(projectConfig: BigQueryConfig)(
-      implicit mat: Materializer,
-      actorSystem: ActorSystem,
-      executionContext: ExecutionContext
-  ): Future[Seq[TableListQueryJsonProtocol.QueryTableModel]] =
+  def listTables(projectConfig: BigQueryConfig): Source[Seq[TableListQueryJsonProtocol.QueryTableModel], NotUsed] =
     runMetaQuery(GoogleEndpoints.tableListUrl(projectConfig.projectId, projectConfig.dataset),
                  BigQueryCommunicationHelper.parseTableListResult,
                  projectConfig)
@@ -102,27 +98,27 @@ object GoogleBigQuerySource {
   /**
    * List fields on tableName.
    */
-  def listFields(tableName: String, projectConfig: BigQueryConfig)(
-      implicit mat: Materializer,
-      actorSystem: ActorSystem,
-      executionContext: ExecutionContext
-  ): Future[Seq[TableDataQueryJsonProtocol.Field]] =
+  def listFields(tableName: String,
+                 projectConfig: BigQueryConfig): Source[Seq[TableDataQueryJsonProtocol.Field], NotUsed] =
     runMetaQuery(
       GoogleEndpoints.fieldListUrl(projectConfig.projectId, projectConfig.dataset, tableName),
       BigQueryCommunicationHelper.parseFieldListResults,
       projectConfig
     )
 
-  private def runMetaQuery[T](url: String, parser: JsObject => Try[Seq[T]], projectConfig: BigQueryConfig)(
-      implicit mat: Materializer,
-      actorSystem: ActorSystem,
-      executionContext: ExecutionContext
-  ): Future[Seq[T]] = {
-    val request = HttpRequest(HttpMethods.GET, url)
-    val bigQuerySource = BigQueryStreamSource(request, parser, BigQueryCallbacks.ignore, projectConfig, Http())
-    bigQuerySource
-      .runWith(Sink.seq)
-      .map(_.flatten)
+  private def runMetaQuery[T](url: String,
+                              parser: JsObject => Try[Seq[T]],
+                              projectConfig: BigQueryConfig): Source[Seq[T], NotUsed] = {
+    Source
+      .setup(
+        { (mat, attr) =>
+          implicit val system: ActorSystem = mat.system
+          implicit val materializer: Materializer = mat
+          val request = HttpRequest(HttpMethods.GET, url)
+          BigQueryStreamSource(request, parser, BigQueryCallbacks.ignore, projectConfig, Http())
+        }
+      )
+      .mapMaterializedValue(_ => NotUsed)
   }
 
 }

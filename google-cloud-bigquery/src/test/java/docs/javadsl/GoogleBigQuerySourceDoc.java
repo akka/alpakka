@@ -15,12 +15,15 @@ import akka.stream.alpakka.googlecloud.bigquery.client.TableDataQueryJsonProtoco
 import akka.stream.alpakka.googlecloud.bigquery.client.TableListQueryJsonProtocol;
 import akka.stream.alpakka.googlecloud.bigquery.javadsl.GoogleBigQuerySource;
 import akka.stream.alpakka.googlecloud.bigquery.javadsl.BigQueryCallbacks;
+import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import scala.util.Try;
 import spray.json.JsObject;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
 // #imports
 
 public class GoogleBigQuerySourceDoc {
@@ -43,9 +46,15 @@ public class GoogleBigQuerySourceDoc {
 
     // #list-tables-and-fields
     CompletionStage<List<TableListQueryJsonProtocol.QueryTableModel>> tables =
-        GoogleBigQuerySource.listTables(config, system, materializer);
+        GoogleBigQuerySource.listTables(config)
+            .runWith(Sink.seq(), materializer)
+            .thenApply(lt -> lt.stream().flatMap(Collection::stream).collect(Collectors.toList()));
+
     CompletionStage<List<TableDataQueryJsonProtocol.Field>> fields =
-        GoogleBigQuerySource.listFields("myTable", config, system, materializer);
+        GoogleBigQuerySource.listFields("myTable", config)
+            .runWith(Sink.seq(), materializer)
+            .thenApply(lt -> lt.stream().flatMap(Collection::stream).collect(Collectors.toList()));
+    ;
     // #list-tables-and-fields
 
     // #csv-style

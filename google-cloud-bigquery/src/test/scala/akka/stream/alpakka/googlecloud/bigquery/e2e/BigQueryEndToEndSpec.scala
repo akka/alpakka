@@ -25,12 +25,14 @@ class BigQueryEndToEndSpec extends BigQueryTableHelper with Matchers {
   "Google BigQuery" should {
 
     "list tables" in {
-      val tables: Future[Seq[QueryTableModel]] = GoogleBigQuerySource.listTables(projectConfig)
+      val tables: Future[Seq[QueryTableModel]] =
+        GoogleBigQuerySource.listTables(projectConfig).runWith(Sink.seq).map(_.flatten)
       await(tables) should contain(QueryTableModel(TableReference(tableName), "TABLE"))
     }
 
     "list fields" in {
-      val fields: Future[Seq[Field]] = GoogleBigQuerySource.listFields(tableName, projectConfig)
+      val fields: Future[Seq[Field]] =
+        GoogleBigQuerySource.listFields(tableName, projectConfig).runWith(Sink.seq).map(_.flatten)
       await(fields).map(_.name).sorted shouldBe Seq("A1", "A2", "A3")
     }
 

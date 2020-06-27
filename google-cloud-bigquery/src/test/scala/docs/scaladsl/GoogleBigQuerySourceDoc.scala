@@ -13,7 +13,7 @@ import akka.stream.alpakka.googlecloud.bigquery.client.BigQueryCommunicationHelp
 import akka.stream.alpakka.googlecloud.bigquery.client.TableDataQueryJsonProtocol.Field
 import akka.stream.alpakka.googlecloud.bigquery.client.TableListQueryJsonProtocol.QueryTableModel
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.{BigQueryCallbacks, GoogleBigQuerySource}
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{Sink, Source}
 import spray.json.DefaultJsonProtocol._
 import spray.json.{JsObject, JsonFormat}
 
@@ -34,8 +34,8 @@ class GoogleBigQuerySourceDoc {
   //#init-config
 
   //#list-tables-and-fields
-  val tables: Future[Seq[QueryTableModel]] = GoogleBigQuerySource.listTables(config)
-  val fields: Future[Seq[Field]] = GoogleBigQuerySource.listFields("myTable", config)
+  val tables: Future[Seq[QueryTableModel]] = GoogleBigQuerySource.listTables(config).runWith(Sink.seq).map(_.flatten)
+  val fields: Future[Seq[Field]] = GoogleBigQuerySource.listFields("myTable", config).runWith(Sink.seq).map(_.flatten)
   //#list-tables-and-fields
 
   //#csv-style
