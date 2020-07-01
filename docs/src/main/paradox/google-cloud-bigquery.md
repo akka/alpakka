@@ -1,16 +1,20 @@
 # Google Cloud BigQuery
 
-The [Google Cloud BigQuery](https://cloud.google.com/bigquery/) connector provides connectivity to google BigQuery by running queries on large datasets and streaming the results.
+The [Google Cloud BigQuery](https://cloud.google.com/bigquery/) connector provides connectivity to Google BigQuery by running queries on large datasets and streaming the results.
 
-### Reported issues
+@@project-info{ projectId="google-cloud-bigquery" }
 
-[Tagged issues at Github](https://github.com/akka/alpakka/labels/p%3Agoogle-cloud-bigquery)
+@@@warning { title="API may change" }
+
+Alpakka Google Cloud BigQuery was added in Alpakka 2.0.2 in July 2020 and is marked as "API may change". Please try it out and suggest improvements. [Issue #2353](https://github.com/akka/alpakka/issues/2353)
+
+@@@
 
 ## Artifacts
 
 @@dependency [sbt,Maven,Gradle] {
   group=com.lightbend.akka
-  artifact=akka-stream-alpakka-google-cloud-bigquery_$scalaBinaryVersion$
+  artifact=akka-stream-alpakka-google-cloud-bigquery_$scala.binary.version$
   version=$version$
 }
 
@@ -45,7 +49,7 @@ Scala
 Java
 : @@snip [snip](/google-cloud-bigquery/src/test/java/docs/javadsl/GoogleBigQuerySourceDoc.java) { #list-tables-and-fields }
 
-For the rawest representation there is a "csvStyle" source built in. 
+For the rawest representation there is a "csvStyle" source built-in. 
 This will return a header (field names), and the fields as a list of Strings.
 
 Scala
@@ -86,22 +90,18 @@ All of the provided functionality can fire a callback when the **downstream** si
 This is useful if you want to implement some timeout in the downstream, and try to lower your costs with stopping the longrunning jobs.
 (Google doesn't provide any insurance about cost reduction, but at least we could try. [Read this for more information.](https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/cancel))
 
-Scala
-: You can use the build in @scala[@scaladoc[BigQueryCallbacks](akka.stream.alpakka.googlecloud.bigquery.scaladsl.BigQueryCallbacks$).]
-
-Java
-: You can use the build in @java[@scaladoc[BigQueryCallbacks](akka.stream.alpakka.googlecloud.bigquery.javadsl.BigQueryCallbacks$).]
+You can use the built-in @apidoc[BigQueryCallbacks$].
 
 ### Parsers
 
-The parser function is a `JsObject => Try[T]` function. 
+The parser function is a @scala[`spray.json.JsObject => Try[T]`]@java[`java.util.function.Function[spray.json.JsObject, scala.util.Try[T]]`] function. 
 This is needed because there is a possibility, the response not to contain any data. In this case we need to retry the request with some delay.
-Your parser function needs to be bulletproof and the code in the examples represents the happy path.
-In case of `Failure` ; your stream will be polling forever!
+Your parser function needs to be bulletproof, and the code in the examples represents the happy path.
+In case of `scala.util.Failure` your stream will be polling forever!
 
 ## Running an End to End test case
 
-You might want to run an End to End test case 
+You might want to run an End-to-End test case.
 
 See @github:[BigQueryEndToEndSpec](../../../../google-cloud-bigquery/src/test/scala/akka/stream/alpakka/googlecloud/bigquery/e2e/BigQueryEndToEndSpec.scala).
 To run this example using an actual GCP project you will need to configure a project, create/init tables in google-bigquery and provide a service account.

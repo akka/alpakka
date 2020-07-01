@@ -6,6 +6,7 @@ package akka.stream.alpakka.googlecloud.bigquery.javadsl
 import java.util
 
 import akka.NotUsed
+import akka.annotation.ApiMayChange
 import akka.http.scaladsl.model.HttpRequest
 import akka.stream.alpakka.googlecloud.bigquery
 import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig
@@ -19,9 +20,9 @@ import scala.util.Try
 /**
  * Java API to create BigQuery sources.
  */
+@ApiMayChange(issue = "https://github.com/akka/alpakka/issues/2353")
 object GoogleBigQuerySource {
   import collection.JavaConverters._
-  import scala.compat.java8.FutureConverters._
 
   /**
    * Read elements of `T` by executing HttpRequest upon BigQuery API.

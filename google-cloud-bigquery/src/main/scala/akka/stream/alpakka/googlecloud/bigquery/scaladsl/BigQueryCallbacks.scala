@@ -5,6 +5,7 @@
 package akka.stream.alpakka.googlecloud.bigquery.scaladsl
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.annotation.ApiMayChange
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
 import akka.stream.Materializer
@@ -14,6 +15,7 @@ import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
 import akka.stream.alpakka.googlecloud.bigquery.impl.sendrequest.SendRequestWithOauthHandling
 import akka.stream.scaladsl.{Sink, Source}
 
+@ApiMayChange(issue = "https://github.com/akka/alpakka/issues/2353")
 object BigQueryCallbacks {
   val ignore: PagingInfo => NotUsed = (_: PagingInfo) => NotUsed
   def tryToStopJob(

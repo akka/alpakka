@@ -6,6 +6,7 @@ package akka.stream.alpakka.googlecloud.bigquery.scaladsl
 
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.annotation.ApiMayChange
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
 import akka.stream.Materializer
@@ -14,15 +15,15 @@ import akka.stream.alpakka.googlecloud.bigquery.client._
 import akka.stream.alpakka.googlecloud.bigquery.impl.BigQueryStreamSource
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
 import akka.stream.alpakka.googlecloud.bigquery.impl.util.ConcatWithHeaders
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.Source
 import spray.json.JsObject
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 /**
  * Scala API to create BigQuery sources.
  */
+@ApiMayChange(issue = "https://github.com/akka/alpakka/issues/2353")
 object GoogleBigQuerySource {
 
   /**
@@ -111,7 +112,7 @@ object GoogleBigQuerySource {
                               projectConfig: BigQueryConfig): Source[Seq[T], NotUsed] = {
     Source
       .setup(
-        { (mat, attr) =>
+        { (mat, _) =>
           implicit val system: ActorSystem = mat.system
           implicit val materializer: Materializer = mat
           val request = HttpRequest(HttpMethods.GET, url)
