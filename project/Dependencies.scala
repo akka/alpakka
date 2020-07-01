@@ -205,6 +205,15 @@ object Dependencies {
       ) ++ JacksonDatabindDependencies
   )
 
+  val GoogleBigQuery = Seq(
+    libraryDependencies ++= Seq(
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
+        "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
+        "com.pauldijou" %% "jwt-core" % JwtCoreVersion, //ApacheV2
+        "io.specto" % "hoverfly-java" % "0.12.2" % Test //ApacheV2
+      ) ++ Mockito
+  )
+
   val GooglePubSub = Seq(
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,

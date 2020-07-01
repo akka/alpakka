@@ -18,6 +18,7 @@ lazy val alpakka = project
     files,
     ftp,
     geode,
+    googleCloudBigQuery,
     googleCloudPubSub,
     googleCloudPubSubGrpc,
     googleCloudStorage,
@@ -181,6 +182,14 @@ lazy val geode =
       }
     }
   )
+
+lazy val googleCloudBigQuery = alpakkaProject(
+  "google-cloud-bigquery",
+  "google.cloud.bigquery",
+  Dependencies.GoogleBigQuery,
+  fork in Test := true,
+  crossScalaVersions --= Seq(Dependencies.Scala211)
+).disablePlugins(MimaPlugin)
 
 lazy val googleCloudPubSub = alpakkaProject(
   "google-cloud-pub-sub",

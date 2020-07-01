@@ -1,0 +1,301 @@
+{
+  "data" : {
+    "pairs" : [ {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/oauth2/v4/token"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "POST"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "www.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "body" : [ {
+          "matcher" : "regex",
+          "value" : "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=*"
+        } ]
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\n  \"access_token\": \"yyyy.c.an-access-token\",\n  \"expires_in\": 3599,\n  \"token_type\": \"Bearer\"\n}",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "quic=\":443\"; ma=2592000; v=\"46,43\",h3-Q050=\":443\"; ma=2592000,h3-Q049=\":443\"; ma=2592000,h3-Q048=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=utf-8" ],
+          "Date" : [ "Sat, 25 Jan 2020 20:10:20 GMT" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "scaffolding on HTTPServer2" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/bigqueryproject/datasets/bigquerydataset/tables"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "POST"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "www.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "body" : [ {
+          "matcher" : "json",
+          "value" : "\n{\n  \"friendlyName\": \"bqtest\",\n  \"tableReference\": {\n    \"datasetId\": \"bigquerydataset\",\n    \"projectId\": \"bigqueryproject\",\n    \"tableId\": \"bqtest\"\n  },\n  \"schema\": {\n    \"fields\": [\n      {\n        \"name\": \"A1\",\n        \"type\": \"STRING\",\n        \"mode\": \"REQUIRED\"\n      },\n      {\n        \"name\": \"A2\",\n        \"type\": \"INTEGER\"\n      },\n      {\n        \"name\": \"A3\",\n        \"type\": \"BOOL\"\n      }\n    ]\n  }\n}\n       "
+        } ]
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\n  \"kind\": \"bigquery#table\",\n  \"etag\": \"randometag==\",\n  \"id\": \"bigqueryproject:bigquerydataset.bqtest\",\n  \"selfLink\": \"https://www.googleapis.com/bigquery/v2/projects/bigqueryproject/datasets/bigquerydataset/tables/bqtest\",\n  \"tableReference\": {\n    \"projectId\": \"bigqueryproject\",\n    \"datasetId\": \"bigquerydataset\",\n    \"tableId\": \"bqtest\"\n  },\n  \"friendlyName\": \"bqtest\",\n  \"schema\": {\n    \"fields\": [\n      {\n        \"name\": \"A1\",\n        \"type\": \"STRING\",\n        \"mode\": \"REQUIRED\"\n      },\n      {\n        \"name\": \"A2\",\n        \"type\": \"INTEGER\"\n      },\n      {\n        \"name\": \"A3\",\n        \"type\": \"BOOLEAN\"\n      }\n    ]\n  },\n  \"numBytes\": \"0\",\n  \"numLongTermBytes\": \"0\",\n  \"numRows\": \"0\",\n  \"creationTime\": \"1579983020644\",\n  \"expirationTime\": \"1585167020644\",\n  \"lastModifiedTime\": \"1579983020700\",\n  \"type\": \"TABLE\",\n  \"location\": \"US\"\n}\n",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "quic=\":443\"; ma=2592000; v=\"46,43\",h3-Q050=\":443\"; ma=2592000,h3-Q049=\":443\"; ma=2592000,h3-Q048=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Sat, 25 Jan 2020 20:10:20 GMT" ],
+          "Etag" : [ "randometag==" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/bigqueryproject/datasets/bigquerydataset/tables/bqtest/insertAll"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "POST"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "www.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "body" : [ {
+          "matcher" : "json",
+          "value" : "\n{\n  rows: [\n    {\n      \"json\": {\n        \"A1\": \"v1\",\n        \"A2\": 1,\n        \"A3\": true\n      }\n    },\n    {\n      \"json\": {\n        \"A1\": \"v2\",\n        \"A2\": 2,\n        \"A3\": false\n      }\n    },\n    {\n      \"json\": {\n        \"A1\": \"v3\",\n        \"A2\": 3,\n        \"A3\": true\n      }\n    },\n    {\n      \"json\": {\n        \"A1\": \"v4\",\n        \"A2\": -4,\n        \"A3\": false\n      }\n    },\n    {\n      \"json\": {\n        \"A1\": \"v5\",\n        \"A2\": null,\n        \"A3\": false\n      }\n    },\n    {\n      \"json\": {\n        \"A1\": \"v6\",\n        \"A2\": 6,\n        \"A3\": null\n      }\n    },\n    {\n      \"json\": {\n        \"A1\": \"v7\",\n        \"A2\": null,\n        \"A3\": null\n      }\n    }\n  ]\n}\n      "
+        } ]
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\n  \"kind\": \"bigquery#tableDataInsertAllResponse\"\n}\n",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "quic=\":443\"; ma=2592000; v=\"46,43\",h3-Q050=\":443\"; ma=2592000,h3-Q049=\":443\"; ma=2592000,h3-Q048=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Sat, 25 Jan 2020 20:10:21 GMT" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/bigqueryproject/datasets/bigquerydataset/tables"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "GET"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "www.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "body" : [ {
+          "matcher" : "exact",
+          "value" : ""
+        } ]
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\n  \"kind\": \"bigquery#tableList\",\n  \"etag\": \"randometag==\",\n  \"tables\": [\n    {\n      \"kind\": \"bigquery#table\",\n      \"id\": \"bigqueryproject:bigquerydataset.bqtest_c58e491fff12403ab445a0a519effd6b\",\n      \"tableReference\": {\n        \"projectId\": \"bigqueryproject\",\n        \"datasetId\": \"bigquerydataset\",\n        \"tableId\": \"bqtest\"\n      },\n      \"friendlyName\": \"bqtest\",\n      \"type\": \"TABLE\",\n      \"creationTime\": \"1579983020644\",\n      \"expirationTime\": \"1585167020644\"\n    }\n  ],\n  \"totalItems\": 1\n}\n",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "quic=\":443\"; ma=2592000; v=\"46,43\",h3-Q050=\":443\"; ma=2592000,h3-Q049=\":443\"; ma=2592000,h3-Q048=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Sat, 25 Jan 2020 20:10:23 GMT" ],
+          "Etag" : [ "randometag==" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/bigqueryproject/datasets/bigquerydataset/tables/bqtest"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "GET"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "www.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "body" : [ {
+          "matcher" : "exact",
+          "value" : ""
+        } ]
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\n  \"kind\": \"bigquery#table\",\n  \"etag\": \"randometag==\",\n  \"id\": \"bigqueryproject:bigquerydataset.bqtest\",\n  \"selfLink\": \"https://www.googleapis.com/bigquery/v2/projects/bigqueryproject/datasets/bigquerydataset/tables/bqtest\",\n  \"tableReference\": {\n    \"projectId\": \"bigqueryproject\",\n    \"datasetId\": \"bigquerydataset\",\n    \"tableId\": \"bqtest\"\n  },\n  \"friendlyName\": \"bqtest\",\n  \"schema\": {\n    \"fields\": [\n      {\n        \"name\": \"A1\",\n        \"type\": \"STRING\",\n        \"mode\": \"REQUIRED\"\n      },\n      {\n        \"name\": \"A2\",\n        \"type\": \"INTEGER\"\n      },\n      {\n        \"name\": \"A3\",\n        \"type\": \"BOOLEAN\"\n      }\n    ]\n  },\n  \"numBytes\": \"0\",\n  \"numLongTermBytes\": \"0\",\n  \"numRows\": \"0\",\n  \"creationTime\": \"1579983020644\",\n  \"expirationTime\": \"1585167020644\",\n  \"lastModifiedTime\": \"1579983021423\",\n  \"type\": \"TABLE\",\n  \"location\": \"US\",\n  \"streamingBuffer\": {\n    \"oldestEntryTime\": \"1579983000000\"\n  }\n}\n",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "quic=\":443\"; ma=2592000; v=\"46,43\",h3-Q050=\":443\"; ma=2592000,h3-Q049=\":443\"; ma=2592000,h3-Q048=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Sat, 25 Jan 2020 20:10:24 GMT" ],
+          "Etag" : [ "randometag==" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/bigqueryproject/queries"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "POST"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "www.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "body" : [ {
+          "matcher" : "json",
+          "value" : "{\"dryRun\":false,\"query\":\"SELECT * FROM bigquerydataset.bqtest;\",\"useLegacySql\":false}"
+        } ]
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\n  \"kind\": \"bigquery#queryResponse\",\n  \"schema\": {\n    \"fields\": [\n      {\n        \"name\": \"A1\",\n        \"type\": \"STRING\",\n        \"mode\": \"NULLABLE\"\n      },\n      {\n        \"name\": \"A2\",\n        \"type\": \"INTEGER\",\n        \"mode\": \"NULLABLE\"\n      },\n      {\n        \"name\": \"A3\",\n        \"type\": \"BOOLEAN\",\n        \"mode\": \"NULLABLE\"\n      }\n    ]\n  },\n  \"jobReference\": {\n    \"projectId\": \"bigqueryproject\",\n    \"jobId\": \"job_4iptxdfcnmisOdApoUuI6dkUnOlh\",\n    \"location\": \"US\"\n  },\n  \"totalRows\": \"7\",\n  \"rows\": [\n    {\n      \"f\": [\n        {\n          \"v\": \"v4\"\n        },\n        {\n          \"v\": \"-4\"\n        },\n        {\n          \"v\": \"false\"\n        }\n      ]\n    },\n    {\n      \"f\": [\n        {\n          \"v\": \"v3\"\n        },\n        {\n          \"v\": \"3\"\n        },\n        {\n          \"v\": \"true\"\n        }\n      ]\n    },\n    {\n      \"f\": [\n        {\n          \"v\": \"v1\"\n        },\n        {\n          \"v\": \"1\"\n        },\n        {\n          \"v\": \"true\"\n        }\n      ]\n    },\n    {\n      \"f\": [\n        {\n          \"v\": \"v2\"\n        },\n        {\n          \"v\": \"2\"\n        },\n        {\n          \"v\": \"false\"\n        }\n      ]\n    },\n    {\n      \"f\": [\n        {\n          \"v\": \"v6\"\n        },\n        {\n          \"v\": \"6\"\n        },\n        {\n          \"v\": null\n        }\n      ]\n    },\n    {\n      \"f\": [\n        {\n          \"v\": \"v7\"\n        },\n        {\n          \"v\": null\n        },\n        {\n          \"v\": null\n        }\n      ]\n    },\n    {\n      \"f\": [\n        {\n          \"v\": \"v5\"\n        },\n        {\n          \"v\": null\n        },\n        {\n          \"v\": \"false\"\n        }\n      ]\n    }\n  ],\n  \"totalBytesProcessed\": \"0\",\n  \"jobComplete\": true,\n  \"cacheHit\": false\n}\n",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "quic=\":443\"; ma=2592000; v=\"46,43\",h3-Q050=\":443\"; ma=2592000,h3-Q049=\":443\"; ma=2592000,h3-Q048=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Sat, 25 Jan 2020 20:10:25 GMT" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/bigqueryproject/datasets/bigquerydataset/tables/bqtest"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "DELETE"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "www.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "body" : [ {
+          "matcher" : "exact",
+          "value" : ""
+        } ]
+      },
+      "response" : {
+        "status" : 204,
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "quic=\":443\"; ma=2592000; v=\"46,43\",h3-Q050=\":443\"; ma=2592000,h3-Q049=\":443\"; ma=2592000,h3-Q048=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000" ],
+          "Content-Length" : [ "0" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Sat, 25 Jan 2020 20:10:25 GMT" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        }
+      }
+    } ],
+    "globalActions" : {
+      "delays" : [ ]
+    }
+  },
+  "meta" : {
+    "schemaVersion" : "v5",
+    "hoverflyVersion" : "v1.1.1",
+    "timeExported" : "2020-01-25T20:10:25Z"
+  }
+}
