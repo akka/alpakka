@@ -443,6 +443,25 @@ trait S3IntegrationSpec
     exception.code shouldBe StatusCodes.Forbidden.toString()
   }
 
+  it should "only upload single chunk when size of the ByteString equals chunk size" in {
+    val source: Source[ByteString, Any] = Source.single(ByteString.fromArray(Array.fill(S3.MinChunkSize)(0.toByte)))
+
+    val metadata =
+      for {
+        _ <- source.runWith(
+          S3.multipartUpload(defaultBucket, objectKey, chunkSize = S3.MinChunkSize)
+            .withAttributes(attributes)
+        )
+        metadata <- S3
+          .getObjectMetadata(defaultBucket, objectKey)
+          .withAttributes(attributes)
+          .runWith(Sink.head)
+      } yield metadata
+
+    val etag = metadata.futureValue.get.eTag.get
+    etag.substring(etag.indexOf('-') + 1) shouldBe "1"
+  }
+
   private def uploadDownloadAndDeleteInOtherRegionCase(objectKey: String): Assertion = {
     val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
 
