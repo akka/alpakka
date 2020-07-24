@@ -641,6 +641,19 @@ import scala.util.{Failure, Success, Try}
         implicit val sys: ActorSystem = mat.system
         implicit val materializer: Materializer = mat
 
+        // Emits at a chunk if no chunks have been emitted. Ensures that we can upload empty files.
+        val atLeastOne =
+          Flow[Chunk]
+            .prefixAndTail(1)
+            .flatMapConcat {
+              case (prefix, tail) =>
+                if (prefix.nonEmpty) {
+                  Source(prefix).concat(tail)
+                } else {
+                  Source.single(Chunk(Source.empty, 0))
+                }
+            }
+
         val retriableFlow: Flow[(Chunk, (MultipartUpload, Int)), (Try[HttpResponse], (MultipartUpload, Int)), NotUsed] =
           Flow[(Chunk, (MultipartUpload, Int))]
             .map {
@@ -658,6 +671,8 @@ import scala.util.{Failure, Success, Try}
         SplitAfterSize(chunkSize, chunkBufferSize)(atLeastOneByteString)
           .via(getChunkBuffer(chunkSize, chunkBufferSize, maxRetries)) //creates the chunks
           .mergeSubstreamsWithParallelism(parallelism)
+          .filter(_.size > 0)
+          .via(atLeastOne)
           .zip(requestInfo)
           .groupBy(parallelism, { case (_, (_, chunkIndex)) => chunkIndex % parallelism })
           // Allow requests that fail with transient errors to be retried, using the already buffered chunk.
