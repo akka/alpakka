@@ -443,6 +443,59 @@ trait S3IntegrationSpec
     exception.code shouldBe StatusCodes.Forbidden.toString()
   }
 
+  private val chunk: ByteString = ByteString.fromArray(Array.fill(S3.MinChunkSize)(0.toByte))
+
+  it should "only upload single chunk when size of the ByteString equals chunk size" in {
+    val source: Source[ByteString, Any] = Source.single(chunk)
+    uploadAndAndCheckParts(source, 1)
+  }
+
+  it should "only upload single chunk when exact chunk is followed by an empty ByteString" in {
+    val source: Source[ByteString, Any] = Source[ByteString](
+      chunk :: ByteString.empty :: Nil
+    )
+
+    uploadAndAndCheckParts(source, 1)
+  }
+
+  it should "upload two chunks size of ByteStrings equals chunk size" in {
+    val source: Source[ByteString, Any] = Source(chunk :: chunk :: Nil)
+    uploadAndAndCheckParts(source, 2)
+  }
+
+  it should "upload empty source" in {
+    val upload =
+      for {
+        upload <- Source
+          .empty[ByteString]
+          .runWith(
+            S3.multipartUpload(defaultBucket, objectKey, chunkSize = S3.MinChunkSize)
+              .withAttributes(attributes)
+          )
+        _ <- S3.deleteObject(defaultBucket, objectKey).withAttributes(attributes).runWith(Sink.head)
+      } yield upload
+
+    upload.futureValue.etag should not be empty
+  }
+
+  private def uploadAndAndCheckParts(source: Source[ByteString, _], expectedParts: Int): Assertion = {
+    val metadata =
+      for {
+        _ <- source.runWith(
+          S3.multipartUpload(defaultBucket, objectKey, chunkSize = S3.MinChunkSize)
+            .withAttributes(attributes)
+        )
+        metadata <- S3
+          .getObjectMetadata(defaultBucket, objectKey)
+          .withAttributes(attributes)
+          .runWith(Sink.head)
+        _ <- S3.deleteObject(defaultBucket, objectKey).withAttributes(attributes).runWith(Sink.head)
+      } yield metadata
+
+    val etag = metadata.futureValue.get.eTag.get
+    etag.substring(etag.indexOf('-') + 1).toInt shouldBe expectedParts
+  }
+
   private def uploadDownloadAndDeleteInOtherRegionCase(objectKey: String): Assertion = {
     val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
 
