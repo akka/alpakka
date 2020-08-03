@@ -458,7 +458,7 @@ trait S3IntegrationSpec
     uploadAndAndCheckParts(source, 1)
   }
 
-  it should "upload two chunks size of ByteSTrings equals chunk size" in {
+  it should "upload two chunks size of ByteStrings equals chunk size" in {
     val source: Source[ByteString, Any] = Source(chunk :: chunk :: Nil)
     uploadAndAndCheckParts(source, 2)
   }
