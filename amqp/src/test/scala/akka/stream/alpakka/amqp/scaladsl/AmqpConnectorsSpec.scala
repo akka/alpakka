@@ -14,6 +14,7 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.{TestPublisher, TestSubscriber}
 import akka.util.ByteString
+import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client.AuthenticationFailureException
 
 import scala.concurrent.Await
@@ -145,6 +146,21 @@ class AmqpConnectorsSpec extends AmqpSpec {
       }
 
       caught.getCause.getMessage should equal("Reply-to header was not set")
+
+      val propertiesWithNullReplyTo = new BasicProperties()
+        .builder()
+        .appId("appId")
+        .build()
+      val outgoingMessageWithEmptyReplyTo = outgoingMessage
+        .withProperties(propertiesWithNullReplyTo)
+
+      Source
+        .single(outgoingMessageWithEmptyReplyTo)
+        .toMat(AmqpSink.replyTo(AmqpReplyToSinkSettings(connectionProvider).withFailIfReplyToMissing(false)))(
+          Keep.right
+        )
+        .run()
+        .futureValue shouldBe Done
 
     }
 
