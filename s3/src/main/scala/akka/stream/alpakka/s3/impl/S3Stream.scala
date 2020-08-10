@@ -234,13 +234,18 @@ import scala.util.{Failure, Success, Try}
               Source.fromFuture(entity.discardBytes().future().map(_ => None))
             case HttpResponse(code, _, entity, _) =>
               Source.fromFuture {
-                Unmarshal(entity).to[String].map { err =>
-                  throw new S3Exception(err, code)
-                }
+                unmarshalError(code, entity)
               }
           }
       }
       .mapMaterializedValue(_ => NotUsed)
+
+  private def unmarshalError(code: StatusCode, entity: ResponseEntity)(implicit mat: Materializer) = {
+    import mat.executionContext
+    Unmarshal(entity).to[String].map { err =>
+      throw S3Exception(err, code)
+    }
+  }
 
   def deleteObject(s3Location: S3Location, versionId: Option[String], s3Headers: S3Headers): Source[Done, NotUsed] =
     Source
@@ -255,9 +260,7 @@ import scala.util.{Failure, Success, Try}
               Source.fromFuture(entity.discardBytes().future().map(_ => Done))
             case HttpResponse(code, _, entity, _) =>
               Source.fromFuture {
-                Unmarshal(entity).to[String].map { err =>
-                  throw new S3Exception(err, code)
-                }
+                unmarshalError(code, entity)
               }
           }
       }
@@ -301,9 +304,7 @@ import scala.util.{Failure, Success, Try}
               }
             case HttpResponse(code, _, entity, _) =>
               Source.fromFuture {
-                Unmarshal(entity).to[String].map { err =>
-                  throw new S3Exception(err, code)
-                }
+                unmarshalError(code, entity)
               }
           }
       }
@@ -400,17 +401,13 @@ import scala.util.{Failure, Success, Try}
       .mapMaterializedValue(_ => NotUsed)
 
   private def processBucketLifecycleResponse(response: HttpResponse, materializer: Materializer): Future[Done] = {
-    import materializer.executionContext
-
     implicit val mat: Materializer = materializer
 
     response match {
       case HttpResponse(status, _, entity, _) if status.isSuccess() =>
         entity.discardBytes().future()
       case HttpResponse(code, _, entity, _) =>
-        Unmarshal(entity).to[String].map { err =>
-          throw new S3Exception(err, code)
-        }
+        unmarshalError(code, entity)
     }
   }
 
@@ -434,9 +431,7 @@ import scala.util.{Failure, Success, Try}
               }
           )
       case HttpResponse(code, _, entity, _) =>
-        Unmarshal(entity).to[String].map { err =>
-          throw new S3Exception(err, code)
-        }
+        unmarshalError(code, entity)
     }
   }
 
@@ -471,9 +466,7 @@ import scala.util.{Failure, Success, Try}
             Source.fromFuture(Unmarshal(entity).to[MultipartUpload])
           case HttpResponse(code, _, entity, _) =>
             Source.fromFuture {
-              Unmarshal(entity).to[String].map { err =>
-                throw new S3Exception(err, code)
-              }
+              unmarshalError(code, entity)
             }
         }
       }
@@ -648,6 +641,19 @@ import scala.util.{Failure, Success, Try}
         implicit val sys: ActorSystem = mat.system
         implicit val materializer: Materializer = mat
 
+        // Emits at a chunk if no chunks have been emitted. Ensures that we can upload empty files.
+        val atLeastOne =
+          Flow[Chunk]
+            .prefixAndTail(1)
+            .flatMapConcat {
+              case (prefix, tail) =>
+                if (prefix.nonEmpty) {
+                  Source(prefix).concat(tail)
+                } else {
+                  Source.single(Chunk(Source.empty, 0))
+                }
+            }
+
         val retriableFlow: Flow[(Chunk, (MultipartUpload, Int)), (Try[HttpResponse], (MultipartUpload, Int)), NotUsed] =
           Flow[(Chunk, (MultipartUpload, Int))]
             .map {
@@ -665,6 +671,8 @@ import scala.util.{Failure, Success, Try}
         SplitAfterSize(chunkSize, chunkBufferSize)(atLeastOneByteString)
           .via(getChunkBuffer(chunkSize, chunkBufferSize, maxRetries)) //creates the chunks
           .mergeSubstreamsWithParallelism(parallelism)
+          .filter(_.size > 0)
+          .via(atLeastOne)
           .zip(requestInfo)
           .groupBy(parallelism, { case (_, (_, chunkIndex)) => chunkIndex % parallelism })
           // Allow requests that fail with transient errors to be retried, using the already buffered chunk.
@@ -807,14 +815,11 @@ import scala.util.{Failure, Success, Try}
   private def entityForSuccess(
       resp: HttpResponse
   )(implicit mat: Materializer): Future[(ResponseEntity, Seq[HttpHeader])] = {
-    import mat.executionContext
     resp match {
       case HttpResponse(status, headers, entity, _) if status.isSuccess() && !status.isRedirection() =>
         Future.successful((entity, headers))
       case HttpResponse(code, _, entity, _) =>
-        Unmarshal(entity).to[String].map { err =>
-          throw new S3Exception(err, code)
-        }
+        unmarshalError(code, entity)
     }
   }
 
@@ -886,11 +891,7 @@ import scala.util.{Failure, Success, Try}
                 case OK =>
                   Unmarshal(entity).to[CopyPartResult].map(cp => SuccessfulUploadPart(upload, index, cp.eTag))
                 case statusCode: StatusCode =>
-                  Unmarshal(entity).to[String].map { err =>
-                    val response =
-                      Option(err).getOrElse(s"Failed to upload part into S3, status code was: $statusCode")
-                    throw new S3Exception(response, statusCode)
-                  }
+                  unmarshalError(statusCode, entity)
               }
 
             case (Failure(ex), multipartCopy) =>

@@ -1,5 +1,20 @@
 # AWS Kinesis
 
+## 2.0.1
+
+- Kinesis: Construction safe API [#2331](https://github.com/akka/alpakka/issues/2331) by [@vaslabs](https://github.com/vaslabs)
+- Update AwsSpiAkkaHttpVersion to 0.0.9 [#2328](https://github.com/akka/alpakka/issues/2328) by [@matsluni](https://github.com/matsluni)
+- Kinesis: code layout [#2300](https://github.com/akka/alpakka/issues/2300) by [@YikSanChan](https://github.com/YikSanChan)
+- Kinesis: Avoid Any in KinesisSchedulerSourceStage [#2297](https://github.com/akka/alpakka/issues/2297) by [@YikSanChan](https://github.com/YikSanChan)
+- Kinesis: Small cleanup [#2299](https://github.com/akka/alpakka/issues/2299) by [@YikSanChan](https://github.com/YikSanChan)
+- [kinesis] Get rid of unnecessary broadcast-zip [#2302](https://github.com/akka/alpakka/issues/2302) by [@YikSanChan](https://github.com/YikSanChan)
+- Kinesis: Give the callback a more meaningful name [#2298](https://github.com/akka/alpakka/issues/2298) by [@YikSanChan](https://github.com/YikSanChan)
+- Fix typo in comment [#2301](https://github.com/akka/alpakka/issues/2301) by [@YikSanChan](https://github.com/YikSanChan)
+- Kinesis: Fix arrow [#2303](https://github.com/akka/alpakka/issues/2303) by [@YikSanChan](https://github.com/YikSanChan)
+
+[*closed in 2.0.1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.1+label%3Ap%3Akinesis)
+
+
 ## 2.0.0-RC2
 
 - AWS library updates [#2235](https://github.com/akka/alpakka/issues/2235) by [@ennru](https://github.com/ennru)

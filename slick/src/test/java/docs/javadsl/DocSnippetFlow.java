@@ -4,18 +4,21 @@
 
 package docs.javadsl;
 
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+import akka.stream.alpakka.slick.javadsl.Slick;
+import akka.stream.alpakka.slick.javadsl.SlickSession;
+import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
 
-import akka.stream.javadsl.*;
-import akka.stream.alpakka.slick.javadsl.*;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class DocSnippetFlow {
   public static void main(String[] args) throws Exception {
@@ -37,15 +40,17 @@ public class DocSnippetFlow {
     final CompletionStage<Done> done =
         Source.from(users)
             .via(
-                Slick.<User>flow(
+                Slick.flow(
                     session,
                     parallelism,
-                    (user) ->
-                        "INSERT INTO ALPAKKA_SLICK_JAVADSL_TEST_USERS VALUES ("
-                            + user.id
-                            + ", '"
-                            + user.name
-                            + "')"))
+                    (user, connection) -> {
+                      PreparedStatement statement =
+                          connection.prepareStatement(
+                              "INSERT INTO ALPAKKA_SLICK_JAVADSL_TEST_USERS VALUES (?, ?)");
+                      statement.setInt(1, user.id);
+                      statement.setString(2, user.name);
+                      return statement;
+                    }))
             .log("nr-of-updated-rows")
             .runWith(Sink.ignore(), materializer);
     // #flow-example

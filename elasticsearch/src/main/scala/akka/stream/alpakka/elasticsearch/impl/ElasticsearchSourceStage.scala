@@ -18,6 +18,7 @@ import spray.json.DefaultJsonProtocol._
 import spray.json._
 
 import scala.collection.JavaConverters._
+import scala.util.{Failure, Success, Try}
 
 /**
  * INTERNAL API
@@ -109,7 +110,10 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](indexName: String
           }
         )
 
-        val completeParams = searchParams ++ extraParams.flatten
+        val baseMap = Map("scroll" -> settings.scroll, "sort" -> "_doc")
+        val routingKey = "routing"
+        val queryParams = searchParams.get(routingKey).fold(baseMap)(r => baseMap + (routingKey -> r))
+        val completeParams = searchParams ++ extraParams.flatten - routingKey
 
         val searchBody = "{" + completeParams
             .map {
@@ -125,7 +129,7 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](indexName: String
         client.performRequestAsync(
           "POST",
           endpoint,
-          Map("scroll" -> settings.scroll, "sort" -> "_doc").asJava,
+          queryParams.asJava,
           new StringEntity(searchBody, StandardCharsets.UTF_8),
           this,
           new BasicHeader("Content-Type", "application/json")
@@ -188,10 +192,11 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](indexName: String
   def handleScrollResponse(scrollResponse: ScrollResponse[T]): Boolean =
     scrollResponse match {
       case ScrollResponse(Some(error), _) =>
+        // Do not attempt to clear the scroll in the case of an error.
         failStage(new IllegalStateException(error))
         false
       case ScrollResponse(None, Some(result)) if result.messages.isEmpty =>
-        completeStage()
+        clearScrollAsync()
         false
       case ScrollResponse(_, Some(result)) =>
         scrollId = result.scrollId
@@ -228,5 +233,54 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](indexName: String
           log.debug("Downstream is pulling data. Already waiting for data")
         }
     }
+
+  /**
+   * When downstream finishes, it is important to attempt to clear the scroll.
+   * As such, this handler initiates an async call to clear the scroll, and
+   * then explicitly keeps the stage alive. [[clearScrollAsync()]] is responsible
+   * for completing the stage.
+   */
+  override def onDownstreamFinish(): Unit = {
+    clearScrollAsync()
+    setKeepGoing(true)
+  }
+
+  /**
+   * If the [[scrollId]] is non null, attempt to clear the scroll.
+   * Complete the stage successfully, whether or not the clear call succeeds.
+   * If the clear call fails, the scroll will eventually timeout.
+   */
+  def clearScrollAsync(): Unit = {
+    if (scrollId == null) {
+      log.debug("Scroll Id is null. Completing stage eagerly.")
+      completeStage()
+    } else {
+      val listener = new ResponseListener {
+        override def onSuccess(response: Response): Unit = {
+          clearScrollAsyncHandler.invoke(Success(response))
+        }
+        override def onFailure(exception: Exception): Unit = {
+          clearScrollAsyncHandler.invoke(Failure(exception))
+        }
+      }
+
+      // Clear the scroll
+      client.performRequestAsync(
+        "DELETE",
+        s"/_search/scroll/$scrollId",
+        listener,
+        new BasicHeader("Content-Type", "application/json")
+      )
+    }
+  }
+
+  private val clearScrollAsyncHandler = getAsyncCallback[Try[Response]]({ result =>
+    {
+      // Note: the scroll will expire, so there is no reason to consider a failed
+      // clear as a reason to fail the stream.
+      log.debug("Result of clearing the scroll: {}", result)
+      completeStage()
+    }
+  })
 
 }

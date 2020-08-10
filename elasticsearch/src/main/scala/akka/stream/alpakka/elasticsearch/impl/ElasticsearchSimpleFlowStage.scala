@@ -42,10 +42,10 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
     case ApiVersion.V5 =>
       require(_indexName != null, "You must define an index name")
       require(_typeName != null, "You must define a type name")
-      new RestBulkApiV5[T, C](_indexName, _typeName, settings.versionType, writer)
+      new RestBulkApiV5[T, C](_indexName, _typeName, settings.versionType, settings.allowExplicitIndex, writer)
     case ApiVersion.V7 =>
       require(_indexName != null, "You must define an index name")
-      new RestBulkApiV7[T, C](_indexName, settings.versionType, writer)
+      new RestBulkApiV7[T, C](_indexName, settings.versionType, settings.allowExplicitIndex, writer)
     case other => throw new IllegalArgumentException(s"API version $other is not supported")
   }
 
@@ -65,6 +65,7 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
     override def onPull(): Unit = tryPull()
 
     override def onPush(): Unit = {
+      val endpoint = if (settings.allowExplicitIndex) "/_bulk" else s"/${_indexName}/_bulk"
       val (messages, resultsPassthrough) = grab(in)
       inflight = true
       val json: String = restApi.toJson(messages)
@@ -74,7 +75,7 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
       // https://www.elastic.co/guide/en/elasticsearch/client/java-rest/current/java-rest-low-usage-requests.html
       client.performRequestAsync(
         "POST",
-        "/_bulk",
+        endpoint,
         java.util.Collections.emptyMap[String, String](),
         new StringEntity(json, StandardCharsets.UTF_8),
         new ResponseListener() {
@@ -111,6 +112,16 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
         log.debug("response {}", jsonString.parseJson.prettyPrint)
       }
       val messageResults = restApi.toWriteResults(messages, jsonString)
+
+      if (log.isErrorEnabled) {
+        messageResults.filterNot(_.success).foreach { failure =>
+          if (failure.getError.isPresent) {
+            log.error(s"Received error from elastic when attempting to index documents. Error: {}",
+                      failure.getError.get)
+          }
+        }
+      }
+
       emit(out, messageResults ++ resultsPassthrough)
       if (isClosed(in)) completeStage()
       else tryPull()

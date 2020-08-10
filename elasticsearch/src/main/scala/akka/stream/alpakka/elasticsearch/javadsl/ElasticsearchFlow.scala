@@ -9,6 +9,7 @@ import akka.annotation.ApiMayChange
 import akka.stream.alpakka.elasticsearch.{scaladsl, _}
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.elasticsearch.client.RestClient
+import scala.collection.JavaConverters._
 
 /**
  * Java API to create Elasticsearch flows.
@@ -91,6 +92,54 @@ object ElasticsearchFlow {
   ): akka.stream.javadsl.Flow[WriteMessage[T, C], WriteResult[T, C], NotUsed] =
     scaladsl.ElasticsearchFlow
       .createWithPassThrough(indexName, typeName, settings, messageWriter)(elasticsearchClient)
+      .asJava
+
+  /**
+   * Create a flow to update Elasticsearch with
+   * [[java.util.List[akka.stream.alpakka.elasticsearch.WriteMessage WriteMessage]]s containing type `T`
+   * with `passThrough` of type `C`.
+   * The result status is part of the [[java.util.List[akka.stream.alpakka.elasticsearch.WriteResult WriteResult]]]
+   * and must be checked for successful execution.
+   *
+   * Warning: When settings configure retrying, messages are emitted out-of-order when errors are detected.
+   *
+   * @param objectMapper Jackson object mapper converting type `T` to JSON
+   */
+  def createBulk[T, C](
+      indexName: String,
+      typeName: String,
+      settings: ElasticsearchWriteSettings,
+      elasticsearchClient: RestClient,
+      objectMapper: ObjectMapper
+  ): akka.stream.javadsl.Flow[java.util.List[WriteMessage[T, C]], java.util.List[WriteResult[T, C]], NotUsed] =
+    createBulk(indexName, typeName, settings, elasticsearchClient, new JacksonWriter[T](objectMapper))
+
+  /**
+   * Create a flow to update Elasticsearch with
+   * [[java.util.List[akka.stream.alpakka.elasticsearch.WriteMessage WriteMessage]]s containing type `T`
+   * with `passThrough` of type `C`.
+   * The result status is part of the [[java.util.List[akka.stream.alpakka.elasticsearch.WriteResult WriteResult]]]
+   * and must be checked for successful execution.
+   *
+   * Warning: When settings configure retrying, messages are emitted out-of-order when errors are detected.
+   *
+   * @param messageWriter converts type `T` to a `String` containing valid JSON
+   */
+  def createBulk[T, C](
+      indexName: String,
+      typeName: String,
+      settings: ElasticsearchWriteSettings,
+      elasticsearchClient: RestClient,
+      messageWriter: MessageWriter[T]
+  ): akka.stream.javadsl.Flow[java.util.List[WriteMessage[T, C]], java.util.List[WriteResult[T, C]], NotUsed] =
+    akka.stream.scaladsl
+      .Flow[java.util.List[WriteMessage[T, C]]]
+      .map(_.asScala.toIndexedSeq)
+      .via(
+        scaladsl.ElasticsearchFlow
+          .createBulk(indexName, typeName, settings, messageWriter)(elasticsearchClient)
+      )
+      .map(_.asJava)
       .asJava
 
   /**

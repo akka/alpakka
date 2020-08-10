@@ -443,6 +443,59 @@ trait S3IntegrationSpec
     exception.code shouldBe StatusCodes.Forbidden.toString()
   }
 
+  private val chunk: ByteString = ByteString.fromArray(Array.fill(S3.MinChunkSize)(0.toByte))
+
+  it should "only upload single chunk when size of the ByteString equals chunk size" in {
+    val source: Source[ByteString, Any] = Source.single(chunk)
+    uploadAndAndCheckParts(source, 1)
+  }
+
+  it should "only upload single chunk when exact chunk is followed by an empty ByteString" in {
+    val source: Source[ByteString, Any] = Source[ByteString](
+      chunk :: ByteString.empty :: Nil
+    )
+
+    uploadAndAndCheckParts(source, 1)
+  }
+
+  it should "upload two chunks size of ByteStrings equals chunk size" in {
+    val source: Source[ByteString, Any] = Source(chunk :: chunk :: Nil)
+    uploadAndAndCheckParts(source, 2)
+  }
+
+  it should "upload empty source" in {
+    val upload =
+      for {
+        upload <- Source
+          .empty[ByteString]
+          .runWith(
+            S3.multipartUpload(defaultBucket, objectKey, chunkSize = S3.MinChunkSize)
+              .withAttributes(attributes)
+          )
+        _ <- S3.deleteObject(defaultBucket, objectKey).withAttributes(attributes).runWith(Sink.head)
+      } yield upload
+
+    upload.futureValue.etag should not be empty
+  }
+
+  private def uploadAndAndCheckParts(source: Source[ByteString, _], expectedParts: Int): Assertion = {
+    val metadata =
+      for {
+        _ <- source.runWith(
+          S3.multipartUpload(defaultBucket, objectKey, chunkSize = S3.MinChunkSize)
+            .withAttributes(attributes)
+        )
+        metadata <- S3
+          .getObjectMetadata(defaultBucket, objectKey)
+          .withAttributes(attributes)
+          .runWith(Sink.head)
+        _ <- S3.deleteObject(defaultBucket, objectKey).withAttributes(attributes).runWith(Sink.head)
+      } yield metadata
+
+    val etag = metadata.futureValue.get.eTag.get
+    etag.substring(etag.indexOf('-') + 1).toInt shouldBe expectedParts
+  }
+
   private def uploadDownloadAndDeleteInOtherRegionCase(objectKey: String): Assertion = {
     val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
 
@@ -540,7 +593,7 @@ class AWSS3IntegrationSpec extends S3IntegrationSpec
  * For this test, you need a local s3 mirror, for instance minio (https://github.com/minio/minio).
  * With docker and the aws cli installed, you could run something like this:
  *
- * docker run -e MINIO_ACCESS_KEY=TESTKEY -e MINIO_SECRET_KEY=TESTSECRET -p 9000:9000 minio/minio server /data
+ * docker run -e MINIO_ACCESS_KEY=TESTKEY -e MINIO_SECRET_KEY=TESTSECRET -e MINIO_DOMAIN=s3minio.alpakka -p 9000:9000 minio/minio server /data
  * AWS_ACCESS_KEY_ID=TESTKEY AWS_SECRET_ACCESS_KEY=TESTSECRET aws --endpoint-url http://localhost:9000 s3api create-bucket --bucket my-test-us-east-1
  * AWS_ACCESS_KEY_ID=TESTKEY AWS_SECRET_ACCESS_KEY=TESTSECRET aws --endpoint-url http://localhost:9000 s3api create-bucket --bucket my.test.frankfurt
  *

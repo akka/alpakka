@@ -123,6 +123,7 @@ Java
 | versionType         | None       | If set, `ElasticsearchSink` uses the chosen versionType to index documents. See [Version types](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#_version_types) for accepted settings. |
 | retryLogic          | No retries | See below |
 | apiVersion          | V5         | Currently supports `V5` and `V7` (see below) |
+| allowExplicitIndex  | True       | When set to False, the index name will be included in the URL instead of on each document (see below) | 
 
 #### Retry logic
 A bulk request might fail partially for some reason. To retry failed writes to Elasticsearch, a `RetryLogic` can be specified. 
@@ -151,6 +152,9 @@ To support writing to multiple versions of Elasticsearch, an `ApiVersion` can be
 This will be used to transform the bulk request into a format understood by the corresponding Elasticsearch server.
 Currently [`V5`](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/docs-bulk.html#docs-bulk) and [`V7`](https://www.elastic.co/guide/en/elasticsearch/reference/7.6/docs-bulk.html#docs-bulk) are supported specifically but this parameter does not need to match the server version exactly (for example, either `V5` or `V7` should work with Elasticsearch 6.x).
 
+### Allow explicit index
+
+When using the `_bulk` API, Elasticsearch will reject requests that have an explicit index in the request body if explicit index names are not allowed. See [URL-based access control](https://www.elastic.co/guide/en/elasticsearch/reference/current/url-access-control.html)
 
 ## Elasticsearch as Flow
 
@@ -221,3 +225,7 @@ Scala
 
 Java
 : @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #custom-search-params }
+
+Additionally, support for [custom routing](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-routing-field.html) 
+is available through the `routing` key. Add this key and the respective value in 'searchParams' map, to route your search directly to the shard that holds
+the document you are looking for and enjoy improved response times.

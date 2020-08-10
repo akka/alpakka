@@ -170,6 +170,48 @@ class LogRotatorSinkSpec
 
     }
 
+    "work for stream-based rotation " in assertAllStagesStopped {
+      // #stream
+      val destinationDir = FileSystems.getDefault.getPath("/tmp")
+
+      val streamBasedTriggerCreator: () => ((String, String)) => Option[Path] = () => {
+        var currentFilename: Option[String] = None
+        (element: (String, String)) => {
+          if (currentFilename.contains(element._1)) {
+            None
+          } else {
+            currentFilename = Some(element._1)
+            Some(destinationDir.resolve(element._1))
+          }
+        }
+      }
+
+      val timeBasedSink: Sink[(String, String), Future[Done]] =
+        LogRotatorSink.withTypedSinkFactory(
+          streamBasedTriggerCreator,
+          (path: Path) =>
+            Flow[(String, String)]
+              .map { case (_, data) => ByteString(data) }
+              .via(Compression.gzip)
+              .toMat(FileIO.toPath(path))(Keep.right)
+        )
+      // #stream
+
+      val timeBaseCompletion = Source(
+        immutable.Seq(
+          ("stream1", "test1"),
+          ("stream1", "test2"),
+          ("stream1", "test3"),
+          ("stream2", "test4"),
+          ("stream2", "test5"),
+          ("stream2", "test6")
+        )
+      ).runWith(timeBasedSink)
+
+      timeBaseCompletion.futureValue shouldBe Done
+
+    }
+
     "write lines to a single file" in assertAllStagesStopped {
       var files = Seq.empty[Path]
       val triggerFunctionCreator = () => {
@@ -298,6 +340,45 @@ class LogRotatorSinkSpec
       ) shouldBe a[java.nio.channels.NonWritableChannelException]
     }
 
+  }
+
+  "downstream fail on exception in sink" in assertAllStagesStopped {
+    val path = Files.createTempFile(fs.getPath("/"), "test", ".log")
+    val triggerFunctionCreator = () => {
+      (x: ByteString) => {
+        Option(path)
+      }
+    }
+    val (probe, completion) =
+      TestSource
+        .probe[ByteString]
+        .toMat(
+          LogRotatorSink.withSinkFactory(
+            triggerGeneratorCreator = triggerFunctionCreator,
+            sinkFactory = (_: Path) =>
+              Flow[ByteString]
+                .map { data =>
+                  if (data.utf8String == "test") throw new IllegalArgumentException("The data is broken")
+                  data
+                }
+                .toMat(Sink.ignore)(Keep.right)
+          )
+        )(Keep.both)
+        .run()
+
+    probe.sendNext(ByteString("test"))
+    probe.sendNext(ByteString("test"))
+    probe.expectCancellation()
+
+    val exception = intercept[Exception] {
+      Await.result(completion, 3.seconds)
+    }
+
+    exactly(
+      1,
+      List(exception, // Akka 2.5 throws nio exception directly
+           exception.getCause) // Akka 2.6 wraps nio exception in a akka.stream.IOOperationIncompleteException
+    ) shouldBe a[IllegalArgumentException]
   }
 
   def readUpFilesAndSizesThenClean(files: Seq[Path]): (Seq[String], Seq[Long]) = {

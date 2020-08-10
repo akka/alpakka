@@ -36,6 +36,9 @@ jobs:
       - PRE_CMD="docker-compose up -d amqp"
     - name: avroparquet
     - name: awslambda
+    - name: aws-event-bridge
+      env:
+      - PRE_CMD="docker-compose up -d amazoneventbridge"
     - name: azure-storage-queue
     - name: cassandra
       env:
@@ -57,6 +60,7 @@ jobs:
     - name: geode
       env:
       - PRE_CMD="docker-compose up -d geode"
+    - name: google-cloud-bigquery
     - name: google-cloud-pub-sub
     - name: google-cloud-pub-sub-grpc
       env:

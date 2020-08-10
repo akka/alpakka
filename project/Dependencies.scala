@@ -18,11 +18,11 @@ object Dependencies {
   val InfluxDBJavaVersion = "2.15"
 
   val AwsSdk2Version = "2.11.3"
-  val AwsSpiAkkaHttpVersion = "0.0.8"
+  val AwsSpiAkkaHttpVersion = "0.0.9"
   // Sync with plugins.sbt
   val AkkaGrpcBinaryVersion = "0.8"
   val AkkaHttp101 = "10.1.11"
-  val AkkaHttp102 = "10.2.0-M1"
+  val AkkaHttp102 = "10.2.0"
   val AkkaHttpVersion = if (CronBuild) AkkaHttp102 else AkkaHttp101
   val AkkaHttpBinaryVersion = if (CronBuild) "10.2" else "10.1"
   val mockitoVersion = "3.1.0"
@@ -74,9 +74,9 @@ object Dependencies {
 
   // Releases https://github.com/FasterXML/jackson-databind/releases
   // CVE issues https://github.com/FasterXML/jackson-databind/issues?utf8=%E2%9C%93&q=+label%3ACVE
-  // This should align with the version used in Akka 2.6.x
+  // This should align with the Jackson minor version used in Akka 2.6.x
   // https://github.com/akka/akka/blob/master/project/Dependencies.scala#L23
-  val JacksonDatabindVersion = "2.10.3"
+  val JacksonDatabindVersion = "2.10.5"
   val JacksonDatabindDependencies = Seq(
     "com.fasterxml.jackson.core" % "jackson-core" % JacksonDatabindVersion,
     "com.fasterxml.jackson.core" % "jackson-databind" % JacksonDatabindVersion
@@ -111,21 +111,15 @@ object Dependencies {
   )
 
   val CassandraVersionInDocs = "4.0"
-  val CassandraDriverVersion = "4.5.1"
-  val CassandraDriverVersionInDocs = "4.5"
-  // https://github.com/akka/alpakka/issues/2226
-  // Performance dropped by ~40% when the driver upgraded to latest netty version
-  // override for now https://datastax-oss.atlassian.net/browse/JAVA-2676
-  val CassandraOverrideNettyVersion = "4.1.39.Final"
+  val CassandraDriverVersion = "4.6.1"
+  val CassandraDriverVersionInDocs = "4.6"
 
   val Cassandra = Seq(
     libraryDependencies ++= Seq(
         ("com.datastax.oss" % "java-driver-core" % CassandraDriverVersion)
           .exclude("com.github.spotbugs", "spotbugs-annotations")
           .exclude("org.apache.tinkerpop", "*") //https://github.com/akka/alpakka/issues/2200
-          .exclude("com.esri.geometry", "esri-geometry-api") //https://github.com/akka/alpakka/issues/2225
-          .exclude("io.netty", "netty-handler"), // https://github.com/akka/alpakka/issues/2226
-        "io.netty" % "netty-handler" % CassandraOverrideNettyVersion,
+          .exclude("com.esri.geometry", "esri-geometry-api"), //https://github.com/akka/alpakka/issues/2225
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion % Provided
       ) ++ JacksonDatabindDependencies
   )
@@ -209,6 +203,15 @@ object Dependencies {
         "com.chuusai" %% "shapeless" % "2.3.3",
         "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.12.1" % Test
       ) ++ JacksonDatabindDependencies
+  )
+
+  val GoogleBigQuery = Seq(
+    libraryDependencies ++= Seq(
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
+        "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
+        "com.pauldijou" %% "jwt-core" % JwtCoreVersion, //ApacheV2
+        "io.specto" % "hoverfly-java" % "0.12.2" % Test //ApacheV2
+      ) ++ Mockito
   )
 
   val GooglePubSub = Seq(
@@ -304,7 +307,6 @@ object Dependencies {
 
   val JsonStreaming = Seq(
     libraryDependencies ++= Seq(
-        "com.github.jsurfer" % "jsurfer" % "1.6.0", // MIT,
         "com.github.jsurfer" % "jsurfer-jackson" % "1.6.0" // MIT
       ) ++ JacksonDatabindDependencies
   )
@@ -364,7 +366,7 @@ object Dependencies {
       )
   )
 
-  val PravegaVersion = "0.7.0"
+  val PravegaVersion = "0.7.1"
   val PravegaVersionForDocs = s"v${PravegaVersion}"
 
   val Pravega = {
@@ -389,7 +391,7 @@ object Dependencies {
         "software.amazon.awssdk" % "auth" % AwsSdk2Version,
         // in-memory filesystem for file related tests
         "com.google.jimfs" % "jimfs" % "1.1" % Test, // ApacheV2
-        "com.github.tomakehurst" % "wiremock" % "2.25.1" % Test // ApacheV2
+        "com.github.tomakehurst" % "wiremock-jre8" % "2.26.3" % Test // ApacheV2
       ) ++ JacksonDatabindDependencies
       ++ Silencer
   )
@@ -416,6 +418,21 @@ object Dependencies {
         "com.typesafe.slick" %% "slick-hikaricp" % SlickVersion, // BSD 2-clause "Simplified" License
         "com.h2database" % "h2" % "1.4.200" % Test // Eclipse Public License 1.0
       )
+  )
+  val Eventbridge = Seq(
+    libraryDependencies ++= Seq(
+        "com.github.matsluni" %% "aws-spi-akka-http" % AwsSpiAkkaHttpVersion excludeAll // ApacheV2
+        (
+          ExclusionRule(organization = "com.typesafe.akka")
+        ),
+        "software.amazon.awssdk" % "eventbridge" % AwsSdk2Version excludeAll // ApacheV2
+        (
+          ExclusionRule("software.amazon.awssdk", "apache-client"),
+          ExclusionRule("software.amazon.awssdk", "netty-nio-client")
+        ),
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion // ApacheV2
+      ) ++ JacksonDatabindDependencies
+      ++ Mockito
   )
 
   val Sns = Seq(

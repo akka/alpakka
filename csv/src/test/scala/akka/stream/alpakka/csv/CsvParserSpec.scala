@@ -321,6 +321,11 @@ class CsvParserSpec extends AnyWordSpec with Matchers with OptionValues with Log
       expectBsInOut(in, List("one", "two", "three"))
     }
 
+    "handle quote right after UTF-8 BOM" in {
+      val in = ByteOrderMark.UTF_8 ++ ByteString("\"one\",\"two\",\"three\"\n", StandardCharsets.UTF_8.name())
+      expectBsInOut(in, List("one", "two", "three"))
+    }
+
     "fail for UTF-16 LE BOM" in {
       val in = ByteOrderMark.UTF_16_LE ++ ByteString("one,two,three\n", StandardCharsets.UTF_16LE.name())
       a[UnsupportedCharsetException] should be thrownBy expectBsInOut(in, List("one", "two", "three"))

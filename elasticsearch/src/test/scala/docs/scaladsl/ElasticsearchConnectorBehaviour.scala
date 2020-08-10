@@ -141,6 +141,20 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
       }
     }
 
+    "Sink Settings" should {
+      "copy explicit index name permission" in {
+        val sinkSettings =
+          ElasticsearchWriteSettings()
+            .withBufferSize(10)
+            .withVersionType("internal")
+            .withRetryLogic(RetryAtFixedRate(maxRetries = 5, retryInterval = 1.second))
+
+        val restrictiveCopy = sinkSettings.withAllowExplicitIndex(false)
+
+        restrictiveCopy.allowExplicitIndex shouldEqual false
+      }
+    }
+
     "Un-typed Elasticsearch connector" should {
       "consume and publish Json documents" in assertAllStagesStopped {
         val indexName = "sink2"
