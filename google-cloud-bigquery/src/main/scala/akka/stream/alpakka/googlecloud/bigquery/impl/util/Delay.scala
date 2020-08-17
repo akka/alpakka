@@ -24,7 +24,7 @@ private[impl] object Delay {
     GraphDSL.create() { implicit builder =>
       import GraphDSL.Implicits._
 
-      val splitter = builder.add(Splitter[T](shouldDelay)())
+      val splitter = builder.add(Splitter[T](shouldDelay))
       val delayFlow =
         builder.add(DelayFlow[T](() => new FibonacciStrategy[T](delayUnit, maxDelay)))
       val merge = builder.add(Merge[T](2, eagerComplete = true))

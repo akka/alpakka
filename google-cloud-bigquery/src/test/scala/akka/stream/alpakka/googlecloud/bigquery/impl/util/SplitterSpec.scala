@@ -33,7 +33,7 @@ class SplitterSpec
     RunnableGraph.fromGraph(GraphDSL.create(sink1, sink2)((_, _)) { implicit builder => (s1, s2) =>
       import GraphDSL.Implicits._
 
-      val splitter = builder.add(Splitter[Int](_ < 3)())
+      val splitter = builder.add(Splitter[Int](_ < 3))
 
       source ~> splitter.in
       splitter.out(0) ~> s1
