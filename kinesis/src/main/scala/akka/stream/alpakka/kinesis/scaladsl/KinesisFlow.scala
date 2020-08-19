@@ -39,7 +39,8 @@ object KinesisFlow {
 
   def withContext[T](streamName: String, settings: KinesisFlowSettings = KinesisFlowSettings.Defaults)(
       implicit kinesisClient: KinesisAsyncClient
-  ): FlowWithContext[PutRecordsRequestEntry, T, PutRecordsResultEntry, T, NotUsed] =
+  ): FlowWithContext[PutRecordsRequestEntry, T, PutRecordsResultEntry, T, NotUsed] = {
+    checkClient(kinesisClient)
     FlowWithContext.fromTuples(
       Flow[(PutRecordsRequestEntry, T)]
         .throttle(settings.maxRecordsPerSecond, 1.second, settings.maxRecordsPerSecond, ThrottleMode.Shaping)
@@ -60,6 +61,7 @@ object KinesisFlow {
         )
         .mapConcat(identity)
     )
+  }
 
   private def handlePutRecordsSuccess[T](
       entries: Iterable[(PutRecordsRequestEntry, T)]
@@ -99,5 +101,8 @@ object KinesisFlow {
           partitionKey -> bytes.toByteBuffer
       }
       .via(byPartitionAndData(streamName, settings))
+
+  private[scaladsl] def checkClient(kinesisClient: KinesisAsyncClient): Unit =
+    require(kinesisClient != null, "The `KinesisAsyncClient` passed in may not be null.")
 
 }

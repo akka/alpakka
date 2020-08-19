@@ -46,7 +46,8 @@ object SqsPublishFlow {
    */
   def apply(settings: SqsPublishSettings = SqsPublishSettings.Defaults)(
       implicit sqsClient: SqsAsyncClient
-  ): Flow[SendMessageRequest, SqsPublishResult, NotUsed] =
+  ): Flow[SendMessageRequest, SqsPublishResult, NotUsed] = {
+    SqsAckFlow.checkClient(sqsClient)
     Flow[SendMessageRequest]
       .mapAsync(settings.maxInFlight) { req =>
         sqsClient
@@ -55,6 +56,7 @@ object SqsPublishFlow {
           .map(req -> _)(sameThreadExecutionContext)
       }
       .map { case (request, response) => new SqsPublishResult(request, response) }
+  }
 
   /**
    * creates a [[akka.stream.scaladsl.Flow Flow]] that groups messages and publishes them in batches to a SQS queue using an [[software.amazon.awssdk.services.sqs.SqsAsyncClient SqsAsyncClient]]
@@ -74,7 +76,8 @@ object SqsPublishFlow {
    */
   def batch(queueUrl: String, settings: SqsPublishBatchSettings = SqsPublishBatchSettings.Defaults)(
       implicit sqsClient: SqsAsyncClient
-  ): Flow[Iterable[SendMessageRequest], List[SqsPublishResultEntry], NotUsed] =
+  ): Flow[Iterable[SendMessageRequest], List[SqsPublishResultEntry], NotUsed] = {
+    SqsAckFlow.checkClient(sqsClient)
     Flow[Iterable[SendMessageRequest]]
       .map { requests =>
         val entries = requests.zipWithIndex.map {
@@ -126,4 +129,5 @@ object SqsPublishFlow {
         case e =>
           Source.failed(e)
       })
+  }
 }
