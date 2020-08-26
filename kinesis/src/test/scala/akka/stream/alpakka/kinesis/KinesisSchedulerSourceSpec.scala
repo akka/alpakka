@@ -68,6 +68,42 @@ class KinesisSchedulerSourceSpec
       sinkProbe.expectComplete()
     })
 
+    "publish records downstream with backpressure" in assertAllStagesStopped(
+      new KinesisSchedulerContext(bufferSize = 50, switchMode = Close) with TestData {
+        val initializationInput: InitializationInput =
+          randomInitializationInput()
+        recordProcessor.initialize(initializationInput)
+
+        private val semaphore = new Semaphore(0)
+        private val pushRecords = Future {
+          for (_ <- 1 to 52) recordProcessor.processRecords(sampleRecordsInput())
+          semaphore.release()
+        }
+
+        Thread.sleep(100)
+
+        // If the bufferSize is 50, only 51 records can be consumed by the Source
+        // 50 -> Source buffer
+        // 1 -> Buffer of the first downstream step
+        semaphore.tryAcquire() shouldBe false
+
+        // we make room so more records are consumed/buffered along the stream
+        valve.onComplete {
+          case Success(valve) => valve.flip(Open)
+        }
+
+        // all the 52 records can be consumed by the Source now
+        eventually {
+          semaphore.tryAcquire() shouldBe true
+          pushRecords.isCompleted shouldBe true
+        }
+
+        for (_ <- 1 to 52) sinkProbe.requestNext()
+        killSwitch.shutdown()
+        sinkProbe.expectComplete()
+      }
+    )
+
     "publish records downstream using different IRecordProcessor incarnations" in assertAllStagesStopped(
       new KinesisSchedulerContext with TestData {
         val initializationInput: InitializationInput =
@@ -214,44 +250,6 @@ class KinesisSchedulerSourceSpec
           shardEndedCallFinished.isCompleted shouldBe true
         }
 
-        killSwitch.shutdown()
-        sinkProbe.expectComplete()
-      }
-    )
-
-    "publish records downstream with backpressure" in assertAllStagesStopped(
-      new KinesisSchedulerContext(bufferSize = 50, switchMode = Close) with TestData {
-        val initializationInput: InitializationInput =
-          randomInitializationInput()
-        recordProcessor.initialize(initializationInput)
-
-        private val semaphore = new Semaphore(0)
-        private val pushRecords = Future {
-          for (_ <- 1 to 52) recordProcessor.processRecords(sampleRecordsInput())
-          semaphore.release()
-        }
-
-        Thread.sleep(100)
-
-        // If the bufferSize is 50, only 51 records can be consumed by the Source
-        // 50 -> Source buffer
-        // 1 -> Buffer of the first downstream step
-        //        akka.stream.materializer.initial-input-buffer-size = 1
-        //        akka.stream.materializer.max-input-buffer-size = 1
-        semaphore.tryAcquire() shouldBe false
-
-        // we make room so more records are consumed/buffered along the stream
-        valve.onComplete {
-          case Success(valve) => valve.flip(Open)
-        }
-
-        // all the 52 records can be consumed by the Source now
-        eventually {
-          semaphore.tryAcquire() shouldBe true
-          pushRecords.isCompleted shouldBe true
-        }
-
-        for (_ <- 1 to 52) sinkProbe.requestNext()
         killSwitch.shutdown()
         sinkProbe.expectComplete()
       }
