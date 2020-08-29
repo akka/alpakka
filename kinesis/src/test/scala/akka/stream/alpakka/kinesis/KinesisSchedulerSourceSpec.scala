@@ -40,7 +40,7 @@ import software.amazon.kinesis.retrieval.kpl.ExtendedSequenceNumber
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.util.{Random, Success}
+import scala.util.Random
 
 class KinesisSchedulerSourceSpec
     extends AnyWordSpec
@@ -70,32 +70,27 @@ class KinesisSchedulerSourceSpec
 
     "publish records downstream with backpressure" in assertAllStagesStopped(
       new KinesisSchedulerContext(bufferSize = 50, switchMode = Close) with TestData {
-        val initializationInput: InitializationInput =
-          randomInitializationInput()
-        recordProcessor.initialize(initializationInput)
+        recordProcessor.initialize(randomInitializationInput())
 
-        private val semaphore = new Semaphore(0)
-        private val pushRecords = Future {
+        private val allRecordsConsumedBySource = Future {
           for (_ <- 1 to 52) recordProcessor.processRecords(sampleRecordsInput())
-          semaphore.release()
         }
 
         Thread.sleep(100)
 
         // If the bufferSize is 50, only 51 records can be consumed by the Source
-        // 50 -> Source buffer
-        // 1 -> Buffer of the first downstream step
-        semaphore.tryAcquire() shouldBe false
+        // 50 -> The buffer of the main stage of the Source
+        // 1 -> Other components of the Source take additional records, this number is affected by the config:
+        //      akka.stream.materializer.initial-input-buffer-size
+        //      akka.stream.materializer.max-input-buffer-size
+        allRecordsConsumedBySource.isCompleted shouldBe false
 
-        // we make room so more records are consumed/buffered along the stream
-        valve.onComplete {
-          case Success(valve) => valve.flip(Open)
-        }
+        // We make room so more records are consumed/buffered along the stream
+        valve.foreach(_.flip(Open))
 
-        // all the 52 records can be consumed by the Source now
+        // All the 52 records can be consumed by the Source now
         eventually {
-          semaphore.tryAcquire() shouldBe true
-          pushRecords.isCompleted shouldBe true
+          allRecordsConsumedBySource.isCompleted shouldBe true
         }
 
         for (_ <- 1 to 52) sinkProbe.requestNext()

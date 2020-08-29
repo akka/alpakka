@@ -3,9 +3,6 @@
  */
 
 package akka.stream.alpakka.kinesis
-/*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
- */
 
 import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler}
 import akka.stream._
