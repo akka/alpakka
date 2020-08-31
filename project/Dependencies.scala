@@ -20,9 +20,9 @@ object Dependencies {
   val AwsSdk2Version = "2.11.3"
   val AwsSpiAkkaHttpVersion = "0.0.8"
   // Sync with plugins.sbt
-  val AkkaGrpcBinaryVersion = "0.8"
+  val AkkaGrpcBinaryVersion = "1.0"
   val AkkaHttp101 = "10.1.11"
-  val AkkaHttp102 = "10.2.0-M1"
+  val AkkaHttp102 = "10.2.0"
   val AkkaHttpVersion = if (CronBuild) AkkaHttp102 else AkkaHttp101
   val AkkaHttpBinaryVersion = if (CronBuild) "10.2" else "10.1"
   val mockitoVersion = "3.1.0"

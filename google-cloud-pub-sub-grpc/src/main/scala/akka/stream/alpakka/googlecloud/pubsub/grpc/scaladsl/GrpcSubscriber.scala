@@ -15,7 +15,6 @@ import akka.actor.{
 import akka.annotation.ApiMayChange
 import akka.stream.alpakka.googlecloud.pubsub.grpc.PubSubSettings
 import akka.stream.alpakka.googlecloud.pubsub.grpc.impl.AkkaGrpcSettings
-import akka.stream.SystemMaterializer
 import com.google.pubsub.v1.pubsub.{SubscriberClient => ScalaSubscriberClient}
 
 /**
@@ -25,8 +24,7 @@ final class GrpcSubscriber private (settings: PubSubSettings, sys: ActorSystem) 
 
   @ApiMayChange
   final val client =
-    ScalaSubscriberClient(AkkaGrpcSettings.fromPubSubSettings(settings)(sys))(SystemMaterializer(sys).materializer,
-                                                                              sys.dispatcher)
+    ScalaSubscriberClient(AkkaGrpcSettings.fromPubSubSettings(settings)(sys))(sys)
 
   sys.registerOnTermination(client.close())
 }
