@@ -206,10 +206,7 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
       "-P:silencer:pathFilters=akka-grpc/test"
     ),
   crossScalaVersions --= Seq(Dependencies.Scala211) // 2.11 is not supported since Akka gRPC 0.6
-)
-// #grpc-plugins
-  .enablePlugins(AkkaGrpcPlugin, JavaAgent)
-// #grpc-plugins
+).enablePlugins(AkkaGrpcPlugin)
 
 lazy val googleCloudStorage =
   alpakkaProject("google-cloud-storage",
