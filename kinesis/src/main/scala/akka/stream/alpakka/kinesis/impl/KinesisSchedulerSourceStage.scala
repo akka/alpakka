@@ -78,9 +78,9 @@ private[kinesis] class KinesisSchedulerSourceStage(
       matValue.success(scheduler)
     }
     private val callback: AsyncCallback[Command] = getAsyncCallback(awaitingRecords)
-    private val newRecordCallback: CommittableRecord => Unit = {
+    private def newRecordCallback(record: CommittableRecord): Unit = {
       backpressureSemaphore.tryAcquire(backpressureTimeout.length, backpressureTimeout.unit)
-      record => callback.invoke(NewRecord(record))
+      callback.invoke(NewRecord(record))
     }
     override def onPull(): Unit = awaitingRecords(Pump)
     override def onDownstreamFinish(): Unit = awaitingRecords(Complete)
