@@ -199,7 +199,6 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
   akkaGrpcGeneratedSources := Seq(AkkaGrpc.Client),
   akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala, AkkaGrpc.Java),
   Compile / PB.protoSources += (Compile / PB.externalIncludePath).value,
-  javaAgents += Dependencies.GooglePubSubGrpcAlpnAgent % Test,
   // for the ExampleApp in the tests
   connectInput in run := true,
   Compile / scalacOptions ++= Seq(

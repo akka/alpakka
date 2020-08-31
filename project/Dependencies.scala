@@ -232,8 +232,6 @@ object Dependencies {
       ) ++ Silencer
   )
 
-  val GooglePubSubGrpcAlpnAgent = "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.10"
-
   val GoogleFcm = Seq(
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
