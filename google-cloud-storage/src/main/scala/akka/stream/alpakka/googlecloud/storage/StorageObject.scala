@@ -56,7 +56,7 @@ final class StorageObject private (
     val contentType: ContentType,
     val size: Long,
     val etag: String,
-    val md5Hash: String,
+    val md5Hash: Option[String],
     val crc32c: String,
     val mediaLink: String,
     val selfLink: String,
@@ -112,7 +112,7 @@ final class StorageObject private (
     copy(contentType = value.asInstanceOf[ContentType])
   def withSize(value: Long): StorageObject = copy(size = value)
   def withEtag(value: String): StorageObject = copy(etag = value)
-  def withMd5Hash(value: String): StorageObject = copy(md5Hash = value)
+  def withMd5Hash(value: String): StorageObject = copy(md5Hash = Option(value))
   def withCrc32c(value: String): StorageObject = copy(crc32c = value)
   def withMediaLink(value: String): StorageObject = copy(mediaLink = value)
   def withSelfLink(value: String): StorageObject = copy(selfLink = value)
@@ -145,7 +145,7 @@ final class StorageObject private (
       contentType: ContentType = contentType,
       size: Long = size,
       etag: String = etag,
-      md5Hash: String = md5Hash,
+      md5Hash: Option[String] = md5Hash,
       crc32c: String = crc32c,
       mediaLink: String = mediaLink,
       selfLink: String = selfLink,
@@ -321,7 +321,7 @@ object StorageObject {
       contentType: ContentType,
       size: Long,
       etag: String,
-      md5Hash: String,
+      md5Hash: Option[String],
       crc32c: String,
       mediaLink: String,
       selfLink: String,
@@ -388,7 +388,7 @@ object StorageObject {
       contentType: akka.http.javadsl.model.ContentType,
       size: Long,
       etag: String,
-      md5Hash: String,
+      md5Hash: Option[String],
       crc32c: String,
       mediaLink: String,
       selfLink: String,

@@ -79,7 +79,7 @@ object Formats extends DefaultJsonProtocol {
       contentType: Option[String],
       crc32c: String,
       eventBasedHold: Option[Boolean],
-      md5Hash: String,
+      md5Hash: Option[String],
       metadata: Option[Map[String, String]],
       name: String,
       storageClass: String,
