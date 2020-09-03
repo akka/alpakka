@@ -93,7 +93,7 @@ class SqsSourceMockSpec extends AnyFlatSpec with Matchers with DefaultTestContex
       i <- 1 to bufferToBatchRatio
       message <- defaultMessages
     } {
-      probe.requestNext(10.milliseconds) shouldEqual message
+      probe.requestNext() shouldEqual message
     }
     probe.cancel()
   }
@@ -141,7 +141,7 @@ class SqsSourceMockSpec extends AnyFlatSpec with Matchers with DefaultTestContex
         .withWaitTime(timeout)
     ).runWith(TestSink.probe[Message])
 
-    (1 to firstWithDataCount * 10).foreach(_ => probe.requestNext(10.milliseconds))
+    (1 to firstWithDataCount * 10).foreach(_ => probe.requestNext())
 
     verify(sqsClient, atMostTimes(firstWithDataCount + parallelism)).receiveMessage(any[ReceiveMessageRequest])
 
