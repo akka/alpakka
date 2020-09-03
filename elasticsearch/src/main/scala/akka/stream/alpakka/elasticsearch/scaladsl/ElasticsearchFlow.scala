@@ -233,6 +233,7 @@ object ElasticsearchFlow {
     override def convert(message: T): String = message.toJson.toString()
   }
 
+  @InternalApi
   private[scaladsl] def checkClient(client: RestClient): Unit =
     require(client != null, "The elasticsearch `RestClient` passed in may not be null.")
 
