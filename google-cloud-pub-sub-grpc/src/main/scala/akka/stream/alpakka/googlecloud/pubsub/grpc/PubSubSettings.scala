@@ -9,16 +9,15 @@ import akka.stream.alpakka.googlecloud.pubsub.grpc.impl.GrpcCredentials
 import com.typesafe.config.Config
 import io.grpc.CallCredentials
 
-import scala.util.Try
-
 /**
  * Connection settings used to establish Pub/Sub connection.
  */
 final class PubSubSettings private (
     val host: String,
     val port: Int,
-    val rootCa: Option[String] = None,
-    val callCredentials: Option[CallCredentials] = None
+    val useTls: Boolean,
+    val rootCa: Option[String],
+    val callCredentials: Option[CallCredentials]
 ) {
 
   /**
@@ -46,9 +45,10 @@ final class PubSubSettings private (
 
   private def copy(host: String = host,
                    port: Int = port,
+                   useTls: Boolean = useTls,
                    rootCa: Option[String] = rootCa,
                    callCredentials: Option[CallCredentials] = callCredentials) =
-    new PubSubSettings(host, port, rootCa, callCredentials)
+    new PubSubSettings(host, port, useTls, rootCa, callCredentials)
 }
 
 object PubSubSettings {
@@ -58,35 +58,22 @@ object PubSubSettings {
    * and unauthorized (no call credentials) endpoint.
    */
   def apply(host: String, port: Int): PubSubSettings =
-    new PubSubSettings(host, port)
+    new PubSubSettings(host, port, false, None, None)
 
   /**
    * Create settings from config instance.
    */
-  def apply(config: Config): PubSubSettings = {
-    val host = config.getString("host")
-    val port = config.getInt("port")
-
-    val pubSubConfig = PubSubSettings(host, port)
-
-    val setRootCa = (pubSubConfig: PubSubSettings) =>
-      config.getString("rootCa") match {
-        case fileName if fileName != "none" => pubSubConfig.withRootCa(fileName)
-        case _ => pubSubConfig
-      }
-    val setCallCredentials = (pubSubConfig: PubSubSettings) =>
+  def apply(config: Config): PubSubSettings =
+    new PubSubSettings(
+      config.getString("host"),
+      config.getInt("port"),
+      config.getBoolean("use-tls"),
+      Some(config.getString("rootCa")).filter(_ != "none"),
       config.getString("callCredentials") match {
-        case "google-application-default" =>
-          Try(GrpcCredentials.applicationDefault())
-            .map(pubSubConfig.withCallCredentials)
-            .getOrElse(pubSubConfig)
-        case _ => pubSubConfig
+        case "google-application-default" => Some(GrpcCredentials.applicationDefault())
+        case _ => None
       }
-
-    Seq(setRootCa, setCallCredentials).foldLeft(pubSubConfig) {
-      case (config, f) => f(config)
-    }
-  }
+    )
 
   /**
    * Create settings from the new actor API's ActorSystem config.

@@ -20,7 +20,7 @@ object Dependencies {
   val AwsSdk2Version = "2.11.3"
   val AwsSpiAkkaHttpVersion = "0.0.9"
   // Sync with plugins.sbt
-  val AkkaGrpcBinaryVersion = "0.8"
+  val AkkaGrpcBinaryVersion = "1.0"
   val AkkaHttp101 = "10.1.11"
   val AkkaHttp102 = "10.2.0"
   val AkkaHttpVersion = if (CronBuild) AkkaHttp102 else AkkaHttp101
@@ -228,14 +228,12 @@ object Dependencies {
     libraryDependencies ++= Seq(
         // https://github.com/googleapis/java-pubsub/tree/master/proto-google-cloud-pubsub-v1/
         "com.google.api.grpc" % "grpc-google-cloud-pubsub-v1" % "1.85.1" % "protobuf-src", // ApacheV2
-        "io.grpc" % "grpc-auth" % "1.28.0", // ApacheV2
+        "io.grpc" % "grpc-auth" % "1.29.0", // ApacheV2
         "com.google.auth" % "google-auth-library-oauth2-http" % "0.20.0", // BSD 3-clause
         // pull in Akka Discovery for our Akka version
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion
       ) ++ Silencer
   )
-
-  val GooglePubSubGrpcAlpnAgent = "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.9"
 
   val GoogleFcm = Seq(
     libraryDependencies ++= Seq(
