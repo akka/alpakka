@@ -223,6 +223,7 @@ object ElasticsearchFlow {
                                    settings: ElasticsearchWriteSettings,
                                    elasticsearchClient: RestClient,
                                    writer: MessageWriter[T]) = {
+    checkClient(elasticsearchClient)
     Flow.fromGraph {
       new impl.ElasticsearchSimpleFlowStage[T, C](indexName, typeName, elasticsearchClient, settings, writer)
     }
@@ -231,5 +232,9 @@ object ElasticsearchFlow {
   private final class SprayJsonWriter[T](implicit writer: JsonWriter[T]) extends MessageWriter[T] {
     override def convert(message: T): String = message.toJson.toString()
   }
+
+  @InternalApi
+  private[scaladsl] def checkClient(client: RestClient): Unit =
+    require(client != null, "The elasticsearch `RestClient` passed in may not be null.")
 
 }

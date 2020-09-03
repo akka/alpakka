@@ -78,7 +78,8 @@ object ElasticsearchSource {
              searchParams: Map[String, String],
              settings: ElasticsearchSourceSettings)(
       implicit elasticsearchClient: RestClient
-  ): Source[ReadResult[JsObject], NotUsed] =
+  ): Source[ReadResult[JsObject], NotUsed] = {
+    ElasticsearchFlow.checkClient(elasticsearchClient)
     Source.fromGraph(
       new impl.ElasticsearchSourceStage(
         indexName,
@@ -89,6 +90,7 @@ object ElasticsearchSource {
         new SprayJsonReader[JsObject]()(DefaultJsonProtocol.RootJsObjectFormat)
       )
     )
+  }
 
   /**
    * Creates a [[akka.stream.scaladsl.Source]] from Elasticsearch that streams [[ReadResult]]s of type `T`
@@ -127,7 +129,8 @@ object ElasticsearchSource {
                settings: ElasticsearchSourceSettings)(
       implicit elasticsearchClient: RestClient,
       sprayJsonReader: JsonReader[T]
-  ): Source[ReadResult[T], NotUsed] =
+  ): Source[ReadResult[T], NotUsed] = {
+    ElasticsearchFlow.checkClient(elasticsearchClient)
     Source.fromGraph(
       new impl.ElasticsearchSourceStage(indexName,
                                         typeName,
@@ -136,6 +139,7 @@ object ElasticsearchSource {
                                         settings,
                                         new SprayJsonReader[T]()(sprayJsonReader))
     )
+  }
 
   private final class SprayJsonReader[T](implicit reader: JsonReader[T]) extends impl.MessageReader[T] {
 
