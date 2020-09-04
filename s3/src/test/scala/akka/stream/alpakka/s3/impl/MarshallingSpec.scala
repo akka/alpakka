@@ -208,4 +208,25 @@ class MarshallingSpec(_system: ActorSystem)
                                                   "5b27a21a97fcf8a7004dd1d906e7a5ba")
   }
 
+  it should "parse CompleteMultipartUpload in event-stream" in {
+    val xmlString =
+      """
+        |<CompleteMultipartUploadResult>
+        |   <Location>some-location</Location>
+        |   <Bucket>some-bucket</Bucket>
+        |   <Key>some/key</Key>
+        |   <ETag>"5b27a21a97fcf8a7004dd1d906e7a5ba"</ETag>
+        |</CompleteMultipartUploadResult>
+      """.stripMargin
+
+    val entity = HttpEntity(MediaTypes.`text/event-stream`, xmlString)
+
+    val result = Marshalling.completeMultipartUploadResultUnmarshaller(entity)
+
+    result.futureValue shouldEqual CompleteMultipartUploadResult("some-location",
+                                                                 "some-bucket",
+                                                                 "some/key",
+                                                                 "5b27a21a97fcf8a7004dd1d906e7a5ba")
+  }
+
 }
