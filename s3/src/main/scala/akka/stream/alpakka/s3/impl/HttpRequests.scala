@@ -13,10 +13,10 @@ import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.Uri.{Authority, Query}
 import akka.http.scaladsl.model.headers.{`Raw-Request-URI`, Host, RawHeader}
 import akka.http.scaladsl.model.{ContentTypes, RequestEntity, _}
+import akka.stream.alpakka.s3.AccessStyle.{PathAccessStyle, VirtualHostAccessStyle}
 import akka.stream.alpakka.s3.{ApiVersion, S3Settings}
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import org.slf4j.LoggerFactory
 import software.amazon.awssdk.regions.Region
 
 import scala.collection.immutable.Seq
@@ -27,7 +27,6 @@ import scala.concurrent.{ExecutionContext, Future}
  */
 @InternalApi private[impl] object HttpRequests {
 
-  private final val log = LoggerFactory.getLogger(getClass)
   private final val BucketPattern = "{bucket}"
 
   def listBucket(
@@ -174,31 +173,27 @@ import scala.concurrent.{ExecutionContext, Future}
 
   @throws(classOf[IllegalUriException])
   private[this] def requestAuthority(bucket: String, region: Region)(implicit conf: S3Settings): Authority = {
-    if (conf.pathStyleAccess && conf.pathStyleAccessWarning) {
-      log.warn(
-        "AWS S3 is going to retire path-style access (https://aws.amazon.com/blogs/aws/amazon-s3-path-deprecation-plan-the-rest-of-the-story/)"
-      )
-    }
-    conf.endpointUrl match {
-      case None if conf.pathStyleAccess =>
+    (conf.endpointUrl, conf.accessStyle) match {
+      case (None, PathAccessStyle) =>
         Authority(Uri.Host(s"s3.$region.amazonaws.com"))
 
-      case None =>
+      case (None, VirtualHostAccessStyle) =>
         Authority(Uri.Host(s"$bucket.s3.$region.amazonaws.com"))
 
-      case Some(endpointUrl) if conf.pathStyleAccess =>
+      case (Some(endpointUrl), PathAccessStyle) =>
         Uri(endpointUrl).authority
 
-      case Some(endpointUrl) =>
+      case (Some(endpointUrl), VirtualHostAccessStyle) =>
         Uri(endpointUrl.replace(BucketPattern, bucket)).authority
     }
   }
 
   private[this] def requestUri(bucket: String, key: Option[String])(implicit conf: S3Settings): Uri = {
-    val basePath = if (conf.pathStyleAccess) {
-      Uri.Path / bucket
-    } else {
-      Uri.Path.Empty
+    val basePath = conf.accessStyle match {
+      case PathAccessStyle =>
+        Uri.Path / bucket
+      case VirtualHostAccessStyle =>
+        Uri.Path.Empty
     }
     val path = key.fold(basePath) { someKey =>
       someKey.split("/", -1).foldLeft(basePath)((acc, p) => acc / p)
