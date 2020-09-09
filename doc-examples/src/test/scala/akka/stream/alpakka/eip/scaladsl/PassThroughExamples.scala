@@ -109,8 +109,7 @@ object PassThroughFlowKafkaCommitExample {
       .committableSource(consumerSettings, Subscriptions.topics("topic1"))
       .via(PassThroughFlow(writeFlow, Keep.right))
       .map(_.committableOffset)
-      .toMat(Committer.sink(committerSettings))(Keep.both)
-      .mapMaterializedValue(DrainingControl.apply)
+      .toMat(Committer.sink(committerSettings))(DrainingControl.apply)
       .run()
     // #passThroughKafkaFlow
   }
