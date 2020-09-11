@@ -15,36 +15,37 @@ import scala.collection.JavaConverters._
  * Represents an object within Google Cloud Storage.
  * Refer to https://cloud.google.com/storage/docs/json_api/v1/objects#resource-representations for more in depth docs
  *
- * @param kind                    The kind of item this is, for objects, this is always storage#object
- * @param id                      The ID of the object, including the bucket name, object name, and generation number
- * @param name                    The name of the object
- * @param bucket                  The name of the bucket containing this object
- * @param generation              The content generation of this object, used for object versioning
- * @param contentType             The Content-Type of the object data, if an object is stored without a Content-Type, it is served as application/octet-stream
- * @param size                    The Content-Length of the data in bytes
+ * @param kind                    The kind of item this is, for objects, this is always storage#object.
+ * @param id                      The ID of the object, including the bucket name, object name, and generation number.
+ * @param name                    The name of the object.
+ * @param bucket                  The name of the bucket containing this object.
+ * @param generation              The content generation of this object, used for object versioning.
+ * @param contentType             The Content-Type of the object data, if an object is stored without a Content-Type, it is served as application/octet-stream.
+ * @param size                    The Content-Length of the data in bytes.
  * @param etag                    The HTTP 1.1 Entity tag for the object.
- * @param md5Hash                 The MD5 hash of the data; encoded using base64
- * @param crc32c                  The CRC32c checksum, encoded using base64 in big-endian byte order
- * @param mediaLink               The Media download link
- * @param selfLink                The link to this object
+ * @param md5Hash                 The MD5 hash of the data; encoded using base64.
+ * @param crc32c                  The CRC32c checksum, encoded using base64 in big-endian byte order.
+ * @param mediaLink               The Media download link.
+ * @param selfLink                The link to this object.
  * @param timeCreated             The creation time of the object in RFC 3339 format.
  * @param timeDeleted             The deletion time of the object in RFC 3339 format. Returned if and only if this version of the object is no longer a live version, but remains in the bucket as a noncurrent version.
  * @param updated                 The modification time of the object metadata in RFC 3339 format.
- * @param storageClass            The storage class of the object
+ * @param storageClass            The storage class of the object.
  * @param contentDisposition      The Content-Disposition of the object data.
- * @param contentEncoding         The Content Encoding of the object data
- * @param contentLanguage         The content language of the objcet data
+ * @param contentEncoding         The Content Encoding of the object data.
+ * @param contentLanguage         The content language of the objcet data.
  * @param metageneration          The version of the metadata for this object at this generation.
- * @param temporaryHold           Whether or not the object is subject to a temporary hold
+ * @param temporaryHold           Whether or not the object is subject to a temporary hold.
  * @param eventBasedHold          Whether or not the object is subject to an event-based hold.
  * @param retentionExpirationTime The earliest time that the object can be deleted, based on a bucket's retention policy, in RFC 3339 format.
  * @param timeStorageClassUpdated The time at which the object's storage class was last changed.
  * @param cacheControl            Cache-Control directive for the object data.
+ * @param customTime              A user-specified date and time represented in the RFC 3339 format.
  * @param metadata                User-provided metadata, in key/value pairs.
  * @param componentCount          Number of underlying components that make up a composite object.
  * @param kmsKeyName              Cloud KMS Key used to encrypt this object, if the object is encrypted by such a key.
  * @param customerEncryption      Metadata of customer-supplied encryption key, if the object is encrypted by such a key.
- * @param owner                   The owner of the object. This will always be the uploader of the object
+ * @param owner                   The owner of the object. This will always be the uploader of the object.
  * @param acl                     Access controls on the object, containing one or more objectAccessControls Resources. If iamConfiguration.uniformBucketLevelAccess.enabled is set to true, this field is omitted in responses, and requests that specify this field fail.
  */
 final class StorageObject private (
@@ -53,17 +54,17 @@ final class StorageObject private (
     val name: String,
     val bucket: String,
     val generation: Long,
-    val contentType: ContentType,
+    val contentType: Option[ContentType],
     val size: Long,
     val etag: String,
     val md5Hash: Option[String],
-    val crc32c: String,
+    val crc32c: Option[String],
     val mediaLink: String,
     val selfLink: String,
     val updated: OffsetDateTime,
     val timeCreated: OffsetDateTime,
     val timeDeleted: Option[OffsetDateTime],
-    val storageClass: String,
+    val storageClass: Option[String],
     val contentDisposition: Option[String],
     val contentEncoding: Option[String],
     val contentLanguage: Option[String],
@@ -73,6 +74,7 @@ final class StorageObject private (
     val retentionExpirationTime: Option[OffsetDateTime],
     val timeStorageClassUpdated: OffsetDateTime,
     val cacheControl: Option[String],
+    val customTime: Option[OffsetDateTime],
     val metadata: Option[Map[String, String]],
     val componentCount: Option[Int],
     val kmsKeyName: Option[String],
@@ -91,6 +93,7 @@ final class StorageObject private (
   def getEventBasedHold: Optional[Boolean] = eventBasedHold.asJava
   def getRetentionExpirationTime: Optional[OffsetDateTime] = retentionExpirationTime.asJava
   def getCacheControl: Optional[String] = cacheControl.asJava
+  def getCustomTime: Optional[OffsetDateTime] = customTime.asJava
   def getMetadata: Optional[java.util.Map[String, String]] = metadata.map(_.asJava).asJava
   def getComponentCount: Optional[Integer] = componentCount.map(Int.box).asJava
   def getKmsKeyName: Optional[String] = kmsKeyName.asJava
@@ -105,21 +108,21 @@ final class StorageObject private (
   def withGeneration(value: Long): StorageObject = copy(generation = value)
 
   /** Scala API */
-  def withContentType(value: ContentType): StorageObject = copy(contentType = value)
+  def withContentType(value: ContentType): StorageObject = copy(contentType = Option(value))
 
   /** Java API */
   def withContentType(value: akka.http.javadsl.model.ContentType): StorageObject =
-    copy(contentType = value.asInstanceOf[ContentType])
+    copy(contentType = Option(value).asInstanceOf[Option[ContentType]])
   def withSize(value: Long): StorageObject = copy(size = value)
   def withEtag(value: String): StorageObject = copy(etag = value)
   def withMd5Hash(value: String): StorageObject = copy(md5Hash = Option(value))
-  def withCrc32c(value: String): StorageObject = copy(crc32c = value)
+  def withCrc32c(value: String): StorageObject = copy(crc32c = Option(value))
   def withMediaLink(value: String): StorageObject = copy(mediaLink = value)
   def withSelfLink(value: String): StorageObject = copy(selfLink = value)
   def withUpdated(value: OffsetDateTime): StorageObject = copy(updated = value)
   def withTimeCreated(value: OffsetDateTime): StorageObject = copy(timeCreated = value)
   def withTimeDeleted(value: OffsetDateTime): StorageObject = copy(timeDeleted = Option(value))
-  def withStorageClass(value: String): StorageObject = copy(storageClass = value)
+  def withStorageClass(value: String): StorageObject = copy(storageClass = Option(value))
   def withContentDisposition(value: String): StorageObject = copy(contentDisposition = Option(value))
   def withContentEncoding(value: String): StorageObject = copy(contentEncoding = Option(value))
   def withContentLanguage(value: String): StorageObject = copy(contentLanguage = Option(value))
@@ -129,6 +132,7 @@ final class StorageObject private (
   def withRetentionExpirationTime(value: OffsetDateTime): StorageObject = copy(retentionExpirationTime = Option(value))
   def withTimeStorageClassUpdated(value: OffsetDateTime): StorageObject = copy(timeStorageClassUpdated = value)
   def withCacheControl(value: String): StorageObject = copy(cacheControl = Option(value))
+  def withCustomTime(value: OffsetDateTime): StorageObject = copy(customTime = Option(value))
   def withMetadata(value: Map[String, String]): StorageObject = copy(metadata = Option(value))
   def withComponentCount(value: Int): StorageObject = copy(componentCount = Option(value))
   def withKmsKeyName(value: String): StorageObject = copy(kmsKeyName = Option(value))
@@ -142,17 +146,17 @@ final class StorageObject private (
       name: String = name,
       bucket: String = bucket,
       generation: Long = generation,
-      contentType: ContentType = contentType,
+      contentType: Option[ContentType] = contentType,
       size: Long = size,
       etag: String = etag,
       md5Hash: Option[String] = md5Hash,
-      crc32c: String = crc32c,
+      crc32c: Option[String] = crc32c,
       mediaLink: String = mediaLink,
       selfLink: String = selfLink,
       updated: OffsetDateTime = updated,
       timeCreated: OffsetDateTime = timeCreated,
       timeDeleted: Option[OffsetDateTime] = timeDeleted,
-      storageClass: String = storageClass,
+      storageClass: Option[String] = storageClass,
       contentDisposition: Option[String] = contentDisposition,
       contentEncoding: Option[String] = contentEncoding,
       contentLanguage: Option[String] = contentLanguage,
@@ -162,6 +166,7 @@ final class StorageObject private (
       retentionExpirationTime: Option[OffsetDateTime] = retentionExpirationTime,
       timeStorageClassUpdated: OffsetDateTime = timeStorageClassUpdated,
       cacheControl: Option[String] = cacheControl,
+      customTime: Option[OffsetDateTime] = customTime,
       metadata: Option[Map[String, String]] = metadata,
       componentCount: Option[Int] = componentCount,
       kmsKeyName: Option[String] = kmsKeyName,
@@ -194,6 +199,7 @@ final class StorageObject private (
     retentionExpirationTime = retentionExpirationTime,
     timeStorageClassUpdated = timeStorageClassUpdated,
     cacheControl = cacheControl,
+    customTime = customTime,
     metadata = metadata,
     componentCount = componentCount,
     kmsKeyName = kmsKeyName,
@@ -229,12 +235,13 @@ final class StorageObject private (
     s"retentionExpirationTime = $retentionExpirationTime," +
     s"timeStorageClassUpdated = $timeStorageClassUpdated," +
     s"cacheControl = $cacheControl," +
+    s"customTime = $customTime"
     metadata.fold("")(m => s"metadata = $m,") +
     componentCount.fold("")(cc => s"componentCount = $cc,") +
     kmsKeyName.fold("")(kkn => s"kmsKeyName = $kkn,") +
     customerEncryption.fold("")(ce => s"customerEncryption = $ce,") +
     owner.fold("")(o => s"owner = $o,") +
-    acl.fold("")(acls => acls.mkString("[", ",", "]")) +
+    acl.fold("")(acls => acls.mkString("[", ",", "],")) +
     ")"
 
   override def equals(other: Any): Boolean = other match {
@@ -264,6 +271,7 @@ final class StorageObject private (
       java.util.Objects.equals(this.retentionExpirationTime, that.retentionExpirationTime) &&
       java.util.Objects.equals(this.timeStorageClassUpdated, that.timeStorageClassUpdated) &&
       java.util.Objects.equals(this.cacheControl, that.cacheControl) &&
+      java.util.Objects.equals(this.customTime, that.customTime) &&
       java.util.Objects.equals(this.metadata, that.metadata) &&
       java.util.Objects.equals(this.componentCount, that.componentCount) &&
       java.util.Objects.equals(this.kmsKeyName, that.kmsKeyName)
@@ -300,6 +308,7 @@ final class StorageObject private (
       retentionExpirationTime,
       timeStorageClassUpdated,
       cacheControl,
+      customTime,
       metadata,
       componentCount.map(Int.box),
       kmsKeyName,
@@ -318,17 +327,17 @@ object StorageObject {
       name: String,
       bucket: String,
       generation: Long,
-      contentType: ContentType,
+      contentType: Option[ContentType],
       size: Long,
       etag: String,
       md5Hash: Option[String],
-      crc32c: String,
+      crc32c: Option[String],
       mediaLink: String,
       selfLink: String,
       updated: OffsetDateTime,
       timeCreated: OffsetDateTime,
       timeDeleted: Option[OffsetDateTime],
-      storageClass: String,
+      storageClass: Option[String],
       contentDisposition: Option[String],
       contentEncoding: Option[String],
       contentLanguage: Option[String],
@@ -338,6 +347,7 @@ object StorageObject {
       retentionExpirationTime: Option[OffsetDateTime],
       timeStorageClassUpdated: OffsetDateTime,
       cacheControl: Option[String],
+      customTime: Option[OffsetDateTime],
       metadata: Option[Map[String, String]],
       componentCount: Option[Int],
       kmsKeyName: Option[String],
@@ -370,6 +380,7 @@ object StorageObject {
     retentionExpirationTime,
     timeStorageClassUpdated,
     cacheControl,
+    customTime,
     metadata,
     componentCount,
     kmsKeyName,
@@ -389,13 +400,13 @@ object StorageObject {
       size: Long,
       etag: String,
       md5Hash: Optional[String],
-      crc32c: String,
+      crc32c: Option[String],
       mediaLink: String,
       selfLink: String,
       updated: OffsetDateTime,
       timeCreated: OffsetDateTime,
       timeDeleted: Optional[OffsetDateTime],
-      storageClass: String,
+      storageClass: Option[String],
       contentDisposition: Optional[String],
       contentEncoding: Optional[String],
       contentLanguage: Optional[String],
@@ -405,6 +416,7 @@ object StorageObject {
       retentionExpirationTime: Optional[OffsetDateTime],
       timeStorageClassUpdated: OffsetDateTime,
       cacheControl: Optional[String],
+      customTime: Optional[OffsetDateTime],
       metadata: Optional[Map[String, String]],
       componentCount: Optional[Int],
       kmsKeyName: Optional[String],
@@ -417,7 +429,7 @@ object StorageObject {
     name,
     bucket,
     generation,
-    contentType.asInstanceOf[ContentType],
+    contentType.asInstanceOf[Option[ContentType]],
     size,
     etag,
     md5Hash.asScala,
@@ -437,6 +449,7 @@ object StorageObject {
     retentionExpirationTime.asScala,
     timeStorageClassUpdated,
     cacheControl.asScala,
+    customTime.asScala,
     metadata.asScala,
     componentCount.asScala,
     kmsKeyName.asScala,
