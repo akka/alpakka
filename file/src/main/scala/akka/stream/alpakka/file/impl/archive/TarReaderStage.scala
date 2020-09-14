@@ -81,9 +81,7 @@ private[file] class TarReaderStage
             // await flow demand
             setHandler(flowOut, new OutHandler {
               override def onPull(): Unit = {
-                val handler = pushSource(metadata, buffer)
-                log.debug(s"setting $handler")
-                setHandler(flowIn, handler)
+                setHandler(flowIn, pushSource(metadata, buffer))
               }
             })
             failOnFlowPush

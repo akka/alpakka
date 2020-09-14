@@ -125,7 +125,7 @@ import akka.util.ByteString
                 fileNameLength + fileModeLength + ownerIdLength + groupIdLength + fileSizeLength,
                 lastModificationLength)
     val lastModification = Instant.ofEpochSecond(parseUnsignedLong(lastModificationString, 8))
-    val linkIndicator = {
+    val linkIndicatorByte = {
       val tmp = bs(
         fileNameLength + fileModeLength + ownerIdLength + groupIdLength + fileSizeLength +
         lastModificationLength + headerChecksumLength
@@ -138,7 +138,7 @@ import akka.util.ByteString
       lastModificationLength + headerChecksumLength + linkIndicatorLength + linkFileNameLength + ustarIndicatorLength + ustarVersionLength + ownerNameLength + groupNameLength + deviceMajorNumberLength + deviceMinorNumberLength,
       fileNamePrefixLength
     )
-    TarArchiveMetadata(fileNamePrefix, filename, size, lastModification, linkIndicator)
+    TarArchiveMetadata(fileNamePrefix, filename, size, lastModification, linkIndicatorByte)
   }
 
   private def getString(bs: ByteString, from: Int, maxLength: Int) = {
@@ -185,7 +185,7 @@ import akka.util.ByteString
 
     padded(
       fileNameBytes ++ fixedData1 ++ fileSizeBytes ++ lastModificationBytes ++ fixedData2 ++
-      ByteString(metadata.linkIndicator) ++ fixedData3 ++ fileNamePrefixBytes,
+      ByteString(metadata.linkIndicatorByte) ++ fixedData3 ++ fileNamePrefixBytes,
       headerLength
     )
   }

@@ -22,7 +22,10 @@ final class TarArchiveMetadata private (
     val filePathName: String,
     val size: Long,
     val lastModification: Instant,
-    val linkIndicator: Byte
+    /**
+     * See constants `TarchiveMetadata.linkIndicatorNormal`
+     */
+    val linkIndicatorByte: Byte
 ) {
   val filePath = filePathPrefix match {
     case None => filePathName
@@ -30,7 +33,7 @@ final class TarArchiveMetadata private (
   }
 
   def isDirectory: Boolean =
-    linkIndicator == TarArchiveMetadata.linkIndicatorDirectory || filePathName.endsWith("/")
+    linkIndicatorByte == TarArchiveMetadata.linkIndicatorDirectory || filePathName.endsWith("/")
 
   override def equals(obj: Any): Boolean = {
     obj match {
@@ -39,13 +42,13 @@ final class TarArchiveMetadata private (
         this.filePathName == that.filePathName &&
         this.size == that.size &&
         this.lastModification == that.lastModification &&
-        this.linkIndicator == that.linkIndicator
+        this.linkIndicatorByte == that.linkIndicatorByte
       case _ => false
     }
   }
 
   override def hashCode(): Int =
-    Objects.hash(filePathPrefix, filePathName, Long.box(size), lastModification, Byte.box(linkIndicator))
+    Objects.hash(filePathPrefix, filePathName, Long.box(size), lastModification, Byte.box(linkIndicatorByte))
 
   override def toString: String =
     "TarArchiveMetadata(" +
@@ -53,7 +56,7 @@ final class TarArchiveMetadata private (
     s"filePathName=$filePathName," +
     s"size=$size," +
     s"lastModification=$lastModification," +
-    s"linkIndicator=${linkIndicator.toChar})"
+    s"linkIndicatorByte=${linkIndicatorByte.toChar})"
 }
 
 object TarArchiveMetadata {
@@ -88,23 +91,26 @@ object TarArchiveMetadata {
           linkIndicatorNormal)
   }
 
+  /**
+   * @param linkIndicatorByte See constants eg. `TarchiveMetadata.linkIndicatorNormal`
+   */
   def apply(filePathPrefix: String,
             filePathName: String,
             size: Long,
             lastModification: Instant,
-            linkIndicator: Byte): TarArchiveMetadata = {
+            linkIndicatorByte: Byte): TarArchiveMetadata = {
     apply(if (filePathPrefix.isEmpty) None else Some(filePathPrefix),
           filePathName,
           size,
           lastModification,
-          linkIndicator)
+          linkIndicatorByte)
   }
 
   private def apply(filePathPrefix: Option[String],
                     filePathName: String,
                     size: Long,
                     lastModification: Instant,
-                    linkIndicator: Byte): TarArchiveMetadata = {
+                    linkIndicatorByte: Byte): TarArchiveMetadata = {
     filePathPrefix.foreach { value =>
       require(
         value.length <= 154,
@@ -119,7 +125,7 @@ object TarArchiveMetadata {
                            size,
                            // tar timestamp granularity is in seconds
                            lastModification.`with`(ChronoField.NANO_OF_SECOND, 0L),
-                           linkIndicator)
+                           linkIndicatorByte)
   }
 
   def create(filePath: String, size: Long): TarArchiveMetadata = apply(filePath, size, Instant.now)
@@ -127,6 +133,16 @@ object TarArchiveMetadata {
     apply(filePath, size, lastModification)
   def create(filePathPrefix: String, filePathName: String, size: Long, lastModification: Instant): TarArchiveMetadata =
     apply(filePathPrefix, filePathName, size, lastModification)
+
+  /**
+   * @param linkIndicatorByte See constants eg. `TarchiveMetadata.linkIndicatorNormal`
+   */
+  def create(filePathPrefix: String,
+             filePathName: String,
+             size: Long,
+             lastModification: Instant,
+             linkIndicatorByte: Byte): TarArchiveMetadata =
+    apply(filePathPrefix, filePathName, size, lastModification, linkIndicatorByte)
 
   /**
    * Create metadata for a directory entry.
