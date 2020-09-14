@@ -23,7 +23,7 @@ class ZipArchiveFlowTest
   implicit val mat = ActorMaterializer()
 
   "ZipArchiveFlowStage" when {
-    "steam ends" should {
+    "stream ends" should {
       "emit element only when downstream requests" in {
         val (upstream, downstream) =
           TestSource
