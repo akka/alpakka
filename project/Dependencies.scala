@@ -55,12 +55,12 @@ object Dependencies {
 
   val testkit = Seq(
     libraryDependencies := Seq(
-        "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.1",
+        "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6",
         "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
         "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion,
         "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
         "ch.qos.logback" % "logback-classic" % "1.2.3", // Eclipse Public License 1.0
-        "org.scalatest" %% "scalatest" % "3.1.4", // ApacheV2
+        "org.scalatest" %% "scalatest" % "3.2.2", // ApacheV2
         "com.novocode" % "junit-interface" % "0.11", // BSD-style
         "ch.qos.logback" % "logback-classic" % "1.2.3", // Eclipse Public License 1.0
         "junit" % "junit" % "4.13" // Eclipse Public License 1.0
