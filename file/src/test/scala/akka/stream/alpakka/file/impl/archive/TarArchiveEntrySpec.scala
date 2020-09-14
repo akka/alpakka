@@ -17,7 +17,8 @@ class TarArchiveEntrySpec extends AnyFlatSpec with Matchers {
     val filename = "thefile.txt"
     val size = 100
     val lastModified = Instant.from(ZonedDateTime.of(LocalDateTime.of(2020, 4, 11, 11, 34), ZoneId.of("CET")))
-    val data = TarArchiveMetadata(filePathPrefix, filename, size, lastModified)
+    val data =
+      TarArchiveMetadata(filePathPrefix, filename, size, lastModified, TarArchiveMetadata.linkIndicatorDirectory)
     val entry = new TarArchiveEntry(data)
     val header = entry.headerBytes
 
@@ -25,6 +26,7 @@ class TarArchiveEntrySpec extends AnyFlatSpec with Matchers {
     parsed.filePath shouldBe filePathPrefix + "/" + filename
     parsed.size shouldBe size
     parsed.lastModification shouldBe lastModified
+    parsed.isDirectory shouldBe true
   }
 
   "Header parser" should "handle both space and null character as terminal" in {
@@ -32,7 +34,7 @@ class TarArchiveEntrySpec extends AnyFlatSpec with Matchers {
     val filename = "thefile.txt"
     val size = 100
     val lastModified = Instant.from(ZonedDateTime.of(LocalDateTime.of(2020, 4, 11, 11, 34), ZoneId.of("CET")))
-    val data = TarArchiveMetadata(filePathPrefix, filename, size, lastModified)
+    val data = TarArchiveMetadata(filePathPrefix, filename, size, lastModified, TarArchiveMetadata.linkIndicatorNormal)
     val entry = new TarArchiveEntry(data)
 
     val headerWithNull = entry.headerBytes

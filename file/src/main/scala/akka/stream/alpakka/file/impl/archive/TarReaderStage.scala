@@ -68,18 +68,26 @@ private[file] class TarReaderStage
           } else new CollectFile(metadata, buffer)
         }
 
-        val metadata = TarArchiveEntry.parse(headerBuffer)
-        val buffer = headerBuffer.drop(TarArchiveEntry.headerLength)
-        if (isAvailable(flowOut)) {
-          pushSource(metadata, buffer)
+        if (headerBuffer.head == 0) {
+          log.debug("empty filename, detected EOF padding, completing")
+          complete(flowOut)
+          new FlushEndOfFilePadding()
         } else {
-          // await flow demand
-          setHandler(flowOut, new OutHandler {
-            override def onPull(): Unit = {
-              setHandler(flowIn, pushSource(metadata, buffer))
-            }
-          })
-          failOnFlowPush
+          val metadata = TarArchiveEntry.parse(headerBuffer)
+          val buffer = headerBuffer.drop(TarArchiveEntry.headerLength)
+          if (isAvailable(flowOut)) {
+            pushSource(metadata, buffer)
+          } else {
+            // await flow demand
+            setHandler(flowOut, new OutHandler {
+              override def onPull(): Unit = {
+                val handler = pushSource(metadata, buffer)
+                log.debug(s"setting $handler")
+                setHandler(flowIn, handler)
+              }
+            })
+            failOnFlowPush
+          }
         }
       }
 
@@ -235,6 +243,19 @@ private[file] class TarReaderStage
               )
             )
         }
+      }
+
+      /**
+       * "At the end of the archive file there are two 512-byte blocks filled with binary zeros as an end-of-file marker."
+       */
+      private final class FlushEndOfFilePadding() extends InHandler {
+
+        override def onPush(): Unit = {
+          grab(flowIn)
+          pull(flowIn)
+        }
+
+        tryPull(flowIn)
       }
 
     }

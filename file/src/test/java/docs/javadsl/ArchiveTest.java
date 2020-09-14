@@ -30,6 +30,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,7 +38,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.*;
 
 public class ArchiveTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
@@ -106,7 +107,7 @@ public class ArchiveTest {
     ByteString resultFileContent = readFileAsByteString(Paths.get("logo.zip"));
     Map<String, ByteString> unzip = archiveHelper.unzip(resultFileContent);
 
-    assertEquals(inputFiles, unzip);
+    assertThat(inputFiles, is(unzip));
 
     // cleanup
     new File("logo.zip").delete();
@@ -135,14 +136,21 @@ public class ArchiveTest {
     // #sample-tar
     */
 
+    Instant lastModification = Instant.now();
     // #sample-tar
+    Pair<TarArchiveMetadata, Source<ByteString, NotUsed>> dir =
+        Pair.create(TarArchiveMetadata.directory("subdir", lastModification), Source.empty());
+
     Pair<TarArchiveMetadata, Source<ByteString, NotUsed>> pair1 =
-        Pair.create(TarArchiveMetadata.create("akka_full_color.svg", size1), source1);
+        Pair.create(
+            TarArchiveMetadata.create("subdir", "akka_full_color.svg", size1, lastModification),
+            source1);
     Pair<TarArchiveMetadata, Source<ByteString, NotUsed>> pair2 =
-        Pair.create(TarArchiveMetadata.create("akka_icon_reverse.svg", size2), source2);
+        Pair.create(
+            TarArchiveMetadata.create("akka_icon_reverse.svg", size2, lastModification), source2);
 
     Source<Pair<TarArchiveMetadata, Source<ByteString, NotUsed>>, NotUsed> source =
-        Source.from(Arrays.asList(pair1, pair2));
+        Source.from(Arrays.asList(dir, pair1, pair2));
 
     Sink<ByteString, CompletionStage<IOResult>> fileSink = FileIO.toPath(Paths.get("logo.tar"));
     CompletionStage<IOResult> ioResult = source.via(Archive.tar()).runWith(fileSink, mat);
@@ -168,9 +176,13 @@ public class ArchiveTest {
   @Test
   public void tarReader() throws Exception {
     ByteString tenDigits = ByteString.fromString("1234567890");
-    TarArchiveMetadata metadata1 = TarArchiveMetadata.create("dir/file1.txt", tenDigits.length());
+    TarArchiveMetadata metadata1 = TarArchiveMetadata.directory("dir/");
+    TarArchiveMetadata metadata2 = TarArchiveMetadata.create("dir/file1.txt", tenDigits.length());
     CompletionStage<ByteString> oneFileArchive =
-        Source.single(Pair.create(metadata1, Source.single(tenDigits)))
+        Source.from(
+                Arrays.asList(
+                    Pair.create(metadata1, Source.empty(ByteString.class)),
+                    Pair.create(metadata2, Source.single(tenDigits))))
             .via(Archive.tar())
             .runWith(Sink.fold(ByteString.emptyByteString(), ByteString::concat), mat);
 
@@ -188,22 +200,61 @@ public class ArchiveTest {
                 1,
                 pair -> {
                   TarArchiveMetadata metadata = pair.first();
-                  Source<ByteString, NotUsed> source = pair.second();
                   Path targetFile = target.resolve(metadata.filePath());
-                  // create the target directory
-                  return Source.single(targetFile.getParent())
-                      .via(Directory.mkdirs())
-                      .runWith(Sink.ignore(), mat)
-                      .thenCompose(
-                          done ->
-                              // stream the file contents to a local file
-                              source.runWith(FileIO.toPath(targetFile), mat));
+                  if (metadata.isDirectory()) {
+                    return Source.single(targetFile)
+                        .via(Directory.mkdirs())
+                        .runWith(Sink.ignore(), mat);
+                  } else {
+                    Source<ByteString, NotUsed> source = pair.second();
+                    // create the target directory
+                    return Source.single(targetFile.getParent())
+                        .via(Directory.mkdirs())
+                        .runWith(Sink.ignore(), mat)
+                        .thenCompose(
+                            done ->
+                                // stream the file contents to a local file
+                                source
+                                    .runWith(FileIO.toPath(targetFile), mat)
+                                    .thenApply(io -> Done.done()));
+                  }
                 })
             .runWith(Sink.ignore(), mat);
     // #tar-reader
     assertThat(tar.toCompletableFuture().get(2, TimeUnit.SECONDS), is(Done.done()));
     File file = target.resolve("dir/file1.txt").toFile();
-    assertTrue(file.exists());
+    assertThat(file.exists(), is(true));
+  }
+
+  @Test
+  public void tarReaderWithEofBlocks() throws Exception {
+    ByteString tenDigits = ByteString.fromString("1234567890");
+    TarArchiveMetadata metadata1 = TarArchiveMetadata.create("file5.txt", tenDigits.length());
+    CompletionStage<ByteString> oneFileArchive =
+        Source.single(Pair.create(metadata1, Source.single(tenDigits)))
+            .via(Archive.tar())
+            // tar standard suggests two empty 512 byte blocks as EOF marker
+            .concat(Source.single(ByteString.fromArray(new byte[1024])))
+            .runWith(Sink.fold(ByteString.emptyByteString(), ByteString::concat), mat);
+
+    Source<ByteString, NotUsed> bytesSource = Source.fromCompletionStage(oneFileArchive);
+    Path target = Files.createTempDirectory("alpakka-tar-");
+
+    CompletionStage<Done> tar =
+        bytesSource
+            .via(Archive.tarReader())
+            .mapAsync(
+                1,
+                pair -> {
+                  TarArchiveMetadata metadata = pair.first();
+                  Source<ByteString, NotUsed> source = pair.second();
+                  Path targetFile = target.resolve(metadata.filePath());
+                  return source.runWith(FileIO.toPath(targetFile), mat);
+                })
+            .runWith(Sink.ignore(), mat);
+    assertThat(tar.toCompletableFuture().get(2, TimeUnit.SECONDS), is(Done.done()));
+    File file = target.resolve("file5.txt").toFile();
+    assertThat(file.exists(), is(true));
   }
 
   @After

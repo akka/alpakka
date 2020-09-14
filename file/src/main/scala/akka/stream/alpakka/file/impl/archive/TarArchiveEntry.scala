@@ -17,6 +17,31 @@ import akka.util.ByteString
  */
 @InternalApi private[file] object TarArchiveEntry {
 
+  /* The C structure for a Tar Entry's header is:
+   *
+   * struct header {
+   * char name[100];     // TarConstants.NAMELEN    - offset   0
+   * char mode[8];       // TarConstants.MODELEN    - offset 100
+   * char uid[8];        // TarConstants.UIDLEN     - offset 108
+   * char gid[8];        // TarConstants.GIDLEN     - offset 116
+   * char size[12];      // TarConstants.SIZELEN    - offset 124
+   * char mtime[12];     // TarConstants.MODTIMELEN - offset 136
+   * char chksum[8];     // TarConstants.CHKSUMLEN  - offset 148
+   * char linkflag[1];   //                         - offset 156
+   * char linkname[100]; // TarConstants.NAMELEN    - offset 157
+   * The following fields are only present in new-style POSIX tar archives:
+   * char magic[6];      // TarConstants.MAGICLEN   - offset 257
+   * char version[2];    // TarConstants.VERSIONLEN - offset 263
+   * char uname[32];     // TarConstants.UNAMELEN   - offset 265
+   * char gname[32];     // TarConstants.GNAMELEN   - offset 297
+   * char devmajor[8];   // TarConstants.DEVLEN     - offset 329
+   * char devminor[8];   // TarConstants.DEVLEN     - offset 337
+   * char prefix[155];   // TarConstants.PREFIXLEN  - offset 345
+   * // Used if "name" field is not long enough to hold the path
+   * char pad[12];       // NULs                    - offset 500
+   * } header;
+   */
+
   val fileNameLength = 100
   val fileModeLength = 8
   val ownerIdLength = 8
@@ -49,10 +74,14 @@ import akka.util.ByteString
 
   private val fixedData2 = {
     // [148, 156)
-    ByteString("        ") ++ // headerChecksumLength
+    ByteString("        ") // headerChecksumLength
+  }
+
+  // [156, 157)
+  // linkIndicatorLength
+
+  private val fixedData3 = {
     empty(
-      // [156, 157)
-      linkIndicatorLength +
       // [157, 257)
       linkFileNameLength
     ) ++
@@ -86,6 +115,7 @@ import akka.util.ByteString
 
   def parse(bs: ByteString): TarArchiveMetadata = {
     require(bs.length >= headerLength, s"the tar archive header is expected to be at least 512 bytes")
+    require(bs.head != 0, "the file name may not be empty")
     val filename = getString(bs, 0, fileNameLength)
     val fileSizeString =
       getString(bs, fileNameLength + fileModeLength + ownerIdLength + groupIdLength, fileSizeLength)
@@ -95,13 +125,20 @@ import akka.util.ByteString
                 fileNameLength + fileModeLength + ownerIdLength + groupIdLength + fileSizeLength,
                 lastModificationLength)
     val lastModification = Instant.ofEpochSecond(parseUnsignedLong(lastModificationString, 8))
+    val linkIndicator = {
+      val tmp = bs(
+        fileNameLength + fileModeLength + ownerIdLength + groupIdLength + fileSizeLength +
+        lastModificationLength + headerChecksumLength
+      )
+      if (tmp == 0) TarArchiveMetadata.linkIndicatorNormal else tmp
+    }
     val fileNamePrefix = getString(
       bs,
       fileNameLength + fileModeLength + ownerIdLength + groupIdLength + fileSizeLength +
       lastModificationLength + headerChecksumLength + linkIndicatorLength + linkFileNameLength + ustarIndicatorLength + ustarVersionLength + ownerNameLength + groupNameLength + deviceMajorNumberLength + deviceMinorNumberLength,
       fileNamePrefixLength
     )
-    TarArchiveMetadata(fileNamePrefix, filename, size, lastModification)
+    TarArchiveMetadata(fileNamePrefix, filename, size, lastModification, linkIndicator)
   }
 
   private def getString(bs: ByteString, from: Int, maxLength: Int) = {
@@ -147,7 +184,8 @@ import akka.util.ByteString
       padded(metadata.filePathPrefix.map(ByteString.apply).getOrElse(ByteString.empty), fileNamePrefixLength)
 
     padded(
-      fileNameBytes ++ fixedData1 ++ fileSizeBytes ++ lastModificationBytes ++ fixedData2 ++ fileNamePrefixBytes,
+      fileNameBytes ++ fixedData1 ++ fileSizeBytes ++ lastModificationBytes ++ fixedData2 ++
+      ByteString(metadata.linkIndicator) ++ fixedData3 ++ fileNamePrefixBytes,
       headerLength
     )
   }

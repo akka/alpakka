@@ -6,6 +6,7 @@ package docs.scaladsl
 
 import java.io._
 import java.nio.file.{Files, Path, Paths}
+import java.time.Instant
 import java.util.Comparator
 
 import akka.{Done, NotUsed}
@@ -74,11 +75,13 @@ class TarArchiveSpec
         // #sample-tar
        */
 
+      val lastModification = Instant.now
       // #sample-tar
       val filesStream = Source(
         List(
-          (TarArchiveMetadata("akka_full_color.svg", fileSize1), fileStream1),
-          (TarArchiveMetadata("akka_icon_reverse.svg", fileSize2), fileStream2)
+          (TarArchiveMetadata.directory("subdir", lastModification), Source.empty),
+          (TarArchiveMetadata("subdir", "akka_full_color.svg", fileSize1, lastModification), fileStream1),
+          (TarArchiveMetadata("akka_icon_reverse.svg", fileSize2, lastModification), fileStream2)
         )
       )
 
@@ -93,18 +96,18 @@ class TarArchiveSpec
         .runWith(FileIO.toPath(Paths.get("result.tar.gz")))
       // #sample-tar-gz
 
-      result.futureValue shouldBe IOResult(3584, Success(Done))
+      result.futureValue shouldBe IOResult(4096, Success(Done))
       resultGz.futureValue.status shouldBe Success(Done)
 
       untar(Paths.get("result.tar").toRealPath(), "xf").foreach(
         _ shouldBe Map(
-          "akka_full_color.svg" -> fileContent1,
+          "subdir/akka_full_color.svg" -> fileContent1,
           "akka_icon_reverse.svg" -> fileContent2
         )
       )
       untar(Paths.get("result.tar.gz").toRealPath(), "xfz").foreach(
         _ shouldBe Map(
-          "akka_full_color.svg" -> fileContent1,
+          "subdir/akka_full_color.svg" -> fileContent1,
           "akka_icon_reverse.svg" -> fileContent2
         )
       )
@@ -180,15 +183,22 @@ class TarArchiveSpec
           .mapAsync(1) {
             case (metadata, source) =>
               val targetFile = target.resolve(metadata.filePath)
-              // create the target directory
-              Source
-                .single(targetFile.getParent)
-                .via(Directory.mkdirs())
-                .runWith(Sink.ignore)
-                .map { _ =>
-                  // stream the file contents to a local file
-                  source.runWith(FileIO.toPath(targetFile))
-                }
+              if (metadata.isDirectory) {
+                Source
+                  .single(targetFile)
+                  .via(Directory.mkdirs())
+                  .runWith(Sink.ignore)
+              } else {
+                // create the target directory
+                Source
+                  .single(targetFile.getParent)
+                  .via(Directory.mkdirs())
+                  .runWith(Sink.ignore)
+                  .map { _ =>
+                    // stream the file contents to a local file
+                    source.runWith(FileIO.toPath(targetFile))
+                  }
+              }
           }
           .runWith(Sink.ignore)
       // #tar-reader
