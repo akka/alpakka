@@ -56,6 +56,39 @@ class JmsMessageProducerSpec extends JmsSpec with MockitoSugar {
       verify(textMessage).setDoubleProperty("double", 5.0)
     }
 
+    "succeed if properties are set as map" in new Setup {
+      val props = Map(
+        "string" -> "string",
+        "int" -> 1,
+        "boolean" -> true,
+        "byte" -> 2.toByte,
+        "short" -> 3.toShort,
+        "float" -> 4.78f,
+        "Java-boxed float" -> java.lang.Float.valueOf(4.35f),
+        "long" -> 4L,
+        "Java-boxed long" -> java.lang.Long.valueOf(44L),
+        "double" -> 5.0
+      )
+
+      val jmsProducer = JmsMessageProducer(jmsSession, settings, 0)
+      jmsProducer.populateMessageProperties(
+        textMessage,
+        JmsTextMessage("test")
+          .withProperties(props)
+      )
+
+      verify(textMessage).setStringProperty("string", "string")
+      verify(textMessage).setIntProperty("int", 1)
+      verify(textMessage).setBooleanProperty("boolean", true)
+      verify(textMessage).setByteProperty("byte", 2.toByte)
+      verify(textMessage).setShortProperty("short", 3.toByte)
+      verify(textMessage).setFloatProperty("float", 4.78f)
+      verify(textMessage).setFloatProperty("Java-boxed float", 4.35f)
+      verify(textMessage).setLongProperty("long", 4L)
+      verify(textMessage).setLongProperty("Java-boxed long", 44L)
+      verify(textMessage).setDoubleProperty("double", 5.0)
+    }
+
     "fail if a property is set to an unsupported type" in new Setup {
       val jmsProducer = JmsMessageProducer(jmsSession, settings, 0)
       assertThrows[UnsupportedMessagePropertyType] {
@@ -76,13 +109,18 @@ class JmsMessageProducerSpec extends JmsSpec with MockitoSugar {
       val jmsProducer = JmsMessageProducer(jmsSession, settings, 0)
       jmsProducer.createMessage(
         JmsMapMessage(
-          Map("string" -> "string",
-              "int" -> 1,
-              "boolean" -> true,
-              "byte" -> 2.toByte,
-              "short" -> 3.toShort,
-              "long" -> 4L,
-              "double" -> 5.0)
+          Map(
+            "string" -> "string",
+            "int" -> 1,
+            "boolean" -> true,
+            "byte" -> 2.toByte,
+            "short" -> 3.toShort,
+            "float" -> 4.89f,
+            "Java-boxed float" -> java.lang.Float.valueOf(4.35f),
+            "long" -> 4L,
+            "Java-boxed long" -> java.lang.Long.valueOf(44L),
+            "double" -> 5.0
+          )
         )
       )
       verify(mapMessage).setString("string", "string")
@@ -90,7 +128,10 @@ class JmsMessageProducerSpec extends JmsSpec with MockitoSugar {
       verify(mapMessage).setBoolean("boolean", true)
       verify(mapMessage).setByte("byte", 2.toByte)
       verify(mapMessage).setShort("short", 3.toByte)
+      verify(mapMessage).setFloat("float", 4.89f)
+      verify(mapMessage).setFloat("Java-boxed float", 4.35f)
       verify(mapMessage).setLong("long", 4L)
+      verify(mapMessage).setLong("Java-boxed long", 44L)
       verify(mapMessage).setDouble("double", 5.0)
     }
 
