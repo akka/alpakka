@@ -244,13 +244,13 @@ final class StorageObject private (
     s"timeStorageClassUpdated = $timeStorageClassUpdated," +
     s"cacheControl = $cacheControl," +
     s"customTime = $customTime"
-    metadata.fold("")(m => s"metadata = $m,") +
-    componentCount.fold("")(cc => s"componentCount = $cc,") +
-    kmsKeyName.fold("")(kkn => s"kmsKeyName = $kkn,") +
-    customerEncryption.fold("")(ce => s"customerEncryption = $ce,") +
-    owner.fold("")(o => s"owner = $o,") +
-    acl.fold("")(acls => acls.mkString("[", ",", "],")) +
-    ")"
+  metadata.fold("")(m => s"metadata = $m,") +
+  componentCount.fold("")(cc => s"componentCount = $cc,") +
+  kmsKeyName.fold("")(kkn => s"kmsKeyName = $kkn,") +
+  customerEncryption.fold("")(ce => s"customerEncryption = $ce,") +
+  owner.fold("")(o => s"owner = $o,") +
+  acl.fold("")(acls => acls.mkString("[", ",", "],")) +
+  ")"
 
   override def equals(other: Any): Boolean = other match {
     case that: StorageObject =>
