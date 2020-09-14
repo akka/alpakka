@@ -137,10 +137,10 @@ object Dependencies {
   val `Doc-examples` = Seq(
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
-        "com.typesafe.akka" %% "akka-stream-kafka" % "1.1.0",
+        "com.typesafe.akka" %% "akka-stream-kafka" % "2.0.5",
         "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,
-        "junit" % "junit" % "4.12" % Test, // Eclipse Public License 1.0
-        "org.scalatest" %% "scalatest" % "3.1.0" % Test // ApacheV2
+        "junit" % "junit" % "4.13" % Test, // Eclipse Public License 1.0
+        "org.scalatest" %% "scalatest" % "3.1.4" % Test // ApacheV2
       )
   )
 
