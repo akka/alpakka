@@ -128,9 +128,9 @@ jobs:
       name: "Publish artifacts for Scala 2.11"
       env: CMD="++2.11.12 publish"
     - name: "Publish artifacts for Scala 2.12"
-      env: CMD="++2.12.11 publish"
+      env: CMD="++2.12.12 publish"
     - name: "Publish artifacts for Scala 2.13"
-      env: CMD="++2.13.2 publish"
+      env: CMD="++2.13.3 publish"
     - script: openssl aes-256-cbc -K $encrypted_bbf1dc4f2a07_key -iv $encrypted_bbf1dc4f2a07_iv -in .travis/travis_alpakka_rsa.enc -out .travis/id_rsa -d && eval "$(ssh-agent -s)" && chmod 600 .travis/id_rsa && ssh-add .travis/id_rsa && sbt -jvm-opts .jvmopts-travis docs/publishRsync
       name: "Publish API and reference documentation"
 
