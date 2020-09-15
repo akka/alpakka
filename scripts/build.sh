@@ -10,9 +10,8 @@ CMD=$2
 # using jabba for custom jdk management
 if [ ! -f ~/.jabba/jabba.sh ]; then curl -L -v --retry 5 -o jabba-install.sh https://raw.githubusercontent.com/shyiko/jabba/0.11.2/install.sh && bash jabba-install.sh; fi
 . ~/.jabba/jabba.sh
-
-~/.jabba/bin/jabba install "$JDK"
-~/.jabba/bin/jabba use "$JDK"
+jabba install "$JDK"
+jabba use "$JDK"
 java -version
 $PRE_CMD
 
