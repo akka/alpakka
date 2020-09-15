@@ -19,9 +19,9 @@ jobs:
     - env: CMD="++2.11.12 Test/compile"
       name: "Compile all code with Scala 2.11"
       if: type != cron
-    - env: CMD="++2.12.11 Test/compile"
-      name: "Compile all code with Scala 2.12 and fatal warnings enabled. Run locally with: env CI=true sbt ++2.12.11 Test/compile"
-    - env: CMD="++2.13.2 Test/compile"
+    - env: CMD="++2.12.12 Test/compile"
+      name: "Compile all code with Scala 2.12 and fatal warnings enabled. Run locally with: env CI=true sbt ++2.12.12 Test/compile"
+    - env: CMD="++2.13.3 Test/compile"
       name: "Compile all code with Scala 2.13"
     - env: CMD="unidoc"
       name: "Create all API docs"
