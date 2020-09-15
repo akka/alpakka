@@ -6,7 +6,7 @@ object Dependencies {
   val CronBuild = sys.env.get("TRAVIS_EVENT_TYPE").contains("cron")
 
   val Scala211 = "2.11.12" // update even 2 places in .travis.yml
-  val Scala212 = "2.12.12" // update even 2 places in .travis.yml
+  val Scala212 = "2.12.11" // update even 2 places in .travis.yml
   val Scala213 = "2.13.3" // update even 2 places in .travis.yml
   val ScalaVersions = Seq(Scala212, Scala211, Scala213).filterNot(_ == Scala211 && CronBuild)
 
