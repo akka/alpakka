@@ -111,32 +111,17 @@ addCommandAlias("verifyCodeStyle", "headerCheck; verifyCodeFmt")
 lazy val amqp = alpakkaProject("amqp", "amqp", Dependencies.Amqp)
 
 lazy val avroparquet =
-  alpakkaProject("avroparquet",
-                 "avroparquet",
-                 Dependencies.AvroParquet,
-                 crossScalaVersions -= Dependencies.Scala211,
-                 Test / parallelExecution := false)
+  alpakkaProject("avroparquet", "avroparquet", Dependencies.AvroParquet, crossScalaVersions -= Dependencies.Scala211)
 
-lazy val awslambda = alpakkaProject("awslambda",
-                                    "aws.lambda",
-                                    Dependencies.AwsLambda,
-                                    // For mockito https://github.com/akka/alpakka/issues/390
-                                    parallelExecution in Test := false)
+lazy val awslambda = alpakkaProject("awslambda", "aws.lambda", Dependencies.AwsLambda)
 
 lazy val azureStorageQueue = alpakkaProject("azure-storage-queue", "azure.storagequeue", Dependencies.AzureStorageQueue)
 
-lazy val cassandra = alpakkaProject("cassandra",
-                                    "cassandra",
-                                    Dependencies.Cassandra,
-                                    crossScalaVersions -= Dependencies.Scala211,
-                                    Test / parallelExecution := false)
+lazy val cassandra =
+  alpakkaProject("cassandra", "cassandra", Dependencies.Cassandra, crossScalaVersions -= Dependencies.Scala211)
 
 lazy val couchbase =
-  alpakkaProject("couchbase",
-                 "couchbase",
-                 Dependencies.Couchbase,
-                 parallelExecution in Test := false,
-                 whitesourceGroup := Whitesource.Group.Supported)
+  alpakkaProject("couchbase", "couchbase", Dependencies.Couchbase, whitesourceGroup := Whitesource.Group.Supported)
 
 lazy val csv = alpakkaProject("csv", "csv", whitesourceGroup := Whitesource.Group.Supported)
 
@@ -144,14 +129,12 @@ lazy val csvBench = internalProject("csv-bench")
   .dependsOn(csv)
   .enablePlugins(JmhPlugin)
 
-lazy val dynamodb = alpakkaProject("dynamodb", "aws.dynamodb", Dependencies.DynamoDB, Test / parallelExecution := false)
+lazy val dynamodb = alpakkaProject("dynamodb", "aws.dynamodb", Dependencies.DynamoDB)
 
 lazy val elasticsearch = alpakkaProject(
   "elasticsearch",
   "elasticsearch",
-  Dependencies.Elasticsearch,
-  // For elasticsearch-cluster-runner https://github.com/akka/alpakka/issues/479
-  parallelExecution in Test := false
+  Dependencies.Elasticsearch
 )
 
 // The name 'file' is taken by `sbt.file`, hence 'files'
@@ -161,8 +144,7 @@ lazy val ftp = alpakkaProject(
   "ftp",
   "ftp",
   Dependencies.Ftp,
-  parallelExecution in Test := false,
-  fork in Test := true,
+  Test / fork := true,
   // To avoid potential blocking in machines with low entropy (default is `/dev/random`)
   javaOptions in Test += "-Djava.security.egd=file:/dev/./urandom"
 )
@@ -172,8 +154,7 @@ lazy val geode =
     "geode",
     "geode",
     Dependencies.Geode,
-    fork in Test := true,
-    parallelExecution in Test := false,
+    Test / fork := true,
     unmanagedSourceDirectories in Compile ++= {
       val sourceDir = (sourceDirectory in Compile).value
       CrossVersion.partialVersion(scalaVersion.value) match {
@@ -187,7 +168,7 @@ lazy val googleCloudBigQuery = alpakkaProject(
   "google-cloud-bigquery",
   "google.cloud.bigquery",
   Dependencies.GoogleBigQuery,
-  fork in Test := true,
+  Test / fork := true,
   crossScalaVersions --= Seq(Dependencies.Scala211)
 ).disablePlugins(MimaPlugin)
 
@@ -195,10 +176,8 @@ lazy val googleCloudPubSub = alpakkaProject(
   "google-cloud-pub-sub",
   "google.cloud.pubsub",
   Dependencies.GooglePubSub,
-  fork in Test := true,
-  envVars in Test := Map("PUBSUB_EMULATOR_HOST" -> "localhost:8538"),
-  // For mockito https://github.com/akka/alpakka/issues/390
-  parallelExecution in Test := false
+  Test / fork := true,
+  envVars in Test := Map("PUBSUB_EMULATOR_HOST" -> "localhost:8538")
 )
 
 lazy val googleCloudPubSubGrpc = alpakkaProject(
@@ -228,12 +207,12 @@ lazy val googleFcm = alpakkaProject(
   "google-fcm",
   "google.firebase.fcm",
   Dependencies.GoogleFcm,
-  fork in Test := true
+  Test / fork := true
 )
 
-lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, fork in Test := true)
+lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, Test / fork := true)
 
-lazy val hdfs = alpakkaProject("hdfs", "hdfs", Dependencies.Hdfs, parallelExecution in Test := false)
+lazy val hdfs = alpakkaProject("hdfs", "hdfs", Dependencies.Hdfs)
 
 lazy val influxdb = alpakkaProject("influxdb",
                                    "influxdb",
@@ -250,16 +229,14 @@ lazy val ironmq = alpakkaProject(
 )
 
 lazy val jms =
-  alpakkaProject("jms", "jms", Dependencies.Jms, parallelExecution in Test := false, fatalWarnings := false)
+  alpakkaProject("jms", "jms", Dependencies.Jms, fatalWarnings := false)
 
 lazy val jsonStreaming = alpakkaProject("json-streaming", "json.streaming", Dependencies.JsonStreaming)
 
 lazy val kinesis = alpakkaProject(
   "kinesis",
   "aws.kinesis",
-  Dependencies.Kinesis,
-  // For mockito https://github.com/akka/alpakka/issues/390
-  Test / parallelExecution := false
+  Dependencies.Kinesis
 )
 
 lazy val kudu = alpakkaProject("kudu", "kudu", Dependencies.Kudu, fork in Test := false)
@@ -277,23 +254,19 @@ lazy val mqttStreamingBench = internalProject("mqtt-streaming-bench", crossScala
   .enablePlugins(JmhPlugin)
   .dependsOn(mqtt, mqttStreaming)
 
-lazy val orientdb = alpakkaProject("orientdb",
-                                   "orientdb",
-                                   Dependencies.OrientDB,
-                                   fork in Test := true,
-                                   parallelExecution in Test := false,
-                                   fatalWarnings := false)
+lazy val orientdb =
+  alpakkaProject("orientdb", "orientdb", Dependencies.OrientDB, Test / fork := true, fatalWarnings := false)
 
 lazy val reference = internalProject("reference", Dependencies.Reference)
   .dependsOn(testkit % Test)
 
-lazy val s3 = alpakkaProject("s3", "aws.s3", Dependencies.S3, Test / parallelExecution := false)
+lazy val s3 = alpakkaProject("s3", "aws.s3", Dependencies.S3)
 
 lazy val pravega =
   alpakkaProject("pravega",
                  "pravega",
                  Dependencies.Pravega,
-                 fork in Test := true,
+                 Test / fork := true,
                  crossScalaVersions -= Dependencies.Scala211 // 2.11 SAM issue for java API.
   )
 
@@ -309,19 +282,15 @@ lazy val eventbridge =
 lazy val sns = alpakkaProject(
   "sns",
   "aws.sns",
-  Dependencies.Sns,
-  // For mockito https://github.com/akka/alpakka/issues/390
-  parallelExecution in Test := false
+  Dependencies.Sns
 )
 
-lazy val solr = alpakkaProject("solr", "solr", Dependencies.Solr, parallelExecution in Test := false)
+lazy val solr = alpakkaProject("solr", "solr", Dependencies.Solr)
 
 lazy val sqs = alpakkaProject(
   "sqs",
   "aws.sqs",
-  Dependencies.Sqs,
-  // For mockito https://github.com/akka/alpakka/issues/390
-  parallelExecution in Test := false
+  Dependencies.Sqs
 )
 
 lazy val sse = alpakkaProject("sse", "sse", Dependencies.Sse)
@@ -452,7 +421,8 @@ def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sb
           organization.value %% name.value % previousStableVersion.value
             .getOrElse(throw new Error("Unable to determine previous version"))
         ),
-      mimaBinaryIssueFilters += ProblemFilters.exclude[Problem]("*.impl.*")
+      mimaBinaryIssueFilters += ProblemFilters.exclude[Problem]("*.impl.*"),
+      Test / parallelExecution := false
     )
     .settings(additionalSettings: _*)
     .dependsOn(testkit % Test)
