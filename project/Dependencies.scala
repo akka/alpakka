@@ -6,8 +6,8 @@ object Dependencies {
   val CronBuild = sys.env.get("TRAVIS_EVENT_TYPE").contains("cron")
 
   val Scala211 = "2.11.12"
-  val Scala212 = "2.12.11"
-  val Scala213 = "2.13.2"
+  val Scala212 = "2.12.12"
+  val Scala213 = "2.13.3"
   val ScalaVersions = Seq(Scala212, Scala211, Scala213).filterNot(_ == Scala211 && CronBuild)
 
   val Akka25Version = "2.5.31"
@@ -25,7 +25,8 @@ object Dependencies {
   val AkkaHttp102 = "10.2.0"
   val AkkaHttpVersion = if (CronBuild) AkkaHttp102 else AkkaHttp101
   val AkkaHttpBinaryVersion = if (CronBuild) "10.2" else "10.1"
-  val mockitoVersion = "3.1.0"
+  val ScalaTestVersion = "3.2.2"
+  val mockitoVersion = "3.4.6" // check even https://github.com/scalatest/scalatestplus-mockito/releases
 
   val CouchbaseVersion = "2.7.16"
   val CouchbaseVersionForDocs = "2.7"
@@ -55,12 +56,12 @@ object Dependencies {
 
   val testkit = Seq(
     libraryDependencies := Seq(
-        "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6",
+        "org.scala-lang.modules" %% "scala-collection-compat" % "2.2.0",
         "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
         "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion,
         "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
         "ch.qos.logback" % "logback-classic" % "1.2.3", // Eclipse Public License 1.0
-        "org.scalatest" %% "scalatest" % "3.2.2", // ApacheV2
+        "org.scalatest" %% "scalatest" % ScalaTestVersion, // ApacheV2
         "com.novocode" % "junit-interface" % "0.11", // BSD-style
         "ch.qos.logback" % "logback-classic" % "1.2.3", // Eclipse Public License 1.0
         "junit" % "junit" % "4.13" // Eclipse Public License 1.0
@@ -69,7 +70,7 @@ object Dependencies {
 
   val Mockito = Seq(
     "org.mockito" % "mockito-core" % mockitoVersion % Test,
-    "org.scalatestplus" %% "mockito-1-10" % "3.1.0.0" % Test
+    "org.scalatestplus" %% "mockito-3-4" % (ScalaTestVersion + ".0") % Test
   )
 
   // Releases https://github.com/FasterXML/jackson-databind/releases
