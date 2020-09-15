@@ -116,17 +116,17 @@ final class StorageObject private (
 
   /** Java API */
   def withContentType(value: akka.http.javadsl.model.ContentType): StorageObject =
-    copy(contentType = Option(value).asInstanceOf[ContentType])
+    copy(maybeContentType = Option(value.asInstanceOf[ContentType]))
   def withSize(value: Long): StorageObject = copy(size = value)
   def withEtag(value: String): StorageObject = copy(etag = value)
-  def withMd5Hash(value: String): StorageObject = copy(md5Hash = value)
-  def withCrc32c(value: String): StorageObject = copy(crc32c = value)
+  def withMd5Hash(value: String): StorageObject = copy(maybeMd5Hash = Option(value))
+  def withCrc32c(value: String): StorageObject = copy(maybeCrc32c = Option(value))
   def withMediaLink(value: String): StorageObject = copy(mediaLink = value)
   def withSelfLink(value: String): StorageObject = copy(selfLink = value)
   def withUpdated(value: OffsetDateTime): StorageObject = copy(updated = value)
   def withTimeCreated(value: OffsetDateTime): StorageObject = copy(timeCreated = value)
   def withTimeDeleted(value: OffsetDateTime): StorageObject = copy(timeDeleted = Option(value))
-  def withStorageClass(value: String): StorageObject = copy(storageClass = value)
+  def withStorageClass(value: String): StorageObject = copy(maybeStorageClass = Option(value))
   def withContentDisposition(value: String): StorageObject = copy(contentDisposition = Option(value))
   def withContentEncoding(value: String): StorageObject = copy(contentEncoding = Option(value))
   def withContentLanguage(value: String): StorageObject = copy(contentLanguage = Option(value))
@@ -150,17 +150,21 @@ final class StorageObject private (
       name: String = name,
       bucket: String = bucket,
       generation: Long = generation,
-      contentType: ContentType = contentType,
+      contentType: ContentType = maybeContentType.getOrElse(null),
+      maybeContentType: Option[ContentType] = maybeContentType,
       size: Long = size,
       etag: String = etag,
-      md5Hash: String = md5Hash,
-      crc32c: String = crc32c,
+      md5Hash: String = maybeMd5Hash.getOrElse(""),
+      maybeMd5Hash: Option[String] = maybeMd5Hash,
+      crc32c: String = maybeCrc32c.getOrElse(""),
+      maybeCrc32c: Option[String] = maybeCrc32c,
       mediaLink: String = mediaLink,
       selfLink: String = selfLink,
       updated: OffsetDateTime = updated,
       timeCreated: OffsetDateTime = timeCreated,
       timeDeleted: Option[OffsetDateTime] = timeDeleted,
-      storageClass: String = storageClass,
+      storageClass: String = maybeStorageClass.getOrElse(""),
+      maybeStorageClass: Option[String] = maybeStorageClass,
       contentDisposition: Option[String] = contentDisposition,
       contentEncoding: Option[String] = contentEncoding,
       contentLanguage: Option[String] = contentLanguage,
