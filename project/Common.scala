@@ -94,7 +94,8 @@ object Common extends AutoPlugin {
         }),
       Compile / doc / scalacOptions -= "-Xfatal-warnings",
       compile / javacOptions ++= Seq(
-          "-Xlint:unchecked"
+          "-Xlint:unchecked",
+          "-Xlint:deprecation"
         ),
       compile / javacOptions ++= (scalaVersion.value match {
           case Dependencies.Scala212 if insideCI.value && fatalWarnings.value => Seq("-Werror")

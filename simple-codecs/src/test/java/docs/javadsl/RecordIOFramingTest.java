@@ -16,8 +16,8 @@ import akka.util.ByteString;
 import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.Test;
-import static org.junit.Assert.*;
 import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;

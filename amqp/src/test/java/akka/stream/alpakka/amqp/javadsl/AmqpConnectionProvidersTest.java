@@ -5,7 +5,11 @@
 package akka.stream.alpakka.amqp.javadsl;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import akka.stream.alpakka.amqp.*;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
