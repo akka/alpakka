@@ -539,7 +539,7 @@ class JmsConnectorsSpec extends JmsSpec {
       val completionFuture: Future[Done] = Source(msgsIn).runWith(jmsSink)
       completionFuture.futureValue shouldBe Done
       // make sure connection was closed
-      connectionFactory.cachedConnection shouldBe 'closed
+      eventually { connectionFactory.cachedConnection shouldBe Symbol("closed") }
     }
 
     "sink exceptional completion" in withConnectionFactory() { connFactory =>
@@ -557,7 +557,7 @@ class JmsConnectorsSpec extends JmsSpec {
 
       completionFuture.failed.futureValue shouldBe a[RuntimeException]
       // make sure connection was closed
-      eventually { connectionFactory.cachedConnection shouldBe 'closed }
+      eventually { connectionFactory.cachedConnection shouldBe Symbol("closed") }
     }
 
     "producer disconnect exceptional completion" in withServer() { server =>
@@ -591,7 +591,7 @@ class JmsConnectorsSpec extends JmsSpec {
       // - not yet initialized before broker stop, or
       // - closed on broker stop (if preStart came first).
       if (connectionFactory.cachedConnection != null) {
-        connectionFactory.cachedConnection shouldBe 'closed
+        connectionFactory.cachedConnection shouldBe Symbol("closed")
       }
     }
 

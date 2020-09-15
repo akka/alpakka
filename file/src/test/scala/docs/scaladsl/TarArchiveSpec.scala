@@ -19,7 +19,7 @@ import akka.stream.{ActorMaterializer, IOResult, Materializer}
 import akka.testkit.TestKit
 import akka.util.ByteString
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
+import org.scalatest.concurrent.{Eventually, IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -35,6 +35,7 @@ class TarArchiveSpec
     with ScalaFutures
     with BeforeAndAfterAll
     with LogCapturing
+    with Eventually
     with IntegrationPatience {
 
   implicit val mat: Materializer = ActorMaterializer()
@@ -204,7 +205,9 @@ class TarArchiveSpec
       // #tar-reader
       tar.futureValue shouldBe Done
       val file: File = target.resolve("dir/file1.txt").toFile
-      file.exists() shouldBe true
+      eventually {
+        file.exists() shouldBe true
+      }
     }
 
     "emit empty file" in {

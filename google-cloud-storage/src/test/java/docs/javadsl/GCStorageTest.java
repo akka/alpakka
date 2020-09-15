@@ -28,7 +28,9 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class GCStorageTest extends GCStorageWiremockBase {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
