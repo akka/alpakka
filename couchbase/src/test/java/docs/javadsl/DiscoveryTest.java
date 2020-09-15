@@ -27,21 +27,19 @@ import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DiscoveryTest {
 
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem actorSystem;
-  private static Materializer materializer;
   private static final String bucketName = "akka";
 
   @BeforeClass
   public static void beforeAll() {
     Config config = ConfigFactory.parseResources("discovery.conf");
     actorSystem = ActorSystem.create("DiscoveryTest", config);
-    materializer = ActorMaterializer.create(actorSystem);
   }
 
   @AfterClass

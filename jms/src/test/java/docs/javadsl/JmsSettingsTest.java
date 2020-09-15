@@ -14,8 +14,8 @@ import org.junit.Test;
 import java.time.Duration;
 
 import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 
 // #retry-settings #send-retry-settings
 import com.typesafe.config.Config;
