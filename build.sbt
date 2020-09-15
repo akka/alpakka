@@ -190,6 +190,7 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
       "-P:silencer:pathFilters=akka-grpc/main",
       "-P:silencer:pathFilters=akka-grpc/test"
     ),
+  javacOptions := javacOptions.value.filterNot(_ == "-Xlint:deprecation"),
   crossScalaVersions --= Seq(Dependencies.Scala211) // 2.11 is not supported since Akka gRPC 0.6
 ).enablePlugins(AkkaGrpcPlugin)
 
@@ -259,7 +260,12 @@ lazy val springWeb = alpakkaProject("spring-web", "spring.web", Dependencies.Spr
 
 lazy val simpleCodecs = alpakkaProject("simple-codecs", "simplecodecs")
 
-lazy val slick = alpakkaProject("slick", "slick", Dependencies.Slick)
+lazy val slick = alpakkaProject(
+  "slick",
+  "slick",
+  Dependencies.Slick,
+  javacOptions := javacOptions.value.filterNot(_ == "-Xlint:deprecation")
+)
 
 lazy val eventbridge = alpakkaProject("aws-event-bridge", "aws.eventbridge", Dependencies.Eventbridge)
 
