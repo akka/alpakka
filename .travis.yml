@@ -17,8 +17,9 @@ script: ./scripts/travis.sh
 jobs:
   include:
     - stage: check
-      script: sbt verifyCodeStyle
-      name: "Code style check. Run locally with: sbt verifyCodeStyle"
+      script: CMD="verifyCodeStyle; mimaReportBinaryIssues"
+      name: "Code style check and MiMa. Run locally with: sbt verifyCodeStyle; mimaReportBinaryIssues"
+      if: type != cron
     - env: CMD="++2.11.12 Test/compile"
       name: "Compile all code with Scala 2.11"
       if: type != cron
@@ -26,12 +27,8 @@ jobs:
       name: "Compile all code with Scala 2.12 and fatal warnings enabled. Run locally with: env CI=true sbt ++2.12.11 Test/compile"
     - env: CMD="++2.13.3 Test/compile"
       name: "Compile all code with Scala 2.13"
-    - env: CMD="unidoc"
-      name: "Create all API docs"
-    - env: CMD="docs/paradox"
-      name: "Create site with Paradox"
-    - env: CMD="mimaReportBinaryIssues"
-      name: "Check binary compatibility (MiMa)"
+    - env: CMD="unidoc; docs/paradox"
+      name: "Create all API docs and create site with Paradox"
 
     - stage: test
       name: amqp
