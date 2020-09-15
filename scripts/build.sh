@@ -5,10 +5,10 @@ set -x
 PRE_CMD=$1
 CMD=$2
 
-[ "$TRAVIS_EVENT_TYPE" == "cron" ] && JDK="adopt@~1.11.0-4" || JDK="adopt@~1.8.0-222"
+[ "$TRAVIS_EVENT_TYPE" == "cron" ] && JDK="adopt@~1.11-0" || JDK="adopt@~1.8-0"
 
 # using jabba for custom jdk management
-curl -sL https://raw.githubusercontent.com/shyiko/jabba/0.11.2/install.sh | bash
+if [ ! -f ~/.jabba/jabba.sh ]; then curl -L -v --retry 5 -o jabba-install.sh https://raw.githubusercontent.com/shyiko/jabba/0.11.2/install.sh && bash jabba-install.sh; fi
 . ~/.jabba/jabba.sh
 jabba install "$JDK"
 jabba use "$JDK"
