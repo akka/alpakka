@@ -7,8 +7,8 @@ CMD=$2
 
 [ "$TRAVIS_EVENT_TYPE" == "cron" ] && JDK="adopt@~1.11-0" || JDK="adopt@~1.8-0"
 
-jabba install "$JDK"
-jabba use "$JDK"
+~/.jabba/bin/jabba install "$JDK"
+~/.jabba/bin/jabba use "$JDK"
 java -version
 $PRE_CMD
 
