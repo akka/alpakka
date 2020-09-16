@@ -34,7 +34,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class CharsetCodingFlowsDoc {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();

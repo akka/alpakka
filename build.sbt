@@ -131,11 +131,7 @@ lazy val csvBench = internalProject("csv-bench")
 
 lazy val dynamodb = alpakkaProject("dynamodb", "aws.dynamodb", Dependencies.DynamoDB)
 
-lazy val elasticsearch = alpakkaProject(
-  "elasticsearch",
-  "elasticsearch",
-  Dependencies.Elasticsearch
-)
+lazy val elasticsearch = alpakkaProject("elasticsearch", "elasticsearch", Dependencies.Elasticsearch)
 
 // The name 'file' is taken by `sbt.file`, hence 'files'
 lazy val files = alpakkaProject("file", "file", Dependencies.File)
@@ -194,7 +190,8 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
       "-P:silencer:pathFilters=akka-grpc/main",
       "-P:silencer:pathFilters=akka-grpc/test"
     ),
-  crossScalaVersions --= Seq(Dependencies.Scala211) // 2.11 is not supported since Akka gRPC 0.6
+  compile / javacOptions := (compile / javacOptions).value.filterNot(_ == "-Xlint:deprecation"),
+  crossScalaVersions --= Seq(Dependencies.Scala211)
 ).enablePlugins(AkkaGrpcPlugin)
 
 lazy val googleCloudStorage =
@@ -203,12 +200,7 @@ lazy val googleCloudStorage =
                  Dependencies.GoogleStorage,
                  crossScalaVersions -= Dependencies.Scala211)
 
-lazy val googleFcm = alpakkaProject(
-  "google-fcm",
-  "google.firebase.fcm",
-  Dependencies.GoogleFcm,
-  Test / fork := true
-)
+lazy val googleFcm = alpakkaProject("google-fcm", "google.firebase.fcm", Dependencies.GoogleFcm, Test / fork := true)
 
 lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, Test / fork := true)
 
@@ -228,21 +220,15 @@ lazy val ironmq = alpakkaProject(
   crossScalaVersions -= Dependencies.Scala211 // hseeberger/akka-http-json does not support Scala 2.11 anymore
 )
 
-lazy val jms =
-  alpakkaProject("jms", "jms", Dependencies.Jms, fatalWarnings := false)
+lazy val jms = alpakkaProject("jms", "jms", Dependencies.Jms)
 
 lazy val jsonStreaming = alpakkaProject("json-streaming", "json.streaming", Dependencies.JsonStreaming)
 
-lazy val kinesis = alpakkaProject(
-  "kinesis",
-  "aws.kinesis",
-  Dependencies.Kinesis
-)
+lazy val kinesis = alpakkaProject("kinesis", "aws.kinesis", Dependencies.Kinesis)
 
 lazy val kudu = alpakkaProject("kudu", "kudu", Dependencies.Kudu, fork in Test := false)
 
-lazy val mongodb =
-  alpakkaProject("mongodb", "mongodb", Dependencies.MongoDb)
+lazy val mongodb = alpakkaProject("mongodb", "mongodb", Dependencies.MongoDb)
 
 lazy val mqtt = alpakkaProject("mqtt", "mqtt", Dependencies.Mqtt)
 
@@ -262,13 +248,13 @@ lazy val reference = internalProject("reference", Dependencies.Reference)
 
 lazy val s3 = alpakkaProject("s3", "aws.s3", Dependencies.S3)
 
-lazy val pravega =
-  alpakkaProject("pravega",
-                 "pravega",
-                 Dependencies.Pravega,
-                 Test / fork := true,
-                 crossScalaVersions -= Dependencies.Scala211 // 2.11 SAM issue for java API.
-  )
+lazy val pravega = alpakkaProject(
+  "pravega",
+  "pravega",
+  Dependencies.Pravega,
+  Test / fork := true,
+  crossScalaVersions -= Dependencies.Scala211 // 2.11 SAM issue for java API.
+)
 
 lazy val springWeb = alpakkaProject("spring-web", "spring.web", Dependencies.SpringWeb)
 
@@ -276,22 +262,13 @@ lazy val simpleCodecs = alpakkaProject("simple-codecs", "simplecodecs")
 
 lazy val slick = alpakkaProject("slick", "slick", Dependencies.Slick)
 
-lazy val eventbridge =
-  alpakkaProject("aws-event-bridge", "aws.eventbridge", Dependencies.Eventbridge)
+lazy val eventbridge = alpakkaProject("aws-event-bridge", "aws.eventbridge", Dependencies.Eventbridge)
 
-lazy val sns = alpakkaProject(
-  "sns",
-  "aws.sns",
-  Dependencies.Sns
-)
+lazy val sns = alpakkaProject("sns", "aws.sns", Dependencies.Sns)
 
 lazy val solr = alpakkaProject("solr", "solr", Dependencies.Solr)
 
-lazy val sqs = alpakkaProject(
-  "sqs",
-  "aws.sqs",
-  Dependencies.Sqs
-)
+lazy val sqs = alpakkaProject("sqs", "aws.sqs", Dependencies.Sqs)
 
 lazy val sse = alpakkaProject("sse", "sse", Dependencies.Sse)
 
@@ -299,11 +276,7 @@ lazy val text = alpakkaProject("text", "text")
 
 lazy val udp = alpakkaProject("udp", "udp")
 
-lazy val unixdomainsocket = alpakkaProject(
-  "unix-domain-socket",
-  "unixdomainsocket",
-  Dependencies.UnixDomainSocket
-)
+lazy val unixdomainsocket = alpakkaProject("unix-domain-socket", "unixdomainsocket", Dependencies.UnixDomainSocket)
 
 lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml)
 

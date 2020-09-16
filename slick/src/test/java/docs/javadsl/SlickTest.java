@@ -171,8 +171,7 @@ public class SlickTest {
                 (__, connection) ->
                     connection.prepareStatement(
                         "INSERT INTO ALPAKKA_SLICK_JAVADSL_TEST_USERS VALUES (?, ?)"))
-            .recover(
-                new PFBuilder<Throwable, Integer>().match(SQLException.class, (ex) -> -1).build());
+            .recoverWithRetries(1, SQLException.class, () -> Source.single(-1));
     final List<Integer> insertionResult =
         usersSource
             .via(slickFlow)
