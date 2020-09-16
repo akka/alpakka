@@ -194,8 +194,8 @@ object Dependencies {
       )
   )
 
-  val GeodeVersion = "1.12.0"
-  val GeodeVersionForDocs = "112"
+  val GeodeVersion = "1.13.0"
+  val GeodeVersionForDocs = "113"
 
   val Geode = Seq(
     libraryDependencies ++=
