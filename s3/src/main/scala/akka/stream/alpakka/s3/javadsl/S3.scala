@@ -207,6 +207,18 @@ object S3 {
       .asJava
 
   /**
+   * Deletes all S3 Objects within the given bucket
+   *
+   * @param bucket the s3 bucket name
+   * @return A [[akka.stream.javadsl.Source Source]] that will emit [[java.lang.Void]] when operation is completed
+   */
+  def deleteBucketContents(bucket: String): Source[Done, NotUsed] =
+    S3Stream
+      .deleteObjectsByPrefix(bucket, None, S3Headers.empty)
+      .map(_ => Done.getInstance())
+      .asJava
+
+  /**
    * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
    *
    * @param bucket the s3 bucket name
