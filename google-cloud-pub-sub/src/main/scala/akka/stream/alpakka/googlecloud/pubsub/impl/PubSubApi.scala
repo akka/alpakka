@@ -16,13 +16,13 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.pubsub._
-import akka.stream.scaladsl.{Flow, FlowWithContext, Keep}
+import akka.stream.scaladsl.{Flow, FlowWithContext}
 import akka.{Done, NotUsed}
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
 import scala.collection.immutable
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
@@ -130,6 +130,94 @@ private[pubsub] trait PubSubApi {
   }
   private implicit val pullRequestFormat = DefaultJsonProtocol.jsonFormat2(PullRequest)
 
+  private def scheme: String = if (isEmulated) "http" else "https"
+
+  def pull(project: String, subscription: String, returnImmediately: Boolean, maxMessages: Int)(
+      implicit as: ActorSystem,
+      materializer: Materializer
+  ): Flow[(Done, Option[String]), PullResponse, NotUsed] = {
+    import materializer.executionContext
+
+    val url: Uri = Uri.from(
+      scheme = scheme,
+      host = PubSubGoogleApisHost,
+      port = PubSubGoogleApisPort,
+      path = s"/v1/projects/$project/subscriptions/$subscription:pull"
+    )
+
+    Flow[(Done, Option[String])]
+      .mapAsync(1) {
+        case (_, maybeAccessToken) =>
+          for {
+            request <- Marshal((HttpMethods.POST, url, PullRequest(returnImmediately, maxMessages)))
+              .to[HttpRequest]
+              .map(request => authorize(maybeAccessToken)(request))
+            response <- Http().singleRequest(request)
+            result <- readPullResponse(response)
+          } yield result
+      }
+  }
+
+  private def readPullResponse(response: HttpResponse)(
+      implicit materializer: Materializer,
+      executionContext: ExecutionContext
+  ): Future[PullResponse] =
+    response.status match {
+      case StatusCodes.Success(_) if response.entity.contentType == ContentTypes.`application/json` =>
+        Unmarshal(response).to[PullResponse]
+      case status =>
+        Unmarshal(response)
+          .to[String]
+          .map { entity =>
+            throw new RuntimeException(s"Unexpected pull response. Code: [$status]. Entity: [$entity]")
+          }
+    }
+
+  def acknowledge(project: String, subscription: String)(
+      implicit as: ActorSystem,
+      materializer: Materializer
+  ): Flow[(AcknowledgeRequest, Option[String]), Done, NotUsed] = {
+    import materializer.executionContext
+
+    val url: Uri = Uri.from(
+      scheme = scheme,
+      host = PubSubGoogleApisHost,
+      port = PubSubGoogleApisPort,
+      path = s"/v1/projects/$project/subscriptions/$subscription:acknowledge"
+    )
+
+    Flow[(AcknowledgeRequest, Option[String])]
+      .mapAsync(1) {
+        case (request, maybeAccessToken) =>
+          for {
+            request <- Marshal((HttpMethods.POST, url, request))
+              .to[HttpRequest]
+              .map(request => authorize(maybeAccessToken)(request))
+            response <- Http().singleRequest(request)
+            result <- readAcknowledgeResponse(response)
+          } yield result
+      }
+  }
+
+  private def readAcknowledgeResponse(response: HttpResponse)(
+      implicit materializer: Materializer,
+      executionContext: ExecutionContext
+  ): Future[Done] = {
+    response.status match {
+      case StatusCodes.Success(_) =>
+        response.discardEntityBytes()
+        Future.successful(Done)
+      case status =>
+        Unmarshal(response)
+          .to[String]
+          .map { entity =>
+            throw new RuntimeException(
+              s"Unexpected acknowledge response. Code [$status] Content-type [${response.entity.contentType}] Entity [$entity]"
+            )
+          }
+    }
+  }
+
   private def pool[T]()(
       implicit as: ActorSystem
   ): Flow[(HttpRequest, T), (Try[HttpResponse], T), Http.HostConnectionPool] =
@@ -138,79 +226,6 @@ private[pubsub] trait PubSubApi {
     } else {
       Http().cachedHostConnectionPoolHttps[T](PubSubGoogleApisHost, PubSubGoogleApisPort)
     }
-
-  private def poolSimple(implicit as: ActorSystem): Flow[HttpRequest, Try[HttpResponse], Http.HostConnectionPool] =
-    Flow[HttpRequest]
-      .map(_ -> NotUsed)
-      .viaMat(pool())(Keep.right)
-      .map(_._1)
-
-  def pull(project: String, subscription: String, returnImmediately: Boolean, maxMessages: Int)(
-      implicit as: ActorSystem,
-      materializer: Materializer
-  ): Flow[(Done, Option[String]), PullResponse, NotUsed] = {
-    import materializer.executionContext
-
-    val url: Uri = s"/v1/projects/$project/subscriptions/$subscription:pull"
-
-    Flow[(Done, Option[String])]
-      .mapAsync(1) {
-        case (_, maybeAccessToken) =>
-          Marshal((HttpMethods.POST, url, PullRequest(returnImmediately, maxMessages)))
-            .to[HttpRequest]
-            .map(request => authorize(maybeAccessToken)(request))
-      }
-      .via(poolSimple)
-      .mapAsync(1) {
-        case Success(response) =>
-          response.status match {
-            case StatusCodes.Success(_) if response.entity.contentType == ContentTypes.`application/json` =>
-              Unmarshal(response).to[PullResponse]
-            case status =>
-              Unmarshal(response)
-                .to[String]
-                .map { entity =>
-                  throw new RuntimeException(s"Unexpected pull response. Code: [$status]. Entity: [$entity]")
-                }
-          }
-        case Failure(NonFatal(ex)) => Future.failed(ex)
-      }
-  }
-
-  def acknowledge(project: String, subscription: String)(
-      implicit as: ActorSystem,
-      materializer: Materializer
-  ): Flow[(AcknowledgeRequest, Option[String]), Done, NotUsed] = {
-    import materializer.executionContext
-
-    val url: Uri = s"/v1/projects/$project/subscriptions/$subscription:acknowledge"
-
-    Flow[(AcknowledgeRequest, Option[String])]
-      .mapAsync(1) {
-        case (request, maybeAccessToken) =>
-          Marshal((HttpMethods.POST, url, request))
-            .to[HttpRequest]
-            .map(request => authorize(maybeAccessToken)(request))
-      }
-      .via(poolSimple)
-      .mapAsync(1) {
-        case Success(response) =>
-          response.status match {
-            case StatusCodes.Success(_) =>
-              response.discardEntityBytes()
-              Future.successful(Done)
-            case status =>
-              Unmarshal(response)
-                .to[String]
-                .map { entity =>
-                  throw new RuntimeException(
-                    s"Unexpected acknowledge response. Code [$status] Content-type [${response.entity.contentType}] Entity [$entity]"
-                  )
-                }
-          }
-        case Failure(NonFatal(ex)) => Future.failed(ex)
-      }
-  }
 
   def publish[T](project: String, topic: String, parallelism: Int)(
       implicit as: ActorSystem,
