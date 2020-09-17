@@ -97,13 +97,16 @@ final class StorageObject private (
   def getEventBasedHold: Optional[Boolean] = eventBasedHold.asJava
   def getRetentionExpirationTime: Optional[OffsetDateTime] = retentionExpirationTime.asJava
   def getCacheControl: Optional[String] = cacheControl.asJava
-  def getCustomTime: Optional[OffsetDateTime] = customTime.asJava
   def getMetadata: Optional[java.util.Map[String, String]] = metadata.map(_.asJava).asJava
   def getComponentCount: Optional[Integer] = componentCount.map(Int.box).asJava
   def getKmsKeyName: Optional[String] = kmsKeyName.asJava
   def getCustomerEncryption: Optional[CustomerEncryption] = customerEncryption.asJava
   def getOwner: Optional[Owner] = owner.asJava
   def getAcl: Optional[java.util.List[ObjectAccessControls]] = acl.map(_.asJava).asJava
+  def getCustomTime: Optional[OffsetDateTime] = customTime.asJava
+  def getMaybeMd5Hash: Optional[String] = maybeMd5Hash.asJava
+  def getMaybeCrc32c: Optional[String] = maybeCrc32c.asJava
+  def getMaybeStorageClass: Optional[String] = maybeStorageClass.asJava
 
   def withKind(value: String): StorageObject = copy(kind = value)
   def withId(value: String): StorageObject = copy(id = value)
