@@ -122,7 +122,9 @@ object Dependencies {
           .exclude("com.github.spotbugs", "spotbugs-annotations")
           .exclude("org.apache.tinkerpop", "*") //https://github.com/akka/alpakka/issues/2200
           .exclude("com.esri.geometry", "esri-geometry-api"), //https://github.com/akka/alpakka/issues/2225
-        "com.typesafe.akka" %% "akka-discovery" % AkkaVersion % Provided
+        "com.typesafe.akka" %% "akka-discovery" % AkkaVersion % Provided,
+        // evict Cassandra's 4.1.45 version to avoid https://github.com/advisories/GHSA-mm9x-g8pc-w292
+        "io.netty" % "netty-handler" % "4.1.52.Final"
       ) ++ JacksonDatabindDependencies
   )
 
