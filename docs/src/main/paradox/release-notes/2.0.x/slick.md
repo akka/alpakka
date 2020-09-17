@@ -1,5 +1,10 @@
 # Slick
 
+## 2.0.2
+
+- Slick/JDBC: Support `PreparedStatement` use in Java DSL [#2318](https://github.com/akka/alpakka/issues/2318) by [@ihostage](https://github.com/ihostage)
+
+
 ## 2.0.0-M2
 
 No changes.

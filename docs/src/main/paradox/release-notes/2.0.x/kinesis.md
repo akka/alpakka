@@ -1,5 +1,11 @@
 # AWS Kinesis
 
+## 2.0.2
+
+- Kinesis KCL source backpressure [#2377](https://github.com/akka/alpakka/issues/2377) by [@aserrallerios](https://github.com/aserrallerios)
+- Check client instance for nulls [#2382](https://github.com/akka/alpakka/issues/2382) by [@ennru](https://github.com/ennru)
+
+
 ## 2.0.1
 
 - Kinesis: Construction safe API [#2331](https://github.com/akka/alpakka/issues/2331) by [@vaslabs](https://github.com/vaslabs)

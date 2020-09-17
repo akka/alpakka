@@ -1,5 +1,10 @@
 # Google Cloud Pub/Sub gRPC
 
+## 2.0.2
+
+- Update Akka gRPC to 1.0.0 and use native openssl [#2312](https://github.com/akka/alpakka/issues/2312) by [@raboof](https://github.com/raboof)
+
+
 ## 2.0.0
 
 - Google Cloud Pub/Sub gRPC: Akka gRPC 0.8.4 [#2290](https://github.com/akka/alpakka/issues/2290) by [@ennru](https://github.com/ennru)

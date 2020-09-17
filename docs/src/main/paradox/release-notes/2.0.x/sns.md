@@ -1,5 +1,9 @@
 # AWS SNS
 
+## 2.0.2
+
+- Check client instance for nulls [#2382](https://github.com/akka/alpakka/issues/2382) by [@ennru](https://github.com/ennru)
+
 ## 2.0.1
 
 - Update AwsSpiAkkaHttpVersion to 0.0.9 [#2328](https://github.com/akka/alpakka/issues/2328) by [@matsluni](https://github.com/matsluni)

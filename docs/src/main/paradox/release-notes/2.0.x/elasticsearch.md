@@ -1,5 +1,10 @@
 # Elasticsearch
 
+## 2.0.2
+
+- Fix Elasticsearch WriteMessage.createIndexMessage documentation [#2387](https://github.com/akka/alpakka/issues/2387) by [@yannisf](https://github.com/yannisf)
+- Check client instance for nulls [#2382](https://github.com/akka/alpakka/issues/2382) by [@ennru](https://github.com/ennru)
+
 ## 2.0.1
 
 - Elasticsearch: Support the routing parameter [#2272](https://github.com/akka/alpakka/issues/2272) by [@yannisf](https://github.com/yannisf)
