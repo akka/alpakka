@@ -1,5 +1,10 @@
 # File
 
+## 2.0.2
+
+- File: tar with directory support and EOF block detection [#2404](https://github.com/akka/alpakka/issues/2404) by [@ennru](https://github.com/ennru)
+- File: Fail LogRotatorSink on failures in the sinks [#2332](https://github.com/akka/alpakka/issues/2332) by [@shagoon](https://github.com/shagoon)
+
 ## 2.0.1
 
 - Allow LogRotatorSink be a Sink[T] instead of Sink[ByteString] [#2323](https://github.com/akka/alpakka/issues/2323) by [@shagoon](https://github.com/shagoon)

@@ -1,5 +1,10 @@
 # Pravega
 
+## 2.0.2
+
+- Pravega 0.7.1 (was 0.7.0) [#2345](https://github.com/akka/alpakka/issues/2345) by [@cheleb](https://github.com/cheleb)
+
+
 ## 2.0.0-RC2
 
 - Pravega connector [#2149](https://github.com/akka/alpakka/issues/2149) by [@cheleb](https://github.com/cheleb)

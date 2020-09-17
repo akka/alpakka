@@ -1,5 +1,9 @@
 # JMS
 
+## 2.0.2
+
+- JMS: accept Float as properties and map values [#2408](https://github.com/akka/alpakka/issues/2408) by [@ennru](https://github.com/ennru)
+
 ## 2.0.0-M3
 
 - JMS: test case for TX sources with broker restart [#2104](https://github.com/akka/alpakka/issues/2104) by [@ennru](https://github.com/ennru)

@@ -1,5 +1,9 @@
 # AMQP
 
+## 2.0.2
+
+- AMQP: Fixes handling null replyTo header in AmqpReplyToSinkStage [#2371](https://github.com/akka/alpakka/issues/2371) by [@Grandys](https://github.com/Grandys)
+
 ## 2.0.0
 
 - AMQP: isolate mock [#2280](https://github.com/akka/alpakka/issues/2280) by [@ennru](https://github.com/ennru)

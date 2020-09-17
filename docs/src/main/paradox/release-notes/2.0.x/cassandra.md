@@ -1,5 +1,9 @@
 # Cassandra
 
+## 2.0.2
+
+- Cassandra: overwrite Netty to 4.1.52 [#2416](https://github.com/akka/alpakka/issues/2416) by [@ennru](https://github.com/ennru)
+
 ## 2.0.1
 
 - Cassandra: Driver 4.6.1 (Remove netty override) [#2320](https://github.com/akka/alpakka/issues/2320) by [@chbatey](https://github.com/chbatey)

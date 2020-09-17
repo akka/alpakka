@@ -1,5 +1,9 @@
 # Google Cloud Storage
 
+## 2.0.2
+
+- Make GCS md5Hash optional [#2388](https://github.com/akka/alpakka/issues/2388) by [@K-Adnan](https://github.com/K-Adnan)
+
 ## 2.0.0
 
 - Google Cloud Storage: emit more chunks when input is closed [#2269](https://github.com/akka/alpakka/issues/2269) by [@mpdn](https://github.com/mpdn)
