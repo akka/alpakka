@@ -61,7 +61,7 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
        |  "contentDisposition": "inline",
        |  "contentLanguage": "en-GB",
        |  "cacheControl": "no-cache",
-       |  "componentCount": "2",
+       |  "componentCount": 2,
        |  "customTime": "2020-09-17T11:09:21.039Z",
        |  "kmsKeyName": "projects/my-gcs-project/keys",
        |  "metadata": {"countryOfOrigin": "United Kingdom"},

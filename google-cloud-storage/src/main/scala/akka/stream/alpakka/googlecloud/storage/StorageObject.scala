@@ -250,7 +250,7 @@ final class StorageObject private (
     s"retentionExpirationTime = $retentionExpirationTime," +
     s"timeStorageClassUpdated = $timeStorageClassUpdated," +
     s"cacheControl = $cacheControl," +
-    s"customTime = $customTime"
+    s"customTime = $customTime,"
   metadata.fold("")(m => s"metadata = $m,") +
   componentCount.fold("")(cc => s"componentCount = $cc,") +
   kmsKeyName.fold("")(kkn => s"kmsKeyName = $kkn,") +
