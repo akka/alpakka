@@ -95,13 +95,29 @@ object GooglePubSub {
       .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.sameThreadExecutionContext))
 
   /**
+   * Create a flow that accepts consumed message acknowledgements.
+   */
+  def acknowledgeFlow(): Flow[AcknowledgeRequest, AcknowledgeRequest, NotUsed] =
+    Flow
+      .setup { (mat, attr) =>
+        Flow[AcknowledgeRequest]
+          .mapAsync(1)(
+            req =>
+              subscriber(mat, attr).client
+                .acknowledge(req)
+                .map(_ => req)(mat.executionContext)
+          )
+      }
+      .mapMaterializedValue(_ => NotUsed)
+
+  /**
    * Create a sink that accepts consumed message acknowledgements.
    *
    * The materialized value completes on stream completion.
    *
    * @param parallelism controls how many acknowledgements can be in-flight at any given time
    */
-  def acknowledge(parallelism: Int): Sink[AcknowledgeRequest, Future[Done]] =
+  def acknowledge(parallelism: Int): Sink[AcknowledgeRequest, Future[Done]] = {
     Sink
       .setup { (mat, attr) =>
         Flow[AcknowledgeRequest]
@@ -109,6 +125,7 @@ object GooglePubSub {
           .toMat(Sink.ignore)(Keep.right)
       }
       .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.sameThreadExecutionContext))
+  }
 
   private def publisher(mat: ActorMaterializer, attr: Attributes) =
     attr

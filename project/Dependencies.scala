@@ -238,7 +238,7 @@ object Dependencies {
         "com.google.auth" % "google-auth-library-oauth2-http" % "0.20.0", // BSD 3-clause
         // pull in Akka Discovery for our Akka version
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion
-      ) ++ Silencer
+      )
   )
 
   val GoogleFcm = Seq(

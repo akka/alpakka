@@ -38,7 +38,7 @@ object GooglePubSub {
    *
    * The materialized value can be used to cancel the source.
    *
-   * @param request the subscription FQRS and ack deadline fields are mandatory for the request
+   * @param request      the subscription FQRS and ack deadline fields are mandatory for the request
    * @param pollInterval time between StreamingPullRequest messages are being sent
    */
   def subscribe(request: StreamingPullRequest,
@@ -73,7 +73,7 @@ object GooglePubSub {
    *
    * The materialized value can be used to cancel the source.
    *
-   * @param request the subscription FQRS field is mandatory for the request
+   * @param request      the subscription FQRS field is mandatory for the request
    * @param pollInterval time between PullRequest messages are being sent
    */
   def subscribePolling(
@@ -95,6 +95,20 @@ object GooglePubSub {
       }
       .mapMaterializedValue(japiFunction(flattenCs))
       .mapMaterializedValue(japiFunction(_.toCompletableFuture))
+
+  /**
+   * Create a sink that accepts consumed message acknowledgements.
+   */
+  def acknowledgeFlow(): Flow[AcknowledgeRequest, AcknowledgeRequest, NotUsed] =
+    Flow
+      .setup { (mat, attr) =>
+        Flow
+          .create[AcknowledgeRequest]
+          .mapAsyncUnordered(1,
+                             req =>
+                               subscriber(mat, attr).client.acknowledge(req).thenApply[AcknowledgeRequest](_ => req))
+      }
+      .mapMaterializedValue(_ => NotUsed)
 
   /**
    * Create a sink that accepts consumed message acknowledgements.
