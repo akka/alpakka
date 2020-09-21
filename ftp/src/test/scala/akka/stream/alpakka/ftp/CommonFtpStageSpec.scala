@@ -44,7 +44,6 @@ final class RawKeySftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
 }
 
 final class KeyFileSftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
-  override protected def extraWaitForStageShutdown(): Unit = Thread.sleep(10 * 1000)
 
   override val settings = SftpSettings(
     InetAddress.getByName(HOSTNAME)
@@ -312,7 +311,6 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       val result = brokenSource.runWith(storeToPath(s"/$fileName", append = false)).futureValue
 
       result.status.failed.get shouldBe a[ArithmeticException]
-      extraWaitForStageShutdown()
     }
 
     "fail and report the exception in the result status if connection fails" ignore { // TODO Fails too often on Travis: assertAllStagesStopped {
@@ -353,7 +351,6 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       eventually {
         fileExists(fileName) shouldBe false
       }
-      extraWaitForStageShutdown()
     }
 
     "fail when the file does not exist" in {
@@ -375,8 +372,6 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       val ex = result.status.failed.get
       ex shouldBe an[IOException]
       ex should (have message s"Could not delete /$fileName" or have message "No such file")
-
-      extraWaitForStageShutdown()
     }
   }
 
@@ -400,7 +395,6 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
         fileExists(fileName) shouldBe false
         fileExists(fileName2) shouldBe true
       }
-      extraWaitForStageShutdown()
     }
 
     "fail when the source file does not exist" in {
@@ -424,8 +418,6 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       val ex = result.status.failed.get
       ex shouldBe an[IOException]
       ex should (have message s"Could not move /$fileName" or have message "No such file")
-
-      extraWaitForStageShutdown()
     }
   }
 
