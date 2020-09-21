@@ -8,12 +8,12 @@ import akka.{Done, NotUsed}
 import akka.stream.IOResult
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
+import akka.testkit.TestKit
 import akka.util.ByteString
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.{Args, BeforeAndAfter, BeforeAndAfterAll, Inside, Status, TestSuite, TestSuiteMixin}
 
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -48,19 +48,12 @@ trait BaseSpec
 
   protected def mkdir(basePath: String, name: String): Source[Done, NotUsed]
 
-  /** For a few tests `assertAllStagesStopped` failed on Travis, this hook allows to inject a bit more patience
-   * for the check.
-   *
-   * Can be removed after upgrade to Akka 2.5.22 https://github.com/akka/akka/issues/26410
-   */
-  protected def extraWaitForStageShutdown(): Unit = ()
-
   after {
     cleanFiles()
   }
 
   override protected def afterAll() = {
-    Await.ready(getSystem.terminate(), 42.seconds)
+    TestKit.shutdownActorSystem(getSystem, verifySystemShutdown = true)
     super.afterAll()
   }
 
