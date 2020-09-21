@@ -98,7 +98,8 @@ object Common extends AutoPlugin {
           "-Xlint:deprecation"
         ),
       compile / javacOptions ++= (scalaVersion.value match {
-          case Dependencies.Scala212 if insideCI.value && fatalWarnings.value => Seq("-Werror")
+          case Dependencies.Scala212 if insideCI.value && fatalWarnings.value && !Dependencies.CronBuild =>
+            Seq("-Werror")
           case _ => Seq.empty
         }),
       autoAPIMappings := true,
