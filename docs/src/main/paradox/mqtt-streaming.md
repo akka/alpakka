@@ -59,11 +59,11 @@ The high-level API is experimental and may be changed even in minor versions.
 
 To subscribe to MQTT topics this connector offers a high-level API wrapping the more involved use of the underlying API which offers all flexibility.
 
-The @scala[@scaladoc[`MqttClientSession`](akka.stream.alpakka.mqtt.streaming.scaladsl.MqttClientSession)]@java[@scaladoc[`MqttClientSession`](akka.stream.alpakka.mqtt.streaming.javadsl.MqttClientSession)] can be shared between clients and should be shut down after all streams are completed.
+The @apidoc[MqttClientSession] can be shared between clients and should be shut down after all streams are completed.
 
 ### At-least-once with high-level API
 
-The high-level @scala[@scaladoc[`MqttSource`](akka.stream.alpakka.mqtt.streaming.scaladsl.MqttSource$)]@java[@scaladoc[`MqttSource`](akka.stream.alpakka.mqtt.streaming.javadsl.MqttSource$)] at-most-once and at-least-once sources. The at-least-once source emits @scala[@scaladoc[`MqttAckHandle`](akka.stream.alpakka.mqtt.streaming.scaladsl.MqttAckHandle)]@java[@scaladoc[`MqttSource`](akka.stream.alpakka.mqtt.streaming.javadsl.MqttAckHandle)] which offers the `ack()` method.
+The high-level @apidoc[MqttSource](akka.stream.alpakka.mqtt.streaming.(javadsl|scaladsl).MqttSource$) provides at-most-once and at-least-once sources. The at-least-once source emits @apidoc[MqttAckHandle](MqttAckHandle) which offers the `ack()` method.
 
 Scala
 : @@snip [snip](/mqtt-streaming/src/test/scala/docs/scaladsl/MqttSourceSpec.scala) { #imports #at-least-once }
