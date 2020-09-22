@@ -47,12 +47,12 @@ class IntegrationSpec
   private val projectId = "alpakka"
 
   // as created in docker-compose.yml
-  private val topic1 = "topic1"
-  private val topic1subscription = "topic1subscription"
+  private val topic1 = "simpleTopic"
+  private val topic1subscription = "simpleSubscription"
 
   // as created in docker-compose.yml
-  private val topic2 = "topic2"
-  private val topic2subscription = "topic2subscription"
+  private val topic2 = "testTopic"
+  private val topic2subscription = "testSubscription"
 
   private val config = PubSubConfig(projectId, clientEmail = "not-relevant", privateKey = "not used with emulation")
 

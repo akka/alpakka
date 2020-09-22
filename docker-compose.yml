@@ -141,26 +141,6 @@ services:
         python publisher.py alpakka create testTopic &&
         python subscriber.py alpakka create testTopic testSubscription
       "
-  gcloud-pubsub-emulator-official:
-    image: google/cloud-sdk:latest
-    ports:
-      - "8539:8539"
-    command: gcloud beta emulators pubsub start --project=alpakka --host-port=0.0.0.0:8539
-  gcloud-pubsub-emulator-official_prep:
-    image: martynas/gcloud-pubsub-client
-    links:
-      - "gcloud-pubsub-emulator-official"
-    environment:
-      - "PUBSUB_PROJECT_ID=alpakka"
-      - "PUBSUB_EMULATOR_HOST=gcloud-pubsub-emulator-official:8539"
-    entrypoint: ""
-    command: >
-      bash -c "
-        python publisher.py alpakka create topic1 &&
-        python subscriber.py alpakka create topic1 topic1subscription
-        python publisher.py alpakka create topic2 &&
-        python subscriber.py alpakka create topic2 topic2subscription
-      "
   hbase:
     image: harisekhon/hbase:1.4
     hostname: hbase
