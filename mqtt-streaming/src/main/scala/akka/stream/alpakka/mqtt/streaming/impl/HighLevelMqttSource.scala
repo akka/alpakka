@@ -87,9 +87,7 @@ private[streaming] object HighLevelMqttSource {
       restartSettings: MqttRestartSettings,
       connectionSettings: MqttConnectionSettings,
       subscriptions: MqttSubscribe,
-      createAckHandle: SourceQueueWithComplete[
-        Command[Nothing]
-      ] => PartialFunction[Event[Nothing], Out]
+      createAckHandle: SourceQueueWithComplete[Command[Nothing]] => PartialFunction[Event[Nothing], Out]
   ) =
     Source
       .fromMaterializer { (mat, _) =>

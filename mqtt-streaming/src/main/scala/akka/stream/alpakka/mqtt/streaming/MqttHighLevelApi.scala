@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.mqtt.streaming
 
-import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.annotation.ApiMayChange
 import akka.stream.scaladsl.{Flow, Tcp}
 import akka.util.ByteString
@@ -15,7 +15,7 @@ import scala.concurrent.duration._
 
 @ApiMayChange
 trait MqttTransportSettings {
-  def connectionFlow()(implicit system: ActorSystem): Flow[ByteString, ByteString, _]
+  def connectionFlow()(implicit system: ClassicActorSystemProvider): Flow[ByteString, ByteString, _]
 }
 
 @ApiMayChange
@@ -35,7 +35,7 @@ final class MqttTcpTransportSettings private (
     port = port
   )
 
-  override def connectionFlow()(implicit system: ActorSystem): Flow[ByteString, ByteString, _] =
+  override def connectionFlow()(implicit system: ClassicActorSystemProvider): Flow[ByteString, ByteString, _] =
     Tcp(system).outgoingConnection(host, port)
 
   override def toString =
