@@ -186,7 +186,6 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
   Compile / PB.protoSources += (Compile / PB.externalIncludePath).value,
   // for the ExampleApp in the tests
   connectInput in run := true,
-  libraryDependencies := libraryDependencies.value ++ Dependencies.Silencer,
   Compile / scalacOptions ++= Seq(
       "-P:silencer:pathFilters=akka-grpc/main",
       "-P:silencer:pathFilters=akka-grpc/test"
