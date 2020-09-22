@@ -103,7 +103,7 @@ object Common extends AutoPlugin {
           "-Xlint:overloads",
           "-Xlint:overrides",
           "-Xlint:rawtypes",
-          "-Xlint:removal",
+          // JDK 11 "-Xlint:removal",
           "-Xlint:static",
           "-Xlint:try",
           "-Xlint:unchecked",
