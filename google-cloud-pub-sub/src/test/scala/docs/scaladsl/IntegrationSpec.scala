@@ -66,13 +66,12 @@ class IntegrationSpec
       // acknowledge any messages left on the subscription from earlier runs
       val cleanup = GooglePubSub
         .subscribe(topic1subscription, config)
-        .idleTimeout(1.second)
+        .idleTimeout(4.seconds)
         .map { msg =>
           println(readable(msg))
           msg.ackId
         }
-        .groupedWithin(1, 200.millis)
-        .map(ids => AcknowledgeRequest(ids: _*))
+        .map(id => AcknowledgeRequest(id))
         .via(GooglePubSub.acknowledgeFlow(topic1subscription, config))
         .runWith(Sink.ignore)
 
