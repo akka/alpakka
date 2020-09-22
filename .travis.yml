@@ -61,7 +61,7 @@ jobs:
     - name: google-cloud-bigquery
     - name: google-cloud-pub-sub
       env:
-        - PRE_CMD="docker-compose up -d gcloud-pubsub-emulator-official_prep"
+        - PRE_CMD="docker-compose up -d gcloud-pubsub-emulator_prep"
     - name: google-cloud-pub-sub-grpc
       env:
       - PRE_CMD="docker-compose up -d gcloud-pubsub-emulator_prep"
