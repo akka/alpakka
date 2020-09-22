@@ -183,6 +183,28 @@ class IntegrationSpec
       //#acknowledge
     }
 
+    "acknowledge flow" in {
+      val projectId = "alpakka"
+      val subscription = "simpleSubscription"
+
+      val request = StreamingPullRequest()
+        .withSubscription(s"projects/$projectId/subscriptions/$subscription")
+        .withStreamAckDeadlineSeconds(10)
+
+      val subscriptionSource: Source[ReceivedMessage, Future[Cancellable]] =
+        GooglePubSub.subscribe(request, pollInterval = 1.second)
+
+      subscriptionSource
+        .map { message =>
+          // do something fun
+          message.ackId
+        }
+        .groupedWithin(10, 1.second)
+        .map(ids => AcknowledgeRequest(ackIds = ids))
+        .via(GooglePubSub.acknowledgeFlow())
+        .to(Sink.ignore)
+    }
+
     "republish" in {
       val msg = "Labas!"
 
