@@ -122,10 +122,10 @@ services:
       - ./geode/scripts/:/scripts/
     command: /scripts/geode.sh
   gcloud-pubsub-emulator:
-    image: bigtruedata/gcloud-pubsub-emulator
+    image: google/cloud-sdk:latest
     ports:
       - "8538:8538"
-    command: start --host-port=0.0.0.0:8538 --data-dir=/data
+    command: gcloud beta emulators pubsub start --project=alpakka --host-port=0.0.0.0:8538
   gcloud-pubsub-emulator_prep:
     image: martynas/gcloud-pubsub-client
     links:
