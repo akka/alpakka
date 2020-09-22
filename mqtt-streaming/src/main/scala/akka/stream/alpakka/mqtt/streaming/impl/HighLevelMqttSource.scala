@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.alpakka.mqtt.streaming.impl
 
-import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
+import java.util.concurrent.atomic.AtomicLong
 
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
@@ -68,7 +68,7 @@ private[streaming] object HighLevelMqttSource {
                     () =>
                       commands
                         .offer(Command(PubAck(packetId)))
-                        .map(_ => Done)(ExecutionContexts.sameThreadExecutionContext))
+                        .map(_ => Done)(ExecutionContexts.parasitic))
         case Event(publish: Publish, _) =>
           throw new RuntimeException(s"Received Publish without packetId in at-least-once mode: $publish")
       }
@@ -91,9 +91,9 @@ private[streaming] object HighLevelMqttSource {
         Command[Nothing]
       ] => PartialFunction[Event[Nothing], Out]
   ) =
-    Setup
-      .source { implicit materializer => implicit attributes =>
-        implicit val system: ActorSystem = materializer.system
+    Source
+      .fromMaterializer { (mat, _) =>
+        implicit val system: ActorSystem = mat.system
 
         val mqttClientSession: MqttClientSession = ActorMqttClientSession(sessionSettings)
         constructInternals[Out](mqttClientSession,
@@ -108,7 +108,7 @@ private[streaming] object HighLevelMqttSource {
               materialized
           }
       }
-      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.sameThreadExecutionContext))
+      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.parasitic))
 
   private def constructInternals[Out](
       mqttClientSession: MqttClientSession,

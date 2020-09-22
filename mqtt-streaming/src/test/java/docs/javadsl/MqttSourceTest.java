@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.javadsl;
@@ -16,6 +16,7 @@ import akka.stream.alpakka.mqtt.streaming.*;
 import akka.stream.alpakka.mqtt.streaming.javadsl.*;
 // #imports
 import akka.stream.javadsl.*;
+import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import org.junit.After;
@@ -26,12 +27,10 @@ import org.junit.Test;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class MqttSourceTest {
 
@@ -41,13 +40,11 @@ public class MqttSourceTest {
       Arrays.asList("one-" + time, "two-" + time, "three-" + time, "four-" + time, "five-" + time);
 
   private static ActorSystem system;
-  private static Materializer materializer;
   private final LoggingAdapter logger = Logging.getLogger(system, this);
 
   @BeforeClass
   public static void setup() {
     MqttSourceTest.system = ActorSystem.create("MqttSourceTest");
-    MqttSourceTest.materializer = ActorMaterializer.create(system);
   }
 
   @AfterClass
@@ -57,7 +54,7 @@ public class MqttSourceTest {
 
   @After
   public void assertStageStopping() {
-    //    StreamTestKit.assertAllStagesStopped(materializer);
+    StreamTestKit.assertAllStagesStopped(SystemMaterializer.get(system).materializer());
   }
 
   @Test
@@ -104,7 +101,7 @@ public class MqttSourceTest {
                     })
                 .viaMat(KillSwitches.single(), Keep.both())
                 .toMat(Sink.ignore(), Keep.both())
-                .run(materializer);
+                .run(system);
 
     CompletionStage<List<Pair<String, ControlPacketFlags>>> subscribed = stream.first().first();
     UniqueKillSwitch killSwitch = stream.first().second();
@@ -113,12 +110,7 @@ public class MqttSourceTest {
 
     SourceQueueWithComplete<Command<Object>> publishFlow =
         publish(
-            topic,
-            ControlPacketFlags.QoSAtLeastOnceDelivery(),
-            transportSettings,
-            input,
-            system,
-            materializer);
+            topic, ControlPacketFlags.QoSAtLeastOnceDelivery(), transportSettings, input, system);
 
     Thread.sleep(2 * 1000);
     // #at-least-once
@@ -139,11 +131,10 @@ public class MqttSourceTest {
       int controlPacketFlags,
       MqttTransportSettings transportSettings,
       Collection<String> input,
-      ActorSystem actorSystem,
-      Materializer materializer) {
+      ActorSystem actorSystem) {
     String clientId = "streaming/source-test/sender";
     MqttClientSession session =
-        new ActorMqttClientSession(MqttSessionSettings.create(), materializer, actorSystem);
+        new ActorMqttClientSession(MqttSessionSettings.create(), actorSystem);
 
     Flow<Command<Object>, DecodeErrorOrEvent<Object>, NotUsed> join =
         Mqtt.clientSessionFlow(session, ByteString.fromString("SourceQueueWithComplete"))
@@ -156,7 +147,7 @@ public class MqttSourceTest {
                         new Command<>(new Connect(clientId, ConnectFlags.CleanSession())))))
             .via(join)
             .to(Sink.ignore())
-            .run(materializer);
+            .run(actorSystem);
     input.forEach(
         d -> {
           session.tell(

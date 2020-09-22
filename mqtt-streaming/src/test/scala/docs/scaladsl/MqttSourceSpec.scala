@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.scaladsl
@@ -10,6 +10,8 @@ import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.event.{Logging, LoggingAdapter}
 import akka.stream._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 // #imports
 import akka.stream.alpakka.mqtt.streaming._
 import akka.stream.alpakka.mqtt.streaming.scaladsl._
@@ -27,7 +29,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class MqttSourceSpec
     extends TestKit(ActorSystem("MqttSourceSpec"))
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
     with ScalaFutures {
@@ -36,7 +38,7 @@ class MqttSourceSpec
 
   private implicit val defaultPatience: PatienceConfig = PatienceConfig(10.seconds, interval = 500.millis)
 
-  private implicit val mat: Materializer = ActorMaterializer()
+  private implicit val mat: Materializer = SystemMaterializer(system).materializer
   private implicit val ec: ExecutionContext = system.dispatcher
   private implicit val logging: LoggingAdapter = Logging.getLogger(system, this)
 
