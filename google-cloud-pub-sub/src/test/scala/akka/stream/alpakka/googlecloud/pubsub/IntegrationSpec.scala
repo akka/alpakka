@@ -11,7 +11,6 @@ import java.util.concurrent.TimeoutException
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.googlecloud.pubsub.impl.PubSubApi
 import akka.stream.alpakka.googlecloud.pubsub.scaladsl.GooglePubSub
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Keep, Sink, Source}
@@ -42,6 +41,7 @@ class IntegrationSpec
 
   override def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 
+  // The gCloud emulator is selected via environment parameters (in build.sbt)
   // as created in docker-compose.yml
   private val projectId = "alpakka"
 
@@ -55,16 +55,6 @@ class IntegrationSpec
 
   private val config = PubSubConfig(projectId, clientEmail = "not-relevant", privateKey = "not used with emulation")
 
-  object EmulatorHttpApi extends PubSubApi {
-    override val isEmulated = true
-    override def PubSubGoogleApisHost = "localhost"
-    override def PubSubGoogleApisPort = 8539
-  }
-
-  lazy val emulatorPubSub: GooglePubSub = new GooglePubSub {
-    override val httpApi: PubSubApi = EmulatorHttpApi
-  }
-
   private def readable(msg: ReceivedMessage) = new String(Base64.getDecoder.decode(msg.message.data.get))
 
   "pub/sub" should {
@@ -73,7 +63,7 @@ class IntegrationSpec
 
     "publish a message and receive it again" in assertAllStagesStopped {
       // acknowledge any messages left on the subscription from earlier runs
-      val cleanup = emulatorPubSub
+      val cleanup = GooglePubSub
         .subscribe(topic1subscription, config)
         .idleTimeout(1.second)
         .map { msg =>
@@ -82,7 +72,7 @@ class IntegrationSpec
         }
         .groupedWithin(1, 200.millis)
         .map(ids => AcknowledgeRequest(ids: _*))
-        .via(emulatorPubSub.acknowledgeFlow(topic1subscription, config))
+        .via(GooglePubSub.acknowledgeFlow(topic1subscription, config))
         .runWith(Sink.ignore)
 
       cleanup.failed.futureValue shouldBe a[TimeoutException]
@@ -91,13 +81,13 @@ class IntegrationSpec
       val publishedMessageIds: Future[Seq[String]] =
         Source
           .single(PublishRequest(Seq(PublishMessage(SampleMessage))))
-          .via(emulatorPubSub.publish(topic1, config))
+          .via(GooglePubSub.publish(topic1, config))
           .runWith(Sink.head)
 
       publishedMessageIds.futureValue.size shouldBe 1
 
       // expect the current message
-      val sink = emulatorPubSub
+      val sink = GooglePubSub
         .subscribe(topic1subscription, config)
         .take(1)
         .runWith(Sink.head)
@@ -107,7 +97,7 @@ class IntegrationSpec
     }
 
     "receive a published message and acknowledge it" in assertAllStagesStopped {
-      val result = emulatorPubSub
+      val result = GooglePubSub
         .subscribe(topic2subscription, config)
         .map { message =>
           readable(message) shouldBe SampleText
@@ -115,20 +105,20 @@ class IntegrationSpec
         }
         .groupedWithin(1, 1.second)
         .map(ids => AcknowledgeRequest(ids: _*))
-        .via(emulatorPubSub.acknowledgeFlow(topic2subscription, config))
+        .via(GooglePubSub.acknowledgeFlow(topic2subscription, config))
         .runWith(Sink.headOption)
 
       val publishedMessageIds: Future[Seq[String]] =
         Source
           .single(PublishRequest(Seq(PublishMessage(SampleMessage))))
-          .via(emulatorPubSub.publish(topic2, config))
+          .via(GooglePubSub.publish(topic2, config))
           .runWith(Sink.head)
 
       publishedMessageIds.futureValue.size shouldBe 1
       result.futureValue.value shouldBe Done
 
       // the acknowledged message should not arrive again
-      val (stream, result2) = emulatorPubSub
+      val (stream, result2) = GooglePubSub
         .subscribe(topic2subscription, config)
         .toMat(TestSink.probe)(Keep.both)
         .run()
