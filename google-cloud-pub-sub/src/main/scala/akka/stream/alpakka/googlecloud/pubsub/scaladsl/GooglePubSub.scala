@@ -15,6 +15,9 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
+/**
+ * Scala DSL for Google Pub/Sub
+ */
 object GooglePubSub extends GooglePubSub {
   private[pubsub] override val httpApi = PubSubApi
 }
@@ -63,7 +66,7 @@ protected[pubsub] trait GooglePubSub {
   }
 
   /**
-   * Creates a source pulling messages from subscription
+   * Creates a source pulling messages from a subscription.
    */
   def subscribe(subscription: String, config: PubSubConfig): Source[ReceivedMessage, Cancellable] = {
     Source
@@ -72,7 +75,7 @@ protected[pubsub] trait GooglePubSub {
   }
 
   /**
-   * Creates a flow pulling messages from subscription
+   * Creates a flow pulling messages from a subscription.
    */
   def subscribeFlow(subscription: String, config: PubSubConfig): Flow[Done, ReceivedMessage, Future[NotUsed]] = {
     Flow
@@ -93,7 +96,7 @@ protected[pubsub] trait GooglePubSub {
   }
 
   /**
-   * Creates a sink for acknowledging messages on subscription
+   * Creates a sink for acknowledging messages on a subscription.
    */
   @deprecated("Use `acknowledge` without `parallelism` param", since = "2.0.0")
   def acknowledge(subscription: String,
@@ -102,19 +105,24 @@ protected[pubsub] trait GooglePubSub {
     acknowledge(subscription, config)
 
   /**
-   * Creates a sink for acknowledging messages on subscription
+   * Creates a flow for acknowledging messages on a subscription.
+   */
+  def acknowledgeFlow(subscription: String, config: PubSubConfig): Flow[AcknowledgeRequest, Done, NotUsed] =
+    Flow
+      .setup { (mat, _) =>
+        implicit val system: ActorSystem = mat.system
+        implicit val materializer: Materializer = mat
+        Flow[AcknowledgeRequest]
+          .via(httpApi.accessToken[AcknowledgeRequest](config))
+          .via(httpApi.acknowledge(config.projectId, subscription))
+      }
+      .mapMaterializedValue(_ => NotUsed)
+
+  /**
+   * Creates a sink for acknowledging messages on a subscription.
    */
   def acknowledge(subscription: String, config: PubSubConfig): Sink[AcknowledgeRequest, Future[Done]] = {
-    val flow =
-      Flow
-        .setup { (mat, _) =>
-          implicit val system: ActorSystem = mat.system
-          implicit val materializer: Materializer = mat
-          Flow[AcknowledgeRequest]
-            .via(httpApi.accessToken[AcknowledgeRequest](config))
-            .via(httpApi.acknowledge(config.projectId, subscription))
-        }
-    flow
+    acknowledgeFlow(subscription, config)
       .toMat(Sink.ignore)(Keep.right)
   }
 

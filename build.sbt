@@ -173,7 +173,8 @@ lazy val googleCloudPubSub = alpakkaProject(
   "google.cloud.pubsub",
   Dependencies.GooglePubSub,
   Test / fork := true,
-  envVars in Test := Map("PUBSUB_EMULATOR_HOST" -> "localhost:8538")
+  // See docker-compose.yml gcloud-pubsub-emulator_prep
+  Test / envVars := Map("PUBSUB_EMULATOR_HOST" -> "localhost", "PUBSUB_EMULATOR_PORT" -> "8538")
 )
 
 lazy val googleCloudPubSubGrpc = alpakkaProject(
