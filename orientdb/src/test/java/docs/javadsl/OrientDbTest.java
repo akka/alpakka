@@ -349,8 +349,7 @@ public class OrientDbTest {
               ODatabaseDocumentTx db = oDatabase.acquire();
               db.setDatabaseOwner(new OObjectDatabaseTx(db));
               ODatabaseRecordThreadLocal.instance().set(db);
-              messages.stream()
-                  .forEach(message -> commitToKafka.accept(message.passThrough()));
+              messages.stream().forEach(message -> commitToKafka.accept(message.passThrough()));
               return NotUsed.getInstance();
             })
         .runWith(Sink.seq(), materializer)
