@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.stream.alpakka.googlecloud.pubsub
+package docs.scaladsl
 
 import java.time.Instant
 import java.util.Base64
@@ -12,6 +12,7 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.pubsub.scaladsl.GooglePubSub
+import akka.stream.alpakka.googlecloud.pubsub._
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
