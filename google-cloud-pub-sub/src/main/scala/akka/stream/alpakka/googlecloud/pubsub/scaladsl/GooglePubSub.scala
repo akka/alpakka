@@ -104,17 +104,22 @@ protected[pubsub] trait GooglePubSub {
   /**
    * Creates a sink for acknowledging messages on subscription
    */
+  def acknowledgeFlow(subscription: String, config: PubSubConfig): Flow[AcknowledgeRequest, Done, NotUsed] =
+    Flow
+      .setup { (mat, _) =>
+        implicit val system: ActorSystem = mat.system
+        implicit val materializer: Materializer = mat
+        Flow[AcknowledgeRequest]
+          .via(httpApi.accessToken[AcknowledgeRequest](config))
+          .via(httpApi.acknowledge(config.projectId, subscription))
+      }
+      .mapMaterializedValue(_ => NotUsed)
+
+  /**
+   * Creates a sink for acknowledging messages on subscription
+   */
   def acknowledge(subscription: String, config: PubSubConfig): Sink[AcknowledgeRequest, Future[Done]] = {
-    val flow =
-      Flow
-        .setup { (mat, _) =>
-          implicit val system: ActorSystem = mat.system
-          implicit val materializer: Materializer = mat
-          Flow[AcknowledgeRequest]
-            .via(httpApi.accessToken[AcknowledgeRequest](config))
-            .via(httpApi.acknowledge(config.projectId, subscription))
-        }
-    flow
+    acknowledgeFlow(subscription, config)
       .toMat(Sink.ignore)(Keep.right)
   }
 
