@@ -1083,8 +1083,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
       //#connection-settings
       val connectionSettings = ElasticsearchConnectionSettings()
         .withBaseUrl("http://localhost:9200")
-        .withUsername("user")
-        .withPassword("password")
+        .withCredentials("user", "password")
       //#connection-settings
       //#source-settings
       val sourceSettings = ElasticsearchSourceSettings()

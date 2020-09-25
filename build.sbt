@@ -134,7 +134,12 @@ lazy val csvBench = internalProject("csv-bench")
 
 lazy val dynamodb = alpakkaProject("dynamodb", "aws.dynamodb", Dependencies.DynamoDB)
 
-lazy val elasticsearch = alpakkaProject("elasticsearch", "elasticsearch", Dependencies.Elasticsearch)
+lazy val elasticsearch = alpakkaProject(
+  "elasticsearch",
+  "elasticsearch",
+  Dependencies.Elasticsearch,
+  crossScalaVersions -= Dependencies.Scala211
+)
 
 // The name 'file' is taken by `sbt.file`, hence 'files'
 lazy val files = alpakkaProject("file", "file", Dependencies.File, fatalWarnings := true)

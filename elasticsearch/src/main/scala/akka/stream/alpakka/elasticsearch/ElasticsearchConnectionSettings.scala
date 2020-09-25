@@ -12,9 +12,8 @@ final class ElasticsearchConnectionSettings private (
 
   def withBaseUrl(value: String): ElasticsearchConnectionSettings = copy(baseUrl = value)
 
-  def withUsername(value: String): ElasticsearchConnectionSettings = copy(username = Option(value))
-
-  def withPassword(value: String): ElasticsearchConnectionSettings = copy(password = Option(value))
+  def withCredentials(username: String, password: String): ElasticsearchConnectionSettings =
+    copy(username = Option(username), password = Option(password))
 
   def hasCredentialsDefined: Boolean = username.isDefined && password.isDefined
 
@@ -24,7 +23,7 @@ final class ElasticsearchConnectionSettings private (
     new ElasticsearchConnectionSettings(baseUrl = baseUrl, username = username, password = password)
 
   override def toString =
-    s"""ElasticsearchSourceSettings(baseUrl=$baseUrl,username=$username,password=$password)"""
+    s"""ElasticsearchSourceSettings(baseUrl=$baseUrl,username=$username,password=${password.fold("")(_ => "***")}"""
 }
 
 object ElasticsearchConnectionSettings {

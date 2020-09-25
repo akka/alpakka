@@ -134,8 +134,7 @@ public class ElasticsearchTest {
     ElasticsearchConnectionSettings connectionSettings =
         ElasticsearchConnectionSettings.create()
             .withBaseUrl("http://localhost:9200")
-            .withUsername("user")
-            .withPassword("password");
+            .withCredentials("user", "password");
     // #connection-settings
 
     // #source-settings

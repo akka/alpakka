@@ -46,8 +46,8 @@ object ElasticsearchSource {
     val indexType = ElasticsearchIndexType(indexName, Option(typeName), settings.apiVersion)
 
     Source
-      .setup {
-        japiBiFunction((mat: ActorMaterializer, _: Attributes) => {
+      .setup { (mat: ActorMaterializer, _: Attributes) =>
+        {
           implicit val system: ActorSystem = mat.system
           implicit val http: HttpExt = Http()
           implicit val ec: ExecutionContext = mat.executionContext
@@ -61,9 +61,9 @@ object ElasticsearchSource {
                 new JacksonReader[java.util.Map[String, Object]](objectMapper, classOf[java.util.Map[String, Object]])
               )
             )
-        })
+        }
       }
-      .mapMaterializedValue(japiFunction(_ => NotUsed))
+      .mapMaterializedValue(_ => NotUsed)
   }
 
   /**
@@ -84,8 +84,8 @@ object ElasticsearchSource {
     val indexType = ElasticsearchIndexType(indexName, Option(typeName), settings.apiVersion)
 
     Source
-      .setup {
-        japiBiFunction((mat: ActorMaterializer, _: Attributes) => {
+      .setup { (mat: ActorMaterializer, _: Attributes) =>
+        {
           implicit val system: ActorSystem = mat.system
           implicit val http: HttpExt = Http()
           implicit val ec: ExecutionContext = mat.executionContext
@@ -98,9 +98,9 @@ object ElasticsearchSource {
               new JacksonReader[java.util.Map[String, Object]](objectMapper, classOf[java.util.Map[String, Object]])
             )
           )
-        })
+        }
       }
-      .mapMaterializedValue(japiFunction(_ => NotUsed))
+      .mapMaterializedValue(_ => NotUsed)
   }
 
   /**
@@ -127,8 +127,8 @@ object ElasticsearchSource {
     val indexType = ElasticsearchIndexType(indexName, Option(typeName), settings.apiVersion)
 
     Source
-      .setup {
-        japiBiFunction((mat: ActorMaterializer, _: Attributes) => {
+      .setup { (mat: ActorMaterializer, _: Attributes) =>
+        {
           implicit val system: ActorSystem = mat.system
           implicit val http: HttpExt = Http()
           implicit val ec: ExecutionContext = mat.executionContext
@@ -141,9 +141,9 @@ object ElasticsearchSource {
               new JacksonReader[T](objectMapper, clazz)
             )
           )
-        })
+        }
       }
-      .mapMaterializedValue(japiFunction(_ => NotUsed))
+      .mapMaterializedValue(_ => NotUsed)
   }
 
   /**
@@ -165,8 +165,8 @@ object ElasticsearchSource {
     val indexType = ElasticsearchIndexType(indexName, Option(typeName), settings.apiVersion)
 
     Source
-      .setup {
-        japiBiFunction((mat: ActorMaterializer, _: Attributes) => {
+      .setup { (mat: ActorMaterializer, _: Attributes) =>
+        {
           implicit val system: ActorSystem = mat.system
           implicit val http: HttpExt = Http()
           implicit val ec: ExecutionContext = mat.executionContext
@@ -179,9 +179,9 @@ object ElasticsearchSource {
               new JacksonReader[T](objectMapper, clazz)
             )
           )
-        })
+        }
       }
-      .mapMaterializedValue(japiFunction(_ => NotUsed))
+      .mapMaterializedValue(_ => NotUsed)
   }
 
   private final class JacksonReader[T](mapper: ObjectMapper, clazz: Class[T]) extends impl.MessageReader[T] {
@@ -209,23 +209,4 @@ object ElasticsearchSource {
       }
     }
   }
-
-  /**
-   * Helper for creating BiFunction instances from Scala
-   * functions as Scala 2.11 does not know about SAMs.
-   */
-  private def japiBiFunction[T, U, R](op: (T, U) => R): BiFunction[T, U, R] = {
-    new BiFunction[T, U, R] {
-      override def apply(t: T, u: U): R = op.apply(t, u)
-    }
-  }
-
-  /**
-   * Helper for creating akka.japi.function.Function instances from Scala
-   * functions as Scala 2.11 does not know about SAMs.
-   */
-  private def japiFunction[A, B](f: A => B): akka.japi.function.Function[A, B] =
-    new akka.japi.function.Function[A, B]() {
-      override def apply(a: A): B = f(a)
-    }
 }
