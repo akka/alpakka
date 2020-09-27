@@ -23,7 +23,7 @@ import scala.concurrent.ExecutionContext
  */
 @InternalApi
 private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
-    indexType: ElasticsearchIndexType,
+    esParams: EsParams,
     settings: ElasticsearchWriteSettings,
     writer: MessageWriter[T]
 )(implicit http: HttpExt, mat: Materializer, ec: ExecutionContext)
@@ -38,13 +38,13 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
 
   private val restApi: RestBulkApi[T, C] = settings.apiVersion match {
     case ApiVersion.V5 =>
-      new RestBulkApiV5[T, C](indexType.indexName,
-                              indexType.typeName.get,
+      new RestBulkApiV5[T, C](esParams.indexName,
+                              esParams.typeName.get,
                               settings.versionType,
                               settings.allowExplicitIndex,
                               writer)
     case ApiVersion.V7 =>
-      new RestBulkApiV7[T, C](indexType.indexName, settings.versionType, settings.allowExplicitIndex, writer)
+      new RestBulkApiV7[T, C](esParams.indexName, settings.versionType, settings.allowExplicitIndex, writer)
     case other => throw new IllegalArgumentException(s"API version $other is not supported")
   }
 
@@ -64,7 +64,7 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
     override def onPull(): Unit = tryPull()
 
     override def onPush(): Unit = {
-      val endpoint = if (settings.allowExplicitIndex) "/_bulk" else s"/${indexType.indexName}/_bulk"
+      val endpoint = if (settings.allowExplicitIndex) "/_bulk" else s"/${esParams.indexName}/_bulk"
       val (messages, resultsPassthrough) = grab(in)
       inflight = true
       val json: String = restApi.toJson(messages)

@@ -28,26 +28,22 @@ object ElasticsearchFlow {
    *
    * This factory method requires an implicit Spray JSON writer for `T`.
    */
-  def create[T](indexName: String,
-                typeName: String,
-                settings: ElasticsearchWriteSettings = ElasticsearchWriteSettings.Default)(
+  def create[T](esParams: EsParams, settings: ElasticsearchWriteSettings = ElasticsearchWriteSettings.Default)(
       implicit sprayJsonWriter: JsonWriter[T]
   ): Flow[WriteMessage[T, NotUsed], WriteResult[T, NotUsed], NotUsed] =
-    create[T](indexName, typeName, settings, new SprayJsonWriter[T]()(sprayJsonWriter))
+    create[T](esParams, settings, new SprayJsonWriter[T]()(sprayJsonWriter))
 
   /**
    * Create a flow to update Elasticsearch with [[akka.stream.alpakka.elasticsearch.WriteMessage WriteMessage]]s containing type `T`.
    * The result status is port of the [[akka.stream.alpakka.elasticsearch.WriteResult WriteResult]] and must be checked for
    * successful execution.
    */
-  def create[T](indexName: String,
-                typeName: String,
+  def create[T](esParams: EsParams,
                 settings: ElasticsearchWriteSettings,
                 writer: MessageWriter[T]): Flow[WriteMessage[T, NotUsed], WriteResult[T, NotUsed], NotUsed] = {
-    val indexType = ElasticsearchIndexType(indexName, Option(typeName), settings.apiVersion)
     Flow[WriteMessage[T, NotUsed]]
       .batch(settings.bufferSize, immutable.Seq(_)) { case (seq, wm) => seq :+ wm }
-      .via(stageFlow(indexType, settings, writer))
+      .via(stageFlow(esParams, settings, writer))
       .mapConcat(identity)
   }
 
@@ -59,12 +55,11 @@ object ElasticsearchFlow {
    *
    * This factory method requires an implicit Spray JSON writer for `T`.
    */
-  def createWithPassThrough[T, C](indexName: String,
-                                  typeName: String,
+  def createWithPassThrough[T, C](esParams: EsParams,
                                   settings: ElasticsearchWriteSettings = ElasticsearchWriteSettings.Default)(
       implicit sprayJsonWriter: JsonWriter[T]
   ): Flow[WriteMessage[T, C], WriteResult[T, C], NotUsed] =
-    createWithPassThrough[T, C](indexName, typeName, settings, new SprayJsonWriter[T]()(sprayJsonWriter))
+    createWithPassThrough[T, C](esParams, settings, new SprayJsonWriter[T]()(sprayJsonWriter))
 
   /**
    * Create a flow to update Elasticsearch with [[akka.stream.alpakka.elasticsearch.WriteMessage WriteMessage]]s containing type `T`
@@ -72,14 +67,12 @@ object ElasticsearchFlow {
    * The result status is part of the [[akka.stream.alpakka.elasticsearch.WriteResult WriteResult]] and must be checked for
    * successful execution.
    */
-  def createWithPassThrough[T, C](indexName: String,
-                                  typeName: String,
+  def createWithPassThrough[T, C](esParams: EsParams,
                                   settings: ElasticsearchWriteSettings,
                                   writer: MessageWriter[T]): Flow[WriteMessage[T, C], WriteResult[T, C], NotUsed] = {
-    val indexType = ElasticsearchIndexType(indexName, Option(typeName), settings.apiVersion)
     Flow[WriteMessage[T, C]]
       .batch(settings.bufferSize, immutable.Seq(_)) { case (seq, wm) => seq :+ wm }
-      .via(stageFlow(indexType, settings, writer))
+      .via(stageFlow(esParams, settings, writer))
       .mapConcat(identity)
   }
 
@@ -92,12 +85,10 @@ object ElasticsearchFlow {
    *
    * This factory method requires an implicit Spray JSON writer for `T`.
    */
-  def createBulk[T, C](indexName: String,
-                       typeName: String,
-                       settings: ElasticsearchWriteSettings = ElasticsearchWriteSettings.Default)(
+  def createBulk[T, C](esParams: EsParams, settings: ElasticsearchWriteSettings = ElasticsearchWriteSettings.Default)(
       implicit sprayJsonWriter: JsonWriter[T]
   ): Flow[immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]], NotUsed] =
-    createBulk[T, C](indexName, typeName, settings, new SprayJsonWriter[T]()(sprayJsonWriter))
+    createBulk[T, C](esParams, settings, new SprayJsonWriter[T]()(sprayJsonWriter))
 
   /**
    * Create a flow to update Elasticsearch with
@@ -107,13 +98,11 @@ object ElasticsearchFlow {
    * and must be checked for successful execution.
    */
   def createBulk[T, C](
-      indexName: String,
-      typeName: String,
+      esParams: EsParams,
       settings: ElasticsearchWriteSettings,
       writer: MessageWriter[T]
   ): Flow[immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]], NotUsed] = {
-    val indexType = ElasticsearchIndexType(indexName, Option(typeName), settings.apiVersion)
-    stageFlow(indexType, settings, writer)
+    stageFlow(esParams, settings, writer)
   }
 
   /**
@@ -125,12 +114,10 @@ object ElasticsearchFlow {
    * This factory method requires an implicit Spray JSON writer for `T`.
    */
   @ApiMayChange
-  def createWithContext[T, C](indexName: String,
-                              typeName: String,
-                              settings: ElasticsearchWriteSettings = ElasticsearchWriteSettings())(
+  def createWithContext[T, C](esParams: EsParams, settings: ElasticsearchWriteSettings = ElasticsearchWriteSettings())(
       implicit sprayJsonWriter: JsonWriter[T]
   ): FlowWithContext[WriteMessage[T, NotUsed], C, WriteResult[T, C], C, NotUsed] =
-    createWithContext[T, C](indexName, typeName, settings, new SprayJsonWriter[T]()(sprayJsonWriter))
+    createWithContext[T, C](esParams, settings, new SprayJsonWriter[T]()(sprayJsonWriter))
 
   /**
    * Create a flow to update Elasticsearch with [[akka.stream.alpakka.elasticsearch.WriteMessage WriteMessage]]s containing type `T`
@@ -140,16 +127,13 @@ object ElasticsearchFlow {
    */
   @ApiMayChange
   def createWithContext[T, C](
-      indexName: String,
-      typeName: String,
+      esParams: EsParams,
       settings: ElasticsearchWriteSettings,
       writer: MessageWriter[T]
   ): FlowWithContext[WriteMessage[T, NotUsed], C, WriteResult[T, C], C, NotUsed] = {
-    val indexType = ElasticsearchIndexType(indexName, Option(typeName), settings.apiVersion)
-
     Flow[WriteMessage[T, C]]
       .batch(settings.bufferSize, immutable.Seq(_)) { case (seq, wm) => seq :+ wm }
-      .via(stageFlow(indexType, settings, writer))
+      .via(stageFlow(esParams, settings, writer))
       .mapConcat(identity)
       .asFlowWithContext[WriteMessage[T, NotUsed], C, C]((res, c) => res.withPassThrough(c))(
         p => p.message.passThrough
@@ -158,12 +142,12 @@ object ElasticsearchFlow {
 
   @InternalApi
   private def stageFlow[T, C](
-      indexType: ElasticsearchIndexType,
+      esParams: EsParams,
       settings: ElasticsearchWriteSettings,
       writer: MessageWriter[T]
   ): Flow[immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]], NotUsed] = {
     if (settings.retryLogic == RetryNever) {
-      val basicFlow = basicStageFlow[T, C](indexType, settings, writer)
+      val basicFlow = basicStageFlow[T, C](esParams, settings, writer)
       Flow[immutable.Seq[WriteMessage[T, C]]]
         .map(messages => messages -> immutable.Seq.empty[WriteResult[T, C]])
         .via(basicFlow)
@@ -179,7 +163,7 @@ object ElasticsearchFlow {
         }
       }
 
-      val basicFlow = basicStageFlow[T, (Int, C)](indexType, settings, writer)
+      val basicFlow = basicStageFlow[T, (Int, C)](esParams, settings, writer)
       val retryFlow = RetryFlow.withBackoff(settings.retryLogic.minBackoff,
                                             settings.retryLogic.maxBackoff,
                                             0,
@@ -221,7 +205,7 @@ object ElasticsearchFlow {
   }
 
   @InternalApi
-  private def basicStageFlow[T, C](indexType: ElasticsearchIndexType,
+  private def basicStageFlow[T, C](esParams: EsParams,
                                    settings: ElasticsearchWriteSettings,
                                    writer: MessageWriter[T]) = {
     Flow
@@ -231,7 +215,7 @@ object ElasticsearchFlow {
         implicit val ec: ExecutionContextExecutor = mat.executionContext
 
         Flow.fromGraph {
-          new impl.ElasticsearchSimpleFlowStage[T, C](indexType, settings, writer)
+          new impl.ElasticsearchSimpleFlowStage[T, C](esParams, settings, writer)
         }
       }
       .mapMaterializedValue(_ => NotUsed)

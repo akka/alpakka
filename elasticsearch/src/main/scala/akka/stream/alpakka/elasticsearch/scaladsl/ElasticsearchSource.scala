@@ -24,11 +24,10 @@ object ElasticsearchSource {
    * Alias of [[create]].
    */
   def apply(
-      indexName: String,
-      typeName: String,
+      esParams: EsParams,
       query: String,
       settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings.Default
-  ): Source[ReadResult[JsObject], NotUsed] = create(indexName, typeName, query, settings)
+  ): Source[ReadResult[JsObject], NotUsed] = create(esParams, query, settings)
 
   /**
    * Creates a [[akka.stream.scaladsl.Source]] from Elasticsearch that streams [[ReadResult]]s
@@ -39,33 +38,19 @@ object ElasticsearchSource {
    *  Map( "query" -> """{"match_all": {}}""" )
    *  Map( "query" -> """{"match_all": {}}""", "_source" -> """ ["fieldToInclude", "anotherFieldToInclude"] """ )
    */
-  def apply(indexName: String,
-            typeName: Option[String],
+  def apply(esParams: EsParams,
             searchParams: Map[String, String],
             settings: ElasticsearchSourceSettings): Source[ReadResult[JsObject], NotUsed] =
-    create(indexName, typeName, searchParams, settings)
+    create(esParams, searchParams, settings)
 
   /**
    * Creates a [[akka.stream.scaladsl.Source]] from Elasticsearch that streams [[ReadResult]]s
    * of Spray's [[spray.json.JsObject]].
    */
-  def create(
-      indexName: String,
-      typeName: String,
-      query: String,
-      settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings.Default
-  ): Source[ReadResult[JsObject], NotUsed] =
-    create(indexName, Option(typeName), query, settings)
-
-  /**
-   * Creates a [[akka.stream.scaladsl.Source]] from Elasticsearch that streams [[ReadResult]]s
-   * of Spray's [[spray.json.JsObject]].
-   */
-  def create(indexName: String,
-             typeName: Option[String],
+  def create(esParams: EsParams,
              query: String,
              settings: ElasticsearchSourceSettings): Source[ReadResult[JsObject], NotUsed] =
-    create(indexName, typeName, Map("query" -> query), settings)
+    create(esParams, Map("query" -> query), settings)
 
   /**
    * Creates a [[akka.stream.scaladsl.Source]] from Elasticsearch that streams [[ReadResult]]s
@@ -75,12 +60,9 @@ object ElasticsearchSource {
    *  Map( "query" -> """{"match_all": {}}""" )
    *  Map( "query" -> """{"match_all": {}}""", "_source" -> """ ["fieldToInclude", "anotherFieldToInclude"] """ )
    */
-  def create(indexName: String,
-             typeName: Option[String],
+  def create(esParams: EsParams,
              searchParams: Map[String, String],
-             settings: ElasticsearchSourceSettings): Source[ReadResult[JsObject], NotUsed] = {
-    val indexType = ElasticsearchIndexType(indexName, typeName, settings.apiVersion)
-
+             settings: ElasticsearchSourceSettings): Source[ReadResult[JsObject], NotUsed] =
     Source
       .setup { (mat, _) =>
         implicit val system: ActorSystem = mat.system
@@ -88,7 +70,7 @@ object ElasticsearchSource {
         implicit val ec: ExecutionContextExecutor = mat.executionContext
 
         val sourceStage = new impl.ElasticsearchSourceStage(
-          indexType,
+          esParams,
           searchParams,
           settings,
           new SprayJsonReader[JsObject]()(DefaultJsonProtocol.RootJsObjectFormat)
@@ -97,28 +79,15 @@ object ElasticsearchSource {
         Source.fromGraph(sourceStage)
       }
       .mapMaterializedValue(_ => NotUsed)
-  }
 
   /**
    * Creates a [[akka.stream.scaladsl.Source]] from Elasticsearch that streams [[ReadResult]]s of type `T`
    * converted by Spray's [[spray.json.JsonReader]]
    */
-  def typed[T](indexName: String,
-               typeName: String,
-               query: String,
-               settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings.Default)(
-      implicit reader: JsonReader[T]
-  ): Source[ReadResult[T], NotUsed] =
-    typed(indexName, Option(typeName), query, settings)
-
-  /**
-   * Creates a [[akka.stream.scaladsl.Source]] from Elasticsearch that streams [[ReadResult]]s of type `T`
-   * converted by Spray's [[spray.json.JsonReader]]
-   */
-  def typed[T](indexName: String, typeName: Option[String], query: String, settings: ElasticsearchSourceSettings)(
+  def typed[T](esParams: EsParams, query: String, settings: ElasticsearchSourceSettings)(
       implicit sprayJsonReader: JsonReader[T]
   ): Source[ReadResult[T], NotUsed] =
-    typed(indexName, typeName, Map("query" -> query), settings)
+    typed(esParams, Map("query" -> query), settings)
 
   /**
    * Creates a [[akka.stream.scaladsl.Source]] from Elasticsearch that streams [[ReadResult]]s of type `T`
@@ -128,14 +97,11 @@ object ElasticsearchSource {
    *  Map( "query" -> """{"match_all": {}}""" )
    *  Map( "query" -> """{"match_all": {}}""", "_source" -> """ ["fieldToInclude", "anotherFieldToInclude"] """ )
    */
-  def typed[T](indexName: String,
-               typeName: Option[String],
+  def typed[T](esParams: EsParams,
                searchParams: Map[String, String],
-               settings: ElasticsearchSourceSettings)(
+               settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings.Default)(
       implicit sprayJsonReader: JsonReader[T]
-  ): Source[ReadResult[T], NotUsed] = {
-    val indexType = ElasticsearchIndexType(indexName, typeName, settings.apiVersion)
-
+  ): Source[ReadResult[T], NotUsed] =
     Source
       .setup { (mat, _) =>
         implicit val system: ActorSystem = mat.system
@@ -143,14 +109,10 @@ object ElasticsearchSource {
         implicit val ec: ExecutionContextExecutor = mat.executionContext
 
         Source.fromGraph(
-          new impl.ElasticsearchSourceStage(indexType,
-                                            searchParams,
-                                            settings,
-                                            new SprayJsonReader[T]()(sprayJsonReader))
+          new impl.ElasticsearchSourceStage(esParams, searchParams, settings, new SprayJsonReader[T]()(sprayJsonReader))
         )
       }
       .mapMaterializedValue(_ => NotUsed)
-  }
 
   private final class SprayJsonReader[T](implicit reader: JsonReader[T]) extends impl.MessageReader[T] {
 

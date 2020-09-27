@@ -9,7 +9,7 @@ import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.alpakka.elasticsearch.{ApiVersion, ElasticsearchIndexType, ElasticsearchSourceSettings, ReadResult}
+import akka.stream.alpakka.elasticsearch.{ApiVersion, ElasticsearchSourceSettings, EsParams, ReadResult}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler, StageLogging}
 import akka.stream.{Attributes, Materializer, Outlet, SourceShape}
 import spray.json.DefaultJsonProtocol._
@@ -43,7 +43,7 @@ private[elasticsearch] trait MessageReader[T] {
  */
 @InternalApi
 private[elasticsearch] final class ElasticsearchSourceStage[T](
-    indexType: ElasticsearchIndexType,
+    esParams: EsParams,
     searchParams: Map[String, String],
     settings: ElasticsearchSourceSettings,
     reader: MessageReader[T]
@@ -54,7 +54,7 @@ private[elasticsearch] final class ElasticsearchSourceStage[T](
   override val shape: SourceShape[ReadResult[T]] = SourceShape(out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new ElasticsearchSourceLogic[T](indexType, searchParams, settings, out, shape, reader)
+    new ElasticsearchSourceLogic[T](esParams, searchParams, settings, out, shape, reader)
 
 }
 
@@ -69,7 +69,7 @@ object ElasticsearchSourceStage {
  */
 @InternalApi
 private[elasticsearch] final class ElasticsearchSourceLogic[T](
-    indexType: ElasticsearchIndexType,
+    esParams: EsParams,
     searchParams: Map[String, String],
     settings: ElasticsearchSourceSettings,
     out: Outlet[ReadResult[T]],
@@ -124,9 +124,9 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
             }
             .mkString(",") + "}"
 
-        val endpoint: String = indexType.apiVersion match {
-          case ApiVersion.V5 => s"/${indexType.indexName}/${indexType.typeName.get}/_search"
-          case ApiVersion.V7 => s"/${indexType.indexName}/_search"
+        val endpoint: String = esParams.apiVersion match {
+          case ApiVersion.V5 => s"/${esParams.indexName}/${esParams.typeName.get}/_search"
+          case ApiVersion.V7 => s"/${esParams.indexName}/_search"
         }
         val uri = Uri(settings.connection.baseUrl).withPath(Path(endpoint)).withQuery(Uri.Query(queryParams))
         val request = HttpRequest(HttpMethods.POST)

@@ -4,17 +4,14 @@
 
 package akka.stream.alpakka.elasticsearch.javadsl
 
-import java.util.function.BiFunction
-
 import akka.NotUsed
-import akka.stream.alpakka.elasticsearch._
-import akka.stream.javadsl.Source
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.node.{ArrayNode, NumericNode}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.{Http, HttpExt}
+import akka.stream.alpakka.elasticsearch.{impl, _}
+import akka.stream.javadsl.Source
 import akka.stream.{ActorMaterializer, Attributes}
-import akka.stream.alpakka.elasticsearch.impl
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.node.{ArrayNode, NumericNode}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
@@ -28,23 +25,19 @@ object ElasticsearchSource {
    * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[ReadResult]]s of [[java.util.Map]].
    * Using default objectMapper
    */
-  def create(indexName: String,
-             typeName: String,
+  def create(esParams: EsParams,
              query: String,
              settings: ElasticsearchSourceSettings): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
-    create(indexName, typeName, query, settings, new ObjectMapper())
+    create(esParams, query, settings, new ObjectMapper())
 
   /**
    * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[ReadResult]]s of [[java.util.Map]].
    * Using custom objectMapper
    */
-  def create(indexName: String,
-             typeName: String,
+  def create(esParams: EsParams,
              query: String,
              settings: ElasticsearchSourceSettings,
-             objectMapper: ObjectMapper): Source[ReadResult[java.util.Map[String, Object]], NotUsed] = {
-    val indexType = ElasticsearchIndexType(indexName, Option(typeName), settings.apiVersion)
-
+             objectMapper: ObjectMapper): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
     Source
       .setup { (mat: ActorMaterializer, _: Attributes) =>
         {
@@ -55,7 +48,7 @@ object ElasticsearchSource {
           Source
             .fromGraph(
               new impl.ElasticsearchSourceStage(
-                indexType,
+                esParams,
                 Map("query" -> query),
                 settings,
                 new JacksonReader[java.util.Map[String, Object]](objectMapper, classOf[java.util.Map[String, Object]])
@@ -64,7 +57,6 @@ object ElasticsearchSource {
         }
       }
       .mapMaterializedValue(_ => NotUsed)
-  }
 
   /**
    * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[ReadResult]]s of [[java.util.Map]].
@@ -76,13 +68,10 @@ object ElasticsearchSource {
    * searchParams.put("query", "{\"match_all\": {}}");
    * searchParams.put("_source", "[\"fieldToInclude\", \"anotherFieldToInclude\"]");
    */
-  def create(indexName: String,
-             typeName: String,
+  def create(esParams: EsParams,
              searchParams: java.util.Map[String, String],
              settings: ElasticsearchSourceSettings,
-             objectMapper: ObjectMapper): Source[ReadResult[java.util.Map[String, Object]], NotUsed] = {
-    val indexType = ElasticsearchIndexType(indexName, Option(typeName), settings.apiVersion)
-
+             objectMapper: ObjectMapper): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
     Source
       .setup { (mat: ActorMaterializer, _: Attributes) =>
         {
@@ -92,7 +81,7 @@ object ElasticsearchSource {
 
           Source.fromGraph(
             new impl.ElasticsearchSourceStage(
-              indexType,
+              esParams,
               searchParams.asScala.toMap,
               settings,
               new JacksonReader[java.util.Map[String, Object]](objectMapper, classOf[java.util.Map[String, Object]])
@@ -101,31 +90,26 @@ object ElasticsearchSource {
         }
       }
       .mapMaterializedValue(_ => NotUsed)
-  }
 
   /**
    * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[ReadResult]]s of type `T`.
    * Using default objectMapper
    */
-  def typed[T](indexName: String,
-               typeName: String,
+  def typed[T](esParams: EsParams,
                query: String,
                settings: ElasticsearchSourceSettings,
                clazz: Class[T]): Source[ReadResult[T], NotUsed] =
-    typed[T](indexName, typeName, query, settings, clazz, new ObjectMapper())
+    typed[T](esParams, query, settings, clazz, new ObjectMapper())
 
   /**
    * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[ReadResult]]s of type `T`.
    * Using custom objectMapper
    */
-  def typed[T](indexName: String,
-               typeName: String,
+  def typed[T](esParams: EsParams,
                query: String,
                settings: ElasticsearchSourceSettings,
                clazz: Class[T],
-               objectMapper: ObjectMapper): Source[ReadResult[T], NotUsed] = {
-    val indexType = ElasticsearchIndexType(indexName, Option(typeName), settings.apiVersion)
-
+               objectMapper: ObjectMapper): Source[ReadResult[T], NotUsed] =
     Source
       .setup { (mat: ActorMaterializer, _: Attributes) =>
         {
@@ -135,7 +119,7 @@ object ElasticsearchSource {
 
           Source.fromGraph(
             new impl.ElasticsearchSourceStage(
-              indexType,
+              esParams,
               Map("query" -> query),
               settings,
               new JacksonReader[T](objectMapper, clazz)
@@ -144,7 +128,6 @@ object ElasticsearchSource {
         }
       }
       .mapMaterializedValue(_ => NotUsed)
-  }
 
   /**
    * Creates a [[akka.stream.javadsl.Source]] from Elasticsearch that streams [[ReadResult]]s of type `T`.
@@ -156,14 +139,11 @@ object ElasticsearchSource {
    * searchParams.put("query", "{\"match_all\": {}}");
    * searchParams.put("_source", "[\"fieldToInclude\", \"anotherFieldToInclude\"]");
    */
-  def typed[T](indexName: String,
-               typeName: String,
+  def typed[T](esParams: EsParams,
                searchParams: java.util.Map[String, String],
                settings: ElasticsearchSourceSettings,
                clazz: Class[T],
-               objectMapper: ObjectMapper): Source[ReadResult[T], NotUsed] = {
-    val indexType = ElasticsearchIndexType(indexName, Option(typeName), settings.apiVersion)
-
+               objectMapper: ObjectMapper): Source[ReadResult[T], NotUsed] =
     Source
       .setup { (mat: ActorMaterializer, _: Attributes) =>
         {
@@ -173,7 +153,7 @@ object ElasticsearchSource {
 
           Source.fromGraph(
             new impl.ElasticsearchSourceStage(
-              indexType,
+              esParams,
               searchParams.asScala.toMap,
               settings,
               new JacksonReader[T](objectMapper, clazz)
@@ -182,7 +162,6 @@ object ElasticsearchSource {
         }
       }
       .mapMaterializedValue(_ => NotUsed)
-  }
 
   private final class JacksonReader[T](mapper: ObjectMapper, clazz: Class[T]) extends impl.MessageReader[T] {
 

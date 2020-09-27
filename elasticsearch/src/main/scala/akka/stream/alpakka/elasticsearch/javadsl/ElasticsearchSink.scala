@@ -20,13 +20,12 @@ object ElasticsearchSink {
    * Create a sink to update Elasticsearch with [[akka.stream.alpakka.elasticsearch.WriteMessage WriteMessage]]s containing type `T`.
    */
   def create[T](
-      indexName: String,
-      typeName: String,
+      esParams: EsParams,
       settings: ElasticsearchWriteSettings,
       objectMapper: ObjectMapper
   ): akka.stream.javadsl.Sink[WriteMessage[T, NotUsed], CompletionStage[Done]] =
     ElasticsearchFlow
-      .create(indexName, typeName, settings, objectMapper)
+      .create(esParams, settings, objectMapper)
       .toMat(Sink.ignore[WriteResult[T, NotUsed]], Keep.right[NotUsed, CompletionStage[Done]])
 
 }
