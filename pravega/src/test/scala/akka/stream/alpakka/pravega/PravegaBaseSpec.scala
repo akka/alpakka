@@ -27,7 +27,7 @@ abstract class PravegaBaseSpec extends AnyWordSpec with PravegaAkkaSpecSupport w
   final val scope = "scala-test-scope-" + UUID.randomUUID().toString
   final val streamName = "scala-test-stream-" + UUID.randomUUID().toString
 
-  override def beforeAll: Unit = {
+  override def beforeAll(): Unit = {
     val streamManager = StreamManager.create(URI.create("tcp://localhost:9090"))
     if (streamManager.createScope(scope))
       logger.info(s"Created scope [$scope].")

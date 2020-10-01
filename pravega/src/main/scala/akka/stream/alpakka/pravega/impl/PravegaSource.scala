@@ -91,7 +91,7 @@ import akka.stream.ActorAttributes
   override def createLogicAndMaterializedValue(
       inheritedAttributes: Attributes
   ): (GraphStageLogic, Future[Done]) = {
-    val startupPromise = Promise[Done]
+    val startupPromise = Promise[Done]()
 
     val logic = new PravegaSourcesStageLogic[A](
       shape,

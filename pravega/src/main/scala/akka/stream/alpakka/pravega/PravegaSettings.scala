@@ -248,7 +248,7 @@ object WriterSettingsBuilder {
     extractBoolean("automatically-note-time")(builder.automaticallyNoteTime)
     extractInt("backoff-multiple")(builder.backoffMultiple)
     extractBoolean("enable-connection-pooling")(builder.enableConnectionPooling)
-    extractInt("initial-backoff-millis")(builder.initalBackoffMillis)
+    extractInt("initial-backoff-millis")(builder.initialBackoffMillis)
     extractInt("retry-attempts")(builder.retryAttempts)
     extractLong("transaction-timeout-time")(builder.transactionTimeoutTime)
 

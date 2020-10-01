@@ -46,7 +46,7 @@ class PravegaGraphSpec extends PravegaBaseSpec {
 
       // #writing
 
-      val finishReading = Promise[Unit]
+      val finishReading = Promise[Unit]()
 
       // #reading
 
