@@ -167,21 +167,13 @@ public class ElasticsearchTest {
 
     Source<ReadResult<Map<String, Object>>, NotUsed> source =
         ElasticsearchSource.create(
-            EsParams.create()
-                .withIndexName("source")
-                .withTypeName("_doc")
-                .withApiVersion(apiVersion),
-            "{\"match_all\": {}}",
-            sourceSettings);
+            constructEsParams("source", "_doc", apiVersion), "{\"match_all\": {}}", sourceSettings);
     CompletionStage<Done> f1 =
         source
             .map(m -> WriteMessage.createIndexMessage(m.id(), m.source()))
             .runWith(
                 ElasticsearchSink.create(
-                    EsParams.create()
-                        .withIndexName("sink1")
-                        .withTypeName("_doc")
-                        .withApiVersion(apiVersion),
+                    constructEsParams("sink1", "_doc", apiVersion),
                     sinkSettings,
                     new ObjectMapper()),
                 materializer);
@@ -194,10 +186,7 @@ public class ElasticsearchTest {
     // Assert docs in sink1/_doc
     CompletionStage<List<String>> f2 =
         ElasticsearchSource.create(
-                EsParams.create()
-                    .withIndexName("sink1")
-                    .withTypeName("_doc")
-                    .withApiVersion(apiVersion),
+                constructEsParams("sink1", "_doc", apiVersion),
                 "{\"match_all\": {}}",
                 ElasticsearchSourceSettings.create()
                     .withConnection(connectionSettings)
@@ -237,10 +226,7 @@ public class ElasticsearchTest {
 
     Source<ReadResult<Book>, NotUsed> source =
         ElasticsearchSource.typed(
-            EsParams.create()
-                .withIndexName("source")
-                .withTypeName("_doc")
-                .withApiVersion(apiVersion),
+            constructEsParams("source", "_doc", apiVersion),
             "{\"match_all\": {}}",
             sourceSettings,
             Book.class);
@@ -249,10 +235,7 @@ public class ElasticsearchTest {
             .map(m -> WriteMessage.createIndexMessage(m.id(), m.source()))
             .runWith(
                 ElasticsearchSink.create(
-                    EsParams.create()
-                        .withIndexName("sink2")
-                        .withTypeName("_doc")
-                        .withApiVersion(apiVersion),
+                    constructEsParams("sink2", "_doc", apiVersion),
                     sinkSettings,
                     new ObjectMapper()),
                 materializer);
@@ -265,10 +248,7 @@ public class ElasticsearchTest {
     // Assert docs in sink2/book
     CompletionStage<List<String>> f2 =
         ElasticsearchSource.typed(
-                EsParams.create()
-                    .withIndexName("sink2")
-                    .withTypeName("_doc")
-                    .withApiVersion(apiVersion),
+                constructEsParams("sink2", "_doc", apiVersion),
                 "{\"match_all\": {}}",
                 ElasticsearchSourceSettings.create()
                     .withApiVersion(apiVersion)
@@ -300,10 +280,7 @@ public class ElasticsearchTest {
     // #run-flow
     CompletionStage<List<WriteResult<Book, NotUsed>>> f1 =
         ElasticsearchSource.typed(
-                EsParams.create()
-                    .withIndexName("source")
-                    .withTypeName("_doc")
-                    .withApiVersion(apiVersion),
+                constructEsParams("source", "_doc", apiVersion),
                 "{\"match_all\": {}}",
                 ElasticsearchSourceSettings.create()
                     .withApiVersion(apiVersion)
@@ -313,10 +290,7 @@ public class ElasticsearchTest {
             .map(m -> WriteMessage.createIndexMessage(m.id(), m.source()))
             .via(
                 ElasticsearchFlow.create(
-                    EsParams.create()
-                        .withIndexName("sink3")
-                        .withTypeName("_doc")
-                        .withApiVersion(apiVersion),
+                    constructEsParams("sink3", "_doc", apiVersion),
                     ElasticsearchWriteSettings.create()
                         .withApiVersion(apiVersion)
                         .withConnection(connectionSettings)
@@ -335,10 +309,7 @@ public class ElasticsearchTest {
     // Assert docs in sink3/book
     CompletionStage<List<String>> f2 =
         ElasticsearchSource.typed(
-                EsParams.create()
-                    .withIndexName("sink3")
-                    .withTypeName("_doc")
-                    .withApiVersion(apiVersion),
+                constructEsParams("sink3", "_doc", apiVersion),
                 "{\"match_all\": {}}",
                 ElasticsearchSourceSettings.create()
                     .withApiVersion(apiVersion)
@@ -378,10 +349,7 @@ public class ElasticsearchTest {
                         "3", "{\"title\": \"Die unendliche Geschichte\"}")))
             .via(
                 ElasticsearchFlow.create(
-                    EsParams.create()
-                        .withIndexName(indexName)
-                        .withTypeName("_doc")
-                        .withApiVersion(apiVersion),
+                    constructEsParams(indexName, "_doc", apiVersion),
                     ElasticsearchWriteSettings.create()
                         .withApiVersion(apiVersion)
                         .withConnection(connectionSettings)
@@ -399,10 +367,7 @@ public class ElasticsearchTest {
 
     CompletionStage<List<String>> f2 =
         ElasticsearchSource.typed(
-                EsParams.create()
-                    .withIndexName(indexName)
-                    .withTypeName("_doc")
-                    .withApiVersion(apiVersion),
+                constructEsParams(indexName, "_doc", apiVersion),
                 "{\"match_all\": {}}",
                 ElasticsearchSourceSettings.create()
                     .withApiVersion(apiVersion)
@@ -435,10 +400,7 @@ public class ElasticsearchTest {
     Source.from(requests)
         .via(
             ElasticsearchFlow.create(
-                EsParams.create()
-                    .withIndexName("sink8")
-                    .withTypeName("_doc")
-                    .withApiVersion(apiVersion),
+                constructEsParams("sink8", "_doc", apiVersion),
                 ElasticsearchWriteSettings.create()
                     .withApiVersion(apiVersion)
                     .withConnection(connectionSettings),
@@ -453,10 +415,7 @@ public class ElasticsearchTest {
     // Assert docs in sink8/book
     CompletionStage<List<String>> f2 =
         ElasticsearchSource.typed(
-                EsParams.create()
-                    .withIndexName("sink8")
-                    .withTypeName("_doc")
-                    .withApiVersion(apiVersion),
+                constructEsParams("sink8", "_doc", apiVersion),
                 "{\"match_all\": {}}",
                 ElasticsearchSourceSettings.create()
                     .withApiVersion(apiVersion)
@@ -500,10 +459,7 @@ public class ElasticsearchTest {
                 })
             .via( // write to elastic
                 ElasticsearchFlow.createWithPassThrough(
-                    EsParams.create()
-                        .withIndexName("sink6")
-                        .withTypeName("_doc")
-                        .withApiVersion(apiVersion),
+                    constructEsParams("sink6", "_doc", apiVersion),
                     ElasticsearchWriteSettings.create()
                         .withApiVersion(apiVersion)
                         .withConnection(connectionSettings)
@@ -528,10 +484,7 @@ public class ElasticsearchTest {
     // Assert that all docs were written to elastic
     List<String> result2 =
         ElasticsearchSource.typed(
-                EsParams.create()
-                    .withIndexName("sink6")
-                    .withTypeName("_doc")
-                    .withApiVersion(apiVersion),
+                constructEsParams("sink6", "_doc", apiVersion),
                 "{\"match_all\": {}}",
                 ElasticsearchSourceSettings.create()
                     .withApiVersion(apiVersion)
@@ -560,10 +513,7 @@ public class ElasticsearchTest {
     Source.single(WriteMessage.createIndexMessage("1", book))
         .via(
             ElasticsearchFlow.create(
-                EsParams.create()
-                    .withIndexName(indexName)
-                    .withTypeName(typeName)
-                    .withApiVersion(apiVersion),
+                constructEsParams(indexName, typeName, apiVersion),
                 ElasticsearchWriteSettings.create()
                     .withApiVersion(apiVersion)
                     .withConnection(connectionSettings)
@@ -578,10 +528,7 @@ public class ElasticsearchTest {
     // Search document and assert it having version 1
     ReadResult<Book> message =
         ElasticsearchSource.<Book>typed(
-                EsParams.create()
-                    .withIndexName(indexName)
-                    .withTypeName(typeName)
-                    .withApiVersion(apiVersion),
+                constructEsParams(indexName, typeName, apiVersion),
                 "{\"match_all\": {}}",
                 ElasticsearchSourceSettings.create()
                     .withApiVersion(apiVersion)
@@ -600,10 +547,7 @@ public class ElasticsearchTest {
     Source.single(WriteMessage.createIndexMessage("1", book).withVersion(1L))
         .via(
             ElasticsearchFlow.create(
-                EsParams.create()
-                    .withIndexName(indexName)
-                    .withTypeName(typeName)
-                    .withApiVersion(apiVersion),
+                constructEsParams(indexName, typeName, apiVersion),
                 ElasticsearchWriteSettings.create()
                     .withApiVersion(apiVersion)
                     .withConnection(connectionSettings)
@@ -622,10 +566,7 @@ public class ElasticsearchTest {
         Source.single(WriteMessage.createIndexMessage("1", book).withVersion(oldVersion))
             .via(
                 ElasticsearchFlow.create(
-                    EsParams.create()
-                        .withIndexName(indexName)
-                        .withTypeName(typeName)
-                        .withApiVersion(apiVersion),
+                    constructEsParams(indexName, typeName, apiVersion),
                     ElasticsearchWriteSettings.create()
                         .withApiVersion(apiVersion)
                         .withConnection(connectionSettings)
@@ -654,10 +595,7 @@ public class ElasticsearchTest {
     Source.single(WriteMessage.createIndexMessage("1", book).withVersion(externalVersion))
         .via(
             ElasticsearchFlow.create(
-                EsParams.create()
-                    .withIndexName(indexName)
-                    .withTypeName(typeName)
-                    .withApiVersion(apiVersion),
+                constructEsParams(indexName, typeName, apiVersion),
                 ElasticsearchWriteSettings.create()
                     .withApiVersion(apiVersion)
                     .withConnection(connectionSettings)
@@ -673,10 +611,7 @@ public class ElasticsearchTest {
     // Assert that the document's external version is saved
     ReadResult<Book> message =
         ElasticsearchSource.<Book>typed(
-                EsParams.create()
-                    .withIndexName(indexName)
-                    .withTypeName(typeName)
-                    .withApiVersion(apiVersion),
+                constructEsParams(indexName, typeName, apiVersion),
                 "{\"match_all\": {}}",
                 ElasticsearchSourceSettings.create()
                     .withApiVersion(apiVersion)
@@ -728,10 +663,7 @@ public class ElasticsearchTest {
         .map((TestDoc d) -> WriteMessage.createIndexMessage(d.id, d))
         .via(
             ElasticsearchFlow.create(
-                EsParams.create()
-                    .withIndexName(indexName)
-                    .withTypeName(typeName)
-                    .withApiVersion(apiVersion),
+                constructEsParams(indexName, typeName, apiVersion),
                 ElasticsearchWriteSettings.create()
                     .withApiVersion(apiVersion)
                     .withConnection(connectionSettings)
@@ -752,10 +684,7 @@ public class ElasticsearchTest {
 
     List<TestDoc> result =
         ElasticsearchSource.<TestDoc>typed(
-                EsParams.create()
-                    .withIndexName(indexName)
-                    .withTypeName(typeName)
-                    .withApiVersion(apiVersion),
+                constructEsParams(indexName, typeName, apiVersion),
                 searchParams, // <-- Using searchParams
                 ElasticsearchSourceSettings.create()
                     .withApiVersion(apiVersion)
@@ -825,5 +754,13 @@ public class ElasticsearchTest {
     WriteMessage<String, NotUsed> msgWithMetadata =
         WriteMessage.createIndexMessage(doc).withCustomMetadata(metadata);
     // #custom-metadata-example
+  }
+
+  private EsParams constructEsParams(String indexName, String typeName, ApiVersion apiVersion) {
+    if (apiVersion == ApiVersion.V5) {
+      return EsParams.V5(indexName, typeName);
+    } else {
+      return EsParams.V7(indexName);
+    }
   }
 }

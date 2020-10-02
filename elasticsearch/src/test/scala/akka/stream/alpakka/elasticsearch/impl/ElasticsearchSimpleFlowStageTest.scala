@@ -48,7 +48,7 @@ class ElasticsearchSimpleFlowStageTest
             .probe[(immutable.Seq[WriteMessage[String, NotUsed]], immutable.Seq[WriteResult[String, NotUsed]])]
             .via(
               new impl.ElasticsearchSimpleFlowStage[String, NotUsed](
-                EsParams().withIndexName("es-simple-flow-index").withTypeName("_doc").withApiVersion(ApiVersion.V5),
+                EsParams.V5("es-simple-flow-index", "_doc"),
                 settings,
                 writer
               )

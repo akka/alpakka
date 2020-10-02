@@ -35,7 +35,6 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
 
     val baseSourceSettings = ElasticsearchSourceSettings().withApiVersion(apiVersion).withConnection(connectionSettings)
     val baseWriteSettings = ElasticsearchWriteSettings().withApiVersion(apiVersion).withConnection(connectionSettings)
-    val baseEsParams = EsParams().withTypeName("_doc").withApiVersion(apiVersion)
 
     //#define-class
     import spray.json._
@@ -91,7 +90,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
     def readTitlesFrom(indexName: String): Future[immutable.Seq[String]] =
       ElasticsearchSource
         .typed[Book](
-          baseEsParams.withIndexName(indexName),
+          constructEsParams(indexName, "_doc", apiVersion),
           query = """{"match_all": {}}""",
           settings = baseSourceSettings
         )
@@ -174,7 +173,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
         //#run-jsobject
         val copy = ElasticsearchSource
           .create(
-            baseEsParams.withIndexName("source"),
+            constructEsParams("source", "_doc", apiVersion),
             query = """{"match_all": {}}""",
             settings = baseSourceSettings
           )
@@ -184,7 +183,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           }
           .runWith(
             ElasticsearchSink.create[Book](
-              baseEsParams.withIndexName(indexName),
+              constructEsParams(indexName, "_doc", apiVersion),
               settings = baseWriteSettings
             )
           )
@@ -211,7 +210,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
         //#run-typed
         val copy = ElasticsearchSource
           .typed[Book](
-            EsParams().withIndexName("source").withTypeName("_doc").withApiVersion(apiVersion),
+            constructEsParams("source", "_doc", apiVersion),
             query = """{"match_all": {}}""",
             settings = baseSourceSettings
           )
@@ -220,7 +219,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           }
           .runWith(
             ElasticsearchSink.create[Book](
-              baseEsParams.withIndexName(indexName),
+              constructEsParams(indexName, "_doc", apiVersion),
               settings = baseWriteSettings
             )
           )
@@ -247,7 +246,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
         //#run-flow
         val copy = ElasticsearchSource
           .typed[Book](
-            EsParams().withIndexName("source").withTypeName("_doc").withApiVersion(apiVersion),
+            constructEsParams("source", "_doc", apiVersion),
             query = """{"match_all": {}}""",
             settings = baseSourceSettings
           )
@@ -256,7 +255,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           }
           .via(
             ElasticsearchFlow.create[Book](
-              baseEsParams.withIndexName(indexName),
+              constructEsParams(indexName, "_doc", apiVersion),
               settings = baseWriteSettings
             )
           )
@@ -289,7 +288,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           )
         ).via(
             ElasticsearchFlow.create(
-              baseEsParams.withIndexName(indexName),
+              constructEsParams(indexName, "_doc", apiVersion),
               settings = baseWriteSettings,
               StringMessageWriter
             )
@@ -322,7 +321,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           }
           .via(
             ElasticsearchFlow.createWithContext(
-              baseEsParams.withIndexName(indexName),
+              constructEsParams(indexName, "_doc", apiVersion),
               baseWriteSettings
             )
           )
@@ -349,7 +348,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           }
           .via(
             ElasticsearchFlow.create[Book](
-              baseEsParams.withIndexName(indexName),
+              constructEsParams(indexName, "_doc", apiVersion),
               baseWriteSettings
             )
           )
@@ -384,7 +383,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           }
           .via(
             ElasticsearchFlow.create(
-              baseEsParams.withIndexName(indexName),
+              constructEsParams(indexName, "_doc", apiVersion),
               baseWriteSettings.withRetryLogic(RetryAtFixedRate(5, 100.millis))
             )
           )
@@ -440,7 +439,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
         val createBooks = Source(writeMsgs)
           .via(
             ElasticsearchFlow.createWithPassThrough(
-              baseEsParams.withIndexName(indexName),
+              constructEsParams(indexName, "_doc", apiVersion),
               baseWriteSettings.withRetryLogic(RetryAtFixedRate(5, 1.millis))
             )
           )
@@ -477,7 +476,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           }
           .via(
             ElasticsearchFlow.createWithContext(
-              baseEsParams.withIndexName(indexName),
+              constructEsParams(indexName, "_doc", apiVersion),
               baseWriteSettings.withRetryLogic(RetryAtFixedRate(5, 100.millis))
             )
           )
@@ -536,7 +535,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
         val createBooks = Source(writeMsgs)
           .via(
             ElasticsearchFlow.createWithContext(
-              baseEsParams.withIndexName(indexName),
+              constructEsParams(indexName, "_doc", apiVersion),
               baseWriteSettings.withRetryLogic(RetryAtFixedRate(5, 1.millis))
             )
           )
@@ -585,7 +584,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           }
           .via( // write to elastic
             ElasticsearchFlow.createWithPassThrough[Book, KafkaOffset](
-              baseEsParams.withIndexName(indexName),
+              constructEsParams(indexName, "_doc", apiVersion),
               settings = baseWriteSettings
             )
           )
@@ -619,7 +618,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           }
           .via(
             ElasticsearchFlow.create[Book](
-              baseEsParams.withIndexName(indexName),
+              constructEsParams(indexName, "_doc", apiVersion),
               baseWriteSettings
             )
           )
@@ -652,7 +651,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           }
           .via(
             ElasticsearchFlow.create[JsObject](
-              baseEsParams.withIndexName(indexName),
+              constructEsParams(indexName, "_doc", apiVersion),
               baseWriteSettings
             )
           )
@@ -664,7 +663,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
 
         // Assert docs in sink7/_doc
         val readBooks = ElasticsearchSource(
-          baseEsParams.withIndexName(indexName),
+          constructEsParams(indexName, "_doc", apiVersion),
           """{"match_all": {}}""",
           baseSourceSettings
         ).map { message =>
@@ -704,7 +703,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
         val writeResults = Source(requests)
           .via(
             ElasticsearchFlow.create[Book](
-              baseEsParams.withIndexName(indexName),
+              constructEsParams(indexName, "_doc", apiVersion),
               baseWriteSettings
             )
           )
@@ -721,7 +720,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
 
         // Assert docs in sink8/_doc
         val readBooks = ElasticsearchSource(
-          baseEsParams.withIndexName(indexName),
+          constructEsParams(indexName, "_doc", apiVersion),
           """{"match_all": {}}""",
           baseSourceSettings
         ).map { message =>
@@ -747,7 +746,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
         val writeResults = Source(requests)
           .via(
             ElasticsearchFlow.create[Book](
-              baseEsParams.withIndexName(indexName),
+              constructEsParams(indexName, "_doc", apiVersion),
               baseWriteSettings
             )
           )
@@ -782,7 +781,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           }
           .via(
             ElasticsearchFlow.create[VersionTestDoc](
-              baseEsParams.withIndexName(indexName).withTypeName(typeName),
+              constructEsParams(indexName, typeName, apiVersion),
               baseWriteSettings.withBufferSize(5)
             )
           )
@@ -797,7 +796,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
 
         val updatedVersions = ElasticsearchSource
           .typed[VersionTestDoc](
-            baseEsParams.withIndexName(indexName).withTypeName(typeName),
+            constructEsParams(indexName, typeName, apiVersion),
             """{"match_all": {}}""",
             baseSourceSettings.withIncludeDocumentVersion(true)
           )
@@ -814,7 +813,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           }
           .via(
             ElasticsearchFlow.create[VersionTestDoc](
-              baseEsParams.withIndexName(indexName).withTypeName(typeName),
+              constructEsParams(indexName, typeName, apiVersion),
               baseWriteSettings.withBufferSize(5).withVersionType("external")
             )
           )
@@ -826,7 +825,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
         // Search again to assert that all documents are now on version 2
         val assertVersions = ElasticsearchSource
           .typed[VersionTestDoc](
-            baseEsParams.withIndexName(indexName).withTypeName(typeName),
+            constructEsParams(indexName, typeName, apiVersion),
             """{"match_all": {}}""",
             baseSourceSettings.withIncludeDocumentVersion(true)
           )
@@ -850,7 +849,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           }
           .via(
             ElasticsearchFlow.create[VersionTestDoc](
-              baseEsParams.withIndexName(indexName).withTypeName(typeName),
+              constructEsParams(indexName, typeName, apiVersion),
               baseWriteSettings.withBufferSize(5).withVersionType("external")
             )
           )
@@ -877,7 +876,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           }
           .via(
             ElasticsearchFlow.create[Book](
-              baseEsParams.withIndexName(indexName).withTypeName(typeName),
+              constructEsParams(indexName, typeName, apiVersion),
               baseWriteSettings.withBufferSize(5).withVersionType("external")
             )
           )
@@ -891,7 +890,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
         // Assert that the document's external version is saved
         val readFirst = ElasticsearchSource
           .typed[Book](
-            baseEsParams.withIndexName(indexName).withTypeName(typeName),
+            constructEsParams(indexName, typeName, apiVersion),
             """{"match_all": {}}""",
             settings = baseSourceSettings.withIncludeDocumentVersion(true)
           )
@@ -908,7 +907,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
 
         val writeCustomIndex = ElasticsearchSource
           .typed[Book](
-            baseEsParams.withIndexName("source").withTypeName("_doc"),
+            constructEsParams("source", "_doc", apiVersion),
             query = """{"match_all": {}}""",
             settings = baseSourceSettings
           )
@@ -919,9 +918,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           }
           .runWith(
             ElasticsearchSink.create[Book](
-              baseEsParams
-                .withIndexName("this-is-not-the-index-we-are-using")
-                .withTypeName("_doc"),
+              constructEsParams("this-is-not-the-index-we-are-using", "_doc", apiVersion),
               settings = baseWriteSettings
             )
           )
@@ -945,7 +942,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
       "allow search without specifying typeName" in assertAllStagesStopped {
         val readWithoutTypeName = ElasticsearchSource
           .typed[Book](
-            EsParams().withIndexName("source").withApiVersion(ApiVersion.V7),
+            constructEsParams("source", "_doc", apiVersion),
             query = """{"match_all": {}}""",
             settings = baseSourceSettings.withBufferSize(5).withApiVersion(ApiVersion.V7)
           )
@@ -988,7 +985,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           }
           .via(
             ElasticsearchFlow.create[TestDoc](
-              baseEsParams.withIndexName(indexName).withTypeName(typeName),
+              constructEsParams(indexName, typeName, apiVersion),
               baseWriteSettings.withBufferSize(5)
             )
           )
@@ -1002,7 +999,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
 
         val readWithSearchParameters = ElasticsearchSource
           .typed[TestDoc](
-            baseEsParams.withIndexName(indexName).withTypeName(typeName),
+            constructEsParams(indexName, typeName, apiVersion),
             searchParams = Map(
               "query" -> """ {"match_all": {}} """,
               "_source" -> """ ["id", "a", "c"] """
@@ -1043,6 +1040,10 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           .withRetryLogic(RetryAtFixedRate(maxRetries = 5, retryInterval = 1.second))
           .withApiVersion(ApiVersion.V5)
       //#sink-settings
+      //#es-params
+      val esParamsV5 = EsParams.V5("index", "_doc")
+      val esParamsV7 = EsParams.V7("index")
+      //#es-params
       sinkSettings.toString should startWith("ElasticsearchWriteSettings(")
       val doc = "dummy-doc"
       //#custom-metadata-example
@@ -1053,6 +1054,14 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
       msg.customMetadata should contain("pipeline")
     }
 
+  }
+
+  private def constructEsParams(indexName: String, typeName: String, apiVersion: ApiVersion): EsParams = {
+    if (apiVersion == ApiVersion.V5) {
+      EsParams.V5(indexName, typeName)
+    } else {
+      EsParams.V7(indexName)
+    }
   }
 
 }

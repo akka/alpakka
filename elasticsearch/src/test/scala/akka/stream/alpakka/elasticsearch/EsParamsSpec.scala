@@ -8,32 +8,22 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class EsParamsSpec extends AnyWordSpec {
   "EsParams" should {
-    "not allow setting a null indexName" in {
+    "not allow setting a null indexName for API version V5" in {
       assertThrows[IllegalArgumentException] {
-        EsParams().withIndexName(null)
+        EsParams.V5(null, "_doc")
       }
     }
 
     "not allow setting a null typeName for API version V5" in {
       assertThrows[IllegalArgumentException] {
-        EsParams().withApiVersion(ApiVersion.V5).withTypeName(null)
+        EsParams.V5("index", null)
       }
     }
 
-    "allow setting a null typeName for API version V7" in {
-      val result = EsParams().withApiVersion(ApiVersion.V7).withTypeName(null)
-      assert(result.typeName.isEmpty)
-    }
-
-    "not allow setting an empty typeName for API version V5" in {
+    "not allow setting a null indexName for API version V7" in {
       assertThrows[IllegalArgumentException] {
-        EsParams().withApiVersion(ApiVersion.V5).withTypeName("")
+        EsParams.V7(null)
       }
-    }
-
-    "allow setting an empty typeName for API version V7" in {
-      val result = EsParams().withApiVersion(ApiVersion.V7).withTypeName("")
-      assert(result.typeName.contains(""))
     }
   }
 }

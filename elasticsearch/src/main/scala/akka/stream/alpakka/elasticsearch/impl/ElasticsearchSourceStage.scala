@@ -124,7 +124,7 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
             }
             .mkString(",") + "}"
 
-        val endpoint: String = esParams.apiVersion match {
+        val endpoint: String = settings.apiVersion match {
           case ApiVersion.V5 => s"/${esParams.indexName}/${esParams.typeName.get}/_search"
           case ApiVersion.V7 => s"/${esParams.indexName}/_search"
         }
