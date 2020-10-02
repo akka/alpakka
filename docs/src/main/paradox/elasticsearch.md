@@ -24,6 +24,18 @@ The table below shows direct dependencies of this module and the second tab show
 @@dependencies { projectId="elasticsearch" }
 
 
+## ElasticSearch Parameters
+
+Any API method that allows reading from and writing to ElasticSearch takes an instance of @apidoc[EsParams$].
+
+`EsParams` has be constructed based on the ElasticSearch API version that you're targeting: 
+
+Scala
+: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #es-params }
+
+Java
+: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #es-params }
+
 ## Elasticsearch as Source and Sink
 
 You can stream messages from or to Elasticsearch using the

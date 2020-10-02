@@ -1040,11 +1040,11 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           .withRetryLogic(RetryAtFixedRate(maxRetries = 5, retryInterval = 1.second))
           .withApiVersion(ApiVersion.V5)
       //#sink-settings
+      sinkSettings.toString should startWith("ElasticsearchWriteSettings(")
       //#es-params
       val esParamsV5 = EsParams.V5("index", "_doc")
       val esParamsV7 = EsParams.V7("index")
       //#es-params
-      sinkSettings.toString should startWith("ElasticsearchWriteSettings(")
       val doc = "dummy-doc"
       //#custom-metadata-example
       val msg = WriteMessage

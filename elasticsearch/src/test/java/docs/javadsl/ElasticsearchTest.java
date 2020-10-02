@@ -150,6 +150,11 @@ public class ElasticsearchTest {
             .withRetryLogic(RetryAtFixedRate.create(5, Duration.ofSeconds(1)))
             .withApiVersion(ApiVersion.V5);
     // #sink-settings
+
+    // #es-params
+    EsParams esParamsV5 = EsParams.V5("source", "_doc");
+    EsParams esParamsV7 = EsParams.V7("source");
+    // #es-params
   }
 
   @Test
