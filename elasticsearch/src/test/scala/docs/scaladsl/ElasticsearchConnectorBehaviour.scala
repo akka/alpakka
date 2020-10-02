@@ -1045,6 +1045,8 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
       val esParamsV5 = EsParams.V5("index", "_doc")
       val esParamsV7 = EsParams.V7("index")
       //#es-params
+      esParamsV5.toString should startWith("EsParams(")
+      esParamsV7.toString should startWith("EsParams(")
       val doc = "dummy-doc"
       //#custom-metadata-example
       val msg = WriteMessage
