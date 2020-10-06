@@ -72,6 +72,8 @@ jobs:
 #      env:
 #      - PRE_CMD="docker-compose up -d hbase"
     - name: hdfs
+      env:
+      - PRE_CMD="file /home/travis/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_2.13/2.0.0/cats-kernel_2.13-2.0.0.jar; md5sum /home/travis/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_2.13/2.0.0/cats-kernel_2.13-2.0.0.jar";
     - name: influxdb
       env:
       - PRE_CMD="docker-compose up -d influxdb"
