@@ -203,7 +203,11 @@ class WriterSettingsBuilder[Message](
     eventWriterConfigCustomizer.foreach(_(eventWriterConfigBuilder))
 
     val eventWriterConfig = eventWriterConfigBuilder.build()
-    new WriterSettings[Message](handleClientConfig(), eventWriterConfig, serializer, None, maximumInflightMessages)
+    new WriterSettings[Message](handleClientConfig(),
+                                eventWriterConfig,
+                                serializer,
+                                keyExtractor,
+                                maximumInflightMessages)
   }
 
 }
