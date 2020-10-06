@@ -5,10 +5,7 @@
 package docs.javadsl;
 
 import akka.actor.ActorSystem;
-import akka.stream.alpakka.pravega.ReaderSettings;
-import akka.stream.alpakka.pravega.ReaderSettingsBuilder;
-import akka.stream.alpakka.pravega.WriterSettings;
-import akka.stream.alpakka.pravega.WriterSettingsBuilder;
+import akka.stream.alpakka.pravega.*;
 import akka.testkit.javadsl.TestKit;
 
 import io.pravega.client.stream.impl.UTF8StringSerializer;
@@ -17,7 +14,10 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.nio.ByteBuffer;
 import java.time.Duration;
+
+import io.pravega.client.stream.Serializer;
 
 public class PravegaSettingsTestCase {
 
@@ -61,6 +61,34 @@ public class PravegaSettingsTestCase {
 
     Assert.assertEquals(
         "Default value doesn't match", writerSettings.maximumInflightMessages(), 10);
+  }
+
+  @Test
+  public void tableWriterSettings() {
+
+    Serializer<Integer> intSerializer =
+        new Serializer<Integer>() {
+          public ByteBuffer serialize(Integer value) {
+            ByteBuffer buff = ByteBuffer.allocate(4).putInt(value);
+            buff.position(0);
+            return buff;
+          }
+
+          public Integer deserialize(ByteBuffer serializedValue) {
+
+            return serializedValue.getInt();
+          }
+        };
+
+    // #table-writer-settings
+    TableWriterSettings<Integer, String> tableWriterSettings =
+        TableWriterSettingsBuilder.<Integer, String>create(system)
+            .withSerializers(intSerializer, new UTF8StringSerializer());
+
+    // #table-writer-settings
+
+    Assert.assertEquals(
+        "Default value doesn't match", tableWriterSettings.maximumInflightMessages(), 10);
   }
 
   @AfterClass

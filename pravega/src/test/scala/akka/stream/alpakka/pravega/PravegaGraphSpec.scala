@@ -19,7 +19,7 @@ import scala.util.Using
 class PravegaGraphSpec extends PravegaBaseSpec with Repeated {
 
   val serializer = new UTF8StringSerializer
-  val nEvent = 500
+  val nEvent = 1000
   val timeout = 10.seconds
 
   "Pravega connector" should {
@@ -32,10 +32,13 @@ class PravegaGraphSpec extends PravegaBaseSpec with Repeated {
       val stream1 = "scala-test-stream1"
       val stream2 = "scala-test-stream2"
 
+      createStream(scope, stream1)
+      createStream(scope, stream2)
+
       implicit val readerSettings = ReaderSettingsBuilder(
         system.settings.config
           .getConfig(ReaderSettingsBuilder.configPath)
-          .withFallback(ConfigFactory.parseString(s"group-name = $group"))
+          .withFallback(ConfigFactory.parseString(s"group-name = ${newGroupName()}"))
       ).withSerializer(serializer)
 
       implicit val writerSettings = WriterSettingsBuilder(system)
@@ -45,15 +48,15 @@ class PravegaGraphSpec extends PravegaBaseSpec with Repeated {
         .withKeyExtractor((str: String) => str.substring(0, 2))
         .withSerializer(serializer)
 
-      createStream(scope, stream1)
-      createStream(scope, stream2)
-
-      logger.info("start source")
+      logger.info(s"Write $nEvent events")
 
       // #writing
-      Source(1 to nEvent)
-        .map(i => f"$i%02d_event")
-        .runWith(Pravega.sink(scope, stream1))
+      val done = time(s"Write $nEvent events",
+                      Source(1 to nEvent)
+                        .map(i => f"$i%02d_event")
+                        .runWith(Pravega.sink(scope, stream1)))
+
+      time("Wait write", Await.ready(done, timeout))
 
       Source(1 to nEvent)
         .map(i => f"$i%02d_event")

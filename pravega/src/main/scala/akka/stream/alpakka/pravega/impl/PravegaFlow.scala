@@ -5,7 +5,6 @@
 package akka.stream.alpakka.pravega.impl
 
 import java.util.concurrent.{CompletableFuture, Semaphore}
-
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.stream.stage.{AsyncCallback, GraphStage, GraphStageLogic, InHandler, OutHandler, StageLogging}
@@ -17,7 +16,7 @@ import scala.compat.java8.FutureConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import akka.stream.alpakka.pravega.WriterSettings
 
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 @InternalApi private final class PravegaFlowStageLogic[A](val shape: FlowShape[A, A],
                                                           val scope: String,
                                                           streamName: String,
@@ -100,7 +99,12 @@ import scala.util.{Failure, Try}
    */
   override def postStop(): Unit = {
     log.debug("Stopping writer")
-    writer.close()
+    Try(writer.close()) match {
+      case Failure(exception) =>
+        log.error(exception, "Error while closing writer to stream [{}] in scope [{}}]", streamName, scope)
+      case Success(value) =>
+        log.info("Closed writer to stream [{}] in scope [{}}]", streamName, scope)
+    }
     close()
   }
 

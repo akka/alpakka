@@ -10,6 +10,10 @@ import akka.stream.alpakka.pravega.PravegaEvent;
 import akka.stream.alpakka.pravega.PravegaReaderGroup;
 import akka.stream.alpakka.pravega.WriterSettings;
 import akka.stream.alpakka.pravega.impl.PravegaReaderGroupManager;
+import akka.japi.Pair;
+import akka.stream.alpakka.pravega.*;
+import akka.stream.alpakka.pravega.impl.PravegaTableSource;
+import akka.stream.alpakka.pravega.impl.PravegaTableWriteFlow;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
@@ -19,11 +23,9 @@ import io.pravega.client.ClientConfig;
 import io.pravega.client.stream.ReaderGroup;
 import scala.compat.java8.FutureConverters;
 import java.util.concurrent.CompletionStage;
-
+import java.util.function.Function;
 import akka.stream.alpakka.pravega.impl.PravegaFlow;
 import akka.stream.alpakka.pravega.impl.PravegaSource;
-
-import akka.stream.alpakka.pravega.ReaderSettings;
 
 public class Pravega {
 

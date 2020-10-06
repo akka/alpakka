@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.pravega.impl
 
-import akka.stream.stage.{AsyncCallback, GraphStageLogic, GraphStageWithMaterializedValue, OutHandler, StageLogging}
+import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, OutHandler, StageLogging}
 import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.Done
 import akka.annotation.InternalApi
@@ -94,7 +94,7 @@ import scala.util.{Failure, Success, Try}
       case Failure(exception) =>
         log.error(exception, s"Error while closing [{}]/[{}]", scope, pravegaReaderGroup.steamsName.mkString(", "))
       case Success(value) =>
-        log.warning("Closed [{}]/[{}]", scope, pravegaReaderGroup.steamsName.mkString(", "))
+        log.info("Closed [{}]/[{}]", scope, pravegaReaderGroup.steamsName.mkString(", "))
     }
     close()
   }

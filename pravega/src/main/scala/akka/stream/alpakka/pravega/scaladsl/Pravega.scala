@@ -8,7 +8,6 @@ import akka.{Done, NotUsed}
 import akka.stream.alpakka.pravega.impl.{PravegaFlow, PravegaReaderGroupManager, PravegaSource}
 import akka.stream.alpakka.pravega.{PravegaEvent, PravegaReaderGroup, ReaderSettings, WriterSettings}
 import io.pravega.client.ClientConfig
-import io.pravega.client.stream.ReaderGroup
 
 import scala.concurrent.Future
 
@@ -41,4 +40,5 @@ object Pravega {
       implicit writerSettings: WriterSettings[A]
   ): Sink[A, Future[Done]] =
     Flow[A].via(flow(scope, streamName)).toMat(Sink.ignore)(Keep.right)
+
 }

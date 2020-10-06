@@ -29,7 +29,7 @@ public abstract class PravegaBaseTestCase extends PravegaAkkaTestCaseSupport {
     return "java-test-group-" + UUID.randomUUID().toString();
   }
 
-  protected String newScope() {
+  protected static String newScope() {
     return "java-test-scope-" + UUID.randomUUID().toString();
   }
 
@@ -37,9 +37,24 @@ public abstract class PravegaBaseTestCase extends PravegaAkkaTestCaseSupport {
     return "java-test-topic-" + UUID.randomUUID().toString();
   }
 
+  protected static String newTableName() {
+    return "java-test-table-" + UUID.randomUUID().toString();
+  }
+
   @BeforeClass
   public static void setup() {
     init();
+  }
+
+  public static void createScope(String scope) {
+    StreamManager streamManager = StreamManager.create(URI.create("tcp://localhost:9090"));
+
+    if (streamManager.createScope(scope)) LOGGER.info("Created scope [{}]", scope);
+    else LOGGER.info("Scope [{}] already exists", scope);
+    StreamConfiguration streamConfig =
+        StreamConfiguration.builder().scalingPolicy(ScalingPolicy.fixed(1)).build();
+
+    streamManager.close();
   }
 
   public void createStream(String scope, String streamName) {

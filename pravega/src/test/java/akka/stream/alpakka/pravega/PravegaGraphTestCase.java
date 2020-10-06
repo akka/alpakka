@@ -10,7 +10,7 @@ import akka.stream.javadsl.Source;
 
 import com.typesafe.config.ConfigFactory;
 import docs.javadsl.PravegaBaseTestCase;
-import io.pravega.client.stream.ReaderGroup;
+
 import io.pravega.client.stream.impl.JavaSerializer;
 import org.junit.Assert;
 import org.junit.Test;
