@@ -16,6 +16,6 @@ import io.pravega.client.EventStreamClientFactory
 
   lazy val eventStreamClientFactory = EventStreamClientFactory.withScope(scope, clientConfig)
 
-  def close() = eventStreamClientFactory.close()
+  def closeEventStreamFactory() = eventStreamClientFactory.close()
 
 }

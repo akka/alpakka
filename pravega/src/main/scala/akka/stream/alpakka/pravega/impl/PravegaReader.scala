@@ -45,9 +45,9 @@ import io.pravega.client.stream.{ReaderGroup, ReaderGroupConfig, StreamCut, Stre
 
   }
 
-  override def close() = {
+  def close() = {
     readerGroupManager.close()
-    super.close()
+    closeEventStreamFactory()
   }
 
 }

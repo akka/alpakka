@@ -101,7 +101,7 @@ import scala.util.{Failure, Try}
   override def postStop(): Unit = {
     log.debug("Stopping writer")
     writer.close()
-    close()
+    closeEventStreamFactory()
   }
 
 }

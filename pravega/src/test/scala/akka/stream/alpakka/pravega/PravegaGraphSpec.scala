@@ -24,14 +24,10 @@ class PravegaGraphSpec extends PravegaBaseSpec with Repeated {
 
     "runs sources" in {
 
-      val group = newGroupName()
-      val scope = newScope()
-      val stream = newStreamName()
-
       implicit val readerSettings = ReaderSettingsBuilder(
         system.settings.config
           .getConfig(ReaderSettingsBuilder.configPath)
-          .withFallback(ConfigFactory.parseString(s"group-name = $group"))
+          .withFallback(ConfigFactory.parseString(s"group-name = ${newGroupName()}"))
       ).withSerializer(serializer)
 
       implicit val writerSettings = WriterSettingsBuilder(system)
@@ -41,20 +37,18 @@ class PravegaGraphSpec extends PravegaBaseSpec with Repeated {
         .withKeyExtractor((str: String) => str.substring(0, 2))
         .withSerializer(serializer)
 
-      createStream(scope, stream)
-
       logger.info("start source")
 
       // #writing
       val done = Source(1 to nEvent)
         .map(i => f"$i%02d_event")
-        .runWith(Pravega.sink(scope, stream))
+        .runWith(Pravega.sink(scope, streamName))
 
       Await.ready(done, timeout)
 
       val doneWithRoutingKey = Source(1 to nEvent)
         .map(i => f"$i%02d_event")
-        .runWith(Pravega.sink(scope, stream)(writerSettingsWithRoutingKey))
+        .runWith(Pravega.sink(scope, streamName)(writerSettingsWithRoutingKey))
 
       Await.ready(doneWithRoutingKey, timeout)
 
@@ -65,7 +59,7 @@ class PravegaGraphSpec extends PravegaBaseSpec with Repeated {
       // #reading
 
       val (kill, fut) = Pravega
-        .source(scope, stream)
+        .source(scope, streamName)
         .viaMat(KillSwitches.single)(Keep.right)
         .toMat(Sink.fold(nEvent * 2) { (acc, _) =>
           if (acc == 1)

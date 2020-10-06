@@ -14,6 +14,11 @@ import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.slf4j.LoggerFactory
 
+import io.pravega.client.ClientConfig
+
+import io.pravega.client.tables.KeyValueTableConfiguration
+import io.pravega.client.admin.KeyValueTableManager
+
 abstract class PravegaBaseSpec extends AnyWordSpec with PravegaAkkaSpecSupport with ScalaFutures with Matchers {
   val logger = LoggerFactory.getLogger(this.getClass())
 
@@ -21,7 +26,11 @@ abstract class PravegaBaseSpec extends AnyWordSpec with PravegaAkkaSpecSupport w
   def newScope() = "scala-test-scope-" + UUID.randomUUID().toString
   def newStreamName() = "scala-test-stream-" + UUID.randomUUID().toString
 
-  def createStream(scope: String, streamName: String) = {
+  final val scope = "scala-test-scope-" + UUID.randomUUID().toString
+  final val streamName = "scala-test-stream-" + UUID.randomUUID().toString
+  final val keyValueTableName = "scala-test-kv-table" + UUID.randomUUID().toString
+
+  override def beforeAll(): Unit = {
     val streamManager = StreamManager.create(URI.create("tcp://localhost:9090"))
     if (streamManager.createScope(scope))
       logger.info(s"Created scope [$scope].")
@@ -35,5 +44,22 @@ abstract class PravegaBaseSpec extends AnyWordSpec with PravegaAkkaSpecSupport w
       logger.info(s"Stream [$streamName] already exists in scope [$scope].")
 
     streamManager.close()
+
+    val clientConfig = ClientConfig
+      .builder()
+      .build()
+
+    val keyValueTableConfig = KeyValueTableConfiguration
+      .builder()
+      .partitionCount(2)
+      .build()
+    val keyValueTableManager = KeyValueTableManager.create(clientConfig)
+
+    if (keyValueTableManager.createKeyValueTable(scope, keyValueTableName, keyValueTableConfig))
+      logger.info(s"Created KeyValue table [$keyValueTableName] in scope [$scope]")
+    else
+      logger.info(s"KeyValue table [$keyValueTableName] already exists in scope [$scope]")
+
+    keyValueTableManager.close()
   }
 }
