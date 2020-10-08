@@ -8,6 +8,10 @@ import java.io.IOException
 import java.nio.file.{Files, Paths}
 import java.util.concurrent.TimeUnit
 
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
+import scala.concurrent.duration._
+import scala.util.{Failure, Success}
+
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
@@ -20,8 +24,6 @@ import akka.util.ByteString
 import org.scalatest._
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.concurrent.duration._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -167,17 +169,26 @@ class UnixDomainSocketSpec
     }
 
     "not be able to connect to a non-existent file" in {
-      val (binding, connection) =
+      val (binding, result) =
         Source
           .single(ByteString("hi"))
           .viaMat(UnixDomainSocket().outgoingConnection(Paths.get("/thisshouldnotexist")))(Keep.right)
+          .log("after")
           .toMat(Sink.headOption)(Keep.both)
           .run()
 
       val bindingFailure = binding.failed.futureValue
       bindingFailure shouldBe an[IOException]
       bindingFailure.getMessage shouldBe "No such file or directory"
-      connection.failed.futureValue shouldBe an[IOException]
+
+      // Verbose for diagnosing https://github.com/akka/alpakka/issues/2437
+      Await.ready(result, 10.seconds)
+      result.value.get match {
+        case Success(headOption) =>
+          fail(s"Unexpected successful completion with value [$headOption]")
+        case Failure(e) =>
+          e shouldBe an[IOException]
+      }
     }
 
   }
