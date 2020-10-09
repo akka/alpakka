@@ -140,10 +140,10 @@ Java
 ### Group messages and publish batches to an SQS queue
 
 Create a sink, that forwards `String` to the SQS queue. However, the main difference from the previous use case, 
-it batches items and sends as a one request and forwards a @apidoc[SqsPublishResultEntry]
+it batches items and sends as one request and forwards a @apidoc[SqsPublishResultEntry]
 further down the stream for each item processed.
 
-Note: There is also another option to send batch of messages to SQS which is using `AmazonSQSBufferedAsyncClient`.
+Note: There is also another option to send a batch of messages to SQS which is using `AmazonSQSBufferedAsyncClient`.
 This client buffers `SendMessageRequest`s under the hood and sends them as a batch instead of sending them one by one. However, beware that `AmazonSQSBufferedAsyncClient`
 does not support FIFO Queues. See [documentation for client-side buffering.](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-client-side-buffering-request-batching.html)
 
