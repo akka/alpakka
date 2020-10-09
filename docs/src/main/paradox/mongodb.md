@@ -120,7 +120,7 @@ Java
 
 ### Update
 
-We can update documents with a Source of @scaladoc[DocumentUpdate](akka.stream.alpakka.mongodb.DocumentUpdate) which is a filter and a update definition.
+We can update documents with a Source of @scaladoc[DocumentUpdate](akka.stream.alpakka.mongodb.DocumentUpdate) which is a filter and an update definition.
 Use either @scala[@scaladoc[MongoSink.updateOne](akka.stream.alpakka.mongodb.scaladsl.MongoSink$)]@java[@scaladoc[MongoSink.updateOne](akka.stream.alpakka.mongodb.javadsl.MongoSink$)] or @scala[@scaladoc[MongoSink.updateMany](akka.stream.alpakka.mongodb.scaladsl.MongoSink$)]@java[@scaladoc[MongoSink.updateMany](akka.stream.alpakka.mongodb.javadsl.MongoSink$)] if the filter should target one or many documents.
 
 Scala
