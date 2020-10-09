@@ -11,6 +11,7 @@ import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -44,11 +45,13 @@ public class SftpWithProxyStageTest extends BaseSftpSupport implements CommonFtp
   }
 
   @Test
+  @Ignore("flakey, see https://github.com/akka/alpakka/issues/2126")
   public void remove() throws Exception {
     CommonFtpStageTest.super.remove();
   }
 
   @Test
+  @Ignore("flakey, see https://github.com/akka/alpakka/issues/2126")
   public void move() throws Exception {
     CommonFtpStageTest.super.move();
   }
