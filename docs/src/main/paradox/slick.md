@@ -17,7 +17,7 @@ The Slick connector provides Scala and Java DSLs to create a `Source` to stream 
   version2=AkkaVersion
 }
 
-You will also need to add the JDBC driver(s) for the specific relational database(s) to your project. Most of those database have drivers that are not available from public repositories so unfortunately some manual steps will probably be required. The Slick documentation has @extref[information on where to download the drivers](slick:supported-databases.html).
+You will also need to add the JDBC driver(s) for the specific relational database(s) to your project. Most of those databases have drivers that are not available from public repositories so unfortunately some manual steps will probably be required. The Slick documentation has @extref[information on where to download the drivers](slick:supported-databases.html).
 
 The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
 
@@ -137,7 +137,7 @@ Scala
 
 ## Using a Slick Flow or Sink
 
-If you want to take stream of elements and turn them into side-effecting actions in a relational database, the Slick connector allows you to perform any DML or DDL statement using either a `Sink` or a `Flow`. This includes the typical `insert`/`update`/`delete` statements but also `create table`, `drop table`, etc. The unit tests have a couple of good examples of the latter usage.
+If you want to take a stream of elements and turn them into side-effecting actions in a relational database, the Slick connector allows you to perform any DML or DDL statement using either a `Sink` or a `Flow`. This includes the typical `insert`/`update`/`delete` statements but also `create table`, `drop table`, etc. The unit tests have a couple of good examples of the latter usage.
 
 The following example show the use of a Slick `Sink` to take a stream of elements and insert them into the database. There is an optional `parallelism` argument to specify how many concurrent streams will be sent to the database. The unit tests for the slick connector have example of performing parallel inserts.
 
