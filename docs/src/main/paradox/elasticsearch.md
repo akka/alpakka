@@ -217,7 +217,7 @@ Java
  
 ### More custom searching
 
-The easiest way of using ElasticSearch-source, is to just specify the query-param. Sometimes you need more control,
+The easiest way of using Elasticsearch-source, is to just specify the query-param. Sometimes you need more control,
 like specifying which fields to return and so on. In such cases you can instead use 'searchParams' instead:
 
 Scala
