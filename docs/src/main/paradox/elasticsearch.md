@@ -32,7 +32,7 @@ Scala
 : @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #connection-settings }
 
 Java
-: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #connection-settings }
+: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchParameterizedTest.java) { #connection-settings }
 
 
 | Parameter           | Default | Description                                                         |
@@ -51,7 +51,7 @@ Scala
 : @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #es-params }
 
 Java
-: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #es-params }
+: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchParameterizedTest.java) { #es-params }
 
 ## Elasticsearch as Source and Sink
 
@@ -60,10 +60,10 @@ You can stream messages from or to Elasticsearch using the
 
 
 Scala
-: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #define-class }
+: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchSpecUtils.scala) { #define-class }
 
 Java
-: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #define-class }
+: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTestBase.java) { #define-class }
 
 ### With typed source
 
@@ -72,20 +72,20 @@ Use `ElasticsearchSource.typed` and `ElasticsearchSink.create` to create source 
 @java[The data is converted to and from JSON by Jackson's ObjectMapper.]
 
 Scala
-: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #run-typed }
+: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchV5Spec.scala) { #run-typed }
 
 Java
-: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #run-typed }
+: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchV5Test.java) { #run-typed }
 
 ### With JSON source
 
 Use `ElasticsearchSource.create` and `ElasticsearchSink.create` to create source and sink.
 
 Scala
-: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #run-jsobject }
+: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchV5Spec.scala) { #run-jsobject }
 
 Java
-: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #run-jsobject }
+: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchV5Test.java) { #run-jsobject }
 
 
 ### Writing to Elasticsearch
@@ -101,10 +101,10 @@ In the above examples, `WriteMessage` is used as the input to `ElasticsearchSink
 | WriteMessage.createDeleteMessage  | Delete an existing document. If there is no document with the specified `id`, do nothing.            |
 
 Scala
-: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #multiple-operations }
+: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchV5Spec.scala) { #multiple-operations }
 
 Java
-: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #multiple-operations }
+: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchV5Test.java) { #multiple-operations }
 
 ### Source configuration
 
@@ -114,7 +114,7 @@ Scala
 : @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #source-settings }
 
 Java
-: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #source-settings }
+: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchParameterizedTest.java) { #source-settings }
 
 | Parameter              | Default        | Description                                                                                                              |
 | ---------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------ |
@@ -132,7 +132,7 @@ Scala
 : @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #sink-settings }
 
 Java
-: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #sink-settings }
+: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchParameterizedTest.java) { #sink-settings }
 
 | Parameter           | Default    | Description                                                                                            |
 | ------------------- | -------    | ------------------------------------------------------------------------------------------------------ |
@@ -184,10 +184,10 @@ You can also build flow stages with @apidoc[ElasticsearchFlow$].
 The API is similar to creating Sinks.
 
 Scala
-: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #run-flow }
+: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchV5Spec.scala) { #run-flow }
 
 Java
-: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #run-flow }
+: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchV5Test.java) { #run-flow }
 
 
 ### Storing documents from Strings
@@ -195,10 +195,10 @@ Java
 Elasticsearch requires the documents to be properly formatted JSON. If your data is available as JSON in Strings, you may use the pre-defined `StringMessageWriter` to avoid any conversions. For any other JSON technologies, implement a @scala[`MessageWriter[T]`]@java[`MessageWriter<T>`].
 
 Scala
-: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #string }
+: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchV5Spec.scala) { #string }
 
 Java
-: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #string }
+: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchV5Test.java) { #string }
 
 
 
@@ -207,10 +207,10 @@ Java
 When streaming documents from Kafka, you might want to commit to Kafka **AFTER** the document has been written to Elastic.
 
 Scala
-: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #kafka-example }
+: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchV5Spec.scala) { #kafka-example }
 
 Java
-: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #kafka-example }
+: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchV5Test.java) { #kafka-example }
 
 
 ### Specifying custom index-name for every document
@@ -219,10 +219,10 @@ When working with index-patterns using wildcards, you might need to specify a cu
 index-name for each document:
 
 Scala
-: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #custom-index-name-example }
+: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchV5Spec.scala) { #custom-index-name-example }
 
 Java
-: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #custom-index-name-example }
+: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchParameterizedTest.java) { #custom-index-name-example }
 
 
 ### Specifying custom metadata for every document
@@ -234,7 +234,7 @@ Scala
 : @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #custom-metadata-example }
 
 Java
-: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #custom-metadata-example }
+: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchParameterizedTest.java) { #custom-metadata-example }
 
  
 ### More custom searching
@@ -243,10 +243,10 @@ The easiest way of using Elasticsearch-source, is to just specify the query-para
 like specifying which fields to return and so on. In such cases you can instead use 'searchParams' instead:
 
 Scala
-: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #custom-search-params }
+: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchV5Spec.scala) { #custom-search-params }
 
 Java
-: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #custom-search-params }
+: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchV5Test.java) { #custom-search-params }
 
 Additionally, support for [custom routing](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-routing-field.html) 
 is available through the `routing` key. Add this key and the respective value in 'searchParams' map, to route your search directly to the shard that holds
