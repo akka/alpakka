@@ -24,9 +24,26 @@ The table below shows direct dependencies of this module and the second tab show
 @@dependencies { projectId="elasticsearch" }
 
 
-## ElasticSearch Parameters
+### Elasticsearch connection
 
-Any API method that allows reading from and writing to ElasticSearch takes an instance of @apidoc[EsParams$].
+The connection and credentials to authenticate with are configured with `ElasticsearchConnectionSettings`.
+
+Scala
+: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #connection-settings }
+
+Java
+: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #connection-settings }
+
+
+| Parameter           | Default | Description                                                         |
+| --------------------| ------- | ------------------------------------------------------------------- |
+| baseUrl             | Empty   | The base URL of Elasticsearch. Should not include a trailing slash. |
+| username            | None    | The username to authenticate with                                   |
+| password            | None    | The password to authenticate with                                   |
+
+## Elasticsearch parameters
+
+Any API method that allows reading from and writing to Elasticsearch takes an instance of @apidoc[EsParams$].
 
 `EsParams` has be constructed based on the ElasticSearch API version that you're targeting: 
 
@@ -125,23 +142,6 @@ Java
 | retryLogic          | No retries | See below |
 | apiVersion          | V5         | Currently supports `V5` and `V7` (see below) |
 | allowExplicitIndex  | True       | When set to False, the index name will be included in the URL instead of on each document (see below) | 
-
-### ElasticSearch connection
-
-The connection and credentials to authenticate with are configured with `ElasticSearchConnectionSettings`.
-
-Scala
-: @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #connection-settings }
-
-Java
-: @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchTest.java) { #connection-settings }
-
-
-| Parameter           | Default | Description                                                         |
-| --------------------| ------- | ------------------------------------------------------------------- |
-| baseUrl             | Empty   | The base URL of ElasticSearch. Should not include a trailing slash. |
-| username            | None    | The username to authenticate with                                   |
-| password            | None    | The password to authenticate with                                   |
 
 #### Retry logic
 A bulk request might fail partially for some reason. To retry failed writes to Elasticsearch, a `RetryLogic` can be specified. 

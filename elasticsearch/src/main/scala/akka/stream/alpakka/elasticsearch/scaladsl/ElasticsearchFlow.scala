@@ -28,7 +28,7 @@ object ElasticsearchFlow {
    *
    * This factory method requires an implicit Spray JSON writer for `T`.
    */
-  def create[T](esParams: EsParams, settings: ElasticsearchWriteSettings = ElasticsearchWriteSettings.Default)(
+  def create[T](esParams: EsParams, settings: ElasticsearchWriteSettings)(
       implicit sprayJsonWriter: JsonWriter[T]
   ): Flow[WriteMessage[T, NotUsed], WriteResult[T, NotUsed], NotUsed] =
     create[T](esParams, settings, new SprayJsonWriter[T]()(sprayJsonWriter))
@@ -55,8 +55,7 @@ object ElasticsearchFlow {
    *
    * This factory method requires an implicit Spray JSON writer for `T`.
    */
-  def createWithPassThrough[T, C](esParams: EsParams,
-                                  settings: ElasticsearchWriteSettings = ElasticsearchWriteSettings.Default)(
+  def createWithPassThrough[T, C](esParams: EsParams, settings: ElasticsearchWriteSettings)(
       implicit sprayJsonWriter: JsonWriter[T]
   ): Flow[WriteMessage[T, C], WriteResult[T, C], NotUsed] =
     createWithPassThrough[T, C](esParams, settings, new SprayJsonWriter[T]()(sprayJsonWriter))
@@ -85,7 +84,7 @@ object ElasticsearchFlow {
    *
    * This factory method requires an implicit Spray JSON writer for `T`.
    */
-  def createBulk[T, C](esParams: EsParams, settings: ElasticsearchWriteSettings = ElasticsearchWriteSettings.Default)(
+  def createBulk[T, C](esParams: EsParams, settings: ElasticsearchWriteSettings)(
       implicit sprayJsonWriter: JsonWriter[T]
   ): Flow[immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]], NotUsed] =
     createBulk[T, C](esParams, settings, new SprayJsonWriter[T]()(sprayJsonWriter))
@@ -114,7 +113,7 @@ object ElasticsearchFlow {
    * This factory method requires an implicit Spray JSON writer for `T`.
    */
   @ApiMayChange
-  def createWithContext[T, C](esParams: EsParams, settings: ElasticsearchWriteSettings = ElasticsearchWriteSettings())(
+  def createWithContext[T, C](esParams: EsParams, settings: ElasticsearchWriteSettings)(
       implicit sprayJsonWriter: JsonWriter[T]
   ): FlowWithContext[WriteMessage[T, NotUsed], C, WriteResult[T, C], C, NotUsed] =
     createWithContext[T, C](esParams, settings, new SprayJsonWriter[T]()(sprayJsonWriter))

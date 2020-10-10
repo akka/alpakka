@@ -29,8 +29,9 @@ class ElasticsearchSimpleFlowStageTest
   implicit val http: HttpExt = Http()
 
   val writer: StringMessageWriter = StringMessageWriter.getInstance
-  val settings: ElasticsearchWriteSettings = ElasticsearchWriteSettings()
-    .withConnection(ElasticsearchConnectionSettings().withBaseUrl("http://localhost:9201"))
+  val settings: ElasticsearchWriteSettings = ElasticsearchWriteSettings(
+    ElasticsearchConnectionSettings("http://localhost:9201")
+  )
   val dummyMessages: (immutable.Seq[WriteMessage[String, NotUsed]], immutable.Seq[WriteResult[String, NotUsed]]) = (
     immutable.Seq(
       WriteMessage.createIndexMessage("1", """{"foo": "bar"}"""),

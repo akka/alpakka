@@ -4,7 +4,10 @@
 
 package akka.stream.alpakka.elasticsearch
 
-final class EsParams private (val indexName: String, val typeName: Option[String])
+final class EsParams private (val indexName: String, val typeName: Option[String]) {
+  override def toString =
+    s"""EsParams(indexName=$indexName,typeName=$typeName)"""
+}
 
 object EsParams {
   def V7(indexName: String): EsParams = {

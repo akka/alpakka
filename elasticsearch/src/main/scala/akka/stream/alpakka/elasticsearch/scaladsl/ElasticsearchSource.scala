@@ -26,7 +26,7 @@ object ElasticsearchSource {
   def apply(
       esParams: EsParams,
       query: String,
-      settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings.Default
+      settings: ElasticsearchSourceSettings
   ): Source[ReadResult[JsObject], NotUsed] = create(esParams, query, settings)
 
   /**
@@ -97,9 +97,7 @@ object ElasticsearchSource {
    *  Map( "query" -> """{"match_all": {}}""" )
    *  Map( "query" -> """{"match_all": {}}""", "_source" -> """ ["fieldToInclude", "anotherFieldToInclude"] """ )
    */
-  def typed[T](esParams: EsParams,
-               searchParams: Map[String, String],
-               settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings.Default)(
+  def typed[T](esParams: EsParams, searchParams: Map[String, String], settings: ElasticsearchSourceSettings)(
       implicit sprayJsonReader: JsonReader[T]
   ): Source[ReadResult[T], NotUsed] =
     Source

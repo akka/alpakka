@@ -24,6 +24,7 @@ class ElasticsearchSpec
     with Inspectors
     with LogCapturing
     with ElasticsearchConnectorBehaviour
+    with ElasticsearchSpecUtils
     with BeforeAndAfterAll {
 
   //#init-mat
@@ -33,9 +34,9 @@ class ElasticsearchSpec
   implicit val http: HttpExt = Http()
 
   val clientV5: ElasticsearchConnectionSettings =
-    ElasticsearchConnectionSettings().withBaseUrl("http://localhost:9201")
+    ElasticsearchConnectionSettings("http://localhost:9201")
   val clientV7: ElasticsearchConnectionSettings =
-    ElasticsearchConnectionSettings().withBaseUrl("http://localhost:9202")
+    ElasticsearchConnectionSettings("http://localhost:9202")
 
   override def afterAll() = {
     val deleteRequestV5 = HttpRequest(HttpMethods.DELETE)

@@ -4,8 +4,9 @@
 
 package akka.stream.alpakka.elasticsearch
 
-import scala.concurrent.duration._
 import akka.util.JavaDurationConverters._
+
+import scala.concurrent.duration._
 
 trait RetryLogic {
   def maxRetries: Int
@@ -99,16 +100,12 @@ final class ElasticsearchWriteSettings private (val connection: ElasticsearchCon
 }
 
 object ElasticsearchWriteSettings {
-  val Default = new ElasticsearchWriteSettings(connection = ElasticsearchConnectionSettings.Default,
-                                               bufferSize = 10,
-                                               retryLogic = RetryNever,
-                                               versionType = None,
-                                               apiVersion = ApiVersion.V5,
-                                               allowExplicitIndex = true)
 
   /** Scala API */
-  def apply(): ElasticsearchWriteSettings = Default
+  def apply(connection: ElasticsearchConnectionSettings): ElasticsearchWriteSettings =
+    new ElasticsearchWriteSettings(connection, 10, RetryNever, None, ApiVersion.V5, allowExplicitIndex = true)
 
   /** Java API */
-  def create(): ElasticsearchWriteSettings = Default
+  def create(connection: ElasticsearchConnectionSettings): ElasticsearchWriteSettings =
+    new ElasticsearchWriteSettings(connection, 10, RetryNever, None, ApiVersion.V5, allowExplicitIndex = true)
 }

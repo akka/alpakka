@@ -5,8 +5,10 @@
 package akka.stream.alpakka.elasticsearch
 
 import java.util.concurrent.TimeUnit
-import scala.concurrent.duration.FiniteDuration
+
 import akka.util.JavaDurationConverters._
+
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * Configure Elastiscsearch sources.
@@ -69,17 +71,19 @@ final class ElasticsearchSourceSettings private (val connection: ElasticsearchCo
 
 object ElasticsearchSourceSettings {
 
-  val Default = new ElasticsearchSourceSettings(
-    connection = ElasticsearchConnectionSettings.Default,
-    bufferSize = 10,
-    includeDocumentVersion = false,
-    scrollDuration = FiniteDuration(5, TimeUnit.MINUTES),
-    apiVersion = ApiVersion.V5
-  )
-
   /** Scala API */
-  def apply(): ElasticsearchSourceSettings = Default
+  def apply(connection: ElasticsearchConnectionSettings): ElasticsearchSourceSettings =
+    new ElasticsearchSourceSettings(connection,
+                                    10,
+                                    includeDocumentVersion = false,
+                                    FiniteDuration(5, TimeUnit.MINUTES),
+                                    ApiVersion.V5)
 
   /** Java API */
-  def create(): ElasticsearchSourceSettings = Default
+  def create(connection: ElasticsearchConnectionSettings): ElasticsearchSourceSettings =
+    new ElasticsearchSourceSettings(connection,
+                                    10,
+                                    includeDocumentVersion = false,
+                                    FiniteDuration(5, TimeUnit.MINUTES),
+                                    ApiVersion.V5)
 }

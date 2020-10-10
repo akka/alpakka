@@ -48,6 +48,8 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
     case other => throw new IllegalArgumentException(s"API version $other is not supported")
   }
 
+  private val baseUri = Uri(settings.connection.baseUrl)
+
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new StageLogic()
 
   private class StageLogic extends GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
@@ -71,7 +73,7 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
 
       log.debug("Posting data to Elasticsearch: {}", json)
 
-      val uri = Uri(settings.connection.baseUrl).withPath(Path(endpoint))
+      val uri = baseUri.withPath(Path(endpoint))
       val request = HttpRequest(HttpMethods.POST)
         .withUri(uri)
         .withEntity(HttpEntity(NDJsonProtocol.`application/x-ndjson`, json))

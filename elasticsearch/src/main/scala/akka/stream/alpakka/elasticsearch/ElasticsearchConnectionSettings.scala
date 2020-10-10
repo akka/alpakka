@@ -23,20 +23,15 @@ final class ElasticsearchConnectionSettings private (
     new ElasticsearchConnectionSettings(baseUrl = baseUrl, username = username, password = password)
 
   override def toString =
-    s"""ElasticsearchSourceSettings(baseUrl=$baseUrl,username=$username,password=${password.fold("")(_ => "***")}"""
+    s"""ElasticsearchConnectionSettings(baseUrl=$baseUrl,username=$username,password=${password.fold("")(_ => "***")})"""
 }
 
 object ElasticsearchConnectionSettings {
 
-  val Default = new ElasticsearchConnectionSettings(
-    baseUrl = "",
-    username = None,
-    password = None
-  )
-
   /** Scala API */
-  def apply(): ElasticsearchConnectionSettings = Default
+  def apply(baseUrl: String): ElasticsearchConnectionSettings = new ElasticsearchConnectionSettings(baseUrl, None, None)
 
   /** Java API */
-  def create(): ElasticsearchConnectionSettings = Default
+  def create(baseUrl: String): ElasticsearchConnectionSettings =
+    new ElasticsearchConnectionSettings(baseUrl, None, None)
 }
