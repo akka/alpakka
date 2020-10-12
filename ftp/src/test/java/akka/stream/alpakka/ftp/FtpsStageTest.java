@@ -11,6 +11,7 @@ import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
