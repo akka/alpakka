@@ -1,6 +1,6 @@
 # UDP
 
-The UDP connector provides Akka Stream flows that allow to send and receive UDP datagrams.
+The UDP connector provides Akka Stream flows that allow for sending and receiving UDP datagrams.
 
 @@project-info{ projectId="udp" }
 
