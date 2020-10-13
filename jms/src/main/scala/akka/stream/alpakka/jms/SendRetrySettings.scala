@@ -17,7 +17,8 @@ import akka.util.JavaDurationConverters._
 final class SendRetrySettings private (val initialRetry: scala.concurrent.duration.FiniteDuration,
                                        val backoffFactor: Double,
                                        val maxBackoff: scala.concurrent.duration.FiniteDuration,
-                                       val maxRetries: Int) {
+                                       val maxRetries: Int
+) {
 
   /** Wait time before retrying the first time. */
   def withInitialRetry(value: scala.concurrent.duration.FiniteDuration): SendRetrySettings = copy(initialRetry = value)

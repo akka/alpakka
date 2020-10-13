@@ -29,30 +29,36 @@ private[impl] object Splitter {
             pull(in)
           }
         }
-        setHandler(in, new InHandler {
-          override def onPush(): Unit = {
-            val e = grab(in)
-            if (out0Predicate(e)) {
-              push(out0, e)
-              pulls -= 1;
-            } else {
-              push(out1, e)
-              pulls -= 1;
-            }
-          }
-        })
-        setHandler(out0, new OutHandler {
-          override def onPull(): Unit = {
-            pulls += 1
-            pullIfNeeded()
-          }
-        })
-        setHandler(out1, new OutHandler {
-          override def onPull(): Unit = {
-            pulls += 1
-            pullIfNeeded()
-          }
-        })
+        setHandler(in,
+                   new InHandler {
+                     override def onPush(): Unit = {
+                       val e = grab(in)
+                       if (out0Predicate(e)) {
+                         push(out0, e)
+                         pulls -= 1;
+                       } else {
+                         push(out1, e)
+                         pulls -= 1;
+                       }
+                     }
+                   }
+        )
+        setHandler(out0,
+                   new OutHandler {
+                     override def onPull(): Unit = {
+                       pulls += 1
+                       pullIfNeeded()
+                     }
+                   }
+        )
+        setHandler(out1,
+                   new OutHandler {
+                     override def onPull(): Unit = {
+                       pulls += 1
+                       pullIfNeeded()
+                     }
+                   }
+        )
       }
   }
 }

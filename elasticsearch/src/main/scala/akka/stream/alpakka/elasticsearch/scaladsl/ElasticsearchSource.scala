@@ -24,8 +24,9 @@ object ElasticsearchSource {
   def apply(indexName: String,
             typeName: String,
             query: String,
-            settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings.Default)(
-      implicit elasticsearchClient: RestClient
+            settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings.Default
+  )(implicit
+      elasticsearchClient: RestClient
   ): Source[ReadResult[JsObject], NotUsed] = create(indexName, typeName, query, settings)
 
   /**
@@ -40,8 +41,9 @@ object ElasticsearchSource {
   def apply(indexName: String,
             typeName: Option[String],
             searchParams: Map[String, String],
-            settings: ElasticsearchSourceSettings)(
-      implicit elasticsearchClient: RestClient
+            settings: ElasticsearchSourceSettings
+  )(implicit
+      elasticsearchClient: RestClient
   ): Source[ReadResult[JsObject], NotUsed] = create(indexName, typeName, searchParams, settings)
 
   /**
@@ -51,8 +53,9 @@ object ElasticsearchSource {
   def create(indexName: String,
              typeName: String,
              query: String,
-             settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings.Default)(
-      implicit elasticsearchClient: RestClient
+             settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings.Default
+  )(implicit
+      elasticsearchClient: RestClient
   ): Source[ReadResult[JsObject], NotUsed] =
     create(indexName, Option(typeName), query, settings)
 
@@ -60,8 +63,8 @@ object ElasticsearchSource {
    * Creates a [[akka.stream.scaladsl.Source]] from Elasticsearch that streams [[ReadResult]]s
    * of Spray's [[spray.json.JsObject]].
    */
-  def create(indexName: String, typeName: Option[String], query: String, settings: ElasticsearchSourceSettings)(
-      implicit elasticsearchClient: RestClient
+  def create(indexName: String, typeName: Option[String], query: String, settings: ElasticsearchSourceSettings)(implicit
+      elasticsearchClient: RestClient
   ): Source[ReadResult[JsObject], NotUsed] =
     create(indexName, typeName, Map("query" -> query), settings)
 
@@ -76,8 +79,9 @@ object ElasticsearchSource {
   def create(indexName: String,
              typeName: Option[String],
              searchParams: Map[String, String],
-             settings: ElasticsearchSourceSettings)(
-      implicit elasticsearchClient: RestClient
+             settings: ElasticsearchSourceSettings
+  )(implicit
+      elasticsearchClient: RestClient
   ): Source[ReadResult[JsObject], NotUsed] = {
     ElasticsearchFlow.checkClient(elasticsearchClient)
     Source.fromGraph(
@@ -99,8 +103,9 @@ object ElasticsearchSource {
   def typed[T](indexName: String,
                typeName: String,
                query: String,
-               settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings.Default)(
-      implicit elasticsearchClient: RestClient,
+               settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings.Default
+  )(implicit
+      elasticsearchClient: RestClient,
       reader: JsonReader[T]
   ): Source[ReadResult[T], NotUsed] =
     typed(indexName, Option(typeName), query, settings)
@@ -110,7 +115,8 @@ object ElasticsearchSource {
    * converted by Spray's [[spray.json.JsonReader]]
    */
   def typed[T](indexName: String, typeName: Option[String], query: String, settings: ElasticsearchSourceSettings)(
-      implicit elasticsearchClient: RestClient,
+      implicit
+      elasticsearchClient: RestClient,
       sprayJsonReader: JsonReader[T]
   ): Source[ReadResult[T], NotUsed] =
     typed(indexName, typeName, Map("query" -> query), settings)
@@ -126,8 +132,9 @@ object ElasticsearchSource {
   def typed[T](indexName: String,
                typeName: Option[String],
                searchParams: Map[String, String],
-               settings: ElasticsearchSourceSettings)(
-      implicit elasticsearchClient: RestClient,
+               settings: ElasticsearchSourceSettings
+  )(implicit
+      elasticsearchClient: RestClient,
       sprayJsonReader: JsonReader[T]
   ): Source[ReadResult[T], NotUsed] = {
     ElasticsearchFlow.checkClient(elasticsearchClient)
@@ -137,7 +144,8 @@ object ElasticsearchSource {
                                         searchParams,
                                         elasticsearchClient,
                                         settings,
-                                        new SprayJsonReader[T]()(sprayJsonReader))
+                                        new SprayJsonReader[T]()(sprayJsonReader)
+      )
     )
   }
 

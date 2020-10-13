@@ -22,9 +22,9 @@ object OrientDbFlow {
   def create(
       className: String,
       settings: OrientDbWriteSettings
-  ): Flow[immutable.Seq[OrientDbWriteMessage[ODocument, NotUsed]],
-          immutable.Seq[OrientDbWriteMessage[ODocument, NotUsed]],
-          NotUsed] =
+  ): Flow[immutable.Seq[OrientDbWriteMessage[ODocument, NotUsed]], immutable.Seq[OrientDbWriteMessage[ODocument,
+                                                                                                      NotUsed
+  ]], NotUsed] =
     Flow
       .fromGraph(
         new OrientDbFlowStage[ODocument, NotUsed](
@@ -43,7 +43,8 @@ object OrientDbFlow {
       settings: OrientDbWriteSettings
   ): Flow[immutable.Seq[OrientDbWriteMessage[ODocument, C]],
           immutable.Seq[OrientDbWriteMessage[ODocument, C]],
-          NotUsed] =
+          NotUsed
+  ] =
     Flow
       .fromGraph(
         new OrientDbFlowStage[ODocument, C](

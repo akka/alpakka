@@ -77,7 +77,7 @@ trait S3IntegrationSpec
         val getRegion: Region = Region.EU_CENTRAL_1
       })
 
-  /** Empty settings to be override in MinioSpec  */
+  /** Empty settings to be override in MinioSpec */
   def invalidCredentials = S3Settings()
 
   def defaultRegionContentCount = 4
@@ -122,8 +122,8 @@ trait S3IntegrationSpec
                    objectKey,
                    data,
                    bytes.length,
-                   s3Headers = S3Headers().withMetaHeaders(MetaHeaders(metaHeaders)))
-        .withAttributes(attributes)
+                   s3Headers = S3Headers().withMetaHeaders(MetaHeaders(metaHeaders))
+      ).withAttributes(attributes)
         .runWith(Sink.head)
 
     result.futureValue.eTag should not be empty
@@ -140,7 +140,8 @@ trait S3IntegrationSpec
                    objectKey,
                    data,
                    bytes.length,
-                   s3Headers = S3Headers().withMetaHeaders(MetaHeaders(metaHeaders)))
+                   s3Headers = S3Headers().withMetaHeaders(MetaHeaders(metaHeaders))
+        )
         .withAttributes(attributes)
         .runWith(Sink.head)
       metaBefore <- S3.getObjectMetadata(defaultBucket, objectKey).withAttributes(attributes).runWith(Sink.head)
@@ -315,29 +316,28 @@ trait S3IntegrationSpec
       upload3 <- source.runWith(S3.multipartUpload(defaultBucket, sourceKey3).withAttributes(attributes))
     } yield (upload1, upload2, upload3)
 
-    whenReady(results) {
-      case (upload1, upload2, upload3) =>
-        upload1.bucket shouldEqual defaultBucket
-        upload1.key shouldEqual sourceKey1
-        upload2.bucket shouldEqual defaultBucket
-        upload2.key shouldEqual sourceKey2
-        upload3.bucket shouldEqual defaultBucket
-        upload3.key shouldEqual sourceKey3
+    whenReady(results) { case (upload1, upload2, upload3) =>
+      upload1.bucket shouldEqual defaultBucket
+      upload1.key shouldEqual sourceKey1
+      upload2.bucket shouldEqual defaultBucket
+      upload2.key shouldEqual sourceKey2
+      upload3.bucket shouldEqual defaultBucket
+      upload3.key shouldEqual sourceKey3
 
-        S3.deleteObjectsByPrefix(defaultBucket, Some("original"))
+      S3.deleteObjectsByPrefix(defaultBucket, Some("original"))
+        .withAttributes(attributes)
+        .runWith(Sink.ignore)
+        .futureValue shouldEqual akka.Done
+      val numOfKeysForPrefix =
+        S3.listBucket(defaultBucket, Some("original"))
           .withAttributes(attributes)
-          .runWith(Sink.ignore)
-          .futureValue shouldEqual akka.Done
-        val numOfKeysForPrefix =
-          S3.listBucket(defaultBucket, Some("original"))
-            .withAttributes(attributes)
-            .runFold(0)((result, _) => result + 1)
-            .futureValue
-        numOfKeysForPrefix shouldEqual 0
-        S3.deleteObject(defaultBucket, sourceKey3)
-          .withAttributes(attributes)
-          .runWith(Sink.head)
-          .futureValue shouldEqual akka.Done
+          .runFold(0)((result, _) => result + 1)
+          .futureValue
+      numOfKeysForPrefix shouldEqual 0
+      S3.deleteObject(defaultBucket, sourceKey3)
+        .withAttributes(attributes)
+        .runWith(Sink.head)
+        .futureValue shouldEqual akka.Done
     }
   }
 
@@ -351,23 +351,22 @@ trait S3IntegrationSpec
       upload2 <- source.runWith(S3.multipartUpload(defaultBucket, sourceKey2).withAttributes(attributes))
     } yield (upload1, upload2)
 
-    whenReady(results) {
-      case (upload1, upload2) =>
-        upload1.bucket shouldEqual defaultBucket
-        upload1.key shouldEqual sourceKey1
-        upload2.bucket shouldEqual defaultBucket
-        upload2.key shouldEqual sourceKey2
+    whenReady(results) { case (upload1, upload2) =>
+      upload1.bucket shouldEqual defaultBucket
+      upload1.key shouldEqual sourceKey1
+      upload2.bucket shouldEqual defaultBucket
+      upload2.key shouldEqual sourceKey2
 
-        S3.deleteObjectsByPrefix(defaultBucket, prefix = None)
+      S3.deleteObjectsByPrefix(defaultBucket, prefix = None)
+        .withAttributes(attributes)
+        .runWith(Sink.ignore)
+        .futureValue shouldEqual akka.Done
+      val numOfKeysForPrefix =
+        S3.listBucket(defaultBucket, None)
           .withAttributes(attributes)
-          .runWith(Sink.ignore)
-          .futureValue shouldEqual akka.Done
-        val numOfKeysForPrefix =
-          S3.listBucket(defaultBucket, None)
-            .withAttributes(attributes)
-            .runFold(0)((result, _) => result + 1)
-            .futureValue
-        numOfKeysForPrefix shouldEqual 0
+          .runFold(0)((result, _) => result + 1)
+          .futureValue
+      numOfKeysForPrefix shouldEqual 0
     }
   }
 
@@ -552,22 +551,21 @@ trait S3IntegrationSpec
         }
     } yield (upload, copy, download)
 
-    whenReady(results) {
-      case (upload, copy, downloaded) =>
-        upload.bucket shouldEqual defaultBucket
-        upload.key shouldEqual sourceKey
-        copy.bucket shouldEqual defaultBucket
-        copy.key shouldEqual targetKey
-        downloaded shouldBe objectValue
+    whenReady(results) { case (upload, copy, downloaded) =>
+      upload.bucket shouldEqual defaultBucket
+      upload.key shouldEqual sourceKey
+      copy.bucket shouldEqual defaultBucket
+      copy.key shouldEqual targetKey
+      downloaded shouldBe objectValue
 
-        S3.deleteObject(defaultBucket, sourceKey)
-          .withAttributes(attributes)
-          .runWith(Sink.head)
-          .futureValue shouldEqual akka.Done
-        S3.deleteObject(defaultBucket, targetKey)
-          .withAttributes(attributes)
-          .runWith(Sink.head)
-          .futureValue shouldEqual akka.Done
+      S3.deleteObject(defaultBucket, sourceKey)
+        .withAttributes(attributes)
+        .runWith(Sink.head)
+        .futureValue shouldEqual akka.Done
+      S3.deleteObject(defaultBucket, targetKey)
+        .withAttributes(attributes)
+        .runWith(Sink.head)
+        .futureValue shouldEqual akka.Done
     }
   }
 }
@@ -607,7 +605,8 @@ class MinioS3IntegrationSpec extends S3IntegrationSpec {
   override val otherRegionContentCount = 0
 
   override def config() =
-    ConfigFactory.parseString(s"""
+    ConfigFactory
+      .parseString(s"""
                                  |alpakka.s3 {
                                  |  aws {
                                  |    credentials {
@@ -618,7 +617,8 @@ class MinioS3IntegrationSpec extends S3IntegrationSpec {
                                  |  }
                                  |  endpoint-url = "$endpointUrlVirtualHostStyle"
                                  |}
-    """.stripMargin).withFallback(super.config())
+    """.stripMargin)
+      .withFallback(super.config())
 
   override def otherRegionSettingsPathStyleAccess =
     S3Settings()

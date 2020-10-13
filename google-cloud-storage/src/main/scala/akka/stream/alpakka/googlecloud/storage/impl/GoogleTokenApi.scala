@@ -36,8 +36,8 @@ private[impl] class GoogleTokenApi(http: => HttpExt, settings: TokenApiSettings)
     Jwt.encode(claim, privateKey, encodingAlgorithm)
   }
 
-  def getAccessToken(clientEmail: String, privateKey: String)(
-      implicit materializer: Materializer
+  def getAccessToken(clientEmail: String, privateKey: String)(implicit
+      materializer: Materializer
   ): Future[AccessTokenExpiry] = {
     import materializer.executionContext
 

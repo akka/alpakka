@@ -21,8 +21,8 @@ import scala.util.{Failure, Try}
 @InternalApi private final class PravegaFlowStageLogic[A](val shape: FlowShape[A, A],
                                                           val scope: String,
                                                           streamName: String,
-                                                          writerSettings: WriterSettings[A])
-    extends GraphStageLogic(shape)
+                                                          writerSettings: WriterSettings[A]
+) extends GraphStageLogic(shape)
     with PravegaWriter
     with StageLogging {
 
@@ -107,8 +107,8 @@ import scala.util.{Failure, Try}
 }
 @InternalApi private[pravega] final class PravegaFlow[A](scope: String,
                                                          streamName: String,
-                                                         writerSettings: WriterSettings[A])
-    extends GraphStage[FlowShape[A, A]] {
+                                                         writerSettings: WriterSettings[A]
+) extends GraphStage[FlowShape[A, A]] {
 
   val in: Inlet[A] = Inlet(Logging.simpleName(this) + ".in")
   val out: Outlet[A] = Outlet(Logging.simpleName(this) + ".out")

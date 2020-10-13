@@ -32,8 +32,9 @@ private[bigquery] object BigQueryStreamSource {
                parserFn: JsObject => Try[T],
                onFinishCallback: PagingInfo => NotUsed,
                projectConfig: BigQueryConfig,
-               http: HttpExt)(
-      implicit mat: Materializer,
+               http: HttpExt
+  )(implicit
+      mat: Materializer,
       system: ActorSystem
   ): Source[T, NotUsed] =
     Source.fromGraph(GraphDSL.create() { implicit builder =>

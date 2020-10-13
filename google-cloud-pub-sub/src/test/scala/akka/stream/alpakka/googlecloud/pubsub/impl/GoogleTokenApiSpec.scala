@@ -83,12 +83,14 @@ class GoogleTokenApiSpec
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),
                            any[ConnectionPoolSettings](),
-                           any[LoggingAdapter]())
+                           any[LoggingAdapter]()
+        )
       ).thenReturn(
         Future.successful(
           HttpResponse(
             entity = HttpEntity(ContentTypes.`application/json`,
-                                """{"access_token": "token", "token_type": "String", "expires_in": 3600}""")
+                                """{"access_token": "token", "token_type": "String", "expires_in": 3600}"""
+            )
           )
         )
       )
@@ -100,7 +102,8 @@ class GoogleTokenApiSpec
       verify(http).singleRequest(captor.capture(),
                                  any[HttpsConnectionContext](),
                                  any[ConnectionPoolSettings](),
-                                 any[LoggingAdapter]())
+                                 any[LoggingAdapter]()
+      )
       val request: HttpRequest = captor.getValue
       request.uri.toString shouldBe "https://www.googleapis.com/oauth2/v4/token"
       val data = Unmarshal(request.entity).to[String].futureValue
@@ -121,12 +124,14 @@ class GoogleTokenApiSpec
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),
                            any[ConnectionPoolSettings](),
-                           any[LoggingAdapter]())
+                           any[LoggingAdapter]()
+        )
       ).thenReturn(
         Future.successful(
           HttpResponse(
             entity = HttpEntity(ContentTypes.`application/json`,
-                                """{"access_token": "token", "token_type": "String", "expires_in": 3600}""")
+                                """{"access_token": "token", "token_type": "String", "expires_in": 3600}"""
+            )
           )
         )
       )
@@ -144,7 +149,8 @@ class GoogleTokenApiSpec
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),
                            any[ConnectionPoolSettings](),
-                           any[LoggingAdapter]())
+                           any[LoggingAdapter]()
+        )
       ).thenReturn(
         Future.successful(
           HttpResponse(
@@ -170,7 +176,8 @@ class GoogleTokenApiSpec
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),
                            any[ConnectionPoolSettings](),
-                           any[LoggingAdapter]())
+                           any[LoggingAdapter]()
+        )
       ).thenReturn(
         Future.successful(
           HttpResponse(
@@ -196,7 +203,8 @@ class GoogleTokenApiSpec
         Future.successful(
           HttpResponse(
             entity = HttpEntity(ContentTypes.`application/json`,
-                                """{"access_token": "token", "token_type": "String", "expires_in": 3600}""")
+                                """{"access_token": "token", "token_type": "String", "expires_in": 3600}"""
+            )
           )
         )
       )

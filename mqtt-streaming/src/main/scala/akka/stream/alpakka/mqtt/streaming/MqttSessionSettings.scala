@@ -42,13 +42,15 @@ final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
                                          val consumerPubRelTimeout: FiniteDuration = 30.seconds,
                                          val receiveSubAckTimeout: FiniteDuration = 30.seconds,
                                          val receiveUnsubAckTimeout: FiniteDuration = 30.seconds,
-                                         val serverSendBufferSize: Int = 64) {
+                                         val serverSendBufferSize: Int = 64
+) {
   require(
     commandParallelism >= 2,
     s"commandParallelism of $commandParallelism must be greater than or equal to 2 to support connection replies such as pinging"
   )
   require(maxPacketSize >= 0 && maxPacketSize <= (1 << 28),
-          s"maxPacketSize of $maxPacketSize must be positive and less than ${1 << 28}")
+          s"maxPacketSize of $maxPacketSize must be positive and less than ${1 << 28}"
+  )
 
   import akka.util.JavaDurationConverters._
 
@@ -250,7 +252,8 @@ final class MqttSessionSettings private (val maxPacketSize: Int = 4096,
                    consumerPubRelTimeout: FiniteDuration = consumerPubRelTimeout,
                    receiveSubAckTimeout: FiniteDuration = receiveSubAckTimeout,
                    receiveUnsubAckTimeout: FiniteDuration = receiveUnsubAckTimeout,
-                   serverSendBufferSize: Int = serverSendBufferSize) =
+                   serverSendBufferSize: Int = serverSendBufferSize
+  ) =
     new MqttSessionSettings(
       maxPacketSize,
       clientSendBufferSize,

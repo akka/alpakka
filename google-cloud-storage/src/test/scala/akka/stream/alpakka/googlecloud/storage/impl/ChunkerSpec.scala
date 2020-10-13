@@ -40,7 +40,8 @@ class ChunkerSpec extends AnyWordSpec with ScalaFutures with Matchers with Befor
                                   Chunk(ByteString(3, 4)),
                                   Chunk(ByteString(1, 2)),
                                   Chunk(ByteString(3, 1)),
-                                  Chunk(ByteString(2), Some(9)))
+                                  Chunk(ByteString(2), Some(9))
+      )
     }
 
     "emit elements of the same size when totalSize % chunkSize == 0" in {
@@ -51,7 +52,8 @@ class ChunkerSpec extends AnyWordSpec with ScalaFutures with Matchers with Befor
                                   Chunk(ByteString(3, 4)),
                                   Chunk(ByteString(1, 2)),
                                   Chunk(ByteString(3, 1)),
-                                  Chunk(ByteString(2, 3), Some(10)))
+                                  Chunk(ByteString(2, 3), Some(10))
+      )
     }
   }
 }

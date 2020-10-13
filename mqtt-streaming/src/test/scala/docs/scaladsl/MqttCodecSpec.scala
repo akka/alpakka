@@ -172,7 +172,8 @@ class MqttCodecSpec extends AnyWordSpec with Matchers with LogCapturing {
                                     Some(Left(BufferUnderflow)),
                                     Some(Left(BufferUnderflow)),
                                     None,
-                                    None)
+                                    None
+        )
       )
     }
 
@@ -307,7 +308,8 @@ class MqttCodecSpec extends AnyWordSpec with Matchers with LogCapturing {
       val bsb: ByteStringBuilder = ByteString.newBuilder
       val packet = Subscribe(
         List("some-head-topic" -> ControlPacketFlags.QoSExactlyOnceDelivery,
-             "some-tail-topic" -> ControlPacketFlags.QoSExactlyOnceDelivery)
+             "some-tail-topic" -> ControlPacketFlags.QoSExactlyOnceDelivery
+        )
       )
       val bytes = packet.encode(bsb, PacketId(0)).result()
       bytes.size shouldBe 40
@@ -326,14 +328,17 @@ class MqttCodecSpec extends AnyWordSpec with Matchers with LogCapturing {
       val bsb: ByteStringBuilder = ByteString.newBuilder
       val packet = Subscribe(
         List("some-head-topic" -> ControlPacketFlags.QoSExactlyOnceDelivery,
-             "some-tail-topic" -> ControlPacketFlags.QoSReserved)
+             "some-tail-topic" -> ControlPacketFlags.QoSReserved
+        )
       )
       val bytes = packet.encode(bsb, PacketId(1)).result()
       bytes.iterator
         .decodeControlPacket(MaxPacketSize) shouldBe Left(
         BadSubscribeMessage(PacketId(1),
                             List(Right("some-head-topic") -> ControlPacketFlags.QoSExactlyOnceDelivery,
-                                 Right("some-tail-topic") -> ControlPacketFlags.QoSReserved))
+                                 Right("some-tail-topic") -> ControlPacketFlags.QoSReserved
+                            )
+        )
       )
     }
 

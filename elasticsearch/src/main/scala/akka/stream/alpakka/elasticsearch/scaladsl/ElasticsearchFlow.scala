@@ -28,8 +28,9 @@ object ElasticsearchFlow {
    */
   def create[T](indexName: String,
                 typeName: String,
-                settings: ElasticsearchWriteSettings = ElasticsearchWriteSettings.Default)(
-      implicit elasticsearchClient: RestClient,
+                settings: ElasticsearchWriteSettings = ElasticsearchWriteSettings.Default
+  )(implicit
+      elasticsearchClient: RestClient,
       sprayJsonWriter: JsonWriter[T]
   ): Flow[WriteMessage[T, NotUsed], WriteResult[T, NotUsed], NotUsed] =
     create[T](indexName, typeName, settings, new SprayJsonWriter[T]()(sprayJsonWriter))
@@ -57,8 +58,9 @@ object ElasticsearchFlow {
    */
   def createWithPassThrough[T, C](indexName: String,
                                   typeName: String,
-                                  settings: ElasticsearchWriteSettings = ElasticsearchWriteSettings.Default)(
-      implicit elasticsearchClient: RestClient,
+                                  settings: ElasticsearchWriteSettings = ElasticsearchWriteSettings.Default
+  )(implicit
+      elasticsearchClient: RestClient,
       sprayJsonWriter: JsonWriter[T]
   ): Flow[WriteMessage[T, C], WriteResult[T, C], NotUsed] =
     createWithPassThrough[T, C](indexName, typeName, settings, new SprayJsonWriter[T]()(sprayJsonWriter))
@@ -72,8 +74,9 @@ object ElasticsearchFlow {
   def createWithPassThrough[T, C](indexName: String,
                                   typeName: String,
                                   settings: ElasticsearchWriteSettings,
-                                  writer: MessageWriter[T])(
-      implicit elasticsearchClient: RestClient
+                                  writer: MessageWriter[T]
+  )(implicit
+      elasticsearchClient: RestClient
   ): Flow[WriteMessage[T, C], WriteResult[T, C], NotUsed] =
     Flow[WriteMessage[T, C]]
       .batch(settings.bufferSize, immutable.Seq(_)) { case (seq, wm) => seq :+ wm }
@@ -91,8 +94,9 @@ object ElasticsearchFlow {
    */
   def createBulk[T, C](indexName: String,
                        typeName: String,
-                       settings: ElasticsearchWriteSettings = ElasticsearchWriteSettings.Default)(
-      implicit elasticsearchClient: RestClient,
+                       settings: ElasticsearchWriteSettings = ElasticsearchWriteSettings.Default
+  )(implicit
+      elasticsearchClient: RestClient,
       sprayJsonWriter: JsonWriter[T]
   ): Flow[immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]], NotUsed] =
     createBulk[T, C](indexName, typeName, settings, new SprayJsonWriter[T]()(sprayJsonWriter))
@@ -107,8 +111,9 @@ object ElasticsearchFlow {
   def createBulk[T, C](indexName: String,
                        typeName: String,
                        settings: ElasticsearchWriteSettings,
-                       writer: MessageWriter[T])(
-      implicit elasticsearchClient: RestClient
+                       writer: MessageWriter[T]
+  )(implicit
+      elasticsearchClient: RestClient
   ): Flow[immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]], NotUsed] =
     stageFlow(indexName, typeName, settings, elasticsearchClient, writer)
 
@@ -123,8 +128,9 @@ object ElasticsearchFlow {
   @ApiMayChange
   def createWithContext[T, C](indexName: String,
                               typeName: String,
-                              settings: ElasticsearchWriteSettings = ElasticsearchWriteSettings())(
-      implicit elasticsearchClient: RestClient,
+                              settings: ElasticsearchWriteSettings = ElasticsearchWriteSettings()
+  )(implicit
+      elasticsearchClient: RestClient,
       sprayJsonWriter: JsonWriter[T]
   ): FlowWithContext[WriteMessage[T, NotUsed], C, WriteResult[T, C], C, NotUsed] =
     createWithContext[T, C](indexName, typeName, settings, new SprayJsonWriter[T]()(sprayJsonWriter))
@@ -139,16 +145,15 @@ object ElasticsearchFlow {
   def createWithContext[T, C](indexName: String,
                               typeName: String,
                               settings: ElasticsearchWriteSettings,
-                              writer: MessageWriter[T])(
-      implicit elasticsearchClient: RestClient
+                              writer: MessageWriter[T]
+  )(implicit
+      elasticsearchClient: RestClient
   ): FlowWithContext[WriteMessage[T, NotUsed], C, WriteResult[T, C], C, NotUsed] = {
     Flow[WriteMessage[T, C]]
       .batch(settings.bufferSize, immutable.Seq(_)) { case (seq, wm) => seq :+ wm }
       .via(stageFlow(indexName, typeName, settings, elasticsearchClient, writer))
       .mapConcat(identity)
-      .asFlowWithContext[WriteMessage[T, NotUsed], C, C]((res, c) => res.withPassThrough(c))(
-        p => p.message.passThrough
-      )
+      .asFlowWithContext[WriteMessage[T, NotUsed], C, C]((res, c) => res.withPassThrough(c))(p => p.message.passThrough)
   }
 
   @InternalApi
@@ -181,7 +186,8 @@ object ElasticsearchFlow {
                                             settings.retryLogic.maxBackoff,
                                             0,
                                             settings.retryLogic.maxRetries,
-                                            basicFlow) { (_, results) =>
+                                            basicFlow
+      ) { (_, results) =>
         retryLogic(results)
       }
 
@@ -195,11 +201,11 @@ object ElasticsearchFlow {
   private def amendWithIndexFlow[T, C]
       : Flow[immutable.Seq[WriteMessage[T, C]],
              (immutable.Seq[WriteMessage[T, (Int, C)]], immutable.Seq[WriteResult[T, (Int, C)]]),
-             NotUsed] = {
+             NotUsed
+      ] = {
     Flow[immutable.Seq[WriteMessage[T, C]]].map { messages =>
-      val indexedMessages = messages.zipWithIndex.map {
-        case (m, idx) =>
-          m.withPassThrough(idx -> m.passThrough)
+      val indexedMessages = messages.zipWithIndex.map { case (m, idx) =>
+        m.withPassThrough(idx -> m.passThrough)
       }
       indexedMessages -> Nil
     }
@@ -222,7 +228,8 @@ object ElasticsearchFlow {
                                    typeName: String,
                                    settings: ElasticsearchWriteSettings,
                                    elasticsearchClient: RestClient,
-                                   writer: MessageWriter[T]) = {
+                                   writer: MessageWriter[T]
+  ) = {
     checkClient(elasticsearchClient)
     Flow.fromGraph {
       new impl.ElasticsearchSimpleFlowStage[T, C](indexName, typeName, elasticsearchClient, settings, writer)

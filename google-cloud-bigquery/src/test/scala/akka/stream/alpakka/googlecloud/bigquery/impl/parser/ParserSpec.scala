@@ -38,7 +38,8 @@ class ParserSpec extends TestKit(ActorSystem("ParserSpec")) with AnyWordSpecLike
   def createTestGraph[Data, S1, S2](source: Source[HttpResponse, _],
                                     dataSink: Sink[Data, S1],
                                     pageSink: Sink[(Boolean, PagingInfo), S2],
-                                    parseFunction: JsObject => Try[Data]): RunnableGraph[(S1, S2)] =
+                                    parseFunction: JsObject => Try[Data]
+  ): RunnableGraph[(S1, S2)] =
     RunnableGraph.fromGraph(GraphDSL.create(dataSink, pageSink)((_, _)) { implicit builder => (s1, s2) =>
       import GraphDSL.Implicits._
 
@@ -58,7 +59,8 @@ class ParserSpec extends TestKit(ActorSystem("ParserSpec")) with AnyWordSpecLike
         createTestGraph(Source.single(response),
                         TestSink.probe[String],
                         TestSink.probe[(Boolean, PagingInfo)],
-                        _ => Try(pageToken))
+                        _ => Try(pageToken)
+        )
 
       val (dataSink, pageSink) = testGraph.run()
 
@@ -74,7 +76,8 @@ class ParserSpec extends TestKit(ActorSystem("ParserSpec")) with AnyWordSpecLike
         createTestGraph(Source.single(response),
                         TestSink.probe[JsObject],
                         TestSink.probe[(Boolean, PagingInfo)],
-                        x => Try(x))
+                        x => Try(x)
+        )
 
       val (dataSink, pageSink) = testGraph.run()
 
@@ -89,7 +92,8 @@ class ParserSpec extends TestKit(ActorSystem("ParserSpec")) with AnyWordSpecLike
       val testGraph = createTestGraph(Source.single(responseWithoutJobId),
                                       TestSink.probe[JsObject],
                                       TestSink.probe[(Boolean, PagingInfo)],
-                                      x => Try(x))
+                                      x => Try(x)
+      )
 
       val (dataSink, pageSink) = testGraph.run()
 
@@ -104,7 +108,8 @@ class ParserSpec extends TestKit(ActorSystem("ParserSpec")) with AnyWordSpecLike
       val testGraph = createTestGraph(Source.single(HttpResponse(entity = HttpEntity("{}"))),
                                       TestSink.probe[JsObject],
                                       TestSink.probe[(Boolean, PagingInfo)],
-                                      x => Try(x))
+                                      x => Try(x)
+      )
 
       val (dataSink, pageSink) = testGraph.run()
 
@@ -125,7 +130,8 @@ class ParserSpec extends TestKit(ActorSystem("ParserSpec")) with AnyWordSpecLike
         createTestGraph(Source.single(response),
                         TestSink.probe[String],
                         TestSink.probe[(Boolean, PagingInfo)],
-                        failureParser)
+                        failureParser
+        )
 
       val (dataSink, pageSink) = testGraph.run()
 

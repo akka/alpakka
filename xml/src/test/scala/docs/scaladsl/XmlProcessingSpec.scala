@@ -156,7 +156,8 @@ class XmlProcessingSpec extends AnyWordSpec with Matchers with ScalaFutures with
           StartElement("doc",
                        namespace = Some("test:xml:0.1"),
                        prefix = None,
-                       namespaceCtx = List(Namespace("test:xml:0.1"))),
+                       namespaceCtx = List(Namespace("test:xml:0.1"))
+          ),
           StartElement("elem", namespace = Some("test:xml:0.1")),
           Characters("elem1"),
           EndElement("elem"),
@@ -181,7 +182,8 @@ class XmlProcessingSpec extends AnyWordSpec with Matchers with ScalaFutures with
           StartElement("x",
                        namespace = None,
                        prefix = None,
-                       namespaceCtx = List(Namespace("http://ecommerce.example.org/schema", prefix = Some("edi")))),
+                       namespaceCtx = List(Namespace("http://ecommerce.example.org/schema", prefix = Some("edi")))
+          ),
           EndElement("x"),
           EndDocument
         )
@@ -202,7 +204,8 @@ class XmlProcessingSpec extends AnyWordSpec with Matchers with ScalaFutures with
             namespace = Some("urn:loc.gov:books"),
             prefix = Some("bk"),
             namespaceCtx = List(Namespace("urn:loc.gov:books", prefix = Some("bk")),
-                                Namespace("urn:ISBN:0-395-36341-6", prefix = Some("isbn")))
+                                Namespace("urn:ISBN:0-395-36341-6", prefix = Some("isbn"))
+            )
           ),
           StartElement(
             "title",
@@ -234,7 +237,8 @@ class XmlProcessingSpec extends AnyWordSpec with Matchers with ScalaFutures with
         List(
           StartDocument,
           StartElement("x",
-                       namespaceCtx = List(Namespace("http://ecommerce.example.org/schema", prefix = Some("edi")))),
+                       namespaceCtx = List(Namespace("http://ecommerce.example.org/schema", prefix = Some("edi")))
+          ),
           StartElement(
             "lineItem",
             List(Attribute("taxClass", "exempt", Some("edi"), Some("http://ecommerce.example.org/schema")))
@@ -286,8 +290,8 @@ class XmlProcessingSpec extends AnyWordSpec with Matchers with ScalaFutures with
           case StartElement("elem", _, _, _, _) => true
           case _ => false
         })
-        .collect({
-          case Characters(s) => s
+        .collect({ case Characters(s) =>
+          s
         })
         .concatSubstreams
         .runWith(Sink.seq)

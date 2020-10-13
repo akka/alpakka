@@ -163,7 +163,8 @@ final class AmqpDetailsConnectionProvider private (
                    automaticRecoveryEnabled: Boolean = automaticRecoveryEnabled,
                    topologyRecoveryEnabled: Boolean = topologyRecoveryEnabled,
                    exceptionHandler: Option[ExceptionHandler] = exceptionHandler,
-                   connectionName: Option[String] = connectionName): AmqpDetailsConnectionProvider =
+                   connectionName: Option[String] = connectionName
+  ): AmqpDetailsConnectionProvider =
     new AmqpDetailsConnectionProvider(
       hostAndPortList,
       credentials,
@@ -234,7 +235,8 @@ object AmqpCredentials {
 
 final class AmqpSSLConfiguration private (val protocol: Option[String] = None,
                                           val trustManager: Option[TrustManager] = None,
-                                          val context: Option[SSLContext] = None) {
+                                          val context: Option[SSLContext] = None
+) {
   if (protocol.isDefined && context.isDefined) {
     throw new IllegalArgumentException("Protocol and context can't be defined in the same AmqpSSLConfiguration.")
   }
@@ -250,7 +252,8 @@ final class AmqpSSLConfiguration private (val protocol: Option[String] = None,
 
   private def copy(protocol: Option[String] = protocol,
                    trustManager: Option[TrustManager] = trustManager,
-                   context: Option[SSLContext] = context): AmqpSSLConfiguration =
+                   context: Option[SSLContext] = context
+  ): AmqpSSLConfiguration =
     new AmqpSSLConfiguration(protocol, trustManager, context)
 
   override def toString: String =
@@ -297,8 +300,8 @@ object AmqpSSLConfiguration {
  */
 final class AmqpConnectionFactoryConnectionProvider private (val factory: ConnectionFactory,
                                                              private val hostAndPorts: immutable.Seq[(String, Int)] =
-                                                               Nil)
-    extends AmqpConnectionProvider {
+                                                               Nil
+) extends AmqpConnectionProvider {
 
   /**
    * @return A list of hosts and ports for this AMQP connection factory.
@@ -352,8 +355,8 @@ object AmqpConnectionFactoryConnectionProvider {
 }
 
 final class AmqpCachedConnectionProvider private (val provider: AmqpConnectionProvider,
-                                                  val automaticRelease: Boolean = true)
-    extends AmqpConnectionProvider {
+                                                  val automaticRelease: Boolean = true
+) extends AmqpConnectionProvider {
 
   import akka.stream.alpakka.amqp.AmqpCachedConnectionProvider._
   private val state = new AtomicReference[State](Empty)

@@ -391,7 +391,8 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
   def mockBucketListing(firstFileName: String,
                         secondFileName: String,
                         folder: Option[String] = None,
-                        versions: Boolean = false): Unit = {
+                        versions: Boolean = false
+  ): Unit = {
     val nextPageToken = "CiAyMDA1MDEwMy8wMDAwOTUwMTQyLTA1LTAwMDAwNi5uYw"
 
     val firstFile =

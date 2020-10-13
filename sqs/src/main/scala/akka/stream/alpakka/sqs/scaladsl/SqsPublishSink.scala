@@ -33,8 +33,8 @@ object SqsPublishSink {
    *
    * @see https://doc.akka.io/docs/akka/current/stream/operators/Source-or-Flow/groupedWithin.html#groupedwithin
    */
-  def grouped(queueUrl: String, settings: SqsPublishGroupedSettings = SqsPublishGroupedSettings.Defaults)(
-      implicit sqsClient: SqsAsyncClient
+  def grouped(queueUrl: String, settings: SqsPublishGroupedSettings = SqsPublishGroupedSettings.Defaults)(implicit
+      sqsClient: SqsAsyncClient
   ): Sink[String, Future[Done]] =
     Flow
       .fromFunction((msg: String) => SendMessageRequest.builder().queueUrl(queueUrl).messageBody(msg).build())
@@ -50,9 +50,8 @@ object SqsPublishSink {
       settings: SqsPublishBatchSettings = SqsPublishBatchSettings.Defaults
   )(implicit sqsClient: SqsAsyncClient): Sink[Iterable[String], Future[Done]] =
     Flow
-      .fromFunction(
-        (msgs: Iterable[String]) =>
-          msgs.map(msg => SendMessageRequest.builder().queueUrl(queueUrl).messageBody(msg).build())
+      .fromFunction((msgs: Iterable[String]) =>
+        msgs.map(msg => SendMessageRequest.builder().queueUrl(queueUrl).messageBody(msg).build())
       )
       .toMat(batchedMessageSink(queueUrl, settings))(Keep.right)
 

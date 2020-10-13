@@ -142,7 +142,8 @@ class S3StreamSpec(_system: ActorSystem)
     partitions should have length 2
     partitions should equal(
       List(CopyPartition(1, sourceLocation, Some(ByteRange(0, 25))),
-           CopyPartition(2, sourceLocation, Some(ByteRange(25, 50))))
+           CopyPartition(2, sourceLocation, Some(ByteRange(25, 50)))
+      )
     )
   }
 

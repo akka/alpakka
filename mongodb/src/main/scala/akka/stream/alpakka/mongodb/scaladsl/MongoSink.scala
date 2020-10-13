@@ -29,7 +29,8 @@ object MongoSink {
    * @param options options to apply to the operation
    */
   def insertOne[T](collection: MongoCollection[T],
-                   options: InsertOneOptions = DefaultInsertOneOptions): Sink[T, Future[Done]] =
+                   options: InsertOneOptions = DefaultInsertOneOptions
+  ): Sink[T, Future[Done]] =
     MongoFlow.insertOne(collection, options).toMat(Sink.ignore)(Keep.right)
 
   /**
@@ -39,7 +40,8 @@ object MongoSink {
    * @param options options to apply to the operation
    */
   def insertMany[T](collection: MongoCollection[T],
-                    options: InsertManyOptions = DefaultInsertManyOptions): Sink[Seq[T], Future[Done]] =
+                    options: InsertManyOptions = DefaultInsertManyOptions
+  ): Sink[Seq[T], Future[Done]] =
     MongoFlow.insertMany(collection, options).toMat(Sink.ignore)(Keep.right)
 
   /**
@@ -49,7 +51,8 @@ object MongoSink {
    * @param options options to apply to the operation
    */
   def updateOne[T](collection: MongoCollection[T],
-                   options: UpdateOptions = DefaultUpdateOptions): Sink[DocumentUpdate, Future[Done]] =
+                   options: UpdateOptions = DefaultUpdateOptions
+  ): Sink[DocumentUpdate, Future[Done]] =
     MongoFlow.updateOne(collection, options).toMat(Sink.ignore)(Keep.right)
 
   /**
@@ -71,7 +74,8 @@ object MongoSink {
    * @param options options to apply to the operation
    */
   def deleteOne[T](collection: MongoCollection[T],
-                   options: DeleteOptions = DefaultDeleteOptions): Sink[Bson, Future[Done]] =
+                   options: DeleteOptions = DefaultDeleteOptions
+  ): Sink[Bson, Future[Done]] =
     MongoFlow.deleteOne(collection, options).toMat(Sink.ignore)(Keep.right)
 
   /**
@@ -81,7 +85,8 @@ object MongoSink {
    * @param options options to apply to the operation
    */
   def deleteMany[T](collection: MongoCollection[T],
-                    options: DeleteOptions = DefaultDeleteOptions): Sink[Bson, Future[Done]] =
+                    options: DeleteOptions = DefaultDeleteOptions
+  ): Sink[Bson, Future[Done]] =
     MongoFlow.deleteMany(collection, options).toMat(Sink.ignore)(Keep.right)
 
   /**

@@ -30,19 +30,16 @@ object PdxDecoder {
 
   implicit val hnilDecoder: PdxDecoder[HNil] = instance((_, _) => Success(HNil))
 
-  implicit val booleanDecoder: PdxDecoder[Boolean] = instance {
-    case (reader, fieldName) =>
-      Success(reader.readBoolean(fieldName.name))
+  implicit val booleanDecoder: PdxDecoder[Boolean] = instance { case (reader, fieldName) =>
+    Success(reader.readBoolean(fieldName.name))
   }
 
-  implicit val booleanListDecoder: PdxDecoder[List[Boolean]] = instance {
-    case (reader, fieldName) =>
-      Success(reader.readBooleanArray(fieldName.name).toList)
+  implicit val booleanListDecoder: PdxDecoder[List[Boolean]] = instance { case (reader, fieldName) =>
+    Success(reader.readBooleanArray(fieldName.name).toList)
   }
 
-  implicit val booleanArrayDecoder: PdxDecoder[Array[Boolean]] = instance {
-    case (reader, fieldName) =>
-      Success(reader.readBooleanArray(fieldName.name))
+  implicit val booleanArrayDecoder: PdxDecoder[Array[Boolean]] = instance { case (reader, fieldName) =>
+    Success(reader.readBooleanArray(fieldName.name))
   }
 
   implicit val intDecoder: PdxDecoder[Int] = instance { (reader, fieldName) =>
@@ -91,57 +88,47 @@ object PdxDecoder {
     Success(reader.readLongArray(fieldName.name))
   }
 
-  implicit val charDecoder: PdxDecoder[Char] = instance {
-    case (reader, fieldName) =>
-      Success(reader.readChar(fieldName.name))
+  implicit val charDecoder: PdxDecoder[Char] = instance { case (reader, fieldName) =>
+    Success(reader.readChar(fieldName.name))
   }
 
-  implicit val charListDecoder: PdxDecoder[List[Char]] = instance {
-    case (reader, fieldName) =>
-      Success(reader.readCharArray(fieldName.name).toList)
+  implicit val charListDecoder: PdxDecoder[List[Char]] = instance { case (reader, fieldName) =>
+    Success(reader.readCharArray(fieldName.name).toList)
   }
-  implicit val charArrayDecoder: PdxDecoder[Array[Char]] = instance {
-    case (reader, fieldName) =>
-      Success(reader.readCharArray(fieldName.name))
+  implicit val charArrayDecoder: PdxDecoder[Array[Char]] = instance { case (reader, fieldName) =>
+    Success(reader.readCharArray(fieldName.name))
   }
 
-  implicit val stringDecoder: PdxDecoder[String] = instance {
-    case (reader, fieldName) =>
-      Success(reader.readString(fieldName.name))
+  implicit val stringDecoder: PdxDecoder[String] = instance { case (reader, fieldName) =>
+    Success(reader.readString(fieldName.name))
   }
 
-  implicit val stringListDecoder: PdxDecoder[List[String]] = instance {
-    case (reader, fieldName) =>
-      Success(reader.readStringArray(fieldName.name).toList)
+  implicit val stringListDecoder: PdxDecoder[List[String]] = instance { case (reader, fieldName) =>
+    Success(reader.readStringArray(fieldName.name).toList)
   }
 
-  implicit val stringArrayDecoder: PdxDecoder[Array[String]] = instance {
-    case (reader, fieldName) =>
-      Success(reader.readStringArray(fieldName.name))
+  implicit val stringArrayDecoder: PdxDecoder[Array[String]] = instance { case (reader, fieldName) =>
+    Success(reader.readStringArray(fieldName.name))
   }
 
-  implicit val dategDecoder: PdxDecoder[Date] = instance {
-    case (reader, fieldName) =>
-      Success(reader.readDate(fieldName.name))
+  implicit val dategDecoder: PdxDecoder[Date] = instance { case (reader, fieldName) =>
+    Success(reader.readDate(fieldName.name))
   }
 
-  implicit val uuidDecoder: PdxDecoder[UUID] = instance {
-    case (reader, fieldName) =>
-      Try(UUID.fromString(reader.readString(fieldName.name)))
+  implicit val uuidDecoder: PdxDecoder[UUID] = instance { case (reader, fieldName) =>
+    Try(UUID.fromString(reader.readString(fieldName.name)))
   }
 
-  implicit def listDecoder[T <: AnyRef]: PdxDecoder[List[T]] = instance {
-    case (reader, fieldName) =>
-      Try(reader.readObjectArray(fieldName.name).toList.asInstanceOf[List[T]])
+  implicit def listDecoder[T <: AnyRef]: PdxDecoder[List[T]] = instance { case (reader, fieldName) =>
+    Try(reader.readObjectArray(fieldName.name).toList.asInstanceOf[List[T]])
   }
 
-  implicit def setDecoder[T <: AnyRef]: PdxDecoder[Set[T]] = instance {
-    case (reader, fieldName) =>
-      Try(reader.readObjectArray(fieldName.name).toSet.asInstanceOf[Set[T]])
+  implicit def setDecoder[T <: AnyRef]: PdxDecoder[Set[T]] = instance { case (reader, fieldName) =>
+    Try(reader.readObjectArray(fieldName.name).toSet.asInstanceOf[Set[T]])
   }
 
-  implicit def hlistDecoder[K <: Symbol, H, T <: HList](
-      implicit witness: Witness.Aux[K],
+  implicit def hlistDecoder[K <: Symbol, H, T <: HList](implicit
+      witness: Witness.Aux[K],
       hDecoder: Lazy[PdxDecoder[H]],
       tDecoder: Lazy[PdxDecoder[T]]
   ): PdxDecoder[FieldType[K, H] :: T] = instance {
@@ -156,8 +143,8 @@ object PdxDecoder {
     case e => Failure(null)
   }
 
-  implicit def objectDecoder[A, Repr <: HList](
-      implicit gen: LabelledGeneric.Aux[A, Repr],
+  implicit def objectDecoder[A, Repr <: HList](implicit
+      gen: LabelledGeneric.Aux[A, Repr],
       hlistDecoder: PdxDecoder[Repr]
   ): PdxDecoder[A] = instance { (reader, fieldName) =>
     hlistDecoder.decode(reader, fieldName).map(gen.from)

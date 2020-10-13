@@ -68,7 +68,8 @@ sealed trait TestUtils {
 
   def verifySequenceFile(fs: FileSystem,
                          content: Sequence[Pair[Text, Text]],
-                         logs: Sequence[RotationMessage]): Assertion
+                         logs: Sequence[RotationMessage]
+  ): Assertion
 
   def generateFakeContentForSequence(count: Double, bytes: Long): Sequence[Pair[Text, Text]]
 
@@ -83,7 +84,8 @@ sealed trait TestUtils {
   def verifyLogsWithCodec(fs: FileSystem,
                           content: Sequence[ByteString],
                           logs: Sequence[RotationMessage],
-                          codec: CompressionCodec): Assertion
+                          codec: CompressionCodec
+  ): Assertion
 }
 
 object ScalaTestUtils extends TestUtils with Matchers {
@@ -99,9 +101,8 @@ object ScalaTestUtils extends TestUtils with Matchers {
     "Programming in Scala Programming"
   ).map(ByteString(_))
 
-  val booksForSequenceWriter: Sequence[(Text, Text)] = books.zipWithIndex.map {
-    case (data, index) =>
-      new Text(index.toString) -> new Text(data.utf8String)
+  val booksForSequenceWriter: Sequence[(Text, Text)] = books.zipWithIndex.map { case (data, index) =>
+    new Text(index.toString) -> new Text(data.utf8String)
   }
 
   def getFiles(fs: FileSystem): Sequence[FileStatus] = {
@@ -140,7 +141,8 @@ object ScalaTestUtils extends TestUtils with Matchers {
   def verifyLogsWithCodec(fs: FileSystem,
                           content: Sequence[ByteString],
                           logs: Sequence[RotationMessage],
-                          codec: CompressionCodec): Assertion = {
+                          codec: CompressionCodec
+  ): Assertion = {
     val pureContent: String = content.map(_.utf8String).mkString
     val contentFromHdfsWithCodec: String = readLogsWithCodec(fs, logs, codec).mkString
     val contentFromHdfs: String = readLogs(fs, logs).mkString
@@ -207,7 +209,8 @@ object JavaTestUtils extends TestUtils {
   def verifyLogsWithCodec(fs: FileSystem,
                           content: Sequence[ByteString],
                           logs: Sequence[RotationMessage],
-                          codec: CompressionCodec): Assertion = {
+                          codec: CompressionCodec
+  ): Assertion = {
     val pureContent: String = content.asScala.map(_.utf8String).mkString
     val contentFromHdfsWithCodec: String =
       ScalaTestUtils.readLogsWithCodec(fs, logs.asScala.toIndexedSeq, codec).mkString

@@ -18,8 +18,8 @@ import scala.annotation.tailrec
  * INTERNAL API
  */
 @InternalApi private[xml] class StreamingXmlParser(ignoreInvalidChars: Boolean,
-                                                   configureFactory: AsyncXMLInputFactory => Unit)
-    extends GraphStage[FlowShape[ByteString, ParseEvent]] {
+                                                   configureFactory: AsyncXMLInputFactory => Unit
+) extends GraphStage[FlowShape[ByteString, ParseEvent]] {
   val in: Inlet[ByteString] = Inlet("XMLParser.in")
   val out: Outlet[ParseEvent] = Outlet("XMLParser.out")
   override val shape: FlowShape[ByteString, ParseEvent] = FlowShape(in, out)
@@ -73,7 +73,8 @@ import scala.annotation.tailrec
                 Attribute(name = parser.getAttributeLocalName(i),
                           value = parser.getAttributeValue(i),
                           prefix = optPrefix,
-                          namespace = optNs)
+                          namespace = optNs
+                )
               }.toList
               val namespaces = (0 until parser.getNamespaceCount).map { i =>
                 val namespace = parser.getNamespaceURI(i)
@@ -88,7 +89,8 @@ import scala.annotation.tailrec
                              attributes,
                              optPrefix.filterNot(_ == ""),
                              optNs.filterNot(_ == ""),
-                             namespaceCtx = namespaces)
+                             namespaceCtx = namespaces
+                )
               )
 
             case XMLStreamConstants.END_ELEMENT =>

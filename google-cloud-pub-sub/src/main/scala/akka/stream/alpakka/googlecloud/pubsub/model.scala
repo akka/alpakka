@@ -22,7 +22,8 @@ import scala.collection.JavaConverters._
 class PubSubConfig private (val projectId: String,
                             val pullReturnImmediately: Boolean,
                             val pullMaxMessagesPerInternalBatch: Int,
-                            @InternalApi private[pubsub] val session: GoogleSession) {
+                            @InternalApi private[pubsub] val session: GoogleSession
+) {
 
   /**
    * Internal API
@@ -38,8 +39,8 @@ class PubSubConfig private (val projectId: String,
 }
 
 object PubSubConfig {
-  def apply(projectId: String, clientEmail: String, privateKey: String)(
-      implicit actorSystem: ActorSystem
+  def apply(projectId: String, clientEmail: String, privateKey: String)(implicit
+      actorSystem: ActorSystem
   ): PubSubConfig =
     new PubSubConfig(
       projectId = projectId,
@@ -52,8 +53,9 @@ object PubSubConfig {
             clientEmail: String,
             privateKey: String,
             pullReturnImmediately: Boolean,
-            pullMaxMessagesPerInternalBatch: Int)(
-      implicit actorSystem: ActorSystem
+            pullMaxMessagesPerInternalBatch: Int
+  )(implicit
+      actorSystem: ActorSystem
   ): PubSubConfig =
     new PubSubConfig(
       projectId = projectId,
@@ -73,7 +75,8 @@ object PubSubConfig {
              privateKey: String,
              actorSystem: ActorSystem,
              pullReturnImmediately: Boolean,
-             pullMaxMessagesPerInternalBatch: Int): PubSubConfig =
+             pullMaxMessagesPerInternalBatch: Int
+  ): PubSubConfig =
     apply(projectId, clientEmail, privateKey, pullReturnImmediately, pullMaxMessagesPerInternalBatch)(actorSystem)
 }
 
@@ -111,7 +114,8 @@ object PublishMessage {
 final class PubSubMessage private (val data: Option[String],
                                    val attributes: Option[immutable.Map[String, String]],
                                    val messageId: String,
-                                   val publishTime: Instant) {
+                                   val publishTime: Instant
+) {
 
   def withAttributes(attributes: java.util.Map[String, String]): PubSubMessage =
     new PubSubMessage(data, Some(attributes.asScala.toMap), messageId, publishTime)
@@ -136,7 +140,8 @@ object PubSubMessage {
   def apply(data: Option[String] = None,
             attributes: Option[immutable.Map[String, String]] = None,
             messageId: String,
-            publishTime: Instant) = new PubSubMessage(data, attributes, messageId, publishTime)
+            publishTime: Instant
+  ) = new PubSubMessage(data, attributes, messageId, publishTime)
 
   /**
    * Java API
@@ -144,11 +149,13 @@ object PubSubMessage {
   def create(data: java.util.Optional[String],
              attributes: java.util.Optional[java.util.Map[String, String]],
              messageId: String,
-             publishTime: Instant) =
+             publishTime: Instant
+  ) =
     new PubSubMessage(Option(data.orElse(null)),
                       Option(attributes.orElse(null)).map(_.asScala.toMap),
                       messageId,
-                      publishTime)
+                      publishTime
+    )
 
 }
 

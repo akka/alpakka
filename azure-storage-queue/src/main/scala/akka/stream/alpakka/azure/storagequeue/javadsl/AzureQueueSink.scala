@@ -41,12 +41,10 @@ object AzureQueueWithTimeoutsSink {
    * of a [[com.microsoft.azure.storage.queue.CouldQueueMessage]] a [[MessageWithTimeouts]].
    */
   def create(cloudQueue: Supplier[CloudQueue]): Sink[MessageWithTimeouts, CompletionStage[Done]] =
-    AzureQueueSink.fromFunction(
-      { input: MessageWithTimeouts =>
-        AzureQueueSinkFunctions
-          .addMessage(() => cloudQueue.get)(input.message, input.timeToLive, input.initialVisibility)
-      }
-    )
+    AzureQueueSink.fromFunction { input: MessageWithTimeouts =>
+      AzureQueueSinkFunctions
+        .addMessage(() => cloudQueue.get)(input.message, input.timeToLive, input.initialVisibility)
+    }
 }
 
 object AzureQueueDeleteSink {
@@ -67,7 +65,7 @@ object AzureQueueDeleteOrUpdateSink {
    * in an Azure Storage Queue.
    */
   def create(cloudQueue: Supplier[CloudQueue]): Sink[MessageAndDeleteOrUpdate, CompletionStage[Done]] =
-    AzureQueueSink.fromFunction[MessageAndDeleteOrUpdate](
-      input => AzureQueueSinkFunctions.deleteOrUpdateMessage(() => cloudQueue.get)(input.message, input.op)
+    AzureQueueSink.fromFunction[MessageAndDeleteOrUpdate](input =>
+      AzureQueueSinkFunctions.deleteOrUpdateMessage(() => cloudQueue.get)(input.message, input.op)
     )
 }

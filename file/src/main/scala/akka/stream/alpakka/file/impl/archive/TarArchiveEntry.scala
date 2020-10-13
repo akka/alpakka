@@ -104,7 +104,8 @@ import akka.util.ByteString
 
   private def padded(bytes: ByteString, targetSize: Int): ByteString = {
     require(bytes.size <= targetSize,
-            s"the padded data is ${bytes.size} bytes, which does not fit into  $targetSize bytes")
+            s"the padded data is ${bytes.size} bytes, which does not fit into  $targetSize bytes"
+    )
     if (bytes.size < targetSize) bytes ++ empty(targetSize - bytes.size)
     else bytes
   }
@@ -123,7 +124,8 @@ import akka.util.ByteString
     val lastModificationString =
       getString(bs,
                 fileNameLength + fileModeLength + ownerIdLength + groupIdLength + fileSizeLength,
-                lastModificationLength)
+                lastModificationLength
+      )
     val lastModification = Instant.ofEpochSecond(parseUnsignedLong(lastModificationString, 8))
     val linkIndicatorByte = {
       val tmp = bs(
@@ -163,8 +165,8 @@ import akka.util.ByteString
     val withoutChecksum = headerBytesWithoutChecksum
     val checksumLong = withoutChecksum.foldLeft(0L)((sum, byte) => sum + byte)
     val checksumBytes = ByteString(toOctalString(checksumLong).reverse.padTo(6, '0').take(6).reverse) ++ ByteString(
-        new Array[Byte](1) ++ ByteString(" ")
-      )
+      new Array[Byte](1) ++ ByteString(" ")
+    )
     val withChecksum = withoutChecksum.take(148) ++ checksumBytes ++ withoutChecksum.drop(148 + 8)
     withChecksum.compact
   }

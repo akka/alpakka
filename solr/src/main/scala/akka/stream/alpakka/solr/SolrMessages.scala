@@ -21,28 +21,30 @@ object WriteMessage {
 
   def createUpdateMessage[T](idField: String,
                              idValue: String,
-                             updates: Map[String, Map[String, Any]]): WriteMessage[T, NotUsed] =
+                             updates: Map[String, Map[String, Any]]
+  ): WriteMessage[T, NotUsed] =
     new WriteMessage(AtomicUpdate,
                      idField = Option(idField),
                      idFieldValue = Option(idValue),
                      routingFieldValue = None,
-                     updates = updates)
+                     updates = updates
+    )
 
   /**
    * Java API
    */
   def createUpdateMessage[T](idField: String,
                              idValue: String,
-                             updates: java.util.Map[String, java.util.Map[String, Object]]): WriteMessage[T, NotUsed] =
+                             updates: java.util.Map[String, java.util.Map[String, Object]]
+  ): WriteMessage[T, NotUsed] =
     WriteMessage.createUpdateMessage(idField, idValue, asScalaUpdates(updates))
 
   @InternalApi
   private[solr] def asScalaUpdates(
       jupdates: java.util.Map[String, java.util.Map[String, Object]]
   ): Map[String, Map[String, Any]] =
-    jupdates.asScala.map {
-      case (k, v: java.util.Map[String, Object]) =>
-        (k, v.asScala.toMap)
+    jupdates.asScala.map { case (k, v: java.util.Map[String, Object]) =>
+      (k, v.asScala.toMap)
     }.toMap
 
   def createPassThrough[C](passThrough: C): WriteMessage[NotUsed, C] =
@@ -137,7 +139,8 @@ object IncomingAtomicUpdateMessage {
   def apply[T](idField: String,
                idValue: String,
                routingFieldValue: Option[String],
-               updates: Map[String, Map[String, Any]]): WriteMessage[T, NotUsed] = {
+               updates: Map[String, Map[String, Any]]
+  ): WriteMessage[T, NotUsed] = {
     val msg = WriteMessage.createUpdateMessage[T](idField, idValue, updates)
     routingFieldValue match {
       case Some(r) => msg.withRoutingFieldValue(r)
@@ -150,7 +153,8 @@ object IncomingAtomicUpdateMessage {
                   idValue: String,
                   routingFieldValue: Option[String],
                   updates: Map[String, Map[String, Any]],
-                  passThrough: C): WriteMessage[T, C] = {
+                  passThrough: C
+  ): WriteMessage[T, C] = {
     val msg = WriteMessage.createUpdateMessage[T](idField, idValue, updates).withPassThrough(passThrough)
     routingFieldValue match {
       case Some(r) => msg.withRoutingFieldValue(r)
@@ -165,7 +169,8 @@ object IncomingAtomicUpdateMessage {
   @Deprecated
   def create[T](idField: String,
                 idValue: String,
-                updates: java.util.Map[String, java.util.Map[String, Object]]): WriteMessage[T, NotUsed] =
+                updates: java.util.Map[String, java.util.Map[String, Object]]
+  ): WriteMessage[T, NotUsed] =
     WriteMessage.createUpdateMessage(idField, idValue, WriteMessage.asScalaUpdates(updates))
 
   /**
@@ -176,7 +181,8 @@ object IncomingAtomicUpdateMessage {
   def create[T](idField: String,
                 idValue: String,
                 routingFieldValue: String,
-                updates: java.util.Map[String, java.util.Map[String, Object]]): WriteMessage[T, NotUsed] =
+                updates: java.util.Map[String, java.util.Map[String, Object]]
+  ): WriteMessage[T, NotUsed] =
     apply(idField, idValue, Option(routingFieldValue), WriteMessage.asScalaUpdates(updates))
 
   /**
@@ -187,7 +193,8 @@ object IncomingAtomicUpdateMessage {
   def create[T, C](idField: String,
                    idValue: String,
                    updates: java.util.Map[String, java.util.Map[String, Object]],
-                   passThrough: C): WriteMessage[T, C] =
+                   passThrough: C
+  ): WriteMessage[T, C] =
     WriteMessage
       .createUpdateMessage(idField, idValue, WriteMessage.asScalaUpdates(updates))
       .withPassThrough(passThrough)
@@ -201,7 +208,8 @@ object IncomingAtomicUpdateMessage {
                    idValue: String,
                    routingFieldValue: String,
                    updates: java.util.Map[String, java.util.Map[String, Object]],
-                   passThrough: C): WriteMessage[T, C] =
+                   passThrough: C
+  ): WriteMessage[T, C] =
     apply(idField, idValue, Option(routingFieldValue), WriteMessage.asScalaUpdates(updates))
       .withPassThrough(passThrough)
 
@@ -280,7 +288,8 @@ final case class WriteResult[T, C](idField: Option[String],
                                    source: Option[T],
                                    updates: Map[String, Map[String, Any]],
                                    passThrough: C,
-                                   status: Int)
+                                   status: Int
+)
 
 sealed trait Operation
 object Upsert extends Operation

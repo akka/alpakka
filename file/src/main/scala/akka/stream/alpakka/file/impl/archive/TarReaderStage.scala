@@ -79,11 +79,13 @@ private[file] class TarReaderStage
             pushSource(metadata, buffer)
           } else {
             // await flow demand
-            setHandler(flowOut, new OutHandler {
-              override def onPull(): Unit = {
-                setHandler(flowIn, pushSource(metadata, buffer))
-              }
-            })
+            setHandler(flowOut,
+                       new OutHandler {
+                         override def onPull(): Unit = {
+                           setHandler(flowIn, pushSource(metadata, buffer))
+                         }
+                       }
+            )
             failOnFlowPush
           }
         }
@@ -91,7 +93,8 @@ private[file] class TarReaderStage
 
       def readTrailer(metadata: TarArchiveMetadata,
                       buffer: ByteString,
-                      subSource: Option[SubSourceOutlet[ByteString]]): InHandler = {
+                      subSource: Option[SubSourceOutlet[ByteString]]
+      ): InHandler = {
         val trailerLength = TarArchiveEntry.trailerLength(metadata)
         if (buffer.length >= trailerLength) {
           subSource.foreach(_.complete())
@@ -215,8 +218,8 @@ private[file] class TarReaderStage
        */
       private final class ReadPastTrailer(metadata: TarArchiveMetadata,
                                           var buffer: ByteString,
-                                          subSource: Option[SubSourceOutlet[ByteString]])
-          extends InHandler {
+                                          subSource: Option[SubSourceOutlet[ByteString]]
+      ) extends InHandler {
         val trailerLength = TarArchiveEntry.trailerLength(metadata)
 
         override def onPush(): Unit = {

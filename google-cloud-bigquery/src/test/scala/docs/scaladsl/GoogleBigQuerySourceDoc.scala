@@ -42,7 +42,8 @@ class GoogleBigQuerySourceDoc {
   val userCsvLikeStream: Source[Seq[String], NotUsed] =
     GoogleBigQuerySource.runQueryCsvStyle("SELECT uid, name FROM bigQueryDatasetName.myTable",
                                           BigQueryCallbacks.tryToStopJob(config),
-                                          config)
+                                          config
+    )
   //#csv-style
 
   //#run-query
@@ -54,7 +55,8 @@ class GoogleBigQuerySourceDoc {
     GoogleBigQuerySource.runQuery("SELECT uid, name FROM bigQueryDatasetName.myTable",
                                   parserFn,
                                   BigQueryCallbacks.ignore,
-                                  config)
+                                  config
+    )
   //#run-query
 
   //#dry-run
@@ -65,7 +67,8 @@ class GoogleBigQuerySourceDoc {
 
   val request = BigQueryCommunicationHelper.createQueryRequest("SELECT uid, name FROM bigQueryDatasetName.myTable",
                                                                config.projectId,
-                                                               dryRun = true)
+                                                               dryRun = true
+  )
 
   val dryRunStream = GoogleBigQuerySource.raw(request, dryRunParser, BigQueryCallbacks.ignore, config)
   //#dry-run

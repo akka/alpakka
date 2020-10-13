@@ -36,7 +36,8 @@ final class WriteMessage[T, PT] private (val operation: Operation,
                                          val passThrough: PT = NotUsed,
                                          val version: Option[Long] = None,
                                          val indexName: Option[String] = None,
-                                         val customMetadata: Map[String, java.lang.String] = Map.empty) {
+                                         val customMetadata: Map[String, java.lang.String] = Map.empty
+) {
 
   def withSource(value: T): WriteMessage[T, PT] = copy(source = Option(value))
 
@@ -47,7 +48,8 @@ final class WriteMessage[T, PT] private (val operation: Operation,
                              value,
                              version = version,
                              indexName = indexName,
-                             customMetadata = customMetadata)
+                             customMetadata = customMetadata
+    )
 
   def withVersion(value: Long): WriteMessage[T, PT] = copy(version = Option(value))
   def withIndexName(value: String): WriteMessage[T, PT] = copy(indexName = Option(value))
@@ -71,14 +73,16 @@ final class WriteMessage[T, PT] private (val operation: Operation,
                    passThrough: PT = passThrough,
                    version: Option[Long] = version,
                    indexName: Option[String] = indexName,
-                   customMetadata: Map[String, String] = customMetadata): WriteMessage[T, PT] =
+                   customMetadata: Map[String, String] = customMetadata
+  ): WriteMessage[T, PT] =
     new WriteMessage[T, PT](operation = operation,
                             id = id,
                             source = source,
                             passThrough = passThrough,
                             version = version,
                             indexName = indexName,
-                            customMetadata = customMetadata)
+                            customMetadata = customMetadata
+    )
 
   override def toString =
     s"""WriteMessage(operation=$operation,id=$id,source=$source,passThrough=$passThrough,version=$version,indexName=$indexName,customMetadata=$customMetadata)"""
@@ -86,12 +90,12 @@ final class WriteMessage[T, PT] private (val operation: Operation,
   override def equals(other: Any): Boolean = other match {
     case that: WriteMessage[_, _] =>
       java.util.Objects.equals(this.operation, that.operation) &&
-      java.util.Objects.equals(this.id, that.id) &&
-      java.util.Objects.equals(this.source, that.source) &&
-      java.util.Objects.equals(this.passThrough, that.passThrough) &&
-      java.util.Objects.equals(this.version, that.version) &&
-      java.util.Objects.equals(this.indexName, that.indexName) &&
-      java.util.Objects.equals(this.customMetadata, that.customMetadata)
+        java.util.Objects.equals(this.id, that.id) &&
+        java.util.Objects.equals(this.source, that.source) &&
+        java.util.Objects.equals(this.passThrough, that.passThrough) &&
+        java.util.Objects.equals(this.version, that.version) &&
+        java.util.Objects.equals(this.indexName, that.indexName) &&
+        java.util.Objects.equals(this.customMetadata, that.customMetadata)
     case _ => false
   }
 
@@ -135,7 +139,8 @@ object WriteMessage {
  */
 final class WriteResult[T2, C2] @InternalApi private[elasticsearch] (val message: WriteMessage[T2, C2],
                                                                      /** JSON structure of the Elasticsearch error. */
-                                                                     val error: Option[String]) {
+                                                                     val error: Option[String]
+) {
   val success: Boolean = error.isEmpty
 
   /** Java API: JSON structure of the Elasticsearch error. */
@@ -156,7 +161,7 @@ final class WriteResult[T2, C2] @InternalApi private[elasticsearch] (val message
   override def equals(other: Any): Boolean = other match {
     case that: WriteResult[T2, C2] =>
       java.util.Objects.equals(this.message, that.message) &&
-      java.util.Objects.equals(this.error, that.error)
+        java.util.Objects.equals(this.error, that.error)
     case _ => false
   }
 

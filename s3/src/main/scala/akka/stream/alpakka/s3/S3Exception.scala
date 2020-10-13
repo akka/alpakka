@@ -18,8 +18,8 @@ class S3Exception @InternalApi private[s3] (val statusCode: StatusCode,
                                             val code: String,
                                             val message: String,
                                             val requestId: String,
-                                            val resource: String)
-    extends RuntimeException(message) {
+                                            val resource: String
+) extends RuntimeException(message) {
 
   @deprecated("kept for binary compatiblity", "2.0.1")
   private[s3] val hostId = ""
@@ -34,7 +34,8 @@ class S3Exception @InternalApi private[s3] (val statusCode: StatusCode,
          (xmlResponse \ "Code").text,
          (xmlResponse \ "Message").text,
          (xmlResponse \ "RequestID").text,
-         (xmlResponse \ "HostID").text)
+         (xmlResponse \ "HostID").text
+    )
 
   @deprecated("kept for binary compatiblity", "2.0.1")
   private[s3] def this(response: String) =

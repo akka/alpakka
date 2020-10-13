@@ -49,7 +49,8 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
                             s"$indexName/_doc",
                             Map[String, String]().asJava,
                             new StringEntity(s"""{"title": "$title"}"""),
-                            new BasicHeader("Content-Type", "application/json"))
+                            new BasicHeader("Content-Type", "application/json")
+      )
 
     def flushAndRefresh(indexName: String): Unit = {
       client.performRequest("POST", s"$indexName/_flush")
@@ -278,14 +279,13 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
             WriteMessage.createIndexMessage("3", s"""{"title": "Die unendliche Geschichte"}""")
           )
         ).via(
-            ElasticsearchFlow.create(
-              indexName = indexName,
-              typeName = "_doc",
-              settings = baseWriteSettings,
-              StringMessageWriter
-            )
+          ElasticsearchFlow.create(
+            indexName = indexName,
+            typeName = "_doc",
+            settings = baseWriteSettings,
+            StringMessageWriter
           )
-          .runWith(Sink.seq)
+        ).runWith(Sink.seq)
         // #string
 
         // Assert no errors
@@ -307,19 +307,17 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
 
         val indexName = "sink3-1"
         val createBooks = Source(books).zipWithIndex
-          .map {
-            case (book, index) =>
-              (WriteMessage.createIndexMessage(index.toString, Book(book)), book)
+          .map { case (book, index) =>
+            (WriteMessage.createIndexMessage(index.toString, Book(book)), book)
           }
           .via(
             ElasticsearchFlow.createWithContext(indexName, "_doc", baseWriteSettings)
           )
           .runWith(Sink.seq)
 
-        forAll(createBooks.futureValue) {
-          case (writeMessage, title) =>
-            val book = writeMessage.message.source
-            book.map(_.title) should contain(title)
+        forAll(createBooks.futureValue) { case (writeMessage, title) =>
+          val book = writeMessage.message.source
+          book.map(_.title) should contain(title)
         }
       }
 
@@ -331,9 +329,8 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
 
         val indexName = "sink4"
         val createBooks = Source(books.zipWithIndex)
-          .map {
-            case (book: String, index: Int) =>
-              WriteMessage.createIndexMessage(index.toString, Book(book))
+          .map { case (book: String, index: Int) =>
+            WriteMessage.createIndexMessage(index.toString, Book(book))
           }
           .via(
             ElasticsearchFlow.create[Book](
@@ -367,18 +364,16 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
             )
             .zipWithIndex
         ).map {
-            case (book: JsObject, index: Int) =>
-              WriteMessage.createIndexMessage(index.toString, book)
-            case _ => ??? // Keep the compiler from complaining
-          }
-          .via(
-            ElasticsearchFlow.create(
-              indexName,
-              "_doc",
-              baseWriteSettings.withRetryLogic(RetryAtFixedRate(5, 100.millis))
-            )
+          case (book: JsObject, index: Int) =>
+            WriteMessage.createIndexMessage(index.toString, book)
+          case _ => ??? // Keep the compiler from complaining
+        }.via(
+          ElasticsearchFlow.create(
+            indexName,
+            "_doc",
+            baseWriteSettings.withRetryLogic(RetryAtFixedRate(5, 100.millis))
           )
-          .runWith(Sink.seq)
+        ).runWith(Sink.seq)
 
         val start = System.currentTimeMillis()
         val writeResults = createBooks.futureValue
@@ -411,19 +406,18 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           .take(bookNr)
           .grouped(5)
           .zipWithIndex
-          .flatMap {
-            case (numBlock, index) =>
-              val writeMsgBlock = numBlock.map { n =>
-                WriteMessage
-                  .createCreateMessage(n.toString, Map("title" -> s"Book ${n}"))
-                  .withPassThrough(n)
-              }
+          .flatMap { case (numBlock, index) =>
+            val writeMsgBlock = numBlock.map { n =>
+              WriteMessage
+                .createCreateMessage(n.toString, Map("title" -> s"Book ${n}"))
+                .withPassThrough(n)
+            }
 
-              val writeMsgFailed = WriteMessage
-                .createCreateMessage("0", Map("title" -> s"Failed"))
-                .withPassThrough(bookNr + index)
+            val writeMsgFailed = WriteMessage
+              .createCreateMessage("0", Map("title" -> s"Failed"))
+              .withPassThrough(bookNr + index)
 
-              (writeMsgBlock ++ Iterator(writeMsgFailed)).toList
+            (writeMsgBlock ++ Iterator(writeMsgFailed)).toList
           }
           .toList
 
@@ -462,18 +456,16 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
             )
             .zipWithIndex
         ).map {
-            case (book: JsObject, index: Int) =>
-              WriteMessage.createIndexMessage(index.toString, book) -> index
-            case _ => ??? // Keep the compiler from complaining
-          }
-          .via(
-            ElasticsearchFlow.createWithContext(
-              indexName,
-              "_doc",
-              baseWriteSettings.withRetryLogic(RetryAtFixedRate(5, 100.millis))
-            )
+          case (book: JsObject, index: Int) =>
+            WriteMessage.createIndexMessage(index.toString, book) -> index
+          case _ => ??? // Keep the compiler from complaining
+        }.via(
+          ElasticsearchFlow.createWithContext(
+            indexName,
+            "_doc",
+            baseWriteSettings.withRetryLogic(RetryAtFixedRate(5, 100.millis))
           )
-          .runWith(Sink.seq)
+        ).runWith(Sink.seq)
 
         val start = System.currentTimeMillis()
         val writeResults = createBooks.futureValue
@@ -511,17 +503,16 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           .take(bookNr)
           .grouped(5)
           .zipWithIndex
-          .flatMap {
-            case (numBlock, index) =>
-              val writeMsgBlock = numBlock.map { n =>
-                WriteMessage
-                  .createCreateMessage(n.toString, Map("title" -> s"Book ${n}")) -> n
-              }
+          .flatMap { case (numBlock, index) =>
+            val writeMsgBlock = numBlock.map { n =>
+              WriteMessage
+                .createCreateMessage(n.toString, Map("title" -> s"Book ${n}")) -> n
+            }
 
-              val writeMsgFailed = WriteMessage
-                  .createCreateMessage("0", Map("title" -> s"Failed")) -> (bookNr + index)
+            val writeMsgFailed = WriteMessage
+              .createCreateMessage("0", Map("title" -> s"Failed")) -> (bookNr + index)
 
-              (writeMsgBlock ++ Iterator(writeMsgFailed)).toList
+            (writeMsgBlock ++ Iterator(writeMsgFailed)).toList
           }
           .toList
 
@@ -629,15 +620,18 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           ("00001",
            JsObject(
              "rating" -> JsNumber(4)
-           )),
+           )
+          ),
           ("00002",
            JsObject(
              "rating" -> JsNumber(3)
-           )),
+           )
+          ),
           ("00003",
            JsObject(
              "rating" -> JsNumber(3)
-           ))
+           )
+          )
         )
 
         // Update sink7/_doc with the second dataset
@@ -665,9 +659,8 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           """{"match_all": {}}""",
           ElasticsearchSourceSettings()
         ).map { message =>
-            message.source
-          }
-          .runWith(Sink.seq)
+          message.source
+        }.runWith(Sink.seq)
 
         // Docs should contain both columns
         readBooks.futureValue.sortBy(_.fields("title").compactPrint) shouldEqual Seq(
@@ -724,9 +717,8 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           """{"match_all": {}}""",
           ElasticsearchSourceSettings()
         ).map { message =>
-            message.source
-          }
-          .runWith(Sink.seq)
+          message.source
+        }.runWith(Sink.seq)
 
         // Docs should contain both columns
         readBooks.futureValue.sortBy(_.fields("title").compactPrint) shouldEqual Seq(
@@ -1048,7 +1040,8 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
                             "query" -> """ {"match_all": {}} """,
                             "_source" -> """ ["id", "a", "c"] """
                           ),
-                          ElasticsearchSourceSettings())
+                          ElasticsearchSourceSettings()
+          )
           .map { message =>
             message.source
           }

@@ -39,7 +39,8 @@ object XmlParsing {
    * Parser Flow that takes a stream of ByteStrings and parses them to XML events similar to SAX.
    */
   def parser(ignoreInvalidChars: Boolean = false,
-             configureFactory: AsyncXMLInputFactory => Unit = configureDefault): Flow[ByteString, ParseEvent, NotUsed] =
+             configureFactory: AsyncXMLInputFactory => Unit = configureDefault
+  ): Flow[ByteString, ParseEvent, NotUsed] =
     Flow.fromGraph(new impl.StreamingXmlParser(ignoreInvalidChars, configureFactory))
 
   /**

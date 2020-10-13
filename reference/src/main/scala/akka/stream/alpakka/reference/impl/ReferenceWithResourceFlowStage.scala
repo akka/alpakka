@@ -42,9 +42,11 @@ import akka.util.ByteString
     }
   )
 
-  setHandler(out, new OutHandler {
-    override def onPull(): Unit = pull(in)
-  })
+  setHandler(out,
+             new OutHandler {
+               override def onPull(): Unit = pull(in)
+             }
+  )
 
   /**
    * Cleanup logic

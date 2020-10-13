@@ -18,7 +18,8 @@ private trait KuduCapabilities {
   protected def getOrCreateTable(kuduClient: KuduClient,
                                  tableName: String,
                                  schema: Schema,
-                                 createTableOptions: CreateTableOptions): KuduTable =
+                                 createTableOptions: CreateTableOptions
+  ): KuduTable =
     if (kuduClient.tableExists(tableName))
       kuduClient.openTable(tableName)
     else {

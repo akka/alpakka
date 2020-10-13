@@ -75,10 +75,12 @@ private[ironmq] class IronMqPushStage(queueName: String, settings: IronMqSetting
         }
       )
 
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit =
-          tryPull(in)
-      })
+      setHandler(out,
+                 new OutHandler {
+                   override def onPull(): Unit =
+                     tryPull(in)
+                 }
+      )
 
       private def checkForCompletion() =
         if (isClosed(in) && runningFutures <= 0) {

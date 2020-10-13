@@ -15,8 +15,8 @@ import scala.util.Success
 
 //#shapeless-pdx-serializer
 @InternalApi
-private[geode] class ShapelessPdxSerializer[A <: AnyRef](enc: PdxEncoder[A], dec: PdxDecoder[A])(
-    implicit tag: ClassTag[A]
+private[geode] class ShapelessPdxSerializer[A <: AnyRef](enc: PdxEncoder[A], dec: PdxDecoder[A])(implicit
+    tag: ClassTag[A]
 ) extends PdxSerializer
     with Declarable {
 

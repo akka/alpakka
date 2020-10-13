@@ -25,10 +25,12 @@ private[storage] class Chunker(val chunkSize: Int) extends GraphStage[FlowShape[
     private val bufferBuilder = ByteString.newBuilder
     private var totalSize = 0L
 
-    setHandler(out, new OutHandler {
-      override def onPull(): Unit =
-        emitChunk()
-    })
+    setHandler(out,
+               new OutHandler {
+                 override def onPull(): Unit =
+                   emitChunk()
+               }
+    )
     setHandler(
       in,
       new InHandler {

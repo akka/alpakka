@@ -20,8 +20,8 @@ import scala.concurrent.{ExecutionContext, Future}
 @InternalApi
 private[bigquery] object SendRequestWithOauthHandling {
 
-  def apply(bigQueryConfig: BigQueryConfig, http: HttpExt)(
-      implicit mat: Materializer,
+  def apply(bigQueryConfig: BigQueryConfig, http: HttpExt)(implicit
+      mat: Materializer,
       system: ActorSystem
   ) =
     Flow[HttpRequest]
@@ -40,8 +40,8 @@ private[bigquery] object SendRequestWithOauthHandling {
     if (response.status.isFailure) {
       Unmarshal(response.entity)
         .to[String]
-        .map(
-          errorBody => throw new IllegalStateException(s"Unexpected error in response: ${response.status}, $errorBody")
+        .map(errorBody =>
+          throw new IllegalStateException(s"Unexpected error in response: ${response.status}, $errorBody")
         )
     } else {
       Future.successful(response)

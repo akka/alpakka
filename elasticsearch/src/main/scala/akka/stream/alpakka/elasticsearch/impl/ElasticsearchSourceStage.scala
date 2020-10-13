@@ -49,8 +49,8 @@ private[elasticsearch] final class ElasticsearchSourceStage[T](indexName: String
                                                                searchParams: Map[String, String],
                                                                client: RestClient,
                                                                settings: ElasticsearchSourceSettings,
-                                                               reader: MessageReader[T])
-    extends GraphStage[SourceShape[ReadResult[T]]] {
+                                                               reader: MessageReader[T]
+) extends GraphStage[SourceShape[ReadResult[T]]] {
   require(indexName != null, "You must define an index name")
 
   val out: Outlet[ReadResult[T]] = Outlet("ElasticsearchSource.out")
@@ -72,8 +72,8 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](indexName: String
                                                                settings: ElasticsearchSourceSettings,
                                                                out: Outlet[ReadResult[T]],
                                                                shape: SourceShape[ReadResult[T]],
-                                                               reader: MessageReader[T])
-    extends GraphStageLogic(shape)
+                                                               reader: MessageReader[T]
+) extends GraphStageLogic(shape)
     with ResponseListener
     with OutHandler
     with StageLogging {
@@ -116,11 +116,10 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](indexName: String
         val completeParams = searchParams ++ extraParams.flatten - routingKey
 
         val searchBody = "{" + completeParams
-            .map {
-              case (name, json) =>
-                "\"" + name + "\":" + json
-            }
-            .mkString(",") + "}"
+          .map { case (name, json) =>
+            "\"" + name + "\":" + json
+          }
+          .mkString(",") + "}"
 
         val endpoint: String = (indexName, typeName) match {
           case (i, Some(t)) => s"/$i/$t/_search"
@@ -142,7 +141,8 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](indexName: String
           s"/_search/scroll",
           Map[String, String]().asJava,
           new StringEntity(Map("scroll" -> settings.scroll, "scroll_id" -> scrollId).toJson.toString,
-                           StandardCharsets.UTF_8),
+                           StandardCharsets.UTF_8
+          ),
           this,
           new BasicHeader("Content-Type", "application/json")
         )
@@ -274,13 +274,13 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](indexName: String
     }
   }
 
-  private val clearScrollAsyncHandler = getAsyncCallback[Try[Response]]({ result =>
+  private val clearScrollAsyncHandler = getAsyncCallback[Try[Response]] { result =>
     {
       // Note: the scroll will expire, so there is no reason to consider a failed
       // clear as a reason to fail the stream.
       log.debug("Result of clearing the scroll: {}", result)
       completeStage()
     }
-  })
+  }
 
 }

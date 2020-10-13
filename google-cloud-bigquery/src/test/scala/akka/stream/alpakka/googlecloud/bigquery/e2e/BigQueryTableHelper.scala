@@ -130,14 +130,18 @@ trait BigQueryTableHelper extends BigQueryTestHelper with AnyWordSpecLike with B
         |}
       """.stripMargin
     Await.result(for {
-      _ <- runRequest(createTable(createTableSql))
-      _ <- runRequest(insertInto(insertDataSql, tableName))
-    } yield (), defaultTimeout)
+                   _ <- runRequest(createTable(createTableSql))
+                   _ <- runRequest(insertInto(insertDataSql, tableName))
+                 } yield (),
+                 defaultTimeout
+    )
     sleep()
   }
 
   def cleanUpDb(): Unit =
     Await.result(for {
-      _ <- runRequest(dropTable(tableName))
-    } yield (), defaultTimeout)
+                   _ <- runRequest(dropTable(tableName))
+                 } yield (),
+                 defaultTimeout
+    )
 }

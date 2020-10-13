@@ -132,9 +132,8 @@ class ArchiveSpec
   private def filesToStream(
       files: Map[String, ByteString]
   ): Source[(ArchiveMetadata, Source[ByteString, NotUsed]), NotUsed] = {
-    val sourceFiles = files.toList.map {
-      case (title, content) =>
-        (ArchiveMetadata(title), Source(content.grouped(10).toList))
+    val sourceFiles = files.toList.map { case (title, content) =>
+      (ArchiveMetadata(title), Source(content.grouped(10).toList))
     }
     Source(sourceFiles)
   }

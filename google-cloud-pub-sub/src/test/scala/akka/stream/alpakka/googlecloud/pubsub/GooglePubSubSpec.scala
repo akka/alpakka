@@ -114,8 +114,10 @@ class GooglePubSubSpec
           project: String,
           topic: String,
           parallelism: Int
-      )(implicit as: ActorSystem,
-        materializer: Materializer): FlowWithContext[(PublishRequest, Option[String]), T, Seq[String], T, NotUsed] =
+      )(implicit
+          as: ActorSystem,
+          materializer: Materializer
+      ): FlowWithContext[(PublishRequest, Option[String]), T, Seq[String], T, NotUsed] =
         FlowWithContext[(PublishRequest, Option[String]), T].map(_ => Seq("id2"))
     }
 
@@ -147,7 +149,8 @@ class GooglePubSubSpec
       mockHttpApi.pull(project = TestCredentials.projectId,
                        subscription = "sub1",
                        returnImmediately = true,
-                       maxMessages = 1000)
+                       maxMessages = 1000
+      )
     ).thenReturn(flow(Seq(message)))
 
     val source = googlePubSub.subscribe(
@@ -187,8 +190,8 @@ class GooglePubSubSpec
       val PubSubGoogleApisPort = 80
 
       override def isEmulated: Boolean = true
-      override def acknowledge(project: String, subscription: String)(
-          implicit as: ActorSystem,
+      override def acknowledge(project: String, subscription: String)(implicit
+          as: ActorSystem,
           materializer: Materializer
       ): Flow[(AcknowledgeRequest, Option[String]), Done, NotUsed] =
         Flow[(AcknowledgeRequest, Option[String])].map { case (_, _) => Done }

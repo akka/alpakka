@@ -38,8 +38,8 @@ private[fcm] class GoogleTokenApi(http: => HttpExt) {
     Jwt.encode(claim, privateKey, encodingAlgorithm)
   }
 
-  def getAccessToken(clientEmail: String, privateKey: String)(
-      implicit materializer: Materializer
+  def getAccessToken(clientEmail: String, privateKey: String)(implicit
+      materializer: Materializer
   ): Future[AccessTokenExpiry] = {
     import materializer.executionContext
     val expiresAt = now + 3600

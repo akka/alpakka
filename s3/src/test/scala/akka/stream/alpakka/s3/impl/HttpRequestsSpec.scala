@@ -377,7 +377,8 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
 
     req.uri.query() shouldEqual Query("list-type" -> "2",
                                       "prefix" -> "random/prefix",
-                                      "continuation-token" -> "randomToken")
+                                      "continuation-token" -> "randomToken"
+    )
   }
 
   it should "properly construct the list bucket request with a delimiter and token passed" in {
@@ -426,9 +427,12 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
       import akka.http.scaladsl.server.Directives._
 
       Http().bindAndHandle(extractRequestContext { ctx =>
-        probe.ref ! ctx.request
-        complete("MOCK")
-      }, address.getHostName, address.getPort)
+                             probe.ref ! ctx.request
+                             complete("MOCK")
+                           },
+                           address.getHostName,
+                           address.getPort
+      )
 
       implicit val setting: S3Settings =
         getSettings().withEndpointUrl(s"http://${address.getHostName}:${address.getPort}/")

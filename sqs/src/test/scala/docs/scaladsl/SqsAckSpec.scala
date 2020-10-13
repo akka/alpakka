@@ -44,13 +44,12 @@ class SqsAckSpec extends AnyFlatSpec with Matchers with DefaultTestContext with 
     }
 
     def sendMessages(messages: Seq[String]): Unit = {
-      def entries = messages.zipWithIndex.foldLeft(List.empty[SendMessageBatchRequestEntry]) {
-        case (list, (m, i)) =>
-          SendMessageBatchRequestEntry
-            .builder()
-            .messageBody(m)
-            .id(i.toString)
-            .build() :: list
+      def entries = messages.zipWithIndex.foldLeft(List.empty[SendMessageBatchRequestEntry]) { case (list, (m, i)) =>
+        SendMessageBatchRequestEntry
+          .builder()
+          .messageBody(m)
+          .id(i.toString)
+          .build() :: list
       }
 
       def batch =

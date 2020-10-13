@@ -7,7 +7,6 @@ package akka.stream.alpakka.mongodb
 import org.bson.conversions.Bson
 
 /**
- *
  * @param filter      a document describing the query filter, which may not be null. This can be of any type for which a { @code Codec} is registered
  * @param replacement an object to replace the previous one, which may not be null. This can be of any type for which a { @code Codec} is registered
  */

@@ -33,8 +33,8 @@ private[jms] sealed trait JmsSession {
 @InternalApi
 private[jms] final class JmsProducerSession(val connection: jms.Connection,
                                             val session: jms.Session,
-                                            val jmsDestination: jms.Destination)
-    extends JmsSession
+                                            val jmsDestination: jms.Destination
+) extends JmsSession
 
 /**
  * Internal API.
@@ -43,8 +43,8 @@ private[jms] final class JmsProducerSession(val connection: jms.Connection,
 private[jms] class JmsConsumerSession(val connection: jms.Connection,
                                       val session: jms.Session,
                                       val jmsDestination: jms.Destination,
-                                      val settingsDestination: Destination)
-    extends JmsSession {
+                                      val settingsDestination: Destination
+) extends JmsSession {
 
   private[jms] def createConsumer(
       selector: Option[String]
@@ -74,8 +74,8 @@ private[jms] final class JmsAckSession(override val connection: jms.Connection,
                                        override val session: jms.Session,
                                        override val jmsDestination: jms.Destination,
                                        override val settingsDestination: Destination,
-                                       val maxPendingAcks: Int)
-    extends JmsConsumerSession(connection, session, jmsDestination, settingsDestination) {
+                                       val maxPendingAcks: Int
+) extends JmsConsumerSession(connection, session, jmsDestination, settingsDestination) {
 
   private[jms] var pendingAck = 0
   private[jms] val ackQueue = new ArrayBlockingQueue[() => Unit](maxPendingAcks + 1)

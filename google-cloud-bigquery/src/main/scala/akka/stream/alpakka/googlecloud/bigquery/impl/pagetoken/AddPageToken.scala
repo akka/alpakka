@@ -15,20 +15,19 @@ import akka.stream.scaladsl.Flow
 @InternalApi
 private[impl] object AddPageToken {
   def apply(): Flow[(HttpRequest, (Boolean, PagingInfo)), HttpRequest, NotUsed] =
-    Flow[(HttpRequest, (Boolean, PagingInfo))].map {
-      case (request, (retry, pagingInfo)) =>
-        val req = if (!retry) {
-          addPageToken(request, pagingInfo)
-        } else {
-          request
-        }
+    Flow[(HttpRequest, (Boolean, PagingInfo))].map { case (request, (retry, pagingInfo)) =>
+      val req = if (!retry) {
+        addPageToken(request, pagingInfo)
+      } else {
+        request
+      }
 
-        pagingInfo.jobId match {
-          case Some(id) =>
-            val getReq = convertRequestToGet(req)
-            addPath(getReq, id)
-          case None => req
-        }
+      pagingInfo.jobId match {
+        case Some(id) =>
+          val getReq = convertRequestToGet(req)
+          addPath(getReq, id)
+        case None => req
+      }
     }
 
   private def addPath(getReq: HttpRequest, path: String) =

@@ -37,8 +37,8 @@ object RetryAtFixedRate {
 
 final class RetryWithBackoff(_maxRetries: Int,
                              _minBackoff: scala.concurrent.duration.FiniteDuration,
-                             _maxBackoff: scala.concurrent.duration.FiniteDuration)
-    extends RetryLogic {
+                             _maxBackoff: scala.concurrent.duration.FiniteDuration
+) extends RetryLogic {
   override val maxRetries: Int = _maxRetries
   override val minBackoff: scala.concurrent.duration.FiniteDuration = _minBackoff
   override def maxBackoff: scala.concurrent.duration.FiniteDuration = _maxBackoff
@@ -48,7 +48,8 @@ object RetryWithBackoff {
 
   def apply(maxRetries: Int,
             minBackoff: scala.concurrent.duration.FiniteDuration,
-            maxBackoff: scala.concurrent.duration.FiniteDuration): RetryWithBackoff =
+            maxBackoff: scala.concurrent.duration.FiniteDuration
+  ): RetryWithBackoff =
     new RetryWithBackoff(maxRetries, minBackoff, maxBackoff)
 
   def create(maxRetries: Int, minBackoff: java.time.Duration, maxBackoff: java.time.Duration): RetryWithBackoff =
@@ -62,7 +63,8 @@ final class ElasticsearchWriteSettings private (val bufferSize: Int,
                                                 val retryLogic: RetryLogic,
                                                 val versionType: Option[String],
                                                 val apiVersion: ApiVersion,
-                                                val allowExplicitIndex: Boolean) {
+                                                val allowExplicitIndex: Boolean
+) {
 
   def withBufferSize(value: Int): ElasticsearchWriteSettings = copy(bufferSize = value)
 
@@ -80,7 +82,8 @@ final class ElasticsearchWriteSettings private (val bufferSize: Int,
                    retryLogic: RetryLogic = retryLogic,
                    versionType: Option[String] = versionType,
                    apiVersion: ApiVersion = apiVersion,
-                   allowExplicitIndex: Boolean = allowExplicitIndex): ElasticsearchWriteSettings =
+                   allowExplicitIndex: Boolean = allowExplicitIndex
+  ): ElasticsearchWriteSettings =
     new ElasticsearchWriteSettings(bufferSize, retryLogic, versionType, apiVersion, allowExplicitIndex)
 
   override def toString =
@@ -98,7 +101,8 @@ object ElasticsearchWriteSettings {
                                                retryLogic = RetryNever,
                                                versionType = None,
                                                apiVersion = ApiVersion.V5,
-                                               allowExplicitIndex = true)
+                                               allowExplicitIndex = true
+  )
 
   /** Scala API */
   def apply(): ElasticsearchWriteSettings = Default

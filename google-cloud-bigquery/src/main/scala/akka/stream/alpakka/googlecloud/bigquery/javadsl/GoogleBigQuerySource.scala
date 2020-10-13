@@ -30,7 +30,8 @@ object GoogleBigQuerySource {
   def raw[T](httpRequest: HttpRequest,
              parserFn: java.util.function.Function[JsObject, Try[T]],
              onFinishCallback: java.util.function.Function[PagingInfo, NotUsed],
-             projectConfig: BigQueryConfig): Source[T, NotUsed] =
+             projectConfig: BigQueryConfig
+  ): Source[T, NotUsed] =
     bigquery.scaladsl.GoogleBigQuerySource
       .raw(
         httpRequest,
@@ -46,7 +47,8 @@ object GoogleBigQuerySource {
   def runQuery[T](query: String,
                   parserFn: java.util.function.Function[JsObject, Try[T]],
                   onFinishCallback: java.util.function.Function[PagingInfo, NotUsed],
-                  projectConfig: BigQueryConfig): Source[T, NotUsed] =
+                  projectConfig: BigQueryConfig
+  ): Source[T, NotUsed] =
     bigquery.scaladsl.GoogleBigQuerySource
       .runQuery(query, parserFn.apply(_), onFinishCallback.apply, projectConfig)
       .asJava
@@ -56,7 +58,8 @@ object GoogleBigQuerySource {
    */
   def runQueryCsvStyle(query: String,
                        onFinishCallback: java.util.function.Function[PagingInfo, NotUsed],
-                       projectConfig: BigQueryConfig): Source[util.List[String], NotUsed] =
+                       projectConfig: BigQueryConfig
+  ): Source[util.List[String], NotUsed] =
     bigquery.scaladsl.GoogleBigQuerySource
       .runQueryCsvStyle(query, onFinishCallback.apply, projectConfig)
       .map(_.asJava)
@@ -77,7 +80,8 @@ object GoogleBigQuerySource {
    * List fields on tableName.
    */
   def listFields(tableName: String,
-                 projectConfig: BigQueryConfig): Source[util.List[TableDataQueryJsonProtocol.Field], NotUsed] =
+                 projectConfig: BigQueryConfig
+  ): Source[util.List[TableDataQueryJsonProtocol.Field], NotUsed] =
     bigquery.scaladsl.GoogleBigQuerySource
       .listFields(tableName, projectConfig)
       .map(_.asJava)

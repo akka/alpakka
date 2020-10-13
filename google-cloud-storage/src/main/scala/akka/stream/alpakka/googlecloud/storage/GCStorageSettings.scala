@@ -78,12 +78,12 @@ final class GCStorageSettings private (
   override def equals(other: Any): Boolean = other match {
     case that: GCStorageSettings =>
       java.util.Objects.equals(this.projectId, that.projectId) &&
-      java.util.Objects.equals(this.clientEmail, that.clientEmail) &&
-      java.util.Objects.equals(this.privateKey, that.privateKey) &&
-      java.util.Objects.equals(this.baseUrl, that.baseUrl) &&
-      java.util.Objects.equals(this.basePath, that.basePath) &&
-      java.util.Objects.equals(this.tokenUrl, that.tokenUrl) &&
-      java.util.Objects.equals(this.tokenScope, that.tokenScope)
+        java.util.Objects.equals(this.clientEmail, that.clientEmail) &&
+        java.util.Objects.equals(this.privateKey, that.privateKey) &&
+        java.util.Objects.equals(this.baseUrl, that.baseUrl) &&
+        java.util.Objects.equals(this.basePath, that.basePath) &&
+        java.util.Objects.equals(this.tokenUrl, that.tokenUrl) &&
+        java.util.Objects.equals(this.tokenScope, that.tokenScope)
     case _ => false
   }
 

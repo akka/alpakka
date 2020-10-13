@@ -171,18 +171,17 @@ class JmsConnectorsSpec extends JmsSpec {
       //#map-source
 
       streamCompletion.futureValue shouldEqual Done
-      result.futureValue.zip(input).foreach {
-        case (out, in) =>
-          out("string") shouldEqual in("string")
-          out("int value") shouldEqual in("int value")
-          out("double value") shouldEqual in("double value")
-          out("short value") shouldEqual in("short value")
-          out("boolean value") shouldEqual in("boolean value")
-          out("long value") shouldEqual in("long value")
-          out("byte") shouldEqual in("byte")
+      result.futureValue.zip(input).foreach { case (out, in) =>
+        out("string") shouldEqual in("string")
+        out("int value") shouldEqual in("int value")
+        out("double value") shouldEqual in("double value")
+        out("short value") shouldEqual in("short value")
+        out("boolean value") shouldEqual in("boolean value")
+        out("long value") shouldEqual in("long value")
+        out("byte") shouldEqual in("byte")
 
-          val outBytes = out("bytearray").asInstanceOf[Array[Byte]]
-          new String(outBytes, Charset.forName("UTF-8")) shouldBe "AStringAsByteArray"
+        val outBytes = out("bytearray").asInstanceOf[Array[Byte]]
+        new String(outBytes, Charset.forName("UTF-8")) shouldBe "AStringAsByteArray"
       }
     }
 
@@ -250,9 +249,8 @@ class JmsConnectorsSpec extends JmsSpec {
 
       finished.futureValue shouldBe Done
 
-      result.futureValue.zip(immutable.Seq("Message A", "Message B")).foreach {
-        case (out, in) =>
-          out.asInstanceOf[TextMessage].getText shouldEqual in
+      result.futureValue.zip(immutable.Seq("Message A", "Message B")).foreach { case (out, in) =>
+        out.asInstanceOf[TextMessage].getText shouldEqual in
       }
     }
 
@@ -324,9 +322,8 @@ class JmsConnectorsSpec extends JmsSpec {
         val result: Future[immutable.Seq[javax.jms.Message]] = jmsSource.take(msgsIn.size).runWith(Sink.seq)
 
         // The sent message and the receiving one should have the same properties
-        result.futureValue.zip(msgsIn).foreach {
-          case (out, in) =>
-            out.asInstanceOf[TextMessage].getText shouldEqual in.body
+        result.futureValue.zip(msgsIn).foreach { case (out, in) =>
+          out.asInstanceOf[TextMessage].getText shouldEqual in.body
         }
     }
 
@@ -356,13 +353,12 @@ class JmsConnectorsSpec extends JmsSpec {
         val result = jmsSource.take(oddMsgsIn.size).runWith(Sink.seq)
 
         // We should have only received the odd numbers in the list
-        result.futureValue.zip(oddMsgsIn).foreach {
-          case (out, in) =>
-            out.getIntProperty("Number") shouldEqual in.properties("Number")
-            out.getBooleanProperty("IsOdd") shouldEqual in.properties("IsOdd")
-            out.getBooleanProperty("IsEven") shouldEqual in.properties("IsEven")
-            // Make sure we are only receiving odd numbers
-            out.getIntProperty("Number") % 2 shouldEqual 1
+        result.futureValue.zip(oddMsgsIn).foreach { case (out, in) =>
+          out.getIntProperty("Number") shouldEqual in.properties("Number")
+          out.getBooleanProperty("IsOdd") shouldEqual in.properties("IsOdd")
+          out.getBooleanProperty("IsEven") shouldEqual in.properties("IsEven")
+          // Make sure we are only receiving odd numbers
+          out.getIntProperty("Number") % 2 shouldEqual 1
         }
     }
 
@@ -510,9 +506,8 @@ class JmsConnectorsSpec extends JmsSpec {
 
         val result = jmsSource
           .take(msgsIn.size)
-          .map {
-            case textMessage: TextMessage =>
-              textMessage.getText
+          .map { case textMessage: TextMessage =>
+            textMessage.getText
           }
           .runWith(Sink.seq)
 
@@ -572,12 +567,11 @@ class JmsConnectorsSpec extends JmsSpec {
       )
 
       val completionFuture: Future[Done] = Source(0 to 10)
-        .mapAsync(1)(
-          n =>
-            Future {
-              Thread.sleep(100)
-              JmsTextMessage(n.toString)
-            }
+        .mapAsync(1)(n =>
+          Future {
+            Thread.sleep(100)
+            JmsTextMessage(n.toString)
+          }
         )
         .runWith(jmsSink)
 
@@ -903,8 +897,8 @@ class JmsConnectorsSpec extends JmsSpec {
       val receiveLatch = new CountDownLatch(3)
 
       val messages = (1 to 10).map(i => mock[TextMessage] -> i).toMap
-      messages.foreach {
-        case (msg, i) => when(session.createTextMessage(i.toString)).thenReturn(msg)
+      messages.foreach { case (msg, i) =>
+        when(session.createTextMessage(i.toString)).thenReturn(msg)
       }
 
       val failOnFifthAndDelayFourthItem = new Answer[Unit] {
@@ -947,8 +941,8 @@ class JmsConnectorsSpec extends JmsSpec {
       import ctx._
 
       val messages = (1 to 10).map(i => mock[TextMessage] -> i).toMap
-      messages.foreach {
-        case (msg, i) => when(session.createTextMessage(i.toString)).thenReturn(msg)
+      messages.foreach { case (msg, i) =>
+        when(session.createTextMessage(i.toString)).thenReturn(msg)
       }
 
       val failOnEvenCount = new Answer[Unit] {
@@ -1234,8 +1228,8 @@ class JmsConnectorsSpec extends JmsSpec {
     //#request-reply
     val respondStreamControl: JmsConsumerControl =
       JmsConsumer(JmsConsumerSettings(system, connectionFactory).withQueue("test"))
-        .collect {
-          case message: TextMessage => JmsTextMessage(message)
+        .collect { case message: TextMessage =>
+          JmsTextMessage(message)
         }
         .map { textMessage =>
           textMessage.headers.foldLeft(JmsTextMessage(textMessage.body.reverse)) {

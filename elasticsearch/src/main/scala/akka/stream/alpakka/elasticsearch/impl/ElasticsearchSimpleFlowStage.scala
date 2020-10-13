@@ -97,7 +97,8 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
 
       log.error(s"Received error from elastic after having already processed {} documents. Error: {}",
                 resultsPassthrough.size,
-                exception)
+                exception
+      )
       failStage(exception)
     }
 
@@ -116,8 +117,8 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
       if (log.isErrorEnabled) {
         messageResults.filterNot(_.success).foreach { failure =>
           if (failure.getError.isPresent) {
-            log.error(s"Received error from elastic when attempting to index documents. Error: {}",
-                      failure.getError.get)
+            log
+              .error(s"Received error from elastic when attempting to index documents. Error: {}", failure.getError.get)
           }
         }
       }

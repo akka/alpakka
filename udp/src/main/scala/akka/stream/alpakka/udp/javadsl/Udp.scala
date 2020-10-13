@@ -38,6 +38,7 @@ object Udp {
    * are sent to the remote address contained in the message.
    */
   def bindFlow(localAddress: InetSocketAddress,
-               system: ActorSystem): Flow[Datagram, Datagram, CompletionStage[InetSocketAddress]] =
+               system: ActorSystem
+  ): Flow[Datagram, Datagram, CompletionStage[InetSocketAddress]] =
     scaladsl.Udp.bindFlow(localAddress)(system).mapMaterializedValue(_.toJava).asJava
 }

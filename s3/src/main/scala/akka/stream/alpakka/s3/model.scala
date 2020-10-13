@@ -70,10 +70,10 @@ final class MultipartUploadResult private (
   override def equals(other: Any): Boolean = other match {
     case that: MultipartUploadResult =>
       Objects.equals(this.location, that.location) &&
-      Objects.equals(this.bucket, that.bucket) &&
-      Objects.equals(this.key, that.key) &&
-      Objects.equals(this.etag, that.etag) &&
-      Objects.equals(this.versionId, that.versionId)
+        Objects.equals(this.bucket, that.bucket) &&
+        Objects.equals(this.key, that.key) &&
+        Objects.equals(this.etag, that.etag) &&
+        Objects.equals(this.versionId, that.versionId)
     case _ => false
   }
 
@@ -204,11 +204,11 @@ final class ListBucketResultContents private (
   override def equals(other: Any): Boolean = other match {
     case that: ListBucketResultContents =>
       Objects.equals(this.bucketName, that.bucketName) &&
-      Objects.equals(this.key, that.key) &&
-      Objects.equals(this.eTag, that.eTag) &&
-      Objects.equals(this.size, that.size) &&
-      Objects.equals(this.lastModified, that.lastModified) &&
-      Objects.equals(this.storageClass, that.storageClass)
+        Objects.equals(this.key, that.key) &&
+        Objects.equals(this.eTag, that.eTag) &&
+        Objects.equals(this.size, that.size) &&
+        Objects.equals(this.lastModified, that.lastModified) &&
+        Objects.equals(this.storageClass, that.storageClass)
     case _ => false
   }
 
@@ -288,7 +288,7 @@ final class ListBucketResultCommonPrefixes private (
   override def equals(other: Any): Boolean = other match {
     case that: ListBucketResultCommonPrefixes =>
       Objects.equals(this.bucketName, that.bucketName) &&
-      Objects.equals(this.prefix, that.prefix)
+        Objects.equals(this.prefix, that.prefix)
     case _ => false
   }
 
@@ -346,8 +346,8 @@ final class ObjectMetadata private (
    * @return The hex encoded MD5 hash of the content for the associated object
    *         as calculated by Amazon S3.
    */
-  lazy val eTag: Option[String] = metadata.collectFirst {
-    case e: ETag => e.etag.value.drop(1).dropRight(1)
+  lazy val eTag: Option[String] = metadata.collectFirst { case e: ETag =>
+    e.etag.value.drop(1).dropRight(1)
   }
 
   /**
@@ -392,8 +392,8 @@ final class ObjectMetadata private (
    */
   lazy val contentLength: Long =
     metadata
-      .collectFirst {
-        case cl: `Content-Length` => cl.length
+      .collectFirst { case cl: `Content-Length` =>
+        cl.length
       }
       .getOrElse(0)
 
@@ -447,8 +447,8 @@ final class ObjectMetadata private (
    *         stored in the associated S3 object.
    * @see ObjectMetadata#setContentType(String)
    */
-  lazy val contentType: Option[String] = metadata.collectFirst {
-    case ct: `Content-Type` => ct.value
+  lazy val contentType: Option[String] = metadata.collectFirst { case ct: `Content-Type` =>
+    ct.value
   }
 
   /**
@@ -487,8 +487,8 @@ final class ObjectMetadata private (
    * @return The date and time at which Amazon S3 last recorded a modification
    *         to the associated object.
    */
-  lazy val lastModified: DateTime = metadata.collectFirst {
-    case ct: `Last-Modified` => ct.date
+  lazy val lastModified: DateTime = metadata.collectFirst { case ct: `Last-Modified` =>
+    ct.date
   }.get
 
   /**
@@ -507,8 +507,8 @@ final class ObjectMetadata private (
   /**
    * Gets the optional Cache-Control header
    */
-  lazy val cacheControl: Option[String] = metadata.collectFirst {
-    case c: `Cache-Control` => c.value
+  lazy val cacheControl: Option[String] = metadata.collectFirst { case c: `Cache-Control` =>
+    c.value
   }
 
   /**

@@ -42,7 +42,8 @@ object RetryFlow {
                                 maxBackoff: FiniteDuration,
                                 randomFactor: Double,
                                 maxRetries: Int,
-                                flow: Flow[In, Out, Mat])(decideRetry: (In, Out) => Option[In]): Flow[In, Out, Mat] =
+                                flow: Flow[In, Out, Mat]
+  )(decideRetry: (In, Out) => Option[In]): Flow[In, Out, Mat] =
     Flow.fromGraph {
       val retryCoordination = BidiFlow.fromGraph(
         new RetryFlowCoordinator[In, Out](minBackoff, maxBackoff, randomFactor, maxRetries, decideRetry)
@@ -89,7 +90,8 @@ object RetryFlow {
                                                              maxBackoff,
                                                              randomFactor,
                                                              maxRetries,
-                                                             decideRetry)
+                                                             decideRetry
+        )
       )
 
       retryCoordination.joinMat(flow)(Keep.right)

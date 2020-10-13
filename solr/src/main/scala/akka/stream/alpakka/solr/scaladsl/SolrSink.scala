@@ -21,8 +21,8 @@ object SolrSink {
   /**
    * Write `SolrInputDocument`s to Solr.
    */
-  def documents[T](collection: String, settings: SolrUpdateSettings)(
-      implicit client: SolrClient
+  def documents[T](collection: String, settings: SolrUpdateSettings)(implicit
+      client: SolrClient
   ): Sink[immutable.Seq[WriteMessage[SolrInputDocument, NotUsed]], Future[Done]] =
     SolrFlow
       .documents(collection, settings)
@@ -32,8 +32,8 @@ object SolrSink {
    * Write Java bean stream elements to Solr.
    * The stream element classes must be annotated for use with [[org.apache.solr.client.solrj.beans.DocumentObjectBinder]] for conversion.
    */
-  def beans[T](collection: String, settings: SolrUpdateSettings)(
-      implicit client: SolrClient
+  def beans[T](collection: String, settings: SolrUpdateSettings)(implicit
+      client: SolrClient
   ): Sink[immutable.Seq[WriteMessage[T, NotUsed]], Future[Done]] =
     SolrFlow
       .beans[T](collection, settings)

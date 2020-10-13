@@ -34,7 +34,8 @@ trait BaseSpec
 
   protected def listFilesWithFilter(basePath: String,
                                     branchSelector: FtpFile => Boolean,
-                                    emitTraversedDirectories: Boolean = false): Source[FtpFile, NotUsed]
+                                    emitTraversedDirectories: Boolean = false
+  ): Source[FtpFile, NotUsed]
 
   protected def retrieveFromPath(path: String, fromRoot: Boolean = false): Source[ByteString, Future[IOResult]]
 

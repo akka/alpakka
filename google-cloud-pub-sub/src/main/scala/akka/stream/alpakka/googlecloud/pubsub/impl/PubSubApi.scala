@@ -112,7 +112,8 @@ private[pubsub] trait PubSubApi {
   private implicit val receivedMessageFormat = new RootJsonFormat[ReceivedMessage] {
     def read(json: JsValue): ReceivedMessage =
       ReceivedMessage(json.asJsObject.fields("ackId").convertTo[String],
-                      json.asJsObject.fields("message").convertTo[PubSubMessage])
+                      json.asJsObject.fields("message").convertTo[PubSubMessage]
+      )
     def write(rm: ReceivedMessage): JsValue =
       JsObject("ackId" -> rm.ackId.toJson, "message" -> rm.message.toJson)
   }
@@ -132,8 +133,8 @@ private[pubsub] trait PubSubApi {
 
   private def scheme: String = if (isEmulated) "http" else "https"
 
-  def pull(project: String, subscription: String, returnImmediately: Boolean, maxMessages: Int)(
-      implicit as: ActorSystem,
+  def pull(project: String, subscription: String, returnImmediately: Boolean, maxMessages: Int)(implicit
+      as: ActorSystem,
       materializer: Materializer
   ): Flow[(Done, Option[String]), PullResponse, NotUsed] = {
     import materializer.executionContext
@@ -146,20 +147,19 @@ private[pubsub] trait PubSubApi {
     )
 
     Flow[(Done, Option[String])]
-      .mapAsync(1) {
-        case (_, maybeAccessToken) =>
-          for {
-            request <- Marshal((HttpMethods.POST, url, PullRequest(returnImmediately, maxMessages)))
-              .to[HttpRequest]
-              .map(request => authorize(maybeAccessToken)(request))
-            response <- Http().singleRequest(request)
-            result <- readPullResponse(response)
-          } yield result
+      .mapAsync(1) { case (_, maybeAccessToken) =>
+        for {
+          request <- Marshal((HttpMethods.POST, url, PullRequest(returnImmediately, maxMessages)))
+            .to[HttpRequest]
+            .map(request => authorize(maybeAccessToken)(request))
+          response <- Http().singleRequest(request)
+          result <- readPullResponse(response)
+        } yield result
       }
   }
 
-  private def readPullResponse(response: HttpResponse)(
-      implicit materializer: Materializer,
+  private def readPullResponse(response: HttpResponse)(implicit
+      materializer: Materializer,
       executionContext: ExecutionContext
   ): Future[PullResponse] =
     response.status match {
@@ -173,8 +173,8 @@ private[pubsub] trait PubSubApi {
           }
     }
 
-  def acknowledge(project: String, subscription: String)(
-      implicit as: ActorSystem,
+  def acknowledge(project: String, subscription: String)(implicit
+      as: ActorSystem,
       materializer: Materializer
   ): Flow[(AcknowledgeRequest, Option[String]), Done, NotUsed] = {
     import materializer.executionContext
@@ -187,20 +187,19 @@ private[pubsub] trait PubSubApi {
     )
 
     Flow[(AcknowledgeRequest, Option[String])]
-      .mapAsync(1) {
-        case (request, maybeAccessToken) =>
-          for {
-            request <- Marshal((HttpMethods.POST, url, request))
-              .to[HttpRequest]
-              .map(request => authorize(maybeAccessToken)(request))
-            response <- Http().singleRequest(request)
-            result <- readAcknowledgeResponse(response)
-          } yield result
+      .mapAsync(1) { case (request, maybeAccessToken) =>
+        for {
+          request <- Marshal((HttpMethods.POST, url, request))
+            .to[HttpRequest]
+            .map(request => authorize(maybeAccessToken)(request))
+          response <- Http().singleRequest(request)
+          result <- readAcknowledgeResponse(response)
+        } yield result
       }
   }
 
-  private def readAcknowledgeResponse(response: HttpResponse)(
-      implicit materializer: Materializer,
+  private def readAcknowledgeResponse(response: HttpResponse)(implicit
+      materializer: Materializer,
       executionContext: ExecutionContext
   ): Future[Done] = {
     response.status match {
@@ -218,8 +217,8 @@ private[pubsub] trait PubSubApi {
     }
   }
 
-  private def pool[T]()(
-      implicit as: ActorSystem
+  private def pool[T]()(implicit
+      as: ActorSystem
   ): Flow[(HttpRequest, T), (Try[HttpResponse], T), Http.HostConnectionPool] =
     if (isEmulated) {
       Http().cachedHostConnectionPool[T](PubSubGoogleApisHost, PubSubGoogleApisPort)
@@ -227,17 +226,16 @@ private[pubsub] trait PubSubApi {
       Http().cachedHostConnectionPoolHttps[T](PubSubGoogleApisHost, PubSubGoogleApisPort)
     }
 
-  def publish[T](project: String, topic: String, parallelism: Int)(
-      implicit as: ActorSystem,
+  def publish[T](project: String, topic: String, parallelism: Int)(implicit
+      as: ActorSystem,
       materializer: Materializer
   ): FlowWithContext[(PublishRequest, Option[String]), T, immutable.Seq[String], T, NotUsed] = {
     import materializer.executionContext
 
     val url: Uri = s"/v1/projects/$project/topics/$topic:publish"
     FlowWithContext[(PublishRequest, Option[String]), T]
-      .mapAsync(parallelism) {
-        case (request, maybeAccessToken) =>
-          Marshal((HttpMethods.POST, url, request)).to[HttpRequest].map(authorize(maybeAccessToken))
+      .mapAsync(parallelism) { case (request, maybeAccessToken) =>
+        Marshal((HttpMethods.POST, url, request)).to[HttpRequest].map(authorize(maybeAccessToken))
       }
       .via(pool())
       .mapAsync(parallelism) {
@@ -259,8 +257,8 @@ private[pubsub] trait PubSubApi {
       }
   }
 
-  def accessToken[T](config: PubSubConfig)(
-      implicit materializer: Materializer
+  def accessToken[T](config: PubSubConfig)(implicit
+      materializer: Materializer
   ): Flow[T, (T, Option[String]), NotUsed] =
     if (isEmulated) {
       Flow[T].map(request => (request, None: Option[String]))
@@ -268,8 +266,8 @@ private[pubsub] trait PubSubApi {
       Flow[T].mapAsync(1)(requestToken(config))
     }
 
-  def accessTokenWithContext[T, C](config: PubSubConfig)(
-      implicit materializer: Materializer
+  def accessTokenWithContext[T, C](config: PubSubConfig)(implicit
+      materializer: Materializer
   ): FlowWithContext[T, C, (T, Option[String]), C, NotUsed] =
     if (isEmulated) {
       FlowWithContext[T, C].map(request => (request, None: Option[String]))

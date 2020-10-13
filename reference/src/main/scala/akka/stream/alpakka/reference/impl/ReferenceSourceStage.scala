@@ -37,12 +37,14 @@ import scala.util.Success
   override def preStart(): Unit =
     startupPromise.success(Done)
 
-  setHandler(out, new OutHandler {
-    override def onPull(): Unit = push(
-      out,
-      new ReferenceReadResult(immutable.Seq(ByteString("one")), Success(100))
-    )
-  })
+  setHandler(out,
+             new OutHandler {
+               override def onPull(): Unit = push(
+                 out,
+                 new ReferenceReadResult(immutable.Seq(ByteString("one")), Success(100))
+               )
+             }
+  )
 
   /**
    * Cleanup logic

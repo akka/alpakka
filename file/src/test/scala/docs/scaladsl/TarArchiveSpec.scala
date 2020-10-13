@@ -159,11 +159,10 @@ class TarArchiveSpec
         Source
           .fromFuture(oneFileArchive)
           .via(Archive.tarReader())
-          .mapAsync(1) {
-            case in @ (metadata, source) =>
-              source.runWith(collectByteString).map { bs =>
-                metadata -> bs
-              }
+          .mapAsync(1) { case in @ (metadata, source) =>
+            source.runWith(collectByteString).map { bs =>
+              metadata -> bs
+            }
           }
           .runWith(Sink.head)
       val result = tar.futureValue
@@ -181,25 +180,24 @@ class TarArchiveSpec
       val tar =
         bytesSource
           .via(Archive.tarReader())
-          .mapAsync(1) {
-            case (metadata, source) =>
-              val targetFile = target.resolve(metadata.filePath)
-              if (metadata.isDirectory) {
-                Source
-                  .single(targetFile)
-                  .via(Directory.mkdirs())
-                  .runWith(Sink.ignore)
-              } else {
-                // create the target directory
-                Source
-                  .single(targetFile.getParent)
-                  .via(Directory.mkdirs())
-                  .runWith(Sink.ignore)
-                  .map { _ =>
-                    // stream the file contents to a local file
-                    source.runWith(FileIO.toPath(targetFile))
-                  }
-              }
+          .mapAsync(1) { case (metadata, source) =>
+            val targetFile = target.resolve(metadata.filePath)
+            if (metadata.isDirectory) {
+              Source
+                .single(targetFile)
+                .via(Directory.mkdirs())
+                .runWith(Sink.ignore)
+            } else {
+              // create the target directory
+              Source
+                .single(targetFile.getParent)
+                .via(Directory.mkdirs())
+                .runWith(Sink.ignore)
+                .map { _ =>
+                  // stream the file contents to a local file
+                  source.runWith(FileIO.toPath(targetFile))
+                }
+            }
           }
           .runWith(Sink.ignore)
       // #tar-reader
@@ -217,11 +215,10 @@ class TarArchiveSpec
           .single(metadataEmpty -> Source.single(ByteString.empty))
           .via(Archive.tar())
           .via(Archive.tarReader())
-          .mapAsync(1) {
-            case (metadata, source) =>
-              source.runWith(collectByteString).map { bs =>
-                metadata -> bs
-              }
+          .mapAsync(1) { case (metadata, source) =>
+            source.runWith(collectByteString).map { bs =>
+              metadata -> bs
+            }
           }
           .runWith(Sink.head)
       val result = tar.futureValue
@@ -242,11 +239,10 @@ class TarArchiveSpec
         // emit in short byte strings
         .mapConcat(_.sliding(2, 2).toList)
         .via(Archive.tarReader())
-        .mapAsync(1) {
-          case (metadata, source) =>
-            source.runWith(collectByteString).map { bs =>
-              (metadata -> bs)
-            }
+        .mapAsync(1) { case (metadata, source) =>
+          source.runWith(collectByteString).map { bs =>
+            (metadata -> bs)
+          }
         }
         .runWith(Sink.seq)
       val result = tar.futureValue
@@ -269,11 +265,10 @@ class TarArchiveSpec
       val tar = Source
         .fromFuture(tarFile)
         .via(Archive.tarReader())
-        .mapAsync(1) {
-          case (metadata, source) =>
-            source.runWith(collectByteString).map { bs =>
-              metadata -> bs
-            }
+        .mapAsync(1) { case (metadata, source) =>
+          source.runWith(collectByteString).map { bs =>
+            metadata -> bs
+          }
         }
         .runWith(Sink.seq)
       val result = tar.futureValue
@@ -297,9 +292,8 @@ class TarArchiveSpec
       val tar = Source
         .fromFuture(input)
         .via(Archive.tarReader())
-        .mapAsync(1) {
-          case (metadata, source) =>
-            source.runWith(Sink.ignore)
+        .mapAsync(1) { case (metadata, source) =>
+          source.runWith(Sink.ignore)
         }
         .runWith(Sink.ignore)
       val error = tar.failed.futureValue
@@ -312,9 +306,8 @@ class TarArchiveSpec
       val tar = Source
         .fromFuture(input)
         .via(Archive.tarReader())
-        .mapAsync(1) {
-          case (metadata, source) =>
-            source.runWith(Sink.ignore)
+        .mapAsync(1) { case (metadata, source) =>
+          source.runWith(Sink.ignore)
         }
         .runWith(Sink.ignore)
       val error = tar.failed.futureValue

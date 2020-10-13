@@ -40,7 +40,8 @@ class KuduTableSpec
   //#configure
   // Kudu Schema
   val cols = List(new ColumnSchema.ColumnSchemaBuilder("key", Type.INT32).key(true).build,
-                  new ColumnSchema.ColumnSchemaBuilder("value", Type.STRING).build)
+                  new ColumnSchema.ColumnSchemaBuilder("value", Type.STRING).build
+  )
   val schema = new Schema(cols.asJava)
 
   // Converter function

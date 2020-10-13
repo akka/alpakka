@@ -31,14 +31,16 @@ object SqsPublishFlow {
    */
   def create(queueUrl: String,
              settings: SqsPublishSettings,
-             sqsClient: SqsAsyncClient): Flow[SendMessageRequest, SqsPublishResult, NotUsed] =
+             sqsClient: SqsAsyncClient
+  ): Flow[SendMessageRequest, SqsPublishResult, NotUsed] =
     akka.stream.alpakka.sqs.scaladsl.SqsPublishFlow.apply(queueUrl, settings)(sqsClient).asJava
 
   /**
    * creates a [[akka.stream.javadsl.Flow Flow]] to publish messages to SQS queues based on the message queue url using an [[software.amazon.awssdk.services.sqs.SqsAsyncClient AmazonSQSAsync]]
    */
   def create(settings: SqsPublishSettings,
-             sqsClient: SqsAsyncClient): Flow[SendMessageRequest, SqsPublishResult, NotUsed] =
+             sqsClient: SqsAsyncClient
+  ): Flow[SendMessageRequest, SqsPublishResult, NotUsed] =
     akka.stream.alpakka.sqs.scaladsl.SqsPublishFlow.apply(settings)(sqsClient).asJava
 
   /**

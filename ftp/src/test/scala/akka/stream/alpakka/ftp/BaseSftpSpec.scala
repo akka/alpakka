@@ -26,7 +26,8 @@ trait BaseSftpSpec extends BaseSftpSupport with BaseSpec {
 
   protected def listFilesWithFilter(basePath: String,
                                     branchSelector: FtpFile => Boolean,
-                                    emitTraversedDirectories: Boolean): Source[FtpFile, NotUsed] =
+                                    emitTraversedDirectories: Boolean
+  ): Source[FtpFile, NotUsed] =
     Sftp.ls(ROOT_PATH + basePath, settings, branchSelector, emitTraversedDirectories)
 
   protected def retrieveFromPath(path: String, fromRoot: Boolean = false): Source[ByteString, Future[IOResult]] = {

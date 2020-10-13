@@ -57,7 +57,8 @@ class BigQueryStreamSourceSpec
       verify(http, atLeastOnce).singleRequest(argument.capture,
                                               any[HttpsConnectionContext](),
                                               any[ConnectionPoolSettings](),
-                                              any[LoggingAdapter]())
+                                              any[LoggingAdapter]()
+      )
       argument.getAllValues.asScala.last.headers.head.value().stripPrefix("Bearer ") shouldBe expected
     }
   }
@@ -70,7 +71,8 @@ class BigQueryStreamSourceSpec
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),
                            any[ConnectionPoolSettings](),
-                           any[LoggingAdapter]())
+                           any[LoggingAdapter]()
+        )
       ).thenReturn(
         Future.successful(
           HttpResponse(
@@ -94,7 +96,8 @@ class BigQueryStreamSourceSpec
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),
                            any[ConnectionPoolSettings](),
-                           any[LoggingAdapter]())
+                           any[LoggingAdapter]()
+        )
       ).thenAnswer(
         new Answer[Future[HttpResponse]] {
           override def answer(invocation: InvocationOnMock): Future[HttpResponse] = {
@@ -130,7 +133,8 @@ class BigQueryStreamSourceSpec
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),
                            any[ConnectionPoolSettings](),
-                           any[LoggingAdapter]())
+                           any[LoggingAdapter]()
+        )
       ).thenAnswer(
         new Answer[Future[HttpResponse]] {
           override def answer(invocation: InvocationOnMock): Future[HttpResponse] = {

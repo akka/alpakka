@@ -179,7 +179,8 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends akka.actor.Ext
   def outgoingConnection(remoteAddress: UnixSocketAddress,
                          localAddress: Optional[UnixSocketAddress],
                          halfClose: Boolean,
-                         connectTimeout: Duration): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]] =
+                         connectTimeout: Duration
+  ): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]] =
     Flow.fromGraph(
       delegate
         .outgoingConnection(remoteAddress, localAddress.asScala, halfClose, connectTimeout)

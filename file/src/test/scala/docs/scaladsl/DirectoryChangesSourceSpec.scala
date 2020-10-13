@@ -23,8 +23,8 @@ object DirectoryChangesSourceSpec {
 
     val fs = FileSystems.getDefault
     val changes = DirectoryChangesSource(fs.getPath(path), pollInterval = 1.second, maxBufferSize = 1000)
-    changes.runForeach {
-      case (path, change) => println("Path: " + path + ", Change: " + change)
+    changes.runForeach { case (path, change) =>
+      println("Path: " + path + ", Change: " + change)
     }
     // #minimal-sample
   }

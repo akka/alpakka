@@ -34,7 +34,8 @@ object CouchbaseWriteSettings {
   def apply(parallelism: Int,
             replicateTo: ReplicateTo,
             persistTo: PersistTo,
-            timeout: FiniteDuration): CouchbaseWriteSettings =
+            timeout: FiniteDuration
+  ): CouchbaseWriteSettings =
     new CouchbaseWriteSettings(parallelism, replicateTo, persistTo, timeout)
 
   def create(): CouchbaseWriteSettings = inMemory
@@ -42,11 +43,13 @@ object CouchbaseWriteSettings {
   def create(parallelism: Int,
              replicateTo: ReplicateTo,
              persistTo: PersistTo,
-             timeout: java.time.Duration): CouchbaseWriteSettings =
+             timeout: java.time.Duration
+  ): CouchbaseWriteSettings =
     new CouchbaseWriteSettings(parallelism,
                                replicateTo,
                                persistTo,
-                               FiniteDuration(timeout.toMillis, TimeUnit.MILLISECONDS))
+                               FiniteDuration(timeout.toMillis, TimeUnit.MILLISECONDS)
+    )
 
 }
 
@@ -56,7 +59,8 @@ object CouchbaseWriteSettings {
 final class CouchbaseWriteSettings private (val parallelism: Int,
                                             val replicateTo: ReplicateTo,
                                             val persistTo: PersistTo,
-                                            val timeout: FiniteDuration) {
+                                            val timeout: FiniteDuration
+) {
 
   def withParallelism(parallelism: Int): CouchbaseWriteSettings = copy(parallelism = parallelism)
 
@@ -78,15 +82,16 @@ final class CouchbaseWriteSettings private (val parallelism: Int,
   private[this] def copy(parallelism: Int = parallelism,
                          replicateTo: ReplicateTo = replicateTo,
                          persistTo: PersistTo = persistTo,
-                         timeout: FiniteDuration = timeout) =
+                         timeout: FiniteDuration = timeout
+  ) =
     new CouchbaseWriteSettings(parallelism, replicateTo, persistTo, timeout)
 
   override def equals(other: Any): Boolean = other match {
     case that: CouchbaseWriteSettings =>
       this.parallelism == that.parallelism &&
-      this.replicateTo == that.replicateTo &&
-      this.persistTo == that.persistTo &&
-      this.timeout == that.timeout
+        this.replicateTo == that.replicateTo &&
+        this.persistTo == that.persistTo &&
+        this.timeout == that.timeout
     case _ => false
   }
 
@@ -193,13 +198,15 @@ final class CouchbaseSessionSettings private (
   def withNodes(nodes: java.util.List[String]): CouchbaseSessionSettings =
     copy(nodes = nodes.asScala.toList)
 
-  /** Scala API:
+  /**
+   * Scala API:
    * Allows to provide an asynchronous method to update the settings.
    */
   def withEnrichAsync(value: CouchbaseSessionSettings => Future[CouchbaseSessionSettings]): CouchbaseSessionSettings =
     copy(enrichAsync = value)
 
-  /** Java API:
+  /**
+   * Java API:
    * Allows to provide an asynchronous method to update the settings.
    */
   def withEnrichAsyncCs(
@@ -229,9 +236,9 @@ final class CouchbaseSessionSettings private (
   override def equals(other: Any): Boolean = other match {
     case that: CouchbaseSessionSettings =>
       username == that.username &&
-      password == that.password &&
-      nodes == that.nodes &&
-      environment == that.environment
+        password == that.password &&
+        nodes == that.nodes &&
+        environment == that.environment
     case _ => false
   }
 

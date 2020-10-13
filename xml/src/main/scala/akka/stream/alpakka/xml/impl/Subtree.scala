@@ -28,9 +28,8 @@ import scala.collection.immutable
       case Some(ns) => doc.createElementNS(ns, start.localName)
       case None => doc.createElement(start.localName)
     }
-    start.attributes.foreach {
-      case (name, value) =>
-        element.setAttribute(name, value)
+    start.attributes.foreach { case (name, value) =>
+      element.setAttribute(name, value)
     }
     element
   }

@@ -23,8 +23,8 @@ import scala.concurrent.{ExecutionContext, Future}
 private[fcm] class FcmSender {
   import FcmJsonSupport._
 
-  def send(projectId: String, token: String, http: HttpExt, fcmSend: FcmSend)(
-      implicit materializer: Materializer
+  def send(projectId: String, token: String, http: HttpExt, fcmSend: FcmSend)(implicit
+      materializer: Materializer
   ): Future[FcmResponse] = {
     val url = s"https://fcm.googleapis.com/v1/projects/$projectId/messages:send"
 

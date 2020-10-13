@@ -13,8 +13,8 @@ import akka.stream.scaladsl.Flow
 private[impl] object EndOfStreamDetector {
 
   def apply(): Flow[(Boolean, PagingInfo), (Boolean, PagingInfo), NotUsed] =
-    Flow[(Boolean, PagingInfo)].takeWhile {
-      case (retry, pagingInfo) => retry || pagingInfo.pageToken.isDefined
+    Flow[(Boolean, PagingInfo)].takeWhile { case (retry, pagingInfo) =>
+      retry || pagingInfo.pageToken.isDefined
     }
 
 }

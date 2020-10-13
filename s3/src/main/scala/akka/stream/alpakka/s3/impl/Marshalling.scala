@@ -31,7 +31,9 @@ import scala.xml.NodeSeq
   }
 
   implicit val completeMultipartUploadResultUnmarshaller: FromEntityUnmarshaller[CompleteMultipartUploadResult] = {
-    nodeSeqUnmarshaller(MediaTypes.`application/xml` withCharset HttpCharsets.`UTF-8`, MediaTypes.`text/event-stream`) map {
+    nodeSeqUnmarshaller(MediaTypes.`application/xml` withCharset HttpCharsets.`UTF-8`,
+                        MediaTypes.`text/event-stream`
+    ) map {
       case NodeSeq.Empty => throw Unmarshaller.NoContentException
       case x =>
         CompleteMultipartUploadResult(

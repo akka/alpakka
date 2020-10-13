@@ -29,8 +29,8 @@ private[bigquery] object Parser {
     implicit val responseFormat: RootJsonFormat[Response] = jsonFormat3(Response)
   }
 
-  def apply[T](parseFunction: JsObject => Try[T])(
-      implicit materializer: Materializer,
+  def apply[T](parseFunction: JsObject => Try[T])(implicit
+      materializer: Materializer,
       ec: ExecutionContext
   ): Graph[FanOutShape2[HttpResponse, T, (Boolean, PagingInfo)], NotUsed] = GraphDSL.create() { implicit builder =>
     import GraphDSL.Implicits._

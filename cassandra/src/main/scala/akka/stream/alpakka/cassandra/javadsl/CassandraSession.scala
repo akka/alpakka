@@ -52,7 +52,8 @@ final class CassandraSession(@InternalApi private[akka] val delegate: scaladsl.C
            log: LoggingAdapter,
            metricsCategory: String,
            init: JFunction[CqlSession, CompletionStage[Done]],
-           onClose: java.lang.Runnable) =
+           onClose: java.lang.Runnable
+  ) =
     this(
       new scaladsl.CassandraSession(system,
                                     sessionProvider,
@@ -60,7 +61,8 @@ final class CassandraSession(@InternalApi private[akka] val delegate: scaladsl.C
                                     log,
                                     metricsCategory,
                                     session => init.apply(session).toScala,
-                                    () => onClose.run())
+                                    () => onClose.run()
+      )
     )
 
   implicit private val ec = delegate.ec

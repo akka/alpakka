@@ -30,7 +30,8 @@ object MqttFlow {
   def atMostOnce(settings: MqttConnectionSettings,
                  subscriptions: MqttSubscriptions,
                  bufferSize: Int,
-                 defaultQos: MqttQoS): Flow[MqttMessage, MqttMessage, CompletionStage[Done]] =
+                 defaultQos: MqttQoS
+  ): Flow[MqttMessage, MqttMessage, CompletionStage[Done]] =
     scaladsl.MqttFlow
       .atMostOnce(settings, subscriptions, bufferSize, defaultQos)
       .mapMaterializedValue(_.toJava)

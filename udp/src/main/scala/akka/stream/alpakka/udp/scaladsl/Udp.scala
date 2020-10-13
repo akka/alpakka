@@ -61,6 +61,7 @@ object Udp {
    * are sent to the remote address contained in the message.
    */
   def bindFlow(localAddress: InetSocketAddress,
-               system: ActorSystem): Flow[Datagram, Datagram, Future[InetSocketAddress]] =
+               system: ActorSystem
+  ): Flow[Datagram, Datagram, Future[InetSocketAddress]] =
     Flow.fromGraph(new UdpBindFlow(localAddress)(system))
 }

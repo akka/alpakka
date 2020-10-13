@@ -77,13 +77,15 @@ class MarshallingSpec(_system: ActorSystem)
                                  "fba9dede5f27731c9771645a39863328",
                                  434234,
                                  Instant.parse("2009-10-12T17:50:30Z"),
-                                 "STANDARD"),
+                                 "STANDARD"
+        ),
         ListBucketResultContents("bucket",
                                  "my-image2.jpg",
                                  "599bab3ed2c697f1d26842727561fd94",
                                  1234,
                                  Instant.parse("2009-10-12T17:50:31Z"),
-                                 "REDUCED_REDUNDANCY")
+                                 "REDUCED_REDUNDANCY"
+        )
       ),
       Seq(
         ListBucketResultCommonPrefixes("bucket", "prefix1/"),
@@ -130,13 +132,15 @@ class MarshallingSpec(_system: ActorSystem)
                                  "fba9dede5f27731c9771645a39863328",
                                  434234,
                                  Instant.parse("2009-10-12T17:50:30Z"),
-                                 "STANDARD"),
+                                 "STANDARD"
+        ),
         ListBucketResultContents("bucket",
                                  "my-image2.jpg",
                                  "599bab3ed2c697f1d26842727561fd94",
                                  1234,
                                  Instant.parse("2009-10-12T17:50:31Z"),
-                                 "REDUCED_REDUNDANCY")
+                                 "REDUCED_REDUNDANCY"
+        )
       ),
       Nil
     )
@@ -179,13 +183,15 @@ class MarshallingSpec(_system: ActorSystem)
                                  "fba9dede5f27731c9771645a39863328",
                                  434234,
                                  Instant.parse("2009-10-12T17:50:30Z"),
-                                 "STANDARD"),
+                                 "STANDARD"
+        ),
         ListBucketResultContents("bucket",
                                  "my-image2.jpg",
                                  "599bab3ed2c697f1d26842727561fd94",
                                  1234,
                                  Instant.parse("2009-10-12T17:50:31Z"),
-                                 "REDUCED_REDUNDANCY")
+                                 "REDUCED_REDUNDANCY"
+        )
       ),
       Nil
     )
@@ -205,7 +211,8 @@ class MarshallingSpec(_system: ActorSystem)
     val result = Marshalling.copyPartResultUnmarshaller(entity)
 
     result.futureValue shouldEqual CopyPartResult(Instant.parse("2009-10-28T22:32:00.000Z"),
-                                                  "5b27a21a97fcf8a7004dd1d906e7a5ba")
+                                                  "5b27a21a97fcf8a7004dd1d906e7a5ba"
+    )
   }
 
   it should "parse CompleteMultipartUpload in event-stream" in {
@@ -226,7 +233,8 @@ class MarshallingSpec(_system: ActorSystem)
     result.futureValue shouldEqual CompleteMultipartUploadResult("some-location",
                                                                  "some-bucket",
                                                                  "some/key",
-                                                                 "5b27a21a97fcf8a7004dd1d906e7a5ba")
+                                                                 "5b27a21a97fcf8a7004dd1d906e7a5ba"
+    )
   }
 
 }

@@ -96,14 +96,14 @@ class KinesisFlowSpec extends AnyWordSpec with Matchers with KinesisMock with Lo
     val streamName = "stream-name"
     val recordStream = Stream
       .from(1)
-      .map(
-        i =>
-          (PutRecordsRequestEntry
-             .builder()
-             .partitionKey("partition-key")
-             .data(SdkBytes.fromByteBuffer(ByteString(i).asByteBuffer))
-             .build(),
-           i)
+      .map(i =>
+        (PutRecordsRequestEntry
+           .builder()
+           .partitionKey("partition-key")
+           .data(SdkBytes.fromByteBuffer(ByteString(i).asByteBuffer))
+           .build(),
+         i
+        )
       )
     val resultStream = Stream
       .from(1)
@@ -135,10 +135,10 @@ class KinesisFlowSpec extends AnyWordSpec with Matchers with KinesisMock with Lo
 
   trait WithPutRecordsFailure { self: Settings =>
     val requestError = new RuntimeException("kinesis-error")
-    when(amazonKinesisAsync.putRecords(any[PutRecordsRequest])).thenReturn({
+    when(amazonKinesisAsync.putRecords(any[PutRecordsRequest])).thenReturn {
       val future = new CompletableFuture[PutRecordsResponse]()
       future.completeExceptionally(requestError)
       future
-    })
+    }
   }
 }

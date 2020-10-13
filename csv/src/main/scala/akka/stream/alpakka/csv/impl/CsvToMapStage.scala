@@ -21,8 +21,8 @@ import scala.collection.immutable
  * @param charset Character set used to convert header line ByteString to String
  */
 @InternalApi private[csv] abstract class CsvToMapStageBase[V](columnNames: Option[immutable.Seq[String]],
-                                                              charset: Charset)
-    extends GraphStage[FlowShape[immutable.Seq[ByteString], Map[String, V]]] {
+                                                              charset: Charset
+) extends GraphStage[FlowShape[immutable.Seq[ByteString], Map[String, V]]] {
 
   override protected def initialAttributes: Attributes = Attributes.name("CsvToMap")
 

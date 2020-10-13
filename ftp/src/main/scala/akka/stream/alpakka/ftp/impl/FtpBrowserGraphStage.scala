@@ -17,7 +17,7 @@ private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings]
     extends FtpGraphStage[FtpClient, S, FtpFile] {
   val ftpLike: FtpLike[FtpClient, S]
 
-  val branchSelector: FtpFile => Boolean = (f) => true
+  val branchSelector: FtpFile => Boolean = f => true
 
   def emitTraversedDirectories: Boolean = false
 

@@ -43,9 +43,7 @@ object AzureQueueWithTimeoutsSink {
   def apply(
       cloudQueue: () => CloudQueue
   ): Sink[(CloudQueueMessage, Int, Int), Future[Done]] =
-    AzureQueueSink.fromFunction(
-      tup => AzureQueueSinkFunctions.addMessage(cloudQueue)(tup._1, tup._2, tup._3)
-    )
+    AzureQueueSink.fromFunction(tup => AzureQueueSinkFunctions.addMessage(cloudQueue)(tup._1, tup._2, tup._3))
 }
 
 object AzureQueueDeleteSink {
@@ -66,7 +64,5 @@ object AzureQueueDeleteOrUpdateSink {
   def apply(
       cloudQueue: () => CloudQueue
   ): Sink[(CloudQueueMessage, DeleteOrUpdateMessage), Future[Done]] =
-    AzureQueueSink.fromFunction(
-      input => AzureQueueSinkFunctions.deleteOrUpdateMessage(cloudQueue)(input._1, input._2)
-    )
+    AzureQueueSink.fromFunction(input => AzureQueueSinkFunctions.deleteOrUpdateMessage(cloudQueue)(input._1, input._2))
 }

@@ -42,7 +42,8 @@ object GooglePubSub {
    * @param pollInterval time between StreamingPullRequest messages are being sent
    */
   def subscribe(request: StreamingPullRequest,
-                pollInterval: Duration): Source[ReceivedMessage, CompletableFuture[Cancellable]] =
+                pollInterval: Duration
+  ): Source[ReceivedMessage, CompletableFuture[Cancellable]] =
     Source
       .setup { (mat, attr) =>
         val cancellable = new CompletableFuture[Cancellable]()
@@ -104,9 +105,10 @@ object GooglePubSub {
       .setup { (mat, attr) =>
         Flow
           .create[AcknowledgeRequest]
-          .mapAsyncUnordered(1,
-                             req =>
-                               subscriber(mat, attr).client.acknowledge(req).thenApply[AcknowledgeRequest](_ => req))
+          .mapAsyncUnordered(
+            1,
+            req => subscriber(mat, attr).client.acknowledge(req).thenApply[AcknowledgeRequest](_ => req)
+          )
       }
       .mapMaterializedValue(_ => NotUsed)
 

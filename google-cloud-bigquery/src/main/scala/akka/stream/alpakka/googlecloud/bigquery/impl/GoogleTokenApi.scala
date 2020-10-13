@@ -42,8 +42,8 @@ private[googlecloud] class GoogleTokenApi(http: => HttpExt, system: ActorSystem,
     Jwt.encode(claim, privateKey, encodingAlgorithm)
   }
 
-  def getAccessToken(clientEmail: String, privateKey: String)(
-      implicit materializer: Materializer
+  def getAccessToken(clientEmail: String, privateKey: String)(implicit
+      materializer: Materializer
   ): Future[AccessTokenExpiry] = {
     import materializer.executionContext
     import SprayJsonSupport._
@@ -61,7 +61,8 @@ private[googlecloud] class GoogleTokenApi(http: => HttpExt, system: ActorSystem,
         case Some(fp) =>
           http.singleRequest(HttpRequest(HttpMethods.POST, googleTokenUrl, entity = requestEntity),
                              connectionContext = fp.httpsContext(system),
-                             settings = fp.poolSettings(system))
+                             settings = fp.poolSettings(system)
+          )
 
         case None => http.singleRequest(HttpRequest(HttpMethods.POST, googleTokenUrl, entity = requestEntity))
       }

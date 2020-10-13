@@ -150,8 +150,8 @@ sealed class JmsByteMessagePassThrough[+PassThrough] protected[jms] (val bytes: 
                                                                      val headers: Set[JmsHeader] = Set.empty,
                                                                      val properties: Map[String, Any] = Map.empty,
                                                                      val destination: Option[Destination] = None,
-                                                                     val passThrough: PassThrough)
-    extends JmsEnvelope[PassThrough] {
+                                                                     val passThrough: PassThrough
+) extends JmsEnvelope[PassThrough] {
 
   /**
    * Add a Jms header e.g. JMSType
@@ -193,7 +193,8 @@ sealed class JmsByteMessagePassThrough[+PassThrough] protected[jms] (val bytes: 
   private def copy(bytes: Array[Byte] = bytes,
                    headers: Set[JmsHeader] = headers,
                    properties: Map[String, Any] = properties,
-                   destination: Option[Destination] = destination): JmsByteMessagePassThrough[PassThrough] =
+                   destination: Option[Destination] = destination
+  ): JmsByteMessagePassThrough[PassThrough] =
     new JmsByteMessagePassThrough[PassThrough](
       bytes,
       headers,
@@ -209,8 +210,8 @@ sealed class JmsByteMessagePassThrough[+PassThrough] protected[jms] (val bytes: 
 final class JmsByteMessage private (bytes: Array[Byte],
                                     headers: Set[JmsHeader] = Set.empty,
                                     properties: Map[String, Any] = Map.empty,
-                                    destination: Option[Destination] = None)
-    extends JmsByteMessagePassThrough[NotUsed](bytes, headers, properties, destination, NotUsed)
+                                    destination: Option[Destination] = None
+) extends JmsByteMessagePassThrough[NotUsed](bytes, headers, properties, destination, NotUsed)
     with JmsMessage {
 
   /**
@@ -246,7 +247,8 @@ final class JmsByteMessage private (bytes: Array[Byte],
   private def copy(bytes: Array[Byte] = bytes,
                    headers: Set[JmsHeader] = headers,
                    properties: Map[String, Any] = properties,
-                   destination: Option[Destination] = destination): JmsByteMessage =
+                   destination: Option[Destination] = destination
+  ): JmsByteMessage =
     new JmsByteMessage(
       bytes,
       headers,
@@ -291,7 +293,8 @@ object JmsByteMessage {
                                                readHeaders(message),
                                                readProperties(message),
                                                Option(message.getJMSDestination).map(Destination(_)),
-                                               passThrough)
+                                               passThrough
+    )
 
   /**
    * Create a byte message from a [[javax.jms.BytesMessage]]
@@ -300,7 +303,8 @@ object JmsByteMessage {
     new JmsByteMessage(readArray(message),
                        readHeaders(message),
                        readProperties(message),
-                       Option(message.getJMSDestination).map(Destination(_)))
+                       Option(message.getJMSDestination).map(Destination(_))
+    )
 
   /**
    * Java API: Create a byte message from a [[javax.jms.BytesMessage]] with pass-through
@@ -323,8 +327,8 @@ sealed class JmsByteStringMessagePassThrough[+PassThrough] protected[jms] (val b
                                                                            val headers: Set[JmsHeader] = Set.empty,
                                                                            val properties: Map[String, Any] = Map.empty,
                                                                            val destination: Option[Destination] = None,
-                                                                           val passThrough: PassThrough)
-    extends JmsEnvelope[PassThrough] {
+                                                                           val passThrough: PassThrough
+) extends JmsEnvelope[PassThrough] {
 
   /**
    * Add a Jms header e.g. JMSType
@@ -361,7 +365,8 @@ sealed class JmsByteStringMessagePassThrough[+PassThrough] protected[jms] (val b
   private def copy(bytes: ByteString = bytes,
                    headers: Set[JmsHeader] = headers,
                    properties: Map[String, Any] = properties,
-                   destination: Option[Destination] = destination): JmsByteStringMessagePassThrough[PassThrough] =
+                   destination: Option[Destination] = destination
+  ): JmsByteStringMessagePassThrough[PassThrough] =
     new JmsByteStringMessagePassThrough(
       bytes,
       headers,
@@ -378,8 +383,8 @@ sealed class JmsByteStringMessagePassThrough[+PassThrough] protected[jms] (val b
 final class JmsByteStringMessage private (bytes: ByteString,
                                           headers: Set[JmsHeader] = Set.empty,
                                           properties: Map[String, Any] = Map.empty,
-                                          destination: Option[Destination] = None)
-    extends JmsByteStringMessagePassThrough[NotUsed](bytes, headers, properties, destination, NotUsed)
+                                          destination: Option[Destination] = None
+) extends JmsByteStringMessagePassThrough[NotUsed](bytes, headers, properties, destination, NotUsed)
     with JmsMessage {
 
   /**
@@ -415,7 +420,8 @@ final class JmsByteStringMessage private (bytes: ByteString,
   private def copy(bytes: ByteString = bytes,
                    headers: Set[JmsHeader] = headers,
                    properties: Map[String, Any] = properties,
-                   destination: Option[Destination] = destination): JmsByteStringMessage =
+                   destination: Option[Destination] = destination
+  ): JmsByteStringMessage =
     new JmsByteStringMessage(
       bytes,
       headers,
@@ -434,7 +440,8 @@ object JmsByteStringMessage {
    * Create a byte message from a ByteString with a pass-through attached
    */
   def apply[PassThrough](byteString: ByteString,
-                         passThrough: PassThrough): JmsByteStringMessagePassThrough[PassThrough] =
+                         passThrough: PassThrough
+  ): JmsByteStringMessagePassThrough[PassThrough] =
     new JmsByteStringMessagePassThrough[PassThrough](byteString, passThrough = passThrough)
 
   /**
@@ -446,7 +453,8 @@ object JmsByteStringMessage {
    * Java API: Create a byte message from a ByteString with a pass-through attached
    */
   def create[PassThrough](byteString: ByteString,
-                          passThrough: PassThrough): JmsByteStringMessagePassThrough[PassThrough] =
+                          passThrough: PassThrough
+  ): JmsByteStringMessagePassThrough[PassThrough] =
     new JmsByteStringMessagePassThrough[PassThrough](byteString, passThrough = passThrough)
 
   /**
@@ -458,12 +466,14 @@ object JmsByteStringMessage {
    * Create a byte message from a [[javax.jms.BytesMessage]] with pass-through
    */
   def apply[PassThrough](message: jms.BytesMessage,
-                         passThrough: PassThrough): JmsByteStringMessagePassThrough[PassThrough] =
+                         passThrough: PassThrough
+  ): JmsByteStringMessagePassThrough[PassThrough] =
     new JmsByteStringMessagePassThrough[PassThrough](readBytes(message),
                                                      readHeaders(message),
                                                      readProperties(message),
                                                      Option(message.getJMSDestination).map(Destination(_)),
-                                                     passThrough)
+                                                     passThrough
+    )
 
   /**
    * Create a byte message from a [[javax.jms.BytesMessage]]
@@ -472,13 +482,15 @@ object JmsByteStringMessage {
     new JmsByteStringMessage(readBytes(message),
                              readHeaders(message),
                              readProperties(message),
-                             Option(message.getJMSDestination).map(Destination(_)))
+                             Option(message.getJMSDestination).map(Destination(_))
+    )
 
   /**
    * Java API: Create a byte message from a [[javax.jms.BytesMessage]] with pass-through
    */
   def create[PassThrough](message: jms.BytesMessage,
-                          passThrough: PassThrough): JmsByteStringMessagePassThrough[PassThrough] =
+                          passThrough: PassThrough
+  ): JmsByteStringMessagePassThrough[PassThrough] =
     apply(message, passThrough)
 
   /**
@@ -497,8 +509,8 @@ sealed class JmsMapMessagePassThrough[+PassThrough] protected[jms] (val body: Ma
                                                                     val headers: Set[JmsHeader] = Set.empty,
                                                                     val properties: Map[String, Any] = Map.empty,
                                                                     val destination: Option[Destination] = None,
-                                                                    val passThrough: PassThrough)
-    extends JmsEnvelope[PassThrough] {
+                                                                    val passThrough: PassThrough
+) extends JmsEnvelope[PassThrough] {
 
   /**
    * Add a Jms header e.g. JMSType
@@ -534,7 +546,8 @@ sealed class JmsMapMessagePassThrough[+PassThrough] protected[jms] (val body: Ma
   private def copy(body: Map[String, Any] = body,
                    headers: Set[JmsHeader] = headers,
                    properties: Map[String, Any] = properties,
-                   destination: Option[Destination] = destination): JmsMapMessagePassThrough[PassThrough] =
+                   destination: Option[Destination] = destination
+  ): JmsMapMessagePassThrough[PassThrough] =
     new JmsMapMessagePassThrough(
       body,
       headers,
@@ -551,8 +564,8 @@ sealed class JmsMapMessagePassThrough[+PassThrough] protected[jms] (val body: Ma
 final class JmsMapMessage(body: Map[String, Any],
                           headers: Set[JmsHeader] = Set.empty,
                           properties: Map[String, Any] = Map.empty,
-                          destination: Option[Destination] = None)
-    extends JmsMapMessagePassThrough[NotUsed](body, headers, properties, destination, NotUsed)
+                          destination: Option[Destination] = None
+) extends JmsMapMessagePassThrough[NotUsed](body, headers, properties, destination, NotUsed)
     with JmsMessage {
 
   /**
@@ -588,7 +601,8 @@ final class JmsMapMessage(body: Map[String, Any],
   private def copy(body: Map[String, Any] = body,
                    headers: Set[JmsHeader] = headers,
                    properties: Map[String, Any] = properties,
-                   destination: Option[Destination] = destination): JmsMapMessage =
+                   destination: Option[Destination] = destination
+  ): JmsMapMessage =
     new JmsMapMessage(
       body,
       headers,
@@ -618,7 +632,8 @@ object JmsMapMessage {
    * Java API: create a map message with a pass-through attached
    */
   def create[PassThrough](map: java.util.Map[String, Any],
-                          passThrough: PassThrough): JmsMapMessagePassThrough[PassThrough] =
+                          passThrough: PassThrough
+  ): JmsMapMessagePassThrough[PassThrough] =
     new JmsMapMessagePassThrough[PassThrough](body = map.asScala.toMap, passThrough = passThrough)
 
   /**
@@ -634,7 +649,8 @@ object JmsMapMessage {
                                               readHeaders(message),
                                               readProperties(message),
                                               Option(message.getJMSDestination).map(Destination(_)),
-                                              passThrough)
+                                              passThrough
+    )
 
   /**
    * Create a map message from a [[javax.jms.MapMessage]]
@@ -643,7 +659,8 @@ object JmsMapMessage {
     new JmsMapMessage(readMap(message),
                       readHeaders(message),
                       readProperties(message),
-                      Option(message.getJMSDestination).map(Destination(_)))
+                      Option(message.getJMSDestination).map(Destination(_))
+    )
 
   /**
    * Java API: Create a map message from a [[javax.jms.MapMessage]] with pass-through
@@ -666,8 +683,8 @@ sealed class JmsTextMessagePassThrough[+PassThrough] protected[jms] (val body: S
                                                                      val headers: Set[JmsHeader] = Set.empty,
                                                                      val properties: Map[String, Any] = Map.empty,
                                                                      val destination: Option[Destination] = None,
-                                                                     val passThrough: PassThrough)
-    extends JmsEnvelope[PassThrough] {
+                                                                     val passThrough: PassThrough
+) extends JmsEnvelope[PassThrough] {
 
   /**
    * Add a Jms header e.g. JMSType
@@ -703,7 +720,8 @@ sealed class JmsTextMessagePassThrough[+PassThrough] protected[jms] (val body: S
   private def copy(body: String = body,
                    headers: Set[JmsHeader] = headers,
                    properties: Map[String, Any] = properties,
-                   destination: Option[Destination] = destination): JmsTextMessagePassThrough[PassThrough] =
+                   destination: Option[Destination] = destination
+  ): JmsTextMessagePassThrough[PassThrough] =
     new JmsTextMessagePassThrough[PassThrough](
       body,
       headers,
@@ -720,8 +738,8 @@ sealed class JmsTextMessagePassThrough[+PassThrough] protected[jms] (val body: S
 final class JmsTextMessage private (body: String,
                                     headers: Set[JmsHeader] = Set.empty,
                                     properties: Map[String, Any] = Map.empty,
-                                    destination: Option[Destination] = None)
-    extends JmsTextMessagePassThrough[NotUsed](body, headers, properties, destination, NotUsed)
+                                    destination: Option[Destination] = None
+) extends JmsTextMessagePassThrough[NotUsed](body, headers, properties, destination, NotUsed)
     with JmsMessage {
 
   /**
@@ -756,7 +774,8 @@ final class JmsTextMessage private (body: String,
   private def copy(body: String = body,
                    headers: Set[JmsHeader] = headers,
                    properties: Map[String, Any] = properties,
-                   destination: Option[Destination] = destination): JmsTextMessage = new JmsTextMessage(
+                   destination: Option[Destination] = destination
+  ): JmsTextMessage = new JmsTextMessage(
     body,
     headers,
     properties,
@@ -800,7 +819,8 @@ object JmsTextMessage {
                                                readHeaders(message),
                                                readProperties(message),
                                                Option(message.getJMSDestination).map(Destination(_)),
-                                               passThrough)
+                                               passThrough
+    )
 
   /**
    * Create a text message from a [[javax.jms.TextMessage]]
@@ -809,7 +829,8 @@ object JmsTextMessage {
     new JmsTextMessage(message.getText,
                        readHeaders(message),
                        readProperties(message),
-                       Option(message.getJMSDestination).map(Destination(_)))
+                       Option(message.getJMSDestination).map(Destination(_))
+    )
 
   /**
    * Java API: Create a text message from a [[javax.jms.TextMessage]] with pass-through
@@ -832,8 +853,8 @@ sealed class JmsObjectMessagePassThrough[+PassThrough] protected[jms] (val seria
                                                                        val headers: Set[JmsHeader] = Set.empty,
                                                                        val properties: Map[String, Any] = Map.empty,
                                                                        val destination: Option[Destination] = None,
-                                                                       val passThrough: PassThrough)
-    extends JmsEnvelope[PassThrough] {
+                                                                       val passThrough: PassThrough
+) extends JmsEnvelope[PassThrough] {
 
   /**
    * Add a Jms header e.g. JMSType
@@ -869,7 +890,8 @@ sealed class JmsObjectMessagePassThrough[+PassThrough] protected[jms] (val seria
   private def copy(serializable: java.io.Serializable = serializable,
                    headers: Set[JmsHeader] = headers,
                    properties: Map[String, Any] = properties,
-                   destination: Option[Destination] = destination): JmsObjectMessagePassThrough[PassThrough] =
+                   destination: Option[Destination] = destination
+  ): JmsObjectMessagePassThrough[PassThrough] =
     new JmsObjectMessagePassThrough(
       serializable,
       headers,
@@ -886,8 +908,8 @@ sealed class JmsObjectMessagePassThrough[+PassThrough] protected[jms] (val seria
 final class JmsObjectMessage private (serializable: java.io.Serializable,
                                       headers: Set[JmsHeader] = Set.empty,
                                       properties: Map[String, Any] = Map.empty,
-                                      destination: Option[Destination] = None)
-    extends JmsObjectMessagePassThrough[NotUsed](serializable, headers, properties, destination, NotUsed)
+                                      destination: Option[Destination] = None
+) extends JmsObjectMessagePassThrough[NotUsed](serializable, headers, properties, destination, NotUsed)
     with JmsMessage {
 
   /**
@@ -923,7 +945,8 @@ final class JmsObjectMessage private (serializable: java.io.Serializable,
   private def copy(serializable: java.io.Serializable = serializable,
                    headers: Set[JmsHeader] = headers,
                    properties: Map[String, Any] = properties,
-                   destination: Option[Destination] = destination): JmsObjectMessage =
+                   destination: Option[Destination] = destination
+  ): JmsObjectMessage =
     new JmsObjectMessage(
       serializable,
       headers,
@@ -942,7 +965,8 @@ object JmsObjectMessage {
    * create an object message with a pass-through attached
    */
   def apply[PassThrough](serializable: java.io.Serializable,
-                         passThrough: PassThrough): JmsObjectMessagePassThrough[PassThrough] =
+                         passThrough: PassThrough
+  ): JmsObjectMessagePassThrough[PassThrough] =
     new JmsObjectMessagePassThrough[PassThrough](serializable, passThrough = passThrough)
 
   /**
@@ -954,7 +978,8 @@ object JmsObjectMessage {
    * Java API: create an object message with a pass-through attached
    */
   def create[PassThrough](serializable: java.io.Serializable,
-                          passThrough: PassThrough): JmsObjectMessagePassThrough[PassThrough] =
+                          passThrough: PassThrough
+  ): JmsObjectMessagePassThrough[PassThrough] =
     new JmsObjectMessagePassThrough[PassThrough](serializable, passThrough = passThrough)
 
   /**
@@ -966,12 +991,14 @@ object JmsObjectMessage {
    * Create an object message with pass-through
    */
   def apply[PassThrough](message: jms.ObjectMessage,
-                         passThrough: PassThrough): JmsObjectMessagePassThrough[PassThrough] =
+                         passThrough: PassThrough
+  ): JmsObjectMessagePassThrough[PassThrough] =
     new JmsObjectMessagePassThrough[PassThrough](message.getObject,
                                                  readHeaders(message),
                                                  readProperties(message),
                                                  Option(message.getJMSDestination).map(Destination(_)),
-                                                 passThrough)
+                                                 passThrough
+    )
 
   /**
    * Create an object message
@@ -980,13 +1007,15 @@ object JmsObjectMessage {
     new JmsObjectMessage(message.getObject,
                          readHeaders(message),
                          readProperties(message),
-                         Option(message.getJMSDestination).map(Destination(_)))
+                         Option(message.getJMSDestination).map(Destination(_))
+    )
 
   /**
    * Java API: Create an object message with pass-through
    */
   def create[PassThrough](message: jms.ObjectMessage,
-                          passThrough: PassThrough): JmsObjectMessagePassThrough[PassThrough] =
+                          passThrough: PassThrough
+  ): JmsObjectMessagePassThrough[PassThrough] =
     apply(message, passThrough)
 
   /**

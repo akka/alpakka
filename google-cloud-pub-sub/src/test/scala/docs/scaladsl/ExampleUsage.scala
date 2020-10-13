@@ -107,8 +107,8 @@ class ExampleUsage {
   Source
     .tick(0.seconds, 10.seconds, Done)
     .via(
-      RestartFlow.withBackoff(1.second, 30.seconds, randomFactor = 0.2)(
-        () => GooglePubSub.subscribeFlow(subscription, config)
+      RestartFlow.withBackoff(1.second, 30.seconds, randomFactor = 0.2)(() =>
+        GooglePubSub.subscribeFlow(subscription, config)
       )
     )
     .map { message =>

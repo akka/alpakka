@@ -37,7 +37,8 @@ object CouchbaseSession {
    */
   def create(settings: CouchbaseSessionSettings,
              bucketName: String,
-             executor: Executor): CompletionStage[CouchbaseSession] =
+             executor: Executor
+  ): CompletionStage[CouchbaseSession] =
     ScalaDslCouchbaseSession
       .apply(settings, bucketName)(executionContext(executor))
       .map(new CouchbaseSessionJavaAdapter(_): CouchbaseSession)(
@@ -269,7 +270,7 @@ abstract class CouchbaseSession {
    * @return a [[java.util.concurrent.CompletionStage]] of `true` if the index was/will be effectively created, `false`
    *      if the index existed and ignoreIfExist` is true. Completion of the `CompletionStage` does not guarantee the index
    *      is online and ready to be used.
-    **/
+   */
   def createIndex(indexName: String, ignoreIfExist: Boolean, fields: AnyRef*): CompletionStage[Boolean]
 
   /**

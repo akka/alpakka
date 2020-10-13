@@ -29,7 +29,8 @@ object ElasticsearchSource {
              typeName: String,
              query: String,
              settings: ElasticsearchSourceSettings,
-             elasticsearchClient: RestClient): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
+             elasticsearchClient: RestClient
+  ): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
     create(indexName, typeName, query, settings, elasticsearchClient, new ObjectMapper())
 
   /**
@@ -41,7 +42,8 @@ object ElasticsearchSource {
              query: String,
              settings: ElasticsearchSourceSettings,
              elasticsearchClient: RestClient,
-             objectMapper: ObjectMapper): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
+             objectMapper: ObjectMapper
+  ): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
     Source.fromGraph(
       new impl.ElasticsearchSourceStage(
         indexName,
@@ -68,7 +70,8 @@ object ElasticsearchSource {
              searchParams: JMap[String, String],
              settings: ElasticsearchSourceSettings,
              elasticsearchClient: RestClient,
-             objectMapper: ObjectMapper): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
+             objectMapper: ObjectMapper
+  ): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
     Source.fromGraph(
       new impl.ElasticsearchSourceStage(
         indexName,
@@ -89,7 +92,8 @@ object ElasticsearchSource {
                query: String,
                settings: ElasticsearchSourceSettings,
                elasticsearchClient: RestClient,
-               clazz: Class[T]): Source[ReadResult[T], NotUsed] =
+               clazz: Class[T]
+  ): Source[ReadResult[T], NotUsed] =
     typed[T](indexName, typeName, query, settings, elasticsearchClient, clazz, new ObjectMapper())
 
   /**
@@ -102,7 +106,8 @@ object ElasticsearchSource {
                settings: ElasticsearchSourceSettings,
                elasticsearchClient: RestClient,
                clazz: Class[T],
-               objectMapper: ObjectMapper): Source[ReadResult[T], NotUsed] =
+               objectMapper: ObjectMapper
+  ): Source[ReadResult[T], NotUsed] =
     Source.fromGraph(
       new impl.ElasticsearchSourceStage(
         indexName,
@@ -130,7 +135,8 @@ object ElasticsearchSource {
                settings: ElasticsearchSourceSettings,
                elasticsearchClient: RestClient,
                clazz: Class[T],
-               objectMapper: ObjectMapper): Source[ReadResult[T], NotUsed] =
+               objectMapper: ObjectMapper
+  ): Source[ReadResult[T], NotUsed] =
     Source.fromGraph(
       new impl.ElasticsearchSourceStage(
         indexName,

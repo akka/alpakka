@@ -76,7 +76,8 @@ import scala.util.control.NonFatal
         makeRequestSource(
           createRequestSource(HttpMethods.DELETE,
                               uriFactory = (settings: GCStorageSettings) =>
-                                Uri(settings.baseUrl).withPath(Path(settings.basePath) ++ getBucketPath(bucketName)))
+                                Uri(settings.baseUrl).withPath(Path(settings.basePath) ++ getBucketPath(bucketName))
+          )
         ).mapAsync(parallelism) { resp =>
           if (resp.status == StatusCodes.NoContent) {
             Future.successful(Done)
@@ -123,8 +124,8 @@ import scala.util.control.NonFatal
         .flatMap(responseEntityOptionTo[BucketListResult])
         .map { bucketListResultOption =>
           bucketListResultOption.map { result =>
-            result.nextPageToken.fold[(ListBucketState, List[StorageObject])]((Finished, result.items))(
-              token => (Running(token), result.items)
+            result.nextPageToken.fold[(ListBucketState, List[StorageObject])]((Finished, result.items))(token =>
+              (Running(token), result.items)
             )
           }
         }
@@ -147,7 +148,8 @@ import scala.util.control.NonFatal
 
   def getObject(bucket: String,
                 objectName: String,
-                generation: Option[Long] = None): Source[Option[StorageObject], NotUsed] =
+                generation: Option[Long] = None
+  ): Source[Option[StorageObject], NotUsed] =
     Source
       .setup { (mat, attr) =>
         implicit val materializer = mat
@@ -159,15 +161,14 @@ import scala.util.control.NonFatal
                 .withPath(Path(settings.basePath) ++ getObjectPath(bucket, objectName))
                 .withQuery(Query(generation.map("generation" -> _.toString).toMap))
           )
-        ).mapAsync(parallelism)(
-          response => processGetStorageObjectResponse(response, mat)
-        )
+        ).mapAsync(parallelism)(response => processGetStorageObjectResponse(response, mat))
       }
       .mapMaterializedValue(_ => NotUsed)
 
   def deleteObjectSource(bucket: String,
                          objectName: String,
-                         generation: Option[Long] = None): Source[Boolean, NotUsed] =
+                         generation: Option[Long] = None
+  ): Source[Boolean, NotUsed] =
     Source
       .setup { (mat, attr) =>
         implicit val materializer = mat
@@ -192,7 +193,8 @@ import scala.util.control.NonFatal
   def putObject(bucket: String,
                 objectName: String,
                 data: Source[ByteString, _],
-                contentType: ContentType): Source[StorageObject, NotUsed] =
+                contentType: ContentType
+  ): Source[StorageObject, NotUsed] =
     Source
       .setup { (mat, attr) =>
         implicit val materializer = mat
@@ -214,7 +216,8 @@ import scala.util.control.NonFatal
 
   def download(bucket: String,
                objectName: String,
-               generation: Option[Long] = None): Source[Option[Source[ByteString, NotUsed]], NotUsed] =
+               generation: Option[Long] = None
+  ): Source[Option[Source[ByteString, NotUsed]], NotUsed] =
     Source
       .setup { (mat, attr) =>
         implicit val materializer = mat
@@ -238,14 +241,16 @@ import scala.util.control.NonFatal
   def resumableUpload(bucket: String,
                       objectName: String,
                       contentType: ContentType,
-                      chunkSize: Int = 5 * 1024 * 1024): Sink[ByteString, Future[StorageObject]] =
+                      chunkSize: Int = 5 * 1024 * 1024
+  ): Sink[ByteString, Future[StorageObject]] =
     chunkAndRequest(bucket, objectName, contentType, chunkSize)
       .toMat(completionSink())(Keep.right)
 
   def rewrite(sourceBucket: String,
               sourceObjectName: String,
               destinationBucket: String,
-              destinationObjectName: String): RunnableGraph[Future[StorageObject]] = {
+              destinationObjectName: String
+  ): RunnableGraph[Future[StorageObject]] = {
     sealed trait RewriteState
     case object Starting extends RewriteState
     case class Running(rewriteToken: String) extends RewriteState
@@ -272,8 +277,8 @@ import scala.util.control.NonFatal
         .flatMap(responseEntityTo[RewriteResponse])
         .map { rewriteResponse =>
           Some(
-            rewriteResponse.rewriteToken.fold[(RewriteState, RewriteResponse)]((Finished, rewriteResponse))(
-              token => (Running(token), rewriteResponse)
+            rewriteResponse.rewriteToken.fold[(RewriteState, RewriteResponse)]((Finished, rewriteResponse))(token =>
+              (Running(token), rewriteResponse)
             )
           )
         }
@@ -316,7 +321,8 @@ import scala.util.control.NonFatal
   }
 
   private def processGetStorageObjectResponse(response: HttpResponse,
-                                              materializer: Materializer): Future[Option[StorageObject]] = {
+                                              materializer: Materializer
+  ): Future[Option[StorageObject]] = {
     implicit val mat = materializer
     import mat.executionContext
 
@@ -324,7 +330,8 @@ import scala.util.control.NonFatal
   }
 
   private def processPutStorageObjectResponse(response: HttpResponse,
-                                              materializer: Materializer): Future[StorageObject] = {
+                                              materializer: Materializer
+  ): Future[StorageObject] = {
     implicit val mat = materializer
     import mat.executionContext
 
@@ -416,8 +423,9 @@ import scala.util.control.NonFatal
     createAuthenticatedRequestSource(request)
   }
 
-  private def createAuthenticatedRequestSource(request: HttpRequest)(implicit mat: ActorMaterializer,
-                                                                     attr: Attributes): Source[HttpRequest, NotUsed] = {
+  private def createAuthenticatedRequestSource(
+      request: HttpRequest
+  )(implicit mat: ActorMaterializer, attr: Attributes): Source[HttpRequest, NotUsed] = {
     import mat.executionContext
     implicit val sys = mat.system
     val conf = resolveSettings()
@@ -425,7 +433,8 @@ import scala.util.control.NonFatal
     val session: GoogleSession =
       new GoogleSession(conf.clientEmail,
                         conf.privateKey,
-                        new GoogleTokenApi(http, TokenApiSettings(conf.tokenUrl, conf.tokenScope)))
+                        new GoogleTokenApi(http, TokenApiSettings(conf.tokenUrl, conf.tokenScope))
+      )
 
     Source.fromFuture(session.getToken().map { accessToken =>
       request.addCredentials(OAuth2BearerToken(accessToken))
@@ -451,8 +460,9 @@ import scala.util.control.NonFatal
     swap(responseOption.map(resp => responseEntityTo(resp)(aRead, mat)))
   }
 
-  private def responseEntityTo[A](response: ResponseEntity)(implicit aRead: JsonReader[A],
-                                                            mat: Materializer): Future[A] = {
+  private def responseEntityTo[A](
+      response: ResponseEntity
+  )(implicit aRead: JsonReader[A], mat: Materializer): Future[A] = {
     import mat.executionContext
     Unmarshal(response).to[JsValue].map(data => data.convertTo[A])
   }
@@ -492,7 +502,8 @@ import scala.util.control.NonFatal
   private def chunkAndRequest(bucket: String,
                               objectName: String,
                               contentType: ContentType,
-                              chunkSize: Int): Flow[ByteString, UploadPartResponse, NotUsed] =
+                              chunkSize: Int
+  ): Flow[ByteString, UploadPartResponse, NotUsed] =
     // The individual upload part requests are processed here
     // apparently Google Cloud storage does not support parallel uploading
     Flow
@@ -505,14 +516,13 @@ import scala.util.control.NonFatal
         //  The individual upload part requests are created.
 
         createRequests(bucket, objectName, contentType, chunkSize)
-          .mapAsync(parallelism) {
-            case (req, (upload, index)) =>
-              GoogleRetry
-                .singleRequest(Http(), req)
-                .map(resp => (Success(resp), (upload, index)))
-                .recoverWith {
-                  case NonFatal(e) => Future.successful((Failure(e), (upload, index)))
-                }
+          .mapAsync(parallelism) { case (req, (upload, index)) =>
+            GoogleRetry
+              .singleRequest(Http(), req)
+              .map(resp => (Success(resp), (upload, index)))
+              .recoverWith { case NonFatal(e) =>
+                Future.successful((Failure(e), (upload, index)))
+              }
           }
           .mapAsync(parallelism) {
             // 308 Resume incomplete means that chunk was successfully transfered but more chunks are expected
@@ -525,11 +535,11 @@ import scala.util.control.NonFatal
             case (Success(HttpResponse(status, _, entity, _)), (upload, index)) =>
               Unmarshal(entity)
                 .to[String]
-                .map(
-                  errorString =>
-                    FailedUploadPart(upload,
-                                     index,
-                                     new RuntimeException(s"Uploading part failed with status $status: $errorString"))
+                .map(errorString =>
+                  FailedUploadPart(upload,
+                                   index,
+                                   new RuntimeException(s"Uploading part failed with status $status: $errorString")
+                  )
                 )
             case (Failure(e), (upload, index)) =>
               Future.successful(FailedUploadPart(upload, index, e))
@@ -540,7 +550,8 @@ import scala.util.control.NonFatal
   private def createRequests(bucketName: String,
                              objectName: String,
                              contentType: ContentType,
-                             chunkSize: Int): Flow[ByteString, (HttpRequest, (MultiPartUpload, Int)), NotUsed] = {
+                             chunkSize: Int
+  ): Flow[ByteString, (HttpRequest, (MultiPartUpload, Int)), NotUsed] = {
     // First step of the resumable upload process is made.
     //  The response is then used to construct the subsequent individual upload part requests
     val requestInfo: Source[(MultiPartUpload, Int), NotUsed] = initiateUpload(bucketName, objectName, contentType)
@@ -553,38 +564,38 @@ import scala.util.control.NonFatal
         Flow
           .apply[ByteString]
           .via(new Chunker(chunkSize))
-          .zipWith(requestInfo) {
-            case (chunk, info) => (chunk, info)
+          .zipWith(requestInfo) { case (chunk, info) =>
+            (chunk, info)
           }
-          .mapAsync(parallelism) {
-            case (chunkedPayload, (uploadInfo, chunkIndex)) =>
-              val queryParams =
-                Map("uploadType" -> "resumable", "name" -> objectName, "upload_id" -> uploadInfo.uploadId)
-              createRequest(
-                HttpMethods.PUT,
-                uriFactory = (settings: GCStorageSettings) =>
-                  Uri(settings.baseUrl)
-                    .withPath(Path("/upload" + settings.basePath) ++ getBucketPath(bucketName) / "o")
-                    .withQuery(Query(queryParams))
-              ).map { req =>
-                  // add payload and Content-Range header
-                  req
-                    .withEntity(
-                      HttpEntity(ContentTypes.`application/octet-stream`,
-                                 chunkedPayload.size,
-                                 Source.single(chunkedPayload.bytes))
+          .mapAsync(parallelism) { case (chunkedPayload, (uploadInfo, chunkIndex)) =>
+            val queryParams =
+              Map("uploadType" -> "resumable", "name" -> objectName, "upload_id" -> uploadInfo.uploadId)
+            createRequest(
+              HttpMethods.PUT,
+              uriFactory = (settings: GCStorageSettings) =>
+                Uri(settings.baseUrl)
+                  .withPath(Path("/upload" + settings.basePath) ++ getBucketPath(bucketName) / "o")
+                  .withQuery(Query(queryParams))
+            ).map { req =>
+              // add payload and Content-Range header
+              req
+                .withEntity(
+                  HttpEntity(ContentTypes.`application/octet-stream`,
+                             chunkedPayload.size,
+                             Source.single(chunkedPayload.bytes)
+                  )
+                )
+                // make sure we do these calculations in the Long range !!!! We talk about potentially huge files
+                // Int is limited to 2,parallelismGb !!
+                .addHeader(
+                  `Content-Range`(
+                    ContentRange((chunkIndex - 1L) * chunkSize,
+                                 ((chunkIndex - 1L) * chunkSize) + Math.max(chunkedPayload.size, 1L) - 1,
+                                 chunkedPayload.totalSize
                     )
-                    // make sure we do these calculations in the Long range !!!! We talk about potentially huge files
-                    // Int is limited to 2,parallelismGb !!
-                    .addHeader(
-                      `Content-Range`(
-                        ContentRange((chunkIndex - 1L) * chunkSize,
-                                     ((chunkIndex - 1L) * chunkSize) + Math.max(chunkedPayload.size, 1L) - 1,
-                                     chunkedPayload.totalSize)
-                      )
-                    )
-                }
-                .map((_, (uploadInfo, chunkIndex)))
+                  )
+                )
+            }.map((_, (uploadInfo, chunkIndex)))
           }
       }
       .mapMaterializedValue(_ => NotUsed)
@@ -592,7 +603,8 @@ import scala.util.control.NonFatal
 
   private def initiateUpload(bucketName: String,
                              objectName: String,
-                             contentType: ContentType): Source[(MultiPartUpload, Int), NotUsed] =
+                             contentType: ContentType
+  ): Source[(MultiPartUpload, Int), NotUsed] =
     Source
       .setup { (mat, attr) =>
         implicit val materializer = mat
@@ -608,24 +620,23 @@ import scala.util.control.NonFatal
             Seq(RawHeader("X-Upload-Content-Type", contentType.toString()))
           )
         ).mapAsync(parallelism) {
-            case HttpResponse(status, headers, entity, _) if status.isSuccess() && !status.isRedirection() =>
-              entity.discardBytes()
-              headers
-                .find(_.is("location"))
-                .flatMap(h => Uri(h.value()).query().get("upload_id"))
-                .map(MultiPartUpload)
-                .map(Future.successful)
-                .getOrElse(Future.failed(new RuntimeException("No upload_id found in Location Header")))
-            case HttpResponse(StatusCodes.NotFound, _, entity, _) =>
-              Unmarshal(entity).to[String].flatMap { err =>
-                Future.failed(new ObjectNotFoundException(err))
-              }
-            case HttpResponse(status, _, entity, _) =>
-              Unmarshal(entity).to[String].flatMap { err =>
-                Future.failed(new RuntimeException(s"[${status.intValue}] $err"))
-              }
-          }
-          .mapConcat(r => Stream.continually(r))
+          case HttpResponse(status, headers, entity, _) if status.isSuccess() && !status.isRedirection() =>
+            entity.discardBytes()
+            headers
+              .find(_.is("location"))
+              .flatMap(h => Uri(h.value()).query().get("upload_id"))
+              .map(MultiPartUpload)
+              .map(Future.successful)
+              .getOrElse(Future.failed(new RuntimeException("No upload_id found in Location Header")))
+          case HttpResponse(StatusCodes.NotFound, _, entity, _) =>
+            Unmarshal(entity).to[String].flatMap { err =>
+              Future.failed(new ObjectNotFoundException(err))
+            }
+          case HttpResponse(status, _, entity, _) =>
+            Unmarshal(entity).to[String].flatMap { err =>
+              Future.failed(new RuntimeException(s"[${status.intValue}] $err"))
+            }
+        }.mapConcat(r => Stream.continually(r))
           .zip(Source.fromIterator(() => Iterator.from(parallelism)))
       }
       .mapMaterializedValue(_ => NotUsed)

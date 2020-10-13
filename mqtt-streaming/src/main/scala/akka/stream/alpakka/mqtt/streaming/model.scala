@@ -173,8 +173,8 @@ final case class Connect(protocolName: Connect.ProtocolName,
                          willTopic: Option[String],
                          willMessage: Option[String],
                          username: Option[String],
-                         password: Option[String])
-    extends ControlPacket(ControlPacketType.CONNECT, ControlPacketFlags.ReservedGeneral) {
+                         password: Option[String]
+) extends ControlPacket(ControlPacketType.CONNECT, ControlPacketFlags.ReservedGeneral) {
 
   /**
    * Conveniently create a connect object without credentials.
@@ -279,8 +279,8 @@ object Publish {
 final case class Publish @InternalApi private[streaming] (override val flags: ControlPacketFlags,
                                                           topicName: String,
                                                           packetId: Option[PacketId],
-                                                          payload: ByteString)
-    extends ControlPacket(ControlPacketType.PUBLISH, flags) {
+                                                          payload: ByteString
+) extends ControlPacket(ControlPacketType.PUBLISH, flags) {
 
   /**
    * 3.3 PUBLISH – Publish message
@@ -348,8 +348,8 @@ object Subscribe {
  * http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html
  */
 final case class Subscribe @InternalApi private[streaming] (packetId: PacketId,
-                                                            topicFilters: Seq[(String, ControlPacketFlags)])
-    extends ControlPacket(ControlPacketType.SUBSCRIBE, ControlPacketFlags.ReservedSubscribe) {
+                                                            topicFilters: Seq[(String, ControlPacketFlags)]
+) extends ControlPacket(ControlPacketType.SUBSCRIBE, ControlPacketFlags.ReservedSubscribe) {
 
   /**
    * 3.8 SUBSCRIBE - Subscribe to topics
@@ -511,8 +511,8 @@ object MqttCodec {
                                      willTopic: Option[Either[MqttCodec.DecodeError, String]],
                                      willMessage: Option[Either[MqttCodec.DecodeError, String]],
                                      username: Option[Either[MqttCodec.DecodeError, String]],
-                                     password: Option[Either[MqttCodec.DecodeError, String]])
-      extends DecodeError {
+                                     password: Option[Either[MqttCodec.DecodeError, String]]
+  ) extends DecodeError {
     override def toString: String =
       s"""BadConnectMessage(clientId:$clientId,willTopic:$willTopic,willMessage:$willMessage,username:$username,password:${password
         .map {
@@ -536,8 +536,8 @@ object MqttCodec {
    */
   final case class BadPublishMessage(topicName: Either[DecodeError, String],
                                      packetId: Option[PacketId],
-                                     payload: ByteString)
-      extends DecodeError {
+                                     payload: ByteString
+  ) extends DecodeError {
     override def toString: String =
       s"""BadPublishMessage(topicName:$topicName,packetId:$packetId,payload:${payload.size}b)"""
   }
@@ -546,8 +546,8 @@ object MqttCodec {
    * Something is wrong with the subscribe message
    */
   final case class BadSubscribeMessage(packetId: PacketId,
-                                       topicFilters: Seq[(Either[DecodeError, String], ControlPacketFlags)])
-      extends DecodeError
+                                       topicFilters: Seq[(Either[DecodeError, String], ControlPacketFlags)]
+  ) extends DecodeError
 
   /**
    * Unable to subscribe at the requested QoS
@@ -702,10 +702,9 @@ object MqttCodec {
       // Variable header
       packetBsb.putShort(packetId.underlying.toShort)
       // Payload
-      v.topicFilters.foreach {
-        case (topicFilter, topicFilterFlags) =>
-          topicFilter.encode(packetBsb)
-          packetBsb.putByte(topicFilterFlags.underlying.toByte)
+      v.topicFilters.foreach { case (topicFilter, topicFilterFlags) =>
+        topicFilter.encode(packetBsb)
+        packetBsb.putByte(topicFilterFlags.underlying.toByte)
       }
       // Fixed header
       (v: ControlPacket).encode(bsb, packetBsb.length)
@@ -867,7 +866,8 @@ object MqttCodec {
                willTopic.fold[Either[DecodeError, Option[String]]](Right(None))(_.right.map(Some.apply)),
                willMessage.fold[Either[DecodeError, Option[String]]](Right(None))(_.right.map(Some.apply)),
                username.fold[Either[DecodeError, Option[String]]](Right(None))(_.right.map(Some.apply)),
-               password.fold[Either[DecodeError, Option[String]]](Right(None))(_.right.map(Some.apply))) match {
+               password.fold[Either[DecodeError, Option[String]]](Right(None))(_.right.map(Some.apply))
+              ) match {
                 case (Right(ci), Right(wt), Right(wm), Right(un), Right(pw)) =>
                   Right(Connect(Connect.Mqtt, Connect.v311, ci, connectFlags, keepAlive, wt, wm, un, pw))
                 case _ =>
@@ -904,8 +904,10 @@ object MqttCodec {
           val packetLen = v.len
           val topicName = v.decodeString()
           val packetId =
-            if (flags.contains(ControlPacketFlags.QoSAtLeastOnceDelivery) ||
-                flags.contains(ControlPacketFlags.QoSExactlyOnceDelivery))
+            if (
+              flags.contains(ControlPacketFlags.QoSAtLeastOnceDelivery) ||
+              flags.contains(ControlPacketFlags.QoSExactlyOnceDelivery)
+            )
               Some(PacketId(v.getShort & 0xffff))
             else None
           val payload = v.getByteString(l - (packetLen - v.len))
@@ -977,14 +979,18 @@ object MqttCodec {
           }
         val topicFilters = decodeTopicFilters(l - (packetLen - v.len), Vector.empty)
         val topicFiltersValid = topicFilters.nonEmpty && topicFilters.foldLeft(true) {
-            case (true, (Right(_), tff)) if tff.underlying < ControlPacketFlags.QoSReserved.underlying => true
-            case _ => false
-          }
+          case (true, (Right(_), tff)) if tff.underlying < ControlPacketFlags.QoSReserved.underlying => true
+          case _ => false
+        }
         if (topicFiltersValid) {
-          Right(Subscribe(packetId, topicFilters.flatMap {
-            case (Right(tfs), tff) => List(tfs -> tff)
-            case _ => List.empty
-          }))
+          Right(
+            Subscribe(packetId,
+                      topicFilters.flatMap {
+                        case (Right(tfs), tff) => List(tfs -> tff)
+                        case _ => List.empty
+                      }
+            )
+          )
         } else {
           Left(BadSubscribeMessage(packetId, topicFilters))
         }
@@ -1031,14 +1037,18 @@ object MqttCodec {
           }
         val topicFilters = decodeTopicFilters(l - (packetLen - v.len), Vector.empty)
         val topicFiltersValid = topicFilters.nonEmpty && topicFilters.foldLeft(true) {
-            case (true, Right(_)) => true
-            case _ => false
-          }
+          case (true, Right(_)) => true
+          case _ => false
+        }
         if (topicFiltersValid) {
-          Right(Unsubscribe(packetId, topicFilters.flatMap {
-            case Right(tfs) => List(tfs)
-            case _ => List.empty
-          }))
+          Right(
+            Unsubscribe(packetId,
+                        topicFilters.flatMap {
+                          case Right(tfs) => List(tfs)
+                          case _ => List.empty
+                        }
+            )
+          )
         } else {
           Left(BadUnsubscribeMessage(packetId, topicFilters))
         }

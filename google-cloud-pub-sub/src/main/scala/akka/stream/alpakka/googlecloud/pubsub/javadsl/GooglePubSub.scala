@@ -26,7 +26,8 @@ object GooglePubSub {
    */
   def publish(topic: String,
               config: PubSubConfig,
-              parallelism: Int): Flow[PublishRequest, java.util.List[String], NotUsed] =
+              parallelism: Int
+  ): Flow[PublishRequest, java.util.List[String], NotUsed] =
     GPubSub
       .publish(topic, config, parallelism)
       .map(response => response.asJava)
@@ -38,7 +39,8 @@ object GooglePubSub {
    */
   def publishWithContext[C](topic: String,
                             config: PubSubConfig,
-                            parallelism: Int): FlowWithContext[PublishRequest, C, java.util.List[String], C, NotUsed] =
+                            parallelism: Int
+  ): FlowWithContext[PublishRequest, C, java.util.List[String], C, NotUsed] =
     GPubSub
       .publishWithContext[C](topic, config, parallelism)
       .map(response => response.asJava)
@@ -69,7 +71,8 @@ object GooglePubSub {
   @deprecated("Use `acknowledge` without `parallelism` param", since = "2.0.0")
   def acknowledge(subscription: String,
                   config: PubSubConfig,
-                  parallelism: Int): Sink[AcknowledgeRequest, CompletionStage[Done]] =
+                  parallelism: Int
+  ): Sink[AcknowledgeRequest, CompletionStage[Done]] =
     acknowledge(subscription, config)
 
   /**

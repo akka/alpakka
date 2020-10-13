@@ -43,7 +43,8 @@ object IronMqProducer {
       .asInstanceOf[Flow[CommittablePushMessage[C1], String, NotUsed]]
 
   def atLeastOnceSink[C1 <: Committable](queueName: String,
-                                         settings: IronMqSettings): Sink[CommittablePushMessage[C1], NotUsed] =
+                                         settings: IronMqSettings
+  ): Sink[CommittablePushMessage[C1], NotUsed] =
     ScalaFlow[CommittablePushMessage[C1]]
       .map { cm =>
         cm.message -> cm.toCommit.asScala

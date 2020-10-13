@@ -64,7 +64,8 @@ sealed class DiscoverySupport private {
   }
 
   private[couchbase] def nodes(config: Config,
-                               system: ActorSystem): CouchbaseSessionSettings => Future[CouchbaseSessionSettings] =
+                               system: ActorSystem
+  ): CouchbaseSessionSettings => Future[CouchbaseSessionSettings] =
     nodes(config)(system)
 
   /**
@@ -81,8 +82,8 @@ sealed class DiscoverySupport private {
    * Expects a `service` section in `alpakka.couchbase.session` and reads the given service name's address
    * to be used as Couchbase `nodes`.
    */
-  def nodes()(
-      implicit system: ClassicActorSystemProvider
+  def nodes()(implicit
+      system: ClassicActorSystemProvider
   ): CouchbaseSessionSettings => Future[CouchbaseSessionSettings] =
     nodes(system.classicSystem)
 

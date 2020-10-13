@@ -13,12 +13,14 @@ import software.amazon.awssdk.services.firehose.model.{PutRecordBatchResponseEnt
 object KinesisFirehoseFlow {
 
   def apply(streamName: String,
-            kinesisClient: FirehoseAsyncClient): Flow[Record, PutRecordBatchResponseEntry, NotUsed] =
+            kinesisClient: FirehoseAsyncClient
+  ): Flow[Record, PutRecordBatchResponseEntry, NotUsed] =
     apply(streamName, KinesisFirehoseFlowSettings.Defaults, kinesisClient)
 
   def apply(streamName: String,
             settings: KinesisFirehoseFlowSettings,
-            kinesisClient: FirehoseAsyncClient): Flow[Record, PutRecordBatchResponseEntry, NotUsed] =
+            kinesisClient: FirehoseAsyncClient
+  ): Flow[Record, PutRecordBatchResponseEntry, NotUsed] =
     scaladsl.KinesisFirehoseFlow.apply(streamName, settings)(kinesisClient).asJava
 
 }

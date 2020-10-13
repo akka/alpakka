@@ -59,7 +59,7 @@ class ModelSpec extends AnyFunSuite with Matchers with LogCapturing {
   }
 
   test("PubSubMessage toString") {
-    pubSubMessage1.toString shouldBe ("PubSubMessage(data=Some(data),attributes=Some(Map(k1 -> v1)),messageId=Id-1,publishTime=1970-01-01T00:00:00Z)")
+    pubSubMessage1.toString shouldBe "PubSubMessage(data=Some(data),attributes=Some(Map(k1 -> v1)),messageId=Id-1,publishTime=1970-01-01T00:00:00Z)"
   }
 
   val receivedMessage1 = ReceivedMessage("1", pubSubMessage1)

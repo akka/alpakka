@@ -35,7 +35,8 @@ object S3 {
               key: String,
               method: HttpMethod = HttpMethods.GET,
               versionId: Option[String] = None,
-              s3Headers: S3Headers = S3Headers.empty): Source[HttpResponse, NotUsed] =
+              s3Headers: S3Headers = S3Headers.empty
+  ): Source[HttpResponse, NotUsed] =
     S3Stream.request(S3Location(bucket, key), method, versionId = versionId, s3Headers = s3Headers.headers)
 
   /**
@@ -95,7 +96,8 @@ object S3 {
   def deleteObject(bucket: String,
                    key: String,
                    versionId: Option[String],
-                   s3Headers: S3Headers): Source[Done, NotUsed] =
+                   s3Headers: S3Headers
+  ): Source[Done, NotUsed] =
     S3Stream.deleteObject(S3Location(bucket, key), versionId, s3Headers)
 
   /**
@@ -144,7 +146,8 @@ object S3 {
                 data: Source[ByteString, _],
                 contentLength: Long,
                 contentType: ContentType = ContentTypes.`application/octet-stream`,
-                s3Headers: S3Headers): Source[ObjectMetadata, NotUsed] =
+                s3Headers: S3Headers
+  ): Source[ObjectMetadata, NotUsed] =
     S3Stream.putObject(S3Location(bucket, key), contentType, data, contentLength, s3Headers)
 
   /**
@@ -215,7 +218,8 @@ object S3 {
    */
   def listBucket(bucket: String,
                  prefix: Option[String],
-                 s3Headers: S3Headers): Source[ListBucketResultContents, NotUsed] =
+                 s3Headers: S3Headers
+  ): Source[ListBucketResultContents, NotUsed] =
     S3Stream.listBucket(bucket, prefix, s3Headers)
 
   /**
@@ -234,7 +238,8 @@ object S3 {
   def listBucket(bucket: String,
                  delimiter: String,
                  prefix: Option[String] = None,
-                 s3Headers: S3Headers = S3Headers.empty): Source[ListBucketResultContents, NotUsed] =
+                 s3Headers: S3Headers = S3Headers.empty
+  ): Source[ListBucketResultContents, NotUsed] =
     S3Stream
       .listBucketAndCommonPrefixes(bucket, delimiter, prefix, s3Headers)
       .mapConcat(_._1)
@@ -407,8 +412,9 @@ object S3 {
    * @param bucketName bucket name
    * @return [[scala.concurrent.Future Future]] of type [[Done]] as API doesn't return any additional information
    */
-  def deleteBucket(bucketName: String)(implicit mat: Materializer,
-                                       attributes: Attributes = Attributes()): Future[Done] =
+  def deleteBucket(
+      bucketName: String
+  )(implicit mat: Materializer, attributes: Attributes = Attributes()): Future[Done] =
     deleteBucket(bucketName, S3Headers.empty)
 
   /**
@@ -457,8 +463,9 @@ object S3 {
    * @param bucketName bucket name
    * @return [[scala.concurrent.Future Future]] of type [[BucketAccess]]
    */
-  def checkIfBucketExists(bucketName: String)(implicit mat: Materializer,
-                                              attributes: Attributes = Attributes()): Future[BucketAccess] =
+  def checkIfBucketExists(
+      bucketName: String
+  )(implicit mat: Materializer, attributes: Attributes = Attributes()): Future[BucketAccess] =
     checkIfBucketExists(bucketName, S3Headers.empty)
 
   /**

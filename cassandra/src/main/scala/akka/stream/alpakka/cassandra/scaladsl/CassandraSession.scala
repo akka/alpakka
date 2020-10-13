@@ -39,8 +39,8 @@ final class CassandraSession(system: akka.actor.ActorSystem,
                              log: LoggingAdapter,
                              metricsCategory: String,
                              init: CqlSession => Future[Done],
-                             onClose: () => Unit)
-    extends NoSerializationVerificationNeeded {
+                             onClose: () => Unit
+) extends NoSerializationVerificationNeeded {
 
   implicit private[akka] val ec: ExecutionContext = executionContext
   private lazy implicit val materializer: Materializer = SystemMaterializer(system).materializer
@@ -57,10 +57,9 @@ final class CassandraSession(system: akka.actor.ActorSystem,
       })
       init(cqlSession).map(_ => cqlSession)
     }
-    .recover {
-      case NonFatal(e) =>
-        log.error(e, "failed to start CassandraSession")
-        throw e
+    .recover { case NonFatal(e) =>
+      log.error(e, "failed to start CassandraSession")
+      throw e
     }
 
   /**
@@ -93,7 +92,8 @@ final class CassandraSession(system: akka.actor.ActorSystem,
           case Some(row) =>
             new CassandraServerMetaData(row.getString("cluster_name"),
                                         row.getString("data_center"),
-                                        row.getString("release_version"))
+                                        row.getString("release_version")
+            )
           case None =>
             log.warning("Couldn't retrieve serverMetaData from system.local table. No rows found.")
             new CassandraServerMetaData("", "", "")
@@ -234,9 +234,8 @@ final class CassandraSession(system: akka.actor.ActorSystem,
   def select(stmt: Future[Statement[_]]): Source[Row, NotUsed] = {
     Source
       .fromFutureSource {
-        underlying().flatMap(cqlSession => stmt.map(cqlSession -> _)).map {
-          case (cqlSession, stmtValue) =>
-            Source.fromPublisher(cqlSession.executeReactive(stmtValue))
+        underlying().flatMap(cqlSession => stmt.map(cqlSession -> _)).map { case (cqlSession, stmtValue) =>
+          Source.fromPublisher(cqlSession.executeReactive(stmtValue))
         }
       }
       .mapMaterializedValue(_ => NotUsed)

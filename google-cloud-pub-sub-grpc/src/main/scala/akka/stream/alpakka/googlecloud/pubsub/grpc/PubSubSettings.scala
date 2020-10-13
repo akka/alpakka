@@ -47,7 +47,8 @@ final class PubSubSettings private (
                    port: Int = port,
                    useTls: Boolean = useTls,
                    rootCa: Option[String] = rootCa,
-                   callCredentials: Option[CallCredentials] = callCredentials) =
+                   callCredentials: Option[CallCredentials] = callCredentials
+  ) =
     new PubSubSettings(host, port, useTls, rootCa, callCredentials)
 }
 

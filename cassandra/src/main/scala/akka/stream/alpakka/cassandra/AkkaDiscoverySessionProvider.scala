@@ -58,9 +58,11 @@ private[cassandra] object AkkaDiscoverySessionProvider {
 
   def connect(system: ActorSystem, config: Config)(implicit ec: ExecutionContext): Future[CqlSession] = {
     readNodes(config)(system, ec).flatMap { contactPoints =>
-      val driverConfigWithContactPoints = ConfigFactory.parseString(s"""
+      val driverConfigWithContactPoints = ConfigFactory
+        .parseString(s"""
         basic.contact-points = [${contactPoints.mkString("\"", "\", \"", "\"")}]
-        """).withFallback(CqlSessionProvider.driverConfig(system, config))
+        """)
+        .withFallback(CqlSessionProvider.driverConfig(system, config))
       val driverConfigLoader = DriverConfigLoaderFromConfig.fromConfig(driverConfigWithContactPoints)
       CqlSession.builder().withConfigLoader(driverConfigLoader).buildAsync().toScala
     }
@@ -69,8 +71,9 @@ private[cassandra] object AkkaDiscoverySessionProvider {
   /**
    * Expect a `service` section in Config and use Akka Discovery to read the addresses for `name` within `lookup-timeout`.
    */
-  private def readNodes(config: Config)(implicit system: ActorSystem,
-                                        ec: ExecutionContext): Future[immutable.Seq[String]] = {
+  private def readNodes(
+      config: Config
+  )(implicit system: ActorSystem, ec: ExecutionContext): Future[immutable.Seq[String]] = {
     val serviceConfig = config.getConfig("service-discovery")
     val serviceName = serviceConfig.getString("name")
     val lookupTimeout = serviceConfig.getDuration("lookup-timeout").asScala

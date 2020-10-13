@@ -151,7 +151,8 @@ private[jms] trait JmsConnector[S <: JmsSession] {
     log.info("{} caught exception {} while stopping stage: {}",
              attributes.nameLifted.mkString,
              ex.getClass.getSimpleName,
-             ex.getMessage)
+             ex.getMessage
+    )
 
   private val onSession: AsyncCallback[S] = getAsyncCallback[S] { session =>
     jmsSessions :+= session
@@ -185,7 +186,8 @@ private[jms] trait JmsConnector[S <: JmsSession] {
       log.error(ex,
                 "{} initializing connection failed for destination[{}]",
                 attributes.nameLifted.mkString,
-                destination.name)
+                destination.name
+      )
       publishAndFailStage(ex)
   }
 
@@ -202,7 +204,8 @@ private[jms] trait JmsConnector[S <: JmsSession] {
       log.error(exception,
                 "{} initializing connection failed for destination[{}]",
                 attributes.nameLifted.mkString,
-                destination.name)
+                destination.name
+      )
       publishAndFailStage(exception)
     } else {
       val status = updateState(JmsConnectorDisconnected)

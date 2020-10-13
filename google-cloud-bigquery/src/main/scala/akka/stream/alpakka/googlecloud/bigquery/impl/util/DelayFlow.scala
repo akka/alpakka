@@ -32,7 +32,6 @@ private[util] object DelayFlow {
    * It is important notice that [[DelayStrategy]] can be stateful.
    * There are also predefined strategies, see [[DelayStrategy]] companion object's methods.
    *
-   *
    * For example:
    * {{{
    * //delay, infinitely increasing by `1 second` on every Failure
@@ -75,7 +74,8 @@ private[util] object DelayFlow {
     def linearIncreasingDelay[T](increaseStep: FiniteDuration,
                                  needsIncrease: T => Boolean,
                                  initialDelay: FiniteDuration = Duration.Zero,
-                                 maxDelay: Duration = Duration.Inf): DelayStrategy[T] = {
+                                 maxDelay: Duration = Duration.Inf
+    ): DelayStrategy[T] = {
       require(increaseStep > Duration.Zero, "Increase step must be positive")
       require(maxDelay > initialDelay, "Max delay must be bigger than initial delay")
 

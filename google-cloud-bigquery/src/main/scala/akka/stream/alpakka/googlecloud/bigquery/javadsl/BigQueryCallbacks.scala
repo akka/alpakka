@@ -20,6 +20,7 @@ object BigQueryCallbacks {
   val ignore: function.Function[PagingInfo, NotUsed] = BigQueryCallbacksScala.ignore.asJava
   def tryToStopJob(projectConfig: BigQueryConfig,
                    actorSystem: ActorSystem,
-                   materializer: Materializer): function.Function[PagingInfo, NotUsed] =
+                   materializer: Materializer
+  ): function.Function[PagingInfo, NotUsed] =
     BigQueryCallbacksScala.tryToStopJob(projectConfig)(actorSystem, materializer).asJava
 }

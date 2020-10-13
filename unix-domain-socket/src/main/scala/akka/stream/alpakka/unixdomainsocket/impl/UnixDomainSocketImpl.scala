@@ -247,9 +247,10 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
   )(sel: Selector, key: SelectionKey)(implicit mat: ActorMaterializer, ec: ExecutionContext): Unit = {
 
     val acceptingChannel = key.channel().asInstanceOf[UnixServerSocketChannel]
-    val acceptedChannel = try {
-      acceptingChannel.accept()
-    } catch { case _: IOException => null }
+    val acceptedChannel =
+      try {
+        acceptingChannel.accept()
+      } catch { case _: IOException => null }
 
     if (acceptedChannel != null) {
       acceptedChannel.configureBlocking(false)
@@ -272,7 +273,8 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
   private def connectKey(remoteAddress: JnrUnixSocketAddress,
                          connectionFinished: Promise[Done],
                          cancellable: Option[Cancellable],
-                         sendReceiveContext: SendReceiveContext)(sel: Selector, key: SelectionKey): Unit = {
+                         sendReceiveContext: SendReceiveContext
+  )(sel: Selector, key: SelectionKey): Unit = {
 
     val connectingChannel = key.channel().asInstanceOf[UnixSocketChannel]
     cancellable.foreach(_.cancel())
@@ -289,7 +291,8 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
   }
 
   private def sendReceiveStructures(sel: Selector, receiveBufferSize: Int, sendBufferSize: Int, halfClose: Boolean)(
-      implicit mat: ActorMaterializer,
+      implicit
+      mat: ActorMaterializer,
       ec: ExecutionContext
   ): (SendReceiveContext, Flow[ByteString, ByteString, NotUsed]) = {
 
@@ -338,18 +341,17 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
           sel.wakeup()
           sent.future.map(_ => bytes)
         }
-        .watchTermination() {
-          case (_, done) =>
-            done.onComplete { _ =>
-              sendReceiveContext.send = if (halfClose) {
-                ShutdownRequested
-              } else {
-                receiveQueue.complete()
-                CloseRequested
-              }
-              sel.wakeup()
+        .watchTermination() { case (_, done) =>
+          done.onComplete { _ =>
+            sendReceiveContext.send = if (halfClose) {
+              ShutdownRequested
+            } else {
+              receiveQueue.complete()
+              CloseRequested
             }
-            Keep.left
+            sel.wakeup()
+          }
+          Keep.left
         }
         .to(Sink.ignore)
     )
@@ -376,9 +378,11 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
   protected def logSource: Class[_] = this.getClass
 
   private val ioThread = new Thread(new Runnable {
-    override def run(): Unit =
-      nioEventLoop(sel, Logging(system, logSource))
-  }, "unix-domain-socket-io")
+                                      override def run(): Unit =
+                                        nioEventLoop(sel, Logging(system, logSource))
+                                    },
+                                    "unix-domain-socket-io"
+  )
   ioThread.start()
 
   CoordinatedShutdown(system).addTask(CoordinatedShutdown.PhaseServiceStop, "stopUnixDomainSocket") { () =>
@@ -393,28 +397,27 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
 
   protected def bind(path: Path,
                      backlog: Int = 128,
-                     halfClose: Boolean = false): Source[IncomingConnection, Future[ServerBinding]] = {
+                     halfClose: Boolean = false
+  ): Source[IncomingConnection, Future[ServerBinding]] = {
 
     val bind: () => Source[IncomingConnection, Future[ServerBinding]] = { () =>
       val (incomingConnectionQueue, incomingConnectionSource) =
         Source
           .queue[IncomingConnection](2, OverflowStrategy.backpressure)
           .prefixAndTail(0)
-          .map {
-            case (_, source) =>
-              source
-                .watchTermination() { (mat, done) =>
-                  done
-                    .andThen {
-                      case _ =>
-                        try {
-                          Files.delete(path)
-                        } catch {
-                          case NonFatal(_) =>
-                        }
+          .map { case (_, source) =>
+            source
+              .watchTermination() { (mat, done) =>
+                done
+                  .andThen { case _ =>
+                    try {
+                      Files.delete(path)
+                    } catch {
+                      case NonFatal(_) =>
                     }
-                  mat
-                }
+                  }
+                mat
+              }
           }
           .toMat(Sink.head)(Keep.both)
           .run()
@@ -427,7 +430,8 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
       val registeredKey =
         channel.register(sel,
                          SelectionKey.OP_ACCEPT,
-                         acceptKey(address, incomingConnectionQueue, halfClose, receiveBufferSize, sendBufferSize) _)
+                         acceptKey(address, incomingConnectionQueue, halfClose, receiveBufferSize, sendBufferSize) _
+        )
       try {
         channel.socket().bind(address, backlog)
         sel.wakeup()
@@ -477,10 +481,14 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
       val cancellable =
         connectTimeout match {
           case d: FiniteDuration =>
-            Some(system.scheduler.scheduleOnce(d, new Runnable {
-              override def run(): Unit =
-                channel.close()
-            }))
+            Some(
+              system.scheduler.scheduleOnce(d,
+                                            new Runnable {
+                                              override def run(): Unit =
+                                                channel.close()
+                                            }
+              )
+            )
           case _ =>
             None
         }
@@ -495,7 +503,9 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
       Future.successful(
         connectionFlow
           .merge(Source.fromFuture(connectionFinished.future.map(_ => ByteString.empty)))
-          .filter(_.nonEmpty) // We merge above so that we can get connection failures - we're not interested in the empty bytes though
+          .filter(
+            _.nonEmpty
+          ) // We merge above so that we can get connection failures - we're not interested in the empty bytes though
           .mapMaterializedValue { _ =>
             connection match {
               case Success(_) =>

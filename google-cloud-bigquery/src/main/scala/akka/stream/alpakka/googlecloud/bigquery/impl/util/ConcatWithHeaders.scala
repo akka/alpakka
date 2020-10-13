@@ -13,14 +13,13 @@ private[bigquery] object ConcatWithHeaders {
     Flow[(Seq[String], Seq[Seq[String]])].statefulMapConcat(() => {
       var isFirstRun = true
 
-      {
-        case (fields, rows) =>
-          if (isFirstRun && rows.nonEmpty) {
-            isFirstRun = false
-            fields :: rows.toList
-          } else {
-            rows.toList
-          }
+      { case (fields, rows) =>
+        if (isFirstRun && rows.nonEmpty) {
+          isFirstRun = false
+          fields :: rows.toList
+        } else {
+          rows.toList
+        }
       }
     })
 }

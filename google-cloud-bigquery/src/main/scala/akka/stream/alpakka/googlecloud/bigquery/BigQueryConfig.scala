@@ -79,7 +79,7 @@ final class ForwardProxyCredentials private (val username: String, val password:
   override def equals(other: Any): Boolean = other match {
     case that: ForwardProxyCredentials =>
       Objects.equals(this.username, that.username) &&
-      Objects.equals(this.password, that.password)
+        Objects.equals(this.password, that.password)
     case _ => false
   }
 
@@ -101,7 +101,8 @@ object ForwardProxy {
   def apply(host: String,
             port: Int,
             credentials: Option[ForwardProxyCredentials],
-            trustPem: Option[ForwardProxyTrustPem]) =
+            trustPem: Option[ForwardProxyTrustPem]
+  ) =
     new ForwardProxy(host, port, credentials, trustPem)
 
   /** Java API */
@@ -113,7 +114,8 @@ object ForwardProxy {
 final class ForwardProxy private (val host: String,
                                   val port: Int,
                                   val credentials: Option[ForwardProxyCredentials],
-                                  val trustPem: Option[ForwardProxyTrustPem]) {
+                                  val trustPem: Option[ForwardProxyTrustPem]
+) {
 
   /** Java API */
   def getHost: String = host
@@ -133,7 +135,8 @@ final class ForwardProxy private (val host: String,
   private def copy(host: String = host,
                    port: Int = port,
                    credentials: Option[ForwardProxyCredentials] = credentials,
-                   trustPem: Option[ForwardProxyTrustPem] = trustPem) =
+                   trustPem: Option[ForwardProxyTrustPem] = trustPem
+  ) =
     new ForwardProxy(host, port, credentials, trustPem)
 
   override def toString =
@@ -147,9 +150,9 @@ final class ForwardProxy private (val host: String,
   override def equals(other: Any): Boolean = other match {
     case that: ForwardProxy =>
       Objects.equals(this.host, that.host) &&
-      Objects.equals(this.port, that.port) &&
-      Objects.equals(this.credentials, that.credentials) &&
-      Objects.equals(this.trustPem, that.trustPem)
+        Objects.equals(this.port, that.port) &&
+        Objects.equals(this.credentials, that.credentials) &&
+        Objects.equals(this.trustPem, that.trustPem)
     case _ => false
   }
 
@@ -160,8 +163,8 @@ final class ForwardProxy private (val host: String,
 object BigQueryConfig {
 
   /** Scala API */
-  def apply(clientEmail: String, privateKey: String, projectId: String, dataset: String)(
-      implicit actorSystem: ActorSystem
+  def apply(clientEmail: String, privateKey: String, projectId: String, dataset: String)(implicit
+      actorSystem: ActorSystem
   ): BigQueryConfig = {
     val session = GoogleSession(clientEmail, privateKey, actorSystem, Option.empty)
     new BigQueryConfig(projectId, dataset, Option.empty, session)
@@ -179,7 +182,8 @@ object BigQueryConfig {
              privateKey: String,
              projectId: String,
              dataset: String,
-             actorSystem: ActorSystem): BigQueryConfig = {
+             actorSystem: ActorSystem
+  ): BigQueryConfig = {
     apply(clientEmail, privateKey, projectId, dataset)(actorSystem)
   }
 
@@ -189,4 +193,5 @@ object BigQueryConfig {
 private[bigquery] final class BigQueryConfig(val projectId: String,
                                              val dataset: String,
                                              val forwardProxy: Option[ForwardProxy],
-                                             @InternalApi private[bigquery] val session: GoogleSession) {}
+                                             @InternalApi private[bigquery] val session: GoogleSession
+) {}

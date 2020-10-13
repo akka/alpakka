@@ -163,8 +163,8 @@ class MongoSinkSpec
       insertTestRange()
 
       // #update-one
-      val source = Source(testRange).map(
-        i => DocumentUpdate(filter = Filters.eq("value", i), update = Updates.set("updateValue", i * -1))
+      val source = Source(testRange).map(i =>
+        DocumentUpdate(filter = Filters.eq("value", i), update = Updates.set("updateValue", i * -1))
       )
       val completion = source.runWith(MongoSink.updateOne(numbersDocumentColl))
       // #update-one
@@ -173,7 +173,9 @@ class MongoSinkSpec
 
       val found = Source.fromPublisher(numbersDocumentColl.find()).runWith(Sink.seq).futureValue
 
-      found.map(doc => doc.getInteger("value") -> doc.getInteger("updateValue")) must contain theSameElementsAs testRange
+      found.map(doc =>
+        doc.getInteger("value") -> doc.getInteger("updateValue")
+      ) must contain theSameElementsAs testRange
         .map(i => i -> i * -1)
     }
 
@@ -182,15 +184,15 @@ class MongoSinkSpec
 
       val source = Source
         .single(0)
-        .map(
-          _ => DocumentUpdate(filter = Filters.gte("value", 0), update = Updates.set("updateValue", 0))
-        )
+        .map(_ => DocumentUpdate(filter = Filters.gte("value", 0), update = Updates.set("updateValue", 0)))
 
       source.runWith(MongoSink.updateMany(numbersDocumentColl)).futureValue
 
       val found = Source.fromPublisher(numbersDocumentColl.find()).runWith(Sink.seq).futureValue
 
-      found.map(doc => doc.getInteger("value") -> doc.getInteger("updateValue")) must contain theSameElementsAs testRange
+      found.map(doc =>
+        doc.getInteger("value") -> doc.getInteger("updateValue")
+      ) must contain theSameElementsAs testRange
         .map(i => i -> 0)
     }
 
@@ -227,12 +229,11 @@ class MongoSinkSpec
         testRange.map(i => DomainObject(i, s"updated-first-property-$i", s"updated-second-property-$i"))
 
       // #replace-one
-      val source = Source(testRange).map(
-        i =>
-          DocumentReplace[DomainObject](
-            filter = Filters.eq("_id", i),
-            replacement = DomainObject(i, s"updated-first-property-$i", s"updated-second-property-$i")
-          )
+      val source = Source(testRange).map(i =>
+        DocumentReplace[DomainObject](
+          filter = Filters.eq("_id", i),
+          replacement = DomainObject(i, s"updated-first-property-$i", s"updated-second-property-$i")
+        )
       )
       val completion = source.runWith(MongoSink.replaceOne[DomainObject](domainObjectsColl))
       // #replace-one

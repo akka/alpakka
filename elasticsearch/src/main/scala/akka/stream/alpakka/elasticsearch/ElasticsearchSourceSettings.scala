@@ -10,11 +10,11 @@ import akka.util.JavaDurationConverters._
 
 /**
  * Configure Elastiscsearch sources.
- *
  */
 final class ElasticsearchSourceSettings private (val bufferSize: Int,
                                                  val includeDocumentVersion: Boolean,
-                                                 val scrollDuration: FiniteDuration) {
+                                                 val scrollDuration: FiniteDuration
+) {
 
   def withBufferSize(value: Int): ElasticsearchSourceSettings = copy(bufferSize = value)
 
@@ -32,10 +32,12 @@ final class ElasticsearchSourceSettings private (val bufferSize: Int,
 
   private def copy(bufferSize: Int = bufferSize,
                    includeDocumentVersion: Boolean = includeDocumentVersion,
-                   scrollDuration: FiniteDuration = scrollDuration): ElasticsearchSourceSettings =
+                   scrollDuration: FiniteDuration = scrollDuration
+  ): ElasticsearchSourceSettings =
     new ElasticsearchSourceSettings(bufferSize = bufferSize,
                                     includeDocumentVersion = includeDocumentVersion,
-                                    scrollDuration = scrollDuration)
+                                    scrollDuration = scrollDuration
+    )
 
   def scroll: String = {
     val scrollString = scrollDuration.unit match {

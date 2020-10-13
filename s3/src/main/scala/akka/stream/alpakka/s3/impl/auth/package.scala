@@ -20,8 +20,8 @@ package object auth {
     val out = new Array[Char](length * 2)
     for (i <- 0 to length - 1) {
       val b = bytes(i)
-      out(i * 2) = Digits((b >> 4) & 0xF)
-      out(i * 2 + 1) = Digits(b & 0xF)
+      out(i * 2) = Digits((b >> 4) & 0xf)
+      out(i * 2 + 1) = Digits(b & 0xf)
     }
     new String(out)
   }
@@ -30,10 +30,9 @@ package object auth {
 
   @InternalApi private[impl] def digest(algorithm: String = "SHA-256"): Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString]
-      .fold(MessageDigest.getInstance(algorithm)) {
-        case (digest, bytes) =>
-          digest.update(bytes.asByteBuffer)
-          digest
+      .fold(MessageDigest.getInstance(algorithm)) { case (digest, bytes) =>
+        digest.update(bytes.asByteBuffer)
+        digest
       }
       .map(d => ByteString(d.digest()))
 }

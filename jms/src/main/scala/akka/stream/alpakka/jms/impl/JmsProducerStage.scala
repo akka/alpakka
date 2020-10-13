@@ -27,7 +27,8 @@ private trait JmsProducerConnector extends JmsConnector[JmsProducerSession] {
   this: TimerGraphStageLogic with StageLogging =>
 
   protected final def createSession(connection: jms.Connection,
-                                    createDestination: jms.Session => jms.Destination): JmsProducerSession = {
+                                    createDestination: jms.Session => jms.Destination
+  ): JmsProducerSession = {
     val session = connection.createSession(false, AcknowledgeMode.AutoAcknowledge.mode)
     new JmsProducerSession(connection, session, createDestination(session))
   }
@@ -45,8 +46,8 @@ private trait JmsProducerConnector extends JmsConnector[JmsProducerSession] {
  */
 @InternalApi
 private[jms] final class JmsProducerStage[E <: JmsEnvelope[PassThrough], PassThrough](settings: JmsProducerSettings,
-                                                                                      destination: Destination)
-    extends GraphStageWithMaterializedValue[FlowShape[E, E], JmsProducerMatValue] { stage =>
+                                                                                      destination: Destination
+) extends GraphStageWithMaterializedValue[FlowShape[E, E], JmsProducerMatValue] { stage =>
   import JmsProducerStage._
 
   private val in = Inlet[E]("JmsProducer.in")
@@ -110,11 +111,13 @@ private[jms] final class JmsProducerStage[E <: JmsEnvelope[PassThrough], PassThr
         super.connectionFailed(ex)
       }
 
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit = pushNextIfPossible()
+      setHandler(out,
+                 new OutHandler {
+                   override def onPull(): Unit = pushNextIfPossible()
 
-        override def onDownstreamFinish(): Unit = publishAndCompleteStage()
-      })
+                   override def onDownstreamFinish(): Unit = publishAndCompleteStage()
+                 }
+      )
 
       setHandler(
         in,
@@ -162,8 +165,8 @@ private[jms] final class JmsProducerStage[E <: JmsEnvelope[PassThrough], PassThr
         import send._
         if (jmsProducers.nonEmpty) {
           val jmsProducer: JmsMessageProducer = jmsProducers.dequeue()
-          Future(jmsProducer.send(envelope)).andThen {
-            case tried => sendCompletedCB.invoke((send, tried, jmsProducer))
+          Future(jmsProducer.send(envelope)).andThen { case tried =>
+            sendCompletedCB.invoke((send, tried, jmsProducer))
           }
         } else {
           nextTryOrFail(send, RetrySkippedOnMissingConnection)
@@ -206,9 +209,11 @@ private[jms] final class JmsProducerStage[E <: JmsEnvelope[PassThrough], PassThr
       override def postStop(): Unit = finishStop()
 
       private def pullIfNeeded(): Unit =
-        if (jmsProducers.nonEmpty // only pull if a producer is available in the pool.
-            && !inFlightMessages.isFull // and a place is available in the in-flight queue.
-            && !hasBeenPulled(in))
+        if (
+          jmsProducers.nonEmpty // only pull if a producer is available in the pool.
+          && !inFlightMessages.isFull // and a place is available in the in-flight queue.
+          && !hasBeenPulled(in)
+        )
           tryPull(in)
 
       private def pushNextIfPossible(): Unit =
@@ -271,5 +276,6 @@ private[jms] object JmsProducerStage {
   case class SendAttempt[E <: JmsEnvelope[_]](envelope: E,
                                               holder: Holder[E],
                                               attempt: Int = 0,
-                                              backoffMaxed: Boolean = false)
+                                              backoffMaxed: Boolean = false
+  )
 }

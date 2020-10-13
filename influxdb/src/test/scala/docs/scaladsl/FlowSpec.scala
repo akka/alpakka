@@ -84,11 +84,14 @@ class FlowSpec
 
     val messagesFromKafka = List(
       KafkaMessage(new InfluxDbFlowCpu(Instant.now().minusSeconds(1000), "local_1", "eu-west-2", 1.4d, true, 123L),
-                   KafkaOffset(0)),
+                   KafkaOffset(0)
+      ),
       KafkaMessage(new InfluxDbFlowCpu(Instant.now().minusSeconds(2000), "local_2", "eu-west-1", 2.5d, false, 125L),
-                   KafkaOffset(1)),
+                   KafkaOffset(1)
+      ),
       KafkaMessage(new InfluxDbFlowCpu(Instant.now().minusSeconds(3000), "local_3", "eu-west-4", 3.1d, false, 251L),
-                   KafkaOffset(2))
+                   KafkaOffset(2)
+      )
     )
 
     var committedOffsets = List[KafkaOffset]()

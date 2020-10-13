@@ -40,8 +40,8 @@ import scala.concurrent.duration._
                                                                      maxBackoff: FiniteDuration,
                                                                      randomFactor: Double,
                                                                      maxRetries: Int,
-                                                                     decideRetry: (In, Out) => Option[In])
-    extends GraphStage[BidiShape[In, In, Out, Out]] {
+                                                                     decideRetry: (In, Out) => Option[In]
+) extends GraphStage[BidiShape[In, In, Out, Out]] {
 
   private val externalIn = Inlet[In]("RetryFlow.externalIn")
   private val externalOut = Outlet[Out]("RetryFlow.externalOut")
@@ -120,11 +120,13 @@ import scala.concurrent.duration._
       }
     )
 
-    setHandler(externalOut, new OutHandler {
-      override def onPull(): Unit =
-        // external demand
-        if (!hasBeenPulled(internalIn)) pull(internalIn)
-    })
+    setHandler(externalOut,
+               new OutHandler {
+                 override def onPull(): Unit =
+                   // external demand
+                   if (!hasBeenPulled(internalIn)) pull(internalIn)
+               }
+    )
 
     private def pushInternal(element: In): Unit = {
       push(internalOut, element)

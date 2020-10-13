@@ -122,7 +122,8 @@ sealed trait FtpApi[FtpClient, S <: RemoteFileSettings] { _: FtpSourceFactory[Ft
   def ls(basePath: String,
          connectionSettings: S,
          branchSelector: Predicate[FtpFile],
-         emitTraversedDirectories: Boolean): Source[FtpFile, NotUsed]
+         emitTraversedDirectories: Boolean
+  ): Source[FtpFile, NotUsed]
 
   /**
    * Java API: creates a [[akka.stream.javadsl.Source Source]] of [[akka.util.ByteString ByteString]] from some file path.
@@ -291,7 +292,8 @@ object Ftp extends FtpApi[FTPClient, FtpSettings] with FtpSourceParams {
   def ls(basePath: String,
          connectionSettings: S,
          branchSelector: Predicate[FtpFile],
-         emitTraversedDirectories: Boolean): Source[FtpFile, NotUsed] =
+         emitTraversedDirectories: Boolean
+  ): Source[FtpFile, NotUsed] =
     Source.fromGraph(
       createBrowserGraph(basePath, connectionSettings, asScalaFromPredicate(branchSelector), emitTraversedDirectories)
     )
@@ -302,7 +304,8 @@ object Ftp extends FtpApi[FTPClient, FtpSettings] with FtpSourceParams {
   def fromPath(host: String,
                username: String,
                password: String,
-               path: String): Source[ByteString, CompletionStage[IOResult]] =
+               path: String
+  ): Source[ByteString, CompletionStage[IOResult]] =
     fromPath(path, defaultSettings(host, Some(username), Some(password)))
 
   def fromPath(path: String, connectionSettings: S): Source[ByteString, CompletionStage[IOResult]] =
@@ -310,13 +313,15 @@ object Ftp extends FtpApi[FTPClient, FtpSettings] with FtpSourceParams {
 
   def fromPath(path: String,
                connectionSettings: S,
-               chunkSize: Int = DefaultChunkSize): Source[ByteString, CompletionStage[IOResult]] =
+               chunkSize: Int = DefaultChunkSize
+  ): Source[ByteString, CompletionStage[IOResult]] =
     fromPath(path, connectionSettings, chunkSize, 0L)
 
   def fromPath(path: String,
                connectionSettings: S,
                chunkSize: Int,
-               offset: Long): Source[ByteString, CompletionStage[IOResult]] = {
+               offset: Long
+  ): Source[ByteString, CompletionStage[IOResult]] = {
     import scala.compat.java8.FutureConverters._
     Source
       .fromGraph(createIOSource(path, connectionSettings, chunkSize, offset))
@@ -340,7 +345,8 @@ object Ftp extends FtpApi[FTPClient, FtpSettings] with FtpSourceParams {
     toPath(path, connectionSettings, append = false)
 
   def move(destinationPath: Function[FtpFile, String],
-           connectionSettings: S): Sink[FtpFile, CompletionStage[IOResult]] = {
+           connectionSettings: S
+  ): Sink[FtpFile, CompletionStage[IOResult]] = {
     import scala.compat.java8.FunctionConverters._
     import scala.compat.java8.FutureConverters._
     Sink
@@ -381,7 +387,8 @@ object Ftps extends FtpApi[FTPSClient, FtpsSettings] with FtpsSourceParams {
   def ls(basePath: String,
          connectionSettings: S,
          branchSelector: Predicate[FtpFile],
-         emitTraversedDirectories: Boolean): Source[FtpFile, NotUsed] =
+         emitTraversedDirectories: Boolean
+  ): Source[FtpFile, NotUsed] =
     Source.fromGraph(
       createBrowserGraph(basePath, connectionSettings, asScalaFromPredicate(branchSelector), emitTraversedDirectories)
     )
@@ -392,7 +399,8 @@ object Ftps extends FtpApi[FTPSClient, FtpsSettings] with FtpsSourceParams {
   def fromPath(host: String,
                username: String,
                password: String,
-               path: String): Source[ByteString, CompletionStage[IOResult]] =
+               path: String
+  ): Source[ByteString, CompletionStage[IOResult]] =
     fromPath(path, defaultSettings(host, Some(username), Some(password)))
 
   def fromPath(path: String, connectionSettings: S): Source[ByteString, CompletionStage[IOResult]] =
@@ -400,13 +408,15 @@ object Ftps extends FtpApi[FTPSClient, FtpsSettings] with FtpsSourceParams {
 
   def fromPath(path: String,
                connectionSettings: S,
-               chunkSize: Int = DefaultChunkSize): Source[ByteString, CompletionStage[IOResult]] =
+               chunkSize: Int = DefaultChunkSize
+  ): Source[ByteString, CompletionStage[IOResult]] =
     fromPath(path, connectionSettings, chunkSize, 0L)
 
   def fromPath(path: String,
                connectionSettings: S,
                chunkSize: Int,
-               offset: Long): Source[ByteString, CompletionStage[IOResult]] = {
+               offset: Long
+  ): Source[ByteString, CompletionStage[IOResult]] = {
     import scala.compat.java8.FutureConverters._
     Source
       .fromGraph(createIOSource(path, connectionSettings, chunkSize, offset))
@@ -430,7 +440,8 @@ object Ftps extends FtpApi[FTPSClient, FtpsSettings] with FtpsSourceParams {
     toPath(path, connectionSettings, append = false)
 
   def move(destinationPath: Function[FtpFile, String],
-           connectionSettings: S): Sink[FtpFile, CompletionStage[IOResult]] = {
+           connectionSettings: S
+  ): Sink[FtpFile, CompletionStage[IOResult]] = {
     import scala.compat.java8.FunctionConverters._
     import scala.compat.java8.FutureConverters._
     Sink
@@ -472,7 +483,8 @@ class SftpApi extends FtpApi[SSHClient, SftpSettings] with SftpSourceParams {
   def ls(basePath: String,
          connectionSettings: S,
          branchSelector: Predicate[FtpFile],
-         emitTraversedDirectories: Boolean): Source[FtpFile, NotUsed] =
+         emitTraversedDirectories: Boolean
+  ): Source[FtpFile, NotUsed] =
     Source.fromGraph(
       createBrowserGraph(basePath, connectionSettings, asScalaFromPredicate(branchSelector), emitTraversedDirectories)
     )
@@ -483,7 +495,8 @@ class SftpApi extends FtpApi[SSHClient, SftpSettings] with SftpSourceParams {
   def fromPath(host: String,
                username: String,
                password: String,
-               path: String): Source[ByteString, CompletionStage[IOResult]] =
+               path: String
+  ): Source[ByteString, CompletionStage[IOResult]] =
     fromPath(path, defaultSettings(host, Some(username), Some(password)))
 
   def fromPath(path: String, connectionSettings: S): Source[ByteString, CompletionStage[IOResult]] =
@@ -491,13 +504,15 @@ class SftpApi extends FtpApi[SSHClient, SftpSettings] with SftpSourceParams {
 
   def fromPath(path: String,
                connectionSettings: S,
-               chunkSize: Int = DefaultChunkSize): Source[ByteString, CompletionStage[IOResult]] =
+               chunkSize: Int = DefaultChunkSize
+  ): Source[ByteString, CompletionStage[IOResult]] =
     fromPath(path, connectionSettings, chunkSize, 0L)
 
   def fromPath(path: String,
                connectionSettings: S,
                chunkSize: Int,
-               offset: Long): Source[ByteString, CompletionStage[IOResult]] = {
+               offset: Long
+  ): Source[ByteString, CompletionStage[IOResult]] = {
     import scala.compat.java8.FutureConverters._
     Source
       .fromGraph(createIOSource(path, connectionSettings, chunkSize, offset))
@@ -521,7 +536,8 @@ class SftpApi extends FtpApi[SSHClient, SftpSettings] with SftpSourceParams {
     toPath(path, connectionSettings, append = false)
 
   def move(destinationPath: Function[FtpFile, String],
-           connectionSettings: S): Sink[FtpFile, CompletionStage[IOResult]] = {
+           connectionSettings: S
+  ): Sink[FtpFile, CompletionStage[IOResult]] = {
     import scala.compat.java8.FunctionConverters._
     import scala.compat.java8.FutureConverters._
     Sink

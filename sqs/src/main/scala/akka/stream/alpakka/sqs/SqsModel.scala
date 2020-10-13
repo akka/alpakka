@@ -80,7 +80,7 @@ object MessageAction {
     override def equals(other: Any): Boolean = other match {
       case that: ChangeMessageVisibility =>
         java.util.Objects.equals(this.message, that.message) &&
-        this.visibilityTimeout == that.visibilityTimeout
+          this.visibilityTimeout == that.visibilityTimeout
       case _ => false
     }
 
@@ -127,7 +127,6 @@ object MessageAction {
 
 /**
  * Result contained in a Sqs Response.
- *
  */
 sealed abstract class SqsResult {
 
@@ -173,7 +172,7 @@ final class SqsPublishResult @InternalApi private[sqs] (
   override def equals(other: Any): Boolean = other match {
     case that: SqsPublishResult =>
       java.util.Objects.equals(this.request, that.request) &&
-      java.util.Objects.equals(this.result, that.result)
+        java.util.Objects.equals(this.result, that.result)
     case _ => false
   }
 
@@ -197,7 +196,7 @@ final class SqsPublishResultEntry @InternalApi private[sqs] (
   override def equals(other: Any): Boolean = other match {
     case that: SqsPublishResultEntry =>
       java.util.Objects.equals(this.request, that.request) &&
-      java.util.Objects.equals(this.result, that.result)
+        java.util.Objects.equals(this.result, that.result)
     case _ => false
   }
 
@@ -206,7 +205,6 @@ final class SqsPublishResultEntry @InternalApi private[sqs] (
 
 /**
  * Messages returned by a SqsAckFlow
- *
  */
 sealed abstract class SqsAckResult extends SqsResult {
 
@@ -239,7 +237,7 @@ object SqsAckResult {
     override def equals(other: Any): Boolean = other match {
       case that: SqsDeleteResult =>
         java.util.Objects.equals(this.messageAction, that.messageAction) &&
-        java.util.Objects.equals(this.result, that.result)
+          java.util.Objects.equals(this.result, that.result)
       case _ => false
     }
 
@@ -294,7 +292,7 @@ object SqsAckResult {
     override def equals(other: Any): Boolean = other match {
       case that: SqsChangeMessageVisibilityResult =>
         java.util.Objects.equals(this.messageAction, that.messageAction) &&
-        java.util.Objects.equals(this.result, that.result)
+          java.util.Objects.equals(this.result, that.result)
       case _ => false
     }
 
@@ -305,7 +303,6 @@ object SqsAckResult {
 
 /**
  * Messages returned by a SqsAckFlow.
- *
  */
 sealed abstract class SqsAckResultEntry extends SqsResult {
 
@@ -325,8 +322,8 @@ object SqsAckResultEntry {
    */
   final class SqsDeleteResultEntry(override val messageAction: MessageAction.Delete,
                                    override val result: DeleteMessageBatchResultEntry,
-                                   override val responseMetadata: SqsResponseMetadata)
-      extends SqsAckResultEntry {
+                                   override val responseMetadata: SqsResponseMetadata
+  ) extends SqsAckResultEntry {
 
     override type Result = DeleteMessageBatchResultEntry
 
@@ -336,7 +333,7 @@ object SqsAckResultEntry {
     override def equals(other: Any): Boolean = other match {
       case that: SqsDeleteResultEntry =>
         java.util.Objects.equals(this.messageAction, that.messageAction) &&
-        java.util.Objects.equals(this.result, that.result)
+          java.util.Objects.equals(this.result, that.result)
       case _ => false
     }
 
@@ -379,8 +376,8 @@ object SqsAckResultEntry {
    */
   final class SqsChangeMessageVisibilityResultEntry(override val messageAction: MessageAction.ChangeMessageVisibility,
                                                     override val result: ChangeMessageVisibilityBatchResultEntry,
-                                                    override val responseMetadata: SqsResponseMetadata)
-      extends SqsAckResultEntry {
+                                                    override val responseMetadata: SqsResponseMetadata
+  ) extends SqsAckResultEntry {
 
     override type Result = ChangeMessageVisibilityBatchResultEntry
 
@@ -390,7 +387,7 @@ object SqsAckResultEntry {
     override def equals(other: Any): Boolean = other match {
       case that: SqsChangeMessageVisibilityResultEntry =>
         java.util.Objects.equals(this.messageAction, that.messageAction) &&
-        java.util.Objects.equals(this.result, that.result)
+          java.util.Objects.equals(this.result, that.result)
       case _ => false
     }
 

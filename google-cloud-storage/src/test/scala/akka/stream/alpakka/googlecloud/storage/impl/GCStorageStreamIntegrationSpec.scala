@@ -114,13 +114,15 @@ class GCStorageStreamIntegrationSpec
           .putObject(bucket,
                      testFileName("testa.txt"),
                      Source.single(ByteString("testa")),
-                     ContentTypes.`text/plain(UTF-8)`)
+                     ContentTypes.`text/plain(UTF-8)`
+          )
           .runWith(Sink.head)
         _ <- GCStorageStream
           .putObject(bucket,
                      testFileName("testb.txt"),
                      Source.single(ByteString("testa")),
-                     ContentTypes.`text/plain(UTF-8)`)
+                     ContentTypes.`text/plain(UTF-8)`
+          )
           .runWith(Sink.head)
         listing <- GCStorageStream.listBucket(bucket, Some(folderName)).runWith(Sink.seq)
       } yield {
@@ -221,7 +223,8 @@ class GCStorageStreamIntegrationSpec
           .putObject(bucket,
                      testFileName("fileToDelete"),
                      Source.single(ByteString("File content")),
-                     ContentTypes.`text/plain(UTF-8)`)
+                     ContentTypes.`text/plain(UTF-8)`
+          )
           .runWith(Sink.head)
         result <- GCStorageStream.deleteObjectSource(bucket, testFileName("fileToDelete")).runWith(Sink.head)
       } yield result
@@ -240,11 +243,10 @@ class GCStorageStreamIntegrationSpec
         GCStorageStream.resumableUpload(bucket, fileName, ContentTypes.`text/plain(UTF-8)`, 4 * 256 * 1024)
 
       val res = Source
-        .fromIterator(
-          () =>
-            Iterator.fill[ByteString](10) {
-              ByteString(Random.alphanumeric.take(1234567).map(c => c.toByte).toArray)
-            }
+        .fromIterator(() =>
+          Iterator.fill[ByteString](10) {
+            ByteString(Random.alphanumeric.take(1234567).map(c => c.toByte).toArray)
+          }
         )
         .runWith(sink)
 
@@ -260,11 +262,10 @@ class GCStorageStreamIntegrationSpec
         GCStorageStream.resumableUpload(bucket, fileName, ContentTypes.`text/plain(UTF-8)`, 4 * 256 * 1024)
 
       val uploadResult = Source
-        .fromIterator(
-          () =>
-            Iterator.fill[ByteString](10) {
-              ByteString(Random.alphanumeric.take(1234567).map(c => c.toByte).toArray)
-            }
+        .fromIterator(() =>
+          Iterator.fill[ByteString](10) {
+            ByteString(Random.alphanumeric.take(1234567).map(c => c.toByte).toArray)
+          }
         )
         .runWith(sink)
 

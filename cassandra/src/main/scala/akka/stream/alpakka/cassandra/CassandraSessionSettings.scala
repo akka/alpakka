@@ -15,7 +15,8 @@ import scala.concurrent.Future
 
 class CassandraSessionSettings private (val configPath: String,
                                         _metricsCategory: Option[String] = None,
-                                        val init: Option[CqlSession => Future[Done]] = None) {
+                                        val init: Option[CqlSession => Future[Done]] = None
+) {
 
   def metricsCategory: String = _metricsCategory.getOrElse(configPath)
 
@@ -41,7 +42,8 @@ class CassandraSessionSettings private (val configPath: String,
 
   private def copy(configPath: String = configPath,
                    metricsCategory: Option[String] = _metricsCategory,
-                   init: Option[CqlSession => Future[Done]] = init) =
+                   init: Option[CqlSession => Future[Done]] = init
+  ) =
     new CassandraSessionSettings(configPath, metricsCategory, init)
 
   override def toString: String =

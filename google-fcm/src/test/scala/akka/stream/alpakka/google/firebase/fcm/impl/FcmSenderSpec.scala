@@ -57,19 +57,22 @@ class FcmSenderSpec
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),
                            any[ConnectionPoolSettings](),
-                           any[LoggingAdapter]())
+                           any[LoggingAdapter]()
+        )
       ).thenReturn(
         Future.successful(HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, """{"name": ""}""")))
       )
 
       Await.result(sender.send("projectId", "token", http, FcmSend(false, FcmNotification.empty)),
-                   defaultPatience.timeout)
+                   defaultPatience.timeout
+      )
 
       val captor: ArgumentCaptor[HttpRequest] = ArgumentCaptor.forClass(classOf[HttpRequest])
       verify(http).singleRequest(captor.capture(),
                                  any[HttpsConnectionContext](),
                                  any[ConnectionPoolSettings](),
-                                 any[LoggingAdapter]())
+                                 any[LoggingAdapter]()
+      )
       val request: HttpRequest = captor.getValue
       Unmarshal(request.entity).to[FcmSend].futureValue shouldBe FcmSend(false, FcmNotification.empty)
       request.uri.toString shouldBe "https://fcm.googleapis.com/v1/projects/projectId/messages:send"
@@ -84,7 +87,8 @@ class FcmSenderSpec
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),
                            any[ConnectionPoolSettings](),
-                           any[LoggingAdapter]())
+                           any[LoggingAdapter]()
+        )
       ).thenReturn(
         Future.successful(HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, """{"name": "test"}""")))
       )
@@ -101,11 +105,13 @@ class FcmSenderSpec
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),
                            any[ConnectionPoolSettings](),
-                           any[LoggingAdapter]())
+                           any[LoggingAdapter]()
+        )
       ).thenReturn(
         Future.successful(
           HttpResponse(status = StatusCodes.BadRequest,
-                       entity = HttpEntity(ContentTypes.`application/json`, """{"name":"test"}"""))
+                       entity = HttpEntity(ContentTypes.`application/json`, """{"name":"test"}""")
+          )
         )
       )
 

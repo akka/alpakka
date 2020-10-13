@@ -91,10 +91,9 @@ object EventSourceSpec {
 
     override def receive = unbound
 
-    private def unbound: Receive = {
-      case Bind =>
-        Http(context.system).bindAndHandle(route(size, shouldSetEventId), address, port).pipeTo(self)
-        context.become(binding)
+    private def unbound: Receive = { case Bind =>
+      Http(context.system).bindAndHandle(route(size, shouldSetEventId), address, port).pipeTo(self)
+      context.become(binding)
     }
 
     private def binding: Receive = {
@@ -108,10 +107,9 @@ object EventSourceSpec {
         context.stop(self)
     }
 
-    private def bound(serverBinding: Http.ServerBinding): Receive = {
-      case Unbind =>
-        serverBinding.unbind().map(_ => Done).pipeTo(self)
-        context.become(unbinding(serverBinding.localAddress))
+    private def bound(serverBinding: Http.ServerBinding): Receive = { case Unbind =>
+      serverBinding.unbind().map(_ => Done).pipeTo(self)
+      context.become(unbinding(serverBinding.localAddress))
     }
 
     private def unbinding(socketAddress: InetSocketAddress): Receive = {

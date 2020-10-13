@@ -34,9 +34,11 @@ private[impl] case class OnFinishCallback[T](callBack: T => Unit) extends GraphS
       }
     )
 
-    setHandler(out, new OutHandler {
-      override def onPull(): Unit =
-        pull(in)
-    })
+    setHandler(out,
+               new OutHandler {
+                 override def onPull(): Unit =
+                   pull(in)
+               }
+    )
   }
 }

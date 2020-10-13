@@ -17,7 +17,8 @@ object KinesisFirehoseSink {
 
   def apply(streamName: String,
             settings: KinesisFirehoseFlowSettings,
-            kinesisClient: FirehoseAsyncClient): Sink[Record, NotUsed] =
+            kinesisClient: FirehoseAsyncClient
+  ): Sink[Record, NotUsed] =
     (scaladsl.KinesisFirehoseSink.apply(streamName, settings)(kinesisClient)).asJava
 
 }

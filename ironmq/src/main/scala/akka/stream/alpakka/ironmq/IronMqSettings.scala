@@ -80,19 +80,22 @@ object IronMqSettings {
     /** Java API: The interval of time between each poll loop. */
     def withFetchInterval(value: java.time.Duration): ConsumerSettings = copy(fetchInterval = value.asScala)
 
-    /** Scala API:
+    /**
+     * Scala API:
      * The amount of time the consumer will wait for the messages to be available on the queue. The IronMQ time unit is
      * the second so any other value is approximated to the second.
      */
     def withPollTimeout(value: scala.concurrent.duration.FiniteDuration): ConsumerSettings = copy(pollTimeout = value)
 
-    /** Java API:
+    /**
+     * Java API:
      * The amount of time the consumer will wait for the messages to be available on the queue. The IronMQ time unit is
      * the second so any other value is approximated to the second.
      */
     def withPollTimeout(value: java.time.Duration): ConsumerSettings = copy(pollTimeout = value.asScala)
 
-    /** Scala API:
+    /**
+     * Scala API:
      * The amount of time the consumer will reserve the message from. It should be higher that the time needed to
      * process the message otherwise the same message will be processed multiple times. Again the IronMq time unit is
      * the second.
@@ -100,7 +103,8 @@ object IronMqSettings {
     def withReservationTimeout(value: scala.concurrent.duration.FiniteDuration): ConsumerSettings =
       copy(reservationTimeout = value)
 
-    /** Java API:
+    /**
+     * Java API:
      * The amount of time the consumer will reserve the message from. It should be higher that the time needed to
      * process the message otherwise the same message will be processed multiple times. Again the IronMq time unit is
      * the second.

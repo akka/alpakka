@@ -40,8 +40,8 @@ class ReaderSettingsBuilder(config: Config,
                             readerConfigCustomizer: Option[ReaderConfigBuilder => ReaderConfigBuilder] = None,
                             groupName: Option[String],
                             timeout: Duration,
-                            readerId: Option[String])
-    extends WithClientConfig(config, clientConfig, clientConfigCustomization) {
+                            readerId: Option[String]
+) extends WithClientConfig(config, clientConfig, clientConfigCustomization) {
 
   def withClientConfig(clientConfig: ClientConfig): ReaderSettingsBuilder = copy(clientConfig = Some(clientConfig))
 
@@ -68,7 +68,8 @@ class ReaderSettingsBuilder(config: Config,
                                 groupName.getOrElse(throw new IllegalStateException("group-name is mandatory")),
                                 timeout.toMillis,
                                 serializer,
-                                readerId)
+                                readerId
+    )
   }
 
   private def copy(clientConfig: Option[ClientConfig] = clientConfig,
@@ -78,7 +79,8 @@ class ReaderSettingsBuilder(config: Config,
                    readerConfigCustomizer: Option[ReaderConfigBuilder => ReaderConfigBuilder] = readerConfigCustomizer,
                    groupName: Option[String] = groupName,
                    timeout: Duration = timeout,
-                   readerId: Option[String] = readerId) =
+                   readerId: Option[String] = readerId
+  ) =
     new ReaderSettingsBuilder(config,
                               clientConfig,
                               clientConfigCustomization,
@@ -86,7 +88,8 @@ class ReaderSettingsBuilder(config: Config,
                               readerConfigCustomizer,
                               groupName,
                               timeout,
-                              readerId)
+                              readerId
+    )
 }
 
 /**
@@ -107,7 +110,8 @@ class ReaderSettings[Message] private[pravega] (val clientConfig: ClientConfig,
                                                 val groupName: String,
                                                 val timeout: Long,
                                                 val serializer: Serializer[Message],
-                                                val readerId: Option[String])
+                                                val readerId: Option[String]
+)
 
 object ReaderSettingsBuilder {
   val configPath = "akka.alpakka.pravega.reader"
@@ -148,7 +152,8 @@ object ReaderSettingsBuilder {
                               None,
                               readerBasicSetting.groupName,
                               readerBasicSetting.timeout,
-                              readerBasicSetting.readerId)
+                              readerBasicSetting.readerId
+    )
 
   }
 }
@@ -186,17 +191,19 @@ class WriterSettingsBuilder[Message](
                    eventWriterConfigCustomizer: Option[EventWriterConfigBuilder => EventWriterConfigBuilder] =
                      eventWriterConfigCustomizer,
                    maximumInflightMessages: Int = maximumInflightMessages,
-                   keyExtractor: Option[Message => String] = keyExtractor): WriterSettingsBuilder[Message] =
+                   keyExtractor: Option[Message => String] = keyExtractor
+  ): WriterSettingsBuilder[Message] =
     new WriterSettingsBuilder(config,
                               clientConfig,
                               clientConfigCustomization,
                               eventWriterConfigBuilder,
                               eventWriterConfigCustomizer,
                               maximumInflightMessages,
-                              keyExtractor)
+                              keyExtractor
+    )
 
   /**
-    Build the settings.
+   *    Build the settings.
    */
   def withSerializer(serializer: Serializer[Message]): WriterSettings[Message] = {
 
@@ -207,7 +214,8 @@ class WriterSettingsBuilder[Message](
                                 eventWriterConfig,
                                 serializer,
                                 keyExtractor,
-                                maximumInflightMessages)
+                                maximumInflightMessages
+    )
   }
 
 }
@@ -242,7 +250,8 @@ object WriterSettingsBuilder {
                               eventWriterConfig(config),
                               None,
                               config.getInt("maximum-inflight-messages"),
-                              None)
+                              None
+    )
 
   private def eventWriterConfig(readerConfig: Config): EventWriterConfigBuilder = {
     val builder = EventWriterConfig.builder()
@@ -287,7 +296,8 @@ private[pravega] class WriterSettings[Message](val clientConfig: ClientConfig,
                                                val eventWriterConfig: EventWriterConfig,
                                                val serializer: Serializer[Message],
                                                val keyExtractor: Option[Message => String],
-                                               val maximumInflightMessages: Int)
+                                               val maximumInflightMessages: Int
+)
 
 private[pravega] object ConfigHelper {
   def buildReaderConfig(config: Config): ReaderConfigBuilder = {

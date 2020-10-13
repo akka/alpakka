@@ -59,7 +59,8 @@ class AmqpProxyConnection(protected val delegate: Connection) extends Connection
   override def addBlockedListener(blockedListener: BlockedListener): Unit = delegate.addBlockedListener(blockedListener)
 
   override def addBlockedListener(blockedCallback: BlockedCallback,
-                                  unblockedCallback: UnblockedCallback): BlockedListener =
+                                  unblockedCallback: UnblockedCallback
+  ): BlockedListener =
     delegate.addBlockedListener(blockedCallback, unblockedCallback)
 
   override def removeBlockedListener(blockedListener: BlockedListener): Boolean =

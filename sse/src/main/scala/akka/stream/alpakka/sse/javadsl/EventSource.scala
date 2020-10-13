@@ -27,7 +27,7 @@ import scala.compat.java8.OptionConverters
  * Progress (including termination) is controlled by the connected flow or sink, e.g. a retry delay can be implemented
  * by streaming the materialized values of the handler via a throttle.
  *
- *{{{
+ * {{{
  * + - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
  *                                               +---------------------+
  * |                                             |       trigger       | |
@@ -58,7 +58,7 @@ import scala.compat.java8.OptionConverters
  *                     ServerSentEvent|          +---------------------+
  * |                                  v                                  |
  *  - - - - - - - - - - - - - - - - - o - - - - - - - - - - - - - - - - -
- *}}}
+ * }}}
  */
 object EventSource {
   import FutureConverters._
@@ -74,7 +74,8 @@ object EventSource {
   def create(uri: Uri,
              send: JFunction[HttpRequest, CompletionStage[HttpResponse]],
              lastEventId: Optional[String],
-             mat: Materializer): Source[ServerSentEvent, NotUsed] = {
+             mat: Materializer
+  ): Source[ServerSentEvent, NotUsed] = {
     val eventSource =
       scaladsl
         .EventSource(

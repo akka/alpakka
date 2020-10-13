@@ -13,7 +13,8 @@ private[bigquery] object QueryJsonProtocol extends DefaultJsonProtocol {
   case class QueryRequest(query: String,
                           useLegacySql: Boolean = false,
                           maxResults: Option[Int] = None,
-                          dryRun: Option[Boolean] = None)
+                          dryRun: Option[Boolean] = None
+  )
 
   case class QueryResponse(schema: Schema, rows: Option[Seq[Row]])
   case class Schema(fields: Seq[FieldSchema])

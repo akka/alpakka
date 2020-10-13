@@ -23,7 +23,8 @@ object SqsAckSink {
    */
   def create(queueUrl: String,
              settings: SqsAckSettings,
-             sqsClient: SqsAsyncClient): Sink[MessageAction, CompletionStage[Done]] =
+             sqsClient: SqsAsyncClient
+  ): Sink[MessageAction, CompletionStage[Done]] =
     akka.stream.alpakka.sqs.scaladsl.SqsAckSink
       .apply(queueUrl, settings)(sqsClient)
       .mapMaterializedValue(_.toJava)
@@ -34,7 +35,8 @@ object SqsAckSink {
    */
   def createGrouped(queueUrl: String,
                     settings: SqsAckGroupedSettings,
-                    sqsClient: SqsAsyncClient): Sink[MessageAction, CompletionStage[Done]] =
+                    sqsClient: SqsAsyncClient
+  ): Sink[MessageAction, CompletionStage[Done]] =
     akka.stream.alpakka.sqs.scaladsl.SqsAckSink
       .grouped(queueUrl, settings)(sqsClient)
       .mapMaterializedValue(_.toJava)

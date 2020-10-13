@@ -21,7 +21,8 @@ object CouchbaseSink {
    */
   def upsert(sessionSettings: CouchbaseSessionSettings,
              writeSettings: CouchbaseWriteSettings,
-             bucketName: String): Sink[JsonDocument, Future[Done]] =
+             bucketName: String
+  ): Sink[JsonDocument, Future[Done]] =
     CouchbaseFlow.upsert(sessionSettings, writeSettings, bucketName).toMat(Sink.ignore)(Keep.right)
 
   /**
@@ -29,7 +30,8 @@ object CouchbaseSink {
    */
   def upsertDoc[T <: Document[_]](sessionSettings: CouchbaseSessionSettings,
                                   writeSettings: CouchbaseWriteSettings,
-                                  bucketName: String): Sink[T, Future[Done]] =
+                                  bucketName: String
+  ): Sink[T, Future[Done]] =
     CouchbaseFlow
       .upsertDoc(sessionSettings, writeSettings, bucketName)
       .toMat(Sink.ignore)(Keep.right)
@@ -39,7 +41,8 @@ object CouchbaseSink {
    */
   def delete(sessionSettings: CouchbaseSessionSettings,
              writeSettings: CouchbaseWriteSettings,
-             bucketName: String): Sink[String, Future[Done]] =
+             bucketName: String
+  ): Sink[String, Future[Done]] =
     CouchbaseFlow.delete(sessionSettings, writeSettings, bucketName).toMat(Sink.ignore)(Keep.right)
 
 }

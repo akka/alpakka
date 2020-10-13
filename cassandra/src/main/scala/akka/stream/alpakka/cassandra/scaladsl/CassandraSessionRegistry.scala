@@ -79,14 +79,16 @@ final class CassandraSessionRegistry(system: ExtendedActorSystem) extends Extens
    * that is different from the ActorSystem's config section for the `configPath`.
    */
   @InternalStableApi private[akka] def sessionFor(settings: CassandraSessionSettings,
-                                                  sessionProviderConfig: Config): CassandraSession = {
+                                                  sessionProviderConfig: Config
+  ): CassandraSession = {
     val key = sessionKey(settings)
     sessions.computeIfAbsent(key, _ => startSession(settings, key, sessionProviderConfig))
   }
 
   private def startSession(settings: CassandraSessionSettings,
                            key: SessionKey,
-                           sessionProviderConfig: Config): CassandraSession = {
+                           sessionProviderConfig: Config
+  ): CassandraSession = {
     val sessionProvider = CqlSessionProvider(system, sessionProviderConfig)
     val log = Logging(system, classOf[CassandraSession])
     val executionContext = system.dispatchers.lookup(sessionProviderConfig.getString("session-dispatcher"))
@@ -96,7 +98,8 @@ final class CassandraSessionRegistry(system: ExtendedActorSystem) extends Extens
                          log,
                          metricsCategory = settings.metricsCategory,
                          init = settings.init.getOrElse(_ => Future.successful(Done)),
-                         onClose = () => sessions.remove(key))
+                         onClose = () => sessions.remove(key)
+    )
   }
 
   /**

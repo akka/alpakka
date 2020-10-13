@@ -29,7 +29,8 @@ final class FcmSettings private (
                     privateKey = privateKey,
                     projectId = projectId,
                     isTest = isTest,
-                    maxConcurrentConnections = maxConcurrentConnections)
+                    maxConcurrentConnections = maxConcurrentConnections
+    )
 
   override def toString =
     s"""FcmFlowConfig(clientEmail=$clientEmail,projectId=$projectId,isTest=$isTest,maxConcurrentConnections=$maxConcurrentConnections)"""

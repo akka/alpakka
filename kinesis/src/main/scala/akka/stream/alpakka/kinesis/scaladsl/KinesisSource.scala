@@ -26,7 +26,8 @@ object KinesisSource {
    * Read from multiple shards into a single stream.
    */
   def basicMerge(shardSettings: List[ShardSettings],
-                 amazonKinesisAsync: KinesisAsyncClient): Source[Record, NotUsed] = {
+                 amazonKinesisAsync: KinesisAsyncClient
+  ): Source[Record, NotUsed] = {
     require(shardSettings.nonEmpty, "shard settings need to be specified")
     val create: ShardSettings => Source[Record, NotUsed] = basic(_, amazonKinesisAsync)
     shardSettings match {

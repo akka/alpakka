@@ -12,7 +12,6 @@ import org.apache.geode.pdx.PdxSerializer
 
 /**
  * Base of all geode client.
- *
  */
 @InternalApi
 private[geode] abstract class GeodeCache(geodeSettings: GeodeSettings) {
@@ -36,7 +35,6 @@ private[geode] abstract class GeodeCache(geodeSettings: GeodeSettings) {
    * <li>configured by sub classes</li>
    * <li>customized by client application</li>
    * </ul>
-   *
    */
   final protected def newCacheFactory(): ClientCacheFactory = {
     val factory = configure(new ClientCacheFactory().setPdxSerializer(serializer))

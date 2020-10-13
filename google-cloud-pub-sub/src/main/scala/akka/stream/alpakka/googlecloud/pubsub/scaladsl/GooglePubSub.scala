@@ -30,7 +30,8 @@ protected[pubsub] trait GooglePubSub {
    */
   def publish(topic: String,
               config: PubSubConfig,
-              parallelism: Int = 1): Flow[PublishRequest, immutable.Seq[String], NotUsed] =
+              parallelism: Int = 1
+  ): Flow[PublishRequest, immutable.Seq[String], NotUsed] =
     Flow[PublishRequest]
       .map((_, ()))
       .via(
@@ -89,7 +90,8 @@ protected[pubsub] trait GooglePubSub {
               .pull(config.projectId,
                     subscription,
                     config.pullReturnImmediately,
-                    config.pullMaxMessagesPerInternalBatch)
+                    config.pullMaxMessagesPerInternalBatch
+              )
           )
           .mapConcat(_.receivedMessages.getOrElse(Seq.empty[ReceivedMessage]).toIndexedSeq)
       }
@@ -101,7 +103,8 @@ protected[pubsub] trait GooglePubSub {
   @deprecated("Use `acknowledge` without `parallelism` param", since = "2.0.0")
   def acknowledge(subscription: String,
                   config: PubSubConfig,
-                  parallelism: Int = 1): Sink[AcknowledgeRequest, Future[Done]] =
+                  parallelism: Int = 1
+  ): Sink[AcknowledgeRequest, Future[Done]] =
     acknowledge(subscription, config)
 
   /**

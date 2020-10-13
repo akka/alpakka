@@ -39,7 +39,8 @@ trait CouchbaseSupport {
 
   val sampleSequence: Seq[TestObject] = sampleData +: Seq[TestObject](TestObject("Second", "Second"),
                                                                       TestObject("Third", "Third"),
-                                                                      TestObject("Fourth", "Fourth"))
+                                                                      TestObject("Fourth", "Fourth")
+  )
 
   val sampleJavaList: java.util.List[TestObject] = sampleSequence.asJava
 

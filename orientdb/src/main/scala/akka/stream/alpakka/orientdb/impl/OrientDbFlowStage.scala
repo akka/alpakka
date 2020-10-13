@@ -97,9 +97,8 @@ private[orientdb] class OrientDbFlowStage[T, C](
           oDocument
             .fieldNames()
             .zip(oDocument.asInstanceOf[ODocument].fieldValues())
-            .foreach {
-              case (fieldName, fieldVal) =>
-                document.field(fieldName, fieldVal)
+            .foreach { case (fieldName, fieldVal) =>
+              document.field(fieldName, fieldVal)
             }
           document.setClassName(className)
           client.save(document)
@@ -120,10 +119,9 @@ private[orientdb] class OrientDbFlowStage[T, C](
     }
 
     protected def write(messages: immutable.Seq[OrientDbWriteMessage[T, C]]): Unit =
-      messages.foreach {
-        case OrientDbWriteMessage(typeRecord: Any, _) =>
-          oObjectClient.save(typeRecord)
-          ()
+      messages.foreach { case OrientDbWriteMessage(typeRecord: Any, _) =>
+        oObjectClient.save(typeRecord)
+        ()
       }
 
   }

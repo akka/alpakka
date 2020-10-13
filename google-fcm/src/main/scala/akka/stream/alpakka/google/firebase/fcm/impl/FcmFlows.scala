@@ -18,20 +18,20 @@ import scala.concurrent.Future
 private[fcm] object FcmFlows {
 
   private[fcm] def fcmWithData[T](conf: FcmSettings,
-                                  sender: FcmSender): Flow[(FcmNotification, T), (FcmResponse, T), NotUsed] =
+                                  sender: FcmSender
+  ): Flow[(FcmNotification, T), (FcmResponse, T), NotUsed] =
     Flow
       .setup { (materializer, _) =>
         import materializer.executionContext
         val http = Http()(materializer.system)
         val session: GoogleSession = new GoogleSession(conf.clientEmail, conf.privateKey, new GoogleTokenApi(http))
         Flow[(FcmNotification, T)]
-          .mapAsync(conf.maxConcurrentConnections)(
-            in =>
-              session.getToken()(materializer).flatMap { token =>
-                sender
-                  .send(conf.projectId, token, http, FcmSend(conf.isTest, in._1))(materializer)
-                  .zip(Future.successful(in._2))
-              }
+          .mapAsync(conf.maxConcurrentConnections)(in =>
+            session.getToken()(materializer).flatMap { token =>
+              sender
+                .send(conf.projectId, token, http, FcmSend(conf.isTest, in._1))(materializer)
+                .zip(Future.successful(in._2))
+            }
           )
       }
       .mapMaterializedValue(_ => NotUsed)
@@ -44,11 +44,10 @@ private[fcm] object FcmFlows {
         val session: GoogleSession = new GoogleSession(conf.clientEmail, conf.privateKey, new GoogleTokenApi(http))
         val sender: FcmSender = new FcmSender()
         Flow[FcmNotification]
-          .mapAsync(conf.maxConcurrentConnections)(
-            in =>
-              session.getToken()(materializer).flatMap { token =>
-                sender.send(conf.projectId, token, http, FcmSend(conf.isTest, in))(materializer)
-              }
+          .mapAsync(conf.maxConcurrentConnections)(in =>
+            session.getToken()(materializer).flatMap { token =>
+              sender.send(conf.projectId, token, http, FcmSend(conf.isTest, in))(materializer)
+            }
           )
       }
       .mapMaterializedValue(_ => NotUsed)

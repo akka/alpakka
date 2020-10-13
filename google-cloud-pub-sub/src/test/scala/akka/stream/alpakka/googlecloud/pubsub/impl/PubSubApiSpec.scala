@@ -152,7 +152,8 @@ class PubSubApiSpec extends AnyFlatSpec with BeforeAndAfterAll with ScalaFutures
     val message =
       PubSubMessage(messageId = "1",
                     data = Some(new String(Base64.getEncoder.encode("Hello Google!".getBytes))),
-                    publishTime = ts)
+                    publishTime = ts
+      )
 
     val pullResponse =
       """{"receivedMessages":[{"ackId":"ack1","message":{"data":"SGVsbG8gR29vZ2xlIQ==","messageId":"1","publishTime":"2019-07-04T08:10:00.111Z"}}]}"""
@@ -185,7 +186,8 @@ class PubSubApiSpec extends AnyFlatSpec with BeforeAndAfterAll with ScalaFutures
     val message =
       PubSubMessage(messageId = "1",
                     data = Some(new String(Base64.getEncoder.encode("Hello Google!".getBytes))),
-                    publishTime = ts)
+                    publishTime = ts
+      )
 
     val pullResponse =
       """{"receivedMessages":[{"ackId":"ack1","message":{"data":"SGVsbG8gR29vZ2xlIQ==","messageId":"1","publishTime":"2019-07-04T08:10:00.111Z"}}]}"""

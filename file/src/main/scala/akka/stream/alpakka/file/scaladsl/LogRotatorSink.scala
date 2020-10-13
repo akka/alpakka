@@ -36,7 +36,8 @@ object LogRotatorSink {
   ): Sink[ByteString, Future[Done]] =
     Sink.fromGraph(
       new LogRotatorSink[ByteString, Path, IOResult](triggerGeneratorCreator,
-                                                     sinkFactory = FileIO.toPath(_, fileOpenOptions))
+                                                     sinkFactory = FileIO.toPath(_, fileOpenOptions)
+      )
     )
 
   /**
@@ -46,7 +47,7 @@ object LogRotatorSink {
    * @param sinkFactory creates sinks for `ByteString`s from the value returned by `triggerGenerator`
    * @tparam C criterion type (for files a `Path`)
    * @tparam R result type in materialized futures of `sinkFactory`
-   **/
+   */
   def withSinkFactory[C, R](
       triggerGeneratorCreator: () => ByteString => Option[C],
       sinkFactory: C => Sink[ByteString, Future[R]]
@@ -61,7 +62,7 @@ object LogRotatorSink {
    * @tparam T stream and sink data type
    * @tparam C criterion type (for files a `Path`)
    * @tparam R result type in materialized futures of `sinkFactory`
-   **/
+   */
   def withTypedSinkFactory[T, C, R](
       triggerGeneratorCreator: () => T => Option[C],
       sinkFactory: C => Sink[T, Future[R]]
@@ -78,8 +79,8 @@ object LogRotatorSink {
  * @tparam R result type in materialized futures of `sinkFactory`
  */
 final private class LogRotatorSink[T, C, R](triggerGeneratorCreator: () => T => Option[C],
-                                            sinkFactory: C => Sink[T, Future[R]])
-    extends GraphStageWithMaterializedValue[SinkShape[T], Future[Done]] {
+                                            sinkFactory: C => Sink[T, Future[R]]
+) extends GraphStageWithMaterializedValue[SinkShape[T], Future[Done]] {
 
   val in = Inlet[T]("LogRotatorSink.in")
   override val shape = SinkShape.of(in)

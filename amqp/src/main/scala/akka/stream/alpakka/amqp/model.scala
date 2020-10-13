@@ -55,7 +55,8 @@ final class WriteMessage private (
   private def copy(immediate: Boolean = immediate,
                    mandatory: Boolean = mandatory,
                    properties: Option[BasicProperties] = properties,
-                   routingKey: Option[String] = routingKey) =
+                   routingKey: Option[String] = routingKey
+  ) =
     new WriteMessage(bytes, immediate, mandatory, properties, routingKey)
 
   override def toString: String =

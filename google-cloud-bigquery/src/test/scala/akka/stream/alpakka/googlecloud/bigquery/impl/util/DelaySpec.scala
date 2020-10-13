@@ -56,13 +56,12 @@ class DelaySpec
         .map(start => System.nanoTime() - start)
         .runWith(TestSink.probe)
 
-      (elems zip delays).foreach {
-        case (_, delay) =>
-          val next = probe
-            .request(1)
-            .expectNext()
+      (elems zip delays).foreach { case (_, delay) =>
+        val next = probe
+          .request(1)
+          .expectNext()
 
-          next should be >= delay.toNanos
+        next should be >= delay.toNanos
       }
 
     }
