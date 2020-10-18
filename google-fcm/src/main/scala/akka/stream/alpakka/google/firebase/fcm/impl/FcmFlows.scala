@@ -23,13 +23,15 @@ private[fcm] object FcmFlows {
       .setup { (materializer, _) =>
         import materializer.executionContext
         val http = Http()(materializer.system)
-        val session: GoogleSession = new GoogleSession(conf.clientEmail, conf.privateKey, new GoogleTokenApi(http))
+        val session: GoogleSession = new GoogleSession(conf.clientEmail,
+                                                       conf.privateKey,
+                                                       new GoogleTokenApi(http, materializer.system, conf.forwardProxy))
         Flow[(FcmNotification, T)]
           .mapAsync(conf.maxConcurrentConnections)(
             in =>
               session.getToken()(materializer).flatMap { token =>
                 sender
-                  .send(conf.projectId, token, http, FcmSend(conf.isTest, in._1))(materializer)
+                  .send(conf, token, http, FcmSend(conf.isTest, in._1), materializer.system)(materializer)
                   .zip(Future.successful(in._2))
               }
           )
@@ -41,13 +43,15 @@ private[fcm] object FcmFlows {
       .setup { (materializer, _) =>
         import materializer.executionContext
         val http = Http()(materializer.system)
-        val session: GoogleSession = new GoogleSession(conf.clientEmail, conf.privateKey, new GoogleTokenApi(http))
+        val session: GoogleSession = new GoogleSession(conf.clientEmail,
+                                                       conf.privateKey,
+                                                       new GoogleTokenApi(http, materializer.system, conf.forwardProxy))
         val sender: FcmSender = new FcmSender()
         Flow[FcmNotification]
           .mapAsync(conf.maxConcurrentConnections)(
             in =>
               session.getToken()(materializer).flatMap { token =>
-                sender.send(conf.projectId, token, http, FcmSend(conf.isTest, in))(materializer)
+                sender.send(conf, token, http, FcmSend(conf.isTest, in), materializer.system)(materializer)
               }
           )
       }
