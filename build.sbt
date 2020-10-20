@@ -111,14 +111,14 @@ addCommandAlias("verifyCodeStyle", "headerCheck; verifyCodeFmt")
 lazy val amqp = alpakkaProject("amqp", "amqp", Dependencies.Amqp)
 
 lazy val avroparquet =
-  alpakkaProject("avroparquet", "avroparquet", Dependencies.AvroParquet, crossScalaVersions -= Dependencies.Scala211)
+  alpakkaProject("avroparquet", "avroparquet", Dependencies.AvroParquet)
 
 lazy val awslambda = alpakkaProject("awslambda", "aws.lambda", Dependencies.AwsLambda)
 
 lazy val azureStorageQueue = alpakkaProject("azure-storage-queue", "azure.storagequeue", Dependencies.AzureStorageQueue)
 
 lazy val cassandra =
-  alpakkaProject("cassandra", "cassandra", Dependencies.Cassandra, crossScalaVersions -= Dependencies.Scala211)
+  alpakkaProject("cassandra", "cassandra", Dependencies.Cassandra)
 
 lazy val couchbase =
   alpakkaProject("couchbase", "couchbase", Dependencies.Couchbase, whitesourceGroup := Whitesource.Group.Supported)
@@ -164,8 +164,7 @@ lazy val googleCloudBigQuery = alpakkaProject(
   "google-cloud-bigquery",
   "google.cloud.bigquery",
   Dependencies.GoogleBigQuery,
-  Test / fork := true,
-  crossScalaVersions --= Seq(Dependencies.Scala211)
+  Test / fork := true
 ).disablePlugins(MimaPlugin)
 
 lazy val googleCloudPubSub = alpakkaProject(
@@ -191,15 +190,13 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
       "-P:silencer:pathFilters=akka-grpc/main",
       "-P:silencer:pathFilters=akka-grpc/test"
     ),
-  compile / javacOptions := (compile / javacOptions).value.filterNot(_ == "-Xlint:deprecation"),
-  crossScalaVersions --= Seq(Dependencies.Scala211)
+  compile / javacOptions := (compile / javacOptions).value.filterNot(_ == "-Xlint:deprecation")
 ).enablePlugins(AkkaGrpcPlugin)
 
 lazy val googleCloudStorage =
   alpakkaProject("google-cloud-storage",
                  "google.cloud.storage",
-                 Dependencies.GoogleStorage,
-                 crossScalaVersions -= Dependencies.Scala211)
+                 Dependencies.GoogleStorage)
 
 lazy val googleFcm = alpakkaProject("google-fcm", "google.firebase.fcm", Dependencies.GoogleFcm, Test / fork := true)
 
@@ -210,15 +207,13 @@ lazy val hdfs = alpakkaProject("hdfs", "hdfs", Dependencies.Hdfs)
 lazy val influxdb = alpakkaProject("influxdb",
                                    "influxdb",
                                    Dependencies.InfluxDB,
-                                   crossScalaVersions -= Dependencies.Scala211,
                                    fatalWarnings := false)
 
 lazy val ironmq = alpakkaProject(
   "ironmq",
   "ironmq",
   Dependencies.IronMq,
-  Test / fork := true,
-  crossScalaVersions -= Dependencies.Scala211 // hseeberger/akka-http-json does not support Scala 2.11 anymore
+  Test / fork := true
 )
 
 lazy val jms = alpakkaProject("jms", "jms", Dependencies.Jms)
@@ -235,9 +230,8 @@ lazy val mqtt = alpakkaProject("mqtt", "mqtt", Dependencies.Mqtt)
 
 lazy val mqttStreaming = alpakkaProject("mqtt-streaming",
                                         "mqttStreaming",
-                                        Dependencies.MqttStreaming,
-                                        crossScalaVersions -= Dependencies.Scala211)
-lazy val mqttStreamingBench = internalProject("mqtt-streaming-bench", crossScalaVersions -= Dependencies.Scala211)
+                                        Dependencies.MqttStreaming)
+lazy val mqttStreamingBench = internalProject("mqtt-streaming-bench")
   .enablePlugins(JmhPlugin)
   .dependsOn(mqtt, mqttStreaming)
 
@@ -253,8 +247,7 @@ lazy val pravega = alpakkaProject(
   "pravega",
   "pravega",
   Dependencies.Pravega,
-  Test / fork := true,
-  crossScalaVersions -= Dependencies.Scala211 // 2.11 SAM issue for java API.
+  Test / fork := true
 )
 
 lazy val springWeb = alpakkaProject("spring-web", "spring.web", Dependencies.SpringWeb)
@@ -376,8 +369,6 @@ lazy val `doc-examples` = project
     name := s"akka-stream-alpakka-doc-examples",
     publish / skip := true,
     whitesourceIgnore := true,
-    // Google Cloud Pub/Sub gRPC is not available for Scala 2.11
-    crossScalaVersions -= Dependencies.Scala211,
     // More projects are not available for Scala 2.13
     crossScalaVersions -= Dependencies.Scala213,
     Dependencies.`Doc-examples`
