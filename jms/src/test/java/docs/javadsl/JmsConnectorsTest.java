@@ -54,6 +54,8 @@ import static org.junit.Assert.fail;
 
 final class DummyJavaTests implements java.io.Serializable {
 
+  private static final long serialVersionUID = 1234567L;
+
   private final String value;
 
   DummyJavaTests(String value) {

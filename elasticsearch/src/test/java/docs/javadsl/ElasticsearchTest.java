@@ -709,13 +709,14 @@ public class ElasticsearchTest {
     String doc = "dummy-doc";
 
     // #custom-index-name-example
-    WriteMessage msg = WriteMessage.createIndexMessage(doc).withIndexName("my-index");
+    WriteMessage<String, NotUsed> msg =
+        WriteMessage.createIndexMessage(doc).withIndexName("my-index");
     // #custom-index-name-example
 
     // #custom-metadata-example
     Map<String, String> metadata = new HashMap<>();
     metadata.put("pipeline", "myPipeline");
-    WriteMessage msgWithMetadata =
+    WriteMessage<String, NotUsed> msgWithMetadata =
         WriteMessage.createIndexMessage(doc).withCustomMetadata(metadata);
     // #custom-metadata-example
   }

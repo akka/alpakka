@@ -67,8 +67,6 @@ public class EventBridgePublisherTest {
         eventBridgeClient
             .createEventBus(
                 CreateEventBusRequest.builder()
-                    .build()
-                    .builder()
                     .name("alpakka-java-eventbus-" + UUID.randomUUID().toString())
                     .build())
             .get()

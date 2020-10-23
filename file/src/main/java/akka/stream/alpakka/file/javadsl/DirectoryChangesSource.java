@@ -26,11 +26,10 @@ public final class DirectoryChangesSource {
    *     there was no changes, if the JDK implementation is slow, it will not help lowering this
    * @param maxBufferSize Maximum number of buffered directory changes before the stage fails
    */
-  @SuppressWarnings("unchecked")
   public static Source<Pair<Path, DirectoryChange>, NotUsed> create(
       Path directoryPath, java.time.Duration pollInterval, int maxBufferSize) {
     return Source.fromGraph(
-        new akka.stream.alpakka.file.impl.DirectoryChangesSource(
+        new akka.stream.alpakka.file.impl.DirectoryChangesSource<>(
             directoryPath,
             JavaDurationConverters.asFiniteDuration(pollInterval),
             maxBufferSize,
