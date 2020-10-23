@@ -31,7 +31,9 @@ object Common extends AutoPlugin {
                             url("https://github.com/akka/alpakka/graphs/contributors")),
     licenses := Seq(("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0"))),
     description := "Alpakka is a Reactive Enterprise Integration library for Java and Scala, based on Reactive Streams and Akka.",
-    fatalWarnings := true,
+    // TODO https://github.com/akka/alpakka/issues/2456
+    // fatalWarnings := true,
+    fatalWarnings := false,
     mimaReportSignatureProblems := true
   )
 

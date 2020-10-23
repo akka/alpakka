@@ -13,9 +13,9 @@ There are a few blog posts and presentations about Alpakka out there, we've @ref
 The code in this documentation is compiled against:
 
 * Alpakka $project.version$ ([Github](https://github.com/akka/alpakka), [API docs](https://doc.akka.io/api/alpakka/current/akka/stream/alpakka/index.html))
-* Scala $scala.binary.version$ (all modules are available for Scala 2.13, and most are available for Scala 2.11)
-* Akka Streams $akka.version$ (all modules are compatible with Akka $akka26.version$+) (@extref:[Reference](akka:stream/index.html), [Github](https://github.com/akka/akka))
-* Akka Http $akka-http.version$ (@extref:[Reference](akka-http:), [Github](https://github.com/akka/akka-http))
+* Scala $scala.binary.version$ (all modules are available for Scala 2.13)
+* Akka Streams $akka.version$+ (@extref:[Reference](akka:stream/index.html), [Github](https://github.com/akka/akka))
+* Akka HTTP $akka-http.version$+ (@extref:[Reference](akka-http:), [Github](https://github.com/akka/akka-http))
 
 See @ref:[Alpakka versioning](other-docs/versioning.md) for more details.
 

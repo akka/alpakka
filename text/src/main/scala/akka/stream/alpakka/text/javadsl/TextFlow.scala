@@ -7,7 +7,6 @@ package akka.stream.alpakka.text.javadsl
 import java.nio.charset.Charset
 
 import akka.NotUsed
-import akka.japi.function
 import akka.stream.alpakka.text.impl.{CharsetDecodingFlow, CharsetTranscodingFlow}
 import akka.stream.javadsl.Flow
 import akka.util.ByteString
@@ -30,9 +29,7 @@ object TextFlow {
    * Decodes a stream of bytes into a stream of characters, using the supplied charset.
    */
   def encoding(outgoing: Charset): Flow[String, ByteString, NotUsed] =
-    Flow.fromFunction(new function.Function[String, ByteString] {
-      override def apply(s: String): ByteString = ByteString.fromString(s, outgoing)
-    })
+    Flow.fromFunction((s: String) => ByteString.fromString(s, outgoing))
 
   /**
    * Translates a stream of bytes from one character encoding into another.

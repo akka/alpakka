@@ -79,8 +79,6 @@ lazy val alpakka = project
         .filterNot(_.data.getAbsolutePath.contains("guava-28.1-android.jar"))
         .filterNot(_.data.getAbsolutePath.contains("commons-net-3.1.jar"))
         .filterNot(_.data.getAbsolutePath.contains("protobuf-java-2.6.1.jar"))
-        // Some projects require (and introduce) Akka 2.6:
-        .filterNot(_.data.getAbsolutePath.contains(s"akka-stream_2.12-${Dependencies.Akka25Version}.jar"))
     },
     ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(`doc-examples`,
                                                                              csvBench,
@@ -194,9 +192,7 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
 ).enablePlugins(AkkaGrpcPlugin)
 
 lazy val googleCloudStorage =
-  alpakkaProject("google-cloud-storage",
-                 "google.cloud.storage",
-                 Dependencies.GoogleStorage)
+  alpakkaProject("google-cloud-storage", "google.cloud.storage", Dependencies.GoogleStorage)
 
 lazy val googleFcm = alpakkaProject("google-fcm", "google.firebase.fcm", Dependencies.GoogleFcm, Test / fork := true)
 
@@ -204,10 +200,7 @@ lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, Test / for
 
 lazy val hdfs = alpakkaProject("hdfs", "hdfs", Dependencies.Hdfs)
 
-lazy val influxdb = alpakkaProject("influxdb",
-                                   "influxdb",
-                                   Dependencies.InfluxDB,
-                                   fatalWarnings := false)
+lazy val influxdb = alpakkaProject("influxdb", "influxdb", Dependencies.InfluxDB, fatalWarnings := false)
 
 lazy val ironmq = alpakkaProject(
   "ironmq",
@@ -228,9 +221,7 @@ lazy val mongodb = alpakkaProject("mongodb", "mongodb", Dependencies.MongoDb)
 
 lazy val mqtt = alpakkaProject("mqtt", "mqtt", Dependencies.Mqtt)
 
-lazy val mqttStreaming = alpakkaProject("mqtt-streaming",
-                                        "mqttStreaming",
-                                        Dependencies.MqttStreaming)
+lazy val mqttStreaming = alpakkaProject("mqtt-streaming", "mqttStreaming", Dependencies.MqttStreaming)
 lazy val mqttStreamingBench = internalProject("mqtt-streaming-bench")
   .enablePlugins(JmhPlugin)
   .dependsOn(mqtt, mqttStreaming)
@@ -294,7 +285,6 @@ lazy val docs = project
     Paradox / siteSubdirName := s"docs/alpakka/${projectInfoVersion.value}",
     paradoxProperties ++= Map(
         "akka.version" -> Dependencies.AkkaVersion,
-        "akka26.version" -> Dependencies.Akka26Version,
         "akka-http.version" -> Dependencies.AkkaHttpVersion,
         "hadoop.version" -> Dependencies.HadoopVersion,
         "extref.akka.base_url" -> s"https://doc.akka.io/docs/akka/${Dependencies.AkkaBinaryVersion}/%s",
