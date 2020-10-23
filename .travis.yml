@@ -18,9 +18,6 @@ jobs:
       env: CMD="verifyCodeStyle; mimaReportBinaryIssues"
       name: "Code style check and MiMa. Run locally with: sbt verifyCodeStyle; mimaReportBinaryIssues"
       if: type != cron
-    - env: CMD="++2.11.12 Test/compile"
-      name: "Compile all code with Scala 2.11"
-      if: type != cron
     - env: CMD="++2.12.11 Test/compile"
       name: "Compile all code with Scala 2.12 and fatal warnings enabled. Run locally with: env CI=true sbt ++2.12.11 Test/compile"
     - env: CMD="++2.13.3 Test/compile"
@@ -126,9 +123,6 @@ jobs:
     - stage: whitesource
       script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt whitesourceCheckPolicies whitesourceUpdate whitesourceSupported/whitesourceUpdate
 
-    - stage: publish
-      name: "Publish artifacts for Scala 2.11"
-      env: CMD="++2.11.12 publish"
     - name: "Publish artifacts for Scala 2.12"
       env: CMD="++2.12.11 publish"
     - name: "Publish artifacts for Scala 2.13"

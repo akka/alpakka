@@ -74,24 +74,15 @@ object Common extends AutoPlugin {
           "com.google.api:com.google.cloud:com.google.iam:com.google.logging:" +
           "com.google.longrunning:com.google.protobuf:com.google.rpc:com.google.type"
         ),
-      Compile / doc / scalacOptions ++= (scalaVersion.value match {
-          case Dependencies.Scala211 =>
-            Seq(
-              "-doc-source-url", {
-                val branch = if (isSnapshot.value) "master" else s"v${version.value}"
-                s"https://github.com/akka/alpakka/tree/${branch}€{FILE_PATH}.scala#L1"
-              }
-            )
-          case _ =>
-            Seq(
-              "-doc-source-url", {
-                val branch = if (isSnapshot.value) "master" else s"v${version.value}"
-                s"https://github.com/akka/alpakka/tree/${branch}€{FILE_PATH_EXT}#L€{FILE_LINE}"
-              },
-              "-doc-canonical-base-url",
-              "https://doc.akka.io/api/alpakka/current/"
-            )
-        }),
+      Compile / doc / scalacOptions ++=
+        Seq(
+          "-doc-source-url", {
+            val branch = if (isSnapshot.value) "master" else s"v${version.value}"
+            s"https://github.com/akka/alpakka/tree/${branch}€{FILE_PATH_EXT}#L€{FILE_LINE}"
+          },
+          "-doc-canonical-base-url",
+          "https://doc.akka.io/api/alpakka/current/"
+        ),
       Compile / doc / scalacOptions -= "-Xfatal-warnings",
       compile / javacOptions ++= Seq(
           "-Xlint:cast",
