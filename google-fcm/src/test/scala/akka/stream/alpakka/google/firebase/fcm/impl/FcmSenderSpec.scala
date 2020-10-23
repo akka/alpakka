@@ -11,8 +11,7 @@ import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.{HttpExt, HttpsConnectionContext}
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.google.firebase.fcm.{FcmErrorResponse, FcmSuccessResponse}
-import akka.stream.alpakka.google.firebase.fcm.FcmNotification
+import akka.stream.alpakka.google.firebase.fcm.{FcmErrorResponse, FcmNotification, FcmSettings, FcmSuccessResponse}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
 import org.mockito.ArgumentCaptor
@@ -48,6 +47,8 @@ class FcmSenderSpec
 
   implicit val materializer = ActorMaterializer()
 
+  implicit val conf = FcmSettings.create("test-XXX@test-XXXXX.iam.gserviceaccount.com", "RSA KEY", "projectId")
+
   "FcmSender" should {
 
     "call the api as the docs want to" in {
@@ -62,7 +63,7 @@ class FcmSenderSpec
         Future.successful(HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, """{"name": ""}""")))
       )
 
-      Await.result(sender.send("projectId", "token", http, FcmSend(false, FcmNotification.empty)),
+      Await.result(sender.send(conf, "token", http, FcmSend(false, FcmNotification.empty), system),
                    defaultPatience.timeout)
 
       val captor: ArgumentCaptor[HttpRequest] = ArgumentCaptor.forClass(classOf[HttpRequest])
@@ -90,7 +91,7 @@ class FcmSenderSpec
       )
 
       sender
-        .send("projectId", "token", http, FcmSend(false, FcmNotification.empty))
+        .send(conf, "token", http, FcmSend(false, FcmNotification.empty), system)
         .futureValue shouldBe FcmSuccessResponse("test")
     }
 
@@ -110,7 +111,7 @@ class FcmSenderSpec
       )
 
       sender
-        .send("projectId", "token", http, FcmSend(false, FcmNotification.empty))
+        .send(conf, "token", http, FcmSend(false, FcmNotification.empty), system)
         .futureValue shouldBe FcmErrorResponse(
         """{"name":"test"}"""
       )
