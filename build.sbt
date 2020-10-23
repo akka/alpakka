@@ -194,9 +194,7 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
 ).enablePlugins(AkkaGrpcPlugin)
 
 lazy val googleCloudStorage =
-  alpakkaProject("google-cloud-storage",
-                 "google.cloud.storage",
-                 Dependencies.GoogleStorage)
+  alpakkaProject("google-cloud-storage", "google.cloud.storage", Dependencies.GoogleStorage)
 
 lazy val googleFcm = alpakkaProject("google-fcm", "google.firebase.fcm", Dependencies.GoogleFcm, Test / fork := true)
 
@@ -204,10 +202,7 @@ lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, Test / for
 
 lazy val hdfs = alpakkaProject("hdfs", "hdfs", Dependencies.Hdfs)
 
-lazy val influxdb = alpakkaProject("influxdb",
-                                   "influxdb",
-                                   Dependencies.InfluxDB,
-                                   fatalWarnings := false)
+lazy val influxdb = alpakkaProject("influxdb", "influxdb", Dependencies.InfluxDB, fatalWarnings := false)
 
 lazy val ironmq = alpakkaProject(
   "ironmq",
@@ -228,9 +223,7 @@ lazy val mongodb = alpakkaProject("mongodb", "mongodb", Dependencies.MongoDb)
 
 lazy val mqtt = alpakkaProject("mqtt", "mqtt", Dependencies.Mqtt)
 
-lazy val mqttStreaming = alpakkaProject("mqtt-streaming",
-                                        "mqttStreaming",
-                                        Dependencies.MqttStreaming)
+lazy val mqttStreaming = alpakkaProject("mqtt-streaming", "mqttStreaming", Dependencies.MqttStreaming)
 lazy val mqttStreamingBench = internalProject("mqtt-streaming-bench")
   .enablePlugins(JmhPlugin)
   .dependsOn(mqtt, mqttStreaming)
