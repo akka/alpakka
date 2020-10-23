@@ -9,10 +9,8 @@ object Dependencies {
   val Scala213 = "2.13.3" // update even 2 places in .travis.yml
   val ScalaVersions = Seq(Scala212, Scala213)
 
-  val Akka25Version = "2.5.31"
-  val Akka26Version = "2.6.8"
-  val AkkaVersion = if (CronBuild) Akka26Version else Akka25Version
-  val AkkaBinaryVersion = if (CronBuild) "2.6" else "2.5"
+  val AkkaVersion = "2.6.10"
+  val AkkaBinaryVersion = "2.6"
 
   val InfluxDBJavaVersion = "2.15"
 
@@ -354,10 +352,10 @@ object Dependencies {
 
   val MqttStreaming = Seq(
     libraryDependencies ++= Seq(
-        "com.typesafe.akka" %% "akka-actor-typed" % Akka26Version, // ApacheV2
-        "com.typesafe.akka" %% "akka-actor-testkit-typed" % Akka26Version % Test, // ApacheV2
-        "com.typesafe.akka" %% "akka-stream-typed" % Akka26Version, // ApacheV2
-        "com.typesafe.akka" %% "akka-stream-testkit" % Akka26Version % Test // ApacheV2
+        "com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion, // ApacheV2
+        "com.typesafe.akka" %% "akka-actor-testkit-typed" % AkkaVersion % Test, // ApacheV2
+        "com.typesafe.akka" %% "akka-stream-typed" % AkkaVersion, // ApacheV2
+        "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test // ApacheV2
       )
   )
 
