@@ -14,7 +14,7 @@ object IronMqConsumer {
 
   def atMostOnceSource(queueName: String, settings: IronMqSettings): Source[Message, NotUsed] =
     Source.fromGraph(new IronMqPullStage(queueName, settings)).mapAsync(1) { cm =>
-      cm.commit().map(_ => cm.message)(ExecutionContexts.sameThreadExecutionContext)
+      cm.commit().map(_ => cm.message)(ExecutionContexts.parasitic)
     }
 
   def atLeastOnceSource[K, V](queueName: String, settings: IronMqSettings): Source[CommittableMessage, NotUsed] =

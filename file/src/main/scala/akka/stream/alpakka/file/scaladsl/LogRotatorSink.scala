@@ -161,7 +161,7 @@ final private class LogRotatorSink[T, C, R](triggerGeneratorCreator: () => T => 
         implicit val ec = materializer.executionContext
         Future
           .sequence(sinkCompletions)
-          .map(_ => Done)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+          .map(_ => Done)(akka.dispatch.ExecutionContexts.parasitic)
       }
 
     def futureCB(newFuture: Future[R]) =
@@ -187,7 +187,7 @@ final private class LogRotatorSink[T, C, R](triggerGeneratorCreator: () => T => 
       val holder = new Holder[R](NotYetThere, futureCB(newFuture))
 
       newFuture.onComplete(holder)(
-        akka.dispatch.ExecutionContexts.sameThreadExecutionContext
+        akka.dispatch.ExecutionContexts.parasitic
       )
 
       prevOut.foreach(_.complete())
@@ -208,7 +208,7 @@ final private class LogRotatorSink[T, C, R](triggerGeneratorCreator: () => T => 
 
           override def onUpstreamFinish(): Unit = {
             implicit val executionContext: ExecutionContext =
-              akka.dispatch.ExecutionContexts.sameThreadExecutionContext
+              akka.dispatch.ExecutionContexts.parasitic
             promise.completeWith(Future.sequence(sinkCompletions).map(_ => Done))
             sourceOut.complete()
           }

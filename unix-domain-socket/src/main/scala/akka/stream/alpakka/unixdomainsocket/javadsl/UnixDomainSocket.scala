@@ -106,7 +106,7 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
 
 final class UnixDomainSocket(system: ExtendedActorSystem) extends akka.actor.Extension {
   import UnixDomainSocket._
-  import akka.dispatch.ExecutionContexts.{sameThreadExecutionContext => ec}
+  import akka.dispatch.ExecutionContexts.parasitic
 
   private lazy val delegate: scaladsl.UnixDomainSocket = scaladsl.UnixDomainSocket.apply(system)
 
@@ -136,7 +136,7 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends akka.actor.Ext
       delegate
         .bind(path, backlog, halfClose)
         .map(new IncomingConnection(_))
-        .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava)
+        .mapMaterializedValue(_.map(new ServerBinding(_))(parasitic).toJava)
     )
 
   /**
@@ -152,7 +152,7 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends akka.actor.Ext
       delegate
         .bind(path)
         .map(new IncomingConnection(_))
-        .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava)
+        .mapMaterializedValue(_.map(new ServerBinding(_))(parasitic).toJava)
     )
 
   /**
@@ -183,7 +183,7 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends akka.actor.Ext
     Flow.fromGraph(
       delegate
         .outgoingConnection(remoteAddress, localAddress.asScala, halfClose, connectTimeout)
-        .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec).toJava)
+        .mapMaterializedValue(_.map(new OutgoingConnection(_))(parasitic).toJava)
     )
 
   /**
@@ -200,7 +200,7 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends akka.actor.Ext
     Flow.fromGraph(
       delegate
         .outgoingConnection(new UnixSocketAddress(path))
-        .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec).toJava)
+        .mapMaterializedValue(_.map(new OutgoingConnection(_))(parasitic).toJava)
     )
 
 }

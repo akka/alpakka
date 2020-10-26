@@ -101,7 +101,7 @@ final private[couchbase] class CouchbaseSessionImpl(asyncBucket: AsyncBucket, cl
 
   def remove(id: String): Future[Done] =
     singleObservableToFuture(asyncBucket.remove(id), id)
-      .map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)
+      .map(_ => Done)(ExecutionContexts.parasitic)
 
   def remove(id: String, writeSettings: CouchbaseWriteSettings): Future[Done] =
     singleObservableToFuture(asyncBucket.remove(id,
@@ -110,7 +110,7 @@ final private[couchbase] class CouchbaseSessionImpl(asyncBucket: AsyncBucket, cl
                                                 writeSettings.timeout.toMillis,
                                                 TimeUnit.MILLISECONDS),
                              id)
-      .map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)
+      .map(_ => Done)(ExecutionContexts.parasitic)
 
   def streamedQuery(query: N1qlQuery): Source[JsonObject, NotUsed] =
     // FIXME verify cancellation works
@@ -126,7 +126,7 @@ final private[couchbase] class CouchbaseSessionImpl(asyncBucket: AsyncBucket, cl
 
   def counter(id: String, delta: Long, initial: Long): Future[Long] =
     singleObservableToFuture(asyncBucket.counter(id, delta, initial), id)
-      .map(_.content(): Long)(ExecutionContexts.sameThreadExecutionContext)
+      .map(_.content(): Long)(ExecutionContexts.parasitic)
 
   def counter(id: String, delta: Long, initial: Long, writeSettings: CouchbaseWriteSettings): Future[Long] =
     singleObservableToFuture(asyncBucket.counter(id,
@@ -137,7 +137,7 @@ final private[couchbase] class CouchbaseSessionImpl(asyncBucket: AsyncBucket, cl
                                                  writeSettings.timeout.toMillis,
                                                  TimeUnit.MILLISECONDS),
                              id)
-      .map(_.content(): Long)(ExecutionContexts.sameThreadExecutionContext)
+      .map(_.content(): Long)(ExecutionContexts.parasitic)
 
   def close(): Future[Done] =
     if (!asyncBucket.isClosed) {

@@ -297,7 +297,7 @@ import scala.util.control.NonFatal
             case Some(resource) => Future.successful(resource)
             case None => Future.failed(new RuntimeException("Storage object is missing"))
           }
-        )(ExecutionContexts.sameThreadExecutionContext)
+        )(ExecutionContexts.parasitic)
       )
   }
 
@@ -651,7 +651,7 @@ import scala.util.control.NonFatal
             }
         }
       }
-      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.sameThreadExecutionContext))
+      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.parasitic))
 
   private def resolveSettings()(implicit attr: Attributes, sys: ActorSystem) =
     attr

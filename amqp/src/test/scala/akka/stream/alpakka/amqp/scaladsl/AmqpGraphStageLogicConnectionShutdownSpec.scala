@@ -42,7 +42,7 @@ class AmqpGraphStageLogicConnectionShutdownSpec
     with LogCapturing {
 
   override implicit val patienceConfig = PatienceConfig(10.seconds)
-  private implicit val executionContext = ExecutionContexts.sameThreadExecutionContext
+  private implicit val executionContext = ExecutionContexts.parasitic
 
   val shutdownsAdded = new AtomicInteger()
   val shutdownsRemoved = new AtomicInteger()

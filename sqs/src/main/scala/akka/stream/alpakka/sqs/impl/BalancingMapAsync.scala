@@ -86,7 +86,7 @@ import scala.util.{Failure, Success}
           buffer.enqueue(holder)
 
           future.value match {
-            case None => future.onComplete(holder)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+            case None => future.onComplete(holder)(akka.dispatch.ExecutionContexts.parasitic)
             case Some(v) =>
               // #20217 the future is already here, optimization: avoid scheduling it on the dispatcher and
               // run the logic directly on this thread

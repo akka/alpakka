@@ -8,7 +8,7 @@ import java.nio.ByteBuffer
 
 import akka.NotUsed
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
+import akka.dispatch.ExecutionContexts.parasitic
 import akka.stream.ThrottleMode
 import akka.stream.alpakka.kinesis.KinesisFlowSettings
 import akka.stream.alpakka.kinesis.KinesisErrors.FailurePublishingRecords
@@ -58,7 +58,7 @@ object KinesisFlow {
                 PutRecordsRequest.builder().streamName(streamName).records(entries.map(_._1).asJavaCollection).build
               )
               .toScala
-              .transform(handlePutRecordsSuccess(entries), FailurePublishingRecords(_))(sameThreadExecutionContext)
+              .transform(handlePutRecordsSuccess(entries), FailurePublishingRecords(_))(parasitic)
         )
         .mapConcat(identity)
     )

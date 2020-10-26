@@ -17,7 +17,7 @@ abstract class AmqpSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll
 
   implicit val system = ActorSystem(this.getClass.getSimpleName)
   implicit val materializer = ActorMaterializer()
-  implicit val executionContext = ExecutionContexts.sameThreadExecutionContext
+  implicit val executionContext = ExecutionContexts.parasitic
 
   override protected def afterAll(): Unit =
     system.terminate()
