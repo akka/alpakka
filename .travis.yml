@@ -14,6 +14,13 @@ script: ./scripts/travis.sh
 
 jobs:
   include:
+    - stage: drop-travis-caches
+      script:
+        - rm -rf $HOME/.cache/coursier
+        - rm -rf $HOME/.ivy2/cache
+        - rm -rf $HOME/.sbt
+        - rm -rf $HOME/.jabba
+      name: "drop-travis-caches"
     - stage: check
       env: CMD="verifyCodeStyle; mimaReportBinaryIssues"
       name: "Code style check and MiMa. Run locally with: sbt verifyCodeStyle; mimaReportBinaryIssues"
@@ -131,6 +138,13 @@ jobs:
       name: "Publish API and reference documentation"
 
 stages:
+  - name: drop-travis-caches
+    # to drop caches trigger a custom build with
+    # env:
+    #   global:
+    #     - RUN_DROP_TRAVIS_CACHES_STAGE=true
+    if: env(RUN_DROP_TRAVIS_CACHES_STAGE) = true
+
   # runs on master commits and PRs
   - name: check
     if: NOT tag =~ ^v
@@ -170,6 +184,7 @@ addons:
 
 env:
   global:
+    - RUN_DROP_TRAVIS_CACHES_STAGE=true
     # encrypt with: travis encrypt WHITESOURCE_PASSWORD=...
     - secure: "VpRSxeqP6gXCxnYCsjylMt1xxXxI/hlj6msibKuHpstDnfPkbDMS8RnRJ/39tyjx/szELZSzAllV0VpM27JpTXlKfIT/78ZUGcljqzfnmv3uh/dWh9k2ERQX1Hr3TGFFyljIbEKHcHjvgHBJtlIRGIuvoBv0tJ98pcqS6dCeplaaJa1Ya7Q53u17GOJakhvTjrT3ASz8gF1kV4GN9XhQCUjRfQSINiT+QC+ONoHy6ztZPIDgfUskBfKgZU5P1saDLcBjzBkXDWIwbKubfJGBl3DSs2fHaWNJE5CRZNJ64Wi8Hs006zvyomIaCfbVAWtxOiLCdXxlys/YQs43RRB0pBqyvTpxH4lEwnLR5uGDH+nuBQw9efCWqsM3CDsRSH7iobjBlunKgDCfjua5/dWJ3Wm2j8WOi6C6/y/YrGwU/DrncukRtcyKj92Mu3LHk5HEMiOiIA41P2NTqalvjvoqi1zMQ5On2g55e2YMcHmQ8dCsRAgegCYB3a6GyGq7T8zkuMMljpmpQJwayrJPQKi001d3ajZZwMLcv4YW9ndVYCZD9ducZ448Uo5BCpJFDPPG+xcXrvZowCUA9JtpnyXrTcTLvFITG2egXyLOQfZ0/FX9XneMtX8qX8ysHaBX9tWiYsplo/WfbpBHy935Ag8WnGH0cYvOXuqAKKUXRVq9ANI="
     # encrypt with: travis encrypt BINTRAY_USER=...
@@ -180,5 +195,6 @@ env:
 branches:
   only:
     - master
+    - release-2.0
     # allow release tags
     - /^v\d+\.\d+(\.\d+)?(-\S*)?$/
