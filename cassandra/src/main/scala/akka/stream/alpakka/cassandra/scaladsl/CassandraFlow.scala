@@ -34,7 +34,7 @@ object CassandraFlow {
       statementBinder: (T, PreparedStatement) => BoundStatement
   )(implicit session: CassandraSession): Flow[T, T, NotUsed] = {
     Flow
-      .lazyInitAsync { () =>
+      .lazyFutureFlow { () =>
         val prepare = session.prepare(cqlStatement)
         prepare.map { preparedStatement =>
           Flow[T].mapAsync(writeSettings.parallelism) { element =>
@@ -65,7 +65,7 @@ object CassandraFlow {
   )(implicit session: CassandraSession): FlowWithContext[T, Ctx, T, Ctx, NotUsed] = {
     FlowWithContext.fromTuples {
       Flow
-        .lazyInitAsync { () =>
+        .lazyFutureFlow { () =>
           val prepare = session.prepare(cqlStatement)
           prepare.map { preparedStatement =>
             Flow[(T, Ctx)].mapAsync(writeSettings.parallelism) {
@@ -106,7 +106,7 @@ object CassandraFlow {
                         statementBinder: (T, PreparedStatement) => BoundStatement,
                         groupingKey: T => K)(implicit session: CassandraSession): Flow[T, T, NotUsed] = {
     Flow
-      .lazyInitAsync { () =>
+      .lazyFutureFlow { () =>
         val prepareStatement: Future[PreparedStatement] = session.prepare(cqlStatement)
         prepareStatement.map { preparedStatement =>
           Flow[T]

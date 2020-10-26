@@ -4,10 +4,7 @@
 
 package docs.javadsl;
 
-import akka.Done;
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.alpakka.cassandra.CassandraSessionSettings;
 import akka.stream.alpakka.cassandra.javadsl.CassandraSession;
 import akka.stream.alpakka.cassandra.javadsl.CassandraSessionRegistry;
@@ -25,7 +22,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class CassandraTestHelper {
   final ActorSystem system;
-  final Materializer materializer;
   final CassandraSession cassandraSession;
   final CassandraAccess cassandraAccess;
   final String keyspaceName;
@@ -33,7 +29,6 @@ public class CassandraTestHelper {
 
   public CassandraTestHelper(String TEST_NAME) {
     system = ActorSystem.create(TEST_NAME);
-    materializer = ActorMaterializer.create(system);
     CassandraSessionRegistry sessionRegistry = CassandraSessionRegistry.get(system);
     CassandraSessionSettings sessionSettings = CassandraSessionSettings.create("alpakka.cassandra");
     cassandraSession = sessionRegistry.sessionFor(sessionSettings);
