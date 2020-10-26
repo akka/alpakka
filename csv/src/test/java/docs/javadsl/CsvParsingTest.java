@@ -6,8 +6,7 @@ package docs.javadsl;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
+import akka.stream.SystemMaterializer;
 import akka.stream.alpakka.csv.MalformedCsvException;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Flow;
@@ -39,7 +38,6 @@ public class CsvParsingTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem system;
-  private static Materializer materializer;
 
   public void documentation() {
     byte delimiter = CsvParsing.COMMA;
@@ -57,7 +55,7 @@ public class CsvParsingTest {
         // #line-scanner
         Source.single(ByteString.fromString("eins,zwei,drei\n"))
             .via(CsvParsing.lineScanner())
-            .runWith(Sink.head(), materializer);
+            .runWith(Sink.head(), system);
     // #line-scanner
     Collection<ByteString> list = completionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
     String[] res = list.stream().map(ByteString::utf8String).toArray(String[]::new);
@@ -73,7 +71,7 @@ public class CsvParsingTest {
         Source.single(ByteString.fromString("eins,zwei,drei\n"))
             .via(CsvParsing.lineScanner())
             .map(line -> line.stream().map(ByteString::utf8String).collect(Collectors.toList()))
-            .runWith(Sink.head(), materializer);
+            .runWith(Sink.head(), system);
     // #line-scanner-string
     List<String> res = completionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
     assertThat(res.get(0), equalTo("eins"));
@@ -86,7 +84,7 @@ public class CsvParsingTest {
     CompletionStage<List<Collection<ByteString>>> completionStage =
         Source.single(ByteString.fromString("eins,zwei,drei\na,b,\\\"c"))
             .via(CsvParsing.lineScanner())
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
     try {
       completionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
       fail("Should throw MalformedCsvException");
@@ -105,7 +103,7 @@ public class CsvParsingTest {
         Source.single(ByteString.fromString("a,b,\\c"))
             .via(CsvParsing.lineScanner())
             .map(line -> line.stream().map(ByteString::utf8String).collect(Collectors.toList()))
-            .runWith(Sink.head(), materializer);
+            .runWith(Sink.head(), system);
     List<String> res = completionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
     assertThat(res.get(0), equalTo("a"));
     assertThat(res.get(1), equalTo("b"));
@@ -115,7 +113,6 @@ public class CsvParsingTest {
   @BeforeClass
   public static void setup() throws Exception {
     system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
   }
 
   @AfterClass
@@ -125,6 +122,6 @@ public class CsvParsingTest {
 
   @After
   public void checkForStageLeaks() {
-    StreamTestKit.assertAllStagesStopped(materializer);
+    StreamTestKit.assertAllStagesStopped(SystemMaterializer.get(system).materializer());
   }
 }

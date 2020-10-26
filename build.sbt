@@ -121,7 +121,7 @@ lazy val cassandra =
 lazy val couchbase =
   alpakkaProject("couchbase", "couchbase", Dependencies.Couchbase, whitesourceGroup := Whitesource.Group.Supported)
 
-lazy val csv = alpakkaProject("csv", "csv", whitesourceGroup := Whitesource.Group.Supported)
+lazy val csv = alpakkaProject("csv", "csv", whitesourceGroup := Whitesource.Group.Supported, fatalWarnings := true)
 
 lazy val csvBench = internalProject("csv-bench")
   .dependsOn(csv)

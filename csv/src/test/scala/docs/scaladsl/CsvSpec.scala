@@ -5,7 +5,6 @@
 package docs.scaladsl
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
 import org.scalatest.concurrent.ScalaFutures
@@ -22,7 +21,6 @@ abstract class CsvSpec
     with LogCapturing {
 
   implicit val system = ActorSystem(this.getClass.getSimpleName)
-  implicit val materializer = ActorMaterializer()
 
   override protected def afterAll(): Unit =
     TestKit.shutdownActorSystem(system)
