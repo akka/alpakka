@@ -116,7 +116,7 @@ lazy val awslambda = alpakkaProject("awslambda", "aws.lambda", Dependencies.AwsL
 lazy val azureStorageQueue = alpakkaProject("azure-storage-queue", "azure.storagequeue", Dependencies.AzureStorageQueue)
 
 lazy val cassandra =
-  alpakkaProject("cassandra", "cassandra", Dependencies.Cassandra)
+  alpakkaProject("cassandra", "cassandra", Dependencies.Cassandra, fatalWarnings := true)
 
 lazy val couchbase =
   alpakkaProject("couchbase", "couchbase", Dependencies.Couchbase, whitesourceGroup := Whitesource.Group.Supported)

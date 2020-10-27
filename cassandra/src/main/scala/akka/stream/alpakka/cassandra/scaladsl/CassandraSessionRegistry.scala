@@ -27,7 +27,7 @@ object CassandraSessionRegistry extends ExtensionId[CassandraSessionRegistry] wi
   def createExtension(system: ExtendedActorSystem): CassandraSessionRegistry =
     new CassandraSessionRegistry(system)
 
-  override def lookup(): ExtensionId[CassandraSessionRegistry] = this
+  override def lookup: ExtensionId[CassandraSessionRegistry] = this
 
   /** Hash key for `sessions`. */
   private case class SessionKey(configPath: String)
