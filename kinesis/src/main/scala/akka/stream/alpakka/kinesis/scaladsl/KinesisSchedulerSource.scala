@@ -42,7 +42,7 @@ object KinesisSchedulerSource {
         Source
           .fromGraph(new KinesisSchedulerSourceStage(settings, schedulerBuilder))
       }
-      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.sameThreadExecutionContext))
+      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.parasitic))
 
   def sharded(
       schedulerBuilder: ShardRecordProcessorFactory => Scheduler,

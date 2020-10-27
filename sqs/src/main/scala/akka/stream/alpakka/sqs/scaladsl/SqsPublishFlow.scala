@@ -8,7 +8,7 @@ import java.util.concurrent.CompletionException
 
 import akka.NotUsed
 import akka.annotation.ApiMayChange
-import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
+import akka.dispatch.ExecutionContexts.parasitic
 import akka.stream.alpakka.sqs.{SqsBatchException, _}
 import akka.stream.scaladsl.{Flow, Source}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
@@ -53,7 +53,7 @@ object SqsPublishFlow {
         sqsClient
           .sendMessage(req)
           .toScala
-          .map(req -> _)(sameThreadExecutionContext)
+          .map(req -> _)(parasitic)
       }
       .map { case (request, response) => new SqsPublishResult(request, response) }
   }
@@ -119,7 +119,7 @@ object SqsPublishFlow {
                   numberOfMessages,
                   s"Some messages are failed to send. $nrOfFailedMessages of $numberOfMessages messages are failed"
                 )
-            }(sameThreadExecutionContext)
+            }(parasitic)
       }
       .recoverWithRetries(1, {
         case e: CompletionException =>

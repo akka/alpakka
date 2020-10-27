@@ -92,7 +92,7 @@ import akka.annotation.InternalApi
             f.onComplete { _ =>
               path.delete()
 
-            }(ExecutionContexts.sameThreadExecutionContext)
+            }(ExecutionContexts.parasitic)
           NotUsed
         }
         emit(out, Chunk(src, length), () => completeStage())

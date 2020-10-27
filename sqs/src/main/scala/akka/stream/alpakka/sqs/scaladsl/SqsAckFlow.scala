@@ -8,7 +8,7 @@ import java.util.concurrent.CompletionException
 
 import akka.NotUsed
 import akka.annotation.{ApiMayChange, InternalApi}
-import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
+import akka.dispatch.ExecutionContexts.parasitic
 import akka.stream.FlowShape
 import akka.stream.alpakka.sqs.MessageAction._
 import akka.stream.alpakka.sqs.SqsAckResult._
@@ -49,7 +49,7 @@ object SqsAckFlow {
           sqsClient
             .deleteMessage(request)
             .toScala
-            .map(resp => new SqsDeleteResult(messageAction, resp))(sameThreadExecutionContext)
+            .map(resp => new SqsDeleteResult(messageAction, resp))(parasitic)
 
         case messageAction: MessageAction.ChangeMessageVisibility =>
           val request =
@@ -63,7 +63,7 @@ object SqsAckFlow {
           sqsClient
             .changeMessageVisibility(request)
             .toScala
-            .map(resp => new SqsChangeMessageVisibilityResult(messageAction, resp))(sameThreadExecutionContext)
+            .map(resp => new SqsChangeMessageVisibilityResult(messageAction, resp))(parasitic)
 
         case messageAction: MessageAction.Ignore =>
           Future.successful(new SqsIgnoreResult(messageAction))
@@ -145,13 +145,13 @@ object SqsAckFlow {
                   numberOfMessages,
                   s"Some messages are failed to delete. $nrOfFailedMessages of $numberOfMessages messages are failed"
                 )
-            }(sameThreadExecutionContext)
+            }(parasitic)
             .recoverWith {
               case e: CompletionException =>
                 Future.failed(new SqsBatchException(request.entries().size(), e.getMessage, e.getCause))
               case e =>
                 Future.failed(new SqsBatchException(request.entries().size(), e.getMessage, e))
-            }(sameThreadExecutionContext)
+            }(parasitic)
       }
       .mapConcat(identity)
   }
@@ -199,13 +199,13 @@ object SqsAckFlow {
                   numberOfMessages,
                   s"Some messages are failed to change visibility. $nrOfFailedMessages of $numberOfMessages messages are failed"
                 )
-            }(sameThreadExecutionContext)
+            }(parasitic)
             .recoverWith {
               case e: CompletionException =>
                 Future.failed(new SqsBatchException(request.entries().size(), e.getMessage, e.getCause))
               case e =>
                 Future.failed(new SqsBatchException(request.entries().size(), e.getMessage, e))
-            }(sameThreadExecutionContext)
+            }(parasitic)
       }
       .mapConcat(identity)
 

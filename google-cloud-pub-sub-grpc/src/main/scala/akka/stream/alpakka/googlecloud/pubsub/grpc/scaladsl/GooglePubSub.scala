@@ -67,7 +67,7 @@ object GooglePubSub {
           .mapConcat(_.receivedMessages.toVector)
           .mapMaterializedValue(_ => cancellable.future)
       }
-      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.sameThreadExecutionContext))
+      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.parasitic))
 
   /**
    * Create a source that emits messages for a given subscription using a synchronous PullRequest.
@@ -92,7 +92,7 @@ object GooglePubSub {
           .mapConcat(_.receivedMessages.toVector)
           .mapMaterializedValue(_ => cancellable.future)
       }
-      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.sameThreadExecutionContext))
+      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.parasitic))
 
   /**
    * Create a flow that accepts consumed message acknowledgements.
@@ -124,7 +124,7 @@ object GooglePubSub {
           .mapAsyncUnordered(parallelism)(subscriber(mat, attr).client.acknowledge)
           .toMat(Sink.ignore)(Keep.right)
       }
-      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.sameThreadExecutionContext))
+      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.parasitic))
   }
 
   private def publisher(mat: ActorMaterializer, attr: Attributes) =

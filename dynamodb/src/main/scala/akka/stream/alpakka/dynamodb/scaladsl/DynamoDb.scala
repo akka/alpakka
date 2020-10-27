@@ -50,8 +50,8 @@ object DynamoDb {
           case (in, ctx) =>
             operation
               .execute(in)
-              .map[(Try[Out], Ctx)](res => (Success(res), ctx))(ExecutionContexts.sameThreadExecutionContext)
-              .recover { case t => (Failure(t), ctx) }(ExecutionContexts.sameThreadExecutionContext)
+              .map[(Try[Out], Ctx)](res => (Success(res), ctx))(ExecutionContexts.parasitic)
+              .recover { case t => (Failure(t), ctx) }(ExecutionContexts.parasitic)
         }
     )
 
