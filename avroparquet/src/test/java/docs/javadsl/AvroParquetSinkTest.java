@@ -6,7 +6,6 @@ package docs.javadsl;
 
 import akka.Done;
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.avroparquet.javadsl.AvroParquetSink;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
@@ -56,14 +55,12 @@ public class AvroParquetSinkTest {
   private final Configuration conf = new Configuration();
   private final List<GenericRecord> records = new ArrayList<>();
   private ActorSystem system;
-  private Materializer materializer;
   private String folder = "target/javaTestFolder";
   private final String file = "./" + folder + "/test.parquet";
 
   @Before
   public void setup() {
     system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
     conf.setBoolean(AvroReadSupport.AVRO_COMPATIBILITY, true);
     records.add(new GenericRecordBuilder(schema).set("id", "1").set("body", "body11").build());
     records.add(new GenericRecordBuilder(schema).set("id", "2").set("body", "body12").build());
@@ -90,7 +87,7 @@ public class AvroParquetSinkTest {
     Sink<GenericRecord, CompletionStage<Done>> sink = AvroParquetSink.create(writer);
     // #init-sink
 
-    CompletionStage<Done> finish = Source.from(records).runWith(sink, materializer);
+    CompletionStage<Done> finish = Source.from(records).runWith(sink, system);
 
     finish.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
@@ -116,7 +113,7 @@ public class AvroParquetSinkTest {
 
   @After
   public void checkForStageLeaksAndDeleteCreatedFiles() {
-    StreamTestKit.assertAllStagesStopped(materializer);
+    StreamTestKit.assertAllStagesStopped(Materializer.matFromSystem(system));
     TestKit.shutdownActorSystem(system);
     File index = new File(folder);
     index.deleteOnExit();
