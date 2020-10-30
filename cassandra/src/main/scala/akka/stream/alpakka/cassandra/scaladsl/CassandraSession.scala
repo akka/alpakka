@@ -212,7 +212,7 @@ final class CassandraSession(system: akka.actor.ActorSystem,
    */
   def select(stmt: Statement[_]): Source[Row, NotUsed] = {
     Source
-      .fromFutureSource {
+      .futureSource {
         underlying().map { cqlSession =>
           Source.fromPublisher(cqlSession.executeReactive(stmt))
         }
@@ -233,7 +233,7 @@ final class CassandraSession(system: akka.actor.ActorSystem,
    */
   def select(stmt: Future[Statement[_]]): Source[Row, NotUsed] = {
     Source
-      .fromFutureSource {
+      .futureSource {
         underlying().flatMap(cqlSession => stmt.map(cqlSession -> _)).map {
           case (cqlSession, stmtValue) =>
             Source.fromPublisher(cqlSession.executeReactive(stmtValue))
