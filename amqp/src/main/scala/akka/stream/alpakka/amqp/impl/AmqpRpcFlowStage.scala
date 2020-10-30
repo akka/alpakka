@@ -156,9 +156,9 @@ private[amqp] final class AmqpRpcFlowStage(settings: AmqpWriteSettings, bufferSi
               pushMessage(queue.dequeue())
             }
 
-          override def onDownstreamFinish(): Unit = {
+          override def onDownstreamFinish(cause: Throwable): Unit = {
             setKeepGoing(true)
-            if (unackedMessages == 0) super.onDownstreamFinish()
+            if (unackedMessages == 0) super.onDownstreamFinish(cause)
           }
         }
       )
