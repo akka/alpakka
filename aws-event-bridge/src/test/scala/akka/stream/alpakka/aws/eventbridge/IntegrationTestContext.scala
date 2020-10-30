@@ -7,7 +7,6 @@ package akka.stream.alpakka.aws.eventbridge
 import java.util.UUID
 
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Suite}
@@ -21,7 +20,6 @@ trait IntegrationTestContext extends BeforeAndAfterAll with ScalaFutures {
 
   //#init-system
   implicit val system: ActorSystem = ActorSystem()
-  implicit val mat: Materializer = ActorMaterializer()
   //#init-system
 
   def eventBusEndpoint: String = s"http://localhost:4587"
@@ -49,10 +47,9 @@ trait IntegrationTestContext extends BeforeAndAfterAll with ScalaFutures {
     import java.net.URI
 
     import com.github.matsluni.akkahttpspi.AkkaHttpClient
-    import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient
-    import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
-    import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
+    import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
     import software.amazon.awssdk.regions.Region
+    import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient
 
     implicit val awsEventBridgeClient: EventBridgeAsyncClient =
       EventBridgeAsyncClient

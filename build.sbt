@@ -247,7 +247,8 @@ lazy val simpleCodecs = alpakkaProject("simple-codecs", "simplecodecs")
 
 lazy val slick = alpakkaProject("slick", "slick", Dependencies.Slick)
 
-lazy val eventbridge = alpakkaProject("aws-event-bridge", "aws.eventbridge", Dependencies.Eventbridge)
+lazy val eventbridge =
+  alpakkaProject("aws-event-bridge", "aws.eventbridge", Dependencies.Eventbridge, fatalWarnings := true)
 
 lazy val sns = alpakkaProject("sns", "aws.sns", Dependencies.Sns)
 

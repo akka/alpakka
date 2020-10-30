@@ -7,8 +7,6 @@ package docs.javadsl;
 import akka.Done;
 // #init-system
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 // #init-system
 import akka.stream.alpakka.aws.eventbridge.javadsl.EventBridgePublisher;
 import akka.stream.javadsl.Sink;
@@ -30,12 +28,10 @@ import org.junit.Test;
 import software.amazon.awssdk.services.eventbridge.model.CreateEventBusRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
-import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.CoreMatchers.*;
 
-import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
@@ -44,7 +40,6 @@ import java.util.concurrent.TimeUnit;
 public class EventBridgePublisherTest {
 
   static ActorSystem system;
-  static Materializer materializer;
   static EventBridgeAsyncClient eventBridgeClient;
   static String eventBusArn;
 
@@ -61,7 +56,6 @@ public class EventBridgePublisherTest {
   @BeforeClass
   public static void setUpBeforeClass() throws ExecutionException, InterruptedException {
     system = ActorSystem.create("EventBridgePublisherTest");
-    materializer = ActorMaterializer.create(system);
     eventBridgeClient = createEventBridgeClient();
     eventBusArn =
         eventBridgeClient
@@ -99,7 +93,6 @@ public class EventBridgePublisherTest {
   void documentation() {
     // #init-system
     ActorSystem system = ActorSystem.create();
-    Materializer materializer = ActorMaterializer.create(system);
     // #init-system
   }
 
@@ -108,7 +101,7 @@ public class EventBridgePublisherTest {
     CompletionStage<Done> completion =
         // #run-events-entry
         Source.single(detailEntry("message"))
-            .runWith(EventBridgePublisher.sink(eventBridgeClient), materializer);
+            .runWith(EventBridgePublisher.sink(eventBridgeClient), system);
 
     // #run-events-entry
     assertThat(completion.toCompletableFuture().get(2, TimeUnit.SECONDS), is(Done.getInstance()));
@@ -119,7 +112,7 @@ public class EventBridgePublisherTest {
     CompletionStage<Done> completion =
         // #run-events-request
         Source.single(detailPutEventsRequest("message"))
-            .runWith(EventBridgePublisher.publishSink(eventBridgeClient), materializer);
+            .runWith(EventBridgePublisher.publishSink(eventBridgeClient), system);
 
     // #run-events-request
     assertThat(completion.toCompletableFuture().get(2, TimeUnit.SECONDS), is(Done.getInstance()));
@@ -131,7 +124,7 @@ public class EventBridgePublisherTest {
         // #flow-events-entry
         Source.single(detailEntry("message"))
             .via(EventBridgePublisher.flow(eventBridgeClient))
-            .runWith(Sink.foreach(res -> System.out.println(res)), materializer);
+            .runWith(Sink.foreach(res -> System.out.println(res)), system);
 
     // #flow-events-entry
     assertThat(completion.toCompletableFuture().get(2, TimeUnit.SECONDS), is(Done.getInstance()));
@@ -143,7 +136,7 @@ public class EventBridgePublisherTest {
         // #flow-events-request
         Source.single(detailPutEventsRequest("message"))
             .via(EventBridgePublisher.publishFlow(eventBridgeClient))
-            .runWith(Sink.foreach(res -> System.out.println(res)), materializer);
+            .runWith(Sink.foreach(res -> System.out.println(res)), system);
 
     // #flow-events-request
     assertThat(completion.toCompletableFuture().get(2, TimeUnit.SECONDS), is(Done.getInstance()));
