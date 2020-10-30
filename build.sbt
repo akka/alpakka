@@ -106,7 +106,7 @@ TaskKey[Unit]("verifyCodeFmt") := {
 
 addCommandAlias("verifyCodeStyle", "headerCheck; verifyCodeFmt")
 
-lazy val amqp = alpakkaProject("amqp", "amqp", Dependencies.Amqp)
+lazy val amqp = alpakkaProject("amqp", "amqp", Dependencies.Amqp, fatalWarnings := true)
 
 lazy val avroparquet =
   alpakkaProject("avroparquet", "avroparquet", Dependencies.AvroParquet)
