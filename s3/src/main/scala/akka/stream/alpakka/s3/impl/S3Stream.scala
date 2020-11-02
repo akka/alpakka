@@ -225,15 +225,15 @@ import scala.util.{Failure, Success, Try}
         issueRequest(S3Location(bucket, key), HttpMethods.HEAD, versionId = versionId, s3Headers = headers)(mat, attr)
           .flatMapConcat {
             case HttpResponse(OK, headers, entity, _) =>
-              Source.fromFuture {
+              Source.future {
                 entity.withoutSizeLimit().discardBytes().future().map { _ =>
                   Some(computeMetaData(headers, entity))
                 }
               }
             case HttpResponse(NotFound, _, entity, _) =>
-              Source.fromFuture(entity.discardBytes().future().map(_ => None))
+              Source.future(entity.discardBytes().future().map(_ => None)(ExecutionContexts.parasitic))
             case HttpResponse(code, _, entity, _) =>
-              Source.fromFuture {
+              Source.future {
                 unmarshalError(code, entity)
               }
           }
@@ -256,9 +256,9 @@ import scala.util.{Failure, Success, Try}
         issueRequest(s3Location, HttpMethods.DELETE, versionId = versionId, s3Headers = headers)(mat, attr)
           .flatMapConcat {
             case HttpResponse(NoContent, _, entity, _) =>
-              Source.fromFuture(entity.discardBytes().future().map(_ => Done)(ExecutionContexts.parasitic))
+              Source.future(entity.discardBytes().future().map(_ => Done)(ExecutionContexts.parasitic))
             case HttpResponse(code, _, entity, _) =>
-              Source.fromFuture {
+              Source.future {
                 unmarshalError(code, entity)
               }
           }
@@ -296,13 +296,13 @@ import scala.util.{Failure, Success, Try}
         signAndRequest(req)
           .flatMapConcat {
             case HttpResponse(OK, h, entity, _) =>
-              Source.fromFuture {
+              Source.future {
                 entity.discardBytes().future().map { _ =>
                   ObjectMetadata(h :+ `Content-Length`(entity.contentLengthOption.getOrElse(0)))
                 }
               }
             case HttpResponse(code, _, entity, _) =>
-              Source.fromFuture {
+              Source.future {
                 unmarshalError(code, entity)
               }
           }
@@ -462,9 +462,9 @@ import scala.util.{Failure, Success, Try}
 
         signAndRequest(req).flatMapConcat {
           case HttpResponse(status, _, entity, _) if status.isSuccess() =>
-            Source.fromFuture(Unmarshal(entity).to[MultipartUpload])
+            Source.future(Unmarshal(entity).to[MultipartUpload])
           case HttpResponse(code, _, entity, _) =>
-            Source.fromFuture {
+            Source.future {
               unmarshalError(code, entity)
             }
         }
@@ -492,9 +492,7 @@ import scala.util.{Failure, Success, Try}
     //  The initial copy upload request gets executed within this function as well.
     //  The individual copy upload part requests are created.
     val copyRequests =
-      createCopyRequests(targetLocation, sourceVersionId, contentType, s3Headers, eventualPartitions)(
-        chunkingParallelism
-      )
+      createCopyRequests(targetLocation, sourceVersionId, contentType, s3Headers, eventualPartitions)
 
     // The individual copy upload part requests are processed here
     processUploadCopyPartRequests(copyRequests)(chunkingParallelism)
@@ -541,7 +539,7 @@ import scala.util.{Failure, Success, Try}
     val headers = sse.toIndexedSeq.flatMap(_.headersFor(UploadPart))
 
     Source
-      .fromFuture(
+      .future(
         completeMultipartUploadRequest(parts.head.multipartUpload, parts.map(p => p.index -> p.etag), headers)
       )
       .flatMapConcat(signAndGetAs[CompleteMultipartUploadResult](_, populateResult(_, _)))
@@ -782,7 +780,7 @@ import scala.util.{Failure, Success, Try}
       f: (T, Seq[HttpHeader]) => T
   )(implicit um: Unmarshaller[ResponseEntity, T], mat: Materializer, attr: Attributes): Source[T, NotUsed] = {
     import mat.executionContext
-    implicit val sys = mat.system
+    implicit val sys: ActorSystem = mat.system
     signAndRequest(request)
       .mapAsync(parallelism = 1)(entityForSuccess)
       .mapAsync(parallelism = 1) {
@@ -795,7 +793,7 @@ import scala.util.{Failure, Success, Try}
       request: HttpRequest,
       retries: Int = 3
   )(implicit sys: ActorSystem, mat: Materializer, attr: Attributes): Source[HttpResponse, NotUsed] = {
-    implicit val conf = resolveSettings(attr, sys)
+    implicit val conf: S3Settings = resolveSettings(attr, sys)
 
     Signer
       .signedRequest(request, signingKey)
@@ -838,7 +836,7 @@ import scala.util.{Failure, Success, Try}
       contentType: ContentType,
       s3Headers: S3Headers,
       partitions: Source[List[CopyPartition], NotUsed]
-  )(parallelism: Int) = {
+  ) = {
     val requestInfo: Source[(MultipartUpload, Int), NotUsed] =
       initiateUpload(location, contentType, s3Headers.headersFor(InitiateMultipartUpload))
 
