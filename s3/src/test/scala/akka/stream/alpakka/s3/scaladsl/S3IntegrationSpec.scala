@@ -6,12 +6,12 @@ package akka.stream.alpakka.s3.scaladsl
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
+import akka.stream.Attributes
 import akka.stream.alpakka.s3.AccessStyle.PathAccessStyle
 import akka.stream.alpakka.s3.BucketAccess.{AccessGranted, NotExists}
 import akka.stream.alpakka.s3._
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Keep, Sink, Source}
-import akka.stream.{ActorMaterializer, Attributes}
 import akka.testkit.TestKit
 import akka.util.ByteString
 import akka.{Done, NotUsed}
@@ -24,8 +24,8 @@ import software.amazon.awssdk.auth.credentials._
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers._
 
-import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
 
 trait S3IntegrationSpec
     extends AnyFlatSpecLike
@@ -39,8 +39,7 @@ trait S3IntegrationSpec
     "S3IntegrationSpec",
     config().withFallback(ConfigFactory.load())
   )
-  implicit val materializer = ActorMaterializer()
-  implicit val ec = materializer.executionContext
+  implicit val ec: ExecutionContext = actorSystem.dispatcher
 
   implicit val defaultPatience: PatienceConfig = PatienceConfig(90.seconds, 100.millis)
 

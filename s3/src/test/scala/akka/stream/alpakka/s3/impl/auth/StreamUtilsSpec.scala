@@ -9,17 +9,17 @@ import java.nio.file.{Files, Path}
 import java.security.{DigestInputStream, MessageDigest}
 
 import akka.actor.ActorSystem
+import akka.stream.ActorAttributes
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
-import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.stream.scaladsl.{Sink, Source, StreamConverters}
 import akka.testkit.TestKit
 import akka.util.ByteString
 import com.google.common.jimfs.{Configuration, Jimfs}
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.BeforeAndAfterAll
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.time.{Millis, Seconds, Span}
 
 class StreamUtilsSpec(_system: ActorSystem)
     extends TestKit(_system)
@@ -30,9 +30,9 @@ class StreamUtilsSpec(_system: ActorSystem)
     with LogCapturing {
   def this() = this(ActorSystem("StreamUtilsSpec"))
 
-  implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withDebugLogging(true))
+  private val DebugLogging = ActorAttributes.debugLogging(true)
 
-  implicit val defaultPatience =
+  implicit val defaultPatience: PatienceConfig =
     PatienceConfig(timeout = Span(5, Seconds), interval = Span(30, Millis))
 
   override protected def afterAll(): Unit = {
@@ -61,7 +61,7 @@ class StreamUtilsSpec(_system: ActorSystem)
 
   "digest" should "calculate the digest of a short string" in {
     val bytes = "abcdefghijklmnopqrstuvwxyz".getBytes()
-    val flow = Source.single(ByteString(bytes)).via(digest()).runWith(Sink.head)
+    val flow = Source.single(ByteString(bytes)).via(digest()).withAttributes(DebugLogging).runWith(Sink.head)
 
     val testDigest = MessageDigest.getInstance("SHA-256").digest(bytes)
     whenReady(flow) { result =>
@@ -71,7 +71,7 @@ class StreamUtilsSpec(_system: ActorSystem)
 
   it should "calculate the digest of a file" in {
     val input = StreamConverters.fromInputStream(() => Files.newInputStream(bigFile))
-    val flow = input.via(digest()).runWith(Sink.head)
+    val flow = input.via(digest()).withAttributes(DebugLogging).runWith(Sink.head)
 
     val testDigest = MessageDigest.getInstance("SHA-256")
     val dis = new DigestInputStream(Files.newInputStream(bigFile), testDigest)

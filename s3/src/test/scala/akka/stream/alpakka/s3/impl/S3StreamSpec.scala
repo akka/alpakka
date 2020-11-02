@@ -5,24 +5,24 @@
 package akka.stream.alpakka.s3.impl
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.model.headers.ByteRange
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.stream.alpakka.s3.BucketAccess.{AccessDenied, AccessGranted, NotExists}
 import akka.stream.alpakka.s3.{ApiVersion, BucketAccess, MemoryBufferType, S3Settings}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Keep, Sink, Source}
-import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Attributes}
+import akka.stream.{Attributes, SystemMaterializer}
 import akka.testkit.TestKit
 import akka.util.ByteString
-import software.amazon.awssdk.auth.credentials._
-import software.amazon.awssdk.regions.providers._
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatest.{BeforeAndAfterAll, PrivateMethodTester}
-import software.amazon.awssdk.regions.Region
-
-import scala.concurrent.Future
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.{BeforeAndAfterAll, PrivateMethodTester}
+import software.amazon.awssdk.auth.credentials._
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.regions.providers._
+
+import scala.concurrent.Future
 
 class S3StreamSpec(_system: ActorSystem)
     extends TestKit(_system)
@@ -37,7 +37,6 @@ class S3StreamSpec(_system: ActorSystem)
   import HttpRequests._
 
   def this() = this(ActorSystem("S3StreamSpec"))
-  implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withDebugLogging(true))
 
   override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 
@@ -160,7 +159,8 @@ class S3StreamSpec(_system: ActorSystem)
     def bucketStatusPreparation(response: HttpResponse): Future[BucketAccess] = {
       val testedMethod = PrivateMethod[Future[BucketAccess]]('processCheckIfExistsResponse)
 
-      val result: Future[BucketAccess] = S3Stream invokePrivate testedMethod(response, materializer)
+      val result: Future[BucketAccess] = S3Stream invokePrivate testedMethod(response,
+                                                                             SystemMaterializer(system).materializer)
 
       result
     }

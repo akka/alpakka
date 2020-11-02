@@ -11,7 +11,6 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{`Raw-Request-URI`, ByteRange, RawHeader}
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.s3.headers.{CannedAcl, ServerSideEncryption, StorageClass}
 import akka.stream.alpakka.s3._
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
@@ -417,7 +416,6 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
   it should "support custom endpoint configured by `endpointUrl`" in {
     implicit val system: ActorSystem = ActorSystem("HttpRequestsSpec")
     import system.dispatcher
-    implicit val materializer: ActorMaterializer = ActorMaterializer()
 
     try {
       val probe = TestProbe()

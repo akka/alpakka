@@ -552,7 +552,7 @@ object ObjectMetadata {
  *
  * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketHEAD.html
  */
-sealed class BucketAccess
+sealed trait BucketAccess
 
 object BucketAccess {
   case object AccessDenied extends BucketAccess

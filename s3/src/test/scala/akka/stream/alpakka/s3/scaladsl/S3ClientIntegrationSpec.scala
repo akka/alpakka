@@ -5,7 +5,6 @@
 package akka.stream.alpakka.s3.scaladsl
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
@@ -23,7 +22,6 @@ trait S3ClientIntegrationSpec
     with LogCapturing {
 
   implicit val system: ActorSystem
-  implicit val materializer = ActorMaterializer()
 
   override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 

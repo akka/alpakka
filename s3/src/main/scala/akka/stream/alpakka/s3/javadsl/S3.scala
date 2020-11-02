@@ -6,13 +6,14 @@ package akka.stream.alpakka.s3.javadsl
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 
+import akka.actor.ClassicActorSystemProvider
 import akka.japi.{Pair => JPair}
 import akka.{Done, NotUsed}
 import akka.http.javadsl.model._
 import akka.http.javadsl.model.headers.ByteRange
 import akka.http.scaladsl.model.headers.{ByteRange => ScalaByteRange}
 import akka.http.scaladsl.model.{ContentType => ScalaContentType, HttpMethod => ScalaHttpMethod}
-import akka.stream.{Attributes, Materializer}
+import akka.stream.{Attributes, Materializer, SystemMaterializer}
 import akka.stream.alpakka.s3.headers.{CannedAcl, ServerSideEncryption}
 import akka.stream.alpakka.s3._
 import akka.stream.alpakka.s3.impl._
@@ -765,6 +766,47 @@ object S3 {
    *
    * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
    * @param bucketName bucket name
+   * @param system the actor system which provides the materializer to run with
+   * @param attributes attributes to run request with
+   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
+   */
+  def makeBucket(bucketName: String,
+                 system: ClassicActorSystemProvider,
+                 attributes: Attributes): CompletionStage[Done] =
+    makeBucket(bucketName, system, attributes, S3Headers.empty)
+
+  /**
+   * Create new bucket with a given name
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
+   * @param bucketName bucket name
+   * @param system the actor system which provides the materializer to run with
+   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
+   */
+  def makeBucket(bucketName: String, system: ClassicActorSystemProvider): CompletionStage[Done] =
+    makeBucket(bucketName, system, Attributes(), S3Headers.empty)
+
+  /**
+   * Create new bucket with a given name
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
+   * @param bucketName bucket name
+   * @param system the actor system which provides the materializer to run with
+   * @param attributes attributes to run request with
+   * @param s3Headers any headers you want to add
+   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
+   */
+  def makeBucket(bucketName: String,
+                 system: ClassicActorSystemProvider,
+                 attributes: Attributes,
+                 s3Headers: S3Headers): CompletionStage[Done] =
+    S3Stream.makeBucket(bucketName, s3Headers)(SystemMaterializer(system).materializer, attributes).toJava
+
+  /**
+   * Create new bucket with a given name
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
+   * @param bucketName bucket name
    * @return [[akka.stream.javadsl.Source Source]] of type [[Done]] as API doesn't return any additional information
    */
   def makeBucketSource(bucketName: String): Source[Done, NotUsed] =
@@ -819,6 +861,47 @@ object S3 {
    */
   def deleteBucket(bucketName: String, materializer: Materializer): CompletionStage[Done] =
     deleteBucket(bucketName, materializer, Attributes(), S3Headers.empty)
+
+  /**
+   * Delete bucket with a given name
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteBucket.html
+   * @param bucketName   bucket name
+   * @param system the actor system which provides the materializer to run with
+   * @param attributes attributes to run request with
+   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
+   */
+  def deleteBucket(bucketName: String,
+                   system: ClassicActorSystemProvider,
+                   attributes: Attributes): CompletionStage[Done] =
+    deleteBucket(bucketName, system, attributes, S3Headers.empty)
+
+  /**
+   * Delete bucket with a given name
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteBucket.html
+   * @param bucketName   bucket name
+   * @param system the actor system which provides the materializer to run with
+   * @param attributes attributes to run request with
+   * @param s3Headers any headers you want to add
+   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
+   */
+  def deleteBucket(bucketName: String,
+                   system: ClassicActorSystemProvider,
+                   attributes: Attributes,
+                   s3Headers: S3Headers): CompletionStage[Done] =
+    S3Stream.deleteBucket(bucketName, s3Headers)(SystemMaterializer(system).materializer, attributes).toJava
+
+  /**
+   * Delete bucket with a given name
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteBucket.html
+   * @param bucketName   bucket name
+   * @param system the actor system which provides the materializer to run with
+   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
+   */
+  def deleteBucket(bucketName: String, system: ClassicActorSystemProvider): CompletionStage[Done] =
+    deleteBucket(bucketName, system, Attributes(), S3Headers.empty)
 
   /**
    * Delete bucket with a given name
@@ -881,6 +964,47 @@ object S3 {
    */
   def checkIfBucketExists(bucketName: String, materializer: Materializer): CompletionStage[BucketAccess] =
     checkIfBucketExists(bucketName, materializer, Attributes(), S3Headers.empty)
+
+  /**
+   * Checks whether the bucket exists and the user has rights to perform the `ListBucket` operation
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadBucket.html
+   * @param bucketName   bucket name
+   * @param system the actor system which provides the materializer to run with
+   * @param attributes attributes to run request with
+   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[BucketAccess]]
+   */
+  def checkIfBucketExists(bucketName: String,
+                          system: ClassicActorSystemProvider,
+                          attributes: Attributes): CompletionStage[BucketAccess] =
+    checkIfBucketExists(bucketName, system, attributes, S3Headers.empty)
+
+  /**
+   * Checks whether the bucket exists and the user has rights to perform the `ListBucket` operation
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadBucket.html
+   * @param bucketName   bucket name
+   * @param system the actor system which provides the materializer to run with
+   * @param attributes attributes to run request with
+   * @param s3Headers any headers you want to add
+   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[BucketAccess]]
+   */
+  def checkIfBucketExists(bucketName: String,
+                          system: ClassicActorSystemProvider,
+                          attributes: Attributes,
+                          s3Headers: S3Headers): CompletionStage[BucketAccess] =
+    S3Stream.checkIfBucketExists(bucketName, s3Headers)(SystemMaterializer(system).materializer, attributes).toJava
+
+  /**
+   * Checks whether the bucket exits and user has rights to perform ListBucket operation
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadBucket.html
+   * @param bucketName   bucket name
+   * @param system the actor system which provides the materializer to run with
+   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[BucketAccess]]
+   */
+  def checkIfBucketExists(bucketName: String, system: ClassicActorSystemProvider): CompletionStage[BucketAccess] =
+    checkIfBucketExists(bucketName, system, Attributes(), S3Headers.empty)
 
   /**
    * Checks whether the bucket exits and user has rights to perform ListBucket operation

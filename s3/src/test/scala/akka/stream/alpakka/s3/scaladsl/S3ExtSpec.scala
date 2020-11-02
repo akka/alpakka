@@ -21,7 +21,7 @@ class S3ExtSpec extends AnyFlatSpecLike with Matchers {
         "alpakka.s3.path-style-access" -> true
       ).asJava
     )
-    implicit val system = ActorSystem.create("s3", config)
+    implicit val system: ActorSystem = ActorSystem.create("s3", config)
     val ext = S3Ext(system)
     ext.settings.endpointUrl shouldBe Some("http://localhost:8001")
     ext.settings.accessStyle shouldBe PathAccessStyle

@@ -87,7 +87,7 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec with Option
         )
       )
 
-    val result: Future[MultipartUploadResult] = Source.single(ByteString(body)).runWith(s3Sink)(materializer)
+    val result: Future[MultipartUploadResult] = Source.single(ByteString(body)).runWith(s3Sink)
 
     val failure = intercept[TestFailedException] {
       result.futureValue
@@ -111,7 +111,7 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec with Option
         )
       )
 
-    val result: Future[MultipartUploadResult] = Source.single(ByteString(body)).runWith(s3Sink)(materializer)
+    val result: Future[MultipartUploadResult] = Source.single(ByteString(body)).runWith(s3Sink)
 
     result.futureValue shouldBe MultipartUploadResult(url, bucket, bucketKey, etag, None)
   }

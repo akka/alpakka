@@ -21,7 +21,7 @@ import akka.stream.alpakka.s3.BucketAccess.{AccessDenied, AccessGranted, NotExis
 import akka.stream.alpakka.s3._
 import akka.stream.alpakka.s3.headers.ServerSideEncryption
 import akka.stream.alpakka.s3.impl.auth.{CredentialScope, Signer, SigningKey}
-import akka.stream.alpakka.s3.impl.backport.RetryFlow
+import akka.stream.scaladsl.RetryFlow
 import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source, Tcp}
 import akka.stream.{ActorMaterializer, Attributes, Materializer}
 import akka.util.ByteString
