@@ -9,7 +9,6 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.ActorSystem
 import akka.dispatch.ExecutionContexts
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.amqp.{
   AmqpCachedConnectionProvider,
   AmqpConnectionFactoryConnectionProvider,
@@ -68,7 +67,6 @@ class AmqpGraphStageLogicConnectionShutdownSpec
     // actor system is within this test as it has to be shut down in order
     // to verify graph stage termination
     implicit val system = ActorSystem(this.getClass.getSimpleName + System.currentTimeMillis())
-    implicit val materializer = ActorMaterializer()
 
     val connectionFactory = new ConnectionFactory() {
       override def newConnection(es: ExecutorService, ar: AddressResolver, name: String): Connection =

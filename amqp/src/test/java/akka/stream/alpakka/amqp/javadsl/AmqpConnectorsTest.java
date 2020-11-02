@@ -8,7 +8,6 @@ import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
 import akka.stream.KillSwitches;
 import akka.stream.Materializer;
 import akka.stream.UniqueKillSwitch;
@@ -46,12 +45,10 @@ public class AmqpConnectorsTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem system;
-  private static Materializer materializer;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
   }
 
   @AfterClass
@@ -61,7 +58,7 @@ public class AmqpConnectorsTest {
 
   @After
   public void checkForStageLeaks() {
-    StreamTestKit.assertAllStagesStopped(materializer);
+    StreamTestKit.assertAllStagesStopped(Materializer.matFromSystem(system));
   }
 
   private AmqpConnectionProvider connectionProvider = AmqpLocalConnectionProvider.getInstance();
@@ -83,7 +80,7 @@ public class AmqpConnectorsTest {
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
     final CompletionStage<Done> result =
-        Source.from(input).map(ByteString::fromString).runWith(amqpSink, materializer);
+        Source.from(input).map(ByteString::fromString).runWith(amqpSink, system);
 
     try {
       result.toCompletableFuture().get();
@@ -111,7 +108,7 @@ public class AmqpConnectorsTest {
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
     final CompletionStage<Done> result =
-        Source.from(input).map(ByteString::fromString).runWith(amqpSink, materializer);
+        Source.from(input).map(ByteString::fromString).runWith(amqpSink, system);
 
     try {
       result.toCompletableFuture().get();
@@ -144,7 +141,7 @@ public class AmqpConnectorsTest {
             .viaMat(ampqRpcFlow, Keep.right())
             .mapAsync(1, cm -> cm.ack().thenApply(unused -> cm.message()))
             .toMat(TestSink.probe(system), Keep.both())
-            .run(materializer);
+            .run(system);
 
     result.first().toCompletableFuture().get(5, TimeUnit.SECONDS);
 
@@ -162,7 +159,7 @@ public class AmqpConnectorsTest {
             .viaMat(KillSwitches.single(), Keep.right())
             .map(b -> WriteMessage.create(b.bytes()).withProperties(b.properties()))
             .to(amqpSink)
-            .run(materializer);
+            .run(system);
 
     List<ReadResult> probeResult =
         JavaConverters.seqAsJavaListConverter(
@@ -194,12 +191,12 @@ public class AmqpConnectorsTest {
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
     Source.from(input)
         .map(ByteString::fromString)
-        .runWith(amqpSink, materializer)
+        .runWith(amqpSink, system)
         .toCompletableFuture()
         .get(3, TimeUnit.SECONDS);
 
     final CompletionStage<List<CommittableReadResult>> result =
-        amqpSource.take(input.size()).runWith(Sink.seq(), materializer);
+        amqpSource.take(input.size()).runWith(Sink.seq(), system);
 
     List<CommittableReadResult> committableMessages =
         result.toCompletableFuture().get(3, TimeUnit.SECONDS);
@@ -245,12 +242,12 @@ public class AmqpConnectorsTest {
         input.stream().map(s -> "key." + s).collect(Collectors.toList());
     Source.from(input)
         .map(s -> WriteMessage.create(ByteString.fromString(s)).withRoutingKey("key." + s))
-        .runWith(amqpSink, materializer);
+        .runWith(amqpSink, system);
 
     final List<ReadResult> result =
         amqpSource
             .take(input.size())
-            .runWith(Sink.seq(), materializer)
+            .runWith(Sink.seq(), system)
             .toCompletableFuture()
             .get(3, TimeUnit.SECONDS);
 
