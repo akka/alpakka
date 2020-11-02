@@ -45,7 +45,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Setup
 
-Prepare an @scaladoc[ActorSystem](akka.actor.ActorSystem) and a @scaladoc[Materializer](akka.stream.Materializer).
+Prepare an @scaladoc[ActorSystem](akka.actor.ActorSystem).
 
 Scala
 : @@snip [snip](/aws-event-bridge/src/test/scala/akka/stream/alpakka/aws/eventbridge/IntegrationTestContext.scala) { #init-system }
