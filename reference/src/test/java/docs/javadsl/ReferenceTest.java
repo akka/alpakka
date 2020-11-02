@@ -11,8 +11,6 @@ package docs.javadsl;
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.alpakka.reference.*;
 import akka.stream.alpakka.reference.javadsl.Reference;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
@@ -34,16 +32,14 @@ import java.util.stream.Collectors;
 public class ReferenceTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
-  static ActorSystem sys;
-  static Materializer mat;
+  static ActorSystem system;
 
   static final String clientId = "test-client-id";
 
   /** Called before test suite. */
   @BeforeClass
   public static void setUpBeforeClass() {
-    sys = ActorSystem.create("ReferenceTest");
-    mat = ActorMaterializer.create(sys);
+    system = ActorSystem.create("ReferenceTest");
   }
 
   /** Called before every test. */
@@ -88,7 +84,7 @@ public class ReferenceTest {
     final Source<ReferenceReadResult, CompletionStage<Done>> source =
         Reference.source(SourceSettings.create(clientId));
 
-    final CompletionStage<ReferenceReadResult> stage = source.runWith(Sink.head(), mat);
+    final CompletionStage<ReferenceReadResult> stage = source.runWith(Sink.head(), system);
     final ReferenceReadResult msg = stage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     Assert.assertEquals(Collections.singletonList(ByteString.fromString("one")), msg.getData());
@@ -125,7 +121,7 @@ public class ReferenceTest {
                             ByteString.fromString("four")))));
 
     final CompletionStage<List<ReferenceWriteResult>> stage =
-        source.via(flow).runWith(Sink.seq(), mat);
+        source.via(flow).runWith(Sink.seq(), system);
     final List<ReferenceWriteResult> result = stage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     final List<ByteString> bytes =
@@ -152,7 +148,7 @@ public class ReferenceTest {
                 ReferenceWriteMessage.create()
                     .withData(Collections.singletonList(ByteString.fromString("one"))))
             .via(Reference.flowWithResource())
-            .runWith(Sink.seq(), mat)
+            .runWith(Sink.seq(), system)
             .toCompletableFuture()
             .get(5, TimeUnit.SECONDS);
 
@@ -175,7 +171,7 @@ public class ReferenceTest {
                     .withAttributes(
                         ReferenceAttributes.resource(
                             Resource.create(ResourceSettings.create("attributes msg")))))
-            .runWith(Sink.seq(), mat)
+            .runWith(Sink.seq(), system)
             .toCompletableFuture()
             .get(5, TimeUnit.SECONDS);
 
@@ -194,6 +190,6 @@ public class ReferenceTest {
   /** Called after test suite. */
   @AfterClass
   public static void tearDownAfterClass() {
-    TestKit.shutdownActorSystem(sys);
+    TestKit.shutdownActorSystem(system);
   }
 }

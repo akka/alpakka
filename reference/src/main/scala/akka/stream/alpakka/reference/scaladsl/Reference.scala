@@ -41,7 +41,7 @@ object Reference {
    */
   def flowWithResource(): Flow[ReferenceWriteMessage, ReferenceWriteResult, NotUsed] =
     Flow
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         Flow.fromGraph(new ReferenceWithResourceFlowStage(resolveResource(mat.system, attr)))
       }
       .mapMaterializedValue(_ => NotUsed)
