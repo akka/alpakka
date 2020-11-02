@@ -5,6 +5,7 @@
 package akka.stream.alpakka.s3.scaladsl
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
@@ -23,6 +24,10 @@ trait S3ClientIntegrationSpec
 
   implicit val system: ActorSystem
 
-  override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
+  override protected def afterAll(): Unit = {
+    Http(system)
+      .shutdownAllConnectionPools()
+      .foreach(_ => TestKit.shutdownActorSystem(system))(system.dispatcher)
+  }
 
 }

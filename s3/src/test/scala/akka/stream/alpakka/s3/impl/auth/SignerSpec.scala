@@ -9,7 +9,6 @@ import java.time.{LocalDateTime, ZoneOffset, ZonedDateTime}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.{`Raw-Request-URI`, Host, RawHeader}
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
-import akka.stream.ActorAttributes
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Sink
 import akka.testkit.TestKit
@@ -35,8 +34,6 @@ class SignerSpec(_system: ActorSystem)
 
   implicit val defaultPatience =
     PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
-
-  private val DebugLogging = ActorAttributes.debugLogging(true)
 
   val credentials = StaticCredentialsProvider.create(
     AwsBasicCredentials.create("AKIDEXAMPLE", "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY")
@@ -74,7 +71,7 @@ class SignerSpec(_system: ActorSystem)
 
     val date = LocalDateTime.of(2015, 8, 30, 12, 36, 0).atZone(ZoneOffset.UTC)
     val srFuture =
-      Signer.signedRequest(req, signingKey(date)).withAttributes(DebugLogging).runWith(Sink.head)
+      Signer.signedRequest(req, signingKey(date)).runWith(Sink.head)
     whenReady(srFuture) { signedRequest =>
       signedRequest should equal(
         HttpRequest(HttpMethods.GET)
@@ -99,7 +96,7 @@ class SignerSpec(_system: ActorSystem)
 
     val date = LocalDateTime.of(2017, 12, 31, 12, 36, 0).atZone(ZoneOffset.UTC)
     val srFuture =
-      Signer.signedRequest(req, signingKey(date)).withAttributes(DebugLogging).runWith(Sink.head)
+      Signer.signedRequest(req, signingKey(date)).runWith(Sink.head)
 
     whenReady(srFuture) { signedRequest =>
       signedRequest.getHeader("x-amz-date").get.value should equal("20171231T123600Z")
@@ -121,7 +118,7 @@ class SignerSpec(_system: ActorSystem)
     val key = SigningKey(date, sessionCredentialsProvider, CredentialScope(date.toLocalDate, Region.US_EAST_1, "iam"))
 
     val srFuture =
-      Signer.signedRequest(req, key).withAttributes(DebugLogging).runWith(Sink.head)
+      Signer.signedRequest(req, key).runWith(Sink.head)
 
     whenReady(srFuture) { signedRequest =>
       signedRequest.getHeader("x-amz-security-token").get.value should equal(sessionCredentials.sessionToken)
@@ -138,7 +135,7 @@ class SignerSpec(_system: ActorSystem)
       )
 
     val date = LocalDateTime.of(2015, 8, 30, 12, 36, 0).atZone(ZoneOffset.UTC)
-    val srFuture = Signer.signedRequest(req, signingKey(date)).withAttributes(DebugLogging).runWith(Sink.head)
+    val srFuture = Signer.signedRequest(req, signingKey(date)).runWith(Sink.head)
 
     whenReady(srFuture) { signedRequest =>
       signedRequest.getHeader("Authorization").asScala.value shouldEqual RawHeader(

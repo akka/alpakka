@@ -383,7 +383,7 @@ object S3Settings {
     }
 
     val maybeProxy = for {
-      host ← Try(c.getString("proxy.host")).toOption if host.nonEmpty
+      host <- Try(c.getString("proxy.host")).toOption if host.nonEmpty
     } yield {
       Proxy(
         host,
@@ -462,10 +462,10 @@ object S3Settings {
 
       if (c.hasPath(credProviderPath)) {
         c.getString(credProviderPath) match {
-          case "default" ⇒
+          case "default" =>
             DefaultCredentialsProvider.create()
 
-          case "static" ⇒
+          case "static" =>
             val aki = c.getString("aws.credentials.access-key-id")
             val sak = c.getString("aws.credentials.secret-access-key")
             val tokenPath = "aws.credentials.token"
@@ -476,10 +476,10 @@ object S3Settings {
             }
             StaticCredentialsProvider.create(creds)
 
-          case "anon" ⇒
+          case "anon" =>
             AnonymousCredentialsProvider.create()
 
-          case _ ⇒
+          case _ =>
             DefaultCredentialsProvider.create()
         }
       } else {

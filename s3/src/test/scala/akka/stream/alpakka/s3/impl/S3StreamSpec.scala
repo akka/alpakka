@@ -42,7 +42,7 @@ class S3StreamSpec(_system: ActorSystem)
 
   "Non-ranged downloads" should "have two (host and synthetic raw-request-uri) headers" in {
 
-    val requestHeaders = PrivateMethod[HttpRequest]('requestHeaders)
+    val requestHeaders = PrivateMethod[HttpRequest](Symbol("requestHeaders"))
     val credentialsProvider = StaticCredentialsProvider.create(
       AwsBasicCredentials.create(
         "test-Id",
@@ -59,13 +59,13 @@ class S3StreamSpec(_system: ActorSystem)
 
     val result: HttpRequest = S3Stream invokePrivate requestHeaders(getDownloadRequest(location), None)
     result.headers.size shouldBe 2
-    result.headers.seq.exists(_.lowercaseName() == "host")
-    result.headers.seq.exists(_.lowercaseName() == "raw-request-uri")
+    result.headers.exists(_.lowercaseName() == "host")
+    result.headers.exists(_.lowercaseName() == "raw-request-uri")
   }
 
   "Ranged downloads" should "have three (host, range and synthetic raw-request-uri) headers" in {
 
-    val requestHeaders = PrivateMethod[HttpRequest]('requestHeaders)
+    val requestHeaders = PrivateMethod[HttpRequest](Symbol("requestHeaders"))
     val credentialsProvider =
       StaticCredentialsProvider.create(
         AwsBasicCredentials.create(
@@ -85,9 +85,9 @@ class S3StreamSpec(_system: ActorSystem)
 
     val result: HttpRequest = S3Stream invokePrivate requestHeaders(getDownloadRequest(location), Some(range))
     result.headers.size shouldBe 3
-    result.headers.seq.exists(_.lowercaseName() == "host")
-    result.headers.seq.exists(_.lowercaseName() == "range")
-    result.headers.seq.exists(_.lowercaseName() == "raw-request-uri")
+    result.headers.exists(_.lowercaseName() == "host")
+    result.headers.exists(_.lowercaseName() == "range")
+    result.headers.exists(_.lowercaseName() == "raw-request-uri")
 
   }
 
@@ -157,7 +157,7 @@ class S3StreamSpec(_system: ActorSystem)
 
   "processCheckIfExistsResponse" should "convert head response to BucketAccess" in {
     def bucketStatusPreparation(response: HttpResponse): Future[BucketAccess] = {
-      val testedMethod = PrivateMethod[Future[BucketAccess]]('processCheckIfExistsResponse)
+      val testedMethod = PrivateMethod[Future[BucketAccess]](Symbol("processCheckIfExistsResponse"))
 
       val result: Future[BucketAccess] = S3Stream invokePrivate testedMethod(response,
                                                                              SystemMaterializer(system).materializer)
@@ -187,7 +187,7 @@ class S3StreamSpec(_system: ActorSystem)
   it should "only resolve the default S3 settings once per actor system" in {
 
     val attr = Attributes()
-    val resolveSettings = PrivateMethod[S3Settings]('resolveSettings)
+    val resolveSettings = PrivateMethod[S3Settings](Symbol("resolveSettings"))
     val settings1 = S3Stream invokePrivate resolveSettings(attr, system)
     val settings2 = S3Stream invokePrivate resolveSettings(attr, system)
 

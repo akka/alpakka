@@ -9,7 +9,6 @@ import java.nio.file.{Files, Path}
 import java.security.{DigestInputStream, MessageDigest}
 
 import akka.actor.ActorSystem
-import akka.stream.ActorAttributes
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source, StreamConverters}
 import akka.testkit.TestKit
@@ -29,8 +28,6 @@ class StreamUtilsSpec(_system: ActorSystem)
     with BeforeAndAfterAll
     with LogCapturing {
   def this() = this(ActorSystem("StreamUtilsSpec"))
-
-  private val DebugLogging = ActorAttributes.debugLogging(true)
 
   implicit val defaultPatience: PatienceConfig =
     PatienceConfig(timeout = Span(5, Seconds), interval = Span(30, Millis))
@@ -61,7 +58,7 @@ class StreamUtilsSpec(_system: ActorSystem)
 
   "digest" should "calculate the digest of a short string" in {
     val bytes = "abcdefghijklmnopqrstuvwxyz".getBytes()
-    val flow = Source.single(ByteString(bytes)).via(digest()).withAttributes(DebugLogging).runWith(Sink.head)
+    val flow = Source.single(ByteString(bytes)).via(digest()).runWith(Sink.head)
 
     val testDigest = MessageDigest.getInstance("SHA-256").digest(bytes)
     whenReady(flow) { result =>
@@ -71,7 +68,7 @@ class StreamUtilsSpec(_system: ActorSystem)
 
   it should "calculate the digest of a file" in {
     val input = StreamConverters.fromInputStream(() => Files.newInputStream(bigFile))
-    val flow = input.via(digest()).withAttributes(DebugLogging).runWith(Sink.head)
+    val flow = input.via(digest()).runWith(Sink.head)
 
     val testDigest = MessageDigest.getInstance("SHA-256")
     val dis = new DigestInputStream(Files.newInputStream(bigFile), testDigest)
