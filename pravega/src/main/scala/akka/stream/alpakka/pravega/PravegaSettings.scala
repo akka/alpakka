@@ -127,6 +127,13 @@ object ReaderSettingsBuilder {
     apply(actorSystem)
 
   /**
+   * Java API: Create settings from a configuration with the same layout as
+   * * the default configuration `akka.alpakka.pravega.reader`.
+   */
+  def create[Message](config: Config): ReaderSettingsBuilder =
+    apply(config)
+
+  /**
    * Create settings from a configuration with the same layout as
    * the default configuration `akka.alpakka.pravega.reader`.
    */

@@ -7,11 +7,8 @@ package akka.stream.alpakka.pravega
 import java.net.URI
 import java.util.UUID
 
-import akka.stream.{ActorMaterializer, Materializer}
-
 import io.pravega.client.admin.StreamManager
 import io.pravega.client.stream.{ScalingPolicy, StreamConfiguration}
-
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -20,14 +17,11 @@ import org.slf4j.LoggerFactory
 abstract class PravegaBaseSpec extends AnyWordSpec with PravegaAkkaSpecSupport with ScalaFutures with Matchers {
   val logger = LoggerFactory.getLogger(this.getClass())
 
-  implicit val mat: Materializer = ActorMaterializer()
+  def newGroupName() = "scala-test-group-" + UUID.randomUUID().toString
+  def newScope() = "scala-test-scope-" + UUID.randomUUID().toString
+  def newStreamName() = "scala-test-stream-" + UUID.randomUUID().toString
 
-  final val groupName = "scala-test-group"
-
-  final val scope = "scala-test-scope-" + UUID.randomUUID().toString
-  final val streamName = "scala-test-stream-" + UUID.randomUUID().toString
-
-  override def beforeAll(): Unit = {
+  def createStream(scope: String, streamName: String) = {
     val streamManager = StreamManager.create(URI.create("tcp://localhost:9090"))
     if (streamManager.createScope(scope))
       logger.info(s"Created scope [$scope].")
@@ -42,5 +36,4 @@ abstract class PravegaBaseSpec extends AnyWordSpec with PravegaAkkaSpecSupport w
 
     streamManager.close()
   }
-
 }
