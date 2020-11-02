@@ -1,0 +1,5 @@
+# change BucketAccess from class to trait #2443
+ProblemFilters.exclude[IncompatibleTemplateDefProblem]("akka.stream.alpakka.s3.BucketAccess")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.alpakka.s3.BucketAccess$AccessDenied$")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.alpakka.s3.BucketAccess$NotExists$")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.alpakka.s3.BucketAccess$AccessGranted$")
