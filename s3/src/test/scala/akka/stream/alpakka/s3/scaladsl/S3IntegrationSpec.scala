@@ -6,6 +6,7 @@ package akka.stream.alpakka.s3.scaladsl
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
+import akka.http.scaladsl.Http
 import akka.stream.Attributes
 import akka.stream.alpakka.s3.AccessStyle.PathAccessStyle
 import akka.stream.alpakka.s3.BucketAccess.{AccessGranted, NotExists}
@@ -54,7 +55,10 @@ trait S3IntegrationSpec
   val objectValue = "Some String"
   val metaHeaders: Map[String, String] = Map("location" -> "Africa", "datatype" -> "image")
 
-  override protected def afterAll(): Unit = TestKit.shutdownActorSystem(actorSystem)
+  override protected def afterAll(): Unit =
+    Http(actorSystem)
+      .shutdownAllConnectionPools()
+      .foreach(_ => TestKit.shutdownActorSystem(actorSystem))
 
   def config() = ConfigFactory.parseString("""
       |alpakka.s3.aws.region {
