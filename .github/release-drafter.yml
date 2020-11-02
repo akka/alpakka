@@ -74,6 +74,8 @@ categories:
     label: 'p:mqtt-streaming'
   - title: 'OrientDB'
     label: 'p:orientdb'
+  - title: 'Pravega'
+    label: 'p:pravega'
   - title: 'Reference'
     label: 'p:reference'
   - title: 'Server-sent events (SSE)'
