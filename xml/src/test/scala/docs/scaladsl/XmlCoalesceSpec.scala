@@ -6,7 +6,6 @@ package docs.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
-import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.xml._
 import akka.stream.alpakka.xml.scaladsl.XmlParsing
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
@@ -20,7 +19,6 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class XmlCoalesceSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with LogCapturing {
   implicit val system: ActorSystem = ActorSystem("Test")
-  implicit val mat: Materializer = ActorMaterializer()
 
   val parse = Flow[String]
     .map(ByteString(_))
