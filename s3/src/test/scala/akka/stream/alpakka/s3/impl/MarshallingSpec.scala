@@ -8,16 +8,16 @@ import java.time.Instant
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{MediaTypes, _}
-import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.stream.alpakka.s3.{ListBucketResultCommonPrefixes, ListBucketResultContents}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
-import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.BeforeAndAfterAll
-
-import scala.collection.immutable.Seq
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.matchers.should.Matchers
+
+import scala.collection.immutable.Seq
+import scala.concurrent.ExecutionContext
 
 class MarshallingSpec(_system: ActorSystem)
     extends TestKit(_system)
@@ -29,8 +29,7 @@ class MarshallingSpec(_system: ActorSystem)
 
   def this() = this(ActorSystem("MarshallingSpec"))
 
-  implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withDebugLogging(true))
-  implicit val ec = materializer.executionContext
+  implicit val ec: ExecutionContext = system.dispatcher
 
   override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 

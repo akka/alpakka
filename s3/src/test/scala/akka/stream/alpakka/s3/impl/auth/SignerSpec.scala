@@ -7,22 +7,21 @@ package akka.stream.alpakka.s3.impl.auth
 import java.time.{LocalDateTime, ZoneOffset, ZonedDateTime}
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
 import akka.http.scaladsl.model.headers.{`Raw-Request-URI`, Host, RawHeader}
+import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Sink
-import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.testkit.TestKit
-import software.amazon.awssdk.auth.credentials._
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.OptionValues._
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.flatspec.AnyFlatSpecLike
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Millis, Seconds, Span}
+import software.amazon.awssdk.auth.credentials._
 import software.amazon.awssdk.regions.Region
 
 import scala.compat.java8.OptionConverters._
-import org.scalatest.flatspec.AnyFlatSpecLike
-import org.scalatest.matchers.should.Matchers
 
 class SignerSpec(_system: ActorSystem)
     extends TestKit(_system)
@@ -35,8 +34,6 @@ class SignerSpec(_system: ActorSystem)
 
   implicit val defaultPatience =
     PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
-
-  implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withDebugLogging(true))
 
   val credentials = StaticCredentialsProvider.create(
     AwsBasicCredentials.create("AKIDEXAMPLE", "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY")

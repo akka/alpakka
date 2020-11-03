@@ -6,15 +6,14 @@ package akka.stream.alpakka.s3.impl
 
 import akka.actor.ActorSystem
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
-import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
 import akka.util.ByteString
-import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.time.{Millis, Seconds, Span}
 
 class MemoryBufferSpec(_system: ActorSystem)
     extends TestKit(_system)
@@ -26,10 +25,8 @@ class MemoryBufferSpec(_system: ActorSystem)
 
   def this() = this(ActorSystem("MemoryBufferSpec"))
 
-  implicit val defaultPatience =
+  implicit val defaultPatience: PatienceConfig =
     PatienceConfig(timeout = Span(5, Seconds), interval = Span(30, Millis))
-
-  implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withDebugLogging(true))
 
   override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 

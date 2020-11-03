@@ -82,7 +82,7 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
       "aws.credentials.provider = default"
     )
     settings.credentialsProvider shouldBe a[DefaultCredentialsProvider]
-    settings.endpointUrl shouldBe 'empty
+    settings.endpointUrl shouldBe empty
   }
 
   it should "correctly fallback to default credentials provider" in {
@@ -120,7 +120,7 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
 
   it should "properly handle a missing endpoint url" in {
     val settings: S3Settings = mkSettings("")
-    settings.endpointUrl shouldBe 'empty
+    settings.endpointUrl shouldBe empty
   }
 
   it should "properly handle a null endpoint url" in {
@@ -129,7 +129,7 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
          |endpoint-url = null
         """.stripMargin
     )
-    settings.endpointUrl shouldBe 'empty
+    settings.endpointUrl shouldBe empty
   }
 
   it should "instantiate with a custom endpoint uri" in {
@@ -227,7 +227,7 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
 
     settings.forwardProxy.value.host shouldEqual "proxy-host"
     settings.forwardProxy.value.port shouldEqual 1337
-    settings.forwardProxy.value.credentials shouldBe 'empty
+    settings.forwardProxy.value.credentials shouldBe empty
   }
 
   it should "parse forward proxy with credentials" in {
