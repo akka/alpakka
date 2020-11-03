@@ -6,8 +6,6 @@ package docs.javadsl;
 
 import akka.Done;
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.alpakka.jms.CustomDestination;
 import akka.stream.alpakka.jms.JmsConsumerSettings;
 import akka.stream.alpakka.jms.JmsProducerSettings;
@@ -50,14 +48,12 @@ public class JmsIbmmqConnectorsTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem system;
-  private static Materializer materializer;
   private static MQQueueConnectionFactory queueConnectionFactory;
   private static MQTopicConnectionFactory topicConnectionFactory;
 
   @BeforeClass
   public static void setup() throws JMSException {
     system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
     // #ibmmq-connection-factory
     // Create the IBM MQ MQQueueConnectionFactory
     MQQueueConnectionFactory connectionFactory = new MQQueueConnectionFactory();
@@ -103,7 +99,7 @@ public class JmsIbmmqConnectorsTest {
     // #ibmmq-queue
 
     List<String> in = Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
-    Source.from(in).runWith(jmsSink, materializer);
+    Source.from(in).runWith(jmsSink, system);
 
     // #ibmmq-queue
     // Option1: create Source using default factory with just name
@@ -127,7 +123,7 @@ public class JmsIbmmqConnectorsTest {
                         "unexpected message type " + envelope.message().getClass());
                   }
                 })
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
 
     List<String> out = new ArrayList<>(result.toCompletableFuture().get(3, TimeUnit.SECONDS));
     Collections.sort(out);
@@ -154,7 +150,7 @@ public class JmsIbmmqConnectorsTest {
 
     List<String> in = Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
 
-    Source.from(in).runWith(jmsSink, materializer);
+    Source.from(in).runWith(jmsSink, system);
 
     // #ibmmq-custom-destination
     Source<String, JmsConsumerControl> jmsSource =
@@ -164,8 +160,7 @@ public class JmsIbmmqConnectorsTest {
 
     // #ibmmq-custom-destination
 
-    CompletionStage<List<String>> result =
-        jmsSource.take(in.size()).runWith(Sink.seq(), materializer);
+    CompletionStage<List<String>> result = jmsSource.take(in.size()).runWith(Sink.seq(), system);
 
     assertEquals(in.size(), result.toCompletableFuture().get(5, TimeUnit.SECONDS).size());
   }
@@ -192,11 +187,11 @@ public class JmsIbmmqConnectorsTest {
     // #ibmmq-topic
 
     CompletionStage<List<String>> result =
-        jmsTopicSource.take(in.size()).runWith(Sink.seq(), materializer);
+        jmsTopicSource.take(in.size()).runWith(Sink.seq(), system);
 
     Thread.sleep(500);
 
-    Source.from(in).runWith(jmsTopicSink, materializer);
+    Source.from(in).runWith(jmsTopicSink, system);
 
     assertEquals(in, result.toCompletableFuture().get(5, TimeUnit.SECONDS));
   }

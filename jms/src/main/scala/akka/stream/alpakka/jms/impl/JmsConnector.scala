@@ -15,7 +15,7 @@ import akka.stream.alpakka.jms._
 import akka.stream.alpakka.jms.impl.InternalConnectionState._
 import akka.stream.scaladsl.{BroadcastHub, Keep, Sink, Source, SourceQueueWithComplete}
 import akka.stream.stage.{AsyncCallback, StageLogging, TimerGraphStageLogic}
-import akka.stream.{ActorAttributes, ActorMaterializerHelper, Attributes, OverflowStrategy}
+import akka.stream.{ActorAttributes, Attributes, OverflowStrategy}
 import javax.jms
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -222,7 +222,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
   }
 
   private def drainConnectionState(): Unit =
-    Source.fromFuture(connectionStateSource).flatMapConcat(identity).runWith(Sink.ignore)(this.materializer)
+    Source.future(connectionStateSource).flatMapConcat(identity).runWith(Sink.ignore)(this.materializer)
 
   protected def executionContext(attributes: Attributes): ExecutionContext = {
     val dispatcherId = (attributes.get[ActorAttributes.Dispatcher](ActorAttributes.IODispatcher) match {
@@ -232,11 +232,11 @@ private[jms] trait JmsConnector[S <: JmsSession] {
     }) match {
       case d @ ActorAttributes.IODispatcher =>
         // this one is not a dispatcher id, but is a config path pointing to the dispatcher id
-        ActorMaterializerHelper.downcast(materializer).system.settings.config.getString(d.dispatcher)
+        materializer.system.settings.config.getString(d.dispatcher)
       case d => d.dispatcher
     }
 
-    ActorMaterializerHelper.downcast(materializer).system.dispatchers.lookup(dispatcherId)
+    materializer.system.dispatchers.lookup(dispatcherId)
   }
 
   protected def createSession(connection: jms.Connection, createDestination: jms.Session => jms.Destination): S
@@ -319,7 +319,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
   }
 
   private def openConnection(attempt: Int, backoffMaxed: Boolean): Future[jms.Connection] = {
-    implicit val system: ActorSystem = ActorMaterializerHelper.downcast(materializer).system
+    implicit val system: ActorSystem = materializer.system
     val jmsConnection = openConnectionAttempt(startConnection)
     updateState(JmsConnectorInitializing(jmsConnection, attempt, backoffMaxed, 0))
     jmsConnection.map { connection =>

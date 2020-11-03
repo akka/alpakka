@@ -7,8 +7,6 @@ package akka.stream.alpakka.jms.javadsl;
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.alpakka.jms.*;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
@@ -40,14 +38,12 @@ public class JmsAckConnectorsTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem system;
-  private static Materializer materializer;
   private static Config consumerConfig;
   private static Config producerConfig;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
     consumerConfig = system.settings().config().getConfig(JmsConsumerSettings.configPath());
     producerConfig = system.settings().config().getConfig(JmsProducerSettings.configPath());
   }
@@ -83,7 +79,7 @@ public class JmsAckConnectorsTest {
                   JmsProducerSettings.create(producerConfig, connectionFactory).withQueue("test"));
 
           List<String> in = Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k");
-          Source.from(in).runWith(jmsSink, materializer);
+          Source.from(in).runWith(jmsSink, system);
 
           Source<AckEnvelope, JmsConsumerControl> jmsSource =
               JmsConsumer.ackSource(
@@ -101,7 +97,7 @@ public class JmsAckConnectorsTest {
                         pair.first().acknowledge();
                         return pair.second();
                       })
-                  .runWith(Sink.seq(), materializer);
+                  .runWith(Sink.seq(), system);
           List<String> out = new ArrayList<>(result.toCompletableFuture().get(3, TimeUnit.SECONDS));
           Collections.sort(out);
           assertEquals(in, out);
@@ -120,7 +116,7 @@ public class JmsAckConnectorsTest {
 
           List<JmsTextMessage> msgsIn = createTestMessageList();
 
-          Source.from(msgsIn).runWith(jmsSink, materializer);
+          Source.from(msgsIn).runWith(jmsSink, system);
 
           Source<AckEnvelope, JmsConsumerControl> jmsSource =
               JmsConsumer.ackSource(
@@ -137,7 +133,7 @@ public class JmsAckConnectorsTest {
                         env.acknowledge();
                         return env.message();
                       })
-                  .runWith(Sink.seq(), materializer);
+                  .runWith(Sink.seq(), system);
 
           List<Message> outMessages =
               new ArrayList<>(result.toCompletableFuture().get(3, TimeUnit.SECONDS));
@@ -185,7 +181,7 @@ public class JmsAckConnectorsTest {
                   .map(jmsTextMessage -> jmsTextMessage.withHeader(JmsReplyTo.queue("test-reply")))
                   .collect(Collectors.toList());
 
-          Source.from(msgsIn).runWith(jmsSink, materializer);
+          Source.from(msgsIn).runWith(jmsSink, system);
 
           Source<AckEnvelope, JmsConsumerControl> jmsSource =
               JmsConsumer.ackSource(
@@ -202,7 +198,7 @@ public class JmsAckConnectorsTest {
                         env.acknowledge();
                         return env.message();
                       })
-                  .runWith(Sink.seq(), materializer);
+                  .runWith(Sink.seq(), system);
 
           List<Message> outMessages =
               new ArrayList<>(result.toCompletableFuture().get(3, TimeUnit.SECONDS));
@@ -245,7 +241,7 @@ public class JmsAckConnectorsTest {
 
           List<JmsTextMessage> msgsIn = createTestMessageList();
 
-          Source.from(msgsIn).runWith(jmsSink, materializer);
+          Source.from(msgsIn).runWith(jmsSink, system);
 
           Source<AckEnvelope, JmsConsumerControl> jmsSource =
               JmsConsumer.ackSource(
@@ -269,7 +265,7 @@ public class JmsAckConnectorsTest {
                         env.acknowledge();
                         return env.message();
                       })
-                  .runWith(Sink.seq(), materializer);
+                  .runWith(Sink.seq(), system);
 
           List<Message> outMessages =
               new ArrayList<>(result.toCompletableFuture().get(3, TimeUnit.SECONDS));
@@ -337,7 +333,7 @@ public class JmsAckConnectorsTest {
                         env.acknowledge();
                         return ((TextMessage) env.message()).getText();
                       })
-                  .runWith(Sink.seq(), materializer)
+                  .runWith(Sink.seq(), system)
                   .thenApply(l -> l.stream().sorted().collect(Collectors.toList()));
           CompletionStage<List<String>> result2 =
               jmsTopicSource2
@@ -347,13 +343,13 @@ public class JmsAckConnectorsTest {
                         env.acknowledge();
                         return ((TextMessage) env.message()).getText();
                       })
-                  .runWith(Sink.seq(), materializer)
+                  .runWith(Sink.seq(), system)
                   .thenApply(l -> l.stream().sorted().collect(Collectors.toList()));
 
           Thread.sleep(500);
 
-          Source.from(in).runWith(jmsTopicSink, materializer);
-          Source.from(inNumbers).runWith(jmsTopicSink2, materializer);
+          Source.from(in).runWith(jmsTopicSink, system);
+          Source.from(inNumbers).runWith(jmsTopicSink2, system);
 
           assertEquals(
               Stream.concat(in.stream(), inNumbers.stream()).sorted().collect(Collectors.toList()),

@@ -20,25 +20,28 @@ import scala.concurrent.duration._
 class JmsProducerRetrySpec extends JmsSpec {
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(20.seconds)
+  val stoppingDecider: Supervision.Decider = ex => Supervision.Stop
 
   "JmsProducer retries" should {
     "retry sending on network failures" in withServer() { server =>
       val connectionFactory = server.createConnectionFactory
-      val jms = JmsProducer.flow[JmsMapMessage](
-        JmsProducerSettings(producerConfig, connectionFactory)
-          .withQueue("test")
-          .withSessionCount(3)
-          .withConnectionRetrySettings(
-            ConnectionRetrySettings(system)
-              .withConnectTimeout(100.millis)
-              .withInitialRetry(50.millis)
-              .withMaxBackoff(50.millis)
-              .withInfiniteRetries()
-          )
-          .withSendRetrySettings(
-            SendRetrySettings(system).withInitialRetry(10.millis).withMaxBackoff(10.millis).withInfiniteRetries()
-          )
-      )
+      val jms = JmsProducer
+        .flow[JmsMapMessage](
+          JmsProducerSettings(producerConfig, connectionFactory)
+            .withQueue("test")
+            .withSessionCount(3)
+            .withConnectionRetrySettings(
+              ConnectionRetrySettings(system)
+                .withConnectTimeout(100.millis)
+                .withInitialRetry(50.millis)
+                .withMaxBackoff(50.millis)
+                .withInfiniteRetries()
+            )
+            .withSendRetrySettings(
+              SendRetrySettings(system).withInitialRetry(10.millis).withMaxBackoff(10.millis).withInfiniteRetries()
+            )
+        )
+        .withAttributes(ActorAttributes.supervisionStrategy(stoppingDecider))
 
       val (queue, result) = Source
         .queue[Int](10, OverflowStrategy.backpressure)
@@ -59,7 +62,9 @@ class JmsProducerRetrySpec extends JmsSpec {
       server.stop() // crash.
 
       Thread.sleep(1000)
-      server.restart() // recover.
+      // https://activemq.apache.org/how-do-i-restart-embedded-broker.html
+      server.service.waitUntilStopped()
+      server.start(true) // recover.
       val restartTime = System.currentTimeMillis()
       for (_ <- 1 to 10) queue.offer(1) // 10 after the crash
       queue.complete()
@@ -82,18 +87,20 @@ class JmsProducerRetrySpec extends JmsSpec {
 
     "fail sending only after max retries" in withServer() { server =>
       val connectionFactory = server.createConnectionFactory
-      val jms = JmsProducer.flow[JmsMapMessage](
-        JmsProducerSettings(producerConfig, connectionFactory)
-          .withQueue("test")
-          .withConnectionRetrySettings(ConnectionRetrySettings(system).withInfiniteRetries())
-          .withSendRetrySettings(
-            SendRetrySettings(system)
-              .withInitialRetry(100.millis)
-              .withMaxBackoff(600.millis)
-              .withBackoffFactor(2)
-              .withMaxRetries(3)
-          )
-      )
+      val jms = JmsProducer
+        .flow[JmsMapMessage](
+          JmsProducerSettings(producerConfig, connectionFactory)
+            .withQueue("test")
+            .withConnectionRetrySettings(ConnectionRetrySettings(system).withInfiniteRetries())
+            .withSendRetrySettings(
+              SendRetrySettings(system)
+                .withInitialRetry(100.millis)
+                .withMaxBackoff(600.millis)
+                .withBackoffFactor(2)
+                .withMaxRetries(3)
+            )
+        )
+        .withAttributes(ActorAttributes.supervisionStrategy(stoppingDecider))
 
       val (cancellable, result) = Source
         .tick(50.millis, 50.millis, "")
@@ -116,11 +123,13 @@ class JmsProducerRetrySpec extends JmsSpec {
     }
 
     "fail immediately on non-recoverable errors" in withConnectionFactory() { connectionFactory =>
-      val jms = JmsProducer.flow[JmsMapMessage](
-        JmsProducerSettings(producerConfig, connectionFactory)
-          .withQueue("test")
-          .withSendRetrySettings(SendRetrySettings(system).withInfiniteRetries())
-      )
+      val jms = JmsProducer
+        .flow[JmsMapMessage](
+          JmsProducerSettings(producerConfig, connectionFactory)
+            .withQueue("test")
+            .withSendRetrySettings(SendRetrySettings(system).withInfiniteRetries())
+        )
+        .withAttributes(ActorAttributes.supervisionStrategy(stoppingDecider))
 
       val result = Source(
         List(JmsMapMessage(Map("body" -> "1")), JmsMapMessage(Map("body" -> this)), JmsMapMessage(Map("body" -> "3")))
@@ -138,21 +147,21 @@ class JmsProducerRetrySpec extends JmsSpec {
         deciderCalls.incrementAndGet()
         Supervision.Resume
       }
-      val settings = ActorMaterializerSettings(system).withSupervisionStrategy(decider)
-      val materializer = ActorMaterializer(settings)(system)
 
-      val jms = JmsProducer.flow[JmsMapMessage](
-        JmsProducerSettings(producerConfig, connectionFactory)
-          .withQueue("test")
-          .withSendRetrySettings(SendRetrySettings(system).withInfiniteRetries())
-      )
+      val jms = JmsProducer
+        .flow[JmsMapMessage](
+          JmsProducerSettings(producerConfig, connectionFactory)
+            .withQueue("test")
+            .withSendRetrySettings(SendRetrySettings(system).withInfiniteRetries())
+        )
+        .withAttributes(ActorAttributes.supervisionStrategy(decider))
 
       // second element is a wrong map message.
       val result = Source(
         List(JmsMapMessage(Map("body" -> "1")), JmsMapMessage(Map("body" -> this)), JmsMapMessage(Map("body" -> "3")))
       ).via(jms)
         .map(_.body("body").toString)
-        .runWith(Sink.seq)(materializer)
+        .runWith(Sink.seq)
 
       // check that second element was skipped.
       val list = result.futureValue
