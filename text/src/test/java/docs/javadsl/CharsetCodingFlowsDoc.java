@@ -5,8 +5,6 @@
 package docs.javadsl;
 
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 
 // #encoding
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
@@ -41,7 +39,6 @@ public class CharsetCodingFlowsDoc {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static final ActorSystem system = ActorSystem.create();
-  private static final Materializer materializer = ActorMaterializer.create(system);
 
   @AfterClass
   public static void afterAll() {
@@ -66,7 +63,7 @@ public class CharsetCodingFlowsDoc {
         stringSource
             .via(TextFlow.encoding(StandardCharsets.US_ASCII))
             .intersperse(ByteString.fromString("\n"))
-            .runWith(FileIO.toPath(targetFile), materializer);
+            .runWith(FileIO.toPath(targetFile), system);
     // #encoding
     IOResult result = streamCompletion.toCompletableFuture().get(1, TimeUnit.SECONDS);
     assertTrue(result.wasSuccessful());
@@ -83,7 +80,7 @@ public class CharsetCodingFlowsDoc {
         // #decoding
         byteStringSource
             .via(TextFlow.decoding(StandardCharsets.UTF_16))
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
     // #decoding
     List<String> result = streamCompletion.toCompletableFuture().get(1, TimeUnit.SECONDS);
     assertEquals(Arrays.asList("äåûßêëé"), result);
@@ -102,7 +99,7 @@ public class CharsetCodingFlowsDoc {
         // #transcoding
         byteStringSource
             .via(TextFlow.transcoding(StandardCharsets.UTF_16, StandardCharsets.UTF_8))
-            .runWith(FileIO.toPath(targetFile), materializer);
+            .runWith(FileIO.toPath(targetFile), system);
     // #transcoding
     IOResult result = streamCompletion.toCompletableFuture().get(1, TimeUnit.SECONDS);
     assertTrue(result.wasSuccessful());
