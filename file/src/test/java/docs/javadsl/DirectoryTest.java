@@ -7,10 +7,9 @@ package docs.javadsl;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 // #walk
 // #ls
+import akka.stream.Materializer;
 import akka.stream.alpakka.file.javadsl.Directory;
 // #ls
 import java.nio.file.FileVisitOption;
@@ -41,12 +40,10 @@ public class DirectoryTest {
 
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
   private static ActorSystem system;
-  private static Materializer materializer;
 
   @BeforeClass
   public static void beforeAll() throws Exception {
     system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
   }
 
   @AfterClass
@@ -74,7 +71,7 @@ public class DirectoryTest {
     // #ls
 
     final List<Path> result =
-        source.runWith(Sink.seq(), materializer).toCompletableFuture().get(3, TimeUnit.SECONDS);
+        source.runWith(Sink.seq(), system).toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(result.size(), 2);
     assertEquals(result.get(0), file1);
     assertEquals(result.get(1), file2);
@@ -99,7 +96,7 @@ public class DirectoryTest {
     // #walk
 
     final List<Path> result =
-        source.runWith(Sink.seq(), materializer).toCompletableFuture().get(3, TimeUnit.SECONDS);
+        source.runWith(Sink.seq(), system).toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(result, Arrays.asList(root, subdir1, file1, subdir2, file2));
   }
 
@@ -122,7 +119,7 @@ public class DirectoryTest {
     // #walk
 
     final List<Path> result =
-        source.runWith(Sink.seq(), materializer).toCompletableFuture().get(3, TimeUnit.SECONDS);
+        source.runWith(Sink.seq(), system).toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(result, Arrays.asList(root, subdir1, subdir2));
   }
 
@@ -137,7 +134,7 @@ public class DirectoryTest {
     CompletionStage<List<Path>> created =
         Source.from(Arrays.asList(dir.resolve("dirA"), dir.resolve("dirB")))
             .via(flow)
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
     // #mkdirs
 
     final List<Path> result = created.toCompletableFuture().get(3, TimeUnit.SECONDS);
@@ -161,7 +158,7 @@ public class DirectoryTest {
             .via(flowWithContext)
             .asSource()
             .map(Pair::first)
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
 
     final List<Path> result = created.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertTrue(Files.isDirectory(result.get(0)));
@@ -172,7 +169,7 @@ public class DirectoryTest {
   public void tearDown() throws Exception {
     fs.close();
     fs = null;
-    StreamTestKit.assertAllStagesStopped(materializer);
+    StreamTestKit.assertAllStagesStopped(Materializer.matFromSystem(system));
   }
 
   static class SomeContext {}

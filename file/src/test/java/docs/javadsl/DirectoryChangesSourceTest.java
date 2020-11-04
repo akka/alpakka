@@ -7,7 +7,6 @@ package docs.javadsl;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.file.DirectoryChange;
 // #minimal-sample
@@ -23,7 +22,6 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.google.common.jimfs.WatchServiceConfiguration;
 import org.junit.*;
-import scala.concurrent.duration.FiniteDuration;
 
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -44,12 +42,10 @@ public class DirectoryChangesSourceTest {
   private Path testDir;
 
   private static ActorSystem system;
-  private static Materializer materializer;
 
   @BeforeClass
   public static void beforeAll() throws Exception {
     system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
   }
 
   @AfterClass
@@ -77,7 +73,7 @@ public class DirectoryChangesSourceTest {
     final TestSubscriber.Probe<Pair<Path, DirectoryChange>> probe = TestSubscriber.probe(system);
 
     DirectoryChangesSource.create(testDir, Duration.ofMillis(250), 200)
-        .runWith(Sink.fromSubscriber(probe), materializer);
+        .runWith(Sink.fromSubscriber(probe), system);
 
     probe.request(1);
 
@@ -110,7 +106,7 @@ public class DirectoryChangesSourceTest {
     final int numberOfChanges = 50;
 
     DirectoryChangesSource.create(testDir, Duration.ofMillis(250), numberOfChanges * 2)
-        .runWith(Sink.fromSubscriber(probe), materializer);
+        .runWith(Sink.fromSubscriber(probe), system);
 
     probe.request(numberOfChanges);
 
@@ -139,7 +135,7 @@ public class DirectoryChangesSourceTest {
 
   @After
   public void tearDown() throws Exception {
-    StreamTestKit.assertAllStagesStopped(materializer);
+    StreamTestKit.assertAllStagesStopped(Materializer.matFromSystem(system));
     fs.close();
   }
 
@@ -149,7 +145,6 @@ public class DirectoryChangesSourceTest {
     final String path = args[0];
 
     final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
 
     // #minimal-sample
 
@@ -165,7 +160,7 @@ public class DirectoryChangesSourceTest {
           final DirectoryChange change = pair.second();
           System.out.println("Path: " + changedPath + ", Change: " + change);
         },
-        materializer);
+        system);
     // #minimal-sample
   }
 }

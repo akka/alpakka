@@ -15,7 +15,6 @@ import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Compression, FileIO, Flow, Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSource
-import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.testkit.TestKit
 import akka.util.ByteString
 import com.google.common.jimfs.{Configuration, Jimfs}
@@ -44,8 +43,6 @@ class LogRotatorSinkSpec
     fs.close()
   }
 
-  val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
-  implicit val materializer = ActorMaterializer(settings)
   implicit val ec: ExecutionContext = system.dispatcher
   val fs = Jimfs.newFileSystem("LogRotatorSinkSpec", Configuration.unix())
 

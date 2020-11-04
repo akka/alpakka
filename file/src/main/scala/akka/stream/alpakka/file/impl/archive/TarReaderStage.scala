@@ -4,8 +4,11 @@
 
 package akka.stream.alpakka.file.impl.archive
 
+import java.util.concurrent.TimeUnit
+
 import akka.NotUsed
 import akka.annotation.InternalApi
+import akka.stream.ActorAttributes.StreamSubscriptionTimeout
 import akka.stream.alpakka.file.{TarArchiveMetadata, TarReaderException}
 import akka.stream.scaladsl.Source
 import akka.stream.stage._
@@ -104,8 +107,10 @@ private[file] class TarReaderStage
         timerKey match {
           case SubscriptionTimeout(subSource) =>
             import StreamSubscriptionTimeoutTerminationMode._
-            val materializer = ActorMaterializerHelper.downcast(interpreter.materializer)
-            val timeoutSettings = materializer.settings.subscriptionTimeoutSettings
+
+            val timeoutSettings = attributes
+              .get[ActorAttributes.StreamSubscriptionTimeout]
+              .getOrElse(StreamSubscriptionTimeout(FiniteDuration(1, TimeUnit.MILLISECONDS), NoopTermination))
             val timeout = timeoutSettings.timeout
 
             timeoutSettings.mode match {
@@ -172,8 +177,7 @@ private[file] class TarReaderStage
               }
             }
           })
-          val timeout =
-            ActorMaterializerHelper.downcast(interpreter.materializer).settings.subscriptionTimeoutSettings.timeout
+          val timeout = attributes.get[ActorAttributes.StreamSubscriptionTimeout].get.timeout
           scheduleOnce(timeoutSignal, timeout)
           sub
         }

@@ -8,7 +8,6 @@ import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
 import akka.stream.IOResult;
 import akka.stream.Materializer;
 import akka.stream.alpakka.file.ArchiveMetadata;
@@ -27,6 +26,7 @@ import org.junit.*;
 import static akka.util.ByteString.emptyByteString;
 
 import java.io.File;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -44,12 +44,10 @@ public class ArchiveTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem system;
-  private static Materializer mat;
 
   @BeforeClass
   public static void beforeAll() throws Exception {
     system = ActorSystem.create();
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
@@ -90,7 +88,7 @@ public class ArchiveTest {
         Source.from(Arrays.asList(pair1, pair2));
 
     Sink<ByteString, CompletionStage<IOResult>> fileSink = FileIO.toPath(Paths.get("logo.zip"));
-    CompletionStage<IOResult> ioResult = source.via(Archive.zip()).runWith(fileSink, mat);
+    CompletionStage<IOResult> ioResult = source.via(Archive.zip()).runWith(fileSink, system);
 
     // #sample-zip
 
@@ -153,7 +151,7 @@ public class ArchiveTest {
         Source.from(Arrays.asList(dir, pair1, pair2));
 
     Sink<ByteString, CompletionStage<IOResult>> fileSink = FileIO.toPath(Paths.get("logo.tar"));
-    CompletionStage<IOResult> ioResult = source.via(Archive.tar()).runWith(fileSink, mat);
+    CompletionStage<IOResult> ioResult = source.via(Archive.tar()).runWith(fileSink, system);
     // #sample-tar
 
     // #sample-tar-gz
@@ -162,7 +160,7 @@ public class ArchiveTest {
     CompletionStage<IOResult> ioResultGz =
         source
             .via(Archive.tar().via(akka.stream.javadsl.Compression.gzip()))
-            .runWith(fileSinkGz, mat);
+            .runWith(fileSinkGz, system);
     // #sample-tar-gz
 
     ioResult.toCompletableFuture().get(3, TimeUnit.SECONDS);
@@ -184,12 +182,12 @@ public class ArchiveTest {
                     Pair.create(metadata1, Source.empty(ByteString.class)),
                     Pair.create(metadata2, Source.single(tenDigits))))
             .via(Archive.tar())
-            .runWith(Sink.fold(ByteString.emptyByteString(), ByteString::concat), mat);
+            .runWith(Sink.fold(ByteString.emptyByteString(), ByteString::concat), system);
 
     // #tar-reader
     Source<ByteString, NotUsed> bytesSource = // ???
         // #tar-reader
-        Source.fromCompletionStage(oneFileArchive);
+        Source.completionStage(oneFileArchive);
     Path target = Files.createTempDirectory("alpakka-tar-");
 
     // #tar-reader
@@ -204,22 +202,22 @@ public class ArchiveTest {
                   if (metadata.isDirectory()) {
                     return Source.single(targetFile)
                         .via(Directory.mkdirs())
-                        .runWith(Sink.ignore(), mat);
+                        .runWith(Sink.ignore(), system);
                   } else {
                     Source<ByteString, NotUsed> source = pair.second();
                     // create the target directory
                     return Source.single(targetFile.getParent())
                         .via(Directory.mkdirs())
-                        .runWith(Sink.ignore(), mat)
+                        .runWith(Sink.ignore(), system)
                         .thenCompose(
                             done ->
                                 // stream the file contents to a local file
                                 source
-                                    .runWith(FileIO.toPath(targetFile), mat)
+                                    .runWith(FileIO.toPath(targetFile), system)
                                     .thenApply(io -> Done.done()));
                   }
                 })
-            .runWith(Sink.ignore(), mat);
+            .runWith(Sink.ignore(), system);
     // #tar-reader
     assertThat(tar.toCompletableFuture().get(2, TimeUnit.SECONDS), is(Done.done()));
     File file = target.resolve("dir/file1.txt").toFile();
@@ -235,9 +233,9 @@ public class ArchiveTest {
             .via(Archive.tar())
             // tar standard suggests two empty 512 byte blocks as EOF marker
             .concat(Source.single(ByteString.fromArray(new byte[1024])))
-            .runWith(Sink.fold(ByteString.emptyByteString(), ByteString::concat), mat);
+            .runWith(Sink.fold(ByteString.emptyByteString(), ByteString::concat), system);
 
-    Source<ByteString, NotUsed> bytesSource = Source.fromCompletionStage(oneFileArchive);
+    Source<ByteString, NotUsed> bytesSource = Source.completionStage(oneFileArchive);
     Path target = Files.createTempDirectory("alpakka-tar-");
 
     CompletionStage<Done> tar =
@@ -249,9 +247,9 @@ public class ArchiveTest {
                   TarArchiveMetadata metadata = pair.first();
                   Source<ByteString, NotUsed> source = pair.second();
                   Path targetFile = target.resolve(metadata.filePath());
-                  return source.runWith(FileIO.toPath(targetFile), mat);
+                  return source.runWith(FileIO.toPath(targetFile), system);
                 })
-            .runWith(Sink.ignore(), mat);
+            .runWith(Sink.ignore(), system);
     assertThat(tar.toCompletableFuture().get(2, TimeUnit.SECONDS), is(Done.done()));
     File file = target.resolve("file5.txt").toFile();
     assertThat(file.exists(), is(true));
@@ -259,11 +257,11 @@ public class ArchiveTest {
 
   @After
   public void tearDown() throws Exception {
-    StreamTestKit.assertAllStagesStopped(mat);
+    StreamTestKit.assertAllStagesStopped(Materializer.matFromSystem(system));
   }
 
-  private Path getFileFromResource(String fileName) {
-    return Paths.get(getClass().getClassLoader().getResource(fileName).getPath());
+  private Path getFileFromResource(String fileName) throws URISyntaxException {
+    return Paths.get(getClass().getClassLoader().getResource(fileName).toURI());
   }
 
   private ByteString readFileAsByteString(Path filePath) throws Exception {
@@ -271,7 +269,7 @@ public class ArchiveTest {
         Sink.fold(emptyByteString(), ByteString::concat);
 
     return FileIO.fromPath(filePath)
-        .runWith(foldSink, mat)
+        .runWith(foldSink, system)
         .toCompletableFuture()
         .get(3, TimeUnit.SECONDS);
   }
