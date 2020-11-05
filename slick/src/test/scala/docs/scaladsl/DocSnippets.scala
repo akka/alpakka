@@ -6,7 +6,6 @@ package docs.scaladsl
 
 import akka.Done
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 //#important-imports
 import akka.stream.alpakka.slick.scaladsl._
 import akka.stream.scaladsl._
@@ -17,7 +16,6 @@ import scala.concurrent.Future
 
 object SlickSourceWithPlainSQLQueryExample extends App {
   implicit val system = ActorSystem()
-  implicit val mat = ActorMaterializer()
   implicit val ec = system.dispatcher
 
   //#source-example
@@ -54,7 +52,6 @@ object SlickSourceWithPlainSQLQueryExample extends App {
 
 object SlickSourceWithTypedQueryExample extends App {
   implicit val system = ActorSystem()
-  implicit val mat = ActorMaterializer()
   implicit val ec = system.dispatcher
 
   //#source-with-typed-query
@@ -87,7 +84,6 @@ object SlickSourceWithTypedQueryExample extends App {
 
 object SlickSinkExample extends App {
   implicit val system = ActorSystem()
-  implicit val mat = ActorMaterializer()
   implicit val ec = system.dispatcher
 
   //#sink-example
@@ -120,7 +116,6 @@ object SlickSinkExample extends App {
 
 object SlickFlowExample extends App {
   implicit val system = ActorSystem()
-  implicit val mat = ActorMaterializer()
   implicit val ec = system.dispatcher
 
   //#flow-example
@@ -165,7 +160,6 @@ object SlickFlowWithPassThroughExample extends App {
   }
 
   implicit val system = ActorSystem()
-  implicit val mat = ActorMaterializer()
   implicit val ec = system.dispatcher
 
   //#flowWithPassThrough-example

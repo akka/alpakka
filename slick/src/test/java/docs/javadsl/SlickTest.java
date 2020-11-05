@@ -8,9 +8,6 @@ import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.function.Function2;
-import akka.japi.pf.PFBuilder;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.alpakka.slick.javadsl.Slick;
 import akka.stream.alpakka.slick.javadsl.SlickRow;
 import akka.stream.alpakka.slick.javadsl.SlickSession;
@@ -51,7 +48,6 @@ public class SlickTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem system;
-  private static Materializer materializer;
 
   // #init-session
   private static final SlickSession session = SlickSession.forConfig("slick-h2");
@@ -89,23 +85,22 @@ public class SlickTest {
   public static void setup() {
     // #init-mat
     system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
     // #init-mat
 
     executeStatement(
         "CREATE TABLE ALPAKKA_SLICK_JAVADSL_TEST_USERS(ID INTEGER, NAME VARCHAR(50))",
         session,
-        materializer);
+        system);
   }
 
   @After
   public void cleanUp() {
-    executeStatement("DELETE FROM ALPAKKA_SLICK_JAVADSL_TEST_USERS", session, materializer);
+    executeStatement("DELETE FROM ALPAKKA_SLICK_JAVADSL_TEST_USERS", session, system);
   }
 
   @AfterClass
   public static void teardown() {
-    executeStatement("DROP TABLE ALPAKKA_SLICK_JAVADSL_TEST_USERS", session, materializer);
+    executeStatement("DROP TABLE ALPAKKA_SLICK_JAVADSL_TEST_USERS", session, system);
 
     // #close-session
     system.registerOnTermination(session::close);
@@ -125,16 +120,13 @@ public class SlickTest {
     assertThrows(
         ExecutionException.class,
         () ->
-            usersSource
-                .runWith(slickSink, materializer)
-                .toCompletableFuture()
-                .get(5, TimeUnit.SECONDS));
+            usersSource.runWith(slickSink, system).toCompletableFuture().get(5, TimeUnit.SECONDS));
   }
 
   @Test
   public void testSinkWithoutParallelismAndReadBackWithSource() throws Exception {
     final Sink<User, CompletionStage<Done>> slickSink = Slick.sink(session, insertUser);
-    usersSource.runWith(slickSink, materializer).toCompletableFuture().get(5, TimeUnit.SECONDS);
+    usersSource.runWith(slickSink, system).toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     assertEqualsUsers();
   }
@@ -142,7 +134,7 @@ public class SlickTest {
   @Test
   public void testSinkPSWithoutParallelismAndReadBackWithSource() throws Exception {
     final Sink<User, CompletionStage<Done>> slickSink = Slick.sink(session, insertUserPS);
-    usersSource.runWith(slickSink, materializer).toCompletableFuture().get(5, TimeUnit.SECONDS);
+    usersSource.runWith(slickSink, system).toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     assertEqualsUsers();
   }
@@ -150,7 +142,7 @@ public class SlickTest {
   @Test
   public void testSinkWithParallelismOf4AndReadBackWithSource() throws Exception {
     final Sink<User, CompletionStage<Done>> slickSink = Slick.sink(session, 4, insertUser);
-    usersSource.runWith(slickSink, materializer).toCompletableFuture().get(5, TimeUnit.SECONDS);
+    usersSource.runWith(slickSink, system).toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     assertEqualsUsers();
   }
@@ -158,7 +150,7 @@ public class SlickTest {
   @Test
   public void testSinkPSWithParallelismOf4AndReadBackWithSource() throws Exception {
     final Sink<User, CompletionStage<Done>> slickSink = Slick.sink(session, 4, insertUserPS);
-    usersSource.runWith(slickSink, materializer).toCompletableFuture().get(5, TimeUnit.SECONDS);
+    usersSource.runWith(slickSink, system).toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     assertEqualsUsers();
   }
@@ -175,7 +167,7 @@ public class SlickTest {
     final List<Integer> insertionResult =
         usersSource
             .via(slickFlow)
-            .runWith(Sink.seq(), materializer)
+            .runWith(Sink.seq(), system)
             .toCompletableFuture()
             .get(5, TimeUnit.SECONDS);
 
@@ -189,7 +181,7 @@ public class SlickTest {
     final List<Integer> insertionResult =
         usersSource
             .via(slickFlow)
-            .runWith(Sink.seq(), materializer)
+            .runWith(Sink.seq(), system)
             .toCompletableFuture()
             .get(5, TimeUnit.SECONDS);
 
@@ -203,7 +195,7 @@ public class SlickTest {
     final List<Integer> insertionResult =
         usersSource
             .via(slickFlow)
-            .runWith(Sink.seq(), materializer)
+            .runWith(Sink.seq(), system)
             .toCompletableFuture()
             .get(5, TimeUnit.SECONDS);
 
@@ -217,7 +209,7 @@ public class SlickTest {
     final List<Integer> insertionResult =
         usersSource
             .via(slickFlow)
-            .runWith(Sink.seq(), materializer)
+            .runWith(Sink.seq(), system)
             .toCompletableFuture()
             .get(5, TimeUnit.SECONDS);
 
@@ -231,7 +223,7 @@ public class SlickTest {
     final List<Integer> insertionResult =
         usersSource
             .via(slickFlow)
-            .runWith(Sink.seq(), materializer)
+            .runWith(Sink.seq(), system)
             .toCompletableFuture()
             .get(5, TimeUnit.SECONDS);
 
@@ -246,7 +238,7 @@ public class SlickTest {
     final List<User> insertedUsers =
         usersSource
             .via(slickFlow)
-            .runWith(Sink.seq(), materializer)
+            .runWith(Sink.seq(), system)
             .toCompletableFuture()
             .get(5, TimeUnit.SECONDS);
 
@@ -261,7 +253,7 @@ public class SlickTest {
     final List<User> insertedUsers =
         usersSource
             .via(slickFlow)
-            .runWith(Sink.seq(), materializer)
+            .runWith(Sink.seq(), system)
             .toCompletableFuture()
             .get(5, TimeUnit.SECONDS);
 
@@ -276,7 +268,7 @@ public class SlickTest {
     final List<User> insertedUsers =
         usersSource
             .via(slickFlow)
-            .runWith(Sink.seq(), materializer)
+            .runWith(Sink.seq(), system)
             .toCompletableFuture()
             .get(5, TimeUnit.SECONDS);
 
@@ -291,7 +283,7 @@ public class SlickTest {
     final List<User> insertedUsers =
         usersSource
             .via(slickFlow)
-            .runWith(Sink.seq(), materializer)
+            .runWith(Sink.seq(), system)
             .toCompletableFuture()
             .get(5, TimeUnit.SECONDS);
 
@@ -333,7 +325,7 @@ public class SlickTest {
                   if (kafkaMessage.msg == 0) throw new Exception("Failed to write message to db");
                   return commitToKafka.apply(kafkaMessage.offset);
                 })
-            .runWith(Sink.ignore(), materializer);
+            .runWith(Sink.ignore(), system);
     resultFuture.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     assertEquals(users.size(), committedOffsets.size());
@@ -345,19 +337,17 @@ public class SlickTest {
         Slick.source(
             session, selectAllUsers, (SlickRow row) -> new User(row.nextInt(), row.nextString()));
 
-    final CompletionStage<List<User>> foundUsersFuture =
-        slickSource.runWith(Sink.seq(), materializer);
+    final CompletionStage<List<User>> foundUsersFuture = slickSource.runWith(Sink.seq(), system);
     final Set<User> foundUsers =
         new HashSet<>(foundUsersFuture.toCompletableFuture().get(3, TimeUnit.SECONDS));
 
     assertEquals(foundUsers, users);
   }
 
-  private static void executeStatement(
-      String statement, SlickSession session, Materializer materializer) {
+  private static void executeStatement(String statement, SlickSession session, ActorSystem system) {
     try {
       Source.single(statement)
-          .runWith(Slick.sink(session), materializer)
+          .runWith(Slick.sink(session), system)
           .toCompletableFuture()
           .get(3, TimeUnit.SECONDS);
     } catch (Exception e) {
