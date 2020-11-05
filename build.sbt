@@ -264,7 +264,7 @@ lazy val udp = alpakkaProject("udp", "udp")
 
 lazy val unixdomainsocket = alpakkaProject("unix-domain-socket", "unixdomainsocket", Dependencies.UnixDomainSocket)
 
-lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml)
+lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml, fatalWarnings := true)
 
 lazy val docs = project
   .enablePlugins(AkkaParadoxPlugin, ParadoxSitePlugin, PreprocessPlugin, PublishRsyncPlugin)

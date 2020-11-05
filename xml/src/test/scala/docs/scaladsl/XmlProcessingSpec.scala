@@ -9,7 +9,6 @@ import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.alpakka.xml._
 import akka.stream.alpakka.xml.scaladsl.XmlParsing
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
-import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.BeforeAndAfterAll
@@ -22,7 +21,6 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class XmlProcessingSpec extends AnyWordSpec with Matchers with ScalaFutures with BeforeAndAfterAll with LogCapturing {
   implicit val system: ActorSystem = ActorSystem("Test")
-  implicit val mat: Materializer = ActorMaterializer()
   implicit val defaultPatience: PatienceConfig = PatienceConfig(timeout = 2.seconds, interval = 50.millis)
 
   // #parser
