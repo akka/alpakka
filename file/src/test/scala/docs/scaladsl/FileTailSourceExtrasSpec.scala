@@ -9,7 +9,6 @@ import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.Files
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.file.DirectoryChange
 import akka.stream.alpakka.file.scaladsl.{DirectoryChangesSource, FileTailSource}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
@@ -35,7 +34,6 @@ class FileTailSourceExtrasSpec
     with LogCapturing {
 
   private val fs = Jimfs.newFileSystem(Configuration.forCurrentPlatform.toBuilder.build)
-  private implicit val mat = ActorMaterializer()
 
   "The FileTailSource" should assertAllStagesStopped {
     "demo stream shutdown when file deleted" in {

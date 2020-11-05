@@ -6,7 +6,6 @@ package docs.scaladsl
 import java.nio.file.FileSystems
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 
 import scala.concurrent.duration._
 
@@ -16,7 +15,6 @@ object DirectoryChangesSourceSpec {
     val path: String = args(0)
 
     implicit val system: ActorSystem = ActorSystem()
-    implicit val materializer = ActorMaterializer()
 
     // #minimal-sample
     import akka.stream.alpakka.file.scaladsl.DirectoryChangesSource

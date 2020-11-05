@@ -117,12 +117,10 @@ final private class LogRotatorSink[T, C, R](triggerGeneratorCreator: () => T => 
 
     def sinkCompletionCallbackHandler(future: Future[R])(h: Holder[R]): Unit =
       h.elem match {
-        case Success(IOResult(_, Failure(ex))) if decider(ex) == Supervision.Stop =>
-          promise.failure(ex)
-        case Success(x) if sinkCompletions.size == 1 && sinkCompletions.head == future =>
+        case Success(_) if sinkCompletions.size == 1 && sinkCompletions.head == future =>
           promise.trySuccess(Done)
           completeStage()
-        case x: Success[R] =>
+        case _: Success[R] =>
           sinkCompletions = sinkCompletions.filter(_ != future)
         case Failure(ex) =>
           failThisStage(ex)

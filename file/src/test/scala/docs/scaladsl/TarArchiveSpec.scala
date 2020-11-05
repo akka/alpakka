@@ -15,7 +15,6 @@ import akka.stream.alpakka.file.scaladsl.{Archive, Directory}
 import akka.stream.alpakka.file.{TarArchiveMetadata, TarReaderException}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{FileIO, Sink, Source}
-import akka.stream.{ActorMaterializer, IOResult, Materializer}
 import akka.testkit.TestKit
 import akka.util.ByteString
 import org.scalatest.BeforeAndAfterAll
@@ -26,7 +25,6 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Success
 
 class TarArchiveSpec
     extends TestKit(ActorSystem("TarArchiveSpec"))
@@ -38,7 +36,6 @@ class TarArchiveSpec
     with Eventually
     with IntegrationPatience {
 
-  implicit val mat: Materializer = ActorMaterializer()
   implicit val ec: ExecutionContext = system.dispatcher
 
   private val collectByteString: Sink[ByteString, Future[ByteString]] = Sink.fold(ByteString.empty)(_ ++ _)
@@ -97,8 +94,8 @@ class TarArchiveSpec
         .runWith(FileIO.toPath(Paths.get("result.tar.gz")))
       // #sample-tar-gz
 
-      result.futureValue shouldBe IOResult(4096, Success(Done))
-      resultGz.futureValue.status shouldBe Success(Done)
+      result.futureValue.count shouldBe 4096
+      resultGz.futureValue.count should not be 4096
 
       untar(Paths.get("result.tar").toRealPath(), "xf").foreach(
         _ shouldBe Map(
@@ -127,7 +124,7 @@ class TarArchiveSpec
       val result = filesStream
         .via(Archive.tar())
         .runWith(FileIO.toPath(Paths.get("result.tar")))
-      result.futureValue shouldBe IOResult(1024, Success(Done))
+      result.futureValue.count shouldBe 1024
 
       untar(Paths.get("result.tar").toRealPath(), "xf").foreach(_ shouldBe Map(fileName -> fileBytes))
 
@@ -157,7 +154,7 @@ class TarArchiveSpec
     "emit one file" in {
       val tar =
         Source
-          .fromFuture(oneFileArchive)
+          .future(oneFileArchive)
           .via(Archive.tarReader())
           .mapAsync(1) {
             case in @ (metadata, source) =>
@@ -174,7 +171,7 @@ class TarArchiveSpec
       // #tar-reader
       val bytesSource: Source[ByteString, NotUsed] = // ???
         // #tar-reader
-        Source.fromFuture(oneFileArchive)
+        Source.future(oneFileArchive)
       val target = Files.createTempDirectory("alpakka-tar-")
 
       // #tar-reader
@@ -267,7 +264,7 @@ class TarArchiveSpec
         .runWith(collectByteString)
 
       val tar = Source
-        .fromFuture(tarFile)
+        .future(tarFile)
         .via(Archive.tarReader())
         .mapAsync(1) {
           case (metadata, source) =>
@@ -284,7 +281,7 @@ class TarArchiveSpec
     "fail for incomplete header" in {
       val input = oneFileArchive.map(bs => bs.take(500))
       val tar = Source
-        .fromFuture(input)
+        .future(input)
         .via(Archive.tarReader())
         .runWith(Sink.ignore)
       val error = tar.failed.futureValue
@@ -295,7 +292,7 @@ class TarArchiveSpec
     "fail for incomplete file" in {
       val input = oneFileArchive.map(bs => bs.take(518))
       val tar = Source
-        .fromFuture(input)
+        .future(input)
         .via(Archive.tarReader())
         .mapAsync(1) {
           case (metadata, source) =>
@@ -310,7 +307,7 @@ class TarArchiveSpec
     "fail for incomplete trailer" in {
       val input = oneFileArchive.map(bs => bs.take(535))
       val tar = Source
-        .fromFuture(input)
+        .future(input)
         .via(Archive.tarReader())
         .mapAsync(1) {
           case (metadata, source) =>
@@ -333,7 +330,7 @@ class TarArchiveSpec
     "fail on missing sub source subscription" in {
       val tar =
         Source
-          .fromFuture(oneFileArchive)
+          .future(oneFileArchive)
           .mapConcat(_.sliding(2, 2).toList)
           .via(Archive.tarReader())
           .runWith(Sink.ignore)
@@ -344,7 +341,7 @@ class TarArchiveSpec
   }
 
   private def getPathFromResources(fileName: String): Path =
-    Paths.get(getClass.getClassLoader.getResource(fileName).getPath)
+    Paths.get(getClass.getClassLoader.getResource(fileName).toURI)
 
   private def generateInputFiles(numberOfFiles: Int, lengthOfFile: Int): immutable.Seq[(String, ByteString)] = {
     val r = new scala.util.Random(31)
