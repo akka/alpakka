@@ -7,8 +7,6 @@ package docs.javadsl;
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.alpakka.slick.javadsl.Slick;
 import akka.stream.alpakka.slick.javadsl.SlickSession;
 import akka.stream.javadsl.Sink;
@@ -56,7 +54,6 @@ public class DocSnippetFlowWithPassThrough {
 
   public static void main(String[] args) throws Exception {
     final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
 
     final SlickSession session = SlickSession.forConfig("slick-h2");
     system.registerOnTermination(session::close);
@@ -101,7 +98,7 @@ public class DocSnippetFlowWithPassThrough {
                 1,
                 kafkaMessage ->
                     kafkaMessage.offset.commit()) // in correct order, commit Kafka message
-            .runWith(Sink.ignore(), materializer);
+            .runWith(Sink.ignore(), system);
     // #flowWithPassThrough-example
 
     done.whenComplete(

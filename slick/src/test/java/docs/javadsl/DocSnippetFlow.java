@@ -6,15 +6,12 @@ package docs.javadsl;
 
 import akka.Done;
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.alpakka.slick.javadsl.Slick;
 import akka.stream.alpakka.slick.javadsl.SlickSession;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
@@ -23,7 +20,6 @@ import java.util.stream.IntStream;
 public class DocSnippetFlow {
   public static void main(String[] args) throws Exception {
     final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
 
     // #flow-example
     final SlickSession session = SlickSession.forConfig("slick-h2");
@@ -52,7 +48,7 @@ public class DocSnippetFlow {
                       return statement;
                     }))
             .log("nr-of-updated-rows")
-            .runWith(Sink.ignore(), materializer);
+            .runWith(Sink.ignore(), system);
     // #flow-example
 
     done.whenComplete(

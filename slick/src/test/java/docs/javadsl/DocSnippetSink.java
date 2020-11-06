@@ -6,8 +6,6 @@ package docs.javadsl;
 
 import akka.Done;
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.alpakka.slick.javadsl.Slick;
 import akka.stream.alpakka.slick.javadsl.SlickSession;
 import akka.stream.javadsl.Source;
@@ -21,7 +19,6 @@ import java.util.stream.IntStream;
 public class DocSnippetSink {
   public static void main(String[] args) throws Exception {
     final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
 
     final SlickSession session = SlickSession.forConfig("slick-h2");
     system.registerOnTermination(session::close);
@@ -47,7 +44,7 @@ public class DocSnippetSink {
                       statement.setString(2, user.name);
                       return statement;
                     }),
-                materializer);
+                system);
     // #sink-example
 
     done.whenComplete(
