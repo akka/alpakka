@@ -229,7 +229,7 @@ class JmsTxConnectorsSpec extends JmsSharedServerSpec {
       val triggerRestart = Promise[Done]
 
       val result = RestartSource
-        .onFailuresWithBackoff(5.seconds, 1.minute, 0.25) { () =>
+        .onFailuresWithBackoff(RestartSettings(5.seconds, 1.minute, 0.25)) { () =>
           JmsConsumer
             .txSource(
               JmsConsumerSettings(consumerConfig, connectionFactory)
