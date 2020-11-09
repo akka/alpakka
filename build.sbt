@@ -111,7 +111,7 @@ lazy val amqp = alpakkaProject("amqp", "amqp", Dependencies.Amqp, fatalWarnings 
 lazy val avroparquet =
   alpakkaProject("avroparquet", "avroparquet", Dependencies.AvroParquet, fatalWarnings := false)
 
-lazy val awslambda = alpakkaProject("awslambda", "aws.lambda", Dependencies.AwsLambda)
+lazy val awslambda = alpakkaProject("awslambda", "aws.lambda", Dependencies.AwsLambda, fatalWarnings := true)
 
 lazy val azureStorageQueue = alpakkaProject("azure-storage-queue", "azure.storagequeue", Dependencies.AzureStorageQueue)
 
