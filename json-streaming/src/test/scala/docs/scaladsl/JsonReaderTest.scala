@@ -5,7 +5,6 @@
 package docs.scaladsl
 
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.json.scaladsl.JsonReader
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
@@ -21,7 +20,6 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class JsonReaderTest extends AnyWordSpec with Matchers with BeforeAndAfterAll with LogCapturing {
   implicit val system: ActorSystem = ActorSystem("Test")
-  implicit val mat: Materializer = ActorMaterializer()
 
   // The timeout of all streams under test
   val timeout: FiniteDuration = 3.seconds
