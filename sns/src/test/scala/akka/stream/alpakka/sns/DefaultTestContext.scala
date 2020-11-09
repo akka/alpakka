@@ -5,7 +5,6 @@
 package akka.stream.alpakka.sns
 
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, Materializer}
 import org.mockito.Mockito.reset
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Suite}
@@ -17,7 +16,6 @@ import scala.concurrent.duration._
 trait DefaultTestContext extends BeforeAndAfterAll with BeforeAndAfterEach with MockitoSugar { this: Suite =>
 
   implicit protected val system: ActorSystem = ActorSystem()
-  implicit protected val mat: Materializer = ActorMaterializer()
   implicit protected val snsClient: SnsAsyncClient = mock[SnsAsyncClient]
 
   override protected def beforeEach(): Unit =

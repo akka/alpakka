@@ -7,13 +7,13 @@ package akka.stream.alpakka.sns
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, Materializer}
-import akka.testkit.TestKit
+import akka.http.scaladsl.Http
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Suite}
 import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sns.model.CreateTopicRequest
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 
 trait IntegrationTestContext extends BeforeAndAfterAll with ScalaFutures {
@@ -21,7 +21,6 @@ trait IntegrationTestContext extends BeforeAndAfterAll with ScalaFutures {
 
   //#init-system
   implicit val system: ActorSystem = ActorSystem()
-  implicit val mat: Materializer = ActorMaterializer()
   //#init-system
 
   def snsEndpoint: String = s"http://localhost:4100"
@@ -42,7 +41,12 @@ trait IntegrationTestContext extends BeforeAndAfterAll with ScalaFutures {
     topicArn = createTopic()
   }
 
-  override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
+  override protected def afterAll(): Unit = {
+    Http()
+      .shutdownAllConnectionPools()
+      .flatMap(_ => system.terminate())(ExecutionContext.global)
+      .futureValue
+  }
 
   def createAsyncClient(endEndpoint: String): SnsAsyncClient = {
     //#init-client
