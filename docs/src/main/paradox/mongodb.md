@@ -3,7 +3,7 @@
 The MongoDB connector allows you to read and save documents.
 You can query a stream of documents from @scala[@scaladoc[MongoSource](akka.stream.alpakka.mongodb.scaladsl.MongoSource$)]@java[@scaladoc[MongoSource](akka.stream.alpakka.mongodb.javadsl.MongoSource$)] or update documents in a collection with @scala[@scaladoc[MongoSink](akka.stream.alpakka.mongodb.scaladsl.MongoSink$)]@java[@scaladoc[MongoSink](akka.stream.alpakka.mongodb.javadsl.MongoSink$)].
 
-This connector is based on the [Mongo Reactive Streams Driver](https://github.com/mongodb/mongo-java-driver-reactivestreams).
+This connector is based on the [MongoDB Java Driver](http://mongodb.github.io/mongo-java-driver/), which is [compatible](https://docs.mongodb.com/drivers/scala#compatibility) with MongoDB versions 2.6 through 4.4.
 
 @@@ note { title="Alternative connector" }
 
@@ -46,7 +46,7 @@ Scala
 Java
 : @@snip [snip](/mongodb/src/test/java/docs/javadsl/Number.java) { #pojo }
 
-For codec support, you first need to setup a @javadoc[CodecRegistry](org.bson.codecs.configuration.CodecRegistry).
+For codec support, you first need to setup a [CodecRegistry](https://mongodb.github.io/mongo-java-driver/4.1/apidocs/bson/org/bson/codecs/configuration/CodecRegistry.html).
 
 Scala
 : @@snip [snip](/mongodb/src/test/scala/docs/scaladsl/MongoSourceSpec.scala) { #codecs }
@@ -63,7 +63,7 @@ Scala
 Java
 : @@snip [snip](/mongodb/src/test/java/docs/javadsl/MongoSourceTest.java) { #init-connection }
 
-We will also need an @apidoc[akka.actor.ActorSystem] and an @apidoc[akka.stream.Materializer].
+We will also need an @apidoc[akka.actor.ActorSystem] and a @apidoc[akka.stream.Materializer].
 
 Scala
 : @@snip [snip](/mongodb/src/test/scala/docs/scaladsl/MongoSourceSpec.scala) { #init-mat }
