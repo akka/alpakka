@@ -5,7 +5,6 @@
 package docs.scaladsl
 
 import akka.actor.ActorSystem
-import akka.stream._
 import akka.stream.alpakka.azure.storagequeue.DeleteOrUpdateMessage.{Delete, UpdateVisibility}
 import akka.stream.alpakka.azure.storagequeue._
 import akka.stream.alpakka.azure.storagequeue.scaladsl._
@@ -25,11 +24,10 @@ import org.scalatest.flatspec.AsyncFlatSpecLike
 // These tests are all live since the Azure Storage Emulator
 // does not run on Linux/Docker yet
 class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with BeforeAndAfterAll {
-  implicit val materializer = ActorMaterializer()
 
-  val timeout = 10.seconds
+  val timeout: FiniteDuration = 10.seconds
   val queueName = s"testqueue${scala.util.Random.nextInt(100000)}"
-  val azureConnStringOpt = Properties.envOrNone("AZURE_CONNECTION_STRING")
+  val azureConnStringOpt: Option[String] = Properties.envOrNone("AZURE_CONNECTION_STRING")
 
   def queueOpt: Option[CloudQueue] =
     azureConnStringOpt.map { storageConnectionString =>
@@ -41,13 +39,15 @@ class AzureQueueSpec extends TestKit(ActorSystem()) with AsyncFlatSpecLike with 
   val queueFactory = () => queueOpt.get
   def queue = queueFactory()
 
-  override def withFixture(test: NoArgAsyncTest) = {
+  override def withFixture(test: NoArgAsyncTest): FutureOutcome = {
     assume(queueOpt.isDefined, "Queue is not defined. Please set AZURE_CONNECTION_STRING")
-    queueOpt.map(_.clear)
+    queueOpt.foreach(_.clear)
     test()
   }
+
   override def beforeAll: Unit =
     queueOpt.map(_.createIfNotExists)
+
   override def afterAll: Unit = {
     queueOpt.map(_.deleteIfExists)
     TestKit.shutdownActorSystem(system)
