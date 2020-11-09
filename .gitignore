@@ -20,3 +20,4 @@ ext-lib-src/
 .bloop/
 .metals/
 metals.sbt
+.bsp/
