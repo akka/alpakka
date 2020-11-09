@@ -5,13 +5,11 @@
 package akka.stream.alpakka.sqs.javadsl;
 
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
+import akka.http.javadsl.Http;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.testkit.javadsl.TestKit;
 // #init-client
 import com.github.matsluni.akkahttpspi.AkkaHttpClient;
-import org.junit.Rule;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -21,6 +19,7 @@ import software.amazon.awssdk.services.sqs.SqsAsyncClient;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
 
 import java.net.URI;
@@ -32,7 +31,6 @@ public abstract class BaseSqsTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   protected static ActorSystem system;
-  protected static Materializer materializer;
   private static SqsAsyncClient sqsClientForClose;
 
   private boolean initialized = false;
@@ -43,16 +41,19 @@ public abstract class BaseSqsTest {
   public static void setup() {
     // #init-mat
     system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
     // #init-mat
   }
 
   @AfterClass
-  public static void teardown() {
+  public static void teardown() throws Exception {
     if (sqsClientForClose != null) {
       sqsClientForClose.close();
     }
-    TestKit.shutdownActorSystem(system);
+    Http.get(system)
+        .shutdownAllConnectionPools()
+        .thenRun(() -> TestKit.shutdownActorSystem(system))
+        .toCompletableFuture()
+        .get(2, TimeUnit.SECONDS);
   }
 
   @Before
