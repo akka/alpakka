@@ -6,6 +6,7 @@ package akka.stream.alpakka.spring.web;
 
 import java.util.Objects;
 
+import akka.stream.Materializer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -16,8 +17,6 @@ import org.springframework.core.ReactiveAdapterRegistry;
 // #configure
 
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 
 @Configuration
 @ConditionalOnClass(akka.stream.javadsl.Source.class)
@@ -27,7 +26,6 @@ public class SpringWebAkkaStreamsConfiguration {
   private static final String DEFAULT_ACTORY_SYSTEM_NAME = "SpringWebAkkaStreamsSystem";
 
   private final ActorSystem system;
-  private final ActorMaterializer mat;
   private final SpringWebAkkaStreamsProperties properties;
 
   public SpringWebAkkaStreamsConfiguration(final SpringWebAkkaStreamsProperties properties) {
@@ -35,8 +33,7 @@ public class SpringWebAkkaStreamsConfiguration {
     final ReactiveAdapterRegistry registry = ReactiveAdapterRegistry.getSharedInstance();
 
     system = ActorSystem.create(getActorSystemName(properties));
-    mat = ActorMaterializer.create(system);
-    new AkkaStreamsRegistrar(mat).registerAdapters(registry);
+    new AkkaStreamsRegistrar(system).registerAdapters(registry);
   }
 
   @Bean
@@ -45,10 +42,11 @@ public class SpringWebAkkaStreamsConfiguration {
     return system;
   }
 
+  /** @deprecated Use actorSystem instead. */
   @Bean
   @ConditionalOnMissingBean(Materializer.class)
-  public ActorMaterializer getMaterializer() {
-    return mat;
+  public Materializer getMaterializer() {
+    return Materializer.matFromSystem(system);
   }
 
   public SpringWebAkkaStreamsProperties getProperties() {

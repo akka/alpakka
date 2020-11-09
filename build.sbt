@@ -250,7 +250,12 @@ lazy val pravega = alpakkaProject(
   Test / fork := true
 )
 
-lazy val springWeb = alpakkaProject("spring-web", "spring.web", Dependencies.SpringWeb)
+lazy val springWeb = alpakkaProject(
+  "spring-web",
+  "spring.web",
+  Dependencies.SpringWeb,
+  fatalWarnings:= true
+)
 
 lazy val simpleCodecs = alpakkaProject("simple-codecs", "simplecodecs")
 
