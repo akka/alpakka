@@ -137,8 +137,7 @@ lazy val dynamodb = alpakkaProject("dynamodb", "aws.dynamodb", Dependencies.Dyna
 lazy val elasticsearch = alpakkaProject(
   "elasticsearch",
   "elasticsearch",
-  Dependencies.Elasticsearch,
-  crossScalaVersions -= Dependencies.Scala211
+  Dependencies.Elasticsearch
 )
 
 // The name 'file' is taken by `sbt.file`, hence 'files'

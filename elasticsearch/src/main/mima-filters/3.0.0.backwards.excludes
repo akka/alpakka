@@ -1,1 +1,1 @@
-ProblemFilters.exclude[Problem]("akka.stream.alpakka.elasticsearch.*)
+ProblemFilters.exclude[Problem]("akka.stream.alpakka.elasticsearch.*")
