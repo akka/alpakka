@@ -152,7 +152,8 @@ public class ElasticsearchTestBase {
     }
   }
 
-  protected ElasticsearchParams constructElasticsearchParams(String indexName, String typeName, ApiVersion apiVersion) {
+  protected ElasticsearchParams constructElasticsearchParams(
+      String indexName, String typeName, ApiVersion apiVersion) {
     if (apiVersion == ApiVersion.V5) {
       return ElasticsearchParams.V5(indexName, typeName);
     } else {
