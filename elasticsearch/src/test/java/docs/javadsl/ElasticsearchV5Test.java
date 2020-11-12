@@ -49,7 +49,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
 
     Source<ReadResult<ElasticsearchTestBase.Book>, NotUsed> source =
         ElasticsearchSource.typed(
-            constructEsParams("source", "_doc", ApiVersion.V5),
+            constructElasticsearchParams("source", "_doc", ApiVersion.V5),
             "{\"match_all\": {}}",
             sourceSettings,
             ElasticsearchTestBase.Book.class);
@@ -58,7 +58,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
             .map(m -> WriteMessage.createIndexMessage(m.id(), m.source()))
             .runWith(
                 ElasticsearchSink.create(
-                    constructEsParams("sink2", "_doc", ApiVersion.V5),
+                    constructElasticsearchParams("sink2", "_doc", ApiVersion.V5),
                     sinkSettings,
                     new ObjectMapper()),
                 materializer);
@@ -71,7 +71,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
     // Assert docs in sink2/book
     CompletionStage<List<String>> f2 =
         ElasticsearchSource.typed(
-                constructEsParams("sink2", "_doc", ApiVersion.V5),
+                constructElasticsearchParams("sink2", "_doc", ApiVersion.V5),
                 "{\"match_all\": {}}",
                 ElasticsearchSourceSettings.create(connectionSettings)
                     .withApiVersion(ApiVersion.V5)
@@ -107,7 +107,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
 
     Source<ReadResult<Map<String, Object>>, NotUsed> source =
         ElasticsearchSource.create(
-            constructEsParams("source", "_doc", ApiVersion.V5),
+            constructElasticsearchParams("source", "_doc", ApiVersion.V5),
             "{\"match_all\": {}}",
             sourceSettings);
     CompletionStage<Done> f1 =
@@ -115,7 +115,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
             .map(m -> WriteMessage.createIndexMessage(m.id(), m.source()))
             .runWith(
                 ElasticsearchSink.create(
-                    constructEsParams("sink1", "_doc", ApiVersion.V5),
+                    constructElasticsearchParams("sink1", "_doc", ApiVersion.V5),
                     sinkSettings,
                     new ObjectMapper()),
                 materializer);
@@ -128,7 +128,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
     // Assert docs in sink1/_doc
     CompletionStage<List<String>> f2 =
         ElasticsearchSource.create(
-                constructEsParams("sink1", "_doc", ApiVersion.V5),
+                constructElasticsearchParams("sink1", "_doc", ApiVersion.V5),
                 "{\"match_all\": {}}",
                 ElasticsearchSourceSettings.create(connectionSettings)
                     .withApiVersion(ApiVersion.V5)
@@ -158,7 +158,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
     // #run-flow
     CompletionStage<List<WriteResult<Book, NotUsed>>> f1 =
         ElasticsearchSource.typed(
-                constructEsParams("source", "_doc", ApiVersion.V5),
+                constructElasticsearchParams("source", "_doc", ApiVersion.V5),
                 "{\"match_all\": {}}",
                 ElasticsearchSourceSettings.create(connectionSettings)
                     .withApiVersion(ApiVersion.V5)
@@ -167,7 +167,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
             .map(m -> WriteMessage.createIndexMessage(m.id(), m.source()))
             .via(
                 ElasticsearchFlow.create(
-                    constructEsParams("sink3", "_doc", ApiVersion.V5),
+                    constructElasticsearchParams("sink3", "_doc", ApiVersion.V5),
                     ElasticsearchWriteSettings.create(connectionSettings)
                         .withApiVersion(ApiVersion.V5)
                         .withBufferSize(5),
@@ -185,7 +185,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
     // Assert docs in sink3/book
     CompletionStage<List<String>> f2 =
         ElasticsearchSource.typed(
-                constructEsParams("sink3", "_doc", ApiVersion.V5),
+                constructElasticsearchParams("sink3", "_doc", ApiVersion.V5),
                 "{\"match_all\": {}}",
                 ElasticsearchSourceSettings.create(connectionSettings)
                     .withApiVersion(ApiVersion.V5)
@@ -225,7 +225,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
                         "3", "{\"title\": \"Die unendliche Geschichte\"}")))
             .via(
                 ElasticsearchFlow.create(
-                    constructEsParams(indexName, "_doc", ApiVersion.V5),
+                    constructElasticsearchParams(indexName, "_doc", ApiVersion.V5),
                     ElasticsearchWriteSettings.create(connectionSettings)
                         .withApiVersion(ApiVersion.V5)
                         .withBufferSize(5),
@@ -242,7 +242,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
 
     CompletionStage<List<String>> f2 =
         ElasticsearchSource.typed(
-                constructEsParams(indexName, "_doc", ApiVersion.V5),
+                constructElasticsearchParams(indexName, "_doc", ApiVersion.V5),
                 "{\"match_all\": {}}",
                 ElasticsearchSourceSettings.create(connectionSettings)
                     .withApiVersion(ApiVersion.V5)
@@ -274,7 +274,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
     Source.from(requests)
         .via(
             ElasticsearchFlow.create(
-                constructEsParams("sink8", "_doc", ApiVersion.V5),
+                constructElasticsearchParams("sink8", "_doc", ApiVersion.V5),
                 ElasticsearchWriteSettings.create(connectionSettings).withApiVersion(ApiVersion.V5),
                 new ObjectMapper()))
         .runWith(Sink.seq(), materializer)
@@ -287,7 +287,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
     // Assert docs in sink8/book
     CompletionStage<List<String>> f2 =
         ElasticsearchSource.typed(
-                constructEsParams("sink8", "_doc", ApiVersion.V5),
+                constructElasticsearchParams("sink8", "_doc", ApiVersion.V5),
                 "{\"match_all\": {}}",
                 ElasticsearchSourceSettings.create(connectionSettings)
                     .withApiVersion(ApiVersion.V5),
@@ -330,7 +330,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
                 })
             .via( // write to elastic
                 ElasticsearchFlow.createWithPassThrough(
-                    constructEsParams("sink6", "_doc", ApiVersion.V5),
+                    constructElasticsearchParams("sink6", "_doc", ApiVersion.V5),
                     ElasticsearchWriteSettings.create(connectionSettings)
                         .withApiVersion(ApiVersion.V5)
                         .withBufferSize(5),
@@ -354,7 +354,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
     // Assert that all docs were written to elastic
     List<String> result2 =
         ElasticsearchSource.typed(
-                constructEsParams("sink6", "_doc", ApiVersion.V5),
+                constructElasticsearchParams("sink6", "_doc", ApiVersion.V5),
                 "{\"match_all\": {}}",
                 ElasticsearchSourceSettings.create(connectionSettings)
                     .withApiVersion(ApiVersion.V5),
@@ -386,7 +386,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
         .map((TestDoc d) -> WriteMessage.createIndexMessage(d.id, d))
         .via(
             ElasticsearchFlow.create(
-                constructEsParams(indexName, typeName, ApiVersion.V5),
+                constructElasticsearchParams(indexName, typeName, ApiVersion.V5),
                 ElasticsearchWriteSettings.create(connectionSettings)
                     .withApiVersion(ApiVersion.V5)
                     .withBufferSize(5),
@@ -406,7 +406,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
 
     List<TestDoc> result =
         ElasticsearchSource.<TestDoc>typed(
-                constructEsParams(indexName, typeName, ApiVersion.V5),
+                constructElasticsearchParams(indexName, typeName, ApiVersion.V5),
                 searchParams, // <-- Using searchParams
                 ElasticsearchSourceSettings.create(connectionSettings)
                     .withApiVersion(ApiVersion.V5),

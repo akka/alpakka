@@ -26,11 +26,11 @@ object ElasticsearchFlow {
    * @param objectMapper Jackson object mapper converting type `T` to JSON
    */
   def create[T](
-      esParams: EsParams,
+      elasticsearchParams: ElasticsearchParams,
       settings: ElasticsearchWriteSettings,
       objectMapper: ObjectMapper
   ): akka.stream.javadsl.Flow[WriteMessage[T, NotUsed], WriteResult[T, NotUsed], NotUsed] =
-    create(esParams, settings, new JacksonWriter[T](objectMapper))
+    create(elasticsearchParams, settings, new JacksonWriter[T](objectMapper))
 
   /**
    * Create a flow to update Elasticsearch with [[akka.stream.alpakka.elasticsearch.WriteMessage WriteMessage]]s containing type `T`.
@@ -42,12 +42,12 @@ object ElasticsearchFlow {
    * @param messageWriter converts type `T` to a `String` containing valid JSON
    */
   def create[T](
-      esParams: EsParams,
+      elasticsearchParams: ElasticsearchParams,
       settings: ElasticsearchWriteSettings,
       messageWriter: MessageWriter[T]
   ): akka.stream.javadsl.Flow[WriteMessage[T, NotUsed], WriteResult[T, NotUsed], NotUsed] =
     scaladsl.ElasticsearchFlow
-      .create(esParams, settings, messageWriter)
+      .create(elasticsearchParams, settings, messageWriter)
       .asJava
 
   /**
@@ -61,11 +61,11 @@ object ElasticsearchFlow {
    * @param objectMapper Jackson object mapper converting type `T` to JSON
    */
   def createWithPassThrough[T, C](
-      esParams: EsParams,
+      elasticsearchParams: ElasticsearchParams,
       settings: ElasticsearchWriteSettings,
       objectMapper: ObjectMapper
   ): akka.stream.javadsl.Flow[WriteMessage[T, C], WriteResult[T, C], NotUsed] =
-    createWithPassThrough(esParams, settings, new JacksonWriter[T](objectMapper))
+    createWithPassThrough(elasticsearchParams, settings, new JacksonWriter[T](objectMapper))
 
   /**
    * Create a flow to update Elasticsearch with [[akka.stream.alpakka.elasticsearch.WriteMessage WriteMessage]]s containing type `T`
@@ -78,12 +78,12 @@ object ElasticsearchFlow {
    * @param messageWriter converts type `T` to a `String` containing valid JSON
    */
   def createWithPassThrough[T, C](
-      esParams: EsParams,
+      elasticsearchParams: ElasticsearchParams,
       settings: ElasticsearchWriteSettings,
       messageWriter: MessageWriter[T]
   ): akka.stream.javadsl.Flow[WriteMessage[T, C], WriteResult[T, C], NotUsed] =
     scaladsl.ElasticsearchFlow
-      .createWithPassThrough(esParams, settings, messageWriter)
+      .createWithPassThrough(elasticsearchParams, settings, messageWriter)
       .asJava
 
   /**
@@ -98,11 +98,11 @@ object ElasticsearchFlow {
    * @param objectMapper Jackson object mapper converting type `T` to JSON
    */
   def createBulk[T, C](
-      esParams: EsParams,
+      elasticsearchParams: ElasticsearchParams,
       settings: ElasticsearchWriteSettings,
       objectMapper: ObjectMapper
   ): akka.stream.javadsl.Flow[java.util.List[WriteMessage[T, C]], java.util.List[WriteResult[T, C]], NotUsed] =
-    createBulk(esParams, settings, new JacksonWriter[T](objectMapper))
+    createBulk(elasticsearchParams, settings, new JacksonWriter[T](objectMapper))
 
   /**
    * Create a flow to update Elasticsearch with
@@ -116,7 +116,7 @@ object ElasticsearchFlow {
    * @param messageWriter converts type `T` to a `String` containing valid JSON
    */
   def createBulk[T, C](
-      esParams: EsParams,
+      elasticsearchParams: ElasticsearchParams,
       settings: ElasticsearchWriteSettings,
       messageWriter: MessageWriter[T]
   ): akka.stream.javadsl.Flow[java.util.List[WriteMessage[T, C]], java.util.List[WriteResult[T, C]], NotUsed] =
@@ -125,7 +125,7 @@ object ElasticsearchFlow {
       .map(_.asScala.toIndexedSeq)
       .via(
         scaladsl.ElasticsearchFlow
-          .createBulk(esParams, settings, messageWriter)
+          .createBulk(elasticsearchParams, settings, messageWriter)
       )
       .map(_.asJava)
       .asJava
@@ -141,11 +141,11 @@ object ElasticsearchFlow {
    */
   @ApiMayChange
   def createWithContext[T, C](
-      esParams: EsParams,
+      elasticsearchParams: ElasticsearchParams,
       settings: ElasticsearchWriteSettings,
       objectMapper: ObjectMapper
   ): akka.stream.javadsl.FlowWithContext[WriteMessage[T, NotUsed], C, WriteResult[T, C], C, NotUsed] =
-    createWithContext(esParams, settings, new JacksonWriter[T](objectMapper))
+    createWithContext(elasticsearchParams, settings, new JacksonWriter[T](objectMapper))
 
   /**
    * Create a flow to update Elasticsearch with [[akka.stream.alpakka.elasticsearch.WriteMessage WriteMessage]]s containing type `T`
@@ -158,12 +158,12 @@ object ElasticsearchFlow {
    */
   @ApiMayChange
   def createWithContext[T, C](
-      esParams: EsParams,
+      elasticsearchParams: ElasticsearchParams,
       settings: ElasticsearchWriteSettings,
       messageWriter: MessageWriter[T]
   ): akka.stream.javadsl.FlowWithContext[WriteMessage[T, NotUsed], C, WriteResult[T, C], C, NotUsed] =
     scaladsl.ElasticsearchFlow
-      .createWithContext(esParams, settings, messageWriter)
+      .createWithContext(elasticsearchParams, settings, messageWriter)
       .asJava
 
   private final class JacksonWriter[T](mapper: ObjectMapper) extends MessageWriter[T] {

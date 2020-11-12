@@ -6,23 +6,23 @@ package akka.stream.alpakka.elasticsearch
 
 import org.scalatest.wordspec.AnyWordSpec
 
-class EsParamsSpec extends AnyWordSpec {
-  "EsParams" should {
+class ElasticsearchParamsSpec extends AnyWordSpec {
+  "elasticsearchParams" should {
     "not allow setting a null indexName for API version V5" in {
       assertThrows[IllegalArgumentException] {
-        EsParams.V5(null, "_doc")
+        ElasticsearchParams.V5(null, "_doc")
       }
     }
 
     "not allow setting a null typeName for API version V5" in {
       assertThrows[IllegalArgumentException] {
-        EsParams.V5("index", null)
+        ElasticsearchParams.V5("index", null)
       }
     }
 
     "not allow setting a null indexName for API version V7" in {
       assertThrows[IllegalArgumentException] {
-        EsParams.V7(null)
+        ElasticsearchParams.V7(null)
       }
     }
   }

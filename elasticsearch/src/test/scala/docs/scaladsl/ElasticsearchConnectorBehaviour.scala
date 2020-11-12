@@ -140,7 +140,7 @@ trait ElasticsearchConnectorBehaviour {
           }
           .via(
             ElasticsearchFlow.createWithContext(
-              constructEsParams(indexName, "_doc", apiVersion),
+              constructElasticsearchParams(indexName, "_doc", apiVersion),
               baseWriteSettings
             )
           )
@@ -167,7 +167,7 @@ trait ElasticsearchConnectorBehaviour {
           }
           .via(
             ElasticsearchFlow.create[Book](
-              constructEsParams(indexName, "_doc", apiVersion),
+              constructElasticsearchParams(indexName, "_doc", apiVersion),
               baseWriteSettings
             )
           )
@@ -202,7 +202,7 @@ trait ElasticsearchConnectorBehaviour {
           }
           .via(
             ElasticsearchFlow.create(
-              constructEsParams(indexName, "_doc", apiVersion),
+              constructElasticsearchParams(indexName, "_doc", apiVersion),
               baseWriteSettings.withRetryLogic(RetryAtFixedRate(5, 100.millis))
             )
           )
@@ -258,7 +258,7 @@ trait ElasticsearchConnectorBehaviour {
         val createBooks = Source(writeMsgs)
           .via(
             ElasticsearchFlow.createWithPassThrough(
-              constructEsParams(indexName, "_doc", apiVersion),
+              constructElasticsearchParams(indexName, "_doc", apiVersion),
               baseWriteSettings.withRetryLogic(RetryAtFixedRate(5, 1.millis))
             )
           )
@@ -295,7 +295,7 @@ trait ElasticsearchConnectorBehaviour {
           }
           .via(
             ElasticsearchFlow.createWithContext(
-              constructEsParams(indexName, "_doc", apiVersion),
+              constructElasticsearchParams(indexName, "_doc", apiVersion),
               baseWriteSettings.withRetryLogic(RetryAtFixedRate(5, 100.millis))
             )
           )
@@ -354,7 +354,7 @@ trait ElasticsearchConnectorBehaviour {
         val createBooks = Source(writeMsgs)
           .via(
             ElasticsearchFlow.createWithContext(
-              constructEsParams(indexName, "_doc", apiVersion),
+              constructElasticsearchParams(indexName, "_doc", apiVersion),
               baseWriteSettings.withRetryLogic(RetryAtFixedRate(5, 1.millis))
             )
           )
@@ -385,7 +385,7 @@ trait ElasticsearchConnectorBehaviour {
           }
           .via(
             ElasticsearchFlow.create[Book](
-              constructEsParams(indexName, "_doc", apiVersion),
+              constructElasticsearchParams(indexName, "_doc", apiVersion),
               baseWriteSettings
             )
           )
@@ -418,7 +418,7 @@ trait ElasticsearchConnectorBehaviour {
           }
           .via(
             ElasticsearchFlow.create[JsObject](
-              constructEsParams(indexName, "_doc", apiVersion),
+              constructElasticsearchParams(indexName, "_doc", apiVersion),
               baseWriteSettings
             )
           )
@@ -430,7 +430,7 @@ trait ElasticsearchConnectorBehaviour {
 
         // Assert docs in sink7/_doc
         val readBooks = ElasticsearchSource(
-          constructEsParams(indexName, "_doc", apiVersion),
+          constructElasticsearchParams(indexName, "_doc", apiVersion),
           """{"match_all": {}}""",
           baseSourceSettings
         ).map { message =>
@@ -465,7 +465,7 @@ trait ElasticsearchConnectorBehaviour {
         val writeResults = Source(requests)
           .via(
             ElasticsearchFlow.create[Book](
-              constructEsParams(indexName, "_doc", apiVersion),
+              constructElasticsearchParams(indexName, "_doc", apiVersion),
               baseWriteSettings
             )
           )
@@ -500,7 +500,7 @@ trait ElasticsearchConnectorBehaviour {
           }
           .via(
             ElasticsearchFlow.create[VersionTestDoc](
-              constructEsParams(indexName, typeName, apiVersion),
+              constructElasticsearchParams(indexName, typeName, apiVersion),
               baseWriteSettings.withBufferSize(5)
             )
           )
@@ -515,7 +515,7 @@ trait ElasticsearchConnectorBehaviour {
 
         val updatedVersions = ElasticsearchSource
           .typed[VersionTestDoc](
-            constructEsParams(indexName, typeName, apiVersion),
+            constructElasticsearchParams(indexName, typeName, apiVersion),
             """{"match_all": {}}""",
             baseSourceSettings.withIncludeDocumentVersion(true)
           )
@@ -532,7 +532,7 @@ trait ElasticsearchConnectorBehaviour {
           }
           .via(
             ElasticsearchFlow.create[VersionTestDoc](
-              constructEsParams(indexName, typeName, apiVersion),
+              constructElasticsearchParams(indexName, typeName, apiVersion),
               baseWriteSettings.withBufferSize(5).withVersionType("external")
             )
           )
@@ -544,7 +544,7 @@ trait ElasticsearchConnectorBehaviour {
         // Search again to assert that all documents are now on version 2
         val assertVersions = ElasticsearchSource
           .typed[VersionTestDoc](
-            constructEsParams(indexName, typeName, apiVersion),
+            constructElasticsearchParams(indexName, typeName, apiVersion),
             """{"match_all": {}}""",
             baseSourceSettings.withIncludeDocumentVersion(true)
           )
@@ -568,7 +568,7 @@ trait ElasticsearchConnectorBehaviour {
           }
           .via(
             ElasticsearchFlow.create[VersionTestDoc](
-              constructEsParams(indexName, typeName, apiVersion),
+              constructElasticsearchParams(indexName, typeName, apiVersion),
               baseWriteSettings.withBufferSize(5).withVersionType("external")
             )
           )
@@ -595,7 +595,7 @@ trait ElasticsearchConnectorBehaviour {
           }
           .via(
             ElasticsearchFlow.create[Book](
-              constructEsParams(indexName, typeName, apiVersion),
+              constructElasticsearchParams(indexName, typeName, apiVersion),
               baseWriteSettings.withBufferSize(5).withVersionType("external")
             )
           )
@@ -609,7 +609,7 @@ trait ElasticsearchConnectorBehaviour {
         // Assert that the document's external version is saved
         val readFirst = ElasticsearchSource
           .typed[Book](
-            constructEsParams(indexName, typeName, apiVersion),
+            constructElasticsearchParams(indexName, typeName, apiVersion),
             """{"match_all": {}}""",
             settings = baseSourceSettings.withIncludeDocumentVersion(true)
           )
@@ -623,7 +623,7 @@ trait ElasticsearchConnectorBehaviour {
       "allow search without specifying typeName" in assertAllStagesStopped {
         val readWithoutTypeName = ElasticsearchSource
           .typed[Book](
-            constructEsParams("source", "_doc", apiVersion),
+            constructElasticsearchParams("source", "_doc", apiVersion),
             query = """{"match_all": {}}""",
             settings = baseSourceSettings.withBufferSize(5).withApiVersion(ApiVersion.V7)
           )
@@ -664,11 +664,11 @@ trait ElasticsearchConnectorBehaviour {
       //#sink-settings
       sinkSettings.toString should startWith("ElasticsearchWriteSettings(")
       //#es-params
-      val esParamsV5 = EsParams.V5("index", "_doc")
-      val esParamsV7 = EsParams.V7("index")
+      val elasticsearchParamsV5 = ElasticsearchParams.V5("index", "_doc")
+      val elasticsearchParamsV7 = ElasticsearchParams.V7("index")
       //#es-params
-      esParamsV5.toString should startWith("EsParams(")
-      esParamsV7.toString should startWith("EsParams(")
+      elasticsearchParamsV5.toString should startWith("ElasticsearchParams(")
+      elasticsearchParamsV7.toString should startWith("ElasticsearchParams(")
       val doc = "dummy-doc"
       //#custom-metadata-example
       val msg = WriteMessage

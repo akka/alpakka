@@ -19,9 +19,9 @@ object ElasticsearchSink {
   /**
    * Create a sink to update Elasticsearch with [[akka.stream.alpakka.elasticsearch.WriteMessage WriteMessage]]s containing type `T`.
    */
-  def create[T](esParams: EsParams, settings: ElasticsearchWriteSettings)(
+  def create[T](elasticsearchParams: ElasticsearchParams, settings: ElasticsearchWriteSettings)(
       implicit sprayJsonWriter: JsonWriter[T]
   ): Sink[WriteMessage[T, NotUsed], Future[Done]] =
-    ElasticsearchFlow.create[T](esParams, settings).toMat(Sink.ignore)(Keep.right)
+    ElasticsearchFlow.create[T](elasticsearchParams, settings).toMat(Sink.ignore)(Keep.right)
 
 }

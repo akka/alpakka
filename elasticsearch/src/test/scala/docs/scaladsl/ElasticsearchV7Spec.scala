@@ -43,7 +43,7 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
 
       val copy = ElasticsearchSource
         .create(
-          constructEsParams("source", "_doc", ApiVersion.V7),
+          constructElasticsearchParams("source", "_doc", ApiVersion.V7),
           query = """{"match_all": {}}""",
           settings = baseSourceSettings
         )
@@ -53,7 +53,7 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
         }
         .runWith(
           ElasticsearchSink.create[Book](
-            constructEsParams(indexName, "_doc", ApiVersion.V7),
+            constructElasticsearchParams(indexName, "_doc", ApiVersion.V7),
             settings = baseWriteSettings
           )
         )
@@ -79,7 +79,7 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
 
       val copy = ElasticsearchSource
         .typed[Book](
-          constructEsParams("source", "_doc", ApiVersion.V7),
+          constructElasticsearchParams("source", "_doc", ApiVersion.V7),
           query = """{"match_all": {}}""",
           settings = baseSourceSettings
         )
@@ -88,7 +88,7 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
         }
         .runWith(
           ElasticsearchSink.create[Book](
-            constructEsParams(indexName, "_doc", ApiVersion.V7),
+            constructElasticsearchParams(indexName, "_doc", ApiVersion.V7),
             settings = baseWriteSettings
           )
         )
@@ -114,7 +114,7 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
 
       val copy = ElasticsearchSource
         .typed[Book](
-          constructEsParams("source", "_doc", ApiVersion.V7),
+          constructElasticsearchParams("source", "_doc", ApiVersion.V7),
           query = """{"match_all": {}}""",
           settings = baseSourceSettings
         )
@@ -123,7 +123,7 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
         }
         .via(
           ElasticsearchFlow.create[Book](
-            constructEsParams(indexName, "_doc", ApiVersion.V7),
+            constructElasticsearchParams(indexName, "_doc", ApiVersion.V7),
             settings = baseWriteSettings
           )
         )
@@ -155,7 +155,7 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
         )
       ).via(
           ElasticsearchFlow.create(
-            constructEsParams(indexName, "_doc", ApiVersion.V7),
+            constructElasticsearchParams(indexName, "_doc", ApiVersion.V7),
             settings = baseWriteSettings,
             StringMessageWriter
           )
@@ -204,7 +204,7 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
         }
         .via( // write to elastic
           ElasticsearchFlow.createWithPassThrough[Book, KafkaOffset](
-            constructEsParams(indexName, "_doc", ApiVersion.V7),
+            constructElasticsearchParams(indexName, "_doc", ApiVersion.V7),
             settings = baseWriteSettings
           )
         )
@@ -239,7 +239,7 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
       val writeResults = Source(requests)
         .via(
           ElasticsearchFlow.create[Book](
-            constructEsParams(indexName, "_doc", ApiVersion.V7),
+            constructElasticsearchParams(indexName, "_doc", ApiVersion.V7),
             baseWriteSettings
           )
         )
@@ -255,7 +255,7 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
 
       // Assert docs in sink8/_doc
       val readBooks = ElasticsearchSource(
-        constructEsParams(indexName, "_doc", ApiVersion.V7),
+        constructElasticsearchParams(indexName, "_doc", ApiVersion.V7),
         """{"match_all": {}}""",
         baseSourceSettings
       ).map { message =>
@@ -278,7 +278,7 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
 
       val writeCustomIndex = ElasticsearchSource
         .typed[Book](
-          constructEsParams("source", "_doc", ApiVersion.V7),
+          constructElasticsearchParams("source", "_doc", ApiVersion.V7),
           query = """{"match_all": {}}""",
           settings = baseSourceSettings
         )
@@ -289,7 +289,7 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
         }
         .runWith(
           ElasticsearchSink.create[Book](
-            constructEsParams("this-is-not-the-index-we-are-using", "_doc", ApiVersion.V7),
+            constructElasticsearchParams("this-is-not-the-index-we-are-using", "_doc", ApiVersion.V7),
             settings = baseWriteSettings
           )
         )
@@ -333,7 +333,7 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
         }
         .via(
           ElasticsearchFlow.create[TestDoc](
-            constructEsParams(indexName, typeName, ApiVersion.V7),
+            constructElasticsearchParams(indexName, typeName, ApiVersion.V7),
             baseWriteSettings.withBufferSize(5)
           )
         )
@@ -346,7 +346,7 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
 
       val readWithSearchParameters = ElasticsearchSource
         .typed[TestDoc](
-          constructEsParams(indexName, typeName, ApiVersion.V7),
+          constructElasticsearchParams(indexName, typeName, ApiVersion.V7),
           searchParams = Map(
             "query" -> """ {"match_all": {}} """,
             "_source" -> """ ["id", "a", "c"] """

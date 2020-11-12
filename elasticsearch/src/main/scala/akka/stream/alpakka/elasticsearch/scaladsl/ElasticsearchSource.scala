@@ -24,10 +24,10 @@ object ElasticsearchSource {
    * Alias of [[create]].
    */
   def apply(
-      esParams: EsParams,
+      elasticsearchParams: ElasticsearchParams,
       query: String,
       settings: ElasticsearchSourceSettings
-  ): Source[ReadResult[JsObject], NotUsed] = create(esParams, query, settings)
+  ): Source[ReadResult[JsObject], NotUsed] = create(elasticsearchParams, query, settings)
 
   /**
    * Creates a [[akka.stream.scaladsl.Source]] from Elasticsearch that streams [[ReadResult]]s
@@ -38,19 +38,19 @@ object ElasticsearchSource {
    *  Map( "query" -> """{"match_all": {}}""" )
    *  Map( "query" -> """{"match_all": {}}""", "_source" -> """ ["fieldToInclude", "anotherFieldToInclude"] """ )
    */
-  def apply(esParams: EsParams,
+  def apply(elasticsearchParams: ElasticsearchParams,
             searchParams: Map[String, String],
             settings: ElasticsearchSourceSettings): Source[ReadResult[JsObject], NotUsed] =
-    create(esParams, searchParams, settings)
+    create(elasticsearchParams, searchParams, settings)
 
   /**
    * Creates a [[akka.stream.scaladsl.Source]] from Elasticsearch that streams [[ReadResult]]s
    * of Spray's [[spray.json.JsObject]].
    */
-  def create(esParams: EsParams,
+  def create(elasticsearchParams: ElasticsearchParams,
              query: String,
              settings: ElasticsearchSourceSettings): Source[ReadResult[JsObject], NotUsed] =
-    create(esParams, Map("query" -> query), settings)
+    create(elasticsearchParams, Map("query" -> query), settings)
 
   /**
    * Creates a [[akka.stream.scaladsl.Source]] from Elasticsearch that streams [[ReadResult]]s
@@ -60,7 +60,7 @@ object ElasticsearchSource {
    *  Map( "query" -> """{"match_all": {}}""" )
    *  Map( "query" -> """{"match_all": {}}""", "_source" -> """ ["fieldToInclude", "anotherFieldToInclude"] """ )
    */
-  def create(esParams: EsParams,
+  def create(elasticsearchParams: ElasticsearchParams,
              searchParams: Map[String, String],
              settings: ElasticsearchSourceSettings): Source[ReadResult[JsObject], NotUsed] =
     Source
@@ -70,7 +70,7 @@ object ElasticsearchSource {
         implicit val ec: ExecutionContextExecutor = mat.executionContext
 
         val sourceStage = new impl.ElasticsearchSourceStage(
-          esParams,
+          elasticsearchParams,
           searchParams,
           settings,
           new SprayJsonReader[JsObject]()(DefaultJsonProtocol.RootJsObjectFormat)
@@ -84,10 +84,10 @@ object ElasticsearchSource {
    * Creates a [[akka.stream.scaladsl.Source]] from Elasticsearch that streams [[ReadResult]]s of type `T`
    * converted by Spray's [[spray.json.JsonReader]]
    */
-  def typed[T](esParams: EsParams, query: String, settings: ElasticsearchSourceSettings)(
+  def typed[T](elasticsearchParams: ElasticsearchParams, query: String, settings: ElasticsearchSourceSettings)(
       implicit sprayJsonReader: JsonReader[T]
   ): Source[ReadResult[T], NotUsed] =
-    typed(esParams, Map("query" -> query), settings)
+    typed(elasticsearchParams, Map("query" -> query), settings)
 
   /**
    * Creates a [[akka.stream.scaladsl.Source]] from Elasticsearch that streams [[ReadResult]]s of type `T`
@@ -97,7 +97,9 @@ object ElasticsearchSource {
    *  Map( "query" -> """{"match_all": {}}""" )
    *  Map( "query" -> """{"match_all": {}}""", "_source" -> """ ["fieldToInclude", "anotherFieldToInclude"] """ )
    */
-  def typed[T](esParams: EsParams, searchParams: Map[String, String], settings: ElasticsearchSourceSettings)(
+  def typed[T](elasticsearchParams: ElasticsearchParams,
+               searchParams: Map[String, String],
+               settings: ElasticsearchSourceSettings)(
       implicit sprayJsonReader: JsonReader[T]
   ): Source[ReadResult[T], NotUsed] =
     Source
@@ -107,7 +109,10 @@ object ElasticsearchSource {
         implicit val ec: ExecutionContextExecutor = mat.executionContext
 
         Source.fromGraph(
-          new impl.ElasticsearchSourceStage(esParams, searchParams, settings, new SprayJsonReader[T]()(sprayJsonReader))
+          new impl.ElasticsearchSourceStage(elasticsearchParams,
+                                            searchParams,
+                                            settings,
+                                            new SprayJsonReader[T]()(sprayJsonReader))
         )
       }
       .mapMaterializedValue(_ => NotUsed)

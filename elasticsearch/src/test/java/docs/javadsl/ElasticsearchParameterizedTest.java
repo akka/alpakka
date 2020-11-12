@@ -67,8 +67,8 @@ public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
     // #sink-settings
 
     // #es-params
-    EsParams esParamsV5 = EsParams.V5("source", "_doc");
-    EsParams esParamsV7 = EsParams.V7("source");
+    ElasticsearchParams elasticsearchParamsV5 = ElasticsearchParams.V5("source", "_doc");
+    ElasticsearchParams elasticsearchParamsV7 = ElasticsearchParams.V7("source");
     // #es-params
   }
 
@@ -85,7 +85,7 @@ public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
     Source.single(WriteMessage.createIndexMessage("1", book))
         .via(
             ElasticsearchFlow.create(
-                constructEsParams(indexName, typeName, apiVersion),
+                constructElasticsearchParams(indexName, typeName, apiVersion),
                 ElasticsearchWriteSettings.create(connectionSettings)
                     .withApiVersion(apiVersion)
                     .withBufferSize(5),
@@ -99,7 +99,7 @@ public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
     // Search document and assert it having version 1
     ReadResult<Book> message =
         ElasticsearchSource.<Book>typed(
-                constructEsParams(indexName, typeName, apiVersion),
+                constructElasticsearchParams(indexName, typeName, apiVersion),
                 "{\"match_all\": {}}",
                 ElasticsearchSourceSettings.create(connectionSettings)
                     .withApiVersion(apiVersion)
@@ -117,7 +117,7 @@ public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
     Source.single(WriteMessage.createIndexMessage("1", book).withVersion(1L))
         .via(
             ElasticsearchFlow.create(
-                constructEsParams(indexName, typeName, apiVersion),
+                constructElasticsearchParams(indexName, typeName, apiVersion),
                 ElasticsearchWriteSettings.create(connectionSettings)
                     .withApiVersion(apiVersion)
                     .withBufferSize(5)
@@ -135,7 +135,7 @@ public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
         Source.single(WriteMessage.createIndexMessage("1", book).withVersion(oldVersion))
             .via(
                 ElasticsearchFlow.create(
-                    constructEsParams(indexName, typeName, apiVersion),
+                    constructElasticsearchParams(indexName, typeName, apiVersion),
                     ElasticsearchWriteSettings.create(connectionSettings)
                         .withApiVersion(apiVersion)
                         .withBufferSize(5)
@@ -163,7 +163,7 @@ public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
     Source.single(WriteMessage.createIndexMessage("1", book).withVersion(externalVersion))
         .via(
             ElasticsearchFlow.create(
-                constructEsParams(indexName, typeName, apiVersion),
+                constructElasticsearchParams(indexName, typeName, apiVersion),
                 ElasticsearchWriteSettings.create(connectionSettings)
                     .withApiVersion(apiVersion)
                     .withBufferSize(5)
@@ -178,7 +178,7 @@ public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
     // Assert that the document's external version is saved
     ReadResult<Book> message =
         ElasticsearchSource.<Book>typed(
-                constructEsParams(indexName, typeName, apiVersion),
+                constructElasticsearchParams(indexName, typeName, apiVersion),
                 "{\"match_all\": {}}",
                 ElasticsearchSourceSettings.create(connectionSettings)
                     .withApiVersion(apiVersion)

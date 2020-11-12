@@ -43,9 +43,9 @@ Java
 
 ## Elasticsearch parameters
 
-Any API method that allows reading from and writing to Elasticsearch takes an instance of @apidoc[EsParams$].
+Any API method that allows reading from and writing to Elasticsearch takes an instance of @apidoc[ElasticsearchParams$].
 
-`EsParams` has be constructed based on the ElasticSearch API version that you're targeting: 
+`ElasticsearchParams` has be constructed based on the ElasticSearch API version that you're targeting: 
 
 Scala
 : @@snip [snip](/elasticsearch/src/test/scala/docs/scaladsl/ElasticsearchConnectorBehaviour.scala) { #es-params }

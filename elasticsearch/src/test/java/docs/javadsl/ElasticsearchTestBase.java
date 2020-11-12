@@ -11,7 +11,7 @@ import akka.http.javadsl.model.HttpRequest;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.elasticsearch.ApiVersion;
 import akka.stream.alpakka.elasticsearch.ElasticsearchConnectionSettings;
-import akka.stream.alpakka.elasticsearch.EsParams;
+import akka.stream.alpakka.elasticsearch.ElasticsearchParams;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.testkit.javadsl.StreamTestKit;
 import akka.testkit.javadsl.TestKit;
@@ -152,11 +152,11 @@ public class ElasticsearchTestBase {
     }
   }
 
-  protected EsParams constructEsParams(String indexName, String typeName, ApiVersion apiVersion) {
+  protected ElasticsearchParams constructElasticsearchParams(String indexName, String typeName, ApiVersion apiVersion) {
     if (apiVersion == ApiVersion.V5) {
-      return EsParams.V5(indexName, typeName);
+      return ElasticsearchParams.V5(indexName, typeName);
     } else {
-      return EsParams.V7(indexName);
+      return ElasticsearchParams.V7(indexName);
     }
   }
 }

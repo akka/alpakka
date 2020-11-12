@@ -12,8 +12,8 @@ import akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSource
 import akka.stream.alpakka.elasticsearch.{
   ApiVersion,
   ElasticsearchConnectionSettings,
-  ElasticsearchSourceSettings,
-  EsParams
+  ElasticsearchParams,
+  ElasticsearchSourceSettings
 }
 import akka.stream.scaladsl.Sink
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
@@ -58,7 +58,7 @@ trait ElasticsearchSpecUtils { this: AnyWordSpec with ScalaFutures =>
                      indexName: String): Future[immutable.Seq[String]] =
     ElasticsearchSource
       .typed[Book](
-        constructEsParams(indexName, "_doc", apiVersion),
+        constructElasticsearchParams(indexName, "_doc", apiVersion),
         query = """{"match_all": {}}""",
         settings = sourceSettings
       )
@@ -78,11 +78,11 @@ trait ElasticsearchSpecUtils { this: AnyWordSpec with ScalaFutures =>
     flushAndRefresh(connectionSettings, "source")
   }
 
-  def constructEsParams(indexName: String, typeName: String, apiVersion: ApiVersion): EsParams = {
+  def constructElasticsearchParams(indexName: String, typeName: String, apiVersion: ApiVersion): ElasticsearchParams = {
     if (apiVersion == ApiVersion.V5) {
-      EsParams.V5(indexName, typeName)
+      ElasticsearchParams.V5(indexName, typeName)
     } else {
-      EsParams.V7(indexName)
+      ElasticsearchParams.V7(indexName)
     }
   }
 }
