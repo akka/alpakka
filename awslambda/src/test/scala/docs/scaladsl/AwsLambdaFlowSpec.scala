@@ -7,7 +7,6 @@ package docs.scaladsl
 import java.util.concurrent.CompletableFuture
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.awslambda.scaladsl.AwsLambdaFlow
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Keep, Sink}
@@ -39,8 +38,6 @@ class AwsLambdaFlowSpec
     with Matchers
     with MockitoSugar
     with LogCapturing {
-
-  implicit val mat = ActorMaterializer()
 
   implicit val ec = system.dispatcher
 

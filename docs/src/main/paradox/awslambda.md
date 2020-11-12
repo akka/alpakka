@@ -35,13 +35,13 @@ Java
 
 The example above uses @extref:[Akka HTTP](akka-http:) as the default HTTP client implementation. For more details about the HTTP client, configuring request retrying and best practices for credentials, see @ref[AWS client configuration](aws-shared-configuration.md) for more details.
 
-We will also need an @apidoc[akka.actor.ActorSystem] and an @apidoc[akka.stream.Materializer].
+We will need an @apidoc[akka.actor.ActorSystem].
 
 Scala
-: @@snip (/awslambda/src/test/scala/docs/scaladsl/Examples.scala) { #init-mat }
+: @@snip (/awslambda/src/test/scala/docs/scaladsl/Examples.scala) { #init-sys }
 
 Java
-: @@snip (/awslambda/src/test/java/docs/javadsl/Examples.java) { #init-mat }
+: @@snip (/awslambda/src/test/java/docs/javadsl/Examples.java) { #init-sys }
 
 This is all preparation that we are going to need.
 
