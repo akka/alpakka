@@ -4,18 +4,17 @@
 
 package akka.stream.alpakka.elasticsearch.impl
 
-import java.nio.charset.StandardCharsets
-
 import akka.annotation.InternalApi
+import akka.http.scaladsl.HttpExt
+import akka.http.scaladsl.model.Uri.Path
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.alpakka.elasticsearch._
 import akka.stream.stage._
-import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
-import org.apache.http.entity.StringEntity
-import org.apache.http.message.BasicHeader
-import org.apache.http.util.EntityUtils
-import org.elasticsearch.client.{Response, ResponseListener, RestClient}
+import akka.stream._
 
 import scala.collection.immutable
+import scala.concurrent.ExecutionContext
 
 /**
  * INTERNAL API.
@@ -24,12 +23,11 @@ import scala.collection.immutable
  */
 @InternalApi
 private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
-    _indexName: String,
-    _typeName: String,
-    client: RestClient,
+    elasticsearchParams: ElasticsearchParams,
     settings: ElasticsearchWriteSettings,
     writer: MessageWriter[T]
-) extends GraphStage[
+)(implicit http: HttpExt, mat: Materializer, ec: ExecutionContext)
+    extends GraphStage[
       FlowShape[(immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]]), immutable.Seq[WriteResult[T, C]]]
     ] {
 
@@ -40,14 +38,17 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
 
   private val restApi: RestBulkApi[T, C] = settings.apiVersion match {
     case ApiVersion.V5 =>
-      require(_indexName != null, "You must define an index name")
-      require(_typeName != null, "You must define a type name")
-      new RestBulkApiV5[T, C](_indexName, _typeName, settings.versionType, settings.allowExplicitIndex, writer)
+      new RestBulkApiV5[T, C](elasticsearchParams.indexName,
+                              elasticsearchParams.typeName.get,
+                              settings.versionType,
+                              settings.allowExplicitIndex,
+                              writer)
     case ApiVersion.V7 =>
-      require(_indexName != null, "You must define an index name")
-      new RestBulkApiV7[T, C](_indexName, settings.versionType, settings.allowExplicitIndex, writer)
+      new RestBulkApiV7[T, C](elasticsearchParams.indexName, settings.versionType, settings.allowExplicitIndex, writer)
     case other => throw new IllegalArgumentException(s"API version $other is not supported")
   }
+
+  private val baseUri = Uri(settings.connection.baseUrl)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new StageLogic()
 
@@ -58,35 +59,43 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
     private val failureHandler =
       getAsyncCallback[(immutable.Seq[WriteResult[T, C]], Throwable)](handleFailure)
     private val responseHandler =
-      getAsyncCallback[(immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]], Response)](handleResponse)
+      getAsyncCallback[(immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]], String)](handleResponse)
 
     setHandlers(in, out, this)
 
     override def onPull(): Unit = tryPull()
 
     override def onPush(): Unit = {
-      val endpoint = if (settings.allowExplicitIndex) "/_bulk" else s"/${_indexName}/_bulk"
+      val endpoint = if (settings.allowExplicitIndex) "/_bulk" else s"/${elasticsearchParams.indexName}/_bulk"
       val (messages, resultsPassthrough) = grab(in)
       inflight = true
       val json: String = restApi.toJson(messages)
 
       log.debug("Posting data to Elasticsearch: {}", json)
 
-      // https://www.elastic.co/guide/en/elasticsearch/client/java-rest/current/java-rest-low-usage-requests.html
-      client.performRequestAsync(
-        "POST",
-        endpoint,
-        java.util.Collections.emptyMap[String, String](),
-        new StringEntity(json, StandardCharsets.UTF_8),
-        new ResponseListener() {
-          override def onFailure(exception: Exception): Unit =
-            failureHandler.invoke((resultsPassthrough, exception))
+      val uri = baseUri.withPath(Path(endpoint))
+      val request = HttpRequest(HttpMethods.POST)
+        .withUri(uri)
+        .withEntity(HttpEntity(NDJsonProtocol.`application/x-ndjson`, json))
 
-          override def onSuccess(response: Response): Unit =
-            responseHandler.invoke((messages, resultsPassthrough, response))
-        },
-        new BasicHeader("Content-Type", "application/x-ndjson")
-      )
+      ElasticsearchApi
+        .executeRequest(
+          request,
+          connectionSettings = settings.connection
+        )
+        .map {
+          case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
+            Unmarshal(responseEntity)
+              .to[String]
+              .map(json => responseHandler.invoke((messages, resultsPassthrough, json)))
+          case HttpResponse(status, _, responseEntity, _) =>
+            Unmarshal(responseEntity).to[String].map { body =>
+              failureHandler.invoke(
+                (resultsPassthrough,
+                 new RuntimeException(s"Request failed for POST $uri, got $status with body: $body"))
+              )
+            }
+        }
     }
 
     private def handleFailure(
@@ -102,16 +111,16 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
     }
 
     private def handleResponse(
-        args: (immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]], Response)
+        args: (immutable.Seq[WriteMessage[T, C]], immutable.Seq[WriteResult[T, C]], String)
     ): Unit = {
       inflight = false
       val (messages, resultsPassthrough, response) = args
-      val jsonString = EntityUtils.toString(response.getEntity)
+
       if (log.isDebugEnabled) {
         import spray.json._
-        log.debug("response {}", jsonString.parseJson.prettyPrint)
+        log.debug("response {}", response.parseJson.prettyPrint)
       }
-      val messageResults = restApi.toWriteResults(messages, jsonString)
+      val messageResults = restApi.toWriteResults(messages, response)
 
       if (log.isErrorEnabled) {
         messageResults.filterNot(_.success).foreach { failure =>

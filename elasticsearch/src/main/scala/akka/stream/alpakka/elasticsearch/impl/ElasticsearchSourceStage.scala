@@ -4,20 +4,18 @@
 
 package akka.stream.alpakka.elasticsearch.impl
 
-import java.io.ByteArrayOutputStream
-import java.nio.charset.StandardCharsets
-
 import akka.annotation.InternalApi
-import akka.stream.alpakka.elasticsearch.{ElasticsearchSourceSettings, ReadResult}
+import akka.http.scaladsl.HttpExt
+import akka.http.scaladsl.model.Uri.Path
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.stream.alpakka.elasticsearch.{ApiVersion, ElasticsearchParams, ElasticsearchSourceSettings, ReadResult}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler, StageLogging}
-import akka.stream.{Attributes, Outlet, SourceShape}
-import org.apache.http.entity.StringEntity
-import org.apache.http.message.BasicHeader
-import org.elasticsearch.client.{Response, ResponseListener, RestClient}
+import akka.stream.{Attributes, Materializer, Outlet, SourceShape}
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
-import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -44,42 +42,46 @@ private[elasticsearch] trait MessageReader[T] {
  * INTERNAL API
  */
 @InternalApi
-private[elasticsearch] final class ElasticsearchSourceStage[T](indexName: String,
-                                                               typeName: Option[String],
-                                                               searchParams: Map[String, String],
-                                                               client: RestClient,
-                                                               settings: ElasticsearchSourceSettings,
-                                                               reader: MessageReader[T])
+private[elasticsearch] final class ElasticsearchSourceStage[T](
+    elasticsearchParams: ElasticsearchParams,
+    searchParams: Map[String, String],
+    settings: ElasticsearchSourceSettings,
+    reader: MessageReader[T]
+)(implicit http: HttpExt, mat: Materializer, ec: ExecutionContext)
     extends GraphStage[SourceShape[ReadResult[T]]] {
-  require(indexName != null, "You must define an index name")
 
   val out: Outlet[ReadResult[T]] = Outlet("ElasticsearchSource.out")
   override val shape: SourceShape[ReadResult[T]] = SourceShape(out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new ElasticsearchSourceLogic[T](indexName, typeName, searchParams, client, settings, out, shape, reader)
+    new ElasticsearchSourceLogic[T](elasticsearchParams, searchParams, settings, out, shape, reader)
 
+}
+
+object ElasticsearchSourceStage {
+  def validate(indexName: String): Unit = {
+    require(indexName != null, "You must define an index name")
+  }
 }
 
 /**
  * INTERNAL API
  */
 @InternalApi
-private[elasticsearch] final class ElasticsearchSourceLogic[T](indexName: String,
-                                                               typeName: Option[String],
-                                                               searchParams: Map[String, String],
-                                                               client: RestClient,
-                                                               settings: ElasticsearchSourceSettings,
-                                                               out: Outlet[ReadResult[T]],
-                                                               shape: SourceShape[ReadResult[T]],
-                                                               reader: MessageReader[T])
+private[elasticsearch] final class ElasticsearchSourceLogic[T](
+    elasticsearchParams: ElasticsearchParams,
+    searchParams: Map[String, String],
+    settings: ElasticsearchSourceSettings,
+    out: Outlet[ReadResult[T]],
+    shape: SourceShape[ReadResult[T]],
+    reader: MessageReader[T]
+)(implicit http: HttpExt, mat: Materializer, ec: ExecutionContext)
     extends GraphStageLogic(shape)
-    with ResponseListener
     with OutHandler
     with StageLogging {
 
   private var scrollId: String = null
-  private val responseHandler = getAsyncCallback[Response](handleResponse)
+  private val responseHandler = getAsyncCallback[String](handleResponse)
   private val failureHandler = getAsyncCallback[Throwable](handleFailure)
 
   private var waitingForElasticData = false
@@ -122,56 +124,74 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](indexName: String
             }
             .mkString(",") + "}"
 
-        val endpoint: String = (indexName, typeName) match {
-          case (i, Some(t)) => s"/$i/$t/_search"
-          case (i, None) => s"/$i/_search"
+        val endpoint: String = settings.apiVersion match {
+          case ApiVersion.V5 => s"/${elasticsearchParams.indexName}/${elasticsearchParams.typeName.get}/_search"
+          case ApiVersion.V7 => s"/${elasticsearchParams.indexName}/_search"
         }
-        client.performRequestAsync(
-          "POST",
-          endpoint,
-          queryParams.asJava,
-          new StringEntity(searchBody, StandardCharsets.UTF_8),
-          this,
-          new BasicHeader("Content-Type", "application/json")
-        )
+        val uri = Uri(settings.connection.baseUrl).withPath(Path(endpoint)).withQuery(Uri.Query(queryParams))
+        val request = HttpRequest(HttpMethods.POST)
+          .withUri(uri)
+          .withEntity(
+            HttpEntity(ContentTypes.`application/json`, searchBody)
+          )
+
+        ElasticsearchApi
+          .executeRequest(
+            request,
+            settings.connection
+          )
+          .map {
+            case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
+              Unmarshal(responseEntity)
+                .to[String]
+                .map(json => responseHandler.invoke(json))
+            case HttpResponse(status, _, responseEntity, _) =>
+              Unmarshal(responseEntity).to[String].map { body =>
+                failureHandler
+                  .invoke(new RuntimeException(s"Request failed for POST $uri, got $status with body: $body"))
+              }
+          }
       } else {
         log.debug("Fetching next scroll")
 
-        client.performRequestAsync(
-          "POST",
-          s"/_search/scroll",
-          Map[String, String]().asJava,
-          new StringEntity(Map("scroll" -> settings.scroll, "scroll_id" -> scrollId).toJson.toString,
-                           StandardCharsets.UTF_8),
-          this,
-          new BasicHeader("Content-Type", "application/json")
-        )
+        val uri = Uri(settings.connection.baseUrl).withPath(Path("/_search/scroll"))
+        val request = HttpRequest(HttpMethods.POST)
+          .withUri(uri)
+          .withEntity(
+            HttpEntity(ContentTypes.`application/json`,
+                       Map("scroll" -> settings.scroll, "scroll_id" -> scrollId).toJson.compactPrint)
+          )
+
+        ElasticsearchApi
+          .executeRequest(
+            request,
+            settings.connection
+          )
+          .map {
+            case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
+              Unmarshal(responseEntity)
+                .to[String]
+                .map(json => responseHandler.invoke(json))
+            case HttpResponse(status, _, responseEntity, _) =>
+              Unmarshal(responseEntity).to[String].map { body =>
+                failureHandler
+                  .invoke(new RuntimeException(s"Request failed for POST $uri, got $status with body: $body"))
+              }
+          }
       }
     } catch {
-      case ex: Exception => handleFailure(ex)
+      case ex: Exception => failureHandler.invoke(ex)
     }
-
-  override def onFailure(exception: Exception) = failureHandler.invoke(exception)
-  override def onSuccess(response: Response) = responseHandler.invoke(response)
 
   def handleFailure(ex: Throwable): Unit = {
     waitingForElasticData = false
     failStage(ex)
   }
 
-  def handleResponse(res: Response): Unit = {
+  def handleResponse(json: String): Unit = {
     waitingForElasticData = false
-    val json = {
-      val out = new ByteArrayOutputStream()
-      try {
-        res.getEntity.writeTo(out)
-        new String(out.toByteArray, "UTF-8")
-      } finally {
-        out.close()
-      }
-    }
 
-    val scrollResponse = reader.convert(json)
+    val scrollResponse: ScrollResponse[T] = reader.convert(json)
 
     if (pullIsWaitingForData) {
       log.debug("Received data from elastic. Downstream has already called pull and is waiting for data")
@@ -255,26 +275,30 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](indexName: String
       log.debug("Scroll Id is null. Completing stage eagerly.")
       completeStage()
     } else {
-      val listener = new ResponseListener {
-        override def onSuccess(response: Response): Unit = {
-          clearScrollAsyncHandler.invoke(Success(response))
-        }
-        override def onFailure(exception: Exception): Unit = {
-          clearScrollAsyncHandler.invoke(Failure(exception))
-        }
-      }
-
       // Clear the scroll
-      client.performRequestAsync(
-        "DELETE",
-        s"/_search/scroll/$scrollId",
-        listener,
-        new BasicHeader("Content-Type", "application/json")
-      )
+      val uri = Uri(settings.connection.baseUrl).withPath(Path(s"/_search/scroll/$scrollId"))
+      val request = HttpRequest(HttpMethods.DELETE)
+        .withUri(uri)
+
+      ElasticsearchApi
+        .executeRequest(request, settings.connection)
+        .map {
+          case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
+            Unmarshal(responseEntity)
+              .to[String]
+              .map(json => {
+                clearScrollAsyncHandler.invoke(Success(json))
+              })
+          case HttpResponse(status, _, responseEntity, _) =>
+            Unmarshal(responseEntity).to[String].map { body =>
+              clearScrollAsyncHandler
+                .invoke(Failure(new RuntimeException(s"Request failed for POST $uri, got $status with body: $body")))
+            }
+        }
     }
   }
 
-  private val clearScrollAsyncHandler = getAsyncCallback[Try[Response]]({ result =>
+  private val clearScrollAsyncHandler = getAsyncCallback[Try[String]]({ result =>
     {
       // Note: the scroll will expire, so there is no reason to consider a failed
       // clear as a reason to fail the stream.
@@ -282,5 +306,4 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](indexName: String
       completeStage()
     }
   })
-
 }

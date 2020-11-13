@@ -5,11 +5,13 @@
 package akka.stream.alpakka.elasticsearch.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.elasticsearch._
-import akka.stream.alpakka.elasticsearch.impl
+import akka.actor.ActorSystem
+import akka.http.scaladsl.{Http, HttpExt}
+import akka.stream.alpakka.elasticsearch.{impl, _}
 import akka.stream.scaladsl.Source
-import org.elasticsearch.client.RestClient
 import spray.json._
+
+import scala.concurrent.ExecutionContextExecutor
 
 /**
  * Scala API to create Elasticsearch sources.
@@ -21,12 +23,11 @@ object ElasticsearchSource {
    * of Spray's [[spray.json.JsObject]].
    * Alias of [[create]].
    */
-  def apply(indexName: String,
-            typeName: String,
-            query: String,
-            settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings.Default)(
-      implicit elasticsearchClient: RestClient
-  ): Source[ReadResult[JsObject], NotUsed] = create(indexName, typeName, query, settings)
+  def apply(
+      elasticsearchParams: ElasticsearchParams,
+      query: String,
+      settings: ElasticsearchSourceSettings
+  ): Source[ReadResult[JsObject], NotUsed] = create(elasticsearchParams, query, settings)
 
   /**
    * Creates a [[akka.stream.scaladsl.Source]] from Elasticsearch that streams [[ReadResult]]s
@@ -37,33 +38,19 @@ object ElasticsearchSource {
    *  Map( "query" -> """{"match_all": {}}""" )
    *  Map( "query" -> """{"match_all": {}}""", "_source" -> """ ["fieldToInclude", "anotherFieldToInclude"] """ )
    */
-  def apply(indexName: String,
-            typeName: Option[String],
+  def apply(elasticsearchParams: ElasticsearchParams,
             searchParams: Map[String, String],
-            settings: ElasticsearchSourceSettings)(
-      implicit elasticsearchClient: RestClient
-  ): Source[ReadResult[JsObject], NotUsed] = create(indexName, typeName, searchParams, settings)
+            settings: ElasticsearchSourceSettings): Source[ReadResult[JsObject], NotUsed] =
+    create(elasticsearchParams, searchParams, settings)
 
   /**
    * Creates a [[akka.stream.scaladsl.Source]] from Elasticsearch that streams [[ReadResult]]s
    * of Spray's [[spray.json.JsObject]].
    */
-  def create(indexName: String,
-             typeName: String,
+  def create(elasticsearchParams: ElasticsearchParams,
              query: String,
-             settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings.Default)(
-      implicit elasticsearchClient: RestClient
-  ): Source[ReadResult[JsObject], NotUsed] =
-    create(indexName, Option(typeName), query, settings)
-
-  /**
-   * Creates a [[akka.stream.scaladsl.Source]] from Elasticsearch that streams [[ReadResult]]s
-   * of Spray's [[spray.json.JsObject]].
-   */
-  def create(indexName: String, typeName: Option[String], query: String, settings: ElasticsearchSourceSettings)(
-      implicit elasticsearchClient: RestClient
-  ): Source[ReadResult[JsObject], NotUsed] =
-    create(indexName, typeName, Map("query" -> query), settings)
+             settings: ElasticsearchSourceSettings): Source[ReadResult[JsObject], NotUsed] =
+    create(elasticsearchParams, Map("query" -> query), settings)
 
   /**
    * Creates a [[akka.stream.scaladsl.Source]] from Elasticsearch that streams [[ReadResult]]s
@@ -73,47 +60,34 @@ object ElasticsearchSource {
    *  Map( "query" -> """{"match_all": {}}""" )
    *  Map( "query" -> """{"match_all": {}}""", "_source" -> """ ["fieldToInclude", "anotherFieldToInclude"] """ )
    */
-  def create(indexName: String,
-             typeName: Option[String],
+  def create(elasticsearchParams: ElasticsearchParams,
              searchParams: Map[String, String],
-             settings: ElasticsearchSourceSettings)(
-      implicit elasticsearchClient: RestClient
-  ): Source[ReadResult[JsObject], NotUsed] = {
-    ElasticsearchFlow.checkClient(elasticsearchClient)
-    Source.fromGraph(
-      new impl.ElasticsearchSourceStage(
-        indexName,
-        typeName,
-        searchParams,
-        elasticsearchClient,
-        settings,
-        new SprayJsonReader[JsObject]()(DefaultJsonProtocol.RootJsObjectFormat)
-      )
-    )
-  }
+             settings: ElasticsearchSourceSettings): Source[ReadResult[JsObject], NotUsed] =
+    Source
+      .setup { (mat, _) =>
+        implicit val system: ActorSystem = mat.system
+        implicit val http: HttpExt = Http()
+        implicit val ec: ExecutionContextExecutor = mat.executionContext
+
+        val sourceStage = new impl.ElasticsearchSourceStage(
+          elasticsearchParams,
+          searchParams,
+          settings,
+          new SprayJsonReader[JsObject]()(DefaultJsonProtocol.RootJsObjectFormat)
+        )
+
+        Source.fromGraph(sourceStage)
+      }
+      .mapMaterializedValue(_ => NotUsed)
 
   /**
    * Creates a [[akka.stream.scaladsl.Source]] from Elasticsearch that streams [[ReadResult]]s of type `T`
    * converted by Spray's [[spray.json.JsonReader]]
    */
-  def typed[T](indexName: String,
-               typeName: String,
-               query: String,
-               settings: ElasticsearchSourceSettings = ElasticsearchSourceSettings.Default)(
-      implicit elasticsearchClient: RestClient,
-      reader: JsonReader[T]
+  def typed[T](elasticsearchParams: ElasticsearchParams, query: String, settings: ElasticsearchSourceSettings)(
+      implicit sprayJsonReader: JsonReader[T]
   ): Source[ReadResult[T], NotUsed] =
-    typed(indexName, Option(typeName), query, settings)
-
-  /**
-   * Creates a [[akka.stream.scaladsl.Source]] from Elasticsearch that streams [[ReadResult]]s of type `T`
-   * converted by Spray's [[spray.json.JsonReader]]
-   */
-  def typed[T](indexName: String, typeName: Option[String], query: String, settings: ElasticsearchSourceSettings)(
-      implicit elasticsearchClient: RestClient,
-      sprayJsonReader: JsonReader[T]
-  ): Source[ReadResult[T], NotUsed] =
-    typed(indexName, typeName, Map("query" -> query), settings)
+    typed(elasticsearchParams, Map("query" -> query), settings)
 
   /**
    * Creates a [[akka.stream.scaladsl.Source]] from Elasticsearch that streams [[ReadResult]]s of type `T`
@@ -123,23 +97,25 @@ object ElasticsearchSource {
    *  Map( "query" -> """{"match_all": {}}""" )
    *  Map( "query" -> """{"match_all": {}}""", "_source" -> """ ["fieldToInclude", "anotherFieldToInclude"] """ )
    */
-  def typed[T](indexName: String,
-               typeName: Option[String],
+  def typed[T](elasticsearchParams: ElasticsearchParams,
                searchParams: Map[String, String],
                settings: ElasticsearchSourceSettings)(
-      implicit elasticsearchClient: RestClient,
-      sprayJsonReader: JsonReader[T]
-  ): Source[ReadResult[T], NotUsed] = {
-    ElasticsearchFlow.checkClient(elasticsearchClient)
-    Source.fromGraph(
-      new impl.ElasticsearchSourceStage(indexName,
-                                        typeName,
-                                        searchParams,
-                                        elasticsearchClient,
-                                        settings,
-                                        new SprayJsonReader[T]()(sprayJsonReader))
-    )
-  }
+      implicit sprayJsonReader: JsonReader[T]
+  ): Source[ReadResult[T], NotUsed] =
+    Source
+      .setup { (mat, _) =>
+        implicit val system: ActorSystem = mat.system
+        implicit val http: HttpExt = Http()
+        implicit val ec: ExecutionContextExecutor = mat.executionContext
+
+        Source.fromGraph(
+          new impl.ElasticsearchSourceStage(elasticsearchParams,
+                                            searchParams,
+                                            settings,
+                                            new SprayJsonReader[T]()(sprayJsonReader))
+        )
+      }
+      .mapMaterializedValue(_ => NotUsed)
 
   private final class SprayJsonReader[T](implicit reader: JsonReader[T]) extends impl.MessageReader[T] {
 

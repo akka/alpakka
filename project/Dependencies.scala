@@ -162,8 +162,8 @@ object Dependencies {
 
   val Elasticsearch = Seq(
     libraryDependencies ++= Seq(
-        "org.elasticsearch.client" % "elasticsearch-rest-client" % "6.3.2", // ApacheV2
-        "io.spray" %% "spray-json" % "1.3.5", // ApacheV2
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
+        "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "org.slf4j" % "jcl-over-slf4j" % jclOverSlf4jVersion % Test
       ) ++ JacksonDatabindDependencies
   )

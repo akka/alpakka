@@ -4,8 +4,9 @@
 
 package akka.stream.alpakka.elasticsearch
 
-import scala.concurrent.duration._
 import akka.util.JavaDurationConverters._
+
+import scala.concurrent.duration._
 
 trait RetryLogic {
   def maxRetries: Int
@@ -58,11 +59,14 @@ object RetryWithBackoff {
 /**
  * Configure Elasticsearch sinks and flows.
  */
-final class ElasticsearchWriteSettings private (val bufferSize: Int,
+final class ElasticsearchWriteSettings private (val connection: ElasticsearchConnectionSettings,
+                                                val bufferSize: Int,
                                                 val retryLogic: RetryLogic,
                                                 val versionType: Option[String],
                                                 val apiVersion: ApiVersion,
                                                 val allowExplicitIndex: Boolean) {
+
+  def withConnection(value: ElasticsearchConnectionSettings): ElasticsearchWriteSettings = copy(connection = value)
 
   def withBufferSize(value: Int): ElasticsearchWriteSettings = copy(bufferSize = value)
 
@@ -76,15 +80,17 @@ final class ElasticsearchWriteSettings private (val bufferSize: Int,
 
   def withAllowExplicitIndex(value: Boolean): ElasticsearchWriteSettings = copy(allowExplicitIndex = value)
 
-  private def copy(bufferSize: Int = bufferSize,
+  private def copy(connection: ElasticsearchConnectionSettings = connection,
+                   bufferSize: Int = bufferSize,
                    retryLogic: RetryLogic = retryLogic,
                    versionType: Option[String] = versionType,
                    apiVersion: ApiVersion = apiVersion,
                    allowExplicitIndex: Boolean = allowExplicitIndex): ElasticsearchWriteSettings =
-    new ElasticsearchWriteSettings(bufferSize, retryLogic, versionType, apiVersion, allowExplicitIndex)
+    new ElasticsearchWriteSettings(connection, bufferSize, retryLogic, versionType, apiVersion, allowExplicitIndex)
 
-  override def toString =
+  override def toString: String =
     "ElasticsearchWriteSettings(" +
+    s"connection=$connection," +
     s"bufferSize=$bufferSize," +
     s"retryLogic=$retryLogic," +
     s"versionType=$versionType," +
@@ -94,15 +100,12 @@ final class ElasticsearchWriteSettings private (val bufferSize: Int,
 }
 
 object ElasticsearchWriteSettings {
-  val Default = new ElasticsearchWriteSettings(bufferSize = 10,
-                                               retryLogic = RetryNever,
-                                               versionType = None,
-                                               apiVersion = ApiVersion.V5,
-                                               allowExplicitIndex = true)
 
   /** Scala API */
-  def apply(): ElasticsearchWriteSettings = Default
+  def apply(connection: ElasticsearchConnectionSettings): ElasticsearchWriteSettings =
+    new ElasticsearchWriteSettings(connection, 10, RetryNever, None, ApiVersion.V5, allowExplicitIndex = true)
 
   /** Java API */
-  def create(): ElasticsearchWriteSettings = Default
+  def create(connection: ElasticsearchConnectionSettings): ElasticsearchWriteSettings =
+    new ElasticsearchWriteSettings(connection, 10, RetryNever, None, ApiVersion.V5, allowExplicitIndex = true)
 }
