@@ -122,7 +122,7 @@ Java
 | bufferSize             | 10             | `ElasticsearchSource` retrieves messages from Elasticsearch by scroll scan. This buffer size is used as the scroll size. | 
 | includeDocumentVersion | false          | Tell Elasticsearch to return the documents `_version` property with the search results. See [Version](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html) and [Optimistic Concurrenct Control](https://www.elastic.co/guide/en/elasticsearch/guide/current/optimistic-concurrency-control.html) to know about this property. |
 | scrollDuration         | 5 min          | `ElasticsearchSource`  retrieves messages from Elasticsearch by scroll scan. This parameter is used as a scroll value. See [Time units](https://www.elastic.co/guide/en/elasticsearch/reference/current/common-options.html#time-units) for supported units.                |
-| apiVersion             | V5             | Currently supports `V5` and `V7` (see below) |
+| apiVersion             | V7             | Currently supports `V5` and `V7` (see below) |
 
 ### Sink and flow configuration
 
@@ -140,7 +140,7 @@ Java
 | bufferSize          | 10         | Flow and Sink batch messages to bulk requests when back-pressure applies.                              |
 | versionType         | None       | If set, `ElasticsearchSink` uses the chosen versionType to index documents. See [Version types](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#_version_types) for accepted settings. |
 | retryLogic          | No retries | See below |
-| apiVersion          | V5         | Currently supports `V5` and `V7` (see below) |
+| apiVersion          | V7         | Currently supports `V5` and `V7` (see below) |
 | allowExplicitIndex  | True       | When set to False, the index name will be included in the URL instead of on each document (see below) | 
 
 #### Retry logic
