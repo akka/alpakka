@@ -30,7 +30,7 @@ class ElasticsearchSimpleFlowStageTest
 
   val writer: StringMessageWriter = StringMessageWriter.getInstance
   val settings: ElasticsearchWriteSettings = ElasticsearchWriteSettings(
-    ElasticsearchConnectionSettings("http://localhost:9201")
+    ElasticsearchConnectionSettings("http://localhost:9202")
   )
   val dummyMessages: (immutable.Seq[WriteMessage[String, NotUsed]], immutable.Seq[WriteResult[String, NotUsed]]) = (
     immutable.Seq(
@@ -49,7 +49,7 @@ class ElasticsearchSimpleFlowStageTest
             .probe[(immutable.Seq[WriteMessage[String, NotUsed]], immutable.Seq[WriteResult[String, NotUsed]])]
             .via(
               new impl.ElasticsearchSimpleFlowStage[String, NotUsed](
-                ElasticsearchParams.V5("es-simple-flow-index", "_doc"),
+                ElasticsearchParams.V7("es-simple-flow-index"),
                 settings,
                 writer
               )
