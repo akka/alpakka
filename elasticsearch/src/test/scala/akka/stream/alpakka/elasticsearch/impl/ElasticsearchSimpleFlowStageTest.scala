@@ -7,7 +7,7 @@ package akka.stream.alpakka.elasticsearch.impl
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.{Http, HttpExt}
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.stream.alpakka.elasticsearch.{StringMessageWriter, _}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Keep
@@ -25,7 +25,7 @@ class ElasticsearchSimpleFlowStageTest
     with BeforeAndAfterAll
     with LogCapturing {
 
-  implicit val mat: ActorMaterializer = ActorMaterializer()
+  implicit val mat: Materializer = Materializer(system)
   implicit val http: HttpExt = Http()
 
   val writer: StringMessageWriter = StringMessageWriter.getInstance

@@ -8,7 +8,7 @@ import akka.actor.ActorSystem;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.model.ContentTypes;
 import akka.http.javadsl.model.HttpRequest;
-import akka.stream.ActorMaterializer;
+import akka.stream.Materializer;
 import akka.stream.alpakka.elasticsearch.ApiVersion;
 import akka.stream.alpakka.elasticsearch.ElasticsearchConnectionSettings;
 import akka.stream.alpakka.elasticsearch.ElasticsearchParams;
@@ -30,7 +30,7 @@ public class ElasticsearchTestBase {
   protected static ApiVersion apiVersion;
   protected static ElasticsearchConnectionSettings connectionSettings;
   protected static ActorSystem system;
-  protected static ActorMaterializer materializer;
+  protected static Materializer materializer;
   protected static Http http;
 
   // #define-class
@@ -49,7 +49,7 @@ public class ElasticsearchTestBase {
   public static void setupBase() throws IOException {
     // #init-mat
     system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
+    materializer = Materializer.matFromSystem(system);
     // #init-mat
     http = Http.get(system);
   }

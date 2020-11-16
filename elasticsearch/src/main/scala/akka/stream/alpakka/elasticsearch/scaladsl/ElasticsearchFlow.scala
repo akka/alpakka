@@ -208,7 +208,7 @@ object ElasticsearchFlow {
                                    settings: ElasticsearchWriteSettings,
                                    writer: MessageWriter[T]) = {
     Flow
-      .setup { (mat, _) =>
+      .fromMaterializer { (mat, _) =>
         implicit val system: ActorSystem = mat.system
         implicit val http: HttpExt = Http()
         implicit val ec: ExecutionContextExecutor = mat.executionContext

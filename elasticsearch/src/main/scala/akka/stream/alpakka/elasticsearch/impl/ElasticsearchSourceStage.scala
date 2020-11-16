@@ -260,7 +260,7 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
    * then explicitly keeps the stage alive. [[clearScrollAsync()]] is responsible
    * for completing the stage.
    */
-  override def onDownstreamFinish(): Unit = {
+  override def onDownstreamFinish(cause: Throwable): Unit = {
     clearScrollAsync()
     setKeepGoing(true)
   }

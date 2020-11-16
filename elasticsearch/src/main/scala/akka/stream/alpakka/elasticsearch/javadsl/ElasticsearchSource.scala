@@ -9,7 +9,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.stream.alpakka.elasticsearch.{impl, _}
 import akka.stream.javadsl.Source
-import akka.stream.{ActorMaterializer, Attributes}
+import akka.stream.{Attributes, Materializer}
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.{ArrayNode, NumericNode}
 
@@ -39,7 +39,7 @@ object ElasticsearchSource {
              settings: ElasticsearchSourceSettings,
              objectMapper: ObjectMapper): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
     Source
-      .setup { (mat: ActorMaterializer, _: Attributes) =>
+      .fromMaterializer { (mat: Materializer, _: Attributes) =>
         {
           implicit val system: ActorSystem = mat.system
           implicit val http: HttpExt = Http()
@@ -73,7 +73,7 @@ object ElasticsearchSource {
              settings: ElasticsearchSourceSettings,
              objectMapper: ObjectMapper): Source[ReadResult[java.util.Map[String, Object]], NotUsed] =
     Source
-      .setup { (mat: ActorMaterializer, _: Attributes) =>
+      .fromMaterializer { (mat: Materializer, _: Attributes) =>
         {
           implicit val system: ActorSystem = mat.system
           implicit val http: HttpExt = Http()
@@ -111,7 +111,7 @@ object ElasticsearchSource {
                clazz: Class[T],
                objectMapper: ObjectMapper): Source[ReadResult[T], NotUsed] =
     Source
-      .setup { (mat: ActorMaterializer, _: Attributes) =>
+      .fromMaterializer { (mat: Materializer, _: Attributes) =>
         {
           implicit val system: ActorSystem = mat.system
           implicit val http: HttpExt = Http()
@@ -145,7 +145,7 @@ object ElasticsearchSource {
                clazz: Class[T],
                objectMapper: ObjectMapper): Source[ReadResult[T], NotUsed] =
     Source
-      .setup { (mat: ActorMaterializer, _: Attributes) =>
+      .fromMaterializer { (mat: Materializer, _: Attributes) =>
         {
           implicit val system: ActorSystem = mat.system
           implicit val http: HttpExt = Http()

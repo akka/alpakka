@@ -16,7 +16,7 @@ import akka.stream.alpakka.elasticsearch.{
   ElasticsearchSourceSettings
 }
 import akka.stream.scaladsl.Sink
-import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.wordspec.AnyWordSpec
 
 import scala.collection.immutable
