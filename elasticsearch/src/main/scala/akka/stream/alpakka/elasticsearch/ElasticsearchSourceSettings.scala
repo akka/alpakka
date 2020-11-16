@@ -77,7 +77,7 @@ object ElasticsearchSourceSettings {
                                     10,
                                     includeDocumentVersion = false,
                                     FiniteDuration(5, TimeUnit.MINUTES),
-                                    ApiVersion.V5)
+                                    ApiVersion.V7)
 
   /** Java API */
   def create(connection: ElasticsearchConnectionSettings): ElasticsearchSourceSettings =
@@ -85,5 +85,5 @@ object ElasticsearchSourceSettings {
                                     10,
                                     includeDocumentVersion = false,
                                     FiniteDuration(5, TimeUnit.MINUTES),
-                                    ApiVersion.V5)
+                                    ApiVersion.V7)
 }

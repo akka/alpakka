@@ -103,9 +103,9 @@ object ElasticsearchWriteSettings {
 
   /** Scala API */
   def apply(connection: ElasticsearchConnectionSettings): ElasticsearchWriteSettings =
-    new ElasticsearchWriteSettings(connection, 10, RetryNever, None, ApiVersion.V5, allowExplicitIndex = true)
+    new ElasticsearchWriteSettings(connection, 10, RetryNever, None, ApiVersion.V7, allowExplicitIndex = true)
 
   /** Java API */
   def create(connection: ElasticsearchConnectionSettings): ElasticsearchWriteSettings =
-    new ElasticsearchWriteSettings(connection, 10, RetryNever, None, ApiVersion.V5, allowExplicitIndex = true)
+    new ElasticsearchWriteSettings(connection, 10, RetryNever, None, ApiVersion.V7, allowExplicitIndex = true)
 }
