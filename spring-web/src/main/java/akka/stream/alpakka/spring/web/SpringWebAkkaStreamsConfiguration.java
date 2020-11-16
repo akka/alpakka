@@ -6,7 +6,6 @@ package akka.stream.alpakka.spring.web;
 
 import java.util.Objects;
 
-import akka.stream.Materializer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -40,13 +39,6 @@ public class SpringWebAkkaStreamsConfiguration {
   @ConditionalOnMissingBean(ActorSystem.class)
   public ActorSystem getActorSystem() {
     return system;
-  }
-
-  /** @deprecated Use actorSystem instead. */
-  @Bean
-  @ConditionalOnMissingBean(Materializer.class)
-  public Materializer getMaterializer() {
-    return Materializer.matFromSystem(system);
   }
 
   public SpringWebAkkaStreamsProperties getProperties() {
