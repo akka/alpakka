@@ -272,7 +272,7 @@ lazy val sqs = alpakkaProject("sqs", "aws.sqs", Dependencies.Sqs)
 
 lazy val sse = alpakkaProject("sse", "sse", Dependencies.Sse)
 
-lazy val text = alpakkaProject("text", "text", fatalWarnings := true)
+lazy val text = alpakkaProject("text", "text")
 
 lazy val udp = alpakkaProject("udp", "udp")
 
