@@ -4,14 +4,21 @@
 
 package akka.stream.alpakka.cassandra
 
-import akka.actor.{ActorSystem, ExtendedActorSystem}
-import com.datastax.oss.driver.api.core.CqlSession
-import com.typesafe.config.{Config, ConfigFactory}
+import java.nio.file.Path
+import java.nio.file.Paths
 
 import scala.collection.immutable
 import scala.compat.java8.FutureConverters._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 import scala.util.Failure
+
+import akka.actor.ActorSystem
+import akka.actor.ExtendedActorSystem
+import akka.annotation.InternalApi
+import com.datastax.oss.driver.api.core.CqlSession
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 
 /**
  * The implementation of the `SessionProvider` is used for creating the
@@ -29,6 +36,13 @@ trait CqlSessionProvider {
 }
 
 /**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object DefaultSessionProvider {
+  final case class AuthCredentials(username: String, password: String)
+}
+
+/**
  * Builds a `CqlSession` from the given `config` via [[DriverConfigLoaderFromConfig]].
  *
  * The configuration for the driver is typically the `datastax-java-driver` section of the ActorSystem's
@@ -37,6 +51,7 @@ trait CqlSessionProvider {
  * given `config`.
  */
 class DefaultSessionProvider(system: ActorSystem, config: Config) extends CqlSessionProvider {
+  import DefaultSessionProvider.AuthCredentials
 
   /**
    * Check if Akka Discovery service lookup should be used. It is part of this class so it
@@ -44,13 +59,37 @@ class DefaultSessionProvider(system: ActorSystem, config: Config) extends CqlSes
    */
   private def useAkkaDiscovery(config: Config): Boolean = config.getString("service-discovery.name").nonEmpty
 
+  private def cloudSecureConnectBundlePath: Option[Path] = {
+    config.getString("cloud-secure-connect-bundle") match {
+      case "" => None
+      case path => Option(Paths.get(path))
+    }
+  }
+
+  private def authCredentials: Option[AuthCredentials] = {
+    config.getString("auth.username") match {
+      case "" => None
+      case username => Option(AuthCredentials(username, config.getString("auth.password")))
+    }
+  }
+
   override def connect()(implicit ec: ExecutionContext): Future[CqlSession] = {
     if (useAkkaDiscovery(config)) {
       AkkaDiscoverySessionProvider.connect(system, config)
     } else {
       val driverConfig = CqlSessionProvider.driverConfig(system, config)
       val driverConfigLoader = DriverConfigLoaderFromConfig.fromConfig(driverConfig)
-      CqlSession.builder().withConfigLoader(driverConfigLoader).buildAsync().toScala
+      val builder = CqlSession.builder().withConfigLoader(driverConfigLoader)
+
+      cloudSecureConnectBundlePath.foreach { path =>
+        builder.withCloudSecureConnectBundle(path)
+      }
+
+      authCredentials.foreach { cred =>
+        builder.withAuthCredentials(cred.username, cred.password)
+      }
+
+      builder.buildAsync().toScala
     }
   }
 }

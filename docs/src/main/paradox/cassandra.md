@@ -132,3 +132,12 @@ Scala
 
 Java
 : @@snip [snip](/cassandra/src/test/java/docs/javadsl/CassandraSourceTest.java) { #discovery }
+
+### Using DataStax Astra
+
+[DataStax Astra](https://www.datastax.com/products/datastax-astra) (Cloud-Native Cassandra-as-a-Service) can be
+used by downloading the [secure connect bundle](https://docs.astra.datastax.com/docs/connecting-to-your-database-with-the-datastax-java-driver) 
+and defining the following configuration properties:
+
+application.conf
+: @@snip [snip](/cassandra/src/test/resources/application.conf) { #astra-sample }
