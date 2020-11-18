@@ -238,7 +238,7 @@ lazy val mqttStreamingBench = internalProject("mqtt-streaming-bench")
 lazy val orientdb =
   alpakkaProject("orientdb", "orientdb", Dependencies.OrientDB, Test / fork := true, fatalWarnings := false)
 
-lazy val reference = internalProject("reference", Dependencies.Reference)
+lazy val reference = internalProject("reference", Dependencies.Reference, fatalWarnings := true)
   .dependsOn(testkit % Test)
 
 lazy val s3 = alpakkaProject("s3", "aws.s3", Dependencies.S3, fatalWarnings := true)
@@ -250,7 +250,12 @@ lazy val pravega = alpakkaProject(
   Test / fork := true
 )
 
-lazy val springWeb = alpakkaProject("spring-web", "spring.web", Dependencies.SpringWeb)
+lazy val springWeb = alpakkaProject(
+  "spring-web",
+  "spring.web",
+  Dependencies.SpringWeb,
+  fatalWarnings := true
+)
 
 lazy val simpleCodecs = alpakkaProject("simple-codecs", "simplecodecs")
 
