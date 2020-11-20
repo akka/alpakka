@@ -10,7 +10,7 @@ import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest, Uri}
 import akka.stream.alpakka.elasticsearch._
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.Materializer
 import akka.testkit.TestKit
 import org.scalatest.{BeforeAndAfterAll, Inspectors}
 import org.scalatest.concurrent.ScalaFutures
@@ -29,7 +29,7 @@ class ElasticsearchSpec
 
   //#init-mat
   implicit val system: ActorSystem = ActorSystem()
-  implicit val materializer: Materializer = ActorMaterializer()
+  implicit val materializer: Materializer = Materializer(system)
   //#init-mat
   implicit val http: HttpExt = Http()
 

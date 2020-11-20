@@ -86,9 +86,9 @@ import scala.concurrent.duration._
           }
         }
 
-        override def onDownstreamFinish(): Unit = {
+        override def onDownstreamFinish(cause: Throwable): Unit = {
           if (elementInProgress.isEmpty) {
-            super.onDownstreamFinish()
+            super.onDownstreamFinish(cause)
           } else {
             // emit elements before finishing
             setKeepGoing(true)

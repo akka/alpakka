@@ -64,7 +64,7 @@ object ElasticsearchSource {
              searchParams: Map[String, String],
              settings: ElasticsearchSourceSettings): Source[ReadResult[JsObject], NotUsed] =
     Source
-      .setup { (mat, _) =>
+      .fromMaterializer { (mat, _) =>
         implicit val system: ActorSystem = mat.system
         implicit val http: HttpExt = Http()
         implicit val ec: ExecutionContextExecutor = mat.executionContext
@@ -103,7 +103,7 @@ object ElasticsearchSource {
       implicit sprayJsonReader: JsonReader[T]
   ): Source[ReadResult[T], NotUsed] =
     Source
-      .setup { (mat, _) =>
+      .fromMaterializer { (mat, _) =>
         implicit val system: ActorSystem = mat.system
         implicit val http: HttpExt = Http()
         implicit val ec: ExecutionContextExecutor = mat.executionContext
