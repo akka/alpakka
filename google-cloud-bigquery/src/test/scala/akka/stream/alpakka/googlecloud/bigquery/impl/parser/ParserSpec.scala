@@ -5,8 +5,10 @@
 package akka.stream.alpakka.googlecloud.bigquery.impl.parser
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{HttpEntity, HttpResponse}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse}
+import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.SprayJsonSupport._
 import akka.stream.scaladsl.{GraphDSL, RunnableGraph, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{ActorMaterializer, ClosedShape}
@@ -14,11 +16,10 @@ import akka.testkit.TestKit
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
-import spray.json.JsObject
+import spray.json.{JsObject, JsValue}
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
 
 class ParserSpec extends TestKit(ActorSystem("ParserSpec")) with AnyWordSpecLike with Matchers with BeforeAndAfterAll {
 
@@ -31,18 +32,22 @@ class ParserSpec extends TestKit(ActorSystem("ParserSpec")) with AnyWordSpecLike
   val pageToken = "dummyToken"
   val jobId = "dummyJobId"
   val response = HttpResponse(
-    entity = HttpEntity(s"""{"pageToken": "$pageToken", "jobReference": { "jobId": "$jobId" } }""")
+    entity = HttpEntity(ContentTypes.`application/json`,
+                        s"""{"pageToken": "$pageToken", "jobReference": { "jobId": "$jobId" } }""")
   )
-  val responseWithoutJobId = HttpResponse(entity = HttpEntity(s"""{"pageToken": "$pageToken"}"""))
+  val responseWithoutJobId = HttpResponse(
+    entity = HttpEntity(ContentTypes.`application/json`, s"""{"pageToken": "$pageToken"}""")
+  )
 
-  def createTestGraph[Data, S1, S2](source: Source[HttpResponse, _],
-                                    dataSink: Sink[Data, S1],
-                                    pageSink: Sink[(Boolean, PagingInfo), S2],
-                                    parseFunction: JsObject => Try[Data]): RunnableGraph[(S1, S2)] =
+  def createTestGraph[Data, S1, S2](
+      source: Source[HttpResponse, _],
+      dataSink: Sink[Data, S1],
+      pageSink: Sink[(Boolean, PagingInfo), S2]
+  )(implicit unmarshaller: Unmarshaller[JsValue, Data]): RunnableGraph[(S1, S2)] =
     RunnableGraph.fromGraph(GraphDSL.create(dataSink, pageSink)((_, _)) { implicit builder => (s1, s2) =>
       import GraphDSL.Implicits._
 
-      val parser = builder.add(Parser[Data](parseFunction))
+      val parser = builder.add(Parser[JsValue, Data])
 
       source ~> parser.in
       parser.out0 ~> s1
@@ -54,11 +59,9 @@ class ParserSpec extends TestKit(ActorSystem("ParserSpec")) with AnyWordSpecLike
   "Parser" should {
 
     "output the value returned by the parse function" in {
+      implicit val unmarshaller = Unmarshaller.strict((_: JsValue) => pageToken)
       val testGraph =
-        createTestGraph(Source.single(response),
-                        TestSink.probe[String],
-                        TestSink.probe[(Boolean, PagingInfo)],
-                        _ => Try(pageToken))
+        createTestGraph(Source.single(response), TestSink.probe[String], TestSink.probe[(Boolean, PagingInfo)])
 
       val (dataSink, pageSink) = testGraph.run()
 
@@ -70,11 +73,9 @@ class ParserSpec extends TestKit(ActorSystem("ParserSpec")) with AnyWordSpecLike
     }
 
     "output the page token and jobid parsed from the http response" in {
+      implicit val unmarshaller = Unmarshaller.strict((x: JsValue) => x.asJsObject)
       val testGraph =
-        createTestGraph(Source.single(response),
-                        TestSink.probe[JsObject],
-                        TestSink.probe[(Boolean, PagingInfo)],
-                        x => Try(x))
+        createTestGraph(Source.single(response), TestSink.probe[JsObject], TestSink.probe[(Boolean, PagingInfo)])
 
       val (dataSink, pageSink) = testGraph.run()
 
@@ -86,10 +87,10 @@ class ParserSpec extends TestKit(ActorSystem("ParserSpec")) with AnyWordSpecLike
     }
 
     "output the page token parsed from the http response" in {
+      implicit val unmarshaller = Unmarshaller.strict((x: JsValue) => x.asJsObject)
       val testGraph = createTestGraph(Source.single(responseWithoutJobId),
                                       TestSink.probe[JsObject],
-                                      TestSink.probe[(Boolean, PagingInfo)],
-                                      x => Try(x))
+                                      TestSink.probe[(Boolean, PagingInfo)])
 
       val (dataSink, pageSink) = testGraph.run()
 
@@ -101,10 +102,11 @@ class ParserSpec extends TestKit(ActorSystem("ParserSpec")) with AnyWordSpecLike
     }
 
     "output none for page token when http response does not contain page token" in {
-      val testGraph = createTestGraph(Source.single(HttpResponse(entity = HttpEntity("{}"))),
-                                      TestSink.probe[JsObject],
-                                      TestSink.probe[(Boolean, PagingInfo)],
-                                      x => Try(x))
+      implicit val unmarshaller = Unmarshaller.strict((x: JsValue) => x.asJsObject)
+      val testGraph =
+        createTestGraph(Source.single(HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, "{}"))),
+                        TestSink.probe[JsObject],
+                        TestSink.probe[(Boolean, PagingInfo)])
 
       val (dataSink, pageSink) = testGraph.run()
 
@@ -117,15 +119,10 @@ class ParserSpec extends TestKit(ActorSystem("ParserSpec")) with AnyWordSpecLike
 
     "handles parser None" in {
 
-      def failureParser(result: JsObject): Try[String] = Try {
-        throw new Exception
-      }
+      implicit val unmarshaller = Unmarshaller.strict[JsValue, String](_ => throw new Exception)
 
       val testGraph =
-        createTestGraph(Source.single(response),
-                        TestSink.probe[String],
-                        TestSink.probe[(Boolean, PagingInfo)],
-                        failureParser)
+        createTestGraph(Source.single(response), TestSink.probe[String], TestSink.probe[(Boolean, PagingInfo)])
 
       val (dataSink, pageSink) = testGraph.run()
 

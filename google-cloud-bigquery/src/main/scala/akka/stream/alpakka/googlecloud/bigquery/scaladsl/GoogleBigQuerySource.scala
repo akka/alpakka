@@ -9,16 +9,15 @@ import akka.actor.ActorSystem
 import akka.annotation.ApiMayChange
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
+import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
 import akka.stream.Materializer
-import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig
 import akka.stream.alpakka.googlecloud.bigquery.client._
 import akka.stream.alpakka.googlecloud.bigquery.impl.BigQueryStreamSource
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
 import akka.stream.alpakka.googlecloud.bigquery.impl.util.ConcatWithHeaders
+import akka.stream.alpakka.googlecloud.bigquery.{BigQueryConfig, BigQueryJsonProtocol}
 import akka.stream.scaladsl.Source
-import spray.json.JsObject
-
-import scala.util.Try
+import spray.json.JsValue
 
 /**
  * Scala API to create BigQuery sources.
@@ -29,18 +28,19 @@ object GoogleBigQuerySource {
   /**
    * Read elements of `T` by executing HttpRequest upon BigQuery API.
    */
-  def raw[T](
+  def raw[J, T](
       httpRequest: HttpRequest,
-      parserFn: JsObject => Try[T],
       onFinishCallback: PagingInfo => NotUsed,
       projectConfig: BigQueryConfig
-  ): Source[T, NotUsed] =
+  )(implicit jsonUnmarshaller: FromEntityUnmarshaller[J],
+    responseUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response],
+    unmarshaller: Unmarshaller[J, T]): Source[T, NotUsed] =
     Source
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         {
           implicit val system: ActorSystem = mat.system
           implicit val materializer: Materializer = mat
-          BigQueryStreamSource[T](httpRequest, parserFn, onFinishCallback, projectConfig, Http())
+          BigQueryStreamSource[J, T](httpRequest, onFinishCallback, projectConfig, Http())
         }
       }
       .mapMaterializedValue(_ => NotUsed)
@@ -48,18 +48,18 @@ object GoogleBigQuerySource {
   /**
    * Read elements of `T` by executing `query`.
    */
-  def runQuery[T](query: String,
-                  parserFn: JsObject => Try[T],
-                  onFinishCallback: PagingInfo => NotUsed,
-                  projectConfig: BigQueryConfig)(
-      ): Source[T, NotUsed] =
+  def runQuery[J, T](query: String, onFinishCallback: PagingInfo => NotUsed, projectConfig: BigQueryConfig)(
+      implicit jsonUnmarshaller: FromEntityUnmarshaller[J],
+      responseUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response],
+      unmarshaller: Unmarshaller[J, T]
+  ): Source[T, NotUsed] =
     Source
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         {
           implicit val system: ActorSystem = mat.system
           implicit val materializer: Materializer = mat
           val request = BigQueryCommunicationHelper.createQueryRequest(query, projectConfig.projectId, dryRun = false)
-          BigQueryStreamSource(request, parserFn, onFinishCallback, projectConfig, Http())
+          BigQueryStreamSource[J, T](request, onFinishCallback, projectConfig, Http())
         }
       }
       .mapMaterializedValue(_ => NotUsed)
@@ -73,16 +73,20 @@ object GoogleBigQuerySource {
       projectConfig: BigQueryConfig
   ): Source[Seq[String], NotUsed] =
     Source
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         {
+          import BigQueryCommunicationHelper._
+          import BigQueryJsonProtocol._
+          import QueryJsonProtocol._
+          import SprayJsonSupport._
+
           implicit val system: ActorSystem = mat.system
           implicit val materializer: Materializer = mat
           val request = BigQueryCommunicationHelper.createQueryRequest(query, projectConfig.projectId, dryRun = false)
-          BigQueryStreamSource(request,
-                               BigQueryCommunicationHelper.parseQueryResult,
-                               onFinishCallback,
-                               projectConfig,
-                               Http())
+          BigQueryStreamSource[JsValue, (Seq[String], Seq[Seq[String]])](request,
+                                                                         onFinishCallback,
+                                                                         projectConfig,
+                                                                         Http())
             .via(ConcatWithHeaders())
         }
       }
@@ -91,32 +95,44 @@ object GoogleBigQuerySource {
   /**
    * List tables on BigQueryConfig.dataset.
    */
-  def listTables(projectConfig: BigQueryConfig): Source[Seq[TableListQueryJsonProtocol.QueryTableModel], NotUsed] =
-    runMetaQuery(GoogleEndpoints.tableListUrl(projectConfig.projectId, projectConfig.dataset),
-                 BigQueryCommunicationHelper.parseTableListResult,
-                 projectConfig)
+  def listTables(projectConfig: BigQueryConfig): Source[Seq[TableListQueryJsonProtocol.QueryTableModel], NotUsed] = {
+    import BigQueryCommunicationHelper._
+    import BigQueryJsonProtocol._
+    import SprayJsonSupport._
+    import TableListQueryJsonProtocol._
+    runMetaQuery[JsValue, TableListQueryJsonProtocol.QueryTableModel](
+      GoogleEndpoints.tableListUrl(projectConfig.projectId, projectConfig.dataset),
+      projectConfig
+    )
+  }
 
   /**
    * List fields on tableName.
    */
   def listFields(tableName: String,
-                 projectConfig: BigQueryConfig): Source[Seq[TableDataQueryJsonProtocol.Field], NotUsed] =
-    runMetaQuery(
+                 projectConfig: BigQueryConfig): Source[Seq[TableDataQueryJsonProtocol.Field], NotUsed] = {
+    import BigQueryCommunicationHelper._
+    import BigQueryJsonProtocol._
+    import SprayJsonSupport._
+    import TableDataQueryJsonProtocol._
+    runMetaQuery[JsValue, Field](
       GoogleEndpoints.fieldListUrl(projectConfig.projectId, projectConfig.dataset, tableName),
-      BigQueryCommunicationHelper.parseFieldListResults,
       projectConfig
     )
+  }
 
-  private def runMetaQuery[T](url: String,
-                              parser: JsObject => Try[Seq[T]],
-                              projectConfig: BigQueryConfig): Source[Seq[T], NotUsed] = {
+  private def runMetaQuery[J, T](url: String, projectConfig: BigQueryConfig)(
+      implicit jsonUnmarshaller: FromEntityUnmarshaller[J],
+      responseUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response],
+      unmarshaller: Unmarshaller[J, Seq[T]]
+  ): Source[Seq[T], NotUsed] = {
     Source
-      .setup(
+      .fromMaterializer(
         { (mat, _) =>
           implicit val system: ActorSystem = mat.system
           implicit val materializer: Materializer = mat
           val request = HttpRequest(HttpMethods.GET, url)
-          BigQueryStreamSource(request, parser, BigQueryCallbacks.ignore, projectConfig, Http())
+          BigQueryStreamSource[J, Seq[T]](request, BigQueryCallbacks.ignore, projectConfig, Http())
         }
       )
       .mapMaterializedValue(_ => NotUsed)

@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.client
 
-import spray.json.{DefaultJsonProtocol, JsonFormat}
+import spray.json.{DefaultJsonProtocol, JsonFormat, RootJsonFormat}
 
 object TableListQueryJsonProtocol extends DefaultJsonProtocol {
 
@@ -14,5 +14,7 @@ object TableListQueryJsonProtocol extends DefaultJsonProtocol {
 
   implicit val tableReferenceFormat: JsonFormat[TableReference] = jsonFormat1(TableReference)
   implicit val queryTableModelFormat: JsonFormat[QueryTableModel] = jsonFormat2(QueryTableModel)
-  implicit val tableListQueryResponseFormat: JsonFormat[TableListQueryResponse] = jsonFormat1(TableListQueryResponse)
+  implicit val tableListQueryResponseFormat: RootJsonFormat[TableListQueryResponse] = jsonFormat1(
+    TableListQueryResponse
+  )
 }

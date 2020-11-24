@@ -6,16 +6,18 @@ package akka.stream.alpakka.googlecloud.bigquery.e2e
 import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.bigquery.{BigQueryConfig, ForwardProxy, ForwardProxyTrustPem}
 import akka.stream.alpakka.googlecloud.bigquery.client.GoogleEndpoints
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.{BigQueryCallbacks, GoogleBigQuerySource}
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.SprayJsonSupport._
 import akka.stream.scaladsl.Sink
+import spray.json.JsValue
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.io.Source
-import scala.util.Try
 
 trait BigQueryTestHelper {
   import com.typesafe.config.ConfigFactory
@@ -56,10 +58,12 @@ trait BigQueryTestHelper {
 
   def await[T](f: Future[T]): T = Await.result(f, defaultTimeout)
 
-  def runRequest(httpRequest: HttpRequest): Future[Done] =
+  def runRequest(httpRequest: HttpRequest): Future[Done] = {
+    implicit val unmarshaller = Unmarshaller.strict((x: JsValue) => x)
     GoogleBigQuerySource
-      .raw(httpRequest, x => Try(x), BigQueryCallbacks.ignore, projectConfig)
+      .raw(httpRequest, BigQueryCallbacks.ignore, projectConfig)
       .runWith(Sink.ignore)
+  }
 
   def createTable(schemaDefinition: String): HttpRequest = HttpRequest(
     HttpMethods.POST,

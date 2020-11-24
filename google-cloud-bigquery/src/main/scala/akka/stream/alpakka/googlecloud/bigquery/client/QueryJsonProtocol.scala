@@ -5,7 +5,7 @@
 package akka.stream.alpakka.googlecloud.bigquery.client
 
 import akka.annotation.InternalApi
-import spray.json.{DefaultJsonProtocol, JsBoolean, JsNull, JsObject, JsString, JsValue, JsonFormat}
+import spray.json.{DefaultJsonProtocol, JsBoolean, JsNull, JsObject, JsString, JsValue, JsonFormat, RootJsonFormat}
 
 @InternalApi
 private[bigquery] object QueryJsonProtocol extends DefaultJsonProtocol {
@@ -40,6 +40,6 @@ private[bigquery] object QueryJsonProtocol extends DefaultJsonProtocol {
   implicit val rowFormat: JsonFormat[Row] = jsonFormat1(Row)
   implicit val fieldFormat: JsonFormat[FieldSchema] = jsonFormat1(FieldSchema)
   implicit val schemaFormat: JsonFormat[Schema] = jsonFormat1(Schema)
-  implicit val queryResponseFormat: JsonFormat[QueryResponse] = jsonFormat2(QueryResponse)
+  implicit val queryResponseFormat: RootJsonFormat[QueryResponse] = jsonFormat2(QueryResponse)
 
 }
