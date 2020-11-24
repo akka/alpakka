@@ -76,8 +76,6 @@ object GoogleBigQuerySource {
       .fromMaterializer { (mat, attr) =>
         {
           import BigQueryCommunicationHelper._
-          import BigQueryJsonProtocol._
-          import QueryJsonProtocol._
           import SprayJsonSupport._
 
           implicit val system: ActorSystem = mat.system
@@ -97,9 +95,7 @@ object GoogleBigQuerySource {
    */
   def listTables(projectConfig: BigQueryConfig): Source[Seq[TableListQueryJsonProtocol.QueryTableModel], NotUsed] = {
     import BigQueryCommunicationHelper._
-    import BigQueryJsonProtocol._
     import SprayJsonSupport._
-    import TableListQueryJsonProtocol._
     runMetaQuery[JsValue, TableListQueryJsonProtocol.QueryTableModel](
       GoogleEndpoints.tableListUrl(projectConfig.projectId, projectConfig.dataset),
       projectConfig
@@ -112,10 +108,8 @@ object GoogleBigQuerySource {
   def listFields(tableName: String,
                  projectConfig: BigQueryConfig): Source[Seq[TableDataQueryJsonProtocol.Field], NotUsed] = {
     import BigQueryCommunicationHelper._
-    import BigQueryJsonProtocol._
     import SprayJsonSupport._
-    import TableDataQueryJsonProtocol._
-    runMetaQuery[JsValue, Field](
+    runMetaQuery[JsValue, TableDataQueryJsonProtocol.Field](
       GoogleEndpoints.fieldListUrl(projectConfig.projectId, projectConfig.dataset, tableName),
       projectConfig
     )
