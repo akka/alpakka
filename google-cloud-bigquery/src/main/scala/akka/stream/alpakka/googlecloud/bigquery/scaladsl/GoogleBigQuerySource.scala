@@ -11,6 +11,9 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
 import akka.stream.Materializer
+import akka.stream.alpakka.googlecloud.bigquery.client.QueryJsonProtocol.QueryResponse
+import akka.stream.alpakka.googlecloud.bigquery.client.TableDataQueryJsonProtocol.TableDataQueryResponse
+import akka.stream.alpakka.googlecloud.bigquery.client.TableListQueryJsonProtocol.TableListQueryResponse
 import akka.stream.alpakka.googlecloud.bigquery.client._
 import akka.stream.alpakka.googlecloud.bigquery.impl.BigQueryStreamSource
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
@@ -75,16 +78,12 @@ object GoogleBigQuerySource {
     Source
       .fromMaterializer { (mat, attr) =>
         {
-          import BigQueryCommunicationHelper._
           import SprayJsonSupport._
-
           implicit val system: ActorSystem = mat.system
           implicit val materializer: Materializer = mat
           val request = BigQueryCommunicationHelper.createQueryRequest(query, projectConfig.projectId, dryRun = false)
-          BigQueryStreamSource[JsValue, (Seq[String], Seq[Seq[String]])](request,
-                                                                         onFinishCallback,
-                                                                         projectConfig,
-                                                                         Http())
+          BigQueryStreamSource[JsValue, QueryResponse](request, onFinishCallback, projectConfig, Http())
+            .map(BigQueryCommunicationHelper.retrieveQueryResultCsvStyle)
             .via(ConcatWithHeaders())
         }
       }
@@ -94,12 +93,11 @@ object GoogleBigQuerySource {
    * List tables on BigQueryConfig.dataset.
    */
   def listTables(projectConfig: BigQueryConfig): Source[Seq[TableListQueryJsonProtocol.QueryTableModel], NotUsed] = {
-    import BigQueryCommunicationHelper._
     import SprayJsonSupport._
-    runMetaQuery[JsValue, TableListQueryJsonProtocol.QueryTableModel](
+    runMetaQuery[JsValue, TableListQueryResponse](
       GoogleEndpoints.tableListUrl(projectConfig.projectId, projectConfig.dataset),
       projectConfig
-    )
+    ).map(_.tables)
   }
 
   /**
@@ -107,26 +105,25 @@ object GoogleBigQuerySource {
    */
   def listFields(tableName: String,
                  projectConfig: BigQueryConfig): Source[Seq[TableDataQueryJsonProtocol.Field], NotUsed] = {
-    import BigQueryCommunicationHelper._
     import SprayJsonSupport._
-    runMetaQuery[JsValue, TableDataQueryJsonProtocol.Field](
+    runMetaQuery[JsValue, TableDataQueryResponse](
       GoogleEndpoints.fieldListUrl(projectConfig.projectId, projectConfig.dataset, tableName),
       projectConfig
-    )
+    ).map(_.schema.fields)
   }
 
   private def runMetaQuery[J, T](url: String, projectConfig: BigQueryConfig)(
       implicit jsonUnmarshaller: FromEntityUnmarshaller[J],
       responseUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response],
-      unmarshaller: Unmarshaller[J, Seq[T]]
-  ): Source[Seq[T], NotUsed] = {
+      unmarshaller: Unmarshaller[J, T]
+  ): Source[T, NotUsed] = {
     Source
       .fromMaterializer(
         { (mat, _) =>
           implicit val system: ActorSystem = mat.system
           implicit val materializer: Materializer = mat
           val request = HttpRequest(HttpMethods.GET, url)
-          BigQueryStreamSource[J, Seq[T]](request, BigQueryCallbacks.ignore, projectConfig, Http())
+          BigQueryStreamSource[J, T](request, BigQueryCallbacks.ignore, projectConfig, Http())
         }
       )
       .mapMaterializedValue(_ => NotUsed)
