@@ -6,7 +6,6 @@ package akka.stream.alpakka.googlecloud.bigquery.e2e
 import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.bigquery.{BigQueryConfig, ForwardProxy, ForwardProxyTrustPem}
 import akka.stream.alpakka.googlecloud.bigquery.client.GoogleEndpoints
@@ -59,8 +58,7 @@ trait BigQueryTestHelper {
   def await[T](f: Future[T]): T = Await.result(f, defaultTimeout)
 
   def runRequest(httpRequest: HttpRequest): Future[Done] = {
-    implicit val unmarshaller = Unmarshaller.strict((x: JsValue) => x)
-    GoogleBigQuerySource
+    GoogleBigQuerySource[JsValue]
       .raw(httpRequest, BigQueryCallbacks.ignore, projectConfig)
       .runWith(Sink.ignore)
   }

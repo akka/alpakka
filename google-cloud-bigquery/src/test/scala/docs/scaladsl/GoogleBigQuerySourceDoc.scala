@@ -12,11 +12,11 @@ import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig
 import akka.stream.alpakka.googlecloud.bigquery.client.BigQueryCommunicationHelper
 import akka.stream.alpakka.googlecloud.bigquery.client.TableDataQueryJsonProtocol.Field
 import akka.stream.alpakka.googlecloud.bigquery.client.TableListQueryJsonProtocol.QueryTableModel
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.{BigQueryCallbacks, GoogleBigQuerySource}
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.SprayJsonSupport._
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.{BigQueryCallbacks, GoogleBigQuerySource}
 import akka.stream.scaladsl.{Sink, Source}
 import spray.json.DefaultJsonProtocol._
-import spray.json.{JsValue, RootJsonFormat}
+import spray.json.RootJsonFormat
 
 import scala.concurrent.Future
 //#imports
@@ -50,8 +50,8 @@ class GoogleBigQuerySourceDoc {
   implicit val userFormatter = jsonFormat2(User)
 
   val userStream: Source[User, NotUsed] =
-    GoogleBigQuerySource
-      .runQuery[JsValue, User]("SELECT uid, name FROM bigQueryDatasetName.myTable", BigQueryCallbacks.ignore, config)
+    GoogleBigQuerySource[User]
+      .runQuery("SELECT uid, name FROM bigQueryDatasetName.myTable", BigQueryCallbacks.ignore, config)
   //#run-query
 
   //#dry-run
@@ -62,6 +62,7 @@ class GoogleBigQuerySourceDoc {
                                                                config.projectId,
                                                                dryRun = true)
 
-  val dryRunStream = GoogleBigQuerySource.raw(request, BigQueryCallbacks.ignore, config)
+  val dryRunStream: Source[DryRunResponse, NotUsed] =
+    GoogleBigQuerySource[DryRunResponse].raw(request, BigQueryCallbacks.ignore, config)
   //#dry-run
 }

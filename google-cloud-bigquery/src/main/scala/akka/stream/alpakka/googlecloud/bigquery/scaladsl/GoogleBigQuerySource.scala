@@ -29,6 +29,12 @@ import spray.json.JsValue
 object GoogleBigQuerySource {
 
   /**
+   * Create a `GoogleBigQuerySource` that reads elements of `T`.
+   * Using this method enables the compiler to automatically infer the JSON type `J`.
+   */
+  def apply[T]: GoogleBigQuerySource[T] = new GoogleBigQuerySource[T]
+
+  /**
    * Read elements of `T` by executing HttpRequest upon BigQuery API.
    */
   def raw[J, T](
@@ -128,5 +134,30 @@ object GoogleBigQuerySource {
       )
       .mapMaterializedValue(_ => NotUsed)
   }
+
+}
+
+final class GoogleBigQuerySource[T] private () {
+
+  /**
+   * Read elements of `T` by executing HttpRequest upon BigQuery API.
+   */
+  def raw[J](
+      httpRequest: HttpRequest,
+      onFinishCallback: PagingInfo => NotUsed,
+      projectConfig: BigQueryConfig
+  )(implicit jsonUnmarshaller: FromEntityUnmarshaller[J],
+    responseUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response],
+    unmarshaller: Unmarshaller[J, T]): Source[T, NotUsed] =
+    GoogleBigQuerySource.raw[J, T](httpRequest, onFinishCallback, projectConfig)
+
+  /**
+   * Read elements of `T` by executing `query`.
+   */
+  def runQuery[J](query: String, onFinishCallback: PagingInfo => NotUsed, projectConfig: BigQueryConfig)(
+      implicit jsonUnmarshaller: FromEntityUnmarshaller[J],
+      responseUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response],
+      unmarshaller: Unmarshaller[J, T]
+  ): Source[T, NotUsed] = GoogleBigQuerySource.runQuery[J, T](query, onFinishCallback, projectConfig)
 
 }
