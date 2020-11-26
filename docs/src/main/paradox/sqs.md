@@ -38,7 +38,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Setup
 
-Prepare an @apidoc[akka.actor.ActorSystem] and a @apidoc[Materializer].
+Prepare an @apidoc[akka.actor.ActorSystem].
 
 Scala
 : @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/DefaultTestContext.scala) { #init-mat }
@@ -47,7 +47,7 @@ Java
 : @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/BaseSqsTest.java) { #init-mat }
 
 
-This connector requires an implicit @javadoc[SqsAsyncClient](software.amazon.awssdk.services.sqs.SqsAsyncClient) instance to communicate with AWS SQS.
+This connector requires an @scala[implicit] @javadoc[SqsAsyncClient](software.amazon.awssdk.services.sqs.SqsAsyncClient) instance to communicate with AWS SQS.
 
 It is your code's responsibility to call `close` to free any resources held by the client. In this example it will be called when the actor system is terminated.
 

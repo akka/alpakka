@@ -19,19 +19,13 @@ import scala.util.{Failure, Success}
 
 /**
  * Internal API.
- *
- * Imported from `akka.stream.impl` for Akka 2.5/2.6 cross-compilation.
  */
 @InternalApi private[impl] object BufferImpl {
   val FixedQueueSize = 128
   val FixedQueueMask = 127
 
-  def apply[T](size: Int, materializer: Materializer): Buffer[T] =
-    materializer match {
-      case m: ActorMaterializer =>
-        apply(size, m.settings.maxFixedBufferSize)
-      case _ => apply(size, 1000000000)
-    }
+  def apply[T](size: Int, effectiveAttributes: Attributes): Buffer[T] =
+    apply(size, effectiveAttributes.mandatoryAttribute[ActorAttributes.MaxFixedBufferSize].size)
 
   private def apply[T](size: Int, max: Int): Buffer[T] =
     if (size < FixedQueueSize || size < max) FixedSizeBuffer(size)
@@ -75,7 +69,7 @@ import scala.util.{Failure, Success}
           }
       )
 
-      override def preStart(): Unit = buffer = BufferImpl(parallelism, materializer)
+      override def preStart(): Unit = buffer = BufferImpl(parallelism, inheritedAttributes)
 
       override def onPull(): Unit = pushNextIfPossible()
 

@@ -8,11 +8,14 @@ import java.net.URI
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorSystem, Terminated}
+import akka.dispatch.ExecutionContexts
+import akka.http.scaladsl.Http
 import akka.stream.alpakka.sqs.SqsSourceSettings
-import akka.stream.{ActorMaterializer, Materializer}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{BeforeAndAfterAll, Suite, Tag}
+
+import scala.concurrent.ExecutionContext
 //#init-client
 import com.github.matsluni.akkahttpspi.AkkaHttpClient
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
@@ -28,7 +31,6 @@ trait DefaultTestContext extends Matchers with BeforeAndAfterAll with ScalaFutur
 
   //#init-mat
   implicit val system: ActorSystem = ActorSystem()
-  implicit val mat: Materializer = ActorMaterializer()
   //#init-mat
 
   // endpoint of the elasticmq docker container
@@ -63,7 +65,10 @@ trait DefaultTestContext extends Matchers with BeforeAndAfterAll with ScalaFutur
   override protected def afterAll(): Unit =
     try {
       closeSqsClient()
-      system.terminate().futureValue shouldBe a[Terminated]
+      Http()
+        .shutdownAllConnectionPools()
+        .flatMap(_ => system.terminate())(ExecutionContext.global)
+        .futureValue shouldBe a[Terminated]
     } finally {
       super.afterAll()
     }
