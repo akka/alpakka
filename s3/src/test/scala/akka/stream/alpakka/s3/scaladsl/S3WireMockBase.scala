@@ -375,26 +375,29 @@ abstract class S3WireMockBase(_system: ActorSystem, val _wireMockServer: WireMoc
     )
   }
 
-  def mockMultipartUploadInitiationWithTransientError(expectedBody: String): Unit = {
+  def mockMultipartUploadInitiationWithTransientError(expectedBody: String, faultOrStatus: Either[Fault, Int]): Unit = {
     val scenarioName = "UploadWithTransientErrors"
+    val responseBuilder = faultOrStatus match {
+      case Left(fault) => aResponse().withFault(fault)
+      case Right(status) =>
+        aResponse()
+          .withStatus(status)
+          .withHeader("x-amz-id-2", "Uuag1LuByRx9e6j5Onimru9pO4ZVKnJ2Qz7/C1NPcfTWAtRPfTaOFg==")
+          .withHeader("x-amz-request-id", "656c76696e6727732072657175657374")
+          .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
+                     |<Error>
+                     |  <Code>InternalError</Code>
+                     |  <Message>We encountered an internal error. Please try again.</Message>
+                     |  <Resource>$bucket/$bucketKey</Resource>
+                     |  <RequestId>4442587FB7D0A2F9</RequestId>
+                     |</Error>""".stripMargin)
+    }
     mock
       .register(
         post(urlEqualTo(s"/$bucketKey?uploads"))
           .inScenario(scenarioName)
           .whenScenarioStateIs(Scenario.STARTED)
-          .willReturn(
-            aResponse()
-              .withStatus(500)
-              .withHeader("x-amz-id-2", "Uuag1LuByRx9e6j5Onimru9pO4ZVKnJ2Qz7/C1NPcfTWAtRPfTaOFg==")
-              .withHeader("x-amz-request-id", "656c76696e6727732072657175657374")
-              .withBody(s"""<?xml version="1.0" encoding="UTF-8"?>
-                           |<Error>
-                           |  <Code>InternalError</Code>
-                           |  <Message>We encountered an internal error. Please try again.</Message>
-                           |  <Resource>$bucket/$bucketKey</Resource>
-                           |  <RequestId>4442587FB7D0A2F9</RequestId>
-                           |</Error>""".stripMargin)
-          )
+          .willReturn(responseBuilder)
           .willSetStateTo("RecoverFromErrorOnInitiate")
       )
 

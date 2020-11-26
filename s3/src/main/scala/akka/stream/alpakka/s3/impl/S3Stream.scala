@@ -790,20 +790,35 @@ import scala.util.{Failure, Success, Try}
   }
 
   private def signAndRequest(
-      request: HttpRequest,
-      retries: Int = 3
+      request: HttpRequest
   )(implicit sys: ActorSystem, mat: Materializer, attr: Attributes): Source[HttpResponse, NotUsed] = {
     implicit val conf: S3Settings = resolveSettings(attr, sys)
+    import conf.retrySettings._
+    import mat.executionContext
 
-    Signer
-      .signedRequest(request, signingKey)
-      .mapAsync(parallelism = 1)(req => singleRequest(req))
-      .flatMapConcat {
-        case HttpResponse(status, _, entity, _) if (retries > 0) && (500 to 599 contains status.intValue()) =>
-          entity.discardBytes()
-          signAndRequest(request, retries - 1)
-        case res => Source.single(res)
-      }
+    val retriableFlow = Flow[HttpRequest]
+      .flatMapConcat(req => Signer.signedRequest(req, signingKey))
+      .mapAsync(parallelism = 1)(
+        req =>
+          singleRequest(req)
+            .map(Success.apply)
+            .recover[Try[HttpResponse]] {
+              case t => Failure(t)
+            }
+      )
+
+    Source
+      .single(request)
+      .via(RetryFlow.withBackoff(minBackoff, maxBackoff, randomFactor, maxRetries, retriableFlow) {
+        case (request, Success(response)) if isTransientError(response.status) =>
+          response.entity.discardBytes()
+          Some(request)
+        case (request, Failure(_)) =>
+          // Treat any exception as transient.
+          Some(request)
+        case _ => None
+      })
+      .mapAsync(1)(Future.fromTry)
   }
 
   private def entityForSuccess(

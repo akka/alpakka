@@ -15,20 +15,23 @@ import software.amazon.awssdk.regions.providers._
 class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with OptionValues {
   private def mkSettings(more: String): S3Settings =
     S3Settings(
-      ConfigFactory.parseString(
-        s"""
+      ConfigFactory
+        .parseString(
+          s"""
           |buffer = memory
           |access-style = virtual
           |validate-object-key = true
-          |multipart-upload.retry-settings {
+          |retry-settings {
           |  max-retries = 3
           |  min-backoff = 0s
           |  max-backoff = 0s
           |  random-factor = 0.0
           |}
+          |multipart-upload.retry-settings = $${retry-settings}
           |$more
         """.stripMargin
-      )
+        )
+        .resolve
     )
 
   "S3Settings" should "correctly parse config with anonymous credentials" in {

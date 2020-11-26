@@ -238,6 +238,7 @@ final class S3Settings private (
     val listBucketApiVersion: ApiVersion,
     val forwardProxy: Option[ForwardProxy],
     val validateObjectKey: Boolean,
+    val retrySettings: RetrySettings,
     val multipartUploadSettings: MultipartUploadSettings
 ) {
 
@@ -310,6 +311,7 @@ final class S3Settings private (
       listBucketApiVersion: ApiVersion = listBucketApiVersion,
       forwardProxy: Option[ForwardProxy] = forwardProxy,
       validateObjectKey: Boolean = validateObjectKey,
+      retrySettings: RetrySettings = retrySettings,
       multipartUploadSettings: MultipartUploadSettings = multipartUploadSettings
   ): S3Settings = new S3Settings(
     bufferType,
@@ -320,6 +322,7 @@ final class S3Settings private (
     listBucketApiVersion,
     forwardProxy,
     validateObjectKey,
+    retrySettings,
     multipartUploadSettings
   )
 
@@ -493,6 +496,8 @@ object S3Settings {
     }).getOrElse(ApiVersion.ListBucketVersion2)
     val validateObjectKey = c.getBoolean("validate-object-key")
 
+    val retrySettings = RetrySettings(c.getConfig("retry-settings"))
+
     val multipartUploadConfig = c.getConfig("multipart-upload")
     val multipartUploadSettings = MultipartUploadSettings(
       RetrySettings(multipartUploadConfig.getConfig("retry-settings"))
@@ -507,6 +512,7 @@ object S3Settings {
       apiVersion,
       maybeForwardProxy,
       validateObjectKey,
+      retrySettings,
       multipartUploadSettings
     )
   }
@@ -535,6 +541,7 @@ object S3Settings {
     listBucketApiVersion,
     forwardProxy = None,
     validateObjectKey = true,
+    RetrySettings.default,
     MultipartUploadSettings(RetrySettings.default)
   )
 
@@ -553,6 +560,7 @@ object S3Settings {
     listBucketApiVersion,
     forwardProxy = None,
     validateObjectKey = true,
+    RetrySettings.default,
     MultipartUploadSettings(RetrySettings.default)
   )
 
