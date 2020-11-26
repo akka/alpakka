@@ -6,7 +6,6 @@ package docs.javadsl;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.recordio.javadsl.RecordIOFraming;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Sink;
@@ -29,7 +28,6 @@ public class RecordIOFramingTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static final ActorSystem system = ActorSystem.create();
-  private static final ActorMaterializer materializer = ActorMaterializer.create(system);
 
   @AfterClass
   public static void afterAll() {
@@ -50,7 +48,7 @@ public class RecordIOFramingTest {
         Source.single(ByteString.fromString(firstRecordWithPrefix + secondRecordWithPrefix));
 
     CompletionStage<List<ByteString>> result =
-        basicSource.via(RecordIOFraming.scanner()).runWith(Sink.seq(), materializer);
+        basicSource.via(RecordIOFraming.scanner()).runWith(Sink.seq(), system);
     // #run-via-scanner
 
     // #result

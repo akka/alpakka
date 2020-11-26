@@ -7,7 +7,6 @@ package docs.scaladsl
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
-import akka.stream.{ActorMaterializer, Materializer}
 //#run-via-scanner
 import akka.stream.alpakka.recordio.scaladsl.RecordIOFraming
 //#run-via-scanner
@@ -33,8 +32,6 @@ class RecordIOFramingSpec(_system: ActorSystem)
   def this() = this(ActorSystem("RecordIOFramingSpec"))
 
   override protected def afterAll(): Unit = shutdown()
-
-  implicit val mat: Materializer = ActorMaterializer()
 
   //#run-via-scanner
 
