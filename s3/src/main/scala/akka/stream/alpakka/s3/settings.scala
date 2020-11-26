@@ -251,11 +251,13 @@ final class RetrySettings private (val maxRetries: Int,
 
   def withMinBackoff(value: FiniteDuration): RetrySettings = copy(minBackoff = value)
 
+  /** Java API */
   def withMinBackoff(value: JavaDuration): RetrySettings =
     copy(minBackoff = FiniteDuration(value.toNanos, TimeUnit.NANOSECONDS))
 
   def withMaxBackoff(value: FiniteDuration): RetrySettings = copy(maxBackoff = value)
 
+  /** Java API */
   def withMaxBackoff(value: JavaDuration): RetrySettings =
     copy(maxBackoff = FiniteDuration(value.toNanos, TimeUnit.NANOSECONDS))
 
