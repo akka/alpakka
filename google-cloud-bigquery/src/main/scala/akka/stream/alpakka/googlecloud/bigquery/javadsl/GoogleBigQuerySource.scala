@@ -15,6 +15,9 @@ import akka.stream.alpakka.googlecloud.bigquery.client._
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
 import akka.stream.alpakka.googlecloud.bigquery.{BigQueryConfig, BigQueryJsonProtocol}
 import akka.stream.javadsl.Source
+import spray.json.JsObject
+
+import scala.util.Try
 
 /**
  * Java API to create BigQuery sources.
@@ -41,6 +44,22 @@ object GoogleBigQuerySource {
       .asJava
 
   /**
+   * Read elements of `T` by executing HttpRequest upon BigQuery API.
+   */
+  def raw[T](httpRequest: HttpRequest,
+             parserFn: java.util.function.Function[JsObject, Try[T]],
+             onFinishCallback: java.util.function.Function[PagingInfo, NotUsed],
+             projectConfig: BigQueryConfig): Source[T, NotUsed] =
+    bigquery.scaladsl.GoogleBigQuerySource
+      .raw(
+        httpRequest,
+        parserFn.apply(_),
+        onFinishCallback.apply,
+        projectConfig
+      )
+      .asJava
+
+  /**
    * Read elements of `T` by executing `query`.
    */
   def runQuery[J, T](query: String,
@@ -53,6 +72,17 @@ object GoogleBigQuerySource {
       .runQuery(query, onFinishCallback.apply, projectConfig)(jsonUnmarshaller.asScala,
                                                               responseUnmarshaller.asScala,
                                                               unmarshaller.asScala)
+      .asJava
+
+  /**
+   * Read elements of `T` by executing `query`.
+   */
+  def runQuery[T](query: String,
+                  parserFn: java.util.function.Function[JsObject, Try[T]],
+                  onFinishCallback: java.util.function.Function[PagingInfo, NotUsed],
+                  projectConfig: BigQueryConfig): Source[T, NotUsed] =
+    bigquery.scaladsl.GoogleBigQuerySource
+      .runQuery(query, parserFn.apply(_), onFinishCallback.apply, projectConfig)
       .asJava
 
   /**

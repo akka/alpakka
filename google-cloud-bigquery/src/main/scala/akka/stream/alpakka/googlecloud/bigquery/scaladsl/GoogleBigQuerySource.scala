@@ -10,6 +10,7 @@ import akka.annotation.ApiMayChange
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
+import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.bigquery.client.QueryJsonProtocol.QueryResponse
 import akka.stream.alpakka.googlecloud.bigquery.client.TableDataQueryJsonProtocol.TableDataQueryResponse
@@ -20,7 +21,10 @@ import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
 import akka.stream.alpakka.googlecloud.bigquery.impl.util.ConcatWithHeaders
 import akka.stream.alpakka.googlecloud.bigquery.{BigQueryConfig, BigQueryJsonProtocol}
 import akka.stream.scaladsl.Source
-import spray.json.JsValue
+import spray.json.{JsObject, JsValue}
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 /**
  * Scala API to create BigQuery sources.
@@ -55,6 +59,20 @@ object GoogleBigQuerySource {
       .mapMaterializedValue(_ => NotUsed)
 
   /**
+   * Read elements of `T` by executing HttpRequest upon BigQuery API.
+   */
+  def raw[T](
+      httpRequest: HttpRequest,
+      parserFn: JsObject => Try[T],
+      onFinishCallback: PagingInfo => NotUsed,
+      projectConfig: BigQueryConfig
+  ): Source[T, NotUsed] = {
+    import SprayJsonSupport._
+    implicit val unmarshaller = unmarshallerFromParser(parserFn)
+    raw[JsValue, T](httpRequest, onFinishCallback, projectConfig)
+  }
+
+  /**
    * Read elements of `T` by executing `query`.
    */
   def runQuery[J, T](query: String, onFinishCallback: PagingInfo => NotUsed, projectConfig: BigQueryConfig)(
@@ -72,6 +90,19 @@ object GoogleBigQuerySource {
         }
       }
       .mapMaterializedValue(_ => NotUsed)
+
+  /**
+   * Read elements of `T` by executing `query`.
+   */
+  def runQuery[T](query: String,
+                  parserFn: JsObject => Try[T],
+                  onFinishCallback: PagingInfo => NotUsed,
+                  projectConfig: BigQueryConfig)(
+      ): Source[T, NotUsed] = {
+    import SprayJsonSupport._
+    implicit val unmarshaller = unmarshallerFromParser(parserFn)
+    runQuery[JsValue, T](query, onFinishCallback, projectConfig)
+  }
 
   /**
    * Read results in a csv format by executing `query`.
@@ -134,6 +165,13 @@ object GoogleBigQuerySource {
       )
       .mapMaterializedValue(_ => NotUsed)
   }
+
+  private def unmarshallerFromParser[T](parserFn: JsObject => Try[T]): Unmarshaller[JsValue, T] =
+    new Unmarshaller[JsValue, T] {
+      override def apply(value: JsValue)(implicit ec: ExecutionContext, materializer: Materializer): Future[T] = {
+        Future(FastFuture(parserFn(value.asJsObject))).flatten
+      }
+    }
 
 }
 
