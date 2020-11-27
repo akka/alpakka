@@ -5,6 +5,7 @@
 package akka.stream.alpakka.s3
 
 import java.nio.file.{Path, Paths}
+import java.time.{Duration => JavaDuration}
 import java.util.concurrent.TimeUnit
 import java.util.{Objects, Optional}
 
@@ -229,6 +230,121 @@ object AccessStyle {
   def virtualHostAccessStyle: VirtualHostAccessStyle = VirtualHostAccessStyle
 }
 
+final class RetrySettings private (val maxRetries: Int,
+                                   val minBackoff: FiniteDuration,
+                                   val maxBackoff: FiniteDuration,
+                                   val randomFactor: Double) {
+
+  /** Java API */
+  def getMaxRetries: Int = maxRetries
+
+  /** Java API */
+  def getMinBackoff: JavaDuration = JavaDuration.ofNanos(minBackoff.toNanos)
+
+  /** Java API */
+  def getMaxBackoff: JavaDuration = JavaDuration.ofNanos(maxBackoff.toNanos)
+
+  /** Java API */
+  def getRandomFactor: Double = randomFactor
+
+  def withMaxRetries(value: Int): RetrySettings = copy(maxRetries = value)
+
+  def withMinBackoff(value: FiniteDuration): RetrySettings = copy(minBackoff = value)
+
+  /** Java API */
+  def withMinBackoff(value: JavaDuration): RetrySettings =
+    copy(minBackoff = FiniteDuration(value.toNanos, TimeUnit.NANOSECONDS))
+
+  def withMaxBackoff(value: FiniteDuration): RetrySettings = copy(maxBackoff = value)
+
+  /** Java API */
+  def withMaxBackoff(value: JavaDuration): RetrySettings =
+    copy(maxBackoff = FiniteDuration(value.toNanos, TimeUnit.NANOSECONDS))
+
+  def withRandomFactor(value: Double): RetrySettings = copy(randomFactor = value)
+
+  private def copy(maxRetries: Int = maxRetries,
+                   minBackoff: FiniteDuration = minBackoff,
+                   maxBackoff: FiniteDuration = maxBackoff,
+                   randomFactor: Double = randomFactor) =
+    new RetrySettings(maxRetries, minBackoff, maxBackoff, randomFactor)
+
+  override def toString: String =
+    "RetrySettings(" +
+    s"maxRetries=$maxRetries," +
+    s"minBackoff=$minBackoff," +
+    s"maxBackoff=$maxBackoff," +
+    s"randomFactor=$randomFactor)"
+
+  override def equals(other: Any): Boolean = other match {
+    case that: RetrySettings =>
+      Objects.equals(this.maxRetries, that.maxRetries) &&
+      Objects.equals(this.minBackoff, that.minBackoff) &&
+      Objects.equals(this.maxBackoff, that.maxBackoff) &&
+      Objects.equals(this.randomFactor, that.randomFactor)
+    case _ => false
+  }
+
+  override def hashCode(): Int =
+    Objects.hash(Int.box(maxRetries), minBackoff, maxBackoff, Double.box(randomFactor))
+}
+
+object RetrySettings {
+  val default: RetrySettings = RetrySettings(3, 200.milliseconds, 10.seconds, 0.0)
+
+  /** Scala API */
+  def apply(maxRetries: Int,
+            minBackoff: FiniteDuration,
+            maxBackoff: FiniteDuration,
+            randomFactor: Double): RetrySettings =
+    new RetrySettings(maxRetries, minBackoff, maxBackoff, randomFactor)
+
+  /** Java API */
+  def create(maxRetries: Int, minBackoff: JavaDuration, maxBackoff: JavaDuration, randomFactor: Double): RetrySettings =
+    apply(maxRetries,
+          FiniteDuration(minBackoff.toNanos, TimeUnit.NANOSECONDS),
+          FiniteDuration(maxBackoff.toNanos, TimeUnit.NANOSECONDS),
+          randomFactor)
+
+  def apply(config: Config): RetrySettings = {
+    RetrySettings(
+      config.getInt("max-retries"),
+      FiniteDuration(config.getDuration("min-backoff").toNanos, TimeUnit.NANOSECONDS),
+      FiniteDuration(config.getDuration("max-backoff").toNanos, TimeUnit.NANOSECONDS),
+      config.getDouble("random-factor")
+    )
+  }
+}
+
+final class MultipartUploadSettings private (val retrySettings: RetrySettings) {
+
+  /** Java API */
+  def getRetrySettings: RetrySettings = retrySettings
+
+  def withRetrySettings(value: RetrySettings) = MultipartUploadSettings(value)
+
+  override def toString =
+    s"MultipartUploadSettings(retrySettings=$retrySettings)"
+
+  override def equals(other: Any): Boolean = other match {
+    case that: MultipartUploadSettings => Objects.equals(this.retrySettings, that.retrySettings)
+    case _ => false
+  }
+
+  override def hashCode(): Int = Objects.hash(retrySettings)
+}
+
+object MultipartUploadSettings {
+
+  /** Scala API */
+  def apply(retrySettings: RetrySettings): MultipartUploadSettings =
+    new MultipartUploadSettings(retrySettings)
+
+  /** Java API */
+  def create(retrySettings: RetrySettings): MultipartUploadSettings =
+    apply(retrySettings)
+}
+
 final class S3Settings private (
     val bufferType: BufferType,
     val credentialsProvider: AwsCredentialsProvider,
@@ -238,6 +354,7 @@ final class S3Settings private (
     val listBucketApiVersion: ApiVersion,
     val forwardProxy: Option[ForwardProxy],
     val validateObjectKey: Boolean,
+    val retrySettings: RetrySettings,
     val multipartUploadSettings: MultipartUploadSettings
 ) {
 
@@ -276,6 +393,12 @@ final class S3Settings private (
   /** Java API */
   def getAccessStyle: AccessStyle = accessStyle
 
+  /** Java API */
+  def getRetrySettings: RetrySettings = retrySettings
+
+  /** Java API */
+  def getMultipartUploadSettings: MultipartUploadSettings = multipartUploadSettings
+
   def withBufferType(value: BufferType): S3Settings = copy(bufferType = value)
 
   @deprecated("Please use endpointUrl instead", since = "1.0.1")
@@ -299,6 +422,8 @@ final class S3Settings private (
   def withValidateObjectKey(value: Boolean): S3Settings =
     if (validateObjectKey == value) this else copy(validateObjectKey = value)
 
+  def withRetrySettings(value: RetrySettings): S3Settings = copy(retrySettings = value)
+
   def withMultipartUploadSettings(value: MultipartUploadSettings): S3Settings = copy(multipartUploadSettings = value)
 
   private def copy(
@@ -310,6 +435,7 @@ final class S3Settings private (
       listBucketApiVersion: ApiVersion = listBucketApiVersion,
       forwardProxy: Option[ForwardProxy] = forwardProxy,
       validateObjectKey: Boolean = validateObjectKey,
+      retrySettings: RetrySettings = retrySettings,
       multipartUploadSettings: MultipartUploadSettings = multipartUploadSettings
   ): S3Settings = new S3Settings(
     bufferType,
@@ -320,6 +446,7 @@ final class S3Settings private (
     listBucketApiVersion,
     forwardProxy,
     validateObjectKey,
+    retrySettings,
     multipartUploadSettings
   )
 
@@ -333,7 +460,8 @@ final class S3Settings private (
     s"listBucketApiVersion=$listBucketApiVersion," +
     s"forwardProxy=$forwardProxy," +
     s"validateObjectKey=$validateObjectKey" +
-    ")"
+    s"retrySettings=$retrySettings" +
+    s"multipartUploadSettings=$multipartUploadSettings)"
 
   override def equals(other: Any): Boolean = other match {
     case that: S3Settings =>
@@ -344,7 +472,9 @@ final class S3Settings private (
       Objects.equals(this.endpointUrl, that.endpointUrl) &&
       Objects.equals(this.listBucketApiVersion, that.listBucketApiVersion) &&
       Objects.equals(this.forwardProxy, that.forwardProxy) &&
-      this.validateObjectKey == that.validateObjectKey
+      this.validateObjectKey == that.validateObjectKey &&
+      Objects.equals(this.retrySettings, that.retrySettings) &&
+      Objects.equals(this.multipartUploadSettings, multipartUploadSettings)
     case _ => false
   }
 
@@ -357,7 +487,9 @@ final class S3Settings private (
       endpointUrl,
       listBucketApiVersion,
       forwardProxy,
-      Boolean.box(validateObjectKey)
+      Boolean.box(validateObjectKey),
+      retrySettings,
+      multipartUploadSettings
     )
 }
 
@@ -493,6 +625,8 @@ object S3Settings {
     }).getOrElse(ApiVersion.ListBucketVersion2)
     val validateObjectKey = c.getBoolean("validate-object-key")
 
+    val retrySettings = RetrySettings(c.getConfig("retry-settings"))
+
     val multipartUploadConfig = c.getConfig("multipart-upload")
     val multipartUploadSettings = MultipartUploadSettings(
       RetrySettings(multipartUploadConfig.getConfig("retry-settings"))
@@ -507,6 +641,7 @@ object S3Settings {
       apiVersion,
       maybeForwardProxy,
       validateObjectKey,
+      retrySettings,
       multipartUploadSettings
     )
   }
@@ -535,6 +670,7 @@ object S3Settings {
     listBucketApiVersion,
     forwardProxy = None,
     validateObjectKey = true,
+    RetrySettings.default,
     MultipartUploadSettings(RetrySettings.default)
   )
 
@@ -553,6 +689,7 @@ object S3Settings {
     listBucketApiVersion,
     forwardProxy = None,
     validateObjectKey = true,
+    RetrySettings.default,
     MultipartUploadSettings(RetrySettings.default)
   )
 
@@ -630,24 +767,4 @@ case object DiskBufferType {
 
   /** Java API */
   def create(path: Path): DiskBufferType = DiskBufferType(path)
-}
-
-final case class MultipartUploadSettings(retrySettings: RetrySettings)
-
-final case class RetrySettings(maxRetries: Int,
-                               minBackoff: FiniteDuration,
-                               maxBackoff: FiniteDuration,
-                               randomFactor: Double)
-
-object RetrySettings {
-  val default: RetrySettings = RetrySettings(3, 200.milliseconds, 10.seconds, 0.0)
-
-  def apply(config: Config): RetrySettings = {
-    RetrySettings(
-      config.getInt("max-retries"),
-      FiniteDuration(config.getDuration("min-backoff").toNanos, TimeUnit.NANOSECONDS),
-      FiniteDuration(config.getDuration("max-backoff").toNanos, TimeUnit.NANOSECONDS),
-      config.getDouble("random-factor")
-    )
-  }
 }

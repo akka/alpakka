@@ -12,6 +12,7 @@ import akka.stream.alpakka.s3.scaladsl.{S3, S3ClientIntegrationSpec, S3WireMockB
 import akka.stream.alpakka.s3._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
+import com.github.tomakehurst.wiremock.http.Fault
 import org.scalatest.OptionValues
 import org.scalatest.exceptions.TestFailedException
 
@@ -49,6 +50,28 @@ class S3SinkSpec extends S3WireMockBase with S3ClientIntegrationSpec with Option
     val result: Future[MultipartUploadResult] =
       file.runWith(s3Sink)
     //#upload
+
+    result.futureValue shouldBe MultipartUploadResult(url, bucket, bucketKey, etag, None)
+  }
+
+  "S3Sink" should "retry multipart upload initiation after a transient internal server error" in {
+
+    mockMultipartUploadInitiationWithTransientError(body, Right(500))
+
+    val s3Sink: Sink[ByteString, Future[MultipartUploadResult]] = S3.multipartUpload(bucket, bucketKey)
+
+    val result: Future[MultipartUploadResult] = Source.single(ByteString(body)).runWith(s3Sink)
+
+    result.futureValue shouldBe MultipartUploadResult(url, bucket, bucketKey, etag, None)
+  }
+
+  "S3Sink" should "retry multipart upload initiation after a transient downstream connection error" in {
+
+    mockMultipartUploadInitiationWithTransientError(body, Left(Fault.CONNECTION_RESET_BY_PEER))
+
+    val s3Sink: Sink[ByteString, Future[MultipartUploadResult]] = S3.multipartUpload(bucket, bucketKey)
+
+    val result: Future[MultipartUploadResult] = Source.single(ByteString(body)).runWith(s3Sink)
 
     result.futureValue shouldBe MultipartUploadResult(url, bucket, bucketKey, etag, None)
   }
