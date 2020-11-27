@@ -9,7 +9,7 @@ import akka.actor.ActorSystem
 import akka.annotation.ApiMayChange
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
-import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
+import akka.http.scaladsl.unmarshalling.{FromByteStringUnmarshaller, Unmarshaller}
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.bigquery.client.QueryJsonProtocol.QueryResponse
@@ -45,7 +45,7 @@ object GoogleBigQuerySource {
       httpRequest: HttpRequest,
       onFinishCallback: PagingInfo => NotUsed,
       projectConfig: BigQueryConfig
-  )(implicit jsonUnmarshaller: FromEntityUnmarshaller[J],
+  )(implicit jsonUnmarshaller: FromByteStringUnmarshaller[J],
     responseUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response],
     unmarshaller: Unmarshaller[J, T]): Source[T, NotUsed] =
     Source
@@ -76,7 +76,7 @@ object GoogleBigQuerySource {
    * Read elements of `T` by executing `query`.
    */
   def runQuery[J, T](query: String, onFinishCallback: PagingInfo => NotUsed, projectConfig: BigQueryConfig)(
-      implicit jsonUnmarshaller: FromEntityUnmarshaller[J],
+      implicit jsonUnmarshaller: FromByteStringUnmarshaller[J],
       responseUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response],
       unmarshaller: Unmarshaller[J, T]
   ): Source[T, NotUsed] =
@@ -150,7 +150,7 @@ object GoogleBigQuerySource {
   }
 
   private def runMetaQuery[J, T](url: String, projectConfig: BigQueryConfig)(
-      implicit jsonUnmarshaller: FromEntityUnmarshaller[J],
+      implicit jsonUnmarshaller: FromByteStringUnmarshaller[J],
       responseUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response],
       unmarshaller: Unmarshaller[J, T]
   ): Source[T, NotUsed] = {
@@ -184,7 +184,7 @@ final class GoogleBigQuerySource[T] private () {
       httpRequest: HttpRequest,
       onFinishCallback: PagingInfo => NotUsed,
       projectConfig: BigQueryConfig
-  )(implicit jsonUnmarshaller: FromEntityUnmarshaller[J],
+  )(implicit jsonUnmarshaller: FromByteStringUnmarshaller[J],
     responseUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response],
     unmarshaller: Unmarshaller[J, T]): Source[T, NotUsed] =
     GoogleBigQuerySource.raw[J, T](httpRequest, onFinishCallback, projectConfig)
@@ -193,7 +193,7 @@ final class GoogleBigQuerySource[T] private () {
    * Read elements of `T` by executing `query`.
    */
   def runQuery[J](query: String, onFinishCallback: PagingInfo => NotUsed, projectConfig: BigQueryConfig)(
-      implicit jsonUnmarshaller: FromEntityUnmarshaller[J],
+      implicit jsonUnmarshaller: FromByteStringUnmarshaller[J],
       responseUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response],
       unmarshaller: Unmarshaller[J, T]
   ): Source[T, NotUsed] = GoogleBigQuerySource.runQuery[J, T](query, onFinishCallback, projectConfig)

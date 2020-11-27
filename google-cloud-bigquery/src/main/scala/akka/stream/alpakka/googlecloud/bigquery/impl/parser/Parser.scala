@@ -7,12 +7,13 @@ package akka.stream.alpakka.googlecloud.bigquery.impl.parser
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal, Unmarshaller}
+import akka.http.scaladsl.unmarshalling.{FromByteStringUnmarshaller, Unmarshal, Unmarshaller}
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture.EnhancedFuture
 import akka.stream.alpakka.googlecloud.bigquery.BigQueryJsonProtocol
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Zip}
 import akka.stream.{FanOutShape2, FlowShape, Graph, Materializer}
+import akka.util.ByteString
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -24,7 +25,7 @@ private[bigquery] object Parser {
   def apply[J, T](
       implicit materializer: Materializer,
       ec: ExecutionContext,
-      jsonUnmarshaller: FromEntityUnmarshaller[J],
+      jsonUnmarshaller: FromByteStringUnmarshaller[J],
       responseUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response],
       unmarshaller: Unmarshaller[J, T]
   ): Graph[FanOutShape2[HttpResponse, T, (Boolean, PagingInfo)], NotUsed] = GraphDSL.create() { implicit builder =>
@@ -65,7 +66,17 @@ private[bigquery] object Parser {
 
   private def parseHttpBody[J](
       response: HttpResponse
-  )(implicit materializer: Materializer, ec: ExecutionContext, unmarshaller: FromEntityUnmarshaller[J]): Future[J] = {
+  )(implicit materializer: Materializer,
+    ec: ExecutionContext,
+    jsonUnmarshaller: FromByteStringUnmarshaller[J]): Future[J] = {
+    implicit val unmarshaller = Unmarshaller.byteStringUnmarshaller
+      .map { bs =>
+        if (bs.isEmpty)
+          ByteString("{}")
+        else
+          bs
+      }
+      .andThen(jsonUnmarshaller)
     Unmarshal(response.entity).to[J]
   }
 

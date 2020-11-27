@@ -7,7 +7,6 @@ import java.util
 
 import akka.NotUsed
 import akka.annotation.ApiMayChange
-import akka.http.javadsl.model.HttpEntity
 import akka.http.javadsl.unmarshalling.Unmarshaller
 import akka.http.scaladsl.model.HttpRequest
 import akka.stream.alpakka.googlecloud.bigquery
@@ -15,6 +14,7 @@ import akka.stream.alpakka.googlecloud.bigquery.client._
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
 import akka.stream.alpakka.googlecloud.bigquery.{BigQueryConfig, BigQueryJsonProtocol}
 import akka.stream.javadsl.Source
+import akka.util.ByteString
 import spray.json.JsObject
 
 import scala.util.Try
@@ -32,7 +32,7 @@ object GoogleBigQuerySource {
   def raw[J, T](httpRequest: HttpRequest,
                 unmarshaller: Unmarshaller[J, T],
                 responseUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response],
-                jsonUnmarshaller: Unmarshaller[HttpEntity, J],
+                jsonUnmarshaller: Unmarshaller[ByteString, J],
                 onFinishCallback: java.util.function.Function[PagingInfo, NotUsed],
                 projectConfig: BigQueryConfig): Source[T, NotUsed] =
     bigquery.scaladsl.GoogleBigQuerySource
@@ -65,7 +65,7 @@ object GoogleBigQuerySource {
   def runQuery[J, T](query: String,
                      unmarshaller: Unmarshaller[J, T],
                      responseUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response],
-                     jsonUnmarshaller: Unmarshaller[HttpEntity, J],
+                     jsonUnmarshaller: Unmarshaller[ByteString, J],
                      onFinishCallback: java.util.function.Function[PagingInfo, NotUsed],
                      projectConfig: BigQueryConfig): Source[T, NotUsed] =
     bigquery.scaladsl.GoogleBigQuerySource

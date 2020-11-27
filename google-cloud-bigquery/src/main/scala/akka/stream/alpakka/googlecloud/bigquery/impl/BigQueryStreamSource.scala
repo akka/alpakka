@@ -9,7 +9,7 @@ import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
+import akka.http.scaladsl.unmarshalling.{FromByteStringUnmarshaller, Unmarshaller}
 import akka.stream._
 import akka.stream.alpakka.googlecloud.bigquery.{BigQueryConfig, BigQueryJsonProtocol}
 import akka.stream.alpakka.googlecloud.bigquery.impl.pagetoken.{AddPageToken, EndOfStreamDetector}
@@ -33,7 +33,7 @@ private[bigquery] object BigQueryStreamSource {
                   http: HttpExt)(
       implicit mat: Materializer,
       system: ActorSystem,
-      jsonUnmarshaller: FromEntityUnmarshaller[J],
+      jsonUnmarshaller: FromByteStringUnmarshaller[J],
       responseUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response],
       unmarshaller: Unmarshaller[J, T]
   ): Source[T, NotUsed] =
