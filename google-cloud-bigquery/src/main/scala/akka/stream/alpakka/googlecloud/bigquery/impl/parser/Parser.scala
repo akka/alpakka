@@ -8,6 +8,8 @@ import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal, Unmarshaller}
+import akka.http.scaladsl.util.FastFuture
+import akka.http.scaladsl.util.FastFuture.EnhancedFuture
 import akka.stream.alpakka.googlecloud.bigquery.BigQueryJsonProtocol
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Zip}
 import akka.stream.{FanOutShape2, FlowShape, Graph, Materializer}
@@ -30,7 +32,7 @@ private[bigquery] object Parser {
 
     val bodyJsonParse: FlowShape[HttpResponse, J] = builder.add(Flow[HttpResponse].mapAsync(1)(parseHttpBody(_)))
 
-    val parseMap = builder.add(Flow[J].mapAsync(1)(Unmarshal(_).to[T].transform(Success(_))))
+    val parseMap = builder.add(Flow[J].mapAsync(1)(parseJson[J, T]))
     val pageInfoProvider = builder.add(Flow[J].mapAsync(1)(getPageInfo[J]))
 
     val broadcast1 = builder.add(Broadcast[J](2, eagerCancel = true))
@@ -67,13 +69,24 @@ private[bigquery] object Parser {
     Unmarshal(response.entity).to[J]
   }
 
-  private def getPageInfo[J](jsObject: J)(
+  private def parseJson[J, T](json: J)(
+      implicit materializer: Materializer,
+      ec: ExecutionContext,
+      unmarshaller: Unmarshaller[J, T]
+  ): Future[Try[T]] = {
+    Unmarshal(json)
+      .to[T]
+      .fast
+      .transformWith(FastFuture.successful[Try[T]])
+  }
+
+  private def getPageInfo[J](json: J)(
       implicit materializer: Materializer,
       ec: ExecutionContext,
       unmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response]
   ): Future[PagingInfo] = {
 
-    Unmarshal(jsObject).to[BigQueryJsonProtocol.Response].map { response =>
+    Unmarshal(json).to[BigQueryJsonProtocol.Response].fast.map { response =>
       val pageToken = response.pageToken orElse response.nextPageToken
       val jobId = response.jobReference.flatMap(_.jobId)
 
