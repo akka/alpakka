@@ -5,23 +5,20 @@
 package docs.javadsl;
 
 // #imports
-
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.http.javadsl.unmarshalling.Unmarshaller;
 import akka.http.scaladsl.model.HttpRequest;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig;
 import akka.stream.alpakka.googlecloud.bigquery.client.BigQueryCommunicationHelper;
 import akka.stream.alpakka.googlecloud.bigquery.client.TableDataQueryJsonProtocol;
 import akka.stream.alpakka.googlecloud.bigquery.client.TableListQueryJsonProtocol;
-import akka.stream.alpakka.googlecloud.bigquery.javadsl.BigQueryCallbacks;
 import akka.stream.alpakka.googlecloud.bigquery.javadsl.GoogleBigQuerySource;
-import akka.stream.alpakka.googlecloud.bigquery.javadsl.SprayJsonSupport;
+import akka.stream.alpakka.googlecloud.bigquery.javadsl.BigQueryCallbacks;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import scala.util.Try;
 import spray.json.JsObject;
-import spray.json.JsValue;
 
 import java.util.Collection;
 import java.util.List;
@@ -80,13 +77,11 @@ public class GoogleBigQuerySourceDoc {
     }
   }
 
-  static Unmarshaller<JsValue, User> userUnmarshaller =
-      Unmarshaller.sync(GoogleBigQuerySourceDoc::userFromJson);
-
-  static User userFromJson(JsValue value) {
-    JsObject object = value.asJsObject();
-    return new User(
-        object.fields().apply("uid").toString(), object.fields().apply("name").toString());
+  static Try<User> userFromJson(JsObject object) {
+    return Try.apply(
+        () ->
+            new User(
+                object.fields().apply("uid").toString(), object.fields().apply("name").toString()));
   }
 
   private static Source<User, NotUsed> example2() {
@@ -101,9 +96,7 @@ public class GoogleBigQuerySourceDoc {
             system);
     return GoogleBigQuerySource.runQuery(
         "SELECT uid, name FROM bigQueryDatasetName.myTable",
-        userUnmarshaller,
-        SprayJsonSupport.responseUnmarshaller(),
-        SprayJsonSupport.jsValueUnmarshaller(),
+        GoogleBigQuerySourceDoc::userFromJson,
         BigQueryCallbacks.ignore(),
         config);
   }
@@ -122,15 +115,14 @@ public class GoogleBigQuerySourceDoc {
     }
   }
 
-  static Unmarshaller<JsValue, DryRunResponse> dryRunResponseUnmarshaller =
-      Unmarshaller.sync(GoogleBigQuerySourceDoc::dryRunResponseFromJson);
-
-  static DryRunResponse dryRunResponseFromJson(JsValue value) {
-    JsObject object = value.asJsObject();
-    return new DryRunResponse(
-        object.fields().apply("totalBytesProcessed").toString(),
-        object.fields().apply("jobComplete").toString(),
-        object.fields().apply("cacheHit").toString());
+  static Try<DryRunResponse> dryRunResponseFromJson(JsObject object) {
+    scala.Function0<DryRunResponse> responseFunction =
+        () ->
+            new DryRunResponse(
+                object.fields().apply("totalBytesProcessed").toString(),
+                object.fields().apply("jobComplete").toString(),
+                object.fields().apply("cacheHit").toString());
+    return Try.apply(responseFunction);
   }
 
   private static Source<DryRunResponse, NotUsed> example3() {
@@ -150,9 +142,7 @@ public class GoogleBigQuerySourceDoc {
 
     return GoogleBigQuerySource.raw(
         request,
-        dryRunResponseUnmarshaller,
-        SprayJsonSupport.responseUnmarshaller(),
-        SprayJsonSupport.jsValueUnmarshaller(),
+        GoogleBigQuerySourceDoc::dryRunResponseFromJson,
         BigQueryCallbacks.ignore(),
         config);
   }
