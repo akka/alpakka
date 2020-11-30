@@ -21,7 +21,7 @@ import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
 import akka.stream.alpakka.googlecloud.bigquery.impl.util.ConcatWithHeaders
 import akka.stream.alpakka.googlecloud.bigquery.{BigQueryConfig, BigQueryJsonProtocol}
 import akka.stream.scaladsl.Source
-import spray.json.{JsObject, JsValue}
+import spray.json.{JsObject, JsValue, JsonFormat}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
@@ -78,7 +78,7 @@ object GoogleBigQuerySource {
   def runQuery[J, T](query: String, onFinishCallback: PagingInfo => NotUsed, projectConfig: BigQueryConfig)(
       implicit jsonUnmarshaller: FromByteStringUnmarshaller[J],
       responseUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response],
-      unmarshaller: Unmarshaller[J, T]
+      rowsUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.ResponseRows[T]]
   ): Source[T, NotUsed] =
     Source
       .fromMaterializer { (mat, attr) =>
@@ -86,7 +86,11 @@ object GoogleBigQuerySource {
           implicit val system: ActorSystem = mat.system
           implicit val materializer: Materializer = mat
           val request = BigQueryCommunicationHelper.createQueryRequest(query, projectConfig.projectId, dryRun = false)
-          BigQueryStreamSource[J, T](request, onFinishCallback, projectConfig, Http())
+          BigQueryStreamSource[J, BigQueryJsonProtocol.ResponseRows[T]](request,
+                                                                        onFinishCallback,
+                                                                        projectConfig,
+                                                                        Http())
+            .mapConcat(_.rows.map(_.toList).getOrElse(Nil))
         }
       }
       .mapMaterializedValue(_ => NotUsed)
@@ -100,7 +104,10 @@ object GoogleBigQuerySource {
                   projectConfig: BigQueryConfig)(
       ): Source[T, NotUsed] = {
     import SprayJsonSupport._
-    implicit val unmarshaller = unmarshallerFromParser(parserFn)
+    implicit val format = new JsonFormat[T] {
+      override def write(obj: T): JsValue = throw new UnsupportedOperationException
+      override def read(json: JsValue): T = parserFn(json.asJsObject).get
+    }
     runQuery[JsValue, T](query, onFinishCallback, projectConfig)
   }
 
@@ -195,7 +202,7 @@ final class GoogleBigQuerySource[T] private () {
   def runQuery[J](query: String, onFinishCallback: PagingInfo => NotUsed, projectConfig: BigQueryConfig)(
       implicit jsonUnmarshaller: FromByteStringUnmarshaller[J],
       responseUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response],
-      unmarshaller: Unmarshaller[J, T]
+      rowsUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.ResponseRows[T]]
   ): Source[T, NotUsed] = GoogleBigQuerySource.runQuery[J, T](query, onFinishCallback, projectConfig)
 
 }

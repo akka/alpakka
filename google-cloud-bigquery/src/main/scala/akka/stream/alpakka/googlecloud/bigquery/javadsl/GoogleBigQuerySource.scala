@@ -63,7 +63,7 @@ object GoogleBigQuerySource {
    * Read elements of `T` by executing `query`.
    */
   def runQuery[J, T](query: String,
-                     unmarshaller: Unmarshaller[J, T],
+                     rowsUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.ResponseRows[T]],
                      responseUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response],
                      jsonUnmarshaller: Unmarshaller[ByteString, J],
                      onFinishCallback: java.util.function.Function[PagingInfo, NotUsed],
@@ -71,7 +71,7 @@ object GoogleBigQuerySource {
     bigquery.scaladsl.GoogleBigQuerySource
       .runQuery(query, onFinishCallback.apply, projectConfig)(jsonUnmarshaller.asScala,
                                                               responseUnmarshaller.asScala,
-                                                              unmarshaller.asScala)
+                                                              rowsUnmarshaller.asScala)
       .asJava
 
   /**

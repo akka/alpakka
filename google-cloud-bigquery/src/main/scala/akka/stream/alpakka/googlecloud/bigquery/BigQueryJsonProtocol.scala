@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.googlecloud.bigquery
 
-import spray.json.{DefaultJsonProtocol, RootJsonFormat}
+import spray.json.{DefaultJsonProtocol, JsonFormat, RootJsonFormat}
 
 object BigQueryJsonProtocol extends DefaultJsonProtocol {
 
@@ -14,5 +14,9 @@ object BigQueryJsonProtocol extends DefaultJsonProtocol {
 
   implicit val jobReferenceFormat: RootJsonFormat[JobReference] = jsonFormat1(JobReference)
   implicit val responseFormat: RootJsonFormat[Response] = jsonFormat3(Response)
+
+  case class ResponseRows[T](rows: Option[Seq[T]])
+
+  implicit def responseRowsFormat[T: JsonFormat]: RootJsonFormat[ResponseRows[T]] = jsonFormat1(ResponseRows[T])
 
 }
