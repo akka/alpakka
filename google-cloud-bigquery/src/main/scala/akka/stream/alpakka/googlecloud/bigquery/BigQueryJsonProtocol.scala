@@ -12,7 +12,7 @@ object BigQueryJsonProtocol extends DefaultJsonProtocol {
 
   case class JobReference(jobId: Option[String])
 
-  implicit val jobReferenceFormat: RootJsonFormat[JobReference] = jsonFormat1(JobReference)
+  implicit val jobReferenceFormat: JsonFormat[JobReference] = jsonFormat1(JobReference)
   implicit val responseFormat: RootJsonFormat[Response] = jsonFormat3(Response)
 
   case class ResponseRows[T](rows: Option[Seq[T]])
