@@ -11,7 +11,7 @@ import akka.http.scaladsl.unmarshalling.{FromByteStringUnmarshaller, Unmarshal, 
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture.EnhancedFuture
 import akka.stream.alpakka.googlecloud.bigquery.BigQueryJsonProtocol
-import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Zip}
+import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Sink, Zip}
 import akka.stream.{FanOutShape2, FlowShape, Graph, Materializer}
 import akka.util.ByteString
 
@@ -33,7 +33,7 @@ private[bigquery] object Parser {
 
     val bodyJsonParse: FlowShape[HttpResponse, J] = builder.add(Flow[HttpResponse].mapAsync(1)(parseHttpBody(_)))
 
-    val parseMap = builder.add(Flow[J].mapAsync(1)(parseJson[J, T]))
+    val parseMap = builder.add(Flow[J].mapAsync(1)(parseJson[J, T]).alsoTo(errorLoggingSink))
     val pageInfoProvider = builder.add(Flow[J].mapAsync(1)(getPageInfo[J]))
 
     val broadcast1 = builder.add(Broadcast[J](2, eagerCancel = true))
@@ -105,4 +105,14 @@ private[bigquery] object Parser {
     }
 
   }
+
+  private def errorLoggingSink: Sink[Try[Any], NotUsed] =
+    Sink
+      .fromMaterializer { (mat, attr) =>
+        Sink.foreach[Try[Any]] {
+          case Failure(ex) => mat.logger.warning("Parsing BigQuery response failed: {}", ex.getMessage)
+          case _ => // Do nothing
+        }
+      }
+      .mapMaterializedValue(_ => NotUsed)
 }
