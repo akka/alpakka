@@ -77,9 +77,8 @@ class ParserSpec extends TestKit(ActorSystem("ParserSpec")) with AnyWordSpecLike
     }
 
     "output the page token and jobid parsed from the http response" in {
-      implicit val unmarshaller = Unmarshaller.strict((x: JsValue) => x.asJsObject)
       val testGraph =
-        createTestGraph(Source.single(response), TestSink.probe[JsObject], TestSink.probe[(Boolean, PagingInfo)])
+        createTestGraph(Source.single(response), TestSink.probe[JsValue], TestSink.probe[(Boolean, PagingInfo)])
 
       val (dataSink, pageSink) = testGraph.run()
 
@@ -106,10 +105,9 @@ class ParserSpec extends TestKit(ActorSystem("ParserSpec")) with AnyWordSpecLike
     }
 
     "output none for page token when http response does not contain page token" in {
-      implicit val unmarshaller = Unmarshaller.strict((x: JsValue) => x.asJsObject)
       val testGraph =
         createTestGraph(Source.single(HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, "{}"))),
-                        TestSink.probe[JsObject],
+                        TestSink.probe[JsValue],
                         TestSink.probe[(Boolean, PagingInfo)])
 
       val (dataSink, pageSink) = testGraph.run()
@@ -122,10 +120,9 @@ class ParserSpec extends TestKit(ActorSystem("ParserSpec")) with AnyWordSpecLike
     }
 
     "retry when job is not complete" in {
-      implicit val unmarshaller = Unmarshaller.strict((x: JsValue) => x.asJsObject)
       val testGraph =
         createTestGraph(Source.single(responseWhereJobIncomplete),
-                        TestSink.probe[JsObject],
+                        TestSink.probe[JsValue],
                         TestSink.probe[(Boolean, PagingInfo)])
 
       val (dataSink, pageSink) = testGraph.run()
