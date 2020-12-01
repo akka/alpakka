@@ -37,10 +37,10 @@ Java
 : @@snip [snip](/google-cloud-bigquery/src/test/java/docs/javadsl/GoogleBigQuerySourceDoc.java) { #init-config }
 
 
-You can use the connector in order to list information on the tables and their fields. 
+You can use the connector in order to list information on the tables and their fields.
 The payload of the response from these requests is mapped to the models `QueryTableModel` and `Field`.
 The results are mapped partially from the payload received.
-In order to retrieve the full payload from these requests a custom parser has to be implemented. 
+In order to retrieve the full payload from these requests a custom parser has to be implemented.
 In case of error, empty response or API changes a custom parser has to be implemented.
 
 Scala
@@ -49,7 +49,7 @@ Scala
 Java
 : @@snip [snip](/google-cloud-bigquery/src/test/java/docs/javadsl/GoogleBigQuerySourceDoc.java) { #list-tables-and-fields }
 
-For the rawest representation there is a "csvStyle" source built-in. 
+For the rawest representation there is a "csvStyle" source built-in.
 This will return a header (field names), and the fields as a list of Strings.
 
 Scala
@@ -59,7 +59,8 @@ Java
 : @@snip [snip](/google-cloud-bigquery/src/test/java/docs/javadsl/GoogleBigQuerySourceDoc.java) { #csv-style }
 
 There is a more sophisticated way to get data from a database.
-If you want to get a stream of classes, you can add your converter function too.
+@scala[If you want to get a stream of classes, you can create a case class that models your data.]
+@java[If you want to get a stream of classes, you can add your converter function too.]
 
 Scala
 : @@snip [snip](/google-cloud-bigquery/src/test/scala/docs/scaladsl/GoogleBigQuerySourceDoc.scala) { #run-query }
@@ -67,7 +68,7 @@ Scala
 Java
 : @@snip [snip](/google-cloud-bigquery/src/test/java/docs/javadsl/GoogleBigQuerySourceDoc.java) { #run-query }
 
-If you want to use the built in paging implementation, or you have some specific needs you can call the raw api.
+If you want to use the built in paging implementation, or you have some specific needs you can call the raw API.
 The next example shows how you can access [dryRun](https://cloud.google.com/bigquery/query-plan-explanation) data with the raw api and helpers.
 
 Scala
@@ -78,7 +79,7 @@ Java
 
 ### Config
 
-The configuration will contain the session (which includes your service-token). 
+The configuration will contain the session (which includes your service-token).
 
 If you create multiple requests to the same source (likely to happen) you should create a single `BigQueryConfig` instance and reuse it.
 
@@ -94,10 +95,25 @@ You can use the built-in @apidoc[BigQueryCallbacks$].
 
 ### Parsers
 
-The parser function is a @scala[`spray.json.JsObject => Try[T]`]@java[`java.util.function.Function[spray.json.JsObject, scala.util.Try[T]]`] function. 
-This is needed because there is a possibility, the response not to contain any data. In this case we need to retry the request with some delay.
-Your parser function needs to be bulletproof, and the code in the examples represents the happy path.
-In case of `scala.util.Failure` your stream will be polling forever!
+The official parser is implemented with the Spray JSON library.
+@scala[To use, bring into scope the required implicits with `import akka.stream.alpakka.googlecloud.bigquery.scaladsl.SprayJsonSupport._` and provide either an implicit `spray.json.JsonFormat[T]` for `GoogleBigQuerySource[T].runQuery` or `spray.json.RootJsonFormat[T]` for `GoogleBigQuerySource[T].raw`.]
+@java[To use, you must provide a `java.util.function.Function[spray.json.JsObject, scala.util.Try[T]]` function.]
+Note that any parsing failures are assumed to be due to a problem with the response from the BigQuery API, in which case the request is automatically retried with some delay.
+For this reason **your parser must be bulletproof**; if it fails on a valid response then your stream will be stuck polling forever.
+Parsing failures are logged at the `WARNING` level.
+
+The actual parsing implementation is fully customizable via the [unmarshalling API](https://doc.akka.io/docs/akka-http/current/common/unmarshalling.html) from Akka HTTP.
+This lets you bring your own JSON library as an alternative to Spray.
+Letting `J` be the type of the JSON representation (e.g., `JsValue` for Spray), you must provide implicits for:
+
+* `FromByteStringUnmarshaller[J]`
+* `Unmarshaller[J, BigQueryJsonProtocol.Response]`
+* `Unmarshaller[J, BigQueryJsonProtocol.ResponseRows[T]]` for `GoogleBigQuerySource[T].runQuery` or `Unmarshaller[J, T]` for `GoogleBigQuerySource[T].raw`
+
+The following example revisits the `User` query from above, this time with all parsing handled by [circe](https://circe.github.io/circe/).
+
+Scala
+: @@snip [snip](/google-cloud-bigquery/src/test/scala/docs/scaladsl/GoogleBigQuerySourceCustomParserDoc.scala) { #custom-parser }
 
 ## Running an End to End test case
 

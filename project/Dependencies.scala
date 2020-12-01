@@ -212,7 +212,10 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "com.pauldijou" %% "jwt-core" % JwtCoreVersion, //ApacheV2
         "io.specto" % "hoverfly-java" % "0.12.3" % Test //ApacheV2
-      ) ++ Mockito
+      ) ++
+      Seq("circe-core", "circe-generic", "circe-parser")
+        .map("io.circe" %% _ % "0.13.0" % Test) ++ //ApacheV2
+      Mockito
   )
 
   val GooglePubSub = Seq(
