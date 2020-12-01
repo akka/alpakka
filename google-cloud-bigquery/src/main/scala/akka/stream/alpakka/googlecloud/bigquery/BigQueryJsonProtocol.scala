@@ -8,12 +8,15 @@ import spray.json.{DefaultJsonProtocol, JsonFormat, RootJsonFormat}
 
 object BigQueryJsonProtocol extends DefaultJsonProtocol {
 
-  case class Response(jobReference: Option[JobReference], pageToken: Option[String], nextPageToken: Option[String])
+  case class Response(jobReference: Option[JobReference],
+                      pageToken: Option[String],
+                      nextPageToken: Option[String],
+                      jobComplete: Option[Boolean])
 
   case class JobReference(jobId: Option[String])
 
   implicit val jobReferenceFormat: JsonFormat[JobReference] = jsonFormat1(JobReference)
-  implicit val responseFormat: RootJsonFormat[Response] = jsonFormat3(Response)
+  implicit val responseFormat: RootJsonFormat[Response] = jsonFormat4(Response)
 
   case class ResponseRows[T](rows: Option[Seq[T]])
 

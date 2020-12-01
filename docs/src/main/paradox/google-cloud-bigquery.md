@@ -98,9 +98,6 @@ You can use the built-in @apidoc[BigQueryCallbacks$].
 The official parser is implemented with the Spray JSON library.
 @scala[To use, bring into scope the required implicits with `import akka.stream.alpakka.googlecloud.bigquery.scaladsl.SprayJsonSupport._` and provide either an implicit `spray.json.JsonFormat[T]` for `GoogleBigQuerySource[T].runQuery` or `spray.json.RootJsonFormat[T]` for `GoogleBigQuerySource[T].raw`.]
 @java[To use, you must provide a `java.util.function.Function[spray.json.JsObject, scala.util.Try[T]]` function.]
-Note that any parsing failures are assumed to be due to a problem with the response from the BigQuery API, in which case the request is automatically retried with some delay.
-For this reason **your parser must be bulletproof**; if it fails on a valid response then your stream will be stuck polling forever.
-Parsing failures are logged at the `WARNING` level.
 
 The actual parsing implementation is fully customizable via the [unmarshalling API](https://doc.akka.io/docs/akka-http/current/common/unmarshalling.html) from Akka HTTP.
 This lets you bring your own JSON library as an alternative to Spray.

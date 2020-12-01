@@ -38,6 +38,10 @@ class ParserSpec extends TestKit(ActorSystem("ParserSpec")) with AnyWordSpecLike
   val responseWithoutJobId = HttpResponse(
     entity = HttpEntity(ContentTypes.`application/json`, s"""{"pageToken": "$pageToken"}""")
   )
+  val responseWhereJobIncomplete = HttpResponse(
+    entity = HttpEntity(ContentTypes.`application/json`,
+                        s"""{"pageToken": "$pageToken", "jobReference": { "jobId": "$jobId" }, "jobComplete": false}""")
+  )
 
   def createTestGraph[Data, S1, S2](
       source: Source[HttpResponse, _],
@@ -117,12 +121,12 @@ class ParserSpec extends TestKit(ActorSystem("ParserSpec")) with AnyWordSpecLike
       pagingInfo should be((false, PagingInfo(None, None)))
     }
 
-    "handles parser None" in {
-
-      implicit val unmarshaller = Unmarshaller.strict[JsValue, String](_ => throw new Exception)
-
+    "retry when job is not complete" in {
+      implicit val unmarshaller = Unmarshaller.strict((x: JsValue) => x.asJsObject)
       val testGraph =
-        createTestGraph(Source.single(response), TestSink.probe[String], TestSink.probe[(Boolean, PagingInfo)])
+        createTestGraph(Source.single(responseWhereJobIncomplete),
+                        TestSink.probe[JsObject],
+                        TestSink.probe[(Boolean, PagingInfo)])
 
       val (dataSink, pageSink) = testGraph.run()
 

@@ -7,16 +7,14 @@ package akka.stream.alpakka.googlecloud.bigquery.impl.parser
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.unmarshalling.{FromByteStringUnmarshaller, Unmarshal, Unmarshaller}
-import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture.EnhancedFuture
 import akka.stream.alpakka.googlecloud.bigquery.BigQueryJsonProtocol
-import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Sink, Zip}
-import akka.stream.{FanOutShape2, FlowShape, Graph, Materializer}
-import akka.util.ByteString
+import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL}
+import akka.stream.{FanOutShape2, Graph, Materializer}
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
 
 @InternalApi
 private[bigquery] object Parser {
@@ -31,88 +29,43 @@ private[bigquery] object Parser {
   ): Graph[FanOutShape2[HttpResponse, T, (Boolean, PagingInfo)], NotUsed] = GraphDSL.create() { implicit builder =>
     import GraphDSL.Implicits._
 
-    val bodyJsonParse: FlowShape[HttpResponse, J] = builder.add(Flow[HttpResponse].mapAsync(1)(parseHttpBody(_)))
+    val bodyJsonParse = builder.add(Flow[HttpResponse].mapAsync(1)(parseHttpResponse(_)))
 
-    val parseMap = builder.add(Flow[J].mapAsync(1)(parseJson[J, T]).alsoTo(errorLoggingSink))
+    val parseMap = builder.add(Flow[J].mapAsync(1)(Unmarshal(_).to[T]))
     val pageInfoProvider = builder.add(Flow[J].mapAsync(1)(getPageInfo[J]))
 
     val broadcast1 = builder.add(Broadcast[J](2, eagerCancel = true))
-    val broadcast2 = builder.add(Broadcast[Try[T]](2, eagerCancel = true))
-
-    val filterNone = builder.add(Flow[Try[T]].mapConcat {
-      case Success(value) => List(value)
-      case Failure(e) => List()
-    })
-
-    val mapOptionToBool = builder.add(Flow[Try[T]].map(_.isFailure))
-
-    val zip = builder.add(Zip[Boolean, PagingInfo]())
 
     bodyJsonParse ~> broadcast1
 
     broadcast1.out(0) ~> parseMap
     broadcast1.out(1) ~> pageInfoProvider
 
-    parseMap ~> broadcast2
-
-    broadcast2.out(0) ~> filterNone
-    broadcast2.out(1) ~> mapOptionToBool
-
-    mapOptionToBool ~> zip.in0
-    pageInfoProvider ~> zip.in1
-
-    new FanOutShape2(bodyJsonParse.in, filterNone.out, zip.out)
+    new FanOutShape2(bodyJsonParse.in, parseMap.out, pageInfoProvider.out)
   }
 
-  private def parseHttpBody[J](
+  private def parseHttpResponse[J](
       response: HttpResponse
   )(implicit materializer: Materializer,
     ec: ExecutionContext,
     jsonUnmarshaller: FromByteStringUnmarshaller[J]): Future[J] = {
-    implicit val unmarshaller = Unmarshaller.byteStringUnmarshaller
-      .map { bs =>
-        if (bs.isEmpty)
-          ByteString("{}")
-        else
-          bs
-      }
-      .andThen(jsonUnmarshaller)
+    implicit val unmarshaller =
+      Unmarshaller.byteStringUnmarshaller.forContentTypes(`application/json`).andThen(jsonUnmarshaller)
     Unmarshal(response.entity).to[J]
-  }
-
-  private def parseJson[J, T](json: J)(
-      implicit materializer: Materializer,
-      ec: ExecutionContext,
-      unmarshaller: Unmarshaller[J, T]
-  ): Future[Try[T]] = {
-    Unmarshal(json)
-      .to[T]
-      .fast
-      .transformWith(FastFuture.successful[Try[T]])
   }
 
   private def getPageInfo[J](json: J)(
       implicit materializer: Materializer,
       ec: ExecutionContext,
       unmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response]
-  ): Future[PagingInfo] = {
+  ): Future[(Boolean, PagingInfo)] = {
 
     Unmarshal(json).to[BigQueryJsonProtocol.Response].fast.map { response =>
       val pageToken = response.pageToken orElse response.nextPageToken
       val jobId = response.jobReference.flatMap(_.jobId)
+      val retry = !response.jobComplete.getOrElse(true)
 
-      PagingInfo(pageToken, jobId)
+      (retry, PagingInfo(pageToken, jobId))
     }
-
   }
-
-  private def errorLoggingSink: Sink[Try[Any], NotUsed] =
-    Sink
-      .fromMaterializer { (mat, attr) =>
-        Sink.foreach[Try[Any]] {
-          case Failure(ex) => mat.logger.warning("Parsing BigQuery response failed: {}", ex.getMessage)
-          case _ => // Do nothing
-        }
-      }
-      .mapMaterializedValue(_ => NotUsed)
 }
