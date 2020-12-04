@@ -95,22 +95,25 @@ You can use the built-in @apidoc[BigQueryCallbacks$].
 
 ### Parsers
 
-The official parser is implemented with the Spray JSON library.
+The provided parser is implemented with the Spray JSON library.
 @scala[To use, bring into scope the required implicits with `import akka.stream.alpakka.googlecloud.bigquery.scaladsl.SprayJsonSupport._` and provide either an implicit `spray.json.JsonFormat[T]` for `GoogleBigQuerySource[T].runQuery` or `spray.json.RootJsonFormat[T]` for `GoogleBigQuerySource[T].raw`.]
-@java[To use, you must provide a `java.util.function.Function[spray.json.JsObject, scala.util.Try[T]]` function.]
+@java[To use, you must provide a `java.util.function.Function<spray.json.JsObject, scala.util.Try<T>>` function.]
 
 The actual parsing implementation is fully customizable via the [unmarshalling API](https://doc.akka.io/docs/akka-http/current/common/unmarshalling.html) from Akka HTTP.
 This lets you bring your own JSON library as an alternative to Spray.
-Letting `J` be the type of the JSON representation (e.g., `JsValue` for Spray), you must provide implicits for:
+Letting `J` be the type of the JSON representation (e.g., `JsValue` for Spray), you must provide @scala[implicits] @java[instances] for:
 
-* `FromByteStringUnmarshaller[J]`
-* `Unmarshaller[J, BigQueryJsonProtocol.Response]`
-* `Unmarshaller[J, BigQueryJsonProtocol.ResponseRows[T]]` for `GoogleBigQuerySource[T].runQuery` or `Unmarshaller[J, T]` for `GoogleBigQuerySource[T].raw`
+* @scala[`FromByteStringUnmarshaller[J]`] @java[`Unmarshaller<akka.util.ByteString, J>`]
+* @scala[`Unmarshaller[J, BigQueryJsonProtocol.Response]`] @java[`Unmarshaller<J, BigQueryJsonProtocol.Response>`]
+* @scala[`Unmarshaller[J, BigQueryJsonProtocol.ResponseRows[T]]` for `GoogleBigQuerySource[T].runQuery` or `Unmarshaller[J, T]` for `GoogleBigQuerySource[T].raw`] @java[`Unmarshaller<J, BigQueryJsonProtocol.ResponseRows<T>>` for `GoogleBigQuerySource.runQuery` or `Unmarshaller<J, T>` for `GoogleBigQuerySource.raw`]
 
-The following example revisits the `User` query from above, this time with all parsing handled by [circe](https://circe.github.io/circe/).
+The following example revisits the `User` query from above, this time with all parsing handled by @scala[[circe](https://circe.github.io/circe/)] @java[[Jackson](https://github.com/FasterXML/jackson)].
 
 Scala
 : @@snip [snip](/google-cloud-bigquery/src/test/scala/docs/scaladsl/GoogleBigQuerySourceCustomParserDoc.scala) { #custom-parser }
+
+Java
+: @@snip [snip](/google-cloud-bigquery/src/test/java/docs/javadsl/GoogleBigQuerySourceCustomParserDoc.java) { #custom-parser-imports #custom-parser }
 
 ## Running an End to End test case
 

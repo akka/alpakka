@@ -211,7 +211,8 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "com.pauldijou" %% "jwt-core" % JwtCoreVersion, //ApacheV2
-        "io.specto" % "hoverfly-java" % "0.12.3" % Test //ApacheV2
+        "io.specto" % "hoverfly-java" % "0.12.3" % Test, //ApacheV2
+        "com.fasterxml.jackson.core" % "jackson-core" % "2.12.0" % Test //ApacheV2
       ) ++
       Seq("circe-core", "circe-generic", "circe-parser")
         .map("io.circe" %% _ % "0.13.0" % Test) ++ //ApacheV2
