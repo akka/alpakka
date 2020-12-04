@@ -43,7 +43,7 @@ object BigQueryJsonProtocol extends DefaultJsonProtocol {
    * Java API
    */
   def createResponseRows[T](rows: Optional[java.util.List[T]]): ResponseRows[T] = {
-    ResponseRows(rows.asScala.map(_.asScala))
+    ResponseRows(rows.asScala.map(_.asScala.toSeq))
   }
 
   implicit def responseRowsFormat[T: JsonFormat]: RootJsonFormat[ResponseRows[T]] = jsonFormat1(ResponseRows[T])
