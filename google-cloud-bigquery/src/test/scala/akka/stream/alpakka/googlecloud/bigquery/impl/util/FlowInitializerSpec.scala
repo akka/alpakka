@@ -5,7 +5,6 @@
 package akka.stream.alpakka.googlecloud.bigquery.impl.util
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.testkit.scaladsl.{TestSink, TestSource}
 import akka.testkit.TestKit
 import org.scalatest.BeforeAndAfterAll
@@ -22,8 +21,6 @@ class FlowInitializerSpec
     TestKit.shutdownActorSystem(system)
 
   "FlowInitializer" should {
-
-    implicit val materializer = ActorMaterializer()
 
     "Put initial value in front of the stream" in {
       val sourceProbe = TestSource.probe[String]

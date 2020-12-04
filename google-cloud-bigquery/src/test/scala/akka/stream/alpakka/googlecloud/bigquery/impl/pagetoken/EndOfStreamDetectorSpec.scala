@@ -5,7 +5,6 @@
 package akka.stream.alpakka.googlecloud.bigquery.impl.pagetoken
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
@@ -24,8 +23,6 @@ class EndOfStreamDetectorSpec
     TestKit.shutdownActorSystem(system)
 
   "EndOfStreamDetector" should {
-
-    implicit val materializer: ActorMaterializer = ActorMaterializer()
 
     val emptyPagingInfo = PagingInfo(None, None)
     val pagingInfoWithPageToken = PagingInfo(Some("next page"), None)

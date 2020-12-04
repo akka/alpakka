@@ -4,7 +4,6 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.e2e
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.bigquery.client.TableDataQueryJsonProtocol.Field
 import akka.stream.alpakka.googlecloud.bigquery.client.TableListQueryJsonProtocol.{QueryTableModel, TableReference}
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.{BigQueryCallbacks, GoogleBigQuerySource}
@@ -15,7 +14,6 @@ import scala.concurrent.Future
 
 class BigQueryEndToEndSpec extends BigQueryTableHelper with Matchers {
   override implicit val actorSystem: ActorSystem = ActorSystem("BigQueryEndToEndSpec")
-  override implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   override def afterAll() = {
     super.afterAll

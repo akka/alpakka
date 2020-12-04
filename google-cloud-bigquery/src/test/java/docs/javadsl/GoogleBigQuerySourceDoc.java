@@ -8,7 +8,7 @@ package docs.javadsl;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.http.scaladsl.model.HttpRequest;
-import akka.stream.ActorMaterializer;
+import akka.stream.Materializer;
 import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig;
 import akka.stream.alpakka.googlecloud.bigquery.client.BigQueryCommunicationHelper;
 import akka.stream.alpakka.googlecloud.bigquery.client.TableDataQueryJsonProtocol;
@@ -31,7 +31,7 @@ public class GoogleBigQuerySourceDoc {
   private static void example() {
     // #init-mat
     ActorSystem system = ActorSystem.create();
-    ActorMaterializer materializer = ActorMaterializer.create(system);
+    Materializer materializer = Materializer.createMaterializer(system);
     // #init-mat
 
     // #init-config
@@ -86,7 +86,7 @@ public class GoogleBigQuerySourceDoc {
 
   private static Source<User, NotUsed> example2() {
     ActorSystem system = ActorSystem.create();
-    ActorMaterializer materializer = ActorMaterializer.create(system);
+    Materializer materializer = Materializer.createMaterializer(system);
     BigQueryConfig config =
         BigQueryConfig.create(
             "project@test.test",
@@ -127,7 +127,7 @@ public class GoogleBigQuerySourceDoc {
 
   private static Source<DryRunResponse, NotUsed> example3() {
     ActorSystem system = ActorSystem.create();
-    ActorMaterializer materializer = ActorMaterializer.create(system);
+    Materializer materializer = Materializer.createMaterializer(system);
     BigQueryConfig config =
         BigQueryConfig.create(
             "project@test.test",

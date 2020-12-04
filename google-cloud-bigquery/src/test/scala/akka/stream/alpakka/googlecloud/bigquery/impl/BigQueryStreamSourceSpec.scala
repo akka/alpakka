@@ -14,7 +14,6 @@ import akka.stream.alpakka.googlecloud.bigquery.e2e.BigQueryTableHelper
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.BigQueryCallbacks
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.SprayJsonSupport._
 import akka.stream.scaladsl.{Sink, Source}
-import akka.stream.ActorMaterializer
 import akka.testkit.TestKit
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{when, _}
@@ -39,7 +38,6 @@ class BigQueryStreamSourceSpec
     with MockitoSugar {
 
   override implicit val actorSystem: ActorSystem = ActorSystem("BigQueryEndToEndSpec")
-  override implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)

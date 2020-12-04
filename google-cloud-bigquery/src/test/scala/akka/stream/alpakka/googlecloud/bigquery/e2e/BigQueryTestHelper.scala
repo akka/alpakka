@@ -6,7 +6,6 @@ package akka.stream.alpakka.googlecloud.bigquery.e2e
 import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.bigquery.{BigQueryConfig, ForwardProxy, ForwardProxyTrustPem}
 import akka.stream.alpakka.googlecloud.bigquery.client.GoogleEndpoints
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.{BigQueryCallbacks, GoogleBigQuerySource}
@@ -22,7 +21,6 @@ trait BigQueryTestHelper {
   import com.typesafe.config.ConfigFactory
 
   implicit val actorSystem: ActorSystem
-  implicit val materializer: ActorMaterializer
   implicit lazy val ec: ExecutionContext = actorSystem.dispatcher
 
   val defaultTimeout = 5.seconds

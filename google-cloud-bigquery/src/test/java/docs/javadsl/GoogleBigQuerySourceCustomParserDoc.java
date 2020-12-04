@@ -9,7 +9,7 @@ package docs.javadsl;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.unmarshalling.Unmarshaller;
-import akka.stream.ActorMaterializer;
+import akka.stream.Materializer;
 import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig;
 import akka.stream.alpakka.googlecloud.bigquery.BigQueryJsonProtocol;
 import akka.stream.alpakka.googlecloud.bigquery.javadsl.BigQueryCallbacks;
@@ -101,7 +101,7 @@ public class GoogleBigQuerySourceCustomParserDoc {
 
   private static Source<User, NotUsed> customParser() {
     ActorSystem system = ActorSystem.create();
-    ActorMaterializer materializer = ActorMaterializer.create(system);
+    Materializer materializer = Materializer.createMaterializer(system);
     BigQueryConfig config =
         BigQueryConfig.create(
             "project@test.test",
