@@ -99,13 +99,18 @@ The provided parser is implemented with the Spray JSON library.
 @scala[To use, bring into scope the required implicits with `import akka.stream.alpakka.googlecloud.bigquery.scaladsl.SprayJsonSupport._` and provide either an implicit `spray.json.JsonFormat[T]` for `GoogleBigQuerySource[T].runQuery` or `spray.json.RootJsonFormat[T]` for `GoogleBigQuerySource[T].raw`.]
 @java[To use, you must provide a `java.util.function.Function<spray.json.JsObject, scala.util.Try<T>>` function.]
 
+When calling the `GoogleBigQuerySource.raw` method, your parser is passed the [entire response body](https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/getQueryResults#response-body).
+When calling the `GoogleBigQuerySource.runQuery` method, your parser is passed one-by-one each entry in the `rows` key of the response.
+Note that these entries are represented as "a series of JSON f,v objects for indicating fields and values" ([reference documentation](https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/getQueryResults#body.GetQueryResultsResponse.FIELDS.rows)).
+@scala[To correctly generate a Spray `JsonFormat[T]` for your case class `T`, you must `import akka.stream.alpakka.googlecloud.bigquery.scaladsl.BigQueryJsonProtocol._` and use the provided `bigQueryJsonFormatN(T)` methods as a drop-in replacement for the usual `jsonFormatN(T)`. Furthermore, the order and presence of parameters in `T` is required to strictly match the query.]
+
 The actual parsing implementation is fully customizable via the [unmarshalling API](https://doc.akka.io/docs/akka-http/current/common/unmarshalling.html) from Akka HTTP.
 This lets you bring your own JSON library as an alternative to Spray.
 Letting `J` be the type of the JSON representation (e.g., `JsValue` for Spray), you must provide @scala[implicits] @java[instances] for:
 
 * @scala[`FromByteStringUnmarshaller[J]`] @java[`Unmarshaller<akka.util.ByteString, J>`]
-* @scala[`Unmarshaller[J, BigQueryJsonProtocol.Response]`] @java[`Unmarshaller<J, BigQueryJsonProtocol.Response>`]
-* @scala[`Unmarshaller[J, BigQueryJsonProtocol.ResponseRows[T]]` for `GoogleBigQuerySource[T].runQuery` or `Unmarshaller[J, T]` for `GoogleBigQuerySource[T].raw`] @java[`Unmarshaller<J, BigQueryJsonProtocol.ResponseRows<T>>` for `GoogleBigQuerySource.runQuery` or `Unmarshaller<J, T>` for `GoogleBigQuerySource.raw`]
+* @scala[`Unmarshaller[J, BigQueryResponseJsonProtocol.Response]`] @java[`Unmarshaller<J, BigQueryResponseJsonProtocol.Response>`]
+* @scala[`Unmarshaller[J, BigQueryResponseJsonProtocol.ResponseRows[T]]` for `GoogleBigQuerySource[T].runQuery` or `Unmarshaller[J, T]` for `GoogleBigQuerySource[T].raw`] @java[`Unmarshaller<J, BigQueryResponseJsonProtocol.ResponseRows<T>>` for `GoogleBigQuerySource.runQuery` or `Unmarshaller<J, T>` for `GoogleBigQuerySource.raw`]
 
 The following example revisits the `User` query from above, this time with all parsing handled by @scala[[circe](https://circe.github.io/circe/)] @java[[Jackson](https://github.com/FasterXML/jackson)].
 
