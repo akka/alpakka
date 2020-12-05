@@ -11,10 +11,10 @@ import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig
 import akka.stream.alpakka.googlecloud.bigquery.client.BigQueryCommunicationHelper
 import akka.stream.alpakka.googlecloud.bigquery.client.TableDataQueryJsonProtocol.Field
 import akka.stream.alpakka.googlecloud.bigquery.client.TableListQueryJsonProtocol.QueryTableModel
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.BigQueryJsonProtocol._
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.SprayJsonSupport._
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.{BigQueryCallbacks, GoogleBigQuerySource}
 import akka.stream.scaladsl.{Sink, Source}
-import spray.json.DefaultJsonProtocol._
 import spray.json.RootJsonFormat
 
 import scala.concurrent.Future
@@ -45,7 +45,7 @@ class GoogleBigQuerySourceDoc {
 
   //#run-query
   case class User(uid: String, name: String)
-  implicit val userFormatter = jsonFormat2(User)
+  implicit val userFormatter = bigQueryJsonFormat2(User)
 
   val userStream: Source[User, NotUsed] =
     GoogleBigQuerySource[User]
