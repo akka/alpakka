@@ -10,7 +10,7 @@ import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.unmarshalling.{FromByteStringUnmarshaller, Unmarshal, Unmarshaller}
 import akka.http.scaladsl.util.FastFuture.EnhancedFuture
-import akka.stream.alpakka.googlecloud.bigquery.BigQueryJsonProtocol
+import akka.stream.alpakka.googlecloud.bigquery.BigQueryResponseJsonProtocol
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL}
 import akka.stream.{FanOutShape2, Graph, Materializer}
 
@@ -24,7 +24,7 @@ private[bigquery] object Parser {
       implicit materializer: Materializer,
       ec: ExecutionContext,
       jsonUnmarshaller: FromByteStringUnmarshaller[J],
-      responseUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response],
+      responseUnmarshaller: Unmarshaller[J, BigQueryResponseJsonProtocol.Response],
       unmarshaller: Unmarshaller[J, T]
   ): Graph[FanOutShape2[HttpResponse, T, (Boolean, PagingInfo)], NotUsed] = GraphDSL.create() { implicit builder =>
     import GraphDSL.Implicits._
@@ -57,10 +57,10 @@ private[bigquery] object Parser {
   private def getPageInfo[J](json: J)(
       implicit materializer: Materializer,
       ec: ExecutionContext,
-      unmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response]
+      unmarshaller: Unmarshaller[J, BigQueryResponseJsonProtocol.Response]
   ): Future[(Boolean, PagingInfo)] = {
 
-    Unmarshal(json).to[BigQueryJsonProtocol.Response].fast.map { response =>
+    Unmarshal(json).to[BigQueryResponseJsonProtocol.Response].fast.map { response =>
       val pageToken = response.pageToken orElse response.nextPageToken
       val jobId = response.jobReference.flatMap(_.jobId)
       val retry = !response.jobComplete.getOrElse(true)

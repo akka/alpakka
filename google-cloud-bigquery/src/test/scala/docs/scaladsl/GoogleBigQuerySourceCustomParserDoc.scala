@@ -20,7 +20,7 @@ class GoogleBigQuerySourceCustomParserDoc {
 
   //#custom-parser
   import akka.http.scaladsl.unmarshalling.{FromByteStringUnmarshaller, Unmarshaller}
-  import akka.stream.alpakka.googlecloud.bigquery.BigQueryJsonProtocol
+  import akka.stream.alpakka.googlecloud.bigquery.BigQueryResponseJsonProtocol
   import io.circe.{jawn, Decoder, Json}
   import io.circe.generic.semiauto
 
@@ -37,10 +37,10 @@ class GoogleBigQuerySourceCustomParserDoc {
 
   implicit val userDecoder: Decoder[User] = semiauto.deriveDecoder
 
-  implicit val jobReferenceDecoder: Decoder[BigQueryJsonProtocol.JobReference] = semiauto.deriveDecoder
-  implicit val responseDecoder: Decoder[BigQueryJsonProtocol.Response] = semiauto.deriveDecoder
+  implicit val jobReferenceDecoder: Decoder[BigQueryResponseJsonProtocol.JobReference] = semiauto.deriveDecoder
+  implicit val responseDecoder: Decoder[BigQueryResponseJsonProtocol.Response] = semiauto.deriveDecoder
 
-  implicit def rowsDecoder[T](implicit decoder: Decoder[T]): Decoder[BigQueryJsonProtocol.ResponseRows[T]] =
+  implicit def rowsDecoder[T](implicit decoder: Decoder[T]): Decoder[BigQueryResponseJsonProtocol.ResponseRows[T]] =
     semiauto.deriveDecoder
 
   val userStream: Source[User, NotUsed] =

@@ -10,7 +10,7 @@ import scala.compat.java8.OptionConverters._
 import scala.collection.JavaConverters._
 import spray.json.{DefaultJsonProtocol, JsonFormat, RootJsonFormat}
 
-object BigQueryJsonProtocol extends DefaultJsonProtocol {
+object BigQueryResponseJsonProtocol extends DefaultJsonProtocol {
 
   final case class Response(jobReference: Option[JobReference],
                             pageToken: Option[String],

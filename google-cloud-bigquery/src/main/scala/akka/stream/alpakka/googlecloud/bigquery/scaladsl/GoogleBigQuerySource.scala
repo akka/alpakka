@@ -19,7 +19,7 @@ import akka.stream.alpakka.googlecloud.bigquery.client._
 import akka.stream.alpakka.googlecloud.bigquery.impl.BigQueryStreamSource
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
 import akka.stream.alpakka.googlecloud.bigquery.impl.util.ConcatWithHeaders
-import akka.stream.alpakka.googlecloud.bigquery.{BigQueryConfig, BigQueryJsonProtocol}
+import akka.stream.alpakka.googlecloud.bigquery.{BigQueryConfig, BigQueryResponseJsonProtocol}
 import akka.stream.scaladsl.Source
 import spray.json.{JsObject, JsValue, JsonFormat}
 
@@ -46,7 +46,7 @@ object GoogleBigQuerySource {
       onFinishCallback: PagingInfo => NotUsed,
       projectConfig: BigQueryConfig
   )(implicit jsonUnmarshaller: FromByteStringUnmarshaller[J],
-    responseUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response],
+    responseUnmarshaller: Unmarshaller[J, BigQueryResponseJsonProtocol.Response],
     unmarshaller: Unmarshaller[J, T]): Source[T, NotUsed] =
     Source
       .fromMaterializer { (mat, attr) =>
@@ -77,8 +77,8 @@ object GoogleBigQuerySource {
    */
   def runQuery[J, T](query: String, onFinishCallback: PagingInfo => NotUsed, projectConfig: BigQueryConfig)(
       implicit jsonUnmarshaller: FromByteStringUnmarshaller[J],
-      responseUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response],
-      rowsUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.ResponseRows[T]]
+      responseUnmarshaller: Unmarshaller[J, BigQueryResponseJsonProtocol.Response],
+      rowsUnmarshaller: Unmarshaller[J, BigQueryResponseJsonProtocol.ResponseRows[T]]
   ): Source[T, NotUsed] =
     Source
       .fromMaterializer { (mat, attr) =>
@@ -86,10 +86,10 @@ object GoogleBigQuerySource {
           implicit val system: ActorSystem = mat.system
           implicit val materializer: Materializer = mat
           val request = BigQueryCommunicationHelper.createQueryRequest(query, projectConfig.projectId, dryRun = false)
-          BigQueryStreamSource[J, BigQueryJsonProtocol.ResponseRows[T]](request,
-                                                                        onFinishCallback,
-                                                                        projectConfig,
-                                                                        Http())
+          BigQueryStreamSource[J, BigQueryResponseJsonProtocol.ResponseRows[T]](request,
+                                                                                onFinishCallback,
+                                                                                projectConfig,
+                                                                                Http())
             .mapConcat(_.rows.map(_.toList).getOrElse(Nil))
         }
       }
@@ -158,7 +158,7 @@ object GoogleBigQuerySource {
 
   private def runMetaQuery[J, T](url: String, projectConfig: BigQueryConfig)(
       implicit jsonUnmarshaller: FromByteStringUnmarshaller[J],
-      responseUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response],
+      responseUnmarshaller: Unmarshaller[J, BigQueryResponseJsonProtocol.Response],
       unmarshaller: Unmarshaller[J, T]
   ): Source[T, NotUsed] = {
     Source
@@ -192,7 +192,7 @@ final class GoogleBigQuerySource[T] private () {
       onFinishCallback: PagingInfo => NotUsed,
       projectConfig: BigQueryConfig
   )(implicit jsonUnmarshaller: FromByteStringUnmarshaller[J],
-    responseUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response],
+    responseUnmarshaller: Unmarshaller[J, BigQueryResponseJsonProtocol.Response],
     unmarshaller: Unmarshaller[J, T]): Source[T, NotUsed] =
     GoogleBigQuerySource.raw[J, T](httpRequest, onFinishCallback, projectConfig)
 
@@ -201,8 +201,8 @@ final class GoogleBigQuerySource[T] private () {
    */
   def runQuery[J](query: String, onFinishCallback: PagingInfo => NotUsed, projectConfig: BigQueryConfig)(
       implicit jsonUnmarshaller: FromByteStringUnmarshaller[J],
-      responseUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response],
-      rowsUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.ResponseRows[T]]
+      responseUnmarshaller: Unmarshaller[J, BigQueryResponseJsonProtocol.Response],
+      rowsUnmarshaller: Unmarshaller[J, BigQueryResponseJsonProtocol.ResponseRows[T]]
   ): Source[T, NotUsed] = GoogleBigQuerySource.runQuery[J, T](query, onFinishCallback, projectConfig)
 
 }

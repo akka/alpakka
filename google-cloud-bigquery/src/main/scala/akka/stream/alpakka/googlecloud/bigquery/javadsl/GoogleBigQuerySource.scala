@@ -12,7 +12,7 @@ import akka.http.scaladsl.model.HttpRequest
 import akka.stream.alpakka.googlecloud.bigquery
 import akka.stream.alpakka.googlecloud.bigquery.client._
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
-import akka.stream.alpakka.googlecloud.bigquery.{BigQueryConfig, BigQueryJsonProtocol}
+import akka.stream.alpakka.googlecloud.bigquery.{BigQueryConfig, BigQueryResponseJsonProtocol}
 import akka.stream.javadsl.Source
 import akka.util.ByteString
 import spray.json.JsObject
@@ -31,7 +31,7 @@ object GoogleBigQuerySource {
    */
   def raw[J, T](httpRequest: HttpRequest,
                 unmarshaller: Unmarshaller[J, T],
-                responseUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response],
+                responseUnmarshaller: Unmarshaller[J, BigQueryResponseJsonProtocol.Response],
                 jsonUnmarshaller: Unmarshaller[ByteString, J],
                 onFinishCallback: java.util.function.Function[PagingInfo, NotUsed],
                 projectConfig: BigQueryConfig): Source[T, NotUsed] =
@@ -63,8 +63,8 @@ object GoogleBigQuerySource {
    * Read elements of `T` by executing `query`.
    */
   def runQuery[J, T](query: String,
-                     rowsUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.ResponseRows[T]],
-                     responseUnmarshaller: Unmarshaller[J, BigQueryJsonProtocol.Response],
+                     rowsUnmarshaller: Unmarshaller[J, BigQueryResponseJsonProtocol.ResponseRows[T]],
+                     responseUnmarshaller: Unmarshaller[J, BigQueryResponseJsonProtocol.Response],
                      jsonUnmarshaller: Unmarshaller[ByteString, J],
                      onFinishCallback: java.util.function.Function[PagingInfo, NotUsed],
                      projectConfig: BigQueryConfig): Source[T, NotUsed] =
