@@ -35,7 +35,13 @@ class GoogleBigQuerySourceCustomParserDoc {
 
   case class User(uid: String, name: String)
 
-  implicit val userDecoder: Decoder[User] = semiauto.deriveDecoder
+  implicit val userDecoder: Decoder[User] = Decoder.instance { c =>
+    val f = c.downField("f")
+    for {
+      uid <- f.downN(0).downField("v").as[String]
+      name <- f.downN(1).downField("v").as[String]
+    } yield User(uid, name)
+  }
 
   implicit val jobReferenceDecoder: Decoder[BigQueryResponseJsonProtocol.JobReference] = semiauto.deriveDecoder
   implicit val responseDecoder: Decoder[BigQueryResponseJsonProtocol.Response] = semiauto.deriveDecoder

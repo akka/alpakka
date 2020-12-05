@@ -87,10 +87,7 @@ public class GoogleBigQuerySourceCustomParserDoc {
                           List<User> users = new ArrayList(rowsJsonNode.size());
                           for (int i = 0; i < rowsJsonNode.size(); ++i) {
                             JsonNode userJsonNode = rowsJsonNode.get(i);
-                            users.add(
-                                new User(
-                                    userJsonNode.get("uid").textValue(),
-                                    userJsonNode.get("name").textValue()));
+                            users.add(readUserFromTree(userJsonNode));
                           }
 
                           return users;
@@ -98,6 +95,13 @@ public class GoogleBigQuerySourceCustomParserDoc {
 
             return BigQueryResponseJsonProtocol.createResponseRows(rows);
           });
+
+  static User readUserFromTree(JsonNode jsonNode) {
+      JsonNode f = jsonNode.get("f");
+      String uid = jsonNode.get(0).get("v").textValue();
+      String name = jsonNode.get(1).get("v").textValue();
+      return new User(uid, name);
+  }
 
   private static Source<User, NotUsed> customParser() {
     ActorSystem system = ActorSystem.create();
