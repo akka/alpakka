@@ -1,0 +1,36 @@
+/*
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ */
+
+package akka.stream.alpakka.googlecloud.bigquery.scaladsl
+
+import spray.json.{JsObject, JsValue, JsonFormat, ProductFormats, RootJsonFormat, StandardFormats}
+
+import scala.reflect.{classTag, ClassTag}
+
+trait BigQueryProductFormatsInstances { this: BigQueryProductFormats with ProductFormats with StandardFormats =>
+[#  // Case classes with 1 parameters
+
+  def bigQueryJsonFormat1[[#P1: JsonFormat#], T <: Product: ClassTag](construct: ([#P1#]) => T): RootJsonFormat[T] = {
+    val Array([#p1#]) = extractFieldNames(classTag[T])
+    bigQueryJsonFormat(construct, [#p1#])
+  }
+  def bigQueryJsonFormat[[#P1: JsonFormat#], T <: Product](construct: ([#P1#]) => T, [#fieldName1: String#]): RootJsonFormat[T] =
+    new RootJsonFormat[T] {
+      def write(p: T) = {
+        val fields = new collection.mutable.ListBuffer[(String, JsValue)]
+        fields.sizeHint(1 * 2)
+        [#fields ++= productElement##2Field[P1](fieldName1, p, 0)#
+        ]
+        JsObject(fields.toSeq: _*)
+      }
+      def read(value: JsValue) = {
+        val f = value.asJsObject.fields("f")
+        [#val p1V = fromBigQueryField[P1](f, fieldName1, 0)#
+        ]
+        construct([#p1V#])
+      }
+    }#
+
+]
+}
