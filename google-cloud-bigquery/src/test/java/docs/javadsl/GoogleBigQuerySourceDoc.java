@@ -19,7 +19,9 @@ import akka.stream.alpakka.googlecloud.bigquery.javadsl.GoogleBigQuerySource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import scala.util.Try;
+import spray.json.JsArray;
 import spray.json.JsObject;
+import spray.json.JsString;
 
 import java.util.Collection;
 import java.util.List;
@@ -80,9 +82,12 @@ public class GoogleBigQuerySourceDoc {
 
   static Try<User> userFromJson(JsObject object) {
     return Try.apply(
-        () ->
-            new User(
-                object.fields().apply("uid").toString(), object.fields().apply("name").toString()));
+        () -> {
+          JsArray f = (JsArray) object.fields().apply("f");
+          String uid = ((JsString) f.elements().apply(0).asJsObject().fields().apply("v")).value();
+          String name = ((JsString) f.elements().apply(1).asJsObject().fields().apply("v")).value();
+          return new User(uid, name);
+        });
   }
 
   private static Source<User, NotUsed> example2() {
