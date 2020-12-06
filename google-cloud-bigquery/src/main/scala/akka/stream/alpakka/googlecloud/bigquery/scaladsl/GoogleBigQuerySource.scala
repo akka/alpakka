@@ -79,21 +79,11 @@ object GoogleBigQuerySource {
       implicit jsonUnmarshaller: FromByteStringUnmarshaller[J],
       responseUnmarshaller: Unmarshaller[J, ResponseJsonProtocol.Response],
       rowsUnmarshaller: Unmarshaller[J, ResponseJsonProtocol.ResponseRows[T]]
-  ): Source[T, NotUsed] =
-    Source
-      .fromMaterializer { (mat, attr) =>
-        {
-          implicit val system: ActorSystem = mat.system
-          implicit val materializer: Materializer = mat
-          val request = BigQueryCommunicationHelper.createQueryRequest(query, projectConfig.projectId, dryRun = false)
-          BigQueryStreamSource[J, ResponseJsonProtocol.ResponseRows[T]](request,
-                                                                        onFinishCallback,
-                                                                        projectConfig,
-                                                                        Http())
-            .mapConcat(_.rows.map(_.toList).getOrElse(Nil))
-        }
-      }
-      .mapMaterializedValue(_ => NotUsed)
+  ): Source[T, NotUsed] = {
+    val request = BigQueryCommunicationHelper.createQueryRequest(query, projectConfig.projectId, dryRun = false)
+    raw[J, ResponseJsonProtocol.ResponseRows[T]](request, onFinishCallback, projectConfig)
+      .mapConcat(_.rows.map(_.toList).getOrElse(Nil))
+  }
 
   /**
    * Read elements of `T` by executing `query`.
@@ -118,20 +108,13 @@ object GoogleBigQuerySource {
       query: String,
       onFinishCallback: PagingInfo => NotUsed,
       projectConfig: BigQueryConfig
-  ): Source[Seq[String], NotUsed] =
-    Source
-      .fromMaterializer { (mat, attr) =>
-        {
-          import SprayJsonSupport._
-          implicit val system: ActorSystem = mat.system
-          implicit val materializer: Materializer = mat
-          val request = BigQueryCommunicationHelper.createQueryRequest(query, projectConfig.projectId, dryRun = false)
-          BigQueryStreamSource[JsValue, QueryResponse](request, onFinishCallback, projectConfig, Http())
-            .map(BigQueryCommunicationHelper.retrieveQueryResultCsvStyle)
-            .via(ConcatWithHeaders())
-        }
-      }
-      .mapMaterializedValue(_ => NotUsed)
+  ): Source[Seq[String], NotUsed] = {
+    import SprayJsonSupport._
+    val request = BigQueryCommunicationHelper.createQueryRequest(query, projectConfig.projectId, dryRun = false)
+    raw[JsValue, QueryResponse](request, onFinishCallback, projectConfig)
+      .map(BigQueryCommunicationHelper.retrieveQueryResultCsvStyle)
+      .via(ConcatWithHeaders())
+  }
 
   /**
    * List tables on BigQueryConfig.dataset.
@@ -161,16 +144,8 @@ object GoogleBigQuerySource {
       responseUnmarshaller: Unmarshaller[J, ResponseJsonProtocol.Response],
       unmarshaller: Unmarshaller[J, T]
   ): Source[T, NotUsed] = {
-    Source
-      .fromMaterializer(
-        { (mat, _) =>
-          implicit val system: ActorSystem = mat.system
-          implicit val materializer: Materializer = mat
-          val request = HttpRequest(HttpMethods.GET, url)
-          BigQueryStreamSource[J, T](request, BigQueryCallbacks.ignore, projectConfig, Http())
-        }
-      )
-      .mapMaterializedValue(_ => NotUsed)
+    val request = HttpRequest(HttpMethods.GET, url)
+    raw[J, T](request, BigQueryCallbacks.ignore, projectConfig)
   }
 
   private def unmarshallerFromParser[T](parserFn: JsObject => Try[T]): Unmarshaller[JsValue, T] =
