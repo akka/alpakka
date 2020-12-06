@@ -11,7 +11,8 @@ import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.unmarshalling.{FromByteStringUnmarshaller, Unmarshaller}
 import akka.stream._
-import akka.stream.alpakka.googlecloud.bigquery.{BigQueryConfig, BigQueryResponseJsonProtocol}
+import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig
+import akka.stream.alpakka.googlecloud.bigquery.client.ResponseJsonProtocol
 import akka.stream.alpakka.googlecloud.bigquery.impl.pagetoken.{AddPageToken, EndOfStreamDetector}
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
@@ -34,7 +35,7 @@ private[bigquery] object BigQueryStreamSource {
       implicit mat: Materializer,
       system: ActorSystem,
       jsonUnmarshaller: FromByteStringUnmarshaller[J],
-      responseUnmarshaller: Unmarshaller[J, BigQueryResponseJsonProtocol.Response],
+      responseUnmarshaller: Unmarshaller[J, ResponseJsonProtocol.Response],
       unmarshaller: Unmarshaller[J, T]
   ): Source[T, NotUsed] =
     Source.fromGraph(GraphDSL.create() { implicit builder =>

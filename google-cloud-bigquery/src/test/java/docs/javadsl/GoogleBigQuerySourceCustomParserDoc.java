@@ -11,7 +11,7 @@ import akka.actor.ActorSystem;
 import akka.http.javadsl.unmarshalling.Unmarshaller;
 import akka.stream.Materializer;
 import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig;
-import akka.stream.alpakka.googlecloud.bigquery.BigQueryResponseJsonProtocol;
+import akka.stream.alpakka.googlecloud.bigquery.client.ResponseJsonProtocol;
 import akka.stream.alpakka.googlecloud.bigquery.javadsl.BigQueryCallbacks;
 import akka.stream.alpakka.googlecloud.bigquery.javadsl.GoogleBigQuerySource;
 import akka.stream.javadsl.Source;
@@ -52,17 +52,17 @@ public class GoogleBigQuerySourceCustomParserDoc {
             }
           });
 
-  static Unmarshaller<JsonNode, BigQueryResponseJsonProtocol.Response> responseUnmarshaller =
+  static Unmarshaller<JsonNode, ResponseJsonProtocol.Response> responseUnmarshaller =
       Unmarshaller.sync(
           jsonNode -> {
-            Optional<BigQueryResponseJsonProtocol.JobReference> jobReference =
+            Optional<ResponseJsonProtocol.JobReference> jobReference =
                 Optional.ofNullable(jsonNode.path("jobReference"))
                     .map(
                         jobReferenceJsonNode -> {
                           Optional<String> jobId =
                               Optional.ofNullable(jobReferenceJsonNode.path("jobId"))
                                   .map(JsonNode::textValue);
-                          return BigQueryResponseJsonProtocol.createJobReference(jobId);
+                          return ResponseJsonProtocol.createJobReference(jobId);
                         });
 
             Optional<String> pageToken =
@@ -73,11 +73,11 @@ public class GoogleBigQuerySourceCustomParserDoc {
             Optional<Boolean> jobComplete =
                 Optional.ofNullable(jsonNode.get("jobComplete")).map(JsonNode::booleanValue);
 
-            return BigQueryResponseJsonProtocol.createResponse(
+            return ResponseJsonProtocol.createResponse(
                 jobReference, pageToken, nextPageToken, jobComplete);
           });
 
-  static Unmarshaller<JsonNode, BigQueryResponseJsonProtocol.ResponseRows<User>> rowsUnmarshaller =
+  static Unmarshaller<JsonNode, ResponseJsonProtocol.ResponseRows<User>> rowsUnmarshaller =
       Unmarshaller.sync(
           jsonNode -> {
             Optional<List<User>> rows =
@@ -93,14 +93,14 @@ public class GoogleBigQuerySourceCustomParserDoc {
                           return users;
                         });
 
-            return BigQueryResponseJsonProtocol.createResponseRows(rows);
+            return ResponseJsonProtocol.createResponseRows(rows);
           });
 
   static User readUserFromTree(JsonNode jsonNode) {
-      JsonNode f = jsonNode.get("f");
-      String uid = jsonNode.get(0).get("v").textValue();
-      String name = jsonNode.get(1).get("v").textValue();
-      return new User(uid, name);
+    JsonNode f = jsonNode.get("f");
+    String uid = jsonNode.get(0).get("v").textValue();
+    String name = jsonNode.get(1).get("v").textValue();
+    return new User(uid, name);
   }
 
   private static Source<User, NotUsed> customParser() {

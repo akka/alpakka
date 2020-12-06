@@ -2,15 +2,14 @@
  * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.stream.alpakka.googlecloud.bigquery
+package akka.stream.alpakka.googlecloud.bigquery.client
 
+import spray.json.{DefaultJsonProtocol, JsonFormat, RootJsonFormat}
+import scala.collection.JavaConverters._
+import scala.compat.java8.OptionConverters._
 import java.util.Optional
 
-import scala.compat.java8.OptionConverters._
-import scala.collection.JavaConverters._
-import spray.json.{DefaultJsonProtocol, JsonFormat, RootJsonFormat}
-
-object BigQueryResponseJsonProtocol extends DefaultJsonProtocol {
+object ResponseJsonProtocol extends DefaultJsonProtocol {
 
   final case class Response(jobReference: Option[JobReference],
                             pageToken: Option[String],

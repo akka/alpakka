@@ -5,7 +5,7 @@
 package akka.stream.alpakka.googlecloud.bigquery.javadsl
 
 import akka.http.javadsl.unmarshalling.Unmarshaller
-import akka.stream.alpakka.googlecloud.bigquery.BigQueryResponseJsonProtocol
+import akka.stream.alpakka.googlecloud.bigquery.client.ResponseJsonProtocol
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.{SprayJsonSupport => ScalaJsonSupport}
 import akka.util.ByteString
 import spray.json.JsValue
@@ -16,8 +16,8 @@ object SprayJsonSupport extends {
     ScalaJsonSupport.sprayJsValueUnmarshaller.asInstanceOf[Unmarshaller[ByteString, JsValue]]
   }
 
-  def responseUnmarshaller: Unmarshaller[JsValue, BigQueryResponseJsonProtocol.Response] = {
-    import BigQueryResponseJsonProtocol._
+  def responseUnmarshaller: Unmarshaller[JsValue, ResponseJsonProtocol.Response] = {
+    import ResponseJsonProtocol._
     ScalaJsonSupport.fromJsValueUnmarshaller[Response]
   }
 

@@ -15,12 +15,13 @@ import scala.concurrent.Future
 // Separate class to circumvent ambiguous implicits for unmarshalling
 class GoogleBigQuerySourceCustomParserDoc {
 
+  import akka.stream.alpakka.googlecloud.bigquery.client.ResponseJsonProtocol
+
   implicit val system = ActorSystem()
   val config = BigQueryConfig("project@test.test", "privateKeyFromGoogle", "projectID", "bigQueryDatasetName")
 
   //#custom-parser
   import akka.http.scaladsl.unmarshalling.{FromByteStringUnmarshaller, Unmarshaller}
-  import akka.stream.alpakka.googlecloud.bigquery.BigQueryResponseJsonProtocol
   import io.circe.{jawn, Decoder, Json}
   import io.circe.generic.semiauto
 
@@ -43,10 +44,10 @@ class GoogleBigQuerySourceCustomParserDoc {
     } yield User(uid, name)
   }
 
-  implicit val jobReferenceDecoder: Decoder[BigQueryResponseJsonProtocol.JobReference] = semiauto.deriveDecoder
-  implicit val responseDecoder: Decoder[BigQueryResponseJsonProtocol.Response] = semiauto.deriveDecoder
+  implicit val jobReferenceDecoder: Decoder[ResponseJsonProtocol.JobReference] = semiauto.deriveDecoder
+  implicit val responseDecoder: Decoder[ResponseJsonProtocol.Response] = semiauto.deriveDecoder
 
-  implicit def rowsDecoder[T](implicit decoder: Decoder[T]): Decoder[BigQueryResponseJsonProtocol.ResponseRows[T]] =
+  implicit def rowsDecoder[T](implicit decoder: Decoder[T]): Decoder[ResponseJsonProtocol.ResponseRows[T]] =
     semiauto.deriveDecoder
 
   val userStream: Source[User, NotUsed] =
