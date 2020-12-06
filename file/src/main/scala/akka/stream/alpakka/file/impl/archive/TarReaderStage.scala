@@ -52,29 +52,29 @@ private[file] class TarReaderStage
         override def onUpstreamFinish(): Unit = setKeepGoing(true)
       }
 
-      setHandler(flowIn, readHeader(ByteString.empty))
+      readHeader(ByteString.empty)
       setHandler(flowOut, expectFlowPull)
 
-      def readHeader(buffer: ByteString): InHandler = {
+      def readHeader(buffer: ByteString): Unit = {
         if (buffer.length >= TarArchiveEntry.headerLength) {
           readFile(buffer)
-        } else new CollectHeader(buffer)
+        } else setHandler(flowIn, new CollectHeader(buffer))
       }
 
-      def readFile(headerBuffer: ByteString): InHandler = {
-        def pushSource(metadata: TarArchiveMetadata, buffer: ByteString): InHandler = {
+      def readFile(headerBuffer: ByteString): Unit = {
+        def pushSource(metadata: TarArchiveMetadata, buffer: ByteString): Unit = {
           if (buffer.length >= metadata.size) {
             val (emit, remain) = buffer.splitAt(metadata.size.toInt)
             log.debug(s"emitting completed source for $metadata")
             push(flowOut, metadata -> Source.single(emit))
             readTrailer(metadata, remain, subSource = None)
-          } else new CollectFile(metadata, buffer)
+          } else setHandler(flowIn, new CollectFile(metadata, buffer))
         }
 
         if (headerBuffer.head == 0) {
           log.debug("empty filename, detected EOF padding, completing")
           complete(flowOut)
-          new FlushEndOfFilePadding()
+          setHandler(flowIn, new FlushEndOfFilePadding())
         } else {
           val metadata = TarArchiveEntry.parse(headerBuffer)
           val buffer = headerBuffer.drop(TarArchiveEntry.headerLength)
@@ -84,23 +84,24 @@ private[file] class TarReaderStage
             // await flow demand
             setHandler(flowOut, new OutHandler {
               override def onPull(): Unit = {
-                setHandler(flowIn, pushSource(metadata, buffer))
+                // TODO switch flowOut after pull
+                pushSource(metadata, buffer)
               }
             })
-            failOnFlowPush
+            setHandler(flowIn, failOnFlowPush)
           }
         }
       }
 
       def readTrailer(metadata: TarArchiveMetadata,
                       buffer: ByteString,
-                      subSource: Option[SubSourceOutlet[ByteString]]): InHandler = {
+                      subSource: Option[SubSourceOutlet[ByteString]]): Unit = {
         val trailerLength = TarArchiveEntry.trailerLength(metadata)
         if (buffer.length >= trailerLength) {
           subSource.foreach(_.complete())
           if (isClosed(flowIn)) completeStage()
           readHeader(buffer.drop(trailerLength))
-        } else new ReadPastTrailer(metadata, buffer, subSource)
+        } else setHandler(flowIn, new ReadPastTrailer(metadata, buffer, subSource))
       }
 
       override protected def onTimer(timerKey: Any): Unit = {
@@ -139,7 +140,7 @@ private[file] class TarReaderStage
         override def onPush(): Unit = {
           buffer ++= grab(flowIn)
           if (buffer.length >= TarArchiveEntry.headerLength) {
-            setHandler(flowIn, readFile(buffer))
+            readFile(buffer)
           } else pull(flowIn)
         }
 
@@ -190,7 +191,7 @@ private[file] class TarReaderStage
           val remaining = metadata.size - emitted
           if (remaining <= bs.length) {
             subSource.push(bs.take(remaining.toInt))
-            setHandler(flowIn, readTrailer(metadata, bs.drop(remaining.toInt), Some(subSource)))
+            readTrailer(metadata, bs.drop(remaining.toInt), Some(subSource))
           } else {
             subSource.push(bs)
             emitted += bs.length
@@ -227,7 +228,7 @@ private[file] class TarReaderStage
           // TODO the buffer content doesn't need to be kept
           buffer ++= grab(flowIn)
           if (buffer.length >= trailerLength) {
-            setHandler(flowIn, readHeader(buffer.drop(trailerLength)))
+            readHeader(buffer.drop(trailerLength))
             subSource.foreach { src =>
               src.complete()
               setHandler(flowOut, expectFlowPull)
