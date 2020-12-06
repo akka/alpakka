@@ -109,8 +109,8 @@ This lets you bring your own JSON library as an alternative to Spray.
 Letting `J` be the type of the JSON representation (e.g., `JsValue` for Spray), you must provide @scala[implicits] @java[instances] for:
 
 * @scala[`FromByteStringUnmarshaller[J]`] @java[`Unmarshaller<akka.util.ByteString, J>`]
-* @scala[`Unmarshaller[J, BigQueryResponseJsonProtocol.Response]`] @java[`Unmarshaller<J, BigQueryResponseJsonProtocol.Response>`]
-* @scala[`Unmarshaller[J, BigQueryResponseJsonProtocol.ResponseRows[T]]` for `GoogleBigQuerySource[T].runQuery` or `Unmarshaller[J, T]` for `GoogleBigQuerySource[T].raw`] @java[`Unmarshaller<J, BigQueryResponseJsonProtocol.ResponseRows<T>>` for `GoogleBigQuerySource.runQuery` or `Unmarshaller<J, T>` for `GoogleBigQuerySource.raw`]
+* @scala[`Unmarshaller[J, ResponseJsonProtocol.Response]`] @java[`Unmarshaller<J, ResponseJsonProtocol.Response>`]
+* @scala[`Unmarshaller[J, ResponseJsonProtocol.ResponseRows[T]]` for `GoogleBigQuerySource[T].runQuery` or `Unmarshaller[J, T]` for `GoogleBigQuerySource[T].raw`] @java[`Unmarshaller<J, ResponseJsonProtocol.ResponseRows<T>>` for `GoogleBigQuerySource.runQuery` or `Unmarshaller<J, T>` for `GoogleBigQuerySource.raw`]
 
 The following example revisits the `User` query from above, this time with all parsing handled by @scala[[circe](https://circe.github.io/circe/)] @java[[Jackson](https://github.com/FasterXML/jackson)].
 
