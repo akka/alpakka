@@ -4,12 +4,12 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.scaladsl
 
-import spray.json.{AdditionalFormats, CollectionFormats, ProductFormats, StandardFormats}
+import spray.json.{AdditionalFormats, ProductFormats, StandardFormats}
 
 trait BigQueryJsonProtocol
     extends BigQueryBasicFormats
     with StandardFormats
-    with CollectionFormats
+    with BigQueryCollectionFormats
     with ProductFormats
     with BigQueryProductFormats
     with AdditionalFormats
