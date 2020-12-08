@@ -292,6 +292,9 @@ lazy val docs = project
     Preprocess / siteSubdirName := s"api/alpakka/${projectInfoVersion.value}",
     Preprocess / sourceDirectory := (LocalRootProject / ScalaUnidoc / unidoc / target).value,
     Preprocess / preprocessRules := Seq(
+        ("http://www\\.eclipse\\.org/".r, _ => "https://www\\.eclipse\\.org/"),
+        ("http://pravega\\.io/".r, _ => "https://pravega\\.io/"),
+        ("http://www\\.scala-lang\\.org/".r, _ => "https://www\\.scala-lang\\.org/"),
         ("https://javadoc\\.io/page/".r, _ => "https://javadoc\\.io/static/"),
         // Add Java module name https://github.com/ThoughtWorksInc/sbt-api-mappings/issues/58
         ("https://docs\\.oracle\\.com/en/java/javase/11/docs/api/".r,
@@ -320,8 +323,8 @@ lazy val docs = project
         "extref.geode.base_url" -> s"https://geode.apache.org/docs/guide/${Dependencies.GeodeVersionForDocs}/%s",
         "extref.javaee-api.base_url" -> "https://docs.oracle.com/javaee/7/api/index.html?%s.html",
         "extref.paho-api.base_url" -> "https://www.eclipse.org/paho/files/javadoc/index.html?%s.html",
-        "extref.pravega.base_url" -> s"http://pravega.io/docs/${Dependencies.PravegaVersionForDocs}/%s",
-        "extref.slick.base_url" -> s"https://slick.lightbend.com/doc/${Dependencies.SlickVersion}/%s",
+        "extref.pravega.base_url" -> s"https://pravega.io/docs/${Dependencies.PravegaVersionForDocs}/%s",
+        "extref.slick.base_url" -> s"https://scala-slick.org/doc/${Dependencies.SlickVersion}/%s",
         // Cassandra
         "extref.cassandra.base_url" -> s"https://cassandra.apache.org/doc/${Dependencies.CassandraVersionInDocs}/%s",
         "extref.cassandra-driver.base_url" -> s"https://docs.datastax.com/en/developer/java-driver/${Dependencies.CassandraDriverVersionInDocs}/%s",

@@ -6,4 +6,4 @@
 ## External library
 
 This library is not maintained in the Alpakka repository.
-Learn more about it at [GitHub krasserm/streamz](https://github.com/krasserm/streamz/blob/master/streamz-converter).
+Learn more about it at [GitHub krasserm/streamz](https://github.com/krasserm/streamz/tree/master/streamz-converter).
