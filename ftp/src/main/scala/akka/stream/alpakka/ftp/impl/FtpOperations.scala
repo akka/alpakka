@@ -6,7 +6,6 @@ package akka.stream.alpakka.ftp
 package impl
 
 import akka.annotation.InternalApi
-import javax.security.auth.login.FailedLoginException
 import net.schmizz.sshj.userauth.UserAuthException
 import org.apache.commons.net.ftp.{FTP, FTPClient}
 

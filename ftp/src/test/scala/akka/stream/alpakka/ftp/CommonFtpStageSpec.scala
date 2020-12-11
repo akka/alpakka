@@ -17,8 +17,7 @@ import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
-import javax.security.auth.login.FailedLoginException
-import org.scalatest.Succeeded
+import net.schmizz.sshj.userauth.UserAuthException
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Millis, Seconds, Span}
 
@@ -79,13 +78,15 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
     PatienceConfig(timeout = Span(30, Seconds), interval = Span(600, Millis))
 
   "FtpBrowserSource" should {
-    "complete with a failed Future, when the credentials supplied were wrong" in {
-      an[Exception] should be thrownBy {
-        listFilesWithWrongCredentials("")
-          .toMat(Sink.seq)(Keep.right)
-          .run()
-          .futureValue
-      }
+    "complete with a failed Future, when the credentials supplied were wrong" in assertAllStagesStopped {
+      implicit val ec = system.getDispatcher
+      listFilesWithWrongCredentials("")
+        .toMat(Sink.seq)(Keep.right)
+        .run()
+        .failed
+        .map { ex =>
+          ex shouldBe a[UserAuthException]
+        }
     }
 
     "list all files from root" in assertAllStagesStopped {
