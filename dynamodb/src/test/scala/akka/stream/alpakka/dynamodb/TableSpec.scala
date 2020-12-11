@@ -7,7 +7,6 @@ package akka.stream.alpakka.dynamodb
 import java.net.URI
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.dynamodb.scaladsl.DynamoDb
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
@@ -21,10 +20,11 @@ import scala.collection.JavaConverters._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpecLike
 
+import scala.concurrent.ExecutionContext
+
 class TableSpec extends TestKit(ActorSystem("TableSpec")) with AsyncWordSpecLike with Matchers with BeforeAndAfterAll {
 
-  implicit val materializer = ActorMaterializer()
-  implicit val ec = system.dispatcher
+  implicit val ec: ExecutionContext = system.dispatcher
 
   implicit val client: DynamoDbAsyncClient = DynamoDbAsyncClient
     .builder()
