@@ -270,7 +270,7 @@ lazy val solr = alpakkaProject("solr", "solr", Dependencies.Solr)
 
 lazy val sqs = alpakkaProject("sqs", "aws.sqs", Dependencies.Sqs)
 
-lazy val sse = alpakkaProject("sse", "sse", Dependencies.Sse)
+lazy val sse = alpakkaProject("sse", "sse", Dependencies.Sse, fatalWarnings := true)
 
 lazy val text = alpakkaProject("text", "text")
 

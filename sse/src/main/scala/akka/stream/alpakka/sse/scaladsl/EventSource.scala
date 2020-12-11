@@ -6,14 +6,14 @@ package akka.stream.alpakka.sse
 package scaladsl
 
 import akka.NotUsed
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, ClassicActorSystemProvider}
 import akka.http.scaladsl.client.RequestBuilding.Get
 import akka.http.scaladsl.coding.Gzip
 import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, Source}
-import akka.stream.{ActorMaterializer, Materializer, SourceShape}
+import akka.stream.SourceShape
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.model.sse.ServerSentEvent.heartbeat
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
@@ -79,18 +79,18 @@ object EventSource {
    * @param send function to send a HTTP request
    * @param initialLastEventId initial value for Last-Event-ID header, `None` by default
    * @param retryDelay delay for retrying after completion, `0` by default
-   * @param mat implicit `Materializer`, needed to obtain server-sent events
+   * @param system implicit actor system (classic or new API)
    * @return continuous source of server-sent events
    */
   def apply(uri: Uri,
             send: HttpRequest => Future[HttpResponse],
             initialLastEventId: Option[String] = None,
             retryDelay: FiniteDuration = Duration.Zero)(
-      implicit mat: Materializer
+      implicit system: ClassicActorSystemProvider
   ): EventSource = {
     import EventStreamUnmarshalling.fromEventsStream
-    import mat.executionContext
-    implicit val system: ActorSystem = actorMaterializer(mat).system
+    implicit val actorSystem: ActorSystem = system.classicSystem
+    import actorSystem.dispatcher
 
     val continuousEvents = {
       def getEventSource(lastEventId: Option[String]) = {
@@ -132,10 +132,4 @@ object EventSource {
       SourceShape(events.out)
     })
   }
-
-  private def actorMaterializer(mat: Materializer): ActorMaterializer = mat match {
-    case am: ActorMaterializer => am
-    case _ => throw new Error("ActorMaterializer required")
-  }
-
 }

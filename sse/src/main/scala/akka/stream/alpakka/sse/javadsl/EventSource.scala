@@ -14,6 +14,9 @@ import akka.http.javadsl.model.sse.ServerSentEvent
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 import java.util.function.{Function => JFunction}
+
+import akka.actor.ClassicActorSystemProvider
+
 import scala.compat.java8.FutureConverters
 import scala.compat.java8.OptionConverters
 
@@ -68,6 +71,28 @@ object EventSource {
    * @param uri URI with absolute path, e.g. "http://myserver/events
    * @param send function to send a HTTP request
    * @param lastEventId initial value for Last-Evend-ID header, optional
+   * @param system actor system (classic or new API)
+   * @return continuous source of server-sent events
+   */
+  def create(uri: Uri,
+             send: JFunction[HttpRequest, CompletionStage[HttpResponse]],
+             lastEventId: Optional[String],
+             system: ClassicActorSystemProvider): Source[ServerSentEvent, NotUsed] = {
+    val eventSource =
+      scaladsl
+        .EventSource(
+          uri.asScala,
+          send(_).toScala.map(_.asInstanceOf[SHttpResponse])(system.classicSystem.dispatcher),
+          lastEventId.asScala
+        )(system)
+        .map(v => v: ServerSentEvent)
+    eventSource.asJava
+  }
+
+  /**
+   * @param uri URI with absolute path, e.g. "http://myserver/events
+   * @param send function to send a HTTP request
+   * @param lastEventId initial value for Last-Evend-ID header, optional
    * @param mat `Materializer`
    * @return continuous source of server-sent events
    */
@@ -81,7 +106,7 @@ object EventSource {
           uri.asScala,
           send(_).toScala.map(_.asInstanceOf[SHttpResponse])(mat.executionContext),
           lastEventId.asScala
-        )(mat)
+        )(mat.system)
         .map(v => v: ServerSentEvent)
     eventSource.asJava
   }
