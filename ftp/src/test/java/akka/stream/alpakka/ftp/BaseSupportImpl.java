@@ -18,6 +18,8 @@ public abstract class BaseSupportImpl implements BaseSupport, AkkaSupport {
 
   private ActorSystem system = ActorSystem.create("alpakka-ftp");
   private Materializer materializer = ActorMaterializer.create(system);
+  public final FtpCredentials CREDENTIALS = FtpCredentials.create("username", "userpass");
+  public final FtpCredentials WRONG_CREDENTIALS = FtpCredentials.create("username", "qwerty");
 
   private String loremIpsum =
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent auctor imperdiet "

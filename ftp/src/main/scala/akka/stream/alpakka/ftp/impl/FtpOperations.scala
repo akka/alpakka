@@ -6,6 +6,8 @@ package akka.stream.alpakka.ftp
 package impl
 
 import akka.annotation.InternalApi
+import javax.security.auth.login.FailedLoginException
+import net.schmizz.sshj.userauth.UserAuthException
 import org.apache.commons.net.ftp.{FTP, FTPClient}
 
 import scala.util.Try
@@ -36,6 +38,12 @@ private[ftp] trait FtpOperations extends CommonFtpOperations { _: FtpLike[FTPCli
       connectionSettings.credentials.username,
       connectionSettings.credentials.password
     )
+    if (ftpClient.getReplyCode == 530) {
+      throw new UserAuthException(
+        s"unable to login to host=[${connectionSettings.host}], port=${connectionSettings.port} ${connectionSettings.proxy
+          .fold("")("proxy=" + _.toString)}"
+      )
+    }
 
     if (connectionSettings.binary) {
       ftpClient.setFileType(FTP.BINARY_FILE_TYPE)

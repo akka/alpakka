@@ -30,15 +30,25 @@ trait BaseSpec
     with BaseSupport
     with LogCapturing { this: TestSuite =>
 
+  protected def listFilesWithWrongCredentials(basePath: String): Source[FtpFile, NotUsed]
+
   protected def listFiles(basePath: String): Source[FtpFile, NotUsed]
 
-  protected def listFilesWithFilter(basePath: String,
-                                    branchSelector: FtpFile => Boolean,
-                                    emitTraversedDirectories: Boolean = false): Source[FtpFile, NotUsed]
+  protected def listFilesWithFilter(
+      basePath: String,
+      branchSelector: FtpFile => Boolean,
+      emitTraversedDirectories: Boolean = false
+  ): Source[FtpFile, NotUsed]
 
-  protected def retrieveFromPath(path: String, fromRoot: Boolean = false): Source[ByteString, Future[IOResult]]
+  protected def retrieveFromPath(
+      path: String,
+      fromRoot: Boolean = false
+  ): Source[ByteString, Future[IOResult]]
 
-  protected def retrieveFromPathWithOffset(path: String, offset: Long): Source[ByteString, Future[IOResult]]
+  protected def retrieveFromPathWithOffset(
+      path: String,
+      offset: Long
+  ): Source[ByteString, Future[IOResult]]
 
   protected def storeToPath(path: String, append: Boolean): Sink[ByteString, Future[IOResult]]
 
@@ -60,7 +70,7 @@ trait BaseSpec
   // Allows to run tests n times in a row with a command line argument, useful for debugging sporadic failures
   // e.g. ftp/testOnly *.FtpsStageSpec -- -Dtimes=20
   // https://gist.github.com/dwickern/6ba9c5c505d2325d3737ace059302922
-  protected abstract override def runTest(testName: String, args: Args): Status = {
+  override abstract protected def runTest(testName: String, args: Args): Status = {
     def run0(times: Int): Status = {
       val status = super.runTest(testName, args)
       if (times <= 1) status else status.thenRun(run0(times - 1))
