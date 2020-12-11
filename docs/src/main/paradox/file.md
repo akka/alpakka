@@ -219,3 +219,5 @@ Scala
 
 Java
 : @@snip [snip](/file/src/test/java/docs/javadsl/ArchiveTest.java) { #tar-reader }
+
+The test in @extref[`NestedTarRaderTest`](github:file/src/test/java/docs/javadsl/NestedTarReaderTest.java) illustrates how the tar reader may be used to extract tar archives from within a tar archive.
