@@ -4,6 +4,7 @@
 
 package docs.javadsl;
 
+import akka.NotUsed;
 import akka.stream.alpakka.elasticsearch.*;
 import akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchFlow;
 import akka.stream.alpakka.elasticsearch.javadsl.ElasticsearchSource;
@@ -90,7 +91,7 @@ public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
                     .withApiVersion(apiVersion)
                     .withBufferSize(5),
                 new ObjectMapper()))
-        .runWith(Sink.seq(), materializer)
+        .runWith(Sink.seq(), system)
         .toCompletableFuture()
         .get();
 
@@ -105,7 +106,7 @@ public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
                     .withApiVersion(apiVersion)
                     .withIncludeDocumentVersion(true),
                 Book.class)
-            .runWith(Sink.head(), materializer)
+            .runWith(Sink.head(), system)
             .toCompletableFuture()
             .get();
 
@@ -123,7 +124,7 @@ public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
                     .withBufferSize(5)
                     .withVersionType("external"),
                 new ObjectMapper()))
-        .runWith(Sink.seq(), materializer)
+        .runWith(Sink.seq(), system)
         .toCompletableFuture()
         .get();
 
@@ -141,7 +142,7 @@ public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
                         .withBufferSize(5)
                         .withVersionType("external"),
                     new ObjectMapper()))
-            .runWith(Sink.seq(), materializer)
+            .runWith(Sink.seq(), system)
             .toCompletableFuture()
             .get()
             .get(0)
@@ -169,7 +170,7 @@ public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
                     .withBufferSize(5)
                     .withVersionType("external"),
                 new ObjectMapper()))
-        .runWith(Sink.seq(), materializer)
+        .runWith(Sink.seq(), system)
         .toCompletableFuture()
         .get();
 
@@ -184,7 +185,7 @@ public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
                     .withApiVersion(apiVersion)
                     .withIncludeDocumentVersion(true),
                 Book.class)
-            .runWith(Sink.seq(), materializer)
+            .runWith(Sink.seq(), system)
             .toCompletableFuture()
             .get()
             .get(0);
@@ -196,13 +197,14 @@ public class ElasticsearchParameterizedTest extends ElasticsearchTestBase {
     String doc = "dummy-doc";
 
     // #custom-index-name-example
-    WriteMessage msg = WriteMessage.createIndexMessage(doc).withIndexName("my-index");
+    WriteMessage<String, NotUsed> msg =
+        WriteMessage.createIndexMessage(doc).withIndexName("my-index");
     // #custom-index-name-example
 
     // #custom-metadata-example
     Map<String, String> metadata = new HashMap<>();
     metadata.put("pipeline", "myPipeline");
-    WriteMessage msgWithMetadata =
+    WriteMessage<String, NotUsed> msgWithMetadata =
         WriteMessage.createIndexMessage(doc).withCustomMetadata(metadata);
     // #custom-metadata-example
   }

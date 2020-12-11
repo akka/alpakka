@@ -30,7 +30,6 @@ public class ElasticsearchTestBase {
   protected static ApiVersion apiVersion;
   protected static ElasticsearchConnectionSettings connectionSettings;
   protected static ActorSystem system;
-  protected static Materializer materializer;
   protected static Http http;
 
   // #define-class
@@ -46,22 +45,19 @@ public class ElasticsearchTestBase {
   // #define-class
 
   @BeforeClass
-  public static void setupBase() throws IOException {
-    // #init-mat
+  public static void setupBase() {
     system = ActorSystem.create();
-    materializer = Materializer.matFromSystem(system);
-    // #init-mat
     http = Http.get(system);
   }
 
   @AfterClass
-  public static void teardown() throws Exception {
+  public static void teardown() {
     TestKit.shutdownActorSystem(system);
   }
 
   @After
   public void checkForStageLeaks() {
-    StreamTestKit.assertAllStagesStopped(materializer);
+    StreamTestKit.assertAllStagesStopped(Materializer.matFromSystem(system));
   }
 
   protected static void prepareIndex(int port, ApiVersion esApiVersion) throws IOException {

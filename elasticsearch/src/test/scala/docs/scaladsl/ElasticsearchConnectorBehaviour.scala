@@ -6,10 +6,10 @@ package docs.scaladsl
 
 import java.util.concurrent.TimeUnit
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.{ContentTypes, HttpMethods, HttpRequest, Uri}
-import akka.stream.Materializer
 import akka.stream.alpakka.elasticsearch._
 import akka.stream.alpakka.elasticsearch.scaladsl._
 import akka.stream.scaladsl.{Sink, Source}
@@ -29,7 +29,7 @@ trait ElasticsearchConnectorBehaviour {
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(10.seconds)
 
   def elasticsearchConnector(apiVersion: ApiVersion, connectionSettings: ElasticsearchConnectionSettings)(
-      implicit materializer: Materializer,
+      implicit system: ActorSystem,
       http: HttpExt
   ): Unit = {
 

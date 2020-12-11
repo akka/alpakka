@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ElasticsearchV5Test extends ElasticsearchTestBase {
   @BeforeClass
@@ -61,7 +62,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
                     constructElasticsearchParams("sink2", "_doc", ApiVersion.V5),
                     sinkSettings,
                     new ObjectMapper()),
-                materializer);
+                system);
     // #run-typed
 
     f1.toCompletableFuture().get();
@@ -78,7 +79,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
                     .withBufferSize(5),
                 ElasticsearchTestBase.Book.class)
             .map(m -> m.source().title)
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
 
     List<String> result = new ArrayList<>(f2.toCompletableFuture().get());
 
@@ -118,7 +119,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
                     constructElasticsearchParams("sink1", "_doc", ApiVersion.V5),
                     sinkSettings,
                     new ObjectMapper()),
-                materializer);
+                system);
     // #run-jsobject
 
     f1.toCompletableFuture().get();
@@ -134,7 +135,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
                     .withApiVersion(ApiVersion.V5)
                     .withBufferSize(5))
             .map(m -> (String) m.source().get("title"))
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
 
     List<String> result = new ArrayList<>(f2.toCompletableFuture().get());
 
@@ -172,14 +173,14 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
                         .withApiVersion(ApiVersion.V5)
                         .withBufferSize(5),
                     new ObjectMapper()))
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
     // #run-flow
 
     List<WriteResult<Book, NotUsed>> result1 = f1.toCompletableFuture().get();
     flushAndRefresh("sink3");
 
     for (WriteResult<Book, NotUsed> aResult1 : result1) {
-      assertEquals(true, aResult1.success());
+      assertTrue(aResult1.success());
     }
 
     // Assert docs in sink3/book
@@ -193,7 +194,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
                     .withBufferSize(5),
                 Book.class)
             .map(m -> m.source().title)
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
 
     List<String> result2 = new ArrayList<>(f2.toCompletableFuture().get());
 
@@ -230,14 +231,14 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
                         .withApiVersion(ApiVersion.V5)
                         .withBufferSize(5),
                     StringMessageWriter.getInstance()))
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
     // #string
 
     List<WriteResult<String, NotUsed>> result1 = write.toCompletableFuture().get();
     flushAndRefresh(indexName);
 
     for (WriteResult<String, NotUsed> aResult1 : result1) {
-      assertEquals(true, aResult1.success());
+      assertTrue(aResult1.success());
     }
 
     CompletionStage<List<String>> f2 =
@@ -249,7 +250,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
                     .withBufferSize(5),
                 Book.class)
             .map(m -> m.source().title)
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
 
     List<String> result2 = new ArrayList<>(f2.toCompletableFuture().get());
 
@@ -277,7 +278,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
                 constructElasticsearchParams("sink8", "_doc", ApiVersion.V5),
                 ElasticsearchWriteSettings.create(connectionSettings).withApiVersion(ApiVersion.V5),
                 new ObjectMapper()))
-        .runWith(Sink.seq(), materializer)
+        .runWith(Sink.seq(), system)
         .toCompletableFuture()
         .get();
     // #multiple-operations
@@ -293,7 +294,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
                     .withApiVersion(ApiVersion.V5),
                 Book.class)
             .map(m -> m.source().title)
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
 
     List<String> result2 = new ArrayList<>(f2.toCompletableFuture().get());
     List<String> expect = Arrays.asList("Book 1", "Book 3");
@@ -343,7 +344,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
                   kafkaCommitter.commit(result.message().passThrough());
                   return NotUsed.getInstance();
                 })
-            .runWith(Sink.ignore(), materializer);
+            .runWith(Sink.ignore(), system);
     // #kafka-example
     kafkaToEs.toCompletableFuture().get(5, TimeUnit.SECONDS); // Wait for it to complete
     flushAndRefresh("sink6");
@@ -360,7 +361,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
                     .withApiVersion(ApiVersion.V5),
                 Book.class)
             .map(m -> m.source().title)
-            .runWith(Sink.seq(), materializer) // Run it
+            .runWith(Sink.seq(), system) // Run it
             .toCompletableFuture()
             .get(); // Wait for it to complete
 
@@ -391,7 +392,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
                     .withApiVersion(ApiVersion.V5)
                     .withBufferSize(5),
                 new ObjectMapper()))
-        .runWith(Sink.seq(), materializer)
+        .runWith(Sink.seq(), system)
         .toCompletableFuture()
         .get();
 
@@ -416,7 +417,7 @@ public class ElasticsearchV5Test extends ElasticsearchTestBase {
                 o -> {
                   return o.source(); // These documents will only have property id, a and c (not
                 })
-            .runWith(Sink.seq(), materializer)
+            .runWith(Sink.seq(), system)
             .toCompletableFuture()
             .get();
     // #custom-search-params

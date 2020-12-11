@@ -8,9 +8,8 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.annotation.{ApiMayChange, InternalApi}
 import akka.http.scaladsl.{Http, HttpExt}
-import akka.stream.alpakka.elasticsearch.impl.backport.RetryFlow
 import akka.stream.alpakka.elasticsearch.{impl, _}
-import akka.stream.scaladsl.{Flow, FlowWithContext}
+import akka.stream.scaladsl.{Flow, FlowWithContext, RetryFlow}
 import spray.json._
 
 import scala.collection.immutable
