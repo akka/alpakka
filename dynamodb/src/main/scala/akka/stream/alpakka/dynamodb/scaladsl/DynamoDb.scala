@@ -9,7 +9,6 @@ import akka.actor.ClassicActorSystemProvider
 import akka.dispatch.ExecutionContexts
 
 import scala.annotation.implicitNotFound
-//import akka.stream.Materializer
 import akka.stream.alpakka.dynamodb.{DynamoDbOp, DynamoDbPaginatedOp}
 import akka.stream.scaladsl.{Flow, FlowWithContext, Sink, Source}
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
@@ -80,7 +79,7 @@ object DynamoDb {
    * Create a Future that will be completed with a response to a given request.
    */
   @implicitNotFound(
-    "an actor system (classic or new API) is a `ClassicActorSystemProvider`, provide that instead of a `Materializer`"
+    "a `ClassicActorSystemProvider` is a classic or new API actor system, provide this instead of a `Materializer`"
   )
   def single[In <: DynamoDbRequest, Out <: DynamoDbResponse](
       request: In
