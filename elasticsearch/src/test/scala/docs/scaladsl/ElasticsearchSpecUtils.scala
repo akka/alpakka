@@ -4,10 +4,10 @@
 
 package docs.scaladsl
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.{ContentTypes, HttpMethods, HttpRequest, Uri}
-import akka.stream.Materializer
 import akka.stream.alpakka.elasticsearch.scaladsl.ElasticsearchSource
 import akka.stream.alpakka.elasticsearch.{
   ApiVersion,
@@ -23,7 +23,7 @@ import scala.collection.immutable
 import scala.concurrent.Future
 
 trait ElasticsearchSpecUtils { this: AnyWordSpec with ScalaFutures =>
-  implicit def materializer: Materializer
+  implicit def system: ActorSystem
 
   def http: HttpExt
 

@@ -60,7 +60,7 @@ public class ElasticsearchV7Test extends ElasticsearchTestBase {
                     constructElasticsearchParams("sink2", "_doc", ApiVersion.V7),
                     sinkSettings,
                     new ObjectMapper()),
-                materializer);
+                system);
 
     f1.toCompletableFuture().get();
 
@@ -76,7 +76,7 @@ public class ElasticsearchV7Test extends ElasticsearchTestBase {
                     .withBufferSize(5),
                 Book.class)
             .map(m -> m.source().title)
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
 
     List<String> result = new ArrayList<>(f2.toCompletableFuture().get());
 
@@ -116,7 +116,7 @@ public class ElasticsearchV7Test extends ElasticsearchTestBase {
                     constructElasticsearchParams("sink1", "_doc", ApiVersion.V7),
                     sinkSettings,
                     new ObjectMapper()),
-                materializer);
+                system);
     // #run-jsobject
 
     f1.toCompletableFuture().get();
@@ -132,7 +132,7 @@ public class ElasticsearchV7Test extends ElasticsearchTestBase {
                     .withApiVersion(ApiVersion.V7)
                     .withBufferSize(5))
             .map(m -> (String) m.source().get("title"))
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
 
     List<String> result = new ArrayList<>(f2.toCompletableFuture().get());
 
@@ -169,7 +169,7 @@ public class ElasticsearchV7Test extends ElasticsearchTestBase {
                         .withApiVersion(ApiVersion.V7)
                         .withBufferSize(5),
                     new ObjectMapper()))
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
 
     List<WriteResult<Book, NotUsed>> result1 = f1.toCompletableFuture().get();
     flushAndRefresh("sink3");
@@ -189,7 +189,7 @@ public class ElasticsearchV7Test extends ElasticsearchTestBase {
                     .withBufferSize(5),
                 Book.class)
             .map(m -> m.source().title)
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
 
     List<String> result2 = new ArrayList<>(f2.toCompletableFuture().get());
 
@@ -225,7 +225,7 @@ public class ElasticsearchV7Test extends ElasticsearchTestBase {
                         .withApiVersion(ApiVersion.V7)
                         .withBufferSize(5),
                     StringMessageWriter.getInstance()))
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
 
     List<WriteResult<String, NotUsed>> result1 = write.toCompletableFuture().get();
     flushAndRefresh(indexName);
@@ -243,7 +243,7 @@ public class ElasticsearchV7Test extends ElasticsearchTestBase {
                     .withBufferSize(5),
                 Book.class)
             .map(m -> m.source().title)
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
 
     List<String> result2 = new ArrayList<>(f2.toCompletableFuture().get());
 
@@ -270,7 +270,7 @@ public class ElasticsearchV7Test extends ElasticsearchTestBase {
                 constructElasticsearchParams("sink8", "_doc", ApiVersion.V7),
                 ElasticsearchWriteSettings.create(connectionSettings).withApiVersion(ApiVersion.V7),
                 new ObjectMapper()))
-        .runWith(Sink.seq(), materializer)
+        .runWith(Sink.seq(), system)
         .toCompletableFuture()
         .get();
 
@@ -285,7 +285,7 @@ public class ElasticsearchV7Test extends ElasticsearchTestBase {
                     .withApiVersion(ApiVersion.V7),
                 Book.class)
             .map(m -> m.source().title)
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
 
     List<String> result2 = new ArrayList<>(f2.toCompletableFuture().get());
     List<String> expect = Arrays.asList("Book 1", "Book 3");
@@ -334,7 +334,7 @@ public class ElasticsearchV7Test extends ElasticsearchTestBase {
                   kafkaCommitter.commit(result.message().passThrough());
                   return NotUsed.getInstance();
                 })
-            .runWith(Sink.ignore(), materializer);
+            .runWith(Sink.ignore(), system);
 
     kafkaToEs.toCompletableFuture().get(5, TimeUnit.SECONDS); // Wait for it to complete
     flushAndRefresh("sink6");
@@ -351,7 +351,7 @@ public class ElasticsearchV7Test extends ElasticsearchTestBase {
                     .withApiVersion(ApiVersion.V7),
                 Book.class)
             .map(m -> m.source().title)
-            .runWith(Sink.seq(), materializer) // Run it
+            .runWith(Sink.seq(), system) // Run it
             .toCompletableFuture()
             .get(); // Wait for it to complete
 
@@ -382,7 +382,7 @@ public class ElasticsearchV7Test extends ElasticsearchTestBase {
                     .withApiVersion(ApiVersion.V7)
                     .withBufferSize(5),
                 new ObjectMapper()))
-        .runWith(Sink.seq(), materializer)
+        .runWith(Sink.seq(), system)
         .toCompletableFuture()
         .get();
 
@@ -406,7 +406,7 @@ public class ElasticsearchV7Test extends ElasticsearchTestBase {
                 o -> {
                   return o.source(); // These documents will only have property id, a and c (not
                 })
-            .runWith(Sink.seq(), materializer)
+            .runWith(Sink.seq(), system)
             .toCompletableFuture()
             .get();
 

@@ -10,7 +10,6 @@ import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest, Uri}
 import akka.stream.alpakka.elasticsearch._
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
-import akka.stream.Materializer
 import akka.testkit.TestKit
 import org.scalatest.{BeforeAndAfterAll, Inspectors}
 import org.scalatest.concurrent.ScalaFutures
@@ -27,10 +26,7 @@ class ElasticsearchSpec
     with ElasticsearchSpecUtils
     with BeforeAndAfterAll {
 
-  //#init-mat
   implicit val system: ActorSystem = ActorSystem()
-  implicit val materializer: Materializer = Materializer(system)
-  //#init-mat
   implicit val http: HttpExt = Http()
 
   val clientV5: ElasticsearchConnectionSettings =
@@ -38,7 +34,7 @@ class ElasticsearchSpec
   val clientV7: ElasticsearchConnectionSettings =
     ElasticsearchConnectionSettings("http://localhost:9202")
 
-  override def afterAll() = {
+  override def afterAll(): Unit = {
     val deleteRequestV5 = HttpRequest(HttpMethods.DELETE)
       .withUri(Uri(clientV5.baseUrl).withPath(Path("/_all")))
     http.singleRequest(deleteRequestV5).futureValue
