@@ -16,7 +16,7 @@ import akka.http.scaladsl.model.headers.`Last-Event-ID`
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.pattern.pipe
 import akka.stream.scaladsl.{Sink, Source}
-import akka.stream.{ActorMaterializer, ThrottleMode}
+import akka.stream.ThrottleMode
 import akka.testkit.SocketUtil
 import akka.{Done, NotUsed}
 import org.scalatest.BeforeAndAfterAll
@@ -85,7 +85,6 @@ object EventSourceSpec {
     import context.dispatcher
 
     private implicit val sys = context.system
-    private implicit val mat = ActorMaterializer()
 
     context.system.scheduler.scheduleOnce(1.second, self, Bind)
 
@@ -143,7 +142,6 @@ final class EventSourceSpec extends AsyncWordSpec with Matchers with BeforeAndAf
 
   private implicit val system = ActorSystem()
   private implicit val ec = system.dispatcher
-  private implicit val mat = ActorMaterializer()
 
   "EventSource" should {
     "communicate correctly with an instable HTTP server" in {
