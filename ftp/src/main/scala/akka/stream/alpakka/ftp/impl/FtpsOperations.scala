@@ -5,8 +5,7 @@
 package akka.stream.alpakka.ftp.impl
 
 import akka.annotation.InternalApi
-import akka.stream.alpakka.ftp.FtpsSettings
-import net.schmizz.sshj.userauth.UserAuthException
+import akka.stream.alpakka.ftp.{FtpAuthenticationException, FtpsSettings}
 import org.apache.commons.net.ftp.{FTP, FTPSClient}
 
 import scala.util.Try
@@ -31,7 +30,7 @@ private[ftp] trait FtpsOperations extends CommonFtpOperations {
         connectionSettings.credentials.password
       )
       if (ftpClient.getReplyCode == 530) {
-        throw new UserAuthException(
+        throw new FtpAuthenticationException(
           s"unable to login to host=[${connectionSettings.host}], port=${connectionSettings.port} ${connectionSettings.proxy
             .fold("")("proxy=" + _.toString)}"
         )

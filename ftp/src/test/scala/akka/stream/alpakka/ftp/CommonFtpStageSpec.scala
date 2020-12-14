@@ -17,7 +17,6 @@ import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
-import net.schmizz.sshj.userauth.UserAuthException
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Millis, Seconds, Span}
 
@@ -85,7 +84,7 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
         .run()
         .failed
         .map { ex =>
-          ex shouldBe a[UserAuthException]
+          ex shouldBe a[FtpAuthenticationException]
         }
     }
 
