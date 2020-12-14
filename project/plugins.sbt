@@ -16,3 +16,5 @@ addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.0")
 addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "1.4.1")
 // Akka gRPC -- sync with version in Dependencies.scala
 addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "1.0.0")
+// templating
+addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.1")

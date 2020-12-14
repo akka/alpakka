@@ -5,20 +5,23 @@
 package docs.javadsl;
 
 // #imports
+
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.http.scaladsl.model.HttpRequest;
-import akka.stream.ActorMaterializer;
+import akka.stream.Materializer;
 import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig;
 import akka.stream.alpakka.googlecloud.bigquery.client.BigQueryCommunicationHelper;
 import akka.stream.alpakka.googlecloud.bigquery.client.TableDataQueryJsonProtocol;
 import akka.stream.alpakka.googlecloud.bigquery.client.TableListQueryJsonProtocol;
-import akka.stream.alpakka.googlecloud.bigquery.javadsl.GoogleBigQuerySource;
 import akka.stream.alpakka.googlecloud.bigquery.javadsl.BigQueryCallbacks;
+import akka.stream.alpakka.googlecloud.bigquery.javadsl.GoogleBigQuerySource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import scala.util.Try;
+import spray.json.JsArray;
 import spray.json.JsObject;
+import spray.json.JsString;
 
 import java.util.Collection;
 import java.util.List;
@@ -31,7 +34,7 @@ public class GoogleBigQuerySourceDoc {
   private static void example() {
     // #init-mat
     ActorSystem system = ActorSystem.create();
-    ActorMaterializer materializer = ActorMaterializer.create(system);
+    Materializer materializer = Materializer.createMaterializer(system);
     // #init-mat
 
     // #init-config
@@ -79,14 +82,17 @@ public class GoogleBigQuerySourceDoc {
 
   static Try<User> userFromJson(JsObject object) {
     return Try.apply(
-        () ->
-            new User(
-                object.fields().apply("uid").toString(), object.fields().apply("name").toString()));
+        () -> {
+          JsArray f = (JsArray) object.fields().apply("f");
+          String uid = ((JsString) f.elements().apply(0).asJsObject().fields().apply("v")).value();
+          String name = ((JsString) f.elements().apply(1).asJsObject().fields().apply("v")).value();
+          return new User(uid, name);
+        });
   }
 
   private static Source<User, NotUsed> example2() {
     ActorSystem system = ActorSystem.create();
-    ActorMaterializer materializer = ActorMaterializer.create(system);
+    Materializer materializer = Materializer.createMaterializer(system);
     BigQueryConfig config =
         BigQueryConfig.create(
             "project@test.test",
@@ -127,7 +133,7 @@ public class GoogleBigQuerySourceDoc {
 
   private static Source<DryRunResponse, NotUsed> example3() {
     ActorSystem system = ActorSystem.create();
-    ActorMaterializer materializer = ActorMaterializer.create(system);
+    Materializer materializer = Materializer.createMaterializer(system);
     BigQueryConfig config =
         BigQueryConfig.create(
             "project@test.test",

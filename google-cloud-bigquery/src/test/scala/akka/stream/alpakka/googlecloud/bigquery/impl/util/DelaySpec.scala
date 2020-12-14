@@ -7,7 +7,6 @@ package akka.stream.alpakka.googlecloud.bigquery.impl.util
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit._
@@ -21,8 +20,6 @@ class DelaySpec
     with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll {
-
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   "Delay" should {
     "work as passthrough if should delay returns false" in {

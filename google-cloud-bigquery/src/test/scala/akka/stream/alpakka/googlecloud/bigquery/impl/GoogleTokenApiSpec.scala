@@ -10,7 +10,6 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.{HttpExt, HttpsConnectionContext}
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.bigquery.impl.GoogleTokenApi.AccessTokenExpiry
 import akka.testkit.TestKit
 import org.mockito.ArgumentCaptor
@@ -41,8 +40,6 @@ class GoogleTokenApiSpec
     PatienceConfig(timeout = 2.seconds, interval = 50.millis)
 
   implicit val executionContext: ExecutionContext = system.dispatcher
-
-  implicit val materializer = ActorMaterializer()
 
   lazy val privateKey = {
     val inputStream = getClass.getClassLoader.getResourceAsStream("private_pcks8.pem")

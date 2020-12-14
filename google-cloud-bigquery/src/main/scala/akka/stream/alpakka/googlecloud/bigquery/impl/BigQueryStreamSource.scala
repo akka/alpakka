@@ -9,18 +9,18 @@ import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.unmarshalling.{FromByteStringUnmarshaller, Unmarshaller}
 import akka.stream._
 import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig
+import akka.stream.alpakka.googlecloud.bigquery.client.ResponseJsonProtocol
 import akka.stream.alpakka.googlecloud.bigquery.impl.pagetoken.{AddPageToken, EndOfStreamDetector}
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
 import akka.stream.alpakka.googlecloud.bigquery.impl.sendrequest.SendRequestWithOauthHandling
 import akka.stream.alpakka.googlecloud.bigquery.impl.util.{Delay, FlowInitializer, OnFinishCallback}
 import akka.stream.scaladsl.{GraphDSL, Source, Zip}
-import spray.json.JsObject
 
 import scala.concurrent.ExecutionContext
-import scala.util.Try
 
 @InternalApi
 private[bigquery] object BigQueryStreamSource {
@@ -28,13 +28,15 @@ private[bigquery] object BigQueryStreamSource {
   def callbackConverter(onFinishCallback: PagingInfo => NotUsed): ((Boolean, PagingInfo)) => Unit =
     (t: (Boolean, PagingInfo)) => { onFinishCallback(t._2); {} }
 
-  def apply[T](httpRequest: HttpRequest,
-               parserFn: JsObject => Try[T],
-               onFinishCallback: PagingInfo => NotUsed,
-               projectConfig: BigQueryConfig,
-               http: HttpExt)(
+  def apply[J, T](httpRequest: HttpRequest,
+                  onFinishCallback: PagingInfo => NotUsed,
+                  projectConfig: BigQueryConfig,
+                  http: HttpExt)(
       implicit mat: Materializer,
-      system: ActorSystem
+      system: ActorSystem,
+      jsonUnmarshaller: FromByteStringUnmarshaller[J],
+      responseUnmarshaller: Unmarshaller[J, ResponseJsonProtocol.Response],
+      unmarshaller: Unmarshaller[J, T]
   ): Source[T, NotUsed] =
     Source.fromGraph(GraphDSL.create() { implicit builder =>
       import GraphDSL.Implicits._
@@ -43,7 +45,7 @@ private[bigquery] object BigQueryStreamSource {
 
       val in = builder.add(Source.repeat(httpRequest))
       val requestSender = builder.add(SendRequestWithOauthHandling(projectConfig, http))
-      val parser = builder.add(Parser(parserFn))
+      val parser = builder.add(Parser[J, T])
       val uptreamFinishHandler =
         builder.add(OnFinishCallback[(Boolean, PagingInfo)](callbackConverter(onFinishCallback)))
       val endOfStreamDetector = builder.add(EndOfStreamDetector())

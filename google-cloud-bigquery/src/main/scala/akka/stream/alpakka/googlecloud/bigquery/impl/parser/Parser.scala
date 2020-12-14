@@ -7,83 +7,65 @@ package akka.stream.alpakka.googlecloud.bigquery.impl.parser
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Zip}
-import akka.stream.{FanOutShape2, FlowShape, Graph, Materializer}
-import spray.json._
+import akka.http.scaladsl.model.MediaTypes.`application/json`
+import akka.http.scaladsl.unmarshalling.{FromByteStringUnmarshaller, Unmarshal, Unmarshaller}
+import akka.http.scaladsl.util.FastFuture.EnhancedFuture
+import akka.stream.alpakka.googlecloud.bigquery.client.ResponseJsonProtocol
+import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL}
+import akka.stream.{FanOutShape2, Graph, Materializer}
 
-import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.{ExecutionContext, Future}
 
 @InternalApi
 private[bigquery] object Parser {
   final case class PagingInfo(pageToken: Option[String], jobId: Option[String])
 
-  object ParserJsonProtocol extends DefaultJsonProtocol {
-
-    case class Response(jobReference: Option[JobReference], pageToken: Option[String], nextPageToken: Option[String])
-
-    case class JobReference(jobId: Option[String])
-
-    implicit val jobReferenceFormat: RootJsonFormat[JobReference] = jsonFormat1(JobReference)
-    implicit val responseFormat: RootJsonFormat[Response] = jsonFormat3(Response)
-  }
-
-  def apply[T](parseFunction: JsObject => Try[T])(
+  def apply[J, T](
       implicit materializer: Materializer,
-      ec: ExecutionContext
+      ec: ExecutionContext,
+      jsonUnmarshaller: FromByteStringUnmarshaller[J],
+      responseUnmarshaller: Unmarshaller[J, ResponseJsonProtocol.Response],
+      unmarshaller: Unmarshaller[J, T]
   ): Graph[FanOutShape2[HttpResponse, T, (Boolean, PagingInfo)], NotUsed] = GraphDSL.create() { implicit builder =>
     import GraphDSL.Implicits._
 
-    val bodyJsonParse: FlowShape[HttpResponse, JsObject] = builder.add(Flow[HttpResponse].mapAsync(1)(parseHttpBody(_)))
+    val bodyJsonParse = builder.add(Flow[HttpResponse].mapAsync(1)(parseHttpResponse(_)))
 
-    val parseMap = builder.add(Flow[JsObject].map(parseFunction(_)))
-    val pageInfoProvider = builder.add(Flow[JsObject].map(getPageInfo))
+    val parseMap = builder.add(Flow[J].mapAsync(1)(Unmarshal(_).to[T]))
+    val pageInfoProvider = builder.add(Flow[J].mapAsync(1)(getPageInfo[J]))
 
-    val broadcast1 = builder.add(Broadcast[JsObject](2, eagerCancel = true))
-    val broadcast2 = builder.add(Broadcast[Try[T]](2, eagerCancel = true))
-
-    val filterNone = builder.add(Flow[Try[T]].mapConcat {
-      case Success(value) => List(value)
-      case Failure(e) => List()
-    })
-
-    val mapOptionToBool = builder.add(Flow[Try[T]].map(_.isFailure))
-
-    val zip = builder.add(Zip[Boolean, PagingInfo]())
+    val broadcast1 = builder.add(Broadcast[J](2, eagerCancel = true))
 
     bodyJsonParse ~> broadcast1
 
     broadcast1.out(0) ~> parseMap
     broadcast1.out(1) ~> pageInfoProvider
 
-    parseMap ~> broadcast2
-
-    broadcast2.out(0) ~> filterNone
-    broadcast2.out(1) ~> mapOptionToBool
-
-    mapOptionToBool ~> zip.in0
-    pageInfoProvider ~> zip.in1
-
-    new FanOutShape2(bodyJsonParse.in, filterNone.out, zip.out)
+    new FanOutShape2(bodyJsonParse.in, parseMap.out, pageInfoProvider.out)
   }
 
-  private def parseHttpBody[T](response: HttpResponse)(implicit materializer: Materializer, ec: ExecutionContext) =
-    Unmarshal(response.entity)
-      .to[String]
-      .map {
-        case "" => JsObject()
-        case nonEmptyString => nonEmptyString.parseJson.asJsObject
-      }
+  private def parseHttpResponse[J](
+      response: HttpResponse
+  )(implicit materializer: Materializer,
+    ec: ExecutionContext,
+    jsonUnmarshaller: FromByteStringUnmarshaller[J]): Future[J] = {
+    implicit val unmarshaller =
+      Unmarshaller.byteStringUnmarshaller.forContentTypes(`application/json`).andThen(jsonUnmarshaller)
+    Unmarshal(response.entity).to[J]
+  }
 
-  private def getPageInfo[T](jsObject: JsObject): PagingInfo = {
-    import ParserJsonProtocol._
+  private def getPageInfo[J](json: J)(
+      implicit materializer: Materializer,
+      ec: ExecutionContext,
+      unmarshaller: Unmarshaller[J, ResponseJsonProtocol.Response]
+  ): Future[(Boolean, PagingInfo)] = {
 
-    val response = jsObject.convertTo[Response]
+    Unmarshal(json).to[ResponseJsonProtocol.Response].fast.map { response =>
+      val pageToken = response.pageToken orElse response.nextPageToken
+      val jobId = response.jobReference.flatMap(_.jobId)
+      val retry = !response.jobComplete.getOrElse(true)
 
-    val pageToken = response.pageToken orElse response.nextPageToken
-    val jobId = response.jobReference.flatMap(_.jobId)
-
-    PagingInfo(pageToken, jobId)
+      (retry, PagingInfo(pageToken, jobId))
+    }
   }
 }

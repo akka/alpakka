@@ -7,12 +7,14 @@ import java.util
 
 import akka.NotUsed
 import akka.annotation.ApiMayChange
+import akka.http.javadsl.unmarshalling.Unmarshaller
 import akka.http.scaladsl.model.HttpRequest
 import akka.stream.alpakka.googlecloud.bigquery
-import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig
 import akka.stream.alpakka.googlecloud.bigquery.client._
 import akka.stream.alpakka.googlecloud.bigquery.impl.parser.Parser.PagingInfo
+import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig
 import akka.stream.javadsl.Source
+import akka.util.ByteString
 import spray.json.JsObject
 
 import scala.util.Try
@@ -23,6 +25,23 @@ import scala.util.Try
 @ApiMayChange(issue = "https://github.com/akka/alpakka/issues/2353")
 object GoogleBigQuerySource {
   import collection.JavaConverters._
+
+  /**
+   * Read elements of `T` by executing HttpRequest upon BigQuery API.
+   */
+  def raw[J, T](httpRequest: HttpRequest,
+                unmarshaller: Unmarshaller[J, T],
+                responseUnmarshaller: Unmarshaller[J, ResponseJsonProtocol.Response],
+                jsonUnmarshaller: Unmarshaller[ByteString, J],
+                onFinishCallback: java.util.function.Function[PagingInfo, NotUsed],
+                projectConfig: BigQueryConfig): Source[T, NotUsed] =
+    bigquery.scaladsl.GoogleBigQuerySource
+      .raw(
+        httpRequest,
+        onFinishCallback.apply,
+        projectConfig
+      )(jsonUnmarshaller.asScala, responseUnmarshaller.asScala, unmarshaller.asScala)
+      .asJava
 
   /**
    * Read elements of `T` by executing HttpRequest upon BigQuery API.
@@ -38,6 +57,21 @@ object GoogleBigQuerySource {
         onFinishCallback.apply,
         projectConfig
       )
+      .asJava
+
+  /**
+   * Read elements of `T` by executing `query`.
+   */
+  def runQuery[J, T](query: String,
+                     rowsUnmarshaller: Unmarshaller[J, ResponseJsonProtocol.ResponseRows[T]],
+                     responseUnmarshaller: Unmarshaller[J, ResponseJsonProtocol.Response],
+                     jsonUnmarshaller: Unmarshaller[ByteString, J],
+                     onFinishCallback: java.util.function.Function[PagingInfo, NotUsed],
+                     projectConfig: BigQueryConfig): Source[T, NotUsed] =
+    bigquery.scaladsl.GoogleBigQuerySource
+      .runQuery(query, onFinishCallback.apply, projectConfig)(jsonUnmarshaller.asScala,
+                                                              responseUnmarshaller.asScala,
+                                                              rowsUnmarshaller.asScala)
       .asJava
 
   /**

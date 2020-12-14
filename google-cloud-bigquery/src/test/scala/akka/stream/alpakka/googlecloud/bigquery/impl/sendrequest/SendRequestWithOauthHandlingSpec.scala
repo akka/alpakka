@@ -9,7 +9,6 @@ import akka.event.LoggingAdapter
 import akka.http.scaladsl.{HttpExt, HttpsConnectionContext}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ConnectionPoolSettings
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.bigquery.e2e.BigQueryTableHelper
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
@@ -33,7 +32,6 @@ class SendRequestWithOauthHandlingSpec
     with MockitoSugar {
 
   override implicit val actorSystem: ActorSystem = ActorSystem("BigQueryEndToEndSpec")
-  override implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   override def afterAll: Unit = {
     TestKit.shutdownActorSystem(system)

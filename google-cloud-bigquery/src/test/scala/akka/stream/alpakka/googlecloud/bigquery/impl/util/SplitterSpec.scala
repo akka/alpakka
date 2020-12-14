@@ -7,7 +7,7 @@ package akka.stream.alpakka.googlecloud.bigquery.impl.util
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{GraphDSL, RunnableGraph, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.{ActorMaterializer, ClosedShape}
+import akka.stream.ClosedShape
 import akka.testkit.TestKit
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
@@ -26,8 +26,6 @@ class SplitterSpec
   override def afterAll: Unit = {
     TestKit.shutdownActorSystem(system)
   }
-
-  implicit val materializer = ActorMaterializer()
 
   def createTestGraph[T](source: Source[Int, _], sink1: Sink[Int, T], sink2: Sink[Int, T]): RunnableGraph[(T, T)] =
     RunnableGraph.fromGraph(GraphDSL.create(sink1, sink2)((_, _)) { implicit builder => (s1, s2) =>

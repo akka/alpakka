@@ -7,25 +7,23 @@ package docs.scaladsl
 //#imports
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig
 import akka.stream.alpakka.googlecloud.bigquery.client.BigQueryCommunicationHelper
 import akka.stream.alpakka.googlecloud.bigquery.client.TableDataQueryJsonProtocol.Field
 import akka.stream.alpakka.googlecloud.bigquery.client.TableListQueryJsonProtocol.QueryTableModel
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.BigQueryJsonProtocol._
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.SprayJsonSupport._
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.{BigQueryCallbacks, GoogleBigQuerySource}
 import akka.stream.scaladsl.{Sink, Source}
-import spray.json.DefaultJsonProtocol._
-import spray.json.{JsObject, JsonFormat}
+import spray.json.RootJsonFormat
 
 import scala.concurrent.Future
-import scala.util.Try
 //#imports
 
 class GoogleBigQuerySourceDoc {
 
   //#init-mat
   implicit val system = ActorSystem()
-  implicit val mat = ActorMaterializer()
   implicit val executionContext = system.dispatcher
   //#init-mat
 
@@ -47,26 +45,22 @@ class GoogleBigQuerySourceDoc {
 
   //#run-query
   case class User(uid: String, name: String)
-  implicit val userFormatter = jsonFormat2(User)
+  implicit val userFormatter = bigQueryJsonFormat2(User)
 
-  def parserFn(result: JsObject): Try[User] = Try(result.convertTo[User])
   val userStream: Source[User, NotUsed] =
-    GoogleBigQuerySource.runQuery("SELECT uid, name FROM bigQueryDatasetName.myTable",
-                                  parserFn,
-                                  BigQueryCallbacks.ignore,
-                                  config)
+    GoogleBigQuerySource[User]
+      .runQuery("SELECT uid, name FROM bigQueryDatasetName.myTable", BigQueryCallbacks.ignore, config)
   //#run-query
 
   //#dry-run
   case class DryRunResponse(totalBytesProcessed: String, jobComplete: Boolean, cacheHit: Boolean)
-  implicit val dryRunFormat: JsonFormat[DryRunResponse] = jsonFormat3(DryRunResponse)
-
-  def dryRunParser(result: JsObject): Try[DryRunResponse] = Try(result.convertTo[DryRunResponse])
+  implicit val dryRunFormat: RootJsonFormat[DryRunResponse] = jsonFormat3(DryRunResponse)
 
   val request = BigQueryCommunicationHelper.createQueryRequest("SELECT uid, name FROM bigQueryDatasetName.myTable",
                                                                config.projectId,
                                                                dryRun = true)
 
-  val dryRunStream = GoogleBigQuerySource.raw(request, dryRunParser, BigQueryCallbacks.ignore, config)
+  val dryRunStream: Source[DryRunResponse, NotUsed] =
+    GoogleBigQuerySource[DryRunResponse].raw(request, BigQueryCallbacks.ignore, config)
   //#dry-run
 }

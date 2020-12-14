@@ -8,11 +8,12 @@ import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.model.{HttpRequest, _}
 import akka.http.scaladsl.settings.ConnectionPoolSettings
+import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.http.scaladsl.{HttpExt, HttpsConnectionContext}
 import akka.stream.alpakka.googlecloud.bigquery.e2e.BigQueryTableHelper
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.BigQueryCallbacks
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.SprayJsonSupport._
 import akka.stream.scaladsl.{Sink, Source}
-import akka.stream.ActorMaterializer
 import akka.testkit.TestKit
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{when, _}
@@ -22,11 +23,11 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
+import spray.json.JsValue
 
 import scala.jdk.CollectionConverters._
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
-import scala.util.Try
 
 class BigQueryStreamSourceSpec
     extends TestKit(ActorSystem("BigQueryStreamSourceSpec"))
@@ -37,7 +38,6 @@ class BigQueryStreamSourceSpec
     with MockitoSugar {
 
   override implicit val actorSystem: ActorSystem = ActorSystem("BigQueryEndToEndSpec")
-  override implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
@@ -79,8 +79,10 @@ class BigQueryStreamSourceSpec
         )
       )
 
+      implicit val unmarshaller = Unmarshaller.strict((_: JsValue) => "success")
+
       val bigQuerySource =
-        BigQueryStreamSource(HttpRequest(), _ => Try("success"), BigQueryCallbacks.ignore, projectConfig, http)
+        BigQueryStreamSource[JsValue, String](HttpRequest(), BigQueryCallbacks.ignore, projectConfig, http)
 
       val resultF = Source.fromGraph(bigQuerySource).runWith(Sink.head)
 
@@ -103,18 +105,21 @@ class BigQueryStreamSourceSpec
               case "/" =>
                 Future.successful(
                   HttpResponse(
-                    entity = HttpEntity("""{ "pageToken": "nextPage", "jobReference": { "jobId": "job123"} }""")
+                    entity = HttpEntity(ContentTypes.`application/json`,
+                                        """{ "pageToken": "nextPage", "jobReference": { "jobId": "job123"} }""")
                   )
                 )
               case "/job123?pageToken=nextPage" =>
-                Future.successful(HttpResponse(entity = HttpEntity("""{ }""")))
+                Future.successful(HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, """{}""")))
             }
           }
         }
       )
 
+      implicit val unmarshaller = Unmarshaller.strict((_: JsValue) => "success")
+
       val bigQuerySource =
-        BigQueryStreamSource(HttpRequest(), _ => Try("success"), BigQueryCallbacks.ignore, projectConfig, http)
+        BigQueryStreamSource(HttpRequest(), BigQueryCallbacks.ignore, projectConfig, http)
 
       val resultF = bigQuerySource.runWith(Sink.seq)
 
@@ -124,8 +129,10 @@ class BigQueryStreamSourceSpec
 
     "url encode page token" in new Scope {
 
+      implicit val unmarshaller = Unmarshaller.strict((_: JsValue) => "success")
+
       val bigQuerySource =
-        BigQueryStreamSource(HttpRequest(), _ => Try("success"), BigQueryCallbacks.ignore, projectConfig, http)
+        BigQueryStreamSource(HttpRequest(), BigQueryCallbacks.ignore, projectConfig, http)
       when(
         http.singleRequest(any[HttpRequest](),
                            any[HttpsConnectionContext](),
@@ -138,9 +145,13 @@ class BigQueryStreamSourceSpec
             request.uri.toString() match {
               case "/" =>
                 Future.successful(
-                  HttpResponse(entity = HttpEntity("""{ "pageToken": "===", "jobReference": { "jobId": "job123"} }"""))
+                  HttpResponse(
+                    entity = HttpEntity(ContentTypes.`application/json`,
+                                        """{ "pageToken": "===", "jobReference": { "jobId": "job123"} }""")
+                  )
                 )
-              case "/job123?pageToken=%3D%3D%3D" => Future.successful(HttpResponse(entity = HttpEntity("""{ }""")))
+              case "/job123?pageToken=%3D%3D%3D" =>
+                Future.successful(HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, """{}""")))
             }
           }
         }
