@@ -53,7 +53,7 @@ If you are using Slick in your project, you can create a `SlickSession` instance
 Scala
 : @@snip [snip](/slick/src/test/scala/docs/scaladsl/SlickSpec.scala) { #init-db-config-session }
 
-Otherwise, you can configure your database using [typesafe-config](https://github.com/typesafehub/config) by adding a named configuration to your application.conf and then referring to that configuration when starting the session:
+Otherwise, you can configure your database using [typesafe-config](https://github.com/lightbend/config) by adding a named configuration to your application.conf and then referring to that configuration when starting the session:
 
 Scala
 : @@snip [snip](/slick/src/test/scala/docs/scaladsl/SlickSpec.scala) { #init-session }

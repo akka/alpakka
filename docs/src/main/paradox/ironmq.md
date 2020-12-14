@@ -4,7 +4,7 @@ The IronMQ connector provides an Akka stream source and sink to connect to the [
 
 IronMQ is a simple point-to-point queue, but it is possible to implement a fan-out semantic by configure the queue as push
 queue and set other queue as subscribers. More information about that could be found on
-[IronMQ documentation](https://www.iron.io/ironmq-fan-out-support/)
+[IronMQ documentation](https://old.iron.io/ironmq-fan-out-support/)
 
 @@project-info{ projectId="ironmq" }
 

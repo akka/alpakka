@@ -1,6 +1,6 @@
 # Pravega
 
-[Pravega](http://www.pravega.io/) provides a new storage abstraction - a stream - for continuous and unbounded data. 
+[Pravega](https://www.pravega.io/) provides a new storage abstraction - a stream - for continuous and unbounded data. 
 A Pravega stream is an elastic set of durable and append-only segments, each segment being an unbounded sequence of bytes. 
 Streams provide exactly-once semantics, and atomicity for groups of events using transactions.
 
@@ -34,7 +34,7 @@ The system is architected so that the underlying storage is elastic and it is ab
 
 When writing an event, Pravega accepts a *routing key* parameter, and it @extref[guarantees order](pravega:/pravega-concepts/#ordering-guarantees) per key even in the presence of auto-scaling.
 
-For more information about [Pravega](http://www.pravega.io/) please visit the official @extref[documentation](pravega:/).
+For more information about [Pravega](https://www.pravega.io/) please visit the official @extref[documentation](pravega:/).
 
 ## Configuration
 
@@ -119,4 +119,4 @@ message.
 
 ## Support
 
-In addition to our regular Alpakka community support on [![gitter: akka/akka](https://img.shields.io/badge/gitter%3A-akka%2Fakka-blue.svg?style=flat-square)](https://gitter.im/akka/akka) and Lightbend's [discuss.lightbend.com](https://discuss.lightbend.com/c/akka/streams-and-alpakka), you can also visit the `#akka-streams-connector` channel on the [Pravega slack](http://pravega-slack-invite.herokuapp.com) for assistance with Pravega integration itself.
+In addition to our regular Alpakka community support on [![gitter: akka/akka](https://img.shields.io/badge/gitter%3A-akka%2Fakka-blue.svg?style=flat-square)](https://gitter.im/akka/akka) and Lightbend's [discuss.lightbend.com](https://discuss.lightbend.com/c/akka/streams-and-alpakka), you can also visit the `#akka-streams-connector` channel on the [Pravega slack](https://pravega-slack-invite.herokuapp.com) for assistance with Pravega integration itself.
