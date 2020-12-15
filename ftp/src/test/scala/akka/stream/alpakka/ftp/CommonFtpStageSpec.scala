@@ -51,7 +51,8 @@ final class KeyFileSftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
     .withCredentials(FtpCredentials.create("username", "wrong password"))
     .withStrictHostKeyChecking(false)
     .withSftpIdentity(
-      SftpIdentity.createFileSftpIdentity(getClientPrivateKeyFile.getPath, ClientPrivateKeyPassphrase)
+      SftpIdentity
+        .createFileSftpIdentity(getClientPrivateKeyFile.getPath, ClientPrivateKeyPassphrase)
     )
 }
 
@@ -63,7 +64,8 @@ final class StrictHostCheckingSftpSourceSpec extends BaseSftpSpec with CommonFtp
     .withStrictHostKeyChecking(true)
     .withKnownHosts(getKnownHostsFile.getPath)
     .withSftpIdentity(
-      SftpIdentity.createFileSftpIdentity(getClientPrivateKeyFile.getPath, ClientPrivateKeyPassphrase)
+      SftpIdentity
+        .createFileSftpIdentity(getClientPrivateKeyFile.getPath, ClientPrivateKeyPassphrase)
     )
 }
 
@@ -75,6 +77,17 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
     PatienceConfig(timeout = Span(30, Seconds), interval = Span(600, Millis))
 
   "FtpBrowserSource" should {
+    "complete with a failed Future, when the credentials supplied were wrong" in assertAllStagesStopped {
+      implicit val ec = system.getDispatcher
+      listFilesWithWrongCredentials("")
+        .toMat(Sink.seq)(Keep.right)
+        .run()
+        .failed
+        .map { ex =>
+          ex shouldBe a[FtpAuthenticationException]
+        }
+    }
+
     "list all files from root" in assertAllStagesStopped {
       val basePath = ""
       generateFiles(30, 10, basePath)
@@ -107,7 +120,9 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       val basePath = "/foo"
       generateFiles(30, 10, basePath)
       val probe =
-        listFilesWithFilter(basePath, f => f.name.contains("1")).toMat(TestSink.probe)(Keep.right).run()
+        listFilesWithFilter(basePath, f => f.name.contains("1"))
+          .toMat(TestSink.probe)(Keep.right)
+          .run()
       probe.request(40).expectNextN(21) // 9 files in root, 2 directories, 10 files in dir_1
       probe.expectComplete()
 
@@ -196,7 +211,8 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       val offset = 1000010L
       Random.nextBytes(fileContents)
       putFileOnFtpWithContents(fileName, fileContents)
-      val (result, probe) = retrieveFromPathWithOffset(s"/$fileName", offset).toMat(TestSink.probe)(Keep.both).run()
+      val (result, probe) =
+        retrieveFromPathWithOffset(s"/$fileName", offset).toMat(TestSink.probe)(Keep.both).run()
       probe.request(1000).expectNextOrComplete()
 
       val expectedNumOfBytes = fileContents.length - offset
@@ -229,7 +245,10 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
         val fileName = "sample_io_" + Instant.now().getNano
         List(true, false).foreach { mode =>
           val result =
-            Source.single(ByteString(getDefaultContent)).runWith(storeToPath(s"/$fileName", mode)).futureValue
+            Source
+              .single(ByteString(getDefaultContent))
+              .runWith(storeToPath(s"/$fileName", mode))
+              .futureValue
 
           val expectedNumOfBytes = getDefaultContent.getBytes().length
           result shouldBe IOResult.createSuccessful(expectedNumOfBytes)
@@ -252,7 +271,10 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
         putFileOnFtp(fileName)
 
         val result =
-          Source.single(ByteString(reversedLoremIpsum)).runWith(storeToPath(s"/$fileName", append = false)).futureValue
+          Source
+            .single(ByteString(reversedLoremIpsum))
+            .runWith(storeToPath(s"/$fileName", append = false))
+            .futureValue
 
         result shouldBe IOResult.createSuccessful(expectedNumOfBytes)
 
@@ -268,7 +290,10 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
         putFileOnFtp(fileName)
 
         val result =
-          Source.single(ByteString(reversedLoremIpsum)).runWith(storeToPath(s"/$fileName", append = true)).futureValue
+          Source
+            .single(ByteString(reversedLoremIpsum))
+            .runWith(storeToPath(s"/$fileName", append = true))
+            .futureValue
 
         result shouldBe IOResult.createSuccessful(expectedNumOfBytes)
 
@@ -432,8 +457,11 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
 
       Await.result(res, Duration(1, TimeUnit.MINUTES))
 
-      val listing = listFilesWithFilter(basePath = "/", branchSelector = _ => true, emitTraversedDirectories = true)
-        .runWith(Sink.seq)
+      val listing = listFilesWithFilter(
+        basePath = "/",
+        branchSelector = _ => true,
+        emitTraversedDirectories = true
+      ).runWith(Sink.seq)
 
       val listingRes: immutable.Seq[FtpFile] = Await.result(listing, Duration(1, TimeUnit.MINUTES))
 
@@ -458,18 +486,24 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
 
       Await.result(res, Duration(1, TimeUnit.MINUTES))
 
-      val listing = listFilesWithFilter(basePath = "/", branchSelector = _ => true, emitTraversedDirectories = true)
-        .runWith(Sink.seq)
+      val listing = listFilesWithFilter(
+        basePath = "/",
+        branchSelector = _ => true,
+        emitTraversedDirectories = true
+      ).runWith(Sink.seq)
 
       val listingRes: immutable.Seq[FtpFile] = Await.result(listing, Duration(1, TimeUnit.MINUTES))
 
       listingRes.map(_.name) should contain allElementsOf Seq(name)
 
-      val listingOnlyInnerDir = listFilesWithFilter(basePath = innerDirPath,
-                                                    branchSelector = _ => true,
-                                                    emitTraversedDirectories = true).runWith(Sink.seq)
+      val listingOnlyInnerDir = listFilesWithFilter(
+        basePath = innerDirPath,
+        branchSelector = _ => true,
+        emitTraversedDirectories = true
+      ).runWith(Sink.seq)
 
-      val listingInnerDirRes: immutable.Seq[FtpFile] = Await.result(listingOnlyInnerDir, Duration(1, TimeUnit.MINUTES))
+      val listingInnerDirRes: immutable.Seq[FtpFile] =
+        Await.result(listingOnlyInnerDir, Duration(1, TimeUnit.MINUTES))
 
       listingInnerDirRes.map(_.name) should contain allElementsOf Seq(innerDirName)
 

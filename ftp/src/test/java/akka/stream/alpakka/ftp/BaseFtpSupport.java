@@ -12,7 +12,6 @@ public class BaseFtpSupport extends BaseSupportImpl {
   private final Path ROOT_DIR = Paths.get("tmp/home");
   public final String HOSTNAME = "localhost";
   public final int PORT = 21000;
-  public final FtpCredentials CREDENTIALS = FtpCredentials.create("username", "userpass");
 
   @Override
   public Path getRootDir() {

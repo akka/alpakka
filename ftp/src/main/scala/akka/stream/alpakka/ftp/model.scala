@@ -37,7 +37,7 @@ final case class FtpFile(
  * Common remote file settings.
  */
 @DoNotInherit
-sealed abstract class RemoteFileSettings {
+abstract sealed class RemoteFileSettings {
   def host: InetAddress
   def port: Int
   def credentials: FtpCredentials
@@ -47,7 +47,7 @@ sealed abstract class RemoteFileSettings {
  * Common settings for FTP and FTPs.
  */
 @DoNotInherit
-sealed abstract class FtpFileSettings extends RemoteFileSettings {
+abstract sealed class FtpFileSettings extends RemoteFileSettings {
   def binary: Boolean // BINARY or ASCII (default)
   def passiveMode: Boolean
 }
@@ -78,7 +78,8 @@ final class FtpSettings private (
   def withPort(value: Int): FtpSettings = copy(port = value)
   def withCredentials(value: FtpCredentials): FtpSettings = copy(credentials = value)
   def withBinary(value: Boolean): FtpSettings = if (binary == value) this else copy(binary = value)
-  def withPassiveMode(value: Boolean): FtpSettings = if (passiveMode == value) this else copy(passiveMode = value)
+  def withPassiveMode(value: Boolean): FtpSettings =
+    if (passiveMode == value) this else copy(passiveMode = value)
   def withProxy(value: Proxy): FtpSettings = copy(proxy = Some(value))
 
   /**
@@ -92,7 +93,9 @@ final class FtpSettings private (
    * Java API:
    * Sets the configure connection callback.
    */
-  def withConfigureConnectionConsumer(configureConnection: java.util.function.Consumer[FTPClient]): FtpSettings =
+  def withConfigureConnectionConsumer(
+      configureConnection: java.util.function.Consumer[FTPClient]
+  ): FtpSettings =
     copy(configureConnection = configureConnection.accept)
 
   private def copy(
@@ -133,9 +136,7 @@ object FtpSettings {
   final val DefaultFtpPort = 21
 
   /** Scala API */
-  def apply(
-      host: java.net.InetAddress
-  ): FtpSettings = new FtpSettings(
+  def apply(host: java.net.InetAddress): FtpSettings = new FtpSettings(
     host,
     port = DefaultFtpPort,
     credentials = FtpCredentials.AnonFtpCredentials,
@@ -146,9 +147,7 @@ object FtpSettings {
   )
 
   /** Java API */
-  def create(
-      host: java.net.InetAddress
-  ): FtpSettings = apply(
+  def create(host: java.net.InetAddress): FtpSettings = apply(
     host
   )
 }
@@ -179,20 +178,24 @@ final class FtpsSettings private (
   def withPort(value: Int): FtpsSettings = copy(port = value)
   def withCredentials(value: FtpCredentials): FtpsSettings = copy(credentials = value)
   def withBinary(value: Boolean): FtpsSettings = if (binary == value) this else copy(binary = value)
-  def withPassiveMode(value: Boolean): FtpsSettings = if (passiveMode == value) this else copy(passiveMode = value)
+  def withPassiveMode(value: Boolean): FtpsSettings =
+    if (passiveMode == value) this else copy(passiveMode = value)
   def withProxy(value: Proxy): FtpsSettings = copy(proxy = Some(value))
 
   /**
    * Scala API:
    * Sets the configure connection callback.
    */
-  def withConfigureConnection(value: FTPSClient => Unit): FtpsSettings = copy(configureConnection = value)
+  def withConfigureConnection(value: FTPSClient => Unit): FtpsSettings =
+    copy(configureConnection = value)
 
   /**
    * Java API:
    * Sets the configure connection callback.
    */
-  def withConfigureConnectionConsumer(configureConnection: java.util.function.Consumer[FTPSClient]): FtpsSettings =
+  def withConfigureConnectionConsumer(
+      configureConnection: java.util.function.Consumer[FTPSClient]
+  ): FtpsSettings =
     copy(configureConnection = configureConnection.accept)
 
   private def copy(
@@ -233,9 +236,7 @@ object FtpsSettings {
   final val DefaultFtpsPort = 2222
 
   /** Scala API */
-  def apply(
-      host: java.net.InetAddress
-  ): FtpsSettings = new FtpsSettings(
+  def apply(host: java.net.InetAddress): FtpsSettings = new FtpsSettings(
     host,
     DefaultFtpsPort,
     FtpCredentials.AnonFtpCredentials,
@@ -246,9 +247,7 @@ object FtpsSettings {
   )
 
   /** Java API */
-  def create(
-      host: java.net.InetAddress
-  ): FtpsSettings = apply(
+  def create(host: java.net.InetAddress): FtpsSettings = apply(
     host
   )
 }
@@ -321,9 +320,7 @@ object SftpSettings {
   final val DefaultSftpPort = 22
 
   /** Scala API */
-  def apply(
-      host: java.net.InetAddress
-  ): SftpSettings = new SftpSettings(
+  def apply(host: java.net.InetAddress): SftpSettings = new SftpSettings(
     host,
     DefaultSftpPort,
     FtpCredentials.AnonFtpCredentials,
@@ -334,9 +331,7 @@ object SftpSettings {
   )
 
   /** Java API */
-  def create(
-      host: java.net.InetAddress
-  ): SftpSettings = apply(
+  def create(host: java.net.InetAddress): SftpSettings = apply(
     host
   )
 }
@@ -344,7 +339,7 @@ object SftpSettings {
 /**
  * FTP credentials
  */
-sealed abstract class FtpCredentials {
+abstract sealed class FtpCredentials {
   def username: String
   def password: String
 }
@@ -373,9 +368,12 @@ object FtpCredentials {
    * @param username the username
    * @param password the password
    */
-  final class NonAnonFtpCredentials @InternalApi private[FtpCredentials] (val username: String, val password: String)
-      extends FtpCredentials {
-    override def toString = s"FtpCredentials(username=$username,password.nonEmpty=${password.nonEmpty})"
+  final class NonAnonFtpCredentials @InternalApi private[FtpCredentials] (
+      val username: String,
+      val password: String
+  ) extends FtpCredentials {
+    override def toString =
+      s"FtpCredentials(username=$username,password.nonEmpty=${password.nonEmpty})"
   }
 
   /** Create username/password credentials. */
@@ -386,7 +384,7 @@ object FtpCredentials {
 /**
  * SFTP identity details
  */
-sealed abstract class SftpIdentity {
+abstract sealed class SftpIdentity {
   type KeyType
   val privateKey: KeyType
   val privateKeyFilePassphrase: Option[Array[Byte]]
@@ -411,7 +409,10 @@ object SftpIdentity {
    * @param privateKey private key value to use when connecting
    * @param privateKeyFilePassphrase password to use to decrypt private key
    */
-  def createRawSftpIdentity(privateKey: Array[Byte], privateKeyFilePassphrase: Array[Byte]): RawKeySftpIdentity =
+  def createRawSftpIdentity(
+      privateKey: Array[Byte],
+      privateKeyFilePassphrase: Array[Byte]
+  ): RawKeySftpIdentity =
     new RawKeySftpIdentity(privateKey, Some(privateKeyFilePassphrase))
 
   /**
@@ -442,7 +443,10 @@ object SftpIdentity {
    * @param privateKey private key file to use when connecting
    * @param privateKeyFilePassphrase password to use to decrypt private key file
    */
-  def createFileSftpIdentity(privateKey: String, privateKeyFilePassphrase: Array[Byte]): KeyFileSftpIdentity =
+  def createFileSftpIdentity(
+      privateKey: String,
+      privateKeyFilePassphrase: Array[Byte]
+  ): KeyFileSftpIdentity =
     new KeyFileSftpIdentity(privateKey, Some(privateKeyFilePassphrase))
 }
 
@@ -511,3 +515,5 @@ final class KeyFileSftpIdentity @InternalApi private[ftp] (
   )
 
 }
+
+final class FtpAuthenticationException(msg: String) extends IllegalArgumentException(msg)

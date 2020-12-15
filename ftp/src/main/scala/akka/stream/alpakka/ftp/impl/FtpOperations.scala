@@ -36,6 +36,12 @@ private[ftp] trait FtpOperations extends CommonFtpOperations { _: FtpLike[FTPCli
       connectionSettings.credentials.username,
       connectionSettings.credentials.password
     )
+    if (ftpClient.getReplyCode == 530) {
+      throw new FtpAuthenticationException(
+        s"unable to login to host=[${connectionSettings.host}], port=${connectionSettings.port} ${connectionSettings.proxy
+          .fold("")("proxy=" + _.toString)}"
+      )
+    }
 
     if (connectionSettings.binary) {
       ftpClient.setFileType(FTP.BINARY_FILE_TYPE)
