@@ -8,10 +8,9 @@ import akka.NotUsed;
 // #init-client
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 
 // #init-client
+import akka.stream.SystemMaterializer;
 import akka.stream.alpakka.dynamodb.DynamoDbOp;
 import akka.stream.alpakka.dynamodb.javadsl.DynamoDb;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
@@ -45,7 +44,6 @@ public class ExampleTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   static ActorSystem system;
-  static Materializer materializer;
   static DynamoDbAsyncClient client;
 
   @BeforeClass
@@ -53,7 +51,6 @@ public class ExampleTest {
 
     // #init-client
     final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
 
     // Don't encode credentials in your source code!
     // see https://doc.akka.io/docs/alpakka/current/aws-shared-configuration.html
@@ -77,7 +74,6 @@ public class ExampleTest {
     // #init-client
 
     ExampleTest.system = system;
-    ExampleTest.materializer = materializer;
     ExampleTest.client = client;
   }
 
@@ -89,7 +85,7 @@ public class ExampleTest {
 
   @After
   public void checkForStageLeaks() {
-    StreamTestKit.assertAllStagesStopped(materializer);
+    StreamTestKit.assertAllStagesStopped(SystemMaterializer.get(system).materializer());
   }
 
   @Test
@@ -98,7 +94,7 @@ public class ExampleTest {
     // #simple-request
     final CompletionStage<ListTablesResponse> listTables =
         DynamoDb.single(
-            client, DynamoDbOp.listTables(), ListTablesRequest.builder().build(), materializer);
+            client, DynamoDbOp.listTables(), ListTablesRequest.builder().build(), system);
     // #simple-request
     // format: on
     ListTablesResponse result = listTables.toCompletableFuture().get(5, TimeUnit.SECONDS);
@@ -120,7 +116,7 @@ public class ExampleTest {
     // #flow
 
     CompletionStage<List<DescribeTableResponse>> streamCompletion =
-        tableArnSource.runWith(Sink.seq(), materializer);
+        tableArnSource.runWith(Sink.seq(), system);
     // exception expected
     streamCompletion.toCompletableFuture().get(5, TimeUnit.SECONDS);
   }
@@ -151,7 +147,7 @@ public class ExampleTest {
     // #withContext
 
     CompletionStage<Pair<PutItemResponse, SomeContext>> streamCompletion =
-        writtenSource.runWith(Sink.head(), materializer);
+        writtenSource.runWith(Sink.head(), system);
     // exception expected
     streamCompletion.toCompletableFuture().get(5, TimeUnit.SECONDS);
   }
@@ -165,8 +161,7 @@ public class ExampleTest {
         DynamoDb.source(client, DynamoDbOp.scan(), scanRequest);
 
     // #paginated
-    CompletionStage<List<ScanResponse>> streamCompletion =
-        scanPages.runWith(Sink.seq(), materializer);
+    CompletionStage<List<ScanResponse>> streamCompletion = scanPages.runWith(Sink.seq(), system);
     // exception expected
     streamCompletion.toCompletableFuture().get(1, TimeUnit.SECONDS);
   }
@@ -179,7 +174,7 @@ public class ExampleTest {
         Source.single(scanRequest).via(DynamoDb.flowPaginated(client, DynamoDbOp.scan()));
     // #paginated
     CompletionStage<List<ScanResponse>> streamCompletion2 =
-        scanPageInFlow.runWith(Sink.seq(), materializer);
+        scanPageInFlow.runWith(Sink.seq(), system);
     // exception expected
     streamCompletion2.toCompletableFuture().get(1, TimeUnit.SECONDS);
   }

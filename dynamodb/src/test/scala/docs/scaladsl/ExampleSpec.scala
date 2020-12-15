@@ -13,7 +13,6 @@ import akka.stream.scaladsl.{FlowWithContext, SourceWithContext}
 import scala.util.{Failure, Success, Try}
 //#init-client
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, Materializer}
 
 //#init-client
 import akka.stream.alpakka.dynamodb.DynamoDbOp._
@@ -47,7 +46,6 @@ class ExampleSpec
     with LogCapturing {
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 100.millis)
-  implicit val materializer: Materializer = ActorMaterializer()
 
   //#init-client
 

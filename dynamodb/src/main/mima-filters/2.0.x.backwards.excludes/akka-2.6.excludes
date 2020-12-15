@@ -1,0 +1,4 @@
+# The new signature takes `ClassicActorSystemProvider` instead of `Materializer`
+# this is not bin-compatible, but resolved by an implicit conversion in sources
+# Accepted as this targets Alpakka 3.0.0
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.dynamodb.scaladsl.DynamoDb.single")
