@@ -4,52 +4,43 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.impl.util
 
-import java.util.concurrent.TimeUnit
-
 import akka.NotUsed
 import akka.annotation.InternalApi
-import akka.stream.alpakka.googlecloud.bigquery.impl.util.DelayFlow.DelayStrategy
-import akka.stream.scaladsl.{GraphDSL, Merge}
-import akka.stream.{FlowShape, Graph}
+import akka.pattern.BackoffSupervisor
+import akka.stream.alpakka.googlecloud.bigquery.RetrySettings
+import akka.stream.scaladsl.{DelayStrategy, Flow, GraphDSL, Merge, Partition}
+import akka.stream.{DelayOverflowStrategy, FlowShape, Graph}
 
 import scala.concurrent.duration.FiniteDuration
 
 @InternalApi
 private[impl] object Delay {
-  def apply[T](
-      shouldDelay: T => Boolean,
-      maxDelay: Int,
-      delayUnit: TimeUnit = TimeUnit.SECONDS
-  ): Graph[FlowShape[T, T], NotUsed] =
+
+  def apply[T](retrySettings: RetrySettings)(shouldDelay: T => Boolean): Graph[FlowShape[T, T], NotUsed] =
     GraphDSL.create() { implicit builder =>
       import GraphDSL.Implicits._
 
-      val splitter = builder.add(Splitter[T](shouldDelay))
-      val delayFlow =
-        builder.add(DelayFlow[T](() => new FibonacciStrategy[T](delayUnit, maxDelay)))
-      val merge = builder.add(Merge[T](2, eagerComplete = true))
+      val partition = builder.add(Partition[T](2, t => if (shouldDelay(t)) 0 else 1))
+      val delay = builder.add(delayFlow[T](retrySettings))
+      val merge = builder.add(Merge[T](2))
 
-      splitter.out(0) ~> delayFlow
-      delayFlow ~> merge.in(0)
+      partition.out(0) ~> delay ~> merge.in(0)
+      partition.out(1) ~> merge.in(1)
 
-      splitter.out(1) ~> merge.in(1)
-
-      new FlowShape(splitter.in, merge.out)
+      new FlowShape(partition.in, merge.out)
     }
 
-  private final class FibonacciStrategy[T](delayUnit: TimeUnit, maxDelay: Int) extends DelayStrategy[T] {
-    val fibs: Stream[Int] = 1 #:: 1 #:: (fibs zip fibs.tail).map { case (a, b) => a + b }
-    var idx = 0
+  private def delayFlow[T](settings: RetrySettings): Flow[T, T, NotUsed] = {
+    Flow[T].delayWith(() => backoffDelayStrategy(settings), DelayOverflowStrategy.backpressure)
+  }
+
+  private def backoffDelayStrategy[T](settings: RetrySettings): DelayStrategy[T] = new DelayStrategy[T] {
+    private var retryCount = 0
     override def nextDelay(elem: T): FiniteDuration = {
-      val delay = fibs(idx)
-
-      idx += 1
-
-      if (delay > maxDelay) {
-        throw new IllegalStateException(s"Maximum delay ($maxDelay) exceeded: ${FiniteDuration(delay, delayUnit)}")
-      }
-
-      FiniteDuration(delay, delayUnit)
+      import settings._
+      val delay = BackoffSupervisor.calculateDelay(retryCount, minBackoff, maxBackoff, randomFactor)
+      retryCount += 1
+      delay
     }
   }
 }

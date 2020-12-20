@@ -106,11 +106,11 @@ Note that these entries are represented as "a series of JSON f,v objects for ind
 
 The actual parsing implementation is fully customizable via the [unmarshalling API](https://doc.akka.io/docs/akka-http/current/common/unmarshalling.html) from Akka HTTP.
 This lets you bring your own JSON library as an alternative to Spray.
-Letting `J` be the type of the JSON representation (e.g., `JsValue` for Spray), you must provide @scala[implicits] @java[instances] for:
+Letting `Json` be the type of the JSON representation (e.g., `JsValue` for Spray), you must provide @scala[implicits] @java[instances] for:
 
-* @scala[`FromByteStringUnmarshaller[J]`] @java[`Unmarshaller<akka.util.ByteString, J>`]
-* @scala[`Unmarshaller[J, ResponseJsonProtocol.Response]`] @java[`Unmarshaller<J, ResponseJsonProtocol.Response>`]
-* @scala[`Unmarshaller[J, ResponseJsonProtocol.ResponseRows[T]]` for `GoogleBigQuerySource[T].runQuery` or `Unmarshaller[J, T]` for `GoogleBigQuerySource[T].raw`] @java[`Unmarshaller<J, ResponseJsonProtocol.ResponseRows<T>>` for `GoogleBigQuerySource.runQuery` or `Unmarshaller<J, T>` for `GoogleBigQuerySource.raw`]
+* @scala[`FromByteStringUnmarshaller[Json]`] @java[`Unmarshaller<akka.util.ByteString, Json>`]
+* @scala[`Unmarshaller[Json, ResponseJsonProtocol.Response]`] @java[`Unmarshaller<Json, ResponseJsonProtocol.Response>`]
+* @scala[`Unmarshaller[Json, ResponseJsonProtocol.ResponseRows[T]]` for `GoogleBigQuerySource[T].runQuery` or `Unmarshaller[Json, T]` for `GoogleBigQuerySource[T].raw`] @java[`Unmarshaller<Json, ResponseJsonProtocol.ResponseRows<T>>` for `GoogleBigQuerySource.runQuery` or `Unmarshaller<Json, T>` for `GoogleBigQuerySource.raw`]
 
 The following example revisits the `User` query from above, this time with all parsing handled by @scala[[circe](https://circe.github.io/circe/)] @java[[Jackson](https://github.com/FasterXML/jackson)].
 

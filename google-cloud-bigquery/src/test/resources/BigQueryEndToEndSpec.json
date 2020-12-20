@@ -1,0 +1,605 @@
+{
+  "data" : {
+    "pairs" : [ {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/token"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "POST"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "oauth2.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "body" : [ {
+          "matcher" : "regex",
+          "value" : "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=*"
+        } ]
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\"access_token\":\"yyyy.c.an-access-token\",\"expires_in\":3599,\"token_type\":\"Bearer\"}",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Sun, 20 Dec 2020 03:00:34 GMT" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "scaffolding on HTTPServer2" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/alpakka-bigquery-test/datasets"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "POST"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "bigquery.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "body" : [ {
+          "matcher" : "json",
+          "value" : "{\"datasetReference\":{\"datasetId\":\"e2e_dataset_677\"}}"
+        } ]
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\n  \"kind\": \"bigquery#dataset\",\n  \"etag\": \"wZGrFfkWicNpAftGB6jokw==\",\n  \"id\": \"alpakka-bigquery-test:e2e_dataset_677\",\n  \"selfLink\": \"https://bigquery.googleapis.com/bigquery/v2/projects/alpakka-bigquery-test/datasets/e2e_dataset_677\",\n  \"datasetReference\": {\n    \"datasetId\": \"e2e_dataset_677\",\n    \"projectId\": \"alpakka-bigquery-test\"\n  },\n  \"defaultTableExpirationMs\": \"5184000000\",\n  \"access\": [\n    {\n      \"role\": \"WRITER\",\n      \"specialGroup\": \"projectWriters\"\n    },\n    {\n      \"role\": \"OWNER\",\n      \"specialGroup\": \"projectOwners\"\n    },\n    {\n      \"role\": \"OWNER\",\n      \"userByEmail\": \"test-runner@alpakka-bigquery-test.iam.gserviceaccount.com\"\n    },\n    {\n      \"role\": \"READER\",\n      \"specialGroup\": \"projectReaders\"\n    }\n  ],\n  \"creationTime\": \"1608433235439\",\n  \"lastModifiedTime\": \"1608433235439\",\n  \"location\": \"US\",\n  \"defaultPartitionExpirationMs\": \"5184000000\"\n}\n",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Sun, 20 Dec 2020 03:00:35 GMT" ],
+          "Etag" : [ "wZGrFfkWicNpAftGB6jokw==" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/alpakka-bigquery-test/datasets"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "GET"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "bigquery.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "body" : [ {
+          "matcher" : "exact",
+          "value" : ""
+        } ],
+        "requiresState" : {
+          "sequence:3" : "1"
+        }
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\n  \"kind\": \"bigquery#datasetList\",\n  \"etag\": \"Fpfdi1P3w+vGSM8klY0M/g==\",\n  \"datasets\": [\n    {\n      \"kind\": \"bigquery#dataset\",\n      \"id\": \"alpakka-bigquery-test:e2e_dataset_677\",\n      \"datasetReference\": {\n        \"datasetId\": \"e2e_dataset_677\",\n        \"projectId\": \"alpakka-bigquery-test\"\n      },\n      \"location\": \"US\"\n    }\n  ]\n}\n",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Sun, 20 Dec 2020 03:00:35 GMT" ],
+          "Etag" : [ "Fpfdi1P3w+vGSM8klY0M/g==" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        },
+        "transitionsState" : {
+          "sequence:3" : "2"
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/alpakka-bigquery-test/datasets/e2e_dataset_677/tables"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "POST"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "bigquery.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "body" : [ {
+          "matcher" : "json",
+          "value" : "{\"schema\":{\"fields\":[{\"mode\":\"REQUIRED\",\"name\":\"integer\",\"type\":\"INTEGER\"},{\"mode\":\"REQUIRED\",\"name\":\"long\",\"type\":\"INTEGER\"},{\"mode\":\"REQUIRED\",\"name\":\"float\",\"type\":\"FLOAT\"},{\"mode\":\"REQUIRED\",\"name\":\"double\",\"type\":\"FLOAT\"},{\"mode\":\"REQUIRED\",\"name\":\"string\",\"type\":\"STRING\"},{\"mode\":\"REQUIRED\",\"name\":\"boolean\",\"type\":\"BOOLEAN\"},{\"fields\":[{\"mode\":\"NULLABLE\",\"name\":\"nullable\",\"type\":\"STRING\"},{\"fields\":[{\"mode\":\"REQUIRED\",\"name\":\"numeric\",\"type\":\"NUMERIC\"}],\"mode\":\"REPEATED\",\"name\":\"repeated\",\"type\":\"RECORD\"}],\"mode\":\"REQUIRED\",\"name\":\"record\",\"type\":\"RECORD\"}]},\"tableReference\":{\"datasetId\":\"e2e_dataset_677\",\"tableId\":\"e2e_table_242\"}}"
+        } ]
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\n  \"kind\": \"bigquery#table\",\n  \"etag\": \"6pYpILcOiltUx1zids2ZQw==\",\n  \"id\": \"alpakka-bigquery-test:e2e_dataset_677.e2e_table_242\",\n  \"selfLink\": \"https://bigquery.googleapis.com/bigquery/v2/projects/alpakka-bigquery-test/datasets/e2e_dataset_677/tables/e2e_table_242\",\n  \"tableReference\": {\n    \"projectId\": \"alpakka-bigquery-test\",\n    \"datasetId\": \"e2e_dataset_677\",\n    \"tableId\": \"e2e_table_242\"\n  },\n  \"schema\": {\n    \"fields\": [\n      {\n        \"name\": \"integer\",\n        \"type\": \"INTEGER\",\n        \"mode\": \"REQUIRED\"\n      },\n      {\n        \"name\": \"long\",\n        \"type\": \"INTEGER\",\n        \"mode\": \"REQUIRED\"\n      },\n      {\n        \"name\": \"float\",\n        \"type\": \"FLOAT\",\n        \"mode\": \"REQUIRED\"\n      },\n      {\n        \"name\": \"double\",\n        \"type\": \"FLOAT\",\n        \"mode\": \"REQUIRED\"\n      },\n      {\n        \"name\": \"string\",\n        \"type\": \"STRING\",\n        \"mode\": \"REQUIRED\"\n      },\n      {\n        \"name\": \"boolean\",\n        \"type\": \"BOOLEAN\",\n        \"mode\": \"REQUIRED\"\n      },\n      {\n        \"name\": \"record\",\n        \"type\": \"RECORD\",\n        \"mode\": \"REQUIRED\",\n        \"fields\": [\n          {\n            \"name\": \"nullable\",\n            \"type\": \"STRING\",\n            \"mode\": \"NULLABLE\"\n          },\n          {\n            \"name\": \"repeated\",\n            \"type\": \"RECORD\",\n            \"mode\": \"REPEATED\",\n            \"fields\": [\n              {\n                \"name\": \"numeric\",\n                \"type\": \"NUMERIC\",\n                \"mode\": \"REQUIRED\"\n              }\n            ]\n          }\n        ]\n      }\n    ]\n  },\n  \"numBytes\": \"0\",\n  \"numLongTermBytes\": \"0\",\n  \"numRows\": \"0\",\n  \"creationTime\": \"1608433236013\",\n  \"expirationTime\": \"1613617236013\",\n  \"lastModifiedTime\": \"1608433236059\",\n  \"type\": \"TABLE\",\n  \"location\": \"US\"\n}\n",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Sun, 20 Dec 2020 03:00:36 GMT" ],
+          "Etag" : [ "6pYpILcOiltUx1zids2ZQw==" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/alpakka-bigquery-test/datasets/e2e_dataset_677/tables"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "GET"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "bigquery.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "body" : [ {
+          "matcher" : "exact",
+          "value" : ""
+        } ],
+        "requiresState" : {
+          "sequence:2" : "1"
+        }
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\n  \"kind\": \"bigquery#tableList\",\n  \"etag\": \"sJOC5wm8rwOwAZigAd938Q==\",\n  \"tables\": [\n    {\n      \"kind\": \"bigquery#table\",\n      \"id\": \"alpakka-bigquery-test:e2e_dataset_677.e2e_table_242\",\n      \"tableReference\": {\n        \"projectId\": \"alpakka-bigquery-test\",\n        \"datasetId\": \"e2e_dataset_677\",\n        \"tableId\": \"e2e_table_242\"\n      },\n      \"type\": \"TABLE\",\n      \"creationTime\": \"1608433236013\",\n      \"expirationTime\": \"1613617236013\"\n    }\n  ],\n  \"totalItems\": 1\n}\n",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Sun, 20 Dec 2020 03:00:36 GMT" ],
+          "Etag" : [ "sJOC5wm8rwOwAZigAd938Q==" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        },
+        "transitionsState" : {
+          "sequence:2" : "2"
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/upload/bigquery/v2/projects/alpakka-bigquery-test/jobs"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "POST"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "bigquery.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "query" : {
+          "uploadType" : [ {
+            "matcher" : "exact",
+            "value" : "resumable"
+          } ]
+        },
+        "body" : [ {
+          "matcher" : "json",
+          "value" : "{\"configuration\":{\"load\":{\"createDisposition\":\"CREATE_NEVER\",\"destinationTable\":{\"datasetId\":\"e2e_dataset_677\",\"projectId\":\"alpakka-bigquery-test\",\"tableId\":\"e2e_table_242\"},\"sourceFormat\":\"NEWLINE_DELIMITED_JSON\",\"writeDisposition\":\"WRITE_APPEND\"}}}"
+        } ],
+        "headers" : {
+          "X-Upload-Content-Type" : [ {
+            "matcher" : "exact",
+            "value" : "application/octet-stream"
+          } ]
+        },
+        "requiresState" : {
+          "sequence:1" : "1"
+        }
+      },
+      "response" : {
+        "status" : 200,
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Content-Length" : [ "0" ],
+          "Content-Type" : [ "text/plain; charset=utf-8", "application/json; charset=UTF-8" ],
+          "Date" : [ "Sun, 20 Dec 2020 03:00:36 GMT" ],
+          "Etag" : [ "Cira0kHYLYuY6gDRLY0TLA==" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Location" : [ "https://bigquery.googleapis.com/upload/bigquery/v2/projects/alpakka-bigquery-test/jobs?uploadType=resumable&upload_id=ABg5-UzSIW_CQL0rWXkWykrkLaULV2tAVYzDuHJgWr6CSkLY341js3TQ0AKh42t6boXJoSdYIlfzYCS_y0RXg0v4bMk" ],
+          "Server" : [ "UploadServer" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Guploader-Uploadid" : [ "ABg5-UzSIW_CQL0rWXkWykrkLaULV2tAVYzDuHJgWr6CSkLY341js3TQ0AKh42t6boXJoSdYIlfzYCS_y0RXg0v4bMk" ]
+        },
+        "transitionsState" : {
+          "sequence:1" : "2"
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/upload/bigquery/v2/projects/alpakka-bigquery-test/jobs"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "POST"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "bigquery.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "query" : {
+          "uploadType" : [ {
+            "matcher" : "exact",
+            "value" : "resumable"
+          } ]
+        },
+        "body" : [ {
+          "matcher" : "json",
+          "value" : "{\"configuration\":{\"load\":{\"createDisposition\":\"CREATE_NEVER\",\"destinationTable\":{\"datasetId\":\"e2e_dataset_677\",\"projectId\":\"alpakka-bigquery-test\",\"tableId\":\"e2e_table_242\"},\"sourceFormat\":\"NEWLINE_DELIMITED_JSON\",\"writeDisposition\":\"WRITE_APPEND\"}}}"
+        } ],
+        "headers" : {
+          "X-Upload-Content-Type" : [ {
+            "matcher" : "exact",
+            "value" : "application/octet-stream"
+          } ]
+        },
+        "requiresState" : {
+          "sequence:1" : "2"
+        }
+      },
+      "response" : {
+        "status" : 200,
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Content-Length" : [ "0" ],
+          "Content-Type" : [ "text/plain; charset=utf-8", "application/json; charset=UTF-8" ],
+          "Date" : [ "Sun, 20 Dec 2020 03:00:38 GMT" ],
+          "Etag" : [ "shqez/Pg2KdhaCDFF/qoAg==" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Location" : [ "https://bigquery.googleapis.com/upload/bigquery/v2/projects/alpakka-bigquery-test/jobs?uploadType=resumable&upload_id=ABg5-Uw3__ScUlWxLYMXPqQjxT0irq6GN70AHDZcer9Rn1NiwKcDy58nePY4Dszc3FIvxU7paODyxNNf6txqIr9LfMMi6aP5hQ" ],
+          "Server" : [ "UploadServer" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Guploader-Uploadid" : [ "ABg5-Uw3__ScUlWxLYMXPqQjxT0irq6GN70AHDZcer9Rn1NiwKcDy58nePY4Dszc3FIvxU7paODyxNNf6txqIr9LfMMi6aP5hQ" ]
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/alpakka-bigquery-test/datasets/e2e_dataset_677/tables/e2e_table_242/data"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "GET"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "bigquery.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "body" : [ {
+          "matcher" : "exact",
+          "value" : ""
+        } ]
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\n  \"kind\": \"bigquery#tableDataList\",\n  \"etag\": \"ef1lIjZlKhSpij+KJx/c9w==\",\n  \"totalRows\": \"0\"\n}\n",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Sun, 20 Dec 2020 03:00:38 GMT" ],
+          "Etag" : [ "ef1lIjZlKhSpij+KJx/c9w==" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/alpakka-bigquery-test/queries"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "POST"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "bigquery.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "body" : [ {
+          "matcher" : "json",
+          "value" : "{\"dryRun\":false,\"query\":\"SELECT string, record, integer FROM e2e_dataset_677.e2e_table_242 WHERE boolean;\",\"useLegacySql\":false}"
+        } ]
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\n  \"kind\": \"bigquery#queryResponse\",\n  \"schema\": {\n    \"fields\": [\n      {\n        \"name\": \"string\",\n        \"type\": \"STRING\",\n        \"mode\": \"NULLABLE\"\n      },\n      {\n        \"name\": \"record\",\n        \"type\": \"RECORD\",\n        \"mode\": \"NULLABLE\",\n        \"fields\": [\n          {\n            \"name\": \"nullable\",\n            \"type\": \"STRING\",\n            \"mode\": \"NULLABLE\"\n          },\n          {\n            \"name\": \"repeated\",\n            \"type\": \"RECORD\",\n            \"mode\": \"REPEATED\",\n            \"fields\": [\n              {\n                \"name\": \"numeric\",\n                \"type\": \"NUMERIC\",\n                \"mode\": \"NULLABLE\"\n              }\n            ]\n          }\n        ]\n      },\n      {\n        \"name\": \"integer\",\n        \"type\": \"INTEGER\",\n        \"mode\": \"NULLABLE\"\n      }\n    ]\n  },\n  \"jobReference\": {\n    \"projectId\": \"alpakka-bigquery-test\",\n    \"jobId\": \"job_BUV-Z42J8JPcipKnoe0LrcbrsDF4\",\n    \"location\": \"US\"\n  },\n  \"totalRows\": \"0\",\n  \"totalBytesProcessed\": \"0\",\n  \"jobComplete\": true,\n  \"cacheHit\": false\n}\n",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Sun, 20 Dec 2020 03:00:39 GMT" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/alpakka-bigquery-test/datasets/e2e_dataset_677/tables/e2e_table_242"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "DELETE"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "bigquery.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "body" : [ {
+          "matcher" : "exact",
+          "value" : ""
+        } ]
+      },
+      "response" : {
+        "status" : 204,
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Content-Length" : [ "0" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Sun, 20 Dec 2020 03:00:39 GMT" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/alpakka-bigquery-test/datasets/e2e_dataset_677/tables"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "GET"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "bigquery.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "body" : [ {
+          "matcher" : "exact",
+          "value" : ""
+        } ],
+        "requiresState" : {
+          "sequence:2" : "2"
+        }
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\n  \"kind\": \"bigquery#tableList\",\n  \"etag\": \"1B2M2Y8AsgTpgAmY7PhCfg==\",\n  \"totalItems\": 0\n}\n",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Sun, 20 Dec 2020 03:00:40 GMT" ],
+          "Etag" : [ "1B2M2Y8AsgTpgAmY7PhCfg==" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/alpakka-bigquery-test/datasets/e2e_dataset_677"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "DELETE"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "bigquery.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "query" : {
+          "deleteContents" : [ {
+            "matcher" : "exact",
+            "value" : "false"
+          } ]
+        },
+        "body" : [ {
+          "matcher" : "exact",
+          "value" : ""
+        } ]
+      },
+      "response" : {
+        "status" : 204,
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Content-Length" : [ "0" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Sun, 20 Dec 2020 03:00:40 GMT" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/alpakka-bigquery-test/datasets"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "GET"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "bigquery.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "body" : [ {
+          "matcher" : "exact",
+          "value" : ""
+        } ],
+        "requiresState" : {
+          "sequence:3" : "2"
+        }
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\n  \"kind\": \"bigquery#datasetList\",\n  \"etag\": \"1B2M2Y8AsgTpgAmY7PhCfg==\"\n}\n",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Sun, 20 Dec 2020 03:00:40 GMT" ],
+          "Etag" : [ "1B2M2Y8AsgTpgAmY7PhCfg==" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        }
+      }
+    } ],
+    "globalActions" : {
+      "delays" : [ ]
+    }
+  },
+  "meta" : {
+    "schemaVersion" : "v5",
+    "hoverflyVersion" : "v1.1.4",
+    "timeExported" : "2020-12-19T19:00:40-08:00"
+  }
+}

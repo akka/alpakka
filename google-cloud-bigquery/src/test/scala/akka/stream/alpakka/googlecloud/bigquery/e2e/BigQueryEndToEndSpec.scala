@@ -4,100 +4,180 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.e2e
 import akka.actor.ActorSystem
-import akka.stream.alpakka.googlecloud.bigquery.client.TableDataQueryJsonProtocol.Field
-import akka.stream.alpakka.googlecloud.bigquery.client.TableListQueryJsonProtocol.{QueryTableModel, TableReference}
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.{BigQueryCallbacks, GoogleBigQuerySource}
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.BigQueryJsonProtocol._
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.SprayJsonSupport._
-import akka.stream.scaladsl.Sink
+import akka.{pattern, Done}
+import akka.stream.alpakka.googlecloud.bigquery.HoverflySupport
+import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.DoneState
+import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.TableReference
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.BigQuery
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.schema.BigQuerySchemas._
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryJsonProtocol._
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.SprayJsonSupport._
+import akka.stream.scaladsl.{Sink, Source}
+import akka.testkit.TestKit
+import io.specto.hoverfly.junit.core.{HoverflyMode, SimulationSource}
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AsyncWordSpecLike
 
+import java.nio.file.Path
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
+import scala.util.Random
 
-class BigQueryEndToEndSpec extends BigQueryTableHelper with Matchers {
-  override implicit val actorSystem: ActorSystem = ActorSystem("BigQueryEndToEndSpec")
+class BigQueryEndToEndSpec
+    extends TestKit(ActorSystem("BigQueryEndToEndSpec"))
+    with AsyncWordSpecLike
+    with Matchers
+    with BeforeAndAfterAll
+    with HoverflySupport {
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    system.settings.config.getString("alpakka.google.bigquery.test.e2e-mode") match {
+      case "simulate" =>
+        hoverfly.simulate(SimulationSource.url(getClass.getClassLoader.getResource("BigQueryEndToEndSpec.json")))
+      case "capture" => hoverfly.resetMode(HoverflyMode.CAPTURE)
+      case _ => throw new IllegalArgumentException
+    }
+  }
 
   override def afterAll() = {
-    super.afterAll
-    actorSystem.terminate
+    system.terminate()
+    if (hoverfly.getMode == HoverflyMode.CAPTURE)
+      hoverfly.exportSimulation(Path.of("hoverfly/BigQueryEndToEndSpec.json"))
+    super.afterAll()
   }
 
-  "Google BigQuery" should {
+  implicit override def executionContext = system.dispatcher
+  implicit def scheduler = system.scheduler
 
-    "list tables" in {
-      val tables: Future[Seq[QueryTableModel]] =
-        GoogleBigQuerySource.listTables(projectConfig).runWith(Sink.seq).map(_.flatten)
-      await(tables) should contain(QueryTableModel(TableReference(tableName), "TABLE"))
+  case class A(integer: Int, long: Long, float: Float, double: Double, string: String, boolean: Boolean, record: B)
+  case class B(nullable: Option[String], repeated: Seq[C])
+  case class C(numeric: BigDecimal)
+
+  implicit val cFormat = bigQueryJsonFormat1(C)
+  implicit val bFormat = bigQueryJsonFormat2(B)
+  implicit val aFormat = bigQueryJsonFormat7(A)
+  implicit val cSchema = bigQuerySchema1(C)
+  implicit val bSchema = bigQuerySchema2(B)
+  implicit val aSchema = bigQuerySchema7(A)
+
+  val rng = new Random(1234567890)
+
+  val datasetId = f"e2e_dataset_${rng.nextInt(1000)}%03d"
+  val tableId = f"e2e_table_${rng.nextInt(1000)}%03d"
+
+  def randomC(): C = C(BigDecimal(f"${rng.nextInt(100)}.${rng.nextInt(100)}%02d"))
+  def randomB(): B = B(
+    if (rng.nextBoolean()) Some(rng.nextString(rng.nextInt(64))) else None,
+    Seq.fill(rng.nextInt(16))(randomC())
+  )
+  def randomA(): A = A(
+    rng.nextInt(),
+    rng.nextLong(),
+    rng.nextFloat(),
+    rng.nextDouble(),
+    rng.nextString(rng.nextInt(64)),
+    rng.nextBoolean(),
+    randomB()
+  )
+
+  val rows = List.fill(10)(randomA())
+
+  "BigQuery" should {
+
+    "create dataset" in {
+      BigQuery.createDataset(datasetId).map { dataset =>
+        dataset.datasetReference.datasetId shouldEqual datasetId
+      }
     }
 
-    "list fields" in {
-      val fields: Future[Seq[Field]] =
-        GoogleBigQuerySource.listFields(tableName, projectConfig).runWith(Sink.seq).map(_.flatten)
-      await(fields).map(_.name).sorted shouldBe Seq("A1", "A2", "A3")
+    "list new dataset" in {
+      BigQuery.datasets.runWith(Sink.seq).map { datasets =>
+        datasets.map(_.datasetReference.datasetId) should contain(datasetId)
+      }
     }
 
-    "select CSV style" in {
-      val result =
-        await(
-          GoogleBigQuerySource
-            .runQueryCsvStyle(s"SELECT * FROM $dataset.$tableName;", BigQueryCallbacks.ignore, projectConfig)
-            .runWith(Sink.seq)
-        )
-
-      println(result)
-
-      checkCsvStyleResultWithoutRowOrder(
-        result,
-        Seq(
-          Seq("A1", "A2", "A3"),
-          Seq("v1", "1", "1"),
-          Seq("v2", "2", "0"),
-          Seq("v3", "3", "1"),
-          Seq("v4", "-4", "0"),
-          Seq("v5", "null", "0"),
-          Seq("v6", "6", "null"),
-          Seq("v7", "null", "null")
-        )
-      )
+    "create table" in {
+      BigQuery.createTable[A](datasetId, tableId).map { table =>
+        table.tableReference should matchPattern {
+          case TableReference(_, `datasetId`, `tableId`) =>
+        }
+      }
     }
 
-    "select into case class" in {
-
-      case class Row(A1: Option[String], A2: Option[Int], A3: Option[Boolean])
-      implicit val rowFormatter = bigQueryJsonFormat3(Row)
-
-      val result =
-        await(
-          GoogleBigQuerySource[Row]
-            .runQuery(s"SELECT * FROM $dataset.$tableName;", BigQueryCallbacks.ignore, projectConfig)
-            .runWith(Sink.seq)
-        )
-
-      checkCaseClassResultWithoutOrder(
-        result,
-        Seq(
-          Row(Some("v1"), Some(1), Some(true)),
-          Row(Some("v2"), Some(2), Some(false)),
-          Row(Some("v3"), Some(3), Some(true)),
-          Row(Some("v4"), Some(-4), Some(false)),
-          Row(Some("v5"), None, Some(false)),
-          Row(Some("v6"), Some(6), None),
-          Row(Some("v7"), None, None)
-        )
-      )
-
+    "list new table" in {
+      BigQuery.tables(datasetId).runWith(Sink.seq).map { tables =>
+        tables.map(_.tableReference.tableId) should contain(tableId)
+      }
     }
 
-  }
+    "insert rows via streaming insert" in {
+      // TODO To test requires a project with billing enabled
+      Future.successful(assert(true))
+    }
 
-  private def checkCsvStyleResultWithoutRowOrder(result: Seq[Seq[String]], expected: Seq[Seq[String]]): Unit = {
-    result.size shouldEqual expected.size
-    result.head.map(_.toUpperCase) shouldEqual expected.head.map(_.toUpperCase)
-    result.foreach(expected contains _)
-  }
+    "insert rows via load jobs" in {
+      Source(rows)
+        .via(BigQuery.insertAllAsync[A](datasetId, tableId))
+        .runWith(Sink.seq)
+        .flatMap {
+          case Seq(job) =>
+            pattern
+              .retry(
+                () => {
+                  BigQuery.job(job.jobReference.flatMap(_.jobId).get).flatMap { job =>
+                    if (job.status.map(_.state).get == DoneState)
+                      Future.successful(job)
+                    else
+                      Future.failed(new RuntimeException("Job not done."))
+                  }
+                },
+                60,
+                if (hoverfly.getMode == HoverflyMode.SIMULATE) 0.seconds else 1.second
+              )
+              .map { job =>
+                job.status.flatMap(_.errorResult) shouldBe None
+              }
+        }
+    }
 
-  private def checkCaseClassResultWithoutOrder[T](result: Seq[T], expected: Seq[T]): Unit = {
-    result.size shouldEqual expected.size
-    result.foreach(expected contains _)
+    "retrieve rows" in {
+      BigQuery[A].tableData(datasetId, tableId).runWith(Sink.seq).map { retrievedRows =>
+        retrievedRows should contain theSameElementsAs rows
+      }
+    }
+
+    "run query" in {
+      val query = s"SELECT string, record, integer FROM $datasetId.$tableId WHERE boolean;"
+      BigQuery[(String, B, Int)].query(query, useLegacySql = false).runWith(Sink.seq).map { retrievedRows =>
+        retrievedRows should contain theSameElementsAs rows.filter(_.boolean).map(a => (a.string, a.record, a.integer))
+      }
+    }
+
+    "delete table" in {
+      BigQuery.deleteTable(datasetId, tableId).map { done =>
+        done shouldBe Done
+      }
+    }
+
+    "not list deleted table" in {
+      BigQuery.tables(datasetId).runWith(Sink.seq).map { tables =>
+        tables.map(_.tableReference.tableId) shouldNot contain(tableId)
+      }
+    }
+
+    "delete dataset" in {
+      BigQuery.deleteDataset(datasetId).map { done =>
+        done shouldBe Done
+      }
+    }
+
+    "not list deleted dataset" in {
+      BigQuery.datasets.runWith(Sink.seq).map { datasets =>
+        datasets.map(_.datasetReference.datasetId) shouldNot contain(datasetId)
+      }
+    }
+
   }
 }

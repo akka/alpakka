@@ -1,0 +1,25 @@
+/*
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ */
+
+package akka.stream.alpakka.googlecloud.bigquery.scaladsl.schema
+
+import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.{RecordType, TableFieldSchema, TableSchema}
+
+import scala.reflect.{classTag, ClassTag}
+
+trait ProductSchemasInstances { this: ProductSchemas with StandardSchemas =>
+[#  // Case classes with 1 parameters
+
+  def bigQuerySchema1[[#P1#], T <: Product: ClassTag](ev: ([#P1#]) => T)(implicit [#writer1: SchemaWriter[P1]#]): TableSchemaWriter[T] = new TableSchemaWriter[T] {
+    def write = TableSchema(schemaFields[[#P1#], T])
+    def write(name: String, mode: FieldMode) = TableFieldSchema(name, RecordType, Some(mode.toString), Some(schemaFields[[#P1#], T]))
+  }
+
+  private def schemaFields[[#P1#], T <: Product: ClassTag](implicit [#writer1: SchemaWriter[P1]#]): Seq[TableFieldSchema] = {
+    val Array([#p1#]) = extractFieldNames(classTag[T])
+    Seq([#writer1.write(p1, Required)#])
+  }#
+
+]
+}
