@@ -4,7 +4,6 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.e2e
 import akka.actor.ActorSystem
-import akka.{pattern, Done}
 import akka.stream.alpakka.googlecloud.bigquery.HoverflySupport
 import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.DoneState
 import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.TableReference
@@ -14,12 +13,13 @@ import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryJsonProto
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.SprayJsonSupport._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
+import akka.{pattern, Done}
 import io.specto.hoverfly.junit.core.{HoverflyMode, SimulationSource}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpecLike
 
-import java.nio.file.Path
+import java.io.File
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.util.Random
@@ -44,7 +44,7 @@ class BigQueryEndToEndSpec
   override def afterAll() = {
     system.terminate()
     if (hoverfly.getMode == HoverflyMode.CAPTURE)
-      hoverfly.exportSimulation(Path.of("hoverfly/BigQueryEndToEndSpec.json"))
+      hoverfly.exportSimulation(new File("hoverfly/BigQueryEndToEndSpec.json").toPath)
     super.afterAll()
   }
 
