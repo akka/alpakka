@@ -29,7 +29,7 @@ private[bigquery] object ServiceAccountCredentials {
 
   def apply(c: Config)(implicit system: ClassicActorSystemProvider): CredentialsProvider = {
     val (projectId, clientEmail, privateKey) = {
-      if (c.getString("path").isBlank) {
+      if (c.getString("path").isEmpty) {
         (
           c.getString("project-id"),
           c.getString("client-email"),
