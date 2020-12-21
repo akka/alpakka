@@ -143,14 +143,14 @@ class BigQueryEndToEndSpec
     }
 
     "retrieve rows" in {
-      BigQuery[A].tableData(datasetId, tableId).runWith(Sink.seq).map { retrievedRows =>
+      BigQuery.tableData[A](datasetId, tableId).runWith(Sink.seq).map { retrievedRows =>
         retrievedRows should contain theSameElementsAs rows
       }
     }
 
     "run query" in {
       val query = s"SELECT string, record, integer FROM $datasetId.$tableId WHERE boolean;"
-      BigQuery[(String, B, Int)].query(query, useLegacySql = false).runWith(Sink.seq).map { retrievedRows =>
+      BigQuery.query[(String, B, Int)](query, useLegacySql = false).runWith(Sink.seq).map { retrievedRows =>
         retrievedRows should contain theSameElementsAs rows.filter(_.boolean).map(a => (a.string, a.record, a.integer))
       }
     }

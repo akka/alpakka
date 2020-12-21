@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.model
 
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.PageToken
 import spray.json.{DefaultJsonProtocol, JsonFormat, RootJsonFormat}
 
 object DatasetJsonProtocol extends DefaultJsonProtocol {
@@ -17,7 +18,8 @@ object DatasetJsonProtocol extends DefaultJsonProtocol {
   implicit val referenceFormat: JsonFormat[DatasetReference] = jsonFormat2(DatasetReference)
   implicit val format: RootJsonFormat[Dataset] = jsonFormat4(Dataset)
 
-  final case class DatasetListResponse(datasets: Option[Seq[Dataset]])
+  final case class DatasetListResponse(nextPageToken: Option[String], datasets: Option[Seq[Dataset]])
 
-  implicit val listResponseFormat: RootJsonFormat[DatasetListResponse] = jsonFormat1(DatasetListResponse)
+  implicit val listResponseFormat: RootJsonFormat[DatasetListResponse] = jsonFormat2(DatasetListResponse)
+  implicit val pageToken: PageToken[DatasetListResponse] = _.nextPageToken
 }

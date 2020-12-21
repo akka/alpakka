@@ -4,7 +4,6 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.scaladsl
 
-import _root_.spray.json.JsValue
 import akka.actor.ClassicActorSystemProvider
 import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.marshalling.{Marshal, ToByteStringMarshaller, ToEntityMarshaller}
@@ -12,12 +11,10 @@ import akka.http.scaladsl.model.HttpMethods.{DELETE, GET, POST}
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{HttpEntity, HttpRequest, HttpResponse, RequestEntity}
-import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal, Unmarshaller}
+import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
 import akka.http.scaladsl.util.FastFuture.EnhancedFuture
-import akka.stream.OverflowStrategy
 import akka.stream.alpakka.googlecloud.bigquery.impl.http.BigQueryHttp
-import akka.stream.alpakka.googlecloud.bigquery.impl.paginated.PaginatedRequest
-import akka.stream.alpakka.googlecloud.bigquery.impl.{BigQueryExt, LoadJob}
+import akka.stream.alpakka.googlecloud.bigquery.impl.{BigQueryExt, LoadJob, PaginatedRequest}
 import akka.stream.alpakka.googlecloud.bigquery.model.DatasetJsonProtocol.{
   Dataset,
   DatasetListResponse,
@@ -33,7 +30,6 @@ import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.{
   WriteAppendDisposition
 }
 import akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.{QueryRequest, QueryResponse}
-import akka.stream.alpakka.googlecloud.bigquery.model.ResponseMetadataJsonProtocol.ResponseMetadata
 import akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol
 import akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.{
   TableDataInsertAllRequest,
@@ -49,7 +45,8 @@ import akka.stream.alpakka.googlecloud.bigquery.{
   BigQuerySettings,
   InsertAllRetryPolicy
 }
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.scaladsl.{Flow, Keep, RestartSource, Sink, Source}
+import akka.stream.{OverflowStrategy, RestartSettings}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
 import com.github.ghik.silencer.silent
@@ -62,8 +59,6 @@ import scala.concurrent.Future
  */
 object BigQuery {
 
-  def apply[T]: BigQuery[T] = new BigQuery[T]
-
   def settings(implicit system: ClassicActorSystemProvider): BigQuerySettings = BigQueryExt(system).settings
 
   def settings(prefix: String)(implicit system: ClassicActorSystemProvider): BigQuerySettings =
@@ -73,11 +68,13 @@ object BigQuery {
                                           settings: BigQuerySettings): Future[HttpResponse] =
     BigQueryHttp().singleRequestWithOAuth(request)
 
-  def paginatedRequest[Out, Json](
-      request: HttpRequest
-  )(implicit jsonUnmarshaller: FromEntityUnmarshaller[Json],
-    metadataUnmarshaller: Unmarshaller[Json, ResponseMetadata],
-    unmarshaller: Unmarshaller[Json, Out]): Source[Out, NotUsed] = PaginatedRequest[Out, Json](request)
+  def paginatedRequest[Out: FromEntityUnmarshaller: PageToken](
+      request: HttpRequest,
+      initialPageToken: Option[String] = None
+  ): Source[Out, NotUsed] = {
+    require(request.method == GET, "Paginated request must be a GET request.")
+    PaginatedRequest[Out](request, initialPageToken)
+  }
 
   def datasets: Source[Dataset, NotUsed] = datasets()
 
@@ -91,7 +88,7 @@ object BigQuery {
         "maxResults" -> maxResults :+?
         "all" -> all :+?
         "filter" -> (if (filter.isEmpty) None else Some(mkFilterParam(filter)))
-      paginatedRequest[DatasetListResponse, JsValue](HttpRequest(GET, uri.withQuery(query)))
+      paginatedRequest[DatasetListResponse](HttpRequest(GET, uri.withQuery(query)))
     }.mapMaterializedValue(_ => NotUsed).mapConcat(_.datasets.fold(List.empty[Dataset])(_.toList))
 
   def dataset(datasetId: String)(implicit system: ClassicActorSystemProvider,
@@ -140,7 +137,7 @@ object BigQuery {
       import spray.SprayJsonSupport._
       val uri = BigQueryEndpoints.tables(settings.projectId, datasetId)
       val query = Query.Empty :+? "maxResults" -> maxResults
-      paginatedRequest[TableListResponse, JsValue](HttpRequest(GET, uri.withQuery(query)))
+      paginatedRequest[TableListResponse](HttpRequest(GET, uri.withQuery(query)))
     }.wireTapMat(Sink.head)(Keep.right).mapConcat(_.tables.fold(List.empty[Table])(_.toList))
 
   def table(datasetId: String, tableId: String)(implicit system: ClassicActorSystemProvider,
@@ -214,28 +211,77 @@ object BigQuery {
       }(system.classicSystem.dispatcher)
   }
 
-  def query[Out, Json](
+  def query[Out](
       query: String,
       dryRun: Boolean = false,
       useLegacySql: Boolean = true,
       onCompleteCallback: Option[JobReference] => Future[Done] = BigQueryCallbacks.ignore
-  )(implicit jsonUnmarshaller: FromEntityUnmarshaller[Json],
-    metadataUnmarshaller: Unmarshaller[Json, ResponseMetadata],
-    queryResponseUnmarshaller: Unmarshaller[Json, QueryResponse[Out]]): Source[Out, Future[QueryResponse[Out]]] = {
+  )(
+      implicit queryResponseUnmarshaller: FromEntityUnmarshaller[QueryResponse[Out]]
+  ): Source[Out, Future[QueryResponse[Out]]] = {
     val request = QueryRequest(query, None, None, None, Some(dryRun), Some(useLegacySql), None)
     this.query(request, onCompleteCallback)
   }
 
-  def query[Out, Json](query: QueryRequest, onCompleteCallback: Option[JobReference] => Future[Done])(
-      implicit jsonUnmarshaller: FromEntityUnmarshaller[Json],
-      metadataUnmarshaller: Unmarshaller[Json, ResponseMetadata],
-      queryResponseUnmarshaller: Unmarshaller[Json, QueryResponse[Out]]
+  def query[Out](query: QueryRequest, onCompleteCallback: Option[JobReference] => Future[Done])(
+      implicit queryResponseUnmarshaller: FromEntityUnmarshaller[QueryResponse[Out]]
   ): Source[Out, Future[QueryResponse[Out]]] =
-    source { settings =>
-      val uri = BigQueryEndpoints.queries(settings.projectId)
-      val entity = HttpEntity(`application/json`, query.toJson.compactPrint)
-      paginatedRequest[QueryResponse[Out], Json](HttpRequest(POST, uri, entity = entity))
-    }.alsoTo(onCompleteCallbackSink(onCompleteCallback))
+    Source
+      .fromMaterializer { (mat, attr) =>
+        import BigQueryException._
+        import mat.executionContext
+        implicit val system = mat.system
+        implicit val settings = BigQueryAttributes.resolveSettings(attr, mat)
+
+        val initialRequest = {
+          val uri = BigQueryEndpoints.queries(settings.projectId)
+          val entity = HttpEntity(`application/json`, query.toJson.compactPrint)
+          HttpRequest(POST, uri, entity = entity)
+        }
+
+        Source.lazyFutureSource { () =>
+          for {
+            response <- BigQueryHttp().retryRequestWithOAuth(initialRequest)
+            initialQueryResponse <- Unmarshal(response.entity).to[QueryResponse[Out]]
+          } yield {
+
+            val jobId = initialQueryResponse.jobReference.jobId.getOrElse {
+              throw BigQueryException("Query response did not contain job id.")
+            }
+
+            val head =
+              if (initialQueryResponse.jobComplete)
+                Source.single(initialQueryResponse)
+              else
+                Source.empty
+
+            val tail =
+              if (initialQueryResponse.jobComplete & initialQueryResponse.pageToken.isEmpty)
+                Source.empty
+              else {
+                import settings.retrySettings._
+                val pages = queryResultsPages[Out](jobId,
+                                                   None,
+                                                   query.maxResults,
+                                                   query.timeoutMs,
+                                                   initialQueryResponse.jobReference.location,
+                                                   initialQueryResponse.pageToken)
+                  .map { queryResponse =>
+                    if (queryResponse.jobComplete)
+                      queryResponse
+                    else
+                      throw BigQueryException("Query job not complete.")
+                  }
+                val restartSettings = RestartSettings(minBackoff, maxBackoff, randomFactor)
+                RestartSource.onFailuresWithBackoff(restartSettings)(() => pages)
+              }
+
+            head.concat(tail)
+          }
+
+        }
+      }
+      .alsoTo(onCompleteCallbackSink(onCompleteCallback))
       .wireTapMat(Sink.head)(Keep.right)
       .buffer(1, OverflowStrategy.backpressure) // Lets the callbacks complete eagerly even if downstream cancels
       .mapConcat(_.rows.fold[List[Out]](Nil)(_.toList))
@@ -250,38 +296,50 @@ object BigQuery {
           .map(_.jobReference)
           .wireTapMat(Sink.headOption)(Keep.right)
           .toMat(Sink.ignore) { (jobReference, done) =>
-            done.transformWith(_ => jobReference)(ExecutionContexts.parasitic).flatMap { jobReference =>
-              callback(jobReference.flatten)
-            }
+            done.transformWith(_ => jobReference)(ExecutionContexts.parasitic).flatMap(callback)
           }
       }
       .mapMaterializedValue(_ => NotUsed)
 
-  def queryResults[Out, Json](
+  def queryResults[Out](
       jobId: String,
       startIndex: Option[Long] = None,
       maxResults: Option[Int] = None,
-      timeoutMs: Option[Int] = None
-  )(implicit jsonUnmarshaller: FromEntityUnmarshaller[Json],
-    metadataUnmarshaller: Unmarshaller[Json, ResponseMetadata],
-    queryResponseUnmarshaller: Unmarshaller[Json, QueryResponse[Out]]): Source[Out, Future[QueryResponse[Out]]] =
+      timeoutMs: Option[Int] = None,
+      location: Option[String] = None
+  )(
+      implicit queryResponseUnmarshaller: FromEntityUnmarshaller[QueryResponse[Out]]
+  ): Source[Out, Future[QueryResponse[Out]]] =
+    queryResultsPages(jobId, startIndex, maxResults, timeoutMs, location, None)
+      .wireTapMat(Sink.head)(Keep.right)
+      .mapConcat(_.rows.fold[List[Out]](Nil)(_.toList))
+
+  private def queryResultsPages[Out](
+      jobId: String,
+      startIndex: Option[Long],
+      maxResults: Option[Int],
+      timeoutMs: Option[Int],
+      location: Option[String],
+      pageToken: Option[String]
+  )(
+      implicit queryResponseUnmarshaller: FromEntityUnmarshaller[QueryResponse[Out]]
+  ): Source[QueryResponse[Out], NotUsed] =
     source { settings =>
       val uri = BigQueryEndpoints.job(settings.projectId, jobId)
       val query = Query.Empty :+?
         "startIndex" -> startIndex :+?
         "maxResults" -> maxResults :+?
-        "timeoutMs" -> timeoutMs
-      paginatedRequest[QueryResponse[Out], Json](HttpRequest(GET, uri.withQuery(query)))
-    }.wireTapMat(Sink.head)(Keep.right).mapConcat(_.rows.fold[List[Out]](Nil)(_.toList))
+        "timeoutMs" -> timeoutMs :+?
+        "location" -> location
+      paginatedRequest[QueryResponse[Out]](HttpRequest(GET, uri.withQuery(query)), pageToken)
+    }.mapMaterializedValue(_ => NotUsed)
 
-  def tableData[Out, Json](datasetId: String,
-                           tableId: String,
-                           startIndex: Option[Long] = None,
-                           maxResults: Option[Int] = None,
-                           selectedFields: Seq[String] = Seq.empty)(
-      implicit jsonUnmarshaller: FromEntityUnmarshaller[Json],
-      metadataUnmarshaller: Unmarshaller[Json, ResponseMetadata],
-      tableDataListUnmarshaller: Unmarshaller[Json, TableDataListResponse[Out]]
+  def tableData[Out](datasetId: String,
+                     tableId: String,
+                     startIndex: Option[Long] = None,
+                     maxResults: Option[Int] = None,
+                     selectedFields: Seq[String] = Seq.empty)(
+      implicit tableDataListUnmarshaller: FromEntityUnmarshaller[TableDataListResponse[Out]]
   ): Source[Out, Future[TableDataListResponse[Out]]] =
     source { settings =>
       val uri = BigQueryEndpoints.tableData(settings.projectId, datasetId, tableId)
@@ -289,7 +347,7 @@ object BigQuery {
         "startIndex" -> startIndex :+?
         "maxResults" -> maxResults :+?
         "selectedFields" -> (if (selectedFields.isEmpty) None else Some(selectedFields.mkString(",")))
-      paginatedRequest[TableDataListResponse[Out], Json](HttpRequest(GET, uri.withQuery(query)))
+      paginatedRequest[TableDataListResponse[Out]](HttpRequest(GET, uri.withQuery(query)))
     }.wireTapMat(Sink.head)(Keep.right).mapConcat(_.rows.fold[List[Out]](Nil)(_.toList))
 
   def insertAll[In](
@@ -443,71 +501,4 @@ object BigQuery {
     lsb |= 0x8000000000000000L // set to IETF variant
     new UUID(msb, lsb)
   }
-}
-
-final class BigQuery[T] private () {
-
-  def createTable(datasetId: String, tableId: String)(
-      implicit system: ClassicActorSystemProvider,
-      settings: BigQuerySettings,
-      schemaWriter: TableSchemaWriter[T]
-  ): Future[Table] = BigQuery.createTable(datasetId, tableId)
-
-  def paginatedRequest[Json](request: HttpRequest)(implicit jsonUnmarshaller: FromEntityUnmarshaller[Json],
-                                                   metadataUnmarshaller: Unmarshaller[Json, ResponseMetadata],
-                                                   unmarshaller: Unmarshaller[Json, T]): Source[T, NotUsed] =
-    BigQuery.paginatedRequest[T, Json](request)
-
-  def query[Json](
-      query: String,
-      dryRun: Boolean = false,
-      useLegacySql: Boolean = true,
-      onCompleteCallback: Option[JobReference] => Future[Done] = BigQueryCallbacks.ignore
-  )(implicit jsonUnmarshaller: FromEntityUnmarshaller[Json],
-    metadataUnmarshaller: Unmarshaller[Json, ResponseMetadata],
-    queryResponseUnmarshaller: Unmarshaller[Json, QueryResponse[T]]): Source[T, Future[QueryResponse[T]]] =
-    BigQuery.query(query, dryRun, useLegacySql, onCompleteCallback)
-
-  def query[Json](query: QueryRequest, onCompleteCallback: Option[JobReference] => Future[Done])(
-      implicit jsonUnmarshaller: FromEntityUnmarshaller[Json],
-      metadataUnmarshaller: Unmarshaller[Json, ResponseMetadata],
-      queryResponseUnmarshaller: Unmarshaller[Json, QueryResponse[T]]
-  ): Source[T, Future[QueryResponse[T]]] = BigQuery.query(query, onCompleteCallback)
-
-  def queryResults[Json](jobId: String,
-                         startIndex: Option[Long] = None,
-                         maxResults: Option[Int] = None,
-                         timeoutMs: Option[Int] = None)(
-      implicit jsonUnmarshaller: FromEntityUnmarshaller[Json],
-      metadataUnmarshaller: Unmarshaller[Json, ResponseMetadata],
-      queryResponseUnmarshaller: Unmarshaller[Json, QueryResponse[T]]
-  ): Source[T, Future[QueryResponse[T]]] = BigQuery.queryResults(jobId, startIndex, maxResults, timeoutMs)
-
-  def tableData[Json](datasetId: String,
-                      tableId: String,
-                      startIndex: Option[Long] = None,
-                      maxResults: Option[Int] = None,
-                      selectedFields: Seq[String] = Seq.empty)(
-      implicit jsonUnmarshaller: FromEntityUnmarshaller[Json],
-      metadataUnmarshaller: Unmarshaller[Json, ResponseMetadata],
-      tableDataListUnmarshaller: Unmarshaller[Json, TableDataListResponse[T]]
-  ): Source[T, Future[TableDataListResponse[T]]] =
-    BigQuery.tableData(datasetId, tableId, startIndex, maxResults, selectedFields)
-
-  def insertAll(
-      datasetId: String,
-      tableId: String,
-      retryPolicy: InsertAllRetryPolicy,
-      templateSuffix: Option[String] = None
-  )(implicit marshaller: ToEntityMarshaller[TableDataInsertAllRequest[T]]): Sink[Seq[T], NotUsed] =
-    BigQuery.insertAll(datasetId, tableId, retryPolicy, templateSuffix)
-
-  def insertAll(datasetId: String, tableId: String, retryFailedRequests: Boolean)(
-      implicit marshaller: ToEntityMarshaller[TableDataInsertAllRequest[T]]
-  ): Flow[TableDataInsertAllRequest[T], TableDataInsertAllResponse, NotUsed] =
-    BigQuery.insertAll(datasetId, tableId, retryFailedRequests)
-
-  def insertAllAsync(datasetId: String,
-                     tableId: String)(implicit marshaller: ToByteStringMarshaller[T]): Flow[T, Job, NotUsed] =
-    BigQuery.insertAllAsync(datasetId, tableId)
 }
