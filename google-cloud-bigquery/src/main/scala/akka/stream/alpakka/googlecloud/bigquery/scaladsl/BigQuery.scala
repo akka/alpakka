@@ -53,6 +53,7 @@ import com.github.ghik.silencer.silent
 
 import java.util.{SplittableRandom, UUID}
 import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * Scala API to interface with BigQuery.
@@ -305,12 +306,12 @@ object BigQuery {
       jobId: String,
       startIndex: Option[Long] = None,
       maxResults: Option[Int] = None,
-      timeoutMs: Option[Int] = None,
+      timeout: Option[FiniteDuration] = None,
       location: Option[String] = None
   )(
       implicit queryResponseUnmarshaller: FromEntityUnmarshaller[QueryResponse[Out]]
   ): Source[Out, Future[QueryResponse[Out]]] =
-    queryResultsPages(jobId, startIndex, maxResults, timeoutMs, location, None)
+    queryResultsPages(jobId, startIndex, maxResults, timeout.map(_.toMillis).map(Math.toIntExact), location, None)
       .wireTapMat(Sink.head)(Keep.right)
       .mapConcat(_.rows.fold[List[Out]](Nil)(_.toList))
 
