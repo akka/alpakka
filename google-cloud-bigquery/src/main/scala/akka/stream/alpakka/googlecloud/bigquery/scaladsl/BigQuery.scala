@@ -54,6 +54,7 @@ import com.github.ghik.silencer.silent
 import java.util.{SplittableRandom, UUID}
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+import scala.util.{Failure, Success}
 
 /**
  * Scala API to interface with BigQuery.
@@ -267,14 +268,16 @@ object BigQuery {
                                                    query.timeoutMs,
                                                    initialQueryResponse.jobReference.location,
                                                    initialQueryResponse.pageToken)
+                  .map(Success(_))
+                  .recover { case ex => Failure(ex) } // Allows upstream failures to escape the RestartSource
                   .map { queryResponse =>
-                    if (queryResponse.jobComplete)
+                    if (queryResponse.toOption.forall(_.jobComplete))
                       queryResponse
                     else
                       throw BigQueryException("Query job not complete.")
                   }
                 val restartSettings = RestartSettings(minBackoff, maxBackoff, randomFactor)
-                RestartSource.onFailuresWithBackoff(restartSettings)(() => pages)
+                RestartSource.onFailuresWithBackoff(restartSettings)(() => pages).map(_.get)
               }
 
             head.concat(tail)
