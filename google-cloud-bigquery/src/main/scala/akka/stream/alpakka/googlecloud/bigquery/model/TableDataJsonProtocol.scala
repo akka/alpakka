@@ -5,7 +5,7 @@
 package akka.stream.alpakka.googlecloud.bigquery.model
 
 import akka.stream.alpakka.googlecloud.bigquery.model.ErrorProtoJsonProtocol.ErrorProto
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.PageToken
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.Paginated
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryJsonFormat
 import spray.json.{DefaultJsonProtocol, JsonFormat, RootJsonFormat}
 
@@ -15,7 +15,7 @@ object TableDataJsonProtocol extends DefaultJsonProtocol {
 
   implicit def listResponseFormat[T: BigQueryJsonFormat]: RootJsonFormat[TableDataListResponse[T]] =
     jsonFormat3(TableDataListResponse[T])
-  implicit val pageToken: PageToken[TableDataListResponse[Any]] = _.pageToken
+  implicit val paginated: Paginated[TableDataListResponse[Any]] = _.pageToken
 
   final case class TableDataInsertAllRequest[+T](skipInvalidRows: Option[Boolean],
                                                  ignoreUnknownValues: Option[Boolean],

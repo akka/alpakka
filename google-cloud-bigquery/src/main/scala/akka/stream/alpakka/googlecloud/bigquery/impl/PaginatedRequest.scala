@@ -11,7 +11,7 @@ import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.alpakka.googlecloud.bigquery.impl.http.BigQueryHttp
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.PageToken
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.Paginated
 import akka.stream.alpakka.googlecloud.bigquery.{BigQueryAttributes, BigQueryException, BigQuerySettings}
 import akka.stream.scaladsl.Source
 import akka.{Done, NotUsed}
@@ -23,7 +23,7 @@ private[bigquery] object PaginatedRequest {
 
   def apply[Out](request: HttpRequest, initialPageToken: Option[String])(
       implicit unmarshaller: FromEntityUnmarshaller[Out],
-      pageToken: PageToken[Out]
+      paginated: Paginated[Out]
   ): Source[Out, NotUsed] =
     Source
       .fromMaterializer { (mat, attr) =>
@@ -34,10 +34,10 @@ private[bigquery] object PaginatedRequest {
           case Left(Done) =>
             FastFuture.successful(None)
 
-          case Right(currentPageToken) =>
-            val updatedRequest = currentPageToken.fold(request)(addPageToken(request, _))
+          case Right(pageToken) =>
+            val updatedRequest = pageToken.fold(request)(addPageToken(request, _))
             sendAndParseRequest[Out](updatedRequest).map { out =>
-              val nextPageToken = pageToken
+              val nextPageToken = paginated
                 .pageToken(out)
                 .fold[Either[Done, Option[String]]](Left(Done))(pageToken => Right(Some(pageToken)))
               Some((nextPageToken, out))

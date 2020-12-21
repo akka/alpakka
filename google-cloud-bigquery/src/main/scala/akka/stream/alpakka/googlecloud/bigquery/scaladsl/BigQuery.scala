@@ -68,7 +68,7 @@ object BigQuery {
                                           settings: BigQuerySettings): Future[HttpResponse] =
     BigQueryHttp().singleRequestWithOAuth(request)
 
-  def paginatedRequest[Out: FromEntityUnmarshaller: PageToken](
+  def paginatedRequest[Out: FromEntityUnmarshaller: Paginated](
       request: HttpRequest,
       initialPageToken: Option[String] = None
   ): Source[Out, NotUsed] = {

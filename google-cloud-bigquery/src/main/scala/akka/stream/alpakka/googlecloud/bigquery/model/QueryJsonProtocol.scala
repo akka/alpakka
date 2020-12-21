@@ -8,7 +8,7 @@ import akka.stream.alpakka.googlecloud.bigquery.model.DatasetJsonProtocol.Datase
 import akka.stream.alpakka.googlecloud.bigquery.model.ErrorProtoJsonProtocol.ErrorProto
 import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.JobReference
 import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.TableSchema
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.PageToken
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.Paginated
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryJsonFormat
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
@@ -38,5 +38,5 @@ object QueryJsonProtocol extends DefaultJsonProtocol {
                                      numDmlAffectedRows: Option[String])
 
   implicit def responseFormat[T: BigQueryJsonFormat]: RootJsonFormat[QueryResponse[T]] = jsonFormat10(QueryResponse[T])
-  implicit val pageToken: PageToken[QueryResponse[Any]] = _.pageToken
+  implicit val paginated: Paginated[QueryResponse[Any]] = _.pageToken
 }

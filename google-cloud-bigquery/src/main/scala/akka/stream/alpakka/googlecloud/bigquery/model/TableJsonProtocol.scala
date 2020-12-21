@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.model
 
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.PageToken
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.Paginated
 import spray.json.{DefaultJsonProtocol, JsonFormat, RootJsonFormat}
 
 object TableJsonProtocol extends DefaultJsonProtocol {
@@ -46,5 +46,5 @@ object TableJsonProtocol extends DefaultJsonProtocol {
   final case class TableListResponse(nextPageToken: Option[String], tables: Option[Seq[Table]], totalItems: Option[Int])
 
   implicit val listResponseFormat: RootJsonFormat[TableListResponse] = jsonFormat3(TableListResponse)
-  implicit val pageToken: PageToken[TableListResponse] = _.nextPageToken
+  implicit val paginated: Paginated[TableListResponse] = _.nextPageToken
 }

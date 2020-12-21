@@ -10,7 +10,7 @@ import akka.http.scaladsl.model.HttpMethods.GET
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.stream.alpakka.googlecloud.bigquery.impl.auth.CredentialsProvider
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.PageToken
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.Paginated
 import akka.stream.alpakka.googlecloud.bigquery.{BigQueryAttributes, BigQuerySettings, HoverflySupport}
 import akka.stream.scaladsl.Sink
 import akka.testkit.TestKit
@@ -42,7 +42,7 @@ class PaginatedRequestSpec
     override def getToken()(implicit ec: ExecutionContext, settings: BigQuerySettings): Future[OAuth2BearerToken] =
       Future.successful(OAuth2BearerToken("yyyy.c.an-access-token"))
   })
-  implicit val pageToken: PageToken[JsValue] = _.asJsObject.fields.get("pageToken").flatMap {
+  implicit val paginated: Paginated[JsValue] = _.asJsObject.fields.get("pageToken").flatMap {
     case JsString(value) => Some(value)
     case _ => None
   }

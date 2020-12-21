@@ -4,6 +4,6 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.scaladsl
 
-trait PageToken[-T] {
+trait Paginated[-T] {
   def pageToken(t: T): Option[String]
 }
