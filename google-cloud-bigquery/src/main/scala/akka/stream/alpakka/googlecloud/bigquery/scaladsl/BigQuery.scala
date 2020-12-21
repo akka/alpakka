@@ -413,8 +413,7 @@ object BigQuery {
       }
       .mapMaterializedValue(_ => NotUsed)
 
-  def insertAllAsync[In](datasetId: String,
-                         tableId: String)(implicit marshaller: ToByteStringMarshaller[In]): Flow[In, Job, NotUsed] =
+  def insertAllAsync[In: ToByteStringMarshaller](datasetId: String, tableId: String): Flow[In, Job, NotUsed] =
     Flow
       .fromMaterializer { (mat, attr) =>
         import SprayJsonSupport._
@@ -456,8 +455,7 @@ object BigQuery {
       .mapMaterializedValue(_ => NotUsed)
 
   @silent("shadow")
-  def createLoadJob[Job](job: Job)(implicit marshaller: ToEntityMarshaller[Job],
-                                   unmarshaller: FromEntityUnmarshaller[Job]): Flow[ByteString, Job, NotUsed] =
+  def createLoadJob[Job: ToEntityMarshaller: FromEntityUnmarshaller](job: Job): Flow[ByteString, Job, NotUsed] =
     Flow
       .fromMaterializer { (mat, attr) =>
         import mat.executionContext
