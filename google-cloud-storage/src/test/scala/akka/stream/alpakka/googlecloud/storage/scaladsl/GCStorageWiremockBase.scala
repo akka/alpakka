@@ -33,7 +33,8 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
   val fileName = "file1.txt"
   val generation = 1543055053992769L
 
-  def storageObjectJson(generation: Long = 1543055053992768L): String =
+  def storageObjectJson(generation: Long = 1543055053992768L,
+                        metadata: (String, String) = "countryOfOrigin" -> "United Kingdom"): String =
     s"""
        |{
        |  "etag":"CMDm8oLo7N4CEAE=",
@@ -64,7 +65,7 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
        |  "componentCount": 2,
        |  "customTime": "2020-09-17T11:09:21.039Z",
        |  "kmsKeyName": "projects/my-gcs-project/keys",
-       |  "metadata": {"countryOfOrigin": "United Kingdom"},
+       |  "metadata": {"${metadata._1}": "${metadata._2}"},
        |  "customerEncryption": {"encryptionAlgorithm": "AES256", "keySha256": "encryption-key-sha256"},
        |  "owner": {"entity": "project-owners-123412341234", "entityId": "790607247"},
        |  "acl": [{ "kind": "storage#objectAccessControl", "id": "my-bucket/test-acl/1463505795940000", "selfLink": "https://www.googleapis.com/storage/v1/b/my-bucket/o/test-acl", "bucket": "my-bucket", "object": "test-acl", "generation": "1463505795940000", "entity": "some-entity", "role": "OWNER", "email": "owner@google.com", "entityId": "790607247", "domain": "my-domain", "projectTeam": { "projectNumber": "57959400", "team": "management" }, "etag": "R2OZrfQiij=" }]
@@ -565,7 +566,7 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
         .willReturn(
           aResponse()
             .withStatus(200)
-            .withBody(generation.map(storageObjectJson) getOrElse storageObjectJson())
+            .withBody(generation.map(storageObjectJson(_)) getOrElse storageObjectJson())
             .withHeader("Content-Type", "application/json")
         )
     )
@@ -711,16 +712,21 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
         )
     )
 
-  def mockLargeFileUpload(firstChunkContent: String, secondChunkContent: String, chunkSize: Int): Unit = {
+  def mockLargeFileUpload(firstChunkContent: String, secondChunkContent: String, chunkSize: Int): Unit =
+    mockLargeFileUpload(firstChunkContent, secondChunkContent, chunkSize, None)
+
+  def mockLargeFileUpload(firstChunkContent: String,
+                          secondChunkContent: String,
+                          chunkSize: Int,
+                          metadata: Option[(String, String)]): Unit = {
     val uploadId = "uploadId"
 
-    mock.register(
+    val noMeta =
       WireMock
         .post(
           urlEqualTo(s"/upload/b/$bucketName/o?uploadType=resumable&name=$fileName")
         )
         .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
-        .withHeader("Content-Length", WireMock.equalTo("0"))
         .willReturn(
           aResponse()
             .withHeader(
@@ -729,6 +735,14 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
             )
             .withStatus(200)
         )
+    mock.register(
+      metadata.fold(noMeta) {
+        case (key, value) =>
+          val metaString = s"""{"$key":"$value"}"""
+          noMeta
+            .withRequestBody(WireMock.equalTo(metaString))
+            .withHeader("Content-Length", WireMock.equalTo(metaString.length.toString))
+      }
     )
 
     mock.register(
@@ -763,7 +777,7 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
           aResponse()
             .withStatus(200)
             .withHeader("Content-Type", "application/json")
-            .withBody(storageObjectJson())
+            .withBody(metadata.map(m => storageObjectJson(metadata = m)).getOrElse(storageObjectJson()))
         )
     )
   }
