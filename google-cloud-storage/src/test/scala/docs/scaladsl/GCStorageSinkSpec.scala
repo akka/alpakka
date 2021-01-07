@@ -42,11 +42,9 @@ class GCStorageSinkSpec
     val chunkSize = 256 * 1024
     val firstChunkContent = Random.alphanumeric.take(chunkSize).mkString
     val secondChunkContent = Random.alphanumeric.take(chunkSize).mkString
-    val metaKey = Random.alphanumeric.take(5).mkString
-    val metaValue = Random.alphanumeric.take(5).mkString
-    val metadata = Map(metaKey -> metaValue)
+    val metadata = Map(Random.alphanumeric.take(5).mkString -> Random.alphanumeric.take(5).mkString)
 
-    mockLargeFileUpload(firstChunkContent, secondChunkContent, chunkSize, Some(metaKey -> metaValue))
+    mockLargeFileUpload(firstChunkContent, secondChunkContent, chunkSize, Some(metadata))
 
     //#upload
     val sink =
