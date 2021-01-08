@@ -226,13 +226,8 @@ object GCStorage {
                       objectName: String,
                       contentType: ContentType,
                       chunkSize: Int,
-                      metadata: Map[String, String]): Sink[ByteString, Future[StorageObject]] = {
-    assert(
-      (chunkSize >= (256 * 1024)) && (chunkSize % (256 * 1024) == 0),
-      "Chunk size must be a multiple of 256KB"
-    )
-    GCStorageStream.resumableUpload(bucket, objectName, contentType, chunkSize, Some(metadata))
-  }
+                      metadata: Map[String, String]): Sink[ByteString, Future[StorageObject]] =
+    resumableUpload(bucket, objectName, contentType, chunkSize, Some(metadata))
 
   /**
    * Uploads object by making multiple requests
@@ -248,12 +243,19 @@ object GCStorage {
   def resumableUpload(bucket: String,
                       objectName: String,
                       contentType: ContentType,
-                      chunkSize: Int): Sink[ByteString, Future[StorageObject]] = {
+                      chunkSize: Int): Sink[ByteString, Future[StorageObject]] =
+    resumableUpload(bucket, objectName, contentType, chunkSize, metadata = None)
+
+  private def resumableUpload(bucket: String,
+                              objectName: String,
+                              contentType: ContentType,
+                              chunkSize: Int,
+                              metadata: Option[Map[String, String]]): Sink[ByteString, Future[StorageObject]] = {
     assert(
       (chunkSize >= (256 * 1024)) && (chunkSize % (256 * 1024) == 0),
       "Chunk size must be a multiple of 256KB"
     )
-    GCStorageStream.resumableUpload(bucket, objectName, contentType, chunkSize)
+    GCStorageStream.resumableUpload(bucket, objectName, contentType, chunkSize, metadata)
   }
 
   /**

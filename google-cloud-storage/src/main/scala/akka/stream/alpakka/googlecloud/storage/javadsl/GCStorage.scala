@@ -250,21 +250,8 @@ object GCStorage {
                       objectName: String,
                       contentType: ContentType,
                       chunkSize: java.lang.Integer,
-                      metadata: java.util.Map[String, String]): Sink[ByteString, CompletionStage[StorageObject]] = {
-    assert(
-      (chunkSize >= (256 * 1024)) && (chunkSize % (256 * 1024) == 0),
-      "Chunk size must be a multiple of 256KB"
-    )
-
-    GCStorageStream
-      .resumableUpload(bucket,
-                       objectName,
-                       contentType.asInstanceOf[ScalaContentType],
-                       chunkSize,
-                       Some(metadata.asScala.toMap))
-      .asJava
-      .mapMaterializedValue(func(_.toJava))
-  }
+                      metadata: java.util.Map[String, String]): Sink[ByteString, CompletionStage[StorageObject]] =
+    resumableUpload(bucket, objectName, contentType, chunkSize, Some(metadata))
 
   /**
    * Uploads object by making multiple requests
@@ -280,14 +267,27 @@ object GCStorage {
   def resumableUpload(bucket: String,
                       objectName: String,
                       contentType: ContentType,
-                      chunkSize: java.lang.Integer): Sink[ByteString, CompletionStage[StorageObject]] = {
+                      chunkSize: java.lang.Integer): Sink[ByteString, CompletionStage[StorageObject]] =
+    resumableUpload(bucket, objectName, contentType, chunkSize, metadata = None)
+
+  private def resumableUpload(
+      bucket: String,
+      objectName: String,
+      contentType: ContentType,
+      chunkSize: java.lang.Integer,
+      metadata: Option[java.util.Map[String, String]]
+  ): Sink[ByteString, CompletionStage[StorageObject]] = {
     assert(
       (chunkSize >= (256 * 1024)) && (chunkSize % (256 * 1024) == 0),
       "Chunk size must be a multiple of 256KB"
     )
 
     GCStorageStream
-      .resumableUpload(bucket, objectName, contentType.asInstanceOf[ScalaContentType], chunkSize)
+      .resumableUpload(bucket,
+                       objectName,
+                       contentType.asInstanceOf[ScalaContentType],
+                       chunkSize,
+                       metadata.map(_.asScala.toMap))
       .asJava
       .mapMaterializedValue(func(_.toJava))
   }
