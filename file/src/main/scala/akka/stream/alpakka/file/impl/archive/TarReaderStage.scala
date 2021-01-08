@@ -65,21 +65,21 @@ private[file] class TarReaderStage
           if (isAvailable(flowOut)) {
             pushSource(metadata, buffer)
           } else {
-            setHandlers(
-              flowIn,
-              flowOut,
-              new OutHandler with InHandler {
-                override def onPull(): Unit = {
-                  setHandler(flowOut, IgnoreDownstreamPull)
-                  pushSource(metadata, buffer)
-                }
-
-                // fail on upstream push
-                override def onPush(): Unit = failStage(new TarReaderException("upstream pushed unexpectedly"))
-                override def onUpstreamFinish(): Unit = setKeepGoing(true)
-              }
-            )
+            setHandlers(flowIn, flowOut, new PushSourceOnPull(metadata, buffer))
           }
+        }
+
+        final class PushSourceOnPull(metadata: TarArchiveMetadata, buffer: ByteString)
+            extends OutHandler
+            with InHandler {
+          override def onPull(): Unit = {
+            setHandler(flowOut, IgnoreDownstreamPull)
+            pushSource(metadata, buffer)
+          }
+
+          // fail on upstream push
+          override def onPush(): Unit = failStage(new TarReaderException("upstream pushed unexpectedly"))
+          override def onUpstreamFinish(): Unit = setKeepGoing(true)
         }
       }
 
