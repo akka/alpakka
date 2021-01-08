@@ -42,12 +42,13 @@ class GCStorageSinkSpec
     val chunkSize = 256 * 1024
     val firstChunkContent = Random.alphanumeric.take(chunkSize).mkString
     val secondChunkContent = Random.alphanumeric.take(chunkSize).mkString
+    val metadata = Map(Random.alphanumeric.take(5).mkString -> Random.alphanumeric.take(5).mkString)
 
-    mockLargeFileUpload(firstChunkContent, secondChunkContent, chunkSize)
+    mockLargeFileUpload(firstChunkContent, secondChunkContent, chunkSize, Some(metadata))
 
     //#upload
     val sink =
-      GCStorage.resumableUpload(bucketName, fileName, ContentTypes.`text/plain(UTF-8)`, chunkSize)
+      GCStorage.resumableUpload(bucketName, fileName, ContentTypes.`text/plain(UTF-8)`, chunkSize, metadata)
 
     val source = Source(
       List(ByteString(firstChunkContent), ByteString(secondChunkContent))
@@ -61,6 +62,7 @@ class GCStorageSinkSpec
 
     storageObject.name shouldBe fileName
     storageObject.bucket shouldBe bucketName
+    storageObject.metadata shouldBe Some(metadata)
   }
 
   "fail with error when large file upload fails" in {

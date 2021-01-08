@@ -238,8 +238,9 @@ import scala.util.control.NonFatal
   def resumableUpload(bucket: String,
                       objectName: String,
                       contentType: ContentType,
-                      chunkSize: Int = 5 * 1024 * 1024): Sink[ByteString, Future[StorageObject]] =
-    chunkAndRequest(bucket, objectName, contentType, chunkSize)
+                      chunkSize: Int = 5 * 1024 * 1024,
+                      metadata: Option[Map[String, String]] = None): Sink[ByteString, Future[StorageObject]] =
+    chunkAndRequest(bucket, objectName, contentType, chunkSize, metadata)
       .toMat(completionSink())(Keep.right)
 
   def rewrite(sourceBucket: String,
@@ -492,7 +493,8 @@ import scala.util.control.NonFatal
   private def chunkAndRequest(bucket: String,
                               objectName: String,
                               contentType: ContentType,
-                              chunkSize: Int): Flow[ByteString, UploadPartResponse, NotUsed] =
+                              chunkSize: Int,
+                              metadata: Option[Map[String, String]]): Flow[ByteString, UploadPartResponse, NotUsed] =
     // The individual upload part requests are processed here
     // apparently Google Cloud storage does not support parallel uploading
     Flow
@@ -504,7 +506,7 @@ import scala.util.control.NonFatal
         //  The initial upload request gets executed within this function as well.
         //  The individual upload part requests are created.
 
-        createRequests(bucket, objectName, contentType, chunkSize)
+        createRequests(bucket, objectName, contentType, chunkSize, metadata)
           .mapAsync(parallelism) {
             case (req, (upload, index)) =>
               GoogleRetry
@@ -537,13 +539,17 @@ import scala.util.control.NonFatal
       }
       .mapMaterializedValue(_ => NotUsed)
 
-  private def createRequests(bucketName: String,
-                             objectName: String,
-                             contentType: ContentType,
-                             chunkSize: Int): Flow[ByteString, (HttpRequest, (MultiPartUpload, Int)), NotUsed] = {
+  private def createRequests(
+      bucketName: String,
+      objectName: String,
+      contentType: ContentType,
+      chunkSize: Int,
+      metadata: Option[Map[String, String]]
+  ): Flow[ByteString, (HttpRequest, (MultiPartUpload, Int)), NotUsed] = {
     // First step of the resumable upload process is made.
     //  The response is then used to construct the subsequent individual upload part requests
-    val requestInfo: Source[(MultiPartUpload, Int), NotUsed] = initiateUpload(bucketName, objectName, contentType)
+    val requestInfo: Source[(MultiPartUpload, Int), NotUsed] =
+      initiateUpload(bucketName, objectName, contentType, metadata)
 
     Flow
       .setup { (mat, attr) =>
@@ -592,22 +598,29 @@ import scala.util.control.NonFatal
 
   private def initiateUpload(bucketName: String,
                              objectName: String,
-                             contentType: ContentType): Source[(MultiPartUpload, Int), NotUsed] =
+                             contentType: ContentType,
+                             metadata: Option[Map[String, String]]): Source[(MultiPartUpload, Int), NotUsed] =
     Source
       .setup { (mat, attr) =>
         implicit val materializer = mat
         implicit val attributes = attr
         import mat.executionContext
         val queryParams = Map("uploadType" -> "resumable", "name" -> objectName)
-        makeRequestSource(
-          createEmptyPostRequestSource(
-            uriFactory = (settings: GCStorageSettings) =>
-              Uri(settings.baseUrl)
-                .withPath(Path("/upload" + settings.basePath) ++ getBucketPath(bucketName) / "o")
-                .withQuery(Query(queryParams)),
-            Seq(RawHeader("X-Upload-Content-Type", contentType.toString()))
-          )
-        ).mapAsync(parallelism) {
+        val headers = Seq(RawHeader("X-Upload-Content-Type", contentType.toString()))
+        val uriFactory = (settings: GCStorageSettings) =>
+          Uri(settings.baseUrl)
+            .withPath(Path("/upload" + settings.basePath) ++ getBucketPath(bucketName) / "o")
+            .withQuery(Query(queryParams))
+
+        val requestSource = metadata.fold(createEmptyPostRequestSource(uriFactory, headers)) { m =>
+          createPostRequestSource(ContentTypes.`application/json`,
+                                  ByteString(m.toJson.compactPrint),
+                                  uriFactory,
+                                  headers)
+        }
+
+        makeRequestSource(requestSource)
+          .mapAsync(parallelism) {
             case HttpResponse(status, headers, entity, _) if status.isSuccess() && !status.isRedirection() =>
               entity.discardBytes()
               headers

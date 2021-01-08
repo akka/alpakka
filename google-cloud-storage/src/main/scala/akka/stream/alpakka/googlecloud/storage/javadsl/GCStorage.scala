@@ -16,6 +16,7 @@ import akka.stream.{Attributes, Materializer}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
 
+import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 
@@ -242,19 +243,51 @@ object GCStorage {
    * @param objectName the object name
    * @param contentType `ContentType`
    * @param chunkSize the size of the request sent to google cloud storage in bytes, must be a multiple of 256KB
+   * @param metadata custom metadata for the object
    * @return a `Sink` that accepts `ByteString`'s and materializes to a `Future` of `StorageObject`
    */
   def resumableUpload(bucket: String,
                       objectName: String,
                       contentType: ContentType,
-                      chunkSize: java.lang.Integer): Sink[ByteString, CompletionStage[StorageObject]] = {
+                      chunkSize: java.lang.Integer,
+                      metadata: java.util.Map[String, String]): Sink[ByteString, CompletionStage[StorageObject]] =
+    resumableUpload(bucket, objectName, contentType, chunkSize, Some(metadata))
+
+  /**
+   * Uploads object by making multiple requests
+   *
+   * @see https://cloud.google.com/storage/docs/json_api/v1/how-tos/resumable-upload
+   *
+   * @param bucket the bucket name
+   * @param objectName the object name
+   * @param contentType `ContentType`
+   * @param chunkSize the size of the request sent to google cloud storage in bytes, must be a multiple of 256KB
+   * @return a `Sink` that accepts `ByteString`'s and materializes to a `Future` of `StorageObject`
+   */
+  def resumableUpload(bucket: String,
+                      objectName: String,
+                      contentType: ContentType,
+                      chunkSize: java.lang.Integer): Sink[ByteString, CompletionStage[StorageObject]] =
+    resumableUpload(bucket, objectName, contentType, chunkSize, metadata = None)
+
+  private def resumableUpload(
+      bucket: String,
+      objectName: String,
+      contentType: ContentType,
+      chunkSize: java.lang.Integer,
+      metadata: Option[java.util.Map[String, String]]
+  ): Sink[ByteString, CompletionStage[StorageObject]] = {
     assert(
       (chunkSize >= (256 * 1024)) && (chunkSize % (256 * 1024) == 0),
       "Chunk size must be a multiple of 256KB"
     )
 
     GCStorageStream
-      .resumableUpload(bucket, objectName, contentType.asInstanceOf[ScalaContentType], chunkSize)
+      .resumableUpload(bucket,
+                       objectName,
+                       contentType.asInstanceOf[ScalaContentType],
+                       chunkSize,
+                       metadata.map(_.asScala.toMap))
       .asJava
       .mapMaterializedValue(func(_.toJava))
   }
