@@ -14,7 +14,7 @@ import akka.actor.ActorSystem
 import akka.stream.alpakka.file.scaladsl.{Archive, Directory}
 import akka.stream.alpakka.file.{TarArchiveMetadata, TarReaderException}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
-import akka.stream.scaladsl.{FileIO, Sink, Source}
+import akka.stream.scaladsl.{FileIO, Flow, Sink, Source}
 import akka.testkit.TestKit
 import akka.util.ByteString
 import org.scalatest.BeforeAndAfterAll
@@ -337,6 +337,54 @@ class TarArchiveSpec
       val error = tar.failed.futureValue
       error shouldBe a[TarReaderException]
       error.getMessage shouldBe "The tar content source was not subscribed to within 5000 milliseconds, it must be subscribed to to progress tar file reading."
+    }
+  }
+
+  "advanced tar reading" should {
+    "allow tar files in tar files to be extracted in a single flow" in {
+      val tenDigits = ByteString("1234567890")
+      val metadata1 = TarArchiveMetadata("dir/file1.txt", tenDigits.length)
+
+      val nestedArchive = {
+        Source
+          .single(metadata1 -> Source.single(tenDigits))
+          .via(Archive.tar())
+          .runWith(collectByteString)
+      }
+      val outerArchive: Future[ByteString] =
+        Source
+          .future(nestedArchive)
+          .map(bs => TarArchiveMetadata("nested.tar", bs.size) -> Source.single(bs))
+          .via(Archive.tar())
+          .runWith(collectByteString)
+
+      val res = Source
+        .future(outerArchive)
+        .mapConcat(_.sliding(100, 100).toList)
+        .via(untar())
+        .map(_.filePathName)
+        .runWith(Sink.seq)
+
+      res.futureValue shouldBe Seq("nested.tar", "file1.txt")
+    }
+
+    def untar(): Flow[ByteString, TarArchiveMetadata, NotUsed] = {
+      Archive
+        .tarReader()
+        .log("untar")
+        .mapAsync(1) {
+          case (metadata, source) if metadata.filePath.endsWith(".tar") =>
+            val contents: Source[TarArchiveMetadata, NotUsed] = Source.single(metadata).concat(source.via(untar()))
+            Future.successful(contents)
+          case (metadata, source) =>
+            source
+              .runWith(Sink.ignore)
+              .map { _ =>
+                Source.single(metadata)
+              }
+        }
+        .flatMapConcat(identity)
+        .log("untarred")
     }
   }
 
