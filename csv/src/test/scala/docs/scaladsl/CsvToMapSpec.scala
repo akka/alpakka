@@ -35,6 +35,11 @@ class CsvToMapSpec extends CsvSpec {
 
     val flow5: Flow[List[ByteString], Map[String, String], NotUsed]
     = CsvToMap.withHeadersAsStrings(StandardCharsets.UTF_8, "column1", "column2", "column3")
+
+
+    // values as String (decode ByteString)
+    val flow6: Flow[List[ByteString], Map[String, String], NotUsed]
+    = CsvToMap.toMapAsStringsCombineAll(StandardCharsets.UTF_8, Option.empty)
     // #flow-type
     // format: on
 
@@ -43,6 +48,7 @@ class CsvToMapSpec extends CsvSpec {
     Source.single(List(ByteString("a"), ByteString("b"))).via(flow3).runWith(Sink.ignore)
     Source.single(List(ByteString("a"), ByteString("b"))).via(flow4).runWith(Sink.ignore)
     Source.single(List(ByteString("a"), ByteString("b"))).via(flow5).runWith(Sink.ignore)
+    Source.single(List(ByteString("a"), ByteString("b"))).via(flow6).runWith(Sink.ignore)
   }
 
   "CSV to Map" should {
@@ -189,5 +195,207 @@ class CsvToMapSpec extends CsvSpec {
       // #column-names
     }
 
+    "parse header and decode data line. Be OK with more headers column than data (including the header in the result)" in assertAllStagesStopped {
+      // #header-line
+      import akka.stream.alpakka.csv.scaladsl.{CsvParsing, CsvToMap}
+
+      // #header-line
+      val future =
+        // format: off
+      // #header-line
+      // values as ByteString
+        Source
+          .single(ByteString(
+            """eins,zwei,drei,vier,fünt
+              |11,12,13
+              |21,22,23
+              |""".stripMargin))
+          .via(CsvParsing.lineScanner())
+          .via(CsvToMap.toMapAsStringsCombineAll(headerPlaceholder = Option.empty))
+          .runWith(Sink.seq)
+      // #header-line
+      // format: on
+      val result = future.futureValue
+      // #header-line
+
+      result should be(
+        Seq(
+          Map("eins" -> "11", "zwei" -> "12", "drei" -> "13", "vier" -> "", "fünt" -> ""),
+          Map("eins" -> "21", "zwei" -> "22", "drei" -> "23", "vier" -> "", "fünt" -> "")
+        )
+      )
+      // #header-line
+    }
+
+    "parse header and decode data line. Be OK when there are more data than header column, set a default header in the result" in assertAllStagesStopped {
+      // #header-line
+      import akka.stream.alpakka.csv.scaladsl.{CsvParsing, CsvToMap}
+
+      // #header-line
+      val future =
+        // format: off
+      // #header-line
+      // values as ByteString
+        Source
+          .single(ByteString(
+            """eins,zwei,drei
+              |11,12,13,14
+              |21,22,23
+              |""".stripMargin))
+          .via(CsvParsing.lineScanner())
+          .via(CsvToMap.toMapAsStringsCombineAll(headerPlaceholder = Option.empty))
+          .runWith(Sink.seq)
+      // #header-line
+      // format: on
+      val result = future.futureValue
+      // #header-line
+
+      result should be(
+        Seq(
+          Map("eins" -> "11", "zwei" -> "12", "drei" -> "13", "Missing Header" -> "14"),
+          Map("eins" -> "21", "zwei" -> "22", "drei" -> "23")
+        )
+      )
+      // #header-line
+    }
+
+    "parse header and decode data line. Be OK when there are more data than header column, set the user configured header in the result" in assertAllStagesStopped {
+      // #header-line
+      import akka.stream.alpakka.csv.scaladsl.{CsvParsing, CsvToMap}
+
+      // #header-line
+      val future =
+        // format: off
+      // #header-line
+      // values as ByteString
+        Source
+          .single(ByteString(
+            """eins,zwei
+              |11,12,13
+              |21,22,
+              |""".stripMargin))
+          .via(CsvParsing.lineScanner())
+          .via(CsvToMap.toMapAsStringsCombineAll(headerPlaceholder = Option("drei")))
+          .runWith(Sink.seq)
+      // #header-line
+      // format: on
+      val result = future.futureValue
+      // #header-line
+
+      result should be(
+        Seq(
+          Map("eins" -> "11", "zwei" -> "12", "drei" -> "13"),
+          Map("eins" -> "21", "zwei" -> "22", "drei" -> "")
+        )
+      )
+      // #header-line
+    }
+  }
+
+  "be OK with more headers column than data (including the header in the result)" in assertAllStagesStopped {
+    // #header-line
+    import akka.stream.alpakka.csv.scaladsl.{CsvParsing, CsvToMap}
+
+    // #header-line
+    val future =
+      // format: off
+    // #header-line
+    // values as ByteString
+      Source
+        .single(ByteString(
+          """eins,zwei,drei,vier,fünt
+            |11,12,13
+            |21,22,23
+            |""".stripMargin))
+        .via(CsvParsing.lineScanner())
+        .via(CsvToMap.toMapCombineAll(headerPlaceholder = Option.empty))
+        .runWith(Sink.seq)
+    // #header-line
+    // format: on
+    val result = future.futureValue
+    // #header-line
+
+    result should be(
+      Seq(
+        Map("eins" -> ByteString("11"),
+            "zwei" -> ByteString("12"),
+            "drei" -> ByteString("13"),
+            "vier" -> ByteString(""),
+            "fünt" -> ByteString("")),
+        Map("eins" -> ByteString("21"),
+            "zwei" -> ByteString("22"),
+            "drei" -> ByteString("23"),
+            "vier" -> ByteString(""),
+            "fünt" -> ByteString(""))
+      )
+    )
+    // #header-line
+  }
+
+  "be OK when there are more data than header column, set a default header in the result" in assertAllStagesStopped {
+    // #header-line
+    import akka.stream.alpakka.csv.scaladsl.{CsvParsing, CsvToMap}
+
+    // #header-line
+    val future =
+      // format: off
+    // #header-line
+    // values as ByteString
+      Source
+        .single(ByteString(
+          """eins,zwei,drei
+            |11,12,13,14
+            |21,22,23
+            |""".stripMargin))
+        .via(CsvParsing.lineScanner())
+        .via(CsvToMap.toMapCombineAll(headerPlaceholder = Option.empty))
+        .runWith(Sink.seq)
+    // #header-line
+    // format: on
+    val result = future.futureValue
+    // #header-line
+
+    result should be(
+      Seq(
+        Map("eins" -> ByteString("11"),
+            "zwei" -> ByteString("12"),
+            "drei" -> ByteString("13"),
+            "Missing Header" -> ByteString("14")),
+        Map("eins" -> ByteString("21"), "zwei" -> ByteString("22"), "drei" -> ByteString("23"))
+      )
+    )
+    // #header-line
+  }
+
+  "be OK when there are more data than header column, set the user configured header in the result" in assertAllStagesStopped {
+    // #header-line
+    import akka.stream.alpakka.csv.scaladsl.{CsvParsing, CsvToMap}
+
+    // #header-line
+    val future =
+      // format: off
+    // #header-line
+    // values as ByteString
+      Source
+        .single(ByteString(
+          """eins,zwei
+            |11,12,13
+            |21,22,
+            |""".stripMargin))
+        .via(CsvParsing.lineScanner())
+        .via(CsvToMap.toMapCombineAll(headerPlaceholder = Option("drei")))
+        .runWith(Sink.seq)
+    // #header-line
+    // format: on
+    val result = future.futureValue
+    // #header-line
+
+    result should be(
+      Seq(
+        Map("eins" -> ByteString("11"), "zwei" -> ByteString("12"), "drei" -> ByteString("13")),
+        Map("eins" -> ByteString("21"), "zwei" -> ByteString("22"), "drei" -> ByteString(""))
+      )
+    )
+    // #header-line
   }
 }
