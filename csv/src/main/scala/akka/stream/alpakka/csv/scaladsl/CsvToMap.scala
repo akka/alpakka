@@ -38,8 +38,7 @@ object CsvToMap {
    * element's values as keys.
    * If the header values are shorter than the data (or vice-versa) placeholder elements are used to extend the shorter collection to the length of the longer.
    * @param charset the charset to decode [[akka.util.ByteString]] to [[scala.Predef.String]], defaults to UTF-8
-   * @paramheaderPlaceholder
-   *placeholder used when there are more headers than data.
+   * @param headerPlaceholder placeholder used when there are more headers than data.
    */
   def toMapCombineAll(
       charset: Charset = StandardCharsets.UTF_8,
@@ -54,8 +53,7 @@ object CsvToMap {
    * element's values as keys.
    * If the header values are shorter than the data (or vice-versa) placeholder elements are used to extend the shorter collection to the length of the longer.
    * @param charset the charset to decode [[akka.util.ByteString]] to [[scala.Predef.String]], defaults to UTF-8
-   * @paramheaderPlaceholder
-   *placeholder used when there are more headers than data.
+   * @param headerPlaceholder placeholder used when there are more headers than data.
    */
   def toMapAsStringsCombineAll(
       charset: Charset = StandardCharsets.UTF_8,
