@@ -30,6 +30,8 @@ import scala.collection.immutable
 
   override protected def initialAttributes: Attributes = Attributes.name("CsvToMap")
 
+  private type Headers = Option[Seq[String]]
+
   private val in = Inlet[immutable.Seq[ByteString]]("CsvToMap.in")
   private val out = Outlet[Map[String, V]]("CsvToMap.out")
   val fieldValuePlaceholder: V
@@ -48,18 +50,19 @@ import scala.collection.immutable
       override def onPush(): Unit = {
         val elem = grab(in)
         if (combineAll) {
-          val map = headers.get
-            .zipAll(transformElements(elem), calculateDefaultHeaderValue(), fieldValuePlaceholder)
-            .toMap
-          process(elem, map)
+          val combiner: Option[Seq[String]] => Map[String, V] = headers =>
+            headers.get
+              .zipAll(transformElements(elem), calculateDefaultHeaderValue(), fieldValuePlaceholder)
+              .toMap
+          process(elem, combiner)
         } else {
-          process(elem, headers.get.zip(transformElements(elem)).toMap)
+          process(elem, headers => headers.get.zip(transformElements(elem)).toMap)
         }
       }
 
-      private def process(elem: immutable.Seq[ByteString], map: Map[String, V]): Unit = {
+      private def process(elem: immutable.Seq[ByteString], combiner: Headers => Map[String, V]): Unit = {
         if (headers.isDefined) {
-          push(out, map)
+          push(out, combiner(headers))
         } else {
           headers = Some(elem.map(_.decodeString(charset)))
           pull(in)
@@ -92,9 +95,9 @@ import scala.collection.immutable
  */
 @InternalApi private[csv] class CsvToMapAsStringsStage(columnNames: Option[immutable.Seq[String]],
                                                        charset: Charset,
-                                                       includeEmptyFields: Boolean,
+                                                       combineAll: Boolean,
                                                        headerPlaceholder: Option[String])
-    extends CsvToMapStageBase[String](columnNames, charset, includeEmptyFields) {
+    extends CsvToMapStageBase[String](columnNames, charset, combineAll) {
 
   override val fieldValuePlaceholder: String = ""
 

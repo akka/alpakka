@@ -21,7 +21,7 @@ class CsvToMapSpec extends CsvSpec {
 
     // keep values as ByteString
     val flow1: Flow[List[ByteString], Map[String, ByteString], NotUsed]
-      = CsvToMap.toMapCombineAll()
+      = CsvToMap.toMap()
 
     val flow2: Flow[List[ByteString], Map[String, ByteString], NotUsed]
       = CsvToMap.toMap(StandardCharsets.UTF_8)

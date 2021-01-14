@@ -30,10 +30,7 @@ object CsvToMap {
    */
   def toMapAsStrings(charset: Charset = StandardCharsets.UTF_8): Flow[List[ByteString], Map[String, String], NotUsed] =
     Flow.fromGraph(
-      new CsvToMapAsStringsStage(columnNames = None,
-                                 charset,
-                                 includeEmptyFields = false,
-                                 headerPlaceholder = Option.empty)
+      new CsvToMapAsStringsStage(columnNames = None, charset, combineAll = false, headerPlaceholder = Option.empty)
     )
 
   /**
@@ -65,10 +62,7 @@ object CsvToMap {
       headerPlaceholder: Option[String] = None
   ): Flow[List[ByteString], Map[String, String], NotUsed] =
     Flow.fromGraph(
-      new CsvToMapAsStringsStage(columnNames = None,
-                                 charset,
-                                 includeEmptyFields = true,
-                                 headerPlaceholder = headerPlaceholder)
+      new CsvToMapAsStringsStage(columnNames = None, charset, combineAll = true, headerPlaceholder = headerPlaceholder)
     )
 
   /**
@@ -95,9 +89,6 @@ object CsvToMap {
       headers: String*
   ): Flow[List[ByteString], Map[String, String], NotUsed] =
     Flow.fromGraph(
-      new CsvToMapAsStringsStage(Some(headers.toList),
-                                 charset,
-                                 includeEmptyFields = false,
-                                 headerPlaceholder = Option.empty)
+      new CsvToMapAsStringsStage(Some(headers.toList), charset, combineAll = false, headerPlaceholder = Option.empty)
     )
 }

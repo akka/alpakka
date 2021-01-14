@@ -179,7 +179,7 @@ class CsvParsingSpec extends CsvSpec {
         FileIO
           .fromPath(Paths.get("csv/src/test/resources/correctness.csv"))
           .via(CsvParsing.lineScanner())
-          .via(CsvToMap.toMapCombineAll())
+          .via(CsvToMap.toMap())
           .map(_.mapValues(_.utf8String).toIndexedSeq)
           .runWith(Sink.seq)
       val res = fut.futureValue
