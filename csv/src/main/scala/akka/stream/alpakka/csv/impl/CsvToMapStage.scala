@@ -15,7 +15,6 @@ import scala.collection.immutable
 
 /**
  * Internal API: Converts incoming [[List[ByteString]]] to [[Map[String, ByteString]]].
- * If the header values are shorter than the data (or vice-versa) placeholder elements are used to extend the shorter collection to the length of the longer.
  *
  * @see akka.stream.alpakka.csv.impl.CsvToMapJavaStage
  * @param columnNames If given, these names are used as map keys; if not first stream element is used
