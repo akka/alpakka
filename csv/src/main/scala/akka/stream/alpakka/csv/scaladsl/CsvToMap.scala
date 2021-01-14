@@ -19,7 +19,9 @@ object CsvToMap {
    * @param charset the charset to decode [[akka.util.ByteString]] to [[scala.Predef.String]], defaults to UTF-8
    */
   def toMap(charset: Charset = StandardCharsets.UTF_8): Flow[List[ByteString], Map[String, ByteString], NotUsed] =
-    Flow.fromGraph(new CsvToMapStage(columnNames = None, charset))
+    Flow.fromGraph(
+      new CsvToMapStage(columnNames = None, charset, combineAll = false, headerPlaceholder = Option.empty)
+    )
 
   /**
    * A flow translating incoming [[scala.List]] of [[akka.util.ByteString]] to a map of String keys and values using the stream's first
@@ -27,7 +29,47 @@ object CsvToMap {
    * @param charset the charset to decode [[akka.util.ByteString]] to [[scala.Predef.String]], defaults to UTF-8
    */
   def toMapAsStrings(charset: Charset = StandardCharsets.UTF_8): Flow[List[ByteString], Map[String, String], NotUsed] =
-    Flow.fromGraph(new CsvToMapAsStringsStage(columnNames = None, charset))
+    Flow.fromGraph(
+      new CsvToMapAsStringsStage(columnNames = None,
+                                 charset,
+                                 includeEmptyFields = false,
+                                 headerPlaceholder = Option.empty)
+    )
+
+  /**
+   * A flow translating incoming [[scala.List]] of [[akka.util.ByteString]] to a map of String and ByteString using the stream's first
+   * element's values as keys.
+   * If the header values are shorter than the data (or vice-versa) placeholder elements are used to extend the shorter collection to the length of the longer.
+   * @param charset the charset to decode [[akka.util.ByteString]] to [[scala.Predef.String]], defaults to UTF-8
+   * @paramheaderPlaceholder
+   *placeholder used when there are more headers than data.
+   */
+  def toMapCombineAll(
+      charset: Charset = StandardCharsets.UTF_8,
+      headerPlaceholder: Option[String] = None
+  ): Flow[List[ByteString], Map[String, ByteString], NotUsed] =
+    Flow.fromGraph(
+      new CsvToMapStage(columnNames = None, charset, combineAll = true, headerPlaceholder = headerPlaceholder)
+    )
+
+  /**
+   * A flow translating incoming [[scala.List]] of [[akka.util.ByteString]] to a map of String keys and values using the stream's first
+   * element's values as keys.
+   * If the header values are shorter than the data (or vice-versa) placeholder elements are used to extend the shorter collection to the length of the longer.
+   * @param charset the charset to decode [[akka.util.ByteString]] to [[scala.Predef.String]], defaults to UTF-8
+   * @paramheaderPlaceholder
+   *placeholder used when there are more headers than data.
+   */
+  def toMapAsStringsCombineAll(
+      charset: Charset = StandardCharsets.UTF_8,
+      headerPlaceholder: Option[String] = None
+  ): Flow[List[ByteString], Map[String, String], NotUsed] =
+    Flow.fromGraph(
+      new CsvToMapAsStringsStage(columnNames = None,
+                                 charset,
+                                 includeEmptyFields = true,
+                                 headerPlaceholder = headerPlaceholder)
+    )
 
   /**
    * A flow translating incoming [[scala.List]] of [[akka.util.ByteString]] to a map of String and ByteString using the given headers
@@ -35,7 +77,12 @@ object CsvToMap {
    * @param headers column names to be used as map keys
    */
   def withHeaders(headers: String*): Flow[List[ByteString], Map[String, ByteString], NotUsed] =
-    Flow.fromGraph(new CsvToMapStage(Some(headers.toList), StandardCharsets.UTF_8))
+    Flow.fromGraph(
+      new CsvToMapStage(Some(headers.toList),
+                        StandardCharsets.UTF_8,
+                        combineAll = false,
+                        headerPlaceholder = Option.empty)
+    )
 
   /**
    * A flow translating incoming [[scala.List]] of [[akka.util.ByteString]] to a map of String keys and values using the given headers
@@ -47,5 +94,10 @@ object CsvToMap {
       charset: Charset,
       headers: String*
   ): Flow[List[ByteString], Map[String, String], NotUsed] =
-    Flow.fromGraph(new CsvToMapAsStringsStage(Some(headers.toList), charset))
+    Flow.fromGraph(
+      new CsvToMapAsStringsStage(Some(headers.toList),
+                                 charset,
+                                 includeEmptyFields = false,
+                                 headerPlaceholder = Option.empty)
+    )
 }

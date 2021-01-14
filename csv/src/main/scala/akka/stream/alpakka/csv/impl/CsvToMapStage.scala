@@ -15,20 +15,27 @@ import scala.collection.immutable
 
 /**
  * Internal API: Converts incoming [[List[ByteString]]] to [[Map[String, ByteString]]].
- * @see akka.stream.alpakka.csv.impl.CsvToMapJavaStage
+ * If the headers list is larger than the values attached to those headers, an empty String will be set by default to the orphan header
+ * If the values list is larger than the headers list, the user can configure a default value for the missing header
  *
+ * @see akka.stream.alpakka.csv.impl.CsvToMapJavaStage
  * @param columnNames If given, these names are used as map keys; if not first stream element is used
  * @param charset Character set used to convert header line ByteString to String
+ *@param combineAll If true, placeholder elements will be used to extend the shorter collection to the length of the longer.
  */
 @InternalApi private[csv] abstract class CsvToMapStageBase[V](columnNames: Option[immutable.Seq[String]],
-                                                              charset: Charset)
+                                                              charset: Charset,
+                                                              combineAll: Boolean)
     extends GraphStage[FlowShape[immutable.Seq[ByteString], Map[String, V]]] {
 
   override protected def initialAttributes: Attributes = Attributes.name("CsvToMap")
 
   private val in = Inlet[immutable.Seq[ByteString]]("CsvToMap.in")
   private val out = Outlet[Map[String, V]]("CsvToMap.out")
+  val fieldValuePlaceholder: V
   override val shape = FlowShape.of(in, out)
+
+  protected def calculateDefaultHeaderValue(): String
 
   protected def transformElements(elements: immutable.Seq[ByteString]): immutable.Seq[V]
 
@@ -40,8 +47,18 @@ import scala.collection.immutable
 
       override def onPush(): Unit = {
         val elem = grab(in)
+        if (combineAll) {
+          val map = headers.get
+            .zipAll(transformElements(elem), calculateDefaultHeaderValue(), fieldValuePlaceholder)
+            .toMap
+          process(elem, map)
+        } else {
+          process(elem, headers.get.zip(transformElements(elem)).toMap)
+        }
+      }
+
+      private def process(elem: immutable.Seq[ByteString], map: Map[String, V]): Unit = {
         if (headers.isDefined) {
-          val map = headers.get.zip(transformElements(elem)).toMap
           push(out, map)
         } else {
           headers = Some(elem.map(_.decodeString(charset)))
@@ -56,18 +73,34 @@ import scala.collection.immutable
 /**
  * Internal API
  */
-@InternalApi private[csv] class CsvToMapStage(columnNames: Option[immutable.Seq[String]], charset: Charset)
-    extends CsvToMapStageBase[ByteString](columnNames, charset) {
+@InternalApi private[csv] class CsvToMapStage(columnNames: Option[immutable.Seq[String]],
+                                              charset: Charset,
+                                              combineAll: Boolean,
+                                              headerPlaceholder: Option[String])
+    extends CsvToMapStageBase[ByteString](columnNames, charset, combineAll) {
+  override val fieldValuePlaceholder: ByteString = ByteString("")
 
   override protected def transformElements(elements: immutable.Seq[ByteString]): immutable.Seq[ByteString] = elements
+
+  override protected def calculateDefaultHeaderValue(): String =
+    headerPlaceholder.fold("Missing Header")(identity)
+
 }
 
 /**
  * Internal API
  */
-@InternalApi private[csv] class CsvToMapAsStringsStage(columnNames: Option[immutable.Seq[String]], charset: Charset)
-    extends CsvToMapStageBase[String](columnNames, charset) {
+@InternalApi private[csv] class CsvToMapAsStringsStage(columnNames: Option[immutable.Seq[String]],
+                                                       charset: Charset,
+                                                       includeEmptyFields: Boolean,
+                                                       headerPlaceholder: Option[String])
+    extends CsvToMapStageBase[String](columnNames, charset, includeEmptyFields) {
+
+  override val fieldValuePlaceholder: String = ""
 
   override protected def transformElements(elements: immutable.Seq[ByteString]): immutable.Seq[String] =
     elements.map(_.decodeString(charset))
+
+  override protected def calculateDefaultHeaderValue(): String =
+    headerPlaceholder.fold("Missing Header")(identity)
 }
