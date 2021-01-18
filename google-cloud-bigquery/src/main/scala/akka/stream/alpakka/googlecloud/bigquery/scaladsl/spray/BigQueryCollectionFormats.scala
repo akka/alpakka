@@ -16,7 +16,7 @@ trait BigQueryCollectionFormats {
   implicit def listFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[List[T]] = new BigQueryJsonFormat[List[T]] {
     def write(list: List[T]) = JsArray(list.map(_.toJson).toVector)
     def read(value: JsValue): List[T] = value match {
-      case JsArray(elements) => elements.toIterator.map(_.asJsObject.fields("v").convertTo[T]).toList
+      case JsArray(elements) => elements.iterator.map(_.asJsObject.fields("v").convertTo[T]).toList
       case x => deserializationError("Expected List as JsArray, but got " + x)
     }
   }
