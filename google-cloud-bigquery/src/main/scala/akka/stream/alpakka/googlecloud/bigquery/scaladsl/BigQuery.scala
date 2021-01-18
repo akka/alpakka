@@ -49,7 +49,6 @@ import akka.stream.scaladsl.{Flow, Keep, RestartSource, Sink, Source}
 import akka.stream.{OverflowStrategy, RestartSettings}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
-import com.github.ghik.silencer.silent
 
 import java.util.{SplittableRandom, UUID}
 import scala.concurrent.{Future, Promise}
@@ -463,7 +462,6 @@ object BigQuery {
       }
       .mapMaterializedValue(_ => NotUsed)
 
-  @silent("shadow")
   def createLoadJob[Job: ToEntityMarshaller: FromEntityUnmarshaller](job: Job): Sink[ByteString, Future[Job]] =
     Sink
       .fromMaterializer { (mat, attr) =>
