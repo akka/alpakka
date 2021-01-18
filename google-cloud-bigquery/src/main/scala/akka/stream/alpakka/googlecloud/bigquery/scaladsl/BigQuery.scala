@@ -452,7 +452,7 @@ object BigQuery {
             .intersperse(newline)
             .toMat(createLoadJob(job))(Keep.right)
             .mapMaterializedValue(promise.completeWith)
-          Flow.fromSinkAndSourceCoupled(sink, Source.future(promise.future))
+          Flow.fromSinkAndSource(sink, Source.future(promise.future))
         }
 
         Flow[In]
