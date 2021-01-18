@@ -11,12 +11,12 @@ import scala.reflect.{classTag, ClassTag}
 trait BigQueryProductFormatsInstances { this: BigQueryProductFormats with ProductFormats with StandardFormats =>
 [#  // Case classes with 1 parameters
 
-  def bigQueryJsonFormat1[[#P1: BigQueryJsonFormat#], T <: Product: ClassTag](construct: ([#P1#]) => T): BigQueryJsonFormat[T] = {
+  def bigQueryJsonFormat1[[#P1: BigQueryJsonFormat#], T <: Product: ClassTag](construct: ([#P1#]) => T): BigQueryRootJsonFormat[T] = {
     val Array([#p1#]) = extractFieldNames(classTag[T])
     bigQueryJsonFormat(construct, [#p1#])
   }
-  def bigQueryJsonFormat[[#P1: BigQueryJsonFormat#], T <: Product](construct: ([#P1#]) => T, [#fieldName1: String#]): BigQueryJsonFormat[T] =
-    new BigQueryJsonFormat[T] {
+  def bigQueryJsonFormat[[#P1: BigQueryJsonFormat#], T <: Product](construct: ([#P1#]) => T, [#fieldName1: String#]): BigQueryRootJsonFormat[T] =
+    new BigQueryRootJsonFormat[T] {
       def write(p: T) = {
         val fields = new collection.mutable.ListBuffer[(String, JsValue)]
         fields.sizeHint(1 * 2)
@@ -31,7 +31,7 @@ trait BigQueryProductFormatsInstances { this: BigQueryProductFormats with Produc
         construct([#p1V#])
       }
     }
-  implicit def bigQueryTuple1Format[[#P1: BigQueryJsonFormat#]]: BigQueryJsonFormat[Tuple1[[#P1#]]] = bigQueryJsonFormat1(Tuple1[[#P1#]])#
+  implicit def bigQueryTuple1Format[[#P1: BigQueryJsonFormat#]]: BigQueryRootJsonFormat[Tuple1[[#P1#]]] = bigQueryJsonFormat1(Tuple1[[#P1#]])#
 
 ]
 }

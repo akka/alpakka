@@ -23,8 +23,21 @@ trait BigQueryJsonWriter[T] extends JsonWriter[T]
 /**
  * A special JsonFormat signaling that the format reads and writes BigQuery-encoded JSON objects.
  */
-trait BigQueryJsonFormat[T]
-    extends JsonFormat[T]
-    with RootJsonWriter[T]
-    with BigQueryJsonReader[T]
-    with BigQueryJsonWriter[T]
+trait BigQueryJsonFormat[T] extends JsonFormat[T] with BigQueryJsonReader[T] with BigQueryJsonWriter[T]
+
+/**
+ * A special JsonReader capable of reading a BigQuery-encoded root JSON object.
+ */
+@implicitNotFound(msg = "Cannot find BigQueryRootJsonReader or BigQueryRootJsonFormat type class for ${T}")
+trait BigQueryRootJsonReader[T] extends BigQueryJsonReader[T]
+
+/**
+ * A special JsonWriter capable of writing a BigQuery-encoded root JSON object.
+ */
+@implicitNotFound(msg = "Cannot find BigQueryRootJsonWriter or BigQueryRootJsonFormat type class for ${T}")
+trait BigQueryRootJsonWriter[T] extends BigQueryJsonWriter[T] with RootJsonWriter[T]
+
+trait BigQueryRootJsonFormat[T]
+    extends BigQueryJsonFormat[T]
+    with BigQueryRootJsonReader[T]
+    with BigQueryRootJsonWriter[T]

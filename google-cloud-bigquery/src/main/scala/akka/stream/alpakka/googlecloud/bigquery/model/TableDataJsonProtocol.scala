@@ -6,14 +6,14 @@ package akka.stream.alpakka.googlecloud.bigquery.model
 
 import akka.stream.alpakka.googlecloud.bigquery.model.ErrorProtoJsonProtocol.ErrorProto
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.Paginated
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryJsonFormat
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRootJsonFormat
 import spray.json.{DefaultJsonProtocol, JsonFormat, RootJsonFormat}
 
 object TableDataJsonProtocol extends DefaultJsonProtocol {
 
   final case class TableDataListResponse[+T](totalRows: String, pageToken: Option[String], rows: Option[Seq[T]])
 
-  implicit def listResponseFormat[T: BigQueryJsonFormat]: RootJsonFormat[TableDataListResponse[T]] =
+  implicit def listResponseFormat[T: BigQueryRootJsonFormat]: RootJsonFormat[TableDataListResponse[T]] =
     jsonFormat3(TableDataListResponse[T])
   implicit val paginated: Paginated[TableDataListResponse[Any]] = _.pageToken
 
@@ -23,8 +23,8 @@ object TableDataJsonProtocol extends DefaultJsonProtocol {
                                                  rows: Seq[Row[T]])
   final case class Row[+T](insertId: Option[String], json: T)
 
-  implicit def rowFormat[T: BigQueryJsonFormat]: JsonFormat[Row[T]] = jsonFormat2(Row[T])
-  implicit def insertAllRequestFormat[T: BigQueryJsonFormat]: RootJsonFormat[TableDataInsertAllRequest[T]] =
+  implicit def rowFormat[T: BigQueryRootJsonFormat]: JsonFormat[Row[T]] = jsonFormat2(Row[T])
+  implicit def insertAllRequestFormat[T: BigQueryRootJsonFormat]: RootJsonFormat[TableDataInsertAllRequest[T]] =
     jsonFormat4(TableDataInsertAllRequest[T])
 
   final case class TableDataInsertAllResponse(insertErrors: Option[Seq[InsertError]])
