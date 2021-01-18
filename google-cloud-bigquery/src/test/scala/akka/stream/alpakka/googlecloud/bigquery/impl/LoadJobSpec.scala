@@ -6,13 +6,13 @@ package akka.stream.alpakka.googlecloud.bigquery.impl
 
 import akka.Done
 import akka.actor.ActorSystem
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.HttpMethods.POST
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.stream.alpakka.googlecloud.bigquery.impl.auth.CredentialsProvider
 import akka.stream.alpakka.googlecloud.bigquery.{BigQueryAttributes, BigQuerySettings, HoverflySupport}
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.SprayJsonSupport._
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.{Keep, Source}
 import akka.testkit.TestKit
 import akka.util.ByteString
 import io.specto.hoverfly.junit.core.SimulationSource.dsl
@@ -75,9 +75,9 @@ class LoadJobSpec
 
       val done = Source
         .single(ByteString("helloworld"))
-        .via(LoadJob[JsValue](HttpRequest(POST, "https://example.com")))
+        .toMat(LoadJob[JsValue](HttpRequest(POST, "https://example.com")))(Keep.right)
         .withAttributes(BigQueryAttributes.settings(settings))
-        .runWith(Sink.ignore)
+        .run()
 
       Await.result(done, 10.seconds) shouldEqual Done
     }

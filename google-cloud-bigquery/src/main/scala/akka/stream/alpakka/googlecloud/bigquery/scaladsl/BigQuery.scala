@@ -6,7 +6,8 @@ package akka.stream.alpakka.googlecloud.bigquery.scaladsl
 
 import akka.actor.ClassicActorSystemProvider
 import akka.dispatch.ExecutionContexts
-import akka.http.scaladsl.marshalling.{Marshal, ToByteStringMarshaller, ToEntityMarshaller}
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.marshalling.{Marshal, ToEntityMarshaller}
 import akka.http.scaladsl.model.HttpMethods.{DELETE, GET, POST}
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model.Uri.Query
@@ -38,7 +39,6 @@ import akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.{
 }
 import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.{Table, TableListResponse, TableReference}
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.schema.TableSchemaWriter
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.SprayJsonSupport
 import akka.stream.alpakka.googlecloud.bigquery.{
   BigQueryAttributes,
   BigQueryException,
@@ -52,7 +52,7 @@ import akka.{Done, NotUsed}
 import com.github.ghik.silencer.silent
 
 import java.util.{SplittableRandom, UUID}
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success}
 
@@ -84,7 +84,7 @@ object BigQuery {
                all: Option[Boolean] = None,
                filter: Map[String, String] = Map.empty): Source[Dataset, NotUsed] =
     source { settings =>
-      import spray.SprayJsonSupport._
+      import SprayJsonSupport._
       val uri = BigQueryEndpoints.datasets(settings.projectId)
       val query = Query.Empty :+?
         "maxResults" -> maxResults :+?
@@ -96,7 +96,7 @@ object BigQuery {
   def dataset(datasetId: String)(implicit system: ClassicActorSystemProvider,
                                  settings: BigQuerySettings): Future[Dataset] = {
     import BigQueryException._
-    import spray.SprayJsonSupport._
+    import SprayJsonSupport._
     val uri = BigQueryEndpoints.dataset(settings.projectId, datasetId)
     BigQueryHttp()
       .retryRequestWithOAuth(HttpRequest(GET, uri))
@@ -114,7 +114,7 @@ object BigQuery {
   def createDataset(dataset: Dataset)(implicit system: ClassicActorSystemProvider,
                                       settings: BigQuerySettings): Future[Dataset] = {
     import BigQueryException._
-    import spray.SprayJsonSupport._
+    import SprayJsonSupport._
     val uri = BigQueryEndpoints.datasets(settings.projectId)
     val entity = HttpEntity(`application/json`, dataset.toJson.compactPrint)
     BigQueryHttp()
@@ -136,7 +136,7 @@ object BigQuery {
 
   def tables(datasetId: String, maxResults: Option[Int] = None): Source[Table, Future[TableListResponse]] =
     source { settings =>
-      import spray.SprayJsonSupport._
+      import SprayJsonSupport._
       val uri = BigQueryEndpoints.tables(settings.projectId, datasetId)
       val query = Query.Empty :+? "maxResults" -> maxResults
       paginatedRequest[TableListResponse](HttpRequest(GET, uri.withQuery(query)))
@@ -145,7 +145,7 @@ object BigQuery {
   def table(datasetId: String, tableId: String)(implicit system: ClassicActorSystemProvider,
                                                 settings: BigQuerySettings): Future[Table] = {
     import BigQueryException._
-    import spray.SprayJsonSupport._
+    import SprayJsonSupport._
     val uri = BigQueryEndpoints.table(settings.projectId, datasetId, tableId)
     BigQueryHttp()
       .retryRequestWithOAuth(HttpRequest(GET, uri))
@@ -166,7 +166,7 @@ object BigQuery {
   def createTable(table: Table)(implicit system: ClassicActorSystemProvider,
                                 settings: BigQuerySettings): Future[Table] = {
     import BigQueryException._
-    import spray.SprayJsonSupport._
+    import SprayJsonSupport._
     val projectId = table.tableReference.projectId.getOrElse(settings.projectId)
     val datasetId = table.tableReference.datasetId
     val uri = BigQueryEndpoints.tables(projectId, datasetId)
@@ -190,7 +190,7 @@ object BigQuery {
   def job(jobId: String, location: Option[String] = None)(implicit system: ClassicActorSystemProvider,
                                                           settings: BigQuerySettings): Future[Job] = {
     import BigQueryException._
-    import spray.SprayJsonSupport._
+    import SprayJsonSupport._
     val uri = BigQueryEndpoints.job(settings.projectId, jobId)
     val query = Query.Empty :+? "location" -> location
     BigQueryHttp()
@@ -203,7 +203,7 @@ object BigQuery {
   def cancelJob(jobId: String, location: Option[String] = None)(implicit system: ClassicActorSystemProvider,
                                                                 settings: BigQuerySettings): Future[Job] = {
     import BigQueryException._
-    import spray.SprayJsonSupport._
+    import SprayJsonSupport._
     val uri = BigQueryEndpoints.jobCancel(settings.projectId, jobId)
     val query = Query.Empty :+? "location" -> location
     BigQueryHttp()
@@ -417,7 +417,7 @@ object BigQuery {
       }
       .mapMaterializedValue(_ => NotUsed)
 
-  def insertAllAsync[In: ToByteStringMarshaller](datasetId: String, tableId: String): Flow[In, Job, NotUsed] =
+  def insertAllAsync[In: ToEntityMarshaller](datasetId: String, tableId: String): Flow[In, Job, NotUsed] =
     Flow
       .fromMaterializer { (mat, attr) =>
         import SprayJsonSupport._
@@ -443,13 +443,18 @@ object BigQuery {
           None
         )
 
-        val newline = ByteString("\n")
-        val jobFlow = Flow[In]
-          .takeWithin(perTableQuota)
-          .mapAsync(1)(Marshal(_).to[ByteString])
-          .map(_ ++ newline)
-          .via(createLoadJob(job))
-          .reduce(Keep.right)
+        val jobFlow = {
+          val newline = ByteString("\n")
+          val promise = Promise[Job]()
+          val sink = Flow[In]
+            .takeWithin(perTableQuota)
+            .mapAsync(1)(Marshal(_).to[HttpEntity])
+            .flatMapConcat(_.dataBytes)
+            .intersperse(newline)
+            .toMat(createLoadJob(job))(Keep.right)
+            .mapMaterializedValue(promise.completeWith)
+          Flow.fromSinkAndSourceCoupled(sink, Source.future(promise.future))
+        }
 
         Flow[In]
           .groupBy(1, _ => (), allowClosedSubstreamRecreation = true)
@@ -459,22 +464,24 @@ object BigQuery {
       .mapMaterializedValue(_ => NotUsed)
 
   @silent("shadow")
-  def createLoadJob[Job: ToEntityMarshaller: FromEntityUnmarshaller](job: Job): Flow[ByteString, Job, NotUsed] =
-    Flow
+  def createLoadJob[Job: ToEntityMarshaller: FromEntityUnmarshaller](job: Job): Sink[ByteString, Future[Job]] =
+    Sink
       .fromMaterializer { (mat, attr) =>
         import mat.executionContext
         implicit val settings = BigQueryAttributes.resolveSettings(attr, mat)
         val uri = BigQueryMediaEndpoints.jobs(settings.projectId)
-        Flow.futureFlow {
-          Marshal(job)
-            .to[RequestEntity]
-            .fast
-            .map { entity =>
-              LoadJob(HttpRequest(POST, uri, entity = entity))
-            }(ExecutionContexts.parasitic)
-        }
+        Sink
+          .lazyFutureSink { () =>
+            Marshal(job)
+              .to[RequestEntity]
+              .fast
+              .map { entity =>
+                LoadJob(HttpRequest(POST, uri, entity = entity))
+              }(ExecutionContexts.parasitic)
+          }
+          .mapMaterializedValue(_.flatten)
       }
-      .mapMaterializedValue(_ => NotUsed)
+      .mapMaterializedValue(_.flatten)
 
   private def source[Out, Mat](f: BigQuerySettings => Source[Out, Mat]): Source[Out, Future[Mat]] =
     Source.fromMaterializer { (mat, attr) =>

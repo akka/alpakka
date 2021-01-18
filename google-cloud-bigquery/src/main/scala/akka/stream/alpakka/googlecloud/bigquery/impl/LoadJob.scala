@@ -20,7 +20,7 @@ import akka.stream.alpakka.googlecloud.bigquery.BigQueryException._
 import akka.stream.alpakka.googlecloud.bigquery.impl.http.BigQueryHttp
 import akka.stream.alpakka.googlecloud.bigquery.impl.util.{AnnotateLast, MaybeLast}
 import akka.stream.alpakka.googlecloud.bigquery.{BigQueryAttributes, BigQueryException, BigQuerySettings}
-import akka.stream.scaladsl.{Flow, RetryFlow}
+import akka.stream.scaladsl.{Flow, Keep, RetryFlow, Sink}
 import akka.util.ByteString
 
 import scala.concurrent.Future
@@ -34,8 +34,8 @@ private[bigquery] object LoadJob {
 
   def apply[Job](
       request: HttpRequest
-  )(implicit unmarshaller: FromEntityUnmarshaller[Job]): Flow[ByteString, Job, NotUsed] =
-    Flow
+  )(implicit unmarshaller: FromEntityUnmarshaller[Job]): Sink[ByteString, Future[Job]] =
+    Sink
       .fromMaterializer { (mat, attr) =>
         import mat.executionContext
         implicit val materializer = mat
@@ -75,9 +75,9 @@ private[bigquery] object LoadJob {
             }
           }
 
-        in.via(upload).map(_.get).mapConcat(_.toList)
+        in.via(upload).mapConcat(_.get.toList).toMat(Sink.last)(Keep.right)
       }
-      .mapMaterializedValue(_ => NotUsed)
+      .mapMaterializedValue(_.flatten)
 
   private val uploadContentTypeHeader =
     RawHeader("X-Upload-Content-Type", ContentTypes.`application/octet-stream`.value)
@@ -92,10 +92,11 @@ private[bigquery] object LoadJob {
 
     BigQueryHttp()
       .retryRequestWithOAuth(initialRequest)
-      .map { response =>
-        response.entity.discardBytes()
-        response.header[Location].get.uri
-      }
+      .flatMap { response =>
+        response.entity.discardBytes().future.map { _ =>
+          response.header[Location].get.uri
+        }
+      }(ExecutionContexts.parasitic)
   }
 
   private def uploadChunk[Job](
@@ -139,21 +140,22 @@ private[bigquery] object LoadJob {
     chunk.fast.flatMap { maybeLast =>
       BigQueryHttp()
         .retryRequestWithOAuth(statusRequest)
-        .map { response =>
-          response.discardEntityBytes()
-          response
-            .header[Range]
-            .flatMap(_.ranges.headOption)
-            .map {
-              case Slice(_, last) =>
-                maybeLast.map {
-                  case Chunk(bytes, position) =>
-                    Chunk(bytes.drop(Math.toIntExact(last + 1 - position)), last + 1)
-                }
-              case _ =>
-                throw BigQueryException("Unable to resume upload job.")
-            } getOrElse maybeLast
-        }
+        .flatMap { response =>
+          response.discardEntityBytes().future.map { _ =>
+            response
+              .header[Range]
+              .flatMap(_.ranges.headOption)
+              .map {
+                case Slice(_, last) =>
+                  maybeLast.map {
+                    case Chunk(bytes, position) =>
+                      Chunk(bytes.drop(Math.toIntExact(last + 1 - position)), last + 1)
+                  }
+                case _ =>
+                  throw BigQueryException("Unable to resume upload job.")
+              } getOrElse maybeLast
+          }
+        }(ExecutionContexts.parasitic)
     }(ExecutionContexts.parasitic)
   }
 }

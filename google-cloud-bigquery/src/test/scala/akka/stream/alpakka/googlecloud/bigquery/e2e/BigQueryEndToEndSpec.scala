@@ -4,13 +4,13 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.e2e
 import akka.actor.ActorSystem
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.stream.alpakka.googlecloud.bigquery.HoverflySupport
 import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.DoneState
 import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.TableReference
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.BigQuery
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.schema.BigQuerySchemas._
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryJsonProtocol._
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.SprayJsonSupport._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
 import akka.{pattern, Done}
