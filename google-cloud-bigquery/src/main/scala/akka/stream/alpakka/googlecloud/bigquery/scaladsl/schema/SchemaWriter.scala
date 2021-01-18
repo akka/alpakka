@@ -8,12 +8,19 @@ import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.{
   NullableMode,
   RepeatedMode,
   RequiredMode,
-  TableFieldSchema
+  TableFieldSchema,
+  TableSchema
 }
 
 trait SchemaWriter[-T] {
 
   def write(name: String, mode: FieldMode): TableFieldSchema
+
+}
+
+object SchemaWriter {
+
+  def apply[T](implicit writer: SchemaWriter[T]): SchemaWriter[T] = writer
 
 }
 
@@ -26,4 +33,16 @@ case object Required extends FieldMode {
 }
 case object Repeated extends FieldMode {
   override def toString: String = RepeatedMode
+}
+
+trait TableSchemaWriter[-T] extends SchemaWriter[T] {
+
+  def write: TableSchema
+
+}
+
+object TableSchemaWriter {
+
+  def apply[T](implicit writer: TableSchemaWriter[T]): TableSchemaWriter[T] = writer
+
 }
