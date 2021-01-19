@@ -210,6 +210,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
+        "io.spray" %%  "spray-json" % "1.3.6",
         "com.pauldijou" %% "jwt-core" % "3.1.0", //ApacheV2
         "io.specto" % "hoverfly-java" % "0.12.3" % Test, //ApacheV2
         "com.fasterxml.jackson.core" % "jackson-core" % "2.12.0" % Test //ApacheV2
