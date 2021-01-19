@@ -32,9 +32,7 @@ private[bigquery] object LoadJob {
 
   private final case class Chunk(bytes: ByteString, position: Long)
 
-  def apply[Job](
-      request: HttpRequest
-  )(implicit unmarshaller: FromEntityUnmarshaller[Job]): Sink[ByteString, Future[Job]] =
+  def apply[Job: FromEntityUnmarshaller](request: HttpRequest): Sink[ByteString, Future[Job]] =
     Sink
       .fromMaterializer { (mat, attr) =>
         import mat.executionContext
@@ -99,11 +97,9 @@ private[bigquery] object LoadJob {
       }(ExecutionContexts.parasitic)
   }
 
-  private def uploadChunk[Job](
+  private def uploadChunk[Job: FromEntityUnmarshaller](
       request: HttpRequest
-  )(implicit mat: Materializer,
-    settings: BigQuerySettings,
-    um: FromEntityUnmarshaller[Job]): Flow[MaybeLast[Chunk], Try[Option[Job]], NotUsed] = {
+  )(implicit mat: Materializer, settings: BigQuerySettings): Flow[MaybeLast[Chunk], Try[Option[Job]], NotUsed] = {
     import mat.executionContext
     implicit val system = mat.system
 
