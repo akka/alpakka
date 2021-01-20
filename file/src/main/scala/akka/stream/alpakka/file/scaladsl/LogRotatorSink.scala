@@ -7,8 +7,6 @@ package akka.stream.alpakka.file.scaladsl
 import java.nio.file.{OpenOption, Path, StandardOpenOption}
 
 import akka.Done
-import akka.stream.ActorAttributes.SupervisionStrategy
-import akka.stream.Supervision.Decider
 import akka.stream._
 import akka.stream.impl.fusing.MapAsync.{Holder, NotYetThere}
 import akka.stream.scaladsl.{FileIO, Sink, Source}
@@ -86,16 +84,15 @@ final private class LogRotatorSink[T, C, R](triggerGeneratorCreator: () => T => 
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
     val promise = Promise[Done]()
-    val decider =
-      inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
-    val logic = new Logic(promise, decider)
+    val logic = new Logic(promise)
     (logic, promise.future)
   }
 
-  private final class Logic(promise: Promise[Done], decider: Decider) extends GraphStageLogic(shape) {
+  private final class Logic(promise: Promise[Done]) extends GraphStageLogic(shape) {
     val triggerGenerator: T => Option[C] = triggerGeneratorCreator()
     var sourceOut: SubSourceOutlet[T] = _
     var sinkCompletions: immutable.Seq[Future[R]] = immutable.Seq.empty
+    var isFinishing = false
 
     def failThisStage(ex: Throwable): Unit =
       if (!promise.isCompleted) {
@@ -105,6 +102,15 @@ final private class LogRotatorSink[T, C, R](triggerGeneratorCreator: () => T => 
         cancel(in)
         promise.failure(ex)
       }
+
+    def completeThisStage() = {
+      if (sourceOut != null) {
+        sourceOut.complete()
+      }
+      implicit val executionContext: ExecutionContext =
+        akka.dispatch.ExecutionContexts.parasitic
+      promise.completeWith(Future.sequence(sinkCompletions).map(_ => Done))
+    }
 
     def checkTrigger(data: T): Option[C] =
       try {
@@ -176,6 +182,7 @@ final private class LogRotatorSink[T, C, R](triggerGeneratorCreator: () => T => 
           switchToNormalMode()
         }
       })
+      setHandler(in, rotateInHandler)
       val newFuture = Source
         .fromGraph(sourceOut.source)
         .runWith(sinkFactory(triggerValue))(interpreter.subFusingMaterializer)
@@ -193,32 +200,44 @@ final private class LogRotatorSink[T, C, R](triggerGeneratorCreator: () => T => 
 
     //we change path if needed or push the grabbed data
     def switchToNormalMode(): Unit = {
-      setHandler(
-        in,
-        new InHandler {
-          override def onPush(): Unit = {
-            val data = grab(in)
-            checkTrigger(data) match {
-              case None => sourceOut.push(data)
-              case Some(triggerValue) => rotate(triggerValue, data)
-            }
-          }
-
-          override def onUpstreamFinish(): Unit = {
-            implicit val executionContext: ExecutionContext =
-              akka.dispatch.ExecutionContexts.parasitic
-            promise.completeWith(Future.sequence(sinkCompletions).map(_ => Done))
-            sourceOut.complete()
-          }
-
-          override def onUpstreamFailure(ex: Throwable): Unit =
-            failThisStage(ex)
+      if (isFinishing) {
+        completeThisStage()
+      } else {
+        setHandler(in, normalModeInHandler)
+        sourceOut.setHandler(new OutHandler {
+          override def onPull(): Unit =
+            pull(in)
+        })
+      }
+    }
+    val rotateInHandler =
+      new InHandler {
+        override def onPush(): Unit = {
+          require(requirement = false,
+                  "No push should happen while we are waiting for the substream to grab the dangling data!")
         }
-      )
-      sourceOut.setHandler(new OutHandler {
-        override def onPull(): Unit =
-          pull(in)
-      })
+        override def onUpstreamFinish(): Unit = {
+          setKeepGoing(true)
+          isFinishing = true
+        }
+        override def onUpstreamFailure(ex: Throwable): Unit =
+          failThisStage(ex)
+      }
+    val normalModeInHandler = new InHandler {
+      override def onPush(): Unit = {
+        val data = grab(in)
+        checkTrigger(data) match {
+          case None => sourceOut.push(data)
+          case Some(triggerValue) => rotate(triggerValue, data)
+        }
+      }
+
+      override def onUpstreamFinish(): Unit = {
+        completeThisStage()
+      }
+
+      override def onUpstreamFailure(ex: Throwable): Unit =
+        failThisStage(ex)
     }
   }
 
