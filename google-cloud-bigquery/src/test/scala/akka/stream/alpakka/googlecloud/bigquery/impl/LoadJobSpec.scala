@@ -4,7 +4,6 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.impl
 
-import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.HttpMethods.POST
@@ -21,7 +20,7 @@ import io.specto.hoverfly.junit.dsl.ResponseCreators.{created, serverError, succ
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import spray.json.JsValue
+import spray.json.{JsObject, JsValue}
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -79,7 +78,7 @@ class LoadJobSpec
         .withAttributes(BigQueryAttributes.settings(settings))
         .run()
 
-      Await.result(done, 10.seconds) shouldEqual Done
+      Await.result(done, 10.seconds) shouldEqual JsObject.empty
     }
 
   }

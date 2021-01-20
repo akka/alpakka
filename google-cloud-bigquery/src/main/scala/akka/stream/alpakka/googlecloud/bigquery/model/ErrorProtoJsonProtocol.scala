@@ -4,11 +4,33 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.model
 
-import spray.json.{DefaultJsonProtocol, JsonFormat}
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryApiJsonProtocol._
+import spray.json.JsonFormat
 
-object ErrorProtoJsonProtocol extends DefaultJsonProtocol {
+import java.util
+import scala.compat.java8.OptionConverters._
 
-  final case class ErrorProto(reason: String, location: Option[String], message: String)
+object ErrorProtoJsonProtocol {
+
+  final case class ErrorProto(reason: String, location: Option[String], message: String) {
+
+    def getReason = reason
+    def getLocation = location.asJava
+    def getMessage = message
+
+    def withReason(reason: String) =
+      copy(reason = reason)
+    def withLocation(location: util.Optional[String]) =
+      copy(location = location.asScala)
+    def withMessage(message: String) =
+      copy(message = message)
+  }
+
+  /**
+   * Java API
+   */
+  def createErrorProto(reason: String, location: util.Optional[String], message: String) =
+    ErrorProto(reason, location.asScala, message)
 
   implicit val format: JsonFormat[ErrorProto] = jsonFormat3(ErrorProto)
 }

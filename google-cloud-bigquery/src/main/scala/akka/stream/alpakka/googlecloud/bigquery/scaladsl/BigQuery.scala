@@ -9,7 +9,6 @@ import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.marshalling.{Marshal, ToEntityMarshaller}
 import akka.http.scaladsl.model.HttpMethods.{DELETE, GET, POST}
-import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{HttpEntity, HttpRequest, HttpResponse, RequestEntity}
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
@@ -41,7 +40,9 @@ import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.{Table, 
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.schema.TableSchemaWriter
 import akka.stream.alpakka.googlecloud.bigquery.{
   BigQueryAttributes,
+  BigQueryEndpoints,
   BigQueryException,
+  BigQueryMediaEndpoints,
   BigQuerySettings,
   InsertAllRetryPolicy
 }
@@ -51,6 +52,7 @@ import akka.util.ByteString
 import akka.{Done, NotUsed}
 
 import java.util.{SplittableRandom, UUID}
+import scala.collection.immutable.Seq
 import scala.concurrent.{Future, Promise}
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success}
@@ -114,13 +116,14 @@ object BigQuery {
                                       settings: BigQuerySettings): Future[Dataset] = {
     import BigQueryException._
     import SprayJsonSupport._
+    implicit val ec = system.classicSystem.dispatcher
     val uri = BigQueryEndpoints.datasets(settings.projectId)
-    val entity = HttpEntity(`application/json`, dataset.toJson.compactPrint)
-    BigQueryHttp()
-      .retryRequestWithOAuth(HttpRequest(POST, uri, entity = entity))
-      .flatMap { response =>
-        Unmarshal(response.entity).to[Dataset]
-      }(system.classicSystem.dispatcher)
+    for {
+      entity <- Marshal(dataset).to[RequestEntity]
+      request = HttpRequest(POST, uri, entity = entity)
+      response <- BigQueryHttp().retryRequestWithOAuth(request)
+      dataset <- Unmarshal(response.entity).to[Dataset]
+    } yield dataset
   }
 
   def deleteDataset(datasetId: String, deleteContents: Boolean = false)(implicit system: ClassicActorSystemProvider,
@@ -166,15 +169,16 @@ object BigQuery {
                                 settings: BigQuerySettings): Future[Table] = {
     import BigQueryException._
     import SprayJsonSupport._
+    implicit val ec = system.classicSystem.dispatcher
     val projectId = table.tableReference.projectId.getOrElse(settings.projectId)
     val datasetId = table.tableReference.datasetId
     val uri = BigQueryEndpoints.tables(projectId, datasetId)
-    val entity = HttpEntity(`application/json`, table.toJson.compactPrint)
-    BigQueryHttp()
-      .retryRequestWithOAuth(HttpRequest(POST, uri, entity = entity))
-      .flatMap { response =>
-        Unmarshal(response.entity).to[Table]
-      }(system.classicSystem.dispatcher)
+    for {
+      entity <- Marshal(table).to[RequestEntity]
+      request = HttpRequest(POST, uri, entity = entity)
+      response <- BigQueryHttp().retryRequestWithOAuth(request)
+      table <- Unmarshal(response.entity).to[Table]
+    } yield table
   }
 
   def deleteTable(datasetId: String, tableId: String)(implicit system: ClassicActorSystemProvider,
@@ -230,18 +234,15 @@ object BigQuery {
     Source
       .fromMaterializer { (mat, attr) =>
         import BigQueryException._
+        import SprayJsonSupport._
         import mat.executionContext
         implicit val system = mat.system
         implicit val settings = BigQueryAttributes.resolveSettings(attr, mat)
 
-        val initialRequest = {
-          val uri = BigQueryEndpoints.queries(settings.projectId)
-          val entity = HttpEntity(`application/json`, query.toJson.compactPrint)
-          HttpRequest(POST, uri, entity = entity)
-        }
-
         Source.lazyFutureSource { () =>
           for {
+            entity <- Marshal(query).to[RequestEntity]
+            initialRequest = HttpRequest(POST, BigQueryEndpoints.queries(settings.projectId), entity = entity)
             response <- BigQueryHttp().retryRequestWithOAuth(initialRequest)
             initialQueryResponse <- Unmarshal(response.entity).to[QueryResponse[Out]]
           } yield {
@@ -289,13 +290,13 @@ object BigQuery {
       .buffer(1, OverflowStrategy.backpressure) // Lets the callbacks complete eagerly even if downstream cancels
       .mapConcat(_.rows.fold[List[Out]](Nil)(_.toList))
 
-  private def onCompleteCallbackSink(
+  private def onCompleteCallbackSink[T](
       callback: Option[JobReference] => Future[Done]
-  ): Sink[QueryResponse[Any], NotUsed] =
+  ): Sink[QueryResponse[T], NotUsed] =
     Sink
       .fromMaterializer { (mat, attr) =>
         import mat.executionContext
-        Flow[QueryResponse[Any]]
+        Flow[QueryResponse[T]]
           .map(_.jobReference)
           .wireTapMat(Sink.headOption)(Keep.right)
           .toMat(Sink.ignore) { (jobReference, done) =>

@@ -4,9 +4,15 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.scaladsl.schema
 
-import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.{RecordType, TableFieldSchema, TableSchema}
+import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.{
+  RecordType,
+  TableFieldSchema,
+  TableFieldSchemaMode,
+  TableSchema
+}
 import spray.json.{AdditionalFormats, ProductFormats, StandardFormats}
 
+import scala.collection.immutable.Seq
 import scala.reflect.ClassTag
 
 trait ProductSchemas extends ProductSchemasInstances { this: StandardSchemas =>
@@ -20,8 +26,8 @@ final class ProductSchemaWriter[T <: Product](fieldSchemas: Seq[TableFieldSchema
 
   override def write: TableSchema = TableSchema(fieldSchemas)
 
-  override def write(name: String, mode: FieldMode): TableFieldSchema =
-    TableFieldSchema(name, RecordType, Some(mode.toString), Some(fieldSchemas))
+  override def write(name: String, mode: TableFieldSchemaMode): TableFieldSchema =
+    TableFieldSchema(name, RecordType, Some(mode), Some(fieldSchemas))
 
 }
 

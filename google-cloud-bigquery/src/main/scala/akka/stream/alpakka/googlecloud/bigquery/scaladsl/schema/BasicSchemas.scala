@@ -10,7 +10,9 @@ import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.{
   IntegerType,
   NumericType,
   StringType,
-  TableFieldSchema
+  TableFieldSchema,
+  TableFieldSchemaMode,
+  TableFieldSchemaType
 }
 
 /**
@@ -18,9 +20,9 @@ import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.{
  */
 trait BasicSchemas {
 
-  private final class PrimitiveSchemaWriter[T](`type`: String) extends SchemaWriter[T] {
-    override def write(name: String, mode: FieldMode): TableFieldSchema = {
-      TableFieldSchema(name, `type`, Some(mode.toString), None)
+  private final class PrimitiveSchemaWriter[T](`type`: TableFieldSchemaType) extends SchemaWriter[T] {
+    override def write(name: String, mode: TableFieldSchemaMode): TableFieldSchema = {
+      TableFieldSchema(name, `type`, Some(mode), None)
     }
   }
 

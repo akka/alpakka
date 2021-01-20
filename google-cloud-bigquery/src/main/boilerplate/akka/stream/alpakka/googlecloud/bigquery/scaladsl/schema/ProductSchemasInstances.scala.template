@@ -4,8 +4,9 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.scaladsl.schema
 
-import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.TableFieldSchema
+import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.{RequiredMode, TableFieldSchema}
 
+import scala.collection.immutable.Seq
 import scala.reflect.{classTag, ClassTag}
 
 trait ProductSchemasInstances { this: ProductSchemas with StandardSchemas =>
@@ -15,7 +16,7 @@ trait ProductSchemasInstances { this: ProductSchemas with StandardSchemas =>
 
   private def schemaFields[[#P1#], T <: Product: ClassTag](implicit [#writer1: SchemaWriter[P1]#]): Seq[TableFieldSchema] = {
     val Array([#p1#]) = extractFieldNames(classTag[T])
-    Seq([#writer1.write(p1, Required)#])
+    Seq([#writer1.write(p1, RequiredMode)#])
   }#
 
 ]

@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.stream.alpakka.googlecloud.bigquery.scaladsl
+package akka.stream.alpakka.googlecloud.bigquery
 
 import akka.http.scaladsl.model.Uri
 
