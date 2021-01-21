@@ -6,7 +6,6 @@ package akka.stream.alpakka.googlecloud.bigquery.scaladsl
 
 import akka.Done
 import akka.actor.ClassicActorSystemProvider
-import akka.annotation.ApiMayChange
 import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings
@@ -14,8 +13,7 @@ import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.JobReferen
 
 import scala.concurrent.Future
 
-@ApiMayChange(issue = "https://github.com/akka/alpakka/issues/2353")
-object BigQueryCallbacks {
+object BigQueryCallback {
 
   private val futureDone = FastFuture.successful(Done)
 

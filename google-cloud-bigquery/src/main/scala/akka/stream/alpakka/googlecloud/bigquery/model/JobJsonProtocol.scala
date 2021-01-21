@@ -180,6 +180,18 @@ object JobJsonProtocol {
    */
   def createJobState(value: String) = JobState(value)
 
+  final case class JobCancelResponse(job: Job) {
+    def getJob = job
+    def withJob(job: Job) =
+      copy(job = job)
+  }
+
+  /**
+   * Java API
+   */
+  def createJobCancelResponse(job: Job) =
+    JobCancelResponse(job)
+
   implicit val createDispositionFormat: JsonFormat[CreateDisposition] = new JsonFormat[CreateDisposition] {
     override def read(json: JsValue): CreateDisposition = json match {
       case JsString(x) => CreateDisposition(x)
@@ -213,4 +225,5 @@ object JobJsonProtocol {
   }
   implicit val statusFormat: JsonFormat[JobStatus] = jsonFormat3(JobStatus)
   implicit val format: RootJsonFormat[Job] = jsonFormat3(Job)
+  implicit val cancelResponseFormat: RootJsonFormat[JobCancelResponse] = jsonFormat1(JobCancelResponse)
 }

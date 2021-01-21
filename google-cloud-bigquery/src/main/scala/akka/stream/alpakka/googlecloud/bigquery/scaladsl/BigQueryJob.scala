@@ -27,6 +27,7 @@ import akka.stream.alpakka.googlecloud.bigquery.impl.http.BigQueryHttp
 import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.{
   CreateNeverDisposition,
   Job,
+  JobCancelResponse,
   JobConfiguration,
   JobConfigurationLoad,
   JobReference,
@@ -57,16 +58,19 @@ private[scaladsl] trait BigQueryJob { this: BigQueryRest =>
       }(system.classicSystem.dispatcher)
   }
 
-  def cancelJob(jobId: String, location: Option[String] = None)(implicit system: ClassicActorSystemProvider,
-                                                                settings: BigQuerySettings): Future[Job] = {
+  def cancelJob(
+      jobId: String,
+      location: Option[String] = None
+  )(implicit system: ClassicActorSystemProvider, settings: BigQuerySettings): Future[JobCancelResponse] = {
     import BigQueryException._
     import SprayJsonSupport._
+    implicit val ec = system.classicSystem.dispatcher
     val uri = BigQueryEndpoints.jobCancel(settings.projectId, jobId)
     val query = Query.Empty :+? "location" -> location
     BigQueryHttp()
       .retryRequestWithOAuth(HttpRequest(POST, uri.withQuery(query)))
       .flatMap { response =>
-        Unmarshal(response.entity).to[Job]
+        Unmarshal(response.entity).to[JobCancelResponse]
       }(system.classicSystem.dispatcher)
   }
 
@@ -74,16 +78,14 @@ private[scaladsl] trait BigQueryJob { this: BigQueryRest =>
       query: String,
       dryRun: Boolean = false,
       useLegacySql: Boolean = true,
-      onCompleteCallback: Option[JobReference] => Future[Done] = BigQueryCallbacks.ignore
-  )(
-      implicit queryResponseUnmarshaller: FromEntityUnmarshaller[QueryResponse[Out]]
-  ): Source[Out, Future[QueryResponse[Out]]] = {
+      onCompleteCallback: Option[JobReference] => Future[Done] = BigQueryCallback.ignore
+  )(implicit um: FromEntityUnmarshaller[QueryResponse[Out]]): Source[Out, Future[QueryResponse[Out]]] = {
     val request = QueryRequest(query, None, None, None, Some(dryRun), Some(useLegacySql), None)
     this.query(request, onCompleteCallback)
   }
 
   def query[Out](query: QueryRequest, onCompleteCallback: Option[JobReference] => Future[Done])(
-      implicit queryResponseUnmarshaller: FromEntityUnmarshaller[QueryResponse[Out]]
+      implicit um: FromEntityUnmarshaller[QueryResponse[Out]]
   ): Source[Out, Future[QueryResponse[Out]]] =
     Source
       .fromMaterializer { (mat, attr) =>
@@ -166,7 +168,7 @@ private[scaladsl] trait BigQueryJob { this: BigQueryRest =>
       timeout: Option[FiniteDuration] = None,
       location: Option[String] = None
   )(
-      implicit queryResponseUnmarshaller: FromEntityUnmarshaller[QueryResponse[Out]]
+      implicit um: FromEntityUnmarshaller[QueryResponse[Out]]
   ): Source[Out, Future[QueryResponse[Out]]] =
     queryResultsPages(jobId, startIndex, maxResults, timeout.map(_.toMillis).map(Math.toIntExact), location, None)
       .wireTapMat(Sink.head)(Keep.right)
@@ -180,7 +182,7 @@ private[scaladsl] trait BigQueryJob { this: BigQueryRest =>
       location: Option[String],
       pageToken: Option[String]
   )(
-      implicit queryResponseUnmarshaller: FromEntityUnmarshaller[QueryResponse[Out]]
+      implicit um: FromEntityUnmarshaller[QueryResponse[Out]]
   ): Source[QueryResponse[Out], NotUsed] =
     source { settings =>
       val uri = BigQueryEndpoints.job(settings.projectId, jobId)

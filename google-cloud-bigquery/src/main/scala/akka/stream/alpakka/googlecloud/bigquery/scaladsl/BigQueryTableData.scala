@@ -37,7 +37,7 @@ private[scaladsl] trait BigQueryTableData { this: BigQueryRest =>
                      startIndex: Option[Long] = None,
                      maxResults: Option[Int] = None,
                      selectedFields: Seq[String] = Seq.empty)(
-      implicit tableDataListUnmarshaller: FromEntityUnmarshaller[TableDataListResponse[Out]]
+      implicit um: FromEntityUnmarshaller[TableDataListResponse[Out]]
   ): Source[Out, Future[TableDataListResponse[Out]]] =
     source { settings =>
       val uri = BigQueryEndpoints.tableData(settings.projectId, datasetId, tableId)
