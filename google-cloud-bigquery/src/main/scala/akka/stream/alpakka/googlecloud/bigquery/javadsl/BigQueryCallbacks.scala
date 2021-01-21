@@ -6,7 +6,7 @@ package akka.stream.alpakka.googlecloud.bigquery.javadsl
 
 import akka.Done
 import akka.actor.ClassicActorSystemProvider
-import akka.japi.Function
+import akka.japi.function.Function
 import akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings
 import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.JobReference
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.{BigQueryCallbacks => ScalaCallback}

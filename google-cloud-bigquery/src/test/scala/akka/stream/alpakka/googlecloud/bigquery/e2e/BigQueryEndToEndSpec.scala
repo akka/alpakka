@@ -4,24 +4,21 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.e2e
 import akka.actor.ActorSystem
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.stream.alpakka.googlecloud.bigquery.HoverflySupport
-import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.DoneState
-import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.TableReference
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.BigQuery
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.schema.BigQuerySchemas._
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryJsonProtocol._
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.alpakka.googlecloud.bigquery.e2e.BigQueryEndToEndSpec.{A, B, C}
 import akka.testkit.TestKit
-import akka.{pattern, Done}
+import com.fasterxml.jackson.annotation.JsonInclude.Include
+import com.fasterxml.jackson.annotation.{JsonCreator, JsonInclude, JsonProperty, JsonPropertyOrder}
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer
 import io.specto.hoverfly.junit.core.{HoverflyMode, SimulationSource}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpecLike
 
 import java.io.File
-import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
+import scala.collection.JavaConverters._
 import scala.util.Random
 
 class BigQueryEndToEndSpec
@@ -48,19 +45,7 @@ class BigQueryEndToEndSpec
     super.afterAll()
   }
 
-  implicit override def executionContext = system.dispatcher
   implicit def scheduler = system.scheduler
-
-  case class A(integer: Int, long: Long, float: Float, double: Double, string: String, boolean: Boolean, record: B)
-  case class B(nullable: Option[String], repeated: Seq[C])
-  case class C(numeric: BigDecimal)
-
-  implicit val cFormat = bigQueryJsonFormat1(C)
-  implicit val bFormat = bigQueryJsonFormat2(B)
-  implicit val aFormat = bigQueryJsonFormat7(A)
-  implicit val cSchema = bigQuerySchema1(C)
-  implicit val bSchema = bigQuerySchema2(B)
-  implicit val aSchema = bigQuerySchema7(A)
 
   val rng = new Random(1234567890)
 
@@ -84,100 +69,54 @@ class BigQueryEndToEndSpec
 
   val rows = List.fill(10)(randomA())
 
-  "BigQuery" should {
+}
 
-    "create dataset" in {
-      BigQuery.createDataset(datasetId).map { dataset =>
-        dataset.datasetReference.datasetId shouldEqual datasetId
-      }
-    }
+object BigQueryEndToEndSpec {
 
-    "list new dataset" in {
-      BigQuery.datasets.runWith(Sink.seq).map { datasets =>
-        datasets.map(_.datasetReference.datasetId) should contain(datasetId)
-      }
-    }
+  @JsonPropertyOrder(alphabetic = true)
+  case class A(integer: Int, long: Long, float: Float, double: Double, string: String, boolean: Boolean, record: B) {
 
-    "create table" in {
-      BigQuery.createTable[A](datasetId, tableId).map { table =>
-        table.tableReference should matchPattern {
-          case TableReference(_, `datasetId`, `tableId`) =>
-        }
-      }
-    }
+    @JsonCreator
+    def this(@JsonProperty("f") f: JsonNode) =
+      this(
+        f.get(0).get("v").textValue().toInt,
+        f.get(1).get("v").textValue().toLong,
+        f.get(2).get("v").textValue().toFloat,
+        f.get(3).get("v").textValue().toDouble,
+        f.get(4).get("v").textValue(),
+        f.get(5).get("v").textValue().toBoolean,
+        new B(f.get(6).get("v"))
+      )
 
-    "list new table" in {
-      BigQuery.tables(datasetId).runWith(Sink.seq).map { tables =>
-        tables.map(_.tableReference.tableId) should contain(tableId)
-      }
-    }
-
-    "insert rows via streaming insert" in {
-      // TODO To test requires a project with billing enabled
-      Future.successful(assert(true))
-    }
-
-    "insert rows via load jobs" in {
-      Source(rows)
-        .via(BigQuery.insertAllAsync[A](datasetId, tableId))
-        .runWith(Sink.seq)
-        .flatMap {
-          case Seq(job) =>
-            pattern
-              .retry(
-                () => {
-                  BigQuery.job(job.jobReference.flatMap(_.jobId).get).flatMap { job =>
-                    if (job.status.map(_.state).get == DoneState)
-                      Future.successful(job)
-                    else
-                      Future.failed(new RuntimeException("Job not done."))
-                  }
-                },
-                60,
-                if (hoverfly.getMode == HoverflyMode.SIMULATE) 0.seconds else 1.second
-              )
-              .map { job =>
-                job.status.flatMap(_.errorResult) shouldBe None
-              }
-        }
-    }
-
-    "retrieve rows" in {
-      BigQuery.tableData[A](datasetId, tableId).runWith(Sink.seq).map { retrievedRows =>
-        retrievedRows should contain theSameElementsAs rows
-      }
-    }
-
-    "run query" in {
-      val query = s"SELECT string, record, integer FROM $datasetId.$tableId WHERE boolean;"
-      BigQuery.query[(String, B, Int)](query, useLegacySql = false).runWith(Sink.seq).map { retrievedRows =>
-        retrievedRows should contain theSameElementsAs rows.filter(_.boolean).map(a => (a.string, a.record, a.integer))
-      }
-    }
-
-    "delete table" in {
-      BigQuery.deleteTable(datasetId, tableId).map { done =>
-        done shouldBe Done
-      }
-    }
-
-    "not list deleted table" in {
-      BigQuery.tables(datasetId).runWith(Sink.seq).map { tables =>
-        tables.map(_.tableReference.tableId) shouldNot contain(tableId)
-      }
-    }
-
-    "delete dataset" in {
-      BigQuery.deleteDataset(datasetId).map { done =>
-        done shouldBe Done
-      }
-    }
-
-    "not list deleted dataset" in {
-      BigQuery.datasets.runWith(Sink.seq).map { datasets =>
-        datasets.map(_.datasetReference.datasetId) shouldNot contain(datasetId)
-      }
-    }
+    def getInteger = integer
+    @JsonSerialize(using = classOf[ToStringSerializer])
+    def getLong = long
+    def getFloat = float
+    def getDouble = double
+    def getString = string
+    def getBoolean = boolean
+    def getRecord = record
 
   }
+
+  @JsonPropertyOrder(alphabetic = true)
+  @JsonInclude(Include.NON_NULL)
+  case class B(nullable: Option[String], repeated: Seq[C]) {
+    def this(node: JsonNode) =
+      this(
+        Option(node.get("f").get(0).get("v").textValue()),
+        node.get("f").get(1).get("v").asScala.map(n => new C(n.get("v"))).toList
+      )
+
+    def getNullable = nullable.orNull
+    def getRepeated = repeated.asJava
+  }
+
+  case class C(numeric: BigDecimal) {
+    def this(node: JsonNode) =
+      this(BigDecimal(node.get("f").get(0).get("v").textValue()))
+    @JsonSerialize(using = classOf[ToStringSerializer])
+    def getNumeric = numeric
+  }
+
 }

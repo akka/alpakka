@@ -7,6 +7,7 @@ package akka.stream.alpakka.googlecloud.bigquery.model
 import akka.stream.alpakka.googlecloud.bigquery.model.ErrorProtoJsonProtocol.ErrorProto
 import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.{TableReference, TableSchema}
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryApiJsonProtocol._
+import com.fasterxml.jackson.annotation.{JsonCreator, JsonProperty}
 import spray.json.{deserializationError, JsString, JsValue, JsonFormat, RootJsonFormat}
 
 import java.util
@@ -125,6 +126,12 @@ object JobJsonProtocol {
   def createSourceFormat(value: String) = SourceFormat(value)
 
   final case class JobReference(projectId: Option[String], jobId: Option[String], location: Option[String]) {
+
+    @JsonCreator
+    private def this(@JsonProperty("projectId") projectId: String,
+                     @JsonProperty("jobId") jobId: String,
+                     @JsonProperty("location") location: String) =
+      this(Option(projectId), Option(jobId), Option(location))
 
     def getProjectId = projectId.asJava
     def getJobId = jobId.asJava

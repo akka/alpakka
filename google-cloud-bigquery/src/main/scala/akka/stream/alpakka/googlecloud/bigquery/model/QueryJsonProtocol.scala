@@ -11,6 +11,7 @@ import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.TableSch
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.Paginated
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryApiJsonProtocol._
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRootJsonFormat
+import com.fasterxml.jackson.annotation.{JsonCreator, JsonIgnoreProperties, JsonProperty}
 import spray.json.RootJsonFormat
 
 import java.{lang, util}
@@ -72,6 +73,7 @@ object QueryJsonProtocol {
       requestId.asScala
     )
 
+  @JsonIgnoreProperties(ignoreUnknown = true)
   final case class QueryResponse[T](schema: Option[TableSchema],
                                     jobReference: JobReference,
                                     totalRows: Option[Long],
@@ -82,6 +84,30 @@ object QueryJsonProtocol {
                                     errors: Option[Seq[ErrorProto]],
                                     cacheHit: Option[Boolean],
                                     numDmlAffectedRows: Option[Long]) {
+
+    @JsonCreator
+    private def this(@JsonProperty("schema") schema: TableSchema,
+                     @JsonProperty(value = "jobReference", required = true) jobReference: JobReference,
+                     @JsonProperty("totalRows") totalRows: String,
+                     @JsonProperty("pageToken") pageToken: String,
+                     @JsonProperty("rows") rows: util.List[T],
+                     @JsonProperty("totalBytesProcessed") totalBytesProcessed: String,
+                     @JsonProperty(value = "jobComplete", required = true) jobComplete: Boolean,
+                     @JsonProperty("errors") errors: util.List[ErrorProto],
+                     @JsonProperty("cacheHit") cacheHit: lang.Boolean,
+                     @JsonProperty("numDmlAffectedRows") numDmlAffectedRows: String) =
+      this(
+        Option(schema),
+        jobReference,
+        Option(totalRows).map(_.toLong),
+        Option(pageToken),
+        Option(rows).map(_.asScala.toList),
+        Option(totalBytesProcessed).map(_.toLong),
+        jobComplete,
+        Option(errors).map(_.asScala.toList),
+        Option(cacheHit).map(_.booleanValue),
+        Option(numDmlAffectedRows).map(_.toLong)
+      )
 
     def getSchema = schema.asJava
     def getJobReference = jobReference

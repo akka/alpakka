@@ -6,6 +6,7 @@ package akka.stream.alpakka.googlecloud.bigquery.model
 
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.Paginated
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryApiJsonProtocol._
+import com.fasterxml.jackson.annotation.{JsonCreator, JsonProperty}
 import spray.json.{deserializationError, JsString, JsValue, JsonFormat, RootJsonFormat}
 
 import java.util
@@ -76,6 +77,11 @@ object TableJsonProtocol {
     TableReference(projectId.asScala, datasetId, tableId)
 
   final case class TableSchema(fields: Seq[TableFieldSchema]) {
+
+    @JsonCreator
+    private def this(@JsonProperty(value = "fields", required = true) fields: util.List[TableFieldSchema]) =
+      this(fields.asScala.toList)
+
     def getFields = fields.asJava
     def withFields(fields: util.List[TableFieldSchema]) = copy(fields = fields.asScala.toList)
   }
@@ -89,6 +95,18 @@ object TableJsonProtocol {
                                     `type`: TableFieldSchemaType,
                                     mode: Option[TableFieldSchemaMode],
                                     fields: Option[Seq[TableFieldSchema]]) {
+
+    @JsonCreator
+    private def this(@JsonProperty(value = "name", required = true) name: String,
+                     @JsonProperty(value = "type", required = true) `type`: String,
+                     @JsonProperty("mode") mode: String,
+                     @JsonProperty("fields") fields: util.List[TableFieldSchema]) =
+      this(
+        name,
+        TableFieldSchemaType(`type`),
+        Option(mode).map(TableFieldSchemaMode),
+        Option(fields).map(_.asScala.toList)
+      )
 
     def getName = name
     def getType = `type`
