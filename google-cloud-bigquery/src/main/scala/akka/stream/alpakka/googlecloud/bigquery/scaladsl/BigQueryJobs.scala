@@ -43,7 +43,7 @@ import scala.concurrent.{Future, Promise}
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success}
 
-private[scaladsl] trait BigQueryJob { this: BigQueryRest =>
+private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
 
   def job(jobId: String, location: Option[String] = None)(implicit system: ClassicActorSystemProvider,
                                                           settings: BigQuerySettings): Future[Job] = {
@@ -78,7 +78,7 @@ private[scaladsl] trait BigQueryJob { this: BigQueryRest =>
       query: String,
       dryRun: Boolean = false,
       useLegacySql: Boolean = true,
-      onCompleteCallback: Option[JobReference] => Future[Done] = BigQueryCallback.ignore
+      onCompleteCallback: Option[JobReference] => Future[Done] = BigQueryCallbacks.ignore
   )(implicit um: FromEntityUnmarshaller[QueryResponse[Out]]): Source[Out, Future[QueryResponse[Out]]] = {
     val request = QueryRequest(query, None, None, None, Some(dryRun), Some(useLegacySql), None)
     this.query(request, onCompleteCallback)

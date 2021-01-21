@@ -21,7 +21,7 @@ import akka.stream.scaladsl.{Keep, Sink, Source}
 
 import scala.concurrent.Future
 
-private[scaladsl] trait BigQueryTable { this: BigQueryRest =>
+private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
 
   def tables(datasetId: String, maxResults: Option[Int] = None): Source[Table, Future[TableListResponse]] =
     source { settings =>

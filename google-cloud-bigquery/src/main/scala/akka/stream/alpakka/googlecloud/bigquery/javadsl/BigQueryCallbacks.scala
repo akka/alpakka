@@ -9,7 +9,7 @@ import akka.actor.ClassicActorSystemProvider
 import akka.japi.Function
 import akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings
 import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.JobReference
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.{BigQueryCallback => ScalaCallback}
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.{BigQueryCallbacks => ScalaCallback}
 
 import java.util
 import java.util.concurrent.CompletionStage
@@ -17,7 +17,7 @@ import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.Future
 
-object BigQueryCallback {
+object BigQueryCallbacks {
 
   private val completedDone: CompletionStage[Done] = Future.successful(Done: Done).toJava
 

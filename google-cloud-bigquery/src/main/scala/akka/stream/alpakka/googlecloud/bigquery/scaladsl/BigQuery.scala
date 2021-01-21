@@ -11,7 +11,12 @@ import akka.stream.alpakka.googlecloud.bigquery.impl.BigQueryExt
 /**
  * Scala API to interface with BigQuery.
  */
-object BigQuery extends BigQueryRest with BigQueryDataset with BigQueryJob with BigQueryTable with BigQueryTableData {
+object BigQuery
+    extends BigQueryRest
+    with BigQueryDatasets
+    with BigQueryJobs
+    with BigQueryTables
+    with BigQueryTableData {
 
   def settings(implicit system: ClassicActorSystemProvider): BigQuerySettings = BigQueryExt(system).settings
 

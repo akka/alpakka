@@ -23,7 +23,7 @@ import akka.stream.scaladsl.Source
 
 import scala.concurrent.Future
 
-private[scaladsl] trait BigQueryDataset { this: BigQueryRest =>
+private[scaladsl] trait BigQueryDatasets { this: BigQueryRest =>
 
   def datasets: Source[Dataset, NotUsed] = datasets()
 

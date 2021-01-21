@@ -13,7 +13,7 @@ import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.JobReferen
 
 import scala.concurrent.Future
 
-object BigQueryCallback {
+object BigQueryCallbacks {
 
   private val futureDone = FastFuture.successful(Done)
 
