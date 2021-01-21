@@ -9,7 +9,14 @@ import akka.stream.alpakka.googlecloud.bigquery.scaladsl.Paginated
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRootJsonFormat
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryApiJsonProtocol._
 import com.fasterxml.jackson.annotation.JsonInclude.Include
-import com.fasterxml.jackson.annotation.{JsonCreator, JsonGetter, JsonIgnore, JsonIgnoreProperties, JsonInclude, JsonProperty}
+import com.fasterxml.jackson.annotation.{
+  JsonCreator,
+  JsonGetter,
+  JsonIgnore,
+  JsonIgnoreProperties,
+  JsonInclude,
+  JsonProperty
+}
 import spray.json.{JsonFormat, RootJsonFormat}
 
 import java.{lang, util}

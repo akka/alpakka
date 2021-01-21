@@ -15,6 +15,7 @@ object BigQuery
     extends BigQueryRest
     with BigQueryDatasets
     with BigQueryJobs
+    with BigQueryQueries
     with BigQueryTables
     with BigQueryTableData {
 
