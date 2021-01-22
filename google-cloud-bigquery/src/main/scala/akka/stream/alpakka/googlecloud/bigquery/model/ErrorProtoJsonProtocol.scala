@@ -13,6 +13,14 @@ import scala.compat.java8.OptionConverters._
 
 object ErrorProtoJsonProtocol {
 
+  /**
+   * ErrorProto model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto BigQuery reference]]
+   *
+   * @param reason a short error code that summarizes the error
+   * @param location specifies where the error occurred, if present
+   * @param message A human-readable description of the error
+   */
   final case class ErrorProto(reason: String, location: Option[String], message: String) {
 
     @JsonCreator
@@ -34,7 +42,13 @@ object ErrorProtoJsonProtocol {
   }
 
   /**
-   * Java API
+   * ErrorProto model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto BigQuery reference]]
+   *
+   * @param reason a short error code that summarizes the error
+   * @param location specifies where the error occurred, if present
+   * @param message A human-readable description of the error
+   * @return an [[ErrorProto]]
    */
   def createErrorProto(reason: String, location: util.Optional[String], message: String) =
     ErrorProto(reason, location.asScala, message)

@@ -10,16 +10,25 @@ sealed abstract class InsertAllRetryPolicy {
   final def getInstance: InsertAllRetryPolicy = this;
 }
 
+/**
+ * Never retry failed insert requests
+ */
 case object NoRetries extends InsertAllRetryPolicy {
   override def retry: Boolean = false
   override def deduplicate: Boolean = false
 }
 
+/**
+ * Retry failed insert requests without deduplication
+ */
 case object RetryNoDeduplication extends InsertAllRetryPolicy {
   override def retry: Boolean = true
   override def deduplicate: Boolean = false
 }
 
+/**
+ * Retry failed insert requests with best-effort deduplication
+ */
 case object RetryWithDeduplication extends InsertAllRetryPolicy {
   override def retry: Boolean = true
   override def deduplicate: Boolean = true

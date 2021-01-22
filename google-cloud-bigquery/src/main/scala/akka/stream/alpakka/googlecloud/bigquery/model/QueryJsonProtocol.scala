@@ -21,6 +21,18 @@ import scala.compat.java8.OptionConverters._
 
 object QueryJsonProtocol {
 
+  /**
+   * QueryRequest model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query#queryrequest BigQuery reference]]
+   *
+   * @param query a query string, following the BigQuery query syntax, of the query to execute
+   * @param maxResults the maximum number of rows of data to return per page of results
+   * @param defaultDataset specifies the default datasetId and projectId to assume for any unqualified table names in the query
+   * @param timeoutMs specifies the maximum amount of time, in milliseconds, that the client is willing to wait for the query to complete
+   * @param dryRun if set to `true` BigQuery doesn't run the job and instead returns statistics about the job such as how many bytes would be processed
+   * @param useLegacySql specifies whether to use BigQuery's legacy SQL dialect for this query
+   * @param requestId a unique user provided identifier to ensure idempotent behavior for queries
+   */
   final case class QueryRequest(query: String,
                                 maxResults: Option[Int],
                                 defaultDataset: Option[DatasetReference],
@@ -54,7 +66,17 @@ object QueryJsonProtocol {
   }
 
   /**
-   * Java API
+   * Java API: QueryRequest model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query#queryrequest BigQuery reference]]
+   *
+   * @param query a query string, following the BigQuery query syntax, of the query to execute
+   * @param maxResults the maximum number of rows of data to return per page of results
+   * @param defaultDataset specifies the default datasetId and projectId to assume for any unqualified table names in the query
+   * @param timeoutMs specifies the maximum amount of time, in milliseconds, that the client is willing to wait for the query to complete
+   * @param dryRun if set to `true` BigQuery doesn't run the job and instead returns statistics about the job such as how many bytes would be processed
+   * @param useLegacySql specifies whether to use BigQuery's legacy SQL dialect for this query
+   * @param requestId a unique user provided identifier to ensure idempotent behavior for queries
+   * @return a [[QueryRequest]]
    */
   def createQueryRequest(query: String,
                          maxResults: util.OptionalInt,
@@ -73,6 +95,23 @@ object QueryJsonProtocol {
       requestId.asScala
     )
 
+  /**
+   * QueryResponse model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query#response-body BigQuery reference]]
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/getQueryResults#response-body BigQuery reference]]
+   *
+   * @param schema the schema of the results
+   * @param jobReference reference to the Job that was created to run the query
+   * @param totalRows the total number of rows in the complete query result set, which can be more than the number of rows in this single page of results
+   * @param pageToken a token used for paging results
+   * @param rows an object with as many results as can be contained within the maximum permitted reply size
+   * @param totalBytesProcessed the total number of bytes processed for this query
+   * @param jobComplete whether the query has completed or not
+   * @param errors the first errors or warnings encountered during the running of the job
+   * @param cacheHit whether the query result was fetched from the query cache
+   * @param numDmlAffectedRows the number of rows affected by a DML statement
+   * @tparam T the data model for each row
+   */
   @JsonIgnoreProperties(ignoreUnknown = true)
   final case class QueryResponse[T](schema: Option[TableSchema],
                                     jobReference: JobReference,
@@ -143,7 +182,22 @@ object QueryJsonProtocol {
   }
 
   /**
-   * Java API
+   * Java API: QueryResponse model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query#response-body BigQuery reference]]
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/getQueryResults#response-body BigQuery reference]]
+   *
+   * @param schema the schema of the results
+   * @param jobReference reference to the Job that was created to run the query
+   * @param totalRows the total number of rows in the complete query result set, which can be more than the number of rows in this single page of results
+   * @param pageToken a token used for paging results
+   * @param rows an object with as many results as can be contained within the maximum permitted reply size
+   * @param totalBytesProcessed the total number of bytes processed for this query
+   * @param jobComplete whether the query has completed or not
+   * @param errors the first errors or warnings encountered during the running of the job
+   * @param cacheHit whether the query result was fetched from the query cache
+   * @param numDmlAffectedRows the number of rows affected by a DML statement
+   * @tparam T the data model for each row
+   * @return a [[QueryResponse]]
    */
   def createQueryResponse[T](schema: util.Optional[TableSchema],
                              jobReference: JobReference,

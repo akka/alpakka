@@ -21,10 +21,24 @@ import scala.language.implicitConversions
 
 private[scaladsl] trait BigQueryRest {
 
+  /**
+   * Makes a single authenticated request without retries.
+   *
+   * @param request the [[akka.http.scaladsl.model.HttpRequest]] to make
+   * @return a [[scala.concurrent.Future]] containing the [[akka.http.scaladsl.model.HttpResponse]]
+   */
   def singleRequest(request: HttpRequest)(implicit system: ClassicActorSystemProvider,
                                           settings: BigQuerySettings): Future[HttpResponse] =
     BigQueryHttp().singleRequestWithOAuth(request)
 
+  /**
+   * Makes a series of authenticated requests to page through a resource.
+   *
+   * @param request the [[akka.http.scaladsl.model.HttpRequest]] to make; must be a GET request
+   * @param initialPageToken a page token to use for the initial request
+   * @tparam Out the data model for each page of the resource
+   * @return a [[akka.stream.scaladsl.Source]] that emits an [[Out]] for each page of the resource
+   */
   def paginatedRequest[Out: FromEntityUnmarshaller: Paginated](
       request: HttpRequest,
       initialPageToken: Option[String] = None

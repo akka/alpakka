@@ -16,6 +16,16 @@ import scala.compat.java8.OptionConverters._
 
 object TableJsonProtocol {
 
+  /**
+   * Table resource model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#resource:-table BigQuery reference]]
+   *
+   * @param tableReference reference describing the ID of this table
+   * @param labels the labels associated with this table
+   * @param schema describes the schema of this table
+   * @param numRows the number of rows of data in this table
+   * @param location the geographic location where the table resides
+   */
   final case class Table(tableReference: TableReference,
                          labels: Option[Map[String, String]],
                          schema: Option[TableSchema],
@@ -41,7 +51,15 @@ object TableJsonProtocol {
   }
 
   /**
-   * Java API
+   * Java API: Table resource model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#resource:-table BigQueryReference]]
+   *
+   * @param tableReference reference describing the ID of this table
+   * @param labels the labels associated with this table
+   * @param schema describes the schema of this table
+   * @param numRows the number of rows of data in this table
+   * @param location the geographic location where the table resides
+   * @return a [[Table]]
    */
   def createTable(tableReference: TableReference,
                   labels: util.Optional[util.Map[String, String]],
@@ -56,6 +74,14 @@ object TableJsonProtocol {
       location.asScala
     )
 
+  /**
+   * TableReference model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/TableReference BigQuery reference]]
+   *
+   * @param projectId the ID of the project containing this table
+   * @param datasetId the ID of the dataset containing this table
+   * @param tableId the ID of the table
+   */
   final case class TableReference(projectId: Option[String], datasetId: String, tableId: String) {
 
     def getProjectId = projectId.asJava
@@ -71,11 +97,23 @@ object TableJsonProtocol {
   }
 
   /**
-   * Java API
+   * Java API: TableReference model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/TableReference BigQuery reference]]
+   *
+   * @param projectId the ID of the project containing this table
+   * @param datasetId the ID of the dataset containing this table
+   * @param tableId the ID of the table
+   * @return a [[TableReference]]
    */
   def createTableReference(projectId: util.Optional[String], datasetId: String, tableId: String) =
     TableReference(projectId.asScala, datasetId, tableId)
 
+  /**
+   * Schema of a table
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#tableschema BigQuery reference]]
+   *
+   * @param fields describes the fields in a table
+   */
   final case class TableSchema(fields: Seq[TableFieldSchema]) {
 
     @JsonCreator
@@ -87,10 +125,23 @@ object TableJsonProtocol {
   }
 
   /**
-   * Java API
+   * Java API: Schema of a table
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#tableschema BigQuery reference]]
+   *
+   * @param fields describes the fields in a table
+   * @return a [[TableSchema]]
    */
   def createTableSchema(fields: util.List[TableFieldSchema]) = TableSchema(fields.asScala.toList)
 
+  /**
+   * A field in TableSchema
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#tablefieldschema BigQuery reference]]
+   *
+   * @param name the field name
+   * @param `type` the field data type
+   * @param mode the field mode
+   * @param fields describes the nested schema fields if the type property is set to `RECORD`
+   */
   final case class TableFieldSchema(name: String,
                                     `type`: TableFieldSchemaType,
                                     mode: Option[TableFieldSchemaMode],
@@ -124,7 +175,14 @@ object TableJsonProtocol {
   }
 
   /**
-   * Java API
+   * A field in TableSchema
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#tablefieldschema BigQuery reference]]
+   *
+   * @param name the field name
+   * @param `type` the field data type
+   * @param mode the field mode
+   * @param fields describes the nested schema fields if the type property is set to `RECORD`
+   * @return a [[TableFieldSchema]]
    */
   def createTableFieldSchema(name: String,
                              `type`: TableFieldSchemaType,
@@ -165,6 +223,14 @@ object TableJsonProtocol {
    */
   def createTableFieldSchemaMode(value: String) = TableFieldSchemaMode(value)
 
+  /**
+   * TableListResponse model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables/list#response-body BigQuery reference]]
+   *
+   * @param nextPageToken a token to request the next page of results
+   * @param tables tables in the requested dataset
+   * @param totalItems the total number of tables in the dataset
+   */
   final case class TableListResponse(nextPageToken: Option[String],
                                      tables: Option[Seq[Table]],
                                      totalItems: Option[Int]) {
@@ -182,7 +248,13 @@ object TableJsonProtocol {
   }
 
   /**
-   * Java API
+   * Java API: TableListResponse model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables/list#response-body BigQuery reference]]
+   *
+   * @param nextPageToken a token to request the next page of results
+   * @param tables tables in the requested dataset
+   * @param totalItems the total number of tables in the dataset
+   * @return a [[TableListResponse]]
    */
   def createTableListResponse(nextPageToken: util.Optional[String],
                               tables: util.Optional[util.List[Table]],

@@ -17,6 +17,14 @@ import scala.compat.java8.OptionConverters._
 
 object JobJsonProtocol {
 
+  /**
+   * Job model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job BigQuery reference]]
+   *
+   * @param configuration describes the job configuration
+   * @param jobReference reference describing the unique-per-user name of the job
+   * @param status the status of this job
+   */
   final case class Job(configuration: Option[JobConfiguration],
                        jobReference: Option[JobReference],
                        status: Option[JobStatus]) {
@@ -34,24 +42,50 @@ object JobJsonProtocol {
   }
 
   /**
-   * Java API
+   * Java API: Job model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job BigQuery reference]]
+   *
+   * @param configuration describes the job configuration
+   * @param jobReference reference describing the unique-per-user name of the job
+   * @param status the status of this job
+   * @return a [[Job]]
    */
   def createJob(configuration: util.Optional[JobConfiguration],
                 jobReference: util.Optional[JobReference],
                 status: util.Optional[JobStatus]) =
     Job(configuration.asScala, jobReference.asScala, status.asScala)
 
+  /**
+   * JobConfiguration model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfiguration BigQuery reference]]
+   *
+   * @param load configures a load job
+   */
   final case class JobConfiguration(load: Option[JobConfigurationLoad]) {
     def getLoad = load.asJava
     def withLoad(load: util.Optional[JobConfigurationLoad]) = copy(load = load.asScala)
   }
 
   /**
-   * Java API
+   * Java API: JobConfiguration model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfiguration BigQuery reference]]
+   *
+   * @param load configures a load job
+   * @return a [[JobConfiguration]]
    */
   def createJobConfiguration(load: util.Optional[JobConfigurationLoad]) =
     JobConfiguration(load.asScala)
 
+  /**
+   * JobConfigurationLoad model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfigurationload BigQuery reference]]
+   *
+   * @param schema the schema for the destination table
+   * @param destinationTable the destination table to load the data into
+   * @param createDisposition specifies whether the job is allowed to create new tables
+   * @param writeDisposition specifies the action that occurs if the destination table already exists
+   * @param sourceFormat the format of the data files
+   */
   final case class JobConfigurationLoad(schema: Option[TableSchema],
                                         destinationTable: Option[TableReference],
                                         createDisposition: Option[CreateDisposition],
@@ -77,7 +111,15 @@ object JobJsonProtocol {
   }
 
   /**
-   * Java API
+   * Java API: JobConfigurationLoad model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfigurationload BigQuery reference]]
+   *
+   * @param schema the schema for the destination table
+   * @param destinationTable the destination table to load the data into
+   * @param createDisposition specifies whether the job is allowed to create new tables
+   * @param writeDisposition specifies the action that occurs if the destination table already exists
+   * @param sourceFormat the format of the data files
+   * @return a [[JobConfigurationLoad]]
    */
   def createJobConfigurationLoad(schema: util.Optional[TableSchema],
                                  destinationTable: util.Optional[TableReference],
@@ -98,9 +140,6 @@ object JobJsonProtocol {
   val CreateIfNeededDisposition = CreateDisposition("CREATE_IF_NEEDED")
   val CreateNeverDisposition = CreateDisposition("CREATE_NEVER")
 
-  /**
-   * Java API
-   */
   def createCreateDisposition(value: String) = CreateDisposition(value)
 
   final case class WriteDisposition(value: String) {
@@ -125,6 +164,14 @@ object JobJsonProtocol {
    */
   def createSourceFormat(value: String) = SourceFormat(value)
 
+  /**
+   * JobReference model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/JobReference BigQuery reference]]
+   *
+   * @param projectId the ID of the project containing this job.
+   * @param jobId the ID of the job
+   * @param location the geographic location of the job
+   */
   final case class JobReference(projectId: Option[String], jobId: Option[String], location: Option[String]) {
 
     @JsonCreator
@@ -146,13 +193,27 @@ object JobJsonProtocol {
   }
 
   /**
-   * Java API
+   * Java API: JobReference model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/JobReference BigQuery reference]]
+   *
+   * @param projectId the ID of the project containing this job.
+   * @param jobId the ID of the job
+   * @param location the geographic location of the job
+   * @return a [[JobReference]]
    */
   def createJobReference(projectId: util.Optional[String],
                          jobId: util.Optional[String],
                          location: util.Optional[String]) =
     JobReference(projectId.asScala, jobId.asScala, location.asScala)
 
+  /**
+   * JobStatus model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobstatus BigQuery reference]]
+   *
+   * @param errorResult final error result of the job; if present, indicates that the job has completed and was unsuccessful
+   * @param errors the first errors encountered during the running of the job
+   * @param state running state of the job
+   */
   final case class JobStatus(errorResult: Option[ErrorProto], errors: Option[Seq[ErrorProto]], state: JobState) {
 
     def getErrorResult = errorResult.asJava
@@ -168,7 +229,13 @@ object JobJsonProtocol {
   }
 
   /**
-   * Java API
+   * Java API: JobStatus model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobstatus BigQuery reference]]
+   *
+   * @param errorResult final error result of the job; if present, indicates that the job has completed and was unsuccessful
+   * @param errors the first errors encountered during the running of the job
+   * @param state running state of the job
+   * @return a [[JobStatus]]
    */
   def createJobStatus(errorResult: util.Optional[ErrorProto],
                       errors: util.Optional[util.List[ErrorProto]],
@@ -226,7 +293,7 @@ object JobJsonProtocol {
   implicit val jobStateFormat: JsonFormat[JobState] = new JsonFormat[JobState] {
     override def read(json: JsValue): JobState = json match {
       case JsString(x) => JobState(x)
-      case x => deserializationError("Expected JobStatus as JsString, but got " + x)
+      case x => deserializationError("Expected JobState as JsString, but got " + x)
     }
     override def write(obj: JobState): JsValue = JsString(obj.value)
   }

@@ -25,6 +25,17 @@ import scala.util.{Failure, Success}
 
 private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
 
+  /**
+   * Runs a BigQuery SQL query.
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query BigQuery reference]]
+   *
+   * @param query a query string, following the BigQuery query syntax, of the query to execute
+   * @param dryRun if set to `true` BigQuery doesn't run the job and instead returns statistics about the job such as how many bytes would be processed
+   * @param useLegacySql specifies whether to use BigQuery's legacy SQL dialect for this query
+   * @param onCompleteCallback a callback to execute when complete
+   * @tparam Out the data model of the query results
+   * @return a [[akka.stream.scaladsl.Source]] that emits an [[Out]] for each row of the results and materializes a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
+   */
   def query[Out](
       query: String,
       dryRun: Boolean = false,
@@ -35,6 +46,15 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
     this.query(request, onCompleteCallback)
   }
 
+  /**
+   * Runs a BigQuery SQL query.
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query BigQuery reference]]
+   *
+   * @param query the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryRequest]]
+   * @param onCompleteCallback a callback to execute when complete
+   * @tparam Out the data model of the query results
+   * @return a [[akka.stream.scaladsl.Source]] that emits an [[Out]] for each row of the results and materializes a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
+   */
   def query[Out](query: QueryRequest, onCompleteCallback: Option[JobReference] => Future[Done])(
       implicit um: FromEntityUnmarshaller[QueryResponse[Out]]
   ): Source[Out, Future[QueryResponse[Out]]] =
@@ -112,6 +132,18 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
       }
       .mapMaterializedValue(_ => NotUsed)
 
+  /**
+   * The results of a query job.
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/getQueryResults BigQuery reference]]
+   *
+   * @param jobId job ID of the query job
+   * @param startIndex zero-based index of the starting row
+   * @param maxResults maximum number of results to read
+   * @param timeout specifies the maximum amount of time that the client is willing to wait for the query to complete
+   * @param location the geographic location of the job. Required except for US and EU
+   * @tparam Out the data model of the query results
+   * @return a [[akka.stream.scaladsl.Source]] that emits an [[Out]] for each row of the results and materializes a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
+   */
   def queryResults[Out](
       jobId: String,
       startIndex: Option[Long] = None,

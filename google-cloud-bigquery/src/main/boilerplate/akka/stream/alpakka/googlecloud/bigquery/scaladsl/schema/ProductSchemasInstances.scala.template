@@ -12,7 +12,7 @@ import scala.reflect.{classTag, ClassTag}
 trait ProductSchemasInstances { this: ProductSchemas with StandardSchemas =>
 [#  // Case classes with 1 parameters
 
-  def bigQuerySchema1[[#P1#], T <: Product: ClassTag](ev: ([#P1#]) => T)(implicit [#writer1: SchemaWriter[P1]#]): ProductSchemaWriter[T] = new ProductSchemaWriter[T](schemaFields[[#P1#], T])
+  def bigQuerySchema1[[#P1#], T <: Product: ClassTag](ev: ([#P1#]) => T)(implicit [#writer1: SchemaWriter[P1]#]): TableSchemaWriter[T] = new ProductSchemaWriter[T](schemaFields[[#P1#], T])
 
   private def schemaFields[[#P1#], T <: Product: ClassTag](implicit [#writer1: SchemaWriter[P1]#]): Seq[TableFieldSchema] = {
     val Array([#p1#]) = extractFieldNames(classTag[T])

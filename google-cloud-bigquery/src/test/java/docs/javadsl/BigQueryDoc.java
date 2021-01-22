@@ -4,6 +4,8 @@
 
 package docs.javadsl;
 
+// #imports
+
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
@@ -30,6 +32,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -43,6 +46,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+// #imports
 
 public class BigQueryDoc {
 
@@ -63,8 +67,9 @@ public class BigQueryDoc {
       name = fields.get(0).get("v").textValue();
       age = Integer.parseInt(fields.get(1).get("v").textValue());
       addresses = new ArrayList<>();
+      ObjectReader addressReader = objectMapper.readerFor(Address.class);
       for (JsonNode node : fields.get(2).get("v")) {
-        Address address = objectMapper.readerFor(Address.class).readValue(node.get("v"));
+        Address address = addressReader.readValue(node.get("v"));
         addresses.add(address);
       }
       isHakker = Boolean.parseBoolean(fields.get(3).get("v").textValue());
@@ -113,16 +118,17 @@ public class BigQueryDoc {
     }
   }
 
-  public class NameAddressesTuple {
+  public class NameAddressesPair {
     private String name;
     private List<Address> addresses;
 
     @JsonCreator
-    public NameAddressesTuple(@JsonProperty("f") JsonNode fields) throws IOException {
+    public NameAddressesPair(@JsonProperty("f") JsonNode fields) throws IOException {
       name = fields.get(0).get("v").textValue();
       addresses = new ArrayList<>();
+      ObjectReader addressReader = objectMapper.readerFor(Address.class);
       for (JsonNode node : fields.get(1).get("v")) {
-        Address address = objectMapper.readerFor(Address.class).readValue(node.get("v"));
+        Address address = addressReader.readValue(node.get("v"));
         addresses.add(address);
       }
     }
@@ -136,26 +142,26 @@ public class BigQueryDoc {
 
     // #run-query
     String sqlQuery =
-        String.format("SELECT name, addresses FROM %s.%s WHERE age > 100", datasetId, tableId);
-    Unmarshaller<HttpEntity, QueryJsonProtocol.QueryResponse<NameAddressesTuple>>
+        String.format("SELECT name, addresses FROM %s.%s WHERE age >= 100", datasetId, tableId);
+    Unmarshaller<HttpEntity, QueryJsonProtocol.QueryResponse<NameAddressesPair>>
         queryResponseUnmarshaller =
-            BigQueryMarshallers.queryResponseUnmarshaller(NameAddressesTuple.class);
-    Source<NameAddressesTuple, CompletionStage<QueryJsonProtocol.QueryResponse<NameAddressesTuple>>>
+            BigQueryMarshallers.queryResponseUnmarshaller(NameAddressesPair.class);
+    Source<NameAddressesPair, CompletionStage<QueryJsonProtocol.QueryResponse<NameAddressesPair>>>
         centenarians =
             BigQuery.query(
                 sqlQuery, false, false, BigQueryCallbacks.ignore(), queryResponseUnmarshaller);
     // #run-query
 
     // #dry-run-query
-    Source<NameAddressesTuple, CompletionStage<QueryJsonProtocol.QueryResponse<NameAddressesTuple>>>
+    Source<NameAddressesPair, CompletionStage<QueryJsonProtocol.QueryResponse<NameAddressesPair>>>
         centenariansDryRun =
             BigQuery.query(
                 sqlQuery, false, false, BigQueryCallbacks.ignore(), queryResponseUnmarshaller);
-    CompletionStage<OptionalLong> bytesProcessed =
+    CompletionStage<Long> bytesProcessed =
         centenariansDryRun
             .to(Sink.ignore())
             .run(system)
-            .thenApply(QueryJsonProtocol.QueryResponse::getTotalBytesProcessed);
+            .thenApply(r -> r.getTotalBytesProcessed().getAsLong());
     // #dry-run-query
 
     // #table-data

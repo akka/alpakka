@@ -23,6 +23,14 @@ import scala.concurrent.Future
 
 private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
 
+  /**
+   * Lists all tables in the specified dataset.
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables/list BigQuery reference]]
+   *
+   * @param datasetId dataset ID of the tables to list
+   * @param maxResults the maximum number of results to return in a single response page
+   * @return a [[akka.stream.scaladsl.Source]] that emits each [[akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.Table]] in the dataset and materializes a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.TableListResponse]]
+   */
   def tables(datasetId: String, maxResults: Option[Int] = None): Source[Table, Future[TableListResponse]] =
     source { settings =>
       import SprayJsonSupport._
@@ -31,6 +39,14 @@ private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
       paginatedRequest[TableListResponse](HttpRequest(GET, uri.withQuery(query)))
     }.wireTapMat(Sink.head)(Keep.right).mapConcat(_.tables.fold(List.empty[Table])(_.toList))
 
+  /**
+   * Gets the specified table resource. This method does not return the data in the table, it only returns the table resource, which describes the structure of this table.
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables/get BigQuery reference]]
+   *
+   * @param datasetId dataset ID of the requested table
+   * @param tableId table ID of the requested table
+   * @return a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.Table]]
+   */
   def table(datasetId: String, tableId: String)(implicit system: ClassicActorSystemProvider,
                                                 settings: BigQuerySettings): Future[Table] = {
     import BigQueryException._
@@ -43,6 +59,15 @@ private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
       }(system.classicSystem.dispatcher)
   }
 
+  /**
+   * Creates a new, empty table in the dataset.
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables/insert BigQuery reference]]
+   *
+   * @param datasetId dataset ID of the new table
+   * @param tableId table ID of the new table
+   * @tparam T the data model for the records of this table
+   * @return a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.Table]]
+   */
   def createTable[T](datasetId: String, tableId: String)(
       implicit system: ClassicActorSystemProvider,
       settings: BigQuerySettings,
@@ -52,6 +77,13 @@ private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
     createTable(table)
   }
 
+  /**
+   * Creates a new, empty table in the dataset.
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables/insert BigQuery reference]]
+   *
+   * @param table the [[akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.Table]] to create
+   * @return a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.Table]]
+   */
   def createTable(table: Table)(implicit system: ClassicActorSystemProvider,
                                 settings: BigQuerySettings): Future[Table] = {
     import BigQueryException._
@@ -68,6 +100,14 @@ private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
     } yield table
   }
 
+  /**
+   * Deletes the specified table from the dataset. If the table contains data, all the data will be deleted.
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables/delete BigQuery reference]]
+   *
+   * @param datasetId dataset ID of the table to delete
+   * @param tableId table ID of the table to delete
+   * @return a [[scala.concurrent.Future]] containing [[akka.Done]]
+   */
   def deleteTable(datasetId: String, tableId: String)(implicit system: ClassicActorSystemProvider,
                                                       settings: BigQuerySettings): Future[Done] = {
     import BigQueryException._

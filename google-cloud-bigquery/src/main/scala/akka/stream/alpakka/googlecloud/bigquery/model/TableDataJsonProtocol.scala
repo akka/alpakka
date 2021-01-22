@@ -26,6 +26,15 @@ import scala.compat.java8.OptionConverters._
 
 object TableDataJsonProtocol {
 
+  /**
+   * TableDataListResponse model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/list#response-body BigQuery reference]]
+   *
+   * @param totalRows total rows of the entire table
+   * @param pageToken a token indicates from where we should start the next read
+   * @param rows repeated rows as result
+   * @tparam T the data model of each row
+   */
   @JsonIgnoreProperties(ignoreUnknown = true)
   final case class TableDataListResponse[T](totalRows: Long, pageToken: Option[String], rows: Option[Seq[T]]) {
 
@@ -48,13 +57,30 @@ object TableDataJsonProtocol {
   }
 
   /**
-   * Java API
+   * Java API: TableDataListResponse model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/list#response-body BigQuery reference]]
+   *
+   * @param totalRows total rows of the entire table
+   * @param pageToken a token indicates from where we should start the next read
+   * @param rows repeated rows as result
+   * @tparam T the data model of each row
+   * @return a [[TableDataListResponse]]
    */
   def createTableDataListResponse[T](totalRows: Long,
                                      pageToken: util.Optional[String],
                                      rows: util.Optional[util.List[T]]) =
     TableDataListResponse(totalRows, pageToken.asScala, rows.asScala.map(_.asScala.toList))
 
+  /**
+   * TableDataInsertAllRequest model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll#request-body BigQuery reference]]
+   *
+   * @param skipInvalidRows insert all valid rows of a request, even if invalid rows exist
+   * @param ignoreUnknownValues accept rows that contain values that do not match the schema
+   * @param templateSuffix if specified, treats the destination table as a base template, and inserts the rows into an instance table named "{destination}{templateSuffix}"
+   * @param rows the rows to insert
+   * @tparam T the data model of each row
+   */
   @JsonInclude(Include.NON_NULL)
   final case class TableDataInsertAllRequest[T](skipInvalidRows: Option[Boolean],
                                                 ignoreUnknownValues: Option[Boolean],
@@ -84,7 +110,15 @@ object TableDataJsonProtocol {
   }
 
   /**
-   * Java API
+   * Java API: TableDataInsertAllRequest model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll#request-body BigQuery reference]]
+   *
+   * @param skipInvalidRows insert all valid rows of a request, even if invalid rows exist
+   * @param ignoreUnknownValues accept rows that contain values that do not match the schema
+   * @param templateSuffix if specified, treats the destination table as a base template, and inserts the rows into an instance table named "{destination}{templateSuffix}"
+   * @param rows the rows to insert
+   * @tparam T the data model of each row
+   * @return a [[TableDataInsertAllRequest]]
    */
   def createTableDataInsertAllRequest[T](skipInvalidRows: util.Optional[lang.Boolean],
                                          ignoreUnknownValues: util.Optional[lang.Boolean],
@@ -97,6 +131,14 @@ object TableDataJsonProtocol {
       rows.asScala.toList
     )
 
+  /**
+   * Row model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll#request-body BigQuery reference]]
+   *
+   * @param insertId a unique ID for deduplication
+   * @param json the record this row contains
+   * @tparam T the data model of the record
+   */
   final case class Row[+T](insertId: Option[String], json: T) {
 
     def getInsertId = insertId.asJava
@@ -109,11 +151,21 @@ object TableDataJsonProtocol {
   }
 
   /**
-   * Java API
+   * Java API: Row model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll#request-body BigQuery reference]]
+   *
+   * @param insertId a unique ID for deduplication
+   * @param json the record this row contains
+   * @tparam T the data model of the record
+   * @return a [[Row]]
    */
   def createRow[T](insertId: util.Optional[String], json: T) =
     Row(insertId.asScala, json)
 
+  /**
+   * TableDataInsertAllResponse model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll#response-body BigQuery reference]]
+   */
   final case class TableDataInsertAllResponse(insertErrors: Option[Seq[InsertError]]) {
     def getInsertErrors = insertErrors.map(_.asJava).asJava
     def withInsertErrors(insertErrors: util.Optional[util.List[InsertError]]) =
@@ -121,11 +173,16 @@ object TableDataJsonProtocol {
   }
 
   /**
-   * Java API
+   * Java API: TableDataInsertAllResponse model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll#response-body BigQuery reference]]
    */
   def createTableDataInsertAllResponse(insertErrors: util.Optional[util.List[InsertError]]) =
     TableDataInsertAllResponse(insertErrors.asScala.map(_.asScala.toList))
 
+  /**
+   * InsertError model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll#response-body BigQuery reference]]
+   */
   final case class InsertError(index: Int, errors: Option[Seq[ErrorProto]]) {
     def getIndex = index
     def getErrors = errors.map(_.asJava).asJava
@@ -136,7 +193,8 @@ object TableDataJsonProtocol {
   }
 
   /**
-   * Java API
+   * Java API: InsertError model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll#response-body BigQuery reference]]
    */
   def createInsertError(index: Int, errors: util.Optional[util.List[ErrorProto]]) =
     InsertError(index, errors.asScala.map(_.asScala.toList))

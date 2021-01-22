@@ -19,8 +19,16 @@ object BigQuery
     with BigQueryTables
     with BigQueryTableData {
 
+  /**
+   * Returns the default [[BigQuerySettings]].
+   */
   def settings(implicit system: ClassicActorSystemProvider): BigQuerySettings = BigQueryExt(system).settings
 
+  /**
+   * Returns the [[BigQuerySettings]] defined at a path in the configuration.
+   *
+   * @param prefix the configuration path
+   */
   def settings(prefix: String)(implicit system: ClassicActorSystemProvider): BigQuerySettings =
     BigQueryExt(system).settings(prefix)
 

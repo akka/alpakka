@@ -32,6 +32,18 @@ import scala.concurrent.Future
 
 private[scaladsl] trait BigQueryTableData { this: BigQueryRest =>
 
+  /**
+   * Lists the content of a table in rows.
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/list BigQuery reference]]
+   *
+   * @param datasetId dataset ID of the table to list
+   * @param tableId table ID of the table to list
+   * @param startIndex start row index of the table
+   * @param maxResults row limit of the table
+   * @param selectedFields subset of fields to return, supports select into sub fields. Example: `selectedFields = Seq("a", "e.d.f")`
+   * @tparam Out the data model of each row
+   * @return a [[akka.stream.scaladsl.Source]] that emits an [[Out]] for each row in the table
+   */
   def tableData[Out](datasetId: String,
                      tableId: String,
                      startIndex: Option[Long] = None,
@@ -48,12 +60,23 @@ private[scaladsl] trait BigQueryTableData { this: BigQueryRest =>
       paginatedRequest[TableDataListResponse[Out]](HttpRequest(GET, uri.withQuery(query)))
     }.wireTapMat(Sink.head)(Keep.right).mapConcat(_.rows.fold[List[Out]](Nil)(_.toList))
 
+  /**
+   * Streams data into BigQuery one record at a time without needing to run a load job
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll BigQuery reference]]
+   *
+   * @param datasetId dataset id of the table to insert into
+   * @param tableId table id of the table to insert into
+   * @param retryPolicy [[akka.stream.alpakka.googlecloud.bigquery.InsertAllRetryPolicy]] determining whether to retry and deduplicate
+   * @param templateSuffix if specified, treats the destination table as a base template, and inserts the rows into an instance table named "{destination}{templateSuffix}"
+   * @tparam In the data model for each record
+   * @return a [[akka.stream.scaladsl.Sink]] that inserts each batch of [[In]] into the table
+   */
   def insertAll[In](
       datasetId: String,
       tableId: String,
       retryPolicy: InsertAllRetryPolicy,
       templateSuffix: Option[String] = None
-  )(implicit marshaller: ToEntityMarshaller[TableDataInsertAllRequest[In]]): Sink[Seq[In], NotUsed] = {
+  )(implicit m: ToEntityMarshaller[TableDataInsertAllRequest[In]]): Sink[Seq[In], NotUsed] = {
     val requests = Flow[Seq[In]].statefulMapConcat { () =>
       val randomGen = new SplittableRandom
 
@@ -82,8 +105,18 @@ private[scaladsl] trait BigQueryTableData { this: BigQueryRest =>
     requests.via(insertAll(tableId, datasetId, retryPolicy.retry)).to(errorSink)
   }
 
+  /**
+   * Streams data into BigQuery one record at a time without needing to run a load job.
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll BigQuery reference]]
+   *
+   * @param datasetId dataset ID of the table to insert into
+   * @param tableId table ID of the table to insert into
+   * @param retryFailedRequests whether to retry failed requests
+   * @tparam In the data model for each record
+   * @return a [[akka.stream.scaladsl.Flow]] that sends each [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.TableDataInsertAllRequest]] and emits a [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.TableDataInsertAllResponse]] for each
+   */
   def insertAll[In](datasetId: String, tableId: String, retryFailedRequests: Boolean)(
-      implicit marshaller: ToEntityMarshaller[TableDataInsertAllRequest[In]]
+      implicit m: ToEntityMarshaller[TableDataInsertAllRequest[In]]
   ): Flow[TableDataInsertAllRequest[In], TableDataInsertAllResponse, NotUsed] =
     Flow
       .fromMaterializer { (mat, attr) =>

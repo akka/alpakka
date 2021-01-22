@@ -15,6 +15,15 @@ import scala.compat.java8.OptionConverters._
 
 object DatasetJsonProtocol {
 
+  /**
+   * Dataset resource model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets#resource:-dataset BigQuery reference]]
+   *
+   * @param datasetReference a reference that identifies the dataset
+   * @param friendlyName a descriptive name for the dataset
+   * @param labels the labels associated with this dataset
+   * @param location the geographic location where the dataset should reside
+   */
   final case class Dataset(datasetReference: DatasetReference,
                            friendlyName: Option[String],
                            labels: Option[Map[String, String]],
@@ -36,7 +45,14 @@ object DatasetJsonProtocol {
   }
 
   /**
-   * Java API
+   * Java API: Dataset resource model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets#resource:-dataset BigQuery reference]]
+   *
+   * @param datasetReference a reference that identifies the dataset
+   * @param friendlyName a descriptive name for the dataset
+   * @param labels the labels associated with this dataset
+   * @param location the geographic location where the dataset should reside
+   * @return a [[Dataset]]
    */
   def createDataset(datasetReference: DatasetReference,
                     friendlyName: util.Optional[String],
@@ -44,6 +60,13 @@ object DatasetJsonProtocol {
                     location: util.Optional[String]) =
     Dataset(datasetReference, friendlyName.asScala, labels.asScala.map(_.asScala.toMap), location.asScala)
 
+  /**
+   * DatasetReference model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets#datasetreference BigQuery reference]]
+   *
+   * @param datasetId A unique ID for this dataset, without the project name
+   * @param projectId The ID of the project containing this dataset
+   */
   final case class DatasetReference(datasetId: String, projectId: Option[String]) {
 
     def getDatasetId = datasetId
@@ -56,11 +79,23 @@ object DatasetJsonProtocol {
   }
 
   /**
-   * Java API
+   * Java API: DatasetReference model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets#datasetreference BigQuery reference]]
+   *
+   * @param datasetId A unique ID for this dataset, without the project name
+   * @param projectId The ID of the project containing this dataset
+   * @return a [[DatasetReference]]
    */
   def createDatasetReference(datasetId: String, projectId: util.Optional[String]) =
     DatasetReference(datasetId, projectId.asScala)
 
+  /**
+   * DatasetListResponse model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets/list#response-body BigQuery reference]]
+   *
+   * @param nextPageToken a token that can be used to request the next results page
+   * @param datasets an array of the dataset resources in the project
+   */
   final case class DatasetListResponse(nextPageToken: Option[String], datasets: Option[Seq[Dataset]]) {
 
     def getNextPageToken = nextPageToken.asJava
@@ -73,7 +108,12 @@ object DatasetJsonProtocol {
   }
 
   /**
-   * Java API
+   * Java API: DatasetListResponse model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets/list#response-body BigQuery reference]]
+   *
+   * @param nextPageToken a token that can be used to request the next results page
+   * @param datasets an array of the dataset resources in the project
+   * @return a [[DatasetListResponse]]
    */
   def createDatasetListResponse(nextPageToken: util.Optional[String], datasets: util.Optional[util.List[Dataset]]) =
     DatasetListResponse(nextPageToken.asScala, datasets.asScala.map(_.asScala.toList))

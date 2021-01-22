@@ -40,20 +40,20 @@ class BigQueryDoc {
   val tableId: String = ???
 
   //#run-query
-  val sqlQuery = s"SELECT name, addresses FROM $datasetId.$tableId WHERE age > 100"
+  val sqlQuery = s"SELECT name, addresses FROM $datasetId.$tableId WHERE age >= 100"
   val centenarians: Source[(String, Seq[Address]), Future[QueryResponse[(String, Seq[Address])]]] =
     BigQuery.query[(String, Seq[Address])](sqlQuery, useLegacySql = false)
   //#run-query
 
   //#dry-run-query
   val centenariansDryRun = BigQuery.query[(String, Seq[Address])](sqlQuery, dryRun = true, useLegacySql = false)
-  val bytesProcessed: Future[Option[Long]] = centenariansDryRun.to(Sink.ignore).run().map(_.totalBytesProcessed)
+  val bytesProcessed: Future[Long] = centenariansDryRun.to(Sink.ignore).run().map(_.totalBytesProcessed.get)
   //#dry-run-query
 
-  //table-data
+  //#table-data
   val everyone: Source[Person, Future[TableDataListResponse[Person]]] =
     BigQuery.tableData[Person](datasetId, tableId)
-  //table-data
+  //#table-data
 
   //#streaming-insert
   val peopleInsertSink: Sink[Seq[Person], NotUsed] =
