@@ -33,6 +33,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -238,7 +239,7 @@ public class BigQueryDoc {
     // #create-table
     TableJsonProtocol.TableSchema personSchema =
         TableJsonProtocol.createTableSchema(
-            List.of(
+            Arrays.asList(
                 TableJsonProtocol.createTableFieldSchema(
                     "name", TableJsonProtocol.StringType(), Optional.empty(), Optional.empty()),
                 TableJsonProtocol.createTableFieldSchema(
@@ -248,7 +249,7 @@ public class BigQueryDoc {
                     TableJsonProtocol.RecordType(),
                     Optional.of(TableJsonProtocol.RepeatedMode()),
                     Optional.of(
-                        List.of(
+                        Arrays.asList(
                             TableJsonProtocol.createTableFieldSchema(
                                 "street",
                                 TableJsonProtocol.StringType(),
