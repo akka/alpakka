@@ -4,14 +4,12 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.javadsl
 
-import akka.{Done, NotUsed}
 import akka.actor.ClassicActorSystemProvider
 import akka.http.javadsl.marshalling.Marshaller
-import akka.http.javadsl.model.{HttpEntity, HttpRequest, HttpResponse, RequestEntity, ResponseEntity}
+import akka.http.javadsl.model.{HttpEntity, HttpRequest, HttpResponse, RequestEntity}
 import akka.http.javadsl.unmarshalling.Unmarshaller
 import akka.http.scaladsl.{model => sm}
 import akka.japi.function.Function
-import akka.stream.alpakka.googlecloud.bigquery.{BigQuerySettings, InsertAllRetryPolicy}
 import akka.stream.alpakka.googlecloud.bigquery.model.DatasetJsonProtocol.Dataset
 import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.{Job, JobCancelResponse, JobReference}
 import akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.{QueryRequest, QueryResponse}
@@ -27,9 +25,11 @@ import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.{
   TableSchema
 }
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.{BigQuery => ScalaBigQuery}
+import akka.stream.alpakka.googlecloud.bigquery.{BigQuerySettings, InsertAllRetryPolicy}
 import akka.stream.javadsl.{Flow, Sink, Source}
 import akka.stream.{scaladsl => ss}
 import akka.util.ByteString
+import akka.{Done, NotUsed}
 
 import java.time.Duration
 import java.util.concurrent.CompletionStage
@@ -126,7 +126,7 @@ object BigQuery {
       startIndex: util.OptionalLong,
       maxResults: util.OptionalInt,
       selectedFields: util.List[String],
-      unmarshaller: Unmarshaller[ResponseEntity, TableDataListResponse[Out]]
+      unmarshaller: Unmarshaller[HttpEntity, TableDataListResponse[Out]]
   ): Source[Out, CompletionStage[TableDataListResponse[Out]]] = {
     implicit val um = unmarshaller.asScalaCastInput[sm.HttpEntity]
     ScalaBigQuery

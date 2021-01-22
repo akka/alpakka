@@ -5,9 +5,11 @@
 package akka.stream.alpakka.googlecloud.bigquery
 
 import akka.actor.ClassicActorSystemProvider
+import akka.http.javadsl.{model => jm}
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.{Http, HttpsConnectionContext}
+import akka.http.{javadsl => jh}
 import akka.stream.alpakka.googlecloud.bigquery.impl.BigQueryExt
 import akka.stream.alpakka.googlecloud.bigquery.impl.auth.{
   ComputeEngineCredentials,
@@ -18,7 +20,10 @@ import akka.stream.alpakka.googlecloud.bigquery.impl.http.{ForwardProxyHttpsCont
 import akka.util.JavaDurationConverters._
 import com.typesafe.config.Config
 
+import java.util
+import java.time
 import java.util.concurrent.TimeUnit
+import scala.compat.java8.OptionConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -53,6 +58,9 @@ object BigQuerySettings {
                      retrySettings)
   }
 
+  def create(c: Config, system: ClassicActorSystemProvider) =
+    apply(c)(system)
+
   /**
    * Scala API: Creates [[BigQuerySettings]] from the [[com.typesafe.config.Config Config]] attached to an actor system.
    */
@@ -70,13 +78,40 @@ object BigQuerySettings {
    */
   def create(system: ClassicActorSystemProvider): BigQuerySettings = apply(system)
 
+  /**
+   * Java API
+   */
+  def create(projectId: String,
+             credentialsProvider: CredentialsProvider,
+             forwardProxy: util.Optional[ForwardProxy],
+             loadJobSettings: LoadJobSettings,
+             retrySettings: RetrySettings) =
+    BigQuerySettings(projectId, credentialsProvider, forwardProxy.asScala, loadJobSettings, retrySettings)
+
 }
 
 final case class BigQuerySettings(projectId: String,
                                   credentialsProvider: CredentialsProvider,
                                   forwardProxy: Option[ForwardProxy],
                                   loadJobSettings: LoadJobSettings,
-                                  retrySettings: RetrySettings)
+                                  retrySettings: RetrySettings) {
+  def getProjectId = projectId
+  def getCredentialsProvider = credentialsProvider
+  def getForwardProxy = forwardProxy
+  def getLoadJobSettings = loadJobSettings
+  def getRetrySettings = retrySettings
+
+  def withProjectId(projectId: String) =
+    copy(projectId = projectId)
+  def withCredentialsProvider(credentialsProvider: CredentialsProvider) =
+    copy(credentialsProvider = credentialsProvider)
+  def withForwardProxy(forwardProxy: util.Optional[ForwardProxy]) =
+    copy(forwardProxy = forwardProxy.asScala)
+  def withLoadJobSettings(loadJobSettings: LoadJobSettings) =
+    copy(loadJobSettings = loadJobSettings)
+  def withRetrySettings(retrySettings: RetrySettings) =
+    copy(retrySettings = retrySettings)
+}
 
 object ForwardProxy {
 
@@ -99,6 +134,9 @@ object ForwardProxy {
     ForwardProxy(scheme, c.getString("host"), c.getInt("port"), maybeCredentials, maybeTrustPem)
   }
 
+  def create(c: Config, system: ClassicActorSystemProvider) =
+    apply(c)(system)
+
   def apply(scheme: String,
             host: String,
             port: Int,
@@ -110,9 +148,26 @@ object ForwardProxy {
     )
   }
 
+  def create(scheme: String,
+             host: String,
+             port: Int,
+             credentials: util.Optional[jm.headers.BasicHttpCredentials],
+             trustPem: util.Optional[String],
+             system: ClassicActorSystemProvider) =
+    apply(scheme, host, port, credentials.asScala.map(_.asInstanceOf[BasicHttpCredentials]), trustPem.asScala)(system)
+
+  def create(connectionContext: jh.HttpConnectionContext, poolSettings: jh.settings.ConnectionPoolSettings) =
+    apply(connectionContext.asInstanceOf[HttpsConnectionContext], poolSettings.asInstanceOf[ConnectionPoolSettings])
 }
 
-final case class ForwardProxy(connectionContext: HttpsConnectionContext, poolSettings: ConnectionPoolSettings)
+final case class ForwardProxy(connectionContext: HttpsConnectionContext, poolSettings: ConnectionPoolSettings) {
+  def getConnectionContext: jh.HttpsConnectionContext = connectionContext
+  def getPoolSettings: jh.settings.ConnectionPoolSettings = poolSettings
+  def withConnectionContext(connectionContext: jh.HttpConnectionContext) =
+    copy(connectionContext = connectionContext.asInstanceOf[HttpsConnectionContext])
+  def withPoolSettings(poolSettings: jh.settings.ConnectionPoolSettings) =
+    copy(poolSettings = poolSettings.asInstanceOf[ConnectionPoolSettings])
+}
 
 object LoadJobSettings {
 
@@ -122,9 +177,22 @@ object LoadJobSettings {
       config.getDuration("per-table-quota").asScala
     )
   }
+
+  def create(config: Config) = apply(config)
+
+  def create(chunkSize: Long, perTableQuota: time.Duration) =
+    apply(chunkSize, FiniteDuration(perTableQuota.toNanos, TimeUnit.NANOSECONDS))
 }
 
-final case class LoadJobSettings(chunkSize: Long, perTableQuota: FiniteDuration)
+final case class LoadJobSettings(chunkSize: Long, perTableQuota: FiniteDuration) {
+  def getChunkSize = chunkSize
+  def getPerTableQuota = time.Duration.ofNanos(perTableQuota.toNanos)
+
+  def withChunkSize(chunkSize: Long) =
+    copy(chunkSize = chunkSize)
+  def withPerTableQuota(perTableQuota: time.Duration) =
+    copy(perTableQuota = FiniteDuration(perTableQuota.toNanos, TimeUnit.NANOSECONDS))
+}
 
 object RetrySettings {
 
@@ -136,9 +204,33 @@ object RetrySettings {
       config.getDouble("random-factor")
     )
   }
+
+  def create(config: Config) = apply(config)
+
+  def create(maxRetries: Int, minBackoff: time.Duration, maxBackoff: time.Duration, randomFactor: Double) =
+    apply(
+      maxRetries,
+      FiniteDuration(minBackoff.toNanos, TimeUnit.NANOSECONDS),
+      FiniteDuration(maxBackoff.toNanos, TimeUnit.NANOSECONDS),
+      randomFactor
+    )
 }
 
 final case class RetrySettings(maxRetries: Int,
                                minBackoff: FiniteDuration,
                                maxBackoff: FiniteDuration,
-                               randomFactor: Double)
+                               randomFactor: Double) {
+  def getMaxRetries = maxRetries
+  def getMinBackoff = time.Duration.ofNanos(minBackoff.toNanos)
+  def getMaxBackoff = time.Duration.ofNanos(maxBackoff.toNanos)
+  def getRandomFactor = randomFactor
+
+  def withMaxRetries(maxRetries: Int) =
+    copy(maxRetries = maxRetries)
+  def withMinBackoff(minBackoff: time.Duration) =
+    copy(minBackoff = FiniteDuration(minBackoff.toNanos, TimeUnit.NANOSECONDS))
+  def withMaxBackoff(maxBackoff: time.Duration) =
+    copy(maxBackoff = FiniteDuration(maxBackoff.toNanos, TimeUnit.NANOSECONDS))
+  def withRandomFactor(randomFactor: Double) =
+    copy(randomFactor = randomFactor)
+}

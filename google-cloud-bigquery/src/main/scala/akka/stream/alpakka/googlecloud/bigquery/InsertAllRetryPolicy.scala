@@ -7,23 +7,20 @@ package akka.stream.alpakka.googlecloud.bigquery
 sealed abstract class InsertAllRetryPolicy {
   def retry: Boolean
   def deduplicate: Boolean
+  final def getInstance: InsertAllRetryPolicy = this;
 }
 
-object InsertAllRetryPolicy {
+case object NoRetries extends InsertAllRetryPolicy {
+  override def retry: Boolean = false
+  override def deduplicate: Boolean = false
+}
 
-  case object NoRetries extends InsertAllRetryPolicy {
-    override def retry: Boolean = false
-    override def deduplicate: Boolean = false
-  }
+case object RetryNoDeduplication extends InsertAllRetryPolicy {
+  override def retry: Boolean = true
+  override def deduplicate: Boolean = false
+}
 
-  case object RetryNoDeduplication extends InsertAllRetryPolicy {
-    override def retry: Boolean = true
-    override def deduplicate: Boolean = false
-  }
-
-  case object RetryWithDeduplication extends InsertAllRetryPolicy {
-    override def retry: Boolean = true
-    override def deduplicate: Boolean = true
-  }
-
+case object RetryWithDeduplication extends InsertAllRetryPolicy {
+  override def retry: Boolean = true
+  override def deduplicate: Boolean = true
 }
