@@ -214,12 +214,8 @@ object Dependencies {
         "io.spray" %% "spray-json" % "1.3.6",
         "com.fasterxml.jackson.core" % "jackson-annotations" % JacksonDatabindVersion,
         "com.pauldijou" %% "jwt-core" % "3.1.0", //ApacheV2
-        "com.typesafe.akka" %% "akka-http-jackson" % AkkaHttpVersion % Test,
         "io.specto" % "hoverfly-java" % "0.12.3" % Test //ApacheV2
-      ) ++
-      Seq("circe-core", "circe-generic", "circe-parser")
-        .map("io.circe" %% _ % "0.13.0" % Test) ++ //ApacheV2
-      Mockito ++ Silencer
+      ) ++ Mockito ++ Silencer
   )
 
   val GooglePubSub = Seq(
