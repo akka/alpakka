@@ -27,9 +27,9 @@ object BigQuery
   /**
    * Returns the [[BigQuerySettings]] defined at a path in the configuration.
    *
-   * @param prefix the configuration path
+   * @param path the configuration path
    */
-  def settings(prefix: String)(implicit system: ClassicActorSystemProvider): BigQuerySettings =
-    BigQueryExt(system).settings(prefix)
+  def settings(path: String)(implicit system: ClassicActorSystemProvider): BigQuerySettings =
+    BigQueryExt(system).settings(path)
 
 }

@@ -23,10 +23,10 @@ private[bigquery] final class BigQueryExt private (sys: ExtendedActorSystem) ext
   private var cachedSettings: Map[String, BigQuerySettings] = ListMap.empty
   val settings: BigQuerySettings = settings(BigQuerySettings.ConfigPath)
 
-  def settings(prefix: String): BigQuerySettings =
-    cachedSettings.getOrElse(prefix, {
-      val settings = BigQuerySettings(sys.settings.config.getConfig(prefix))(sys)
-      cachedSettings += prefix -> settings
+  def settings(path: String): BigQuerySettings =
+    cachedSettings.getOrElse(path, {
+      val settings = BigQuerySettings(sys.settings.config.getConfig(path))(sys)
+      cachedSettings += path -> settings
       settings
     })
 }

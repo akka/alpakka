@@ -58,10 +58,10 @@ object BigQuery {
    * Returns the [[BigQuerySettings]] defined at a path in the configuration.
    *
    * @param system the actor system
-   * @param prefix the configuration path
+   * @param path the configuration path
    */
-  def getSettings(system: ClassicActorSystemProvider, prefix: String): BigQuerySettings =
-    ScalaBigQuery.settings(prefix)(system)
+  def getSettings(system: ClassicActorSystemProvider, path: String): BigQuerySettings =
+    ScalaBigQuery.settings(path)(system)
 
   /**
    * Makes a single authenticated request without retries.

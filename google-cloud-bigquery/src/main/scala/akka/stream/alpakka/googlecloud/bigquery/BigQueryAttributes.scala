@@ -9,36 +9,31 @@ import akka.stream.alpakka.googlecloud.bigquery.impl.BigQueryExt
 import akka.stream.{Attributes, Materializer}
 
 /**
- * Akka Stream attributes that are used when materializing BigQuery stream blueprints.
+ * Akka Stream [[Attributes]] that are used when materializing BigQuery stream blueprints.
  */
 object BigQueryAttributes {
 
   /**
-   * Settings to use for the BigQuery stream
+   * [[BigQuerySettings]] to use for the BigQuery stream
    */
   def settings(settings: BigQuerySettings): Attributes = Attributes(BigQuerySettingsValue(settings))
 
   /**
-   * Config path which will be used to resolve required BigQuery settings
+   * Config path which will be used to resolve required [[BigQuerySettings]]
    */
   def settingsPath(path: String): Attributes = Attributes(BigQuerySettingsPath(path))
 
+  /**
+   * Resolves the most specific [[BigQuerySettings]] for some [[Attributes]]
+   */
   def resolveSettings(attr: Attributes, mat: Materializer): BigQuerySettings =
-    attr
-      .get[BigQuerySettingsValue]
-      .map(_.settings)
-      .getOrElse {
-        val bigQueryExtension = BigQueryExt(mat.system)
-        attr
-          .get[BigQuerySettingsPath]
-          .map(settingsPath => bigQueryExtension.settings(settingsPath.path))
-          .getOrElse(bigQueryExtension.settings)
-      }
-}
+    attr.attributeList.collectFirst {
+      case BigQuerySettingsValue(settings) => settings
+      case BigQuerySettingsPath(path) => BigQueryExt(mat.system).settings(path)
+    } getOrElse {
+      BigQueryExt(mat.system).settings
+    }
 
-final case class BigQuerySettingsPath(path: String) extends Attribute
-object BigQuerySettingsPath {
-  val Default = BigQuerySettingsPath(BigQuerySettings.ConfigPath)
+  private final case class BigQuerySettingsValue(settings: BigQuerySettings) extends Attribute
+  private final case class BigQuerySettingsPath(path: String) extends Attribute
 }
-
-final case class BigQuerySettingsValue(settings: BigQuerySettings) extends Attribute
