@@ -81,7 +81,7 @@ object BigQuery {
    *
    * @param request the [[akka.http.javadsl.model.HttpRequest]] to make; must be a GET request
    * @param initialPageToken a page token to use for the initial request
-   * @param unmarshaller unmarshaller for [[Out]]
+   * @param unmarshaller [[akka.http.javadsl.unmarshalling.Unmarshaller]] for [[Out]]
    * @tparam Out the data model for each page of the resource
    * @return a [[akka.stream.javadsl.Source]] that emits an [[Out]] for each page of the resource
    */
@@ -250,7 +250,7 @@ object BigQuery {
    * @param startIndex start row index of the table
    * @param maxResults row limit of the table
    * @param selectedFields subset of fields to return, supports select into sub fields. Example: `selectedFields = List.of("a", "e.d.f")`
-   * @param unmarshaller unmarshaller for [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.TableDataListResponse]]
+   * @param unmarshaller [[akka.http.javadsl.unmarshalling.Unmarshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.TableDataListResponse]]
    * @tparam Out the data model of each row
    * @return a [[akka.stream.javadsl.Source]] that emits an [[Out]] for each row in the table
    */
@@ -277,7 +277,7 @@ object BigQuery {
    * @param tableId table id of the table to insert into
    * @param retryPolicy [[InsertAllRetryPolicy]] determining whether to retry and deduplicate
    * @param templateSuffix if specified, treats the destination table as a base template, and inserts the rows into an instance table named "{destination}{templateSuffix}"
-   * @param marshaller marshaller for [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.TableDataInsertAllRequest]]
+   * @param marshaller [[akka.http.javadsl.marshalling.Marshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.TableDataInsertAllRequest]]
    * @tparam In the data model for each record
    * @return a [[akka.stream.javadsl.Sink]] that inserts each batch of [[In]] into the table
    */
@@ -302,7 +302,7 @@ object BigQuery {
    * @param datasetId dataset ID of the table to insert into
    * @param tableId table ID of the table to insert into
    * @param retryFailedRequests whether to retry failed requests
-   * @param marshaller marshaller for [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.TableDataInsertAllRequest]]
+   * @param marshaller [[akka.http.javadsl.marshalling.Marshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.TableDataInsertAllRequest]]
    * @tparam In the data model for each record
    * @return a [[akka.stream.javadsl.Flow]] that sends each [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.TableDataInsertAllRequest]] and emits a [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.TableDataInsertAllResponse]] for each
    */
@@ -324,7 +324,7 @@ object BigQuery {
    * @param dryRun if set to `true` BigQuery doesn't run the job and instead returns statistics about the job such as how many bytes would be processed
    * @param useLegacySql specifies whether to use BigQuery's legacy SQL dialect for this query
    * @param onCompleteCallback a callback to execute when complete
-   * @param unmarshaller unmarshaller for [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
+   * @param unmarshaller [[akka.http.javadsl.unmarshalling.Unmarshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
    * @tparam Out the data model of the query results
    * @return a [[akka.stream.javadsl.Source]] that emits an [[Out]] for each row of the results and materializes a [[java.util.concurrent.CompletionStage]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
    */
@@ -345,7 +345,7 @@ object BigQuery {
    *
    * @param query the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryRequest]]
    * @param onCompleteCallback a callback to execute when complete
-   * @param unmarshaller unmarshaller for [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
+   * @param unmarshaller [[akka.http.javadsl.unmarshalling.Unmarshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
    * @tparam Out the data model of the query results
    * @return a [[akka.stream.javadsl.Source]] that emits an [[Out]] for each row of the results and materializes a [[java.util.concurrent.CompletionStage]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
    */
@@ -367,7 +367,7 @@ object BigQuery {
    * @param maxResults maximum number of results to read
    * @param timeout specifies the maximum amount of time that the client is willing to wait for the query to complete
    * @param location the geographic location of the job. Required except for US and EU
-   * @param unmarshaller unmarshaller for [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
+   * @param unmarshaller [[akka.http.javadsl.unmarshalling.Unmarshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
    * @tparam Out the data model of the query results
    * @return a [[akka.stream.javadsl.Source]] that emits an [[Out]] for each row of the results and materializes a [[java.util.concurrent.CompletionStage]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
    */
@@ -433,7 +433,7 @@ object BigQuery {
    *
    * @param datasetId dataset ID of the table to insert into
    * @param tableId table ID of the table to insert into
-   * @param marshaller marshaller for [[In]]
+   * @param marshaller [[akka.http.javadsl.marshalling.Marshaller]] for [[In]]
    * @tparam In the data model for each record
    * @return a [[akka.stream.javadsl.Flow]] that uploads each [[In]] and emits a [[Job]] for every upload job created
    */
@@ -451,8 +451,8 @@ object BigQuery {
    * @see [[https://cloud.google.com/bigquery/docs/reference/api-uploads BigQuery reference]]
    *
    * @param job the job to start
-   * @param marshaller marshaller for [[Job]]
-   * @param unmarshaller unmarshaller for [[Job]]
+   * @param marshaller [[akka.http.javadsl.marshalling.Marshaller]] for [[Job]]
+   * @param unmarshaller [[akka.http.javadsl.unmarshalling.Unmarshaller]] for [[Job]]
    * @tparam Job the data model for a job
    * @return a [[akka.stream.javadsl.Sink]] that uploads bytes and materializes a [[java.util.concurrent.CompletionStage]] containing the [[Job]] when completed
    */
