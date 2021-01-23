@@ -8,6 +8,7 @@ import akka.stream.alpakka.googlecloud.bigquery.model.ErrorProtoJsonProtocol.Err
 import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.{TableReference, TableSchema}
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryApiJsonProtocol._
 import com.fasterxml.jackson.annotation.{JsonCreator, JsonProperty}
+import com.github.ghik.silencer.silent
 import spray.json.{deserializationError, JsString, JsValue, JsonFormat, RootJsonFormat}
 
 import java.util
@@ -174,6 +175,7 @@ object JobJsonProtocol {
    */
   final case class JobReference(projectId: Option[String], jobId: Option[String], location: Option[String]) {
 
+    @silent("never used")
     @JsonCreator
     private def this(@JsonProperty("projectId") projectId: String,
                      @JsonProperty("jobId") jobId: String,

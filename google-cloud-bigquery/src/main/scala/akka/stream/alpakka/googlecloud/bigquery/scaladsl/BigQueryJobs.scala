@@ -29,6 +29,7 @@ import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.TableRef
 import akka.stream.alpakka.googlecloud.bigquery._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.util.ByteString
+import com.github.ghik.silencer.silent
 
 import scala.concurrent.{Future, Promise}
 
@@ -144,7 +145,9 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
    * @tparam Job the data model for a job
    * @return a [[akka.stream.scaladsl.Sink]] that uploads bytes and materializes a [[scala.concurrent.Future]] containing the [[Job]] when completed
    */
-  def createLoadJob[Job: ToEntityMarshaller: FromEntityUnmarshaller](job: Job): Sink[ByteString, Future[Job]] =
+  def createLoadJob[@silent("shadows") Job: ToEntityMarshaller: FromEntityUnmarshaller](
+      job: Job
+  ): Sink[ByteString, Future[Job]] =
     Sink
       .fromMaterializer { (mat, attr) =>
         import mat.executionContext

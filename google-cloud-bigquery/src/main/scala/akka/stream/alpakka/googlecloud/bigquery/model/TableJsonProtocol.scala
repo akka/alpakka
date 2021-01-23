@@ -7,6 +7,7 @@ package akka.stream.alpakka.googlecloud.bigquery.model
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.Paginated
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryApiJsonProtocol._
 import com.fasterxml.jackson.annotation.{JsonCreator, JsonProperty}
+import com.github.ghik.silencer.silent
 import spray.json.{deserializationError, JsString, JsValue, JsonFormat, RootJsonFormat}
 
 import java.util
@@ -116,6 +117,7 @@ object TableJsonProtocol {
    */
   final case class TableSchema(fields: Seq[TableFieldSchema]) {
 
+    @silent("never used")
     @JsonCreator
     private def this(@JsonProperty(value = "fields", required = true) fields: util.List[TableFieldSchema]) =
       this(fields.asScala.toList)
@@ -147,6 +149,7 @@ object TableJsonProtocol {
                                     mode: Option[TableFieldSchemaMode],
                                     fields: Option[Seq[TableFieldSchema]]) {
 
+    @silent("never used")
     @JsonCreator
     private def this(@JsonProperty(value = "name", required = true) name: String,
                      @JsonProperty(value = "type", required = true) `type`: String,

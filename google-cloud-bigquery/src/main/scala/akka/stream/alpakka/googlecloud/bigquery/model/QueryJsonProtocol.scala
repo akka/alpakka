@@ -12,6 +12,7 @@ import akka.stream.alpakka.googlecloud.bigquery.scaladsl.Paginated
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryApiJsonProtocol._
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRootJsonFormat
 import com.fasterxml.jackson.annotation.{JsonCreator, JsonIgnoreProperties, JsonProperty}
+import com.github.ghik.silencer.silent
 import spray.json.RootJsonFormat
 
 import java.{lang, util}
@@ -124,6 +125,7 @@ object QueryJsonProtocol {
                                     cacheHit: Option[Boolean],
                                     numDmlAffectedRows: Option[Long]) {
 
+    @silent("never used")
     @JsonCreator
     private def this(@JsonProperty("schema") schema: TableSchema,
                      @JsonProperty(value = "jobReference", required = true) jobReference: JobReference,

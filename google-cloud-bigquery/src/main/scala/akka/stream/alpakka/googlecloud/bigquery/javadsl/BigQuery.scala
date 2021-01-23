@@ -9,9 +9,8 @@ import akka.http.javadsl.marshalling.Marshaller
 import akka.http.javadsl.model.{HttpEntity, HttpRequest, HttpResponse, RequestEntity}
 import akka.http.javadsl.unmarshalling.Unmarshaller
 import akka.http.scaladsl.{model => sm}
-import akka.japi.function.Function
 import akka.stream.alpakka.googlecloud.bigquery.model.DatasetJsonProtocol.Dataset
-import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.{Job, JobCancelResponse, JobReference}
+import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.{Job, JobCancelResponse}
 import akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.{QueryRequest, QueryResponse}
 import akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.{
   TableDataInsertAllRequest,
@@ -30,6 +29,7 @@ import akka.stream.javadsl.{Flow, Sink, Source}
 import akka.stream.{scaladsl => ss}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
+import com.github.ghik.silencer.silent
 
 import java.time.Duration
 import java.util.concurrent.CompletionStage
@@ -37,7 +37,6 @@ import java.{lang, util}
 import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
-import scala.concurrent.Future
 import scala.concurrent.duration.{FiniteDuration, MILLISECONDS}
 import scala.language.implicitConversions
 
@@ -447,9 +446,11 @@ object BigQuery {
    * @tparam Job the data model for a job
    * @return a [[akka.stream.javadsl.Sink]] that uploads bytes and materializes a [[java.util.concurrent.CompletionStage]] containing the [[Job]] when completed
    */
-  def createLoadJob[Job](job: Job,
-                         marshaller: Marshaller[Job, RequestEntity],
-                         unmarshaller: Unmarshaller[HttpEntity, Job]): Sink[ByteString, CompletionStage[Job]] = {
+  def createLoadJob[@silent("shadows") Job](
+      job: Job,
+      marshaller: Marshaller[Job, RequestEntity],
+      unmarshaller: Unmarshaller[HttpEntity, Job]
+  ): Sink[ByteString, CompletionStage[Job]] = {
     implicit val m = marshaller.asScalaCastOutput[sm.RequestEntity]
     implicit val um = unmarshaller.asScalaCastInput[sm.HttpEntity]
     ScalaBigQuery.createLoadJob(job).mapMaterializedValue(_.toJava).asJava[ByteString]

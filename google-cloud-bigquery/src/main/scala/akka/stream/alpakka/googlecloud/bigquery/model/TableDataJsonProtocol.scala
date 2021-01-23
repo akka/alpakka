@@ -17,6 +17,7 @@ import com.fasterxml.jackson.annotation.{
   JsonInclude,
   JsonProperty
 }
+import com.github.ghik.silencer.silent
 import spray.json.{JsonFormat, RootJsonFormat}
 
 import java.{lang, util}
@@ -38,6 +39,7 @@ object TableDataJsonProtocol {
   @JsonIgnoreProperties(ignoreUnknown = true)
   final case class TableDataListResponse[T](totalRows: Long, pageToken: Option[String], rows: Option[Seq[T]]) {
 
+    @silent("never used")
     @JsonCreator
     private def this(@JsonProperty(value = "totalRows", required = true) totalRows: String,
                      @JsonProperty("pageToken") pageToken: String,
@@ -92,10 +94,13 @@ object TableDataJsonProtocol {
     @JsonIgnore def getTemplateSuffix = templateSuffix.asJava
     def getRows = rows.asJava
 
+    @silent("never used")
     @JsonGetter("skipInvalidRows")
     private def skipInvalidRowsOrNull = skipInvalidRows.map(lang.Boolean.valueOf).orNull
+    @silent("never used")
     @JsonGetter("ignoreUnknownValues")
     private def ignoreUnknownValuesOrNull = ignoreUnknownValues.map(lang.Boolean.valueOf).orNull
+    @silent("never used")
     @JsonGetter("templateSuffix")
     private def templateSuffixOrNull = templateSuffix.orNull
 
