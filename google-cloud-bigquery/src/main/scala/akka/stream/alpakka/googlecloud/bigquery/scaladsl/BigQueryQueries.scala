@@ -103,6 +103,7 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
                     else
                       throw BigQueryException("Query job not complete.")
                   }
+                  .addAttributes(attr)
                 val restartSettings = RestartSettings(minBackoff, maxBackoff, randomFactor)
                 RestartSource.onFailuresWithBackoff(restartSettings)(() => pages).map(_.get)
               }
@@ -168,7 +169,7 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
       implicit um: FromEntityUnmarshaller[QueryResponse[Out]]
   ): Source[QueryResponse[Out], NotUsed] =
     source { settings =>
-      val uri = BigQueryEndpoints.job(settings.projectId, jobId)
+      val uri = BigQueryEndpoints.query(settings.projectId, jobId)
       val query = Query.Empty :+?
         "startIndex" -> startIndex :+?
         "maxResults" -> maxResults :+?
