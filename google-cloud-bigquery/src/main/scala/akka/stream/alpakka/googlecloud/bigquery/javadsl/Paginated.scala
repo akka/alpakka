@@ -13,6 +13,7 @@ import scala.compat.java8.OptionConverters._
  * Models a paginated resource
  */
 trait Paginated {
+
   /**
    * Returns the token for the next page, if present
    */

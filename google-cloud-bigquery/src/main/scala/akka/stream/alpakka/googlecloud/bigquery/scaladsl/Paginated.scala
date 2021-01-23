@@ -9,6 +9,7 @@ package akka.stream.alpakka.googlecloud.bigquery.scaladsl
  * @tparam T the resource
  */
 trait Paginated[-T] {
+
   /**
    * Returns the token for the next page, if present
    * @param resource the paginated resource

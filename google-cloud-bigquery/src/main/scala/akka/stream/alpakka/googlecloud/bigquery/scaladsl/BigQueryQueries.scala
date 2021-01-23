@@ -4,20 +4,18 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.scaladsl
 
-import akka.{Done, NotUsed}
-import akka.dispatch.ExecutionContexts
+import akka.NotUsed
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.HttpMethods.{GET, POST}
-import akka.http.scaladsl.model.{HttpRequest, RequestEntity}
 import akka.http.scaladsl.model.Uri.Query
+import akka.http.scaladsl.model.{HttpRequest, RequestEntity}
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
-import akka.stream.{OverflowStrategy, RestartSettings}
-import akka.stream.alpakka.googlecloud.bigquery.{BigQueryAttributes, BigQueryEndpoints, BigQueryException}
+import akka.stream.RestartSettings
 import akka.stream.alpakka.googlecloud.bigquery.impl.http.BigQueryHttp
-import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.JobReference
 import akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.{QueryRequest, QueryResponse}
-import akka.stream.scaladsl.{Flow, Keep, RestartSource, Sink, Source}
+import akka.stream.alpakka.googlecloud.bigquery.{BigQueryAttributes, BigQueryEndpoints, BigQueryException}
+import akka.stream.scaladsl.{Keep, RestartSource, Sink, Source}
 
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -32,18 +30,14 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
    * @param query a query string, following the BigQuery query syntax, of the query to execute
    * @param dryRun if set to `true` BigQuery doesn't run the job and instead returns statistics about the job such as how many bytes would be processed
    * @param useLegacySql specifies whether to use BigQuery's legacy SQL dialect for this query
-   * @param onCompleteCallback a callback to execute when complete
    * @tparam Out the data model of the query results
    * @return a [[akka.stream.scaladsl.Source]] that emits an [[Out]] for each row of the results and materializes a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
    */
-  def query[Out](
-      query: String,
-      dryRun: Boolean = false,
-      useLegacySql: Boolean = true,
-      onCompleteCallback: Option[JobReference] => Future[Done] = BigQueryCallbacks.ignore
-  )(implicit um: FromEntityUnmarshaller[QueryResponse[Out]]): Source[Out, Future[QueryResponse[Out]]] = {
+  def query[Out](query: String, dryRun: Boolean = false, useLegacySql: Boolean = true)(
+      implicit um: FromEntityUnmarshaller[QueryResponse[Out]]
+  ): Source[Out, Future[QueryResponse[Out]]] = {
     val request = QueryRequest(query, None, None, None, Some(dryRun), Some(useLegacySql), None)
-    this.query(request, onCompleteCallback)
+    this.query(request)
   }
 
   /**
@@ -51,11 +45,10 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
    * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query BigQuery reference]]
    *
    * @param query the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryRequest]]
-   * @param onCompleteCallback a callback to execute when complete
    * @tparam Out the data model of the query results
    * @return a [[akka.stream.scaladsl.Source]] that emits an [[Out]] for each row of the results and materializes a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
    */
-  def query[Out](query: QueryRequest, onCompleteCallback: Option[JobReference] => Future[Done])(
+  def query[Out](query: QueryRequest)(
       implicit um: FromEntityUnmarshaller[QueryResponse[Out]]
   ): Source[Out, Future[QueryResponse[Out]]] =
     Source
@@ -113,25 +106,8 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
 
         }
       }
-      .alsoTo(onCompleteCallbackSink(onCompleteCallback))
       .wireTapMat(Sink.head)(Keep.right)
-      .buffer(1, OverflowStrategy.backpressure) // Lets the callbacks complete eagerly even if downstream cancels
       .mapConcat(_.rows.fold[List[Out]](Nil)(_.toList))
-
-  private def onCompleteCallbackSink[T](
-      callback: Option[JobReference] => Future[Done]
-  ): Sink[QueryResponse[T], NotUsed] =
-    Sink
-      .fromMaterializer { (mat, attr) =>
-        import mat.executionContext
-        Flow[QueryResponse[T]]
-          .map(_.jobReference)
-          .wireTapMat(Sink.headOption)(Keep.right)
-          .toMat(Sink.ignore) { (jobReference, done) =>
-            done.transformWith(_ => jobReference)(ExecutionContexts.parasitic).flatMap(callback)
-          }
-      }
-      .mapMaterializedValue(_ => NotUsed)
 
   /**
    * The results of a query job.

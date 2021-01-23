@@ -323,7 +323,6 @@ object BigQuery {
    * @param query a query string, following the BigQuery query syntax, of the query to execute
    * @param dryRun if set to `true` BigQuery doesn't run the job and instead returns statistics about the job such as how many bytes would be processed
    * @param useLegacySql specifies whether to use BigQuery's legacy SQL dialect for this query
-   * @param onCompleteCallback a callback to execute when complete
    * @param unmarshaller [[akka.http.javadsl.unmarshalling.Unmarshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
    * @tparam Out the data model of the query results
    * @return a [[akka.stream.javadsl.Source]] that emits an [[Out]] for each row of the results and materializes a [[java.util.concurrent.CompletionStage]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
@@ -332,11 +331,10 @@ object BigQuery {
       query: String,
       dryRun: Boolean,
       useLegacySql: Boolean,
-      onCompleteCallback: Function[util.Optional[JobReference], CompletionStage[Done]],
       unmarshaller: Unmarshaller[HttpEntity, QueryResponse[Out]]
   ): Source[Out, CompletionStage[QueryResponse[Out]]] = {
     implicit val um = unmarshaller.asScalaCastInput[sm.HttpEntity]
-    ScalaBigQuery.query(query, dryRun, useLegacySql, onCompleteCallback).mapMaterializedValue(_.toJava).asJava
+    ScalaBigQuery.query(query, dryRun, useLegacySql).mapMaterializedValue(_.toJava).asJava
   }
 
   /**
@@ -344,18 +342,16 @@ object BigQuery {
    * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query BigQuery reference]]
    *
    * @param query the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryRequest]]
-   * @param onCompleteCallback a callback to execute when complete
    * @param unmarshaller [[akka.http.javadsl.unmarshalling.Unmarshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
    * @tparam Out the data model of the query results
    * @return a [[akka.stream.javadsl.Source]] that emits an [[Out]] for each row of the results and materializes a [[java.util.concurrent.CompletionStage]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
    */
   def query[Out](
       query: QueryRequest,
-      onCompleteCallback: Function[util.Optional[JobReference], CompletionStage[Done]],
       unmarshaller: Unmarshaller[HttpEntity, QueryResponse[Out]]
   ): Source[Out, CompletionStage[QueryResponse[Out]]] = {
     implicit val um = unmarshaller.asScalaCastInput[sm.HttpEntity]
-    ScalaBigQuery.query(query, onCompleteCallback).mapMaterializedValue(_.toJava).asJava
+    ScalaBigQuery.query(query).mapMaterializedValue(_.toJava).asJava
   }
 
   /**
@@ -389,11 +385,6 @@ object BigQuery {
       .mapMaterializedValue(_.toJava)
       .asJava
   }
-
-  private implicit def wrapCallback(
-      callback: Function[util.Optional[JobReference], CompletionStage[Done]]
-  ): Option[JobReference] => Future[Done] =
-    jobReference => callback(jobReference.asJava).toScala
 
   /**
    * Returns information about a specific job.

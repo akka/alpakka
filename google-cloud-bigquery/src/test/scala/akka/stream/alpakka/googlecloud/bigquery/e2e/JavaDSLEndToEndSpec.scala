@@ -38,7 +38,7 @@ class JavaDSLEndToEndSpec extends BigQueryEndToEndSpec {
   "BigQuery JavaDSL" should {
 
     import akka.stream.alpakka.googlecloud.bigquery.javadsl.jackson.BigQueryMarshallers
-    import akka.stream.alpakka.googlecloud.bigquery.javadsl.{BigQuery, BigQueryCallbacks}
+    import akka.stream.alpakka.googlecloud.bigquery.javadsl.BigQuery
     import akka.stream.javadsl.{Sink, Source}
 
     val settings = BigQuery.getSettings(system)
@@ -167,11 +167,7 @@ class JavaDSLEndToEndSpec extends BigQueryEndToEndSpec {
     "run query" in {
       val query = s"SELECT string, record, integer FROM $datasetId.$tableId WHERE boolean;"
       BigQuery
-        .query[JsonNode](query,
-                         false,
-                         false,
-                         BigQueryCallbacks.ignore[util.Optional[JobReference]],
-                         BigQueryMarshallers.queryResponseUnmarshaller(classOf[JsonNode]))
+        .query[JsonNode](query, false, false, BigQueryMarshallers.queryResponseUnmarshaller(classOf[JsonNode]))
         .runWith(Sink.seq[JsonNode], system)
         .toScala
         .map { retrievedRows =>

@@ -18,7 +18,6 @@ import akka.stream.alpakka.googlecloud.bigquery.BigQueryAttributes;
 import akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings;
 import akka.stream.alpakka.googlecloud.bigquery.RetryWithDeduplication;
 import akka.stream.alpakka.googlecloud.bigquery.javadsl.BigQuery;
-import akka.stream.alpakka.googlecloud.bigquery.javadsl.BigQueryCallbacks;
 import akka.stream.alpakka.googlecloud.bigquery.javadsl.jackson.BigQueryMarshallers;
 import akka.stream.alpakka.googlecloud.bigquery.model.DatasetJsonProtocol;
 import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol;
@@ -147,16 +146,12 @@ public class BigQueryDoc {
         queryResponseUnmarshaller =
             BigQueryMarshallers.queryResponseUnmarshaller(NameAddressesPair.class);
     Source<NameAddressesPair, CompletionStage<QueryJsonProtocol.QueryResponse<NameAddressesPair>>>
-        centenarians =
-            BigQuery.query(
-                sqlQuery, false, false, BigQueryCallbacks.ignore(), queryResponseUnmarshaller);
+        centenarians = BigQuery.query(sqlQuery, false, false, queryResponseUnmarshaller);
     // #run-query
 
     // #dry-run-query
     Source<NameAddressesPair, CompletionStage<QueryJsonProtocol.QueryResponse<NameAddressesPair>>>
-        centenariansDryRun =
-            BigQuery.query(
-                sqlQuery, false, false, BigQueryCallbacks.ignore(), queryResponseUnmarshaller);
+        centenariansDryRun = BigQuery.query(sqlQuery, false, false, queryResponseUnmarshaller);
     CompletionStage<Long> bytesProcessed =
         centenariansDryRun
             .to(Sink.ignore())
@@ -283,7 +278,7 @@ public class BigQueryDoc {
     // #custom-settings
     BigQuerySettings defaultSettings = BigQuery.getSettings(system);
     BigQuerySettings customSettings = defaultSettings.withProjectId("myOtherProjectId");
-    BigQuery.query(sqlQuery, false, false, BigQueryCallbacks.ignore(), queryResponseUnmarshaller)
+    BigQuery.query(sqlQuery, false, false, queryResponseUnmarshaller)
         .withAttributes(BigQueryAttributes.settings(customSettings));
     // #custom-settings
   }
