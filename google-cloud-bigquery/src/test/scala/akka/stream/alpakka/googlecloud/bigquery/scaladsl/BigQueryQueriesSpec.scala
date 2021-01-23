@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.stream.alpakka.googlecloud.bigquery.scaladsl
 
 import _root_.spray.json._
@@ -8,7 +12,12 @@ import akka.stream.alpakka.googlecloud.bigquery.impl.auth.CredentialsProvider
 import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.JobReference
 import akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRootJsonFormat
-import akka.stream.alpakka.googlecloud.bigquery.{BigQueryAttributes, BigQueryEndpoints, BigQuerySettings, HoverflySupport}
+import akka.stream.alpakka.googlecloud.bigquery.{
+  BigQueryAttributes,
+  BigQueryEndpoints,
+  BigQuerySettings,
+  HoverflySupport
+}
 import akka.stream.scaladsl.Sink
 import akka.testkit.TestKit
 import io.specto.hoverfly.junit.core.SimulationSource.dsl
@@ -19,10 +28,9 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpecLike
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
 
 class BigQueryQueriesSpec
-  extends TestKit(ActorSystem("BigQueryQueriesSpec"))
+    extends TestKit(ActorSystem("BigQueryQueriesSpec"))
     with AsyncWordSpecLike
     with Matchers
     with BeforeAndAfterAll
