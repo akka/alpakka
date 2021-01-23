@@ -19,7 +19,7 @@ object BigQueryAttributes {
   def settings(settings: BigQuerySettings): Attributes = Attributes(BigQuerySettingsValue(settings))
 
   /**
-   * Config path which will be used to resolve required [[BigQuerySettings]]
+   * Config path which will be used to resolve [[BigQuerySettings]]
    */
   def settingsPath(path: String): Attributes = Attributes(BigQuerySettingsPath(path))
 

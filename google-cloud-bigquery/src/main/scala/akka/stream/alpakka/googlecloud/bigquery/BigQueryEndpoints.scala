@@ -6,15 +6,23 @@ package akka.stream.alpakka.googlecloud.bigquery
 
 import akka.http.scaladsl.model.Uri
 
+/**
+ * Endpoints for the BigQuery REST API
+ * @see [[https://cloud.google.com/bigquery/docs/reference/rest BigQuery reference]]
+ */
 object BigQueryEndpoints extends BigQueryEndpoints(Uri("https://bigquery.googleapis.com/bigquery/v2")) {
   private final implicit class UriWithSlash(val uri: Uri) extends AnyVal {
     def /(segment: String): Uri = uri.withPath(uri.path / segment)
   }
 }
 
+/**
+ * Endpoints for the BigQuery media upload API
+ * @see [[https://cloud.google.com/bigquery/docs/reference/api-uploads BigQuery reference]]
+ */
 object BigQueryMediaEndpoints extends BigQueryEndpoints(Uri("https://bigquery.googleapis.com/upload/bigquery/v2"))
 
-sealed abstract class BigQueryEndpoints(final val endpoint: Uri) {
+private[bigquery] sealed abstract class BigQueryEndpoints(final val endpoint: Uri) {
 
   import BigQueryEndpoints.UriWithSlash
 
