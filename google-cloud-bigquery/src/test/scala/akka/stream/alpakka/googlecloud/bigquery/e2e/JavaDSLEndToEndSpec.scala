@@ -7,7 +7,7 @@ package akka.stream.alpakka.googlecloud.bigquery.e2e
 import akka.http.javadsl.marshallers.jackson.Jackson
 import akka.stream.alpakka.googlecloud.bigquery.e2e.BigQueryEndToEndSpec.{A, B}
 import akka.stream.alpakka.googlecloud.bigquery.model.DatasetJsonProtocol.Dataset
-import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.{DoneState, Job, JobReference}
+import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.{DoneState, Job}
 import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.{
   createTableFieldSchema,
   createTableSchema,
@@ -44,37 +44,24 @@ class JavaDSLEndToEndSpec extends BigQueryEndToEndSpec {
     val settings = BigQuery.getSettings(system)
 
     val schema = createTableSchema(
-      Seq(
-        createTableFieldSchema("integer", IntegerType, util.Optional.of(RequiredMode), util.Optional.empty()),
-        createTableFieldSchema("long", IntegerType, util.Optional.of(RequiredMode), util.Optional.empty()),
-        createTableFieldSchema("float", FloatType, util.Optional.of(RequiredMode), util.Optional.empty()),
-        createTableFieldSchema("double", FloatType, util.Optional.of(RequiredMode), util.Optional.empty()),
-        createTableFieldSchema("string", StringType, util.Optional.of(RequiredMode), util.Optional.empty()),
-        createTableFieldSchema("boolean", BooleanType, util.Optional.of(RequiredMode), util.Optional.empty()),
+      createTableFieldSchema("integer", IntegerType, util.Optional.of(RequiredMode)),
+      createTableFieldSchema("long", IntegerType, util.Optional.of(RequiredMode)),
+      createTableFieldSchema("float", FloatType, util.Optional.of(RequiredMode)),
+      createTableFieldSchema("double", FloatType, util.Optional.of(RequiredMode)),
+      createTableFieldSchema("string", StringType, util.Optional.of(RequiredMode)),
+      createTableFieldSchema("boolean", BooleanType, util.Optional.of(RequiredMode)),
+      createTableFieldSchema(
+        "record",
+        RecordType,
+        util.Optional.of(RequiredMode),
+        createTableFieldSchema("nullable", StringType, util.Optional.of(NullableMode)),
         createTableFieldSchema(
-          "record",
+          "repeated",
           RecordType,
-          util.Optional.of(RequiredMode),
-          util.Optional.of(
-            Seq(
-              createTableFieldSchema("nullable", StringType, util.Optional.of(NullableMode), util.Optional.empty()),
-              createTableFieldSchema(
-                "repeated",
-                RecordType,
-                util.Optional.of(RepeatedMode),
-                util.Optional.of(
-                  Seq(
-                    createTableFieldSchema("numeric",
-                                           NumericType,
-                                           util.Optional.of(RequiredMode),
-                                           util.Optional.empty())
-                  ).asJava
-                )
-              )
-            ).asJava
-          )
+          util.Optional.of(RepeatedMode),
+          createTableFieldSchema("numeric", NumericType, util.Optional.of(RequiredMode))
         )
-      ).asJava
+      )
     )
 
     "create dataset" in {

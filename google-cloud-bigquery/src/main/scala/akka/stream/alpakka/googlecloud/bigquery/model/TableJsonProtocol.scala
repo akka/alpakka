@@ -11,6 +11,7 @@ import com.github.ghik.silencer.silent
 import spray.json.{deserializationError, JsString, JsValue, JsonFormat, RootJsonFormat}
 
 import java.util
+import scala.annotation.varargs
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Seq
 import scala.compat.java8.OptionConverters._
@@ -136,6 +137,16 @@ object TableJsonProtocol {
   def createTableSchema(fields: util.List[TableFieldSchema]) = TableSchema(fields.asScala.toList)
 
   /**
+   * Java API: Schema of a table
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#tableschema BigQuery reference]]
+   *
+   * @param fields describes the fields in a table
+   * @return a [[TableSchema]]
+   */
+  @varargs
+  def createTableSchema(fields: TableFieldSchema*) = TableSchema(fields.toList)
+
+  /**
    * A field in TableSchema
    * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#tablefieldschema BigQuery reference]]
    *
@@ -193,6 +204,23 @@ object TableJsonProtocol {
                              fields: util.Optional[util.List[TableFieldSchema]]) =
     TableFieldSchema(name, `type`, mode.asScala, fields.asScala.map(_.asScala.toList))
 
+  /**
+   * A field in TableSchema
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#tablefieldschema BigQuery reference]]
+   *
+   * @param name the field name
+   * @param `type` the field data type
+   * @param mode the field mode
+   * @param fields describes the nested schema fields if the type property is set to `RECORD`
+   * @return a [[TableFieldSchema]]
+   */
+  @varargs
+  def createTableFieldSchema(name: String,
+                             `type`: TableFieldSchemaType,
+                             mode: util.Optional[TableFieldSchemaMode],
+                             fields: TableFieldSchema*) =
+    TableFieldSchema(name, `type`, mode.asScala, if (fields.nonEmpty) Some(fields.toList) else None)
+
   sealed case class TableFieldSchemaType(value: String) {
     def getValue = value
   }
@@ -214,6 +242,42 @@ object TableJsonProtocol {
    */
   def createTableFieldSchemaType(value: String) = TableFieldSchemaType(value)
 
+  /** Java API */
+  def stringType = StringType
+
+  /** Java API */
+  def bytesType = BytesType
+
+  /** Java API */
+  def integerType = IntegerType
+
+  /** Java API */
+  def floatType = FloatType
+
+  /** Java API */
+  def booleanType = BooleanType
+
+  /** Java API */
+  def timestampType = TimestampType
+
+  /** Java API */
+  def dateType = DateType
+
+  /** Java API */
+  def timeType = TimeType
+
+  /** Java API */
+  def dateTimeType = DateTimeType
+
+  /** Java API */
+  def geographyType = GeographyType
+
+  /** Java API */
+  def numericType = NumericType
+
+  /** Java API */
+  def recordType = RecordType
+
   sealed case class TableFieldSchemaMode(value: String) {
     def getValue = value
   }
@@ -225,6 +289,15 @@ object TableJsonProtocol {
    * Java API
    */
   def createTableFieldSchemaMode(value: String) = TableFieldSchemaMode(value)
+
+  /** Java API */
+  def nullableMode = NullableMode
+
+  /** Java API */
+  def requiredMode = RequiredMode
+
+  /** Java API */
+  def repeatedMode = RepeatedMode
 
   /**
    * TableListResponse model

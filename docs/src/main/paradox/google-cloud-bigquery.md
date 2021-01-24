@@ -121,7 +121,7 @@ The BigQuery connector enables loading data into tables via real-time streaming 
 For an overview of these strategies see the [BigQuery documentation](https://cloud.google.com/bigquery/docs/loading-data).
 
 The @scala[@apidoc[BigQuery.insertAll[In]](BigQuery$)] @java[@apidoc[BigQuery.<In>insertAll](BigQuery$)] method creates a sink that accepts batches of @scala[`Seq[In]`] @java[`List<In>`]  (for example created by the [`batch`](https://doc.akka.io/docs/akka/current/stream/operators/Source-or-Flow/batch.html) operator) and streams them directly into a table.
-To enable/disable BigQuery’s best-effort deduplication feature use the appropriate @apidoc[InsertAllRetryPolicy].
+To enable/disable BigQuery’s best-effort deduplication feature use the appropriate @apidoc[InsertAllRetryPolicy$].
 
 Scala
 : @@snip [snip](/google-cloud-bigquery/src/test/scala/docs/scaladsl/BigQueryDoc.scala) { #streaming-insert }
@@ -134,7 +134,7 @@ The @scala[@apidoc[BigQuery.insertAllAsync[In]](BigQuery$)] @java[@apidoc[@java[
 By default, a new load job is created every minute to attempt to emulate near-real-time streaming inserts, although there is no guarantee when the job will actually run.
 The frequency with which new load jobs are created is controlled by the `alpakka.google.bigquery.load-job.per-table-quota` configuration setting.
 
-@@@warning { title="Broken API" }
+@@@warning
 
 Pending the resolution of [Google BigQuery issue 176002651](https://issuetracker.google.com/176002651), the `BigQuery.insertAllAsync` API may not work as expected.
 

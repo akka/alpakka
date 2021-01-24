@@ -16,7 +16,7 @@ import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.{Table, 
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.BigQuery
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.schema.BigQuerySchemas._
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryJsonProtocol._
-import akka.stream.alpakka.googlecloud.bigquery.{BigQueryAttributes, BigQuerySettings, RetryWithDeduplication}
+import akka.stream.alpakka.googlecloud.bigquery.{BigQueryAttributes, BigQuerySettings, InsertAllRetryPolicy}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.{Done, NotUsed}
 
@@ -57,7 +57,7 @@ class BigQueryDoc {
 
   //#streaming-insert
   val peopleInsertSink: Sink[Seq[Person], NotUsed] =
-    BigQuery.insertAll[Person](datasetId, tableId, RetryWithDeduplication)
+    BigQuery.insertAll[Person](datasetId, tableId, InsertAllRetryPolicy.WithDeduplication)
   //#streaming-insert
 
   //#async-insert

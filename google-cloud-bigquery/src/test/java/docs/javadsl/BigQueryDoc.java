@@ -16,7 +16,7 @@ import akka.http.javadsl.model.RequestEntity;
 import akka.http.javadsl.unmarshalling.Unmarshaller;
 import akka.stream.alpakka.googlecloud.bigquery.BigQueryAttributes;
 import akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings;
-import akka.stream.alpakka.googlecloud.bigquery.RetryWithDeduplication;
+import akka.stream.alpakka.googlecloud.bigquery.InsertAllRetryPolicy;
 import akka.stream.alpakka.googlecloud.bigquery.javadsl.BigQuery;
 import akka.stream.alpakka.googlecloud.bigquery.javadsl.jackson.BigQueryMarshallers;
 import akka.stream.alpakka.googlecloud.bigquery.model.DatasetJsonProtocol;
@@ -35,7 +35,6 @@ import com.fasterxml.jackson.databind.ObjectReader;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -175,12 +174,12 @@ public class BigQueryDoc {
 
     // #streaming-insert
     Marshaller<TableDataJsonProtocol.TableDataInsertAllRequest<Person>, RequestEntity>
-        tableDataInsertAllMarshaller = BigQueryMarshallers.tableDataListRequestMarshaller();
+        tableDataInsertAllMarshaller = BigQueryMarshallers.tableDataInsertAllRequestMarshaller();
     Sink<List<Person>, NotUsed> peopleInsertSink =
         BigQuery.insertAll(
             datasetId,
             tableId,
-            RetryWithDeduplication.getInstance(),
+            InsertAllRetryPolicy.withDeduplication(),
             Optional.empty(),
             tableDataInsertAllMarshaller);
     // #streaming-insert
@@ -203,7 +202,7 @@ public class BigQueryDoc {
                 job.thenApply(
                     j ->
                         j.getStatus()
-                            .map(s -> s.getState().equals(JobJsonProtocol.DoneState()))
+                            .map(s -> s.getState().equals(JobJsonProtocol.doneState()))
                             .orElse(false));
             allAreDone = allAreDone.thenCombine(jobIsDone, (a, b) -> a & b);
           }
@@ -240,37 +239,24 @@ public class BigQueryDoc {
     // #create-table
     TableJsonProtocol.TableSchema personSchema =
         TableJsonProtocol.createTableSchema(
-            Arrays.asList(
+            TableJsonProtocol.createTableFieldSchema(
+                "name", TableJsonProtocol.stringType(), Optional.empty()),
+            TableJsonProtocol.createTableFieldSchema(
+                "age", TableJsonProtocol.integerType(), Optional.empty()),
+            TableJsonProtocol.createTableFieldSchema(
+                "addresses",
+                TableJsonProtocol.recordType(),
+                Optional.of(TableJsonProtocol.repeatedMode()),
                 TableJsonProtocol.createTableFieldSchema(
-                    "name", TableJsonProtocol.StringType(), Optional.empty(), Optional.empty()),
+                    "street", TableJsonProtocol.stringType(), Optional.empty()),
                 TableJsonProtocol.createTableFieldSchema(
-                    "age", TableJsonProtocol.IntegerType(), Optional.empty(), Optional.empty()),
+                    "city", TableJsonProtocol.stringType(), Optional.empty()),
                 TableJsonProtocol.createTableFieldSchema(
-                    "addresses",
-                    TableJsonProtocol.RecordType(),
-                    Optional.of(TableJsonProtocol.RepeatedMode()),
-                    Optional.of(
-                        Arrays.asList(
-                            TableJsonProtocol.createTableFieldSchema(
-                                "street",
-                                TableJsonProtocol.StringType(),
-                                Optional.empty(),
-                                Optional.empty()),
-                            TableJsonProtocol.createTableFieldSchema(
-                                "city",
-                                TableJsonProtocol.StringType(),
-                                Optional.empty(),
-                                Optional.empty()),
-                            TableJsonProtocol.createTableFieldSchema(
-                                "postalCode",
-                                TableJsonProtocol.IntegerType(),
-                                Optional.of(TableJsonProtocol.NullableMode()),
-                                Optional.empty())))),
-                TableJsonProtocol.createTableFieldSchema(
-                    "isHakker",
-                    TableJsonProtocol.BooleanType(),
-                    Optional.empty(),
-                    Optional.empty())));
+                    "postalCode",
+                    TableJsonProtocol.integerType(),
+                    Optional.of(TableJsonProtocol.nullableMode()))),
+            TableJsonProtocol.createTableFieldSchema(
+                "isHakker", TableJsonProtocol.booleanType(), Optional.empty()));
     CompletionStage<TableJsonProtocol.Table> newTable =
         BigQuery.createTable(datasetId, "newTableId", personSchema, system, settings);
     // #create-table

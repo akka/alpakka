@@ -256,6 +256,15 @@ object JobJsonProtocol {
    */
   def createJobState(value: String) = JobState(value)
 
+  /** Java API */
+  def pendingState = PendingState
+
+  /** Java API */
+  def runningState = RunningState
+
+  /** Java API */
+  def doneState = DoneState
+
   final case class JobCancelResponse(job: Job) {
     def getJob = job
     def withJob(job: Job) =
