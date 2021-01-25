@@ -51,7 +51,6 @@ public class BigQueryDoc {
   ActorSystem system = null;
 
   // #setup
-  BigQuerySettings settings = BigQuery.getSettings(system);
   ObjectMapper objectMapper = new ObjectMapper();
 
   class Person {
@@ -194,6 +193,7 @@ public class BigQueryDoc {
     // #job-status
     Function<List<JobJsonProtocol.JobReference>, CompletionStage<Boolean>> checkIfJobsDone =
         jobReferences -> {
+          BigQuerySettings settings = BigQuery.getSettings(system);
           CompletionStage<Boolean> allAreDone = CompletableFuture.completedFuture(true);
           for (JobJsonProtocol.JobReference jobReference : jobReferences) {
             CompletionStage<JobJsonProtocol.Job> job =
@@ -218,6 +218,7 @@ public class BigQueryDoc {
     // #job-status
 
     // #dataset-methods
+    BigQuerySettings settings = BigQuery.getSettings(system);
     Source<DatasetJsonProtocol.Dataset, NotUsed> allDatasets =
         BigQuery.listDatasets(OptionalInt.empty(), Optional.empty(), Collections.emptyMap());
     CompletionStage<DatasetJsonProtocol.Dataset> existingDataset =
