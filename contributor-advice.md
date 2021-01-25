@@ -22,7 +22,7 @@ use case we see, is committing a Kafka offset after passing data to another syst
 
 ### Implementing the Java API in Scala
 
-> Reference connector [Java API factory methods](reference/src/main/scala/akka/stream/alpakka/javadsl/Reference.scala)
+> Reference connector [Java API factory methods](reference/src/main/scala/akka/stream/alpakka/reference/javadsl/Reference.scala)
 
 Alpakka, same as Akka, aims to keep 100% feature parity between the various language DSLs. Implementing even the API for Java in Scala has proven the most viable way to do it, as long as you keep the following in mind:
 
