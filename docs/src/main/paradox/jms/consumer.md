@@ -142,12 +142,12 @@ Java
 
 ## Raw JVM type sources
 
-| Stream element type                                   | Alpakka source factory   |
-|-------------------------------------------------------|--------------------------|
-| String                                                | [`JmsConsumer.textSource`](#text-sources)   |
-| @scala[Array[Byte]]@java[byte[]]                      | [`JmsConsumer.bytesSource`](#byte-array-sources)  |
-| @scala[Map[String, AnyRef]]@java[Map<String, Object>] | [`JmsConsumer.mapSource`](#map-messages-sources)  |
-| Object (`java.io.Serializable`)                       | [`JmsConsumer.objectSource`](#object-sources)     |
+| Stream element type                                       | Alpakka source factory   |
+|-----------------------------------------------------------|--------------------------|
+| `String`                                                  | [`JmsConsumer.textSource`](#text-sources)         |
+| @scala[`Array[Byte]`]@java[`byte[]`]                      | [`JmsConsumer.bytesSource`](#byte-array-sources)  |
+| @scala[`Map[String, AnyRef]`]@java[`Map<String, Object>`] | [`JmsConsumer.mapSource`](#map-messages-sources)  |
+| `Object` (`java.io.Serializable`)                         | [`JmsConsumer.objectSource`](#object-sources)     |
 
 ### Text sources
 
