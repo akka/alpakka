@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package docs.scaladsl
 
 import java.net.InetAddress
@@ -64,7 +68,7 @@ class StreamingSftpTransport {
 
     println("Streaming: Starting")
     val start = System.currentTimeMillis()
-    Await.result(runnable, 180 seconds)
+    Await.result(runnable, 180.seconds)
     val end = System.currentTimeMillis()
     println(s"Streaming: ${end - start}")
 
