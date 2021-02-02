@@ -69,6 +69,20 @@ final class StrictHostCheckingSftpSourceSpec extends BaseSftpSpec with CommonFtp
     )
 }
 
+final class UnconfirmedReadsSftpSourceSpec extends BaseSftpSpec with CommonFtpStageSpec {
+  override val settings = SftpSettings(
+    InetAddress.getByName(HOSTNAME)
+  ).withPort(PORT)
+    .withCredentials(FtpCredentials.create("username", "wrong password"))
+    .withStrictHostKeyChecking(true)
+    .withKnownHosts(getKnownHostsFile.getPath)
+    .withSftpIdentity(
+      SftpIdentity
+        .createFileSftpIdentity(getClientPrivateKeyFile.getPath, ClientPrivateKeyPassphrase)
+    )
+    .withMaxUnconfirmedReads(8)
+}
+
 trait CommonFtpStageSpec extends BaseSpec with Eventually {
 
   implicit val system = getSystem

@@ -22,7 +22,7 @@ import org.apache.commons.net.DefaultSocketFactory
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Try}
 
 /**
  * INTERNAL API
@@ -123,15 +123,34 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
     retrieveFileInputStream(name, handler, 0L)
 
   def retrieveFileInputStream(name: String, handler: Handler, offset: Long): Try[InputStream] =
+    retrieveFileInputStream(name, handler, offset, 1)
+
+  def retrieveFileInputStream(name: String,
+                              handler: Handler,
+                              offset: Long,
+                              maxUnconfirmedReads: Int): Try[InputStream] =
     Try {
       val remoteFile = handler.open(name, java.util.EnumSet.of(OpenMode.READ))
-      val is = new remoteFile.RemoteFileInputStream(offset) {
+      val is = maxUnconfirmedReads match {
+        case m if m > 1 =>
+          new remoteFile.ReadAheadRemoteFileInputStream(m, offset) {
 
-        override def close(): Unit =
-          try {
-            super.close()
-          } finally {
-            remoteFile.close()
+            override def close(): Unit =
+              try {
+                super.close()
+              } finally {
+                remoteFile.close()
+              }
+          }
+        case _ =>
+          new remoteFile.RemoteFileInputStream(offset) {
+
+            override def close(): Unit =
+              try {
+                super.close()
+              } finally {
+                remoteFile.close()
+              }
           }
       }
       Option(is).getOrElse {

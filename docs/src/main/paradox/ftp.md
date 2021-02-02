@@ -54,6 +54,16 @@ Scala
 Java
 : @@snip [snip](/ftp/src/test/java/docs/javadsl/ConfigureCustomSSHClient.java) { #configure-custom-ssh-client }
 
+### Improving SFTP throughput
+For SFTP connection allowing more than one unconfirmed read request to be sent by the client you can use `withMaxUnconfirmedReads` on @scaladoc[SftpSettings](akka.stream.alpakka.ftp.SftpSettings)  
+Command-line `sftp` uses a value of 64 by default.  This can significantly improve throughput by reducing the impact of latency.
+
+Scala
+: @@snip [snip](/ftp/src/test/scala/docs/scaladsl/scalaExamples.scala) { #retrieving-with-unconfirmed-reads }
+
+Java
+: @@snip [snip](/ftp/src/test/java/docs/javadsl/SftpRetrievingExample.java) { #retrieving-with-unconfirmed-reads }
+
 ## Traversing a remote FTP folder recursively
 
 In order to traverse a remote folder recursively, you need to use the `ls` method in the FTP API:
