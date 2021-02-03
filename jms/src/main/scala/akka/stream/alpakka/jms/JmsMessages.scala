@@ -93,6 +93,15 @@ sealed trait JmsMessage extends JmsEnvelope[NotUsed] with JmsEnvelopeWithPropert
   def withHeaders(newHeaders: Set[JmsHeader]): JmsMessage
 
   def withoutDestination: JmsMessage
+
+  def withProperty(name: String, value: Any): JmsMessage
+
+  def withProperties(props: Map[String, Any]): JmsMessage
+
+  /**
+   * Java API.
+   */
+  def withProperties(properties: java.util.Map[String, Object]): JmsMessage
 }
 
 object JmsMessage {
