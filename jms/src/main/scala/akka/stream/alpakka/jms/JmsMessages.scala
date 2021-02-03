@@ -70,22 +70,27 @@ object JmsPassThrough {
 }
 
 /**
- * Marker trait for stream elements that do not contain pass-through data.
+ * Marker trait for stream elements that contain pass-through data with properties.
  */
-sealed trait JmsMessage extends JmsEnvelope[NotUsed] {
+sealed trait JmsEnvelopeWithProperties[+PassThrough] extends JmsEnvelope[PassThrough] {
+  def withProperty(name: String, value: Any): JmsEnvelopeWithProperties[PassThrough]
 
-  def withHeader(jmsHeader: JmsHeader): JmsMessage
-
-  def withHeaders(newHeaders: Set[JmsHeader]): JmsMessage
-
-  def withProperty(name: String, value: Any): JmsMessage
-
-  def withProperties(props: Map[String, Any]): JmsMessage
+  def withProperties(props: Map[String, Any]): JmsEnvelopeWithProperties[PassThrough]
 
   /**
    * Java API.
    */
-  def withProperties(properties: java.util.Map[String, Object]): JmsMessage
+  def withProperties(properties: java.util.Map[String, Object]): JmsEnvelopeWithProperties[PassThrough]
+}
+
+/**
+ * Marker trait for stream elements that do not contain pass-through data.
+ */
+sealed trait JmsMessage extends JmsEnvelope[NotUsed] with JmsEnvelopeWithProperties[NotUsed] {
+
+  def withHeader(jmsHeader: JmsHeader): JmsMessage
+
+  def withHeaders(newHeaders: Set[JmsHeader]): JmsMessage
 
   def withoutDestination: JmsMessage
 }
@@ -151,7 +156,8 @@ sealed class JmsByteMessagePassThrough[+PassThrough] protected[jms] (val bytes: 
                                                                      val properties: Map[String, Any] = Map.empty,
                                                                      val destination: Option[Destination] = None,
                                                                      val passThrough: PassThrough)
-    extends JmsEnvelope[PassThrough] {
+    extends JmsEnvelope[PassThrough]
+    with JmsEnvelopeWithProperties[PassThrough] {
 
   /**
    * Add a Jms header e.g. JMSType
@@ -324,7 +330,8 @@ sealed class JmsByteStringMessagePassThrough[+PassThrough] protected[jms] (val b
                                                                            val properties: Map[String, Any] = Map.empty,
                                                                            val destination: Option[Destination] = None,
                                                                            val passThrough: PassThrough)
-    extends JmsEnvelope[PassThrough] {
+    extends JmsEnvelope[PassThrough]
+    with JmsEnvelopeWithProperties[PassThrough] {
 
   /**
    * Add a Jms header e.g. JMSType
@@ -340,6 +347,12 @@ sealed class JmsByteStringMessagePassThrough[+PassThrough] protected[jms] (val b
 
   def withProperties(props: Map[String, Any]): JmsByteStringMessagePassThrough[PassThrough] =
     copy(properties = properties ++ props)
+
+  /**
+   * Java API
+   */
+  def withProperties(props: java.util.Map[String, Object]): JmsByteStringMessagePassThrough[PassThrough] =
+    copy(properties = properties ++ props.asScala)
 
   def toQueue(name: String): JmsByteStringMessagePassThrough[PassThrough] = to(Queue(name))
 
@@ -498,7 +511,8 @@ sealed class JmsMapMessagePassThrough[+PassThrough] protected[jms] (val body: Ma
                                                                     val properties: Map[String, Any] = Map.empty,
                                                                     val destination: Option[Destination] = None,
                                                                     val passThrough: PassThrough)
-    extends JmsEnvelope[PassThrough] {
+    extends JmsEnvelope[PassThrough]
+    with JmsEnvelopeWithProperties[PassThrough] {
 
   /**
    * Add a Jms header e.g. JMSType
@@ -513,6 +527,9 @@ sealed class JmsMapMessagePassThrough[+PassThrough] protected[jms] (val body: Ma
 
   def withProperties(props: Map[String, Any]): JmsMapMessagePassThrough[PassThrough] =
     copy(properties = properties ++ props)
+
+  def withProperties(props: java.util.Map[String, Object]): JmsMapMessagePassThrough[PassThrough] =
+    copy(properties = properties ++ props.asScala)
 
   def toQueue(name: String): JmsMapMessagePassThrough[PassThrough] = to(Queue(name))
 
@@ -667,7 +684,8 @@ sealed class JmsTextMessagePassThrough[+PassThrough] protected[jms] (val body: S
                                                                      val properties: Map[String, Any] = Map.empty,
                                                                      val destination: Option[Destination] = None,
                                                                      val passThrough: PassThrough)
-    extends JmsEnvelope[PassThrough] {
+    extends JmsEnvelope[PassThrough]
+    with JmsEnvelopeWithProperties[PassThrough] {
 
   /**
    * Add a Jms header e.g. JMSType
@@ -682,6 +700,12 @@ sealed class JmsTextMessagePassThrough[+PassThrough] protected[jms] (val body: S
 
   def withProperties(props: Map[String, Any]): JmsTextMessagePassThrough[PassThrough] =
     copy(properties = properties ++ props)
+
+  /**
+   * Java API
+   */
+  def withProperties(props: java.util.Map[String, Object]): JmsTextMessagePassThrough[PassThrough] =
+    copy(properties = properties ++ props.asScala)
 
   def toQueue(name: String): JmsTextMessagePassThrough[PassThrough] = to(Queue(name))
 
