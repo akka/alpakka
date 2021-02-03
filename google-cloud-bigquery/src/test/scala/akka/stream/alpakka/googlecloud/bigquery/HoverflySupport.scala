@@ -9,15 +9,7 @@ import org.scalatest.{BeforeAndAfterAll, Suite}
 
 trait HoverflySupport extends BeforeAndAfterAll { this: Suite =>
 
-  val hoverfly = {
-    val hoverflyConfig = HoverflyConfig
-      .localConfigs()
-      .proxyPort(8500)
-      .adminPort(8888)
-      .captureHeaders("Content-Range", "X-Upload-Content-Type")
-      .enableStatefulCapture()
-    new Hoverfly(hoverflyConfig, HoverflyMode.SIMULATE)
-  }
+  def hoverfly = BigQueryHoverfly
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -28,4 +20,17 @@ trait HoverflySupport extends BeforeAndAfterAll { this: Suite =>
     super.afterAll()
     hoverfly.close()
   }
+}
+
+object BigQueryHoverfly
+    extends Hoverfly(
+      HoverflyConfig
+        .localConfigs()
+        .proxyPort(8500)
+        .adminPort(8888)
+        .captureHeaders("Content-Range", "X-Upload-Content-Type")
+        .enableStatefulCapture(),
+      HoverflyMode.SIMULATE
+    ) {
+  def getInstance = this
 }

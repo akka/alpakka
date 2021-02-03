@@ -2,20 +2,52 @@
  * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.stream.alpakka.googlecloud.bigquery.e2e
+package akka.stream.alpakka.googlecloud.bigquery.e2e.scaladsl
 
-import akka.stream.alpakka.googlecloud.bigquery.e2e.BigQueryEndToEndSpec.{A, B, C}
+import akka.actor.ActorSystem
 import akka.{pattern, Done}
+import akka.stream.alpakka.googlecloud.bigquery.HoverflySupport
+import akka.stream.alpakka.googlecloud.bigquery.e2e.{A, B, C}
 import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.DoneState
 import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.TableReference
-import io.specto.hoverfly.junit.core.HoverflyMode
+import akka.testkit.TestKit
+import io.specto.hoverfly.junit.core.{HoverflyMode, SimulationSource}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AsyncWordSpecLike
 
+import java.io.File
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-class ScalaDSLEndToEndSpec extends BigQueryEndToEndSpec {
+class BigQueryEndToEndSpec
+    extends TestKit(ActorSystem("BigQueryEndToEndSpec"))
+    with AsyncWordSpecLike
+    with Matchers
+    with BeforeAndAfterAll
+    with HoverflySupport
+    with EndToEndHelper {
 
-  "BigQuery ScalaDSL" should {
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    system.settings.config.getString("alpakka.google.bigquery.test.e2e-mode") match {
+      case "simulate" =>
+        hoverfly.simulate(SimulationSource.url(getClass.getClassLoader.getResource("BigQueryEndToEndSpec.json")))
+      case "capture" => hoverfly.resetMode(HoverflyMode.CAPTURE)
+      case _ => throw new IllegalArgumentException
+    }
+  }
+
+  override def afterAll() = {
+    system.terminate()
+    if (hoverfly.getMode == HoverflyMode.CAPTURE)
+      hoverfly.exportSimulation(new File("hoverfly/BigQueryEndToEndSpec.json").toPath)
+    super.afterAll()
+  }
+
+  implicit def scheduler = system.scheduler
+
+  "BigQuery Scala DSL" should {
 
     import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
     import akka.stream.alpakka.googlecloud.bigquery.scaladsl.BigQuery
@@ -71,7 +103,7 @@ class ScalaDSLEndToEndSpec extends BigQueryEndToEndSpec {
               .retry(
                 () => {
                   BigQuery.job(job.jobReference.flatMap(_.jobId).get).flatMap { job =>
-                    if (job.status.map(_.state).get == DoneState)
+                    if (job.status.map(_.state).contains(DoneState))
                       Future.successful(job)
                     else
                       Future.failed(new RuntimeException("Job not done."))
