@@ -140,6 +140,8 @@ The frequency with which new load jobs are created is controlled by the `alpakka
 
 Pending the resolution of [Google BigQuery issue 176002651](https://issuetracker.google.com/176002651), the `BigQuery.insertAllAsync` API may not work as expected.
 
+As a workaround, you can use the config setting `akka.http.parsing.conflicting-content-type-header-processing-mode = first` with Akka HTTP v2.6.4 or later (not yet released at time of writing but available as a [snapshot build](https://doc.akka.io/docs/akka-http/snapshot/contributing.html#snapshots)).
+
 @@@
 
 Scala
