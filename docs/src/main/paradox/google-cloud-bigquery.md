@@ -88,9 +88,11 @@ Java
 ## Run a query
 
 You can run a SQL query and stream the unmarshalled results with the @scala[@apidoc[BigQuery.query[Out]](BigQuery$)] @java[@apidoc[BigQuery.<Out>query](BigQuery$)] method.
-@scala[The output type `Out` can be a tuple or any user-defined class for which an implicit @scaladoc[BigQueryRootJsonFormat[Out]](akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRootJsonFormat) is available.]
+@scala[
+  The output type `Out` can be a tuple or any user-defined class for which an implicit @scaladoc[BigQueryRootJsonFormat[Out]](akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRootJsonFormat) is available.
+  Note that the order and presence of fields in `Out` must strictly match your SQL query.
+]
 @java[To create the unmarshaller, use the @scaladoc[BigQueryMarshallers.<Out>queryResponseUnmarshaller](akka.stream.alpakka.googlecloud.bigquery.javadsl.jackson.BigQueryMarshallers$) method.]
-@scala[Note that the order and presence of fields in `Out` must strictly match your SQL query.]
 
 Scala
 : @@snip [snip](/google-cloud-bigquery/src/test/scala/docs/scaladsl/BigQueryDoc.scala) { #run-query }
@@ -130,7 +132,7 @@ Java
 : @@snip [snip](/google-cloud-bigquery/src/test/java/docs/javadsl/BigQueryDoc.java) { #streaming-insert }
 
 As a cost-saving alternative to streaming inserts, you can also add data to a table via asynchronous load jobs.
-The @scala[@apidoc[BigQuery.insertAllAsync[In]](BigQuery$)] @java[@apidoc[@java[BigQuery.<In>insertAllAsync]](BigQuery$)] method creates a flow that starts a series of batch load jobs.
+The @scala[@apidoc[BigQuery.insertAllAsync[In]](BigQuery$)] @java[@apidoc[BigQuery.<In>insertAllAsync](BigQuery$)] method creates a flow that starts a series of batch load jobs.
 By default, a new load job is created every minute to attempt to emulate near-real-time streaming inserts, although there is no guarantee when the job will actually run.
 The frequency with which new load jobs are created is controlled by the `alpakka.google.bigquery.load-job.per-table-quota` configuration setting.
 
