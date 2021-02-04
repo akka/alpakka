@@ -8,6 +8,7 @@ import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.alpakka.googlecloud.bigquery.impl.http.BigQueryHttp
@@ -21,9 +22,8 @@ import scala.concurrent.Future
 @InternalApi
 private[bigquery] object PaginatedRequest {
 
-  def apply[Out](request: HttpRequest, initialPageToken: Option[String])(
-      implicit unmarshaller: FromEntityUnmarshaller[Out],
-      paginated: Paginated[Out]
+  def apply[Out: FromEntityUnmarshaller](request: HttpRequest, initialPageToken: Option[String])(
+      implicit paginated: Paginated[Out]
   ): Source[Out, NotUsed] =
     Source
       .fromMaterializer { (mat, attr) =>
@@ -47,12 +47,11 @@ private[bigquery] object PaginatedRequest {
       .mapMaterializedValue(_ => NotUsed)
 
   private def addPageToken(request: HttpRequest, pageToken: String): HttpRequest =
-    request.withUri(request.uri.withQuery(request.uri.query().+:("pageToken" -> pageToken)))
+    request.withUri(request.uri.withQuery(Query.Cons("pageToken", pageToken, request.uri.query())))
 
-  private def sendAndParseRequest[Out](request: HttpRequest)(
+  private def sendAndParseRequest[Out: FromEntityUnmarshaller](request: HttpRequest)(
       implicit system: ActorSystem,
-      settings: BigQuerySettings,
-      unmarshaller: FromEntityUnmarshaller[Out]
+      settings: BigQuerySettings
   ): Future[Out] = {
     import BigQueryException._
     import system.dispatcher

@@ -48,10 +48,10 @@ private[scaladsl] trait BigQueryDatasets { this: BigQueryRest =>
     source { settings =>
       import SprayJsonSupport._
       val uri = BigQueryEndpoints.datasets(settings.projectId)
-      val query = Query.Empty :+?
-        "maxResults" -> maxResults :+?
-        "all" -> all :+?
-        "filter" -> (if (filter.isEmpty) None else Some(mkFilterParam(filter)))
+      val query = ("maxResults" -> maxResults) ?+:
+        ("all" -> all) ?+:
+        ("filter" -> (if (filter.isEmpty) None else Some(mkFilterParam(filter)))) ?+:
+        Query.Empty
       paginatedRequest[DatasetListResponse](HttpRequest(GET, uri.withQuery(query)))
     }.mapMaterializedValue(_ => NotUsed).mapConcat(_.datasets.fold(List.empty[Dataset])(_.toList))
 

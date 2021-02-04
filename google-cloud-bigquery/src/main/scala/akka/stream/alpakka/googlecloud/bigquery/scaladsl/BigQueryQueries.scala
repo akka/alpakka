@@ -146,11 +146,11 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
   ): Source[QueryResponse[Out], NotUsed] =
     source { settings =>
       val uri = BigQueryEndpoints.query(settings.projectId, jobId)
-      val query = Query.Empty :+?
-        "startIndex" -> startIndex :+?
-        "maxResults" -> maxResults :+?
-        "timeoutMs" -> timeoutMs :+?
-        "location" -> location
+      val query = ("startIndex" -> startIndex) ?+:
+        ("maxResults" -> maxResults) ?+:
+        ("timeoutMs" -> timeoutMs) ?+:
+        ("location" -> location) ?+:
+        Query.Empty
       paginatedRequest[QueryResponse[Out]](HttpRequest(GET, uri.withQuery(query)), pageToken)
     }.mapMaterializedValue(_ => NotUsed)
 

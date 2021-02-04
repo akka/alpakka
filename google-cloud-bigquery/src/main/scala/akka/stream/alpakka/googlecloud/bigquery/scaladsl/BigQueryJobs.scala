@@ -48,7 +48,7 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
     import BigQueryException._
     import SprayJsonSupport._
     val uri = BigQueryEndpoints.job(settings.projectId, jobId)
-    val query = Query.Empty :+? "location" -> location
+    val query = ("location" -> location) ?+: Query.Empty
     BigQueryHttp()
       .retryRequestWithOAuth(HttpRequest(GET, uri.withQuery(query)))
       .flatMap { response =>
@@ -72,7 +72,7 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
     import SprayJsonSupport._
     implicit val ec = system.classicSystem.dispatcher
     val uri = BigQueryEndpoints.jobCancel(settings.projectId, jobId)
-    val query = Query.Empty :+? "location" -> location
+    val query = ("location" -> location) ?+: Query.Empty
     BigQueryHttp()
       .retryRequestWithOAuth(HttpRequest(POST, uri.withQuery(query)))
       .flatMap { response =>

@@ -13,7 +13,7 @@ import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.stream.alpakka.googlecloud.bigquery.{BigQueryAttributes, BigQuerySettings}
 import akka.stream.alpakka.googlecloud.bigquery.impl.PaginatedRequest
 import akka.stream.alpakka.googlecloud.bigquery.impl.http.BigQueryHttp
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.BigQueryRest.QueryAddOption
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.BigQueryRest.QueryPrependOption
 import akka.stream.scaladsl.Source
 
 import scala.concurrent.Future
@@ -54,7 +54,7 @@ private[scaladsl] trait BigQueryRest {
       f(BigQueryAttributes.resolveSettings(attr, mat))
     }
 
-  protected[this] implicit def queryAddOption(query: Query) = new QueryAddOption(query)
+  protected[this] implicit def queryPrependOption(query: Query) = new QueryPrependOption(query)
 
   protected[this] def mkFilterParam(filter: Map[String, String]): String =
     filter.view
@@ -68,7 +68,7 @@ private[scaladsl] trait BigQueryRest {
 }
 
 object BigQueryRest {
-  private[scaladsl] final class QueryAddOption(val query: Query) extends AnyVal {
-    def :+?(kv: (String, Option[Any])): Query = kv._2.fold(query)(v => Query.Cons(kv._1, v.toString, query))
+  private[scaladsl] final class QueryPrependOption(val query: Query) extends AnyVal {
+    def ?+:(kv: (String, Option[Any])): Query = kv._2.fold(query)(v => Query.Cons(kv._1, v.toString, query))
   }
 }

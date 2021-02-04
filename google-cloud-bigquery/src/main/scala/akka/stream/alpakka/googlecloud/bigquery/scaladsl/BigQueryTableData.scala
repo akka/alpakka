@@ -53,10 +53,10 @@ private[scaladsl] trait BigQueryTableData { this: BigQueryRest =>
   ): Source[Out, Future[TableDataListResponse[Out]]] =
     source { settings =>
       val uri = BigQueryEndpoints.tableData(settings.projectId, datasetId, tableId)
-      val query = Query.Empty :+?
-        "startIndex" -> startIndex :+?
-        "maxResults" -> maxResults :+?
-        "selectedFields" -> (if (selectedFields.isEmpty) None else Some(selectedFields.mkString(",")))
+      val query = ("startIndex" -> startIndex) ?+:
+        ("maxResults" -> maxResults) ?+:
+        ("selectedFields" -> (if (selectedFields.isEmpty) None else Some(selectedFields.mkString(",")))) ?+:
+        Query.Empty
       paginatedRequest[TableDataListResponse[Out]](HttpRequest(GET, uri.withQuery(query)))
     }.wireTapMat(Sink.head)(Keep.right).mapConcat(_.rows.fold[List[Out]](Nil)(_.toList))
 

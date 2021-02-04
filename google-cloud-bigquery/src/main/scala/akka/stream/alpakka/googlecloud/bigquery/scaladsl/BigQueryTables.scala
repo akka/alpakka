@@ -35,7 +35,7 @@ private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
     source { settings =>
       import SprayJsonSupport._
       val uri = BigQueryEndpoints.tables(settings.projectId, datasetId)
-      val query = Query.Empty :+? "maxResults" -> maxResults
+      val query = ("maxResults" -> maxResults) ?+: Query.Empty
       paginatedRequest[TableListResponse](HttpRequest(GET, uri.withQuery(query)))
     }.wireTapMat(Sink.head)(Keep.right).mapConcat(_.tables.fold(List.empty[Table])(_.toList))
 
