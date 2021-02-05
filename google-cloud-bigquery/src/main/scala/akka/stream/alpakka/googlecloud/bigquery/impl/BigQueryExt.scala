@@ -12,6 +12,7 @@ import akka.actor.{
   ExtensionId,
   ExtensionIdProvider
 }
+import akka.annotation.InternalApi
 import akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings
 
 import scala.collection.immutable.ListMap
@@ -19,6 +20,7 @@ import scala.collection.immutable.ListMap
 /**
  * Manages one [[BigQuerySettings]] per `ActorSystem`.
  */
+@InternalApi
 private[bigquery] final class BigQueryExt private (sys: ExtendedActorSystem) extends Extension {
   private var cachedSettings: Map[String, BigQuerySettings] = ListMap.empty
   val settings: BigQuerySettings = settings(BigQuerySettings.ConfigPath)
@@ -31,6 +33,7 @@ private[bigquery] final class BigQueryExt private (sys: ExtendedActorSystem) ext
     })
 }
 
+@InternalApi
 private[bigquery] object BigQueryExt extends ExtensionId[BigQueryExt] with ExtensionIdProvider {
 
   def apply()(implicit system: ActorSystem): BigQueryExt = super.apply(system)

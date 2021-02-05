@@ -5,6 +5,7 @@
 package akka.stream.alpakka.googlecloud.bigquery.impl.http
 
 import akka.actor.ActorSystem
+import akka.annotation.InternalApi
 import akka.http.scaladsl.ClientTransport
 import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
@@ -15,6 +16,7 @@ import akka.util.ByteString
 import java.net.InetSocketAddress
 import scala.concurrent.Future
 
+@InternalApi
 private[bigquery] object ForwardProxyPoolSettings {
 
   def apply(scheme: String, host: String, port: Int, credentials: Option[BasicHttpCredentials])(
