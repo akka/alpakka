@@ -24,8 +24,9 @@ private[writer] final case class SequenceWriter[K <: Writable, V <: Writable](
     maybeTargetPath: Option[Path]
 ) extends HdfsWriter[SequenceFile.Writer, (K, V)] {
 
-  override protected lazy val target: Path =
-    getOrCreatePath(maybeTargetPath, createTargetPath(pathGenerator, 0))
+  override protected def target(rotationCount: Long, timestamp: Long): Path =
+    if (pathGenerator.newPathForEachFile) createTargetPath(pathGenerator, rotationCount, timestamp)
+    else getOrCreatePath(maybeTargetPath, createTargetPath(pathGenerator, 0))
 
   override def sync(): Unit = output.hsync()
 

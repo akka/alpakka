@@ -69,7 +69,7 @@ object HdfsWritingSettings {
   def create(): HdfsWritingSettings = default
 }
 
-final case class HdfsWriteMessage[T, P](source: T, passThrough: P)
+final case class HdfsWriteMessage[T, P](source: T, passThrough: P, timestamp: Long)
 
 object HdfsWriteMessage {
 
@@ -79,7 +79,15 @@ object HdfsWriteMessage {
    * @param source a message
    */
   def apply[T](source: T): HdfsWriteMessage[T, NotUsed] =
-    HdfsWriteMessage(source, NotUsed)
+    HdfsWriteMessage(source, NotUsed, -1)
+
+  /**
+   * Scala API - creates [[HdfsWriteMessage]] to use when not using passThrough
+   *
+   * @param source a message
+   */
+  def apply[T, P](source: T, passThrough: P): HdfsWriteMessage[T, P] =
+    HdfsWriteMessage(source, passThrough, -1)
 
   /**
    * Java API - creates [[HdfsWriteMessage]] to use when not using passThrough
@@ -96,7 +104,7 @@ object HdfsWriteMessage {
    * @param passThrough pass-through data
    */
   def create[T, P](source: T, passThrough: P): HdfsWriteMessage[T, P] =
-    HdfsWriteMessage(source, passThrough)
+    HdfsWriteMessage(source, passThrough, -1)
 
 }
 
@@ -130,10 +138,12 @@ object FileUnit {
 
 sealed abstract class FilePathGenerator extends ((Long, Long) => Path) {
   def tempDirectory: String
+  def newPathForEachFile: Boolean
 }
 
 object FilePathGenerator {
   private val DefaultTempDirectory = "/tmp/alpakka-hdfs"
+  private val NewPathForEachFile = false
 
   /**
    * Scala API: creates [[FilePathGenerator]] to rotate output
@@ -141,9 +151,12 @@ object FilePathGenerator {
    * @param f    a function that takes rotation count and timestamp to return path of output
    * @param temp the temporary directory that [[akka.stream.alpakka.hdfs.impl.HdfsFlowStage]] use
    */
-  def apply(f: (Long, Long) => String, temp: String = DefaultTempDirectory): FilePathGenerator =
+  def apply(f: (Long, Long) => String,
+            temp: String = DefaultTempDirectory,
+            pathForEachFile: Boolean = NewPathForEachFile): FilePathGenerator =
     new FilePathGenerator {
       val tempDirectory: String = temp
+      val newPathForEachFile: Boolean = pathForEachFile
       def apply(rotationCount: Long, timestamp: Long): Path = new Path(f(rotationCount, timestamp))
     }
 

@@ -24,7 +24,9 @@ private[writer] final case class CompressedDataWriter(
     override val overwrite: Boolean
 ) extends HdfsWriter[FSDataOutputStream, ByteString] {
 
-  override protected lazy val target: Path = getOrCreatePath(maybeTargetPath, outputFileWithExtension(0))
+  override protected def target(rotationCount: Long, timestamp: Long): Path =
+    if (pathGenerator.newPathForEachFile) outputFileWithExtension(rotationCount, timestamp)
+    else getOrCreatePath(maybeTargetPath, outputFileWithExtension(0))
 
   private val compressor: Compressor = CodecPool.getCompressor(compressionCodec, fs.getConf)
   private val cmpOutput: CompressionOutputStream = compressionCodec.createOutputStream(output, compressor)
@@ -48,8 +50,8 @@ private[writer] final case class CompressedDataWriter(
 
   override protected def create(fs: FileSystem, file: Path): FSDataOutputStream = fs.create(file, overwrite)
 
-  private def outputFileWithExtension(rotationCount: Long): Path = {
-    val candidatePath = createTargetPath(pathGenerator, rotationCount)
+  private def outputFileWithExtension(rotationCount: Long, timestamp: Long = -1): Path = {
+    val candidatePath = createTargetPath(pathGenerator, rotationCount, timestamp)
     val candidateExtension = s".${FilenameUtils.getExtension(candidatePath.getName)}"
     val codecExtension = compressionCodec.getDefaultExtension
     if (codecExtension != candidateExtension)

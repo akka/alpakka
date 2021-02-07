@@ -5,14 +5,13 @@
 package docs.scaladsl
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.hdfs._
 import akka.stream.alpakka.hdfs.scaladsl.HdfsFlow
 import akka.stream.alpakka.hdfs.util.ScalaTestUtils._
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.util.ByteString
-import org.apache.hadoop.fs.Path
+import org.apache.hadoop.fs.{FileStatus, Path}
 import org.apache.hadoop.hdfs.MiniDFSCluster
 import org.apache.hadoop.io.SequenceFile.CompressionType
 import org.apache.hadoop.io.Text
@@ -24,6 +23,8 @@ import scala.concurrent.duration.{Duration, _}
 import scala.concurrent.{Await, ExecutionContextExecutor}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import java.time.{LocalDateTime, ZoneOffset}
 
 class HdfsWriterSpec
     extends AnyWordSpecLike
@@ -37,7 +38,6 @@ class HdfsWriterSpec
 
   //#init-mat
   implicit val system: ActorSystem = ActorSystem()
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
   //#init-mat
   //#init-client
   import org.apache.hadoop.conf.Configuration
@@ -85,7 +85,7 @@ class HdfsWriterSpec
 
       readLogsWithFlatten(fs, logs) shouldEqual books2.flatMap(_.utf8String)
     }
-
+//
     "use file size rotation and produce five files" in {
       val flow = HdfsFlow.data(
         fs,
@@ -167,7 +167,7 @@ class HdfsWriterSpec
       verifyOutputFileSize(fs, logs)
       readLogsWithFlatten(fs, logs) shouldBe data.flatMap(_.utf8String)
     }
-
+//
     "use buffer rotation and produce three files" in {
       val flow = HdfsFlow.data(
         fs,
@@ -295,6 +295,90 @@ class HdfsWriterSpec
       assert(List(0, 1, 2, 3, 4, 5) == committedOffsets.map(_.offset))
 
       verifyOutputFileSize(fs, logs)
+      readLogs(fs, logs).flatMap(_.split("\n")) shouldBe messagesFromKafka.map(_.book.title)
+    }
+
+    "kafka-example - store data with passThrough and a new path for each file" in {
+      //#define-kafka-classes
+      case class Book(title: String)
+      case class KafkaOffset(offset: Int)
+      case class KafkaMessage(book: Book, offset: KafkaOffset, timestamp: Long)
+      //#define-kafka-classes
+
+      val TWENTY_FOUR_HOURS = 24 * 60 * 60
+
+      //#kafka-example
+      // We're going to pretend we got messages from kafka.
+      // After we've written them to HDFS, we want
+      // to commit the offset to Kafka
+      val messagesFromKafka = List(
+        KafkaMessage(Book("Akka Concurrency"), KafkaOffset(0), 0),
+        KafkaMessage(Book("Akka in Action"), KafkaOffset(1), TWENTY_FOUR_HOURS),
+        KafkaMessage(Book("Effective Akka"), KafkaOffset(2), TWENTY_FOUR_HOURS * 2),
+        KafkaMessage(Book("Learning Scala"), KafkaOffset(3), TWENTY_FOUR_HOURS * 3),
+        KafkaMessage(Book("Scala Puzzlers"), KafkaOffset(4), TWENTY_FOUR_HOURS * 4),
+        KafkaMessage(Book("Scala for Spark in Production"), KafkaOffset(5), TWENTY_FOUR_HOURS * 5)
+      )
+
+      var committedOffsets = List[KafkaOffset]()
+
+      def commitToKafka(offset: KafkaOffset): Unit =
+        committedOffsets = committedOffsets :+ offset
+
+      val generator: (Long, Long) => String = (c: Long, t: Long) => {
+        val date = LocalDateTime.ofEpochSecond(t, 0, ZoneOffset.UTC)
+        val year = date.getYear
+        val month = date.getMonthValue
+        val day = date.getDayOfMonth
+        val hour = date.getHour
+        s"/$year/$month/$day/$hour-$c"
+      }
+      val resF = Source(messagesFromKafka)
+        .map { kafkaMessage: KafkaMessage =>
+          val book = kafkaMessage.book
+          // Transform message so that we can write to hdfs
+          HdfsWriteMessage(ByteString(book.title), kafkaMessage.offset, kafkaMessage.timestamp)
+        }
+        .via(
+          HdfsFlow.dataWithPassThrough[KafkaOffset](
+            fs,
+            SyncStrategy.count(50),
+            RotationStrategy.count(1),
+            HdfsWritingSettings()
+              .withNewLine(true)
+              .withPathGenerator(FilePathGenerator(f = generator, pathForEachFile = true))
+          )
+        )
+        .map { message =>
+          message match {
+            case WrittenMessage(passThrough, _) =>
+              commitToKafka(passThrough)
+            case _ => ()
+          }
+          message
+        }
+        .collect {
+          case rm: RotationMessage => rm
+        }
+        .runWith(Sink.seq)
+      //#kafka-example
+
+      val logs = Await.result(resF, Duration.Inf)
+      logs shouldBe (0 to 5).map(c => RotationMessage(generator(c, c * TWENTY_FOUR_HOURS), c))
+
+      // Make sure all messages was committed to kafka
+      assert(List(0, 1, 2, 3, 4, 5) == committedOffsets.map(_.offset))
+
+      verifyOutputFileSizeInArbitraryPath(
+        () => {
+          val it = fs.listFiles(new Path("/1970"), true)
+          new Iterator[FileStatus] {
+            override def hasNext: Boolean = it.hasNext
+            override def next(): FileStatus = it.next
+          }.toSeq
+        },
+        logs
+      )
       readLogs(fs, logs).flatMap(_.split("\n")) shouldBe messagesFromKafka.map(_.book.title)
     }
   }

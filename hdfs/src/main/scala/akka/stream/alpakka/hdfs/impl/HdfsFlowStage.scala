@@ -106,6 +106,7 @@ private[hdfs] final class HdfsFlowLogic[W, I, C](
       _ <- updateSync(offset)
       _ <- updateRotation(offset)
       _ <- trySyncOutput
+      _ <- updateTimesamp(input.timestamp)
       rotationResult <- tryRotateOutput
       (rotationCount, maybeRotationMessage) = rotationResult
       messages = Seq(Some(WrittenMessage(input.passThrough, rotationCount)), maybeRotationMessage)
@@ -129,6 +130,11 @@ private[hdfs] final class HdfsFlowLogic[W, I, C](
       (state.copy(rotationStrategy = newRotation), newRotation)
     }
 
+  private def updateTimesamp(timestamp: Long): FlowStep[W, I, Long] =
+    FlowStep[W, I, Long] { state =>
+      (state.copy(timestamp = timestamp), timestamp)
+    }
+
   private def updateSync(offset: Long): FlowStep[W, I, SyncStrategy] =
     FlowStep[W, I, SyncStrategy] { state =>
       val newSync = state.syncStrategy.update(offset)
@@ -141,9 +147,9 @@ private[hdfs] final class HdfsFlowLogic[W, I, C](
       val newRotation = state.rotationStrategy.reset()
       val newWriter = state.writer.rotate(newRotationCount)
 
-      state.writer.moveToTarget()
+      state.writer.moveToTarget(state.rotationCount, state.timestamp)
 
-      val message = RotationMessage(state.writer.targetPath, state.rotationCount)
+      val message = RotationMessage(state.writer.targetPath(state.rotationCount, state.timestamp), state.rotationCount)
       val newState = state.copy(rotationCount = newRotationCount,
                                 writer = newWriter,
                                 rotationStrategy = newRotation,
@@ -211,6 +217,7 @@ private object HdfsFlowLogic {
 
   final case class FlowState[W, I](
       rotationCount: Int,
+      timestamp: Long,
       writer: HdfsWriter[W, I],
       rotationStrategy: RotationStrategy,
       syncStrategy: SyncStrategy,
@@ -222,6 +229,6 @@ private object HdfsFlowLogic {
         writer: HdfsWriter[W, I],
         rs: RotationStrategy,
         ss: SyncStrategy
-    ): FlowState[W, I] = new FlowState[W, I](0, writer, rs, ss, LogicState.Idle)
+    ): FlowState[W, I] = new FlowState[W, I](0, -1, writer, rs, ss, LogicState.Idle)
   }
 }

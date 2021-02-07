@@ -120,6 +120,9 @@ object ScalaTestUtils extends TestUtils with Matchers {
   def verifyOutputFileSize(fs: FileSystem, logs: Sequence[RotationMessage]): Assertion =
     ScalaTestUtils.getFiles(fs).size shouldEqual logs.size
 
+  def verifyOutputFileSizeInArbitraryPath(f: () => Sequence[FileStatus], logs: Sequence[RotationMessage]): Assertion =
+    f().size shouldEqual logs.size
+
   def readLogs(fs: FileSystem, logs: Sequence[RotationMessage]): Sequence[String] =
     logs.map(log => new Path(destination, log.path)).map(f => read(fs.open(f)))
 
