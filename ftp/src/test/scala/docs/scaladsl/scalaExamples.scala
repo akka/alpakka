@@ -3,7 +3,7 @@
  */
 
 package docs.scaladsl
-import akka.stream.alpakka.ftp.{FtpFile, FtpSettings}
+import akka.stream.alpakka.ftp.{FtpFile, FtpSettings, SftpSettings}
 
 object scalaExamples {
 

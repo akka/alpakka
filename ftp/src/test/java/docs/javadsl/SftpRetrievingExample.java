@@ -7,7 +7,7 @@ package docs.javadsl;
 // #retrieving-with-unconfirmed-reads
 
 import akka.stream.IOResult;
-import akka.stream.alpakka.ftp.FtpSettings;
+import akka.stream.alpakka.ftp.SftpSettings;
 import akka.stream.alpakka.ftp.javadsl.Sftp;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
