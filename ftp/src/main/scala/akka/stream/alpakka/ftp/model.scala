@@ -262,6 +262,7 @@ object FtpsSettings {
  * @param knownHosts known hosts file to be used when connecting
  * @param sftpIdentity private/public key config to use when connecting
  * @param proxy An optional proxy to use when connecting with these settings
+ * @param maxUnconfirmedReads determines the number of read requests sent in parallel, disabled if set to <=1
  */
 final class SftpSettings private (
     val host: java.net.InetAddress,
@@ -270,7 +271,8 @@ final class SftpSettings private (
     val strictHostKeyChecking: Boolean,
     val knownHosts: Option[String],
     val sftpIdentity: Option[SftpIdentity],
-    val proxy: Option[Proxy]
+    val proxy: Option[Proxy],
+    val maxUnconfirmedReads: Int = 1
 ) extends RemoteFileSettings {
 
   def withHost(value: java.net.InetAddress): SftpSettings = copy(host = value)
@@ -281,6 +283,7 @@ final class SftpSettings private (
   def withKnownHosts(value: String): SftpSettings = copy(knownHosts = Option(value))
   def withSftpIdentity(value: SftpIdentity): SftpSettings = copy(sftpIdentity = Option(value))
   def withProxy(value: Proxy): SftpSettings = copy(proxy = Some(value))
+  def withMaxUnconfirmedReads(value: Int): SftpSettings = copy(maxUnconfirmedReads = value)
 
   private def copy(
       host: java.net.InetAddress = host,
@@ -289,7 +292,8 @@ final class SftpSettings private (
       strictHostKeyChecking: Boolean = strictHostKeyChecking,
       knownHosts: Option[String] = knownHosts,
       sftpIdentity: Option[SftpIdentity] = sftpIdentity,
-      proxy: Option[Proxy] = proxy
+      proxy: Option[Proxy] = proxy,
+      maxUnconfirmedReads: Int = maxUnconfirmedReads
   ): SftpSettings = new SftpSettings(
     host = host,
     port = port,
@@ -297,7 +301,8 @@ final class SftpSettings private (
     strictHostKeyChecking = strictHostKeyChecking,
     knownHosts = knownHosts,
     sftpIdentity = sftpIdentity,
-    proxy = proxy
+    proxy = proxy,
+    maxUnconfirmedReads = maxUnconfirmedReads
   )
 
   override def toString =
@@ -308,7 +313,8 @@ final class SftpSettings private (
     s"strictHostKeyChecking=$strictHostKeyChecking," +
     s"knownHosts=$knownHosts," +
     s"sftpIdentity=$sftpIdentity," +
-    s"proxy=$proxy)"
+    s"proxy=$proxy," +
+    s"maxUnconfirmedReads=$maxUnconfirmedReads)"
 }
 
 /**
@@ -327,7 +333,8 @@ object SftpSettings {
     strictHostKeyChecking = true,
     knownHosts = None,
     sftpIdentity = None,
-    proxy = None
+    proxy = None,
+    maxUnconfirmedReads = 1
   )
 
   /** Java API */
