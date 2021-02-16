@@ -321,7 +321,7 @@ object Dependencies {
       ) ++ Seq(
         "software.amazon.awssdk" % "kinesis" % AwsSdk2Version, // ApacheV2
         "software.amazon.awssdk" % "firehose" % AwsSdk2Version, // ApacheV2
-        "software.amazon.kinesis" % "amazon-kinesis-client" % "2.2.7" // ApacheV2
+        "software.amazon.kinesis" % "amazon-kinesis-client" % "2.3.3" // ApacheV2
       ).map(
         _.excludeAll(
           ExclusionRule("software.amazon.awssdk", "apache-client"),
