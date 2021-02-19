@@ -67,21 +67,17 @@ public class KinesisTest {
     when(amazonKinesisAsync.getShardIterator((GetShardIteratorRequest) any()))
         .thenAnswer(
             (Answer)
-                invocation -> {
-                  return CompletableFuture.completedFuture(
-                      GetShardIteratorResponse.builder().build());
-                });
+                invocation -> CompletableFuture.completedFuture(
+                      GetShardIteratorResponse.builder().build()));
 
     when(amazonKinesisAsync.getRecords((GetRecordsRequest) any()))
         .thenAnswer(
             (Answer)
-                invocation -> {
-                  return CompletableFuture.completedFuture(
+                invocation -> CompletableFuture.completedFuture(
                       GetRecordsResponse.builder()
                           .records(Record.builder().sequenceNumber("1").build())
                           .nextShardIterator("iter")
-                          .build());
-                });
+                          .build()));
 
     final Source<Record, NotUsed> source = KinesisSource.basic(settings, amazonKinesisAsync);
     final CompletionStage<Record> record = source.runWith(Sink.head(), system);
