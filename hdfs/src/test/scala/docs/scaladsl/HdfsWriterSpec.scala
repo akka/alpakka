@@ -85,7 +85,7 @@ class HdfsWriterSpec
 
       readLogsWithFlatten(fs, logs) shouldEqual books2.flatMap(_.utf8String)
     }
-//
+
     "use file size rotation and produce five files" in {
       val flow = HdfsFlow.data(
         fs,
@@ -167,7 +167,7 @@ class HdfsWriterSpec
       verifyOutputFileSize(fs, logs)
       readLogsWithFlatten(fs, logs) shouldBe data.flatMap(_.utf8String)
     }
-//
+
     "use buffer rotation and produce three files" in {
       val flow = HdfsFlow.data(
         fs,
