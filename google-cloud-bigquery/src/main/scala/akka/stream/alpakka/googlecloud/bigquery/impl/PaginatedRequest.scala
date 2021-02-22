@@ -10,7 +10,6 @@ import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
-import akka.http.scaladsl.util.FastFuture
 import akka.stream.alpakka.googlecloud.bigquery.impl.http.BigQueryHttp
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.Paginated
 import akka.stream.alpakka.googlecloud.bigquery.{BigQueryAttributes, BigQueryException, BigQuerySettings}
