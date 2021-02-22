@@ -22,6 +22,8 @@ import scala.concurrent.Future
 @InternalApi
 private[bigquery] object PaginatedRequest {
 
+  private val futureNone = Future.successful(None)
+
   def apply[Out: FromEntityUnmarshaller](request: HttpRequest, initialPageToken: Option[String])(
       implicit paginated: Paginated[Out]
   ): Source[Out, NotUsed] =
@@ -31,8 +33,7 @@ private[bigquery] object PaginatedRequest {
         implicit val settings = BigQueryAttributes.resolveSettings(attr, mat)
 
         Source.unfoldAsync[Either[Done, Option[String]], Out](Right(initialPageToken)) {
-          case Left(Done) =>
-            FastFuture.successful(None)
+          case Left(Done) => futureNone
 
           case Right(pageToken) =>
             val updatedRequest = pageToken.fold(request)(addPageToken(request, _))
