@@ -39,8 +39,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import static akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class BigQueryEndToEndTest extends EndToEndHelper {
 
@@ -167,7 +166,7 @@ public class BigQueryEndToEndTest extends EndToEndHelper {
             .get();
     assertEquals(1, jobs.size());
     JobJsonProtocol.Job job = waitUntilJobComplete(jobs.get(0)).toCompletableFuture().get();
-    assertTrue(job.getStatus().flatMap(JobJsonProtocol.JobStatus::getErrorResult).isEmpty());
+    assertFalse(job.getStatus().flatMap(JobJsonProtocol.JobStatus::getErrorResult).isPresent());
   }
 
   private <T> List<T> sorted(List<T> list) {
