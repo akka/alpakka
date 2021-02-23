@@ -73,24 +73,30 @@ final case class HdfsWriteMessage[T, P](source: T, passThrough: P, timestamp: Lo
 
 object HdfsWriteMessage {
 
+  private val defaultPerMessageTimestamp = -1L
+
   /**
    * Scala API - creates [[HdfsWriteMessage]] to use when not using passThrough
+   * and per-message timestamp
    *
    * @param source a message
    */
   def apply[T](source: T): HdfsWriteMessage[T, NotUsed] =
-    HdfsWriteMessage(source, NotUsed, -1)
+    HdfsWriteMessage(source, NotUsed, defaultPerMessageTimestamp)
 
   /**
    * Scala API - creates [[HdfsWriteMessage]] to use when not using passThrough
+   * and per-message timestamp
    *
    * @param source a message
+   * @param passThrough pass-through data
    */
   def apply[T, P](source: T, passThrough: P): HdfsWriteMessage[T, P] =
-    HdfsWriteMessage(source, passThrough, -1)
+    HdfsWriteMessage(source, passThrough, defaultPerMessageTimestamp)
 
   /**
    * Java API - creates [[HdfsWriteMessage]] to use when not using passThrough
+   * and per-message timestamp
    *
    * @param source a message
    */
@@ -99,12 +105,13 @@ object HdfsWriteMessage {
 
   /**
    * Java API - creates [[HdfsWriteMessage]] to use with passThrough
+   * and without per-message timestamp
    *
    * @param source a message
    * @param passThrough pass-through data
    */
   def create[T, P](source: T, passThrough: P): HdfsWriteMessage[T, P] =
-    HdfsWriteMessage(source, passThrough, -1)
+    HdfsWriteMessage(source, passThrough, defaultPerMessageTimestamp)
 
 }
 
@@ -150,6 +157,8 @@ object FilePathGenerator {
    *
    * @param f    a function that takes rotation count and timestamp to return path of output
    * @param temp the temporary directory that [[akka.stream.alpakka.hdfs.impl.HdfsFlowStage]] use
+   * @param pathForEachFile turns on/off a possibility to create a new path for each file
+   *                        which depends on rotation count and timestamp supplied by hdfs messages
    */
   def apply(f: (Long, Long) => String,
             temp: String = DefaultTempDirectory,
