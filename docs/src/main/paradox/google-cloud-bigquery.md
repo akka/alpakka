@@ -33,15 +33,17 @@ Alpakka Google Cloud BigQuery was added in Alpakka 2.0.2 in July 2020 and is mar
   version4=AkkaHttpVersion
 }
 
-To use the [Jackson JSON library](https://github.com/FasterXML/jackson) for marshalling you must also add the Akka HTTP module for Jackson support.
+@java[
+  To use the [Jackson JSON library](https://github.com/FasterXML/jackson) for marshalling you must also add the Akka HTTP module for Jackson support.
 
-@@dependency [sbt,Maven,Gradle] {
-  symbol3=AkkaHttpVersion
-  value3=$akka-http.version$
-  group5=com.typesafe.akka
-  artifact5=akka-http-jackson_$scala.binary.version$
-  version5=AkkaHttpVersion
-}
+  @@dependency [sbt,Maven,Gradle] {
+    symbol3=AkkaHttpVersion
+    value3=$akka-http.version$
+    group5=com.typesafe.akka
+    artifact5=akka-http-jackson_$scala.binary.version$
+    version5=AkkaHttpVersion
+  }
+]
 
 The table below shows direct dependencies of this module and the second tab shows all libraries that it depends on transitively.
 
