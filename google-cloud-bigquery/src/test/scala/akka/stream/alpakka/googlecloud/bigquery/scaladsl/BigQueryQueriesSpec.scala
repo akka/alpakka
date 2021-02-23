@@ -176,9 +176,11 @@ class BigQueryQueriesSpec
 
       "parser is broken" in {
 
+        class BrokenParserException extends Exception
+
         implicit object brokenFormat extends BigQueryRootJsonFormat[JsValue] {
           override def write(obj: JsValue): JsValue = obj
-          override def read(json: JsValue): JsValue = throw new RuntimeException
+          override def read(json: JsValue): JsValue = throw new BrokenParserException
         }
 
         hoverfly.reset()
@@ -191,7 +193,7 @@ class BigQueryQueriesSpec
           )
         )
 
-        recoverToSucceededIf[RuntimeException] {
+        recoverToSucceededIf[BrokenParserException] {
           query[JsValue]("SQL")
             .addAttributes(BigQueryAttributes.settings(settings))
             .runWith(Sink.seq[JsValue])
