@@ -21,7 +21,7 @@ private[hdfs] trait HdfsWriter[W, I] {
 
   protected lazy val temp: Path = tempFromTarget(pathGenerator, target())
 
-  def moveToTarget(rotationCount: Long = 0, timestamp: Long): Boolean = {
+  def moveToTarget(rotationCount: Long, timestamp: Long): Boolean = {
     val currTarget = target(rotationCount, timestamp)
     if (!fs.exists(currTarget.getParent))
       fs.mkdirs(currTarget.getParent)
