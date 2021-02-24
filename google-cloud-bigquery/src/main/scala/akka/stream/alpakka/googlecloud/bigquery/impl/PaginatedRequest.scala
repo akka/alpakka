@@ -31,11 +31,12 @@ private[bigquery] object PaginatedRequest {
         implicit val system = mat.system
         implicit val settings = BigQueryAttributes.resolveSettings(attr, mat)
 
+        val requestWithPageToken = addPageToken(request)
         Source.unfoldAsync[Either[Done, Option[String]], Out](Right(initialPageToken)) {
           case Left(Done) => futureNone
 
           case Right(pageToken) =>
-            val updatedRequest = pageToken.fold(request)(addPageToken(request, _))
+            val updatedRequest = pageToken.fold(request)(requestWithPageToken)
             sendAndParseRequest[Out](updatedRequest).map { out =>
               val nextPageToken = paginated
                 .pageToken(out)
@@ -46,8 +47,10 @@ private[bigquery] object PaginatedRequest {
       }
       .mapMaterializedValue(_ => NotUsed)
 
-  private def addPageToken(request: HttpRequest, pageToken: String): HttpRequest =
-    request.withUri(request.uri.withQuery(Query.Cons("pageToken", pageToken, request.uri.query())))
+  private def addPageToken(request: HttpRequest): String => HttpRequest = {
+    val query = request.uri.query()
+    pageToken => request.withUri(request.uri.withQuery(Query.Cons("pageToken", pageToken, query)))
+  }
 
   private def sendAndParseRequest[Out: FromEntityUnmarshaller](request: HttpRequest)(
       implicit system: ActorSystem,
