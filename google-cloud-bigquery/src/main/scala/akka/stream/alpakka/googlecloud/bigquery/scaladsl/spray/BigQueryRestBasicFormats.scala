@@ -4,28 +4,12 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray
 
-import spray.json.{
-  deserializationError,
-  AdditionalFormats,
-  CollectionFormats,
-  DefaultJsonProtocol,
-  JsNumber,
-  JsString,
-  JsValue,
-  JsonFormat,
-  ProductFormats,
-  StandardFormats
-}
+import spray.json.{deserializationError, DefaultJsonProtocol, JsNumber, JsValue, JsonFormat}
 
-import scala.util.Try
-
-object BigQueryApiJsonProtocol extends BigQueryApiJsonProtocol
-
-trait BigQueryApiJsonProtocol
-    extends StandardFormats
-    with CollectionFormats
-    with ProductFormats
-    with AdditionalFormats {
+/**
+ * Provides the JsonFormats for the BigQuery REST API's representation of the most important Scala types.
+ */
+trait BigQueryRestBasicFormats {
 
   implicit val IntJsonFormat = DefaultJsonProtocol.IntJsonFormat
   implicit val FloatJsonFormat = DefaultJsonProtocol.FloatJsonFormat
@@ -44,13 +28,8 @@ trait BigQueryApiJsonProtocol
     def write(x: Long) = JsNumber(x)
     def read(value: JsValue) = value match {
       case JsNumber(x) if x.isValidLong => x.longValue
-      case JsString(BigQueryLong(x)) => x
+      case BigQueryNumber(x) if x.isValidLong => x.longValue
       case x => deserializationError("Expected Long as JsNumber or JsString, but got " + x)
     }
   }
-
-  private object BigQueryLong {
-    def unapply(long: String): Option[Long] = Try(long.toLong).toOption
-  }
-
 }

@@ -5,7 +5,7 @@
 package akka.stream.alpakka.googlecloud.bigquery.model
 
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.Paginated
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryApiJsonProtocol._
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRestJsonProtocol._
 import com.fasterxml.jackson.annotation.{JsonCreator, JsonProperty}
 import com.github.ghik.silencer.silent
 import spray.json.{deserializationError, JsString, JsValue, JsonFormat, RootJsonFormat}

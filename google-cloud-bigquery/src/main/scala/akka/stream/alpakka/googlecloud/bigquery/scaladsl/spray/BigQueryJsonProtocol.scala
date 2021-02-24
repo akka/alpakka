@@ -6,6 +6,9 @@ package akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray
 
 import spray.json.{AdditionalFormats, ProductFormats}
 
+/**
+ * Provides all the predefined BigQueryJsonFormats for rows and cells in BigQuery tables.
+ */
 trait BigQueryJsonProtocol
     extends BigQueryBasicFormats
     with BigQueryStandardFormats

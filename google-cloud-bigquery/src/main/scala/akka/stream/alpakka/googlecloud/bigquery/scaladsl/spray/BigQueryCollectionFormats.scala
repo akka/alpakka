@@ -11,7 +11,7 @@ import scala.reflect.ClassTag
 trait BigQueryCollectionFormats {
 
   /**
-   * Supplies the JsonFormat for Lists.
+   * Supplies the BigQueryJsonFormat for Lists.
    */
   implicit def listFormat[T: BigQueryJsonFormat]: BigQueryJsonFormat[List[T]] = new BigQueryJsonFormat[List[T]] {
     def write(list: List[T]) = JsArray(list.map(_.toJson).toVector)
@@ -22,7 +22,7 @@ trait BigQueryCollectionFormats {
   }
 
   /**
-   * Supplies the JsonFormat for Arrays.
+   * Supplies the BigQueryJsonFormat for Arrays.
    */
   implicit def arrayFormat[T: BigQueryJsonFormat: ClassTag]: BigQueryJsonFormat[Array[T]] =
     new BigQueryJsonFormat[Array[T]] {
@@ -49,8 +49,8 @@ trait BigQueryCollectionFormats {
   implicit def linearSeqFormat[T: BigQueryJsonFormat] = viaSeq[LinearSeq[T], T](seq => LinearSeq(seq: _*))
 
   /**
-   * A JsonFormat construction helper that creates a JsonFormat for an Iterable type I from a builder function
-   * List => I.
+   * A BigQueryJsonFormat construction helper that creates a BigQueryJsonFormat for an Iterable type I from a builder function
+   * Seq => I.
    */
   def viaSeq[I <: Iterable[T], T: BigQueryJsonFormat](f: imm.Seq[T] => I): BigQueryJsonFormat[I] =
     new BigQueryJsonFormat[I] {

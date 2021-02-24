@@ -9,7 +9,7 @@ import akka.stream.alpakka.googlecloud.bigquery.model.ErrorProtoJsonProtocol.Err
 import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.JobReference
 import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.TableSchema
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.Paginated
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryApiJsonProtocol._
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRestJsonProtocol._
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRootJsonFormat
 import com.fasterxml.jackson.annotation.{JsonCreator, JsonIgnoreProperties, JsonProperty}
 import com.github.ghik.silencer.silent
