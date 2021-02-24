@@ -35,16 +35,23 @@ private[scaladsl] trait BigQueryRest {
    * Makes a series of authenticated requests to page through a resource.
    *
    * @param request the [[akka.http.scaladsl.model.HttpRequest]] to make; must be a GET request
-   * @param initialPageToken a page token to use for the initial request
    * @tparam Out the data model for each page of the resource
    * @return a [[akka.stream.scaladsl.Source]] that emits an [[Out]] for each page of the resource
    */
-  def paginatedRequest[Out: FromEntityUnmarshaller: Paginated](
+  def paginatedRequest[Out: FromEntityUnmarshaller: Paginated](request: HttpRequest): Source[Out, NotUsed] = {
+    val query = request.uri.query()
+    val initialPageToken = query.get("pageToken")
+    val queryWithoutPageToken = query.filterNot(_._1 == "pageToken")
+    paginatedRequest(request, queryWithoutPageToken, initialPageToken)
+  }
+
+  protected[this] def paginatedRequest[Out: FromEntityUnmarshaller: Paginated](
       request: HttpRequest,
+      query: Query,
       initialPageToken: Option[String] = None
   ): Source[Out, NotUsed] = {
     require(request.method == GET, "Paginated request must be a GET request.")
-    PaginatedRequest[Out](request, initialPageToken)
+    PaginatedRequest[Out](request, query, initialPageToken)
   }
 
   // Helper methods

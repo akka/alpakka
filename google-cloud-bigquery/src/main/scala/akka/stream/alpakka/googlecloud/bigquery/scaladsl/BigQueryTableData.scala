@@ -57,7 +57,7 @@ private[scaladsl] trait BigQueryTableData { this: BigQueryRest =>
         ("maxResults" -> maxResults) ?+:
         ("selectedFields" -> (if (selectedFields.isEmpty) None else Some(selectedFields.mkString(",")))) ?+:
         Query.Empty
-      paginatedRequest[TableDataListResponse[Out]](HttpRequest(GET, uri.withQuery(query)))
+      paginatedRequest[TableDataListResponse[Out]](HttpRequest(GET, uri), query)
     }.wireTapMat(Sink.head)(Keep.right).mapConcat(_.rows.fold[List[Out]](Nil)(_.toList))
 
   /**

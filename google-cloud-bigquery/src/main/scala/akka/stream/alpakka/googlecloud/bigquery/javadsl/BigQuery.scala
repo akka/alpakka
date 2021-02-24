@@ -79,16 +79,14 @@ object BigQuery {
    * Makes a series of authenticated requests to page through a resource.
    *
    * @param request the [[akka.http.javadsl.model.HttpRequest]] to make; must be a GET request
-   * @param initialPageToken a page token to use for the initial request
    * @param unmarshaller [[akka.http.javadsl.unmarshalling.Unmarshaller]] for [[Out]]
    * @tparam Out the data model for each page of the resource
    * @return a [[akka.stream.javadsl.Source]] that emits an [[Out]] for each page of the resource
    */
   def paginatedRequest[Out <: Paginated](request: HttpRequest,
-                                         initialPageToken: util.Optional[String],
                                          unmarshaller: Unmarshaller[HttpResponse, Out]): Source[Out, NotUsed] = {
     implicit val um = unmarshaller.asScalaCastInput[sm.HttpEntity]
-    ScalaBigQuery.paginatedRequest[Out](request, initialPageToken.asScala).asJava
+    ScalaBigQuery.paginatedRequest[Out](request).asJava
   }
 
   private implicit def requestAsScala(request: HttpRequest): sm.HttpRequest =

@@ -151,7 +151,7 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
         ("timeoutMs" -> timeoutMs) ?+:
         ("location" -> location) ?+:
         Query.Empty
-      paginatedRequest[QueryResponse[Out]](HttpRequest(GET, uri.withQuery(query)), pageToken)
+      paginatedRequest[QueryResponse[Out]](HttpRequest(GET, uri), query, pageToken)
     }.mapMaterializedValue(_ => NotUsed)
 
 }

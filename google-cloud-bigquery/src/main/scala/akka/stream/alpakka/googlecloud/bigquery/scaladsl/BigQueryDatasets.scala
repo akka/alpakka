@@ -52,7 +52,7 @@ private[scaladsl] trait BigQueryDatasets { this: BigQueryRest =>
         ("all" -> all) ?+:
         ("filter" -> (if (filter.isEmpty) None else Some(mkFilterParam(filter)))) ?+:
         Query.Empty
-      paginatedRequest[DatasetListResponse](HttpRequest(GET, uri.withQuery(query)))
+      paginatedRequest[DatasetListResponse](HttpRequest(GET, uri), query)
     }.mapMaterializedValue(_ => NotUsed).mapConcat(_.datasets.fold(List.empty[Dataset])(_.toList))
 
   /**
