@@ -10,10 +10,10 @@ import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.JobReferen
 import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.TableSchema
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.Paginated
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRestJsonProtocol._
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRootJsonFormat
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRootJsonReader
 import com.fasterxml.jackson.annotation.{JsonCreator, JsonIgnoreProperties, JsonProperty}
 import com.github.ghik.silencer.silent
-import spray.json.RootJsonFormat
+import spray.json.{RootJsonFormat, RootJsonReader}
 
 import java.{lang, util}
 import scala.collection.JavaConverters._
@@ -225,7 +225,11 @@ object QueryJsonProtocol {
     )
 
   implicit val requestFormat: RootJsonFormat[QueryRequest] = jsonFormat7(QueryRequest)
-  implicit def responseFormat[T: BigQueryRootJsonFormat]: RootJsonFormat[QueryResponse[T]] =
+  implicit def responseFormat[T <: AnyRef](
+      implicit reader: BigQueryRootJsonReader[T]
+  ): RootJsonReader[QueryResponse[T]] = {
+    implicit val format = lift(reader)
     jsonFormat10(QueryResponse[T])
+  }
   implicit def paginated[T]: Paginated[QueryResponse[T]] = _.pageToken
 }

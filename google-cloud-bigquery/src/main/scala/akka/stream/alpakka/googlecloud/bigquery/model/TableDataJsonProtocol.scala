@@ -6,19 +6,12 @@ package akka.stream.alpakka.googlecloud.bigquery.model
 
 import akka.stream.alpakka.googlecloud.bigquery.model.ErrorProtoJsonProtocol.ErrorProto
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.Paginated
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRootJsonFormat
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRestJsonProtocol._
+import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.{BigQueryRootJsonReader, BigQueryRootJsonWriter}
 import com.fasterxml.jackson.annotation.JsonInclude.Include
-import com.fasterxml.jackson.annotation.{
-  JsonCreator,
-  JsonGetter,
-  JsonIgnore,
-  JsonIgnoreProperties,
-  JsonInclude,
-  JsonProperty
-}
+import com.fasterxml.jackson.annotation._
 import com.github.ghik.silencer.silent
-import spray.json.{JsonFormat, RootJsonFormat}
+import spray.json.{JsonFormat, RootJsonFormat, RootJsonReader, RootJsonWriter}
 
 import java.{lang, util}
 import scala.collection.JavaConverters._
@@ -204,12 +197,20 @@ object TableDataJsonProtocol {
   def createInsertError(index: Int, errors: util.Optional[util.List[ErrorProto]]) =
     InsertError(index, errors.asScala.map(_.asScala.toList))
 
-  implicit def listResponseFormat[T: BigQueryRootJsonFormat]: RootJsonFormat[TableDataListResponse[T]] =
+  implicit def listResponseFormat[T <: AnyRef](
+      implicit reader: BigQueryRootJsonReader[T]
+  ): RootJsonReader[TableDataListResponse[T]] = {
+    implicit val format = lift(reader)
     jsonFormat3(TableDataListResponse[T])
+  }
   implicit def paginated[T]: Paginated[TableDataListResponse[T]] = _.pageToken
-  implicit def rowFormat[T: BigQueryRootJsonFormat]: JsonFormat[Row[T]] = jsonFormat2(Row[T])
-  implicit def insertAllRequestFormat[T: BigQueryRootJsonFormat]: RootJsonFormat[TableDataInsertAllRequest[T]] =
+  implicit def insertAllRequestFormat[T](
+      implicit writer: BigQueryRootJsonWriter[T]
+  ): RootJsonWriter[TableDataInsertAllRequest[T]] = {
+    implicit val format = lift(writer)
+    implicit val rowFormat = jsonFormat2(Row[T])
     jsonFormat4(TableDataInsertAllRequest[T])
+  }
   implicit val insertErrorFormat: JsonFormat[InsertError] = jsonFormat2(InsertError)
   implicit val insertAllResponseFormat: RootJsonFormat[TableDataInsertAllResponse] =
     jsonFormat1(TableDataInsertAllResponse)

@@ -31,7 +31,7 @@ trait BigQueryProductFormatsInstances { this: BigQueryProductFormats with Produc
         construct([#p1V#])
       }
     }
-  implicit def bigQueryTuple1Format[[#P1: BigQueryJsonFormat#]]: BigQueryRootJsonFormat[Tuple1[[#P1#]]] = bigQueryJsonFormat1(Tuple1[[#P1#]])#
+  implicit def bigQueryTuple1Reader[[#P1: BigQueryJsonFormat#]]: BigQueryRootJsonReader[Tuple1[[#P1#]]] = bigQueryJsonFormat1(Tuple1[[#P1#]])#
 
 ]
 }

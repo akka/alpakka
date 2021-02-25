@@ -11,7 +11,6 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.stream.alpakka.googlecloud.bigquery.impl.auth.CredentialsProvider
 import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.JobReference
 import akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRootJsonFormat
 import akka.stream.alpakka.googlecloud.bigquery.{
   BigQueryAttributes,
   BigQueryEndpoints,
@@ -41,6 +40,11 @@ class BigQueryQueriesSpec
   override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
     super.afterAll()
+  }
+
+  implicit def queryResponseFormat[T: JsonFormat]: RootJsonFormat[QueryResponse[T]] = {
+    import DefaultJsonProtocol._
+    jsonFormat10(QueryResponse[T])
   }
 
   implicit val settings = BigQuerySettings()
@@ -82,11 +86,7 @@ class BigQueryQueriesSpec
   "BigQueryQueries" should {
 
     "get query results" when {
-
-      implicit object jsValueFormat extends BigQueryRootJsonFormat[JsValue] {
-        override def write(obj: JsValue): JsValue = obj
-        override def read(json: JsValue): JsValue = json
-      }
+      import DefaultJsonProtocol._
 
       "succeeds immediately and has one page" in {
 
@@ -178,7 +178,7 @@ class BigQueryQueriesSpec
 
         class BrokenParserException extends Exception
 
-        implicit object brokenFormat extends BigQueryRootJsonFormat[JsValue] {
+        implicit object brokenFormat extends JsonFormat[JsValue] {
           override def write(obj: JsValue): JsValue = obj
           override def read(json: JsValue): JsValue = throw new BrokenParserException
         }
