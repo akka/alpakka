@@ -5,7 +5,6 @@
 package docs.scaladsl
 
 //#imports
-import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.stream.alpakka.googlecloud.bigquery.model.DatasetJsonProtocol.Dataset
 import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol
@@ -26,7 +25,8 @@ import scala.concurrent.Future
 
 class BigQueryDoc {
 
-  implicit val system: ActorSystem = ???
+  @com.github.ghik.silencer.silent("dead code")
+  implicit val system: akka.actor.ActorSystem = ???
   import system.dispatcher
 
   //#setup
@@ -36,7 +36,9 @@ class BigQueryDoc {
   implicit val personFormat = bigQueryJsonFormat4(Person)
   //#setup
 
+  @com.github.ghik.silencer.silent("dead code")
   val datasetId: String = ???
+  @com.github.ghik.silencer.silent("dead code")
   val tableId: String = ???
 
   //#run-query
@@ -64,6 +66,7 @@ class BigQueryDoc {
   val peopleLoadFlow: Flow[Person, Job, NotUsed] = BigQuery.insertAllAsync[Person](datasetId, tableId)
   //#async-insert
 
+  @com.github.ghik.silencer.silent("dead code")
   val people: List[Person] = ???
 
   //#job-status
