@@ -15,6 +15,10 @@ import spray.json.{AdditionalFormats, ProductFormats, StandardFormats}
 import scala.collection.immutable.Seq
 import scala.reflect.ClassTag
 
+/**
+ * Provides the helpers for constructing custom SchemaWriter implementations for types implementing the Product trait
+ * (especially case classes)
+ */
 trait ProductSchemas extends ProductSchemasInstances { this: StandardSchemas =>
 
   protected def extractFieldNames(tag: ClassTag[_]): Array[String] =
@@ -22,7 +26,8 @@ trait ProductSchemas extends ProductSchemasInstances { this: StandardSchemas =>
 
 }
 
-final class ProductSchemaWriter[T <: Product](fieldSchemas: Seq[TableFieldSchema]) extends TableSchemaWriter[T] {
+private[schema] final class ProductSchemaWriter[T <: Product](fieldSchemas: Seq[TableFieldSchema])
+    extends TableSchemaWriter[T] {
 
   override def write: TableSchema = TableSchema(fieldSchemas)
 

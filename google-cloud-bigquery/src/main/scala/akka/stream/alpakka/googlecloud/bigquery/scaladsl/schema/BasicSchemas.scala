@@ -16,7 +16,7 @@ import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.{
 }
 
 /**
- * Provides the Big Query schemas for the most important Scala types.
+ * Provides the BigQuery schemas for the most important Scala types.
  */
 trait BasicSchemas {
 

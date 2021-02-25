@@ -4,14 +4,7 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray
 
-import spray.json.{
-  deserializationError,
-  DeserializationException,
-  JsArray,
-  JsValue,
-  ProductFormats,
-  StandardFormats
-}
+import spray.json.{deserializationError, DeserializationException, JsArray, JsValue, ProductFormats, StandardFormats}
 
 /**
  * Provides the helpers for constructing custom BigQueryJsonFormat implementations for types implementing the Product trait

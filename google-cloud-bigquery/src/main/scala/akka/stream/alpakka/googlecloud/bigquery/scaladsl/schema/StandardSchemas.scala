@@ -6,6 +6,9 @@ package akka.stream.alpakka.googlecloud.bigquery.scaladsl.schema
 
 import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.{NullableMode, RequiredMode}
 
+/**
+ * Provides BigQuery schemas for the non-collection standard types.
+ */
 trait StandardSchemas {
 
   implicit def optionSchemaWriter[T](implicit writer: SchemaWriter[T]): SchemaWriter[Option[T]] = { (name, mode) =>
