@@ -9,8 +9,9 @@ import akka.http.javadsl.marshalling.Marshaller
 import akka.http.javadsl.model.{HttpEntity, HttpRequest, HttpResponse, RequestEntity}
 import akka.http.javadsl.unmarshalling.Unmarshaller
 import akka.http.scaladsl.{model => sm}
+import akka.japi.Pair
 import akka.stream.alpakka.googlecloud.bigquery.model.DatasetJsonProtocol.Dataset
-import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.{Job, JobCancelResponse}
+import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.{Job, JobCancelResponse, JobReference}
 import akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.{QueryRequest, QueryResponse}
 import akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.{
   TableDataInsertAllRequest,
@@ -322,7 +323,8 @@ object BigQuery {
    * @param useLegacySql specifies whether to use BigQuery's legacy SQL dialect for this query
    * @param unmarshaller [[akka.http.javadsl.unmarshalling.Unmarshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
    * @tparam Out the data model of the query results
-   * @return a [[akka.stream.javadsl.Source]] that emits an [[Out]] for each row of the results and materializes a [[java.util.concurrent.CompletionStage]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
+   * @return a [[akka.stream.javadsl.Source]] that emits an [[Out]] for each row of the results and materializes
+   *         a [[java.util.concurrent.CompletionStage]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
    */
   def query[Out](
       query: String,
@@ -341,14 +343,22 @@ object BigQuery {
    * @param query the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryRequest]]
    * @param unmarshaller [[akka.http.javadsl.unmarshalling.Unmarshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
    * @tparam Out the data model of the query results
-   * @return a [[akka.stream.javadsl.Source]] that emits an [[Out]] for each row of the results and materializes a [[java.util.concurrent.CompletionStage]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
+   * @return a [[akka.stream.javadsl.Source]] that emits an [[Out]] for each row of the results and materializes
+   *         a [[java.util.concurrent.CompletionStage]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.JobReference]]
+   *         a [[java.util.concurrent.CompletionStage]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
    */
   def query[Out](
       query: QueryRequest,
       unmarshaller: Unmarshaller[HttpEntity, QueryResponse[Out]]
-  ): Source[Out, CompletionStage[QueryResponse[Out]]] = {
+  ): Source[Out, Pair[CompletionStage[JobReference], CompletionStage[QueryResponse[Out]]]] = {
     implicit val um = unmarshaller.asScalaCastInput[sm.HttpEntity]
-    ScalaBigQuery.query(query).mapMaterializedValue(_.toJava).asJava
+    ScalaBigQuery
+      .query(query)
+      .mapMaterializedValue {
+        case (jobReference, queryResponse) =>
+          Pair(jobReference.toJava, queryResponse.toJava)
+      }
+      .asJava
   }
 
   /**

@@ -13,11 +13,12 @@ import akka.http.scaladsl.model.{HttpRequest, RequestEntity}
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
 import akka.stream.RestartSettings
 import akka.stream.alpakka.googlecloud.bigquery.impl.http.BigQueryHttp
+import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.JobReference
 import akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.{QueryRequest, QueryResponse}
 import akka.stream.alpakka.googlecloud.bigquery.{BigQueryAttributes, BigQueryEndpoints, BigQueryException}
 import akka.stream.scaladsl.{Keep, RestartSource, Sink, Source}
 
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success}
 
@@ -31,13 +32,14 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
    * @param dryRun if set to `true` BigQuery doesn't run the job and instead returns statistics about the job such as how many bytes would be processed
    * @param useLegacySql specifies whether to use BigQuery's legacy SQL dialect for this query
    * @tparam Out the data model of the query results
-   * @return a [[akka.stream.scaladsl.Source]] that emits an [[Out]] for each row of the results and materializes a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
+   * @return a [[akka.stream.scaladsl.Source]] that emits an [[Out]] for each row of the result and materializes
+   *         a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
    */
   def query[Out](query: String, dryRun: Boolean = false, useLegacySql: Boolean = true)(
       implicit um: FromEntityUnmarshaller[QueryResponse[Out]]
   ): Source[Out, Future[QueryResponse[Out]]] = {
     val request = QueryRequest(query, None, None, None, Some(dryRun), Some(useLegacySql), None)
-    this.query(request)
+    this.query(request).mapMaterializedValue(_._2)
   }
 
   /**
@@ -46,11 +48,13 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
    *
    * @param query the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryRequest]]
    * @tparam Out the data model of the query results
-   * @return a [[akka.stream.scaladsl.Source]] that emits an [[Out]] for each row of the results and materializes a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
+   * @return a [[akka.stream.scaladsl.Source]] that emits an [[Out]] for each row of the results and materializes
+   *         a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.JobReference]] and
+   *         a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
    */
   def query[Out](query: QueryRequest)(
       implicit um: FromEntityUnmarshaller[QueryResponse[Out]]
-  ): Source[Out, Future[QueryResponse[Out]]] =
+  ): Source[Out, (Future[JobReference], Future[QueryResponse[Out]])] =
     Source
       .fromMaterializer { (mat, attr) =>
         import BigQueryException._
@@ -59,54 +63,61 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
         implicit val system = mat.system
         implicit val settings = BigQueryAttributes.resolveSettings(attr, mat)
 
-        Source.lazyFutureSource { () =>
-          for {
-            entity <- Marshal(query).to[RequestEntity]
-            initialRequest = HttpRequest(POST, BigQueryEndpoints.queries(settings.projectId), entity = entity)
-            response <- BigQueryHttp().retryRequestWithOAuth(initialRequest)
-            initialQueryResponse <- Unmarshal(response.entity).to[QueryResponse[Out]]
-          } yield {
+        val jobReference = Promise[JobReference]()
 
-            val jobId = initialQueryResponse.jobReference.jobId.getOrElse {
-              throw BigQueryException("Query response did not contain job id.")
-            }
+        Source
+          .lazyFutureSource { () =>
+            for {
+              entity <- Marshal(query).to[RequestEntity]
+              initialRequest = HttpRequest(POST, BigQueryEndpoints.queries(settings.projectId), entity = entity)
+              response <- BigQueryHttp().retryRequestWithOAuth(initialRequest)
+              initialQueryResponse <- Unmarshal(response.entity).to[QueryResponse[Out]]
+            } yield {
 
-            val head =
-              if (initialQueryResponse.jobComplete)
-                Source.single(initialQueryResponse)
-              else
-                Source.empty
+              jobReference.success(initialQueryResponse.jobReference)
 
-            val tail =
-              if (initialQueryResponse.jobComplete & initialQueryResponse.pageToken.isEmpty)
-                Source.empty
-              else {
-                import settings.retrySettings._
-                val pages = queryResultsPages[Out](jobId,
-                                                   None,
-                                                   query.maxResults,
-                                                   query.timeoutMs,
-                                                   initialQueryResponse.jobReference.location,
-                                                   initialQueryResponse.pageToken)
-                  .map(Success(_))
-                  .recover { case ex => Failure(ex) } // Allows upstream failures to escape the RestartSource
-                  .map { queryResponse =>
-                    if (queryResponse.toOption.forall(_.jobComplete))
-                      queryResponse
-                    else
-                      throw BigQueryException("Query job not complete.")
-                  }
-                  .addAttributes(attr)
-                val restartSettings = RestartSettings(minBackoff, maxBackoff, randomFactor)
-                RestartSource.onFailuresWithBackoff(restartSettings)(() => pages).map(_.get)
+              val jobId = initialQueryResponse.jobReference.jobId.getOrElse {
+                throw BigQueryException("Query response did not contain job id.")
               }
 
-            head.concat(tail)
-          }
+              val head =
+                if (initialQueryResponse.jobComplete)
+                  Source.single(initialQueryResponse)
+                else
+                  Source.empty
 
-        }
+              val tail =
+                if (initialQueryResponse.jobComplete & initialQueryResponse.pageToken.isEmpty)
+                  Source.empty
+                else {
+                  import settings.retrySettings._
+                  val pages = queryResultsPages[Out](jobId,
+                                                     None,
+                                                     query.maxResults,
+                                                     query.timeoutMs,
+                                                     initialQueryResponse.jobReference.location,
+                                                     initialQueryResponse.pageToken)
+                    .map(Success(_))
+                    .recover { case ex => Failure(ex) } // Allows upstream failures to escape the RestartSource
+                    .map { queryResponse =>
+                      if (queryResponse.toOption.forall(_.jobComplete))
+                        queryResponse
+                      else
+                        throw BigQueryException("Query job not complete.")
+                    }
+                    .addAttributes(attr)
+                  val restartSettings = RestartSettings(minBackoff, maxBackoff, randomFactor)
+                  RestartSource.onFailuresWithBackoff(restartSettings)(() => pages).map(_.get)
+                }
+
+              head.concat(tail)
+            }
+
+          }
+          .mapMaterializedValue(_ => jobReference.future)
       }
-      .wireTapMat(Sink.head)(Keep.right)
+      .mapMaterializedValue(_.flatten)
+      .wireTapMat(Sink.head)(Keep.both)
       .mapConcat(_.rows.fold[List[Out]](Nil)(_.toList))
 
   /**
