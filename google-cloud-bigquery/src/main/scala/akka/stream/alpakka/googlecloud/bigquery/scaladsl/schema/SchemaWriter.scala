@@ -13,7 +13,7 @@ import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.{
 import scala.annotation.implicitNotFound
 
 /**
- * Provides a [[TableFieldSchema]] for type [[T]].
+ * Provides a [[akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.TableFieldSchema]] for type [[T]].
  */
 @implicitNotFound(msg = "Cannot find SchemaWriter type class for ${T}")
 trait SchemaWriter[-T] {
@@ -29,7 +29,7 @@ object SchemaWriter {
 }
 
 /**
- * Provides a [[TableSchema]] for type [[T]].
+ * Provides a [[akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.TableSchema]] for type [[T]].
  */
 @implicitNotFound(msg = "Cannot find TableSchemaWriter type class for ${T}")
 trait TableSchemaWriter[-T] extends SchemaWriter[T] {

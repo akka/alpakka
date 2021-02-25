@@ -8,7 +8,6 @@ package docs.javadsl;
 
 import akka.Done;
 import akka.NotUsed;
-import akka.actor.ActorSystem;
 import akka.http.javadsl.marshallers.jackson.Jackson;
 import akka.http.javadsl.marshalling.Marshaller;
 import akka.http.javadsl.model.HttpEntity;
@@ -48,12 +47,12 @@ import java.util.stream.Collectors;
 
 public class BigQueryDoc {
 
-  ActorSystem system = null;
+  akka.actor.ActorSystem system = null;
 
   // #setup
   ObjectMapper objectMapper = new ObjectMapper();
 
-  class Person {
+  public class Person {
     private String name;
     private Integer age;
     private List<Address> addresses;
@@ -89,7 +88,7 @@ public class BigQueryDoc {
     }
   }
 
-  class Address {
+  public class Address {
     private String street;
     private String city;
     private Integer postalCode;

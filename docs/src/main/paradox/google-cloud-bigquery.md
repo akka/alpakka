@@ -33,17 +33,15 @@ Alpakka Google Cloud BigQuery was added in Alpakka 2.0.2 in July 2020 and is mar
   version4=AkkaHttpVersion
 }
 
-@java[
-  To use the [Jackson JSON library](https://github.com/FasterXML/jackson) for marshalling you must also add the Akka HTTP module for Jackson support.
+To use the [Jackson JSON library](https://github.com/FasterXML/jackson) for marshalling you must also add the Akka HTTP module for Jackson support.
 
-  @@dependency [sbt,Maven,Gradle] {
-    symbol3=AkkaHttpVersion
-    value3=$akka-http.version$
-    group5=com.typesafe.akka
-    artifact5=akka-http-jackson_$scala.binary.version$
-    version5=AkkaHttpVersion
-  }
-]
+@@dependency [sbt,Maven,Gradle] {
+  symbol3=AkkaHttpVersion
+  value3=$akka-http.version$
+  group5=com.typesafe.akka
+  artifact5=akka-http-jackson_$scala.binary.version$
+  version5=AkkaHttpVersion
+}
 
 The table below shows direct dependencies of this module and the second tab shows all libraries that it depends on transitively.
 
@@ -79,7 +77,7 @@ Java
 
 @scala[
   To enable automatic support for (un)marshalling `User` and `Address` as BigQuery table rows and query results we create implicit @scaladoc[BigQueryRootJsonFormat[T]](akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRootJsonFormat) instances.
-  The `bigQueryJsonFormatN` methods are imported from @scaladoc[BigQueryJsonProtocol](akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryJsonProtocol$), similar in spirit to Spray’s @scaladoc[DefaultJsonProtocol](spray.json.DefaultJsonProtocol).
+  The `bigQueryJsonFormatN` methods are imported from @scaladoc[BigQueryJsonProtocol](akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryJsonProtocol$), analogous to Spray’s @scaladoc[DefaultJsonProtocol](spray.json.DefaultJsonProtocol).
 ]
 @java[
   To enable support for (un)marshalling `User` and `Address` as BigQuery table rows and query results we use Jackson’s @javadoc[@JsonCreator](com.fasterxml.jackson.annotation.JsonCreator) and @javadoc[@JsonProperty](com.fasterxml.jackson.annotation.JsonProperty) annotations.
@@ -111,7 +109,7 @@ Scala
 Java
 : @@snip [snip](/google-cloud-bigquery/src/test/java/docs/javadsl/BigQueryDoc.java) { #dry-run-query }
 
-Finally, you can also stream all of the rows in a table without the expense of running a query with the @scala[@apidoc[BigQuery.tableData[Out]](BigQuery$)] @java[@apidoc[BigQuery.<Out>tableData](BigQuery$)] method.
+Finally, you can also stream all of the rows in a table without the expense of running a query with the @scala[@apidoc[BigQuery.tableData[Out]](BigQuery$)] @java[@apidoc[BigQuery.<Out>listTableData](BigQuery$)] method.
 
 Scala
 : @@snip [snip](/google-cloud-bigquery/src/test/scala/docs/scaladsl/BigQueryDoc.scala) { #table-data }
@@ -124,7 +122,8 @@ Java
 The BigQuery connector enables loading data into tables via real-time streaming inserts or batch loading.
 For an overview of these strategies see the [BigQuery documentation](https://cloud.google.com/bigquery/docs/loading-data).
 
-The @scala[@apidoc[BigQuery.insertAll[In]](BigQuery$)] @java[@apidoc[BigQuery.<In>insertAll](BigQuery$)] method creates a sink that accepts batches of @scala[`Seq[In]`] @java[`List<In>`]  (for example created by the [`batch`](https://doc.akka.io/docs/akka/current/stream/operators/Source-or-Flow/batch.html) operator) and streams them directly into a table.
+The @scala[@apidoc[BigQuery.insertAll[In]](BigQuery$)] @java[@apidoc[BigQuery.<In>insertAll](BigQuery$)] method creates a sink that accepts batches of @scala[`Seq[In]`] @java[`List<In>`]
+(for example created via the [`batch`](https://doc.akka.io/docs/akka/current/stream/operators/Source-or-Flow/batch.html) operator) and streams them directly into a table.
 To enable/disable BigQuery’s best-effort deduplication feature use the appropriate @apidoc[InsertAllRetryPolicy$].
 
 Scala
@@ -152,7 +151,7 @@ Scala
 Java
 : @@snip [snip](/google-cloud-bigquery/src/test/java/docs/javadsl/BigQueryDoc.java) { #async-insert }
 
-To check the status of the load jobs use the @scala[@apidoc[BigQuery.job](BigQuery$)]] @java[@apidoc[BigQuery.getJob](BigQuery$)]] method.
+To check the status of the load jobs use the @scala[@apidoc[BigQuery.job](BigQuery$)] @java[@apidoc[BigQuery.getJob](BigQuery$)] method.
 
 Scala
 : @@snip [snip](/google-cloud-bigquery/src/test/scala/docs/scaladsl/BigQueryDoc.scala) { #job-status }

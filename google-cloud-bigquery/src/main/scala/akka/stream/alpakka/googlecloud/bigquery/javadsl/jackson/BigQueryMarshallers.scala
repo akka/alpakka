@@ -22,7 +22,7 @@ object BigQueryMarshallers {
   private val defaultObjectMapper = new ObjectMapper().enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
 
   /**
-   * [[Unmarshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.TableDataListResponse]]
+   * [[akka.http.javadsl.unmarshalling.Unmarshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.TableDataListResponse]]
    *
    * @param `type` the data model for each row
    * @tparam T the data model for each row
@@ -31,7 +31,7 @@ object BigQueryMarshallers {
     unmarshaller(defaultObjectMapper.getTypeFactory.constructParametricType(classOf[TableDataListResponse[T]], `type`))
 
   /**
-   * [[Unmarshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.TableDataListResponse]]
+   * [[akka.http.javadsl.unmarshalling.Unmarshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.TableDataListResponse]]
    *
    * @param mapper an [[ObjectMapper]]
    * @param `type` the data model for each row
@@ -42,7 +42,7 @@ object BigQueryMarshallers {
     unmarshaller(mapper, mapper.getTypeFactory.constructParametricType(classOf[TableDataListResponse[T]], `type`))
 
   /**
-   * [[Marshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.TableDataInsertAllRequest]]
+   * [[akka.http.javadsl.marshalling.Marshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.TableDataInsertAllRequest]]
    *
    * @tparam T the data model for each row
    */
@@ -50,7 +50,7 @@ object BigQueryMarshallers {
     Jackson.marshaller[TableDataInsertAllRequest[T]]()
 
   /**
-   * [[Marshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.TableDataInsertAllRequest]]
+   * [[akka.http.javadsl.marshalling.Marshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.TableDataInsertAllRequest]]
    *
    * @param mapper an [[ObjectMapper]]
    * @tparam T the data model for each row
@@ -61,7 +61,7 @@ object BigQueryMarshallers {
     Jackson.marshaller[TableDataInsertAllRequest[T]](mapper)
 
   /**
-   * [[Unmarshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
+   * [[akka.http.javadsl.unmarshalling.Unmarshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
    *
    * @param `type` the data model for each row
    * @tparam T the data model for each row
@@ -70,7 +70,7 @@ object BigQueryMarshallers {
     unmarshaller(defaultObjectMapper.getTypeFactory.constructParametricType(classOf[QueryResponse[T]], `type`))
 
   /**
-   * [[Unmarshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
+   * [[akka.http.javadsl.unmarshalling.Unmarshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
    *
    * @param mapper an [[ObjectMapper]]
    * @param `type` the data model for each row
