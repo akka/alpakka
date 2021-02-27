@@ -19,7 +19,7 @@ abstract class DefaultTimestampExtractor extends TimestampExtractor {
 }
 
 class NoTimestampExtractor extends DefaultTimestampExtractor {
-  override def extract(source: Any): Long = ???
+  override def extract(source: Any): Long = -1L
 }
 
 object TimestampExtractor {
