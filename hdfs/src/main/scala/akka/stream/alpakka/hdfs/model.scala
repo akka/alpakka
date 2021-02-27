@@ -8,6 +8,7 @@ import java.util.function.BiFunction
 
 import akka.NotUsed
 import akka.stream.alpakka.hdfs.impl.HdfsFlowLogic
+import akka.stream.alpakka.hdfs.impl.extractor.TimestampExtractor
 import akka.stream.alpakka.hdfs.impl.strategy.DefaultRotationStrategy._
 import akka.stream.alpakka.hdfs.impl.strategy.DefaultSyncStrategy._
 import akka.stream.alpakka.hdfs.impl.strategy.Strategy
@@ -20,7 +21,8 @@ final class HdfsWritingSettings private (
     val overwrite: Boolean,
     val newLine: Boolean,
     val lineSeparator: String,
-    val pathGenerator: FilePathGenerator
+    val pathGenerator: FilePathGenerator,
+    val timestampExtractor: TimestampExtractor
 ) {
   private[hdfs] val newLineByteArray = ByteString(lineSeparator).toArray
 
@@ -28,17 +30,20 @@ final class HdfsWritingSettings private (
   def withNewLine(value: Boolean): HdfsWritingSettings = if (newLine == value) this else copy(newLine = value)
   def withLineSeparator(value: String): HdfsWritingSettings = copy(lineSeparator = value)
   def withPathGenerator(value: FilePathGenerator): HdfsWritingSettings = copy(pathGenerator = value)
+  def withTimestampExtractor(value: TimestampExtractor): HdfsWritingSettings = copy(timestampExtractor = value)
 
   private def copy(
       overwrite: Boolean = overwrite,
       newLine: Boolean = newLine,
       lineSeparator: String = lineSeparator,
-      pathGenerator: FilePathGenerator = pathGenerator
+      pathGenerator: FilePathGenerator = pathGenerator,
+      timestampExtractor: TimestampExtractor = timestampExtractor
   ): HdfsWritingSettings = new HdfsWritingSettings(
     overwrite = overwrite,
     newLine = newLine,
     lineSeparator = lineSeparator,
-    pathGenerator = pathGenerator
+    pathGenerator = pathGenerator,
+    timestampExtractor = timestampExtractor
   )
 
   override def toString =
@@ -46,7 +51,8 @@ final class HdfsWritingSettings private (
     s"overwrite=$overwrite," +
     s"newLine=$newLine," +
     s"lineSeparator=$lineSeparator," +
-    s"pathGenerator=$pathGenerator" +
+    s"pathGenerator=$pathGenerator," +
+    s"timestampExtractor=$timestampExtractor" +
     ")"
 }
 
@@ -59,7 +65,8 @@ object HdfsWritingSettings {
     overwrite = true,
     newLine = false,
     lineSeparator = System.getProperty("line.separator"),
-    pathGenerator = DefaultFilePathGenerator
+    pathGenerator = DefaultFilePathGenerator,
+    timestampExtractor = TimestampExtractor.none
   )
 
   /** Scala API */
@@ -69,34 +76,20 @@ object HdfsWritingSettings {
   def create(): HdfsWritingSettings = default
 }
 
-final case class HdfsWriteMessage[T, P](source: T, passThrough: P, timestamp: Long)
+final case class HdfsWriteMessage[T, P](source: T, passThrough: P)
 
 object HdfsWriteMessage {
 
-  private val defaultPerMessageTimestamp = -1L
-
   /**
    * Scala API - creates [[HdfsWriteMessage]] to use when not using passThrough
-   * and per-message timestamp
    *
    * @param source a message
    */
   def apply[T](source: T): HdfsWriteMessage[T, NotUsed] =
-    HdfsWriteMessage(source, NotUsed, defaultPerMessageTimestamp)
-
-  /**
-   * Scala API - creates [[HdfsWriteMessage]] to use when not using passThrough
-   * and per-message timestamp
-   *
-   * @param source a message
-   * @param passThrough pass-through data
-   */
-  def apply[T, P](source: T, passThrough: P): HdfsWriteMessage[T, P] =
-    HdfsWriteMessage(source, passThrough, defaultPerMessageTimestamp)
+    HdfsWriteMessage(source, NotUsed)
 
   /**
    * Java API - creates [[HdfsWriteMessage]] to use when not using passThrough
-   * and per-message timestamp
    *
    * @param source a message
    */
@@ -105,13 +98,12 @@ object HdfsWriteMessage {
 
   /**
    * Java API - creates [[HdfsWriteMessage]] to use with passThrough
-   * and without per-message timestamp
    *
    * @param source a message
    * @param passThrough pass-through data
    */
   def create[T, P](source: T, passThrough: P): HdfsWriteMessage[T, P] =
-    HdfsWriteMessage(source, passThrough, defaultPerMessageTimestamp)
+    HdfsWriteMessage(source, passThrough)
 
 }
 
@@ -145,7 +137,7 @@ object FileUnit {
 
 sealed abstract class FilePathGenerator extends ((Long, Long) => Path) {
   def tempDirectory: String
-  def newPathForEachFile: Boolean
+  private[hdfs] def newPathForEachFile: Boolean
 }
 
 object FilePathGenerator {
@@ -157,14 +149,24 @@ object FilePathGenerator {
    *
    * @param f    a function that takes rotation count and timestamp to return path of output
    * @param temp the temporary directory that [[akka.stream.alpakka.hdfs.impl.HdfsFlowStage]] use
+   */
+  def apply(f: (Long, Long) => String, temp: String = DefaultTempDirectory): FilePathGenerator =
+    new FilePathGenerator {
+      val tempDirectory: String = temp
+      val newPathForEachFile: Boolean = NewPathForEachFile
+      def apply(rotationCount: Long, timestamp: Long): Path = new Path(f(rotationCount, timestamp))
+    }
+
+  /**
+   * Scala API: creates [[FilePathGenerator]] to rotate output
+   *
+   * @param f    a function that takes rotation count and timestamp to return path of output
    * @param pathForEachFile turns on/off a possibility to create a new path for each file
    *                        which depends on rotation count and timestamp supplied by hdfs messages
    */
-  def apply(f: (Long, Long) => String,
-            temp: String = DefaultTempDirectory,
-            pathForEachFile: Boolean = NewPathForEachFile): FilePathGenerator =
+  def apply(f: (Long, Long) => String, pathForEachFile: Boolean): FilePathGenerator =
     new FilePathGenerator {
-      val tempDirectory: String = temp
+      val tempDirectory: String = DefaultTempDirectory
       val newPathForEachFile: Boolean = pathForEachFile
       def apply(rotationCount: Long, timestamp: Long): Path = new Path(f(rotationCount, timestamp))
     }

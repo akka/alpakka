@@ -1,0 +1,2 @@
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.hdfs.HdfsWritingSettings.this")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.alpakka.hdfs.FilePathGenerator.newPathForEachFile")

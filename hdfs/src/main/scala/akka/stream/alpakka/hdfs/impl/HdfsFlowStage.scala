@@ -10,6 +10,7 @@ import akka.event.Logging
 import akka.stream._
 import akka.stream.alpakka.hdfs._
 import akka.stream.alpakka.hdfs.impl.HdfsFlowLogic.{FlowState, FlowStep, LogicState}
+import akka.stream.alpakka.hdfs.impl.extractor.TimestampExtractor
 import akka.stream.alpakka.hdfs.impl.writer.HdfsWriter
 import akka.stream.stage._
 import cats.data.State
@@ -55,7 +56,8 @@ private[hdfs] final class HdfsFlowLogic[W, I, C](
     with InHandler
     with OutHandler {
 
-  private var state = FlowState(initialHdfsWriter, initialRotationStrategy, initialSyncStrategy)
+  private var state =
+    FlowState(initialHdfsWriter, initialRotationStrategy, initialSyncStrategy, settings.timestampExtractor)
 
   private val separator = Option(settings.newLineByteArray).filter(_ => settings.newLine)
   private val flushProgram = rotateOutput.flatMap(message => tryPush(Seq(message)))
@@ -106,7 +108,7 @@ private[hdfs] final class HdfsFlowLogic[W, I, C](
       _ <- updateSync(offset)
       _ <- updateRotation(offset)
       _ <- trySyncOutput
-      _ <- updateTimesamp(input.timestamp)
+      _ <- updateTimesamp(input.passThrough)
       rotationResult <- tryRotateOutput
       (rotationCount, maybeRotationMessage) = rotationResult
       messages = Seq(Some(WrittenMessage(input.passThrough, rotationCount)), maybeRotationMessage)
@@ -130,8 +132,9 @@ private[hdfs] final class HdfsFlowLogic[W, I, C](
       (state.copy(rotationStrategy = newRotation), newRotation)
     }
 
-  private def updateTimesamp(timestamp: Long): FlowStep[W, I, Long] =
+  private def updateTimesamp(passThrough: C): FlowStep[W, I, Long] =
     FlowStep[W, I, Long] { state =>
+      val timestamp = state.timestampExtractor.extract(passThrough)
       (state.copy(timestamp = timestamp), timestamp)
     }
 
@@ -221,6 +224,7 @@ private object HdfsFlowLogic {
       writer: HdfsWriter[W, I],
       rotationStrategy: RotationStrategy,
       syncStrategy: SyncStrategy,
+      timestampExtractor: TimestampExtractor,
       logicState: LogicState
   )
 
@@ -228,7 +232,8 @@ private object HdfsFlowLogic {
     def apply[W, I](
         writer: HdfsWriter[W, I],
         rs: RotationStrategy,
-        ss: SyncStrategy
-    ): FlowState[W, I] = new FlowState[W, I](0, -1, writer, rs, ss, LogicState.Idle)
+        ss: SyncStrategy,
+        te: TimestampExtractor
+    ): FlowState[W, I] = new FlowState[W, I](0, -1, writer, rs, ss, te, LogicState.Idle)
   }
 }

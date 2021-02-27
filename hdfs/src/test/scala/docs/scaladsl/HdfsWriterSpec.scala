@@ -333,26 +333,30 @@ class HdfsWriterSpec
         val hour = date.getHour
         s"/$year/$month/$day/$hour-$c"
       }
+      case class OffsetAndTimestamp(offset: KafkaOffset, timestamp: Long)
       val resF = Source(messagesFromKafka)
         .map { kafkaMessage: KafkaMessage =>
           val book = kafkaMessage.book
           // Transform message so that we can write to hdfs
-          HdfsWriteMessage(ByteString(book.title), kafkaMessage.offset, kafkaMessage.timestamp)
+          HdfsWriteMessage(ByteString(book.title), OffsetAndTimestamp(kafkaMessage.offset, kafkaMessage.timestamp))
         }
         .via(
-          HdfsFlow.dataWithPassThrough[KafkaOffset](
+          HdfsFlow.dataWithPassThrough[OffsetAndTimestamp](
             fs,
             SyncStrategy.count(50),
             RotationStrategy.count(1),
             HdfsWritingSettings()
               .withNewLine(true)
               .withPathGenerator(FilePathGenerator(f = generator, pathForEachFile = true))
+              .withTimestampExtractor {
+                case ot: OffsetAndTimestamp => ot.timestamp
+              }
           )
         )
         .map { message =>
           message match {
-            case WrittenMessage(passThrough, _) =>
-              commitToKafka(passThrough)
+            case WrittenMessage(OffsetAndTimestamp(offset, _), _) =>
+              commitToKafka(offset)
             case _ => ()
           }
           message
