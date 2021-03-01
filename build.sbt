@@ -267,7 +267,7 @@ lazy val eventbridge =
 
 lazy val sns = alpakkaProject("sns", "aws.sns", Dependencies.Sns)
 
-lazy val solr = alpakkaProject("solr", "solr", Dependencies.Solr)
+lazy val solr = alpakkaProject("solr", "solr", Dependencies.Solr, fatalWarnings := true)
 
 lazy val sqs = alpakkaProject("sqs", "aws.sqs", Dependencies.Sqs)
 
