@@ -7,7 +7,7 @@ package impl
 
 import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
 import akka.stream.stage.{GraphStageWithMaterializedValue, InHandler, OutHandler}
-import akka.stream.{Attributes, IOResult, Inlet, Outlet, Shape, SinkShape, SourceShape}
+import akka.stream.{Attributes, IOOperationIncompleteException, IOResult, Inlet, Outlet, Shape, SinkShape, SourceShape}
 import akka.util.ByteString
 import akka.util.ByteString.ByteString1C
 
@@ -138,7 +138,7 @@ private[ftp] trait FtpIOSourceStage[FtpClient, S <: RemoteFileSettings]
         matValuePromise.trySuccess(IOResult.createSuccessful(readBytesTotal))
 
       protected[this] def matFailure(t: Throwable): Boolean =
-        matValuePromise.trySuccess(IOResult.createFailed(readBytesTotal, t))
+        matValuePromise.tryFailure(new IOOperationIncompleteException(readBytesTotal, t))
 
       /** BLOCKING I/O READ */
       private[this] def readChunk() = {
@@ -243,7 +243,7 @@ private[ftp] trait FtpIOSinkStage[FtpClient, S <: RemoteFileSettings]
         matValuePromise.trySuccess(IOResult.createSuccessful(writtenBytesTotal))
 
       protected[this] def matFailure(t: Throwable): Boolean =
-        matValuePromise.trySuccess(IOResult.createFailed(writtenBytesTotal, t))
+        matValuePromise.tryFailure(new IOOperationIncompleteException(writtenBytesTotal, t))
 
       /** BLOCKING I/O WRITE */
       private[this] def write(bytes: ByteString) =
@@ -311,7 +311,7 @@ private[ftp] trait FtpMoveSink[FtpClient, S <: RemoteFileSettings]
         matValuePromise.trySuccess(IOResult.createSuccessful(numberOfMovedFiles))
 
       protected[this] def matFailure(t: Throwable): Boolean =
-        matValuePromise.trySuccess(IOResult.createFailed(numberOfMovedFiles, t))
+        matValuePromise.tryFailure(t)
     } // end of stage logic
 
     (logic, matValuePromise.future)
@@ -367,7 +367,7 @@ private[ftp] trait FtpRemoveSink[FtpClient, S <: RemoteFileSettings]
         matValuePromise.trySuccess(IOResult.createSuccessful(numberOfRemovedFiles))
 
       protected[this] def matFailure(t: Throwable): Boolean =
-        matValuePromise.trySuccess(IOResult.createFailed(numberOfRemovedFiles, t))
+        matValuePromise.tryFailure(t)
     } // end of stage logic
 
     (logic, matValuePromise.future)

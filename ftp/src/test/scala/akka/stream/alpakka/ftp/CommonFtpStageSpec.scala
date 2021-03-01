@@ -10,8 +10,7 @@ import java.nio.file.attribute.PosixFilePermission
 import java.nio.file.{Files, Paths}
 import java.time.Instant
 import java.util.concurrent.TimeUnit
-
-import akka.stream.IOResult
+import akka.stream.{IOOperationIncompleteException, IOResult}
 import BaseSftpSupport.{CLIENT_PRIVATE_KEY_PASSPHRASE => ClientPrivateKeyPassphrase}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
@@ -347,9 +346,13 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       val fileName = "sample_io_upstream_" + Instant.now().getNano
       val brokenSource = Source(10.to(0, -1)).map(x => ByteString(10 / x))
 
-      val result = brokenSource.runWith(storeToPath(s"/$fileName", append = false)).futureValue
+      val ex = brokenSource
+        .runWith(storeToPath(s"/$fileName", append = false))
+        .failed
+        .futureValue
 
-      result.status.failed.get shouldBe a[ArithmeticException]
+      ex shouldBe a[IOOperationIncompleteException]
+      ex.getCause shouldBe a[ArithmeticException]
     }
 
     "fail and report the exception in the result status if connection fails" ignore { // TODO Fails too often on Travis: assertAllStagesStopped {
@@ -365,10 +368,10 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
       val future = infiniteSource.runWith(storeToPath(s"/$fileName", append = false))
       waitForUploadToStart(fileName)
       // stopServer()
-      val result = future.futureValue
+      val ex = future.failed.futureValue
       // startServer()
 
-      result.status.failed.get shouldBe a[Exception]
+      ex shouldBe a[Exception]
     }
   }
 
@@ -403,12 +406,12 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
         permissions = Set.empty
       )
 
-      val result = Source
+      val ex = Source
         .single(file)
         .runWith(remove())
+        .failed
         .futureValue
 
-      val ex = result.status.failed.get
       ex shouldBe an[IOException]
       ex should (have message s"Could not delete /$fileName" or have message "No such file")
     }
@@ -449,12 +452,12 @@ trait CommonFtpStageSpec extends BaseSpec with Eventually {
         permissions = Set.empty
       )
 
-      val result = Source
+      val ex = Source
         .single(file)
         .runWith(move(_ => fileName2))
+        .failed
         .futureValue
 
-      val ex = result.status.failed.get
       ex shouldBe an[IOException]
       ex should (have message s"Could not move /$fileName" or have message "No such file")
     }
