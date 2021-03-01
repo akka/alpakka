@@ -223,7 +223,7 @@ lazy val jms = alpakkaProject("jms", "jms", Dependencies.Jms, fatalWarnings := t
 
 lazy val jsonStreaming = alpakkaProject("json-streaming", "json.streaming", Dependencies.JsonStreaming)
 
-lazy val kinesis = alpakkaProject("kinesis", "aws.kinesis", Dependencies.Kinesis)
+lazy val kinesis = alpakkaProject("kinesis", "aws.kinesis", Dependencies.Kinesis, fatalWarnings := true)
 
 lazy val kudu = alpakkaProject("kudu", "kudu", Dependencies.Kudu, fork in Test := false)
 
