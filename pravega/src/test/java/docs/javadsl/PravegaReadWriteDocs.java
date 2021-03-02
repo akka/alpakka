@@ -8,6 +8,7 @@ import akka.Done;
 import akka.japi.Pair;
 import akka.stream.alpakka.pravega.*;
 import akka.stream.alpakka.pravega.javadsl.Pravega;
+import akka.stream.alpakka.pravega.javadsl.PravegaTable;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -80,7 +81,7 @@ public class PravegaReadWriteDocs extends PravegaAkkaTestCaseSupport {
             new Person(4, "Four"));
 
     Sink<Person, CompletionStage<Done>> sink =
-        Pravega.tableSink(
+        PravegaTable.sink(
             "an_existing_scope",
             "an_existing_tableName",
             tablewriterSettings,
@@ -97,7 +98,7 @@ public class PravegaReadWriteDocs extends PravegaAkkaTestCaseSupport {
     // #table-reading
 
     final CompletionStage<Done> pair =
-        Pravega.tableSource("an_existing_scope", "an_existing_tableName", "test", tableSettings)
+        PravegaTable.source("an_existing_scope", "an_existing_tableName", "test", tableSettings)
             .to(Sink.foreach((Pair<Integer, String> kvp) -> processKVP(kvp)))
             .run(system);
     // #table-reading

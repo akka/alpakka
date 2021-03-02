@@ -19,6 +19,8 @@ import io.pravega.client.stream.impl.UTF8StringSerializer
 
 import java.nio.ByteBuffer
 import akka.stream.alpakka.pravega.TableSettingsBuilder
+import akka.stream.alpakka.pravega.scaladsl.PravegaTable
+import akka.stream.alpakka.pravega.scaladsl.Pravega
 
 class PravegaReadWriteDocs {
 
@@ -81,12 +83,12 @@ class PravegaReadWriteDocs {
 
   Source(1 to 10)
     .map(id => Person(id = s"id_$id", firstname = s"name_$id"))
-    .via(Pravega.tableWriteFlow("an_existing_scope", "an_existing_tablename", (p: Person) => (p.id, p.firstname)))
+    .via(PravegaTable.writeFlow("an_existing_scope", "an_existing_tablename", (p: Person) => (p.id, p.firstname)))
     .runWith(Sink.ignore)
 
   Source(1 to 10)
     .map(id => Person(id = s"id_$id", firstname = s"name_$id"))
-    .runWith(Pravega.tableSink("an_existing_scope", "an_existing_tablename", (p: Person) => (p.id, p.firstname)))
+    .runWith(PravegaTable.sink("an_existing_scope", "an_existing_tablename", (p: Person) => (p.id, p.firstname)))
 
   // #table-writing
 
@@ -99,8 +101,8 @@ class PravegaReadWriteDocs {
 
   // #table-reading
 
-  val readingDone = Pravega
-    .tableSource("an_existing_scope", "an_existing_tablename", "test", tableSettings)
+  val readingDone = PravegaTable
+    .source("an_existing_scope", "an_existing_tablename", "test", tableSettings)
     .to(Sink.foreach(println))
     .run()
 

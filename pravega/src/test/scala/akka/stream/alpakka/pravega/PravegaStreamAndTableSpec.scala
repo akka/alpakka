@@ -5,7 +5,7 @@
 package akka.stream.alpakka.pravega
 
 import scala.language.postfixOps
-import akka.stream.alpakka.pravega.scaladsl.Pravega
+
 import akka.stream.scaladsl.{Sink, Source}
 import io.pravega.client.stream.impl.UTF8StringSerializer
 
@@ -16,6 +16,7 @@ import io.pravega.client.stream.Serializer
 
 import java.nio.ByteBuffer
 import akka.stream.alpakka.testkit.scaladsl.Repeated
+import akka.stream.alpakka.pravega.scaladsl.PravegaTable
 
 case class Auction(id: Int, description: String)
 trait HasId {
@@ -53,10 +54,8 @@ class PravegaStreamAndTableSpec extends PravegaBaseSpec with Repeated {
         .filter(_ % 2 == 0)
         .map(id => Auction(id = id, description = s"Auction N° $id"))
         .runWith(
-          Pravega.tableSink(scope,
-                            keyValueTableName,
-                            (auction: Auction) => (auction.id, auction.description),
-                            familyExtractor)
+          PravegaTable
+            .sink(scope, keyValueTableName, (auction: Auction) => (auction.id, auction.description), familyExtractor)
         )
 
       Await.ready(fut, 10 seconds)
@@ -64,22 +63,21 @@ class PravegaStreamAndTableSpec extends PravegaBaseSpec with Repeated {
       val readingDone = Source(100 to 200)
         .map(id => Player(id = id, name = s"Player $id", auctionId = Some(id % 100)))
         .via(
-          Pravega
-            .tableReadFlow(
-              scope,
-              keyValueTableName,
-              (player: Player) => player.auctionId,
-              (player: Player, description: Option[String]) =>
-                description match {
-                  case Some(value) =>
-                    Winner(id = player.id,
-                           name = player.name,
-                           auctionId = player.auctionId.getOrElse(-1),
-                           description = value)
-                  case None => player
-                },
-              Some(familyExtractor)
-            )
+          PravegaTable.readFlow(
+            scope,
+            keyValueTableName,
+            (player: Player) => player.auctionId,
+            (player: Player, description: Option[String]) =>
+              description match {
+                case Some(value) =>
+                  Winner(id = player.id,
+                         name = player.name,
+                         auctionId = player.auctionId.getOrElse(-1),
+                         description = value)
+                case None => player
+              },
+            Some(familyExtractor)
+          )
         )
         //        .wireTap(w => logger.info(w.toString()))
         .runWith(Sink.fold(0) { (sum, value) =>

@@ -5,7 +5,7 @@
 package akka.stream.alpakka.pravega
 
 import scala.language.postfixOps
-import akka.stream.alpakka.pravega.scaladsl.Pravega
+
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import io.pravega.client.stream.impl.UTF8StringSerializer
 
@@ -16,6 +16,7 @@ import io.pravega.client.stream.Serializer
 
 import java.nio.ByteBuffer
 import akka.stream.alpakka.testkit.scaladsl.Repeated
+import akka.stream.alpakka.pravega.scaladsl.PravegaTable
 
 case class Person(id: Int, firstname: String)
 
@@ -46,7 +47,7 @@ class PravegaKVTableSpec extends PravegaBaseSpec with Repeated {
 
       val fut = Source(1 to 100)
         .map(id => Person(id = id, firstname = s"name_$id"))
-        .runWith(Pravega.tableSink(scope, keyValueTableName, (p: Person) => (p.id, p.firstname), familyExtractor))
+        .runWith(PravegaTable.sink(scope, keyValueTableName, (p: Person) => (p.id, p.firstname), familyExtractor))
 
       Await.ready(fut, 10 seconds)
 
@@ -54,8 +55,8 @@ class PravegaKVTableSpec extends PravegaBaseSpec with Repeated {
         .apply[Int, String](system.settings.config.getConfig(TableSettingsBuilder.configPath))
         .withKVSerializers(intSerializer, serializer)
 
-      val readingDone = Pravega
-        .tableSource(scope, keyValueTableName, "test", tableSettings)
+      val readingDone = PravegaTable
+        .source(scope, keyValueTableName, "test", tableSettings)
         .toMat(Sink.fold(0) { (sum, value) =>
           sum + value._1
         })(Keep.right)

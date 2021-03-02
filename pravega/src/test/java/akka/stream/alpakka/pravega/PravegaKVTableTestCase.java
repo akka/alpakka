@@ -8,6 +8,7 @@ import akka.Done;
 import akka.japi.Pair;
 
 import akka.stream.alpakka.pravega.javadsl.Pravega;
+import akka.stream.alpakka.pravega.javadsl.PravegaTable;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -67,7 +68,7 @@ public class PravegaKVTableTestCase extends PravegaBaseTestCase {
             new Person(4, "Four"));
 
     Sink<Person, CompletionStage<Done>> sink =
-        Pravega.tableSink(
+        PravegaTable.sink(
             scope,
             tableName,
             tablewriterSettings,
@@ -83,7 +84,7 @@ public class PravegaKVTableTestCase extends PravegaBaseTestCase {
             .withKVSerializers(intSerializer, serializer);
 
     final CompletionStage<String> readingDone =
-        Pravega.tableSource(scope, tableName, "test", tableSettings)
+        PravegaTable.source(scope, tableName, "test", tableSettings)
             .runWith(
                 Sink.fold(
                     "",
