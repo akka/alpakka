@@ -5,6 +5,7 @@
 package akka.stream.alpakka.googlecloud.bigquery
 
 import akka.actor.ClassicActorSystemProvider
+import akka.annotation.InternalApi
 import akka.http.javadsl.{model => jm}
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import akka.http.scaladsl.settings.ConnectionPoolSettings
@@ -58,6 +59,9 @@ object BigQuerySettings {
                      retrySettings)
   }
 
+  /**
+   * Java API: Reads from the given config.
+   */
   def create(c: Config, system: ClassicActorSystemProvider) =
     apply(c)(system)
 
@@ -90,11 +94,11 @@ object BigQuerySettings {
 
 }
 
-final case class BigQuerySettings(projectId: String,
-                                  credentialsProvider: CredentialsProvider,
-                                  forwardProxy: Option[ForwardProxy],
-                                  loadJobSettings: LoadJobSettings,
-                                  retrySettings: RetrySettings) {
+final case class BigQuerySettings @InternalApi private (projectId: String,
+                                                        credentialsProvider: CredentialsProvider,
+                                                        forwardProxy: Option[ForwardProxy],
+                                                        loadJobSettings: LoadJobSettings,
+                                                        retrySettings: RetrySettings) {
   def getProjectId = projectId
   def getCredentialsProvider = credentialsProvider
   def getForwardProxy = forwardProxy
@@ -160,7 +164,8 @@ object ForwardProxy {
     apply(connectionContext.asInstanceOf[HttpsConnectionContext], poolSettings.asInstanceOf[ConnectionPoolSettings])
 }
 
-final case class ForwardProxy(connectionContext: HttpsConnectionContext, poolSettings: ConnectionPoolSettings) {
+final case class ForwardProxy @InternalApi private (connectionContext: HttpsConnectionContext,
+                                                    poolSettings: ConnectionPoolSettings) {
   def getConnectionContext: jh.HttpsConnectionContext = connectionContext
   def getPoolSettings: jh.settings.ConnectionPoolSettings = poolSettings
   def withConnectionContext(connectionContext: jh.HttpConnectionContext) =
@@ -184,7 +189,7 @@ object LoadJobSettings {
     apply(chunkSize, FiniteDuration(perTableQuota.toNanos, TimeUnit.NANOSECONDS))
 }
 
-final case class LoadJobSettings(chunkSize: Long, perTableQuota: FiniteDuration) {
+final case class LoadJobSettings @InternalApi private (chunkSize: Long, perTableQuota: FiniteDuration) {
   def getChunkSize = chunkSize
   def getPerTableQuota = time.Duration.ofNanos(perTableQuota.toNanos)
 
@@ -216,10 +221,10 @@ object RetrySettings {
     )
 }
 
-final case class RetrySettings(maxRetries: Int,
-                               minBackoff: FiniteDuration,
-                               maxBackoff: FiniteDuration,
-                               randomFactor: Double) {
+final case class RetrySettings @InternalApi private (maxRetries: Int,
+                                                     minBackoff: FiniteDuration,
+                                                     maxBackoff: FiniteDuration,
+                                                     randomFactor: Double) {
   def getMaxRetries = maxRetries
   def getMinBackoff = time.Duration.ofNanos(minBackoff.toNanos)
   def getMaxBackoff = time.Duration.ofNanos(maxBackoff.toNanos)
