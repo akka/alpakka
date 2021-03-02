@@ -87,55 +87,34 @@ import java.util.concurrent.atomic.AtomicInteger
       asyncPushback.invokeWithFeedback((t, msg))
     }
 
-  familyExtractor match {
-    case Some(familyExtractor) =>
-      setHandler(
-        in,
-        new InHandler {
-          override def onPush(): Unit = {
-            val msg = grab(in)
-            val (key, value) = keyValueExtractor(msg)
-            onAir.incrementAndGet()
-            handleSentEvent(table.put(familyExtractor(msg), key, value), msg)
-          }
-          override def onUpstreamFinish(): Unit = {
-            log.debug("Upstream finished")
-            if (onAir.get == 0) {
-              log.debug("Stage completed on upstream finish")
-              completeStage()
-            }
-            upstreamEnded = true
-          }
-
+  private def setHandler(familyExtractorOption: Option[A => String]): Unit = {
+    val familyExtractor = familyExtractorOption match {
+      case Some(familyExtractor) => familyExtractor
+      case None => a: A => null
+    }
+    setHandler(
+      in,
+      new InHandler {
+        override def onPush(): Unit = {
+          val msg = grab(in)
+          val (key, value) = keyValueExtractor(msg)
+          onAir.incrementAndGet()
+          handleSentEvent(table.put(familyExtractor(msg), key, value), msg)
         }
-      )
-
-    case None =>
-      setHandler(
-        in,
-        new InHandler {
-          override def onPush(): Unit = {
-            val msg = grab(in)
-            val (key, value) = keyValueExtractor(msg)
-            onAir.incrementAndGet()
-
-            handleSentEvent(
-              table.put(null, key, value),
-              msg
-            )
-          }
-          override def onUpstreamFinish(): Unit = {
-            log.debug("Upstream finished")
+        override def onUpstreamFinish(): Unit = {
+          log.debug("Upstream finished")
+          if (onAir.get == 0) {
+            log.debug("Stage completed on upstream finish")
             completeStage()
-            if (onAir.get == 0)
-              completeStage()
-            upstreamEnded = true
           }
-
+          upstreamEnded = true
         }
-      )
 
+      }
+    )
   }
+
+  setHandler(familyExtractor)
 
   setHandler(
     out,
