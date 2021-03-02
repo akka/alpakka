@@ -6,7 +6,6 @@ package docs.javadsl;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.kinesis.KinesisFlowSettings;
 import akka.stream.alpakka.kinesis.ShardIterators;
 import akka.stream.alpakka.kinesis.ShardSettings;
@@ -37,7 +36,6 @@ public class KinesisSnippets {
     // #init-client
 
     final ActorSystem system = ActorSystem.create();
-    final ActorMaterializer materializer = ActorMaterializer.create(system);
 
     final software.amazon.awssdk.services.kinesis.KinesisAsyncClient amazonKinesisAsync =
         KinesisAsyncClient.builder()
