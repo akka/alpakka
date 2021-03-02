@@ -34,7 +34,7 @@ The system is architected so that the underlying storage is elastic and it is ab
 
 When writing an event, Pravega accepts a *routing key* parameter, and it @extref[guarantees order](pravega:/pravega-concepts/#ordering-guarantees) per key even in the presence of auto-scaling.
 
-Since version 8.x, Pravega support write and read access to Key/Value table. 
+Since version 8.x, Pravega supports write and read access to a Key/Value tables. 
 
 For more information about [Pravega](https://www.pravega.io/) please visit the official @extref[documentation](pravega:/).
 
@@ -123,7 +123,7 @@ message.
 
 ### Key Value Pair table
 
-Similary a Pravega Table Flow or Sink needs a @apidoc[TableWriterSettings] to operate:
+Similarly a Pravega Table Flow or Sink needs a @apidoc[TableWriterSettings] to operate:
 
 Scala:
 :   @@snip[snip](/pravega/src/test/scala/docs/scaladsl/PravegaSettingsSpec.scala) { #table-writer-settings }
