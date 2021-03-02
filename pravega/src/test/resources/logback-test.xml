@@ -23,7 +23,7 @@
     <logger name="akka.stream.alpakka.pravega" level="debug" />
     <logger name="docs.scaladsl" level="debug" />
     <logger name="docs.javadsl" level="debug" />
-    <logger name="PravegaTableSourceStageLogic(akka://PravegaSpec)" level="debug" />
+
 
     <root level="WARN">
         <appender-ref ref="CapturingAppender"/>
