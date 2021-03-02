@@ -305,7 +305,8 @@ class TableSettingsBuilder[K, V](
     keyValueTableClientConfigurationBuilderCustomizer: Option[
       KeyValueTableClientConfiguration.KeyValueTableClientConfigurationBuilder => KeyValueTableClientConfiguration.KeyValueTableClientConfigurationBuilder
     ] = None,
-    maximumInflightMessages: Int
+    maximumInflightMessages: Int,
+    maxEntriesAtOnce: Int
 ) extends WithClientConfig(config, clientConfig, clientConfigModifier) {
   def keyValueTableClientConfigurationBuilder(
       f: KeyValueTableClientConfiguration.KeyValueTableClientConfigurationBuilder => KeyValueTableClientConfiguration.KeyValueTableClientConfigurationBuilder
@@ -315,6 +316,8 @@ class TableSettingsBuilder[K, V](
   def withClientConfigModifier(clientConfig: ClientConfig) = copy(clientConfig = Some(clientConfig))
 
   def withMaximumInflightMessages(i: Int): TableSettingsBuilder[K, V] = copy(maximumInflightMessages = i)
+
+  def withMaxEntriesAtOnce(i: Int): TableSettingsBuilder[K, V] = copy(maxEntriesAtOnce = i)
 
   def clientConfigBuilder(
       clientConfigModifier: ClientConfigBuilder => ClientConfigBuilder
@@ -327,14 +330,16 @@ class TableSettingsBuilder[K, V](
       keyValueTableClientConfigurationBuilderCustomizer: Option[
         KeyValueTableClientConfiguration.KeyValueTableClientConfigurationBuilder => KeyValueTableClientConfiguration.KeyValueTableClientConfigurationBuilder
       ] = keyValueTableClientConfigurationBuilderCustomizer,
-      maximumInflightMessages: Int = maximumInflightMessages
+      maximumInflightMessages: Int = maximumInflightMessages,
+      maxEntriesAtOnce: Int = maxEntriesAtOnce
   ): TableSettingsBuilder[K, V] =
     new TableSettingsBuilder(config,
                              clientConfig,
                              clientConfigModifier,
                              keyValueTableClientConfigurationBuilder,
                              keyValueTableClientConfigurationBuilderCustomizer,
-                             maximumInflightMessages)
+                             maximumInflightMessages,
+                             maxEntriesAtOnce)
 
   /**
   Build the settings.
@@ -347,7 +352,12 @@ class TableSettingsBuilder[K, V](
     keyValueTableClientConfigurationBuilderCustomizer.foreach(_(keyValueTableClientConfigurationBuilder))
 
     val clientConfig = keyValueTableClientConfigurationBuilder.build()
-    new TableSettings[K, V](handleClientConfig(), clientConfig, keySerializer, valueSerializer, maximumInflightMessages)
+    new TableSettings[K, V](handleClientConfig(),
+                            clientConfig,
+                            keySerializer,
+                            valueSerializer,
+                            maximumInflightMessages,
+                            maxEntriesAtOnce)
   }
 
 }
@@ -379,7 +389,8 @@ object TableSettingsBuilder {
                              None,
                              tableClientConfiguration(config),
                              None,
-                             config.getInt("maximum-inflight-messages"))
+                             config.getInt("maximum-inflight-messages"),
+                             config.getInt("max-entries-at-once"))
 
   private def tableClientConfiguration(implicit config: Config) = {
 
@@ -404,7 +415,8 @@ class TableWriterSettingsBuilder[K, V](
     keyValueTableClientConfigurationBuilderCustomizer: Option[
       KeyValueTableClientConfiguration.KeyValueTableClientConfigurationBuilder => KeyValueTableClientConfiguration.KeyValueTableClientConfigurationBuilder
     ] = None,
-    maximumInflightMessages: Int
+    maximumInflightMessages: Int,
+    maxEntriesAtOnce: Int
 ) extends WithClientConfig(config, clientConfig, clientConfigCustomization) {
 
   def keyValueTableClientConfigurationBuilder(
@@ -421,20 +433,24 @@ class TableWriterSettingsBuilder[K, V](
 
   def withMaximumInflightMessages(i: Int): TableWriterSettingsBuilder[K, V] = copy(maximumInflightMessages = i)
 
+  def withMaxEntriesAtOnce(i: Int): TableWriterSettingsBuilder[K, V] = copy(maxEntriesAtOnce = i)
+
   private def copy(
       clientConfig: Option[ClientConfig] = clientConfig,
       clientConfigCustomization: Option[ClientConfigBuilder => ClientConfigBuilder] = clientConfigCustomization,
       keyValueTableClientConfigurationBuilderCustomizer: Option[
         KeyValueTableClientConfiguration.KeyValueTableClientConfigurationBuilder => KeyValueTableClientConfiguration.KeyValueTableClientConfigurationBuilder
       ] = keyValueTableClientConfigurationBuilderCustomizer,
-      maximumInflightMessages: Int = maximumInflightMessages
+      maximumInflightMessages: Int = maximumInflightMessages,
+      maxEntriesAtOnce: Int = maxEntriesAtOnce
   ): TableWriterSettingsBuilder[K, V] =
     new TableWriterSettingsBuilder(config,
                                    clientConfig,
                                    clientConfigCustomization,
                                    keyValueTableClientConfigurationBuilder,
                                    keyValueTableClientConfigurationBuilderCustomizer,
-                                   maximumInflightMessages)
+                                   maximumInflightMessages,
+                                   maxEntriesAtOnce)
 
   /**
     Build the settings.
@@ -451,7 +467,8 @@ class TableWriterSettingsBuilder[K, V](
                                   eventWriterConfig,
                                   keySerializer,
                                   valueSerializer,
-                                  maximumInflightMessages)
+                                  maximumInflightMessages,
+                                  maxEntriesAtOnce)
   }
 
 }
@@ -483,7 +500,8 @@ object TableWriterSettingsBuilder {
                                    None,
                                    tableClientConfiguration(config),
                                    None,
-                                   config.getInt("maximum-inflight-messages"))
+                                   config.getInt("maximum-inflight-messages"),
+                                   config.getInt("max-entries-at-once"))
 
   private def tableClientConfiguration(implicit config: Config) = {
 
@@ -540,19 +558,22 @@ class TableWriterSettings[K, V](
     keyValueTableClientConfiguration: KeyValueTableClientConfiguration,
     keySerializer: Serializer[K],
     valueSerializer: Serializer[V],
-    maximumInflightMessages: Int
+    maximumInflightMessages: Int,
+    maxEntriesAtOnce: Int
 ) extends TableSettings(clientConfig,
                           keyValueTableClientConfiguration,
                           keySerializer,
                           valueSerializer,
-                          maximumInflightMessages)
+                          maximumInflightMessages,
+                          maxEntriesAtOnce)
 
 class TableSettings[K, V](
     val clientConfig: ClientConfig,
     val keyValueTableClientConfiguration: KeyValueTableClientConfiguration,
     val keySerializer: Serializer[K],
     val valueSerializer: Serializer[V],
-    val maximumInflightMessages: Int
+    val maximumInflightMessages: Int,
+    val maxEntriesAtOnce: Int
 )
 
 private[pravega] object ConfigHelper {

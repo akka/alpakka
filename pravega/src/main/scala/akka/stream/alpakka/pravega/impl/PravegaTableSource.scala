@@ -108,8 +108,7 @@ import io.pravega.common.util.AsyncIterator
       table = keyValueTableFactory
         .forKeyValueTable(tableName, tableSettings.keySerializer, tableSettings.valueSerializer, kvtClientConfig)
 
-      //TODO Applied * 10, but no idea :-/
-      val iterator = table.entryIterator(keyFamily, tableSettings.maximumInflightMessages * 10, null)
+      val iterator = table.entryIterator(keyFamily, tableSettings.maxEntriesAtOnce, null)
 
       nextIteration(iterator)
 

@@ -25,10 +25,11 @@ abstract class PravegaBaseSpec extends AnyWordSpec with PravegaAkkaSpecSupport w
   def newGroupName() = "scala-test-group-" + UUID.randomUUID().toString
   def newScope() = "scala-test-scope-" + UUID.randomUUID().toString
   def newStreamName() = "scala-test-stream-" + UUID.randomUUID().toString
+  def newKeyValueTableName() = "scala-test-kv-table" + UUID.randomUUID().toString
 
-  final val scope = "scala-test-scope-" + UUID.randomUUID().toString
-  final val streamName = "scala-test-stream-" + UUID.randomUUID().toString
-  final val keyValueTableName = "scala-test-kv-table" + UUID.randomUUID().toString
+  final val scope = newScope()
+  final val streamName = newStreamName()
+  final val keyValueTableName = newKeyValueTableName()
 
   override def beforeAll(): Unit = {
     val streamManager = StreamManager.create(URI.create("tcp://localhost:9090"))
