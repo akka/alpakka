@@ -428,6 +428,7 @@ object BigQuery {
   /**
    * Loads data into BigQuery via a series of asynchronous load jobs, configurable by [[akka.stream.alpakka.googlecloud.bigquery.LoadJobSettings]].
    * @note WARNING: Pending the resolution of [[https://issuetracker.google.com/176002651 BigQuery issue 176002651]] this method may not work as expected.
+   *       As a workaround, you can use the config setting `akka.http.parsing.conflicting-content-type-header-processing-mode = first` with Akka HTTP v2.6.4 or later.
    *
    * @param datasetId dataset ID of the table to insert into
    * @param tableId table ID of the table to insert into
@@ -445,6 +446,7 @@ object BigQuery {
   /**
    * Starts a new asynchronous upload job.
    * @note WARNING: Pending the resolution of [[https://issuetracker.google.com/176002651 BigQuery issue 176002651]] this method may not work as expected.
+   *       As a workaround, you can use the config setting `akka.http.parsing.conflicting-content-type-header-processing-mode = first` with Akka HTTP v2.6.4 or later.
    * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/insert BigQuery reference]]
    * @see [[https://cloud.google.com/bigquery/docs/reference/api-uploads BigQuery reference]]
    *
