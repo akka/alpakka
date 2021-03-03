@@ -14,7 +14,7 @@ jobs:
         with:
           # See https://github.com/actions/checkout/issues/299#issuecomment-677674415
           ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 100
+          fetch-depth: 0
 
       - name: Fetch tags
         run: git fetch --depth=100 origin +refs/tags/*:refs/tags/*
