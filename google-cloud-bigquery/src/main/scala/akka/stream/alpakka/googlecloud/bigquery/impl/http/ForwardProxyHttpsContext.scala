@@ -5,7 +5,7 @@
 package akka.stream.alpakka.googlecloud.bigquery.impl.http
 
 import akka.annotation.InternalApi
-import akka.http.scaladsl.{ConnectionContext, HttpsConnectionContext}
+import akka.http.scaladsl.HttpsConnectionContext
 
 import java.io.FileInputStream
 import java.security.KeyStore
@@ -28,7 +28,7 @@ private[bigquery] object ForwardProxyHttpsContext {
     tmf.init(trustStore)
     val trustManagers = tmf.getTrustManagers
     sslContext.init(null, trustManagers, null)
-    ConnectionContext.httpsClient(sslContext)
+    new HttpsConnectionContext(sslContext)
   }
 
   private def x509Certificate(trustPemPath: String): X509Certificate = {
