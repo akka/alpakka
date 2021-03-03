@@ -49,7 +49,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Configuration
 
-The settings for the BigQuery connector are read by default from `alpakka.google.bigquery` configuration section.
+The settings for the BigQuery connector are read by default from the `alpakka.google.bigquery` configuration section.
 By default, [service account credentials](https://cloud.google.com/docs/authentication/getting-started) are loaded from the file path specified by the `GOOGLE_APPLICATION_CREDENTIALS` environment variable.
 When running in a [Compute Engine](https://cloud.google.com/compute) instance, credentials can be loaded automatically by setting `alpakka.google.bigquery.credentials.provider = compute-engine`.
 If you use a non-standard configuration path or need multiple different configurations, please refer to @ref[the attributes section below](google-cloud-bigquery.md#apply-bigquery-settings-to-a-part-of-the-stream) to see how to apply different configuration to different parts of the stream.
