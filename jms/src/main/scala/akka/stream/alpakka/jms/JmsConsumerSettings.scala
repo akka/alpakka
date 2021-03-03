@@ -23,6 +23,7 @@ final class JmsConsumerSettings private (
     val selector: Option[String],
     val acknowledgeMode: Option[AcknowledgeMode],
     val ackTimeout: scala.concurrent.duration.Duration,
+    val ackFlushTimeout: scala.concurrent.duration.FiniteDuration,
     val failStreamOnAckTimeout: Boolean,
     val connectionStatusSubscriptionTimeout: scala.concurrent.duration.FiniteDuration
 ) extends akka.stream.alpakka.jms.JmsSettings {
@@ -71,6 +72,9 @@ final class JmsConsumerSettings private (
   /** Timeout for acknowledge. (Used by TX consumers.) */
   def withAckTimeout(value: scala.concurrent.duration.Duration): JmsConsumerSettings = copy(ackTimeout = value)
 
+  /** Timeout for flushing acknowledges back to the broker. (Used by AckSources.) */
+  def withAckFlushTimeout(value: scala.concurrent.duration.FiniteDuration): JmsConsumerSettings = copy(ackFlushTimeout = value)
+
   /** Java API: Timeout for acknowledge. (Used by TX consumers.) */
   def withAckTimeout(value: java.time.Duration): JmsConsumerSettings = copy(ackTimeout = value.asScala)
 
@@ -98,6 +102,7 @@ final class JmsConsumerSettings private (
       selector: Option[String] = selector,
       acknowledgeMode: Option[AcknowledgeMode] = acknowledgeMode,
       ackTimeout: scala.concurrent.duration.Duration = ackTimeout,
+      ackFlushTimeout: scala.concurrent.duration.FiniteDuration = ackFlushTimeout,
       failStreamOnAckTimeout: Boolean = failStreamOnAckTimeout,
       connectionStatusSubscriptionTimeout: scala.concurrent.duration.FiniteDuration =
         connectionStatusSubscriptionTimeout
@@ -111,6 +116,7 @@ final class JmsConsumerSettings private (
     selector = selector,
     acknowledgeMode = acknowledgeMode,
     ackTimeout = ackTimeout,
+    ackFlushTimeout = ackFlushTimeout,
     failStreamOnAckTimeout = failStreamOnAckTimeout,
     connectionStatusSubscriptionTimeout = connectionStatusSubscriptionTimeout
   )
@@ -158,6 +164,8 @@ object JmsConsumerSettings {
     val acknowledgeMode =
       getOption("acknowledge-mode", c => AcknowledgeMode.from(c.getString("acknowledge-mode")))
     val ackTimeout = c.getDuration("ack-timeout").asScala
+    val ackFlushTimeoutDuration = c.getDuration("ack-flush-timeout").asScala
+    val ackFlushTimeout = FiniteDuration(ackFlushTimeoutDuration.length, ackFlushTimeoutDuration.unit)
     val failStreamOnAckTimeout = c.getBoolean("fail-stream-on-ack-timeout")
     val connectionStatusSubscriptionTimeout = c.getDuration("connection-status-subscription-timeout").asScala
     new JmsConsumerSettings(
@@ -170,6 +178,7 @@ object JmsConsumerSettings {
       selector,
       acknowledgeMode,
       ackTimeout,
+      ackFlushTimeout,
       failStreamOnAckTimeout,
       connectionStatusSubscriptionTimeout
     )

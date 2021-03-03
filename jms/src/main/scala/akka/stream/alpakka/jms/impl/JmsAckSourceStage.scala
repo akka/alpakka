@@ -6,6 +6,7 @@ package akka.stream.alpakka.jms.impl
 
 import akka.annotation.InternalApi
 import akka.stream.alpakka.jms._
+import akka.stream.alpakka.jms.impl.JmsConnector.FlushAcknowledgementsTimerKey
 import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue}
 import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.util.OptionVal
@@ -36,6 +37,7 @@ private[jms] final class JmsAckSourceStage(settings: JmsConsumerSettings, destin
   private final class JmsAckSourceStageLogic(inheritedAttributes: Attributes)
       extends SourceStageLogic[AckEnvelope](shape, out, settings, destination, inheritedAttributes) {
     private val maxPendingAck = settings.bufferSize
+    private val ackFlushTimeout = settings.ackFlushTimeout
 
     protected def createSession(connection: jms.Connection,
                                 createDestination: jms.Session => javax.jms.Destination): JmsAckSession = {
@@ -49,6 +51,7 @@ private[jms] final class JmsAckSourceStage(settings: JmsConsumerSettings, destin
     override protected def onSessionOpened(jmsSession: JmsConsumerSession): Unit =
       jmsSession match {
         case session: JmsAckSession =>
+          scheduleOnce(FlushAcknowledgementsTimerKey(session, ackFlushTimeout), ackFlushTimeout)
           session
             .createConsumer(settings.selector)
             .map { consumer =>

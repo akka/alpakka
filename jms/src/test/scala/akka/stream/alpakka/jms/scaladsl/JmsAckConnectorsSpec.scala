@@ -406,5 +406,37 @@ class JmsAckConnectorsSpec extends JmsSpec {
 
       streamDone.failed.futureValue.getMessage shouldBe "aborted"
     }
+
+    "flush acknowledgments to broker after flush.timeout triggers" in withServer() { server =>
+      val connectionFactory = server.createConnectionFactory
+
+      val testQueue = "test"
+      val aMessage = "message"
+      Source
+        .single(aMessage)
+        .runWith(JmsProducer.textSink(JmsProducerSettings(producerConfig, connectionFactory).withQueue(testQueue)))
+
+      val source = JmsConsumer.ackSource(
+        JmsConsumerSettings(system, connectionFactory).withBufferSize(100).withAckFlushTimeout(1.second).withQueue(testQueue)
+      )
+
+      val streamDone = source
+        .map { env =>
+          env.acknowledge()
+          env.message match {
+            case message: TextMessage => Some(message.getText)
+            case _ => None
+
+          }
+        }
+        .runWith(Sink.headOption)
+
+      streamDone.futureValue.flatten shouldBe Some(aMessage)
+      println("foo")
+      // Need to wait for the stream to have started and running for sometime.
+      Thread.sleep(5001)
+      // Consuming again should give us no elements, as msg was acked and therefore removed from the broker
+      source.runWith(Sink.headOption).futureValue shouldBe None
+    }
   }
 }

@@ -18,6 +18,7 @@ import akka.stream.stage.{AsyncCallback, StageLogging, TimerGraphStageLogic}
 import akka.stream.{ActorAttributes, Attributes, OverflowStrategy}
 import javax.jms
 
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
@@ -214,6 +215,12 @@ private[jms] trait JmsConnector[S <: JmsSession] {
   }
 
   override def onTimer(timerKey: Any): Unit = timerKey match {
+    case FlushAcknowledgementsTimerKey(session, timeout) =>
+      session.ackQueue.forEach(_.apply())
+      session.ackQueue.clear()
+      session.pendingAck = 0
+      scheduleOnce(timerKey, timeout)
+
     case AttemptConnect(attempt, backoffMaxed) =>
       log.info("{} retries connecting, attempt {}", attributes.nameLifted.mkString, attempt)
       initSessionAsync(attempt, backoffMaxed)
@@ -394,7 +401,7 @@ object JmsConnector {
   case object TimedOut extends ConnectionAttemptStatus
 
   case class AttemptConnect(attempt: Int, backoffMaxed: Boolean)
-
+  case class FlushAcknowledgementsTimerKey(jmsSession: JmsAckSession, timeout: FiniteDuration)
   case object ConnectionStatusTimeout
 
   def connection: InternalConnectionState => Future[jms.Connection] = {
