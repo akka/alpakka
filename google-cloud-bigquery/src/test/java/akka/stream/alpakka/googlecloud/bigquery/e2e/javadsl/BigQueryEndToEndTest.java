@@ -20,6 +20,10 @@ import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.specto.hoverfly.junit.core.Hoverfly;
 import io.specto.hoverfly.junit.core.HoverflyMode;
 import io.specto.hoverfly.junit.core.SimulationSource;
@@ -47,6 +51,11 @@ public class BigQueryEndToEndTest extends EndToEndHelper {
   private static Hoverfly hoverfly = BigQueryHoverfly.getInstance();
 
   private BigQuerySettings settings = BigQuery.getSettings(system);
+  private ObjectMapper objectMapper =
+      JsonMapper.builder()
+          .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+          .addModule(new JavaTimeModule())
+          .build();
 
   private TableSchema schema =
       createTableSchema(
@@ -65,7 +74,12 @@ public class BigQueryEndToEndTest extends EndToEndHelper {
                   "repeated",
                   recordType(),
                   Optional.of(repeatedMode()),
-                  createTableFieldSchema("numeric", numericType(), Optional.of(requiredMode())))));
+                  createTableFieldSchema("numeric", numericType(), Optional.of(requiredMode())),
+                  createTableFieldSchema("date", dateType(), Optional.of(requiredMode())),
+                  createTableFieldSchema("time", timeType(), Optional.of(requiredMode())),
+                  createTableFieldSchema("dateTime", dateTimeType(), Optional.of(requiredMode())),
+                  createTableFieldSchema(
+                      "timestamp", timestampType(), Optional.of(requiredMode())))));
 
   @BeforeClass
   public static void before() {
@@ -160,7 +174,7 @@ public class BigQueryEndToEndTest extends EndToEndHelper {
   public void insertRowsViaLoadJobs() throws ExecutionException, InterruptedException {
     List<JobJsonProtocol.Job> jobs =
         Source.from(getRows())
-            .via(BigQuery.insertAllAsync(datasetId(), tableId(), Jackson.marshaller()))
+            .via(BigQuery.insertAllAsync(datasetId(), tableId(), Jackson.marshaller(objectMapper)))
             .runWith(Sink.seq(), system)
             .toCompletableFuture()
             .get();

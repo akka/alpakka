@@ -9,23 +9,13 @@ import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.{
   FloatType,
   IntegerType,
   NumericType,
-  StringType,
-  TableFieldSchema,
-  TableFieldSchemaMode,
-  TableFieldSchemaType
+  StringType
 }
 
 /**
  * Provides the BigQuery schemas for the most important Scala types.
  */
 trait BasicSchemas {
-
-  private final class PrimitiveSchemaWriter[T](`type`: TableFieldSchemaType) extends SchemaWriter[T] {
-    override def write(name: String, mode: TableFieldSchemaMode): TableFieldSchema = {
-      TableFieldSchema(name, `type`, Some(mode), None)
-    }
-  }
-
   implicit val intSchemaWriter: SchemaWriter[Int] = new PrimitiveSchemaWriter(IntegerType)
   implicit val longSchemaWriter: SchemaWriter[Long] = new PrimitiveSchemaWriter(IntegerType)
   implicit val floatSchemaWriter: SchemaWriter[Float] = new PrimitiveSchemaWriter[Float](FloatType)

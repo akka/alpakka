@@ -16,5 +16,6 @@ trait BigQueryJsonProtocol
     with ProductFormats
     with BigQueryProductFormats
     with AdditionalFormats
+    with BigQueryJavaTimeFormats
 
 object BigQueryJsonProtocol extends BigQueryJsonProtocol

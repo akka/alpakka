@@ -6,6 +6,7 @@ package akka.stream.alpakka.googlecloud.bigquery.e2e.scaladsl
 
 import akka.stream.alpakka.googlecloud.bigquery.e2e.{A, B, C}
 
+import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
 import scala.util.Random
 
 trait EndToEndHelper {
@@ -16,7 +17,13 @@ trait EndToEndHelper {
 
   val tableId = f"e2e_table_${rng.nextInt(1000)}%03d"
 
-  private def randomC(): C = C(BigDecimal(f"${rng.nextInt(100)}.${rng.nextInt(100)}%02d"))
+  private def randomC(): C = C(
+    BigDecimal(f"${rng.nextInt(100)}.${rng.nextInt(100)}%02d"),
+    LocalDate.ofEpochDay(rng.nextInt(100 * 365)),
+    LocalTime.ofSecondOfDay(rng.nextInt(60 * 60 * 24)),
+    LocalDateTime.of(LocalDate.ofEpochDay(rng.nextInt(100 * 365)), LocalTime.ofSecondOfDay(rng.nextInt(60 * 60 * 24))),
+    Instant.ofEpochSecond(rng.nextInt())
+  )
 
   private def randomB(): B = B(
     if (rng.nextBoolean()) Some(rng.nextString(rng.nextInt(64))) else None,

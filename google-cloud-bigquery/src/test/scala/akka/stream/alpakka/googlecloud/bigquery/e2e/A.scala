@@ -9,6 +9,8 @@ import com.fasterxml.jackson.annotation.{JsonCreator, JsonInclude, JsonProperty,
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer
+
+import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
 import scala.collection.JavaConverters._
 
 @JsonPropertyOrder(alphabetic = true)
@@ -50,9 +52,22 @@ case class B(nullable: Option[String], repeated: Seq[C]) {
   def getRepeated = repeated.asJava
 }
 
-case class C(numeric: BigDecimal) {
+@JsonPropertyOrder(alphabetic = true)
+case class C(numeric: BigDecimal, date: LocalDate, time: LocalTime, dateTime: LocalDateTime, timestamp: Instant) {
+
   def this(node: JsonNode) =
-    this(BigDecimal(node.get("f").get(0).get("v").textValue()))
+    this(
+      BigDecimal(node.get("f").get(0).get("v").textValue()),
+      LocalDate.parse(node.get("f").get(1).get("v").textValue()),
+      LocalTime.parse(node.get("f").get(2).get("v").textValue()),
+      LocalDateTime.parse(node.get("f").get(3).get("v").textValue()),
+      Instant.ofEpochMilli((BigDecimal(node.get("f").get(4).get("v").textValue()) * 1000).toLong)
+    )
+
   @JsonSerialize(using = classOf[ToStringSerializer])
   def getNumeric = numeric
+  def getDate = date
+  def getTime = time
+  def getDateTime = dateTime
+  def getTimestamp = timestamp
 }

@@ -55,10 +55,10 @@ class BigQueryEndToEndSpec
     import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryJsonProtocol._
     import akka.stream.scaladsl.{Sink, Source}
 
-    implicit val cFormat = bigQueryJsonFormat1(C)
+    implicit val cFormat = bigQueryJsonFormat5(C)
     implicit val bFormat = bigQueryJsonFormat2(B)
     implicit val aFormat = bigQueryJsonFormat7(A)
-    implicit val cSchema = bigQuerySchema1(C)
+    implicit val cSchema = bigQuerySchema5(C)
     implicit val bSchema = bigQuerySchema2(B)
     implicit val aSchema = bigQuerySchema7(A)
 
