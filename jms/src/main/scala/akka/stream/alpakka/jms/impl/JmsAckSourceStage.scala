@@ -51,7 +51,9 @@ private[jms] final class JmsAckSourceStage(settings: JmsConsumerSettings, destin
     override protected def onSessionOpened(jmsSession: JmsConsumerSession): Unit =
       jmsSession match {
         case session: JmsAckSession =>
-          scheduleOnce(FlushAcknowledgementsTimerKey(session, ackFlushTimeout), ackFlushTimeout)
+          ackFlushTimeout.foreach { timeout =>
+            scheduleOnce(FlushAcknowledgementsTimerKey(session, timeout), timeout)
+          }
           session
             .createConsumer(settings.selector)
             .map { consumer =>
@@ -104,4 +106,5 @@ private[jms] final class JmsAckSourceStage(settings: JmsConsumerSettings, destin
           )
       }
   }
+
 }

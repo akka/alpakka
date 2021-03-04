@@ -9,9 +9,11 @@ import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 import akka.Done
 import akka.stream.alpakka.jms._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{KillSwitches, ThrottleMode}
 import javax.jms.{JMSException, TextMessage}
 import org.scalatest.Inspectors._
+import org.scalatest.time.Span.convertSpanToDuration
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -364,7 +366,7 @@ class JmsAckConnectorsSpec extends JmsSpec {
     }
 
     "shutdown when waiting to acknowledge messages" in withServer() { server =>
-      val connectionFactory = server.createConnectionFactory
+      val connectionFactory = server.createQueueConnectionFactory
 
       val in = 0 to 25 map (i => ('a' + i).asInstanceOf[Char].toString)
       Source(in).runWith(JmsProducer.textSink(JmsProducerSettings(producerConfig, connectionFactory).withQueue("test")))
@@ -412,31 +414,42 @@ class JmsAckConnectorsSpec extends JmsSpec {
 
       val testQueue = "test"
       val aMessage = "message"
+      val flushTimeout = 1.second
       Source
         .single(aMessage)
         .runWith(JmsProducer.textSink(JmsProducerSettings(producerConfig, connectionFactory).withQueue(testQueue)))
-
       val source = JmsConsumer.ackSource(
-        JmsConsumerSettings(system, connectionFactory).withBufferSize(100).withAckFlushTimeout(1.second).withQueue(testQueue)
+        JmsConsumerSettings(system, connectionFactory)
+          .withBufferSize(100)
+          .withAckFlushTimeout(flushTimeout)
+          .withQueue(testQueue)
       )
 
-      val streamDone = source
+      val (consumerControl, probe) = source
         .map { env =>
           env.acknowledge()
           env.message match {
             case message: TextMessage => Some(message.getText)
             case _ => None
-
           }
         }
-        .runWith(Sink.headOption)
+        .toMat(TestSink.probe)(Keep.both)
+        .run()
 
-      streamDone.futureValue.flatten shouldBe Some(aMessage)
-      println("foo")
-      // Need to wait for the stream to have started and running for sometime.
-      Thread.sleep(5001)
+      probe.requestNext(convertSpanToDuration(patienceConfig.timeout)) shouldBe Some(aMessage)
+
+      eventually {
+        server.service.checkQueueSize(testQueue) shouldBe true //queue is empty
+      }
+
+      consumerControl.shutdown()
+      probe.expectComplete()
+
       // Consuming again should give us no elements, as msg was acked and therefore removed from the broker
-      source.runWith(Sink.headOption).futureValue shouldBe None
+      val (emptyConsumerControl, emptySourceProbe) = source.toMat(TestSink.probe)(Keep.both).run()
+      emptySourceProbe.ensureSubscription().expectNoMessage()
+      emptyConsumerControl.shutdown()
+      emptySourceProbe.expectComplete()
     }
   }
 }
