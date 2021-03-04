@@ -72,9 +72,6 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
           } yield {
 
             val jobReference = initialQueryResponse.jobReference
-            val jobId = jobReference.jobId.getOrElse {
-              throw BigQueryException("Query response did not contain job id.")
-            }
 
             val head =
               if (initialQueryResponse.jobComplete)
@@ -85,26 +82,27 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
             val tail =
               if (initialQueryResponse.jobComplete & initialQueryResponse.pageToken.isEmpty)
                 Source.empty
-              else {
-                import settings.retrySettings._
-                val pages = queryResultsPages[Out](jobId,
-                                                   None,
-                                                   query.maxResults,
-                                                   query.timeoutMs,
-                                                   initialQueryResponse.jobReference.location,
-                                                   initialQueryResponse.pageToken)
-                  .map(Success(_))
-                  .recover { case ex => Failure(ex) } // Allows upstream failures to escape the RestartSource
-                  .map { queryResponse =>
-                    if (queryResponse.toOption.forall(_.jobComplete))
-                      queryResponse
-                    else
-                      throw BigQueryException("Query job not complete.")
-                  }
-                  .addAttributes(attr)
-                val restartSettings = RestartSettings(minBackoff, maxBackoff, randomFactor)
-                RestartSource.onFailuresWithBackoff(restartSettings)(() => pages).map(_.get)
-              }
+              else
+                jobReference.jobId.map { jobId =>
+                  import settings.retrySettings._
+                  val pages = queryResultsPages[Out](jobId,
+                                                     None,
+                                                     query.maxResults,
+                                                     query.timeoutMs,
+                                                     initialQueryResponse.jobReference.location,
+                                                     initialQueryResponse.pageToken)
+                    .map(Success(_))
+                    .recover { case ex => Failure(ex) } // Allows upstream failures to escape the RestartSource
+                    .map { queryResponse =>
+                      if (queryResponse.toOption.forall(_.jobComplete))
+                        queryResponse
+                      else
+                        throw BigQueryException("Query job not complete.")
+                    }
+                    .addAttributes(attr)
+                  val restartSettings = RestartSettings(minBackoff, maxBackoff, randomFactor)
+                  RestartSource.onFailuresWithBackoff(restartSettings)(() => pages).map(_.get)
+                } getOrElse Source.empty
 
             head.concat(tail).mapMaterializedValue(_ => jobReference)
           }

@@ -16,6 +16,7 @@ import akka.stream.alpakka.googlecloud.bigquery.javadsl.BigQuery;
 import akka.stream.alpakka.googlecloud.bigquery.javadsl.jackson.BigQueryMarshallers;
 import akka.stream.alpakka.googlecloud.bigquery.model.DatasetJsonProtocol;
 import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol;
+import akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol;
 import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -226,6 +227,22 @@ public class BigQueryEndToEndTest extends EndToEndHelper {
             .toCompletableFuture()
             .get();
     assertEquals(sorted(expectedResults), sorted(results));
+  }
+
+  @Test
+  public void dryRunQuery() throws ExecutionException, InterruptedException {
+    String query =
+        String.format(
+            "SELECT string, record, integer FROM %s.%s WHERE boolean;", datasetId(), tableId());
+    QueryJsonProtocol.QueryResponse<JsonNode> response =
+        BigQuery.query(
+                query, true, false, BigQueryMarshallers.queryResponseUnmarshaller(JsonNode.class))
+            .to(Sink.ignore())
+            .run(system)
+            .toCompletableFuture()
+            .get();
+    OptionalLong bytesProcessed = response.getTotalBytesProcessed();
+    assertTrue(bytesProcessed.isPresent() && bytesProcessed.getAsLong() > 0);
   }
 
   @Test

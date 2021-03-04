@@ -13,6 +13,7 @@ import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.TableRef
 import akka.testkit.TestKit
 import io.specto.hoverfly.junit.core.{HoverflyMode, SimulationSource}
 import org.scalatest.BeforeAndAfterAll
+import org.scalatest.OptionValues._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpecLike
 
@@ -128,6 +129,14 @@ class BigQueryEndToEndSpec
       val query = s"SELECT string, record, integer FROM $datasetId.$tableId WHERE boolean;"
       BigQuery.query[(String, B, Int)](query, useLegacySql = false).runWith(Sink.seq).map { retrievedRows =>
         retrievedRows should contain theSameElementsAs rows.filter(_.boolean).map(a => (a.string, a.record, a.integer))
+      }
+    }
+
+    "dry run query" in {
+      val query = s"SELECT string, record, integer FROM $datasetId.$tableId WHERE boolean;"
+      BigQuery.query[(String, B, Int)](query, dryRun = true, useLegacySql = false).to(Sink.ignore).run().map {
+        queryResponse =>
+          queryResponse.totalBytesProcessed.value should be > 0L
       }
     }
 

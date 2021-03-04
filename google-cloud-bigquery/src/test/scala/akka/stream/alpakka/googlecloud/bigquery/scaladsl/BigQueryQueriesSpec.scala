@@ -83,12 +83,16 @@ class BigQueryQueriesSpec
     rows = Some(JsString("secondPage") :: Nil)
   )
 
+  val completeQueryWithoutJobId = completeQuery.copy[JsValue](
+    jobReference = JobReference(None, None, None)
+  )
+
   "BigQueryQueries" should {
 
     "get query results" when {
       import DefaultJsonProtocol._
 
-      "succeeds immediately and has one page" in {
+      "completes immediately and has one page" in {
 
         hoverfly.reset()
         hoverfly.simulate(
@@ -106,7 +110,7 @@ class BigQueryQueriesSpec
           .map(_ shouldEqual Seq(JsString("firstPage")))
       }
 
-      "succeeds immediately and has two pages" in {
+      "completes immediately and has two pages" in {
 
         hoverfly.reset()
         hoverfly.simulate(
@@ -127,7 +131,7 @@ class BigQueryQueriesSpec
           .map(_ shouldEqual Seq(JsString("firstPage"), JsString("secondPage")))
       }
 
-      "succeeds on 2nd attempt and has one page" in {
+      "completes on 2nd attempt and has one page" in {
 
         hoverfly.reset()
         hoverfly.simulate(
@@ -147,7 +151,7 @@ class BigQueryQueriesSpec
           .map(_ shouldEqual Seq(JsString("firstPage")))
       }
 
-      "succeeds on 2nd attempt and has two pages" in {
+      "completes on 2nd attempt and has two pages" in {
 
         hoverfly.reset()
         hoverfly.simulate(
@@ -168,6 +172,24 @@ class BigQueryQueriesSpec
           .addAttributes(BigQueryAttributes.settings(settings))
           .runWith(Sink.seq[JsValue])
           .map(_ shouldEqual Seq(JsString("firstPage"), JsString("secondPage")))
+      }
+
+      "completes immediately without job id" in {
+
+        hoverfly.reset()
+        hoverfly.simulate(
+          dsl(
+            service(BigQueryEndpoints.queries(settings.projectId).authority.host.address())
+              .post(BigQueryEndpoints.queries(settings.projectId).path.toString)
+              .anyBody()
+              .willReturn(success(completeQueryWithoutJobId.toJson.toString(), "application/json"))
+          )
+        )
+
+        query[JsValue]("SQL")
+          .addAttributes(BigQueryAttributes.settings(settings))
+          .runWith(Sink.seq[JsValue])
+          .map(_ shouldEqual Seq(JsString("firstPage")))
       }
 
     }
