@@ -5,7 +5,6 @@
 package docs.scaladsl
 
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.pravega.scaladsl.Pravega
 import akka.stream.alpakka.pravega.{PravegaEvent, ReaderSettingsBuilder, WriterSettingsBuilder}
 import akka.stream.scaladsl.{Sink, Source}
@@ -14,7 +13,6 @@ import io.pravega.client.stream.impl.UTF8StringSerializer
 object PravegaReadWriteDocs {
 
   implicit val system = ActorSystem("PravegaDocs")
-  implicit val mat: Materializer = ActorMaterializer()
 
   val serializer = new UTF8StringSerializer
 

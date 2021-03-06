@@ -30,14 +30,14 @@ public class Pravega {
    */
   public static <V> Source<PravegaEvent<V>, CompletionStage<Done>> source(
       String scope, String streamName, ReaderSettings<V> readerSettings) {
-    return Source.fromGraph(new PravegaSource<V>(scope, streamName, readerSettings))
+    return Source.fromGraph(new PravegaSource<>(scope, streamName, readerSettings))
         .mapMaterializedValue(FutureConverters::<Done>toJava);
   }
 
   /** Incoming messages are written to Pravega stream and emitted unchanged. */
   public static <V> Flow<V, V, NotUsed> flow(
       String scope, String streamName, WriterSettings<V> writerSettings) {
-    return Flow.fromGraph(new PravegaFlow<V>(scope, streamName, writerSettings));
+    return Flow.fromGraph(new PravegaFlow<>(scope, streamName, writerSettings));
   }
   /** Incoming messages are written to Pravega. */
   public static <V> Sink<V, CompletionStage<Done>> sink(
