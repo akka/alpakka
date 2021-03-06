@@ -362,9 +362,9 @@ object Dependencies {
 
   val OrientDB = Seq(
     libraryDependencies ++= Seq(
-        ("com.orientechnologies" % "orientdb-graphdb" % "3.0.34")
+        ("com.orientechnologies" % "orientdb-graphdb" % "3.1.9")
           .exclude("com.tinkerpop.blueprints", "blueprints-core"),
-        "com.orientechnologies" % "orientdb-object" % "3.0.34" // ApacheV2
+        "com.orientechnologies" % "orientdb-object" % "3.1.9" // ApacheV2
       )
   )
 
