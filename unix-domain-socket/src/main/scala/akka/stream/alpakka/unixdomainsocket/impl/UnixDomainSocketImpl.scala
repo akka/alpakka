@@ -5,22 +5,25 @@
 package akka.stream.alpakka.unixdomainsocket
 package impl
 
-import java.io.IOException
-import java.nio.ByteBuffer
-import java.nio.channels.{SelectionKey, Selector}
-import java.nio.file.{Files, Path, Paths}
-
 import akka.actor.{Cancellable, CoordinatedShutdown, ExtendedActorSystem, Extension}
 import akka.annotation.InternalApi
 import akka.event.{Logging, LoggingAdapter}
 import akka.stream._
-import akka.stream.alpakka.unixdomainsocket.scaladsl
+import akka.stream.alpakka.unixdomainsocket.scaladsl.UnixDomainSocket.{
+  IncomingConnection,
+  OutgoingConnection,
+  ServerBinding
+}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
 import jnr.enxio.channels.NativeSelectorProvider
 import jnr.unixsocket.{UnixServerSocketChannel, UnixSocketChannel, UnixSocketAddress => JnrUnixSocketAddress}
 
+import java.io.IOException
+import java.nio.ByteBuffer
+import java.nio.channels.{SelectionKey, Selector}
+import java.nio.file.{Files, Path, Paths}
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.control.NonFatal
@@ -31,8 +34,6 @@ import scala.util.{Failure, Success, Try}
  */
 @InternalApi
 private[unixdomainsocket] object UnixDomainSocketImpl {
-
-  import scaladsl.UnixDomainSocket._
 
   private sealed abstract class ReceiveContext(
       val queue: SourceQueueWithComplete[ByteString],
@@ -244,7 +245,7 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
       halfClose: Boolean,
       receiveBufferSize: Int,
       sendBufferSize: Int
-  )(sel: Selector, key: SelectionKey)(implicit mat: ActorMaterializer, ec: ExecutionContext): Unit = {
+  )(sel: Selector, key: SelectionKey)(implicit mat: Materializer, ec: ExecutionContext): Unit = {
 
     val acceptingChannel = key.channel().asInstanceOf[UnixServerSocketChannel]
     val acceptedChannel = try {
@@ -289,7 +290,7 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
   }
 
   private def sendReceiveStructures(sel: Selector, receiveBufferSize: Int, sendBufferSize: Int, halfClose: Boolean)(
-      implicit mat: ActorMaterializer,
+      implicit mat: Materializer,
       ec: ExecutionContext
   ): (SendReceiveContext, Flow[ByteString, ByteString, NotUsed]) = {
 
@@ -354,7 +355,7 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
         .to(Sink.ignore)
     )
 
-    (sendReceiveContext, Flow.fromSinkAndSource(sendSink, Source.fromFutureSource(receiveSource)))
+    (sendReceiveContext, Flow.fromSinkAndSource(sendSink, Source.futureSource(receiveSource)))
   }
 }
 
@@ -364,10 +365,9 @@ private[unixdomainsocket] object UnixDomainSocketImpl {
 @InternalApi
 private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedActorSystem) extends Extension {
 
-  import scaladsl.UnixDomainSocket._
   import UnixDomainSocketImpl._
 
-  private implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
+  private implicit val materializer: Materializer = Materializer(system)
   import system.dispatcher
 
   private val sel = NativeSelectorProvider.getInstance.openSelector
@@ -375,10 +375,7 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
   /** Override to customise reported log source */
   protected def logSource: Class[_] = this.getClass
 
-  private val ioThread = new Thread(new Runnable {
-    override def run(): Unit =
-      nioEventLoop(sel, Logging(system, logSource))
-  }, "unix-domain-socket-io")
+  private val ioThread = new Thread(() => nioEventLoop(sel, Logging(system, logSource)), "unix-domain-socket-io")
   ioThread.start()
 
   CoordinatedShutdown(system).addTask(CoordinatedShutdown.PhaseServiceStop, "stopUnixDomainSocket") { () =>
@@ -455,12 +452,12 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
       }
 
       Source
-        .fromFutureSource(incomingConnectionSource)
+        .futureSource(incomingConnectionSource)
         .mapMaterializedValue(_ => serverBinding.future)
 
     }
 
-    Source.lazily(bind).mapMaterializedValue(_.flatMap(identity))
+    Source.lazySource(bind).mapMaterializedValue(_.flatMap(identity))
   }
 
   protected def outgoingConnection(
@@ -494,7 +491,7 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
 
       Future.successful(
         connectionFlow
-          .merge(Source.fromFuture(connectionFinished.future.map(_ => ByteString.empty)))
+          .merge(Source.future(connectionFinished.future.map(_ => ByteString.empty)))
           .filter(_.nonEmpty) // We merge above so that we can get connection failures - we're not interested in the empty bytes though
           .mapMaterializedValue { _ =>
             connection match {
@@ -510,6 +507,6 @@ private[unixdomainsocket] abstract class UnixDomainSocketImpl(system: ExtendedAc
       )
     }
 
-    Flow.lazyInitAsync(connect).mapMaterializedValue(_.flatMap(_.get))
+    Flow.lazyFutureFlow(connect).mapMaterializedValue(_.flatten)
   }
 }
