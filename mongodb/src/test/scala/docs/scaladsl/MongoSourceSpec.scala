@@ -31,10 +31,9 @@ class MongoSourceSpec
     with Matchers
     with LogCapturing {
 
-  // #init-mat
+  // #init-system
   implicit val system = ActorSystem()
-  implicit val mat = ActorMaterializer()
-  // #init-mat
+  // #init-system
 
   override protected def beforeAll(): Unit =
     Source.fromPublisher(db.drop()).runWith(Sink.headOption).futureValue
