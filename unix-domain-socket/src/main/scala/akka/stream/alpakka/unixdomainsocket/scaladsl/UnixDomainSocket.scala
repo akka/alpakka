@@ -32,7 +32,7 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
   override def createExtension(system: ExtendedActorSystem) =
     new UnixDomainSocket(system)
 
-  override def lookup(): ExtensionId[_ <: Extension] =
+  override def lookup: ExtensionId[_ <: Extension] =
     UnixDomainSocket
 
   /**
