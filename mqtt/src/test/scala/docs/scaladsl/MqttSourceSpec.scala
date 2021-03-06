@@ -38,10 +38,8 @@ class MqttSourceSpec extends MqttSpecBase("MqttSourceSpec") {
     val subscribed = Promise[Done]()
     RestartSource
       .withBackoff(
-        minBackoff = 100.millis,
-        maxBackoff = 3.seconds,
-        randomFactor = 0.2,
-        maxRestarts = 5
+        RestartSettings(minBackoff = 100.millis, maxBackoff = 3.seconds, randomFactor = 0.2).withMaxRestarts(5,
+                                                                                                             1.second)
       ) { () =>
         source
           .mapMaterializedValue { f =>
@@ -440,7 +438,7 @@ class MqttSourceSpec extends MqttSpecBase("MqttSourceSpec") {
           sourceSettings
             .withCleanSession(false)
             .withBroker(s"tcp://localhost:$proxyPort")
-            .withOfflinePersistenceSettings(bufferSize = 1234, deleteOldestMessage = false, persistBuffer = true),
+            .withOfflinePersistenceSettings(bufferSize = 1234),
           MqttSubscriptions(topic1, MqttQoS.AtLeastOnce),
           8
         )
@@ -479,7 +477,7 @@ class MqttSourceSpec extends MqttSpecBase("MqttSourceSpec") {
           sourceSettings
             .withCleanSession(false)
             .withBroker(s"tcp://localhost:$proxyPort")
-            .withOfflinePersistenceSettings(bufferSize = 1234, deleteOldestMessage = false, persistBuffer = true),
+            .withOfflinePersistenceSettings(bufferSize = 1234),
           MqttSubscriptions(topic1, MqttQoS.AtLeastOnce),
           8
         )
