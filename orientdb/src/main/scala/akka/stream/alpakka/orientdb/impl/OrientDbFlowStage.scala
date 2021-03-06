@@ -105,7 +105,7 @@ private[orientdb] class OrientDbFlowStage[T, C](
           client.save(document)
         case OrientDbWriteMessage(oRecord: ORecord, _) =>
           client.save(oRecord)
-        case OrientDbWriteMessage(others: _, _) =>
+        case OrientDbWriteMessage(others, _) =>
           failStage(new RuntimeException(s"unexpected type [${others.getClass}], ORecord required"))
       }
   }
