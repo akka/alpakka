@@ -8,5 +8,5 @@ public class TestConstants {
 
   public static final String INFLUXDB_URL = "http://localhost:8086";
   public static final String USERNAME = "root";
-  public static final String PASSWORD = "root1234";
+  public static final String PASSWORD = "root";
 }
