@@ -229,8 +229,7 @@ public class OrientDbTest {
             .map(m -> OrientDbWriteMessage.create(m.oDocument()))
             .groupedWithin(10, Duration.ofMillis(10))
             .runWith(
-                OrientDbSink.create(sinkClass1, OrientDbWriteSettings.create(oDatabase)),
-                system);
+                OrientDbSink.create(sinkClass1, OrientDbWriteSettings.create(oDatabase)), system);
 
     f1.toCompletableFuture().get(10, TimeUnit.SECONDS);
 
