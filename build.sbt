@@ -208,7 +208,7 @@ lazy val googleFcm = alpakkaProject("google-fcm", "google.firebase.fcm", Depende
 
 lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, Test / fork := true)
 
-lazy val hdfs = alpakkaProject("hdfs", "hdfs", Dependencies.Hdfs)
+lazy val hdfs = alpakkaProject("hdfs", "hdfs", Dependencies.Hdfs, fatalWarnings := true)
 
 lazy val influxdb = alpakkaProject("influxdb", "influxdb", Dependencies.InfluxDB, fatalWarnings := false)
 
