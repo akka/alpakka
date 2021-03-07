@@ -9,7 +9,7 @@ import java.util.UUID
 import akka.actor.ActorSystem
 import akka.stream.alpakka.ironmq.impl.IronMqClient
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.Materializer
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.BeforeAndAfterEach
