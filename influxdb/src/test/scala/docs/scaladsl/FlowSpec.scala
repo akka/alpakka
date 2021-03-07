@@ -9,7 +9,6 @@ import java.util.concurrent.TimeUnit
 
 import akka.Done
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.influxdb.{InfluxDbReadSettings, InfluxDbWriteMessage, InfluxDbWriteResult}
 import akka.stream.alpakka.influxdb.scaladsl.{InfluxDbFlow, InfluxDbSource}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
@@ -35,7 +34,6 @@ class FlowSpec
     with LogCapturing {
 
   implicit val system = ActorSystem()
-  implicit val mat = ActorMaterializer()
 
   final val DatabaseName = this.getClass.getSimpleName
 

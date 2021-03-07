@@ -210,7 +210,7 @@ lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, Test / for
 
 lazy val hdfs = alpakkaProject("hdfs", "hdfs", Dependencies.Hdfs)
 
-lazy val influxdb = alpakkaProject("influxdb", "influxdb", Dependencies.InfluxDB, fatalWarnings := false)
+lazy val influxdb = alpakkaProject("influxdb", "influxdb", Dependencies.InfluxDB, fatalWarnings := true)
 
 lazy val ironmq = alpakkaProject(
   "ironmq",
