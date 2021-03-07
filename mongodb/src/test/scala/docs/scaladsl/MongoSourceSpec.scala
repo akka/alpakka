@@ -6,7 +6,6 @@ package docs.scaladsl
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.mongodb.scaladsl.MongoSource
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}

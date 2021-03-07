@@ -134,7 +134,11 @@ public class MongoSourceTest {
 
     assertEquals(
         true,
-        source.runWith(Sink.seq(), system).toCompletableFuture().get(5, TimeUnit.SECONDS).isEmpty());
+        source
+            .runWith(Sink.seq(), system)
+            .toCompletableFuture()
+            .get(5, TimeUnit.SECONDS)
+            .isEmpty());
   }
 
   private List<Integer> seed() throws Exception {
@@ -144,7 +148,8 @@ public class MongoSourceTest {
         numbers.stream().map(i -> Document.parse("{_id:" + i + "}")).collect(Collectors.toList());
 
     final CompletionStage<InsertManyResult> completion =
-        Source.fromPublisher(numbersDocumentColl.insertMany(documents)).runWith(Sink.head(), system);
+        Source.fromPublisher(numbersDocumentColl.insertMany(documents))
+            .runWith(Sink.head(), system);
     completion.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     return numbers;
