@@ -216,7 +216,8 @@ lazy val ironmq = alpakkaProject(
   "ironmq",
   "ironmq",
   Dependencies.IronMq,
-  Test / fork := true
+  Test / fork := true,
+  fatalWarnings := true
 )
 
 lazy val jms = alpakkaProject("jms", "jms", Dependencies.Jms, fatalWarnings := true)

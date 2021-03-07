@@ -63,7 +63,7 @@ abstract class IronMqSpec
   override protected def beforeEach(): Unit = {
     mutableConfig = Option(initConfig())
     mutableActorSystem = Option(ActorSystem(s"test-${System.currentTimeMillis()}", config))
-    mutableMaterializer = Option(ActorMaterializer())
+    mutableMaterializer = Option(Materializer(mutableActorSystem.get))
     mutableIronMqClient = Option(IronMqClient(IronMqSettings(config.getConfig("alpakka.ironmq"))))
   }
 

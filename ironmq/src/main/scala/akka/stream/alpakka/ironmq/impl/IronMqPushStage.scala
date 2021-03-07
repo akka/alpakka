@@ -44,7 +44,7 @@ private[ironmq] class IronMqPushStage(queueName: String, settings: IronMqSetting
 
       override def preStart(): Unit = {
         super.preStart()
-        client = IronMqClient(settings)(ActorMaterializerHelper.downcast(materializer).system, materializer)
+        client = IronMqClient(settings)(materializer.system, materializer)
       }
 
       setHandler(
