@@ -248,7 +248,8 @@ lazy val pravega = alpakkaProject(
   "pravega",
   "pravega",
   Dependencies.Pravega,
-  Test / fork := true
+  Test / fork := true,
+  fatalWarnings := true
 )
 
 lazy val springWeb = alpakkaProject(
