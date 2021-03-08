@@ -95,10 +95,7 @@ public class HdfsWriterTest {
             fs, SyncStrategy.count(50), RotationStrategy.size(0.01, FileUnit.KB()), settings);
 
     CompletionStage<List<RotationMessage>> resF =
-        Source.from(books)
-            .map(HdfsWriteMessage::create)
-            .via(flow)
-            .runWith(Sink.seq(), system);
+        Source.from(books).map(HdfsWriteMessage::create).via(flow).runWith(Sink.seq(), system);
 
     List<RotationMessage> result = new ArrayList<>(resF.toCompletableFuture().get());
     List<RotationMessage> expect =
@@ -161,10 +158,7 @@ public class HdfsWriterTest {
         HdfsFlow.data(fs, SyncStrategy.count(1), RotationStrategy.count(2), settings);
 
     CompletionStage<List<RotationMessage>> resF =
-        Source.from(books)
-            .map(HdfsWriteMessage::create)
-            .via(flow)
-            .runWith(Sink.seq(), system);
+        Source.from(books).map(HdfsWriteMessage::create).via(flow).runWith(Sink.seq(), system);
 
     List<RotationMessage> logs = new ArrayList<>(resF.toCompletableFuture().get());
 
@@ -207,10 +201,7 @@ public class HdfsWriterTest {
         HdfsFlow.data(fs, SyncStrategy.none(), RotationStrategy.none(), settings);
 
     CompletionStage<List<RotationMessage>> resF =
-        Source.from(books)
-            .map(HdfsWriteMessage::create)
-            .via(flow)
-            .runWith(Sink.seq(), system);
+        Source.from(books).map(HdfsWriteMessage::create).via(flow).runWith(Sink.seq(), system);
 
     List<RotationMessage> logs = new ArrayList<>(resF.toCompletableFuture().get());
 
@@ -332,10 +323,7 @@ public class HdfsWriterTest {
         HdfsFlow.compressed(fs, SyncStrategy.count(1), RotationStrategy.count(1), codec, settings);
 
     CompletionStage<List<RotationMessage>> resF =
-        Source.from(books)
-            .map(HdfsWriteMessage::create)
-            .via(flow)
-            .runWith(Sink.seq(), system);
+        Source.from(books).map(HdfsWriteMessage::create).via(flow).runWith(Sink.seq(), system);
 
     List<RotationMessage> logs = new ArrayList<>(resF.toCompletableFuture().get());
     List<RotationMessage> expect =

@@ -88,10 +88,7 @@ public class HdfsReaderTest {
         JavaTestUtils.generateFakeContentWithPartitions(1, FileUnit.MB().byteCount(), 30);
 
     CompletionStage<List<RotationMessage>> resF =
-        Source.from(content)
-            .map(HdfsWriteMessage::create)
-            .via(flow)
-            .runWith(Sink.seq(), system);
+        Source.from(content).map(HdfsWriteMessage::create).via(flow).runWith(Sink.seq(), system);
 
     List<RotationMessage> logs = new ArrayList<>(resF.toCompletableFuture().get());
     List<Character> readData = new ArrayList<>();
@@ -129,10 +126,7 @@ public class HdfsReaderTest {
         JavaTestUtils.generateFakeContentForSequence(0.5, FileUnit.MB().byteCount());
 
     CompletionStage<List<RotationMessage>> resF =
-        Source.from(content)
-            .map(HdfsWriteMessage::create)
-            .via(flow)
-            .runWith(Sink.seq(), system);
+        Source.from(content).map(HdfsWriteMessage::create).via(flow).runWith(Sink.seq(), system);
 
     List<RotationMessage> logs = new ArrayList<>(resF.toCompletableFuture().get());
     List<Pair<Text, Text>> readData = new ArrayList<>();
