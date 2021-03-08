@@ -5,7 +5,6 @@
 package docs.scaladsl
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.hdfs._
 import akka.stream.alpakka.hdfs.scaladsl.HdfsFlow
 import akka.stream.alpakka.hdfs.util.ScalaTestUtils._
@@ -35,10 +34,7 @@ class HdfsWriterSpec
   private var hdfsCluster: MiniDFSCluster = _
   private val destination = "/tmp/alpakka/"
 
-  //#init-mat
   implicit val system: ActorSystem = ActorSystem()
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
-  //#init-mat
   //#init-client
   import org.apache.hadoop.conf.Configuration
   import org.apache.hadoop.fs.FileSystem
