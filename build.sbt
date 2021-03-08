@@ -228,7 +228,7 @@ lazy val kinesis = alpakkaProject("kinesis", "aws.kinesis", Dependencies.Kinesis
 
 lazy val kudu = alpakkaProject("kudu", "kudu", Dependencies.Kudu, fork in Test := false, fatalWarnings := true)
 
-lazy val mongodb = alpakkaProject("mongodb", "mongodb", Dependencies.MongoDb)
+lazy val mongodb = alpakkaProject("mongodb", "mongodb", Dependencies.MongoDb, fatalWarnings := true)
 
 lazy val mqtt = alpakkaProject("mqtt", "mqtt", Dependencies.Mqtt, fatalWarnings := false)
 

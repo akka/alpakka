@@ -5,7 +5,6 @@
 package docs.scaladsl
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.mongodb.{DocumentReplace, DocumentUpdate}
 import akka.stream.alpakka.mongodb.scaladsl.MongoSink
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
@@ -40,7 +39,6 @@ class MongoSinkSpec
   val codecRegistry = fromRegistries(fromProviders(classOf[Number], classOf[DomainObject]), DEFAULT_CODEC_REGISTRY)
 
   implicit val system = ActorSystem()
-  implicit val mat = ActorMaterializer()
 
   override protected def beforeAll(): Unit =
     Source.fromPublisher(db.drop()).runWith(Sink.headOption).futureValue
@@ -98,7 +96,7 @@ class MongoSinkSpec
 
     "save with insertOne and codec support" in assertAllStagesStopped {
       // #insert-one
-      val testRangeObjects = testRange.map(Number(_))
+      val testRangeObjects = testRange.map(Number)
       val source = Source(testRangeObjects)
       source.runWith(MongoSink.insertOne(numbersColl)).futureValue
       // #insert-one
@@ -120,7 +118,7 @@ class MongoSinkSpec
 
     "save with insertMany and codec support" in assertAllStagesStopped {
       // #insert-many
-      val objects = testRange.map(Number(_))
+      val objects = testRange.map(Number)
       val source = Source(objects)
       val completion = source.grouped(2).runWith(MongoSink.insertMany[Number](numbersColl))
       // #insert-many
@@ -146,7 +144,7 @@ class MongoSinkSpec
     }
 
     "save with insertMany with options and codec support" in assertAllStagesStopped {
-      val testRangeObjects = testRange.map(Number(_))
+      val testRangeObjects = testRange.map(Number)
       val source = Source(testRangeObjects)
 
       source

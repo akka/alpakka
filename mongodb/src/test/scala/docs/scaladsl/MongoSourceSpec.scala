@@ -6,7 +6,6 @@ package docs.scaladsl
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.mongodb.scaladsl.MongoSource
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
@@ -31,10 +30,9 @@ class MongoSourceSpec
     with Matchers
     with LogCapturing {
 
-  // #init-mat
+  // #init-system
   implicit val system = ActorSystem()
-  implicit val mat = ActorMaterializer()
-  // #init-mat
+  // #init-system
 
   override protected def beforeAll(): Unit =
     Source.fromPublisher(db.drop()).runWith(Sink.headOption).futureValue
