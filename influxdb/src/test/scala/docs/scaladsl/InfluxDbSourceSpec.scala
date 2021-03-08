@@ -5,7 +5,6 @@
 package docs.scaladsl
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.influxdb.InfluxDbReadSettings
 import akka.stream.alpakka.influxdb.scaladsl.InfluxDbSource
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
@@ -31,7 +30,6 @@ class InfluxDbSourceSpec
   final val DatabaseName = "InfluxDbSourceSpec"
 
   implicit val system = ActorSystem()
-  implicit val mat = ActorMaterializer()
 
   implicit var influxDB: InfluxDB = _
 
