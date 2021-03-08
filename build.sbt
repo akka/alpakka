@@ -229,9 +229,10 @@ lazy val kudu = alpakkaProject("kudu", "kudu", Dependencies.Kudu, fork in Test :
 
 lazy val mongodb = alpakkaProject("mongodb", "mongodb", Dependencies.MongoDb)
 
-lazy val mqtt = alpakkaProject("mqtt", "mqtt", Dependencies.Mqtt)
+lazy val mqtt = alpakkaProject("mqtt", "mqtt", Dependencies.Mqtt, fatalWarnings := false)
 
-lazy val mqttStreaming = alpakkaProject("mqtt-streaming", "mqttStreaming", Dependencies.MqttStreaming)
+lazy val mqttStreaming =
+  alpakkaProject("mqtt-streaming", "mqttStreaming", Dependencies.MqttStreaming, fatalWarnings := false)
 lazy val mqttStreamingBench = internalProject("mqtt-streaming-bench")
   .enablePlugins(JmhPlugin)
   .dependsOn(mqtt, mqttStreaming)

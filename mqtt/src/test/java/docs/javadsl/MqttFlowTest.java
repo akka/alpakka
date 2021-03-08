@@ -8,8 +8,6 @@ import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.alpakka.mqtt.MqttConnectionSettings;
 import akka.stream.alpakka.mqtt.MqttMessage;
 import akka.stream.alpakka.mqtt.MqttQoS;
@@ -46,21 +44,12 @@ public class MqttFlowTest {
   private static final Logger log = LoggerFactory.getLogger(MqttFlowTest.class);
 
   private static ActorSystem system;
-  private static Materializer materializer;
 
   private static final int bufferSize = 8;
 
-  private static Pair<ActorSystem, Materializer> setupMaterializer() {
-    final ActorSystem system = ActorSystem.create("MqttFlowTest");
-    final Materializer materializer = ActorMaterializer.create(system);
-    return Pair.create(system, materializer);
-  }
-
   @BeforeClass
   public static void setup() throws Exception {
-    final Pair<ActorSystem, Materializer> sysmat = setupMaterializer();
-    system = sysmat.first();
-    materializer = sysmat.second();
+    system = ActorSystem.create("MqttFlowTest");
   }
 
   @AfterClass
@@ -90,7 +79,7 @@ public class MqttFlowTest {
             Pair<CompletableFuture<Optional<MqttMessage>>, CompletionStage<Done>>,
             CompletionStage<List<MqttMessage>>>
         materialized =
-            source.viaMat(mqttFlow, Keep.both()).toMat(Sink.seq(), Keep.both()).run(materializer);
+            source.viaMat(mqttFlow, Keep.both()).toMat(Sink.seq(), Keep.both()).run(system);
 
     CompletableFuture<Optional<MqttMessage>> mqttMessagePromise = materialized.first().first();
     CompletionStage<Done> subscribedToMqtt = materialized.first().second();
@@ -125,7 +114,7 @@ public class MqttFlowTest {
     // #run-flow-ack
     final Pair<Pair<NotUsed, CompletionStage<Done>>, CompletionStage<List<MqttMessageWithAck>>>
         materialized =
-            source.viaMat(mqttFlow, Keep.both()).toMat(Sink.seq(), Keep.both()).run(materializer);
+            source.viaMat(mqttFlow, Keep.both()).toMat(Sink.seq(), Keep.both()).run(system);
 
     // #run-flow-ack
 

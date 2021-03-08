@@ -11,7 +11,7 @@ import akka.actor.ActorSystem
 import akka.stream.alpakka.mqtt.scaladsl.MqttFlow
 import akka.stream.alpakka.mqtt.streaming.scaladsl.{ActorMqttServerSession, Mqtt}
 import akka.stream.scaladsl.{BroadcastHub, Keep, Sink, Source, Tcp}
-import akka.stream.{ActorMaterializer, Materializer, OverflowStrategy}
+import akka.stream.OverflowStrategy
 import akka.util.ByteString
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.openjdk.jmh.annotations._
@@ -40,7 +40,6 @@ class MqttPerf {
   import streaming.MqttCodec._
 
   private implicit val system: ActorSystem = ActorSystem("mqttperf")
-  private implicit val mat: Materializer = ActorMaterializer()
 
   private val (_, clientSource) = Source
     .queue[MqttMessage](2, OverflowStrategy.backpressure)

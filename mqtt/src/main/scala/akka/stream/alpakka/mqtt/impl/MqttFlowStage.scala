@@ -243,9 +243,9 @@ abstract class MqttFlowStageLogic[I](in: Inlet[I],
       if (unackedMessages.get() == 0 && isClosed(in)) completeStage()
     }
 
-  override def onDownstreamFinish(): Unit = {
+  override def onDownstreamFinish(cause: Throwable): Unit = {
     setKeepGoing(true)
-    if (unackedMessages.get() == 0) super.onDownstreamFinish()
+    if (unackedMessages.get() == 0) super.onDownstreamFinish(cause)
   }
 
   setHandlers(in, out, this)

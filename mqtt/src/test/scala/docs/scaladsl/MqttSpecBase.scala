@@ -26,7 +26,6 @@ abstract class MqttSpecBase(name: String)
     with Eventually
     with IntegrationPatience
     with LogCapturing {
-  implicit val mat: Materializer = ActorMaterializer()
   val connectionSettings = MqttConnectionSettings(
     "tcp://localhost:1883",
     "test-client",
