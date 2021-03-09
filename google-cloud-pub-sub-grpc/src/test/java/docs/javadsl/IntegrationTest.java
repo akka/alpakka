@@ -118,8 +118,7 @@ public class IntegrationTest {
         GooglePubSub.subscribe(request, pollInterval);
     // #subscribe-stream
 
-    final CompletionStage<ReceivedMessage> first =
-        subscriptionSource.runWith(Sink.head(), system);
+    final CompletionStage<ReceivedMessage> first = subscriptionSource.runWith(Sink.head(), system);
 
     final String topic = "simpleTopic";
     final ByteString msg = ByteString.copyFromUtf8("Hello world!");
@@ -158,8 +157,7 @@ public class IntegrationTest {
         GooglePubSub.subscribePolling(request, pollInterval);
     // #subscribe-sync
 
-    final CompletionStage<ReceivedMessage> first =
-        subscriptionSource.runWith(Sink.head(), system);
+    final CompletionStage<ReceivedMessage> first = subscriptionSource.runWith(Sink.head(), system);
 
     final String topic = "simpleTopic";
     final ByteString msg = ByteString.copyFromUtf8("Hello world!");
