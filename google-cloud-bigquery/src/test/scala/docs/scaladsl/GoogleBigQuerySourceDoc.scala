@@ -22,10 +22,8 @@ import scala.concurrent.Future
 
 class GoogleBigQuerySourceDoc {
 
-  //#init-mat
   implicit val system = ActorSystem()
   implicit val executionContext = system.dispatcher
-  //#init-mat
 
   //#init-config
   val config = BigQueryConfig("project@test.test", "privateKeyFromGoogle", "projectID", "bigQueryDatasetName")
