@@ -14,7 +14,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.Uri.{Path, Query}
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.{ActorMaterializer, Attributes, Materializer}
+import akka.stream.{Attributes, Materializer}
 import akka.stream.alpakka.googlecloud.storage._
 import akka.stream.alpakka.googlecloud.storage.impl.Formats._
 import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source}
@@ -30,7 +30,7 @@ import scala.util.control.NonFatal
 
   def getBucketSource(bucketName: String): Source[Option[Bucket], NotUsed] =
     Source
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         implicit val materializer = mat
         implicit val attribures = attr
         makeRequestSource(
@@ -47,7 +47,7 @@ import scala.util.control.NonFatal
 
   def createBucketSource(bucketName: String, location: String): Source[Bucket, NotUsed] =
     Source
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         implicit val materializer = mat
         implicit val attribures = attr
         makeRequestSource(
@@ -68,7 +68,7 @@ import scala.util.control.NonFatal
 
   def deleteBucketSource(bucketName: String): Source[Done, NotUsed] =
     Source
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         implicit val materializer = mat
         implicit val attributes = attr
         import mat.executionContext
@@ -101,7 +101,7 @@ import scala.util.control.NonFatal
 
     def getBucketListResult(
         pageToken: Option[String]
-    )(implicit mat: ActorMaterializer, attr: Attributes): Future[Option[(ListBucketState, List[StorageObject])]] = {
+    )(implicit mat: Materializer, attr: Attributes): Future[Option[(ListBucketState, List[StorageObject])]] = {
       import mat.executionContext
       val queryParams =
         Map(
@@ -131,7 +131,7 @@ import scala.util.control.NonFatal
     }
 
     Source
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         implicit val materializer = mat
         implicit val attributes = attr
         Source
@@ -149,7 +149,7 @@ import scala.util.control.NonFatal
                 objectName: String,
                 generation: Option[Long] = None): Source[Option[StorageObject], NotUsed] =
     Source
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         implicit val materializer = mat
         implicit val attributes = attr
         makeRequestSource(
@@ -169,7 +169,7 @@ import scala.util.control.NonFatal
                          objectName: String,
                          generation: Option[Long] = None): Source[Boolean, NotUsed] =
     Source
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         implicit val materializer = mat
         implicit val attribures = attr
         makeRequestSource(
@@ -194,7 +194,7 @@ import scala.util.control.NonFatal
                 data: Source[ByteString, _],
                 contentType: ContentType): Source[StorageObject, NotUsed] =
     Source
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         implicit val materializer = mat
         implicit val attributes = attr
         val queryParams = Map("uploadType" -> "media", "name" -> objectName)
@@ -216,7 +216,7 @@ import scala.util.control.NonFatal
                objectName: String,
                generation: Option[Long] = None): Source[Option[Source[ByteString, NotUsed]], NotUsed] =
     Source
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         implicit val materializer = mat
         implicit val attributes = attr
         val queryParams = Map("alt" -> "media") ++ generation.map("generation" -> _.toString)
@@ -257,7 +257,7 @@ import scala.util.control.NonFatal
 
     def rewriteRequest(
         rewriteToken: Option[String]
-    )(implicit mat: ActorMaterializer, attr: Attributes): Future[Option[(RewriteState, RewriteResponse)]] = {
+    )(implicit mat: Materializer, attr: Attributes): Future[Option[(RewriteState, RewriteResponse)]] = {
       import mat.executionContext
       val queryParams = rewriteToken.map(token => Map("rewriteToken" -> token)).getOrElse(Map())
       makeRequestSource(
@@ -281,7 +281,7 @@ import scala.util.control.NonFatal
     }
 
     Source
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         implicit val materializer = mat
         implicit val attributes = attr
         Source
@@ -334,7 +334,7 @@ import scala.util.control.NonFatal
 
   private def makeRequestSource(
       requestSource: Source[HttpRequest, NotUsed]
-  )(implicit mat: ActorMaterializer): Source[HttpResponse, NotUsed] = {
+  )(implicit mat: Materializer): Source[HttpResponse, NotUsed] = {
     implicit val sys = mat.system
     requestSource.via(GoogleRetry.singleRequestFlow(Http()))
   }
@@ -345,7 +345,7 @@ import scala.util.control.NonFatal
       method: HttpMethod = HttpMethods.GET,
       headers: Seq[HttpHeader] = Seq.empty,
       uriFactory: GCStorageSettings => Uri
-  )(implicit mat: ActorMaterializer, attr: Attributes): Source[HttpRequest, NotUsed] = {
+  )(implicit mat: Materializer, attr: Attributes): Source[HttpRequest, NotUsed] = {
     implicit val sys = mat.system
     val conf = resolveSettings()
     val uri = uriFactory(conf)
@@ -360,7 +360,7 @@ import scala.util.control.NonFatal
       method: HttpMethod,
       headers: Seq[HttpHeader] = Seq.empty,
       uriFactory: GCStorageSettings => Uri
-  )(implicit mat: ActorMaterializer, attr: Attributes): Future[HttpRequest] =
+  )(implicit mat: Materializer, attr: Attributes): Future[HttpRequest] =
     createRequestSource(method, headers, uriFactory).runWith(Sink.head)
 
   private def createPostRequestSource(
@@ -368,7 +368,7 @@ import scala.util.control.NonFatal
       bytes: ByteString,
       uriFactory: GCStorageSettings => Uri,
       headers: Seq[HttpHeader] = Seq.empty
-  )(implicit mat: ActorMaterializer, attr: Attributes): Source[HttpRequest, NotUsed] = {
+  )(implicit mat: Materializer, attr: Attributes): Source[HttpRequest, NotUsed] = {
 
     implicit val sys = mat.system
     val conf = resolveSettings()
@@ -385,7 +385,7 @@ import scala.util.control.NonFatal
   private def createEmptyPostRequestSource(
       uriFactory: GCStorageSettings => Uri,
       headers: Seq[HttpHeader]
-  )(implicit mat: ActorMaterializer, attr: Attributes): Source[HttpRequest, NotUsed] = {
+  )(implicit mat: Materializer, attr: Attributes): Source[HttpRequest, NotUsed] = {
 
     implicit val sys = mat.system
     val conf = resolveSettings()
@@ -403,7 +403,7 @@ import scala.util.control.NonFatal
       data: Source[ByteString, _],
       uriFactory: GCStorageSettings => Uri,
       headers: Seq[HttpHeader] = Seq.empty
-  )(implicit mat: ActorMaterializer, attr: Attributes): Source[HttpRequest, NotUsed] = {
+  )(implicit mat: Materializer, attr: Attributes): Source[HttpRequest, NotUsed] = {
 
     implicit val sys = mat.system
     val conf = resolveSettings()
@@ -417,7 +417,7 @@ import scala.util.control.NonFatal
     createAuthenticatedRequestSource(request)
   }
 
-  private def createAuthenticatedRequestSource(request: HttpRequest)(implicit mat: ActorMaterializer,
+  private def createAuthenticatedRequestSource(request: HttpRequest)(implicit mat: Materializer,
                                                                      attr: Attributes): Source[HttpRequest, NotUsed] = {
     import mat.executionContext
     implicit val sys = mat.system
@@ -498,7 +498,7 @@ import scala.util.control.NonFatal
     // The individual upload part requests are processed here
     // apparently Google Cloud storage does not support parallel uploading
     Flow
-      .setup { (mat, _) =>
+      .fromMaterializer { (mat, _) =>
         implicit val materializer = mat
         implicit val sys = mat.system
         import mat.executionContext
@@ -552,7 +552,7 @@ import scala.util.control.NonFatal
       initiateUpload(bucketName, objectName, contentType, metadata)
 
     Flow
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         implicit val materializer = mat
         implicit val attributes = attr
         import materializer.executionContext
@@ -601,7 +601,7 @@ import scala.util.control.NonFatal
                              contentType: ContentType,
                              metadata: Option[Map[String, String]]): Source[(MultiPartUpload, Int), NotUsed] =
     Source
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         implicit val materializer = mat
         implicit val attributes = attr
         import mat.executionContext
@@ -645,7 +645,7 @@ import scala.util.control.NonFatal
 
   private def completionSink(): Sink[UploadPartResponse, Future[StorageObject]] =
     Sink
-      .setup { (mat, _) =>
+      .fromMaterializer { (mat, _) =>
         import mat.executionContext
 
         Sink.seq[UploadPartResponse].mapMaterializedValue { responseFuture: Future[Seq[UploadPartResponse]] =>

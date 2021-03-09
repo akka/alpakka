@@ -5,7 +5,7 @@
 package akka.stream.alpakka.googlecloud.storage
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -22,7 +22,7 @@ trait WithMaterializerGlobal
     with IntegrationPatience
     with Matchers {
   implicit val actorSystem = ActorSystem("test")
-  implicit val materializer = ActorMaterializer()
+  implicit val materializer = Materializer(actorSystem)
   implicit val ec = materializer.executionContext
 
   override protected def afterAll(): Unit = {

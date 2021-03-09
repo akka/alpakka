@@ -11,7 +11,7 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import akka.stream.alpakka.googlecloud.storage.impl.backport.RetryFlow
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl.{Flow, RetryFlow, Sink, Source}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
