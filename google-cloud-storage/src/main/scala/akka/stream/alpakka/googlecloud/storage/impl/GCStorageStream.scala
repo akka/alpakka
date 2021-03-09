@@ -428,7 +428,7 @@ import scala.util.control.NonFatal
                         conf.privateKey,
                         new GoogleTokenApi(http, TokenApiSettings(conf.tokenUrl, conf.tokenScope)))
 
-    Source.fromFuture(session.getToken().map { accessToken =>
+    Source.future(session.getToken().map { accessToken =>
       request.addCredentials(OAuth2BearerToken(accessToken))
     })
   }
