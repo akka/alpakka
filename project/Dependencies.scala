@@ -15,7 +15,7 @@ object Dependencies {
   val InfluxDBJavaVersion = "2.15"
 
   val AwsSdk2Version = "2.11.14"
-  val AwsSpiAkkaHttpVersion = "0.0.10"
+  val AwsSpiAkkaHttpVersion = "0.0.11"
   // Sync with plugins.sbt
   val AkkaGrpcBinaryVersion = "1.0"
   val AkkaHttp101 = "10.1.11"
@@ -111,8 +111,8 @@ object Dependencies {
   )
 
   val CassandraVersionInDocs = "4.0"
-  val CassandraDriverVersion = "4.9.0"
-  val CassandraDriverVersionInDocs = CassandraDriverVersion.take(3)
+  val CassandraDriverVersion = "4.10.0"
+  val CassandraDriverVersionInDocs = "4.10"
 
   val Cassandra = Seq(
     libraryDependencies ++= Seq(
@@ -120,9 +120,7 @@ object Dependencies {
           .exclude("com.github.spotbugs", "spotbugs-annotations")
           .exclude("org.apache.tinkerpop", "*") //https://github.com/akka/alpakka/issues/2200
           .exclude("com.esri.geometry", "esri-geometry-api"), //https://github.com/akka/alpakka/issues/2225
-        "com.typesafe.akka" %% "akka-discovery" % AkkaVersion % Provided,
-        // evict Cassandra's 4.1.45 version to avoid https://github.com/advisories/GHSA-mm9x-g8pc-w292
-        "io.netty" % "netty-handler" % "4.1.52.Final"
+        "com.typesafe.akka" %% "akka-discovery" % AkkaVersion % Provided
       ) ++ JacksonDatabindDependencies
   )
 
@@ -303,7 +301,7 @@ object Dependencies {
         "com.ibm.mq" % "com.ibm.mq.allclient" % "9.2.0.0" % Test, // IBM International Program License Agreement https://public.dhe.ibm.com/ibmdl/export/pub/software/websphere/messaging/mqdev/maven/licenses/L-APIG-AZYF2E/LI_en.html
         "org.apache.activemq" % "activemq-broker" % "5.16.0" % Test, // ApacheV2
         "org.apache.activemq" % "activemq-client" % "5.16.0" % Test, // ApacheV2
-        "io.github.sullis" %% "jms-testkit" % "0.2.8" % Test // ApacheV2
+        "io.github.sullis" %% "jms-testkit" % "0.5.0" % Test // ApacheV2
       ) ++ Mockito,
     // Having JBoss as a first resolver is a workaround for https://github.com/coursier/coursier/issues/200
     externalResolvers := ("jboss" at "https://repository.jboss.org/nexus/content/groups/public") +: externalResolvers.value
@@ -324,7 +322,7 @@ object Dependencies {
       ) ++ Seq(
         "software.amazon.awssdk" % "kinesis" % AwsSdk2Version, // ApacheV2
         "software.amazon.awssdk" % "firehose" % AwsSdk2Version, // ApacheV2
-        "software.amazon.kinesis" % "amazon-kinesis-client" % "2.2.7" // ApacheV2
+        "software.amazon.kinesis" % "amazon-kinesis-client" % "2.3.3" // ApacheV2
       ).map(
         _.excludeAll(
           ExclusionRule("software.amazon.awssdk", "apache-client"),
@@ -365,13 +363,13 @@ object Dependencies {
 
   val OrientDB = Seq(
     libraryDependencies ++= Seq(
-        ("com.orientechnologies" % "orientdb-graphdb" % "3.0.34")
+        ("com.orientechnologies" % "orientdb-graphdb" % "3.1.9")
           .exclude("com.tinkerpop.blueprints", "blueprints-core"),
-        "com.orientechnologies" % "orientdb-object" % "3.0.34" // ApacheV2
+        "com.orientechnologies" % "orientdb-object" % "3.1.9" // ApacheV2
       )
   )
 
-  val PravegaVersion = "0.8.0"
+  val PravegaVersion = "0.9.0"
   val PravegaVersionForDocs = s"v${PravegaVersion}"
 
   val Pravega = {
@@ -494,8 +492,8 @@ object Dependencies {
 
   val UnixDomainSocket = Seq(
     libraryDependencies ++= Seq(
-        "com.github.jnr" % "jffi" % "1.2.23", // classifier "complete", // Is the classifier needed anymore?
-        "com.github.jnr" % "jnr-unixsocket" % "0.28" // BSD/ApacheV2/CPL/MIT as per https://github.com/akka/alpakka/issues/620#issuecomment-348727265
+        "com.github.jnr" % "jffi" % "1.3.1", // classifier "complete", // Is the classifier needed anymore?
+        "com.github.jnr" % "jnr-unixsocket" % "0.38.5" // BSD/ApacheV2/CPL/MIT as per https://github.com/akka/alpakka/issues/620#issuecomment-348727265
       )
   )
 

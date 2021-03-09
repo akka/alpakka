@@ -53,7 +53,8 @@ import akka.stream.alpakka.couchbase.CouchbaseSessionRegistry;
 // #session
 import akka.stream.alpakka.couchbase.CouchbaseSessionSettings;
 import akka.stream.alpakka.couchbase.javadsl.CouchbaseSession;
-// #session #registry
+// #session
+// #registry
 import java.util.stream.Collectors;
 // #sessionFromBucket
 import com.couchbase.client.java.Bucket;

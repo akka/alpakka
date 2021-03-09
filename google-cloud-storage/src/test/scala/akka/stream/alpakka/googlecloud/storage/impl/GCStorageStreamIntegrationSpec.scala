@@ -236,8 +236,10 @@ class GCStorageStreamIntegrationSpec
 
     "provide a sink to stream data to gcs" ignore {
       val fileName = testFileName("big-streaming-file")
+      val meta = Map("meta-key-1" -> "value-1")
+
       val sink =
-        GCStorageStream.resumableUpload(bucket, fileName, ContentTypes.`text/plain(UTF-8)`, 4 * 256 * 1024)
+        GCStorageStream.resumableUpload(bucket, fileName, ContentTypes.`text/plain(UTF-8)`, 4 * 256 * 1024, Some(meta))
 
       val res = Source
         .fromIterator(
@@ -251,6 +253,7 @@ class GCStorageStreamIntegrationSpec
       val so = res.futureValue
       so.name shouldBe fileName
       so.size shouldBe 12345670
+      so.metadata shouldBe Some(meta)
     }
 
     "rewrite file from source to destination path" ignore {

@@ -7,7 +7,6 @@ package docs.javadsl;
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
 // #solr-update-settings
 import akka.stream.alpakka.solr.SolrUpdateSettings;
 // #solr-update-settings
@@ -65,7 +64,6 @@ public class SolrTest {
   private static SolrClient solrClient;
   private static SolrClient cl;
   private static ActorSystem system = ActorSystem.create();
-  private static ActorMaterializer materializer = ActorMaterializer.create(system);
   // #init-client
   private static final int zookeeperPort = 9984;
   private static final String zookeeperHost = "127.0.0.1:" + zookeeperPort + "/solr";
@@ -131,8 +129,7 @@ public class SolrTest {
                 })
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(
-                SolrSink.documents(collectionName, SolrUpdateSettings.create(), solrClient),
-                materializer)
+                SolrSink.documents(collectionName, SolrUpdateSettings.create(), solrClient), system)
             // explicit commit when stream ended
             .thenApply(
                 done -> {
@@ -151,7 +148,7 @@ public class SolrTest {
     CompletionStage<List<String>> res2 =
         SolrSource.fromTupleStream(stream2)
             .map(t -> tupleToBook.apply(t).title)
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
 
     List<String> result = new ArrayList<>(resultOf(res2));
 
@@ -196,7 +193,7 @@ public class SolrTest {
             .runWith(
                 SolrSink.beans(
                     collectionName, SolrUpdateSettings.create(), solrClient, BookBean.class),
-                materializer)
+                system)
             // explicit commit when stream ended
             .thenApply(
                 done -> {
@@ -215,7 +212,7 @@ public class SolrTest {
     CompletionStage<List<String>> res2 =
         SolrSource.fromTupleStream(stream2)
             .map(t -> tupleToBook.apply(t).title)
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
 
     List<String> result = new ArrayList<>(resultOf(res2));
 
@@ -245,7 +242,7 @@ public class SolrTest {
             .runWith(
                 SolrSink.typeds(
                     collectionName, SolrUpdateSettings.create(), bookToDoc, solrClient, Book.class),
-                materializer)
+                system)
             // explicit commit when stream ended
             .thenApply(
                 done -> {
@@ -264,7 +261,7 @@ public class SolrTest {
     CompletionStage<List<String>> res2 =
         SolrSource.fromTupleStream(stream2)
             .map(t -> tupleToBook.apply(t).title)
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
 
     List<String> result = new ArrayList<>(resultOf(res2));
 
@@ -294,7 +291,7 @@ public class SolrTest {
             .via(
                 SolrFlow.typeds(
                     collectionName, SolrUpdateSettings.create(), bookToDoc, solrClient, Book.class))
-            .runWith(Sink.ignore(), materializer)
+            .runWith(Sink.ignore(), system)
             // explicit commit when stream ended
             .thenApply(
                 done -> {
@@ -313,7 +310,7 @@ public class SolrTest {
     CompletionStage<List<String>> res2 =
         SolrSource.fromTupleStream(stream2)
             .map(t -> tupleToBook.apply(t).title)
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
 
     List<String> result = new ArrayList<>(resultOf(res2));
 
@@ -374,7 +371,7 @@ public class SolrTest {
                         .collect(Collectors.toList()))
             .map(ConsumerMessage::createCommittableOffsetBatch)
             .mapAsync(1, CommittableOffsetBatch::commitJavadsl)
-            .runWith(Sink.ignore(), materializer);
+            .runWith(Sink.ignore(), system);
     // #kafka-example
 
     resultOf(completion);
@@ -391,7 +388,7 @@ public class SolrTest {
     CompletionStage<List<String>> res2 =
         SolrSource.fromTupleStream(stream)
             .map(t -> tupleToBook.apply(t).title)
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
 
     List<String> result = new ArrayList<>(resultOf(res2));
 
@@ -415,8 +412,7 @@ public class SolrTest {
                 })
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(
-                SolrSink.documents(collectionName, SolrUpdateSettings.create(), solrClient),
-                materializer)
+                SolrSink.documents(collectionName, SolrUpdateSettings.create(), solrClient), system)
             // explicit commit when stream ended
             .thenApply(
                 done -> {
@@ -441,8 +437,7 @@ public class SolrTest {
                 })
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(
-                SolrSink.documents(collectionName, SolrUpdateSettings.create(), solrClient),
-                materializer)
+                SolrSink.documents(collectionName, SolrUpdateSettings.create(), solrClient), system)
             // explicit commit when stream ended
             .thenApply(
                 done -> {
@@ -461,7 +456,7 @@ public class SolrTest {
     CompletionStage<List<String>> res3 =
         SolrSource.fromTupleStream(stream3)
             .map(t -> tupleToBook.apply(t).title)
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
 
     List<String> result = new ArrayList<>(resultOf(res3));
     List<String> expect = Collections.emptyList();
@@ -483,8 +478,7 @@ public class SolrTest {
                 })
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(
-                SolrSink.documents(collectionName, SolrUpdateSettings.create(), solrClient),
-                materializer)
+                SolrSink.documents(collectionName, SolrUpdateSettings.create(), solrClient), system)
             // explicit commit when stream ended
             .thenApply(
                 done -> {
@@ -514,8 +508,7 @@ public class SolrTest {
                 })
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(
-                SolrSink.documents(collectionName, SolrUpdateSettings.create(), solrClient),
-                materializer)
+                SolrSink.documents(collectionName, SolrUpdateSettings.create(), solrClient), system)
             // explicit commit when stream ended
             .thenApply(
                 done -> {
@@ -537,7 +530,7 @@ public class SolrTest {
                   Book b = tupleToBook.apply(t);
                   return b.title + ". " + b.comment;
                 })
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
 
     List<String> result = new ArrayList<>(resultOf(res3));
     List<String> expect =
@@ -571,8 +564,7 @@ public class SolrTest {
                 })
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(
-                SolrSink.documents(collectionName, SolrUpdateSettings.create(), solrClient),
-                materializer)
+                SolrSink.documents(collectionName, SolrUpdateSettings.create(), solrClient), system)
             // explicit commit when stream ended
             .thenApply(
                 done -> {
@@ -602,8 +594,7 @@ public class SolrTest {
                 })
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(
-                SolrSink.documents(collectionName, SolrUpdateSettings.create(), solrClient),
-                materializer)
+                SolrSink.documents(collectionName, SolrUpdateSettings.create(), solrClient), system)
             // explicit commit when stream ended
             .thenApply(
                 done -> {
@@ -625,7 +616,7 @@ public class SolrTest {
                   Book b = tupleToBook.apply(t);
                   return b.title + ". " + b.comment;
                 })
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
 
     List<String> result = new ArrayList<>(resultOf(res3));
 
@@ -657,8 +648,7 @@ public class SolrTest {
                 })
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(
-                SolrSink.documents(collectionName, SolrUpdateSettings.create(), solrClient),
-                materializer)
+                SolrSink.documents(collectionName, SolrUpdateSettings.create(), solrClient), system)
             // explicit commit when stream ended
             .thenApply(
                 done -> {
@@ -684,8 +674,7 @@ public class SolrTest {
                 })
             .groupedWithin(5, Duration.ofMillis(10))
             .runWith(
-                SolrSink.documents(collectionName, SolrUpdateSettings.create(), solrClient),
-                materializer)
+                SolrSink.documents(collectionName, SolrUpdateSettings.create(), solrClient), system)
             // explicit commit when stream ended
             .thenApply(
                 done -> {
@@ -704,7 +693,7 @@ public class SolrTest {
     CompletionStage<List<String>> res3 =
         SolrSource.fromTupleStream(stream3)
             .map(t -> tupleToBook.apply(t).title)
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
 
     List<String> result = new ArrayList<>(resultOf(res3));
     List<String> expect = Collections.emptyList();
@@ -751,7 +740,7 @@ public class SolrTest {
                         .collect(Collectors.toList()))
             .map(ConsumerMessage::createCommittableOffsetBatch)
             .mapAsync(1, CommittableOffsetBatch::commitJavadsl)
-            .runWith(Sink.ignore(), materializer);
+            .runWith(Sink.ignore(), system);
     // #kafka-example-PT
 
     resultOf(completion);

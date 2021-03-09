@@ -8,7 +8,6 @@ import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.mongodb.DocumentReplace;
 import akka.stream.alpakka.mongodb.DocumentUpdate;
@@ -47,7 +46,6 @@ public class MongoSinkTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem system;
-  private static Materializer mat;
 
   private final MongoClient client;
   private final MongoDatabase db;
@@ -60,7 +58,6 @@ public class MongoSinkTest {
 
   public MongoSinkTest() {
     system = ActorSystem.create();
-    mat = ActorMaterializer.create(system);
 
     PojoCodecProvider codecProvider =
         PojoCodecProvider.builder().register(Number.class, DomainObject.class).build();
@@ -79,7 +76,7 @@ public class MongoSinkTest {
   private void insertTestRange() throws Exception {
     Source.from(testRange)
         .map(i -> Document.parse("{\"value\":" + i + "}"))
-        .runWith(MongoSink.insertOne(numbersDocumentColl), mat)
+        .runWith(MongoSink.insertOne(numbersDocumentColl), system)
         .toCompletableFuture()
         .get(5, TimeUnit.SECONDS);
   }
@@ -96,21 +93,21 @@ public class MongoSinkTest {
               System.out.println(String.format("%s inserting %s", i, domainObject));
               return domainObject;
             })
-        .runWith(MongoSink.insertOne(domainObjectsColl), mat)
+        .runWith(MongoSink.insertOne(domainObjectsColl), system)
         .toCompletableFuture()
         .get(5, TimeUnit.SECONDS);
   }
 
   private void deleteCollection(MongoCollection<Document> collection) throws Exception {
     Source.fromPublisher(collection.deleteMany(new Document()))
-        .runWith(Sink.head(), mat)
+        .runWith(Sink.head(), system)
         .toCompletableFuture()
         .get(5, TimeUnit.SECONDS);
   }
 
   private void checkCollectionForLeaks(MongoCollection<Document> collection) throws Exception {
     Source.fromPublisher(collection.deleteMany(new Document()))
-        .runWith(Sink.head(), mat)
+        .runWith(Sink.head(), system)
         .toCompletableFuture()
         .get(5, TimeUnit.SECONDS);
   }
@@ -125,7 +122,7 @@ public class MongoSinkTest {
   public void checkForLeaks() throws Exception {
     checkCollectionForLeaks(numbersDocumentColl);
     checkCollectionForLeaks(domainObjectsDocumentColl);
-    StreamTestKit.assertAllStagesStopped(mat);
+    StreamTestKit.assertAllStagesStopped(Materializer.matFromSystem(system));
   }
 
   @AfterClass
@@ -138,11 +135,11 @@ public class MongoSinkTest {
     final Source<Document, NotUsed> source =
         Source.from(testRange).map(i -> Document.parse("{\"value\":" + i + "}"));
     final CompletionStage<Done> completion =
-        source.runWith(MongoSink.insertOne(numbersDocumentColl), mat);
+        source.runWith(MongoSink.insertOne(numbersDocumentColl), system);
 
     completion.toCompletableFuture().get(5, TimeUnit.SECONDS);
     final CompletionStage<List<Document>> found =
-        Source.fromPublisher(numbersDocumentColl.find()).runWith(Sink.seq(), mat);
+        Source.fromPublisher(numbersDocumentColl.find()).runWith(Sink.seq(), system);
 
     assertEquals(
         testRange,
@@ -156,12 +153,12 @@ public class MongoSinkTest {
     // #insert-one
     List<Number> testRangeObjects = testRange.stream().map(Number::new).collect(toList());
     final CompletionStage<Done> completion =
-        Source.from(testRangeObjects).runWith(MongoSink.insertOne(numbersColl), mat);
+        Source.from(testRangeObjects).runWith(MongoSink.insertOne(numbersColl), system);
     // #insert-one
 
     completion.toCompletableFuture().get(5, TimeUnit.SECONDS);
     final CompletionStage<List<Number>> found =
-        Source.fromPublisher(numbersColl.find()).runWith(Sink.seq(), mat);
+        Source.fromPublisher(numbersColl.find()).runWith(Sink.seq(), system);
 
     assertEquals(testRangeObjects, found.toCompletableFuture().get(5, TimeUnit.SECONDS));
   }
@@ -171,11 +168,11 @@ public class MongoSinkTest {
     final Source<Document, NotUsed> source =
         Source.from(testRange).map(i -> Document.parse("{\"value\":" + i + "}"));
     final CompletionStage<Done> completion =
-        source.grouped(2).runWith(MongoSink.insertMany(numbersDocumentColl), mat);
+        source.grouped(2).runWith(MongoSink.insertMany(numbersDocumentColl), system);
 
     completion.toCompletableFuture().get(5, TimeUnit.SECONDS);
     final CompletionStage<List<Document>> found =
-        Source.fromPublisher(numbersDocumentColl.find()).runWith(Sink.seq(), mat);
+        Source.fromPublisher(numbersDocumentColl.find()).runWith(Sink.seq(), system);
 
     assertEquals(
         testRange,
@@ -189,12 +186,12 @@ public class MongoSinkTest {
     // #insert-many
     final List<Number> testRangeObjects = testRange.stream().map(Number::new).collect(toList());
     final CompletionStage<Done> completion =
-        Source.from(testRangeObjects).grouped(2).runWith(MongoSink.insertMany(numbersColl), mat);
+        Source.from(testRangeObjects).grouped(2).runWith(MongoSink.insertMany(numbersColl), system);
     // #insert-many
 
     completion.toCompletableFuture().get(5, TimeUnit.SECONDS);
     final CompletionStage<List<Number>> found =
-        Source.fromPublisher(numbersColl.find()).runWith(Sink.seq(), mat);
+        Source.fromPublisher(numbersColl.find()).runWith(Sink.seq(), system);
 
     assertEquals(testRangeObjects, found.toCompletableFuture().get(5, TimeUnit.SECONDS));
   }
@@ -208,11 +205,11 @@ public class MongoSinkTest {
             .grouped(2)
             .runWith(
                 MongoSink.insertMany(numbersDocumentColl, new InsertManyOptions().ordered(false)),
-                mat);
+                system);
 
     completion.toCompletableFuture().get(5, TimeUnit.SECONDS);
     final CompletionStage<List<Document>> found =
-        Source.fromPublisher(numbersDocumentColl.find()).runWith(Sink.seq(), mat);
+        Source.fromPublisher(numbersDocumentColl.find()).runWith(Sink.seq(), system);
 
     assertEquals(
         testRange,
@@ -228,11 +225,11 @@ public class MongoSinkTest {
         Source.from(testRangeObjects)
             .grouped(2)
             .runWith(
-                MongoSink.insertMany(numbersColl, new InsertManyOptions().ordered(false)), mat);
+                MongoSink.insertMany(numbersColl, new InsertManyOptions().ordered(false)), system);
 
     completion.toCompletableFuture().get(5, TimeUnit.SECONDS);
     final CompletionStage<List<Number>> found =
-        Source.fromPublisher(numbersColl.find()).runWith(Sink.seq(), mat);
+        Source.fromPublisher(numbersColl.find()).runWith(Sink.seq(), system);
 
     assertEquals(testRangeObjects, found.toCompletableFuture().get(5, TimeUnit.SECONDS));
   }
@@ -249,13 +246,13 @@ public class MongoSinkTest {
                     DocumentUpdate.create(
                         Filters.eq("value", i), Updates.set("updateValue", i * -1)));
     final CompletionStage<Done> completion =
-        source.runWith(MongoSink.updateOne(numbersDocumentColl), mat);
+        source.runWith(MongoSink.updateOne(numbersDocumentColl), system);
     // #update-one
 
     completion.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     final CompletionStage<List<Document>> found =
-        Source.fromPublisher(numbersDocumentColl.find()).runWith(Sink.seq(), mat);
+        Source.fromPublisher(numbersDocumentColl.find()).runWith(Sink.seq(), system);
 
     assertEquals(
         testRange.stream().map(i -> Pair.create(i, i * -1)).collect(toList()),
@@ -273,12 +270,12 @@ public class MongoSinkTest {
             .map(
                 i -> DocumentUpdate.create(Filters.gte("value", 0), Updates.set("updateValue", 0)));
     final CompletionStage<Done> completion =
-        source.runWith(MongoSink.updateMany(numbersDocumentColl), mat);
+        source.runWith(MongoSink.updateMany(numbersDocumentColl), system);
 
     completion.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     final CompletionStage<List<Document>> found =
-        Source.fromPublisher(numbersDocumentColl.find()).runWith(Sink.seq(), mat);
+        Source.fromPublisher(numbersDocumentColl.find()).runWith(Sink.seq(), system);
 
     assertEquals(
         testRange.stream().map(i -> Pair.create(i, 0)).collect(toList()),
@@ -294,13 +291,13 @@ public class MongoSinkTest {
     // #delete-one
     final Source<Bson, NotUsed> source = Source.from(testRange).map(i -> Filters.eq("value", i));
     final CompletionStage<Done> completion =
-        source.runWith(MongoSink.deleteOne(numbersDocumentColl), mat);
+        source.runWith(MongoSink.deleteOne(numbersDocumentColl), system);
     // #delete-one
 
     completion.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     final CompletionStage<List<Document>> found =
-        Source.fromPublisher(numbersDocumentColl.find()).runWith(Sink.seq(), mat);
+        Source.fromPublisher(numbersDocumentColl.find()).runWith(Sink.seq(), system);
 
     assertTrue(found.toCompletableFuture().get(5, TimeUnit.SECONDS).isEmpty());
   }
@@ -311,12 +308,12 @@ public class MongoSinkTest {
 
     final Source<Bson, NotUsed> source = Source.single(0).map(i -> Filters.gte("value", 0));
     final CompletionStage<Done> completion =
-        source.runWith(MongoSink.deleteMany(numbersDocumentColl), mat);
+        source.runWith(MongoSink.deleteMany(numbersDocumentColl), system);
 
     completion.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     final CompletionStage<List<Document>> found =
-        Source.fromPublisher(numbersDocumentColl.find()).runWith(Sink.seq(), mat);
+        Source.fromPublisher(numbersDocumentColl.find()).runWith(Sink.seq(), system);
 
     assertTrue(found.toCompletableFuture().get(5, TimeUnit.SECONDS).isEmpty());
   }
@@ -337,7 +334,7 @@ public class MongoSinkTest {
                             String.format("updated-first-property-%s", i),
                             String.format("updated-second-property-%s", i))));
     final CompletionStage<Done> completion =
-        source.runWith(MongoSink.replaceOne(domainObjectsColl), mat);
+        source.runWith(MongoSink.replaceOne(domainObjectsColl), system);
     // #replace-one
 
     completion.toCompletableFuture().get(5, TimeUnit.SECONDS);
@@ -345,7 +342,7 @@ public class MongoSinkTest {
     final List<DomainObject> found =
         new ArrayList<>(
             Source.fromPublisher(domainObjectsColl.find())
-                .runWith(Sink.seq(), mat)
+                .runWith(Sink.seq(), system)
                 .toCompletableFuture()
                 .get(5, TimeUnit.SECONDS));
 

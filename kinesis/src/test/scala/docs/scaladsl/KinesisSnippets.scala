@@ -11,7 +11,6 @@ import akka.actor.ActorSystem
 import akka.stream.alpakka.kinesis.scaladsl.{KinesisFlow, KinesisSink, KinesisSource}
 import akka.stream.alpakka.kinesis.{KinesisFlowSettings, ShardIterator, ShardSettings}
 import akka.stream.scaladsl.{Flow, FlowWithContext, Sink, Source}
-import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.ByteString
 import software.amazon.awssdk.services.kinesis.model.{PutRecordsRequestEntry, PutRecordsResultEntry, Record}
 
@@ -24,7 +23,6 @@ object KinesisSnippets {
   import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 
   implicit val system: ActorSystem = ActorSystem()
-  implicit val materializer: Materializer = ActorMaterializer()
 
   implicit val amazonKinesisAsync: software.amazon.awssdk.services.kinesis.KinesisAsyncClient =
     KinesisAsyncClient

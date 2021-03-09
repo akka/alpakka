@@ -4,28 +4,26 @@
 
 package docs.scaladsl
 
-import java.io.IOException
-import java.nio.file.{Files, Paths}
-import java.util.concurrent.TimeUnit
-
-import scala.concurrent.{Await, ExecutionContext, Future, Promise}
-import scala.concurrent.duration._
-import scala.util.{Failure, Success}
-
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.alpakka.unixdomainsocket.UnixSocketAddress
-import akka.stream.{ActorMaterializer, OverflowStrategy}
 import akka.stream.alpakka.unixdomainsocket.scaladsl.UnixDomainSocket
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.{Materializer, OverflowStrategy}
 import akka.testkit._
 import akka.util.ByteString
 import org.scalatest._
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import java.io.IOException
+import java.nio.file.{Files, Paths}
+import java.util.concurrent.TimeUnit
+import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
+import scala.util.{Failure, Success}
 
 class UnixDomainSocketSpec
     extends TestKit(ActorSystem("UnixDomainSocketSpec"))
@@ -39,7 +37,7 @@ class UnixDomainSocketSpec
   override def afterAll: Unit =
     TestKit.shutdownActorSystem(system)
 
-  implicit val ma: ActorMaterializer = ActorMaterializer()
+  implicit val ma: Materializer = Materializer(system)
   implicit val ec: ExecutionContext = system.dispatcher
 
   private val dir = Files.createTempDirectory("UnixDomainSocketSpec")

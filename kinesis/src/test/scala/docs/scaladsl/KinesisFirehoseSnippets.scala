@@ -9,7 +9,6 @@ import akka.actor.ActorSystem
 import akka.stream.alpakka.kinesisfirehose.KinesisFirehoseFlowSettings
 import akka.stream.alpakka.kinesisfirehose.scaladsl.{KinesisFirehoseFlow, KinesisFirehoseSink}
 import akka.stream.scaladsl.{Flow, Sink}
-import akka.stream.{ActorMaterializer, Materializer}
 import software.amazon.awssdk.services.firehose.model.{PutRecordBatchResponseEntry, Record}
 
 object KinesisFirehoseSnippets {
@@ -19,7 +18,6 @@ object KinesisFirehoseSnippets {
   import software.amazon.awssdk.services.firehose.FirehoseAsyncClient
 
   implicit val system: ActorSystem = ActorSystem()
-  implicit val materializer: Materializer = ActorMaterializer()
 
   implicit val amazonKinesisFirehoseAsync: software.amazon.awssdk.services.firehose.FirehoseAsyncClient =
     FirehoseAsyncClient

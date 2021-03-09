@@ -7,12 +7,13 @@ package docs.scaladsl
 import java.nio.file._
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-
 import akka.Done
 import akka.actor.ActorSystem
+import akka.stream.{Attributes, Inlet, SinkShape}
 import akka.stream.alpakka.file.scaladsl.LogRotatorSink
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Compression, FileIO, Flow, Keep, Sink, Source}
+import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, InHandler}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.TestKit
@@ -24,7 +25,7 @@ import org.scalatest.BeforeAndAfterAll
 import scala.collection.immutable
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -57,7 +58,7 @@ class LogRotatorSinkSpec
     buffer.toList
   }
 
-  def fileLengthTriggerCreator(): (() => ByteString => Option[Path], () => Seq[Path]) = {
+  private def fileLengthTriggerCreator(): (() => ByteString => Option[Path], () => Seq[Path]) = {
     var files = Seq.empty[Path]
     val testFunction = () => {
       val max = 2002
@@ -244,6 +245,26 @@ class LogRotatorSinkSpec
       contents should contain theSameElementsAs TestLines.sliding(2, 2).map(_.mkString("")).toList
     }
 
+    "correctly close sinks" in assertAllStagesStopped {
+      val test = (1 to 3).map(_.toString).toList
+      var out = Seq.empty[String]
+      def add(e: ByteString): Unit = {
+        out = out :+ e.utf8String
+      }
+
+      val completion =
+        Source(test.map(ByteString.apply)).runWith(
+          LogRotatorSink.withSinkFactory[Unit, Done](
+            triggerGeneratorCreator = () => (_: ByteString) => Some({}),
+            sinkFactory = (_: Unit) =>
+              Flow[ByteString].toMat(new StrangeSlowSink[ByteString](add, 100.millis, 200.millis))(Keep.right)
+          )
+        )
+
+      Await.result(completion, 3.seconds)
+      out should contain theSameElementsAs test
+    }
+
     "write compressed lines to multiple targets" in assertAllStagesStopped {
       val (triggerFunctionCreator, files) = fileLengthTriggerCreator()
       val source = Source(testByteStrings)
@@ -378,12 +399,12 @@ class LogRotatorSinkSpec
     ) shouldBe a[IllegalArgumentException]
   }
 
-  def readUpFilesAndSizesThenClean(files: Seq[Path]): (Seq[String], Seq[Long]) = {
+  private def readUpFilesAndSizesThenClean(files: Seq[Path]): (Seq[String], Seq[Long]) = {
     val (bytes, sizes) = readUpFileBytesAndSizesThenClean(files)
     (bytes.map(_.utf8String), sizes)
   }
 
-  def readUpFileBytesAndSizesThenClean(files: Seq[Path]): (Seq[ByteString], Seq[Long]) = {
+  private def readUpFileBytesAndSizesThenClean(files: Seq[Path]): (Seq[ByteString], Seq[Long]) = {
     var sizes = Seq.empty[Long]
     var data = Seq.empty[ByteString]
     files.foreach { path =>
@@ -393,5 +414,38 @@ class LogRotatorSinkSpec
       ()
     }
     (data, sizes)
+  }
+
+  class StrangeSlowSink[A](callback: A => Unit, waitBeforePull: FiniteDuration, waitAfterComplete: FiniteDuration)
+      extends GraphStageWithMaterializedValue[SinkShape[A], Future[Done]] {
+    val in: Inlet[A] = Inlet("StrangeSlowSink.in")
+    override val shape: SinkShape[A] = SinkShape(in)
+
+    override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
+      val promise = Promise[Done]()
+      val logic = new GraphStageLogic(shape) {
+        override def preStart(): Unit = {
+          Await.result(Future(Thread.sleep(waitBeforePull.toMillis)), 1.minute)
+          pull(in)
+        }
+        setHandler(
+          in,
+          new InHandler {
+            override def onPush(): Unit = {
+              callback(grab(in))
+              pull(in)
+            }
+
+            override def onUpstreamFinish(): Unit = {
+              Await.result(Future(Thread.sleep(waitAfterComplete.toMillis)), 1.minute)
+              promise.success(Done.done())
+              super.onUpstreamFinish()
+            }
+          }
+        )
+      }
+
+      (logic, promise.future)
+    }
   }
 }

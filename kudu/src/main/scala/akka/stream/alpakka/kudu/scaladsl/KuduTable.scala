@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.kudu.scaladsl
 
-import akka.stream.{ActorMaterializer, Attributes}
+import akka.stream.{Attributes, Materializer}
 import akka.stream.alpakka.kudu.{KuduAttributes, KuduClientExt, KuduTableSettings}
 import akka.stream.alpakka.kudu.impl.KuduFlowStage
 import akka.stream.scaladsl.{Flow, Keep, Sink}
@@ -28,12 +28,12 @@ object KuduTable {
    */
   def flow[A](settings: KuduTableSettings[A]): Flow[A, A, NotUsed] =
     Flow
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         Flow.fromGraph(new KuduFlowStage[A](settings, client(mat, attr)))
       }
       .mapMaterializedValue(_ => NotUsed)
 
-  private def client(mat: ActorMaterializer, attr: Attributes) =
+  private def client(mat: Materializer, attr: Attributes) =
     attr
       .get[KuduAttributes.Client]
       .map(_.client)

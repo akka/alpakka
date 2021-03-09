@@ -121,11 +121,13 @@ public class JmsConnectorsTest {
   public void publishAndConsumeJmsTextMessage() throws Exception {
     withServer(
         server -> {
-          // #connection-factory #text-sink
+          // #connection-factory
+          // #text-sink
           // #text-source
           javax.jms.ConnectionFactory connectionFactory = server.createConnectionFactory();
           // #text-source
-          // #connection-factory #text-sink
+          // #connection-factory
+          // #text-sink
 
           // #text-sink
 
@@ -155,7 +157,8 @@ public class JmsConnectorsTest {
   public void publishAndConsumeJmsObjectMessage() throws Exception {
     withServer(
         server -> {
-          // #connection-factory-object #object-sink
+          // #connection-factory-object
+          // #object-sink
           // #object-source
           ActiveMQConnectionFactory connectionFactory =
               (ActiveMQConnectionFactory) server.createConnectionFactory();
@@ -163,7 +166,8 @@ public class JmsConnectorsTest {
               Arrays.asList(DummyJavaTests.class.getPackage().getName()));
 
           // #object-source
-          // #connection-factory-object #object-sink
+          // #connection-factory-object
+          // #object-sink
 
           // #object-sink
           Sink<java.io.Serializable, CompletionStage<Done>> jmsSink =
@@ -193,10 +197,12 @@ public class JmsConnectorsTest {
   public void publishAndConsumeJmsByteMessage() throws Exception {
     withServer(
         server -> {
-          // #bytearray-sink #bytearray-source
+          // #bytearray-sink
+          // #bytearray-source
           ConnectionFactory connectionFactory = server.createConnectionFactory();
 
-          // #bytearray-sink #bytearray-source
+          // #bytearray-sink
+          // #bytearray-source
 
           // #bytearray-sink
           Sink<byte[], CompletionStage<Done>> jmsSink =
@@ -225,10 +231,12 @@ public class JmsConnectorsTest {
   public void publishAndConsumeJmsMapMessage() throws Exception {
     withServer(
         server -> {
-          // #map-sink #map-source
+          // #map-sink
+          // #map-source
           ConnectionFactory connectionFactory = server.createConnectionFactory();
 
-          // #map-sink #map-source
+          // #map-sink
+          // #map-source
           // #map-sink
           Sink<Map<String, Object>, CompletionStage<Done>> jmsSink =
               JmsProducer.mapSink(

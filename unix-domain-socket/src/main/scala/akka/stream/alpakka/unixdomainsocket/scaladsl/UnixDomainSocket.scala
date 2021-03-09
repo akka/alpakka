@@ -32,7 +32,7 @@ object UnixDomainSocket extends ExtensionId[UnixDomainSocket] with ExtensionIdPr
   override def createExtension(system: ExtendedActorSystem) =
     new UnixDomainSocket(system)
 
-  override def lookup(): ExtensionId[_ <: Extension] =
+  override def lookup: ExtensionId[_ <: Extension] =
     UnixDomainSocket
 
   /**
@@ -73,7 +73,7 @@ final class UnixDomainSocket(system: ExtendedActorSystem) extends UnixDomainSock
 
   import UnixDomainSocket._
 
-  private implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
+  private implicit val materializer: Materializer = Materializer(system)
 
   /**
    * Creates a [[UnixDomainSocket.ServerBinding]] instance which represents a prospective Unix Domain Socket

@@ -9,7 +9,7 @@ import java.util.UUID
 import akka.actor.ActorSystem
 import akka.stream.alpakka.ironmq.impl.IronMqClient
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.Materializer
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.BeforeAndAfterEach
@@ -63,7 +63,7 @@ abstract class IronMqSpec
   override protected def beforeEach(): Unit = {
     mutableConfig = Option(initConfig())
     mutableActorSystem = Option(ActorSystem(s"test-${System.currentTimeMillis()}", config))
-    mutableMaterializer = Option(ActorMaterializer())
+    mutableMaterializer = Option(Materializer(mutableActorSystem.get))
     mutableIronMqClient = Option(IronMqClient(IronMqSettings(config.getConfig("alpakka.ironmq"))))
   }
 

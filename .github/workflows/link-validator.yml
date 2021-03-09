@@ -12,12 +12,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          # See https://github.com/actions/checkout/issues/299#issuecomment-677674415
-          ref: ${{ github.event.pull_request.head.sha }}
+          # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
           fetch-depth: 0
 
-      - name: Fetch tags
-        run: git fetch --depth=100 origin +refs/tags/*:refs/tags/*
+      - name: Checkout GitHub merge
+        if: github.event.pull_request
+        run: |-
+          git fetch origin pull/${{ github.event.pull_request.number }}/merge:scratch
+          git checkout scratch
 
       - name: Set up JDK 11
         uses: olafurpg/setup-scala@v10

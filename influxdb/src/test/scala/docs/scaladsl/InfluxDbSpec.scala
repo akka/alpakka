@@ -5,7 +5,6 @@
 package docs.scaladsl
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import org.influxdb.{InfluxDB, InfluxDBFactory}
 import org.influxdb.dto.{Point, Query, QueryResult}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
@@ -33,7 +32,6 @@ class InfluxDbSpec
     with LogCapturing {
 
   implicit val system = ActorSystem()
-  implicit val mat = ActorMaterializer()
 
   final val DatabaseName = this.getClass.getSimpleName
 

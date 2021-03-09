@@ -6,7 +6,6 @@ package docs.scaladsl
 
 import akka.Done
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.hbase.HTableSettings
 import akka.stream.alpakka.hbase.scaladsl.HTableStage
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
@@ -31,8 +30,6 @@ class HBaseStageSpec
     with ScalaFutures
     with BeforeAndAfterAll
     with LogCapturing {
-
-  implicit val mat = ActorMaterializer()
 
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 500.millis)

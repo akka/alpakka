@@ -6,8 +6,6 @@ package docs.javadsl;
 
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.alpakka.udp.Datagram;
 import akka.stream.alpakka.udp.javadsl.Udp;
@@ -32,12 +30,10 @@ public class UdpTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem system;
-  private static Materializer materializer;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("UdpTest");
-    materializer = ActorMaterializer.create(system);
   }
 
   @AfterClass
@@ -63,7 +59,7 @@ public class UdpTest {
             TestSource.<Datagram>probe(system)
                 .viaMat(bindFlow, Keep.both())
                 .toMat(TestSink.probe(system), Keep.both())
-                .run(materializer);
+                .run(system);
 
     {
       // #send-datagrams
@@ -86,7 +82,7 @@ public class UdpTest {
     Source.range(1, messagesToSend)
         .map(i -> ByteString.fromString("Message " + i))
         .map(bs -> Datagram.create(bs, destination))
-        .runWith(Udp.sendSink(system), materializer);
+        .runWith(Udp.sendSink(system), system);
     // #send-datagrams
 
     for (int i = 0; i < messagesToSend; i++) {

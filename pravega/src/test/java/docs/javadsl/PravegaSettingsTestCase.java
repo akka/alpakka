@@ -11,9 +11,6 @@ import akka.stream.alpakka.pravega.WriterSettings;
 import akka.stream.alpakka.pravega.WriterSettingsBuilder;
 import akka.testkit.javadsl.TestKit;
 
-import static io.pravega.client.ClientConfig.ClientConfigBuilder;
-
-import io.pravega.client.stream.impl.DefaultCredentials;
 import io.pravega.client.stream.impl.UTF8StringSerializer;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -21,7 +18,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.time.Duration;
-import java.util.function.Function;
 
 public class PravegaSettingsTestCase {
 

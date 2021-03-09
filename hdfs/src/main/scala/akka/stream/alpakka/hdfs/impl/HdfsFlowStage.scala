@@ -61,7 +61,7 @@ private[hdfs] final class HdfsFlowLogic[W, I, C](
   private val flushProgram = rotateOutput.flatMap(message => tryPush(Seq(message)))
 
   private[impl] val sharedScheduleFn =
-    schedulePeriodicallyWithInitialDelay(NotUsed, _: FiniteDuration, _: FiniteDuration)
+    scheduleWithFixedDelay(NotUsed, _: FiniteDuration, _: FiniteDuration)
 
   setHandlers(inlet, outlet, this)
 

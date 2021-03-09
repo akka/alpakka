@@ -43,6 +43,6 @@ private[scaladsl] object MqttMessageWithAck {
      *
      * @return a future indicating, if the acknowledge reached MQTT
      */
-    override def ack(): Future[Done] = FutureConverters.toScala(e.ack)
+    override def ack(): Future[Done] = FutureConverters.toScala(e.ack())
   }
 }
