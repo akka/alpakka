@@ -225,7 +225,7 @@ object QueryJsonProtocol {
     )
 
   implicit val requestFormat: RootJsonFormat[QueryRequest] = jsonFormat7(QueryRequest)
-  implicit def responseFormat[T <: AnyRef](
+  implicit def responseReader[T <: AnyRef](
       implicit reader: BigQueryRootJsonReader[T]
   ): RootJsonReader[QueryResponse[T]] = {
     implicit val format = lift(reader)

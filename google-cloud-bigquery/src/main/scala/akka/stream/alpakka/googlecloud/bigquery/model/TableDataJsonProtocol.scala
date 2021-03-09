@@ -197,14 +197,14 @@ object TableDataJsonProtocol {
   def createInsertError(index: Int, errors: util.Optional[util.List[ErrorProto]]) =
     InsertError(index, errors.asScala.map(_.asScala.toList))
 
-  implicit def listResponseFormat[T <: AnyRef](
+  implicit def listResponseReader[T <: AnyRef](
       implicit reader: BigQueryRootJsonReader[T]
   ): RootJsonReader[TableDataListResponse[T]] = {
     implicit val format = lift(reader)
     jsonFormat3(TableDataListResponse[T])
   }
   implicit def paginated[T]: Paginated[TableDataListResponse[T]] = _.pageToken
-  implicit def insertAllRequestFormat[T](
+  implicit def insertAllRequestWriter[T](
       implicit writer: BigQueryRootJsonWriter[T]
   ): RootJsonWriter[TableDataInsertAllRequest[T]] = {
     implicit val format = lift(writer)
