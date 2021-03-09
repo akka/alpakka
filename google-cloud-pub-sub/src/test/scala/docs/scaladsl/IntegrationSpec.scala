@@ -10,7 +10,6 @@ import java.util.concurrent.TimeoutException
 
 import akka.Done
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.pubsub.scaladsl.GooglePubSub
 import akka.stream.alpakka.googlecloud.pubsub._
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
@@ -38,7 +37,6 @@ class IntegrationSpec
     with LogCapturing {
 
   private implicit val system = ActorSystem("IntegrationSpec")
-  private implicit val materializer = ActorMaterializer()
 
   override def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 

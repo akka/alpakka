@@ -9,7 +9,6 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
 import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.googlecloud.pubsub.*;
 import akka.stream.alpakka.googlecloud.pubsub.javadsl.GooglePubSub;
 import akka.stream.javadsl.*;
@@ -26,10 +25,9 @@ public class ExampleUsageJava {
 
   private static void example() throws NoSuchAlgorithmException, InvalidKeySpecException {
 
-    // #init-mat
+    // #init-system
     ActorSystem system = ActorSystem.create();
-    ActorMaterializer materializer = ActorMaterializer.create(system);
-    // #init-mat
+    // #init-system
 
     // #init-credentials
     String privateKey =
@@ -64,7 +62,7 @@ public class ExampleUsageJava {
         GooglePubSub.publish(topic, config, 1);
 
     CompletionStage<List<List<String>>> publishedMessageIds =
-        source.via(publishFlow).runWith(Sink.seq(), materializer);
+        source.via(publishFlow).runWith(Sink.seq(), system);
     // #publish-single
 
     // #publish-single-with-context
@@ -81,7 +79,7 @@ public class ExampleUsageJava {
         GooglePubSub.publishWithContext(topic, config, 1);
 
     CompletionStage<List<Pair<List<String>, String>>> publishedMessageIdsWithContext =
-        sourceWithContext.via(publishFlowWithContext).runWith(Sink.seq(), materializer);
+        sourceWithContext.via(publishFlowWithContext).runWith(Sink.seq(), system);
     // #publish-single-with-context
 
     // #publish-fast
@@ -90,7 +88,7 @@ public class ExampleUsageJava {
         .groupedWithin(1000, Duration.ofMinutes(1))
         .map(messages -> PublishRequest.create(messages))
         .via(publishFlow)
-        .runWith(Sink.ignore(), materializer);
+        .runWith(Sink.ignore(), system);
     // #publish-fast
 
     // #subscribe

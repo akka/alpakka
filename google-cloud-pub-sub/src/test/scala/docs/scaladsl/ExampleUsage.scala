@@ -8,7 +8,6 @@ import java.time.Instant
 import java.util.Base64
 
 import akka.actor.{ActorSystem, Cancellable}
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.pubsub._
 import akka.stream.alpakka.googlecloud.pubsub.scaladsl.GooglePubSub
 import akka.stream.scaladsl.{Flow, FlowWithContext, RestartFlow, Sink, Source}
@@ -20,10 +19,9 @@ import scala.concurrent.{Future, Promise}
 
 class ExampleUsage {
 
-  //#init-mat
+  //#init-system
   implicit val system = ActorSystem()
-  implicit val mat = ActorMaterializer()
-  //#init-mat
+  //#init-system
 
   //#init-credentials
   val privateKey =
