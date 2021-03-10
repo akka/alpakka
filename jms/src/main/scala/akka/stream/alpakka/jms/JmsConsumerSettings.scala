@@ -212,7 +212,7 @@ object JmsConsumerSettings {
   /**
    * Java API: Reads from the given config.
    *
-   * @param c                 Config instance read configuration from
+   * @param c Config instance read configuration from
    * @param connectionFactory Factory to use for creating JMS connections.
    */
   def create(c: Config, connectionFactory: javax.jms.ConnectionFactory): JmsConsumerSettings =
@@ -221,7 +221,7 @@ object JmsConsumerSettings {
   /**
    * Java API: Reads from the default config provided by the actor system at `alpakka.jms.consumer`.
    *
-   * @param actorSystem       The actor system
+   * @param actorSystem The actor system
    * @param connectionFactory Factory to use for creating JMS connections.
    */
   def create(actorSystem: ActorSystem, connectionFactory: javax.jms.ConnectionFactory): JmsConsumerSettings =
@@ -230,7 +230,7 @@ object JmsConsumerSettings {
   /**
    * Java API: Reads from the default config provided by the actor system at `alpakka.jms.consumer`.
    *
-   * @param actorSystem       The actor system
+   * @param actorSystem The actor system
    * @param connectionFactory Factory to use for creating JMS connections.
    */
   def create(actorSystem: ClassicActorSystemProvider,
