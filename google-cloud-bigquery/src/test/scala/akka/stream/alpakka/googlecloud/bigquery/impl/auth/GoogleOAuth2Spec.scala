@@ -59,6 +59,7 @@ class GoogleOAuth2Spec
         dsl(
           service("oauth2.googleapis.com")
             .post("/token")
+            .queryParam("prettyPrint", "false")
             .body(newRegexMatcher("grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=*"))
             .willReturn(
               success("""{"access_token": "token", "token_type": "String", "expires_in": 3600}""", "application/json")

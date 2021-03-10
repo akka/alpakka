@@ -26,18 +26,29 @@ private[bigquery] object BigQueryHttp {
     new BigQueryHttp(Http()(system.classicSystem))
 
   def apply(http: HttpExt): BigQueryHttp = new BigQueryHttp(http)
+
+  private val standardParamsQuery = "prettyPrint=false"
+  private val andStandardParamsQuery = "&" + standardParamsQuery
 }
 
 final class BigQueryHttp private (val http: HttpExt) extends AnyVal {
+
+  import BigQueryHttp._
 
   private implicit def system = http.system
   private implicit def ec = system.dispatcher
   private implicit def scheduler = system.scheduler
 
-  def singleRequest(request: HttpRequest)(implicit settings: BigQuerySettings): Future[HttpResponse] =
-    settings.forwardProxy.fold(http.singleRequest(request)) { proxy =>
-      http.singleRequest(request, proxy.connectionContext, proxy.poolSettings)
+  def singleRequest(request: HttpRequest)(implicit settings: BigQuerySettings): Future[HttpResponse] = {
+    val requestWithStandardParams = request.withUri(
+      request.uri.copy(
+        rawQueryString = Some(request.uri.rawQueryString.fold(standardParamsQuery)(_.concat(andStandardParamsQuery)))
+      )
+    )
+    settings.forwardProxy.fold(http.singleRequest(requestWithStandardParams)) { proxy =>
+      http.singleRequest(requestWithStandardParams, proxy.connectionContext, proxy.poolSettings)
     }
+  }
 
   def singleRequestOrFail(request: HttpRequest)(
       implicit settings: BigQuerySettings,
