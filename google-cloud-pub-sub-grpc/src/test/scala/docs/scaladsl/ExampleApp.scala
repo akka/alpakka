@@ -6,9 +6,9 @@ package docs.scaladsl
 import java.util.logging.{Level, Logger}
 
 import akka.actor.{ActorSystem, Cancellable}
+import akka.stream.DelayOverflowStrategy
 import akka.stream.alpakka.googlecloud.pubsub.grpc.scaladsl.GooglePubSub
 import akka.stream.scaladsl.{Sink, Source}
-import akka.stream.{DelayOverflowStrategy, Materializer}
 import com.google.protobuf.ByteString
 import com.google.pubsub.v1.pubsub.{PublishRequest, PubsubMessage, StreamingPullRequest}
 import com.typesafe.config.ConfigFactory
@@ -28,7 +28,7 @@ object ExampleApp {
       """.stripMargin)
 
     implicit val sys = ActorSystem("ExampleApp", config)
-    implicit val mat = Materializer.matFromSystem(sys)
+
     import sys.dispatcher
 
     val result = args.toList match {
@@ -53,7 +53,7 @@ object ExampleApp {
     }
   }
 
-  private def publishSingle(args: List[String])(implicit mat: Materializer) = {
+  private def publishSingle(args: List[String])(implicit system: ActorSystem) = {
     val projectId :: topic :: Nil = args
 
     Source
@@ -62,7 +62,7 @@ object ExampleApp {
       .runWith(Sink.head)
   }
 
-  private def publishStream(args: List[String])(implicit mat: Materializer) = {
+  private def publishStream(args: List[String])(implicit system: ActorSystem) = {
     val projectId :: topic :: Nil = args
 
     Source
@@ -79,7 +79,7 @@ object ExampleApp {
       .run()
   }
 
-  private def subscribeStream(args: List[String])(implicit mat: Materializer) = {
+  private def subscribeStream(args: List[String])(implicit system: ActorSystem) = {
     val projectId :: sub :: Nil = args
 
     GooglePubSub
