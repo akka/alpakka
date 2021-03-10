@@ -165,7 +165,8 @@ lazy val geode =
         case Some((2, n)) if n >= 12 => Seq(sourceDir / "scala-2.12+")
         case _ => Seq.empty
       }
-    }
+    },
+    fatalWarnings := true
   )
 
 lazy val googleCloudBigQuery = alpakkaProject(

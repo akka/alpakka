@@ -33,7 +33,7 @@ public class GeodeFlowTestCase extends GeodeBaseTestCase {
         geode.flow(personRegionSettings, new PersonPdxSerializer());
 
     CompletionStage<List<Person>> run =
-        source.via(flow).toMat(Sink.seq(), Keep.right()).run(materializer);
+        source.via(flow).toMat(Sink.seq(), Keep.right()).run(system);
     // #flow
 
     run.toCompletableFuture().get();
