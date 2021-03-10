@@ -5,12 +5,14 @@
 package akka.stream.alpakka.googlecloud.bigquery.scaladsl
 
 import akka.actor.ClassicActorSystemProvider
+import akka.annotation.ApiMayChange
 import akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings
 import akka.stream.alpakka.googlecloud.bigquery.impl.BigQueryExt
 
 /**
  * Scala API to interface with BigQuery.
  */
+@ApiMayChange(issue = "https://github.com/akka/alpakka/issues/2353")
 object BigQuery
     extends BigQueryRest
     with BigQueryDatasets

@@ -5,6 +5,7 @@
 package akka.stream.alpakka.googlecloud.bigquery.javadsl
 
 import akka.actor.ClassicActorSystemProvider
+import akka.annotation.ApiMayChange
 import akka.http.javadsl.marshalling.Marshaller
 import akka.http.javadsl.model.{HttpEntity, HttpRequest, HttpResponse, RequestEntity}
 import akka.http.javadsl.unmarshalling.Unmarshaller
@@ -44,6 +45,7 @@ import scala.language.implicitConversions
 /**
  * Java API to interface with BigQuery.
  */
+@ApiMayChange(issue = "https://github.com/akka/alpakka/issues/2353")
 object BigQuery {
 
   /**
