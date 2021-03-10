@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.e2e
 
+import akka.util.ByteString
 import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.annotation.{JsonCreator, JsonInclude, JsonProperty, JsonPropertyOrder}
 import com.fasterxml.jackson.databind.JsonNode
@@ -41,14 +42,16 @@ case class A(integer: Int, long: Long, float: Float, double: Double, string: Str
 
 @JsonPropertyOrder(alphabetic = true)
 @JsonInclude(Include.NON_NULL)
-case class B(nullable: Option[String], repeated: Seq[C]) {
+case class B(nullable: Option[String], bytes: ByteString, repeated: Seq[C]) {
   def this(node: JsonNode) =
     this(
       Option(node.get("f").get(0).get("v").textValue()),
-      node.get("f").get(1).get("v").asScala.map(n => new C(n.get("v"))).toList
+      ByteString(node.get("f").get(1).get("v").textValue()).decodeBase64,
+      node.get("f").get(2).get("v").asScala.map(n => new C(n.get("v"))).toList
     )
 
   def getNullable = nullable.orNull
+  def getBytes = bytes.encodeBase64.utf8String
   def getRepeated = repeated.asJava
 }
 

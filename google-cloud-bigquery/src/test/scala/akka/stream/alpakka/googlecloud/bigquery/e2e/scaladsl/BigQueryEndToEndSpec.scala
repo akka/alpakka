@@ -57,10 +57,10 @@ class BigQueryEndToEndSpec
     import akka.stream.scaladsl.{Sink, Source}
 
     implicit val cFormat = bigQueryJsonFormat5(C)
-    implicit val bFormat = bigQueryJsonFormat2(B)
+    implicit val bFormat = bigQueryJsonFormat3(B)
     implicit val aFormat = bigQueryJsonFormat7(A)
     implicit val cSchema = bigQuerySchema5(C)
-    implicit val bSchema = bigQuerySchema2(B)
+    implicit val bSchema = bigQuerySchema3(B)
     implicit val aSchema = bigQuerySchema7(A)
 
     "create dataset" in {

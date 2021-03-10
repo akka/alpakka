@@ -71,6 +71,7 @@ public class BigQueryEndToEndTest extends EndToEndHelper {
               recordType(),
               Optional.of(requiredMode()),
               createTableFieldSchema("nullable", stringType(), Optional.of(nullableMode())),
+              createTableFieldSchema("bytes", bytesType(), Optional.of(requiredMode())),
               createTableFieldSchema(
                   "repeated",
                   recordType(),

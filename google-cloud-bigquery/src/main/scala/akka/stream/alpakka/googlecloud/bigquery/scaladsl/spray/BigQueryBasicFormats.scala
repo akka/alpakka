@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray
 
+import akka.util.ByteString
 import spray.json.{deserializationError, JsBoolean, JsFalse, JsNumber, JsString, JsTrue, JsValue}
 
 /**
@@ -131,6 +132,15 @@ trait BigQueryBasicFormats {
     def read(value: JsValue) = value match {
       case JsString(x) => Symbol(x)
       case x => deserializationError("Expected Symbol as JsString, but got " + x)
+    }
+  }
+
+  implicit object ByteStringJsonFormat extends BigQueryJsonFormat[ByteString] {
+    import java.nio.charset.StandardCharsets.US_ASCII
+    def write(x: ByteString) = JsString(x.encodeBase64.decodeString(US_ASCII))
+    def read(value: JsValue) = value match {
+      case BigQueryBytes(x) => x
+      case x => deserializationError("Expected ByteString as JsString, but got " + x)
     }
   }
 }

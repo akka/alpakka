@@ -5,6 +5,7 @@
 package akka.stream.alpakka.googlecloud.bigquery.e2e.scaladsl
 
 import akka.stream.alpakka.googlecloud.bigquery.e2e.{A, B, C}
+import akka.util.ByteString
 
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime}
 import scala.util.Random
@@ -27,6 +28,11 @@ trait EndToEndHelper {
 
   private def randomB(): B = B(
     if (rng.nextBoolean()) Some(rng.nextString(rng.nextInt(64))) else None,
+    ByteString({
+      val bytes = new Array[Byte](rng.nextInt(64))
+      rng.nextBytes(bytes)
+      bytes
+    }),
     Seq.fill(rng.nextInt(16))(randomC())
   )
 
