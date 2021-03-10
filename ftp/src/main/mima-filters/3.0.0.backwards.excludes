@@ -1,0 +1,8 @@
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.ftp.javadsl.FtpApi.mkdirAsync")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.ftp.javadsl.Ftp.mkdirAsync")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.ftp.javadsl.Ftps.mkdirAsync")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.ftp.javadsl.SftpApi.mkdirAsync")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.ftp.scaladsl.FtpApi.mkdirAsync")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.ftp.scaladsl.Ftp.mkdirAsync")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.ftp.scaladsl.Ftps.mkdirAsync")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.ftp.scaladsl.SftpApi.mkdirAsync")
