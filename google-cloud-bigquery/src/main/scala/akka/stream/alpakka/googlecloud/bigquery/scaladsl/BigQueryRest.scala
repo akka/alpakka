@@ -74,8 +74,8 @@ private[scaladsl] trait BigQueryRest {
 
 }
 
-object BigQueryRest {
-  private[scaladsl] final class QueryPrependOption(val query: Query) extends AnyVal {
+private[scaladsl] object BigQueryRest {
+  final class QueryPrependOption(val query: Query) extends AnyVal {
     def ?+:(kv: (String, Option[Any])): Query = kv._2.fold(query)(v => Query.Cons(kv._1, v.toString, query))
   }
 }

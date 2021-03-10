@@ -31,7 +31,8 @@ private[bigquery] object BigQueryHttp {
   private val andStandardParamsQuery = "&" + standardParamsQuery
 }
 
-final class BigQueryHttp private (val http: HttpExt) extends AnyVal {
+@InternalApi
+private[bigquery] final class BigQueryHttp private (val http: HttpExt) extends AnyVal {
 
   import BigQueryHttp._
 
