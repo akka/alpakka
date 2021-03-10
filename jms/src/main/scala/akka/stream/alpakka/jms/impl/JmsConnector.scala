@@ -18,7 +18,6 @@ import akka.stream.stage.{AsyncCallback, StageLogging, TimerGraphStageLogic}
 import akka.stream.{ActorAttributes, Attributes, OverflowStrategy}
 import javax.jms
 
-import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
@@ -215,11 +214,10 @@ private[jms] trait JmsConnector[S <: JmsSession] {
   }
 
   override def onTimer(timerKey: Any): Unit = timerKey match {
-    case FlushAcknowledgementsTimerKey(session, timeout) =>
+    case FlushAcknowledgementsTimerKey(session) =>
       session.ackQueue.forEach(_.apply())
       session.ackQueue.clear()
       session.pendingAck = 0
-      scheduleOnce(timerKey, timeout)
 
     case AttemptConnect(attempt, backoffMaxed) =>
       log.info("{} retries connecting, attempt {}", attributes.nameLifted.mkString, attempt)
@@ -290,8 +288,10 @@ private[jms] trait JmsConnector[S <: JmsSession] {
   }
 
   private def closeSession(s: S): Unit = {
-    try s.closeSession()
-    catch {
+    try {
+      cancelAckTimers(s)
+      s.closeSession()
+    } catch {
       case e: Throwable => log.error(e, "Error closing jms session")
     }
   }
@@ -301,8 +301,10 @@ private[jms] trait JmsConnector[S <: JmsSession] {
       .sequence {
         jmsSessions.map { s =>
           Future {
-            try s.abortSession()
-            catch {
+            try {
+              cancelAckTimers(s)
+              s.abortSession()
+            } catch {
               case e: Throwable => log.error(e, "Error aborting jms session")
             }
           }
@@ -311,6 +313,12 @@ private[jms] trait JmsConnector[S <: JmsSession] {
       .map(_ => ())
     jmsSessions = Seq.empty
     aborting
+  }
+
+  private def cancelAckTimers(s: JmsSession): Unit = s match {
+    case session: JmsAckSession =>
+      cancelTimer(FlushAcknowledgementsTimerKey(session))
+    case _ => ()
   }
 
   def startConnection: Boolean
@@ -400,8 +408,8 @@ object JmsConnector {
   case object Connected extends ConnectionAttemptStatus
   case object TimedOut extends ConnectionAttemptStatus
 
-  case class AttemptConnect(attempt: Int, backoffMaxed: Boolean)
-  case class FlushAcknowledgementsTimerKey(jmsSession: JmsAckSession, timeout: FiniteDuration)
+  final case class AttemptConnect(attempt: Int, backoffMaxed: Boolean)
+  final case class FlushAcknowledgementsTimerKey(jmsSession: JmsAckSession)
   case object ConnectionStatusTimeout
 
   def connection: InternalConnectionState => Future[jms.Connection] = {

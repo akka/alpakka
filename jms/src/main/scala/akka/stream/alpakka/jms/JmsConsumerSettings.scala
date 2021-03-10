@@ -89,7 +89,7 @@ final class JmsConsumerSettings private (
   def withFailStreamOnAckTimeout(value: Boolean): JmsConsumerSettings =
     if (failStreamOnAckTimeout == value) this else copy(failStreamOnAckTimeout = value)
 
-  /**  Timeout for connection status subscriber */
+  /** Timeout for connection status subscriber */
   def withConnectionStatusSubscriptionTimeout(value: FiniteDuration): JmsConsumerSettings =
     copy(connectionStatusSubscriptionTimeout = value)
 
@@ -150,7 +150,7 @@ object JmsConsumerSettings {
   /**
    * Reads from the given config.
    *
-   * @param c                 Config instance read configuration from
+   * @param c Config instance read configuration from
    * @param connectionFactory Factory to use for creating JMS connections.
    */
   def apply(c: Config, connectionFactory: javax.jms.ConnectionFactory): JmsConsumerSettings = {
@@ -168,8 +168,7 @@ object JmsConsumerSettings {
     val sessionCount = c.getInt("session-count")
     val bufferSize = c.getInt("buffer-size")
     val selector = getStringOption("selector")
-    val acknowledgeMode =
-      getOption("acknowledge-mode", c => AcknowledgeMode.from(c.getString("acknowledge-mode")))
+    val acknowledgeMode = getOption("acknowledge-mode", c => AcknowledgeMode.from(c.getString("acknowledge-mode")))
     val ackTimeout = c.getDuration("ack-timeout").asScala
     val ackFlushTimeoutDuration = getOption("ack-flush-timeout", config => c.getDuration("ack-flush-timeout").asScala)
     val ackFlushTimeout = ackFlushTimeoutDuration.map(duration => FiniteDuration(duration.length, duration.unit))

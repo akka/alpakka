@@ -52,7 +52,7 @@ private[jms] final class JmsAckSourceStage(settings: JmsConsumerSettings, destin
       jmsSession match {
         case session: JmsAckSession =>
           ackFlushTimeout.foreach { timeout =>
-            scheduleOnce(FlushAcknowledgementsTimerKey(session, timeout), timeout)
+            scheduleWithFixedDelay(FlushAcknowledgementsTimerKey(session), timeout, timeout)
           }
           session
             .createConsumer(settings.selector)
