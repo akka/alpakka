@@ -105,7 +105,6 @@ public class GoogleBigQuerySourceCustomParserDoc {
 
   private static Source<User, NotUsed> customParser() {
     ActorSystem system = ActorSystem.create();
-    Materializer materializer = Materializer.createMaterializer(system);
     BigQueryConfig config =
         BigQueryConfig.create(
             "project@test.test",

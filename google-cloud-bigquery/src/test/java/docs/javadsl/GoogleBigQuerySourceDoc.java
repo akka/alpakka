@@ -34,7 +34,6 @@ public class GoogleBigQuerySourceDoc {
   private static void example() {
     // #init-mat
     ActorSystem system = ActorSystem.create();
-    Materializer materializer = Materializer.createMaterializer(system);
     // #init-mat
 
     // #init-config
@@ -50,12 +49,12 @@ public class GoogleBigQuerySourceDoc {
     // #list-tables-and-fields
     CompletionStage<List<TableListQueryJsonProtocol.QueryTableModel>> tables =
         GoogleBigQuerySource.listTables(config)
-            .runWith(Sink.seq(), materializer)
+            .runWith(Sink.seq(), system)
             .thenApply(lt -> lt.stream().flatMap(Collection::stream).collect(Collectors.toList()));
 
     CompletionStage<List<TableDataQueryJsonProtocol.Field>> fields =
         GoogleBigQuerySource.listFields("myTable", config)
-            .runWith(Sink.seq(), materializer)
+            .runWith(Sink.seq(), system)
             .thenApply(lt -> lt.stream().flatMap(Collection::stream).collect(Collectors.toList()));
     ;
     // #list-tables-and-fields
@@ -64,7 +63,7 @@ public class GoogleBigQuerySourceDoc {
     Source<List<String>, NotUsed> userCsvLikeStream =
         GoogleBigQuerySource.runQueryCsvStyle(
             "SELECT uid, name FROM bigQueryDatasetName.myTable",
-            BigQueryCallbacks.tryToStopJob(config, system, materializer),
+            BigQueryCallbacks.tryToStopJob(config, system),
             config);
     // #csv-style
   }
@@ -92,7 +91,6 @@ public class GoogleBigQuerySourceDoc {
 
   private static Source<User, NotUsed> example2() {
     ActorSystem system = ActorSystem.create();
-    Materializer materializer = Materializer.createMaterializer(system);
     BigQueryConfig config =
         BigQueryConfig.create(
             "project@test.test",
@@ -133,7 +131,6 @@ public class GoogleBigQuerySourceDoc {
 
   private static Source<DryRunResponse, NotUsed> example3() {
     ActorSystem system = ActorSystem.create();
-    Materializer materializer = Materializer.createMaterializer(system);
     BigQueryConfig config =
         BigQueryConfig.create(
             "project@test.test",
