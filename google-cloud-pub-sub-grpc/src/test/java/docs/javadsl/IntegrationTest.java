@@ -9,7 +9,6 @@ import akka.NotUsed;
 import akka.actor.Cancellable;
 
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
 
 // #publish-single
 import akka.stream.alpakka.googlecloud.pubsub.grpc.PubSubSettings;
@@ -23,7 +22,6 @@ import com.google.pubsub.v1.*;
 
 // #publish-single
 
-import akka.stream.Materializer;
 import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -43,7 +41,6 @@ public class IntegrationTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   static final ActorSystem system = ActorSystem.create("IntegrationTest");
-  static final Materializer materializer = ActorMaterializer.create(system);
 
   @Test
   public void shouldPublishAMessage()
@@ -66,7 +63,7 @@ public class IntegrationTest {
     final Flow<PublishRequest, PublishResponse, NotUsed> publishFlow = GooglePubSub.publish(1);
 
     final CompletionStage<List<PublishResponse>> publishedMessageIds =
-        source.via(publishFlow).runWith(Sink.seq(), materializer);
+        source.via(publishFlow).runWith(Sink.seq(), system);
     // #publish-single
 
     assertTrue(
@@ -95,7 +92,7 @@ public class IntegrationTest {
                         .addAllMessages(messages)
                         .build())
             .via(GooglePubSub.publish(1))
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
     // #publish-fast
 
     assertTrue(
@@ -121,8 +118,7 @@ public class IntegrationTest {
         GooglePubSub.subscribe(request, pollInterval);
     // #subscribe-stream
 
-    final CompletionStage<ReceivedMessage> first =
-        subscriptionSource.runWith(Sink.head(), materializer);
+    final CompletionStage<ReceivedMessage> first = subscriptionSource.runWith(Sink.head(), system);
 
     final String topic = "simpleTopic";
     final ByteString msg = ByteString.copyFromUtf8("Hello world!");
@@ -135,7 +131,7 @@ public class IntegrationTest {
             .addMessages(publishMessage)
             .build();
 
-    Source.single(publishRequest).via(GooglePubSub.publish(1)).runWith(Sink.ignore(), materializer);
+    Source.single(publishRequest).via(GooglePubSub.publish(1)).runWith(Sink.ignore(), system);
 
     assertEquals(
         "received and expected messages not the same",
@@ -161,8 +157,7 @@ public class IntegrationTest {
         GooglePubSub.subscribePolling(request, pollInterval);
     // #subscribe-sync
 
-    final CompletionStage<ReceivedMessage> first =
-        subscriptionSource.runWith(Sink.head(), materializer);
+    final CompletionStage<ReceivedMessage> first = subscriptionSource.runWith(Sink.head(), system);
 
     final String topic = "simpleTopic";
     final ByteString msg = ByteString.copyFromUtf8("Hello world!");
@@ -175,7 +170,7 @@ public class IntegrationTest {
             .addMessages(publishMessage)
             .build();
 
-    Source.single(publishRequest).via(GooglePubSub.publish(1)).runWith(Sink.ignore(), materializer);
+    Source.single(publishRequest).via(GooglePubSub.publish(1)).runWith(Sink.ignore(), system);
 
     assertEquals(
         "received and expected messages not the same",
