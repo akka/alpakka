@@ -6,6 +6,7 @@ package docs.javadsl;
 
 import akka.Done;
 import akka.NotUsed;
+import akka.actor.ActorSystem;
 import akka.http.javadsl.model.ContentType;
 import akka.http.javadsl.model.ContentTypes;
 import akka.stream.Attributes;
@@ -34,7 +35,7 @@ import static org.junit.Assert.assertTrue;
 public class GCStorageTest extends GCStorageWiremockBase {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
-  private final Materializer materializer = Materializer.createMaterializer(system());
+  private final ActorSystem actorSystem = system();
   private final GCStorageSettings sampleSettings = GCStorageExt.get(system()).settings();
 
   @After
@@ -55,7 +56,7 @@ public class GCStorageTest extends GCStorageWiremockBase {
     final Attributes sampleAttributes = GCStorageAttributes.settings(sampleSettings);
 
     final CompletionStage<Bucket> createBucketResponse =
-        GCStorage.createBucket(bucketName(), location, materializer, sampleAttributes);
+        GCStorage.createBucket(bucketName(), location, actorSystem, sampleAttributes);
     final Source<Bucket, NotUsed> createBucketSourceResponse =
         GCStorage.createBucketSource(bucketName(), location);
 
@@ -88,7 +89,7 @@ public class GCStorageTest extends GCStorageWiremockBase {
     final Attributes sampleAttributes = GCStorageAttributes.settings(sampleSettings);
 
     final CompletionStage<Bucket> createBucketResponse =
-        GCStorage.createBucket(this.bucketName(), location, materializer, sampleAttributes);
+        GCStorage.createBucket(this.bucketName(), location, actorSystem, sampleAttributes);
     final Source<Bucket, NotUsed> createBucketSourceResponse =
         GCStorage.createBucketSource(this.bucketName(), location);
 
@@ -120,7 +121,7 @@ public class GCStorageTest extends GCStorageWiremockBase {
     final Attributes sampleAttributes = GCStorageAttributes.settings(sampleSettings);
 
     final CompletionStage<Done> deleteBucketResponse =
-        GCStorage.deleteBucket(this.bucketName(), materializer, sampleAttributes);
+        GCStorage.deleteBucket(this.bucketName(), actorSystem, sampleAttributes);
     final Source<Done, NotUsed> deleteBucketSourceResponse =
         GCStorage.deleteBucketSource(this.bucketName());
 
@@ -143,7 +144,7 @@ public class GCStorageTest extends GCStorageWiremockBase {
     final Attributes sampleAttributes = GCStorageAttributes.settings(sampleSettings);
 
     final CompletionStage<Done> deleteBucketResponse =
-        GCStorage.deleteBucket(this.bucketName(), materializer, sampleAttributes);
+        GCStorage.deleteBucket(this.bucketName(), actorSystem, sampleAttributes);
     final Source<Done, NotUsed> deleteBucketSourceResponse =
         GCStorage.deleteBucketSource(this.bucketName());
 
@@ -173,7 +174,7 @@ public class GCStorageTest extends GCStorageWiremockBase {
     final Attributes sampleAttributes = GCStorageAttributes.settings(sampleSettings);
 
     final CompletionStage<Optional<Bucket>> getBucketResponse =
-        GCStorage.getBucket(this.bucketName(), materializer, sampleAttributes);
+        GCStorage.getBucket(this.bucketName(), actorSystem, sampleAttributes);
     final Source<Optional<Bucket>, NotUsed> getBucketSourceResponse =
         GCStorage.getBucketSource(this.bucketName());
 
@@ -201,7 +202,7 @@ public class GCStorageTest extends GCStorageWiremockBase {
     final Attributes sampleAttributes = GCStorageAttributes.settings(sampleSettings);
 
     final CompletionStage<Optional<Bucket>> getBucketResponse =
-        GCStorage.getBucket(this.bucketName(), materializer, sampleAttributes);
+        GCStorage.getBucket(this.bucketName(), actorSystem, sampleAttributes);
     final Source<Optional<Bucket>, NotUsed> getBucketSourceResponse =
         GCStorage.getBucketSource(this.bucketName());
 
@@ -223,7 +224,7 @@ public class GCStorageTest extends GCStorageWiremockBase {
     final Attributes sampleAttributes = GCStorageAttributes.settings(sampleSettings);
 
     final CompletionStage<Optional<Bucket>> getBucketResponse =
-        GCStorage.getBucket(this.bucketName(), materializer, sampleAttributes);
+        GCStorage.getBucket(this.bucketName(), actorSystem, sampleAttributes);
     final Source<Optional<Bucket>, NotUsed> getBucketSourceResponse =
         GCStorage.getBucketSource(this.bucketName());
 
@@ -459,10 +460,7 @@ public class GCStorageTest extends GCStorageWiremockBase {
         GCStorage.getObject(bucketName(), fileName());
 
     try {
-      getObjectSource
-          .runWith(Sink.head(), system())
-          .toCompletableFuture()
-          .get(5, TimeUnit.SECONDS);
+      getObjectSource.runWith(Sink.head(), system()).toCompletableFuture().get(5, TimeUnit.SECONDS);
     } catch (Exception e) {
       assertEquals("java.lang.RuntimeException: [400] Get storage object failed", e.getMessage());
     }
@@ -546,10 +544,7 @@ public class GCStorageTest extends GCStorageWiremockBase {
         GCStorage.download(bucketName(), fileName());
 
     try {
-      downloadSource
-          .runWith(Sink.head(), system())
-          .toCompletableFuture()
-          .get(5, TimeUnit.SECONDS);
+      downloadSource.runWith(Sink.head(), system()).toCompletableFuture().get(5, TimeUnit.SECONDS);
     } catch (Exception e) {
       assertEquals("java.lang.RuntimeException: [400] File download failed", e.getMessage());
     }
@@ -641,10 +636,7 @@ public class GCStorageTest extends GCStorageWiremockBase {
         GCStorage.deleteObject(bucketName(), fileName(), generation());
 
     assertTrue(
-        deleteSource
-            .runWith(Sink.head(), system())
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS));
+        deleteSource.runWith(Sink.head(), system()).toCompletableFuture().get(5, TimeUnit.SECONDS));
 
     assertTrue(
         deleteGenerationSource
@@ -661,10 +653,7 @@ public class GCStorageTest extends GCStorageWiremockBase {
     final Source<Boolean, NotUsed> deleteSource = GCStorage.deleteObject(bucketName(), fileName());
 
     assertFalse(
-        deleteSource
-            .runWith(Sink.head(), system())
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS));
+        deleteSource.runWith(Sink.head(), system()).toCompletableFuture().get(5, TimeUnit.SECONDS));
   }
 
   @Test
@@ -675,10 +664,7 @@ public class GCStorageTest extends GCStorageWiremockBase {
     final Source<Boolean, NotUsed> deleteSource = GCStorage.deleteObject(bucketName(), fileName());
 
     try {
-      deleteSource
-          .runWith(Sink.head(), system())
-          .toCompletableFuture()
-          .get(5, TimeUnit.SECONDS);
+      deleteSource.runWith(Sink.head(), system()).toCompletableFuture().get(5, TimeUnit.SECONDS);
     } catch (Exception e) {
       assertEquals("java.lang.RuntimeException: [400] Delete object failed", e.getMessage());
     }
@@ -820,8 +806,7 @@ public class GCStorageTest extends GCStorageWiremockBase {
     // #rewrite
 
     final CompletionStage<StorageObject> result =
-        GCStorage.rewrite(bucketName(), fileName(), rewriteBucketName, fileName())
-            .run(system());
+        GCStorage.rewrite(bucketName(), fileName(), rewriteBucketName, fileName()).run(system());
 
     // #rewrite
 
@@ -839,8 +824,7 @@ public class GCStorageTest extends GCStorageWiremockBase {
     this.mockRewriteFailure(rewriteBucketName);
 
     final CompletionStage<StorageObject> result =
-        GCStorage.rewrite(bucketName(), fileName(), rewriteBucketName, fileName())
-            .run(system());
+        GCStorage.rewrite(bucketName(), fileName(), rewriteBucketName, fileName()).run(system());
 
     try {
       result.toCompletableFuture().get(5, TimeUnit.SECONDS);
