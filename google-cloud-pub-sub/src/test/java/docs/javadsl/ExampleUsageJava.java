@@ -9,6 +9,7 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
 import akka.japi.Pair;
+import akka.stream.RestartSettings;
 import akka.stream.alpakka.googlecloud.pubsub.*;
 import akka.stream.alpakka.googlecloud.pubsub.javadsl.GooglePubSub;
 import akka.stream.javadsl.*;
@@ -113,9 +114,7 @@ public class ExampleUsageJava {
     Source.tick(Duration.ofSeconds(0), Duration.ofSeconds(10), Done.getInstance())
         .via(
             RestartFlow.withBackoff(
-                Duration.ofSeconds(1),
-                Duration.ofSeconds(30),
-                0.2,
+                RestartSettings.create(Duration.ofSeconds(1), Duration.ofSeconds(30), 0.2),
                 () -> GooglePubSub.subscribeFlow(subscription, config)))
         .map(
             message -> {

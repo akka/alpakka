@@ -8,6 +8,7 @@ import java.time.Instant
 import java.util.Base64
 
 import akka.actor.{ActorSystem, Cancellable}
+import akka.stream.RestartSettings
 import akka.stream.alpakka.googlecloud.pubsub._
 import akka.stream.alpakka.googlecloud.pubsub.scaladsl.GooglePubSub
 import akka.stream.scaladsl.{Flow, FlowWithContext, RestartFlow, Sink, Source}
@@ -105,7 +106,7 @@ class ExampleUsage {
   Source
     .tick(0.seconds, 10.seconds, Done)
     .via(
-      RestartFlow.withBackoff(1.second, 30.seconds, randomFactor = 0.2)(
+      RestartFlow.withBackoff(RestartSettings(1.second, 30.seconds, randomFactor = 0.2))(
         () => GooglePubSub.subscribeFlow(subscription, config)
       )
     )
