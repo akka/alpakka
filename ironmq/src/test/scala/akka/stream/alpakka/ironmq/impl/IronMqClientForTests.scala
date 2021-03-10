@@ -7,7 +7,7 @@ import java.util.UUID
 
 import akka.actor.ActorSystem
 import akka.stream.alpakka.ironmq.IronMqSettings
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.Materializer
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.hashing.MurmurHash3
@@ -15,7 +15,7 @@ import scala.util.hashing.MurmurHash3
 trait IronMqClientForTests {
 
   implicit def system: ActorSystem = ActorSystem()
-  implicit def materializer: Materializer = ActorMaterializer()
+  implicit def materializer: Materializer = Materializer(system)
   implicit lazy val executionContext: ExecutionContext = system.dispatcher
 
   val projectId = s"""${MurmurHash3.stringHash(System.currentTimeMillis().toString)}"""

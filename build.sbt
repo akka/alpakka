@@ -165,7 +165,8 @@ lazy val geode =
         case Some((2, n)) if n >= 12 => Seq(sourceDir / "scala-2.12+")
         case _ => Seq.empty
       }
-    }
+    },
+    fatalWarnings := true
   )
 
 lazy val googleCloudBigQuery = alpakkaProject(
@@ -181,7 +182,8 @@ lazy val googleCloudPubSub = alpakkaProject(
   Dependencies.GooglePubSub,
   Test / fork := true,
   // See docker-compose.yml gcloud-pubsub-emulator_prep
-  Test / envVars := Map("PUBSUB_EMULATOR_HOST" -> "localhost", "PUBSUB_EMULATOR_PORT" -> "8538")
+  Test / envVars := Map("PUBSUB_EMULATOR_HOST" -> "localhost", "PUBSUB_EMULATOR_PORT" -> "8538"),
+  fatalWarnings := true
 )
 
 lazy val googleCloudPubSubGrpc = alpakkaProject(
@@ -198,17 +200,22 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
       "-P:silencer:pathFilters=akka-grpc/main",
       "-P:silencer:pathFilters=akka-grpc/test"
     ),
-  compile / javacOptions := (compile / javacOptions).value.filterNot(_ == "-Xlint:deprecation")
+  compile / javacOptions := (compile / javacOptions).value.filterNot(_ == "-Xlint:deprecation"),
+  fatalWarnings := true
 ).enablePlugins(AkkaGrpcPlugin)
 
 lazy val googleCloudStorage =
-  alpakkaProject("google-cloud-storage", "google.cloud.storage", Dependencies.GoogleStorage)
+  alpakkaProject("google-cloud-storage", "google.cloud.storage", Dependencies.GoogleStorage, fatalWarnings := true)
 
-lazy val googleFcm = alpakkaProject("google-fcm", "google.firebase.fcm", Dependencies.GoogleFcm, Test / fork := true)
+lazy val googleFcm = alpakkaProject("google-fcm",
+                                    "google.firebase.fcm",
+                                    Dependencies.GoogleFcm,
+                                    Test / fork := true,
+                                    fatalWarnings := true)
 
-lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, Test / fork := true)
+lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, Test / fork := true, fatalWarnings := true)
 
-lazy val hdfs = alpakkaProject("hdfs", "hdfs", Dependencies.Hdfs)
+lazy val hdfs = alpakkaProject("hdfs", "hdfs", Dependencies.Hdfs, fatalWarnings := true)
 
 lazy val influxdb = alpakkaProject("influxdb", "influxdb", Dependencies.InfluxDB, fatalWarnings := false)
 
@@ -216,22 +223,24 @@ lazy val ironmq = alpakkaProject(
   "ironmq",
   "ironmq",
   Dependencies.IronMq,
-  Test / fork := true
+  Test / fork := true,
+  fatalWarnings := true
 )
 
 lazy val jms = alpakkaProject("jms", "jms", Dependencies.Jms, fatalWarnings := true)
 
 lazy val jsonStreaming = alpakkaProject("json-streaming", "json.streaming", Dependencies.JsonStreaming)
 
-lazy val kinesis = alpakkaProject("kinesis", "aws.kinesis", Dependencies.Kinesis)
+lazy val kinesis = alpakkaProject("kinesis", "aws.kinesis", Dependencies.Kinesis, fatalWarnings := true)
 
-lazy val kudu = alpakkaProject("kudu", "kudu", Dependencies.Kudu, fork in Test := false)
+lazy val kudu = alpakkaProject("kudu", "kudu", Dependencies.Kudu, fork in Test := false, fatalWarnings := true)
 
-lazy val mongodb = alpakkaProject("mongodb", "mongodb", Dependencies.MongoDb)
+lazy val mongodb = alpakkaProject("mongodb", "mongodb", Dependencies.MongoDb, fatalWarnings := true)
 
-lazy val mqtt = alpakkaProject("mqtt", "mqtt", Dependencies.Mqtt)
+lazy val mqtt = alpakkaProject("mqtt", "mqtt", Dependencies.Mqtt, fatalWarnings := false)
 
-lazy val mqttStreaming = alpakkaProject("mqtt-streaming", "mqttStreaming", Dependencies.MqttStreaming)
+lazy val mqttStreaming =
+  alpakkaProject("mqtt-streaming", "mqttStreaming", Dependencies.MqttStreaming, fatalWarnings := false)
 lazy val mqttStreamingBench = internalProject("mqtt-streaming-bench")
   .enablePlugins(JmhPlugin)
   .dependsOn(mqtt, mqttStreaming)
@@ -248,7 +257,8 @@ lazy val pravega = alpakkaProject(
   "pravega",
   "pravega",
   Dependencies.Pravega,
-  Test / fork := true
+  Test / fork := true,
+  fatalWarnings := true
 )
 
 lazy val springWeb = alpakkaProject(
@@ -267,7 +277,7 @@ lazy val eventbridge =
 
 lazy val sns = alpakkaProject("sns", "aws.sns", Dependencies.Sns)
 
-lazy val solr = alpakkaProject("solr", "solr", Dependencies.Solr)
+lazy val solr = alpakkaProject("solr", "solr", Dependencies.Solr, fatalWarnings := true)
 
 lazy val sqs = alpakkaProject("sqs", "aws.sqs", Dependencies.Sqs)
 
@@ -275,9 +285,10 @@ lazy val sse = alpakkaProject("sse", "sse", Dependencies.Sse, fatalWarnings := t
 
 lazy val text = alpakkaProject("text", "text")
 
-lazy val udp = alpakkaProject("udp", "udp")
+lazy val udp = alpakkaProject("udp", "udp", fatalWarnings := true)
 
-lazy val unixdomainsocket = alpakkaProject("unix-domain-socket", "unixdomainsocket", Dependencies.UnixDomainSocket)
+lazy val unixdomainsocket =
+  alpakkaProject("unix-domain-socket", "unixdomainsocket", Dependencies.UnixDomainSocket, fatalWarnings := true)
 
 lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml, fatalWarnings := true)
 

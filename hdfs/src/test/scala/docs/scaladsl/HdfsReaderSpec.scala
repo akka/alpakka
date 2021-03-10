@@ -5,7 +5,6 @@
 package docs.scaladsl
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.hdfs._
 import akka.stream.alpakka.hdfs.scaladsl.{HdfsFlow, HdfsSource}
 import akka.stream.alpakka.hdfs.util.ScalaTestUtils._
@@ -34,7 +33,6 @@ class HdfsReaderSpec
   private val destination = "/tmp/alpakka/"
 
   implicit val system: ActorSystem = ActorSystem()
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   val conf = new Configuration()
   conf.set("fs.default.name", "hdfs://localhost:54310")

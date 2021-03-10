@@ -5,9 +5,8 @@
 package docs.scaladsl
 
 import java.net.InetSocketAddress
-
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.alpakka.udp.Datagram
 import akka.stream.alpakka.udp.scaladsl.Udp
@@ -31,7 +30,7 @@ class UdpSpec
     with BeforeAndAfterAll
     with LogCapturing {
 
-  implicit val mat = ActorMaterializer()
+  implicit val mat = Materializer(system)
   implicit val pat = PatienceConfig(3.seconds, 50.millis)
 
   // #bind-address

@@ -14,7 +14,6 @@ import net.schmizz.sshj.SSHClient
 import net.schmizz.sshj.sftp.{OpenMode, RemoteResourceInfo, SFTPClient}
 import net.schmizz.sshj.transport.verification.PromiscuousVerifier
 import net.schmizz.sshj.userauth.UserAuthException
-import net.schmizz.sshj.userauth.keyprovider.OpenSSHKeyFile
 import net.schmizz.sshj.userauth.method.{AuthPassword, AuthPublickey}
 import net.schmizz.sshj.userauth.password.{PasswordFinder, PasswordUtils, Resource}
 import net.schmizz.sshj.xfer.FilePermission
@@ -22,7 +21,7 @@ import org.apache.commons.net.DefaultSocketFactory
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Try}
 
 /**
  * INTERNAL API
@@ -47,6 +46,8 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
 
       sftpIdentity match {
         case Some(identity) =>
+          val keyAuth = authPublickey(identity)
+
           if (credentials.password != "") {
             val passwordAuth: AuthPassword = new AuthPassword(new PasswordFinder() {
               def reqPassword(resource: Resource[_]): Array[Char] = credentials.password.toCharArray
@@ -54,10 +55,9 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
               def shouldRetry(resource: Resource[_]) = false
             })
 
-            val keyAuth = authPublickey(identity)
             ssh.auth(credentials.username, passwordAuth, keyAuth)
           } else {
-            setIdentity(identity, credentials.username)
+            ssh.auth(credentials.username, keyAuth)
           }
         case None =>
           if (credentials.password != "") {
@@ -123,15 +123,34 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
     retrieveFileInputStream(name, handler, 0L)
 
   def retrieveFileInputStream(name: String, handler: Handler, offset: Long): Try[InputStream] =
+    retrieveFileInputStream(name, handler, offset, 1)
+
+  def retrieveFileInputStream(name: String,
+                              handler: Handler,
+                              offset: Long,
+                              maxUnconfirmedReads: Int): Try[InputStream] =
     Try {
       val remoteFile = handler.open(name, java.util.EnumSet.of(OpenMode.READ))
-      val is = new remoteFile.RemoteFileInputStream(offset) {
+      val is = maxUnconfirmedReads match {
+        case m if m > 1 =>
+          new remoteFile.ReadAheadRemoteFileInputStream(m, offset) {
 
-        override def close(): Unit =
-          try {
-            super.close()
-          } finally {
-            remoteFile.close()
+            override def close(): Unit =
+              try {
+                super.close()
+              } finally {
+                remoteFile.close()
+              }
+          }
+        case _ =>
+          new remoteFile.RemoteFileInputStream(offset) {
+
+            override def close(): Unit =
+              try {
+                super.close()
+              } finally {
+                remoteFile.close()
+              }
           }
       }
       Option(is).getOrElse {
@@ -163,33 +182,6 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
         throw new IOException(s"Could not write to $name")
       }
     }
-
-  private[this] def setIdentity(
-      identity: SftpIdentity,
-      username: String
-  )(
-      implicit ssh: SSHClient
-  ) = {
-    def bats(array: Array[Byte]): String = new String(array, StandardCharsets.UTF_8)
-
-    def initKey(f: OpenSSHKeyFile => Unit) = {
-      val key = new OpenSSHKeyFile
-      f(key)
-      ssh.authPublickey(username, key)
-    }
-
-    val passphrase =
-      identity.privateKeyFilePassphrase
-        .map(pass => PasswordUtils.createOneOff(bats(pass).toCharArray))
-        .orNull
-
-    identity match {
-      case id: RawKeySftpIdentity =>
-        initKey(_.init(bats(id.privateKey), id.publicKey.map(bats).orNull, passphrase))
-      case id: KeyFileSftpIdentity =>
-        initKey(_.init(new File(id.privateKey), passphrase))
-    }
-  }
 
   private[this] def authPublickey(identity: SftpIdentity)(implicit ssh: SSHClient) = {
     def bats(array: Array[Byte]): String = new String(array, StandardCharsets.UTF_8)

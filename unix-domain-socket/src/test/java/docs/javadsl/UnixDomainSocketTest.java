@@ -7,28 +7,30 @@ package docs.javadsl;
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.stream.*;
+import akka.japi.Pair;
+import akka.stream.Materializer;
+import akka.stream.OverflowStrategy;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.alpakka.unixdomainsocket.javadsl.UnixDomainSocket;
-import akka.stream.javadsl.*;
+import akka.stream.alpakka.unixdomainsocket.javadsl.UnixDomainSocket.IncomingConnection;
+import akka.stream.alpakka.unixdomainsocket.javadsl.UnixDomainSocket.ServerBinding;
+import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.Keep;
+import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-
-import akka.japi.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.file.Files;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-
-import akka.stream.alpakka.unixdomainsocket.javadsl.UnixDomainSocket.IncomingConnection;
-import akka.stream.alpakka.unixdomainsocket.javadsl.UnixDomainSocket.ServerBinding;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.junit.Assert.assertEquals;
 
@@ -39,11 +41,11 @@ public class UnixDomainSocketTest {
   private static final Logger log = LoggerFactory.getLogger(UnixDomainSocketTest.class);
   private static ActorSystem system;
   private static Materializer materializer;
-  private static int timeoutSeconds = 10;
+  private static final int timeoutSeconds = 10;
 
   private static Pair<ActorSystem, Materializer> setupMaterializer() {
     final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
+    final Materializer materializer = Materializer.createMaterializer(system);
     return Pair.create(system, materializer);
   }
 
@@ -92,7 +94,7 @@ public class UnixDomainSocketTest {
                   return connection.handleWith(echo, materializer);
                 })
             .toMat(Sink.ignore(), Keep.left())
-            .run(materializer);
+            .run(system);
 
     // #outgoingConnection
 
@@ -103,7 +105,7 @@ public class UnixDomainSocketTest {
     final CompletionStage<Done> sent =
         Source.single(sendBytes)
             .via(UnixDomainSocket.get(system).outgoingConnection(path))
-            .runWith(Sink.ignore(), materializer);
+            .runWith(Sink.ignore(), system);
 
     sent.toCompletableFuture().get(timeoutSeconds, TimeUnit.SECONDS);
     assertEquals(sendBytes, received.get(timeoutSeconds, TimeUnit.SECONDS));

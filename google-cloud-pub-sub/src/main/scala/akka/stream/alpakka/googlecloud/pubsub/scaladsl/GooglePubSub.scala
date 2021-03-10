@@ -51,7 +51,7 @@ protected[pubsub] trait GooglePubSub {
     // https://github.com/akka/akka/issues/27883
     FlowWithContext.fromTuples {
       Flow
-        .setup { (mat, _) =>
+        .fromMaterializer { (mat, _) =>
           implicit val system: ActorSystem = mat.system
           implicit val materializer: Materializer = mat
           httpApi
@@ -79,7 +79,7 @@ protected[pubsub] trait GooglePubSub {
    */
   def subscribeFlow(subscription: String, config: PubSubConfig): Flow[Done, ReceivedMessage, Future[NotUsed]] = {
     Flow
-      .setup { (mat, _) =>
+      .fromMaterializer { (mat, _) =>
         implicit val system: ActorSystem = mat.system
         implicit val materializer: Materializer = mat
         Flow[Done]
@@ -109,7 +109,7 @@ protected[pubsub] trait GooglePubSub {
    */
   def acknowledgeFlow(subscription: String, config: PubSubConfig): Flow[AcknowledgeRequest, Done, NotUsed] =
     Flow
-      .setup { (mat, _) =>
+      .fromMaterializer { (mat, _) =>
         implicit val system: ActorSystem = mat.system
         implicit val materializer: Materializer = mat
         Flow[AcknowledgeRequest]

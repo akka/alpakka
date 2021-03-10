@@ -7,8 +7,6 @@ package docs.javadsl;
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.alpakka.kudu.KuduAttributes;
 import akka.stream.alpakka.kudu.KuduTableSettings;
 import akka.stream.alpakka.kudu.javadsl.KuduTable;
@@ -43,7 +41,6 @@ public class KuduTableTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem system;
-  private static Materializer materializer;
   private static Schema schema;
 
   private static KuduTableSettings<Person> tableSettings;
@@ -51,7 +48,6 @@ public class KuduTableTest {
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
 
     // #configure
     // Kudu Schema
@@ -95,7 +91,7 @@ public class KuduTableTest {
     CompletionStage<Done> o =
         Source.from(Arrays.asList(100, 101, 102, 103, 104))
             .map((i) -> new Person(i, String.format("name %d", i)))
-            .runWith(sink, materializer);
+            .runWith(sink, system);
     // #sink
     assertEquals(Done.getInstance(), o.toCompletableFuture().get(5, TimeUnit.SECONDS));
   }
@@ -110,7 +106,7 @@ public class KuduTableTest {
             .map((i) -> new Person(i, String.format("name_%d", i)))
             .via(flow)
             .toMat(Sink.seq(), Keep.right())
-            .run(materializer);
+            .run(system);
     // #flow
     assertEquals(5, run.toCompletableFuture().get(5, TimeUnit.SECONDS).size());
   }
@@ -139,7 +135,7 @@ public class KuduTableTest {
             .map((i) -> new Person(i, String.format("name_%d", i)))
             .via(flow)
             .toMat(Sink.seq(), Keep.right())
-            .run(materializer);
+            .run(system);
 
     assertEquals(5, run.toCompletableFuture().get(5, TimeUnit.SECONDS).size());
   }

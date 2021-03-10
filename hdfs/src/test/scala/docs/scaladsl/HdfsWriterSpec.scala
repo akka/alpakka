@@ -36,9 +36,7 @@ class HdfsWriterSpec
   private var hdfsCluster: MiniDFSCluster = _
   private val destination = "/tmp/alpakka/"
 
-  //#init-mat
   implicit val system: ActorSystem = ActorSystem()
-  //#init-mat
   //#init-client
   import org.apache.hadoop.conf.Configuration
   import org.apache.hadoop.fs.FileSystem

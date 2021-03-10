@@ -63,13 +63,13 @@ Scala
 Java
 : @@snip [snip](/mongodb/src/test/java/docs/javadsl/MongoSourceTest.java) { #init-connection }
 
-We will also need an @apidoc[akka.actor.ActorSystem] and a @apidoc[akka.stream.Materializer].
+We will also need an @apidoc[akka.actor.ActorSystem].
 
 Scala
-: @@snip [snip](/mongodb/src/test/scala/docs/scaladsl/MongoSourceSpec.scala) { #init-mat }
+: @@snip [snip](/mongodb/src/test/scala/docs/scaladsl/MongoSourceSpec.scala) { #init-system }
 
 Java
-: @@snip [snip](/mongodb/src/test/java/docs/javadsl/MongoSourceTest.java) { #init-mat }
+: @@snip [snip](/mongodb/src/test/java/docs/javadsl/MongoSourceTest.java) { #init-system }
 
 
 ## Source

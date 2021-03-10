@@ -20,7 +20,7 @@ private[fcm] object FcmFlows {
   private[fcm] def fcmWithData[T](conf: FcmSettings,
                                   sender: FcmSender): Flow[(FcmNotification, T), (FcmResponse, T), NotUsed] =
     Flow
-      .setup { (materializer, _) =>
+      .fromMaterializer { (materializer, _) =>
         import materializer.executionContext
         val http = Http()(materializer.system)
         val session: GoogleSession = new GoogleSession(conf.clientEmail,
@@ -40,7 +40,7 @@ private[fcm] object FcmFlows {
 
   private[fcm] def fcm(conf: FcmSettings, sender: FcmSender): Flow[FcmNotification, FcmResponse, NotUsed] =
     Flow
-      .setup { (materializer, _) =>
+      .fromMaterializer { (materializer, _) =>
         import materializer.executionContext
         val http = Http()(materializer.system)
         val session: GoogleSession = new GoogleSession(conf.clientEmail,

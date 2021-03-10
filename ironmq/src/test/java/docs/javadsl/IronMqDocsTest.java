@@ -7,7 +7,6 @@ package docs.javadsl;
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 // #imports
 import akka.stream.alpakka.ironmq.*;
@@ -37,7 +36,7 @@ public class IronMqDocsTest extends IronMqClientForJava {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static final ActorSystem system = ActorSystem.create();
-  private static final Materializer materializer = ActorMaterializer.create(system);
+  private static final Materializer materializer = Materializer.matFromSystem(system);
   private static final scala.concurrent.duration.Duration awaiting =
       scala.concurrent.duration.Duration.create(5, TimeUnit.SECONDS);
   private static final Duration patience = Duration.ofSeconds(5);

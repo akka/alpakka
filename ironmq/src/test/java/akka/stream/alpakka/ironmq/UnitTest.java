@@ -5,7 +5,6 @@
 package akka.stream.alpakka.ironmq;
 
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.alpakka.ironmq.impl.IronMqClient;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
@@ -28,14 +27,14 @@ public abstract class UnitTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private ActorSystem system;
-  private ActorMaterializer materializer;
+  private Materializer materializer;
   private IronMqClient ironMqClient;
 
   @Before
   public void setup() throws Exception {
     Config config = initConfig();
     system = ActorSystem.create("TestActorSystem", config);
-    materializer = ActorMaterializer.create(system);
+    materializer = Materializer.matFromSystem(system);
     ironMqClient =
         new IronMqClient(
             IronMqSettings.create(config.getConfig(IronMqSettings.ConfigPath())),

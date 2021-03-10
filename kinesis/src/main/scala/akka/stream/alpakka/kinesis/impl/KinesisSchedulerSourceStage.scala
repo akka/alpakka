@@ -83,7 +83,7 @@ private[kinesis] class KinesisSchedulerSourceStage(
       callback.invoke(NewRecord(record))
     }
     override def onPull(): Unit = awaitingRecords(Pump)
-    override def onDownstreamFinish(): Unit = awaitingRecords(Complete)
+    override def onDownstreamFinish(cause: Throwable): Unit = awaitingRecords(Complete)
     @tailrec
     private def awaitingRecords(in: Command): Unit = in match {
       case NewRecord(record) =>

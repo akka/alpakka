@@ -8,17 +8,17 @@ The Alpakka JMS connector offers producing JMS messages to topics or queues in t
 
 The JMS message model supports several types of message bodies in (see @javadoc[javax.jms.Message](javax.jms.Message)), which may be created directly from the Akka Stream elements, or in wrappers to access more advanced features.
 
-| Stream element type                                   | Alpakka producer         |
-|-------------------------------------------------------|--------------------------|
-| String                                                | [`JmsProducer.textSink`](#text-sinks)   |
-| @scala[Array[Byte]]@java[byte[]]                      | [`JmsProducer.bytesSink`](#byte-array-sinks)  |
-| @scala[Map[String, AnyRef]]@java[Map<String, Object>] | [`JmsProducer.mapSink`](#map-messages-sinks)  |
-| Object (`java.io.Serializable`)                       | [`JmsProducer.objectSink`](#object-sinks)     |
-| `JmsTextMessage`                                      | [`JmsProducer.sink`](#a-jmsmessage-sub-type-sink) or [`JmsProducer.flow`](#sending-messages-as-a-flow) |
-| `JmsByteMessage`                                      | [`JmsProducer.sink`](#a-jmsmessage-sub-type-sink) or [`JmsProducer.flow`](#sending-messages-as-a-flow) |
-| `JmsByteStringMessage`                                | [`JmsProducer.sink`](#a-jmsmessage-sub-type-sink) or [`JmsProducer.flow`](#sending-messages-as-a-flow) |
-| `JmsMapMessage`                                       | [`JmsProducer.sink`](#a-jmsmessage-sub-type-sink) or [`JmsProducer.flow`](#sending-messages-as-a-flow) |
-| `JmsObjectMessage`                                    | [`JmsProducer.sink`](#a-jmsmessage-sub-type-sink) or [`JmsProducer.flow`](#sending-messages-as-a-flow) |
+| Stream element type                                       | Alpakka producer         |
+|-----------------------------------------------------------|--------------------------|
+| `String`                                                  | [`JmsProducer.textSink`](#text-sinks)   |
+| @scala[`Array[Byte]`]@java[`byte[]`]                      | [`JmsProducer.bytesSink`](#byte-array-sinks)  |
+| @scala[`Map[String, AnyRef]`]@java[`Map<String, Object>`] | [`JmsProducer.mapSink`](#map-messages-sinks)  |
+| `Object` (`java.io.Serializable`)                         | [`JmsProducer.objectSink`](#object-sinks)     |
+| `JmsTextMessage`                                          | [`JmsProducer.sink`](#a-jmsmessage-sub-type-sink) or [`JmsProducer.flow`](#sending-messages-as-a-flow) |
+| `JmsByteMessage`                                          | [`JmsProducer.sink`](#a-jmsmessage-sub-type-sink) or [`JmsProducer.flow`](#sending-messages-as-a-flow) |
+| `JmsByteStringMessage`                                    | [`JmsProducer.sink`](#a-jmsmessage-sub-type-sink) or [`JmsProducer.flow`](#sending-messages-as-a-flow) |
+| `JmsMapMessage`                                           | [`JmsProducer.sink`](#a-jmsmessage-sub-type-sink) or [`JmsProducer.flow`](#sending-messages-as-a-flow) |
+| `JmsObjectMessage`                                        | [`JmsProducer.sink`](#a-jmsmessage-sub-type-sink) or [`JmsProducer.flow`](#sending-messages-as-a-flow) |
 | @scala[`JmsEnvelope[PassThrough]`]@java[`JmsEnvelope<PassThrough>`] with instances `JmsPassThrough`, `JmsTextMessagePassThrough`, `JmsByteMessagePassThrough`, `JmsByteStringMessagePassThrough`, `JmsMapMessagePassThrough`, `JmsObjectMessagePassThrough`      | [`JmsProducer.flexiFlow`](#passing-context-through-the-producer) |
 
 

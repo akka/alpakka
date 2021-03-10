@@ -61,7 +61,7 @@ private[ironmq] final class IronMqPullStage(queueName: String, settings: IronMqS
       private var client: IronMqClient = _ // set in preStart
 
       override def preStart(): Unit =
-        client = IronMqClient(settings)(ActorMaterializerHelper.downcast(materializer).system, materializer)
+        client = IronMqClient(settings)(materializer.system, materializer)
 
       setHandler(
         out,
@@ -69,7 +69,7 @@ private[ironmq] final class IronMqPullStage(queueName: String, settings: IronMqS
 
           override def onPull(): Unit = {
             if (!isTimerActive(FetchMessagesTimerKey)) {
-              schedulePeriodically(FetchMessagesTimerKey, fetchInterval)
+              scheduleAtFixedRate(FetchMessagesTimerKey, fetchInterval, fetchInterval)
             }
             deliveryMessages()
           }

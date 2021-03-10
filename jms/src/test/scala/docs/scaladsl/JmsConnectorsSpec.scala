@@ -40,10 +40,12 @@ class JmsConnectorsSpec extends JmsSpec {
   "The JMS Connectors" should {
     "publish and consume strings through a queue" in withServer() { server =>
       val url = server.brokerUri
-      //#connection-factory #text-sink
+      //#connection-factory
+      //#text-sink
       //#text-source
       val connectionFactory: javax.jms.ConnectionFactory = new org.apache.activemq.ActiveMQConnectionFactory(url)
-      //#connection-factory #text-sink
+      //#connection-factory
+      //#text-sink
       //#text-source
 
       //#text-sink
@@ -71,10 +73,12 @@ class JmsConnectorsSpec extends JmsSpec {
     }
 
     "publish and consume serializable objects through a queue" in withConnectionFactory() { connFactory =>
-      //#object-sink #object-source
+      //#object-sink
+      //#object-source
       val connectionFactory = connFactory.asInstanceOf[ActiveMQConnectionFactory]
       connectionFactory.setTrustedPackages(List(classOf[DummyObject].getPackage.getName).asJava)
-      //#object-sink #object-source
+      //#object-sink
+      //#object-source
 
       //#object-sink
 
@@ -104,8 +108,6 @@ class JmsConnectorsSpec extends JmsSpec {
     }
 
     "publish and consume bytearray through a queue" in withConnectionFactory() { connectionFactory =>
-      //#bytearray-sink #bytearray-source
-      //#bytearray-sink #bytearray-source
       //#bytearray-sink
       val jmsSink: Sink[Array[Byte], Future[Done]] = JmsProducer.bytesSink(
         JmsProducerSettings(system, connectionFactory).withQueue("test")
@@ -133,9 +135,6 @@ class JmsConnectorsSpec extends JmsSpec {
     }
 
     "publish and consume map through a queue" in withConnectionFactory() { connectionFactory =>
-      //#map-sink #map-source
-      //#map-sink #map-source
-
       //#map-sink
       val jmsSink: Sink[Map[String, Any], Future[Done]] = JmsProducer.mapSink(
         JmsProducerSettings(system, connectionFactory).withQueue("test")
@@ -188,9 +187,6 @@ class JmsConnectorsSpec extends JmsSpec {
 
     "publish and consume JMS text messages with properties through a queue" in withConnectionFactory() {
       connectionFactory =>
-        //#jms-source
-        //#jms-source
-
         val jmsSink: Sink[JmsTextMessage, Future[Done]] = JmsProducer.sink(
           JmsProducerSettings(producerConfig, connectionFactory).withQueue("numbers")
         )
@@ -227,7 +223,7 @@ class JmsConnectorsSpec extends JmsSpec {
         //#jms-source
 
         control.shutdown()
-        //#jms-source
+      //#jms-source
     }
 
     "publish and consume JMS text messages" in withConnectionFactory() { connectionFactory =>
@@ -760,10 +756,6 @@ class JmsConnectorsSpec extends JmsSpec {
     }
 
     "browse" in withConnectionFactory() { connectionFactory =>
-      // format: off
-        //#browse-source
-        //#browse-source
-      // format: on
       val in = List(1 to 100).map(_.toString())
 
       withClue("write some messages") {

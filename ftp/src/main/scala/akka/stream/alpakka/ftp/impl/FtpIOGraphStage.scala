@@ -7,13 +7,12 @@ package impl
 
 import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
 import akka.stream.stage.{GraphStageWithMaterializedValue, InHandler, OutHandler}
-import akka.stream.{Attributes, IOResult, Inlet, Outlet, Shape, SinkShape, SourceShape}
+import akka.stream.{Attributes, IOOperationIncompleteException, IOResult, Inlet, Outlet, Shape, SinkShape, SourceShape}
 import akka.util.ByteString
 import akka.util.ByteString.ByteString1C
 
 import scala.concurrent.{Future, Promise}
 import java.io.{IOException, InputStream, OutputStream}
-
 import akka.annotation.InternalApi
 
 import scala.util.control.NonFatal
@@ -112,17 +111,34 @@ private[ftp] trait FtpIOSourceStage[FtpClient, S <: RemoteFileSettings]
 
       protected[this] def doPreStart(): Unit =
         isOpt = ftpLike match {
+          case ur: UnconfirmedReads =>
+            withUnconfirmedReads(ur)
           case ro: RetrieveOffset =>
             Some(ro.retrieveFileInputStream(path, handler.get.asInstanceOf[ro.Handler], offset).get)
           case _ =>
             Some(ftpLike.retrieveFileInputStream(path, handler.get).get)
         }
 
+      private def withUnconfirmedReads(
+          ftpLikeWithUnconfirmedReads: FtpLike[FtpClient, S] with UnconfirmedReads
+      ): Option[InputStream] =
+        connectionSettings match {
+          case s: SftpSettings =>
+            Some(
+              ftpLikeWithUnconfirmedReads
+                .retrieveFileInputStream(path,
+                                         handler.get.asInstanceOf[ftpLikeWithUnconfirmedReads.Handler],
+                                         offset,
+                                         s.maxUnconfirmedReads)
+                .get
+            )
+        }
+
       protected[this] def matSuccess(): Boolean =
         matValuePromise.trySuccess(IOResult.createSuccessful(readBytesTotal))
 
       protected[this] def matFailure(t: Throwable): Boolean =
-        matValuePromise.trySuccess(IOResult.createFailed(readBytesTotal, t))
+        matValuePromise.tryFailure(new IOOperationIncompleteException(readBytesTotal, t))
 
       /** BLOCKING I/O READ */
       private[this] def readChunk() = {
@@ -227,7 +243,7 @@ private[ftp] trait FtpIOSinkStage[FtpClient, S <: RemoteFileSettings]
         matValuePromise.trySuccess(IOResult.createSuccessful(writtenBytesTotal))
 
       protected[this] def matFailure(t: Throwable): Boolean =
-        matValuePromise.trySuccess(IOResult.createFailed(writtenBytesTotal, t))
+        matValuePromise.tryFailure(new IOOperationIncompleteException(writtenBytesTotal, t))
 
       /** BLOCKING I/O WRITE */
       private[this] def write(bytes: ByteString) =
@@ -295,7 +311,7 @@ private[ftp] trait FtpMoveSink[FtpClient, S <: RemoteFileSettings]
         matValuePromise.trySuccess(IOResult.createSuccessful(numberOfMovedFiles))
 
       protected[this] def matFailure(t: Throwable): Boolean =
-        matValuePromise.trySuccess(IOResult.createFailed(numberOfMovedFiles, t))
+        matValuePromise.tryFailure(t)
     } // end of stage logic
 
     (logic, matValuePromise.future)
@@ -351,7 +367,7 @@ private[ftp] trait FtpRemoveSink[FtpClient, S <: RemoteFileSettings]
         matValuePromise.trySuccess(IOResult.createSuccessful(numberOfRemovedFiles))
 
       protected[this] def matFailure(t: Throwable): Boolean =
-        matValuePromise.trySuccess(IOResult.createFailed(numberOfRemovedFiles, t))
+        matValuePromise.tryFailure(t)
     } // end of stage logic
 
     (logic, matValuePromise.future)
