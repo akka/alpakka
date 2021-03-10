@@ -84,7 +84,7 @@ public class GoogleBigQuerySourceCustomParserDoc {
                 Optional.ofNullable(jsonNode.get("rows"))
                     .map(
                         rowsJsonNode -> {
-                          List<User> users = new ArrayList(rowsJsonNode.size());
+                          ArrayList<User> users = new ArrayList<User>(rowsJsonNode.size());
                           for (int i = 0; i < rowsJsonNode.size(); ++i) {
                             JsonNode userJsonNode = rowsJsonNode.get(i);
                             users.add(readUserFromTree(userJsonNode));

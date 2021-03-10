@@ -214,7 +214,8 @@ object Dependencies {
       ) ++
       Seq("circe-core", "circe-generic", "circe-parser")
         .map("io.circe" %% _ % "0.13.0" % Test) ++ //ApacheV2
-      Mockito
+      Mockito ++
+      Silencer
   )
 
   val GooglePubSub = Seq(

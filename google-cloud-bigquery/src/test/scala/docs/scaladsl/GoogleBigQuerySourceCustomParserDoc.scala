@@ -9,6 +9,7 @@ import akka.actor.ActorSystem
 import akka.stream.alpakka.googlecloud.bigquery.BigQueryConfig
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.{BigQueryCallbacks, GoogleBigQuerySource}
 import akka.stream.scaladsl.Source
+import com.github.ghik.silencer.silent
 
 import scala.concurrent.Future
 
@@ -47,6 +48,7 @@ class GoogleBigQuerySourceCustomParserDoc {
   implicit val jobReferenceDecoder: Decoder[ResponseJsonProtocol.JobReference] = semiauto.deriveDecoder
   implicit val responseDecoder: Decoder[ResponseJsonProtocol.Response] = semiauto.deriveDecoder
 
+  @silent
   implicit def rowsDecoder[T](implicit decoder: Decoder[T]): Decoder[ResponseJsonProtocol.ResponseRows[T]] =
     semiauto.deriveDecoder
 
