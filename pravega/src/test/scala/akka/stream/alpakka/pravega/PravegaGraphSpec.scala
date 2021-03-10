@@ -17,7 +17,7 @@ import scala.concurrent.{Await, Promise}
 class PravegaGraphSpec extends PravegaBaseSpec with Repeated {
 
   val serializer = new UTF8StringSerializer
-  val nEvent = 500
+  val nEvent = 1000
   val timeout = 10.seconds
 
   "Pravega connector" should {
@@ -37,14 +37,15 @@ class PravegaGraphSpec extends PravegaBaseSpec with Repeated {
         .withKeyExtractor((str: String) => str.substring(0, 2))
         .withSerializer(serializer)
 
-      logger.info("start source")
+      logger.info(s"Write $nEvent events")
 
       // #writing
-      val done = Source(1 to nEvent)
-        .map(i => f"$i%02d_event")
-        .runWith(Pravega.sink(scope, streamName))
+      val done = time(s"Write $nEvent events",
+                      Source(1 to nEvent)
+                        .map(i => f"$i%02d_event")
+                        .runWith(Pravega.sink(scope, streamName)))
 
-      Await.ready(done, timeout)
+      time("Wait write", Await.ready(done, timeout))
 
       val doneWithRoutingKey = Source(1 to nEvent)
         .map(i => f"$i%02d_event")
@@ -56,12 +57,14 @@ class PravegaGraphSpec extends PravegaBaseSpec with Repeated {
 
       val finishReading = Promise[Unit]()
 
+      val eventToread = nEvent * 2
+
       // #reading
 
       val (kill, fut) = Pravega
         .source(scope, streamName)
         .viaMat(KillSwitches.single)(Keep.right)
-        .toMat(Sink.fold(nEvent * 2) { (acc, _) =>
+        .toMat(Sink.fold(eventToread) { (acc, _) =>
           if (acc == 1)
             finishReading.success(())
           acc - 1
@@ -70,7 +73,7 @@ class PravegaGraphSpec extends PravegaBaseSpec with Repeated {
 
       // #reading
 
-      Await.ready(finishReading.future, timeout)
+      time(s"Read $eventToread events", Await.ready(finishReading.future, timeout))
 
       logger.debug("Die, die by my hand.")
       kill.shutdown()

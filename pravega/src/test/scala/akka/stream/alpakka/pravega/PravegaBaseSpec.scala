@@ -22,6 +22,14 @@ import io.pravega.client.admin.KeyValueTableManager
 abstract class PravegaBaseSpec extends AnyWordSpec with PravegaAkkaSpecSupport with ScalaFutures with Matchers {
   val logger = LoggerFactory.getLogger(this.getClass())
 
+  def time[R](label: String, block: => R): R = {
+    val t0 = System.nanoTime() / 1000000
+    val result = block
+    val t1 = System.nanoTime() / 1000000
+    logger.info(s"$label took " + (t1 - t0) + "ms")
+    result
+  }
+
   def newGroupName() = "scala-test-group-" + UUID.randomUUID().toString
   def newScope() = "scala-test-scope-" + UUID.randomUUID().toString
   def newStreamName() = "scala-test-stream-" + UUID.randomUUID().toString
@@ -38,7 +46,9 @@ abstract class PravegaBaseSpec extends AnyWordSpec with PravegaAkkaSpecSupport w
     else
       logger.info(s"Scope [$scope] already exists.")
     val streamConfig =
-      StreamConfiguration.builder.scalingPolicy(ScalingPolicy.fixed(1)).build
+      StreamConfiguration.builder
+        .scalingPolicy(ScalingPolicy.fixed(10))
+        .build
     if (streamManager.createStream(scope, streamName, streamConfig))
       logger.info(s"Created stream [$streamName] in scope [$scope].")
     else

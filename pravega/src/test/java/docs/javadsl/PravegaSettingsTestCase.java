@@ -17,6 +17,8 @@ import org.junit.Test;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 
+import io.pravega.client.stream.Serializer;
+
 public class PravegaSettingsTestCase {
 
   protected static ActorSystem system;
