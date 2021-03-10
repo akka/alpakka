@@ -9,7 +9,7 @@ import akka.http.scaladsl.model.{ErrorInfo, ExceptionWithErrorInfo}
 import akka.http.scaladsl.unmarshalling.{FromResponseUnmarshaller, PredefinedFromEntityUnmarshallers, Unmarshaller}
 import akka.stream.alpakka.googlecloud.bigquery.model.ErrorProtoJsonProtocol.ErrorProto
 
-final case class BigQueryException private (_info: ErrorInfo) extends ExceptionWithErrorInfo(_info)
+final case class BigQueryException private (override val info: ErrorInfo) extends ExceptionWithErrorInfo(info)
 
 object BigQueryException {
 

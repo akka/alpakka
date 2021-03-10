@@ -10,7 +10,7 @@ import akka.http.scaladsl.unmarshalling.{FromResponseUnmarshaller, PredefinedFro
 import spray.json.DefaultJsonProtocol._
 import spray.json.RootJsonFormat
 
-final case class GoogleOAuth2Exception private (_info: ErrorInfo) extends ExceptionWithErrorInfo(_info)
+final case class GoogleOAuth2Exception private (override val info: ErrorInfo) extends ExceptionWithErrorInfo(info)
 
 private[bigquery] object GoogleOAuth2Exception {
 
