@@ -24,6 +24,7 @@ import scala.collection.immutable
 @InternalApi private[csv] abstract class CsvToMapStageBase[V](columnNames: Option[immutable.Seq[String]],
                                                               charset: Charset,
                                                               combineAll: Boolean,
+                                                              customFieldValuePlaceHolder: Option[V],
                                                               headerPlaceholder: Option[String])
     extends GraphStage[FlowShape[immutable.Seq[ByteString], Map[String, V]]] {
 
@@ -68,7 +69,9 @@ import scala.collection.immutable
 
   private def combineUsingPlaceholder(elem: immutable.Seq[ByteString]): Headers => Map[String, V] = headers => {
     val combined = headers.get
-      .zipAll(transformElements(elem), headerPlaceholder.fold("MissingHeader")(identity), fieldValuePlaceholder)
+      .zipAll(transformElements(elem),
+              headerPlaceholder.getOrElse("MissingHeader"),
+              customFieldValuePlaceHolder.getOrElse(fieldValuePlaceholder))
     val filtering: String => Boolean = key =>
       headerPlaceholder.map(_.equalsIgnoreCase(key)).fold(key.equalsIgnoreCase("MissingHeader"))(identity)
     val missingHeadersContent =
@@ -99,8 +102,14 @@ import scala.collection.immutable
 @InternalApi private[csv] class CsvToMapStage(columnNames: Option[immutable.Seq[String]],
                                               charset: Charset,
                                               combineAll: Boolean,
+                                              customFieldValuePlaceHolder: Option[ByteString],
                                               headerPlaceholder: Option[String])
-    extends CsvToMapStageBase[ByteString](columnNames, charset, combineAll, headerPlaceholder) {
+    extends CsvToMapStageBase[ByteString](columnNames,
+                                          charset,
+                                          combineAll,
+                                          customFieldValuePlaceHolder,
+                                          headerPlaceholder) {
+
   override val fieldValuePlaceholder: ByteString = ByteString("")
 
   override protected def transformElements(elements: immutable.Seq[ByteString]): immutable.Seq[ByteString] = elements
@@ -113,8 +122,9 @@ import scala.collection.immutable
 @InternalApi private[csv] class CsvToMapAsStringsStage(columnNames: Option[immutable.Seq[String]],
                                                        charset: Charset,
                                                        combineAll: Boolean,
+                                                       customFieldValuePlaceHolder: Option[String],
                                                        headerPlaceholder: Option[String])
-    extends CsvToMapStageBase[String](columnNames, charset, combineAll, headerPlaceholder) {
+    extends CsvToMapStageBase[String](columnNames, charset, combineAll, customFieldValuePlaceHolder, headerPlaceholder) {
 
   override val fieldValuePlaceholder: String = ""
 

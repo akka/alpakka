@@ -55,7 +55,8 @@ public class CsvToMapTest {
 
     // values as String (decode ByteString)
     Flow<Collection<ByteString>, Map<String, String>, ?> flow6 =
-        CsvToMap.toMapAsStringsCombineAll(StandardCharsets.UTF_8, Optional.empty());
+        CsvToMap.toMapAsStringsCombineAll(
+            StandardCharsets.UTF_8, Optional.empty(), Optional.empty());
     // #flow-type
   }
 
@@ -145,7 +146,9 @@ public class CsvToMapTest {
         // values as String
         Source.single(ByteString.fromString("eins,zwei,drei,vier,fünt\n1,2,3"))
             .via(CsvParsing.lineScanner())
-            .via(CsvToMap.toMapAsStringsCombineAll(StandardCharsets.UTF_8, Optional.empty()))
+            .via(
+                CsvToMap.toMapAsStringsCombineAll(
+                    StandardCharsets.UTF_8, Optional.empty(), Optional.empty()))
             .runWith(Sink.head(), system);
     // #column-names
     Map<String, String> map = completionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
@@ -167,7 +170,9 @@ public class CsvToMapTest {
         // values as String
         Source.single(ByteString.fromString("eins,zwei,drei\n1,2,3,4,5"))
             .via(CsvParsing.lineScanner())
-            .via(CsvToMap.toMapAsStringsCombineAll(StandardCharsets.UTF_8, Optional.empty()))
+            .via(
+                CsvToMap.toMapAsStringsCombineAll(
+                    StandardCharsets.UTF_8, Optional.empty(), Optional.empty()))
             .runWith(Sink.head(), system);
     // #column-names
     Map<String, String> map = completionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
@@ -193,7 +198,7 @@ public class CsvToMapTest {
             .via(CsvParsing.lineScanner())
             .via(
                 CsvToMap.toMapAsStringsCombineAll(
-                    StandardCharsets.UTF_8, Optional.of("MyCustomHeader")))
+                    StandardCharsets.UTF_8, Optional.empty(), Optional.of("MyCustomHeader")))
             .runWith(Sink.head(), system);
     // #column-names
     Map<String, String> map = completionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
@@ -208,13 +213,39 @@ public class CsvToMapTest {
   }
 
   @Test
+  public void
+      givenMoreHeadersThanDataAndACustomFieldValueHeadersShouldBecomeMapKeysAndStringValues()
+          throws Exception {
+    CompletionStage<Map<String, String>> completionStage =
+        // #column-names
+
+        // values as String
+        Source.single(ByteString.fromString("eins,zwei,drei\n1,2"))
+            .via(CsvParsing.lineScanner())
+            .via(
+                CsvToMap.toMapAsStringsCombineAll(
+                    StandardCharsets.UTF_8, Optional.of("missing"), Optional.of("MyCustomHeader")))
+            .runWith(Sink.head(), system);
+    // #column-names
+    Map<String, String> map = completionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+    // #column-names
+
+    assertThat(map.get("eins"), equalTo("1"));
+    assertThat(map.get("zwei"), equalTo("2"));
+    assertThat(map.get("drei"), equalTo("missing"));
+    // #column-names
+  }
+
+  @Test
   public void parsedLineShouldBecomeMapKeysWhenMoreDataThanHeaders() throws Exception {
     CompletionStage<Map<String, ByteString>> completionStage =
         // #header-line
         // values as ByteString
         Source.single(ByteString.fromString("eins,zwei,drei\n1,2,3,4,5"))
             .via(CsvParsing.lineScanner())
-            .via(CsvToMap.toMapCombineAll(StandardCharsets.UTF_8, Optional.empty()))
+            .via(
+                CsvToMap.toMapCombineAll(
+                    StandardCharsets.UTF_8, Optional.empty(), Optional.empty()))
             .runWith(Sink.head(), system);
     // #header-line
     Map<String, ByteString> map = completionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
@@ -235,7 +266,9 @@ public class CsvToMapTest {
         // values as ByteString
         Source.single(ByteString.fromString("eins,zwei,drei,vier,fünt\n1,2,3"))
             .via(CsvParsing.lineScanner())
-            .via(CsvToMap.toMapCombineAll(StandardCharsets.UTF_8, Optional.empty()))
+            .via(
+                CsvToMap.toMapCombineAll(
+                    StandardCharsets.UTF_8, Optional.empty(), Optional.empty()))
             .runWith(Sink.head(), system);
     // #header-line
     Map<String, ByteString> map = completionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
@@ -250,14 +283,16 @@ public class CsvToMapTest {
   }
 
   @Test
-  public void parsedLineShouldBecomeMapKeysWhenMoreHeadersThanDataAndACustomHeaderIsDefined()
+  public void parsedLineShouldBecomeMapKeysWhenMoreDataThanHeadersAndACustomHeaderIsDefined()
       throws Exception {
     CompletionStage<Map<String, ByteString>> completionStage =
         // #header-line
         // values as ByteString
         Source.single(ByteString.fromString("eins,zwei,drei\n1,2,3,4,5"))
             .via(CsvParsing.lineScanner())
-            .via(CsvToMap.toMapCombineAll(StandardCharsets.UTF_8, Optional.of("MyCustomHeader")))
+            .via(
+                CsvToMap.toMapCombineAll(
+                    StandardCharsets.UTF_8, Optional.empty(), Optional.of("MyCustomHeader")))
             .runWith(Sink.head(), system);
     // #header-line
     Map<String, ByteString> map = completionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
@@ -268,6 +303,30 @@ public class CsvToMapTest {
     assertThat(map.get("drei"), equalTo(ByteString.fromString("3")));
     assertThat(map.get("MyCustomHeader0"), equalTo(ByteString.fromString("4")));
     assertThat(map.get("MyCustomHeader1"), equalTo(ByteString.fromString("5")));
+    // #header-line
+  }
+
+  @Test
+  public void parsedLineShouldBecomeMapKeysWhenMoreHeadersThanDataAndACustomValueIsDefined()
+      throws Exception {
+    CompletionStage<Map<String, ByteString>> completionStage =
+        // #header-line
+        // values as ByteString
+        Source.single(ByteString.fromString("eins,zwei,drei\n1,2"))
+            .via(CsvParsing.lineScanner())
+            .via(
+                CsvToMap.toMapCombineAll(
+                    StandardCharsets.UTF_8,
+                    Optional.of(ByteString.fromString("missing")),
+                    Optional.of("MyCustomHeader")))
+            .runWith(Sink.head(), system);
+    // #header-line
+    Map<String, ByteString> map = completionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
+    // #header-line
+
+    assertThat(map.get("eins"), equalTo(ByteString.fromString("1")));
+    assertThat(map.get("zwei"), equalTo(ByteString.fromString("2")));
+    assertThat(map.get("drei"), equalTo(ByteString.fromString("missing")));
     // #header-line
   }
 

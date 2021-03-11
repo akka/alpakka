@@ -290,6 +290,38 @@ class CsvToMapSpec extends CsvSpec {
       )
       // #header-line
     }
+
+    "parse header and decode data line. Be OK when there are more headers than data column, set the user configured field value in the result" in assertAllStagesStopped {
+      // #header-line
+      import akka.stream.alpakka.csv.scaladsl.{CsvParsing, CsvToMap}
+
+      // #header-line
+      val future =
+        // format: off
+        // #header-line
+        // values as ByteString
+          Source
+            .single(ByteString(
+              """eins,zwei,drei,fünt
+                |11,12,13
+                |21,22,23
+                |""".stripMargin))
+            .via(CsvParsing.lineScanner())
+            .via(CsvToMap.toMapAsStringsCombineAll(customFieldValuePlaceholder = Option("missing")))
+            .runWith(Sink.seq)
+        // #header-line
+        // format: on
+      val result = future.futureValue
+      // #header-line
+
+      result should be(
+        Seq(
+          Map("eins" -> "11", "zwei" -> "12", "drei" -> "13", "fünt" -> "missing"),
+          Map("eins" -> "21", "zwei" -> "22", "drei" -> "23", "fünt" -> "missing")
+        )
+      )
+      // #header-line
+    }
   }
 
   "be OK with more headers column than data (including the header in the result)" in assertAllStagesStopped {
@@ -395,6 +427,44 @@ class CsvToMapSpec extends CsvSpec {
       Seq(
         Map("eins" -> ByteString("11"), "zwei" -> ByteString("12"), "MyCustomHeader0" -> ByteString("13")),
         Map("eins" -> ByteString("21"), "zwei" -> ByteString("22"), "MyCustomHeader0" -> ByteString(""))
+      )
+    )
+    // #header-line
+  }
+
+  "be OK when there are more headers than data column, set the user configured field value in the result" in assertAllStagesStopped {
+    // #header-line
+    import akka.stream.alpakka.csv.scaladsl.{CsvParsing, CsvToMap}
+
+    // #header-line
+    val future =
+      // format: off
+      // #header-line
+      // values as ByteString
+        Source
+          .single(ByteString(
+            """eins,zwei,drei,fünt
+              |11,12,13
+              |21,22,
+              |""".stripMargin))
+          .via(CsvParsing.lineScanner())
+          .via(CsvToMap.toMapCombineAll(headerPlaceholder = Option("MyCustomHeader"), customFieldValuePlaceholder = Option(ByteString("missing"))))
+          .runWith(Sink.seq)
+      // #header-line
+      // format: on
+    val result = future.futureValue
+    // #header-line
+
+    result should be(
+      Seq(
+        Map("eins" -> ByteString("11"),
+            "zwei" -> ByteString("12"),
+            "drei" -> ByteString("13"),
+            "fünt" -> ByteString("missing")),
+        Map("eins" -> ByteString("21"),
+            "zwei" -> ByteString("22"),
+            "drei" -> ByteString(""),
+            "fünt" -> ByteString("missing"))
       )
     )
     // #header-line

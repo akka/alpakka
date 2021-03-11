@@ -20,7 +20,11 @@ object CsvToMap {
    */
   def toMap(charset: Charset = StandardCharsets.UTF_8): Flow[List[ByteString], Map[String, ByteString], NotUsed] =
     Flow.fromGraph(
-      new CsvToMapStage(columnNames = None, charset, combineAll = false, headerPlaceholder = Option.empty)
+      new CsvToMapStage(columnNames = None,
+                        charset,
+                        combineAll = false,
+                        customFieldValuePlaceHolder = Option.empty,
+                        headerPlaceholder = Option.empty)
     )
 
   /**
@@ -30,7 +34,11 @@ object CsvToMap {
    */
   def toMapAsStrings(charset: Charset = StandardCharsets.UTF_8): Flow[List[ByteString], Map[String, String], NotUsed] =
     Flow.fromGraph(
-      new CsvToMapAsStringsStage(columnNames = None, charset, combineAll = false, headerPlaceholder = Option.empty)
+      new CsvToMapAsStringsStage(columnNames = None,
+                                 charset,
+                                 combineAll = false,
+                                 customFieldValuePlaceHolder = Option.empty,
+                                 headerPlaceholder = Option.empty)
     )
 
   /**
@@ -38,14 +46,20 @@ object CsvToMap {
    * element's values as keys.
    * If the header values are shorter than the data (or vice-versa) placeholder elements are used to extend the shorter collection to the length of the longer.
    * @param charset the charset to decode [[akka.util.ByteString]] to [[scala.Predef.String]], defaults to UTF-8
+   * @param customFieldValuePlaceholder placeholder used when there data than headers.
    * @param headerPlaceholder placeholder used when there are more headers than data.
    */
   def toMapCombineAll(
       charset: Charset = StandardCharsets.UTF_8,
+      customFieldValuePlaceholder: Option[ByteString] = None,
       headerPlaceholder: Option[String] = None
   ): Flow[List[ByteString], Map[String, ByteString], NotUsed] =
     Flow.fromGraph(
-      new CsvToMapStage(columnNames = None, charset, combineAll = true, headerPlaceholder = headerPlaceholder)
+      new CsvToMapStage(columnNames = None,
+                        charset,
+                        combineAll = true,
+                        customFieldValuePlaceHolder = customFieldValuePlaceholder,
+                        headerPlaceholder = headerPlaceholder)
     )
 
   /**
@@ -53,14 +67,20 @@ object CsvToMap {
    * element's values as keys.
    * If the header values are shorter than the data (or vice-versa) placeholder elements are used to extend the shorter collection to the length of the longer.
    * @param charset the charset to decode [[akka.util.ByteString]] to [[scala.Predef.String]], defaults to UTF-8
+   * @param customFieldValuePlaceholder placeholder used when there data than headers.
    * @param headerPlaceholder placeholder used when there are more headers than data.
    */
   def toMapAsStringsCombineAll(
       charset: Charset = StandardCharsets.UTF_8,
+      customFieldValuePlaceholder: Option[String] = None,
       headerPlaceholder: Option[String] = None
   ): Flow[List[ByteString], Map[String, String], NotUsed] =
     Flow.fromGraph(
-      new CsvToMapAsStringsStage(columnNames = None, charset, combineAll = true, headerPlaceholder = headerPlaceholder)
+      new CsvToMapAsStringsStage(columnNames = None,
+                                 charset,
+                                 combineAll = true,
+                                 customFieldValuePlaceHolder = customFieldValuePlaceholder,
+                                 headerPlaceholder = headerPlaceholder)
     )
 
   /**
@@ -73,6 +93,7 @@ object CsvToMap {
       new CsvToMapStage(Some(headers.toList),
                         StandardCharsets.UTF_8,
                         combineAll = false,
+                        customFieldValuePlaceHolder = Option.empty,
                         headerPlaceholder = Option.empty)
     )
 
@@ -87,6 +108,10 @@ object CsvToMap {
       headers: String*
   ): Flow[List[ByteString], Map[String, String], NotUsed] =
     Flow.fromGraph(
-      new CsvToMapAsStringsStage(Some(headers.toList), charset, combineAll = false, headerPlaceholder = Option.empty)
+      new CsvToMapAsStringsStage(Some(headers.toList),
+                                 charset,
+                                 combineAll = false,
+                                 customFieldValuePlaceHolder = Option.empty,
+                                 headerPlaceholder = Option.empty)
     )
 }

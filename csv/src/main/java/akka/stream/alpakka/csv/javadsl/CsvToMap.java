@@ -35,7 +35,8 @@ public class CsvToMap {
    */
   public static Flow<Collection<ByteString>, Map<String, ByteString>, ?> toMap(Charset charset) {
     return Flow.fromGraph(
-        new CsvToMapJavaStage(Optional.empty(), charset, false, Optional.empty()));
+        new CsvToMapJavaStage(
+            Optional.empty(), charset, false, Optional.empty(), Optional.empty()));
   }
 
   /**
@@ -47,7 +48,8 @@ public class CsvToMap {
   public static Flow<Collection<ByteString>, Map<String, String>, ?> toMapAsStrings(
       Charset charset) {
     return Flow.fromGraph(
-        new CsvToMapAsStringsJavaStage(Optional.empty(), charset, false, Optional.empty()));
+        new CsvToMapAsStringsJavaStage(
+            Optional.empty(), charset, false, Optional.empty(), Optional.empty()));
   }
 
   /**
@@ -58,12 +60,16 @@ public class CsvToMap {
    *
    * @param charset the charset to decode [[akka.util.ByteString]] to [[scala.Predef.String]],
    *     defaults to UTF-8
+   * @param customFieldValuePlaceHolder placeholder used when there data than headers.
    * @param headerPlaceholder placeholder used when there are more headers than data.
    */
   public static Flow<Collection<ByteString>, Map<String, ByteString>, ?> toMapCombineAll(
-      Charset charset, Optional<String> headerPlaceholder) {
+      Charset charset,
+      Optional<ByteString> customFieldValuePlaceHolder,
+      Optional<String> headerPlaceholder) {
     return Flow.fromGraph(
-        new CsvToMapJavaStage(Optional.empty(), charset, true, headerPlaceholder));
+        new CsvToMapJavaStage(
+            Optional.empty(), charset, true, customFieldValuePlaceHolder, headerPlaceholder));
   }
 
   /**
@@ -74,12 +80,16 @@ public class CsvToMap {
    *
    * @param charset the charset to decode [[akka.util.ByteString]] to [[scala.Predef.String]],
    *     defaults to UTF-8
+   * @param customFieldValuePlaceHolder placeholder used when there data than headers.
    * @param headerPlaceholder placeholder used when there are more headers than data.
    */
   public static Flow<Collection<ByteString>, Map<String, String>, ?> toMapAsStringsCombineAll(
-      Charset charset, Optional<String> headerPlaceholder) {
+      Charset charset,
+      Optional<String> customFieldValuePlaceHolder,
+      Optional<String> headerPlaceholder) {
     return Flow.fromGraph(
-        new CsvToMapAsStringsJavaStage(Optional.empty(), charset, true, headerPlaceholder));
+        new CsvToMapAsStringsJavaStage(
+            Optional.empty(), charset, true, customFieldValuePlaceHolder, headerPlaceholder));
   }
 
   /**
@@ -92,7 +102,11 @@ public class CsvToMap {
       String... headers) {
     return Flow.fromGraph(
         new CsvToMapJavaStage(
-            Optional.of(Arrays.asList(headers)), StandardCharsets.UTF_8, false, Optional.empty()));
+            Optional.of(Arrays.asList(headers)),
+            StandardCharsets.UTF_8,
+            false,
+            Optional.empty(),
+            Optional.empty()));
   }
 
   /**
@@ -105,6 +119,10 @@ public class CsvToMap {
       Charset charset, String... headers) {
     return Flow.fromGraph(
         new CsvToMapAsStringsJavaStage(
-            Optional.of(Arrays.asList(headers)), charset, false, Optional.empty()));
+            Optional.of(Arrays.asList(headers)),
+            charset,
+            false,
+            Optional.empty(),
+            Optional.empty()));
   }
 }

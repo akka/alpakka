@@ -7,7 +7,6 @@ package akka.stream.alpakka.csv.impl
 import java.nio.charset.Charset
 import java.util.stream.Collectors
 import java.{util => ju}
-
 import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
@@ -22,6 +21,7 @@ import akka.util.ByteString
 @InternalApi private[csv] abstract class CsvToMapJavaStageBase[V](columnNames: ju.Optional[ju.Collection[String]],
                                                                   charset: Charset,
                                                                   combineAll: Boolean,
+                                                                  customFieldValuePlaceHolder: ju.Optional[V],
                                                                   headerPlaceholder: ju.Optional[String])
     extends GraphStage[FlowShape[ju.Collection[ByteString], ju.Map[String, V]]] {
 
@@ -52,26 +52,23 @@ import akka.util.ByteString
           override def onPush(): Unit = {
             val elem = grab(in)
             if (combineAll) {
-              if (headers.isPresent) {
-                val map = zipAllWithHeaders(transformElements(elem))
-                push(out, map)
-              } else {
-                headers = ju.Optional.of(decode(elem))
-                pull(in)
-              }
+              process(elem, zipAllWithHeaders)
             } else {
-              if (headers.isPresent) {
-                val map = zipWithHeaders(transformElements(elem))
-                push(out, map)
-              } else {
-                headers = ju.Optional.of(decode(elem))
-                pull(in)
-              }
-
+              process(elem, zipWithHeaders)
             }
           }
         }
       )
+
+      private def process(elem: ju.Collection[ByteString], combine: ju.Collection[V] => ju.Map[String, V]) = {
+        if (headers.isPresent) {
+          val map = combine(transformElements(elem))
+          push(out, map)
+        } else {
+          headers = ju.Optional.of(decode(elem))
+          pull(in)
+        }
+      }
 
       setHandler(out, new OutHandler {
         override def onPull(): Unit = pull(in)
@@ -96,7 +93,7 @@ import akka.util.ByteString
             if (colIter.hasNext) {
               map.put(hIter.next(), colIter.next())
             } else {
-              map.put(hIter.next(), fieldValuePlaceholder)
+              map.put(hIter.next(), customFieldValuePlaceHolder.orElse(fieldValuePlaceholder))
             }
           }
         } else if (elem.size() > headers.get.size()) {
@@ -128,8 +125,13 @@ import akka.util.ByteString
 @InternalApi private[csv] class CsvToMapJavaStage(columnNames: ju.Optional[ju.Collection[String]],
                                                   charset: Charset,
                                                   combineAll: Boolean,
+                                                  customFieldValuePlaceHolder: ju.Optional[ByteString],
                                                   headerPlaceholder: ju.Optional[String])
-    extends CsvToMapJavaStageBase[ByteString](columnNames, charset, combineAll, headerPlaceholder) {
+    extends CsvToMapJavaStageBase[ByteString](columnNames,
+                                              charset,
+                                              combineAll,
+                                              customFieldValuePlaceHolder,
+                                              headerPlaceholder) {
 
   override val fieldValuePlaceholder: ByteString = ByteString("")
 
@@ -143,8 +145,13 @@ import akka.util.ByteString
 @InternalApi private[csv] class CsvToMapAsStringsJavaStage(columnNames: ju.Optional[ju.Collection[String]],
                                                            charset: Charset,
                                                            combineAll: Boolean,
+                                                           customFieldValuePlaceHolder: ju.Optional[String],
                                                            headerPlaceholder: ju.Optional[String])
-    extends CsvToMapJavaStageBase[String](columnNames, charset, combineAll, headerPlaceholder) {
+    extends CsvToMapJavaStageBase[String](columnNames,
+                                          charset,
+                                          combineAll,
+                                          customFieldValuePlaceHolder,
+                                          headerPlaceholder) {
 
   override val fieldValuePlaceholder: String = ""
 
