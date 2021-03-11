@@ -29,7 +29,7 @@ public class GeodeFiniteSourceTestCase extends GeodeBaseTestCase {
                 p -> {
                   LOGGER.debug(p.toString());
                 },
-                materializer);
+                system);
     // #query
 
     personsDone.toCompletableFuture().get();
@@ -41,7 +41,7 @@ public class GeodeFiniteSourceTestCase extends GeodeBaseTestCase {
                 p -> {
                   LOGGER.debug(p.toString());
                 },
-                materializer);
+                system);
 
     animalsDone.toCompletableFuture().get();
     geode.close();

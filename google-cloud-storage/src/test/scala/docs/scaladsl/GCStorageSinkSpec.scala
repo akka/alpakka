@@ -5,7 +5,6 @@
 package docs.scaladsl
 
 import akka.http.scaladsl.model.ContentTypes
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.storage.StorageObject
 import akka.stream.alpakka.googlecloud.storage.scaladsl.{GCStorage, GCStorageWiremockBase}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
@@ -27,8 +26,6 @@ class GCStorageSinkSpec
     with IntegrationPatience
     with Matchers
     with LogCapturing {
-
-  implicit val materializer = ActorMaterializer()
 
   override def beforeAll(): Unit =
     mockTokenApi()

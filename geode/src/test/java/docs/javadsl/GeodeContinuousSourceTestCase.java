@@ -41,7 +41,7 @@ public class GeodeContinuousSourceTestCase extends GeodeBaseTestCase {
                     geode.closeContinuousQuery("test");
                   }
                 },
-                materializer);
+                system);
     // #continuousQuery
 
     Flow<Person, Person, NotUsed> flow =
@@ -52,7 +52,7 @@ public class GeodeContinuousSourceTestCase extends GeodeBaseTestCase {
             .map((i) -> new Person(i, String.format("Java flow %d", i), new Date()))
             .via(flow)
             .toMat(Sink.seq(), Keep.both())
-            .run(materializer);
+            .run(system);
 
     run.second().toCompletableFuture().get();
 

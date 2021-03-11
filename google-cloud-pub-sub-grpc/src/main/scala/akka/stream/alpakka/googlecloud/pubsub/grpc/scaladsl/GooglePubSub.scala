@@ -6,7 +6,7 @@ package akka.stream.alpakka.googlecloud.pubsub.grpc.scaladsl
 
 import akka.actor.Cancellable
 import akka.dispatch.ExecutionContexts
-import akka.stream.{ActorMaterializer, Attributes}
+import akka.stream.{Attributes, Materializer}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.{Done, NotUsed}
 import com.google.pubsub.v1.pubsub._
@@ -27,7 +27,7 @@ object GooglePubSub {
    */
   def publish(parallelism: Int): Flow[PublishRequest, PublishResponse, NotUsed] =
     Flow
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         Flow[PublishRequest]
           .mapAsyncUnordered(parallelism)(publisher(mat, attr).client.publish)
       }
@@ -46,7 +46,7 @@ object GooglePubSub {
       pollInterval: FiniteDuration
   ): Source[ReceivedMessage, Future[Cancellable]] =
     Source
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         val cancellable = Promise[Cancellable]
 
         val subsequentRequest = request
@@ -82,7 +82,7 @@ object GooglePubSub {
       pollInterval: FiniteDuration
   ): Source[ReceivedMessage, Future[Cancellable]] =
     Source
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         val cancellable = Promise[Cancellable]
         val client = subscriber(mat, attr).client
         Source
@@ -99,7 +99,7 @@ object GooglePubSub {
    */
   def acknowledgeFlow(): Flow[AcknowledgeRequest, AcknowledgeRequest, NotUsed] =
     Flow
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         Flow[AcknowledgeRequest]
           .mapAsync(1)(
             req =>
@@ -119,7 +119,7 @@ object GooglePubSub {
    */
   def acknowledge(parallelism: Int): Sink[AcknowledgeRequest, Future[Done]] = {
     Sink
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         Flow[AcknowledgeRequest]
           .mapAsyncUnordered(parallelism)(subscriber(mat, attr).client.acknowledge)
           .toMat(Sink.ignore)(Keep.right)
@@ -127,13 +127,13 @@ object GooglePubSub {
       .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.parasitic))
   }
 
-  private def publisher(mat: ActorMaterializer, attr: Attributes) =
+  private def publisher(mat: Materializer, attr: Attributes) =
     attr
       .get[PubSubAttributes.Publisher]
       .map(_.publisher)
       .getOrElse(GrpcPublisherExt()(mat.system).publisher)
 
-  private def subscriber(mat: ActorMaterializer, attr: Attributes) =
+  private def subscriber(mat: Materializer, attr: Attributes) =
     attr
       .get[PubSubAttributes.Subscriber]
       .map(_.subscriber)

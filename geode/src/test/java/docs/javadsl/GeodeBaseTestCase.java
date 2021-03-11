@@ -6,8 +6,6 @@ package docs.javadsl;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.alpakka.geode.GeodeSettings;
 import akka.stream.alpakka.geode.RegionSettings;
 import akka.stream.alpakka.geode.javadsl.Geode;
@@ -30,8 +28,7 @@ public class GeodeBaseTestCase {
 
   protected static final Logger LOGGER = LoggerFactory.getLogger(GeodeFlowTestCase.class);
 
-  private static ActorSystem system;
-  protected static Materializer materializer;
+  protected static ActorSystem system;
   private String geodeDockerHostname = "localhost";
 
   {
@@ -49,7 +46,6 @@ public class GeodeBaseTestCase {
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
   }
 
   static Source<Person, NotUsed> buildPersonsSource(Integer... ids) {

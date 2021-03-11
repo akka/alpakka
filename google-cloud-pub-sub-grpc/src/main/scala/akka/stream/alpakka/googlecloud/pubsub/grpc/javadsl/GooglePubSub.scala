@@ -6,9 +6,8 @@ package akka.stream.alpakka.googlecloud.pubsub.grpc.javadsl
 
 import java.time.Duration
 import java.util.concurrent.{CompletableFuture, CompletionStage}
-
 import akka.actor.Cancellable
-import akka.stream.{ActorMaterializer, Attributes}
+import akka.stream.{Attributes, Materializer}
 import akka.stream.javadsl.{Flow, Keep, Sink, Source}
 import akka.{Done, NotUsed}
 import com.google.pubsub.v1._
@@ -26,7 +25,7 @@ object GooglePubSub {
    */
   def publish(parallelism: Int): Flow[PublishRequest, PublishResponse, NotUsed] =
     Flow
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         Flow
           .create[PublishRequest]
           .mapAsyncUnordered(parallelism, publisher(mat, attr).client.publish(_))
@@ -44,7 +43,7 @@ object GooglePubSub {
   def subscribe(request: StreamingPullRequest,
                 pollInterval: Duration): Source[ReceivedMessage, CompletableFuture[Cancellable]] =
     Source
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         val cancellable = new CompletableFuture[Cancellable]()
 
         val subsequentRequest = request.toBuilder
@@ -81,7 +80,7 @@ object GooglePubSub {
       pollInterval: Duration
   ): Source[ReceivedMessage, CompletableFuture[Cancellable]] =
     Source
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         val cancellable = new CompletableFuture[Cancellable]()
 
         val client = subscriber(mat, attr).client
@@ -101,7 +100,7 @@ object GooglePubSub {
    */
   def acknowledgeFlow(): Flow[AcknowledgeRequest, AcknowledgeRequest, NotUsed] =
     Flow
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         Flow
           .create[AcknowledgeRequest]
           .mapAsyncUnordered(1,
@@ -119,7 +118,7 @@ object GooglePubSub {
    */
   def acknowledge(parallelism: Int): Sink[AcknowledgeRequest, CompletionStage[Done]] =
     Sink
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         Flow
           .create[AcknowledgeRequest]
           .mapAsyncUnordered(parallelism, subscriber(mat, attr).client.acknowledge(_))
@@ -130,13 +129,13 @@ object GooglePubSub {
   private def flattenCs[T](f: CompletionStage[_ <: CompletionStage[T]]): CompletionStage[T] =
     f.thenCompose((t: CompletionStage[T]) => t)
 
-  private def publisher(mat: ActorMaterializer, attr: Attributes) =
+  private def publisher(mat: Materializer, attr: Attributes) =
     attr
       .get[PubSubAttributes.Publisher]
       .map(_.publisher)
       .getOrElse(GrpcPublisherExt.get(mat.system).publisher)
 
-  private def subscriber(mat: ActorMaterializer, attr: Attributes) =
+  private def subscriber(mat: Materializer, attr: Attributes) =
     attr
       .get[PubSubAttributes.Subscriber]
       .map(_.subscriber)

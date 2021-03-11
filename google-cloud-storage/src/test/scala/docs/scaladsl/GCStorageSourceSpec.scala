@@ -9,7 +9,7 @@ import akka.stream.alpakka.googlecloud.storage.scaladsl.{GCStorage, GCStorageWir
 import akka.stream.alpakka.googlecloud.storage.{Bucket, GCStorageAttributes, GCStorageExt, StorageObject}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
-import akka.stream.{ActorMaterializer, Attributes}
+import akka.stream.Attributes
 import akka.util.ByteString
 import akka.{Done, NotUsed}
 import org.scalatest.BeforeAndAfterAll
@@ -28,7 +28,6 @@ class GCStorageSourceSpec
     with Matchers
     with LogCapturing {
 
-  implicit val materializer = ActorMaterializer()
   private val sampleSettings = GCStorageExt(system).settings
 
   override def beforeAll(): Unit =

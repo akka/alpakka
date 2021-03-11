@@ -165,7 +165,8 @@ lazy val geode =
         case Some((2, n)) if n >= 12 => Seq(sourceDir / "scala-2.12+")
         case _ => Seq.empty
       }
-    }
+    },
+    fatalWarnings := true
   )
 
 lazy val googleCloudBigQuery = alpakkaProject(
@@ -182,7 +183,8 @@ lazy val googleCloudPubSub = alpakkaProject(
   Dependencies.GooglePubSub,
   Test / fork := true,
   // See docker-compose.yml gcloud-pubsub-emulator_prep
-  Test / envVars := Map("PUBSUB_EMULATOR_HOST" -> "localhost", "PUBSUB_EMULATOR_PORT" -> "8538")
+  Test / envVars := Map("PUBSUB_EMULATOR_HOST" -> "localhost", "PUBSUB_EMULATOR_PORT" -> "8538"),
+  fatalWarnings := true
 )
 
 lazy val googleCloudPubSubGrpc = alpakkaProject(
@@ -199,13 +201,18 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
       "-P:silencer:pathFilters=akka-grpc/main",
       "-P:silencer:pathFilters=akka-grpc/test"
     ),
-  compile / javacOptions := (compile / javacOptions).value.filterNot(_ == "-Xlint:deprecation")
+  compile / javacOptions := (compile / javacOptions).value.filterNot(_ == "-Xlint:deprecation"),
+  fatalWarnings := true
 ).enablePlugins(AkkaGrpcPlugin)
 
 lazy val googleCloudStorage =
-  alpakkaProject("google-cloud-storage", "google.cloud.storage", Dependencies.GoogleStorage)
+  alpakkaProject("google-cloud-storage", "google.cloud.storage", Dependencies.GoogleStorage, fatalWarnings := true)
 
-lazy val googleFcm = alpakkaProject("google-fcm", "google.firebase.fcm", Dependencies.GoogleFcm, Test / fork := true)
+lazy val googleFcm = alpakkaProject("google-fcm",
+                                    "google.firebase.fcm",
+                                    Dependencies.GoogleFcm,
+                                    Test / fork := true,
+                                    fatalWarnings := true)
 
 lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, Test / fork := true, fatalWarnings := true)
 
@@ -391,7 +398,8 @@ lazy val `doc-examples` = project
     whitesourceIgnore := true,
     // More projects are not available for Scala 2.13
     crossScalaVersions -= Dependencies.Scala213,
-    Dependencies.`Doc-examples`
+    Dependencies.`Doc-examples`,
+    fatalWarnings := true
   )
 
 def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sbt.Def.SettingsDefinition*): Project = {
