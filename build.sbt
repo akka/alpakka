@@ -393,7 +393,8 @@ lazy val `doc-examples` = project
     whitesourceIgnore := true,
     // More projects are not available for Scala 2.13
     crossScalaVersions -= Dependencies.Scala213,
-    Dependencies.`Doc-examples`
+    Dependencies.`Doc-examples`,
+    fatalWarnings := true
   )
 
 def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sbt.Def.SettingsDefinition*): Project = {
