@@ -31,7 +31,6 @@ import java.util.concurrent.ExecutionException;
 
 public class PassThroughExamples {
   private static ActorSystem system;
-  private static Materializer materializer;
 
   @Test
   public void passThroughWithKeep() throws InterruptedException, ExecutionException {
@@ -43,9 +42,7 @@ public class PassThroughExamples {
     Flow<Integer, Integer, NotUsed> passThroughMe = Flow.of(Integer.class).map(i -> i * 10);
 
     CompletionStage<List<Integer>> ret =
-        source
-            .via(PassThroughFlow.create(passThroughMe, Keep.right()))
-            .runWith(Sink.seq(), materializer);
+        source.via(PassThroughFlow.create(passThroughMe, Keep.right())).runWith(Sink.seq(), system);
 
     // Verify results
     List<Integer> list = ret.toCompletableFuture().get();
@@ -63,7 +60,7 @@ public class PassThroughExamples {
     Flow<Integer, Integer, NotUsed> passThroughMe = Flow.of(Integer.class).map(i -> i * 10);
 
     CompletionStage<List<Pair<Integer, Integer>>> ret =
-        source.via(PassThroughFlow.create(passThroughMe)).runWith(Sink.seq(), materializer);
+        source.via(PassThroughFlow.create(passThroughMe)).runWith(Sink.seq(), system);
 
     // Verify results
     List<Pair<Integer, Integer>> list = ret.toCompletableFuture().get();
@@ -78,7 +75,6 @@ public class PassThroughExamples {
   @BeforeClass
   public static void setup() throws Exception {
     system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
   }
 
   @AfterClass
@@ -111,7 +107,6 @@ class PassThroughFlow {
 
 class PassThroughFlowKafkaCommitExample {
   private static ActorSystem system;
-  private static Materializer materializer;
 
   public void dummy() {
     // #passThroughKafkaFlow
@@ -127,7 +122,7 @@ class PassThroughFlowKafkaCommitExample {
             .map(i -> i.committableOffset())
             .toMat(Committer.sink(comitterSettings), Keep.both())
             .mapMaterializedValue(Consumer::createDrainingControl)
-            .run(materializer);
+            .run(system);
 
     // #passThroughKafkaFlow
   }
@@ -135,6 +130,5 @@ class PassThroughFlowKafkaCommitExample {
   @BeforeClass
   public static void setup() throws Exception {
     system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
   }
 }
