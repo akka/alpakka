@@ -16,7 +16,6 @@ import javax.net.ssl.{SSLContext, TrustManagerFactory}
 @InternalApi
 private[bigquery] object ForwardProxyHttpsContext {
 
-  @silent("deprecated")
   def apply(trustPemPath: String): HttpsConnectionContext = {
     val certificate = x509Certificate(trustPemPath: String)
     val sslContext = SSLContext.getInstance("SSL")
@@ -30,7 +29,7 @@ private[bigquery] object ForwardProxyHttpsContext {
     tmf.init(trustStore)
     val trustManagers = tmf.getTrustManagers
     sslContext.init(null, trustManagers, null)
-    new HttpsConnectionContext(sslContext)
+    new HttpsConnectionContext(sslContext): @silent("deprecated")
   }
 
   private def x509Certificate(trustPemPath: String): X509Certificate = {
