@@ -258,7 +258,7 @@ services:
     ports:
       - "3128:3128"
   pravega:
-    image: pravega/pravega:0.8.0
+    image: pravega/pravega:0.9.0
     ports:
       - 9090:9090
       - 12345:12345
