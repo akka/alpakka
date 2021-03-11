@@ -10,7 +10,6 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.{HttpExt, HttpsConnectionContext}
-import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.google.firebase.fcm.impl.GoogleTokenApi.AccessTokenExpiry
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
@@ -42,8 +41,6 @@ class GoogleTokenApiSpec
     PatienceConfig(timeout = 2.seconds, interval = 50.millis)
 
   implicit val executionContext: ExecutionContext = system.dispatcher
-
-  implicit val materializer: Materializer = ActorMaterializer()
 
   // openssl genrsa -out mykey.pem 1024
   // openssl pkcs8 -topk8 -nocrypt -in mykey.pem -out myrsakey_pcks8

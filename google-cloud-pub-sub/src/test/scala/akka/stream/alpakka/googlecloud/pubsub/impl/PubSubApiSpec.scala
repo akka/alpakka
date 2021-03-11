@@ -11,7 +11,6 @@ import java.util.Base64
 import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.{ConnectionContext, Http}
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.pubsub._
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Keep, Sink, Source}
@@ -45,7 +44,6 @@ class NoopTrustManager extends X509TrustManager {
 class PubSubApiSpec extends AnyFlatSpec with BeforeAndAfterAll with ScalaFutures with Matchers with LogCapturing {
 
   implicit val system = ActorSystem()
-  implicit val mat = ActorMaterializer()
 
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 100.millis)

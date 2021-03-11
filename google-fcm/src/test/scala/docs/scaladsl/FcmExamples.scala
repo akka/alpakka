@@ -12,7 +12,6 @@ import akka.stream.alpakka.google.firebase.fcm._
 
 //#imports
 import akka.stream.scaladsl.{Sink, Source}
-import akka.stream.{ActorMaterializer, Materializer}
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -20,7 +19,6 @@ import scala.concurrent.Future
 class FcmExamples {
 
   implicit val system = ActorSystem()
-  implicit val mat: Materializer = ActorMaterializer()
 
   //#init-credentials
   val privateKey =
