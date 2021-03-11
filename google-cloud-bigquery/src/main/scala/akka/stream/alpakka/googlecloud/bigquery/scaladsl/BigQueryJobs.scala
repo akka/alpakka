@@ -14,6 +14,7 @@ import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{HttpEntity, HttpRequest, RequestEntity}
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
 import akka.http.scaladsl.util.FastFuture.EnhancedFuture
+import akka.stream.FlowShape
 import akka.stream.alpakka.googlecloud.bigquery.impl.LoadJob
 import akka.stream.alpakka.googlecloud.bigquery.impl.http.BigQueryHttp
 import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.{
@@ -27,11 +28,11 @@ import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.{
 }
 import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.TableReference
 import akka.stream.alpakka.googlecloud.bigquery._
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.scaladsl.{Flow, GraphDSL, Keep, Sink}
 import akka.util.ByteString
 import com.github.ghik.silencer.silent
 
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.Future
 
 private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
 
@@ -118,15 +119,16 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
 
         val jobFlow = {
           val newline = ByteString("\n")
-          val promise = Promise[Job]()
           val sink = Flow[In]
             .takeWithin(perTableQuota)
             .mapAsync(1)(Marshal(_).to[HttpEntity])
             .flatMapConcat(_.dataBytes)
             .intersperse(newline)
             .toMat(createLoadJob(job))(Keep.right)
-            .mapMaterializedValue(promise.completeWith)
-          Flow.fromSinkAndSource(sink, Source.future(promise.future))
+          Flow.fromGraph(GraphDSL.create(sink) { implicit b => sink =>
+            import GraphDSL.Implicits._
+            FlowShape(sink.in, b.materializedValue.mapAsync(1)(identity).outlet)
+          })
         }
 
         Flow[In]
