@@ -16,6 +16,7 @@ import com.github.ghik.silencer.silent
 import spray.json.{RootJsonFormat, RootJsonReader}
 
 import java.{lang, util}
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Seq
 import scala.compat.java8.OptionConverters._
@@ -114,16 +115,16 @@ object QueryJsonProtocol {
    * @tparam T the data model for each row
    */
   @JsonIgnoreProperties(ignoreUnknown = true)
-  final case class QueryResponse[T](schema: Option[TableSchema],
-                                    jobReference: JobReference,
-                                    totalRows: Option[Long],
-                                    pageToken: Option[String],
-                                    rows: Option[Seq[T]],
-                                    totalBytesProcessed: Option[Long],
-                                    jobComplete: Boolean,
-                                    errors: Option[Seq[ErrorProto]],
-                                    cacheHit: Option[Boolean],
-                                    numDmlAffectedRows: Option[Long]) {
+  final case class QueryResponse[+T](schema: Option[TableSchema],
+                                     jobReference: JobReference,
+                                     totalRows: Option[Long],
+                                     pageToken: Option[String],
+                                     rows: Option[Seq[T]],
+                                     totalBytesProcessed: Option[Long],
+                                     jobComplete: Boolean,
+                                     errors: Option[Seq[ErrorProto]],
+                                     cacheHit: Option[Boolean],
+                                     numDmlAffectedRows: Option[Long]) {
 
     @silent("never used")
     @JsonCreator
@@ -154,7 +155,7 @@ object QueryJsonProtocol {
     def getJobReference = jobReference
     def getTotalRows = totalRows.asPrimitive
     def getPageToken = pageToken.asJava
-    def getRows = rows.map(_.asJava).asJava
+    def getRows: util.Optional[util.List[T] @uncheckedVariance] = rows.map(_.asJava).asJava
     def getTotalBytesProcessed = totalBytesProcessed.asPrimitive
     def getJobComplete = jobComplete
     def getErrors = errors.map(_.asJava).asJava
@@ -169,7 +170,7 @@ object QueryJsonProtocol {
       copy(totalRows = totalRows.asScala)
     def withPageToken(pageToken: util.Optional[String]) =
       copy(pageToken = pageToken.asScala)
-    def withRows(rows: util.Optional[util.List[T]]) =
+    def withRows(rows: util.Optional[util.List[T] @uncheckedVariance]) =
       copy(rows = rows.asScala.map(_.asScala.toList))
     def withTotalBytesProcessed(totalBytesProcessed: util.OptionalLong) =
       copy(totalBytesProcessed = totalBytesProcessed.asScala)
@@ -231,5 +232,5 @@ object QueryJsonProtocol {
     implicit val format = lift(reader)
     jsonFormat10(QueryResponse[T])
   }
-  implicit def paginated[T]: Paginated[QueryResponse[T]] = _.pageToken
+  implicit val paginated: Paginated[QueryResponse[Any]] = _.pageToken
 }

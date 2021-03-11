@@ -14,6 +14,7 @@ import com.github.ghik.silencer.silent
 import spray.json.{JsonFormat, RootJsonFormat, RootJsonReader, RootJsonWriter}
 
 import java.{lang, util}
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Seq
 import scala.compat.java8.OptionConverters._
@@ -30,7 +31,7 @@ object TableDataJsonProtocol {
    * @tparam T the data model of each row
    */
   @JsonIgnoreProperties(ignoreUnknown = true)
-  final case class TableDataListResponse[T](totalRows: Long, pageToken: Option[String], rows: Option[Seq[T]]) {
+  final case class TableDataListResponse[+T](totalRows: Long, pageToken: Option[String], rows: Option[Seq[T]]) {
 
     @silent("never used")
     @JsonCreator
@@ -41,13 +42,13 @@ object TableDataJsonProtocol {
 
     def getTotalRows = totalRows
     def getPageToken = pageToken.asJava
-    def getRows = rows.map(_.asJava).asJava
+    def getRows: util.Optional[util.List[T] @uncheckedVariance] = rows.map(_.asJava).asJava
 
     def withTotalRows(totalRows: Long) =
       copy(totalRows = totalRows)
     def withPageToken(pageToken: util.Optional[String]) =
       copy(pageToken = pageToken.asScala)
-    def withRows(rows: util.Optional[util.List[T]]) =
+    def withRows(rows: util.Optional[util.List[T] @uncheckedVariance]) =
       copy(rows = rows.asScala.map(_.asScala.toList))
   }
 
@@ -77,15 +78,15 @@ object TableDataJsonProtocol {
    * @tparam T the data model of each row
    */
   @JsonInclude(Include.NON_NULL)
-  final case class TableDataInsertAllRequest[T](skipInvalidRows: Option[Boolean],
-                                                ignoreUnknownValues: Option[Boolean],
-                                                templateSuffix: Option[String],
-                                                rows: Seq[Row[T]]) {
+  final case class TableDataInsertAllRequest[+T](skipInvalidRows: Option[Boolean],
+                                                 ignoreUnknownValues: Option[Boolean],
+                                                 templateSuffix: Option[String],
+                                                 rows: Seq[Row[T]]) {
 
     @JsonIgnore def getSkipInvalidRows = skipInvalidRows.map(lang.Boolean.valueOf).asJava
     @JsonIgnore def getIgnoreUnknownValues = ignoreUnknownValues.map(lang.Boolean.valueOf).asJava
     @JsonIgnore def getTemplateSuffix = templateSuffix.asJava
-    def getRows = rows.asJava
+    def getRows: util.List[Row[T] @uncheckedVariance] = rows.asJava
 
     @silent("never used")
     @JsonGetter("skipInvalidRows")
@@ -103,7 +104,7 @@ object TableDataJsonProtocol {
       copy(ignoreUnknownValues = ignoreUnknownValues.asScala.map(_.booleanValue))
     def withTemplateSuffix(templateSuffix: util.Optional[String]) =
       copy(templateSuffix = templateSuffix.asScala)
-    def withRows(rows: util.List[Row[T]]): TableDataInsertAllRequest[T] =
+    def withRows(rows: util.List[Row[T] @uncheckedVariance]): TableDataInsertAllRequest[T] =
       copy(rows = rows.asScala.toList)
   }
 
@@ -203,7 +204,7 @@ object TableDataJsonProtocol {
     implicit val format = lift(reader)
     jsonFormat3(TableDataListResponse[T])
   }
-  implicit def paginated[T]: Paginated[TableDataListResponse[T]] = _.pageToken
+  implicit val paginated: Paginated[TableDataListResponse[Any]] = _.pageToken
   implicit def insertAllRequestWriter[T](
       implicit writer: BigQueryRootJsonWriter[T]
   ): RootJsonWriter[TableDataInsertAllRequest[T]] = {
