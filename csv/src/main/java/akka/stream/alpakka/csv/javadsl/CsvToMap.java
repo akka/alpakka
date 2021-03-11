@@ -60,16 +60,16 @@ public class CsvToMap {
    *
    * @param charset the charset to decode [[akka.util.ByteString]] to [[scala.Predef.String]],
    *     defaults to UTF-8
-   * @param customFieldValuePlaceHolder placeholder used when there data than headers.
+   * @param customFieldValuePlaceholder placeholder used when there are more data than headers.
    * @param headerPlaceholder placeholder used when there are more headers than data.
    */
   public static Flow<Collection<ByteString>, Map<String, ByteString>, ?> toMapCombineAll(
       Charset charset,
-      Optional<ByteString> customFieldValuePlaceHolder,
+      Optional<ByteString> customFieldValuePlaceholder,
       Optional<String> headerPlaceholder) {
     return Flow.fromGraph(
         new CsvToMapJavaStage(
-            Optional.empty(), charset, true, customFieldValuePlaceHolder, headerPlaceholder));
+            Optional.empty(), charset, true, customFieldValuePlaceholder, headerPlaceholder));
   }
 
   /**
@@ -80,16 +80,16 @@ public class CsvToMap {
    *
    * @param charset the charset to decode [[akka.util.ByteString]] to [[scala.Predef.String]],
    *     defaults to UTF-8
-   * @param customFieldValuePlaceHolder placeholder used when there data than headers.
+   * @param customFieldValuePlaceholder placeholder used when there are more data than headers.
    * @param headerPlaceholder placeholder used when there are more headers than data.
    */
   public static Flow<Collection<ByteString>, Map<String, String>, ?> toMapAsStringsCombineAll(
       Charset charset,
-      Optional<String> customFieldValuePlaceHolder,
+      Optional<String> customFieldValuePlaceholder,
       Optional<String> headerPlaceholder) {
     return Flow.fromGraph(
         new CsvToMapAsStringsJavaStage(
-            Optional.empty(), charset, true, customFieldValuePlaceHolder, headerPlaceholder));
+            Optional.empty(), charset, true, customFieldValuePlaceholder, headerPlaceholder));
   }
 
   /**

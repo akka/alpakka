@@ -23,7 +23,7 @@ object CsvToMap {
       new CsvToMapStage(columnNames = None,
                         charset,
                         combineAll = false,
-                        customFieldValuePlaceHolder = Option.empty,
+                        customFieldValuePlaceholder = Option.empty,
                         headerPlaceholder = Option.empty)
     )
 
@@ -37,7 +37,7 @@ object CsvToMap {
       new CsvToMapAsStringsStage(columnNames = None,
                                  charset,
                                  combineAll = false,
-                                 customFieldValuePlaceHolder = Option.empty,
+                                 customFieldValuePlaceholder = Option.empty,
                                  headerPlaceholder = Option.empty)
     )
 
@@ -46,7 +46,7 @@ object CsvToMap {
    * element's values as keys.
    * If the header values are shorter than the data (or vice-versa) placeholder elements are used to extend the shorter collection to the length of the longer.
    * @param charset the charset to decode [[akka.util.ByteString]] to [[scala.Predef.String]], defaults to UTF-8
-   * @param customFieldValuePlaceholder placeholder used when there data than headers.
+   * @param customFieldValuePlaceholder placeholder used when there is more data than headers.
    * @param headerPlaceholder placeholder used when there are more headers than data.
    */
   def toMapCombineAll(
@@ -58,7 +58,7 @@ object CsvToMap {
       new CsvToMapStage(columnNames = None,
                         charset,
                         combineAll = true,
-                        customFieldValuePlaceHolder = customFieldValuePlaceholder,
+                        customFieldValuePlaceholder = customFieldValuePlaceholder,
                         headerPlaceholder = headerPlaceholder)
     )
 
@@ -67,7 +67,7 @@ object CsvToMap {
    * element's values as keys.
    * If the header values are shorter than the data (or vice-versa) placeholder elements are used to extend the shorter collection to the length of the longer.
    * @param charset the charset to decode [[akka.util.ByteString]] to [[scala.Predef.String]], defaults to UTF-8
-   * @param customFieldValuePlaceholder placeholder used when there data than headers.
+   * @param customFieldValuePlaceholder placeholder used when there is more data than headers.
    * @param headerPlaceholder placeholder used when there are more headers than data.
    */
   def toMapAsStringsCombineAll(
@@ -79,7 +79,7 @@ object CsvToMap {
       new CsvToMapAsStringsStage(columnNames = None,
                                  charset,
                                  combineAll = true,
-                                 customFieldValuePlaceHolder = customFieldValuePlaceholder,
+                                 customFieldValuePlaceholder = customFieldValuePlaceholder,
                                  headerPlaceholder = headerPlaceholder)
     )
 
@@ -93,7 +93,7 @@ object CsvToMap {
       new CsvToMapStage(Some(headers.toList),
                         StandardCharsets.UTF_8,
                         combineAll = false,
-                        customFieldValuePlaceHolder = Option.empty,
+                        customFieldValuePlaceholder = Option.empty,
                         headerPlaceholder = Option.empty)
     )
 
@@ -111,7 +111,7 @@ object CsvToMap {
       new CsvToMapAsStringsStage(Some(headers.toList),
                                  charset,
                                  combineAll = false,
-                                 customFieldValuePlaceHolder = Option.empty,
+                                 customFieldValuePlaceholder = Option.empty,
                                  headerPlaceholder = Option.empty)
     )
 }

@@ -16,12 +16,15 @@ import akka.util.ByteString
  * Internal Java API: Converts incoming {@link Collection}<{@link ByteString}> to {@link java.util.Map}<String, ByteString>.
  *
  * @param columnNames If given, these names are used as map keys; if not first stream element is used
- * @param charset     Character set used to convert header line ByteString to String
+ * @param charset Character set used to convert header line ByteString to String
+ * @param combineAll If true, placeholder elements will be used to extend the shorter collection to the length of the longer.
+ * @param customFieldValuePlaceholder placeholder used when there are more data than headers.
+ * @param headerPlaceholder placeholder used when there are more headers than data.
  */
 @InternalApi private[csv] abstract class CsvToMapJavaStageBase[V](columnNames: ju.Optional[ju.Collection[String]],
                                                                   charset: Charset,
                                                                   combineAll: Boolean,
-                                                                  customFieldValuePlaceHolder: ju.Optional[V],
+                                                                  customFieldValuePlaceholder: ju.Optional[V],
                                                                   headerPlaceholder: ju.Optional[String])
     extends GraphStage[FlowShape[ju.Collection[ByteString], ju.Map[String, V]]] {
 
@@ -93,7 +96,7 @@ import akka.util.ByteString
             if (colIter.hasNext) {
               map.put(hIter.next(), colIter.next())
             } else {
-              map.put(hIter.next(), customFieldValuePlaceHolder.orElse(fieldValuePlaceholder))
+              map.put(hIter.next(), customFieldValuePlaceholder.orElse(fieldValuePlaceholder))
             }
           }
         } else if (elem.size() > headers.get.size()) {
@@ -125,12 +128,12 @@ import akka.util.ByteString
 @InternalApi private[csv] class CsvToMapJavaStage(columnNames: ju.Optional[ju.Collection[String]],
                                                   charset: Charset,
                                                   combineAll: Boolean,
-                                                  customFieldValuePlaceHolder: ju.Optional[ByteString],
+                                                  customFieldValuePlaceholder: ju.Optional[ByteString],
                                                   headerPlaceholder: ju.Optional[String])
     extends CsvToMapJavaStageBase[ByteString](columnNames,
                                               charset,
                                               combineAll,
-                                              customFieldValuePlaceHolder,
+                                              customFieldValuePlaceholder,
                                               headerPlaceholder) {
 
   override val fieldValuePlaceholder: ByteString = ByteString("")
@@ -145,12 +148,12 @@ import akka.util.ByteString
 @InternalApi private[csv] class CsvToMapAsStringsJavaStage(columnNames: ju.Optional[ju.Collection[String]],
                                                            charset: Charset,
                                                            combineAll: Boolean,
-                                                           customFieldValuePlaceHolder: ju.Optional[String],
+                                                           customFieldValuePlaceholder: ju.Optional[String],
                                                            headerPlaceholder: ju.Optional[String])
     extends CsvToMapJavaStageBase[String](columnNames,
                                           charset,
                                           combineAll,
-                                          customFieldValuePlaceHolder,
+                                          customFieldValuePlaceholder,
                                           headerPlaceholder) {
 
   override val fieldValuePlaceholder: String = ""
