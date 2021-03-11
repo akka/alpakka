@@ -20,7 +20,9 @@ import akka.util.ByteString
  * @param charset     Character set used to convert header line ByteString to String
  */
 @InternalApi private[csv] abstract class CsvToMapJavaStageBase[V](columnNames: ju.Optional[ju.Collection[String]],
-                                                                  charset: Charset)
+                                                                  charset: Charset,
+                                                                  combineAll: Boolean,
+                                                                  headerPlaceholder: ju.Optional[String])
     extends GraphStage[FlowShape[ju.Collection[ByteString], ju.Map[String, V]]] {
 
   override protected def initialAttributes: Attributes = Attributes.name("CsvToMap")
@@ -28,6 +30,8 @@ import akka.util.ByteString
   private val in = Inlet[ju.Collection[ByteString]]("CsvToMap.in")
   private val out = Outlet[ju.Map[String, V]]("CsvToMap.out")
   override val shape = FlowShape.of(in, out)
+
+  val fieldValuePlaceholder: V
 
   protected def transformElements(elements: ju.Collection[ByteString]): ju.Collection[V]
 
@@ -47,12 +51,23 @@ import akka.util.ByteString
         new InHandler {
           override def onPush(): Unit = {
             val elem = grab(in)
-            if (headers.isPresent) {
-              val map = zipWithHeaders(transformElements(elem))
-              push(out, map)
+            if (combineAll) {
+              if (headers.isPresent) {
+                val map = zipAllWithHeaders(transformElements(elem))
+                push(out, map)
+              } else {
+                headers = ju.Optional.of(decode(elem))
+                pull(in)
+              }
             } else {
-              headers = ju.Optional.of(decode(elem))
-              pull(in)
+              if (headers.isPresent) {
+                val map = zipWithHeaders(transformElements(elem))
+                push(out, map)
+              } else {
+                headers = ju.Optional.of(decode(elem))
+                pull(in)
+              }
+
             }
           }
         }
@@ -71,6 +86,38 @@ import akka.util.ByteString
         }
         map
       }
+
+      private def zipAllWithHeaders(elem: ju.Collection[V]): ju.Map[String, V] = {
+        val map = new ju.HashMap[String, V]()
+        val hIter = headers.get.iterator()
+        val colIter = elem.iterator()
+        if (headers.get.size() > elem.size()) {
+          while (hIter.hasNext) {
+            if (colIter.hasNext) {
+              map.put(hIter.next(), colIter.next())
+            } else {
+              map.put(hIter.next(), fieldValuePlaceholder)
+            }
+          }
+        } else if (elem.size() > headers.get.size()) {
+          var index = 0
+          while (colIter.hasNext) {
+            if (hIter.hasNext) {
+              map.put(hIter.next(), colIter.next())
+            } else {
+              map.put(headerPlaceholder.orElse("MissingHeader") + index, colIter.next())
+              index = index + 1
+            }
+          }
+
+        } else {
+          while (hIter.hasNext && colIter.hasNext) {
+            map.put(hIter.next(), colIter.next())
+          }
+        }
+        map
+      }
+
     }
 
 }
@@ -78,8 +125,13 @@ import akka.util.ByteString
 /**
  * Internal API
  */
-@InternalApi private[csv] class CsvToMapJavaStage(columnNames: ju.Optional[ju.Collection[String]], charset: Charset)
-    extends CsvToMapJavaStageBase[ByteString](columnNames, charset) {
+@InternalApi private[csv] class CsvToMapJavaStage(columnNames: ju.Optional[ju.Collection[String]],
+                                                  charset: Charset,
+                                                  combineAll: Boolean,
+                                                  headerPlaceholder: ju.Optional[String])
+    extends CsvToMapJavaStageBase[ByteString](columnNames, charset, combineAll, headerPlaceholder) {
+
+  override val fieldValuePlaceholder: ByteString = ByteString("")
 
   override protected def transformElements(elements: ju.Collection[ByteString]): ju.Collection[ByteString] =
     elements
@@ -89,8 +141,12 @@ import akka.util.ByteString
  * Internal API
  */
 @InternalApi private[csv] class CsvToMapAsStringsJavaStage(columnNames: ju.Optional[ju.Collection[String]],
-                                                           charset: Charset)
-    extends CsvToMapJavaStageBase[String](columnNames, charset) {
+                                                           charset: Charset,
+                                                           combineAll: Boolean,
+                                                           headerPlaceholder: ju.Optional[String])
+    extends CsvToMapJavaStageBase[String](columnNames, charset, combineAll, headerPlaceholder) {
+
+  override val fieldValuePlaceholder: String = ""
 
   override protected def transformElements(elements: ju.Collection[ByteString]): ju.Collection[String] =
     decode(elements)

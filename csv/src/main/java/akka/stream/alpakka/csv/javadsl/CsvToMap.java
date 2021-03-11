@@ -34,7 +34,8 @@ public class CsvToMap {
    * @param charset the charset to decode {@link ByteString} to {@link String}
    */
   public static Flow<Collection<ByteString>, Map<String, ByteString>, ?> toMap(Charset charset) {
-    return Flow.fromGraph(new CsvToMapJavaStage(Optional.empty(), charset));
+    return Flow.fromGraph(
+        new CsvToMapJavaStage(Optional.empty(), charset, false, Optional.empty()));
   }
 
   /**
@@ -45,7 +46,40 @@ public class CsvToMap {
    */
   public static Flow<Collection<ByteString>, Map<String, String>, ?> toMapAsStrings(
       Charset charset) {
-    return Flow.fromGraph(new CsvToMapAsStringsJavaStage(Optional.empty(), charset));
+    return Flow.fromGraph(
+        new CsvToMapAsStringsJavaStage(Optional.empty(), charset, false, Optional.empty()));
+  }
+
+  /**
+   * A flow translating incoming [[scala.List]] of [[akka.util.ByteString]] to a map of String and
+   * ByteString using the stream's first element's values as keys. If the header values are shorter
+   * than the data (or vice-versa) placeholder elements are used to extend the shorter collection to
+   * the length of the longer.
+   *
+   * @param charset the charset to decode [[akka.util.ByteString]] to [[scala.Predef.String]],
+   *     defaults to UTF-8
+   * @param headerPlaceholder placeholder used when there are more headers than data.
+   */
+  public static Flow<Collection<ByteString>, Map<String, ByteString>, ?> toMapCombineAll(
+      Charset charset, Optional<String> headerPlaceholder) {
+    return Flow.fromGraph(
+        new CsvToMapJavaStage(Optional.empty(), charset, true, headerPlaceholder));
+  }
+
+  /**
+   * A flow translating incoming [[scala.List]] of [[akka.util.ByteString]] to a map of String keys
+   * and values using the stream's first element's values as keys. If the header values are shorter
+   * than the data (or vice-versa) placeholder elements are used to extend the shorter collection to
+   * the length of the longer.
+   *
+   * @param charset the charset to decode [[akka.util.ByteString]] to [[scala.Predef.String]],
+   *     defaults to UTF-8
+   * @param headerPlaceholder placeholder used when there are more headers than data.
+   */
+  public static Flow<Collection<ByteString>, Map<String, String>, ?> toMapAsStringsCombineAll(
+      Charset charset, Optional<String> headerPlaceholder) {
+    return Flow.fromGraph(
+        new CsvToMapAsStringsJavaStage(Optional.empty(), charset, true, headerPlaceholder));
   }
 
   /**
@@ -57,7 +91,8 @@ public class CsvToMap {
   public static Flow<Collection<ByteString>, Map<String, ByteString>, ?> withHeaders(
       String... headers) {
     return Flow.fromGraph(
-        new CsvToMapJavaStage(Optional.of(Arrays.asList(headers)), StandardCharsets.UTF_8));
+        new CsvToMapJavaStage(
+            Optional.of(Arrays.asList(headers)), StandardCharsets.UTF_8, false, Optional.empty()));
   }
 
   /**
@@ -69,6 +104,7 @@ public class CsvToMap {
   public static Flow<Collection<ByteString>, Map<String, String>, ?> withHeadersAsStrings(
       Charset charset, String... headers) {
     return Flow.fromGraph(
-        new CsvToMapAsStringsJavaStage(Optional.of(Arrays.asList(headers)), charset));
+        new CsvToMapAsStringsJavaStage(
+            Optional.of(Arrays.asList(headers)), charset, false, Optional.empty()));
   }
 }

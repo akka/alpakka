@@ -252,7 +252,7 @@ class CsvToMapSpec extends CsvSpec {
 
       result should be(
         Seq(
-          Map("eins" -> "11", "zwei" -> "12", "drei" -> "13", "Missing Header" -> "14"),
+          Map("eins" -> "11", "zwei" -> "12", "drei" -> "13", "MissingHeader0" -> "14"),
           Map("eins" -> "21", "zwei" -> "22", "drei" -> "23")
         )
       )
@@ -275,7 +275,7 @@ class CsvToMapSpec extends CsvSpec {
               |21,22,
               |""".stripMargin))
           .via(CsvParsing.lineScanner())
-          .via(CsvToMap.toMapAsStringsCombineAll(headerPlaceholder = Option("drei")))
+          .via(CsvToMap.toMapAsStringsCombineAll(headerPlaceholder = Option("MyCustomHeader")))
           .runWith(Sink.seq)
       // #header-line
       // format: on
@@ -284,8 +284,8 @@ class CsvToMapSpec extends CsvSpec {
 
       result should be(
         Seq(
-          Map("eins" -> "11", "zwei" -> "12", "drei" -> "13"),
-          Map("eins" -> "21", "zwei" -> "22", "drei" -> "")
+          Map("eins" -> "11", "zwei" -> "12", "MyCustomHeader0" -> "13"),
+          Map("eins" -> "21", "zwei" -> "22", "MyCustomHeader0" -> "")
         )
       )
       // #header-line
@@ -344,7 +344,7 @@ class CsvToMapSpec extends CsvSpec {
       Source
         .single(ByteString(
           """eins,zwei,drei
-            |11,12,13,14
+            |11,12,13,14,15
             |21,22,23
             |""".stripMargin))
         .via(CsvParsing.lineScanner())
@@ -360,7 +360,8 @@ class CsvToMapSpec extends CsvSpec {
         Map("eins" -> ByteString("11"),
             "zwei" -> ByteString("12"),
             "drei" -> ByteString("13"),
-            "Missing Header" -> ByteString("14")),
+            "MissingHeader0" -> ByteString("14"),
+            "MissingHeader1" -> ByteString("15")),
         Map("eins" -> ByteString("21"), "zwei" -> ByteString("22"), "drei" -> ByteString("23"))
       )
     )
@@ -383,7 +384,7 @@ class CsvToMapSpec extends CsvSpec {
             |21,22,
             |""".stripMargin))
         .via(CsvParsing.lineScanner())
-        .via(CsvToMap.toMapCombineAll(headerPlaceholder = Option("drei")))
+        .via(CsvToMap.toMapCombineAll(headerPlaceholder = Option("MyCustomHeader")))
         .runWith(Sink.seq)
     // #header-line
     // format: on
@@ -392,8 +393,8 @@ class CsvToMapSpec extends CsvSpec {
 
     result should be(
       Seq(
-        Map("eins" -> ByteString("11"), "zwei" -> ByteString("12"), "drei" -> ByteString("13")),
-        Map("eins" -> ByteString("21"), "zwei" -> ByteString("22"), "drei" -> ByteString(""))
+        Map("eins" -> ByteString("11"), "zwei" -> ByteString("12"), "MyCustomHeader0" -> ByteString("13")),
+        Map("eins" -> ByteString("21"), "zwei" -> ByteString("22"), "MyCustomHeader0" -> ByteString(""))
       )
     )
     // #header-line

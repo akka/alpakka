@@ -5,7 +5,6 @@
 package akka.stream.alpakka.csv.impl
 
 import java.nio.charset.Charset
-
 import akka.annotation.InternalApi
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
@@ -49,19 +48,13 @@ import scala.collection.immutable
       override def onPush(): Unit = {
         val elem = grab(in)
         if (combineAll) {
-          val combine: Headers => Map[String, V] = headers =>
-            headers.get
-              .zipAll(transformElements(elem),
-                      headerPlaceholder.fold("Missing Header")(identity),
-                      fieldValuePlaceholder)
-              .toMap
-          process(elem, combine)
+          process(elem, combineUsingPlaceholder(elem))
         } else {
           process(elem, headers => headers.get.zip(transformElements(elem)).toMap)
         }
       }
 
-      private def process(elem: immutable.Seq[ByteString], combine: Headers => Map[String, V]): Unit = {
+      private def process(elem: immutable.Seq[ByteString], combine: => Headers => Map[String, V]): Unit = {
         if (headers.isDefined) {
           push(out, combine(headers))
         } else {
@@ -72,6 +65,32 @@ import scala.collection.immutable
 
       override def onPull(): Unit = pull(in)
     }
+
+  private def combineUsingPlaceholder(elem: immutable.Seq[ByteString]): Headers => Map[String, V] = headers => {
+    val combined = headers.get
+      .zipAll(transformElements(elem), headerPlaceholder.fold("MissingHeader")(identity), fieldValuePlaceholder)
+    val filtering: String => Boolean = key =>
+      headerPlaceholder.map(_.equalsIgnoreCase(key)).fold(key.equalsIgnoreCase("MissingHeader"))(identity)
+    val missingHeadersContent =
+      combined
+        .filter {
+          case (key, _) => filtering(key)
+        }
+        .zipWithIndex
+        .map {
+          case (content, index) =>
+            val (key, value) = content
+            (s"$key$index", value)
+        }
+    val contentWithPredefinedHeaders =
+      combined
+        .filterNot {
+          case (key, _) =>
+            filtering(key)
+        }
+    val all = contentWithPredefinedHeaders ++ missingHeadersContent
+    all.toMap
+  }
 }
 
 /**
