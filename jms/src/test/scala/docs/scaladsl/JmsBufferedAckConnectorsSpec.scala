@@ -386,14 +386,14 @@ class JmsBufferedAckConnectorsSpec extends JmsSharedServerSpec {
     "flush acknowledgments to broker after flush.timeout triggers" in withConnectionFactory() { connectionFactory =>
       val testQueue = "test"
       val aMessage = "message"
-      val flushTimeout = 1.second
+      val maxAckInterval = 1.second
       Source
         .single(aMessage)
         .runWith(JmsProducer.textSink(JmsProducerSettings(producerConfig, connectionFactory).withQueue(testQueue)))
       val source = JmsConsumer.ackSource(
         JmsConsumerSettings(system, connectionFactory)
-          .withBufferSize(100)
-          .withAckFlushTimeout(flushTimeout)
+          .withMaxPendingAcks(100)
+          .withMaxAckInterval(maxAckInterval)
           .withQueue(testQueue)
       )
 

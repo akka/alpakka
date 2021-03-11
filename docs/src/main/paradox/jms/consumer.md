@@ -58,7 +58,8 @@ connectionRetrySettings | Retry characteristics if the connection failed to be e
 sessionCount            | Number of parallel sessions to use for receiving JMS messages.       | defaults to `1`     |
 bufferSize              | Maximum number of messages to prefetch before applying backpressure. | 100                 |
 ackTimeout              | For use with JMS transactions, only: maximum time given to a message to be committed or rolled back. | 1 second  |
-ackFlushTimeout         | For use with AckSource, only: Timeout for flushing acknowledges back to the broker | Empty               |
+maxAckInterval          | For use with AckSource, only: The max duration before the queued acks are sent to the broker | Empty               |
+maxPendingAcks          | For use with AckSource, only: The amount of acks that get queued before being sent to the broker | 100               |
 selector                | JMS selector expression (see [below](#using-jms-selectors))          | Empty               |
 connectionStatusSubscriptionTimeout | 5 seconds | Time to wait for subscriber of connection status events before starting to discard them |
 
@@ -95,7 +96,7 @@ The `sessionCount` parameter controls the number of JMS sessions to run in paral
 *  Using multiple sessions increases throughput, especially if acknowledging message by message is desired.
 *  Messages may arrive out of order if `sessionCount` is larger than 1.
 *  Message-by-message acknowledgement can be achieved by setting `bufferSize` to 0, thus disabling buffering. The outstanding messages before backpressure will be the `sessionCount`.
-*  If buffering is enabled, setting `ackFlushTimeout` will mean acknowledgment happens at most `ackFlushTimeout` time after `ackEnvelope.acknowledge()` is called. If not set, acknowledgment will not reach the broker until a new message arrives. 
+*  If buffering is enabled, setting `maxAckInterval` will mean acknowledgment happens at most `maxAckInterval` time after `ackEnvelope.acknowledge()` is called. If not set, acknowledgment will not reach the broker until a new message arrives. 
 *  The default `AcknowledgeMode` is `ClientAcknowledge` but can be overridden to custom `AcknowledgeMode`s, even implementation-specific ones by setting the `AcknowledgeMode` in the `JmsConsumerSettings` when creating the stream.
 
 @@@ warning

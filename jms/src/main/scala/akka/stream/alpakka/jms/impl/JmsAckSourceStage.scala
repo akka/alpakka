@@ -36,14 +36,14 @@ private[jms] final class JmsAckSourceStage(settings: JmsConsumerSettings, destin
 
   private final class JmsAckSourceStageLogic(inheritedAttributes: Attributes)
       extends SourceStageLogic[AckEnvelope](shape, out, settings, destination, inheritedAttributes) {
-    private val maxPendingAck = settings.bufferSize
-    private val ackFlushTimeout = settings.ackFlushTimeout
+    private val maxPendingAcks = settings.maxPendingAcks
+    private val maxAckInterval = settings.maxAckInterval
 
     protected def createSession(connection: jms.Connection,
                                 createDestination: jms.Session => javax.jms.Destination): JmsAckSession = {
       val session =
         connection.createSession(false, settings.acknowledgeMode.getOrElse(AcknowledgeMode.ClientAcknowledge).mode)
-      new JmsAckSession(connection, session, createDestination(session), destination, settings.bufferSize)
+      new JmsAckSession(connection, session, createDestination(session), destination, maxPendingAcks)
     }
 
     protected def pushMessage(msg: AckEnvelope): Unit = push(out, msg)
@@ -51,7 +51,7 @@ private[jms] final class JmsAckSourceStage(settings: JmsConsumerSettings, destin
     override protected def onSessionOpened(jmsSession: JmsConsumerSession): Unit =
       jmsSession match {
         case session: JmsAckSession =>
-          ackFlushTimeout.foreach { timeout =>
+          maxAckInterval.foreach { timeout =>
             scheduleWithFixedDelay(FlushAcknowledgementsTimerKey(session), timeout, timeout)
           }
           session
@@ -82,7 +82,7 @@ private[jms] final class JmsAckSourceStage(settings: JmsConsumerSettings, destin
                     try {
                       handleMessage.invoke(AckEnvelope(message, session))
                       session.pendingAck += 1
-                      if (session.pendingAck > maxPendingAck) {
+                      if (session.pendingAck > maxPendingAcks) {
                         val action = session.ackQueue.take()
                         action()
                         session.pendingAck -= 1

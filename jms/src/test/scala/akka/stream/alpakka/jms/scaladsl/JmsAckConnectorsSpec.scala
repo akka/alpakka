@@ -301,7 +301,7 @@ class JmsAckConnectorsSpec extends JmsSpec {
         .run()
 
       val jmsSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
-        JmsConsumerSettings(system, connectionFactory).withSessionCount(5).withBufferSize(0).withQueue("numbers")
+        JmsConsumerSettings(system, connectionFactory).withSessionCount(5).withBufferSize(0).withMaxPendingAcks(0).withQueue("numbers")
       )
 
       val resultQueue = new LinkedBlockingQueue[String]()
@@ -414,14 +414,14 @@ class JmsAckConnectorsSpec extends JmsSpec {
 
       val testQueue = "test"
       val aMessage = "message"
-      val flushTimeout = 1.second
+      val maxAckInterval = 1.second
       Source
         .single(aMessage)
         .runWith(JmsProducer.textSink(JmsProducerSettings(producerConfig, connectionFactory).withQueue(testQueue)))
       val source = JmsConsumer.ackSource(
         JmsConsumerSettings(system, connectionFactory)
-          .withBufferSize(100)
-          .withAckFlushTimeout(flushTimeout)
+          .withMaxPendingAcks(100)
+          .withMaxAckInterval(maxAckInterval)
           .withQueue(testQueue)
       )
 
