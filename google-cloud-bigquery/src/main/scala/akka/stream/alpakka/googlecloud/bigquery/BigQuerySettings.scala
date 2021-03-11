@@ -5,7 +5,7 @@
 package akka.stream.alpakka.googlecloud.bigquery
 
 import akka.actor.ClassicActorSystemProvider
-import akka.annotation.{ApiMayChange, InternalApi}
+import akka.annotation.InternalApi
 import akka.http.javadsl.{model => jm}
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import akka.http.scaladsl.settings.ConnectionPoolSettings
@@ -21,14 +21,12 @@ import akka.stream.alpakka.googlecloud.bigquery.impl.http.{ForwardProxyHttpsCont
 import akka.util.JavaDurationConverters._
 import com.typesafe.config.Config
 
-import java.util
-import java.time
+import java.{time, util}
 import java.util.concurrent.TimeUnit
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-@ApiMayChange(issue = "https://github.com/akka/alpakka/issues/2353")
 object BigQuerySettings {
   val ConfigPath = "alpakka.google.bigquery"
 

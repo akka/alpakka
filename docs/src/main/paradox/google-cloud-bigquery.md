@@ -8,7 +8,7 @@ This connector is primarily intended for streaming data into and out of BigQuery
 
 @@@warning { title="API may change" }
 
-Alpakka Google Cloud BigQuery was added in Alpakka 2.0.2 in July 2020 and is marked as "API may change". Please try it out and suggest improvements. [Issue #2353](https://github.com/akka/alpakka/issues/2353)
+Alpakka Google Cloud BigQuery was added in Alpakka 2.0.2 in July 2020 and is marked as "API may change". Please try it out and suggest improvements. [PR #2548](https://github.com/akka/alpakka/pull/2548)
 
 @@@
 
