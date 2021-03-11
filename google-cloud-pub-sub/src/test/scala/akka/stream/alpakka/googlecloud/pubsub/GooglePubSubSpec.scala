@@ -13,7 +13,7 @@ import akka.stream.alpakka.googlecloud.pubsub.impl.{GoogleSession, PubSubApi, Te
 import akka.stream.alpakka.googlecloud.pubsub.scaladsl.GooglePubSub
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Flow, FlowWithContext, Sink, Source}
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.Materializer
 import akka.testkit.TestKit
 import akka.{Done, NotUsed}
 import org.mockito.Mockito._
@@ -38,7 +38,6 @@ class GooglePubSubSpec
     PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
   implicit val system = ActorSystem()
-  implicit val mat = ActorMaterializer()
 
   override protected def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)

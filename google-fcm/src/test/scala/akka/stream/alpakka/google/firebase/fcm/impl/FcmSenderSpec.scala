@@ -10,7 +10,6 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.{HttpExt, HttpsConnectionContext}
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.google.firebase.fcm.{FcmErrorResponse, FcmNotification, FcmSettings, FcmSuccessResponse}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
@@ -44,8 +43,6 @@ class FcmSenderSpec
     PatienceConfig(timeout = 2.seconds, interval = 50.millis)
 
   implicit val executionContext: ExecutionContext = system.dispatcher
-
-  implicit val materializer = ActorMaterializer()
 
   implicit val conf = FcmSettings.create("test-XXX@test-XXXXX.iam.gserviceaccount.com", "RSA KEY", "projectId")
 

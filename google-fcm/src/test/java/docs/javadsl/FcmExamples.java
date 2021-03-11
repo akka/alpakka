@@ -6,7 +6,6 @@ package docs.javadsl;
 
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
 // #imports
 import akka.stream.alpakka.google.firebase.fcm.*;
 import akka.stream.alpakka.google.firebase.fcm.javadsl.GoogleFcm;
@@ -22,7 +21,6 @@ public class FcmExamples {
 
   private static void example() {
     ActorSystem system = ActorSystem.create();
-    ActorMaterializer materializer = ActorMaterializer.create(system);
 
     // #init-credentials
     String privateKey =
@@ -44,7 +42,7 @@ public class FcmExamples {
     FcmNotification notification =
         FcmNotification.basic(
             "Test", "This is a test notification!", new FcmNotificationModels.Token("token"));
-    Source.single(notification).runWith(GoogleFcm.fireAndForget(fcmConfig), materializer);
+    Source.single(notification).runWith(GoogleFcm.fireAndForget(fcmConfig), system);
     // #simple-send
 
     // #asFlow-send
@@ -62,14 +60,14 @@ public class FcmExamples {
                   }
                   return res;
                 })
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
     // #asFlow-send
 
     // #withData-send
     CompletionStage<List<Pair<FcmResponse, String>>> result2 =
         Source.single(Pair.create(notification, "superData"))
             .via(GoogleFcm.sendWithPassThrough(fcmConfig))
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
     // #withData-send
 
   }
