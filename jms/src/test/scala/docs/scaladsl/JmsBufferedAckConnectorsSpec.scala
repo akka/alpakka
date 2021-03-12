@@ -383,7 +383,7 @@ class JmsBufferedAckConnectorsSpec extends JmsSharedServerSpec {
       resultList.toSet should contain theSameElementsAs numsIn.map(_.toString)
     }
 
-    "flush acknowledgments to broker after flush.timeout triggers" in withConnectionFactory() { connectionFactory =>
+    "send acknowledgments back to the broker after max.ack.interval" in withConnectionFactory() { connectionFactory =>
       val testQueue = "test"
       val aMessage = "message"
       val maxAckInterval = 1.second

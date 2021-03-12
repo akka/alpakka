@@ -301,7 +301,11 @@ class JmsAckConnectorsSpec extends JmsSpec {
         .run()
 
       val jmsSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
-        JmsConsumerSettings(system, connectionFactory).withSessionCount(5).withBufferSize(0).withMaxPendingAcks(0).withQueue("numbers")
+        JmsConsumerSettings(system, connectionFactory)
+          .withSessionCount(5)
+          .withBufferSize(0)
+          .withMaxPendingAcks(0)
+          .withQueue("numbers")
       )
 
       val resultQueue = new LinkedBlockingQueue[String]()
@@ -366,7 +370,7 @@ class JmsAckConnectorsSpec extends JmsSpec {
     }
 
     "shutdown when waiting to acknowledge messages" in withServer() { server =>
-      val connectionFactory = server.createQueueConnectionFactory
+      val connectionFactory = server.createConnectionFactory
 
       val in = 0 to 25 map (i => ('a' + i).asInstanceOf[Char].toString)
       Source(in).runWith(JmsProducer.textSink(JmsProducerSettings(producerConfig, connectionFactory).withQueue("test")))
@@ -409,7 +413,7 @@ class JmsAckConnectorsSpec extends JmsSpec {
       streamDone.failed.futureValue.getMessage shouldBe "aborted"
     }
 
-    "flush acknowledgments to broker after flush.timeout triggers" in withServer() { server =>
+    "send acknowledgments back to the broker after max.ack.interval" in withServer() { server =>
       val connectionFactory = server.createConnectionFactory
 
       val testQueue = "test"

@@ -96,7 +96,7 @@ The `sessionCount` parameter controls the number of JMS sessions to run in paral
 *  Using multiple sessions increases throughput, especially if acknowledging message by message is desired.
 *  Messages may arrive out of order if `sessionCount` is larger than 1.
 *  Message-by-message acknowledgement can be achieved by setting `bufferSize` to 0, thus disabling buffering. The outstanding messages before backpressure will be the `sessionCount`.
-*  If buffering is enabled, setting `maxAckInterval` will mean acknowledgment happens at most `maxAckInterval` time after `ackEnvelope.acknowledge()` is called. If not set, acknowledgment will not reach the broker until a new message arrives. 
+*  If buffering is enabled then it's possible for messages to remain in the buffer and never be acknowledged (or acknowledged after a long time) when no new elements arrive to reach the `maxPendingAcks` threshold. By setting `maxAckInterval` messages will be acknowledged after the defined interval or number of pending acks, whichever comes first. 
 *  The default `AcknowledgeMode` is `ClientAcknowledge` but can be overridden to custom `AcknowledgeMode`s, even implementation-specific ones by setting the `AcknowledgeMode` in the `JmsConsumerSettings` when creating the stream.
 
 @@@ warning
