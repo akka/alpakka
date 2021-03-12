@@ -102,9 +102,9 @@ private[orientdb] class OrientDbFlowStage[T, C](
                 document.field(fieldName, fieldVal)
             }
           document.setClassName(className)
-          client.save(document)
+          client.save[ODocument](document)
         case OrientDbWriteMessage(oRecord: ORecord, _) =>
-          client.save(oRecord)
+          client.save[ORecord](oRecord)
         case OrientDbWriteMessage(others, _) =>
           failStage(new RuntimeException(s"unexpected type [${others.getClass}], ORecord required"))
       }
@@ -120,7 +120,7 @@ private[orientdb] class OrientDbFlowStage[T, C](
     protected def write(messages: immutable.Seq[OrientDbWriteMessage[T, C]]): Unit =
       messages.foreach {
         case OrientDbWriteMessage(typeRecord: Any, _) =>
-          oObjectClient.save(typeRecord)
+          oObjectClient.save[Object](typeRecord)
       }
 
   }
