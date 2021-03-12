@@ -20,6 +20,7 @@ object Dependencies {
   val AkkaGrpcBinaryVersion = "1.0"
   val AkkaHttp101 = "10.1.11"
   val AkkaHttp102 = "10.2.0"
+  val AkkaHttp1024 = "10.2.4"
   val AkkaHttpVersion = if (CronBuild) AkkaHttp102 else AkkaHttp101
   val AkkaHttpBinaryVersion = if (CronBuild) "10.2" else "10.1"
   val ScalaTestVersion = "3.2.2"
@@ -206,15 +207,15 @@ object Dependencies {
 
   val GoogleBigQuery = Seq(
     libraryDependencies ++= Seq(
-        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
-        "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        "com.pauldijou" %% "jwt-core" % JwtCoreVersion, //ApacheV2
-        "io.specto" % "hoverfly-java" % "0.12.3" % Test, //ApacheV2
-        "com.fasterxml.jackson.core" % "jackson-core" % "2.12.0" % Test //ApacheV2
-      ) ++
-      Seq("circe-core", "circe-generic", "circe-parser")
-        .map("io.circe" %% _ % "0.13.0" % Test) ++ //ApacheV2
-      Mockito
+        "com.typesafe.akka" %% "akka-http" % AkkaHttp1024,
+        "com.typesafe.akka" %% "akka-http-jackson" % AkkaHttp1024 % Provided,
+        "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttp1024,
+        "io.spray" %% "spray-json" % "1.3.6",
+        "com.fasterxml.jackson.core" % "jackson-annotations" % JacksonDatabindVersion,
+        "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % JacksonDatabindVersion % Test,
+        "com.pauldijou" %% "jwt-core" % "3.1.0", //ApacheV2
+        "io.specto" % "hoverfly-java" % "0.12.3" % Test //ApacheV2
+      ) ++ Mockito ++ Silencer
   )
 
   val GooglePubSub = Seq(

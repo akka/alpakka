@@ -1,0 +1,826 @@
+{
+  "data" : {
+    "pairs" : [ {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/token"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "POST"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "oauth2.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "query" : {
+          "prettyPrint" : [ {
+            "matcher" : "exact",
+            "value" : "false"
+          } ]
+        },
+        "body" : [ {
+          "matcher" : "regex",
+          "value" : "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=*"
+        } ]
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\"access_token\":\"ya29.c.an_access_token\",\"expires_in\":3599,\"token_type\":\"Bearer\"}",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Wed, 10 Mar 2021 08:14:50 GMT" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "scaffolding on HTTPServer2" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/alpakka-bigquery-test/datasets"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "POST"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "bigquery.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "query" : {
+          "prettyPrint" : [ {
+            "matcher" : "exact",
+            "value" : "false"
+          } ]
+        },
+        "body" : [ {
+          "matcher" : "json",
+          "value" : "{\"datasetReference\":{\"datasetId\":\"e2e_dataset_677\"}}"
+        } ]
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\"kind\":\"bigquery#dataset\",\"etag\":\"du1yDtDvifCnhuw6UPR11Q==\",\"id\":\"alpakka-bigquery-test:e2e_dataset_677\",\"selfLink\":\"https://bigquery.googleapis.com/bigquery/v2/projects/alpakka-bigquery-test/datasets/e2e_dataset_677\",\"datasetReference\":{\"datasetId\":\"e2e_dataset_677\",\"projectId\":\"alpakka-bigquery-test\"},\"defaultTableExpirationMs\":\"5184000000\",\"access\":[{\"role\":\"WRITER\",\"specialGroup\":\"projectWriters\"},{\"role\":\"OWNER\",\"specialGroup\":\"projectOwners\"},{\"role\":\"OWNER\",\"userByEmail\":\"test-runner@alpakka-bigquery-test.iam.gserviceaccount.com\"},{\"role\":\"READER\",\"specialGroup\":\"projectReaders\"}],\"creationTime\":\"1615364091735\",\"lastModifiedTime\":\"1615364091735\",\"location\":\"US\",\"defaultPartitionExpirationMs\":\"5184000000\"}",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Wed, 10 Mar 2021 08:14:51 GMT" ],
+          "Etag" : [ "du1yDtDvifCnhuw6UPR11Q==" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/alpakka-bigquery-test/datasets"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "GET"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "bigquery.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "query" : {
+          "prettyPrint" : [ {
+            "matcher" : "exact",
+            "value" : "false"
+          } ]
+        },
+        "body" : [ {
+          "matcher" : "exact",
+          "value" : ""
+        } ],
+        "requiresState" : {
+          "sequence:3" : "1"
+        }
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\"kind\":\"bigquery#datasetList\",\"etag\":\"IHoKkRKhcfVOeVouhHW+8Q==\",\"datasets\":[{\"kind\":\"bigquery#dataset\",\"id\":\"alpakka-bigquery-test:client_test_dataset\",\"datasetReference\":{\"datasetId\":\"client_test_dataset\",\"projectId\":\"alpakka-bigquery-test\"},\"location\":\"US\"},{\"kind\":\"bigquery#dataset\",\"id\":\"alpakka-bigquery-test:e2e_dataset_677\",\"datasetReference\":{\"datasetId\":\"e2e_dataset_677\",\"projectId\":\"alpakka-bigquery-test\"},\"location\":\"US\"},{\"kind\":\"bigquery#dataset\",\"id\":\"alpakka-bigquery-test:example_dataset\",\"datasetReference\":{\"datasetId\":\"example_dataset\",\"projectId\":\"alpakka-bigquery-test\"},\"location\":\"US\"}]}",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Wed, 10 Mar 2021 08:14:52 GMT" ],
+          "Etag" : [ "IHoKkRKhcfVOeVouhHW+8Q==" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        },
+        "transitionsState" : {
+          "sequence:3" : "2"
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/alpakka-bigquery-test/datasets/e2e_dataset_677/tables"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "POST"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "bigquery.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "query" : {
+          "prettyPrint" : [ {
+            "matcher" : "exact",
+            "value" : "false"
+          } ]
+        },
+        "body" : [ {
+          "matcher" : "json",
+          "value" : "{\"schema\":{\"fields\":[{\"mode\":\"REQUIRED\",\"name\":\"integer\",\"type\":\"INTEGER\"},{\"mode\":\"REQUIRED\",\"name\":\"long\",\"type\":\"INTEGER\"},{\"mode\":\"REQUIRED\",\"name\":\"float\",\"type\":\"FLOAT\"},{\"mode\":\"REQUIRED\",\"name\":\"double\",\"type\":\"FLOAT\"},{\"mode\":\"REQUIRED\",\"name\":\"string\",\"type\":\"STRING\"},{\"mode\":\"REQUIRED\",\"name\":\"boolean\",\"type\":\"BOOLEAN\"},{\"fields\":[{\"mode\":\"NULLABLE\",\"name\":\"nullable\",\"type\":\"STRING\"},{\"mode\":\"REQUIRED\",\"name\":\"bytes\",\"type\":\"BYTES\"},{\"fields\":[{\"mode\":\"REQUIRED\",\"name\":\"numeric\",\"type\":\"NUMERIC\"},{\"mode\":\"REQUIRED\",\"name\":\"date\",\"type\":\"DATE\"},{\"mode\":\"REQUIRED\",\"name\":\"time\",\"type\":\"TIME\"},{\"mode\":\"REQUIRED\",\"name\":\"dateTime\",\"type\":\"DATETIME\"},{\"mode\":\"REQUIRED\",\"name\":\"timestamp\",\"type\":\"TIMESTAMP\"}],\"mode\":\"REPEATED\",\"name\":\"repeated\",\"type\":\"RECORD\"}],\"mode\":\"REQUIRED\",\"name\":\"record\",\"type\":\"RECORD\"}]},\"tableReference\":{\"datasetId\":\"e2e_dataset_677\",\"tableId\":\"e2e_table_242\"}}"
+        } ]
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\"kind\":\"bigquery#table\",\"etag\":\"vmr9T2MpeU+X3ofY2WycsA==\",\"id\":\"alpakka-bigquery-test:e2e_dataset_677.e2e_table_242\",\"selfLink\":\"https://bigquery.googleapis.com/bigquery/v2/projects/alpakka-bigquery-test/datasets/e2e_dataset_677/tables/e2e_table_242\",\"tableReference\":{\"projectId\":\"alpakka-bigquery-test\",\"datasetId\":\"e2e_dataset_677\",\"tableId\":\"e2e_table_242\"},\"schema\":{\"fields\":[{\"name\":\"integer\",\"type\":\"INTEGER\",\"mode\":\"REQUIRED\"},{\"name\":\"long\",\"type\":\"INTEGER\",\"mode\":\"REQUIRED\"},{\"name\":\"float\",\"type\":\"FLOAT\",\"mode\":\"REQUIRED\"},{\"name\":\"double\",\"type\":\"FLOAT\",\"mode\":\"REQUIRED\"},{\"name\":\"string\",\"type\":\"STRING\",\"mode\":\"REQUIRED\"},{\"name\":\"boolean\",\"type\":\"BOOLEAN\",\"mode\":\"REQUIRED\"},{\"name\":\"record\",\"type\":\"RECORD\",\"mode\":\"REQUIRED\",\"fields\":[{\"name\":\"nullable\",\"type\":\"STRING\",\"mode\":\"NULLABLE\"},{\"name\":\"bytes\",\"type\":\"BYTES\",\"mode\":\"REQUIRED\"},{\"name\":\"repeated\",\"type\":\"RECORD\",\"mode\":\"REPEATED\",\"fields\":[{\"name\":\"numeric\",\"type\":\"NUMERIC\",\"mode\":\"REQUIRED\"},{\"name\":\"date\",\"type\":\"DATE\",\"mode\":\"REQUIRED\"},{\"name\":\"time\",\"type\":\"TIME\",\"mode\":\"REQUIRED\"},{\"name\":\"dateTime\",\"type\":\"DATETIME\",\"mode\":\"REQUIRED\"},{\"name\":\"timestamp\",\"type\":\"TIMESTAMP\",\"mode\":\"REQUIRED\"}]}]}]},\"numBytes\":\"0\",\"numLongTermBytes\":\"0\",\"numRows\":\"0\",\"creationTime\":\"1615364092415\",\"expirationTime\":\"1620548092415\",\"lastModifiedTime\":\"1615364092449\",\"type\":\"TABLE\",\"location\":\"US\"}",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Wed, 10 Mar 2021 08:14:52 GMT" ],
+          "Etag" : [ "vmr9T2MpeU+X3ofY2WycsA==" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/alpakka-bigquery-test/datasets/e2e_dataset_677/tables"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "GET"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "bigquery.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "query" : {
+          "prettyPrint" : [ {
+            "matcher" : "exact",
+            "value" : "false"
+          } ]
+        },
+        "body" : [ {
+          "matcher" : "exact",
+          "value" : ""
+        } ],
+        "requiresState" : {
+          "sequence:2" : "1"
+        }
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\"kind\":\"bigquery#tableList\",\"etag\":\"KtseGC/wYnp8bh+imEbRnw==\",\"tables\":[{\"kind\":\"bigquery#table\",\"id\":\"alpakka-bigquery-test:e2e_dataset_677.e2e_table_242\",\"tableReference\":{\"projectId\":\"alpakka-bigquery-test\",\"datasetId\":\"e2e_dataset_677\",\"tableId\":\"e2e_table_242\"},\"type\":\"TABLE\",\"creationTime\":\"1615364092415\",\"expirationTime\":\"1620548092415\"}],\"totalItems\":1}",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Wed, 10 Mar 2021 08:14:52 GMT" ],
+          "Etag" : [ "KtseGC/wYnp8bh+imEbRnw==" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        },
+        "transitionsState" : {
+          "sequence:2" : "2"
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/upload/bigquery/v2/projects/alpakka-bigquery-test/jobs"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "POST"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "bigquery.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "query" : {
+          "prettyPrint" : [ {
+            "matcher" : "exact",
+            "value" : "false"
+          } ],
+          "uploadType" : [ {
+            "matcher" : "exact",
+            "value" : "resumable"
+          } ]
+        },
+        "body" : [ {
+          "matcher" : "json",
+          "value" : "{\"configuration\":{\"load\":{\"createDisposition\":\"CREATE_NEVER\",\"destinationTable\":{\"datasetId\":\"e2e_dataset_677\",\"projectId\":\"alpakka-bigquery-test\",\"tableId\":\"e2e_table_242\"},\"sourceFormat\":\"NEWLINE_DELIMITED_JSON\",\"writeDisposition\":\"WRITE_APPEND\"}}}"
+        } ],
+        "headers" : {
+          "X-Upload-Content-Type" : [ {
+            "matcher" : "exact",
+            "value" : "application/octet-stream"
+          } ]
+        }
+      },
+      "response" : {
+        "status" : 200,
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Content-Length" : [ "0" ],
+          "Content-Type" : [ "text/plain; charset=utf-8", "application/json; charset=UTF-8" ],
+          "Date" : [ "Wed, 10 Mar 2021 08:14:53 GMT" ],
+          "Etag" : [ "FGxPd9GxDTOMCujboHC0Tg==" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Location" : [ "https://bigquery.googleapis.com/upload/bigquery/v2/projects/alpakka-bigquery-test/jobs?uploadType=resumable&prettyPrint=false&upload_id=ABg5-Uw9oLNBNH0Vg1-cZbvHnoB1FNiK-NtCf6jhtNaJKOOV98gC4LiMuvP-D2tD3m9AG_0MnXT7iXXdhOn6inq8W2i3nzRWZg" ],
+          "Server" : [ "UploadServer" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Guploader-Uploadid" : [ "ABg5-Uw9oLNBNH0Vg1-cZbvHnoB1FNiK-NtCf6jhtNaJKOOV98gC4LiMuvP-D2tD3m9AG_0MnXT7iXXdhOn6inq8W2i3nzRWZg" ]
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/upload/bigquery/v2/projects/alpakka-bigquery-test/jobs"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "PUT"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "bigquery.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "query" : {
+          "prettyPrint" : [ {
+            "matcher" : "exact",
+            "value" : "false;false"
+          } ],
+          "uploadType" : [ {
+            "matcher" : "exact",
+            "value" : "resumable"
+          } ],
+          "upload_id" : [ {
+            "matcher" : "exact",
+            "value" : "ABg5-Uw9oLNBNH0Vg1-cZbvHnoB1FNiK-NtCf6jhtNaJKOOV98gC4LiMuvP-D2tD3m9AG_0MnXT7iXXdhOn6inq8W2i3nzRWZg"
+          } ]
+        },
+        "body" : [ {
+          "matcher" : "exact",
+          "value" : "{\"boolean\":false,\"double\":0.14965441544104874,\"float\":0.9501375,\"integer\":-106137654,\"long\":\"-5505870842158098357\",\"record\":{\"bytes\":\"gV0=\",\"repeated\":[]},\"string\":\"콚ത딥ⱴ↓ഘ൮鈩꼧銤Ϡ䡩֪䌼蚧ৰ듹歬戰ꦃ걔옊ᐐ陥쨮ㆷ햅綡ꬿ眝쥻瑱ஓ䕟遵炔᎚ꐰ湿ܪ퇣釛ꉑ⋀ᡠ㻅轧휬阦ᦺ欃뼥圣悵轓䎝챎\"}\n{\"boolean\":false,\"double\":0.989898801123375,\"float\":0.46173006,\"integer\":-984823444,\"long\":\"-4977748211049216820\",\"record\":{\"bytes\":\"V77+vwQATN3+q2YbJ+rwn8hd6FZY\",\"nullable\":\"̓ᑍ뚯咺⟍飗勄謡讯 ᩕ힌啣ꅋࡱ聶㐝拫妢❅쟎쉴符맂⿩࿱띛몝嬡촑\",\"repeated\":[{\"date\":\"2018-03-04\",\"dateTime\":\"1989-02-02T23:15:35\",\"numeric\":\"65.46\",\"time\":\"09:10:20\",\"timestamp\":\"1993-03-04T01:15:46Z\"},{\"date\":\"1980-08-06\",\"dateTime\":\"2046-12-08T22:38:08\",\"numeric\":\"57.39\",\"time\":\"20:12:54\",\"timestamp\":\"1960-11-11T02:04:30Z\"},{\"date\":\"1988-11-02\",\"dateTime\":\"2066-05-28T23:58:31\",\"numeric\":\"63.85\",\"time\":\"15:20:11\",\"timestamp\":\"1944-11-29T03:44:24Z\"},{\"date\":\"2026-06-08\",\"dateTime\":\"2046-05-07T15:11:51\",\"numeric\":\"92.28\",\"time\":\"18:57:33\",\"timestamp\":\"1991-12-26T05:28:55Z\"},{\"date\":\"2063-11-04\",\"dateTime\":\"2038-12-16T08:09:06\",\"numeric\":\"91.16\",\"time\":\"07:06:01\",\"timestamp\":\"1918-05-18T15:50:03Z\"},{\"date\":\"2040-11-14\",\"dateTime\":\"1983-04-25T12:03:58\",\"numeric\":\"22.42\",\"time\":\"11:10:00\",\"timestamp\":\"1977-02-10T13:19:39Z\"},{\"date\":\"1973-11-04\",\"dateTime\":\"2021-12-23T15:04:04\",\"numeric\":\"58.67\",\"time\":\"14:13:48\",\"timestamp\":\"1928-09-28T23:37:41Z\"},{\"date\":\"1974-01-04\",\"dateTime\":\"2026-04-16T01:12:40\",\"numeric\":\"96.08\",\"time\":\"15:28:52\",\"timestamp\":\"2036-02-19T20:46:23Z\"}]},\"string\":\"폐䆐ᚈ䨼␔躞긢ꍠ긬쀒ᵸꦽ㝥▫蒔乳펞躼奅ꛩ贾韜洨톳䚬ቔ촠蝈憜綍㗟贱䟓ᜐ⤊墬扢覽㝓敮뷔ᗷ\"}\n{\"boolean\":false,\"double\":0.16000260824546997,\"float\":0.66021746,\"integer\":211736158,\"long\":\"7341909481878015308\",\"record\":{\"bytes\":\"DEOi9F9S/TiDW50QXRect7icCILfO+8FAoo1+cTBCp6Qzs4OI88XnnRzvPbfIuWomErWtNiZABuMepvreKaO\",\"nullable\":\"颽뉢仺攨觷ꈝẛ鐌㸀ힼ๤骳䪋ે雈߽춯폃磉쌨汃跑䥃볨舫敢掳盝勸ꑳ㳫ꢣᶮ◌仲ɱ풍䲱⍋ꂖᓒ爹ꥦ൵路鿎맿ۿ᥻⃡ꍆᛜⳔ읒솻区\",\"repeated\":[{\"date\":\"1991-08-24\",\"dateTime\":\"2037-12-07T23:42:48\",\"numeric\":\"74.10\",\"time\":\"07:35:50\",\"timestamp\":\"1976-12-01T09:19:19Z\"},{\"date\":\"1990-02-10\",\"dateTime\":\"2066-12-12T08:28:11\",\"numeric\":\"11.12\",\"time\":\"10:51:59\",\"timestamp\":\"1902-08-04T01:51:39Z\"},{\"date\":\"2005-07-04\",\"dateTime\":\"2063-05-15T21:43:36\",\"numeric\":\"50.58\",\"time\":\"23:13:06\",\"timestamp\":\"2033-10-24T02:50:00Z\"},{\"date\":\"2000-11-10\",\"dateTime\":\"1992-01-08T05:57:31\",\"numeric\":\"32.66\",\"time\":\"02:58:36\",\"timestamp\":\"1923-05-07T00:13:59Z\"},{\"date\":\"1991-09-11\",\"dateTime\":\"2054-10-01T23:07:51\",\"numeric\":\"52.66\",\"time\":\"22:38:06\",\"timestamp\":\"2009-10-29T08:30:27Z\"},{\"date\":\"2009-06-25\",\"dateTime\":\"1994-04-21T14:25:27\",\"numeric\":\"49.88\",\"time\":\"20:27:47\",\"timestamp\":\"2004-05-29T14:19:24Z\"},{\"date\":\"2005-07-06\",\"dateTime\":\"2051-08-09T11:22:27\",\"numeric\":\"34.49\",\"time\":\"03:13:42\",\"timestamp\":\"1987-11-26T21:45:43Z\"},{\"date\":\"2001-03-31\",\"dateTime\":\"2019-09-02T08:13:59\",\"numeric\":\"65.81\",\"time\":\"04:53:01\",\"timestamp\":\"1942-04-26T21:52:55Z\"},{\"date\":\"2058-06-23\",\"dateTime\":\"1978-02-23T02:28:02\",\"numeric\":\"6.57\",\"time\":\"21:15:57\",\"timestamp\":\"1931-07-10T18:43:39Z\"},{\"date\":\"2044-03-29\",\"dateTime\":\"2035-03-17T16:09:16\",\"numeric\":\"54.18\",\"time\":\"02:49:03\",\"timestamp\":\"2037-03-31T10:30:16Z\"},{\"date\":\"1991-02-13\",\"dateTime\":\"2052-12-07T05:31:25\",\"numeric\":\"87.77\",\"time\":\"21:32:51\",\"timestamp\":\"2000-06-13T23:32:43Z\"},{\"date\":\"2035-08-28\",\"dateTime\":\"1987-12-27T04:10:18\",\"numeric\":\"85.07\",\"time\":\"00:13:57\",\"timestamp\":\"1915-10-31T00:35:23Z\"},{\"date\":\"2061-03-22\",\"dateTime\":\"2058-07-13T21:28:46\",\"numeric\":\"7.53\",\"time\":\"09:32:33\",\"timestamp\":\"1945-10-13T09:03:16Z\"},{\"date\":\"2053-12-31\",\"dateTime\":\"2054-08-09T12:13:47\",\"numeric\":\"32.24\",\"time\":\"19:46:45\",\"timestamp\":\"1999-07-05T13:51:29Z\"}]},\"string\":\"䳲歵㦰➥ፎ恦涾笱燹J騍骜餄ሐ₃궁䒢䊷拯ๅ獀癸㎙㗳❳秆쳾봳奢C퍊ꘝ捼릢惂௘穭镁啷뜭ࠑ뮛温䭀趍堑뀮땖\"}\n{\"boolean\":false,\"double\":0.6289224346854412,\"float\":0.92996806,\"integer\":404850403,\"long\":\"8921169388299790285\",\"record\":{\"bytes\":\"TeIp7M2rxr+wPUKJy4vvILjwkZuRw0iv1MWHXNi49jYxTKZQN7yJKzir1gk=\",\"nullable\":\"巟䩱쌵ᤥ복珂笤崗綣ꓢ锌岥붾\",\"repeated\":[{\"date\":\"2011-12-02\",\"dateTime\":\"2043-09-08T15:28:52\",\"numeric\":\"37.73\",\"time\":\"22:10:16\",\"timestamp\":\"1924-10-08T09:54:18Z\"},{\"date\":\"2062-01-04\",\"dateTime\":\"2005-07-10T13:21:25\",\"numeric\":\"52.34\",\"time\":\"00:10:55\",\"timestamp\":\"2011-01-31T12:27:27Z\"},{\"date\":\"2068-06-20\",\"dateTime\":\"2050-05-08T12:23:58\",\"numeric\":\"12.62\",\"time\":\"13:51:13\",\"timestamp\":\"1946-09-01T21:44:57Z\"},{\"date\":\"2053-06-09\",\"dateTime\":\"2012-07-29T15:10:35\",\"numeric\":\"2.70\",\"time\":\"10:17:39\",\"timestamp\":\"2009-04-07T10:39:45Z\"},{\"date\":\"2001-09-06\",\"dateTime\":\"2057-12-03T06:20:34\",\"numeric\":\"92.20\",\"time\":\"07:28:30\",\"timestamp\":\"1992-06-10T08:13:55Z\"},{\"date\":\"2016-06-06\",\"dateTime\":\"2062-02-14T19:49:32\",\"numeric\":\"55.74\",\"time\":\"19:03:45\",\"timestamp\":\"1936-07-04T16:06:57Z\"},{\"date\":\"1987-08-02\",\"dateTime\":\"2028-06-09T05:59:13\",\"numeric\":\"99.18\",\"time\":\"06:53:06\",\"timestamp\":\"1952-02-04T13:30:20Z\"},{\"date\":\"1981-09-05\",\"dateTime\":\"2066-08-08T01:16:13\",\"numeric\":\"7.71\",\"time\":\"07:02:21\",\"timestamp\":\"1952-01-12T02:55:41Z\"},{\"date\":\"2061-06-15\",\"dateTime\":\"1980-01-28T01:22:58\",\"numeric\":\"51.53\",\"time\":\"11:56:36\",\"timestamp\":\"2027-07-21T17:01:06Z\"},{\"date\":\"2021-01-03\",\"dateTime\":\"2014-01-15T19:43:56\",\"numeric\":\"64.07\",\"time\":\"01:51:16\",\"timestamp\":\"1983-03-31T23:26:20Z\"}]},\"string\":\"♥돞ڂ냡Ꝝ郕嗧鶮㶊⡨চ♣㪎睟䀺⤄鄶璂衡☊ⱬ逫癬읦\"}\n{\"boolean\":false,\"double\":0.8968169258928302,\"float\":0.46140158,\"integer\":-354775744,\"long\":\"2023254908089933049\",\"record\":{\"bytes\":\"ZmGM\",\"nullable\":\"蹆㖈䞴핽㕀Ⱑ䪽⺎㥆ᖆ孌ᫌڪ郎⮖ܓ٣標ᆕ늬侮膼㚳꟟谥ᭆꀽ끾ᴅ裭ꭢ唓켠㯀Ꮰؕ췦悚俴횿伱毪띴ᨡ衉祺ᡴᘿ缧⹰⨧衐㫾\",\"repeated\":[{\"date\":\"2063-03-03\",\"dateTime\":\"1984-12-22T11:02:45\",\"numeric\":\"57.62\",\"time\":\"05:34:09\",\"timestamp\":\"1970-02-03T00:35:07Z\"},{\"date\":\"1990-03-20\",\"dateTime\":\"2066-06-08T16:40:26\",\"numeric\":\"66.36\",\"time\":\"04:36:08\",\"timestamp\":\"2014-02-27T17:59:02Z\"},{\"date\":\"1981-09-22\",\"dateTime\":\"2041-10-07T17:15:20\",\"numeric\":\"83.87\",\"time\":\"02:39:08\",\"timestamp\":\"1915-03-09T03:30:32Z\"},{\"date\":\"2060-12-22\",\"dateTime\":\"2068-06-26T00:38:11\",\"numeric\":\"99.04\",\"time\":\"23:17:37\",\"timestamp\":\"2003-10-23T16:20:11Z\"},{\"date\":\"1975-02-06\",\"dateTime\":\"2059-08-07T12:44:47\",\"numeric\":\"86.82\",\"time\":\"00:37:56\",\"timestamp\":\"2019-08-23T23:49:13Z\"},{\"date\":\"1981-10-09\",\"dateTime\":\"1980-05-21T13:58:26\",\"numeric\":\"16.56\",\"time\":\"08:55:41\",\"timestamp\":\"1958-07-09T13:47:48Z\"},{\"date\":\"2053-11-26\",\"dateTime\":\"2062-02-07T02:12:09\",\"numeric\":\"29.68\",\"time\":\"12:23:10\",\"timestamp\":\"1947-06-25T05:27:33Z\"},{\"date\":\"1995-05-10\",\"dateTime\":\"2014-09-12T12:32:30\",\"numeric\":\"38.87\",\"time\":\"05:38:40\",\"timestamp\":\"1983-07-08T20:30:33Z\"},{\"date\":\"2026-09-01\",\"dateTime\":\"2049-11-27T22:34:41\",\"numeric\":\"71.13\",\"time\":\"10:28:54\",\"timestamp\":\"1915-10-16T06:17:48Z\"},{\"date\":\"1971-11-03\",\"dateTime\":\"2068-07-26T05:26:22\",\"numeric\":\"70.63\",\"time\":\"15:28:13\",\"timestamp\":\"1919-08-26T10:59:57Z\"},{\"date\":\"2046-04-06\",\"dateTime\":\"1986-04-11T00:50:56\",\"numeric\":\"50.08\",\"time\":\"13:18:20\",\"timestamp\":\"1954-09-27T03:01:58Z\"},{\"date\":\"1995-03-02\",\"dateTime\":\"1989-09-19T05:43:37\",\"numeric\":\"84.87\",\"time\":\"07:47:47\",\"timestamp\":\"1960-07-25T04:59:26Z\"},{\"date\":\"1988-02-03\",\"dateTime\":\"2002-08-19T05:26:49\",\"numeric\":\"60.26\",\"time\":\"13:49:34\",\"timestamp\":\"1969-08-14T17:08:22Z\"},{\"date\":\"1981-06-19\",\"dateTime\":\"1984-09-03T02:14:54\",\"numeric\":\"51.06\",\"time\":\"13:43:50\",\"timestamp\":\"1908-02-15T22:16:51Z\"}]},\"string\":\"倜䏩䙫ㆻ慠兡⎹ܹ曯䕡ꯂ\"}\n{\"boolean\":true,\"double\":0.5573142419653542,\"float\":0.4995007,\"integer\":-1430648428,\"long\":\"7983433322294486324\",\"record\":{\"bytes\":\"MkYu1c19O77lgrn0afsWGcFR1ZXIVdg8j+FTE8pFnBq2fCtnI8aAO1JdcRb2\",\"repeated\":[{\"date\":\"2064-05-17\",\"dateTime\":\"2041-06-27T14:20:47\",\"numeric\":\"50.80\",\"time\":\"20:34:55\",\"timestamp\":\"1910-04-22T13:53:26Z\"},{\"date\":\"1986-07-10\",\"dateTime\":\"2032-01-15T08:34:29\",\"numeric\":\"5.78\",\"time\":\"23:50:17\",\"timestamp\":\"2031-01-10T19:15:49Z\"},{\"date\":\"2015-09-05\",\"dateTime\":\"1990-02-01T04:08:30\",\"numeric\":\"66.21\",\"time\":\"23:47:51\",\"timestamp\":\"2032-08-28T01:05:14Z\"},{\"date\":\"2032-10-26\",\"dateTime\":\"2065-12-02T09:26:25\",\"numeric\":\"11.40\",\"time\":\"08:40:55\",\"timestamp\":\"1927-01-30T00:29:22Z\"},{\"date\":\"2020-12-19\",\"dateTime\":\"2008-02-10T14:10:00\",\"numeric\":\"98.02\",\"time\":\"14:15:10\",\"timestamp\":\"1934-12-30T04:01:24Z\"},{\"date\":\"1987-06-13\",\"dateTime\":\"2057-03-03T02:52:36\",\"numeric\":\"63.98\",\"time\":\"14:34:17\",\"timestamp\":\"1946-05-19T16:41:02Z\"},{\"date\":\"2066-07-15\",\"dateTime\":\"2046-05-30T16:04:36\",\"numeric\":\"31.13\",\"time\":\"23:20:23\",\"timestamp\":\"1906-06-03T00:21:27Z\"},{\"date\":\"1973-03-30\",\"dateTime\":\"2006-06-27T10:23:21\",\"numeric\":\"45.10\",\"time\":\"16:15:26\",\"timestamp\":\"2017-07-07T14:37:03Z\"},{\"date\":\"2047-10-14\",\"dateTime\":\"2000-05-02T19:42:56\",\"numeric\":\"94.55\",\"time\":\"08:48:04\",\"timestamp\":\"1928-02-09T16:47:12Z\"}]},\"string\":\"⡾딙楨ᬑ苣菁ㅛ锍硂饜밸ờ윥롴㇏貟㪐岙깵楖흩[恳熁ᆚ莹煶㫼轥⁝候㶈䦼뚉⍗깗鼡\"}\n{\"boolean\":true,\"double\":0.38783524952738846,\"float\":0.6529374,\"integer\":-12909003,\"long\":\"7623063716980990999\",\"record\":{\"bytes\":\"\",\"repeated\":[{\"date\":\"1999-09-21\",\"dateTime\":\"2025-05-24T12:08:51\",\"numeric\":\"2.74\",\"time\":\"16:20:17\",\"timestamp\":\"2011-06-05T13:39:46Z\"},{\"date\":\"2024-02-20\",\"dateTime\":\"2062-09-12T21:17:43\",\"numeric\":\"63.68\",\"time\":\"10:08:34\",\"timestamp\":\"1969-08-31T14:06:33Z\"},{\"date\":\"1994-11-05\",\"dateTime\":\"2038-07-16T19:35:30\",\"numeric\":\"59.28\",\"time\":\"23:07:57\",\"timestamp\":\"1985-06-10T10:16:47Z\"},{\"date\":\"1983-04-08\",\"dateTime\":\"2047-11-18T09:17:16\",\"numeric\":\"47.00\",\"time\":\"17:15:36\",\"timestamp\":\"1992-02-18T07:54:50Z\"},{\"date\":\"1984-04-25\",\"dateTime\":\"2029-07-14T13:17:09\",\"numeric\":\"57.89\",\"time\":\"22:47:34\",\"timestamp\":\"1968-06-30T05:41:57Z\"},{\"date\":\"1983-06-03\",\"dateTime\":\"2023-11-03T13:57:34\",\"numeric\":\"53.20\",\"time\":\"21:18:30\",\"timestamp\":\"1953-05-28T04:43:01Z\"},{\"date\":\"2005-11-16\",\"dateTime\":\"1981-11-23T21:18:08\",\"numeric\":\"51.97\",\"time\":\"04:52:30\",\"timestamp\":\"2025-05-17T03:37:40Z\"},{\"date\":\"1970-08-19\",\"dateTime\":\"2043-09-17T19:14:00\",\"numeric\":\"38.60\",\"time\":\"00:02:10\",\"timestamp\":\"2024-07-28T06:53:18Z\"},{\"date\":\"1984-01-22\",\"dateTime\":\"2018-10-21T20:49:43\",\"numeric\":\"73.43\",\"time\":\"12:56:26\",\"timestamp\":\"1914-01-14T17:26:23Z\"},{\"date\":\"1976-01-19\",\"dateTime\":\"2017-08-30T13:29:43\",\"numeric\":\"37.20\",\"time\":\"23:06:35\",\"timestamp\":\"1905-03-24T16:21:18Z\"},{\"date\":\"2052-03-02\",\"dateTime\":\"2065-03-02T02:03:21\",\"numeric\":\"77.20\",\"time\":\"00:16:50\",\"timestamp\":\"2022-04-16T04:50:06Z\"},{\"date\":\"1974-07-02\",\"dateTime\":\"2026-08-18T13:01:27\",\"numeric\":\"57.03\",\"time\":\"11:54:10\",\"timestamp\":\"1958-08-20T03:37:17Z\"},{\"date\":\"2060-12-21\",\"dateTime\":\"2041-01-03T08:51:17\",\"numeric\":\"14.83\",\"time\":\"21:43:33\",\"timestamp\":\"2032-10-24T16:38:02Z\"}]},\"string\":\"ೣ銨귷겂짓䏳癞諔䏡ꀢ䮤격普釱䡉Ⴏ틛븋颶鹵Ο䤠㦫얺췷㩒₥䏁ꎞ勖纷ᝳ璲ص왓팥⪨悪એ味錕焼෌䑏⟀큖쮮똷崈麮⛕䮻遃賵廸棄繉䪋ᣜ料\"}\n{\"boolean\":false,\"double\":0.18117764934827651,\"float\":0.9085254,\"integer\":202176966,\"long\":\"-6260962306968636424\",\"record\":{\"bytes\":\"q5kWenNeiDbcGTug/2NKmifBNzisaYQWz+vlIaP8hxct+6LoRt9QzwTV3rfVR7rmZjfj9Dca9EFdOZgi\",\"nullable\":\"퀰尔୐ྡ蜭ቜ퉁\",\"repeated\":[{\"date\":\"2001-07-23\",\"dateTime\":\"2059-05-14T12:22:46\",\"numeric\":\"17.38\",\"time\":\"04:51:14\",\"timestamp\":\"1934-10-12T20:11:55Z\"},{\"date\":\"2004-04-15\",\"dateTime\":\"2044-12-02T21:32:04\",\"numeric\":\"37.02\",\"time\":\"16:50:22\",\"timestamp\":\"1912-01-01T16:16:15Z\"},{\"date\":\"1983-01-01\",\"dateTime\":\"2023-08-24T12:38:16\",\"numeric\":\"24.87\",\"time\":\"02:03:43\",\"timestamp\":\"1940-01-04T16:31:20Z\"},{\"date\":\"1985-05-29\",\"dateTime\":\"2012-06-23T20:18:53\",\"numeric\":\"12.60\",\"time\":\"18:39:07\",\"timestamp\":\"2006-08-11T04:19:14Z\"},{\"date\":\"1972-05-24\",\"dateTime\":\"2023-02-11T23:22:51\",\"numeric\":\"20.15\",\"time\":\"22:09:24\",\"timestamp\":\"1983-06-16T18:20:42Z\"}]},\"string\":\"䫺쏝舷ꊀᾡ翴撩撒䓄뛢࿟籘㑍酕싐앬娰뾮掀鐶辆㚸࢏庠귺ᠱḸ䓷ݎ共ㄹ\"}\n{\"boolean\":true,\"double\":0.68984792723055,\"float\":0.84119505,\"integer\":436938772,\"long\":\"-8409784870773773625\",\"record\":{\"bytes\":\"/WOvYAinXNNY0QZT7mtHHDQaGLD+XwXtrWPpXQIOQ4DV9Q==\",\"nullable\":\"籱\",\"repeated\":[{\"date\":\"2044-08-02\",\"dateTime\":\"2064-10-30T00:32:10\",\"numeric\":\"52.39\",\"time\":\"20:53:32\",\"timestamp\":\"2028-09-18T17:42:24Z\"},{\"date\":\"2015-03-13\",\"dateTime\":\"2062-07-28T14:33:47\",\"numeric\":\"69.45\",\"time\":\"16:05:37\",\"timestamp\":\"1916-09-04T06:06:40Z\"},{\"date\":\"2052-10-11\",\"dateTime\":\"2062-12-29T14:05:59\",\"numeric\":\"7.01\",\"time\":\"21:48:11\",\"timestamp\":\"2009-02-13T21:24:18Z\"},{\"date\":\"2049-06-22\",\"dateTime\":\"1991-01-04T04:09:34\",\"numeric\":\"97.19\",\"time\":\"10:31:28\",\"timestamp\":\"2013-12-21T13:58:15Z\"},{\"date\":\"1988-04-28\",\"dateTime\":\"2029-12-23T10:02:43\",\"numeric\":\"19.06\",\"time\":\"22:05:19\",\"timestamp\":\"2016-09-01T08:03:38Z\"},{\"date\":\"2031-07-06\",\"dateTime\":\"1973-05-18T20:29:41\",\"numeric\":\"38.77\",\"time\":\"13:43:09\",\"timestamp\":\"1956-07-21T08:14:36Z\"},{\"date\":\"1987-11-02\",\"dateTime\":\"1995-09-05T19:37:14\",\"numeric\":\"41.08\",\"time\":\"00:50:03\",\"timestamp\":\"1991-10-20T05:44:25Z\"},{\"date\":\"1976-05-29\",\"dateTime\":\"2068-02-09T18:14:09\",\"numeric\":\"14.13\",\"time\":\"13:55:17\",\"timestamp\":\"1927-07-10T19:46:59Z\"},{\"date\":\"1996-12-10\",\"dateTime\":\"1990-11-29T02:27:15\",\"numeric\":\"17.88\",\"time\":\"08:33:49\",\"timestamp\":\"2028-09-16T14:48:17Z\"}]},\"string\":\"왒ᯪຬ勪䂟潩袉邩絘낻᭪᪺꙲#䕪㿔쵑\"}\n{\"boolean\":false,\"double\":0.3761377939688305,\"float\":0.11075175,\"integer\":-1411004879,\"long\":\"7562226178054181812\",\"record\":{\"bytes\":\"7Rq8lQN2bm4QmmNoajs6f8JToZoMmXwmbfqtA+xbGY/C2BkABtglquffBg==\",\"repeated\":[]},\"string\":\"忁ᐰ䵔䂬⓬ꉺ좎㛾욒究㐣덜ᗺ⣾斋쿈蚕↲觗矜䇝ꍤ苂艪ꗙ璕췱塃쎵䀑긬ꊀ帏뙷钪笳헿ᘯ෽騲뮊沩߀布迋ㅉ⻫玥㿌\"}"
+        } ],
+        "headers" : {
+          "Content-Range" : [ {
+            "matcher" : "exact",
+            "value" : "bytes 0-14035/14036"
+          } ]
+        }
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\"kind\":\"bigquery#job\",\"etag\":\"HdtpQIZtVWLI7OXGl0buFA==\",\"id\":\"alpakka-bigquery-test:US.job_lSg_8guJRL-uEqyvK8mDuaXTxvFi\",\"selfLink\":\"https://bigquery.googleapis.com/bigquery/v2/projects/alpakka-bigquery-test/jobs/job_lSg_8guJRL-uEqyvK8mDuaXTxvFi?location=US\",\"user_email\":\"test-runner@alpakka-bigquery-test.iam.gserviceaccount.com\",\"configuration\":{\"load\":{\"schema\":{\"fields\":[{\"name\":\"integer\",\"type\":\"INTEGER\",\"mode\":\"REQUIRED\"},{\"name\":\"long\",\"type\":\"INTEGER\",\"mode\":\"REQUIRED\"},{\"name\":\"float\",\"type\":\"FLOAT\",\"mode\":\"REQUIRED\"},{\"name\":\"double\",\"type\":\"FLOAT\",\"mode\":\"REQUIRED\"},{\"name\":\"string\",\"type\":\"STRING\",\"mode\":\"REQUIRED\"},{\"name\":\"boolean\",\"type\":\"BOOLEAN\",\"mode\":\"REQUIRED\"},{\"name\":\"record\",\"type\":\"RECORD\",\"mode\":\"REQUIRED\",\"fields\":[{\"name\":\"nullable\",\"type\":\"STRING\",\"mode\":\"NULLABLE\"},{\"name\":\"bytes\",\"type\":\"BYTES\",\"mode\":\"REQUIRED\"},{\"name\":\"repeated\",\"type\":\"RECORD\",\"mode\":\"REPEATED\",\"fields\":[{\"name\":\"numeric\",\"type\":\"NUMERIC\",\"mode\":\"REQUIRED\"},{\"name\":\"date\",\"type\":\"DATE\",\"mode\":\"REQUIRED\"},{\"name\":\"time\",\"type\":\"TIME\",\"mode\":\"REQUIRED\"},{\"name\":\"dateTime\",\"type\":\"DATETIME\",\"mode\":\"REQUIRED\"},{\"name\":\"timestamp\",\"type\":\"TIMESTAMP\",\"mode\":\"REQUIRED\"}]}]}]},\"destinationTable\":{\"projectId\":\"alpakka-bigquery-test\",\"datasetId\":\"e2e_dataset_677\",\"tableId\":\"e2e_table_242\"},\"createDisposition\":\"CREATE_NEVER\",\"writeDisposition\":\"WRITE_APPEND\",\"sourceFormat\":\"NEWLINE_DELIMITED_JSON\"},\"jobType\":\"LOAD\"},\"jobReference\":{\"projectId\":\"alpakka-bigquery-test\",\"jobId\":\"job_lSg_8guJRL-uEqyvK8mDuaXTxvFi\",\"location\":\"US\"},\"statistics\":{\"creationTime\":\"1615364094191\",\"startTime\":\"1615364094800\"},\"status\":{\"state\":\"RUNNING\"}}",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Content-Length" : [ "1644" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Wed, 10 Mar 2021 08:14:55 GMT" ],
+          "Etag" : [ "HdtpQIZtVWLI7OXGl0buFA==" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "UploadServer" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Guploader-Uploadid" : [ "ABg5-Uw9oLNBNH0Vg1-cZbvHnoB1FNiK-NtCf6jhtNaJKOOV98gC4LiMuvP-D2tD3m9AG_0MnXT7iXXdhOn6inq8W2i3nzRWZg" ]
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/alpakka-bigquery-test/jobs/job_lSg_8guJRL-uEqyvK8mDuaXTxvFi"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "GET"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "bigquery.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "query" : {
+          "prettyPrint" : [ {
+            "matcher" : "exact",
+            "value" : "false"
+          } ]
+        },
+        "body" : [ {
+          "matcher" : "exact",
+          "value" : ""
+        } ],
+        "requiresState" : {
+          "sequence:1" : "1"
+        }
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\"kind\":\"bigquery#job\",\"etag\":\"rL+9oKCHzU5s3oJfw5GBMA==\",\"id\":\"alpakka-bigquery-test:US.job_lSg_8guJRL-uEqyvK8mDuaXTxvFi\",\"selfLink\":\"https://bigquery.googleapis.com/bigquery/v2/projects/alpakka-bigquery-test/jobs/job_lSg_8guJRL-uEqyvK8mDuaXTxvFi?location=US\",\"user_email\":\"test-runner@alpakka-bigquery-test.iam.gserviceaccount.com\",\"configuration\":{\"load\":{\"schema\":{\"fields\":[{\"name\":\"integer\",\"type\":\"INTEGER\",\"mode\":\"REQUIRED\"},{\"name\":\"long\",\"type\":\"INTEGER\",\"mode\":\"REQUIRED\"},{\"name\":\"float\",\"type\":\"FLOAT\",\"mode\":\"REQUIRED\"},{\"name\":\"double\",\"type\":\"FLOAT\",\"mode\":\"REQUIRED\"},{\"name\":\"string\",\"type\":\"STRING\",\"mode\":\"REQUIRED\"},{\"name\":\"boolean\",\"type\":\"BOOLEAN\",\"mode\":\"REQUIRED\"},{\"name\":\"record\",\"type\":\"RECORD\",\"mode\":\"REQUIRED\",\"fields\":[{\"name\":\"nullable\",\"type\":\"STRING\",\"mode\":\"NULLABLE\"},{\"name\":\"bytes\",\"type\":\"BYTES\",\"mode\":\"REQUIRED\"},{\"name\":\"repeated\",\"type\":\"RECORD\",\"mode\":\"REPEATED\",\"fields\":[{\"name\":\"numeric\",\"type\":\"NUMERIC\",\"mode\":\"REQUIRED\"},{\"name\":\"date\",\"type\":\"DATE\",\"mode\":\"REQUIRED\"},{\"name\":\"time\",\"type\":\"TIME\",\"mode\":\"REQUIRED\"},{\"name\":\"dateTime\",\"type\":\"DATETIME\",\"mode\":\"REQUIRED\"},{\"name\":\"timestamp\",\"type\":\"TIMESTAMP\",\"mode\":\"REQUIRED\"}]}]}]},\"destinationTable\":{\"projectId\":\"alpakka-bigquery-test\",\"datasetId\":\"e2e_dataset_677\",\"tableId\":\"e2e_table_242\"},\"createDisposition\":\"CREATE_NEVER\",\"writeDisposition\":\"WRITE_APPEND\",\"sourceFormat\":\"NEWLINE_DELIMITED_JSON\"},\"jobType\":\"LOAD\"},\"jobReference\":{\"projectId\":\"alpakka-bigquery-test\",\"jobId\":\"job_lSg_8guJRL-uEqyvK8mDuaXTxvFi\",\"location\":\"US\"},\"statistics\":{\"creationTime\":\"1615364094191\",\"startTime\":\"1615364094800\",\"reservation_id\":\"default-pipeline\"},\"status\":{\"state\":\"RUNNING\"}}",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Wed, 10 Mar 2021 08:14:55 GMT" ],
+          "Etag" : [ "rL+9oKCHzU5s3oJfw5GBMA==" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        },
+        "transitionsState" : {
+          "sequence:1" : "2"
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/alpakka-bigquery-test/jobs/job_lSg_8guJRL-uEqyvK8mDuaXTxvFi"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "GET"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "bigquery.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "query" : {
+          "prettyPrint" : [ {
+            "matcher" : "exact",
+            "value" : "false"
+          } ]
+        },
+        "body" : [ {
+          "matcher" : "exact",
+          "value" : ""
+        } ],
+        "requiresState" : {
+          "sequence:1" : "2"
+        }
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\"kind\":\"bigquery#job\",\"etag\":\"OkvE5QH7WIiJbZZblsfwnQ==\",\"id\":\"alpakka-bigquery-test:US.job_lSg_8guJRL-uEqyvK8mDuaXTxvFi\",\"selfLink\":\"https://bigquery.googleapis.com/bigquery/v2/projects/alpakka-bigquery-test/jobs/job_lSg_8guJRL-uEqyvK8mDuaXTxvFi?location=US\",\"user_email\":\"test-runner@alpakka-bigquery-test.iam.gserviceaccount.com\",\"configuration\":{\"load\":{\"schema\":{\"fields\":[{\"name\":\"integer\",\"type\":\"INTEGER\",\"mode\":\"REQUIRED\"},{\"name\":\"long\",\"type\":\"INTEGER\",\"mode\":\"REQUIRED\"},{\"name\":\"float\",\"type\":\"FLOAT\",\"mode\":\"REQUIRED\"},{\"name\":\"double\",\"type\":\"FLOAT\",\"mode\":\"REQUIRED\"},{\"name\":\"string\",\"type\":\"STRING\",\"mode\":\"REQUIRED\"},{\"name\":\"boolean\",\"type\":\"BOOLEAN\",\"mode\":\"REQUIRED\"},{\"name\":\"record\",\"type\":\"RECORD\",\"mode\":\"REQUIRED\",\"fields\":[{\"name\":\"nullable\",\"type\":\"STRING\",\"mode\":\"NULLABLE\"},{\"name\":\"bytes\",\"type\":\"BYTES\",\"mode\":\"REQUIRED\"},{\"name\":\"repeated\",\"type\":\"RECORD\",\"mode\":\"REPEATED\",\"fields\":[{\"name\":\"numeric\",\"type\":\"NUMERIC\",\"mode\":\"REQUIRED\"},{\"name\":\"date\",\"type\":\"DATE\",\"mode\":\"REQUIRED\"},{\"name\":\"time\",\"type\":\"TIME\",\"mode\":\"REQUIRED\"},{\"name\":\"dateTime\",\"type\":\"DATETIME\",\"mode\":\"REQUIRED\"},{\"name\":\"timestamp\",\"type\":\"TIMESTAMP\",\"mode\":\"REQUIRED\"}]}]}]},\"destinationTable\":{\"projectId\":\"alpakka-bigquery-test\",\"datasetId\":\"e2e_dataset_677\",\"tableId\":\"e2e_table_242\"},\"createDisposition\":\"CREATE_NEVER\",\"writeDisposition\":\"WRITE_APPEND\",\"sourceFormat\":\"NEWLINE_DELIMITED_JSON\"},\"jobType\":\"LOAD\"},\"jobReference\":{\"projectId\":\"alpakka-bigquery-test\",\"jobId\":\"job_lSg_8guJRL-uEqyvK8mDuaXTxvFi\",\"location\":\"US\"},\"statistics\":{\"creationTime\":\"1615364094191\",\"startTime\":\"1615364094800\",\"endTime\":\"1615364095879\",\"load\":{\"inputFiles\":\"1\",\"inputFileBytes\":\"14036\",\"outputRows\":\"10\",\"outputBytes\":\"6216\",\"badRecords\":\"0\",\"timeline\":[{\"elapsedMs\":\"846\",\"totalSlotMs\":\"130\",\"pendingUnits\":\"0\",\"completedUnits\":\"1\"}]},\"totalSlotMs\":\"130\",\"reservationUsage\":[{\"name\":\"default-pipeline\",\"slotMs\":\"130\"}],\"reservation_id\":\"default-pipeline\"},\"status\":{\"state\":\"DONE\"}}",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Wed, 10 Mar 2021 08:14:56 GMT" ],
+          "Etag" : [ "OkvE5QH7WIiJbZZblsfwnQ==" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/alpakka-bigquery-test/datasets/e2e_dataset_677/tables/e2e_table_242/data"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "GET"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "bigquery.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "query" : {
+          "prettyPrint" : [ {
+            "matcher" : "exact",
+            "value" : "false"
+          } ]
+        },
+        "body" : [ {
+          "matcher" : "exact",
+          "value" : ""
+        } ]
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\"kind\":\"bigquery#tableDataList\",\"etag\":\"f7csq+zfOJ7JFZdUCAiFYQ==\",\"totalRows\":\"10\",\"rows\":[{\"f\":[{\"v\":\"-106137654\"},{\"v\":\"-5505870842158098357\"},{\"v\":\"0.9501375\"},{\"v\":\"0.14965441544104874\"},{\"v\":\"콚ത딥ⱴ↓ഘ൮鈩꼧銤Ϡ䡩֪䌼蚧ৰ듹歬戰ꦃ걔옊ᐐ陥쨮ㆷ햅綡ꬿ眝쥻瑱ஓ䕟遵炔᎚ꐰ湿ܪ퇣釛ꉑ⋀ᡠ㻅轧휬阦ᦺ欃뼥圣悵轓䎝챎\"},{\"v\":\"false\"},{\"v\":{\"f\":[{\"v\":null},{\"v\":\"gV0=\"},{\"v\":[]}]}}]},{\"f\":[{\"v\":\"-1411004879\"},{\"v\":\"7562226178054181812\"},{\"v\":\"0.11075175\"},{\"v\":\"0.37613779396883051\"},{\"v\":\"忁ᐰ䵔䂬⓬ꉺ좎㛾욒究㐣덜ᗺ⣾斋쿈蚕↲觗矜䇝ꍤ苂艪ꗙ璕췱塃쎵䀑긬ꊀ帏뙷钪笳헿ᘯ෽騲뮊沩߀布迋ㅉ⻫玥㿌\"},{\"v\":\"false\"},{\"v\":{\"f\":[{\"v\":null},{\"v\":\"7Rq8lQN2bm4QmmNoajs6f8JToZoMmXwmbfqtA+xbGY/C2BkABtglquffBg==\"},{\"v\":[]}]}}]},{\"f\":[{\"v\":\"-12909003\"},{\"v\":\"7623063716980990999\"},{\"v\":\"0.6529374\"},{\"v\":\"0.38783524952738846\"},{\"v\":\"ೣ銨귷겂짓䏳癞諔䏡ꀢ䮤격普釱䡉Ⴏ틛븋颶鹵Ο䤠㦫얺췷㩒₥䏁ꎞ勖纷ᝳ璲ص왓팥⪨悪એ味錕焼෌䑏⟀큖쮮똷崈麮⛕䮻遃賵廸棄繉䪋ᣜ料\"},{\"v\":\"true\"},{\"v\":{\"f\":[{\"v\":null},{\"v\":\"\"},{\"v\":[{\"v\":{\"f\":[{\"v\":\"2.74\"},{\"v\":\"1999-09-21\"},{\"v\":\"16:20:17\"},{\"v\":\"2025-05-24T12:08:51\"},{\"v\":\"1307281186.0\"}]}},{\"v\":{\"f\":[{\"v\":\"63.68\"},{\"v\":\"2024-02-20\"},{\"v\":\"10:08:34\"},{\"v\":\"2062-09-12T21:17:43\"},{\"v\":\"-10576407.0\"}]}},{\"v\":{\"f\":[{\"v\":\"59.28\"},{\"v\":\"1994-11-05\"},{\"v\":\"23:07:57\"},{\"v\":\"2038-07-16T19:35:30\"},{\"v\":\"487246607.0\"}]}},{\"v\":{\"f\":[{\"v\":\"47\"},{\"v\":\"1983-04-08\"},{\"v\":\"17:15:36\"},{\"v\":\"2047-11-18T09:17:16\"},{\"v\":\"698399690.0\"}]}},{\"v\":{\"f\":[{\"v\":\"57.89\"},{\"v\":\"1984-04-25\"},{\"v\":\"22:47:34\"},{\"v\":\"2029-07-14T13:17:09\"},{\"v\":\"-47499483.0\"}]}},{\"v\":{\"f\":[{\"v\":\"53.2\"},{\"v\":\"1983-06-03\"},{\"v\":\"21:18:30\"},{\"v\":\"2023-11-03T13:57:34\"},{\"v\":\"-523739819.0\"}]}},{\"v\":{\"f\":[{\"v\":\"51.97\"},{\"v\":\"2005-11-16\"},{\"v\":\"04:52:30\"},{\"v\":\"1981-11-23T21:18:08\"},{\"v\":\"1747453060.0\"}]}},{\"v\":{\"f\":[{\"v\":\"38.6\"},{\"v\":\"1970-08-19\"},{\"v\":\"00:02:10\"},{\"v\":\"2043-09-17T19:14:00\"},{\"v\":\"1722149598.0\"}]}},{\"v\":{\"f\":[{\"v\":\"73.43\"},{\"v\":\"1984-01-22\"},{\"v\":\"12:56:26\"},{\"v\":\"2018-10-21T20:49:43\"},{\"v\":\"-1766039617.0\"}]}},{\"v\":{\"f\":[{\"v\":\"37.2\"},{\"v\":\"1976-01-19\"},{\"v\":\"23:06:35\"},{\"v\":\"2017-08-30T13:29:43\"},{\"v\":\"-2044078722.0\"}]}},{\"v\":{\"f\":[{\"v\":\"77.2\"},{\"v\":\"2052-03-02\"},{\"v\":\"00:16:50\"},{\"v\":\"2065-03-02T02:03:21\"},{\"v\":\"1650084606.0\"}]}},{\"v\":{\"f\":[{\"v\":\"57.03\"},{\"v\":\"1974-07-02\"},{\"v\":\"11:54:10\"},{\"v\":\"2026-08-18T13:01:27\"},{\"v\":\"-358719763.0\"}]}},{\"v\":{\"f\":[{\"v\":\"14.83\"},{\"v\":\"2060-12-21\"},{\"v\":\"21:43:33\"},{\"v\":\"2041-01-03T08:51:17\"},{\"v\":\"1982248682.0\"}]}}]}]}}]},{\"f\":[{\"v\":\"-1430648428\"},{\"v\":\"7983433322294486324\"},{\"v\":\"0.4995007\"},{\"v\":\"0.55731424196535417\"},{\"v\":\"⡾딙楨ᬑ苣菁ㅛ锍硂饜밸ờ윥롴㇏貟㪐岙깵楖흩[恳熁ᆚ莹煶㫼轥⁝候㶈䦼뚉⍗깗鼡\"},{\"v\":\"true\"},{\"v\":{\"f\":[{\"v\":null},{\"v\":\"MkYu1c19O77lgrn0afsWGcFR1ZXIVdg8j+FTE8pFnBq2fCtnI8aAO1JdcRb2\"},{\"v\":[{\"v\":{\"f\":[{\"v\":\"50.8\"},{\"v\":\"2064-05-17\"},{\"v\":\"20:34:55\"},{\"v\":\"2041-06-27T14:20:47\"},{\"v\":\"-1883815594.0\"}]}},{\"v\":{\"f\":[{\"v\":\"5.78\"},{\"v\":\"1986-07-10\"},{\"v\":\"23:50:17\"},{\"v\":\"2032-01-15T08:34:29\"},{\"v\":\"1925838949.0\"}]}},{\"v\":{\"f\":[{\"v\":\"66.21\"},{\"v\":\"2015-09-05\"},{\"v\":\"23:47:51\"},{\"v\":\"1990-02-01T04:08:30\"},{\"v\":\"1977267914.0\"}]}},{\"v\":{\"f\":[{\"v\":\"11.4\"},{\"v\":\"2032-10-26\"},{\"v\":\"08:40:55\"},{\"v\":\"2065-12-02T09:26:25\"},{\"v\":\"-1354491038.0\"}]}},{\"v\":{\"f\":[{\"v\":\"98.02\"},{\"v\":\"2020-12-19\"},{\"v\":\"14:15:10\"},{\"v\":\"2008-02-10T14:10:00\"},{\"v\":\"-1104695916.0\"}]}},{\"v\":{\"f\":[{\"v\":\"63.98\"},{\"v\":\"1987-06-13\"},{\"v\":\"14:34:17\"},{\"v\":\"2057-03-03T02:52:36\"},{\"v\":\"-745399138.0\"}]}},{\"v\":{\"f\":[{\"v\":\"31.13\"},{\"v\":\"2066-07-15\"},{\"v\":\"23:20:23\"},{\"v\":\"2046-05-30T16:04:36\"},{\"v\":\"-2006465913.0\"}]}},{\"v\":{\"f\":[{\"v\":\"45.1\"},{\"v\":\"1973-03-30\"},{\"v\":\"16:15:26\"},{\"v\":\"2006-06-27T10:23:21\"},{\"v\":\"1499438223.0\"}]}},{\"v\":{\"f\":[{\"v\":\"94.55\"},{\"v\":\"2047-10-14\"},{\"v\":\"08:48:04\"},{\"v\":\"2000-05-02T19:42:56\"},{\"v\":\"-1322032368.0\"}]}}]}]}}]},{\"f\":[{\"v\":\"436938772\"},{\"v\":\"-8409784870773773625\"},{\"v\":\"0.84119505\"},{\"v\":\"0.68984792723055\"},{\"v\":\"왒ᯪຬ勪䂟潩袉邩絘낻᭪᪺꙲#䕪㿔쵑\"},{\"v\":\"true\"},{\"v\":{\"f\":[{\"v\":\"籱\"},{\"v\":\"/WOvYAinXNNY0QZT7mtHHDQaGLD+XwXtrWPpXQIOQ4DV9Q==\"},{\"v\":[{\"v\":{\"f\":[{\"v\":\"52.39\"},{\"v\":\"2044-08-02\"},{\"v\":\"20:53:32\"},{\"v\":\"2064-10-30T00:32:10\"},{\"v\":\"1852911744.0\"}]}},{\"v\":{\"f\":[{\"v\":\"69.45\"},{\"v\":\"2015-03-13\"},{\"v\":\"16:05:37\"},{\"v\":\"2062-07-28T14:33:47\"},{\"v\":\"-1682790800.0\"}]}},{\"v\":{\"f\":[{\"v\":\"7.01\"},{\"v\":\"2052-10-11\"},{\"v\":\"21:48:11\"},{\"v\":\"2062-12-29T14:05:59\"},{\"v\":\"1234560258.0\"}]}},{\"v\":{\"f\":[{\"v\":\"97.19\"},{\"v\":\"2049-06-22\"},{\"v\":\"10:31:28\"},{\"v\":\"1991-01-04T04:09:34\"},{\"v\":\"1387634295.0\"}]}},{\"v\":{\"f\":[{\"v\":\"19.06\"},{\"v\":\"1988-04-28\"},{\"v\":\"22:05:19\"},{\"v\":\"2029-12-23T10:02:43\"},{\"v\":\"1472717018.0\"}]}},{\"v\":{\"f\":[{\"v\":\"38.77\"},{\"v\":\"2031-07-06\"},{\"v\":\"13:43:09\"},{\"v\":\"1973-05-18T20:29:41\"},{\"v\":\"-424367124.0\"}]}},{\"v\":{\"f\":[{\"v\":\"41.08\"},{\"v\":\"1987-11-02\"},{\"v\":\"00:50:03\"},{\"v\":\"1995-09-05T19:37:14\"},{\"v\":\"687937465.0\"}]}},{\"v\":{\"f\":[{\"v\":\"14.13\"},{\"v\":\"1976-05-29\"},{\"v\":\"13:55:17\"},{\"v\":\"2068-02-09T18:14:09\"},{\"v\":\"-1340511181.0\"}]}},{\"v\":{\"f\":[{\"v\":\"17.88\"},{\"v\":\"1996-12-10\"},{\"v\":\"08:33:49\"},{\"v\":\"1990-11-29T02:27:15\"},{\"v\":\"1852728497.0\"}]}}]}]}}]},{\"f\":[{\"v\":\"202176966\"},{\"v\":\"-6260962306968636424\"},{\"v\":\"0.9085254\"},{\"v\":\"0.18117764934827651\"},{\"v\":\"䫺쏝舷ꊀᾡ翴撩撒䓄뛢࿟籘㑍酕싐앬娰뾮掀鐶辆㚸࢏庠귺ᠱḸ䓷ݎ共ㄹ\"},{\"v\":\"false\"},{\"v\":{\"f\":[{\"v\":\"퀰尔୐ྡ蜭ቜ퉁\"},{\"v\":\"q5kWenNeiDbcGTug/2NKmifBNzisaYQWz+vlIaP8hxct+6LoRt9QzwTV3rfVR7rmZjfj9Dca9EFdOZgi\"},{\"v\":[{\"v\":{\"f\":[{\"v\":\"17.38\"},{\"v\":\"2001-07-23\"},{\"v\":\"04:51:14\"},{\"v\":\"2059-05-14T12:22:46\"},{\"v\":\"-1111463285.0\"}]}},{\"v\":{\"f\":[{\"v\":\"37.02\"},{\"v\":\"2004-04-15\"},{\"v\":\"16:50:22\"},{\"v\":\"2044-12-02T21:32:04\"},{\"v\":\"-1830325425.0\"}]}},{\"v\":{\"f\":[{\"v\":\"24.87\"},{\"v\":\"1983-01-01\"},{\"v\":\"02:03:43\"},{\"v\":\"2023-08-24T12:38:16\"},{\"v\":\"-946452520.0\"}]}},{\"v\":{\"f\":[{\"v\":\"12.6\"},{\"v\":\"1985-05-29\"},{\"v\":\"18:39:07\"},{\"v\":\"2012-06-23T20:18:53\"},{\"v\":\"1155269954.0\"}]}},{\"v\":{\"f\":[{\"v\":\"20.15\"},{\"v\":\"1972-05-24\"},{\"v\":\"22:09:24\"},{\"v\":\"2023-02-11T23:22:51\"},{\"v\":\"424635642.0\"}]}}]}]}}]},{\"f\":[{\"v\":\"404850403\"},{\"v\":\"8921169388299790285\"},{\"v\":\"0.92996806\"},{\"v\":\"0.62892243468544118\"},{\"v\":\"♥돞ڂ냡Ꝝ郕嗧鶮㶊⡨চ♣㪎睟䀺⤄鄶璂衡☊ⱬ逫癬읦\"},{\"v\":\"false\"},{\"v\":{\"f\":[{\"v\":\"巟䩱쌵ᤥ복珂笤崗綣ꓢ锌岥붾\"},{\"v\":\"TeIp7M2rxr+wPUKJy4vvILjwkZuRw0iv1MWHXNi49jYxTKZQN7yJKzir1gk=\"},{\"v\":[{\"v\":{\"f\":[{\"v\":\"37.73\"},{\"v\":\"2011-12-02\"},{\"v\":\"22:10:16\"},{\"v\":\"2043-09-08T15:28:52\"},{\"v\":\"-1427378742.0\"}]}},{\"v\":{\"f\":[{\"v\":\"52.34\"},{\"v\":\"2062-01-04\"},{\"v\":\"00:10:55\"},{\"v\":\"2005-07-10T13:21:25\"},{\"v\":\"1296476847.0\"}]}},{\"v\":{\"f\":[{\"v\":\"12.62\"},{\"v\":\"2068-06-20\"},{\"v\":\"13:51:13\"},{\"v\":\"2050-05-08T12:23:58\"},{\"v\":\"-736308903.0\"}]}},{\"v\":{\"f\":[{\"v\":\"2.7\"},{\"v\":\"2053-06-09\"},{\"v\":\"10:17:39\"},{\"v\":\"2012-07-29T15:10:35\"},{\"v\":\"1239100785.0\"}]}},{\"v\":{\"f\":[{\"v\":\"92.2\"},{\"v\":\"2001-09-06\"},{\"v\":\"07:28:30\"},{\"v\":\"2057-12-03T06:20:34\"},{\"v\":\"708164035.0\"}]}},{\"v\":{\"f\":[{\"v\":\"55.74\"},{\"v\":\"2016-06-06\"},{\"v\":\"19:03:45\"},{\"v\":\"2062-02-14T19:49:32\"},{\"v\":\"-1056959583.0\"}]}},{\"v\":{\"f\":[{\"v\":\"99.18\"},{\"v\":\"1987-08-02\"},{\"v\":\"06:53:06\"},{\"v\":\"2028-06-09T05:59:13\"},{\"v\":\"-565093780.0\"}]}},{\"v\":{\"f\":[{\"v\":\"7.71\"},{\"v\":\"1981-09-05\"},{\"v\":\"07:02:21\"},{\"v\":\"2066-08-08T01:16:13\"},{\"v\":\"-567119059.0\"}]}},{\"v\":{\"f\":[{\"v\":\"51.53\"},{\"v\":\"2061-06-15\"},{\"v\":\"11:56:36\"},{\"v\":\"1980-01-28T01:22:58\"},{\"v\":\"1816189266.0\"}]}},{\"v\":{\"f\":[{\"v\":\"64.07\"},{\"v\":\"2021-01-03\"},{\"v\":\"01:51:16\"},{\"v\":\"2014-01-15T19:43:56\"},{\"v\":\"418001180.0\"}]}}]}]}}]},{\"f\":[{\"v\":\"-984823444\"},{\"v\":\"-4977748211049216820\"},{\"v\":\"0.46173006\"},{\"v\":\"0.989898801123375\"},{\"v\":\"폐䆐ᚈ䨼␔躞긢ꍠ긬쀒ᵸꦽ㝥▫蒔乳펞躼奅ꛩ贾韜洨톳䚬ቔ촠蝈憜綍㗟贱䟓ᜐ⤊墬扢覽㝓敮뷔ᗷ\"},{\"v\":\"false\"},{\"v\":{\"f\":[{\"v\":\"̓ᑍ뚯咺⟍飗勄謡讯 ᩕ힌啣ꅋࡱ聶㐝拫妢❅쟎쉴符맂⿩࿱띛몝嬡촑\"},{\"v\":\"V77+vwQATN3+q2YbJ+rwn8hd6FZY\"},{\"v\":[{\"v\":{\"f\":[{\"v\":\"65.46\"},{\"v\":\"2018-03-04\"},{\"v\":\"09:10:20\"},{\"v\":\"1989-02-02T23:15:35\"},{\"v\":\"731207746.0\"}]}},{\"v\":{\"f\":[{\"v\":\"57.39\"},{\"v\":\"1980-08-06\"},{\"v\":\"20:12:54\"},{\"v\":\"2046-12-08T22:38:08\"},{\"v\":\"-288395730.0\"}]}},{\"v\":{\"f\":[{\"v\":\"63.85\"},{\"v\":\"1988-11-02\"},{\"v\":\"15:20:11\"},{\"v\":\"2066-05-28T23:58:31\"},{\"v\":\"-791756136.0\"}]}},{\"v\":{\"f\":[{\"v\":\"92.28\"},{\"v\":\"2026-06-08\"},{\"v\":\"18:57:33\"},{\"v\":\"2046-05-07T15:11:51\"},{\"v\":\"693725335.0\"}]}},{\"v\":{\"f\":[{\"v\":\"91.16\"},{\"v\":\"2063-11-04\"},{\"v\":\"07:06:01\"},{\"v\":\"2038-12-16T08:09:06\"},{\"v\":\"-1629101397.0\"}]}},{\"v\":{\"f\":[{\"v\":\"22.42\"},{\"v\":\"2040-11-14\"},{\"v\":\"11:10:00\"},{\"v\":\"1983-04-25T12:03:58\"},{\"v\":\"224428779.0\"}]}},{\"v\":{\"f\":[{\"v\":\"58.67\"},{\"v\":\"1973-11-04\"},{\"v\":\"14:13:48\"},{\"v\":\"2021-12-23T15:04:04\"},{\"v\":\"-1301962939.0\"}]}},{\"v\":{\"f\":[{\"v\":\"96.08\"},{\"v\":\"1974-01-04\"},{\"v\":\"15:28:52\"},{\"v\":\"2026-04-16T01:12:40\"},{\"v\":\"2087066783.0\"}]}}]}]}}]},{\"f\":[{\"v\":\"-354775744\"},{\"v\":\"2023254908089933049\"},{\"v\":\"0.46140158\"},{\"v\":\"0.89681692589283024\"},{\"v\":\"倜䏩䙫ㆻ慠兡⎹ܹ曯䕡ꯂ\"},{\"v\":\"false\"},{\"v\":{\"f\":[{\"v\":\"蹆㖈䞴핽㕀Ⱑ䪽⺎㥆ᖆ孌ᫌڪ郎⮖ܓ٣標ᆕ늬侮膼㚳꟟谥ᭆꀽ끾ᴅ裭ꭢ唓켠㯀Ꮰؕ췦悚俴횿伱毪띴ᨡ衉祺ᡴᘿ缧⹰⨧衐㫾\"},{\"v\":\"ZmGM\"},{\"v\":[{\"v\":{\"f\":[{\"v\":\"57.62\"},{\"v\":\"2063-03-03\"},{\"v\":\"05:34:09\"},{\"v\":\"1984-12-22T11:02:45\"},{\"v\":\"2853307.0\"}]}},{\"v\":{\"f\":[{\"v\":\"66.36\"},{\"v\":\"1990-03-20\"},{\"v\":\"04:36:08\"},{\"v\":\"2066-06-08T16:40:26\"},{\"v\":\"1393523942.0\"}]}},{\"v\":{\"f\":[{\"v\":\"83.87\"},{\"v\":\"1981-09-22\"},{\"v\":\"02:39:08\"},{\"v\":\"2041-10-07T17:15:20\"},{\"v\":\"-1729888168.0\"}]}},{\"v\":{\"f\":[{\"v\":\"99.04\"},{\"v\":\"2060-12-22\"},{\"v\":\"23:17:37\"},{\"v\":\"2068-06-26T00:38:11\"},{\"v\":\"1066926011.0\"}]}},{\"v\":{\"f\":[{\"v\":\"86.82\"},{\"v\":\"1975-02-06\"},{\"v\":\"00:37:56\"},{\"v\":\"2059-08-07T12:44:47\"},{\"v\":\"1566604153.0\"}]}},{\"v\":{\"f\":[{\"v\":\"16.56\"},{\"v\":\"1981-10-09\"},{\"v\":\"08:55:41\"},{\"v\":\"1980-05-21T13:58:26\"},{\"v\":\"-362311932.0\"}]}},{\"v\":{\"f\":[{\"v\":\"29.68\"},{\"v\":\"2053-11-26\"},{\"v\":\"12:23:10\"},{\"v\":\"2062-02-07T02:12:09\"},{\"v\":\"-710706747.0\"}]}},{\"v\":{\"f\":[{\"v\":\"38.87\"},{\"v\":\"1995-05-10\"},{\"v\":\"05:38:40\"},{\"v\":\"2014-09-12T12:32:30\"},{\"v\":\"426544233.0\"}]}},{\"v\":{\"f\":[{\"v\":\"71.13\"},{\"v\":\"2026-09-01\"},{\"v\":\"10:28:54\"},{\"v\":\"2049-11-27T22:34:41\"},{\"v\":\"-1710783732.0\"}]}},{\"v\":{\"f\":[{\"v\":\"70.63\"},{\"v\":\"1971-11-03\"},{\"v\":\"15:28:13\"},{\"v\":\"2068-07-26T05:26:22\"},{\"v\":\"-1588942803.0\"}]}},{\"v\":{\"f\":[{\"v\":\"50.08\"},{\"v\":\"2046-04-06\"},{\"v\":\"13:18:20\"},{\"v\":\"1986-04-11T00:50:56\"},{\"v\":\"-481669082.0\"}]}},{\"v\":{\"f\":[{\"v\":\"84.87\"},{\"v\":\"1995-03-02\"},{\"v\":\"07:47:47\"},{\"v\":\"1989-09-19T05:43:37\"},{\"v\":\"-297802834.0\"}]}},{\"v\":{\"f\":[{\"v\":\"60.26\"},{\"v\":\"1988-02-03\"},{\"v\":\"13:49:34\"},{\"v\":\"2002-08-19T05:26:49\"},{\"v\":\"-12034298.0\"}]}},{\"v\":{\"f\":[{\"v\":\"51.06\"},{\"v\":\"1981-06-19\"},{\"v\":\"13:43:50\"},{\"v\":\"1984-09-03T02:14:54\"},{\"v\":\"-1952646189.0\"}]}}]}]}}]},{\"f\":[{\"v\":\"211736158\"},{\"v\":\"7341909481878015308\"},{\"v\":\"0.66021746\"},{\"v\":\"0.16000260824546997\"},{\"v\":\"䳲歵㦰➥ፎ恦涾笱燹J騍骜餄ሐ₃궁䒢䊷拯ๅ獀癸㎙㗳❳秆쳾봳奢C퍊ꘝ捼릢惂௘穭镁啷뜭ࠑ뮛温䭀趍堑뀮땖\"},{\"v\":\"false\"},{\"v\":{\"f\":[{\"v\":\"颽뉢仺攨觷ꈝẛ鐌㸀ힼ๤骳䪋ે雈߽춯폃磉쌨汃跑䥃볨舫敢掳盝勸ꑳ㳫ꢣᶮ◌仲ɱ풍䲱⍋ꂖᓒ爹ꥦ൵路鿎맿ۿ᥻⃡ꍆᛜⳔ읒솻区\"},{\"v\":\"DEOi9F9S/TiDW50QXRect7icCILfO+8FAoo1+cTBCp6Qzs4OI88XnnRzvPbfIuWomErWtNiZABuMepvreKaO\"},{\"v\":[{\"v\":{\"f\":[{\"v\":\"74.1\"},{\"v\":\"1991-08-24\"},{\"v\":\"07:35:50\"},{\"v\":\"2037-12-07T23:42:48\"},{\"v\":\"218279959.0\"}]}},{\"v\":{\"f\":[{\"v\":\"11.12\"},{\"v\":\"1990-02-10\"},{\"v\":\"10:51:59\"},{\"v\":\"2066-12-12T08:28:11\"},{\"v\":\"-2127334101.0\"}]}},{\"v\":{\"f\":[{\"v\":\"50.58\"},{\"v\":\"2005-07-04\"},{\"v\":\"23:13:06\"},{\"v\":\"2063-05-15T21:43:36\"},{\"v\":\"2013735000.0\"}]}},{\"v\":{\"f\":[{\"v\":\"32.66\"},{\"v\":\"2000-11-10\"},{\"v\":\"02:58:36\"},{\"v\":\"1992-01-08T05:57:31\"},{\"v\":\"-1472341561.0\"}]}},{\"v\":{\"f\":[{\"v\":\"52.66\"},{\"v\":\"1991-09-11\"},{\"v\":\"22:38:06\"},{\"v\":\"2054-10-01T23:07:51\"},{\"v\":\"1256805027.0\"}]}},{\"v\":{\"f\":[{\"v\":\"49.88\"},{\"v\":\"2009-06-25\"},{\"v\":\"20:27:47\"},{\"v\":\"1994-04-21T14:25:27\"},{\"v\":\"1085840364.0\"}]}},{\"v\":{\"f\":[{\"v\":\"34.49\"},{\"v\":\"2005-07-06\"},{\"v\":\"03:13:42\"},{\"v\":\"2051-08-09T11:22:27\"},{\"v\":\"564961543.0\"}]}},{\"v\":{\"f\":[{\"v\":\"65.81\"},{\"v\":\"2001-03-31\"},{\"v\":\"04:53:01\"},{\"v\":\"2019-09-02T08:13:59\"},{\"v\":\"-873598025.0\"}]}},{\"v\":{\"f\":[{\"v\":\"6.57\"},{\"v\":\"2058-06-23\"},{\"v\":\"21:15:57\"},{\"v\":\"1978-02-23T02:28:02\"},{\"v\":\"-1214284581.0\"}]}},{\"v\":{\"f\":[{\"v\":\"54.18\"},{\"v\":\"2044-03-29\"},{\"v\":\"02:49:03\"},{\"v\":\"2035-03-17T16:09:16\"},{\"v\":\"2122108216.0\"}]}},{\"v\":{\"f\":[{\"v\":\"87.77\"},{\"v\":\"1991-02-13\"},{\"v\":\"21:32:51\"},{\"v\":\"2052-12-07T05:31:25\"},{\"v\":\"960939163.0\"}]}},{\"v\":{\"f\":[{\"v\":\"85.07\"},{\"v\":\"2035-08-28\"},{\"v\":\"00:13:57\"},{\"v\":\"1987-12-27T04:10:18\"},{\"v\":\"-1709508277.0\"}]}},{\"v\":{\"f\":[{\"v\":\"7.53\"},{\"v\":\"2061-03-22\"},{\"v\":\"09:32:33\"},{\"v\":\"2058-07-13T21:28:46\"},{\"v\":\"-764261804.0\"}]}},{\"v\":{\"f\":[{\"v\":\"32.24\"},{\"v\":\"2053-12-31\"},{\"v\":\"19:46:45\"},{\"v\":\"2054-08-09T12:13:47\"},{\"v\":\"931182689.0\"}]}}]}]}}]}]}",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Wed, 10 Mar 2021 08:14:56 GMT" ],
+          "Etag" : [ "f7csq+zfOJ7JFZdUCAiFYQ==" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/alpakka-bigquery-test/queries"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "POST"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "bigquery.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "query" : {
+          "prettyPrint" : [ {
+            "matcher" : "exact",
+            "value" : "false"
+          } ]
+        },
+        "body" : [ {
+          "matcher" : "json",
+          "value" : "{\"dryRun\":false,\"query\":\"SELECT string, record, integer FROM e2e_dataset_677.e2e_table_242 WHERE boolean;\",\"useLegacySql\":false}"
+        } ]
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\"kind\":\"bigquery#queryResponse\",\"schema\":{\"fields\":[{\"name\":\"string\",\"type\":\"STRING\",\"mode\":\"NULLABLE\"},{\"name\":\"record\",\"type\":\"RECORD\",\"mode\":\"NULLABLE\",\"fields\":[{\"name\":\"nullable\",\"type\":\"STRING\",\"mode\":\"NULLABLE\"},{\"name\":\"bytes\",\"type\":\"BYTES\",\"mode\":\"NULLABLE\"},{\"name\":\"repeated\",\"type\":\"RECORD\",\"mode\":\"REPEATED\",\"fields\":[{\"name\":\"numeric\",\"type\":\"NUMERIC\",\"mode\":\"NULLABLE\"},{\"name\":\"date\",\"type\":\"DATE\",\"mode\":\"NULLABLE\"},{\"name\":\"time\",\"type\":\"TIME\",\"mode\":\"NULLABLE\"},{\"name\":\"dateTime\",\"type\":\"DATETIME\",\"mode\":\"NULLABLE\"},{\"name\":\"timestamp\",\"type\":\"TIMESTAMP\",\"mode\":\"NULLABLE\"}]}]},{\"name\":\"integer\",\"type\":\"INTEGER\",\"mode\":\"NULLABLE\"}]},\"jobReference\":{\"projectId\":\"alpakka-bigquery-test\",\"jobId\":\"job_mzZoq8PvX7nCTLyg7WZiK5heZkvo\",\"location\":\"US\"},\"totalRows\":\"3\",\"rows\":[{\"f\":[{\"v\":\"ೣ銨귷겂짓䏳癞諔䏡ꀢ䮤격普釱䡉Ⴏ틛븋颶鹵Ο䤠㦫얺췷㩒₥䏁ꎞ勖纷ᝳ璲ص왓팥⪨悪એ味錕焼෌䑏⟀큖쮮똷崈麮⛕䮻遃賵廸棄繉䪋ᣜ料\"},{\"v\":{\"f\":[{\"v\":null},{\"v\":\"\"},{\"v\":[{\"v\":{\"f\":[{\"v\":\"2.74\"},{\"v\":\"1999-09-21\"},{\"v\":\"16:20:17\"},{\"v\":\"2025-05-24T12:08:51\"},{\"v\":\"1.307281186E9\"}]}},{\"v\":{\"f\":[{\"v\":\"63.68\"},{\"v\":\"2024-02-20\"},{\"v\":\"10:08:34\"},{\"v\":\"2062-09-12T21:17:43\"},{\"v\":\"-1.0576407E7\"}]}},{\"v\":{\"f\":[{\"v\":\"59.28\"},{\"v\":\"1994-11-05\"},{\"v\":\"23:07:57\"},{\"v\":\"2038-07-16T19:35:30\"},{\"v\":\"4.87246607E8\"}]}},{\"v\":{\"f\":[{\"v\":\"47\"},{\"v\":\"1983-04-08\"},{\"v\":\"17:15:36\"},{\"v\":\"2047-11-18T09:17:16\"},{\"v\":\"6.9839969E8\"}]}},{\"v\":{\"f\":[{\"v\":\"57.89\"},{\"v\":\"1984-04-25\"},{\"v\":\"22:47:34\"},{\"v\":\"2029-07-14T13:17:09\"},{\"v\":\"-4.7499483E7\"}]}},{\"v\":{\"f\":[{\"v\":\"53.2\"},{\"v\":\"1983-06-03\"},{\"v\":\"21:18:30\"},{\"v\":\"2023-11-03T13:57:34\"},{\"v\":\"-5.23739819E8\"}]}},{\"v\":{\"f\":[{\"v\":\"51.97\"},{\"v\":\"2005-11-16\"},{\"v\":\"04:52:30\"},{\"v\":\"1981-11-23T21:18:08\"},{\"v\":\"1.74745306E9\"}]}},{\"v\":{\"f\":[{\"v\":\"38.6\"},{\"v\":\"1970-08-19\"},{\"v\":\"00:02:10\"},{\"v\":\"2043-09-17T19:14:00\"},{\"v\":\"1.722149598E9\"}]}},{\"v\":{\"f\":[{\"v\":\"73.43\"},{\"v\":\"1984-01-22\"},{\"v\":\"12:56:26\"},{\"v\":\"2018-10-21T20:49:43\"},{\"v\":\"-1.766039617E9\"}]}},{\"v\":{\"f\":[{\"v\":\"37.2\"},{\"v\":\"1976-01-19\"},{\"v\":\"23:06:35\"},{\"v\":\"2017-08-30T13:29:43\"},{\"v\":\"-2.044078722E9\"}]}},{\"v\":{\"f\":[{\"v\":\"77.2\"},{\"v\":\"2052-03-02\"},{\"v\":\"00:16:50\"},{\"v\":\"2065-03-02T02:03:21\"},{\"v\":\"1.650084606E9\"}]}},{\"v\":{\"f\":[{\"v\":\"57.03\"},{\"v\":\"1974-07-02\"},{\"v\":\"11:54:10\"},{\"v\":\"2026-08-18T13:01:27\"},{\"v\":\"-3.58719763E8\"}]}},{\"v\":{\"f\":[{\"v\":\"14.83\"},{\"v\":\"2060-12-21\"},{\"v\":\"21:43:33\"},{\"v\":\"2041-01-03T08:51:17\"},{\"v\":\"1.982248682E9\"}]}}]}]}},{\"v\":\"-12909003\"}]},{\"f\":[{\"v\":\"⡾딙楨ᬑ苣菁ㅛ锍硂饜밸ờ윥롴㇏貟㪐岙깵楖흩[恳熁ᆚ莹煶㫼轥⁝候㶈䦼뚉⍗깗鼡\"},{\"v\":{\"f\":[{\"v\":null},{\"v\":\"MkYu1c19O77lgrn0afsWGcFR1ZXIVdg8j+FTE8pFnBq2fCtnI8aAO1JdcRb2\"},{\"v\":[{\"v\":{\"f\":[{\"v\":\"50.8\"},{\"v\":\"2064-05-17\"},{\"v\":\"20:34:55\"},{\"v\":\"2041-06-27T14:20:47\"},{\"v\":\"-1.883815594E9\"}]}},{\"v\":{\"f\":[{\"v\":\"5.78\"},{\"v\":\"1986-07-10\"},{\"v\":\"23:50:17\"},{\"v\":\"2032-01-15T08:34:29\"},{\"v\":\"1.925838949E9\"}]}},{\"v\":{\"f\":[{\"v\":\"66.21\"},{\"v\":\"2015-09-05\"},{\"v\":\"23:47:51\"},{\"v\":\"1990-02-01T04:08:30\"},{\"v\":\"1.977267914E9\"}]}},{\"v\":{\"f\":[{\"v\":\"11.4\"},{\"v\":\"2032-10-26\"},{\"v\":\"08:40:55\"},{\"v\":\"2065-12-02T09:26:25\"},{\"v\":\"-1.354491038E9\"}]}},{\"v\":{\"f\":[{\"v\":\"98.02\"},{\"v\":\"2020-12-19\"},{\"v\":\"14:15:10\"},{\"v\":\"2008-02-10T14:10:00\"},{\"v\":\"-1.104695916E9\"}]}},{\"v\":{\"f\":[{\"v\":\"63.98\"},{\"v\":\"1987-06-13\"},{\"v\":\"14:34:17\"},{\"v\":\"2057-03-03T02:52:36\"},{\"v\":\"-7.45399138E8\"}]}},{\"v\":{\"f\":[{\"v\":\"31.13\"},{\"v\":\"2066-07-15\"},{\"v\":\"23:20:23\"},{\"v\":\"2046-05-30T16:04:36\"},{\"v\":\"-2.006465913E9\"}]}},{\"v\":{\"f\":[{\"v\":\"45.1\"},{\"v\":\"1973-03-30\"},{\"v\":\"16:15:26\"},{\"v\":\"2006-06-27T10:23:21\"},{\"v\":\"1.499438223E9\"}]}},{\"v\":{\"f\":[{\"v\":\"94.55\"},{\"v\":\"2047-10-14\"},{\"v\":\"08:48:04\"},{\"v\":\"2000-05-02T19:42:56\"},{\"v\":\"-1.322032368E9\"}]}}]}]}},{\"v\":\"-1430648428\"}]},{\"f\":[{\"v\":\"왒ᯪຬ勪䂟潩袉邩絘낻᭪᪺꙲#䕪㿔쵑\"},{\"v\":{\"f\":[{\"v\":\"籱\"},{\"v\":\"/WOvYAinXNNY0QZT7mtHHDQaGLD+XwXtrWPpXQIOQ4DV9Q==\"},{\"v\":[{\"v\":{\"f\":[{\"v\":\"52.39\"},{\"v\":\"2044-08-02\"},{\"v\":\"20:53:32\"},{\"v\":\"2064-10-30T00:32:10\"},{\"v\":\"1.852911744E9\"}]}},{\"v\":{\"f\":[{\"v\":\"69.45\"},{\"v\":\"2015-03-13\"},{\"v\":\"16:05:37\"},{\"v\":\"2062-07-28T14:33:47\"},{\"v\":\"-1.6827908E9\"}]}},{\"v\":{\"f\":[{\"v\":\"7.01\"},{\"v\":\"2052-10-11\"},{\"v\":\"21:48:11\"},{\"v\":\"2062-12-29T14:05:59\"},{\"v\":\"1.234560258E9\"}]}},{\"v\":{\"f\":[{\"v\":\"97.19\"},{\"v\":\"2049-06-22\"},{\"v\":\"10:31:28\"},{\"v\":\"1991-01-04T04:09:34\"},{\"v\":\"1.387634295E9\"}]}},{\"v\":{\"f\":[{\"v\":\"19.06\"},{\"v\":\"1988-04-28\"},{\"v\":\"22:05:19\"},{\"v\":\"2029-12-23T10:02:43\"},{\"v\":\"1.472717018E9\"}]}},{\"v\":{\"f\":[{\"v\":\"38.77\"},{\"v\":\"2031-07-06\"},{\"v\":\"13:43:09\"},{\"v\":\"1973-05-18T20:29:41\"},{\"v\":\"-4.24367124E8\"}]}},{\"v\":{\"f\":[{\"v\":\"41.08\"},{\"v\":\"1987-11-02\"},{\"v\":\"00:50:03\"},{\"v\":\"1995-09-05T19:37:14\"},{\"v\":\"6.87937465E8\"}]}},{\"v\":{\"f\":[{\"v\":\"14.13\"},{\"v\":\"1976-05-29\"},{\"v\":\"13:55:17\"},{\"v\":\"2068-02-09T18:14:09\"},{\"v\":\"-1.340511181E9\"}]}},{\"v\":{\"f\":[{\"v\":\"17.88\"},{\"v\":\"1996-12-10\"},{\"v\":\"08:33:49\"},{\"v\":\"1990-11-29T02:27:15\"},{\"v\":\"1.852728497E9\"}]}}]}]}},{\"v\":\"436938772\"}]}],\"totalBytesProcessed\":\"5976\",\"jobComplete\":true,\"cacheHit\":false}",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Wed, 10 Mar 2021 08:14:57 GMT" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/alpakka-bigquery-test/queries"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "POST"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "bigquery.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "query" : {
+          "prettyPrint" : [ {
+            "matcher" : "exact",
+            "value" : "false"
+          } ]
+        },
+        "body" : [ {
+          "matcher" : "json",
+          "value" : "{\"dryRun\":true,\"query\":\"SELECT string, record, integer FROM e2e_dataset_677.e2e_table_242 WHERE boolean;\",\"useLegacySql\":false}"
+        } ]
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\"kind\":\"bigquery#queryResponse\",\"schema\":{\"fields\":[{\"name\":\"string\",\"type\":\"STRING\",\"mode\":\"NULLABLE\"},{\"name\":\"record\",\"type\":\"RECORD\",\"mode\":\"NULLABLE\",\"fields\":[{\"name\":\"nullable\",\"type\":\"STRING\",\"mode\":\"NULLABLE\"},{\"name\":\"bytes\",\"type\":\"BYTES\",\"mode\":\"NULLABLE\"},{\"name\":\"repeated\",\"type\":\"RECORD\",\"mode\":\"REPEATED\",\"fields\":[{\"name\":\"numeric\",\"type\":\"NUMERIC\",\"mode\":\"NULLABLE\"},{\"name\":\"date\",\"type\":\"DATE\",\"mode\":\"NULLABLE\"},{\"name\":\"time\",\"type\":\"TIME\",\"mode\":\"NULLABLE\"},{\"name\":\"dateTime\",\"type\":\"DATETIME\",\"mode\":\"NULLABLE\"},{\"name\":\"timestamp\",\"type\":\"TIMESTAMP\",\"mode\":\"NULLABLE\"}]}]},{\"name\":\"integer\",\"type\":\"INTEGER\",\"mode\":\"NULLABLE\"}]},\"jobReference\":{\"projectId\":\"alpakka-bigquery-test\",\"location\":\"US\"},\"totalBytesProcessed\":\"5976\",\"jobComplete\":true,\"cacheHit\":true}",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Wed, 10 Mar 2021 08:14:57 GMT" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/alpakka-bigquery-test/datasets/e2e_dataset_677/tables/e2e_table_242"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "DELETE"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "bigquery.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "query" : {
+          "prettyPrint" : [ {
+            "matcher" : "exact",
+            "value" : "false"
+          } ]
+        },
+        "body" : [ {
+          "matcher" : "exact",
+          "value" : ""
+        } ]
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{}",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Wed, 10 Mar 2021 08:14:58 GMT" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/alpakka-bigquery-test/datasets/e2e_dataset_677/tables"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "GET"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "bigquery.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "query" : {
+          "prettyPrint" : [ {
+            "matcher" : "exact",
+            "value" : "false"
+          } ]
+        },
+        "body" : [ {
+          "matcher" : "exact",
+          "value" : ""
+        } ],
+        "requiresState" : {
+          "sequence:2" : "2"
+        }
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\"kind\":\"bigquery#tableList\",\"etag\":\"1B2M2Y8AsgTpgAmY7PhCfg==\",\"totalItems\":0}",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Wed, 10 Mar 2021 08:14:58 GMT" ],
+          "Etag" : [ "1B2M2Y8AsgTpgAmY7PhCfg==" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/alpakka-bigquery-test/datasets/e2e_dataset_677"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "DELETE"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "bigquery.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "query" : {
+          "deleteContents" : [ {
+            "matcher" : "exact",
+            "value" : "false"
+          } ],
+          "prettyPrint" : [ {
+            "matcher" : "exact",
+            "value" : "false"
+          } ]
+        },
+        "body" : [ {
+          "matcher" : "exact",
+          "value" : ""
+        } ]
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{}",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Wed, 10 Mar 2021 08:14:58 GMT" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        }
+      }
+    }, {
+      "request" : {
+        "path" : [ {
+          "matcher" : "exact",
+          "value" : "/bigquery/v2/projects/alpakka-bigquery-test/datasets"
+        } ],
+        "method" : [ {
+          "matcher" : "exact",
+          "value" : "GET"
+        } ],
+        "destination" : [ {
+          "matcher" : "exact",
+          "value" : "bigquery.googleapis.com"
+        } ],
+        "scheme" : [ {
+          "matcher" : "exact",
+          "value" : "https"
+        } ],
+        "query" : {
+          "prettyPrint" : [ {
+            "matcher" : "exact",
+            "value" : "false"
+          } ]
+        },
+        "body" : [ {
+          "matcher" : "exact",
+          "value" : ""
+        } ],
+        "requiresState" : {
+          "sequence:3" : "2"
+        }
+      },
+      "response" : {
+        "status" : 200,
+        "body" : "{\"kind\":\"bigquery#datasetList\",\"etag\":\"FYbqBPwbyPpuMeagefOPlQ==\",\"datasets\":[{\"kind\":\"bigquery#dataset\",\"id\":\"alpakka-bigquery-test:client_test_dataset\",\"datasetReference\":{\"datasetId\":\"client_test_dataset\",\"projectId\":\"alpakka-bigquery-test\"},\"location\":\"US\"},{\"kind\":\"bigquery#dataset\",\"id\":\"alpakka-bigquery-test:example_dataset\",\"datasetReference\":{\"datasetId\":\"example_dataset\",\"projectId\":\"alpakka-bigquery-test\"},\"location\":\"US\"}]}",
+        "encodedBody" : false,
+        "templated" : false,
+        "headers" : {
+          "Alt-Svc" : [ "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"" ],
+          "Cache-Control" : [ "private" ],
+          "Content-Type" : [ "application/json; charset=UTF-8" ],
+          "Date" : [ "Wed, 10 Mar 2021 08:14:59 GMT" ],
+          "Etag" : [ "FYbqBPwbyPpuMeagefOPlQ==" ],
+          "Hoverfly" : [ "Was-Here" ],
+          "Server" : [ "ESF" ],
+          "Vary" : [ "Origin", "X-Origin", "Referer" ],
+          "X-Content-Type-Options" : [ "nosniff" ],
+          "X-Frame-Options" : [ "SAMEORIGIN" ],
+          "X-Xss-Protection" : [ "0" ]
+        }
+      }
+    } ],
+    "globalActions" : {
+      "delays" : [ ]
+    }
+  },
+  "meta" : {
+    "schemaVersion" : "v5",
+    "hoverflyVersion" : "v1.1.4",
+    "timeExported" : "2021-03-10T00:14:56-08:00"
+  }
+}
