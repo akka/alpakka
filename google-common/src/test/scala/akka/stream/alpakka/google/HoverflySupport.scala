@@ -9,7 +9,7 @@ import org.scalatest.{BeforeAndAfterAll, Suite}
 
 trait HoverflySupport extends BeforeAndAfterAll { this: Suite =>
 
-  def hoverfly = BigQueryHoverfly
+  def hoverfly = GoogleHoverfly
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -22,7 +22,7 @@ trait HoverflySupport extends BeforeAndAfterAll { this: Suite =>
   }
 }
 
-object BigQueryHoverfly
+object GoogleHoverfly
     extends Hoverfly(
       HoverflyConfig
         .localConfigs()

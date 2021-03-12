@@ -42,13 +42,7 @@ private[google] object GoogleExt extends ExtensionId[GoogleExt] with ExtensionId
 
   /**
    * Java API.
-   * Get the BigQuery extension with the classic actors API.
-   */
-  override def get(system: akka.actor.ActorSystem): GoogleExt = super.apply(system)
-
-  /**
-   * Java API.
-   * Get the BigQuery extension with the new actors API.
+   * Get the Google extension with the new actors API.
    */
   override def get(system: ClassicActorSystemProvider): GoogleExt = super.apply(system)
 }

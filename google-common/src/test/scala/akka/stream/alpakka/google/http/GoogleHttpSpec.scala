@@ -39,7 +39,7 @@ class GoogleHttpSpec
     http
   }
 
-  "BigQueryHttp" must {
+  "GoogleHttp" must {
 
     "handle unexpected http error" in {
 
