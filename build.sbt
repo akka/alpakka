@@ -169,6 +169,13 @@ lazy val geode =
     fatalWarnings := true
   )
 
+lazy val googleCommon = internalProject(
+  "google-common",
+  Dependencies.GoogleCommon,
+  Test / fork := true,
+  fatalWarnings := true,
+).disablePlugins(MimaPlugin).dependsOn(testkit % Test)
+
 lazy val googleCloudBigQuery = alpakkaProject(
   "google-cloud-bigquery",
   "google.cloud.bigquery",
