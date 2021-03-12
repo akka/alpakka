@@ -162,8 +162,8 @@ object RequestSettings {
 
   def apply(config: Config): RequestSettings = {
     RequestSettings(
-      Some(config.getString("user-ip")).filterNot(_.isBlank),
-      Some(config.getString("quota-user")).filterNot(_.isBlank),
+      Some(config.getString("user-ip")).filterNot(_.isEmpty),
+      Some(config.getString("quota-user")).filterNot(_.isEmpty),
       config.getBoolean("pretty-print"),
       config.getBytes("upload-chunk-size")
     )

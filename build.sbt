@@ -173,7 +173,7 @@ lazy val googleCommon = internalProject(
   "google-common",
   Dependencies.GoogleCommon,
   Test / fork := true,
-  fatalWarnings := true,
+  fatalWarnings := true
 ).disablePlugins(MimaPlugin).dependsOn(testkit % Test)
 
 lazy val googleCloudBigQuery = alpakkaProject(
