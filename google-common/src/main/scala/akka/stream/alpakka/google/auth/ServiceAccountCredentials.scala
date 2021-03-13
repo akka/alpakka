@@ -29,7 +29,7 @@ private[auth] object ServiceAccountCredentials {
 
   def apply(c: Config)(implicit system: ClassicActorSystemProvider): Credentials = {
     val (projectId, clientEmail, privateKey) = {
-      if (c.getString("path").isEmpty) {
+      if (c.getString("private-key").nonEmpty) {
         (
           c.getString("project-id"),
           c.getString("client-email"),
