@@ -7,7 +7,7 @@ Further information at the official [Google Cloud documentation website](https:/
 @@@
 
 This connector communicates to the BigQuery Storage API via the gRPC protocol. The integration between Akka Stream and gRPC is handled by the
-[Akka gRPC library](https://github.com/akka/akka-grpc). Currently this connector only supports returning each row as an Avro GenericRecord.
+@extref:[Akka gRPC library](akka-grpc:/). Currently, this connector only supports returning each row as an Avro GenericRecord.
 @@project-info{ projectId="google-cloud-bigquery-storage" }
 
 ## Artifacts
