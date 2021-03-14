@@ -32,7 +32,7 @@ public class PravegaReadWriteDocs extends PravegaAkkaTestCaseSupport {
         Pravega.sink("an_existing_scope", "an_existing_scope", writerSettings);
 
     CompletionStage<Done> doneWithRouting =
-        Source.from(Arrays.asList("One", "Two", "Three")).runWith(sinkWithRouting, materializer);
+        Source.from(Arrays.asList("One", "Two", "Three")).runWith(sinkWithRouting, system);
 
     // #writing
 
@@ -40,7 +40,7 @@ public class PravegaReadWriteDocs extends PravegaAkkaTestCaseSupport {
     CompletionStage<Done> fut =
         Pravega.<String>source("an_existing_scope", "an_existing_scope", readerSettings)
             .to(Sink.foreach(e -> processMessage(e.message())))
-            .run(materializer);
+            .run(system);
     // #reading
 
   }

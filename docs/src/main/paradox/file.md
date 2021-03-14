@@ -191,7 +191,7 @@ Java
 Result of flow can be send to sink even before whole TAR file is created, so size of resulting TAR archive
 is not limited to memory size.
 
-This example usage shows packaging files from disk.
+This example usage shows packaging directories and files from disk.
 
 Scala
 : @@snip [snip](/file/src/test/scala/docs/scaladsl/TarArchiveSpec.scala) { #sample-tar }
@@ -212,10 +212,12 @@ Java
 
 @apidoc[Archive.tarReader()](Archive$) reads a stream of `ByteString`s as TAR format emitting the metadata entry and a `Source` for every file in the stream. It is essential to request all the emitted source's data, otherwise the stream will not reach the next file entry.
 
-The example below reads the incoming stream and stores all files in the local file system.
+The example below reads the incoming stream, creates directories and stores all files in the local file system.
 
 Scala
 : @@snip [snip](/file/src/test/scala/docs/scaladsl/TarArchiveSpec.scala) { #tar-reader }
 
 Java
 : @@snip [snip](/file/src/test/java/docs/javadsl/ArchiveTest.java) { #tar-reader }
+
+The test in @extref[`NestedTarRaderTest`](github:file/src/test/java/docs/javadsl/NestedTarReaderTest.java) illustrates how the tar reader may be used to extract tar archives from within a tar archive.

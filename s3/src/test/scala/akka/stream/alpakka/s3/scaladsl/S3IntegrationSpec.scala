@@ -6,11 +6,13 @@ package akka.stream.alpakka.s3.scaladsl
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
+import akka.http.scaladsl.Http
+import akka.stream.Attributes
+import akka.stream.alpakka.s3.AccessStyle.PathAccessStyle
 import akka.stream.alpakka.s3.BucketAccess.{AccessGranted, NotExists}
 import akka.stream.alpakka.s3._
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Keep, Sink, Source}
-import akka.stream.{ActorMaterializer, Attributes}
 import akka.testkit.TestKit
 import akka.util.ByteString
 import akka.{Done, NotUsed}
@@ -23,8 +25,8 @@ import software.amazon.awssdk.auth.credentials._
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers._
 
-import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
 
 trait S3IntegrationSpec
     extends AnyFlatSpecLike
@@ -38,8 +40,7 @@ trait S3IntegrationSpec
     "S3IntegrationSpec",
     config().withFallback(ConfigFactory.load())
   )
-  implicit val materializer = ActorMaterializer()
-  implicit val ec = materializer.executionContext
+  implicit val ec: ExecutionContext = actorSystem.dispatcher
 
   implicit val defaultPatience: PatienceConfig = PatienceConfig(90.seconds, 100.millis)
 
@@ -54,7 +55,10 @@ trait S3IntegrationSpec
   val objectValue = "Some String"
   val metaHeaders: Map[String, String] = Map("location" -> "Africa", "datatype" -> "image")
 
-  override protected def afterAll(): Unit = TestKit.shutdownActorSystem(actorSystem)
+  override protected def afterAll(): Unit =
+    Http(actorSystem)
+      .shutdownAllConnectionPools()
+      .foreach(_ => TestKit.shutdownActorSystem(actorSystem))
 
   def config() = ConfigFactory.parseString("""
       |alpakka.s3.aws.region {
@@ -69,10 +73,9 @@ trait S3IntegrationSpec
   /** Hooks for Minio tests to overwrite the HTTP transport */
   def attributes(s3Settings: S3Settings): Attributes = Attributes.none
 
-  @com.github.ghik.silencer.silent("path-style access")
   def otherRegionSettingsPathStyleAccess =
     S3Settings()
-      .withPathStyleAccess(true)
+      .withAccessStyle(PathAccessStyle)
       .withS3RegionProvider(new AwsRegionProvider {
         val getRegion: Region = Region.EU_CENTRAL_1
       })
@@ -443,6 +446,59 @@ trait S3IntegrationSpec
     exception.code shouldBe StatusCodes.Forbidden.toString()
   }
 
+  private val chunk: ByteString = ByteString.fromArray(Array.fill(S3.MinChunkSize)(0.toByte))
+
+  it should "only upload single chunk when size of the ByteString equals chunk size" in {
+    val source: Source[ByteString, Any] = Source.single(chunk)
+    uploadAndAndCheckParts(source, 1)
+  }
+
+  it should "only upload single chunk when exact chunk is followed by an empty ByteString" in {
+    val source: Source[ByteString, Any] = Source[ByteString](
+      chunk :: ByteString.empty :: Nil
+    )
+
+    uploadAndAndCheckParts(source, 1)
+  }
+
+  it should "upload two chunks size of ByteStrings equals chunk size" in {
+    val source: Source[ByteString, Any] = Source(chunk :: chunk :: Nil)
+    uploadAndAndCheckParts(source, 2)
+  }
+
+  it should "upload empty source" in {
+    val upload =
+      for {
+        upload <- Source
+          .empty[ByteString]
+          .runWith(
+            S3.multipartUpload(defaultBucket, objectKey, chunkSize = S3.MinChunkSize)
+              .withAttributes(attributes)
+          )
+        _ <- S3.deleteObject(defaultBucket, objectKey).withAttributes(attributes).runWith(Sink.head)
+      } yield upload
+
+    upload.futureValue.etag should not be empty
+  }
+
+  private def uploadAndAndCheckParts(source: Source[ByteString, _], expectedParts: Int): Assertion = {
+    val metadata =
+      for {
+        _ <- source.runWith(
+          S3.multipartUpload(defaultBucket, objectKey, chunkSize = S3.MinChunkSize)
+            .withAttributes(attributes)
+        )
+        metadata <- S3
+          .getObjectMetadata(defaultBucket, objectKey)
+          .withAttributes(attributes)
+          .runWith(Sink.head)
+        _ <- S3.deleteObject(defaultBucket, objectKey).withAttributes(attributes).runWith(Sink.head)
+      } yield metadata
+
+    val etag = metadata.futureValue.get.eTag.get
+    etag.substring(etag.indexOf('-') + 1).toInt shouldBe expectedParts
+  }
+
   private def uploadDownloadAndDeleteInOtherRegionCase(objectKey: String): Assertion = {
     val source: Source[ByteString, Any] = Source(ByteString(objectValue) :: Nil)
 
@@ -540,7 +596,7 @@ class AWSS3IntegrationSpec extends S3IntegrationSpec
  * For this test, you need a local s3 mirror, for instance minio (https://github.com/minio/minio).
  * With docker and the aws cli installed, you could run something like this:
  *
- * docker run -e MINIO_ACCESS_KEY=TESTKEY -e MINIO_SECRET_KEY=TESTSECRET -p 9000:9000 minio/minio server /data
+ * docker run -e MINIO_ACCESS_KEY=TESTKEY -e MINIO_SECRET_KEY=TESTSECRET -e MINIO_DOMAIN=s3minio.alpakka -p 9000:9000 minio/minio server /data
  * AWS_ACCESS_KEY_ID=TESTKEY AWS_SECRET_ACCESS_KEY=TESTSECRET aws --endpoint-url http://localhost:9000 s3api create-bucket --bucket my-test-us-east-1
  * AWS_ACCESS_KEY_ID=TESTKEY AWS_SECRET_ACCESS_KEY=TESTSECRET aws --endpoint-url http://localhost:9000 s3api create-bucket --bucket my.test.frankfurt
  *
@@ -567,12 +623,11 @@ class MinioS3IntegrationSpec extends S3IntegrationSpec {
                                  |}
     """.stripMargin).withFallback(super.config())
 
-  @com.github.ghik.silencer.silent
   override def otherRegionSettingsPathStyleAccess =
     S3Settings()
       .withCredentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secret)))
       .withEndpointUrl(endpointUrlPathStyle)
-      .withPathStyleAccess(true)
+      .withAccessStyle(PathAccessStyle)
 
   override def invalidCredentials: S3Settings =
     S3Settings()

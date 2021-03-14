@@ -383,7 +383,8 @@ import scala.util.{Failure, Success}
   private val ConsumerNamePrefix = "consumer-"
   private val ProducerNamePrefix = "producer-"
 
-  def clientConnect(data: ConnectReceived)(implicit mat: Materializer): Behavior[Event] = Behaviors.setup { _ =>
+  def clientConnect(data: ConnectReceived)(implicit mat: Materializer): Behavior[Event] = Behaviors.setup { context =>
+    context.log.debug("clientConnect stash={}", data.stash)
     data.local.trySuccess(ForwardConnect)
 
     Behaviors.withTimers { timer =>
@@ -393,7 +394,7 @@ import scala.util.{Failure, Success}
 
       Behaviors
         .receivePartial[Event] {
-          case (context, ConnAckReceivedLocally(_, remote)) =>
+          case (_, ConnAckReceivedLocally(_, remote)) =>
             val (queue, source) = Source
               .queue[ForwardConnAckCommand](data.settings.serverSendBufferSize, OverflowStrategy.backpressure)
               .toMat(BroadcastHub.sink)(Keep.both)

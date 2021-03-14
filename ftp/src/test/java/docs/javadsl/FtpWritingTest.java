@@ -30,11 +30,12 @@ import akka.stream.Materializer;
 import akka.testkit.javadsl.TestKit;
 import org.junit.*;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class FtpWritingTest extends BaseFtpSupport {
 

@@ -104,7 +104,7 @@ class SoftReferenceCacheSpec extends AnyWordSpec with Matchers {
                 }
                 state.counter = count
                 state
-              }.foreach(enqueue)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+              }.foreach(enqueue)(akka.dispatch.ExecutionContexts.parasitic)
             }
           }
         }

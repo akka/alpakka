@@ -7,7 +7,6 @@ package docs.javadsl;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 
-import akka.stream.ActorMaterializer;
 import akka.stream.ThrottleMode;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -33,7 +32,6 @@ public class EventSourceTest {
     String host = "localhost";
     int port = 8080;
     ActorSystem system = null;
-    ActorMaterializer materializer = null;
 
     int nrOfSamples = 10;
 
@@ -46,7 +44,7 @@ public class EventSourceTest {
     final Uri targetUri = Uri.create(String.format("http://%s:%d", host, port));
     final Optional<String> lastEventId = Optional.of("2");
     Source<ServerSentEvent, NotUsed> eventSource =
-        EventSource.create(targetUri, send, lastEventId, materializer);
+        EventSource.create(targetUri, send, lastEventId, system);
     // #event-source
 
     // #consume-events
@@ -57,7 +55,7 @@ public class EventSourceTest {
     eventSource
         .throttle(elements, per, maximumBurst, ThrottleMode.shaping())
         .take(nrOfSamples)
-        .runWith(Sink.seq(), materializer);
+        .runWith(Sink.seq(), system);
     // #consume-events
   }
 }

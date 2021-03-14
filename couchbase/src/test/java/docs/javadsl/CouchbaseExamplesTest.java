@@ -4,7 +4,6 @@
 
 package docs.javadsl;
 
-import akka.Done;
 import akka.actor.ActorSystem;
 import akka.stream.Materializer;
 // #deleteWithResult
@@ -54,7 +53,8 @@ import akka.stream.alpakka.couchbase.CouchbaseSessionRegistry;
 // #session
 import akka.stream.alpakka.couchbase.CouchbaseSessionSettings;
 import akka.stream.alpakka.couchbase.javadsl.CouchbaseSession;
-// #session #registry
+// #session
+// #registry
 import java.util.stream.Collectors;
 // #sessionFromBucket
 import com.couchbase.client.java.Bucket;
@@ -69,7 +69,11 @@ import static com.couchbase.client.java.query.dsl.Expression.*;
 import scala.concurrent.duration.FiniteDuration;
 
 import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 public class CouchbaseExamplesTest {
 

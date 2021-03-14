@@ -15,7 +15,6 @@ import akka.stream.alpakka.orientdb.{
 }
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
-import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
 import com.orientechnologies.orient.`object`.db.OObjectDatabaseTx
@@ -41,7 +40,6 @@ class OrientDbSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 100.millis)
 
   implicit val system: ActorSystem = ActorSystem()
-  implicit val materializer: Materializer = ActorMaterializer()
 
   //#init-settings
 

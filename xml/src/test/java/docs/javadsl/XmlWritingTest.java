@@ -5,8 +5,6 @@
 package docs.javadsl;
 
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.alpakka.xml.*;
 import akka.stream.alpakka.xml.javadsl.XmlWriting;
@@ -38,7 +36,6 @@ public class XmlWritingTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem system;
-  private static Materializer materializer;
 
   @Test
   public void xmlWriter() throws InterruptedException, ExecutionException, TimeoutException {
@@ -65,7 +62,7 @@ public class XmlWritingTest {
     docList.add(EndElement.create("doc"));
     docList.add(EndDocument.getInstance());
 
-    final CompletionStage<String> resultStage = Source.from(docList).runWith(write, materializer);
+    final CompletionStage<String> resultStage = Source.from(docList).runWith(write, system);
 
     resultStage
         .thenAccept((str) -> assertEquals(doc, str))
@@ -118,7 +115,7 @@ public class XmlWritingTest {
     docList.add(EndElement.create("book"));
     docList.add(EndDocument.getInstance());
 
-    final CompletionStage<String> resultStage = Source.from(docList).runWith(write, materializer);
+    final CompletionStage<String> resultStage = Source.from(docList).runWith(write, system);
     // #writer-usage
 
     resultStage
@@ -154,7 +151,7 @@ public class XmlWritingTest {
     docList.add(EndElement.create("doc"));
     docList.add(EndDocument.getInstance());
 
-    final CompletionStage<String> resultStage = Source.from(docList).runWith(write, materializer);
+    final CompletionStage<String> resultStage = Source.from(docList).runWith(write, system);
 
     resultStage
         .thenAccept((str) -> assertEquals(doc, str))
@@ -163,13 +160,12 @@ public class XmlWritingTest {
   }
 
   @BeforeClass
-  public static void setup() throws Exception {
+  public static void setup() {
     system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
   }
 
   @AfterClass
-  public static void teardown() throws Exception {
+  public static void teardown() {
     TestKit.shutdownActorSystem(system);
   }
 }

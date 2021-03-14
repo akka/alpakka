@@ -1,0 +1,2 @@
+# change to private constructor
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.google.firebase.fcm.FcmSettings.this")

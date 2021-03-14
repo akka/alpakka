@@ -2,7 +2,7 @@
 name-template: 'Alpakka $NEXT_PATCH_VERSION'
 tag-template: 'v$NEXT_PATCH_VERSION'
 categories:
-  - title: 'Infrastructure'
+  - title: ':toolbox: Infrastructure'
     label: 'alpakka-itself'
   - title: 'AMQP'
     label: 'p:amqp'
@@ -14,6 +14,8 @@ categories:
     label: 'p:kudu'
   - title: 'AvroParquet'
     label: 'p:avroparquet'
+  - title: 'AWS EventBridge'
+    label: 'p:aws-event-bridge'
   - title: 'AWS Lambda'
     label: 'p:aws-lambda'
   - title: 'AWS Kinesis'
@@ -42,6 +44,8 @@ categories:
     label: 'p:ftp'
   - title: 'Geode'
     label: 'p:geode'
+  - title: 'Google Cloud BigQuery'
+    label: 'p:google-cloud-bigquery'
   - title: 'Google Cloud Pub/Sub'
     label: 'p:google-cloud-pub-sub'
   - title: 'Google Cloud Pub/Sub gRPC'
@@ -70,6 +74,8 @@ categories:
     label: 'p:mqtt-streaming'
   - title: 'OrientDB'
     label: 'p:orientdb'
+  - title: 'Pravega'
+    label: 'p:pravega'
   - title: 'Reference'
     label: 'p:reference'
   - title: 'Server-sent events (SSE)'
@@ -91,6 +97,13 @@ categories:
 
 change-template: '- $TITLE [#$NUMBER](https://github.com/akka/alpakka/issues/$NUMBER) by [@$AUTHOR](https://github.com/$AUTHOR)'
 template: |
+  # :mega: Alpakka $NEXT_PATCH_VERSION released!
+
+  ### See the full Release Notes in the [Alpakka documentation](https://doc.akka.io/docs/alpakka/2.0/release-notes/2.0.x.html).
+
   ## Changes
 
   $CHANGES
+
+  ## :bow: Credits
+  Special thanks to the following contributors who helped with this release: $CONTRIBUTORS

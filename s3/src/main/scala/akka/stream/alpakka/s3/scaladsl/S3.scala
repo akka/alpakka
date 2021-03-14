@@ -120,6 +120,15 @@ object S3 {
     S3Stream.deleteObjectsByPrefix(bucket, prefix, s3Headers)
 
   /**
+   * Deletes all S3 Objects within the given bucket
+   *
+   * @param bucket the s3 bucket name
+   * @return A [[akka.stream.scaladsl.Source Source]] that will emit [[akka.Done]] when operation is completed
+   */
+  def deleteBucketContents(bucket: String): Source[Done, NotUsed] =
+    deleteObjectsByPrefix(bucket, None, S3Headers.empty)
+
+  /**
    * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
    *
    * @param bucket the s3 bucket name

@@ -4,8 +4,11 @@
 
 package akka.stream.alpakka.file.impl.archive
 
+import java.util.concurrent.TimeUnit
+
 import akka.NotUsed
 import akka.annotation.InternalApi
+import akka.stream.ActorAttributes.StreamSubscriptionTimeout
 import akka.stream.alpakka.file.{TarArchiveMetadata, TarReaderException}
 import akka.stream.scaladsl.Source
 import akka.stream.stage._
@@ -34,72 +37,71 @@ private[file] class TarReaderStage
           extends SubSourceOutlet[ByteString]("fileOut")
           with TarReaderStage.SourceWithTimeout
 
-      val ignoreFlowOutPull: OutHandler = new OutHandler {
-        override def onPull(): Unit = ()
-      }
+      readHeader(ByteString.empty)
 
-      val expectFlowPull: OutHandler = new OutHandler {
-        override def onPull(): Unit = {
-          pull(flowIn)
-          setHandler(flowOut, ignoreFlowOutPull)
-        }
-      }
-      val failOnFlowPush: InHandler = new InHandler {
-        override def onPush(): Unit = failStage(new TarReaderException("upstream pushed"))
-        override def onUpstreamFinish(): Unit = setKeepGoing(true)
-      }
-
-      setHandler(flowIn, readHeader(ByteString.empty))
-      setHandler(flowOut, expectFlowPull)
-
-      def readHeader(buffer: ByteString): InHandler = {
+      def readHeader(buffer: ByteString): Unit = {
         if (buffer.length >= TarArchiveEntry.headerLength) {
           readFile(buffer)
-        } else new CollectHeader(buffer)
+        } else setHandlers(flowIn, flowOut, new CollectHeader(buffer))
       }
 
-      def readFile(headerBuffer: ByteString): InHandler = {
-        def pushSource(metadata: TarArchiveMetadata, buffer: ByteString): InHandler = {
+      def readFile(headerBuffer: ByteString): Unit = {
+        def pushSource(metadata: TarArchiveMetadata, buffer: ByteString): Unit = {
           if (buffer.length >= metadata.size) {
             val (emit, remain) = buffer.splitAt(metadata.size.toInt)
             log.debug(s"emitting completed source for $metadata")
             push(flowOut, metadata -> Source.single(emit))
             readTrailer(metadata, remain, subSource = None)
-          } else new CollectFile(metadata, buffer)
+          } else setHandlers(flowIn, flowOut, new CollectFile(metadata, buffer))
         }
 
-        val metadata = TarArchiveEntry.parse(headerBuffer)
-        val buffer = headerBuffer.drop(TarArchiveEntry.headerLength)
-        if (isAvailable(flowOut)) {
-          pushSource(metadata, buffer)
+        if (headerBuffer.head == 0) {
+          log.debug("empty filename, detected EOF padding, completing")
+          complete(flowOut)
+          setHandlers(flowIn, flowOut, new FlushEndOfFilePadding())
         } else {
-          // await flow demand
-          setHandler(flowOut, new OutHandler {
-            override def onPull(): Unit = {
-              setHandler(flowIn, pushSource(metadata, buffer))
-            }
-          })
-          failOnFlowPush
+          val metadata = TarArchiveEntry.parse(headerBuffer)
+          val buffer = headerBuffer.drop(TarArchiveEntry.headerLength)
+          if (isAvailable(flowOut)) {
+            pushSource(metadata, buffer)
+          } else {
+            setHandlers(flowIn, flowOut, new PushSourceOnPull(metadata, buffer))
+          }
+        }
+
+        final class PushSourceOnPull(metadata: TarArchiveMetadata, buffer: ByteString)
+            extends OutHandler
+            with InHandler {
+          override def onPull(): Unit = {
+            setHandler(flowOut, IgnoreDownstreamPull)
+            pushSource(metadata, buffer)
+          }
+
+          // fail on upstream push
+          override def onPush(): Unit = failStage(new TarReaderException("upstream pushed unexpectedly"))
+          override def onUpstreamFinish(): Unit = setKeepGoing(true)
         }
       }
 
       def readTrailer(metadata: TarArchiveMetadata,
                       buffer: ByteString,
-                      subSource: Option[SubSourceOutlet[ByteString]]): InHandler = {
+                      subSource: Option[SubSourceOutlet[ByteString]]): Unit = {
         val trailerLength = TarArchiveEntry.trailerLength(metadata)
         if (buffer.length >= trailerLength) {
           subSource.foreach(_.complete())
           if (isClosed(flowIn)) completeStage()
           readHeader(buffer.drop(trailerLength))
-        } else new ReadPastTrailer(metadata, buffer, subSource)
+        } else setHandlers(flowIn, flowOut, new ReadPastTrailer(metadata, buffer, subSource))
       }
 
       override protected def onTimer(timerKey: Any): Unit = {
         timerKey match {
           case SubscriptionTimeout(subSource) =>
             import StreamSubscriptionTimeoutTerminationMode._
-            val materializer = ActorMaterializerHelper.downcast(interpreter.materializer)
-            val timeoutSettings = materializer.settings.subscriptionTimeoutSettings
+
+            val timeoutSettings = attributes
+              .get[ActorAttributes.StreamSubscriptionTimeout]
+              .getOrElse(StreamSubscriptionTimeout(FiniteDuration(1, TimeUnit.MILLISECONDS), NoopTermination))
             val timeout = timeoutSettings.timeout
 
             timeoutSettings.mode match {
@@ -121,14 +123,33 @@ private[file] class TarReaderStage
       }
 
       /**
+       * Don't react on downstream pulls until we have something to push.
+       */
+      private trait IgnoreDownstreamPull extends OutHandler {
+        final override def onPull(): Unit = ()
+      }
+      private object IgnoreDownstreamPull extends IgnoreDownstreamPull
+
+      /**
+       * Pull upstream on a downstream pull and ignore subsequent pulls.
+       */
+      private trait ExpectDownstreamPull extends OutHandler {
+        final override def onPull(): Unit = {
+          pull(flowIn)
+          setHandler(flowOut, IgnoreDownstreamPull)
+        }
+      }
+      private object ExpectDownstreamPull extends ExpectDownstreamPull
+
+      /**
        * Handler until the header of 512 bytes is completely received.
        */
-      private final class CollectHeader(var buffer: ByteString) extends InHandler {
+      private final class CollectHeader(var buffer: ByteString) extends InHandler with ExpectDownstreamPull {
 
         override def onPush(): Unit = {
           buffer ++= grab(flowIn)
           if (buffer.length >= TarArchiveEntry.headerLength) {
-            setHandler(flowIn, readFile(buffer))
+            readFile(buffer)
           } else pull(flowIn)
         }
 
@@ -146,7 +167,9 @@ private[file] class TarReaderStage
       /**
        * Handler during file content reading.
        */
-      private final class CollectFile(metadata: TarArchiveMetadata, var buffer: ByteString) extends InHandler {
+      private final class CollectFile(metadata: TarArchiveMetadata, var buffer: ByteString)
+          extends InHandler
+          with IgnoreDownstreamPull {
         private var emitted: Long = 0
         private var flowInPulled = false
 
@@ -166,21 +189,21 @@ private[file] class TarReaderStage
               }
             }
           })
-          val timeout =
-            ActorMaterializerHelper.downcast(interpreter.materializer).settings.subscriptionTimeoutSettings.timeout
+          val timeout = attributes.get[ActorAttributes.StreamSubscriptionTimeout].get.timeout
           scheduleOnce(timeoutSignal, timeout)
           sub
         }
 
         log.debug(s"emitting source for $metadata")
         push(flowOut, metadata -> Source.fromGraph(subSource.source))
-        setHandler(flowOut, ignoreFlowOutPull)
+        setHandler(flowOut, IgnoreDownstreamPull)
 
-        def subPush(bs: ByteString) = {
+        private def subPush(bs: ByteString): Unit = {
           val remaining = metadata.size - emitted
           if (remaining <= bs.length) {
-            subSource.push(bs.take(remaining.toInt))
-            setHandler(flowIn, readTrailer(metadata, bs.drop(remaining.toInt), Some(subSource)))
+            val (emit, remain) = bs.splitAt(remaining.toInt)
+            subSource.push(emit)
+            readTrailer(metadata, remain, Some(subSource))
           } else {
             subSource.push(bs)
             emitted += bs.length
@@ -210,19 +233,20 @@ private[file] class TarReaderStage
       private final class ReadPastTrailer(metadata: TarArchiveMetadata,
                                           var buffer: ByteString,
                                           subSource: Option[SubSourceOutlet[ByteString]])
-          extends InHandler {
-        val trailerLength = TarArchiveEntry.trailerLength(metadata)
+          extends InHandler
+          with ExpectDownstreamPull {
+        private val trailerLength = TarArchiveEntry.trailerLength(metadata)
 
         override def onPush(): Unit = {
           // TODO the buffer content doesn't need to be kept
           buffer ++= grab(flowIn)
           if (buffer.length >= trailerLength) {
-            setHandler(flowIn, readHeader(buffer.drop(trailerLength)))
             subSource.foreach { src =>
               src.complete()
-              setHandler(flowOut, expectFlowPull)
+              setHandler(flowOut, ExpectDownstreamPull)
               if (isAvailable(flowOut)) pull(flowIn)
             }
+            readHeader(buffer.drop(trailerLength))
           } else pull(flowIn)
         }
 
@@ -235,6 +259,19 @@ private[file] class TarReaderStage
               )
             )
         }
+      }
+
+      /**
+       * "At the end of the archive file there are two 512-byte blocks filled with binary zeros as an end-of-file marker."
+       */
+      private final class FlushEndOfFilePadding() extends InHandler with IgnoreDownstreamPull {
+
+        override def onPush(): Unit = {
+          grab(flowIn)
+          pull(flowIn)
+        }
+
+        tryPull(flowIn)
       }
 
     }

@@ -6,6 +6,7 @@ package docs.scaladsl
 
 import java.io._
 import java.nio.file.{Files, Path, Paths}
+import java.time.Instant
 import java.util.Comparator
 
 import akka.{Done, NotUsed}
@@ -13,19 +14,17 @@ import akka.actor.ActorSystem
 import akka.stream.alpakka.file.scaladsl.{Archive, Directory}
 import akka.stream.alpakka.file.{TarArchiveMetadata, TarReaderException}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
-import akka.stream.scaladsl.{FileIO, Sink, Source}
-import akka.stream.{ActorMaterializer, IOResult, Materializer}
+import akka.stream.scaladsl.{FileIO, Flow, Sink, Source}
 import akka.testkit.TestKit
 import akka.util.ByteString
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
+import org.scalatest.concurrent.{Eventually, IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Success
 
 class TarArchiveSpec
     extends TestKit(ActorSystem("TarArchiveSpec"))
@@ -34,9 +33,9 @@ class TarArchiveSpec
     with ScalaFutures
     with BeforeAndAfterAll
     with LogCapturing
+    with Eventually
     with IntegrationPatience {
 
-  implicit val mat: Materializer = ActorMaterializer()
   implicit val ec: ExecutionContext = system.dispatcher
 
   private val collectByteString: Sink[ByteString, Future[ByteString]] = Sink.fold(ByteString.empty)(_ ++ _)
@@ -74,11 +73,13 @@ class TarArchiveSpec
         // #sample-tar
        */
 
+      val lastModification = Instant.now
       // #sample-tar
       val filesStream = Source(
         List(
-          (TarArchiveMetadata("akka_full_color.svg", fileSize1), fileStream1),
-          (TarArchiveMetadata("akka_icon_reverse.svg", fileSize2), fileStream2)
+          (TarArchiveMetadata.directory("subdir", lastModification), Source.empty),
+          (TarArchiveMetadata("subdir", "akka_full_color.svg", fileSize1, lastModification), fileStream1),
+          (TarArchiveMetadata("akka_icon_reverse.svg", fileSize2, lastModification), fileStream2)
         )
       )
 
@@ -93,18 +94,18 @@ class TarArchiveSpec
         .runWith(FileIO.toPath(Paths.get("result.tar.gz")))
       // #sample-tar-gz
 
-      result.futureValue shouldBe IOResult(3584, Success(Done))
-      resultGz.futureValue.status shouldBe Success(Done)
+      result.futureValue.count shouldBe 4096
+      resultGz.futureValue.count should not be 4096
 
       untar(Paths.get("result.tar").toRealPath(), "xf").foreach(
         _ shouldBe Map(
-          "akka_full_color.svg" -> fileContent1,
+          "subdir/akka_full_color.svg" -> fileContent1,
           "akka_icon_reverse.svg" -> fileContent2
         )
       )
       untar(Paths.get("result.tar.gz").toRealPath(), "xfz").foreach(
         _ shouldBe Map(
-          "akka_full_color.svg" -> fileContent1,
+          "subdir/akka_full_color.svg" -> fileContent1,
           "akka_icon_reverse.svg" -> fileContent2
         )
       )
@@ -123,7 +124,7 @@ class TarArchiveSpec
       val result = filesStream
         .via(Archive.tar())
         .runWith(FileIO.toPath(Paths.get("result.tar")))
-      result.futureValue shouldBe IOResult(1024, Success(Done))
+      result.futureValue.count shouldBe 1024
 
       untar(Paths.get("result.tar").toRealPath(), "xf").foreach(_ shouldBe Map(fileName -> fileBytes))
 
@@ -153,7 +154,7 @@ class TarArchiveSpec
     "emit one file" in {
       val tar =
         Source
-          .fromFuture(oneFileArchive)
+          .future(oneFileArchive)
           .via(Archive.tarReader())
           .mapAsync(1) {
             case in @ (metadata, source) =>
@@ -170,7 +171,7 @@ class TarArchiveSpec
       // #tar-reader
       val bytesSource: Source[ByteString, NotUsed] = // ???
         // #tar-reader
-        Source.fromFuture(oneFileArchive)
+        Source.future(oneFileArchive)
       val target = Files.createTempDirectory("alpakka-tar-")
 
       // #tar-reader
@@ -180,21 +181,30 @@ class TarArchiveSpec
           .mapAsync(1) {
             case (metadata, source) =>
               val targetFile = target.resolve(metadata.filePath)
-              // create the target directory
-              Source
-                .single(targetFile.getParent)
-                .via(Directory.mkdirs())
-                .runWith(Sink.ignore)
-                .map { _ =>
-                  // stream the file contents to a local file
-                  source.runWith(FileIO.toPath(targetFile))
-                }
+              if (metadata.isDirectory) {
+                Source
+                  .single(targetFile)
+                  .via(Directory.mkdirs())
+                  .runWith(Sink.ignore)
+              } else {
+                // create the target directory
+                Source
+                  .single(targetFile.getParent)
+                  .via(Directory.mkdirs())
+                  .runWith(Sink.ignore)
+                  .map { _ =>
+                    // stream the file contents to a local file
+                    source.runWith(FileIO.toPath(targetFile))
+                  }
+              }
           }
           .runWith(Sink.ignore)
       // #tar-reader
       tar.futureValue shouldBe Done
       val file: File = target.resolve("dir/file1.txt").toFile
-      file.exists() shouldBe true
+      eventually {
+        file.exists() shouldBe true
+      }
     }
 
     "emit empty file" in {
@@ -254,7 +264,7 @@ class TarArchiveSpec
         .runWith(collectByteString)
 
       val tar = Source
-        .fromFuture(tarFile)
+        .future(tarFile)
         .via(Archive.tarReader())
         .mapAsync(1) {
           case (metadata, source) =>
@@ -271,7 +281,7 @@ class TarArchiveSpec
     "fail for incomplete header" in {
       val input = oneFileArchive.map(bs => bs.take(500))
       val tar = Source
-        .fromFuture(input)
+        .future(input)
         .via(Archive.tarReader())
         .runWith(Sink.ignore)
       val error = tar.failed.futureValue
@@ -282,7 +292,7 @@ class TarArchiveSpec
     "fail for incomplete file" in {
       val input = oneFileArchive.map(bs => bs.take(518))
       val tar = Source
-        .fromFuture(input)
+        .future(input)
         .via(Archive.tarReader())
         .mapAsync(1) {
           case (metadata, source) =>
@@ -297,7 +307,7 @@ class TarArchiveSpec
     "fail for incomplete trailer" in {
       val input = oneFileArchive.map(bs => bs.take(535))
       val tar = Source
-        .fromFuture(input)
+        .future(input)
         .via(Archive.tarReader())
         .mapAsync(1) {
           case (metadata, source) =>
@@ -320,7 +330,7 @@ class TarArchiveSpec
     "fail on missing sub source subscription" in {
       val tar =
         Source
-          .fromFuture(oneFileArchive)
+          .future(oneFileArchive)
           .mapConcat(_.sliding(2, 2).toList)
           .via(Archive.tarReader())
           .runWith(Sink.ignore)
@@ -330,8 +340,56 @@ class TarArchiveSpec
     }
   }
 
+  "advanced tar reading" should {
+    "allow tar files in tar files to be extracted in a single flow" in {
+      val tenDigits = ByteString("1234567890")
+      val metadata1 = TarArchiveMetadata("dir/file1.txt", tenDigits.length)
+
+      val nestedArchive = {
+        Source
+          .single(metadata1 -> Source.single(tenDigits))
+          .via(Archive.tar())
+          .runWith(collectByteString)
+      }
+      val outerArchive: Future[ByteString] =
+        Source
+          .future(nestedArchive)
+          .map(bs => TarArchiveMetadata("nested.tar", bs.size) -> Source.single(bs))
+          .via(Archive.tar())
+          .runWith(collectByteString)
+
+      val res = Source
+        .future(outerArchive)
+        .mapConcat(_.sliding(100, 100).toList)
+        .via(untar())
+        .map(_.filePathName)
+        .runWith(Sink.seq)
+
+      res.futureValue shouldBe Seq("nested.tar", "file1.txt")
+    }
+
+    def untar(): Flow[ByteString, TarArchiveMetadata, NotUsed] = {
+      Archive
+        .tarReader()
+        .log("untar")
+        .mapAsync(1) {
+          case (metadata, source) if metadata.filePath.endsWith(".tar") =>
+            val contents: Source[TarArchiveMetadata, NotUsed] = Source.single(metadata).concat(source.via(untar()))
+            Future.successful(contents)
+          case (metadata, source) =>
+            source
+              .runWith(Sink.ignore)
+              .map { _ =>
+                Source.single(metadata)
+              }
+        }
+        .flatMapConcat(identity)
+        .log("untarred")
+    }
+  }
+
   private def getPathFromResources(fileName: String): Path =
-    Paths.get(getClass.getClassLoader.getResource(fileName).getPath)
+    Paths.get(getClass.getClassLoader.getResource(fileName).toURI)
 
   private def generateInputFiles(numberOfFiles: Int, lengthOfFile: Int): immutable.Seq[(String, ByteString)] = {
     val r = new scala.util.Random(31)

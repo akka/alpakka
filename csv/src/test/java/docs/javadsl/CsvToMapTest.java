@@ -5,8 +5,7 @@
 package docs.javadsl;
 
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
+import akka.stream.SystemMaterializer;
 // #import
 import akka.stream.alpakka.csv.javadsl.CsvParsing;
 import akka.stream.alpakka.csv.javadsl.CsvToMap;
@@ -28,13 +27,12 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class CsvToMapTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem system;
-  private static Materializer materializer;
 
   public void documentation() {
     // #flow-type
@@ -64,7 +62,7 @@ public class CsvToMapTest {
         Source.single(ByteString.fromString("eins,zwei,drei\n1,2,3"))
             .via(CsvParsing.lineScanner())
             .via(CsvToMap.toMap(StandardCharsets.UTF_8))
-            .runWith(Sink.head(), materializer);
+            .runWith(Sink.head(), system);
     // #header-line
     Map<String, ByteString> map = completionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
     // #header-line
@@ -84,7 +82,7 @@ public class CsvToMapTest {
         Source.single(ByteString.fromString("eins,zwei,drei\n1,2,3"))
             .via(CsvParsing.lineScanner())
             .via(CsvToMap.toMapAsStrings(StandardCharsets.UTF_8))
-            .runWith(Sink.head(), materializer);
+            .runWith(Sink.head(), system);
     // #header-line
     Map<String, String> map = completionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
     // #header-line
@@ -103,7 +101,7 @@ public class CsvToMapTest {
         Source.single(ByteString.fromString("1,2,3"))
             .via(CsvParsing.lineScanner())
             .via(CsvToMap.withHeaders("eins", "zwei", "drei"))
-            .runWith(Sink.head(), materializer);
+            .runWith(Sink.head(), system);
     // #column-names
     Map<String, ByteString> map = completionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
     // #column-names
@@ -123,7 +121,7 @@ public class CsvToMapTest {
         Source.single(ByteString.fromString("1,2,3"))
             .via(CsvParsing.lineScanner())
             .via(CsvToMap.withHeadersAsStrings(StandardCharsets.UTF_8, "eins", "zwei", "drei"))
-            .runWith(Sink.head(), materializer);
+            .runWith(Sink.head(), system);
     // #column-names
     Map<String, String> map = completionStage.toCompletableFuture().get(5, TimeUnit.SECONDS);
     // #column-names
@@ -137,7 +135,6 @@ public class CsvToMapTest {
   @BeforeClass
   public static void setup() throws Exception {
     system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
   }
 
   @AfterClass
@@ -147,6 +144,6 @@ public class CsvToMapTest {
 
   @After
   public void checkForStageLeaks() {
-    StreamTestKit.assertAllStagesStopped(materializer);
+    StreamTestKit.assertAllStagesStopped(SystemMaterializer.get(system).materializer());
   }
 }

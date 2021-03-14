@@ -97,7 +97,7 @@ private abstract class SourceStageLogic[T](shape: SourceShape[T],
         if (stopped && queue.isEmpty) completeStage()
       }
 
-      override def onDownstreamFinish(): Unit = {
+      override def onDownstreamFinish(cause: Throwable): Unit = {
         // no need to keep messages in the queue, downstream will never pull them.
         queue.clear()
         // keep processing async callbacks for stopSessions.
@@ -139,7 +139,7 @@ private abstract class SourceStageLogic[T](shape: SourceShape[T],
     override def shutdown(): Unit = stopSessions()
     override def abort(ex: Throwable): Unit = abortSessions(ex)
     override def connected: Source[InternalConnectionState, NotUsed] =
-      Source.fromFuture(connectionStateSource).flatMapConcat(identity)
+      Source.future(connectionStateSource).flatMapConcat(identity)
   }
 
   override def postStop(): Unit = finishStop()

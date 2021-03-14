@@ -28,6 +28,7 @@ import scala.concurrent.{ExecutionContext, Promise}
 import scala.concurrent.duration._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.slf4j.LoggerFactory
 
 class MqttSessionSpec
     extends TestKit(ActorSystem("mqtt-spec"))
@@ -36,6 +37,8 @@ class MqttSessionSpec
     with ScalaFutures
     with Matchers
     with LogCapturing {
+
+  val log = LoggerFactory.getLogger(classOf[MqttSessionSpec])
 
   implicit val executionContext: ExecutionContext = system.dispatcher
   implicit val timeout: Timeout = Timeout(3.seconds.dilated)
@@ -916,7 +919,11 @@ class MqttSessionSpec
       server.reply(secondPubAckBytes)
 
       client.complete()
-      client.watchCompletion().foreach(_ => session.shutdown())
+      log.debug("client.complete()")
+      client.watchCompletion().foreach { _ =>
+        log.debug("client completed")
+        session.shutdown()
+      }
     }
 
     "publish with a QoS of 1 and cause a retry given a timeout" in /* failing when enabled assertAllStagesStopped */ {

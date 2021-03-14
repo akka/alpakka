@@ -73,7 +73,7 @@ blog by Abhishek Srivastava, October 2017
 [Reading and Writing data into RabbitMQ using Alpakka](https://abhsrivastava.github.io/2017/10/03/Reading-Writing-Data-into-RabbitMQ-using-Alpakka/)
 blog by Abhishek Srivastava, October 2017
 
-[Using cats with reactive-kafka](https://www.iravid.com/posts/using-cats-with-reactive-kafka.html)
+[Using cats with reactive-kafka](https://iravid.com/posts/using-cats-with-reactive-kafka.html)
 blog by Itamar Ravid, July 2017
 
 [Exploring Reactive Integrations in Java 8 With Akka Streams, Alpakka, and Kafka](https://dzone.com/articles/exploring-reactive-integrations-in-java-8-with-akka-streams-alpakka-and-kafka)
@@ -81,5 +81,5 @@ Webinar by Konrad Malawski, Lightbend, Janary 2017
 
 ## 2016
 
-[Akka Streams Integration, codename Alpakka](https://akka.io/blog/2016/08/23/intro-alpakka)
+[Akka Streams Integration, codename Alpakka](https://akka.io/blog/article/2016/08/23/intro-alpakka)
 initial announcement of Akka Alpakka, August 2016

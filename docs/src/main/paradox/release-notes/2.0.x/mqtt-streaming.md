@@ -1,5 +1,10 @@
 # MQTT Streaming
 
+## 2.0.2
+
+- Check client instance for nulls [#2382](https://github.com/akka/alpakka/issues/2382) by [@ennru](https://github.com/ennru)
+
+
 ## 2.0.0-RC1
 
 **The MQTT Streaming connector does only support Akka 2.6 now.**

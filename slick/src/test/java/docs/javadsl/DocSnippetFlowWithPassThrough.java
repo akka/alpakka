@@ -7,13 +7,12 @@ package docs.javadsl;
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.alpakka.slick.javadsl.Slick;
 import akka.stream.alpakka.slick.javadsl.SlickSession;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 
+import java.sql.PreparedStatement;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -55,7 +54,6 @@ public class DocSnippetFlowWithPassThrough {
 
   public static void main(String[] args) throws Exception {
     final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
 
     final SlickSession session = SlickSession.forConfig("slick-h2");
     system.registerOnTermination(session::close);
@@ -79,12 +77,14 @@ public class DocSnippetFlowWithPassThrough {
                     session,
                     system.dispatcher(),
                     // add an optional second argument to specify the parallelism factor (int)
-                    (kafkaMessage) ->
-                        "INSERT INTO ALPAKKA_SLICK_JAVADSL_TEST_USERS VALUES ("
-                            + kafkaMessage.msg.id
-                            + ", '"
-                            + kafkaMessage.msg.name
-                            + "')",
+                    (kafkaMessage, connection) -> {
+                      PreparedStatement statement =
+                          connection.prepareStatement(
+                              "INSERT INTO ALPAKKA_SLICK_JAVADSL_TEST_USERS VALUES (?, ?)");
+                      statement.setInt(1, kafkaMessage.msg.id);
+                      statement.setString(2, kafkaMessage.msg.name);
+                      return statement;
+                    },
                     (kafkaMessage, insertCount) ->
                         kafkaMessage.map(
                             user ->
@@ -98,7 +98,7 @@ public class DocSnippetFlowWithPassThrough {
                 1,
                 kafkaMessage ->
                     kafkaMessage.offset.commit()) // in correct order, commit Kafka message
-            .runWith(Sink.ignore(), materializer);
+            .runWith(Sink.ignore(), system);
     // #flowWithPassThrough-example
 
     done.whenComplete(

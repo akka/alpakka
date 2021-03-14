@@ -1,34 +1,36 @@
 language: scala
-sudo: false
 
 services:
   - docker
 
-before_install:
-  # make comparing to origin/master work and fetch full history for correct current and previous version detection
-  - git remote set-branches --add origin master && git fetch --unshallow
+# make comparing to origin/master work and fetch full history for correct current and previous version detection
+git:
+  depth: 500
+
+# using jabba for custom jdk management (see ./scripts/build.sh)
 
 # default script for jobs, that do not have any specified
 script: ./scripts/travis.sh
 
 jobs:
   include:
+    - stage: drop-travis-caches
+      script:
+        - rm -rf $HOME/.cache/coursier
+        - rm -rf $HOME/.ivy2/cache
+        - rm -rf $HOME/.sbt
+        - rm -rf $HOME/.jabba
+      name: "drop-travis-caches"
     - stage: check
-      script: sbt verifyCodeStyle
-      name: "Code style check. Run locally with: sbt verifyCodeStyle"
-    - env: CMD="++2.11.12 Test/compile"
-      name: "Compile all code with Scala 2.11"
+      env: CMD="verifyCodeStyle; mimaReportBinaryIssues"
+      name: "Code style check and MiMa. Run locally with: sbt verifyCodeStyle; mimaReportBinaryIssues"
       if: type != cron
-    - env: CMD="++2.12.10 Test/compile"
-      name: "Compile all code with Scala 2.12 and fatal warnings enabled. Run locally with: env CI=true sbt ++2.12.10 Test/compile"
-    - env: CMD="++2.13.1 Test/compile"
+    - env: CMD="++2.12.11 Test/compile"
+      name: "Compile all code with Scala 2.12 and fatal warnings enabled. Run locally with: env CI=true sbt ++2.12.11 Test/compile"
+    - env: CMD="++2.13.3 Test/compile"
       name: "Compile all code with Scala 2.13"
-    - env: CMD="unidoc"
-      name: "Create all API docs"
-    - env: CMD="docs/paradox"
-      name: "Create site with Paradox"
-    - env: CMD="mimaReportBinaryIssues"
-      name: "Check binary compatibility (MiMa)"
+    - env: CMD="unidoc; docs/paradox"
+      name: "Create all API docs and create site with Paradox"
 
     - stage: test
       name: amqp
@@ -36,6 +38,9 @@ jobs:
       - PRE_CMD="docker-compose up -d amqp"
     - name: avroparquet
     - name: awslambda
+    - name: aws-event-bridge
+      env:
+      - PRE_CMD="docker-compose up -d amazoneventbridge"
     - name: azure-storage-queue
     - name: cassandra
       env:
@@ -57,7 +62,10 @@ jobs:
     - name: geode
       env:
       - PRE_CMD="docker-compose up -d geode"
+    - name: google-cloud-bigquery
     - name: google-cloud-pub-sub
+      env:
+        - PRE_CMD="docker-compose up -d gcloud-pubsub-emulator_prep"
     - name: google-cloud-pub-sub-grpc
       env:
       - PRE_CMD="docker-compose up -d gcloud-pubsub-emulator_prep"
@@ -68,6 +76,8 @@ jobs:
 #      env:
 #      - PRE_CMD="docker-compose up -d hbase"
     - name: hdfs
+      env:
+      - PRE_CMD="file /home/travis/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_2.13/2.0.0/cats-kernel_2.13-2.0.0.jar"
     - name: influxdb
       env:
       - PRE_CMD="docker-compose up -d influxdb"
@@ -120,17 +130,21 @@ jobs:
     - stage: whitesource
       script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt whitesourceCheckPolicies whitesourceUpdate whitesourceSupported/whitesourceUpdate
 
-    - stage: publish
-      name: "Publish artifacts for Scala 2.11.12"
-      env: CMD="++2.11.12 publish"
-    - name: "Publish artifacts for Scala 2.12.10"
-      env: CMD="++2.12.10 publish"
-    - name: "Publish artifacts for Scala 2.13.1"
-      env: CMD="++2.13.1 publish"
+    - name: "Publish artifacts for Scala 2.12"
+      env: CMD="++2.12.11 publish"
+    - name: "Publish artifacts for Scala 2.13"
+      env: CMD="++2.13.3 publish"
     - script: openssl aes-256-cbc -K $encrypted_bbf1dc4f2a07_key -iv $encrypted_bbf1dc4f2a07_iv -in .travis/travis_alpakka_rsa.enc -out .travis/id_rsa -d && eval "$(ssh-agent -s)" && chmod 600 .travis/id_rsa && ssh-add .travis/id_rsa && sbt -jvm-opts .jvmopts-travis docs/publishRsync
       name: "Publish API and reference documentation"
 
 stages:
+  - name: drop-travis-caches
+    # to drop caches trigger a custom build with
+    # env:
+    #   global:
+    #     - RUN_DROP_TRAVIS_CACHES_STAGE=true
+    if: env(RUN_DROP_TRAVIS_CACHES_STAGE) = true
+
   # runs on master commits and PRs
   - name: check
     if: NOT tag =~ ^v
@@ -159,9 +173,8 @@ cache:
   directories:
     - $HOME/.cache/coursier
     - $HOME/.ivy2/cache
-    - $HOME/.sbt/boot
-    - $HOME/.sbt/launchers
-    - $HOME/.jabba/jdk
+    - $HOME/.sbt
+    - $HOME/.jabba
   timeout: 900
 
 addons:
@@ -171,6 +184,7 @@ addons:
 
 env:
   global:
+    - RUN_DROP_TRAVIS_CACHES_STAGE=true
     # encrypt with: travis encrypt WHITESOURCE_PASSWORD=...
     - secure: "VpRSxeqP6gXCxnYCsjylMt1xxXxI/hlj6msibKuHpstDnfPkbDMS8RnRJ/39tyjx/szELZSzAllV0VpM27JpTXlKfIT/78ZUGcljqzfnmv3uh/dWh9k2ERQX1Hr3TGFFyljIbEKHcHjvgHBJtlIRGIuvoBv0tJ98pcqS6dCeplaaJa1Ya7Q53u17GOJakhvTjrT3ASz8gF1kV4GN9XhQCUjRfQSINiT+QC+ONoHy6ztZPIDgfUskBfKgZU5P1saDLcBjzBkXDWIwbKubfJGBl3DSs2fHaWNJE5CRZNJ64Wi8Hs006zvyomIaCfbVAWtxOiLCdXxlys/YQs43RRB0pBqyvTpxH4lEwnLR5uGDH+nuBQw9efCWqsM3CDsRSH7iobjBlunKgDCfjua5/dWJ3Wm2j8WOi6C6/y/YrGwU/DrncukRtcyKj92Mu3LHk5HEMiOiIA41P2NTqalvjvoqi1zMQ5On2g55e2YMcHmQ8dCsRAgegCYB3a6GyGq7T8zkuMMljpmpQJwayrJPQKi001d3ajZZwMLcv4YW9ndVYCZD9ducZ448Uo5BCpJFDPPG+xcXrvZowCUA9JtpnyXrTcTLvFITG2egXyLOQfZ0/FX9XneMtX8qX8ysHaBX9tWiYsplo/WfbpBHy935Ag8WnGH0cYvOXuqAKKUXRVq9ANI="
     # encrypt with: travis encrypt BINTRAY_USER=...
@@ -181,5 +195,6 @@ env:
 branches:
   only:
     - master
+    - release-2.0
     # allow release tags
     - /^v\d+\.\d+(\.\d+)?(-\S*)?$/

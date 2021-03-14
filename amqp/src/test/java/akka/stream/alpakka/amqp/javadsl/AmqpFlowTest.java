@@ -18,8 +18,6 @@ import org.junit.Test;
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.alpakka.amqp.AmqpLocalConnectionProvider;
 import akka.stream.alpakka.amqp.AmqpWriteSettings;
 import akka.stream.alpakka.amqp.QueueDeclaration;
@@ -40,12 +38,10 @@ public class AmqpFlowTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem system;
-  private static Materializer materializer;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
   }
 
   private static AmqpWriteSettings settings() {
@@ -86,7 +82,7 @@ public class AmqpFlowTest {
             .map(s -> WriteMessage.create(ByteString.fromString(s)))
             .via(flow)
             .toMat(TestSink.probe(system), Keep.right())
-            .run(materializer);
+            .run(system);
 
     result
         .request(input.size())
@@ -120,7 +116,7 @@ public class AmqpFlowTest {
             .via(flowWithContext)
             .asSource()
             .toMat(TestSink.probe(system), Keep.right())
-            .run(materializer);
+            .run(system);
 
     result
         .request(input.size())
@@ -143,7 +139,7 @@ public class AmqpFlowTest {
             .map(s -> Pair.create(WriteMessage.create(ByteString.fromString(s)), s))
             .via(flow)
             .toMat(TestSink.probe(system), Keep.right())
-            .run(materializer);
+            .run(system);
 
     result
         .request(input.size())

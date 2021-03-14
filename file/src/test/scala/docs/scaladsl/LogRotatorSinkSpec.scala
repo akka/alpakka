@@ -7,15 +7,15 @@ package docs.scaladsl
 import java.nio.file._
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-
 import akka.Done
 import akka.actor.ActorSystem
+import akka.stream.{Attributes, Inlet, SinkShape}
 import akka.stream.alpakka.file.scaladsl.LogRotatorSink
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Compression, FileIO, Flow, Keep, Sink, Source}
+import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, InHandler}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSource
-import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.testkit.TestKit
 import akka.util.ByteString
 import com.google.common.jimfs.{Configuration, Jimfs}
@@ -25,7 +25,7 @@ import org.scalatest.BeforeAndAfterAll
 import scala.collection.immutable
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -44,8 +44,6 @@ class LogRotatorSinkSpec
     fs.close()
   }
 
-  val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
-  implicit val materializer = ActorMaterializer(settings)
   implicit val ec: ExecutionContext = system.dispatcher
   val fs = Jimfs.newFileSystem("LogRotatorSinkSpec", Configuration.unix())
 
@@ -60,7 +58,7 @@ class LogRotatorSinkSpec
     buffer.toList
   }
 
-  def fileLengthTriggerCreator(): (() => ByteString => Option[Path], () => Seq[Path]) = {
+  private def fileLengthTriggerCreator(): (() => ByteString => Option[Path], () => Seq[Path]) = {
     var files = Seq.empty[Path]
     val testFunction = () => {
       val max = 2002
@@ -170,6 +168,48 @@ class LogRotatorSinkSpec
 
     }
 
+    "work for stream-based rotation " in assertAllStagesStopped {
+      // #stream
+      val destinationDir = FileSystems.getDefault.getPath("/tmp")
+
+      val streamBasedTriggerCreator: () => ((String, String)) => Option[Path] = () => {
+        var currentFilename: Option[String] = None
+        (element: (String, String)) => {
+          if (currentFilename.contains(element._1)) {
+            None
+          } else {
+            currentFilename = Some(element._1)
+            Some(destinationDir.resolve(element._1))
+          }
+        }
+      }
+
+      val timeBasedSink: Sink[(String, String), Future[Done]] =
+        LogRotatorSink.withTypedSinkFactory(
+          streamBasedTriggerCreator,
+          (path: Path) =>
+            Flow[(String, String)]
+              .map { case (_, data) => ByteString(data) }
+              .via(Compression.gzip)
+              .toMat(FileIO.toPath(path))(Keep.right)
+        )
+      // #stream
+
+      val timeBaseCompletion = Source(
+        immutable.Seq(
+          ("stream1", "test1"),
+          ("stream1", "test2"),
+          ("stream1", "test3"),
+          ("stream2", "test4"),
+          ("stream2", "test5"),
+          ("stream2", "test6")
+        )
+      ).runWith(timeBasedSink)
+
+      timeBaseCompletion.futureValue shouldBe Done
+
+    }
+
     "write lines to a single file" in assertAllStagesStopped {
       var files = Seq.empty[Path]
       val triggerFunctionCreator = () => {
@@ -203,6 +243,26 @@ class LogRotatorSinkSpec
       val (contents, sizes) = readUpFilesAndSizesThenClean(files())
       sizes should contain theSameElementsAs Seq(2002L, 2002L, 2002L)
       contents should contain theSameElementsAs TestLines.sliding(2, 2).map(_.mkString("")).toList
+    }
+
+    "correctly close sinks" in assertAllStagesStopped {
+      val test = (1 to 3).map(_.toString).toList
+      var out = Seq.empty[String]
+      def add(e: ByteString): Unit = {
+        out = out :+ e.utf8String
+      }
+
+      val completion =
+        Source(test.map(ByteString.apply)).runWith(
+          LogRotatorSink.withSinkFactory[Unit, Done](
+            triggerGeneratorCreator = () => (_: ByteString) => Some({}),
+            sinkFactory = (_: Unit) =>
+              Flow[ByteString].toMat(new StrangeSlowSink[ByteString](add, 100.millis, 200.millis))(Keep.right)
+          )
+        )
+
+      Await.result(completion, 3.seconds)
+      out should contain theSameElementsAs test
     }
 
     "write compressed lines to multiple targets" in assertAllStagesStopped {
@@ -300,12 +360,51 @@ class LogRotatorSinkSpec
 
   }
 
-  def readUpFilesAndSizesThenClean(files: Seq[Path]): (Seq[String], Seq[Long]) = {
+  "downstream fail on exception in sink" in assertAllStagesStopped {
+    val path = Files.createTempFile(fs.getPath("/"), "test", ".log")
+    val triggerFunctionCreator = () => {
+      (x: ByteString) => {
+        Option(path)
+      }
+    }
+    val (probe, completion) =
+      TestSource
+        .probe[ByteString]
+        .toMat(
+          LogRotatorSink.withSinkFactory(
+            triggerGeneratorCreator = triggerFunctionCreator,
+            sinkFactory = (_: Path) =>
+              Flow[ByteString]
+                .map { data =>
+                  if (data.utf8String == "test") throw new IllegalArgumentException("The data is broken")
+                  data
+                }
+                .toMat(Sink.ignore)(Keep.right)
+          )
+        )(Keep.both)
+        .run()
+
+    probe.sendNext(ByteString("test"))
+    probe.sendNext(ByteString("test"))
+    probe.expectCancellation()
+
+    val exception = intercept[Exception] {
+      Await.result(completion, 3.seconds)
+    }
+
+    exactly(
+      1,
+      List(exception, // Akka 2.5 throws nio exception directly
+           exception.getCause) // Akka 2.6 wraps nio exception in a akka.stream.IOOperationIncompleteException
+    ) shouldBe a[IllegalArgumentException]
+  }
+
+  private def readUpFilesAndSizesThenClean(files: Seq[Path]): (Seq[String], Seq[Long]) = {
     val (bytes, sizes) = readUpFileBytesAndSizesThenClean(files)
     (bytes.map(_.utf8String), sizes)
   }
 
-  def readUpFileBytesAndSizesThenClean(files: Seq[Path]): (Seq[ByteString], Seq[Long]) = {
+  private def readUpFileBytesAndSizesThenClean(files: Seq[Path]): (Seq[ByteString], Seq[Long]) = {
     var sizes = Seq.empty[Long]
     var data = Seq.empty[ByteString]
     files.foreach { path =>
@@ -315,5 +414,38 @@ class LogRotatorSinkSpec
       ()
     }
     (data, sizes)
+  }
+
+  class StrangeSlowSink[A](callback: A => Unit, waitBeforePull: FiniteDuration, waitAfterComplete: FiniteDuration)
+      extends GraphStageWithMaterializedValue[SinkShape[A], Future[Done]] {
+    val in: Inlet[A] = Inlet("StrangeSlowSink.in")
+    override val shape: SinkShape[A] = SinkShape(in)
+
+    override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
+      val promise = Promise[Done]()
+      val logic = new GraphStageLogic(shape) {
+        override def preStart(): Unit = {
+          Await.result(Future(Thread.sleep(waitBeforePull.toMillis)), 1.minute)
+          pull(in)
+        }
+        setHandler(
+          in,
+          new InHandler {
+            override def onPush(): Unit = {
+              callback(grab(in))
+              pull(in)
+            }
+
+            override def onUpstreamFinish(): Unit = {
+              Await.result(Future(Thread.sleep(waitAfterComplete.toMillis)), 1.minute)
+              promise.success(Done.done())
+              super.onUpstreamFinish()
+            }
+          }
+        )
+      }
+
+      (logic, promise.future)
+    }
   }
 }

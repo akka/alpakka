@@ -22,7 +22,7 @@ use case we see, is committing a Kafka offset after passing data to another syst
 
 ### Implementing the Java API in Scala
 
-> Reference connector [Java API factory methods](reference/src/main/scala/akka/stream/alpakka/javadsl/Reference.scala)
+> Reference connector [Java API factory methods](reference/src/main/scala/akka/stream/alpakka/reference/javadsl/Reference.scala)
 
 Alpakka, same as Akka, aims to keep 100% feature parity between the various language DSLs. Implementing even the API for Java in Scala has proven the most viable way to do it, as long as you keep the following in mind:
 
@@ -59,6 +59,22 @@ Alpakka, same as Akka, aims to keep 100% feature parity between the various lang
 | `scala.concurrent.Future[T]` | `java.util.concurrent.CompletionStage<T>` |
 | `scala.concurrent.Promise[T]` | `java.util.concurrent.CompletableFuture<T>` |
 | `scala.concurrent.duration.FiniteDuration` | `java.time.Duration` |
+
+Functions, if you want to allow the function to throw checked exceptions (like
+Scala functions - the infrastructure should recover from those gracefully) or
+leverage variance in the parameter or return types:
+
+| Scala | Java |
+|-------|------|
+| `T => Unit` | `akka.japi.function.Procedure<T>` |
+| `() => R` (`scala.Function0[R]`) | `akka.japi.function.Creator<R>` |
+| `T => R` (`scala.Function1[T, R]`) | `akka.japi.function.Function<T, R>` |
+
+Functions, if you don't want to allow the function to throw checked exceptions
+(unlike Scala functions):
+
+| Scala | Java |
+|-------|------|
 | `T => Unit` | `java.util.function.Consumer<T>` |
 | `() => R` (`scala.Function0[R]`) | `java.util.function.Supplier<R>` |
 | `T => R` (`scala.Function1[T, R]`) | `java.util.function.Function<T, R>` |

@@ -4,6 +4,13 @@
 
 version: '2'
 services:
+  amazoneventbridge:
+    image: localstack/localstack:0.10.6
+    environment:
+      - "SERVICES=events"
+      - "DEBUG=true"
+    ports:
+      - "4587:4587"
   amazonsns:
     image: pafortin/goaws
     ports:
@@ -96,7 +103,7 @@ services:
       ADDED_FLAGS: "--tls=1"
   geode:
     container_name: geode
-    image: apachegeode/geode:1.12.0
+    image: apachegeode/geode:1.13.0
     hostname: geode
     mem_limit: 2g
     expose:
@@ -115,10 +122,10 @@ services:
       - ./geode/scripts/:/scripts/
     command: /scripts/geode.sh
   gcloud-pubsub-emulator:
-    image: bigtruedata/gcloud-pubsub-emulator
+    image: google/cloud-sdk:311.0.0
     ports:
       - "8538:8538"
-    command: start --host-port=0.0.0.0:8538 --data-dir=/data
+    command: gcloud beta emulators pubsub start --project=alpakka --host-port=0.0.0.0:8538
   gcloud-pubsub-emulator_prep:
     image: martynas/gcloud-pubsub-client
     links:
@@ -216,7 +223,7 @@ services:
     ports:
       - "27017:27017"
   influxdb:
-    image: influxdb
+    image: influxdb:1.8-alpine
     ports:
       - "8086:8086"
   mqtt:
@@ -226,7 +233,7 @@ services:
     volumes:
       - ./mqtt/src/test/travis:/mqtt/config/conf.d
   orientdb:
-    image: orientdb:3.0.13
+    image: orientdb:3.1.9
     ports:
       - "2424:2424"
     environment:
@@ -251,7 +258,7 @@ services:
     ports:
       - "3128:3128"
   pravega:
-    image: pravega/pravega:0.7.0
+    image: pravega/pravega:0.9.0
     ports:
       - 9090:9090
       - 12345:12345

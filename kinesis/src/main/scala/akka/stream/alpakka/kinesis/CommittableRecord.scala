@@ -39,7 +39,7 @@ abstract class CommittableRecord @InternalApi private[kinesis] (
 
   /**
    * Safe checkpoint method, that will only attempt to checkpoint
-   * it the lease has not been lost and will capture expected
+   * if the lease has not been lost and will capture expected
    * Exceptions (that may still occur due to unavoidable race
    * conditions). The method will still throw critical Exceptions.
    *
@@ -75,7 +75,7 @@ object CommittableRecord {
   // Records that have been batched by the KPL producer all have the
   // same sequence number but will differ by subsequence number
   implicit val orderBySequenceNumber: Ordering[CommittableRecord] =
-    Ordering[(String, Long)].on(cr ⇒ (cr.sequenceNumber, cr.subSequenceNumber))
+    Ordering[(String, Long)].on(cr => (cr.sequenceNumber, cr.subSequenceNumber))
 
   /**
    * See [[akka.stream.alpakka.kinesis.impl.ShardProcessor]]

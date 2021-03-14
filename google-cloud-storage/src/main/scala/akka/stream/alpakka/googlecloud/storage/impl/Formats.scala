@@ -77,6 +77,7 @@ object Formats extends DefaultJsonProtocol {
       contentEncoding: Option[String],
       contentLanguage: Option[String],
       contentType: Option[String],
+      customTime: Option[String],
       crc32c: String,
       eventBasedHold: Option[Boolean],
       md5Hash: String,
@@ -87,7 +88,7 @@ object Formats extends DefaultJsonProtocol {
       acl: Option[List[ObjectAccessControls]]
   )
 
-  private implicit val storageObjectWritableJson = jsonFormat13(StorageObjectWriteableJson)
+  private implicit val storageObjectWritableJson = jsonFormat14(StorageObjectWriteableJson)
 
   private implicit object StorageObjectJsonFormat extends RootJsonFormat[StorageObjectJson] {
     override def read(value: JsValue): StorageObjectJson = {
@@ -230,13 +231,16 @@ object Formats extends DefaultJsonProtocol {
       strToLongOrThrow(size, "size"),
       etag,
       md5Hash,
+      Option(md5Hash),
       crc32c,
+      Option(crc32c),
       mediaLink,
       selfLink,
       strToDateTimeOrThrow(updated, "updated"),
       strToDateTimeOrThrow(timeCreated, "timeCreated"),
       timeDeleted.map(td => strToDateTimeOrThrow(td, "timeDeleted")),
       storageClass,
+      Option(storageClass),
       contentDisposition,
       contentEncoding,
       contentLanguage,
@@ -246,6 +250,7 @@ object Formats extends DefaultJsonProtocol {
       retentionExpirationTime.map(ret => strToDateTimeOrThrow(ret, "retentionExpirationTime")),
       strToDateTimeOrThrow(timeStorageClassUpdated, "retentionExpirationTime"),
       cacheControl,
+      customTime.map(ct => strToDateTimeOrThrow(ct, "customTime")),
       metadata,
       componentCount,
       kmsKeyName,

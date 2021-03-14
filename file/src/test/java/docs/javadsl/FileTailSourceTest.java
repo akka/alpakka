@@ -7,7 +7,6 @@ package docs.javadsl;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.pf.PFBuilder;
-import akka.stream.ActorMaterializer;
 import akka.stream.KillSwitches;
 import akka.stream.Materializer;
 import akka.stream.UniqueKillSwitch;
@@ -44,12 +43,10 @@ public class FileTailSourceTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem system;
-  private static Materializer materializer;
 
   @BeforeClass
   public static void beforeAll() throws Exception {
     system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
   }
 
   @AfterClass
@@ -83,7 +80,7 @@ public class FileTailSourceTest {
         source
             .viaMat(KillSwitches.single(), Keep.right())
             .to(Sink.fromSubscriber(subscriber))
-            .run(materializer);
+            .run(system);
 
     ByteString result = subscriber.requestNext();
     assertEquals(dataInFile, result.utf8String());
@@ -111,7 +108,7 @@ public class FileTailSourceTest {
         source
             .viaMat(KillSwitches.single(), Keep.right())
             .to(Sink.fromSubscriber(subscriber))
-            .run(materializer);
+            .run(system);
 
     String result1 = subscriber.requestNext();
     assertEquals("a", result1);
@@ -148,7 +145,8 @@ public class FileTailSourceTest {
                   }
                   return Collections.<String>emptyList();
                 })
-            .recoverWith(
+            .recoverWithRetries(
+                -1,
                 new PFBuilder<Throwable, Source<String, NotUsed>>()
                     .match(FileNotFoundException.class, t -> Source.empty())
                     .build());
@@ -162,7 +160,7 @@ public class FileTailSourceTest {
 
     // #shutdown-on-delete
 
-    source.to(Sink.fromSubscriber(subscriber)).run(materializer);
+    source.to(Sink.fromSubscriber(subscriber)).run(system);
 
     String result1 = subscriber.requestNext();
     assertEquals("a", result1);
@@ -188,14 +186,15 @@ public class FileTailSourceTest {
                 8192, // chunk size
                 Duration.ofMillis(250))
             .idleTimeout(Duration.ofSeconds(5))
-            .recoverWith(
+            .recoverWithRetries(
+                -1,
                 new PFBuilder<Throwable, Source<String, NotUsed>>()
                     .match(TimeoutException.class, t -> Source.empty())
                     .build());
 
     // #shutdown-on-idle-timeout
 
-    stream.to(Sink.fromSubscriber(subscriber)).run(materializer);
+    stream.to(Sink.fromSubscriber(subscriber)).run(system);
 
     String result1 = subscriber.requestNext();
     assertEquals("a", result1);
@@ -209,7 +208,7 @@ public class FileTailSourceTest {
   public void tearDown() throws Exception {
     fs.close();
     fs = null;
-    StreamTestKit.assertAllStagesStopped(materializer);
+    StreamTestKit.assertAllStagesStopped(Materializer.matFromSystem(system));
   }
 
   // small sample of usage, tails the first argument file path
@@ -218,7 +217,6 @@ public class FileTailSourceTest {
     final String path = args[0];
 
     final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
 
     // #simple-lines
     final FileSystem fs = FileSystems.getDefault();
@@ -229,7 +227,7 @@ public class FileTailSourceTest {
         akka.stream.alpakka.file.javadsl.FileTailSource.createLines(
             fs.getPath(path), maxLineSize, pollingInterval);
 
-    lines.runForeach((line) -> System.out.println(line), materializer);
+    lines.runForeach(System.out::println, system);
     // #simple-lines
   }
 }

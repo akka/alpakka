@@ -15,7 +15,7 @@ class CanonicalRequestSpec extends AnyFlatSpec with Matchers {
   it should "correctly build a canonicalString for eu-central-1" in {
     val req = HttpRequest(
       HttpMethods.GET,
-      Uri("https://s3-eu-central-1.amazonaws.com/my.test.bucket/test%20folder/test%20file%20(1).txt?uploads")
+      Uri("https://s3.eu-central-1.amazonaws.com/my.test.bucket/test%20folder/test%20file%20(1).txt?uploads")
     ).withHeaders(
       RawHeader("x-amz-content-sha256", "testhash"),
       `Content-Type`(ContentTypes.`application/json`)
@@ -36,7 +36,7 @@ class CanonicalRequestSpec extends AnyFlatSpec with Matchers {
   it should "correctly build a canonicalString for us-east-1" in {
     val req = HttpRequest(
       HttpMethods.GET,
-      Uri("https://mytestbucket.s3.amazonaws.com/test%20folder/test%20file%20(1):.txt")
+      Uri("https://mytestbucket.s3.us-east-1.amazonaws.com/test%20folder/test%20file%20(1):.txt")
         .withQuery(Query("partNumber" -> "2", "uploadId" -> "testUploadId"))
     ).withHeaders(
       RawHeader("x-amz-content-sha256", "testhash"),
@@ -58,7 +58,7 @@ class CanonicalRequestSpec extends AnyFlatSpec with Matchers {
   it should "correctly build a canonicalString for us-east-1 with empty path" in {
     val req = HttpRequest(
       HttpMethods.GET,
-      Uri("https://mytestbucket.s3.amazonaws.com")
+      Uri("https://mytestbucket.s3.us-east-1.amazonaws.com")
     ).withHeaders(
       RawHeader("x-amz-content-sha256", "testhash"),
       `Content-Type`(ContentTypes.`application/json`)
@@ -80,7 +80,7 @@ class CanonicalRequestSpec extends AnyFlatSpec with Matchers {
     // this corresponds with not encode path: /føldęrü/1234()[]><!? .TXT
     val req = HttpRequest(
       HttpMethods.GET,
-      Uri("https://mytestbucket.s3.amazonaws.com/f%C3%B8ld%C4%99r%C3%BC/1234()%5B%5D%3E%3C!%3F%20.TXT")
+      Uri("https://mytestbucket.s3.us-east-1.amazonaws.com/f%C3%B8ld%C4%99r%C3%BC/1234()%5B%5D%3E%3C!%3F%20.TXT")
     ).withHeaders(
       RawHeader("x-amz-content-sha256", "testhash"),
       `Content-Type`(ContentTypes.`application/json`)
@@ -106,7 +106,7 @@ class CanonicalRequestSpec extends AnyFlatSpec with Matchers {
     val request =
       HttpRequest(
         HttpMethods.GET,
-        Uri(s"https://mytestbucket.s3.amazonaws.com/test")
+        Uri(s"https://mytestbucket.s3.us-east-1.amazonaws.com/test")
           .withQuery(Uri.Query(name.toString -> value.toString))
       ).withHeaders(
         RawHeader("x-amz-content-sha256", "testhash"),
@@ -136,7 +136,7 @@ class CanonicalRequestSpec extends AnyFlatSpec with Matchers {
         val request =
           HttpRequest(
             HttpMethods.GET,
-            Uri(s"https://mytestbucket.s3.amazonaws.com")
+            Uri(s"https://mytestbucket.s3.us-east-1.amazonaws.com")
               .withPath(Uri.Path.Empty / s"file-$char.txt")
           ).withHeaders(
             RawHeader("x-amz-content-sha256", "testhash"),
@@ -161,7 +161,7 @@ class CanonicalRequestSpec extends AnyFlatSpec with Matchers {
   it should "correctly build a canonicalString when synthetic headers are present" in {
     val req = HttpRequest(
       HttpMethods.GET,
-      Uri("https://s3-eu-central-1.amazonaws.com/my.test.bucket/file+name.txt")
+      Uri("https://s3.eu-central-1.amazonaws.com/my.test.bucket/file+name.txt")
     ).withHeaders(
       RawHeader("x-amz-content-sha256", "testhash"),
       `Content-Type`(ContentTypes.`application/json`),

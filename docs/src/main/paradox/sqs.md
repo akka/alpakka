@@ -38,7 +38,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Setup
 
-Prepare an @apidoc[akka.actor.ActorSystem] and a @apidoc[Materializer].
+Prepare an @apidoc[akka.actor.ActorSystem].
 
 Scala
 : @@snip [snip](/sqs/src/test/scala/akka/stream/alpakka/sqs/scaladsl/DefaultTestContext.scala) { #init-mat }
@@ -47,7 +47,7 @@ Java
 : @@snip [snip](/sqs/src/test/java/akka/stream/alpakka/sqs/javadsl/BaseSqsTest.java) { #init-mat }
 
 
-This connector requires an implicit @javadoc[SqsAsyncClient](software.amazon.awssdk.services.sqs.SqsAsyncClient) instance to communicate with AWS SQS.
+This connector requires an @scala[implicit] @javadoc[SqsAsyncClient](software.amazon.awssdk.services.sqs.SqsAsyncClient) instance to communicate with AWS SQS.
 
 It is your code's responsibility to call `close` to free any resources held by the client. In this example it will be called when the actor system is terminated.
 
@@ -140,10 +140,10 @@ Java
 ### Group messages and publish batches to an SQS queue
 
 Create a sink, that forwards `String` to the SQS queue. However, the main difference from the previous use case, 
-it batches items and sends as a one request and forwards a @apidoc[SqsPublishResultEntry]
+it batches items and sends as one request and forwards a @apidoc[SqsPublishResultEntry]
 further down the stream for each item processed.
 
-Note: There is also another option to send batch of messages to SQS which is using `AmazonSQSBufferedAsyncClient`.
+Note: There is also another option to send a batch of messages to SQS which is using `AmazonSQSBufferedAsyncClient`.
 This client buffers `SendMessageRequest`s under the hood and sends them as a batch instead of sending them one by one. However, beware that `AmazonSQSBufferedAsyncClient`
 does not support FIFO Queues. See [documentation for client-side buffering.](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-client-side-buffering-request-batching.html)
 

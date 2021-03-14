@@ -7,10 +7,9 @@ package docs.scaladsl
 import java.util.UUID
 
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.Sink
-import akka.stream.{ActorMaterializer, Materializer}
-import akka.stream.alpakka.kinesis.{KinesisSchedulerCheckpointSettings, KinesisSchedulerSourceSettings}
 import akka.stream.alpakka.kinesis.scaladsl.KinesisSchedulerSource
+import akka.stream.alpakka.kinesis.{KinesisSchedulerCheckpointSettings, KinesisSchedulerSourceSettings}
+import akka.stream.scaladsl.Sink
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
@@ -25,7 +24,6 @@ class KclSnippets {
 
   //#init-system
   implicit val system: ActorSystem = ActorSystem()
-  implicit val materializer: Materializer = ActorMaterializer()
   //#init-system
 
   //#init-clients

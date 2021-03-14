@@ -1,4 +1,8 @@
-#### Json streaming
+# Json streaming
+
+## 2.0.2
+
+- json-streaming: fix generated POM [#2344](https://github.com/akka/alpakka/issues/2344) by [@laszlovandenhoek](https://github.com/laszlovandenhoek)
 
 ## 2.0.0-RC2
 

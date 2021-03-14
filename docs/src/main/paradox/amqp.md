@@ -35,6 +35,10 @@ There are several types of @apidoc[AmqpConnectionProvider]:
 * @apidoc[AmqpConnectionFactoryConnectionProvider$] which takes a raw [ConnectionFactory](https://rabbitmq.github.io/rabbitmq-java-client/api/current/com/rabbitmq/client/ConnectionFactory.html). It creates a new connection for each stage.
 * @apidoc[AmqpCachedConnectionProvider$] which receive any other provider as parameter and caches the connection it provides to be used in all stages. By default it closes the connection whenever the last stage using the provider stops. Optionally, it takes `automaticRelease` boolean parameter so the connection is not automatically release and the user have to release it explicitly.
 
+@@@ warning
+Please be aware that the basic usage of @apidoc[AmqpConnectionProvider] like this `AmqpUriConnectionProvider(s"amqp://$host:$port")` has an issue with recovering connections, more details can be found in this [issue](https://github.com/akka/alpakka/issues/1270)
+@@@
+
 ## Sending messages
 
 First define a queue name and the declaration of the queue that the messages will be sent to.

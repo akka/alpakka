@@ -85,10 +85,6 @@ public class CassandraSourceTest {
         // #init-session
         helper.system;
     // #init-session
-    Materializer materializer = // ???
-        // #init-session
-        helper.materializer;
-    // #init-session
     CassandraSessionSettings sessionSettings = CassandraSessionSettings.create();
     CassandraSession cassandraSession =
         CassandraSessionRegistry.get(system).sessionFor(sessionSettings);
@@ -97,20 +93,20 @@ public class CassandraSourceTest {
         cassandraSession
             .select("SELECT release_version FROM system.local;")
             .map(row -> row.getString("release_version"))
-            .runWith(Sink.head(), materializer);
+            .runWith(Sink.head(), system);
     // #init-session
     assertThat(await(version).isEmpty(), is(false));
   }
 
   @Test
   public void select() throws InterruptedException, ExecutionException, TimeoutException {
-    Materializer materializer = helper.materializer;
+    ActorSystem system = helper.system;
     // #cql
 
     CompletionStage<List<Integer>> select =
         CassandraSource.create(cassandraSession, "SELECT id FROM " + idtable + ";")
             .map(r -> r.getInt("id"))
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
     // #cql
     List<Integer> rows = await(select);
 
@@ -119,7 +115,7 @@ public class CassandraSourceTest {
 
   @Test
   public void selectVarArgs() throws InterruptedException, ExecutionException, TimeoutException {
-    Materializer materializer = helper.materializer;
+    ActorSystem system = helper.system;
     int value = 5;
     // #cql
 
@@ -127,14 +123,14 @@ public class CassandraSourceTest {
         CassandraSource.create(
                 cassandraSession, "SELECT * FROM " + idtable + " WHERE id = ?;", value)
             .map(r -> r.getInt("id"))
-            .runWith(Sink.head(), materializer);
+            .runWith(Sink.head(), system);
     // #cql
     assertThat(await(select), is(value));
   }
 
   @Test
   public void statement() throws InterruptedException, ExecutionException, TimeoutException {
-    Materializer materializer = helper.materializer;
+    ActorSystem system = helper.system;
     int value = 5;
     // #statement
 
@@ -144,7 +140,7 @@ public class CassandraSourceTest {
     CompletionStage<List<Integer>> select =
         CassandraSource.create(cassandraSession, stmt)
             .map(r -> r.getInt("id"))
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
     // #statement
     assertThat(new ArrayList<>(await(select)), hasItems(data.toArray()));
   }

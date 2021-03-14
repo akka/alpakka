@@ -8,9 +8,7 @@ import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
 import akka.stream.KillSwitches;
-import akka.stream.Materializer;
 import akka.stream.UniqueKillSwitch;
 import akka.stream.alpakka.mqtt.*;
 import akka.stream.alpakka.mqtt.javadsl.MqttMessageWithAck;
@@ -44,7 +42,8 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertFalse;
 
 public class MqttSourceTest {
 
@@ -53,21 +52,12 @@ public class MqttSourceTest {
   private static final Logger log = LoggerFactory.getLogger(MqttSourceTest.class);
 
   private static ActorSystem system;
-  private static Materializer materializer;
 
   private static final int bufferSize = 8;
 
-  private static Pair<ActorSystem, Materializer> setupMaterializer() {
-    final ActorSystem system = ActorSystem.create("MqttSourceTest");
-    final Materializer materializer = ActorMaterializer.create(system);
-    return Pair.create(system, materializer);
-  }
-
   @BeforeClass
   public static void setup() throws Exception {
-    final Pair<ActorSystem, Materializer> sysmat = setupMaterializer();
-    system = sysmat.first();
-    materializer = sysmat.second();
+    system = ActorSystem.create("MqttSourceTest");
   }
 
   @AfterClass
@@ -122,7 +112,7 @@ public class MqttSourceTest {
     // #create-source-with-manualacks
 
     final Pair<CompletionStage<Done>, CompletionStage<List<MqttMessageWithAck>>> unackedResult =
-        mqttSource.take(input.size()).toMat(Sink.seq(), Keep.both()).run(materializer);
+        mqttSource.take(input.size()).toMat(Sink.seq(), Keep.both()).run(system);
 
     unackedResult.first().toCompletableFuture().get(5, TimeUnit.SECONDS);
 
@@ -132,7 +122,7 @@ public class MqttSourceTest {
             MqttQoS.atLeastOnce());
     Source.from(input)
         .map(s -> MqttMessage.create(topic, ByteString.fromString(s)))
-        .runWith(mqttSink, materializer);
+        .runWith(mqttSink, system);
 
     assertEquals(
         input,
@@ -151,7 +141,7 @@ public class MqttSourceTest {
                 messageWithAck ->
                     messageWithAck.ack().thenApply(unused2 -> messageWithAck.message()))
             .take(input.size())
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
     // #run-source-with-manualacks
 
     assertEquals(
@@ -183,13 +173,13 @@ public class MqttSourceTest {
         MqttSource.atLeastOnce(connectionSettings, subscriptions, bufferSize);
 
     final Pair<CompletionStage<Done>, CompletionStage<List<MqttMessageWithAck>>> unackedResult =
-        mqttSource.take(input.size()).toMat(Sink.seq(), Keep.both()).run(materializer);
+        mqttSource.take(input.size()).toMat(Sink.seq(), Keep.both()).run(system);
 
     unackedResult.first().toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     Source.from(input)
         .map(s -> MqttMessage.create(topic, ByteString.fromString(s)))
-        .runWith(mqttSink, materializer)
+        .runWith(mqttSink, system)
         .toCompletableFuture()
         .get(3, TimeUnit.SECONDS);
 
@@ -202,7 +192,7 @@ public class MqttSourceTest {
               try {
                 m.ack().toCompletableFuture().get(3, TimeUnit.SECONDS);
               } catch (Exception e) {
-                assertEquals("Error acking message manually", false, true);
+                assertFalse("Error acking message manually", false);
               }
             });
   }
@@ -232,7 +222,7 @@ public class MqttSourceTest {
             .map(m -> m.topic() + "-" + m.payload().utf8String())
             .take(messageCount * 2)
             .toMat(Sink.seq(), Keep.both())
-            .run(materializer);
+            .run(system);
 
     CompletionStage<Done> subscribed = materialized.first();
     CompletionStage<List<String>> streamResult = materialized.second();
@@ -253,7 +243,7 @@ public class MqttSourceTest {
     // #run-sink
     Sink<MqttMessage, CompletionStage<Done>> mqttSink =
         MqttSink.create(connectionSettings.withClientId("source-test/sink"), MqttQoS.atLeastOnce());
-    Source.from(messages).runWith(mqttSink, materializer);
+    Source.from(messages).runWith(mqttSink, system);
     // #run-sink
 
     assertEquals(
@@ -288,10 +278,7 @@ public class MqttSourceTest {
     // Create a proxy to RabbitMQ so it can be shutdown
     int proxyPort = 1347; // make sure to keep it separate from ports used by other tests
     Pair<CompletionStage<Tcp.ServerBinding>, CompletionStage<Tcp.IncomingConnection>> result1 =
-        Tcp.get(system)
-            .bind("localhost", proxyPort)
-            .toMat(Sink.head(), Keep.both())
-            .run(materializer);
+        Tcp.get(system).bind("localhost", proxyPort).toMat(Sink.head(), Keep.both()).run(system);
 
     CompletionStage<UniqueKillSwitch> proxyKs =
         result1
@@ -303,14 +290,14 @@ public class MqttSourceTest {
                         Tcp.get(system)
                             .outgoingConnection("localhost", 1883)
                             .viaMat(KillSwitches.single(), Keep.right()),
-                        materializer));
+                        system));
 
     result1.first().toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     MqttConnectionSettings settings1 =
         sourceSettings
             .withClientId("source-test/testator")
-            .withBroker("tcp://localhost:" + String.valueOf(proxyPort))
+            .withBroker("tcp://localhost:" + proxyPort)
             .withWill(lastWill);
     MqttSubscriptions subscriptions = MqttSubscriptions.create(topic1, MqttQoS.atLeastOnce());
 
@@ -318,12 +305,12 @@ public class MqttSourceTest {
         MqttSource.atMostOnce(settings1, subscriptions, bufferSize);
 
     Pair<CompletionStage<Done>, TestSubscriber.Probe<MqttMessage>> result2 =
-        source1.toMat(TestSink.probe(system), Keep.both()).run(materializer);
+        source1.toMat(TestSink.probe(system), Keep.both()).run(system);
 
     // Ensure that the connection made it all the way to the server by waiting until it receives a
     // message
     result2.first().toCompletableFuture().get(5, TimeUnit.SECONDS);
-    Source.single(msg).runWith(MqttSink.create(sinkSettings, MqttQoS.atLeastOnce()), materializer);
+    Source.single(msg).runWith(MqttSink.create(sinkSettings, MqttQoS.atLeastOnce()), system);
     result2.second().requestNext();
 
     // Kill the proxy, producing an unexpected disconnection of the client
@@ -334,7 +321,7 @@ public class MqttSourceTest {
     Source<MqttMessage, CompletionStage<Done>> source2 =
         MqttSource.atMostOnce(settings2, subscriptions2, bufferSize);
 
-    CompletionStage<MqttMessage> elem = source2.runWith(Sink.head(), materializer);
+    CompletionStage<MqttMessage> elem = source2.runWith(Sink.head(), system);
     assertEquals(
         MqttMessage.create(willTopic, ByteString.fromString("ohi")),
         elem.toCompletableFuture().get(3, TimeUnit.SECONDS));

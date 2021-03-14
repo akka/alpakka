@@ -127,6 +127,13 @@ object ReaderSettingsBuilder {
     apply(actorSystem)
 
   /**
+   * Java API: Create settings from a configuration with the same layout as
+   * * the default configuration `akka.alpakka.pravega.reader`.
+   */
+  def create[Message](config: Config): ReaderSettingsBuilder =
+    apply(config)
+
+  /**
    * Create settings from a configuration with the same layout as
    * the default configuration `akka.alpakka.pravega.reader`.
    */
@@ -203,7 +210,11 @@ class WriterSettingsBuilder[Message](
     eventWriterConfigCustomizer.foreach(_(eventWriterConfigBuilder))
 
     val eventWriterConfig = eventWriterConfigBuilder.build()
-    new WriterSettings[Message](handleClientConfig(), eventWriterConfig, serializer, None, maximumInflightMessages)
+    new WriterSettings[Message](handleClientConfig(),
+                                eventWriterConfig,
+                                serializer,
+                                keyExtractor,
+                                maximumInflightMessages)
   }
 
 }
@@ -248,7 +259,7 @@ object WriterSettingsBuilder {
     extractBoolean("automatically-note-time")(builder.automaticallyNoteTime)
     extractInt("backoff-multiple")(builder.backoffMultiple)
     extractBoolean("enable-connection-pooling")(builder.enableConnectionPooling)
-    extractInt("initial-backoff-millis")(builder.initalBackoffMillis)
+    extractInt("initial-backoff-millis")(builder.initialBackoffMillis)
     extractInt("retry-attempts")(builder.retryAttempts)
     extractLong("transaction-timeout-time")(builder.transactionTimeoutTime)
 

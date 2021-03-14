@@ -12,10 +12,9 @@ import akka.stream.alpakka.file.ArchiveMetadata
 import akka.stream.alpakka.file.scaladsl.Archive
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{FileIO, Sink, Source}
-import akka.stream.{ActorMaterializer, IOResult, Materializer}
 import akka.testkit.TestKit
 import akka.util.ByteString
-import akka.{Done, NotUsed}
+import akka.NotUsed
 import docs.javadsl.ArchiveHelper
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
@@ -24,7 +23,6 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Success
 
 class ArchiveSpec
     extends TestKit(ActorSystem("ArchiveSpec"))
@@ -35,7 +33,6 @@ class ArchiveSpec
     with LogCapturing
     with IntegrationPatience {
 
-  implicit val mat: Materializer = ActorMaterializer()
   implicit val ec: ExecutionContext = system.dispatcher
 
   private val archiveHelper = new ArchiveHelper()
@@ -80,7 +77,7 @@ class ArchiveSpec
           .via(Archive.zip())
           .runWith(FileIO.toPath(Paths.get("result.zip")))
         // #sample-zip
-        result.futureValue shouldBe IOResult(1178, Success(Done))
+        result.futureValue.count shouldBe 1178
 
         val resultFileContent =
           FileIO.fromPath(Paths.get("result.zip")).runWith(Sink.fold(ByteString.empty)(_ ++ _)).futureValue

@@ -13,7 +13,7 @@ import akka.annotation.InternalApi
 import net.schmizz.sshj.SSHClient
 import net.schmizz.sshj.sftp.{OpenMode, RemoteResourceInfo, SFTPClient}
 import net.schmizz.sshj.transport.verification.PromiscuousVerifier
-import net.schmizz.sshj.userauth.keyprovider.OpenSSHKeyFile
+import net.schmizz.sshj.userauth.UserAuthException
 import net.schmizz.sshj.userauth.method.{AuthPassword, AuthPublickey}
 import net.schmizz.sshj.userauth.password.{PasswordFinder, PasswordUtils, Resource}
 import net.schmizz.sshj.xfer.FilePermission
@@ -21,7 +21,7 @@ import org.apache.commons.net.DefaultSocketFactory
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
-import scala.util.Try
+import scala.util.{Failure, Try}
 
 /**
  * INTERNAL API
@@ -31,39 +31,49 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
 
   type Handler = SFTPClient
 
-  def connect(connectionSettings: SftpSettings)(implicit ssh: SSHClient): Try[Handler] = Try {
-    import connectionSettings._
+  def connect(connectionSettings: SftpSettings)(implicit ssh: SSHClient): Try[Handler] =
+    Try {
+      import connectionSettings._
 
-    proxy.foreach(p => ssh.setSocketFactory(new DefaultSocketFactory(p)))
+      proxy.foreach(p => ssh.setSocketFactory(new DefaultSocketFactory(p)))
 
-    if (!strictHostKeyChecking)
-      ssh.addHostKeyVerifier(new PromiscuousVerifier)
-    else
-      knownHosts.foreach(path => ssh.loadKnownHosts(new File(path)))
+      if (!strictHostKeyChecking) {
+        ssh.addHostKeyVerifier(new PromiscuousVerifier)
+      } else {
+        knownHosts.foreach(path => ssh.loadKnownHosts(new File(path)))
+      }
+      ssh.connect(host.getHostAddress, port)
 
-    ssh.connect(host.getHostAddress, port)
-
-    sftpIdentity match {
-      case Some(identity) =>
-        if (credentials.password != "") {
-          val passwordAuth: AuthPassword = new AuthPassword(new PasswordFinder() {
-            def reqPassword(resource: Resource[_]): Array[Char] = credentials.password.toCharArray
-            def shouldRetry(resource: Resource[_]) = false
-          })
-
+      sftpIdentity match {
+        case Some(identity) =>
           val keyAuth = authPublickey(identity)
-          ssh.auth(credentials.username, passwordAuth, keyAuth)
-        } else {
-          setIdentity(identity, credentials.username)
-        }
-      case None =>
-        if (credentials.password != "") {
-          ssh.authPassword(credentials.username, credentials.password)
-        }
-    }
 
-    ssh.newSFTPClient()
-  }
+          if (credentials.password != "") {
+            val passwordAuth: AuthPassword = new AuthPassword(new PasswordFinder() {
+              def reqPassword(resource: Resource[_]): Array[Char] = credentials.password.toCharArray
+
+              def shouldRetry(resource: Resource[_]) = false
+            })
+
+            ssh.auth(credentials.username, passwordAuth, keyAuth)
+          } else {
+            ssh.auth(credentials.username, keyAuth)
+          }
+        case None =>
+          if (credentials.password != "") {
+            ssh.authPassword(credentials.username, credentials.password)
+          }
+      }
+
+      ssh.newSFTPClient()
+    } match {
+      case Failure(_: UserAuthException) =>
+        throw new FtpAuthenticationException(
+          s"unable to login to host=[${connectionSettings.host}], port=${connectionSettings.port} ${connectionSettings.proxy
+            .fold("")("proxy=" + _.toString)}"
+        )
+      case result => result
+    }
 
   def disconnect(handler: Handler)(implicit ssh: SSHClient): Unit = {
     handler.close()
@@ -112,74 +122,80 @@ private[ftp] trait SftpOperations { _: FtpLike[SSHClient, SftpSettings] =>
   def retrieveFileInputStream(name: String, handler: Handler): Try[InputStream] =
     retrieveFileInputStream(name, handler, 0L)
 
-  def retrieveFileInputStream(name: String, handler: Handler, offset: Long): Try[InputStream] = Try {
-    val remoteFile = handler.open(name, java.util.EnumSet.of(OpenMode.READ))
-    val is = new remoteFile.RemoteFileInputStream(offset) {
+  def retrieveFileInputStream(name: String, handler: Handler, offset: Long): Try[InputStream] =
+    retrieveFileInputStream(name, handler, offset, 1)
 
-      override def close(): Unit =
-        try {
-          super.close()
-        } finally {
-          remoteFile.close()
-        }
-    }
-    Option(is).getOrElse {
-      remoteFile.close()
-      throw new IOException(s"$name: No such file or directory")
-    }
-  }
+  def retrieveFileInputStream(name: String,
+                              handler: Handler,
+                              offset: Long,
+                              maxUnconfirmedReads: Int): Try[InputStream] =
+    Try {
+      val remoteFile = handler.open(name, java.util.EnumSet.of(OpenMode.READ))
+      val is = maxUnconfirmedReads match {
+        case m if m > 1 =>
+          new remoteFile.ReadAheadRemoteFileInputStream(m, offset) {
 
-  def storeFileOutputStream(name: String, handler: Handler, append: Boolean): Try[OutputStream] = Try {
-    import OpenMode._
-    val openModes =
-      if (append) java.util.EnumSet.of(WRITE, CREAT, APPEND) else java.util.EnumSet.of(WRITE, CREAT, TRUNC)
-    val remoteFile = handler.open(name, openModes)
-    val os = new remoteFile.RemoteFileOutputStream() {
+            override def close(): Unit =
+              try {
+                super.close()
+              } finally {
+                remoteFile.close()
+              }
+          }
+        case _ =>
+          new remoteFile.RemoteFileInputStream(offset) {
 
-      override def close(): Unit = {
-        try {
-          remoteFile.close()
-        } catch {
-          case e: IOException =>
-        }
-        super.close()
+            override def close(): Unit =
+              try {
+                super.close()
+              } finally {
+                remoteFile.close()
+              }
+          }
+      }
+      Option(is).getOrElse {
+        remoteFile.close()
+        throw new IOException(s"$name: No such file or directory")
       }
     }
-    Option(os).getOrElse {
-      remoteFile.close()
-      throw new IOException(s"Could not write to $name")
+
+  def storeFileOutputStream(name: String, handler: Handler, append: Boolean): Try[OutputStream] =
+    Try {
+      import OpenMode._
+      val openModes =
+        if (append) java.util.EnumSet.of(WRITE, CREAT, APPEND)
+        else java.util.EnumSet.of(WRITE, CREAT, TRUNC)
+      val remoteFile = handler.open(name, openModes)
+      val os = new remoteFile.RemoteFileOutputStream() {
+
+        override def close(): Unit = {
+          try {
+            remoteFile.close()
+          } catch {
+            case e: IOException =>
+          }
+          super.close()
+        }
+      }
+      Option(os).getOrElse {
+        remoteFile.close()
+        throw new IOException(s"Could not write to $name")
+      }
     }
-  }
-
-  private[this] def setIdentity(identity: SftpIdentity, username: String)(implicit ssh: SSHClient) = {
-    def bats(array: Array[Byte]): String = new String(array, StandardCharsets.UTF_8)
-
-    def initKey(f: OpenSSHKeyFile => Unit) = {
-      val key = new OpenSSHKeyFile
-      f(key)
-      ssh.authPublickey(username, key)
-    }
-
-    val passphrase =
-      identity.privateKeyFilePassphrase.map(pass => PasswordUtils.createOneOff(bats(pass).toCharArray)).orNull
-
-    identity match {
-      case id: RawKeySftpIdentity =>
-        initKey(_.init(bats(id.privateKey), id.publicKey.map(bats).orNull, passphrase))
-      case id: KeyFileSftpIdentity =>
-        initKey(_.init(new File(id.privateKey), passphrase))
-    }
-  }
 
   private[this] def authPublickey(identity: SftpIdentity)(implicit ssh: SSHClient) = {
     def bats(array: Array[Byte]): String = new String(array, StandardCharsets.UTF_8)
 
     val passphrase =
-      identity.privateKeyFilePassphrase.map(pass => PasswordUtils.createOneOff(bats(pass).toCharArray)).orNull
+      identity.privateKeyFilePassphrase
+        .map(pass => PasswordUtils.createOneOff(bats(pass).toCharArray))
+        .orNull
 
     identity match {
       case id: RawKeySftpIdentity =>
-        new AuthPublickey(ssh.loadKeys(bats(id.privateKey), id.publicKey.map(bats).orNull, passphrase))
+        new AuthPublickey(
+          ssh.loadKeys(bats(id.privateKey), id.publicKey.map(bats).orNull, passphrase)
+        )
       case id: KeyFileSftpIdentity =>
         new AuthPublickey(ssh.loadKeys(id.privateKey, passphrase))
     }

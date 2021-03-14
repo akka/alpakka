@@ -8,7 +8,6 @@ import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
 import akka.stream.KillSwitches;
 import akka.stream.Materializer;
 import akka.stream.UniqueKillSwitch;
@@ -46,12 +45,10 @@ public class AmqpDocsTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem system;
-  private static Materializer materializer;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
   }
 
   @AfterClass
@@ -61,7 +58,7 @@ public class AmqpDocsTest {
 
   @After
   public void checkForStageLeaks() {
-    StreamTestKit.assertAllStagesStopped(materializer);
+    StreamTestKit.assertAllStagesStopped(Materializer.matFromSystem(system));
   }
 
   private AmqpConnectionProvider connectionProvider = AmqpLocalConnectionProvider.getInstance();
@@ -88,7 +85,7 @@ public class AmqpDocsTest {
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
     CompletionStage<Done> writing =
-        Source.from(input).map(ByteString::fromString).runWith(amqpSink, materializer);
+        Source.from(input).map(ByteString::fromString).runWith(amqpSink, system);
     // #create-sink
     writing.toCompletableFuture().get(3, TimeUnit.SECONDS);
 
@@ -102,7 +99,7 @@ public class AmqpDocsTest {
             bufferSize);
 
     final CompletionStage<List<ReadResult>> result =
-        amqpSource.take(input.size()).runWith(Sink.seq(), materializer);
+        amqpSource.take(input.size()).runWith(Sink.seq(), system);
     // #create-source
 
     assertEquals(
@@ -140,7 +137,7 @@ public class AmqpDocsTest {
             .map(ByteString::fromString)
             .viaMat(ampqRpcFlow, Keep.right())
             .toMat(TestSink.probe(system), Keep.both())
-            .run(materializer);
+            .run(system);
     // #create-rpc-flow
     result.first().toCompletableFuture().get(3, TimeUnit.SECONDS);
 
@@ -155,7 +152,7 @@ public class AmqpDocsTest {
                     WriteMessage.create(b.bytes().concat(ByteString.fromString("a")))
                         .withProperties(b.properties()))
             .to(amqpSink)
-            .run(materializer);
+            .run(system);
 
     result
         .second()
@@ -218,7 +215,7 @@ public class AmqpDocsTest {
                       seen.add(branchElem.first());
                       return seen;
                     }))
-            .run(materializer);
+            .run(system);
 
     system
         .scheduler()
@@ -234,7 +231,7 @@ public class AmqpDocsTest {
             .viaMat(KillSwitches.single(), Keep.right())
             .map(ByteString::fromString)
             .to(amqpSink)
-            .run(materializer);
+            .run(system);
 
     assertEquals(Done.getInstance(), completion.get(10, TimeUnit.SECONDS));
     mergingFlow.shutdown();
@@ -257,7 +254,7 @@ public class AmqpDocsTest {
                 .withDeclaration(queueDeclaration));
 
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
-    Source.from(input).map(ByteString::fromString).runWith(amqpSink, materializer);
+    Source.from(input).map(ByteString::fromString).runWith(amqpSink, system);
 
     // #create-source-withoutautoack
     final Integer bufferSize = 10;
@@ -272,7 +269,7 @@ public class AmqpDocsTest {
             .mapAsync(1, this::businessLogic)
             .mapAsync(1, cm -> cm.ack(/* multiple */ false).thenApply(unused -> cm.message()))
             .take(input.size())
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
     // #create-source-withoutautoack
 
     assertEquals(
@@ -296,7 +293,7 @@ public class AmqpDocsTest {
     final List<String> input = Arrays.asList("one", "two", "three", "four", "five");
     Source.from(input)
         .map(ByteString::fromString)
-        .runWith(amqpSink, materializer)
+        .runWith(amqpSink, system)
         .toCompletableFuture()
         .get(5, TimeUnit.SECONDS);
 
@@ -318,7 +315,7 @@ public class AmqpDocsTest {
                 cm ->
                     cm.nack(/* multiple */ false, /* requeue */ true)
                         .thenApply(unused -> cm.message()))
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
     // #create-source-withoutautoack
 
     nackedResults.toCompletableFuture().get(3, TimeUnit.SECONDS);
@@ -327,7 +324,7 @@ public class AmqpDocsTest {
         amqpSource
             .take(input.size())
             .mapAsync(1, cm -> cm.ack().thenApply(unused -> cm))
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
 
     assertEquals(
         input,
@@ -362,7 +359,7 @@ public class AmqpDocsTest {
         Source.from(input)
             .map(message -> WriteMessage.create(ByteString.fromString(message)))
             .via(amqpFlow)
-            .runWith(Sink.seq(), materializer)
+            .runWith(Sink.seq(), system)
             .toCompletableFuture()
             .get();
     // #create-flow

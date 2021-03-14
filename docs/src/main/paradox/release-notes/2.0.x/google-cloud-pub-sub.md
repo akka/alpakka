@@ -1,5 +1,9 @@
 # Google Cloud Pub/Sub
 
+## 2.0.2
+
+- Google Cloud Pub/Sub: use SingleRequest [#2403](https://github.com/akka/alpakka/issues/2403) by [@karlssonsimon](https://github.com/karlssonsimon)
+
 ## 2.0.0-RC2
 
 - Google PubSub: subscribe as a flow [#2169](https://github.com/akka/alpakka/issues/2169) by [@btomala](https://github.com/btomala)

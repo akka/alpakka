@@ -11,7 +11,6 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{`Raw-Request-URI`, ByteRange, RawHeader}
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.s3.headers.{CannedAcl, ServerSideEncryption, StorageClass}
 import akka.stream.alpakka.s3._
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
@@ -58,7 +57,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
 
     req.entity shouldEqual HttpEntity.empty(contentType)
     req.headers should contain(RawHeader("x-amz-acl", acl.value))
-    req.uri.authority.host.toString shouldEqual "bucket.s3.amazonaws.com"
+    req.uri.authority.host.toString shouldEqual "bucket.s3.us-east-1.amazonaws.com"
     req.uri.path.toString shouldEqual "/image-1024@2x"
 
     metaHeaders.map { m =>
@@ -78,7 +77,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
 
     req.entity shouldEqual HttpEntity.empty(contentType)
     req.headers should contain(RawHeader("x-amz-acl", acl.value))
-    req.uri.authority.host.toString shouldEqual "bucket.s3-us-east-2.amazonaws.com"
+    req.uri.authority.host.toString shouldEqual "bucket.s3.us-east-2.amazonaws.com"
     req.uri.path.toString shouldEqual "/image-1024@2x"
 
     metaHeaders.map { m =>
@@ -131,7 +130,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
         S3Headers().withCannedAcl(acl).withMetaHeaders(MetaHeaders(metaHeaders)).headers
       )
 
-    req.uri.authority.host.toString shouldEqual "s3.amazonaws.com"
+    req.uri.authority.host.toString shouldEqual "s3.us-east-1.amazonaws.com"
     req.uri.path.toString shouldEqual "/bucket/image-1024@2x"
   }
 
@@ -141,7 +140,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
 
     val req = HttpRequests.getDownloadRequest(location)
 
-    req.uri.authority.host.toString shouldEqual "s3.amazonaws.com"
+    req.uri.authority.host.toString shouldEqual "s3.us-east-1.amazonaws.com"
     req.uri.path.toString shouldEqual "/bucket/image-1024@2x"
     req.uri.rawQueryString shouldBe empty
   }
@@ -157,7 +156,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
         S3Headers().withCannedAcl(acl).withMetaHeaders(MetaHeaders(metaHeaders)).headers
       )
 
-    req.uri.authority.host.toString shouldEqual "s3-us-west-2.amazonaws.com"
+    req.uri.authority.host.toString shouldEqual "s3.us-west-2.amazonaws.com"
     req.uri.path.toString shouldEqual "/bucket/image-1024@2x"
   }
 
@@ -167,7 +166,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
 
     val req = HttpRequests.getDownloadRequest(location)
 
-    req.uri.authority.host.toString shouldEqual "s3-eu-west-1.amazonaws.com"
+    req.uri.authority.host.toString shouldEqual "s3.eu-west-1.amazonaws.com"
     req.uri.path.toString shouldEqual "/bucket/image-1024@2x"
     req.uri.rawQueryString shouldBe empty
   }
@@ -193,7 +192,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
 
     val req = HttpRequests.getDownloadRequest(location)
 
-    req.uri.authority.host.toString shouldEqual "bucket.s3.amazonaws.com"
+    req.uri.authority.host.toString shouldEqual "bucket.s3.us-east-1.amazonaws.com"
     req.uri.path.toString shouldEqual "//test/foo.txt"
     req.uri.rawQueryString shouldBe empty
   }
@@ -206,7 +205,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
 
     val req = HttpRequests.getDownloadRequest(location)
 
-    req.uri.authority.host.toString shouldEqual "bucket.s3.amazonaws.com"
+    req.uri.authority.host.toString shouldEqual "bucket.s3.us-east-1.amazonaws.com"
     req.uri.path.toString shouldEqual "//test//"
     req.uri.rawQueryString shouldBe empty
   }
@@ -218,7 +217,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
 
     val req = HttpRequests.getDownloadRequest(location)
 
-    req.uri.authority.host.toString shouldEqual "bucket.s3.amazonaws.com"
+    req.uri.authority.host.toString shouldEqual "bucket.s3.us-east-1.amazonaws.com"
     req.uri.path.toString shouldEqual "/test%20folder/test%20file.txt"
     req.uri.rawQueryString shouldBe empty
   }
@@ -228,7 +227,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
 
     val location = S3Location("bucket", "test folder/1 + 2 = 3")
     val req = HttpRequests.getDownloadRequest(location)
-    req.uri.authority.host.toString shouldEqual "bucket.s3.amazonaws.com"
+    req.uri.authority.host.toString shouldEqual "bucket.s3.us-east-1.amazonaws.com"
     req.uri.path.toString shouldEqual "/test%20folder/1%20+%202%20=%203"
     req.headers should contain(`Raw-Request-URI`("/test%20folder/1%20%2B%202%20=%203"))
   }
@@ -241,7 +240,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
 
     val req = HttpRequests.getDownloadRequest(location)
 
-    req.uri.authority.host.toString shouldEqual "s3-eu-west-1.amazonaws.com"
+    req.uri.authority.host.toString shouldEqual "s3.eu-west-1.amazonaws.com"
     req.uri.path.toString shouldEqual "/bucket/test%20folder/test%20file.txt"
     req.uri.rawQueryString shouldBe empty
   }
@@ -254,7 +253,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
     val versionId = "123456"
     val req = HttpRequests.getDownloadRequest(location, versionId = Some(versionId))
 
-    req.uri.authority.host.toString shouldEqual "s3.amazonaws.com"
+    req.uri.authority.host.toString shouldEqual "s3.us-east-1.amazonaws.com"
     req.uri.path.toString shouldEqual "/bucket/test/foo.txt"
     req.uri.rawQueryString.fold(fail("query string is empty while it was supposed to be populated")) { rawQueryString =>
       rawQueryString shouldEqual s"versionId=$versionId"
@@ -417,7 +416,6 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
   it should "support custom endpoint configured by `endpointUrl`" in {
     implicit val system: ActorSystem = ActorSystem("HttpRequestsSpec")
     import system.dispatcher
-    implicit val materializer: ActorMaterializer = ActorMaterializer()
 
     try {
       val probe = TestProbe()
@@ -488,7 +486,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
     val request = HttpRequests.bucketManagementRequest(location, method = HttpMethods.PUT)
 
     //Date is added by akka by default
-    request.uri.authority.host.toString should equal("bucket.s3.amazonaws.com")
+    request.uri.authority.host.toString should equal("bucket.s3.us-east-1.amazonaws.com")
     request.entity.contentLengthOption should equal(Some(0))
     request.uri.queryString() should equal(None)
     request.method should equal(HttpMethods.PUT)
@@ -500,7 +498,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
     val request = HttpRequests.bucketManagementRequest(location, method = HttpMethods.DELETE)
 
     //Date is added by akka by default
-    request.uri.authority.host.toString should equal("bucket.s3.amazonaws.com")
+    request.uri.authority.host.toString should equal("bucket.s3.us-east-1.amazonaws.com")
     request.entity.contentLengthOption should equal(Some(0))
     request.uri.queryString() should equal(None)
     request.method should equal(HttpMethods.DELETE)
@@ -512,7 +510,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
     val request: HttpRequest = HttpRequests.bucketManagementRequest(location, method = HttpMethods.HEAD)
 
     //Date is added by akka by default
-    request.uri.authority.host.toString should equal("bucket.s3.amazonaws.com")
+    request.uri.authority.host.toString should equal("bucket.s3.us-east-1.amazonaws.com")
     request.entity.contentLengthOption should equal(Some(0))
     request.uri.queryString() should equal(None)
     request.method should equal(HttpMethods.HEAD)

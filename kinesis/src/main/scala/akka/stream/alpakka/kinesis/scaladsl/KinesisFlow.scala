@@ -7,7 +7,8 @@ package akka.stream.alpakka.kinesis.scaladsl
 import java.nio.ByteBuffer
 
 import akka.NotUsed
-import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
+import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts.parasitic
 import akka.stream.ThrottleMode
 import akka.stream.alpakka.kinesis.KinesisFlowSettings
 import akka.stream.alpakka.kinesis.KinesisErrors.FailurePublishingRecords
@@ -39,7 +40,8 @@ object KinesisFlow {
 
   def withContext[T](streamName: String, settings: KinesisFlowSettings = KinesisFlowSettings.Defaults)(
       implicit kinesisClient: KinesisAsyncClient
-  ): FlowWithContext[PutRecordsRequestEntry, T, PutRecordsResultEntry, T, NotUsed] =
+  ): FlowWithContext[PutRecordsRequestEntry, T, PutRecordsResultEntry, T, NotUsed] = {
+    checkClient(kinesisClient)
     FlowWithContext.fromTuples(
       Flow[(PutRecordsRequestEntry, T)]
         .throttle(settings.maxRecordsPerSecond, 1.second, settings.maxRecordsPerSecond, ThrottleMode.Shaping)
@@ -56,10 +58,11 @@ object KinesisFlow {
                 PutRecordsRequest.builder().streamName(streamName).records(entries.map(_._1).asJavaCollection).build
               )
               .toScala
-              .transform(handlePutRecordsSuccess(entries), FailurePublishingRecords(_))(sameThreadExecutionContext)
+              .transform(handlePutRecordsSuccess(entries), FailurePublishingRecords(_))(parasitic)
         )
         .mapConcat(identity)
     )
+  }
 
   private def handlePutRecordsSuccess[T](
       entries: Iterable[(PutRecordsRequestEntry, T)]
@@ -99,5 +102,9 @@ object KinesisFlow {
           partitionKey -> bytes.toByteBuffer
       }
       .via(byPartitionAndData(streamName, settings))
+
+  @InternalApi
+  private[scaladsl] def checkClient(kinesisClient: KinesisAsyncClient): Unit =
+    require(kinesisClient != null, "The `KinesisAsyncClient` passed in may not be null.")
 
 }

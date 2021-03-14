@@ -5,8 +5,7 @@
 package docs.javadsl;
 
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
+import akka.stream.SystemMaterializer;
 // #import
 import akka.stream.alpakka.csv.javadsl.CsvFormatting;
 import akka.stream.alpakka.csv.javadsl.CsvQuotingStyle;
@@ -32,13 +31,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class CsvFormattingTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem system;
-  private static Materializer materializer;
 
   public void documentation() {
     char delimiter = CsvFormatting.COMMA;
@@ -69,7 +67,7 @@ public class CsvFormattingTest {
         // #formatting
         Source.single(Arrays.asList("one", "two", "three"))
             .via(CsvFormatting.format())
-            .runWith(Sink.head(), materializer);
+            .runWith(Sink.head(), system);
     // #formatting
     ByteString result = completionStage.toCompletableFuture().get(1, TimeUnit.SECONDS);
     assertThat(result.utf8String(), equalTo("one,two,three\r\n"));
@@ -78,7 +76,6 @@ public class CsvFormattingTest {
   @BeforeClass
   public static void setup() throws Exception {
     system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
   }
 
   @AfterClass
@@ -88,6 +85,6 @@ public class CsvFormattingTest {
 
   @After
   public void checkForStageLeaks() {
-    StreamTestKit.assertAllStagesStopped(materializer);
+    StreamTestKit.assertAllStagesStopped(SystemMaterializer.get(system).materializer());
   }
 }

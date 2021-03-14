@@ -8,16 +8,16 @@ import java.time.Instant
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{MediaTypes, _}
-import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.stream.alpakka.s3.{ListBucketResultCommonPrefixes, ListBucketResultContents}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
-import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.BeforeAndAfterAll
-
-import scala.collection.immutable.Seq
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.matchers.should.Matchers
+
+import scala.collection.immutable.Seq
+import scala.concurrent.ExecutionContext
 
 class MarshallingSpec(_system: ActorSystem)
     extends TestKit(_system)
@@ -29,13 +29,12 @@ class MarshallingSpec(_system: ActorSystem)
 
   def this() = this(ActorSystem("MarshallingSpec"))
 
-  implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withDebugLogging(true))
-  implicit val ec = materializer.executionContext
+  implicit val ec: ExecutionContext = system.dispatcher
 
   override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 
   val xmlString = """<?xml version="1.0" encoding="UTF-8"?>
-                    |<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                    |<ListBucketResult xmlns="http://s3.us-east-1.amazonaws.com/doc/2006-03-01/">
                     |    <Name>bucket</Name>
                     |    <Prefix/>
                     |    <KeyCount>205</KeyCount>
@@ -93,7 +92,7 @@ class MarshallingSpec(_system: ActorSystem)
   }
 
   val listBucketV2TruncatedResponse = """<?xml version="1.0" encoding="UTF-8"?>
-                                        |<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                                        |<ListBucketResult xmlns="http://s3.us-east-1.amazonaws.com/doc/2006-03-01/">
                                         |    <Name>bucket</Name>
                                         |    <Prefix/>
                                         |    <KeyCount>205</KeyCount>
@@ -143,7 +142,7 @@ class MarshallingSpec(_system: ActorSystem)
   }
 
   val listBucketV1TruncatedResponse = """<?xml version="1.0" encoding="UTF-8"?>
-                                        |<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                                        |<ListBucketResult xmlns="http://s3.us-east-1.amazonaws.com/doc/2006-03-01/">
                                         |    <Name>bucket</Name>
                                         |    <Prefix/>
                                         |    <KeyCount>205</KeyCount>
@@ -206,6 +205,27 @@ class MarshallingSpec(_system: ActorSystem)
 
     result.futureValue shouldEqual CopyPartResult(Instant.parse("2009-10-28T22:32:00.000Z"),
                                                   "5b27a21a97fcf8a7004dd1d906e7a5ba")
+  }
+
+  it should "parse CompleteMultipartUpload in event-stream" in {
+    val xmlString =
+      """
+        |<CompleteMultipartUploadResult>
+        |   <Location>some-location</Location>
+        |   <Bucket>some-bucket</Bucket>
+        |   <Key>some/key</Key>
+        |   <ETag>"5b27a21a97fcf8a7004dd1d906e7a5ba"</ETag>
+        |</CompleteMultipartUploadResult>
+      """.stripMargin
+
+    val entity = HttpEntity(MediaTypes.`text/event-stream`, xmlString)
+
+    val result = Marshalling.completeMultipartUploadResultUnmarshaller(entity)
+
+    result.futureValue shouldEqual CompleteMultipartUploadResult("some-location",
+                                                                 "some-bucket",
+                                                                 "some/key",
+                                                                 "5b27a21a97fcf8a7004dd1d906e7a5ba")
   }
 
 }

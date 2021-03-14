@@ -62,7 +62,7 @@ private[amqp] final class AmqpReplyToSinkStage(settings: AmqpReplyToSinkSettings
           override def onPush(): Unit = {
             val elem = grab(in)
 
-            val replyTo = elem.properties.map(_.getReplyTo)
+            val replyTo = elem.properties.flatMap(properties => Option(properties.getReplyTo))
 
             if (replyTo.isDefined) {
               channel.basicPublish(

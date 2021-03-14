@@ -41,7 +41,7 @@ object CouchbaseSession {
     ScalaDslCouchbaseSession
       .apply(settings, bucketName)(executionContext(executor))
       .map(new CouchbaseSessionJavaAdapter(_): CouchbaseSession)(
-        ExecutionContexts.sameThreadExecutionContext
+        ExecutionContexts.parasitic
       )
       .toJava
 
@@ -52,7 +52,7 @@ object CouchbaseSession {
   def create(client: AsyncCluster, bucketName: String, executor: Executor): CompletionStage[CouchbaseSession] =
     ScalaDslCouchbaseSession(client, bucketName)(executionContext(executor))
       .map(new CouchbaseSessionJavaAdapter(_): CouchbaseSession)(
-        ExecutionContexts.sameThreadExecutionContext
+        ExecutionContexts.parasitic
       )
       .toJava
 

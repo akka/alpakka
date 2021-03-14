@@ -5,7 +5,6 @@
 package akka.stream.alpakka.file.impl.archive
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Keep
 import akka.stream.testkit.scaladsl.{TestSink, TestSource}
@@ -20,10 +19,8 @@ class ZipArchiveFlowTest
     with BeforeAndAfterAll
     with LogCapturing {
 
-  implicit val mat = ActorMaterializer()
-
   "ZipArchiveFlowStage" when {
-    "steam ends" should {
+    "stream ends" should {
       "emit element only when downstream requests" in {
         val (upstream, downstream) =
           TestSource

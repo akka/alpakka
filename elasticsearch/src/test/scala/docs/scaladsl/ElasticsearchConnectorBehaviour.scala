@@ -4,287 +4,128 @@
 
 package docs.scaladsl
 
-import java.util.Collections
 import java.util.concurrent.TimeUnit
 
-import akka.stream.Materializer
+import akka.actor.ActorSystem
+import akka.http.scaladsl.HttpExt
+import akka.http.scaladsl.model.Uri.Path
+import akka.http.scaladsl.model.{ContentTypes, HttpMethods, HttpRequest, Uri}
 import akka.stream.alpakka.elasticsearch._
 import akka.stream.alpakka.elasticsearch.scaladsl._
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.{Done, NotUsed}
-import org.apache.http.entity.StringEntity
-import org.apache.http.message.BasicHeader
-import org.elasticsearch.client.RestClient
 import org.scalatest.Inspectors
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.collection.JavaConverters._
 import scala.collection.immutable
-import scala.concurrent.Future
 import scala.concurrent.duration._
 
-trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with ScalaFutures with Inspectors =>
+trait ElasticsearchConnectorBehaviour {
+  this: AnyWordSpec with Matchers with ScalaFutures with Inspectors with ElasticsearchSpecUtils =>
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(10.seconds)
 
-  def elasticsearchConnector(apiVersion: ApiVersion, _client: RestClient)(implicit materializer: Materializer): Unit = {
+  def elasticsearchConnector(apiVersion: ApiVersion, connectionSettings: ElasticsearchConnectionSettings)(
+      implicit system: ActorSystem,
+      http: HttpExt
+  ): Unit = {
 
-    val baseWriteSettings = ElasticsearchWriteSettings().withApiVersion(apiVersion)
-    implicit val client = _client
+    val baseSourceSettings = ElasticsearchSourceSettings(connectionSettings).withApiVersion(apiVersion)
+    val baseWriteSettings = ElasticsearchWriteSettings(connectionSettings).withApiVersion(apiVersion)
 
-    //#define-class
     import spray.json._
     import DefaultJsonProtocol._
 
-    case class Book(title: String)
+    def createStrictMapping(indexName: String): Unit = {
+      val uri = Uri(connectionSettings.baseUrl)
+        .withPath(Path(s"/$indexName"))
+        .withQuery(Uri.Query(Map("include_type_name" -> "true")))
 
-    implicit val format: JsonFormat[Book] = jsonFormat1(Book)
-    //#define-class
+      val request = HttpRequest(HttpMethods.PUT)
+        .withUri(uri)
+        .withEntity(
+          ContentTypes.`application/json`,
+          s"""{
+            |  "mappings": {
+            |    "_doc": {
+            |      "dynamic": "strict",
+            |      "properties": {
+            |        "title": { "type": "text"}
+            |      }
+            |    }
+            |  }
+            |}
+         """.stripMargin
+        )
 
-    def register(indexName: String, title: String): Unit =
-      client.performRequest("POST",
-                            s"$indexName/_doc",
-                            Map[String, String]().asJava,
-                            new StringEntity(s"""{"title": "$title"}"""),
-                            new BasicHeader("Content-Type", "application/json"))
-
-    def flushAndRefresh(indexName: String): Unit = {
-      client.performRequest("POST", s"$indexName/_flush")
-      client.performRequest("POST", s"$indexName/_refresh")
+      http.singleRequest(request).futureValue
     }
 
-    def createStrictMapping(indexName: String): Unit =
-      client.performRequest(
-        "PUT",
-        indexName,
-        Collections.singletonMap("include_type_name", "true"),
-        new StringEntity(s"""{
-                          |  "mappings": {
-                          |    "_doc": {
-                          |      "dynamic": "strict",
-                          |      "properties": {
-                          |        "title": { "type": "text"}
-                          |      }
-                          |    }
-                          |  }
-                          |}
-         """.stripMargin),
-        new BasicHeader("Content-Type", "application/json")
-      )
-
-    def readTitlesFrom(indexName: String): Future[immutable.Seq[String]] =
-      ElasticsearchSource
-        .typed[Book](
-          indexName,
-          "_doc",
-          """{"match_all": {}}"""
-        )
-        .map { message =>
-          message.source.title
-        }
-        .runWith(Sink.seq)
-
-    register("source", "Akka in Action")
-    register("source", "Programming in Scala")
-    register("source", "Learning Scala")
-    register("source", "Scala for Spark in Production")
-    register("source", "Scala Puzzlers")
-    register("source", "Effective Akka")
-    register("source", "Akka Concurrency")
-    flushAndRefresh("source")
+    insertTestData(connectionSettings)
 
     "Source Settings" should {
       "convert scrollDuration value to correct scroll string value (Days)" in {
-        val sourceSettings = ElasticsearchSourceSettings()
+        val sourceSettings = ElasticsearchSourceSettings(connectionSettings)
           .withScrollDuration(FiniteDuration(5, TimeUnit.DAYS))
 
         sourceSettings.scroll shouldEqual "5d"
       }
       "convert scrollDuration value to correct scroll string value (Hours)" in {
-        val sourceSettings = ElasticsearchSourceSettings()
+        val sourceSettings = ElasticsearchSourceSettings(connectionSettings)
           .withScrollDuration(FiniteDuration(5, TimeUnit.HOURS))
 
         sourceSettings.scroll shouldEqual "5h"
       }
       "convert scrollDuration value to correct scroll string value (Minutes)" in {
-        val sourceSettings = ElasticsearchSourceSettings()
+        val sourceSettings = ElasticsearchSourceSettings(connectionSettings)
           .withScrollDuration(FiniteDuration(5, TimeUnit.MINUTES))
 
         sourceSettings.scroll shouldEqual "5m"
       }
       "convert scrollDuration value to correct scroll string value (Seconds)" in {
-        val sourceSettings = ElasticsearchSourceSettings()
+        val sourceSettings = ElasticsearchSourceSettings(connectionSettings)
           .withScrollDuration(FiniteDuration(5, TimeUnit.SECONDS))
 
         sourceSettings.scroll shouldEqual "5s"
       }
       "convert scrollDuration value to correct scroll string value (Milliseconds)" in {
-        val sourceSettings = ElasticsearchSourceSettings()
+        val sourceSettings = ElasticsearchSourceSettings(connectionSettings)
           .withScrollDuration(FiniteDuration(5, TimeUnit.MILLISECONDS))
 
         sourceSettings.scroll shouldEqual "5ms"
       }
       "convert scrollDuration value to correct scroll string value (Microseconds)" in {
-        val sourceSettings = ElasticsearchSourceSettings()
+        val sourceSettings = ElasticsearchSourceSettings(connectionSettings)
           .withScrollDuration(FiniteDuration(5, TimeUnit.MICROSECONDS))
 
         sourceSettings.scroll shouldEqual "5micros"
       }
       "convert scrollDuration value to correct scroll string value (Nanoseconds)" in {
-        val sourceSettings = ElasticsearchSourceSettings()
+        val sourceSettings = ElasticsearchSourceSettings(connectionSettings)
           .withScrollDuration(FiniteDuration(5, TimeUnit.NANOSECONDS))
 
         sourceSettings.scroll shouldEqual "5nanos"
       }
     }
 
-    "Un-typed Elasticsearch connector" should {
-      "consume and publish Json documents" in assertAllStagesStopped {
-        val indexName = "sink2"
-        //#run-jsobject
-        val copy = ElasticsearchSource
-          .create(
-            indexName = "source",
-            typeName = "_doc",
-            query = """{"match_all": {}}"""
-          )
-          .map { message: ReadResult[spray.json.JsObject] =>
-            val book: Book = jsonReader[Book].read(message.source)
-            WriteMessage.createIndexMessage(message.id, book)
-          }
-          .runWith(
-            ElasticsearchSink.create[Book](
-              indexName,
-              typeName = "_doc",
-              settings = baseWriteSettings
-            )
-          )
-        //#run-jsobject
+    "Sink Settings" should {
+      "copy explicit index name permission" in {
+        val sinkSettings =
+          ElasticsearchWriteSettings(connectionSettings)
+            .withBufferSize(10)
+            .withVersionType("internal")
+            .withRetryLogic(RetryAtFixedRate(maxRetries = 5, retryInterval = 1.second))
 
-        copy.futureValue shouldBe Done
-        flushAndRefresh(indexName)
+        val restrictiveCopy = sinkSettings.withAllowExplicitIndex(false)
 
-        readTitlesFrom(indexName).futureValue should contain allElementsOf Seq(
-          "Akka Concurrency",
-          "Akka in Action",
-          "Effective Akka",
-          "Learning Scala",
-          "Programming in Scala",
-          "Scala Puzzlers",
-          "Scala for Spark in Production"
-        )
-      }
-    }
-
-    "Typed Elasticsearch connector" should {
-      "consume and publish documents as specific type" in assertAllStagesStopped {
-        val indexName = "sink2"
-        //#run-typed
-        val copy = ElasticsearchSource
-          .typed[Book](
-            indexName = "source",
-            typeName = "_doc",
-            query = """{"match_all": {}}"""
-          )
-          .map { message: ReadResult[Book] =>
-            WriteMessage.createIndexMessage(message.id, message.source)
-          }
-          .runWith(
-            ElasticsearchSink.create[Book](
-              indexName,
-              typeName = "_doc",
-              settings = baseWriteSettings
-            )
-          )
-        //#run-typed
-
-        copy.futureValue shouldBe Done
-        flushAndRefresh(indexName)
-
-        readTitlesFrom(indexName).futureValue should contain allElementsOf Seq(
-          "Akka Concurrency",
-          "Akka in Action",
-          "Effective Akka",
-          "Learning Scala",
-          "Programming in Scala",
-          "Scala Puzzlers",
-          "Scala for Spark in Production"
-        )
+        restrictiveCopy.allowExplicitIndex shouldEqual false
       }
     }
 
     "ElasticsearchFlow" should {
-      "store documents and pass failed documents to downstream" in assertAllStagesStopped {
-        val indexName = "sink3"
-        //#run-flow
-        val copy = ElasticsearchSource
-          .typed[Book](
-            indexName = "source",
-            typeName = "_doc",
-            query = """{"match_all": {}}"""
-          )
-          .map { message: ReadResult[Book] =>
-            WriteMessage.createIndexMessage(message.id, message.source)
-          }
-          .via(
-            ElasticsearchFlow.create[Book](
-              indexName = indexName,
-              typeName = "_doc",
-              settings = baseWriteSettings
-            )
-          )
-          .runWith(Sink.seq)
-        //#run-flow
-
-        // Assert no errors
-        copy.futureValue.filter(!_.success) shouldBe empty
-        flushAndRefresh(indexName)
-
-        readTitlesFrom(indexName).futureValue.sorted shouldEqual Seq(
-          "Akka Concurrency",
-          "Akka in Action",
-          "Effective Akka",
-          "Learning Scala",
-          "Programming in Scala",
-          "Scala Puzzlers",
-          "Scala for Spark in Production"
-        )
-      }
-
-      "store properly formatted JSON from Strings" in assertAllStagesStopped {
-        val indexName = "sink3-0"
-        // #string
-        val write: Future[immutable.Seq[WriteResult[String, NotUsed]]] = Source(
-          immutable.Seq(
-            WriteMessage.createIndexMessage("1", s"""{"title": "Das Parfum"}"""),
-            WriteMessage.createIndexMessage("2", s"""{"title": "Faust"}"""),
-            WriteMessage.createIndexMessage("3", s"""{"title": "Die unendliche Geschichte"}""")
-          )
-        ).via(
-            ElasticsearchFlow.create(
-              indexName = indexName,
-              typeName = "_doc",
-              settings = baseWriteSettings,
-              StringMessageWriter
-            )
-          )
-          .runWith(Sink.seq)
-        // #string
-
-        // Assert no errors
-        write.futureValue.filter(!_.success) shouldBe empty
-        flushAndRefresh(indexName)
-
-        readTitlesFrom(indexName).futureValue.sorted shouldEqual Seq(
-          "Das Parfum",
-          "Die unendliche Geschichte",
-          "Faust"
-        )
-      }
-
       "pass through data in `withContext`" in assertAllStagesStopped {
         val books = immutable.Seq(
           "Akka in Action",
@@ -298,7 +139,10 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
               (WriteMessage.createIndexMessage(index.toString, Book(book)), book)
           }
           .via(
-            ElasticsearchFlow.createWithContext(indexName, "_doc", baseWriteSettings)
+            ElasticsearchFlow.createWithContext(
+              constructElasticsearchParams(indexName, "_doc", apiVersion),
+              baseWriteSettings
+            )
           )
           .runWith(Sink.seq)
 
@@ -323,8 +167,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           }
           .via(
             ElasticsearchFlow.create[Book](
-              indexName,
-              "_doc",
+              constructElasticsearchParams(indexName, "_doc", apiVersion),
               baseWriteSettings
             )
           )
@@ -332,8 +175,8 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
 
         // Assert no error
         createBooks.futureValue.filter(!_.success) shouldBe empty
-        flushAndRefresh(indexName)
-        readTitlesFrom(indexName).futureValue should contain allElementsOf Seq(
+        flushAndRefresh(connectionSettings, indexName)
+        readTitlesFrom(apiVersion, baseSourceSettings, indexName).futureValue should contain allElementsOf Seq(
           "Akka in Action",
           "Akka \u00DF Concurrency"
         )
@@ -359,8 +202,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           }
           .via(
             ElasticsearchFlow.create(
-              indexName,
-              "_doc",
+              constructElasticsearchParams(indexName, "_doc", apiVersion),
               baseWriteSettings.withRetryLogic(RetryAtFixedRate(5, 100.millis))
             )
           )
@@ -382,8 +224,8 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
         // Assert retried 5 times by looking duration
         assert(end - start > 5 * 100)
 
-        flushAndRefresh(indexName)
-        readTitlesFrom(indexName).futureValue shouldEqual Seq(
+        flushAndRefresh(connectionSettings, indexName)
+        readTitlesFrom(apiVersion, baseSourceSettings, indexName).futureValue shouldEqual Seq(
           "Akka in Action"
         )
       }
@@ -416,8 +258,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
         val createBooks = Source(writeMsgs)
           .via(
             ElasticsearchFlow.createWithPassThrough(
-              indexName,
-              "_doc",
+              constructElasticsearchParams(indexName, "_doc", apiVersion),
               baseWriteSettings.withRetryLogic(RetryAtFixedRate(5, 1.millis))
             )
           )
@@ -427,10 +268,10 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
 
         writeResults should have size writeMsgs.size
 
-        flushAndRefresh(indexName)
+        flushAndRefresh(connectionSettings, indexName)
 
         val expectedBookTitles = Iterator.from(0).map(n => s"Book ${n}").take(bookNr).toSet
-        readTitlesFrom(indexName).futureValue should contain theSameElementsAs expectedBookTitles
+        readTitlesFrom(apiVersion, baseSourceSettings, indexName).futureValue should contain theSameElementsAs expectedBookTitles
       }
 
       "retry a failed document and pass retried documents to downstream (createWithContext)" in assertAllStagesStopped {
@@ -454,8 +295,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           }
           .via(
             ElasticsearchFlow.createWithContext(
-              indexName,
-              "_doc",
+              constructElasticsearchParams(indexName, "_doc", apiVersion),
               baseWriteSettings.withRetryLogic(RetryAtFixedRate(5, 100.millis))
             )
           )
@@ -481,8 +321,8 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
         // Assert retried 5 times by looking duration
         assert(end - start > 5 * 100)
 
-        flushAndRefresh(indexName)
-        readTitlesFrom(indexName).futureValue should contain theSameElementsAs Seq(
+        flushAndRefresh(connectionSettings, indexName)
+        readTitlesFrom(apiVersion, baseSourceSettings, indexName).futureValue should contain theSameElementsAs Seq(
           "Akka in Action",
           "Learning Scala"
         )
@@ -514,8 +354,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
         val createBooks = Source(writeMsgs)
           .via(
             ElasticsearchFlow.createWithContext(
-              indexName,
-              "_doc",
+              constructElasticsearchParams(indexName, "_doc", apiVersion),
               baseWriteSettings.withRetryLogic(RetryAtFixedRate(5, 1.millis))
             )
           )
@@ -526,63 +365,10 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
         writeResults should have size writeMsgs.size
         writeResults.map(_._2) should contain theSameElementsInOrderAs writeMsgs.map(_._2)
 
-        flushAndRefresh(indexName)
+        flushAndRefresh(connectionSettings, indexName)
 
         val expectedBookTitles = Iterator.from(0).map(n => s"Book ${n}").take(bookNr).toSet
-        readTitlesFrom(indexName).futureValue should contain theSameElementsAs expectedBookTitles
-      }
-
-      "kafka-example - store documents and pass Responses with passThrough" in assertAllStagesStopped {
-
-        //#kafka-example
-        // We're going to pretend we got messages from kafka.
-        // After we've written them to Elastic, we want
-        // to commit the offset to Kafka
-
-        case class KafkaOffset(offset: Int)
-        case class KafkaMessage(book: Book, offset: KafkaOffset)
-
-        val messagesFromKafka = List(
-          KafkaMessage(Book("Book 1"), KafkaOffset(0)),
-          KafkaMessage(Book("Book 2"), KafkaOffset(1)),
-          KafkaMessage(Book("Book 3"), KafkaOffset(2))
-        )
-
-        var committedOffsets = Vector[KafkaOffset]()
-
-        def commitToKafka(offset: KafkaOffset): Unit =
-          committedOffsets = committedOffsets :+ offset
-
-        val indexName = "sink6"
-        val kafkaToEs = Source(messagesFromKafka) // Assume we get this from Kafka
-          .map { kafkaMessage: KafkaMessage =>
-            val book = kafkaMessage.book
-            val id = book.title
-
-            // Transform message so that we can write to elastic
-            WriteMessage.createIndexMessage(id, book).withPassThrough(kafkaMessage.offset)
-          }
-          .via( // write to elastic
-            ElasticsearchFlow.createWithPassThrough[Book, KafkaOffset](
-              indexName = indexName,
-              typeName = "_doc",
-              settings = baseWriteSettings
-            )
-          )
-          .map { result =>
-            if (!result.success) throw new Exception("Failed to write message to elastic")
-            // Commit to kafka
-            commitToKafka(result.message.passThrough)
-          }
-          .runWith(Sink.ignore)
-
-        kafkaToEs.futureValue shouldBe Done
-        //#kafka-example
-        flushAndRefresh(indexName)
-
-        // Make sure all messages was committed to kafka
-        committedOffsets.map(_.offset) should contain theSameElementsAs Seq(0, 1, 2)
-        readTitlesFrom(indexName).futureValue.toList should contain allElementsOf messagesFromKafka.map(_.book.title)
+        readTitlesFrom(apiVersion, baseSourceSettings, indexName).futureValue should contain theSameElementsAs expectedBookTitles
       }
 
       "store new documents using upsert method and partially update existing ones" in assertAllStagesStopped {
@@ -599,8 +385,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           }
           .via(
             ElasticsearchFlow.create[Book](
-              indexName,
-              "_doc",
+              constructElasticsearchParams(indexName, "_doc", apiVersion),
               baseWriteSettings
             )
           )
@@ -608,7 +393,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
 
         // Assert no errors
         createBooks.futureValue.filter(!_.success) shouldBe 'empty
-        flushAndRefresh(indexName)
+        flushAndRefresh(connectionSettings, indexName)
 
         // Create a second dataset with matching indexes to test partial update
         val updatedBooks = List(
@@ -633,8 +418,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           }
           .via(
             ElasticsearchFlow.create[JsObject](
-              indexName,
-              "_doc",
+              constructElasticsearchParams(indexName, "_doc", apiVersion),
               baseWriteSettings
             )
           )
@@ -642,14 +426,13 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
 
         // Assert no errors
         upserts.futureValue.filter(!_.success) shouldBe 'empty
-        flushAndRefresh(indexName)
+        flushAndRefresh(connectionSettings, indexName)
 
         // Assert docs in sink7/_doc
         val readBooks = ElasticsearchSource(
-          indexName,
-          "_doc",
+          constructElasticsearchParams(indexName, "_doc", apiVersion),
           """{"match_all": {}}""",
-          ElasticsearchSourceSettings()
+          baseSourceSettings
         ).map { message =>
             message.source
           }
@@ -672,56 +455,6 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
         )
       }
 
-      "handle multiple types of operations correctly" in assertAllStagesStopped {
-        val indexName = "sink8"
-        //#multiple-operations
-        val requests = List[WriteMessage[Book, NotUsed]](
-          WriteMessage.createIndexMessage(id = "00001", source = Book("Book 1")),
-          WriteMessage.createUpsertMessage(id = "00002", source = Book("Book 2")),
-          WriteMessage.createUpsertMessage(id = "00003", source = Book("Book 3")),
-          WriteMessage.createUpdateMessage(id = "00004", source = Book("Book 4")),
-          WriteMessage.createCreateMessage(id = "00005", source = Book("Book 5")),
-          WriteMessage.createDeleteMessage(id = "00002")
-        )
-
-        val writeResults = Source(requests)
-          .via(
-            ElasticsearchFlow.create[Book](
-              indexName,
-              "_doc",
-              baseWriteSettings
-            )
-          )
-          .runWith(Sink.seq)
-        //#multiple-operations
-
-        val results = writeResults.futureValue
-        results should have size requests.size
-        // Assert no errors except a missing document for a update request
-        val errorMessages = results.flatMap(_.errorReason)
-        errorMessages should have size 1
-        errorMessages(0) shouldEqual "[_doc][00004]: document missing"
-        flushAndRefresh(indexName)
-
-        // Assert docs in sink8/_doc
-        val readBooks = ElasticsearchSource(
-          indexName,
-          "_doc",
-          """{"match_all": {}}""",
-          ElasticsearchSourceSettings()
-        ).map { message =>
-            message.source
-          }
-          .runWith(Sink.seq)
-
-        // Docs should contain both columns
-        readBooks.futureValue.sortBy(_.fields("title").compactPrint) shouldEqual Seq(
-          JsObject("title" -> JsString("Book 1")),
-          JsObject("title" -> JsString("Book 3")),
-          JsObject("title" -> JsString("Book 5"))
-        )
-      }
-
       "Create existing document should fail" in {
         val indexName = "sink9"
         val requests = List[WriteMessage[Book, NotUsed]](
@@ -732,8 +465,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
         val writeResults = Source(requests)
           .via(
             ElasticsearchFlow.create[Book](
-              indexName,
-              "_doc",
+              constructElasticsearchParams(indexName, "_doc", apiVersion),
               baseWriteSettings
             )
           )
@@ -744,7 +476,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
         // Assert error
         val errorMessages = results.flatMap(_.errorReason)
         errorMessages should have size 1
-        errorMessages(0) should include("version conflict, document already exists (current version [1])")
+        errorMessages.head should include("version conflict, document already exists (current version [1])")
       }
 
       "read and write document-version if configured to do so" in assertAllStagesStopped {
@@ -768,26 +500,24 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           }
           .via(
             ElasticsearchFlow.create[VersionTestDoc](
-              indexName,
-              typeName,
-              ElasticsearchWriteSettings().withBufferSize(5)
+              constructElasticsearchParams(indexName, typeName, apiVersion),
+              baseWriteSettings.withBufferSize(5)
             )
           )
           .runWith(Sink.seq)
 
         // Assert no errors
         indexResults.futureValue.filter(!_.success) shouldBe 'empty
-        flushAndRefresh(indexName)
+        flushAndRefresh(connectionSettings, indexName)
 
         // search for the documents and assert them being at version 1,
         // then update while specifying that for which version
 
         val updatedVersions = ElasticsearchSource
           .typed[VersionTestDoc](
-            indexName,
-            typeName,
+            constructElasticsearchParams(indexName, typeName, apiVersion),
             """{"match_all": {}}""",
-            ElasticsearchSourceSettings().withIncludeDocumentVersion(true)
+            baseSourceSettings.withIncludeDocumentVersion(true)
           )
           .map { message =>
             val doc = message.source
@@ -802,8 +532,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           }
           .via(
             ElasticsearchFlow.create[VersionTestDoc](
-              indexName,
-              typeName,
+              constructElasticsearchParams(indexName, typeName, apiVersion),
               baseWriteSettings.withBufferSize(5).withVersionType("external")
             )
           )
@@ -811,14 +540,13 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
 
         updatedVersions.futureValue.filter(!_.success) shouldBe 'empty
 
-        flushAndRefresh(indexName)
+        flushAndRefresh(connectionSettings, indexName)
         // Search again to assert that all documents are now on version 2
         val assertVersions = ElasticsearchSource
           .typed[VersionTestDoc](
-            indexName,
-            typeName,
+            constructElasticsearchParams(indexName, typeName, apiVersion),
             """{"match_all": {}}""",
-            ElasticsearchSourceSettings().withIncludeDocumentVersion(true)
+            baseSourceSettings.withIncludeDocumentVersion(true)
           )
           .map { message =>
             val doc = message.source
@@ -840,8 +568,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           }
           .via(
             ElasticsearchFlow.create[VersionTestDoc](
-              indexName,
-              typeName,
+              constructElasticsearchParams(indexName, typeName, apiVersion),
               baseWriteSettings.withBufferSize(5).withVersionType("external")
             )
           )
@@ -868,8 +595,7 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           }
           .via(
             ElasticsearchFlow.create[Book](
-              indexName,
-              typeName,
+              constructElasticsearchParams(indexName, typeName, apiVersion),
               baseWriteSettings.withBufferSize(5).withVersionType("external")
             )
           )
@@ -878,91 +604,18 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
         val insertResult = insertWrite.futureValue.head
         assert(insertResult.success)
 
-        flushAndRefresh(indexName)
+        flushAndRefresh(connectionSettings, indexName)
 
         // Assert that the document's external version is saved
         val readFirst = ElasticsearchSource
           .typed[Book](
-            indexName,
-            typeName,
+            constructElasticsearchParams(indexName, typeName, apiVersion),
             """{"match_all": {}}""",
-            ElasticsearchSourceSettings().withIncludeDocumentVersion(true)
+            settings = baseSourceSettings.withIncludeDocumentVersion(true)
           )
           .runWith(Sink.head)
 
         assert(readFirst.futureValue.version.contains(externalVersion))
-      }
-
-      "use indexName supplied in message if present" in assertAllStagesStopped {
-        // Copy source/_doc to sink2/_doc through typed stream
-
-        //#custom-index-name-example
-        val customIndexName = "custom-index"
-
-        val writeCustomIndex = ElasticsearchSource
-          .typed[Book](
-            indexName = "source",
-            typeName = "_doc",
-            query = """{"match_all": {}}"""
-          )
-          .map { message: ReadResult[Book] =>
-            WriteMessage
-              .createIndexMessage(message.id, message.source)
-              .withIndexName(customIndexName) // Setting the index-name to use for this document
-          }
-          .runWith(
-            ElasticsearchSink.create[Book](
-              indexName = "this-is-not-the-index-we-are-using",
-              typeName = "_doc",
-              settings = baseWriteSettings
-            )
-          )
-        //#custom-index-name-example
-
-        writeCustomIndex.futureValue shouldBe Done
-        flushAndRefresh(customIndexName)
-        readTitlesFrom(customIndexName).futureValue.sorted shouldEqual Seq(
-          "Akka Concurrency",
-          "Akka in Action",
-          "Effective Akka",
-          "Learning Scala",
-          "Programming in Scala",
-          "Scala Puzzlers",
-          "Scala for Spark in Production"
-        )
-      }
-
-      "throw an IllegalArgumentException if indexName is null when passed to ElasticsearchSource" in {
-        assertThrows[IllegalArgumentException] {
-          ElasticsearchSource
-            .create(
-              indexName = null,
-              typeName = "_doc",
-              query = """{"match_all": {}}"""
-            )
-        }
-      }
-
-      "throw an IllegalArgumentException if indexName is null when passed to ElasticsearchFlow" in {
-        assertThrows[IllegalArgumentException] {
-          ElasticsearchFlow
-            .create[Book](
-              indexName = null,
-              typeName = "_doc",
-              settings = baseWriteSettings
-            )
-        }
-      }
-
-      "throw an IllegalArgumentException if typeName is null when passed to ElasticsearchFlow" in {
-        assertThrows[IllegalArgumentException] {
-          ElasticsearchFlow
-            .create[Book](
-              indexName = "foo",
-              typeName = null,
-              settings = ElasticsearchWriteSettings().withApiVersion(ApiVersion.V5)
-            )
-        }
       }
     }
 
@@ -970,10 +623,9 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
       "allow search without specifying typeName" in assertAllStagesStopped {
         val readWithoutTypeName = ElasticsearchSource
           .typed[Book](
-            indexName = "source",
-            typeName = None,
+            constructElasticsearchParams("source", "_doc", apiVersion),
             query = """{"match_all": {}}""",
-            settings = ElasticsearchSourceSettings().withBufferSize(5)
+            settings = baseSourceSettings.withBufferSize(5).withApiVersion(ApiVersion.V7)
           )
           .map(_.source.title)
           .runWith(Sink.seq)
@@ -989,80 +641,34 @@ trait ElasticsearchConnectorBehaviour { this: AnyWordSpec with Matchers with Sca
           "Scala for Spark in Production"
         )
       }
-
-      "be able to use custom searchParams" in assertAllStagesStopped {
-
-        //#custom-search-params
-        case class TestDoc(id: String, a: String, b: Option[String], c: String)
-        //#custom-search-params
-
-        implicit val formatVersionTestDoc: JsonFormat[TestDoc] = jsonFormat4(TestDoc)
-
-        val indexName = "custom-search-params-test-scala"
-        val typeName = "_doc"
-
-        val docs = List(
-          TestDoc("1", "a1", Some("b1"), "c1"),
-          TestDoc("2", "a2", Some("b2"), "c2"),
-          TestDoc("3", "a3", Some("b3"), "c3")
-        )
-
-        // insert new documents
-        val writes = Source(docs)
-          .map { doc =>
-            WriteMessage.createIndexMessage(doc.id, doc)
-          }
-          .via(
-            ElasticsearchFlow.create[TestDoc](
-              indexName,
-              typeName,
-              baseWriteSettings.withBufferSize(5)
-            )
-          )
-          .runWith(Sink.seq)
-
-        writes.futureValue.filter(!_.success) shouldBe 'empty
-        flushAndRefresh(indexName)
-
-        //#custom-search-params
-        // Search for docs and ask elastic to only return some fields
-
-        val readWithSearchParameters = ElasticsearchSource
-          .typed[TestDoc](indexName,
-                          Some(typeName),
-                          searchParams = Map(
-                            "query" -> """ {"match_all": {}} """,
-                            "_source" -> """ ["id", "a", "c"] """
-                          ),
-                          ElasticsearchSourceSettings())
-          .map { message =>
-            message.source
-          }
-          .runWith(Sink.seq)
-
-        //#custom-search-params
-
-        assert(readWithSearchParameters.futureValue.toList.sortBy(_.id) == docs.map(_.copy(b = None)))
-
-      }
     }
 
     lazy val _ = {
+      //#connection-settings
+      val connectionSettings = ElasticsearchConnectionSettings("http://localhost:9200")
+        .withCredentials("user", "password")
+      //#connection-settings
       //#source-settings
-      val sourceSettings = ElasticsearchSourceSettings()
+      val sourceSettings = ElasticsearchSourceSettings(connectionSettings)
         .withBufferSize(10)
         .withScrollDuration(5.minutes)
       //#source-settings
       sourceSettings.toString should startWith("ElasticsearchSourceSettings(")
       //#sink-settings
       val sinkSettings =
-        ElasticsearchWriteSettings()
+        ElasticsearchWriteSettings(connectionSettings)
           .withBufferSize(10)
           .withVersionType("internal")
           .withRetryLogic(RetryAtFixedRate(maxRetries = 5, retryInterval = 1.second))
           .withApiVersion(ApiVersion.V5)
       //#sink-settings
       sinkSettings.toString should startWith("ElasticsearchWriteSettings(")
+      //#es-params
+      val elasticsearchParamsV5 = ElasticsearchParams.V5("index", "_doc")
+      val elasticsearchParamsV7 = ElasticsearchParams.V7("index")
+      //#es-params
+      elasticsearchParamsV5.toString should startWith("ElasticsearchParams(")
+      elasticsearchParamsV7.toString should startWith("ElasticsearchParams(")
       val doc = "dummy-doc"
       //#custom-metadata-example
       val msg = WriteMessage

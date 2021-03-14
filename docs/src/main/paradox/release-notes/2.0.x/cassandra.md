@@ -1,5 +1,15 @@
 # Cassandra
 
+## 2.0.2
+
+- Cassandra: overwrite Netty to 4.1.52 [#2416](https://github.com/akka/alpakka/issues/2416) by [@ennru](https://github.com/ennru)
+
+## 2.0.1
+
+- Cassandra: Driver 4.6.1 (Remove netty override) [#2320](https://github.com/akka/alpakka/issues/2320) by [@chbatey](https://github.com/chbatey)
+
+[*closed in 2.0.1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.1+label%3Ap%3Acassandra)
+
 ## 2.0.0-RC2
 
 - Akka 2.5.31 and prefer `ClassicActorSystemProvider` [#2254](https://github.com/akka/alpakka/issues/2254) by [@ennru](https://github.com/ennru)

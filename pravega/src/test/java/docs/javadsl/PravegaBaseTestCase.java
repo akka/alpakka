@@ -25,21 +25,24 @@ import io.pravega.client.stream.StreamConfiguration;
 
 public abstract class PravegaBaseTestCase extends PravegaAkkaTestCaseSupport {
 
-  protected ReaderSettings<String> settings =
-      ReaderSettingsBuilder.apply(system)
-          .withGroupName("javaGroupName")
-          .withSerializer(new UTF8StringSerializer());
+  protected String newGroup() {
+    return "java-test-group-" + UUID.randomUUID().toString();
+  }
 
-  protected final String scope = "java-test-scope-" + UUID.randomUUID().toString();
+  protected String newScope() {
+    return "java-test-scope-" + UUID.randomUUID().toString();
+  }
 
-  protected final String streamName = "java-test-topic-" + UUID.randomUUID().toString();
+  protected String newStreamName() {
+    return "java-test-topic-" + UUID.randomUUID().toString();
+  }
 
   @BeforeClass
   public static void setup() {
     init();
   }
 
-  public PravegaBaseTestCase() {
+  public void createStream(String scope, String streamName) {
     StreamManager streamManager = StreamManager.create(URI.create("tcp://localhost:9090"));
 
     if (streamManager.createScope(scope)) LOGGER.info("Created scope [{}]", scope);

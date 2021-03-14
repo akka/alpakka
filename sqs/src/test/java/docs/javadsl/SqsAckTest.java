@@ -84,7 +84,7 @@ public class SqsAckTest extends BaseSqsTest {
         // #ack
         source
             .map(m -> MessageAction.delete(m))
-            .runWith(SqsAckSink.create(queueUrl, SqsAckSettings.create(), awsClient), materializer);
+            .runWith(SqsAckSink.create(queueUrl, SqsAckSettings.create(), awsClient), system);
     // #ack
 
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
@@ -107,7 +107,7 @@ public class SqsAckTest extends BaseSqsTest {
         source
             .map(m -> MessageAction.delete(m))
             .via(SqsAckFlow.create(queueUrl, SqsAckSettings.create(), awsClient))
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
     // #flow-ack
 
     List<SqsAckResult> results = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
@@ -139,7 +139,7 @@ public class SqsAckTest extends BaseSqsTest {
         // #requeue
         source
             .map(m -> MessageAction.changeMessageVisibility(m, 12))
-            .runWith(SqsAckSink.create(queueUrl, SqsAckSettings.create(), awsClient), materializer);
+            .runWith(SqsAckSink.create(queueUrl, SqsAckSettings.create(), awsClient), system);
     // #requeue
     done.toCompletableFuture().get(1, TimeUnit.SECONDS);
 
@@ -160,7 +160,7 @@ public class SqsAckTest extends BaseSqsTest {
         source
             .map(m -> MessageAction.ignore(m))
             .via(SqsAckFlow.create(queueUrl, SqsAckSettings.create(), awsClient))
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
     // #ignore
 
     List<SqsAckResult> results = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
@@ -196,7 +196,7 @@ public class SqsAckTest extends BaseSqsTest {
         source
             .map(m -> MessageAction.delete(m))
             .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings.create(), awsClient))
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
 
     // #batch-ack
 
@@ -241,7 +241,7 @@ public class SqsAckTest extends BaseSqsTest {
         source
             .map(m -> MessageAction.changeMessageVisibility(m, 5))
             .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings.create(), awsClient))
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
     // #batch-requeue
 
     List<SqsAckResultEntry> results = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);
@@ -274,7 +274,7 @@ public class SqsAckTest extends BaseSqsTest {
         source
             .map(m -> MessageAction.ignore(m))
             .via(SqsAckFlow.grouped(queueUrl, SqsAckGroupedSettings.create(), awsClient))
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
     // #batch-ignore
 
     List<SqsAckResultEntry> results = stage.toCompletableFuture().get(1, TimeUnit.SECONDS);

@@ -9,9 +9,8 @@ import java.nio.ByteBuffer
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.alpakka.kinesis.scaladsl.{KinesisFlow, KinesisSink, KinesisSource}
-import akka.stream.alpakka.kinesis.{KinesisFlowSettings, ShardSettings}
+import akka.stream.alpakka.kinesis.{KinesisFlowSettings, ShardIterator, ShardSettings}
 import akka.stream.scaladsl.{Flow, FlowWithContext, Sink, Source}
-import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.ByteString
 import software.amazon.awssdk.services.kinesis.model.{PutRecordsRequestEntry, PutRecordsResultEntry, Record}
 
@@ -24,7 +23,6 @@ object KinesisSnippets {
   import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 
   implicit val system: ActorSystem = ActorSystem()
-  implicit val materializer: Materializer = ActorMaterializer()
 
   implicit val amazonKinesisAsync: software.amazon.awssdk.services.kinesis.KinesisAsyncClient =
     KinesisAsyncClient
@@ -39,13 +37,12 @@ object KinesisSnippets {
   //#init-client
 
   //#source-settings
-  import software.amazon.awssdk.services.kinesis.model.ShardIteratorType
 
   val settings =
     ShardSettings(streamName = "myStreamName", shardId = "shard-id")
       .withRefreshInterval(1.second)
       .withLimit(500)
-      .withShardIteratorType(ShardIteratorType.TRIM_HORIZON)
+      .withShardIterator(ShardIterator.TrimHorizon)
   //#source-settings
 
   //#source-single

@@ -6,7 +6,7 @@ package akka.stream.alpakka.googlecloud.pubsub.grpc.scaladsl
 
 import akka.actor.Cancellable
 import akka.dispatch.ExecutionContexts
-import akka.stream.{ActorMaterializer, Attributes}
+import akka.stream.{Attributes, Materializer}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.{Done, NotUsed}
 import com.google.pubsub.v1.pubsub._
@@ -27,7 +27,7 @@ object GooglePubSub {
    */
   def publish(parallelism: Int): Flow[PublishRequest, PublishResponse, NotUsed] =
     Flow
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         Flow[PublishRequest]
           .mapAsyncUnordered(parallelism)(publisher(mat, attr).client.publish)
       }
@@ -46,7 +46,7 @@ object GooglePubSub {
       pollInterval: FiniteDuration
   ): Source[ReceivedMessage, Future[Cancellable]] =
     Source
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         val cancellable = Promise[Cancellable]
 
         val subsequentRequest = request
@@ -67,7 +67,7 @@ object GooglePubSub {
           .mapConcat(_.receivedMessages.toVector)
           .mapMaterializedValue(_ => cancellable.future)
       }
-      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.sameThreadExecutionContext))
+      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.parasitic))
 
   /**
    * Create a source that emits messages for a given subscription using a synchronous PullRequest.
@@ -82,7 +82,7 @@ object GooglePubSub {
       pollInterval: FiniteDuration
   ): Source[ReceivedMessage, Future[Cancellable]] =
     Source
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         val cancellable = Promise[Cancellable]
         val client = subscriber(mat, attr).client
         Source
@@ -92,7 +92,23 @@ object GooglePubSub {
           .mapConcat(_.receivedMessages.toVector)
           .mapMaterializedValue(_ => cancellable.future)
       }
-      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.sameThreadExecutionContext))
+      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.parasitic))
+
+  /**
+   * Create a flow that accepts consumed message acknowledgements.
+   */
+  def acknowledgeFlow(): Flow[AcknowledgeRequest, AcknowledgeRequest, NotUsed] =
+    Flow
+      .fromMaterializer { (mat, attr) =>
+        Flow[AcknowledgeRequest]
+          .mapAsync(1)(
+            req =>
+              subscriber(mat, attr).client
+                .acknowledge(req)
+                .map(_ => req)(mat.executionContext)
+          )
+      }
+      .mapMaterializedValue(_ => NotUsed)
 
   /**
    * Create a sink that accepts consumed message acknowledgements.
@@ -101,22 +117,23 @@ object GooglePubSub {
    *
    * @param parallelism controls how many acknowledgements can be in-flight at any given time
    */
-  def acknowledge(parallelism: Int): Sink[AcknowledgeRequest, Future[Done]] =
+  def acknowledge(parallelism: Int): Sink[AcknowledgeRequest, Future[Done]] = {
     Sink
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         Flow[AcknowledgeRequest]
           .mapAsyncUnordered(parallelism)(subscriber(mat, attr).client.acknowledge)
           .toMat(Sink.ignore)(Keep.right)
       }
-      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.sameThreadExecutionContext))
+      .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.parasitic))
+  }
 
-  private def publisher(mat: ActorMaterializer, attr: Attributes) =
+  private def publisher(mat: Materializer, attr: Attributes) =
     attr
       .get[PubSubAttributes.Publisher]
       .map(_.publisher)
       .getOrElse(GrpcPublisherExt()(mat.system).publisher)
 
-  private def subscriber(mat: ActorMaterializer, attr: Attributes) =
+  private def subscriber(mat: Materializer, attr: Attributes) =
     attr
       .get[PubSubAttributes.Subscriber]
       .map(_.subscriber)

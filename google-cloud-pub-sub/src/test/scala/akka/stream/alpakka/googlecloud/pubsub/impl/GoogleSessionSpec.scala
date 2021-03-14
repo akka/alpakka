@@ -5,7 +5,6 @@
 package akka.stream.alpakka.googlecloud.pubsub.impl
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.pubsub.impl.GoogleTokenApi.AccessTokenExpiry
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import org.mockito.Mockito.{when, _}
@@ -31,7 +30,6 @@ class GoogleSessionSpec
   }
 
   implicit val system = ActorSystem()
-  implicit val mat = ActorMaterializer()
 
   val accessToken =
     "ya29.Elz4A2XkfGKJ4CoS5x_umUBHsvjGdeWQzu6gRRCnNXI0fuIyoDP_6aYktBQEOI4YAhLNgUl2OpxWQaN8Z3hd5YfFw1y4EGAtr2o28vSID-c8ul_xxHuudE7RmhH9sg"

@@ -17,7 +17,7 @@ The Slick connector provides Scala and Java DSLs to create a `Source` to stream 
   version2=AkkaVersion
 }
 
-You will also need to add the JDBC driver(s) for the specific relational database(s) to your project. Most of those database have drivers that are not available from public repositories so unfortunately some manual steps will probably be required. The Slick documentation has @extref[information on where to download the drivers](slick:supported-databases.html).
+You will also need to add the JDBC driver(s) for the specific relational database(s) to your project. Most of those databases have drivers that are not available from public repositories so unfortunately some manual steps will probably be required. The Slick documentation has @extref[information on where to download the drivers](slick:supported-databases.html).
 
 The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
 
@@ -53,7 +53,7 @@ If you are using Slick in your project, you can create a `SlickSession` instance
 Scala
 : @@snip [snip](/slick/src/test/scala/docs/scaladsl/SlickSpec.scala) { #init-db-config-session }
 
-Otherwise, you can configure your database using [typesafe-config](https://github.com/typesafehub/config) by adding a named configuration to your application.conf and then referring to that configuration when starting the session:
+Otherwise, you can configure your database using [typesafe-config](https://github.com/lightbend/config) by adding a named configuration to your application.conf and then referring to that configuration when starting the session:
 
 Scala
 : @@snip [snip](/slick/src/test/scala/docs/scaladsl/SlickSpec.scala) { #init-session }
@@ -110,6 +110,18 @@ Java
 
 The Slick connector allows you to perform a SQL query and expose the resulting stream of results as an Akka Streams `Source[T]`. Where `T` is any type that can be constructed using a database row.
 
+@@@ warning
+Some database systems, such as PostgreSQL, require session parameters to be set in a certain way to support streaming without caching all data at once in memory on the client side, see [Slick documentation](https://scala-slick.org/doc/3.2.0/dbio.html#streaming).
+```scala
+// Example for PostgreSQL:
+query.result.withStatementParameters(
+  rsType = ResultSetType.ForwardOnly,
+  rsConcurrency = ResultSetConcurrency.ReadOnly,
+  fetchSize = 128, // not to be left at default value (0)
+).transactionally
+```
+@@@
+
 ### Plain SQL queries
 
 Both the Scala and Java DSLs support the use of @extref[plain SQL queries](slick:concepts.html#plain-sql-statements).
@@ -137,7 +149,7 @@ Scala
 
 ## Using a Slick Flow or Sink
 
-If you want to take stream of elements and turn them into side-effecting actions in a relational database, the Slick connector allows you to perform any DML or DDL statement using either a `Sink` or a `Flow`. This includes the typical `insert`/`update`/`delete` statements but also `create table`, `drop table`, etc. The unit tests have a couple of good examples of the latter usage.
+If you want to take a stream of elements and turn them into side-effecting actions in a relational database, the Slick connector allows you to perform any DML or DDL statement using either a `Sink` or a `Flow`. This includes the typical `insert`/`update`/`delete` statements but also `create table`, `drop table`, etc. The unit tests have a couple of good examples of the latter usage.
 
 The following example show the use of a Slick `Sink` to take a stream of elements and insert them into the database. There is an optional `parallelism` argument to specify how many concurrent streams will be sent to the database. The unit tests for the slick connector have example of performing parallel inserts.
 

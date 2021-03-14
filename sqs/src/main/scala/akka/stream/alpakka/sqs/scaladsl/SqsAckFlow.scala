@@ -7,8 +7,8 @@ package akka.stream.alpakka.sqs.scaladsl
 import java.util.concurrent.CompletionException
 
 import akka.NotUsed
-import akka.annotation.ApiMayChange
-import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
+import akka.annotation.{ApiMayChange, InternalApi}
+import akka.dispatch.ExecutionContexts.parasitic
 import akka.stream.FlowShape
 import akka.stream.alpakka.sqs.MessageAction._
 import akka.stream.alpakka.sqs.SqsAckResult._
@@ -34,7 +34,8 @@ object SqsAckFlow {
    */
   def apply(queueUrl: String, settings: SqsAckSettings = SqsAckSettings.Defaults)(
       implicit sqsClient: SqsAsyncClient
-  ): Flow[MessageAction, SqsAckResult, NotUsed] =
+  ): Flow[MessageAction, SqsAckResult, NotUsed] = {
+    checkClient(sqsClient)
     Flow[MessageAction]
       .mapAsync(settings.maxInFlight) {
         case messageAction: MessageAction.Delete =>
@@ -48,7 +49,7 @@ object SqsAckFlow {
           sqsClient
             .deleteMessage(request)
             .toScala
-            .map(resp => new SqsDeleteResult(messageAction, resp))(sameThreadExecutionContext)
+            .map(resp => new SqsDeleteResult(messageAction, resp))(parasitic)
 
         case messageAction: MessageAction.ChangeMessageVisibility =>
           val request =
@@ -62,18 +63,20 @@ object SqsAckFlow {
           sqsClient
             .changeMessageVisibility(request)
             .toScala
-            .map(resp => new SqsChangeMessageVisibilityResult(messageAction, resp))(sameThreadExecutionContext)
+            .map(resp => new SqsChangeMessageVisibilityResult(messageAction, resp))(parasitic)
 
         case messageAction: MessageAction.Ignore =>
           Future.successful(new SqsIgnoreResult(messageAction))
       }
+  }
 
   /**
    * creates a [[akka.stream.scaladsl.Flow Flow]] for ack grouped SQS messages using an [[software.amazon.awssdk.services.sqs.SqsAsyncClient]].
    */
   def grouped(queueUrl: String, settings: SqsAckGroupedSettings = SqsAckGroupedSettings.Defaults)(
       implicit sqsClient: SqsAsyncClient
-  ): Flow[MessageAction, SqsAckResultEntry, NotUsed] =
+  ): Flow[MessageAction, SqsAckResultEntry, NotUsed] = {
+    checkClient(sqsClient)
     Flow.fromGraph(
       GraphDSL.create() { implicit builder =>
         import GraphDSL.Implicits._
@@ -97,10 +100,12 @@ object SqsAckFlow {
         FlowShape(p.in, merge.out)
       }
     )
+  }
 
   private def groupedDelete(queueUrl: String, settings: SqsAckGroupedSettings)(
       implicit sqsClient: SqsAsyncClient
-  ): Flow[MessageAction.Delete, SqsDeleteResultEntry, NotUsed] =
+  ): Flow[MessageAction.Delete, SqsDeleteResultEntry, NotUsed] = {
+    checkClient(sqsClient)
     Flow[MessageAction.Delete]
       .groupedWithin(settings.maxBatchSize, settings.maxBatchWait)
       .map { actions =>
@@ -140,15 +145,16 @@ object SqsAckFlow {
                   numberOfMessages,
                   s"Some messages are failed to delete. $nrOfFailedMessages of $numberOfMessages messages are failed"
                 )
-            }(sameThreadExecutionContext)
+            }(parasitic)
             .recoverWith {
               case e: CompletionException =>
                 Future.failed(new SqsBatchException(request.entries().size(), e.getMessage, e.getCause))
               case e =>
                 Future.failed(new SqsBatchException(request.entries().size(), e.getMessage, e))
-            }(sameThreadExecutionContext)
+            }(parasitic)
       }
       .mapConcat(identity)
+  }
 
   private def groupedChangeMessageVisibility(queueUrl: String, settings: SqsAckGroupedSettings)(
       implicit sqsClient: SqsAsyncClient
@@ -193,13 +199,17 @@ object SqsAckFlow {
                   numberOfMessages,
                   s"Some messages are failed to change visibility. $nrOfFailedMessages of $numberOfMessages messages are failed"
                 )
-            }(sameThreadExecutionContext)
+            }(parasitic)
             .recoverWith {
               case e: CompletionException =>
                 Future.failed(new SqsBatchException(request.entries().size(), e.getMessage, e.getCause))
               case e =>
                 Future.failed(new SqsBatchException(request.entries().size(), e.getMessage, e))
-            }(sameThreadExecutionContext)
+            }(parasitic)
       }
       .mapConcat(identity)
+
+  @InternalApi
+  private[scaladsl] def checkClient(sqsClient: SqsAsyncClient): Unit =
+    require(sqsClient != null, "The `SqsAsyncClient` passed in may not be null.")
 }

@@ -5,7 +5,6 @@
 package akka.stream.alpakka.jms
 
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
 import javax.jms._
@@ -29,12 +28,6 @@ abstract class JmsSpec
     with LogCapturing {
 
   implicit val system = ActorSystem(this.getClass.getSimpleName)
-
-  val decider: Supervision.Decider = ex => Supervision.Stop
-
-  val settings = ActorMaterializerSettings(system).withSupervisionStrategy(decider)
-
-  implicit val materializer = ActorMaterializer(settings)
 
   val consumerConfig = system.settings.config.getConfig(JmsConsumerSettings.configPath)
   val producerConfig = system.settings.config.getConfig(JmsProducerSettings.configPath)

@@ -9,10 +9,9 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.JavaPartialFunction;
 import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
 import akka.stream.KillSwitches;
-import akka.stream.Materializer;
 import akka.stream.OverflowStrategy;
+import akka.stream.SystemMaterializer;
 import akka.stream.UniqueKillSwitch;
 import akka.stream.alpakka.mqtt.streaming.Command;
 import akka.stream.alpakka.mqtt.streaming.ConnAck;
@@ -68,19 +67,15 @@ public class MqttFlowTest {
   private static int TIMEOUT_SECONDS = 5;
 
   private static ActorSystem system;
-  private static Materializer materializer;
 
-  private static Pair<ActorSystem, Materializer> setupMaterializer() {
+  private static ActorSystem setupSystem() {
     final ActorSystem system = ActorSystem.create("MqttFlowTest");
-    final Materializer materializer = ActorMaterializer.create(system);
-    return Pair.create(system, materializer);
+    return system;
   }
 
   @BeforeClass
   public static void setup() {
-    final Pair<ActorSystem, Materializer> sysmat = setupMaterializer();
-    system = sysmat.first();
-    materializer = sysmat.second();
+    system = setupSystem();
   }
 
   @AfterClass
@@ -90,7 +85,7 @@ public class MqttFlowTest {
 
   @After
   public void assertStageStopping() {
-    StreamTestKit.assertAllStagesStopped(materializer);
+    StreamTestKit.assertAllStagesStopped(SystemMaterializer.get(system).materializer());
   }
 
   @Test
@@ -124,7 +119,7 @@ public class MqttFlowTest {
                   }
                 })
             .toMat(Sink.head(), Keep.both())
-            .run(materializer);
+            .run(system);
 
     SourceQueueWithComplete<Command<Object>> commands = run.first();
     commands.offer(new Command<>(new Connect(clientId, ConnectFlags.CleanSession())));
@@ -184,7 +179,7 @@ public class MqttFlowTest {
                           Source.<Command<Object>>queue(2, OverflowStrategy.dropHead())
                               .via(mqttFlow)
                               .toMat(BroadcastHub.of(DecodeErrorOrEvent.classOf()), Keep.both())
-                              .run(materializer);
+                              .run(system);
 
                   SourceQueueWithComplete<Command<Object>> queue = run.first();
                   Source<DecodeErrorOrEvent<Object>, NotUsed> source = run.second();
@@ -225,7 +220,7 @@ public class MqttFlowTest {
                           } // Ignore everything else
                         }
                       },
-                      materializer);
+                      system);
 
                   return source;
                 });
@@ -233,7 +228,7 @@ public class MqttFlowTest {
 
     // #run-streaming-bind-flow
     Pair<CompletionStage<Tcp.ServerBinding>, UniqueKillSwitch> bindingAndSwitch =
-        bindSource.viaMat(KillSwitches.single(), Keep.both()).to(Sink.ignore()).run(materializer);
+        bindSource.viaMat(KillSwitches.single(), Keep.both()).to(Sink.ignore()).run(system);
 
     CompletionStage<Tcp.ServerBinding> bound = bindingAndSwitch.first();
     UniqueKillSwitch server = bindingAndSwitch.second();
@@ -262,7 +257,7 @@ public class MqttFlowTest {
                   }
                 })
             .toMat(Sink.head(), Keep.both())
-            .run(materializer);
+            .run(system);
 
     SourceQueueWithComplete<Command<Object>> commands = run.first();
     commands.offer(new Command<>(new Connect(clientId, ConnectFlags.None())));

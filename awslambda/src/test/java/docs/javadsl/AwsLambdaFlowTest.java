@@ -6,7 +6,6 @@ package docs.javadsl;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.awslambda.javadsl.AwsLambdaFlow;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.javadsl.Flow;
@@ -34,13 +33,11 @@ public class AwsLambdaFlowTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   private static ActorSystem system;
-  private static ActorMaterializer materializer;
   private static LambdaAsyncClient awsLambdaClient;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
     awsLambdaClient = mock(LambdaAsyncClient.class);
   }
 
@@ -51,7 +48,7 @@ public class AwsLambdaFlowTest {
 
   @After
   public void checkForStageLeaks() {
-    StreamTestKit.assertAllStagesStopped(materializer);
+    StreamTestKit.assertAllStagesStopped(akka.stream.Materializer.matFromSystem(system));
   }
 
   @Test
@@ -66,7 +63,7 @@ public class AwsLambdaFlowTest {
     Flow<InvokeRequest, InvokeResponse, NotUsed> flow = AwsLambdaFlow.create(awsLambdaClient, 1);
     Source<InvokeRequest, NotUsed> source = Source.single(invokeRequest);
     final CompletionStage<List<InvokeResponse>> stage =
-        source.via(flow).runWith(Sink.seq(), materializer);
+        source.via(flow).runWith(Sink.seq(), system);
     assertEquals(1, stage.toCompletableFuture().get(3, TimeUnit.SECONDS).size());
   }
 }

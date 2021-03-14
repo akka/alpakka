@@ -34,13 +34,13 @@ object CassandraFlow {
       statementBinder: (T, PreparedStatement) => BoundStatement
   )(implicit session: CassandraSession): Flow[T, T, NotUsed] = {
     Flow
-      .lazyInitAsync { () =>
+      .lazyFutureFlow { () =>
         val prepare = session.prepare(cqlStatement)
         prepare.map { preparedStatement =>
           Flow[T].mapAsync(writeSettings.parallelism) { element =>
             session
               .executeWrite(statementBinder(element, preparedStatement))
-              .map(_ => element)(ExecutionContexts.sameThreadExecutionContext)
+              .map(_ => element)(ExecutionContexts.parasitic)
           }
         }(session.ec)
       }
@@ -65,14 +65,14 @@ object CassandraFlow {
   )(implicit session: CassandraSession): FlowWithContext[T, Ctx, T, Ctx, NotUsed] = {
     FlowWithContext.fromTuples {
       Flow
-        .lazyInitAsync { () =>
+        .lazyFutureFlow { () =>
           val prepare = session.prepare(cqlStatement)
           prepare.map { preparedStatement =>
             Flow[(T, Ctx)].mapAsync(writeSettings.parallelism) {
               case tuple @ (element, _) =>
                 session
                   .executeWrite(statementBinder(element, preparedStatement))
-                  .map(_ => tuple)(ExecutionContexts.sameThreadExecutionContext)
+                  .map(_ => tuple)(ExecutionContexts.parasitic)
             }
           }(session.ec)
         }
@@ -106,7 +106,7 @@ object CassandraFlow {
                         statementBinder: (T, PreparedStatement) => BoundStatement,
                         groupingKey: T => K)(implicit session: CassandraSession): Flow[T, T, NotUsed] = {
     Flow
-      .lazyInitAsync { () =>
+      .lazyFutureFlow { () =>
         val prepareStatement: Future[PreparedStatement] = session.prepare(cqlStatement)
         prepareStatement.map { preparedStatement =>
           Flow[T]
@@ -116,7 +116,7 @@ object CassandraFlow {
             .mapAsyncUnordered(writeSettings.parallelism) { list =>
               val boundStatements = list.map(t => statementBinder(t, preparedStatement))
               val batchStatement = BatchStatement.newInstance(writeSettings.batchType).addAll(boundStatements.asJava)
-              session.executeWriteBatch(batchStatement).map(_ => list)(ExecutionContexts.sameThreadExecutionContext)
+              session.executeWriteBatch(batchStatement).map(_ => list)(ExecutionContexts.parasitic)
             }
             .mapConcat(_.toList)
         }(session.ec)

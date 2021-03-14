@@ -5,6 +5,7 @@ dependency-change: "/project/Dependencies.scala"
 
 'p:amqp': ["/amqp"]
 'p:avroparquet': ["/avroparquet"]
+'p:aws-event-bridge': ["/aws-event-bridge"]
 'p:aws-lambda': ["/awslambda"]
 'p:aws-s3': ["/s3"]
 'p:aws-sns': ["/sns"]
@@ -18,6 +19,7 @@ dependency-change: "/project/Dependencies.scala"
 'p:file': ["/file"]
 'p:ftp': ["/ftp"]
 'p:geode': ["/geode"]
+'p:google-cloud-bigquery': ["/google-cloud-bigquery"]
 'p:google-cloud-pub-sub': ["/google-cloud-pub-sub"]
 'p:google-cloud-pub-sub-grpc': ["/google-cloud-pub-sub-grpc"]
 'p:google-cloud-storage': ["/google-cloud-storage"]

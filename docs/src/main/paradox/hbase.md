@@ -3,7 +3,7 @@
 The connector provides sources, flows and sinks to interact with HBase database.
 
 HBase is a column family NoSQL Database backed by HDFS.
-For more information about HBase, please visit the [HBase documentation](http://hbase.apache.org).
+For more information about HBase, please visit the [HBase documentation](https://hbase.apache.org).
 
 @@project-info{ projectId="hbase" }
 

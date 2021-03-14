@@ -78,7 +78,7 @@ final class CouchbaseSessionRegistry(system: ExtendedActorSystem) extends Extens
    */
   def getSessionFor(settings: CouchbaseSessionSettings, bucketName: String): CompletionStage[JCouchbaseSession] =
     sessionFor(settings, bucketName)
-      .map(_.asJava)(ExecutionContexts.sameThreadExecutionContext)
+      .map(_.asJava)(ExecutionContexts.parasitic)
       .toJava
 
   @tailrec
@@ -91,7 +91,7 @@ final class CouchbaseSessionRegistry(system: ExtendedActorSystem) extends Extens
       val session = clusterRegistry
         .clusterFor(key.settings)
         .flatMap(cluster => CouchbaseSession(cluster, key.bucketName)(blockingDispatcher))(
-          ExecutionContexts.sameThreadExecutionContext
+          ExecutionContexts.parasitic
         )
       promise.completeWith(session)
       promise.future

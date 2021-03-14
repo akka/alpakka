@@ -20,7 +20,7 @@ Scala
 Java
 : @@snip [snip](/doc-examples/src/test/java/akka/stream/alpakka/eip/javadsl/SplitterExamples.java) { #Simple-Split }
 
-## Spliter + Aggregator
+## Splitter + Aggregator
 
 Sometimes it's very useful to split a message and aggregate it's "sub-messages" into a new message (A combination of [Splitter](https://www.enterpriseintegrationpatterns.com/patterns/messaging/Sequencer.html) and [Aggregator](https://www.enterpriseintegrationpatterns.com/patterns/messaging/Aggregator.html)) 
 

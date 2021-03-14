@@ -8,6 +8,7 @@ import java.util.{Objects, Optional}
 
 import akka.http.scaladsl.model.{DateTime, HttpHeader, IllegalUriException, Uri}
 import akka.http.scaladsl.model.headers._
+import akka.stream.alpakka.s3.AccessStyle.PathAccessStyle
 
 import scala.collection.immutable.Seq
 import scala.collection.immutable
@@ -551,7 +552,7 @@ object ObjectMetadata {
  *
  * @see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketHEAD.html
  */
-sealed class BucketAccess
+sealed trait BucketAccess
 
 object BucketAccess {
   case object AccessDenied extends BucketAccess
@@ -580,7 +581,7 @@ object BucketAndKey {
   }
 
   private[s3] def validateBucketName(bucket: String, conf: S3Settings): Unit = {
-    if (conf.pathStyleAccess) {
+    if (conf.accessStyle == PathAccessStyle) {
       if (!pathStyleValid(bucket)) {
         throw IllegalUriException(
           "The bucket name contains sub-dir selection with `..`",

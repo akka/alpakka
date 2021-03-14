@@ -6,9 +6,8 @@ package akka.stream.alpakka.googlecloud.pubsub.grpc.javadsl
 
 import java.time.Duration
 import java.util.concurrent.{CompletableFuture, CompletionStage}
-
 import akka.actor.Cancellable
-import akka.stream.{ActorMaterializer, Attributes}
+import akka.stream.{Attributes, Materializer}
 import akka.stream.javadsl.{Flow, Keep, Sink, Source}
 import akka.{Done, NotUsed}
 import com.google.pubsub.v1._
@@ -26,25 +25,25 @@ object GooglePubSub {
    */
   def publish(parallelism: Int): Flow[PublishRequest, PublishResponse, NotUsed] =
     Flow
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         Flow
           .create[PublishRequest]
-          .mapAsyncUnordered(parallelism, japiFunction(publisher(mat, attr).client.publish))
+          .mapAsyncUnordered(parallelism, publisher(mat, attr).client.publish(_))
       }
-      .mapMaterializedValue(japiFunction(_ => NotUsed))
+      .mapMaterializedValue(_ => NotUsed)
 
   /**
    * Create a source that emits messages for a given subscription using a StreamingPullRequest.
    *
    * The materialized value can be used to cancel the source.
    *
-   * @param request the subscription FQRS and ack deadline fields are mandatory for the request
+   * @param request      the subscription FQRS and ack deadline fields are mandatory for the request
    * @param pollInterval time between StreamingPullRequest messages are being sent
    */
   def subscribe(request: StreamingPullRequest,
                 pollInterval: Duration): Source[ReceivedMessage, CompletableFuture[Cancellable]] =
     Source
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         val cancellable = new CompletableFuture[Cancellable]()
 
         val subsequentRequest = request.toBuilder
@@ -59,21 +58,21 @@ object GooglePubSub {
               .concat(
                 Source
                   .tick(Duration.ZERO, pollInterval, subsequentRequest)
-                  .mapMaterializedValue(japiFunction(cancellable.complete))
+                  .mapMaterializedValue(cancellable.complete(_))
               )
           )
-          .mapConcat(japiFunction(_.getReceivedMessagesList))
-          .mapMaterializedValue(japiFunction(_ => cancellable))
+          .mapConcat(_.getReceivedMessagesList)
+          .mapMaterializedValue(_ => cancellable)
       }
-      .mapMaterializedValue(japiFunction(flattenCs))
-      .mapMaterializedValue(japiFunction(_.toCompletableFuture))
+      .mapMaterializedValue(flattenCs(_))
+      .mapMaterializedValue(_.toCompletableFuture)
 
   /**
    * Create a source that emits messages for a given subscription using a synchronous PullRequest.
    *
    * The materialized value can be used to cancel the source.
    *
-   * @param request the subscription FQRS field is mandatory for the request
+   * @param request      the subscription FQRS field is mandatory for the request
    * @param pollInterval time between PullRequest messages are being sent
    */
   def subscribePolling(
@@ -81,20 +80,34 @@ object GooglePubSub {
       pollInterval: Duration
   ): Source[ReceivedMessage, CompletableFuture[Cancellable]] =
     Source
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         val cancellable = new CompletableFuture[Cancellable]()
 
         val client = subscriber(mat, attr).client
 
         Source
           .tick(Duration.ZERO, pollInterval, request)
-          .mapAsync(1, client.pull)
-          .mapConcat(japiFunction(_.getReceivedMessagesList))
-          .mapMaterializedValue(japiFunction(cancellable.complete))
-          .mapMaterializedValue(japiFunction(_ => cancellable))
+          .mapAsync(1, client.pull(_))
+          .mapConcat(_.getReceivedMessagesList)
+          .mapMaterializedValue(cancellable.complete(_))
+          .mapMaterializedValue(_ => cancellable)
       }
-      .mapMaterializedValue(japiFunction(flattenCs))
-      .mapMaterializedValue(japiFunction(_.toCompletableFuture))
+      .mapMaterializedValue(flattenCs(_))
+      .mapMaterializedValue(_.toCompletableFuture)
+
+  /**
+   * Create a flow that accepts consumed message acknowledgements.
+   */
+  def acknowledgeFlow(): Flow[AcknowledgeRequest, AcknowledgeRequest, NotUsed] =
+    Flow
+      .fromMaterializer { (mat, attr) =>
+        Flow
+          .create[AcknowledgeRequest]
+          .mapAsyncUnordered(1,
+                             req =>
+                               subscriber(mat, attr).client.acknowledge(req).thenApply[AcknowledgeRequest](_ => req))
+      }
+      .mapMaterializedValue(_ => NotUsed)
 
   /**
    * Create a sink that accepts consumed message acknowledgements.
@@ -105,35 +118,24 @@ object GooglePubSub {
    */
   def acknowledge(parallelism: Int): Sink[AcknowledgeRequest, CompletionStage[Done]] =
     Sink
-      .setup { (mat, attr) =>
+      .fromMaterializer { (mat, attr) =>
         Flow
           .create[AcknowledgeRequest]
-          .mapAsyncUnordered(parallelism, japiFunction(subscriber(mat, attr).client.acknowledge))
+          .mapAsyncUnordered(parallelism, subscriber(mat, attr).client.acknowledge(_))
           .toMat(Sink.ignore(), Keep.right[NotUsed, CompletionStage[Done]])
       }
-      .mapMaterializedValue(japiFunction(flattenCs))
-
-  /**
-   * Helper for creating akka.japi.function.Function instances from Scala
-   * functions as Scala 2.11 does not know about SAMs.
-   */
-  private def japiFunction[A, B](f: A => B): akka.japi.function.Function[A, B] =
-    new akka.japi.function.Function[A, B]() {
-      override def apply(a: A): B = f(a)
-    }
+      .mapMaterializedValue(flattenCs(_))
 
   private def flattenCs[T](f: CompletionStage[_ <: CompletionStage[T]]): CompletionStage[T] =
-    f.thenCompose(new java.util.function.Function[CompletionStage[T], CompletionStage[T]] {
-      override def apply(t: CompletionStage[T]): CompletionStage[T] = t
-    })
+    f.thenCompose((t: CompletionStage[T]) => t)
 
-  private def publisher(mat: ActorMaterializer, attr: Attributes) =
+  private def publisher(mat: Materializer, attr: Attributes) =
     attr
       .get[PubSubAttributes.Publisher]
       .map(_.publisher)
       .getOrElse(GrpcPublisherExt.get(mat.system).publisher)
 
-  private def subscriber(mat: ActorMaterializer, attr: Attributes) =
+  private def subscriber(mat: Materializer, attr: Attributes) =
     attr
       .get[PubSubAttributes.Subscriber]
       .map(_.subscriber)

@@ -5,11 +5,9 @@
 package docs.javadsl;
 
 import akka.NotUsed;
-// #init-mat
+// #init-sys
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
-// #init-mat
+// #init-sys
 import akka.stream.alpakka.awslambda.javadsl.AwsLambdaFlow;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
@@ -31,11 +29,10 @@ import java.util.concurrent.CompletionStage;
 
 public class Examples {
 
-  // #init-mat
+  // #init-sys
 
   ActorSystem system = ActorSystem.create();
-  Materializer materializer = ActorMaterializer.create(system);
-  // #init-mat
+  // #init-sys
 
   public void initClient() {
     // #init-client
@@ -67,7 +64,7 @@ public class Examples {
             .build();
     Flow<InvokeRequest, InvokeResponse, NotUsed> flow = AwsLambdaFlow.create(awsLambdaClient, 1);
     final CompletionStage<List<InvokeResponse>> stage =
-        Source.single(request).via(flow).runWith(Sink.seq(), materializer);
+        Source.single(request).via(flow).runWith(Sink.seq(), system);
     // #run
   }
 }

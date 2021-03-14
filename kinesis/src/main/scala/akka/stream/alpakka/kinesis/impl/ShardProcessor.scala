@@ -18,7 +18,7 @@ import scala.collection.JavaConverters._
 
 @InternalApi
 private[kinesis] class ShardProcessor(
-    callback: CommittableRecord => Unit
+    processRecord: CommittableRecord => Unit
 ) extends ShardRecordProcessor {
 
   // We need extra coordination in the event of a Shard End (for example, when we double
@@ -63,7 +63,7 @@ private[kinesis] class ShardProcessor(
     val numberOfRecords = processRecordsInput.records().size()
     processRecordsInput.records().asScala.zipWithIndex.foreach {
       case (record, index) =>
-        callback(
+        processRecord(
           new InternalCommittableRecord(
             record,
             batchData,
@@ -71,17 +71,6 @@ private[kinesis] class ShardProcessor(
           )
         )
     }
-  }
-
-  final class InternalCommittableRecord(record: KinesisClientRecord, batchData: BatchData, lastRecord: Boolean)
-      extends CommittableRecord(record, batchData, shardData) {
-    private def checkpoint(): Unit = {
-      checkpointer.checkpoint(record.sequenceNumber(), record.subSequenceNumber())
-      if (lastRecord) lastRecordSemaphore.release()
-    }
-    override def shutdownReason: Option[ShutdownReason] = shutdown
-    override def forceCheckpoint(): Unit =
-      checkpoint()
   }
 
   override def leaseLost(leaseLostInput: LeaseLostInput): Unit =
@@ -105,4 +94,14 @@ private[kinesis] class ShardProcessor(
     shutdown = Some(ShutdownReason.REQUESTED)
   }
 
+  final class InternalCommittableRecord(record: KinesisClientRecord, batchData: BatchData, lastRecord: Boolean)
+      extends CommittableRecord(record, batchData, shardData) {
+    private def checkpoint(): Unit = {
+      checkpointer.checkpoint(sequenceNumber, subSequenceNumber)
+      if (lastRecord) lastRecordSemaphore.release()
+    }
+    override def shutdownReason: Option[ShutdownReason] = shutdown
+    override def forceCheckpoint(): Unit =
+      checkpoint()
+  }
 }

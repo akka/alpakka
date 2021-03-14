@@ -5,16 +5,22 @@
 package akka.stream.alpakka.elasticsearch
 
 import java.util.concurrent.TimeUnit
-import scala.concurrent.duration.FiniteDuration
+
 import akka.util.JavaDurationConverters._
+
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * Configure Elastiscsearch sources.
  *
  */
-final class ElasticsearchSourceSettings private (val bufferSize: Int,
+final class ElasticsearchSourceSettings private (val connection: ElasticsearchConnectionSettings,
+                                                 val bufferSize: Int,
                                                  val includeDocumentVersion: Boolean,
-                                                 val scrollDuration: FiniteDuration) {
+                                                 val scrollDuration: FiniteDuration,
+                                                 val apiVersion: ApiVersion) {
+
+  def withConnection(value: ElasticsearchConnectionSettings): ElasticsearchSourceSettings = copy(connection = value)
 
   def withBufferSize(value: Int): ElasticsearchSourceSettings = copy(bufferSize = value)
 
@@ -30,12 +36,19 @@ final class ElasticsearchSourceSettings private (val bufferSize: Int,
   def withIncludeDocumentVersion(value: Boolean): ElasticsearchSourceSettings =
     if (includeDocumentVersion == value) this else copy(includeDocumentVersion = value)
 
-  private def copy(bufferSize: Int = bufferSize,
+  def withApiVersion(value: ApiVersion): ElasticsearchSourceSettings =
+    if (apiVersion == value) this else copy(apiVersion = value)
+
+  private def copy(connection: ElasticsearchConnectionSettings = connection,
+                   bufferSize: Int = bufferSize,
                    includeDocumentVersion: Boolean = includeDocumentVersion,
-                   scrollDuration: FiniteDuration = scrollDuration): ElasticsearchSourceSettings =
-    new ElasticsearchSourceSettings(bufferSize = bufferSize,
+                   scrollDuration: FiniteDuration = scrollDuration,
+                   apiVersion: ApiVersion = apiVersion): ElasticsearchSourceSettings =
+    new ElasticsearchSourceSettings(connection = connection,
+                                    bufferSize = bufferSize,
                                     includeDocumentVersion = includeDocumentVersion,
-                                    scrollDuration = scrollDuration)
+                                    scrollDuration = scrollDuration,
+                                    apiVersion = apiVersion)
 
   def scroll: String = {
     val scrollString = scrollDuration.unit match {
@@ -52,21 +65,25 @@ final class ElasticsearchSourceSettings private (val bufferSize: Int,
   }
 
   override def toString =
-    s"""ElasticsearchSourceSettings(bufferSize=$bufferSize,includeDocumentVersion=$includeDocumentVersion,scrollDuration=$scrollDuration)"""
+    s"""ElasticsearchSourceSettings(connection=$connection,bufferSize=$bufferSize,includeDocumentVersion=$includeDocumentVersion,scrollDuration=$scrollDuration,apiVersion=$apiVersion)"""
 
 }
 
 object ElasticsearchSourceSettings {
 
-  val Default = new ElasticsearchSourceSettings(
-    bufferSize = 10,
-    includeDocumentVersion = false,
-    scrollDuration = FiniteDuration(5, TimeUnit.MINUTES)
-  )
-
   /** Scala API */
-  def apply(): ElasticsearchSourceSettings = Default
+  def apply(connection: ElasticsearchConnectionSettings): ElasticsearchSourceSettings =
+    new ElasticsearchSourceSettings(connection,
+                                    10,
+                                    includeDocumentVersion = false,
+                                    FiniteDuration(5, TimeUnit.MINUTES),
+                                    ApiVersion.V7)
 
   /** Java API */
-  def create(): ElasticsearchSourceSettings = Default
+  def create(connection: ElasticsearchConnectionSettings): ElasticsearchSourceSettings =
+    new ElasticsearchSourceSettings(connection,
+                                    10,
+                                    includeDocumentVersion = false,
+                                    FiniteDuration(5, TimeUnit.MINUTES),
+                                    ApiVersion.V7)
 }

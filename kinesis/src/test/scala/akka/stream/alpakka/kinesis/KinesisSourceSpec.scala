@@ -34,7 +34,7 @@ class KinesisSourceSpec extends AnyWordSpec with Matchers with KinesisMock with 
 
     val shardSettings =
       ShardSettings("stream_name", "shard-id")
-        .withShardIteratorType(ShardIteratorType.TRIM_HORIZON)
+        .withShardIterator(ShardIterator.TrimHorizon)
 
     "poll for records" in assertAllStagesStopped {
       new KinesisSpecContext with WithGetShardIteratorSuccess with WithGetRecordsSuccess {

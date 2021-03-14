@@ -7,7 +7,7 @@ package akka.stream.alpakka.kinesis
 import java.util.concurrent.{Executors, TimeoutException}
 
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, Materializer}
+import com.typesafe.config.ConfigFactory
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Suite}
 
@@ -16,8 +16,13 @@ import scala.concurrent.{blocking, Await, ExecutionContext, ExecutionContextExec
 
 trait DefaultTestContext extends BeforeAndAfterAll with BeforeAndAfterEach with MockitoSugar { this: Suite =>
 
-  implicit protected val system: ActorSystem = ActorSystem()
-  implicit protected val materializer: Materializer = ActorMaterializer()
+  implicit protected val system: ActorSystem = ActorSystem(
+    "KinesisTests",
+    ConfigFactory.parseString("""
+    akka.stream.materializer.initial-input-buffer-size = 1
+    akka.stream.materializer.max-input-buffer-size = 1
+  """)
+  )
   private val threadPool = Executors.newFixedThreadPool(10)
   implicit protected val executionContext: ExecutionContextExecutor =
     ExecutionContext.fromExecutor(threadPool)

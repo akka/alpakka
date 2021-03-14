@@ -29,7 +29,7 @@ Alpakka MQTT Streaming implements the [MQTT 3.1.1](https://docs.oasis-open.org/m
   artifact=akka-stream-alpakka-mqtt-streaming_$scala.binary.version$
   version=$project.version$
   symbol2=AkkaVersion
-  value2=$akka26.version$
+  value2=$akka.version$
   group2=com.typesafe.akka
   artifact2=akka-stream_$scala.binary.version$
   version2=AkkaVersion
@@ -41,12 +41,6 @@ Alpakka MQTT Streaming implements the [MQTT 3.1.1](https://docs.oasis-open.org/m
 The table below shows direct dependencies of this module and the second tab shows all libraries it depends on transitively.
 
 @@dependencies { projectId="mqtt-streaming" }
-
-@@@ note
-
-Unlike most Alpakka modules, mqtt-streaming requires at least Akka $akka26.version$.
-
-@@@
 
 ## Flow through a client session
 

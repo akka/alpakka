@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.spring.web;
 
+import akka.actor.ActorSystem;
 import akka.stream.Materializer;
 import akka.stream.javadsl.AsPublisher;
 import org.springframework.core.ReactiveAdapterRegistry;
@@ -13,10 +14,16 @@ import static org.springframework.core.ReactiveTypeDescriptor.multiValue;
 
 public class AkkaStreamsRegistrar {
 
-  private final Materializer materializer;
+  private final ActorSystem system;
 
-  public AkkaStreamsRegistrar(Materializer mat) {
-    materializer = mat;
+  /** @deprecated use {@link #AkkaStreamsRegistrar(ActorSystem)}. */
+  @Deprecated
+  public AkkaStreamsRegistrar(Materializer materializer) {
+    this(materializer.system());
+  }
+
+  public AkkaStreamsRegistrar(ActorSystem system) {
+    this.system = system;
   }
 
   public void registerAdapters(ReactiveAdapterRegistry registry) {
@@ -25,15 +32,16 @@ public class AkkaStreamsRegistrar {
         multiValue(akka.stream.javadsl.Source.class, akka.stream.javadsl.Source::empty),
         source ->
             ((akka.stream.javadsl.Source<?, ?>) source)
-                .runWith(
-                    akka.stream.javadsl.Sink.asPublisher(AsPublisher.WITH_FANOUT), materializer),
+                .runWith(akka.stream.javadsl.Sink.asPublisher(AsPublisher.WITH_FANOUT), system),
         akka.stream.javadsl.Source::fromPublisher);
 
     registry.registerReactiveType(
         multiValue(akka.stream.scaladsl.Source.class, akka.stream.scaladsl.Source::empty),
         source ->
             ((akka.stream.scaladsl.Source<?, ?>) source)
-                .runWith(akka.stream.scaladsl.Sink.asPublisher(true), materializer),
+                .runWith(
+                    akka.stream.scaladsl.Sink.asPublisher(true),
+                    Materializer.matFromSystem(system)),
         akka.stream.scaladsl.Source::fromPublisher);
   }
 }

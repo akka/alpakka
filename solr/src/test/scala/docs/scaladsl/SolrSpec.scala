@@ -14,7 +14,6 @@ import akka.stream.alpakka.solr._
 import akka.stream.alpakka.solr.scaladsl.{SolrFlow, SolrSink, SolrSource}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
-import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
 import org.apache.solr.client.solrj.embedded.JettyConfig
 import org.apache.solr.client.solrj.impl.{CloudSolrClient, ZkClientClusterStateProvider}
@@ -43,8 +42,6 @@ class SolrSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with Sca
   private var zkTestServer: ZkTestServer = _
   implicit val system: ActorSystem = ActorSystem()
   implicit val commitExecutionContext: ExecutionContext = ExecutionContext.global
-
-  implicit val materializer: Materializer = ActorMaterializer()
 
   final val predefinedCollection = "collection1"
 

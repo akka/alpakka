@@ -4,23 +4,21 @@
 
 package docs.javadsl;
 
+import akka.Done;
+import akka.actor.ActorSystem;
+import akka.stream.alpakka.slick.javadsl.Slick;
+import akka.stream.alpakka.slick.javadsl.SlickSession;
+import akka.stream.javadsl.Source;
+
+import java.sql.PreparedStatement;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import akka.Done;
-import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
-
-import akka.stream.javadsl.*;
-import akka.stream.alpakka.slick.javadsl.*;
-
 public class DocSnippetSink {
   public static void main(String[] args) throws Exception {
     final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
 
     final SlickSession session = SlickSession.forConfig("slick-h2");
     system.registerOnTermination(session::close);
@@ -38,13 +36,15 @@ public class DocSnippetSink {
                 Slick.<User>sink(
                     session,
                     // add an optional second argument to specify the parallelism factor (int)
-                    (user) ->
-                        "INSERT INTO ALPAKKA_SLICK_JAVADSL_TEST_USERS VALUES ("
-                            + user.id
-                            + ", '"
-                            + user.name
-                            + "')"),
-                materializer);
+                    (user, connection) -> {
+                      PreparedStatement statement =
+                          connection.prepareStatement(
+                              "INSERT INTO ALPAKKA_SLICK_JAVADSL_TEST_USERS VALUES (?, ?)");
+                      statement.setInt(1, user.id);
+                      statement.setString(2, user.name);
+                      return statement;
+                    }),
+                system);
     // #sink-example
 
     done.whenComplete(

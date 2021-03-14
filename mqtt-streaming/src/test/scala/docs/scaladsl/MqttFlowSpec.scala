@@ -99,7 +99,10 @@ trait MqttFlowSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll 
   }
 
   "mqtt server flow" should {
-    "receive a bidirectional connection and a subscription to a topic" in assertAllStagesStopped {
+    // Ignored due to ://github.com/akka/alpakka/issues/1549, possibly
+    // fixed with https://github.com/akka/alpakka/pull/2189
+    "receive a bidirectional connection and a subscription to a topic" ignore {
+
       val host = "localhost"
 
       //#create-streaming-bind-flow

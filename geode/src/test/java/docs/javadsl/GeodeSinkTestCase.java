@@ -33,7 +33,7 @@ public class GeodeSinkTestCase extends GeodeBaseTestCase {
 
     RunnableGraph<CompletionStage<Done>> runnableGraph = source.toMat(sink, Keep.right());
 
-    CompletionStage<Done> stage = runnableGraph.run(materializer);
+    CompletionStage<Done> stage = runnableGraph.run(system);
 
     stage.toCompletableFuture().get();
 
@@ -54,7 +54,7 @@ public class GeodeSinkTestCase extends GeodeBaseTestCase {
     RunnableGraph<CompletionStage<Done>> runnableGraph = source.toMat(sink, Keep.right());
     // #sink
 
-    CompletionStage<Done> stage = runnableGraph.run(materializer);
+    CompletionStage<Done> stage = runnableGraph.run(system);
 
     stage.toCompletableFuture().get();
 

@@ -36,7 +36,7 @@ private trait JmsProducerConnector extends JmsConnector[JmsProducerSession] {
 
   val status: JmsProducerMatValue = new JmsProducerMatValue {
     override def connected: Source[InternalConnectionState, NotUsed] =
-      Source.fromFuture(connectionStateSource).flatMapConcat(identity)
+      Source.future(connectionStateSource).flatMapConcat(identity)
   }
 }
 
@@ -113,7 +113,7 @@ private[jms] final class JmsProducerStage[E <: JmsEnvelope[PassThrough], PassThr
       setHandler(out, new OutHandler {
         override def onPull(): Unit = pushNextIfPossible()
 
-        override def onDownstreamFinish(): Unit = publishAndCompleteStage()
+        override def onDownstreamFinish(cause: Throwable): Unit = publishAndCompleteStage()
       })
 
       setHandler(

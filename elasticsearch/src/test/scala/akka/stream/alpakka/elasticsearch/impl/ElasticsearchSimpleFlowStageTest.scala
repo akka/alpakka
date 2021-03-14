@@ -6,19 +6,18 @@ package akka.stream.alpakka.elasticsearch.impl
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.http.scaladsl.{Http, HttpExt}
+import akka.stream.Materializer
+import akka.stream.alpakka.elasticsearch.{StringMessageWriter, _}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Keep
 import akka.stream.testkit.scaladsl.{TestSink, TestSource}
-import akka.stream.alpakka.elasticsearch.StringMessageWriter
 import akka.testkit.TestKit
 import org.scalatest.BeforeAndAfterAll
-import org.apache.http.HttpHost
-import org.elasticsearch.client.RestClient
 import org.scalatest.wordspec.AnyWordSpecLike
-import akka.stream.alpakka.elasticsearch._
 
 import scala.collection.immutable
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class ElasticsearchSimpleFlowStageTest
     extends TestKit(ActorSystem("elasticsearchtest"))
@@ -26,12 +25,14 @@ class ElasticsearchSimpleFlowStageTest
     with BeforeAndAfterAll
     with LogCapturing {
 
-  implicit val mat = ActorMaterializer()
+  implicit val mat: Materializer = Materializer(system)
+  implicit val http: HttpExt = Http()
 
-  val client = RestClient.builder(new HttpHost("localhost", 9201)).build()
-  val writer = StringMessageWriter.getInstance
-  val settings = ElasticsearchWriteSettings()
-  val dummyMessages = (
+  val writer: StringMessageWriter = StringMessageWriter.getInstance
+  val settings: ElasticsearchWriteSettings = ElasticsearchWriteSettings(
+    ElasticsearchConnectionSettings("http://localhost:9202")
+  )
+  val dummyMessages: (immutable.Seq[WriteMessage[String, NotUsed]], immutable.Seq[WriteResult[String, NotUsed]]) = (
     immutable.Seq(
       WriteMessage.createIndexMessage("1", """{"foo": "bar"}"""),
       WriteMessage.createIndexMessage("2", """{"foo2": "bar2"}"""),
@@ -48,9 +49,7 @@ class ElasticsearchSimpleFlowStageTest
             .probe[(immutable.Seq[WriteMessage[String, NotUsed]], immutable.Seq[WriteResult[String, NotUsed]])]
             .via(
               new impl.ElasticsearchSimpleFlowStage[String, NotUsed](
-                "es-simple-flow-index",
-                "_doc",
-                client,
+                ElasticsearchParams.V7("es-simple-flow-index"),
                 settings,
                 writer
               )
@@ -74,7 +73,6 @@ class ElasticsearchSimpleFlowStageTest
 
   override def afterAll(): Unit = {
     super.afterAll()
-    client.close()
     TestKit.shutdownActorSystem(system)
   }
 }

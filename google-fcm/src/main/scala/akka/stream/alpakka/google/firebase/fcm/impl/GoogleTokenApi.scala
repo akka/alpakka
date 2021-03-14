@@ -13,13 +13,18 @@ import akka.stream.alpakka.google.firebase.fcm.impl.GoogleTokenApi.{AccessTokenE
 import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim, JwtTime}
 import java.time.Clock
 
+import akka.actor.ActorSystem
+import akka.stream.alpakka.google.firebase.fcm.ForwardProxy
+import akka.stream.alpakka.google.firebase.fcm.ForwardProxyHttpsContext.ForwardProxyHttpsContext
+import akka.stream.alpakka.google.firebase.fcm.ForwardProxyPoolSettings.ForwardProxyPoolSettings
+
 import scala.concurrent.Future
 
 /**
  * INTERNAL API
  */
 @InternalApi
-private[fcm] class GoogleTokenApi(http: => HttpExt) {
+private[fcm] class GoogleTokenApi(http: => HttpExt, system: ActorSystem, forwardProxy: Option[ForwardProxy]) {
   import FcmJsonSupport._
 
   implicit val clock = Clock.systemUTC()
@@ -51,7 +56,13 @@ private[fcm] class GoogleTokenApi(http: => HttpExt) {
     ).toEntity
 
     for {
-      response <- http.singleRequest(HttpRequest(HttpMethods.POST, googleTokenUrl, entity = requestEntity))
+      response <- forwardProxy match {
+        case Some(fp) =>
+          http.singleRequest(HttpRequest(HttpMethods.POST, googleTokenUrl, entity = requestEntity),
+                             connectionContext = fp.httpsContext(system),
+                             settings = fp.poolSettings(system))
+        case None => http.singleRequest(HttpRequest(HttpMethods.POST, googleTokenUrl, entity = requestEntity))
+      }
       result <- Unmarshal(response.entity).to[OAuthResponse]
     } yield {
       AccessTokenExpiry(

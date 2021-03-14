@@ -8,7 +8,6 @@ import java.nio.file.{Files, Path}
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Flow, FlowWithContext, Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
@@ -31,7 +30,6 @@ class DirectorySpec
     with LogCapturing {
 
   private val fs = Jimfs.newFileSystem(Configuration.forCurrentPlatform.toBuilder.build)
-  private implicit val mat = ActorMaterializer()
 
   "The directory source factory" should assertAllStagesStopped {
     "list files" in {

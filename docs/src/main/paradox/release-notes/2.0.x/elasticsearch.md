@@ -1,5 +1,20 @@
 # Elasticsearch
 
+## 2.0.2
+
+- Fix Elasticsearch WriteMessage.createIndexMessage documentation [#2387](https://github.com/akka/alpakka/issues/2387) by [@yannisf](https://github.com/yannisf)
+- Check client instance for nulls [#2382](https://github.com/akka/alpakka/issues/2382) by [@ennru](https://github.com/ennru)
+
+## 2.0.1
+
+- Elasticsearch: Support the routing parameter [#2272](https://github.com/akka/alpakka/issues/2272) by [@yannisf](https://github.com/yannisf)
+- ElasticsearchSource: Clear Scroll On Exhaustion or Completion [#2330](https://github.com/akka/alpakka/issues/2330) by [@michaeljmarshall](https://github.com/michaeljmarshall)
+- Elasticsearch: Log indexing errors [#2317](https://github.com/akka/alpakka/issues/2317) by [@KGoodale13](https://github.com/KGoodale13)
+- [elasticsearch] Support `allow_explicit_index: false` [#2326](https://github.com/akka/alpakka/issues/2326) by [@mrooding](https://github.com/mrooding)
+- [Elasticsearch] Add createBulk factory methods [#2306](https://github.com/akka/alpakka/issues/2306) by [@KGoodale13](https://github.com/KGoodale13)
+
+[*closed in 2.0.1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A2.0.1+label%3Ap%3Aelasticsearch)
+
 ## 2.0.0
 
 - Elasticsearch: replace push with emit [#2292](https://github.com/akka/alpakka/issues/2292) by [@KGoodale13](https://github.com/KGoodale13)

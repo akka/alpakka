@@ -7,6 +7,7 @@ package akka.stream.alpakka.googlecloud.storage.javadsl
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 
+import akka.actor.ActorSystem
 import akka.http.javadsl.model.ContentType
 import akka.http.scaladsl.model.{ContentType => ScalaContentType}
 import akka.stream.alpakka.googlecloud.storage.impl.GCStorageStream
@@ -16,6 +17,7 @@ import akka.stream.{Attributes, Materializer}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
 
+import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 
@@ -35,11 +37,32 @@ object GCStorage {
    * @param materializer materializer to run with
    * @param attributes attributes to run request with
    * @return a `CompletionStage` containing `Bucket` if it exists
+   * @deprecated pass in the actor system instead of the materializer, since 3.0.0
    */
+  @deprecated("pass in the actor system instead of the materializer", "3.0.0")
   def getBucket(bucketName: String,
                 materializer: Materializer,
                 attributes: Attributes): CompletionStage[Optional[Bucket]] =
-    GCStorageStream.getBucket(bucketName)(materializer, attributes).map(_.asJava)(materializer.executionContext).toJava
+    GCStorageStream
+      .getBucket(bucketName)(materializer, attributes)
+      .map(_.asJava)(materializer.executionContext)
+      .toJava
+
+  /**
+   * Gets information on a bucket
+   *
+   * @see https://cloud.google.com/storage/docs/json_api/v1/buckets/get
+   *
+   * @param bucketName the name of the bucket to look up
+   * @param system actor system to run with
+   * @param attributes attributes to run request with
+   * @return a `CompletionStage` containing `Bucket` if it exists
+   */
+  def getBucket(bucketName: String, system: ActorSystem, attributes: Attributes): CompletionStage[Optional[Bucket]] =
+    GCStorageStream
+      .getBucket(bucketName)(Materializer.matFromSystem(system), attributes)
+      .map(_.asJava)(system.dispatcher)
+      .toJava
 
   /**
    * Gets information on a bucket
@@ -60,12 +83,29 @@ object GCStorage {
    * @param bucketName the name of the bucket
    * @param location the region to put the bucket in
    * @return a `CompletionStage` of `Bucket` with created bucket
+   * @deprecated pass in the actor system instead of the materializer, since 3.0.0
    */
+  @deprecated("pass in the actor system instead of the materializer", "3.0.0")
   def createBucket(bucketName: String,
                    location: String,
                    materializer: Materializer,
                    attributes: Attributes): CompletionStage[Bucket] =
     GCStorageStream.createBucket(bucketName, location)(materializer, attributes).toJava
+
+  /**
+   * Creates a new bucket
+   *
+   * @see https://cloud.google.com/storage/docs/json_api/v1/buckets/insert
+   *
+   * @param bucketName the name of the bucket
+   * @param location the region to put the bucket in
+   * @return a `CompletionStage` of `Bucket` with created bucket
+   */
+  def createBucket(bucketName: String,
+                   location: String,
+                   system: ActorSystem,
+                   attributes: Attributes): CompletionStage[Bucket] =
+    GCStorageStream.createBucket(bucketName, location)(Materializer.matFromSystem(system), attributes).toJava
 
   /**
    * Creates a new bucket
@@ -86,9 +126,22 @@ object GCStorage {
    *
    * @param bucketName the name of the bucket
    * @return a `CompletionStage` of `Done` on successful deletion
+   * @deprecated pass in the actor system instead of the materializer, since 3.0.0
    */
+  @deprecated("pass in the actor system instead of the materializer", "3.0.0")
   def deleteBucket(bucketName: String, materializer: Materializer, attributes: Attributes): CompletionStage[Done] =
     GCStorageStream.deleteBucket(bucketName)(materializer, attributes).toJava
+
+  /**
+   * Deletes bucket
+   *
+   * @see https://cloud.google.com/storage/docs/json_api/v1/buckets/delete
+   *
+   * @param bucketName the name of the bucket
+   * @return a `CompletionStage` of `Done` on successful deletion
+   */
+  def deleteBucket(bucketName: String, system: ActorSystem, attributes: Attributes): CompletionStage[Done] =
+    GCStorageStream.deleteBucket(bucketName)(Materializer.matFromSystem(system), attributes).toJava
 
   /**
    * Deletes bucket
@@ -242,19 +295,51 @@ object GCStorage {
    * @param objectName the object name
    * @param contentType `ContentType`
    * @param chunkSize the size of the request sent to google cloud storage in bytes, must be a multiple of 256KB
+   * @param metadata custom metadata for the object
    * @return a `Sink` that accepts `ByteString`'s and materializes to a `Future` of `StorageObject`
    */
   def resumableUpload(bucket: String,
                       objectName: String,
                       contentType: ContentType,
-                      chunkSize: java.lang.Integer): Sink[ByteString, CompletionStage[StorageObject]] = {
+                      chunkSize: java.lang.Integer,
+                      metadata: java.util.Map[String, String]): Sink[ByteString, CompletionStage[StorageObject]] =
+    resumableUpload(bucket, objectName, contentType, chunkSize, Some(metadata))
+
+  /**
+   * Uploads object by making multiple requests
+   *
+   * @see https://cloud.google.com/storage/docs/json_api/v1/how-tos/resumable-upload
+   *
+   * @param bucket the bucket name
+   * @param objectName the object name
+   * @param contentType `ContentType`
+   * @param chunkSize the size of the request sent to google cloud storage in bytes, must be a multiple of 256KB
+   * @return a `Sink` that accepts `ByteString`'s and materializes to a `Future` of `StorageObject`
+   */
+  def resumableUpload(bucket: String,
+                      objectName: String,
+                      contentType: ContentType,
+                      chunkSize: java.lang.Integer): Sink[ByteString, CompletionStage[StorageObject]] =
+    resumableUpload(bucket, objectName, contentType, chunkSize, metadata = None)
+
+  private def resumableUpload(
+      bucket: String,
+      objectName: String,
+      contentType: ContentType,
+      chunkSize: java.lang.Integer,
+      metadata: Option[java.util.Map[String, String]]
+  ): Sink[ByteString, CompletionStage[StorageObject]] = {
     assert(
       (chunkSize >= (256 * 1024)) && (chunkSize % (256 * 1024) == 0),
       "Chunk size must be a multiple of 256KB"
     )
 
     GCStorageStream
-      .resumableUpload(bucket, objectName, contentType.asInstanceOf[ScalaContentType], chunkSize)
+      .resumableUpload(bucket,
+                       objectName,
+                       contentType.asInstanceOf[ScalaContentType],
+                       chunkSize,
+                       metadata.map(_.asScala.toMap))
       .asJava
       .mapMaterializedValue(func(_.toJava))
   }
