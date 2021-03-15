@@ -62,12 +62,6 @@ object GrpcPublisherExt extends ExtensionId[GrpcPublisherExt] with ExtensionIdPr
   override def createExtension(system: ExtendedActorSystem) = new GrpcPublisherExt(system)
 
   /**
-   * Access to extension.
-   */
-  @deprecated("use get() instead", since = "2.0.0")
-  def apply()(implicit system: ActorSystem): GrpcPublisherExt = super.apply(system)
-
-  /**
    * Java API
    *
    * Access to extension.

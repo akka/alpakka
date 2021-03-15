@@ -435,46 +435,6 @@ object S3 {
    * @param bucket Which bucket that you list object metadata for
    * @param prefix Prefix of the keys you want to list under passed bucket
    * @return Source of object metadata
-   *
-   * @deprecated use version with `Optional` instead, since 2.0.0
-   */
-  @Deprecated
-  def listBucket(bucket: String, prefix: Option[String]): Source[ListBucketResultContents, NotUsed] =
-    listBucket(bucket, prefix.asJava, S3Headers.empty)
-
-  /**
-   * Will return a source of object metadata for a given bucket with optional prefix using version 2 of the List Bucket API.
-   * This will automatically page through all keys with the given parameters.
-   *
-   * The <code>akka.stream.alpakka.s3.list-bucket-api-version</code> can be set to 1 to use the older API version 1
-   *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html  (version 2 API)
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html (version 1 API)
-   * @param bucket Which bucket that you list object metadata for
-   * @param prefix Prefix of the keys you want to list under passed bucket
-   * @return Source of object metadata
-   *
-   * @deprecated use version with `Optional` instead, since 2.0.0
-   */
-  @Deprecated
-  def listBucket(bucket: String,
-                 prefix: Option[String],
-                 s3Headers: S3Headers): Source[ListBucketResultContents, NotUsed] =
-    S3Stream
-      .listBucket(bucket, prefix, s3Headers)
-      .asJava
-
-  /**
-   * Will return a source of object metadata for a given bucket with optional prefix using version 2 of the List Bucket API.
-   * This will automatically page through all keys with the given parameters.
-   *
-   * The <code>akka.stream.alpakka.s3.list-bucket-api-version</code> can be set to 1 to use the older API version 1
-   *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html  (version 2 API)
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html (version 1 API)
-   * @param bucket Which bucket that you list object metadata for
-   * @param prefix Prefix of the keys you want to list under passed bucket
-   * @return Source of object metadata
    */
   def listBucket(bucket: String, prefix: Optional[String]): Source[ListBucketResultContents, NotUsed] =
     listBucket(bucket, prefix, S3Headers.empty)

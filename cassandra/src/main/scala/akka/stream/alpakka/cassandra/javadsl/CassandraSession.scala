@@ -96,16 +96,6 @@ final class CassandraSession(@InternalApi private[akka] val delegate: scaladsl.C
     delegate.executeDDL(stmt).toJava
 
   /**
-   * See <a href="https://docs.datastax.com/en/dse/6.7/cql/cql/cql_using/useCreateTable.html">Creating a table</a>.
-   *
-   * The returned `CompletionStage` is completed when the table has been created,
-   * or if the statement fails.
-   */
-  @deprecated("Use executeDDL instead.", "0.100")
-  def executeCreateTable(stmt: String): CompletionStage[Done] =
-    delegate.executeDDL(stmt).toJava
-
-  /**
    * Create a `PreparedStatement` that can be bound and used in
    * `executeWrite` or `select` multiple times.
    */

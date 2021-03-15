@@ -16,7 +16,11 @@ public class AkkaStreamsRegistrar {
 
   private final ActorSystem system;
 
-  /** @deprecated use {@link #AkkaStreamsRegistrar(ActorSystem)}. */
+  /**
+   * deprecated, use {@link #AkkaStreamsRegistrar(ActorSystem)}.
+   *
+   * @deprecated pass in the actor system instead of the materializer, since 3.0.0
+   */
   @Deprecated
   public AkkaStreamsRegistrar(Materializer materializer) {
     this(materializer.system());

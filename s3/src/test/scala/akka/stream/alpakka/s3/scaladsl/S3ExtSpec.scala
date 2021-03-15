@@ -5,7 +5,6 @@
 package akka.stream.alpakka.s3.scaladsl
 
 import akka.actor.ActorSystem
-import akka.stream.alpakka.s3.AccessStyle.PathAccessStyle
 import akka.stream.alpakka.s3.S3Ext
 import com.typesafe.config.ConfigFactory
 import org.scalatest.flatspec.AnyFlatSpecLike
@@ -24,6 +23,5 @@ class S3ExtSpec extends AnyFlatSpecLike with Matchers {
     implicit val system: ActorSystem = ActorSystem.create("s3", config)
     val ext = S3Ext(system)
     ext.settings.endpointUrl shouldBe Some("http://localhost:8001")
-    ext.settings.accessStyle shouldBe PathAccessStyle
   }
 }

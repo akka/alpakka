@@ -8,7 +8,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.http.scaladsl.Http
 import akka.stream.Attributes
-import akka.stream.alpakka.s3.AccessStyle.PathAccessStyle
 import akka.stream.alpakka.s3.BucketAccess.{AccessGranted, NotExists}
 import akka.stream.alpakka.s3._
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
@@ -75,7 +74,6 @@ trait S3IntegrationSpec
 
   def otherRegionSettingsPathStyleAccess =
     S3Settings()
-      .withAccessStyle(PathAccessStyle)
       .withS3RegionProvider(new AwsRegionProvider {
         val getRegion: Region = Region.EU_CENTRAL_1
       })
@@ -627,7 +625,6 @@ class MinioS3IntegrationSpec extends S3IntegrationSpec {
     S3Settings()
       .withCredentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secret)))
       .withEndpointUrl(endpointUrlPathStyle)
-      .withAccessStyle(PathAccessStyle)
 
   override def invalidCredentials: S3Settings =
     S3Settings()
