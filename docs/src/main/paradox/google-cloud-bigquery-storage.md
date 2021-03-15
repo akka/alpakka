@@ -38,39 +38,6 @@ The Alpakka Google Cloud BigQuery Storage library contains the classes generated
 
 @@@note { title="ALPN on JDK 8" }
 
-For use on JDK 8 the ALPN Java agent needs to be set up explicitly.
-
-@@@
-
-### Maven
-
-When using JDK 8: configure your project to use the Java agent for ALPN and add `-javaagent:...` to your startup scripts as described in the @extref:[Akka gRPC documentation](akka-grpc:/buildtools/maven.html#starting-your-akka-grpc-server-from-maven).
-
-### sbt
-
-When using JDK 8: Configure your project to use the Java agent for ALPN and add `-javaagent:...` to your startup scripts.
-
-Pull in the [`sbt-javaagent`](https://github.com/sbt/sbt-javaagent) plugin.
-
-project/plugins.sbt
-: @@snip (/project/plugins.sbt) { #grpc-agent }
-
-Enable the Akka gRPC and JavaAgent plugins on the sbt project.
-
-build.sbt
-: @@snip (/build.sbt) { #grpc-plugins }
-
-Add the Java agent to the runtime configuration.
-
-build.sbt
-:   ```scala
-    javaAgents += "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.9"
-    ```
-
-### Gradle
-
-When using JDK 8: Configure your project to use the Java agent for ALPN and add `-javaagent:...` to your startup scripts as described in the @extref:[Akka gRPC documentation](akka-grpc:/buildtools/gradle.html#starting-your-akka-grpc-server-from-gradle).
-
 ## Configuration
 
 The connector comes with the default settings configured to work with the Google BigQuery endpoint and uses the default way of
