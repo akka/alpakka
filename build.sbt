@@ -124,7 +124,11 @@ lazy val cassandra =
   alpakkaProject("cassandra", "cassandra", Dependencies.Cassandra, fatalWarnings := true)
 
 lazy val couchbase =
-  alpakkaProject("couchbase", "couchbase", Dependencies.Couchbase, whitesourceGroup := Whitesource.Group.Supported)
+  alpakkaProject("couchbase",
+                 "couchbase",
+                 Dependencies.Couchbase,
+                 whitesourceGroup := Whitesource.Group.Supported,
+                 fatalWarnings := true)
 
 lazy val csv = alpakkaProject("csv", "csv", whitesourceGroup := Whitesource.Group.Supported, fatalWarnings := true)
 

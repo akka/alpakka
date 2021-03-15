@@ -5,8 +5,6 @@
 package docs.javadsl;
 
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 // #registry
 import akka.stream.alpakka.couchbase.CouchbaseSessionRegistry;
 import akka.stream.alpakka.couchbase.CouchbaseSessionSettings;
