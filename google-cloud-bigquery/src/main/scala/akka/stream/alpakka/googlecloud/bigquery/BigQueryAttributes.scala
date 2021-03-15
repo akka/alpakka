@@ -4,9 +4,10 @@
 
 package akka.stream.alpakka.googlecloud.bigquery
 
+import akka.actor.ClassicActorSystemProvider
+import akka.stream.Attributes
 import akka.stream.Attributes.Attribute
 import akka.stream.alpakka.googlecloud.bigquery.impl.BigQueryExt
-import akka.stream.{Attributes, Materializer}
 
 /**
  * Akka Stream [[Attributes]] that are used when materializing BigQuery stream blueprints.
@@ -26,12 +27,12 @@ object BigQueryAttributes {
   /**
    * Resolves the most specific [[BigQuerySettings]] for some [[Attributes]]
    */
-  def resolveSettings(attr: Attributes, mat: Materializer): BigQuerySettings =
+  def resolveSettings(attr: Attributes, system: ClassicActorSystemProvider): BigQuerySettings =
     attr.attributeList.collectFirst {
       case BigQuerySettingsValue(settings) => settings
-      case BigQuerySettingsPath(path) => BigQueryExt(mat.system).settings(path)
+      case BigQuerySettingsPath(path) => BigQueryExt(system).settings(path)
     } getOrElse {
-      BigQueryExt(mat.system).settings
+      BigQueryExt(system).settings
     }
 
   private final case class BigQuerySettingsValue(settings: BigQuerySettings) extends Attribute

@@ -37,7 +37,7 @@ private[bigquery] object LoadJob {
       .fromMaterializer { (mat, attr) =>
         import mat.executionContext
         implicit val materializer = mat
-        implicit val settings = BigQueryAttributes.resolveSettings(attr, mat)
+        implicit val settings = BigQueryAttributes.resolveSettings(attr, mat.system)
         import settings.loadJobSettings
 
         val in = Flow[ByteString]

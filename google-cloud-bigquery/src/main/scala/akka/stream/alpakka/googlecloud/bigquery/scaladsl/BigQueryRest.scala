@@ -58,7 +58,7 @@ private[scaladsl] trait BigQueryRest {
 
   protected[this] def source[Out, Mat](f: BigQuerySettings => Source[Out, Mat]): Source[Out, Future[Mat]] =
     Source.fromMaterializer { (mat, attr) =>
-      f(BigQueryAttributes.resolveSettings(attr, mat))
+      f(BigQueryAttributes.resolveSettings(attr, mat.system))
     }
 
   protected[this] implicit def queryPrependOption(query: Query) = new QueryPrependOption(query)

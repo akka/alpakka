@@ -29,7 +29,7 @@ private[bigquery] object PaginatedRequest {
     Source
       .fromMaterializer { (mat, attr) =>
         implicit val system = mat.system
-        implicit val settings = BigQueryAttributes.resolveSettings(attr, mat)
+        implicit val settings = BigQueryAttributes.resolveSettings(attr, system)
 
         val requestWithPageToken = addPageToken(request, query)
         Source.unfoldAsync[Either[Done, Option[String]], Out](Right(initialPageToken)) {

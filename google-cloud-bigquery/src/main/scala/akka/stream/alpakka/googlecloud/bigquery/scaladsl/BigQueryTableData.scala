@@ -124,7 +124,7 @@ private[scaladsl] trait BigQueryTableData { this: BigQueryRest =>
         import SprayJsonSupport._
         import mat.executionContext
         implicit val system = mat.system
-        implicit val settings = BigQueryAttributes.resolveSettings(attr, mat)
+        implicit val settings = BigQueryAttributes.resolveSettings(attr, system)
 
         val uri = BigQueryEndpoints.tableDataInsertAll(settings.projectId, datasetId, tableId)
         val request = HttpRequest(POST, uri)

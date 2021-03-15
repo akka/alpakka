@@ -96,7 +96,7 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
       .fromMaterializer { (mat, attr) =>
         import SprayJsonSupport._
         import mat.executionContext
-        val settings = BigQueryAttributes.resolveSettings(attr, mat)
+        val settings = BigQueryAttributes.resolveSettings(attr, mat.system)
         import settings.loadJobSettings.perTableQuota
 
         val job = Job(
@@ -155,7 +155,7 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
     Sink
       .fromMaterializer { (mat, attr) =>
         import mat.executionContext
-        implicit val settings = BigQueryAttributes.resolveSettings(attr, mat)
+        implicit val settings = BigQueryAttributes.resolveSettings(attr, mat.system)
         val uri = BigQueryMediaEndpoints.jobs(settings.projectId)
         Sink
           .lazyFutureSink { () =>
