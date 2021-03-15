@@ -26,13 +26,12 @@ object GoogleAttributes {
    * Resolves the most specific [[GoogleSettings]] for some [[Attributes]]
    */
   def resolveSettings(attr: Attributes, mat: Materializer): GoogleSettings =
-    attr.attributeList.collectFirst {
+    attr.get[GoogleAttribute].fold(GoogleExt(mat.system).settings) {
       case GoogleSettingsValue(settings) => settings
       case GoogleSettingsPath(path) => GoogleExt(mat.system).settings(path)
-    } getOrElse {
-      GoogleExt(mat.system).settings
     }
 
-  private final case class GoogleSettingsValue(settings: GoogleSettings) extends Attribute
-  private final case class GoogleSettingsPath(path: String) extends Attribute
+  private sealed abstract class GoogleAttribute extends Attribute
+  private final case class GoogleSettingsValue(settings: GoogleSettings) extends GoogleAttribute
+  private final case class GoogleSettingsPath(path: String) extends GoogleAttribute
 }
