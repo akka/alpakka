@@ -150,7 +150,8 @@ lazy val ftp = alpakkaProject(
   Dependencies.Ftp,
   Test / fork := true,
   // To avoid potential blocking in machines with low entropy (default is `/dev/random`)
-  javaOptions in Test += "-Djava.security.egd=file:/dev/./urandom"
+  javaOptions in Test += "-Djava.security.egd=file:/dev/./urandom",
+  fatalWarnings := true
 )
 
 lazy val geode =

@@ -4,6 +4,7 @@
 
 package akka.stream.alpakka.ftp.javadsl
 
+import akka.actor.ActorSystem
 import java.util.concurrent.CompletionStage
 import java.util.function._
 
@@ -210,9 +211,23 @@ sealed trait FtpApi[FtpClient, S <: RemoteFileSettings] { _: FtpSourceFactory[Ft
    * @param basePath path to start with
    * @param name name of a directory to create
    * @param connectionSettings connection settings
+   * @param materializer materializer
+   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of [[akka.Done]] indicating a materialized, asynchronous request
+   * @deprecated pass in the actor system instead of the materializer, since 3.0.0
+   */
+  @Deprecated
+  def mkdirAsync(basePath: String, name: String, connectionSettings: S, mat: Materializer): CompletionStage[Done]
+
+  /**
+   * Java API for creating a directory in a given path
+   *
+   * @param basePath path to start with
+   * @param name name of a directory to create
+   * @param connectionSettings connection settings
+   * @param system actor system
    * @return [[java.util.concurrent.CompletionStage CompletionStage]] of [[akka.Done]] indicating a materialized, asynchronous request
    */
-  def mkdirAsync(basePath: String, name: String, connectionSettings: S, mat: Materializer): CompletionStage[Done]
+  def mkdirAsync(basePath: String, name: String, connectionSettings: S, system: ActorSystem): CompletionStage[Done]
 
   /**
    * Java API: creates a [[akka.stream.javadsl.Sink Sink]] of [[akka.util.ByteString ByteString]] to some file path.
@@ -331,6 +346,11 @@ object Ftp extends FtpApi[FTPClient, FtpSettings] with FtpSourceParams {
     mkdir(basePath, name, connectionSettings).runWith(sink, mat)
   }
 
+  def mkdirAsync(basePath: String, name: String, connectionSettings: S, system: ActorSystem): CompletionStage[Done] = {
+    val sink: Sink[Done, CompletionStage[Done]] = Sink.head()
+    mkdir(basePath, name, connectionSettings).runWith(sink, system)
+  }
+
   def toPath(path: String, connectionSettings: S, append: Boolean): Sink[ByteString, CompletionStage[IOResult]] = {
     import scala.compat.java8.FutureConverters._
     Sink.fromGraph(createIOSink(path, connectionSettings, append)).mapMaterializedValue(func(_.toJava))
@@ -419,6 +439,11 @@ object Ftps extends FtpApi[FTPSClient, FtpsSettings] with FtpsSourceParams {
   def mkdirAsync(basePath: String, name: String, connectionSettings: S, mat: Materializer): CompletionStage[Done] = {
     val sink: Sink[Done, CompletionStage[Done]] = Sink.head()
     mkdir(basePath, name, connectionSettings).runWith(sink, mat)
+  }
+
+  def mkdirAsync(basePath: String, name: String, connectionSettings: S, system: ActorSystem): CompletionStage[Done] = {
+    val sink: Sink[Done, CompletionStage[Done]] = Sink.head()
+    mkdir(basePath, name, connectionSettings).runWith(sink, system)
   }
 
   def toPath(path: String, connectionSettings: S, append: Boolean): Sink[ByteString, CompletionStage[IOResult]] = {
@@ -510,6 +535,11 @@ class SftpApi extends FtpApi[SSHClient, SftpSettings] with SftpSourceParams {
   def mkdirAsync(basePath: String, name: String, connectionSettings: S, mat: Materializer): CompletionStage[Done] = {
     val sink: Sink[Done, CompletionStage[Done]] = Sink.head()
     mkdir(basePath, name, connectionSettings).runWith(sink, mat)
+  }
+
+  def mkdirAsync(basePath: String, name: String, connectionSettings: S, system: ActorSystem): CompletionStage[Done] = {
+    val sink: Sink[Done, CompletionStage[Done]] = Sink.head()
+    mkdir(basePath, name, connectionSettings).runWith(sink, system)
   }
 
   def toPath(path: String, connectionSettings: S, append: Boolean): Sink[ByteString, CompletionStage[IOResult]] = {
