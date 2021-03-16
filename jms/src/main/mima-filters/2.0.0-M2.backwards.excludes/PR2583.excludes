@@ -1,0 +1,2 @@
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.alpakka.jms.StopMessageListenerException")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.alpakka.jms.StopMessageListenerException$")
