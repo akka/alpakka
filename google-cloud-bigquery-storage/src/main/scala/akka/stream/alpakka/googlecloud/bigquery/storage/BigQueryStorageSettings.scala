@@ -46,6 +46,14 @@ final class BigQueryStorageSettings private (
                    rootCa: Option[String] = rootCa,
                    callCredentials: Option[CallCredentials] = callCredentials) =
     new BigQueryStorageSettings(host, port, rootCa, callCredentials)
+
+  override def toString: String =
+    "BigQueryStorageSettings(" +
+      s"host=$host, " +
+      s"port=$port, " +
+      s"rootCa=$rootCa, "+
+      s"callCredentials=$callCredentials"
+      ")"
 }
 
 object BigQueryStorageSettings {
