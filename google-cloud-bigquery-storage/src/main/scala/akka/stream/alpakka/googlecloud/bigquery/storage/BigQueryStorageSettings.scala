@@ -96,7 +96,7 @@ object BigQueryStorageSettings {
   /**
    * Create settings from ActorSystem's config.
    */
-  def apply(system: ActorSystem): BigQueryStorageSettings =
+  def apply(system: ClassicActorSystemProvider): BigQueryStorageSettings =
     BigQueryStorageSettings(system.settings.config.getConfig("alpakka.google.cloud.bigquery.grpc"))
 
   /**
