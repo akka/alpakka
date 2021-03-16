@@ -215,10 +215,7 @@ private[jms] trait JmsConnector[S <: JmsSession] {
 
   override def onTimer(timerKey: Any): Unit = timerKey match {
     case FlushAcknowledgementsTimerKey(session) =>
-      session.ackQueue.forEach(_.apply())
-      session.ackQueue.clear()
-      session.pendingAck = 0
-
+      session.drainAcks()
     case AttemptConnect(attempt, backoffMaxed) =>
       log.info("{} retries connecting, attempt {}", attributes.nameLifted.mkString, attempt)
       initSessionAsync(attempt, backoffMaxed)
