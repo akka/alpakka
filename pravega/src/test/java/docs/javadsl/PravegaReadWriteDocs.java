@@ -85,7 +85,7 @@ public class PravegaReadWriteDocs extends PravegaAkkaTestCaseSupport {
             "an_existing_scope",
             "an_existing_tableName",
             tablewriterSettings,
-            (Person p) -> new scala.Tuple2<>(p.id(), p.firstname()));
+            (Person p) -> new Pair<>(p.id(), p.firstname()));
 
     CompletionStage<Done> done = Source.from(events).toMat(sink, Keep.right()).run(system);
 

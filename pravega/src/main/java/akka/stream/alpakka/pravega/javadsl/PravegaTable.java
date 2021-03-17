@@ -31,21 +31,25 @@ public class PravegaTable {
       String scope,
       String tableName,
       TableWriterSettings<K, V> tableWriterSettings,
-      scala.Function1<A, scala.Tuple2<K, V>> keyValueExtractor,
+      scala.Function1<A, Pair<K, V>> keyValueExtractor,
       scala.Function1<A, String> familyExtractor) {
     return Flow.fromGraph(
         new PravegaTableWriteFlow<A, K, V>(
-            scope, tableName, tableWriterSettings, keyValueExtractor, familyExtractor));
+            scope,
+            tableName,
+            tableWriterSettings,
+            keyValueExtractor.andThen(Pair::toScala),
+            familyExtractor));
   }
 
   public static <A, K, V> Flow<A, A, NotUsed> writeFlow(
       String scope,
       String tableName,
       TableWriterSettings<K, V> tableWriterSettings,
-      scala.Function1<A, scala.Tuple2<K, V>> keyValueExtractor) {
+      scala.Function1<A, Pair<K, V>> keyValueExtractor) {
     return Flow.fromGraph(
         new PravegaTableWriteFlow<A, K, V>(
-            scope, tableName, tableWriterSettings, keyValueExtractor));
+            scope, tableName, tableWriterSettings, keyValueExtractor.andThen(Pair::toScala)));
   }
   /** Incoming messages are written to a Pravega table KV. */
   public static <A, K, V> Sink<A, CompletionStage<Done>> sink(
@@ -54,12 +58,7 @@ public class PravegaTable {
       TableWriterSettings<K, V> tableWriterSettings,
       scala.Function1<A, Pair<K, V>> keyValueExtractor,
       scala.Function1<A, String> familyExtractor) {
-    return writeFlow(
-            scope,
-            tableName,
-            tableWriterSettings,
-            keyValueExtractor.andThen(Pair::toScala),
-            familyExtractor)
+    return writeFlow(scope, tableName, tableWriterSettings, keyValueExtractor, familyExtractor)
         .toMat(Sink.ignore(), Keep.right());
   }
 
@@ -68,13 +67,13 @@ public class PravegaTable {
       String scope,
       String tableName,
       TableWriterSettings<K, V> tableWriterSettings,
-      scala.Function1<A, scala.Tuple2<K, V>> keyValueExtractor) {
+      scala.Function1<A, Pair<K, V>> keyValueExtractor) {
     return writeFlow(scope, tableName, tableWriterSettings, keyValueExtractor)
         .toMat(Sink.ignore(), Keep.right());
   }
 
   /**
-   * Messages are read from a Pravega stream.
+   * Messages are read from a Pravega table.
    *
    * <p>Materialized value is a [[Future]] which completes to [[Done]] as soon as the Pravega reader
    * is open.
