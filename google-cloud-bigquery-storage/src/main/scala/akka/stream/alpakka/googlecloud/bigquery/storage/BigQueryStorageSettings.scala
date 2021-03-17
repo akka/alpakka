@@ -49,11 +49,11 @@ final class BigQueryStorageSettings private (
 
   override def toString: String =
     "BigQueryStorageSettings(" +
-      s"host=$host, " +
-      s"port=$port, " +
-      s"rootCa=$rootCa, "+
-      s"callCredentials=$callCredentials"
-      ")"
+    s"host=$host, " +
+    s"port=$port, " +
+    s"rootCa=$rootCa, " +
+    s"callCredentials=$callCredentials"
+  ")"
 }
 
 object BigQueryStorageSettings {

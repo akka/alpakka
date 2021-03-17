@@ -4,21 +4,14 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.storage.javadsl
 
-import java.util.concurrent.{CompletableFuture, CompletionStage}
-
+import java.util.concurrent.CompletionStage
 import akka.NotUsed
-import akka.japi.function.Creator
-import akka.stream.alpakka.googlecloud.bigquery.storage.impl.AvroDecoder
-import akka.stream.javadsl.{Flow, Source}
-import akka.stream.scaladsl.{Flow => SFlow}
-import akka.stream.{ActorMaterializer, Attributes}
+import akka.stream.javadsl.Source
 import com.google.cloud.bigquery.storage.v1.ReadSession.TableReadOptions
-import com.google.cloud.bigquery.storage.v1._
-import com.google.cloud.bigquery.storage.v1.CreateReadSessionRequest
 import org.apache.avro.generic.GenericRecord
-
-import scala.collection.JavaConverters._
-import scala.compat.java8.FunctionConverters._
+import akka.stream.alpakka.googlecloud.bigquery.storage.{scaladsl => scstorage}
+import akka.stream.alpakka.googlecloud.bigquery.storage.ProtobufConverters._
+import scala.compat.java8.FutureConverters.FutureOps
 
 /**
  * Google BigQuery Storage Api Akka Stream operator factory.
@@ -97,73 +90,12 @@ object GoogleBigQueryStorage {
       tableId: String,
       readOptions: Option[TableReadOptions],
       maxNumStreams: Int
-  ): Source[Source[GenericRecord, NotUsed], CompletionStage[NotUsed]] =
-    Source.setup[Source[GenericRecord, NotUsed], NotUsed] { (mat: ActorMaterializer, attr: Attributes) =>
-      val client = reader(mat, attr).client
-      val schemaS: CompletableFuture[String] = new CompletableFuture[String]()
+  ): Source[Source[GenericRecord, NotUsed], CompletionStage[NotUsed]] = {
+    val source = scstorage.GoogleBigQueryStorage.read(projectId, datasetId, tableId, readOptions.map(_.asScala()), maxNumStreams)
+      .map(s => s.asJava)
+      .asJava
+      .mapMaterializedValue(_.toJava)
+    source
+  }
 
-      val decoderFlow = Flow.lazyInitAsync[AvroRows, List[GenericRecord], NotUsed] {
-        new Creator[CompletionStage[Flow[AvroRows, List[GenericRecord], NotUsed]]] {
-          override def create(): CompletionStage[Flow[AvroRows, List[GenericRecord], NotUsed]] =
-            schemaS.thenApply[Flow[AvroRows, List[GenericRecord], NotUsed]](
-              { ss: String =>
-                val avro = AvroDecoder(ss)
-                SFlow
-                  .fromFunction[AvroRows, List[GenericRecord]](r => avro.decodeRows(r.getSerializedBinaryRows))
-                  .asJava[AvroRows]
-              }.asJava
-            )
-        }
-      }
-
-      Source
-        .fromCompletionStage {
-          val table = s"projects/$projectId/datasets/$datasetId/tables/$tableId"
-          client
-            .createReadSession()
-            .addHeader(RequestParamsHeader, s"read_session.table=$table")
-            .invoke(
-              CreateReadSessionRequest
-                .newBuilder()
-                .setParent(s"projects/$projectId")
-                .setReadSession {
-                  val builder = ReadSession
-                    .newBuilder()
-                    .setDataFormat(DataFormat.AVRO)
-                    .setTable(s"projects/$projectId/datasets/$datasetId/tables/$tableId")
-                  readOptions.fold(builder)(builder.setReadOptions).build()
-                }
-                .setMaxStreamCount(maxNumStreams)
-                .build()
-            )
-        }
-        .mapConcat(japiFunction { session: ReadSession =>
-          schemaS.complete(session.getAvroSchema.getSchema)
-          session.getStreamsList
-        })
-        .map(japiFunction { stream =>
-          client
-            .readRows()
-            .addHeader(RequestParamsHeader, s"read_stream=${stream.getName}")
-            .invoke(ReadRowsRequest.newBuilder().setReadStream(stream.getName).build())
-            .map[AvroRows](japiFunction((resp: ReadRowsResponse) => resp.getAvroRows))
-            .via(decoderFlow)
-            .mapConcat(japiFunction(_.asJava))
-        })
-    }
-
-  private def reader(mat: ActorMaterializer, attr: Attributes) =
-    attr
-      .get[BigQueryStorageAttributes.BigQueryStorageReader]
-      .map(_.client)
-      .getOrElse(GrpcBigQueryStorageReaderExt()(mat.system).reader)
-
-  /**
-   * Helper for creating akka.japi.function.Function instances from Scala
-   * functions as Scala 2.11 does not know about SAMs.
-   */
-  private def japiFunction[A, B](f: A => B): akka.japi.function.Function[A, B] =
-    new akka.japi.function.Function[A, B]() {
-      override def apply(a: A): B = f(a)
-    }
 }
