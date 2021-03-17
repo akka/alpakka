@@ -53,7 +53,7 @@ class ResumableUploadSpec
             .header("Authorization", "Bearer yyyy.c.an-access-token")
             .header("Content-Range", "bytes 0-9/10")
             .body("helloworld")
-            .willReturn(serverError())
+            .willReturn(serverError().header("Content-Type", "application/json").body("{}"))
             .put("/upload123")
             .queryParam("prettyPrint", "false")
             .header("Authorization", "Bearer yyyy.c.an-access-token")

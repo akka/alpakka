@@ -8,7 +8,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.HttpMethods.GET
 import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.model.Uri.Query
 import akka.stream.alpakka.google.scaladsl.Paginated
 import akka.stream.scaladsl.Sink
 import akka.testkit.TestKit
@@ -57,7 +56,7 @@ class PaginatedRequestSpec
         )
       )
 
-      val result = PaginatedRequest[JsValue](HttpRequest(GET, "https://example.com"), Query.Empty, None)
+      val result = PaginatedRequest[JsValue](HttpRequest(GET, "https://example.com"))
         .withAttributes(GoogleAttributes.settings(settings))
         .runWith(Sink.head)
 
@@ -84,7 +83,7 @@ class PaginatedRequestSpec
         )
       )
 
-      val result = PaginatedRequest[JsValue](HttpRequest(GET, "https://example.com"), Query.Empty, None)
+      val result = PaginatedRequest[JsValue](HttpRequest(GET, "https://example.com"))
         .withAttributes(GoogleAttributes.settings(settings))
         .runWith(Sink.seq)
 
@@ -111,7 +110,7 @@ class PaginatedRequestSpec
         )
       )
 
-      val result = PaginatedRequest[JsValue](HttpRequest(GET, "https://example.com"), Query.Empty, None)
+      val result = PaginatedRequest[JsValue](HttpRequest(GET, "https://example.com"))
         .withAttributes(GoogleAttributes.settings(settings))
         .runWith(Sink.seq)
 

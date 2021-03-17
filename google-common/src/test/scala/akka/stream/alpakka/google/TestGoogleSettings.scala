@@ -24,9 +24,8 @@ trait TestGoogleSettings {
     override def asGoogle(implicit ec: ExecutionContext, settings: GoogleSettings): google.auth.Credentials = ???
   })
 
-  case class GoogleHttpException() extends Exception
-
-  implicit val exceptionUnmarshaller: FromResponseUnmarshaller[Exception] = Unmarshaller(
+  final case class GoogleHttpException() extends Exception
+  val exceptionUnmarshaller: FromResponseUnmarshaller[Throwable] = Unmarshaller(
     implicit ec =>
       (r: HttpResponse) => {
         r.discardEntityBytes().future().map(_ => GoogleHttpException())

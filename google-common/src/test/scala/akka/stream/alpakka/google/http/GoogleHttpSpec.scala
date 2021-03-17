@@ -6,11 +6,13 @@ package akka.stream.alpakka.google.http
 
 import akka.actor.{ActorSystem, ExtendedActorSystem}
 import akka.event.LoggingAdapter
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.{HttpExt, HttpsConnectionContext}
 import akka.stream.alpakka.google.{GoogleSettings, TestGoogleSettings}
+import akka.stream.alpakka.google.implicits._
 import akka.stream.alpakka.google.auth.{Credentials, GoogleOAuth2Exception}
 import akka.testkit.TestKit
 import org.mockito.ArgumentMatchers.any
@@ -19,6 +21,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatestplus.mockito.MockitoSugar
+import spray.json.{JsObject, JsValue}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -55,7 +58,8 @@ class GoogleHttpSpec
         HttpResponse(StatusCodes.InternalServerError, Nil, HttpEntity(ContentTypes.`application/json`, "{}"))
       )
 
-      val response = GoogleHttp(http).singleRequestOrFail(HttpRequest())
+      implicit val exum = exceptionUnmarshaller
+      val response = GoogleHttp(http).singleRequest[JsValue](HttpRequest())
 
       assertThrows[GoogleHttpException](Await.result(response, 1.seconds))
     }
@@ -74,13 +78,14 @@ class GoogleHttpSpec
         Future.successful(
           HttpResponse(StatusCodes.InternalServerError, Nil, HttpEntity(ContentTypes.`application/json`, "{}"))
         ),
-        Future.successful(HttpResponse(StatusCodes.OK, Nil, HttpEntity.Empty))
+        Future.successful(HttpResponse(StatusCodes.OK, Nil, HttpEntity(ContentTypes.`application/json`, "{}")))
       )
 
-      val response = GoogleHttp(http).retryRequest(HttpRequest())
+      implicit val exum = exceptionUnmarshaller.withDefaultRetry
+      val response = GoogleHttp(http).retryRequest[JsValue](HttpRequest())
 
       Await.result(response, 3.seconds) should matchPattern {
-        case HttpResponse(StatusCodes.OK, Nil, HttpEntity.Empty, _) =>
+        case JsObject.empty =>
       }
     }
 

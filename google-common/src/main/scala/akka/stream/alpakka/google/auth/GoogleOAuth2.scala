@@ -8,9 +8,8 @@ import akka.annotation.InternalApi
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.HttpMethods.POST
 import akka.http.scaladsl.model.{FormData, HttpRequest}
-import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
-import akka.stream.alpakka.google.GoogleSettings
+import akka.stream.alpakka.google.{implicits, GoogleSettings}
 import akka.stream.alpakka.google.http.GoogleHttp
 import pdi.jwt.JwtAlgorithm.RS256
 import pdi.jwt.{JwtClaim, JwtSprayJson}
@@ -32,20 +31,15 @@ private[auth] object GoogleOAuth2 {
   ): Future[AccessToken] = {
     import GoogleOAuth2Exception._
     import SprayJsonSupport._
-    import mat.executionContext
+    import implicits._
     implicit val system = mat.system
-
-    val jwt = generateJwt(clientEmail, privateKey, scopes)
 
     val entity = FormData(
       "grant_type" -> "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      "assertion" -> jwt
+      "assertion" -> generateJwt(clientEmail, privateKey, scopes)
     ).toEntity
 
-    for {
-      response <- GoogleHttp().retryRequest(HttpRequest(POST, oAuthTokenUrl, entity = entity))
-      token <- Unmarshal(response.entity).to[AccessToken]
-    } yield token
+    GoogleHttp().retryRequest[AccessToken](HttpRequest(POST, oAuthTokenUrl, entity = entity))
   }
 
   private def generateJwt(clientEmail: String, privateKey: String, scopes: Seq[String])(

@@ -14,7 +14,7 @@ import akka.http.scaladsl.{Http, HttpsConnectionContext}
 import akka.http.{javadsl => jh}
 import akka.stream.alpakka.google.auth.Credentials
 import akka.stream.alpakka.google.http.{ForwardProxyHttpsContext, ForwardProxyPoolSettings}
-import akka.stream.alpakka.google.syntax._
+import akka.stream.alpakka.google.implicits._
 import akka.util.JavaDurationConverters._
 import com.typesafe.config.Config
 
