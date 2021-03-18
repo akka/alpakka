@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.storage
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, ClassicActorSystemProvider}
 import akka.stream.alpakka.googlecloud.bigquery.storage.impl.GrpcCredentials
 import com.typesafe.config.Config
 import io.grpc.CallCredentials
@@ -97,7 +97,7 @@ object BigQueryStorageSettings {
    * Create settings from ActorSystem's config.
    */
   def apply(system: ClassicActorSystemProvider): BigQueryStorageSettings =
-    BigQueryStorageSettings(system.settings.config.getConfig("alpakka.google.cloud.bigquery.grpc"))
+    BigQueryStorageSettings(system.classicSystem.settings.config.getConfig("alpakka.google.cloud.bigquery.grpc"))
 
   /**
    * Java API
