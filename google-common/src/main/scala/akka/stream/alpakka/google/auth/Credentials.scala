@@ -13,17 +13,35 @@ import com.google.auth.{Credentials => GoogleCredentials}
 import com.typesafe.config.Config
 
 import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.util.control.NonFatal
 
 @InternalApi
 private[alpakka] object Credentials {
 
   def apply(c: Config)(implicit system: ClassicActorSystemProvider): Credentials = c.getString("provider") match {
-    case "service-account" => ServiceAccountCredentials(c.getConfig("service-account"))
-    case "compute-engine" =>
-      val timeout = c.getDuration("compute-engine.timeout").asScala
-      Await.result(ComputeEngineCredentials(), timeout)
+    case "application-default" =>
+      try {
+        parseServiceAccount(c)
+      } catch {
+        case NonFatal(ex1) =>
+          try {
+            parseComputeEngine(c)
+          } catch {
+            case NonFatal(ex2) =>
+              system.classicSystem.log.warning("Unable to find application default credentials", ex1, ex2)
+              NoCredentials // TODO Once credentials are guaranteed to be managed centrally we can throw an error instead
+          }
+      }
+    case "service-account" => parseServiceAccount(c)
+    case "compute-engine" => parseComputeEngine(c)
     case "none" => NoCredentials
   }
+
+  private def parseServiceAccount(c: Config)(implicit system: ClassicActorSystemProvider) =
+    ServiceAccountCredentials(c.getConfig("service-account"))
+
+  private def parseComputeEngine(c: Config)(implicit system: ClassicActorSystemProvider) =
+    Await.result(ComputeEngineCredentials(), c.getDuration("compute-engine.timeout").asScala)
 
 }
 

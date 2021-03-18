@@ -43,6 +43,10 @@ private[alpakka] object ServiceAccountCredentials {
       }
     }
     val scopes = c.getStringList("scopes").asScala.toSeq
+    require(
+      projectId.nonEmpty && clientEmail.nonEmpty && privateKey.nonEmpty && scopes.nonEmpty && scopes.forall(_.nonEmpty),
+      "Service account requires that project-id, client-email, private-key, and at least one scope are specified."
+    )
     apply(projectId, clientEmail, privateKey, scopes)
   }
 
