@@ -91,7 +91,8 @@ object GoogleBigQueryStorage {
       readOptions: Option[TableReadOptions],
       maxNumStreams: Int
   ): Source[Source[GenericRecord, NotUsed], CompletionStage[NotUsed]] = {
-    val source = scstorage.GoogleBigQueryStorage.read(projectId, datasetId, tableId, readOptions.map(_.asScala()), maxNumStreams)
+    val source = scstorage.GoogleBigQueryStorage
+      .read(projectId, datasetId, tableId, readOptions.map(_.asScala()), maxNumStreams)
       .map(s => s.asJava)
       .asJava
       .mapMaterializedValue(_.toJava)

@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.stream.alpakka.googlecloud.bigquery.storage
 
 import com.google.cloud.bigquery.storage.v1.ReadSession.TableReadOptions
@@ -9,7 +13,7 @@ import scala.collection.JavaConverters._
 private[storage] object ProtobufConverters {
 
   implicit class TableReadOptionsAsScala(val readOption: TableReadOptions) {
-    def asScala(): ReadSession.TableReadOptions= {
+    def asScala(): ReadSession.TableReadOptions = {
       ReadSession.TableReadOptions(
         selectedFields = selectedFields(),
         rowRestriction = readOption.getRowRestriction,
@@ -18,12 +22,15 @@ private[storage] object ProtobufConverters {
     }
 
     private final def selectedFields(): Seq[String] = {
-      readOption.getSelectedFieldsList.asScala.map(s=> s.asInstanceOf[String])
+      readOption.getSelectedFieldsList.asScala.map(s => s.asInstanceOf[String])
     }
 
     private final def unknownFields(): scalapb.UnknownFieldSet = {
-      val map = readOption.getUnknownFields.asMap().asScala
-        .map( entry => (entry._1.asInstanceOf[Int], unknownField(entry._2))).toMap
+      val map = readOption.getUnknownFields
+        .asMap()
+        .asScala
+        .map(entry => (entry._1.asInstanceOf[Int], unknownField(entry._2)))
+        .toMap
       scalapb.UnknownFieldSet(map)
     }
 
@@ -37,7 +44,5 @@ private[storage] object ProtobufConverters {
     }
 
   }
-
-
 
 }

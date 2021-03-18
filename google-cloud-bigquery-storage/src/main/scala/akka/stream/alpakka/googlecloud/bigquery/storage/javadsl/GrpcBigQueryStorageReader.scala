@@ -18,7 +18,7 @@ final class GrpcBigQueryStorageReader private (settings: BigQueryStorageSettings
 
   @ApiMayChange
   final val client =
-    JavaBigQueryReadClient.create(AkkaGrpcSettings.fromBigQuerySettings(settings)(sys), mat, sys.dispatcher)
+    JavaBigQueryReadClient.create(AkkaGrpcSettings.fromBigQuerySettings(settings)(sys), sys)
 
   sys.registerOnTermination(client.close())
 }

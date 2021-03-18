@@ -17,7 +17,7 @@ import com.google.cloud.bigquery.storage.v1.storage.{BigQueryReadClient => Scala
 final class GrpcBigQueryStorageReader private (settings: BigQueryStorageSettings, sys: ActorSystem, mat: Materializer) {
 
   @ApiMayChange
-  final val client = ScalaBigQueryReadClient(AkkaGrpcSettings.fromBigQuerySettings(settings)(sys))(mat, sys.dispatcher)
+  final val client = ScalaBigQueryReadClient(AkkaGrpcSettings.fromBigQuerySettings(settings)(sys))(sys)
 
   sys.registerOnTermination(client.close())
 }
