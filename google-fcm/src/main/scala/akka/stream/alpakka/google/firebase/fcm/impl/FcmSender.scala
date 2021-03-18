@@ -36,7 +36,7 @@ private[fcm] class FcmSender {
       GoogleHttp(http)
         .singleAuthenticatedRequest[FcmSuccessResponse](HttpRequest(HttpMethods.POST, url, entity = entity))
     } recover {
-      case error: FcmErrorResponse => error
+      case FcmErrorException(error) => error
     }
   }
 
@@ -45,7 +45,9 @@ private[fcm] class FcmSender {
       if (response.status.isSuccess) {
         Unmarshal(response.entity).to[FcmSuccessResponse]
       } else {
-        Unmarshal(response.entity).to[FcmErrorResponse].map(throw _)
+        Unmarshal(response.entity).to[FcmErrorResponse].map(error => throw FcmErrorException(error))
       }
   }.withDefaultRetry
+
+  private case class FcmErrorException(error: FcmErrorResponse) extends Exception
 }
