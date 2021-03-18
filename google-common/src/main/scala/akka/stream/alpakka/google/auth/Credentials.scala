@@ -22,6 +22,7 @@ private[alpakka] object Credentials {
     case "compute-engine" =>
       val timeout = c.getDuration("compute-engine.timeout").asScala
       Await.result(ComputeEngineCredentials(), timeout)
+    case "none" => NoCredentials
   }
 
 }
