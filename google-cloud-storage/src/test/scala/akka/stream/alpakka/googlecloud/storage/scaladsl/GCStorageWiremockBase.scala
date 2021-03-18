@@ -910,7 +910,7 @@ object GCStorageWiremockBase {
 
   private def config(proxyPort: Int) =
     ConfigFactory.parseString(s"""
-    |${GCStorageSettings.ConfigPath} {
+    |${(GCStorageSettings: @silent("deprecated")).ConfigPath} {
     |  project-id = ""testX-XXXXX""
     |  client-email = "test-XXX@test-XXXXX.iam.gserviceaccount.com"
     |  private-key = \"\"\"
