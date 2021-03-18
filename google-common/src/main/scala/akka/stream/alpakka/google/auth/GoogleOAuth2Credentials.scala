@@ -42,5 +42,5 @@ private[auth] final class GoogleOAuth2Credentials(credentials: OAuth2Credentials
     }
   }
 
-  override def refresh(): Unit = () // TODO do we need to implement this?
+  override def refresh(): Unit = credentials.refresh()
 }

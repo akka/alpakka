@@ -10,7 +10,7 @@ import akka.annotation.InternalApi
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.pattern.pipe
 import akka.stream.alpakka.google.GoogleSettings
-import akka.stream.alpakka.google.auth.OAuth2Credentials.TokenRequest
+import akka.stream.alpakka.google.auth.OAuth2Credentials.{ForceRefresh, TokenRequest}
 import com.google.auth.{Credentials => GoogleCredentials}
 
 import java.time.Clock
@@ -20,6 +20,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 @InternalApi
 private[auth] object OAuth2Credentials {
   final case class TokenRequest(promise: Promise[OAuth2BearerToken], settings: GoogleSettings)
+  final case object ForceRefresh
 }
 
 @InternalApi
@@ -30,6 +31,8 @@ private[auth] final class OAuth2Credentials(val projectId: String, credentials: 
     credentials ! TokenRequest(token, settings)
     token.future
   }
+
+  def refresh(): Unit = credentials ! ForceRefresh
 
   override def asGoogle(implicit ec: ExecutionContext, settings: GoogleSettings): GoogleCredentials =
     new GoogleOAuth2Credentials(this)(ec, settings)
@@ -83,6 +86,10 @@ private[auth] abstract class OAuth2CredentialsActor extends Actor {
 
       openPromises.foreach(_.failure(cause))
       openPromises.clear()
+
+    case ForceRefresh if !refreshing =>
+      cachedToken = None
+
   }
 
   protected def getAccessToken()(implicit ctx: ActorContext, settings: GoogleSettings): Future[AccessToken]
