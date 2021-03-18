@@ -14,7 +14,7 @@ import akka.http.scaladsl.model.Uri.{Path, Query}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, FromResponseUnmarshaller, Unmarshal, Unmarshaller}
 import akka.stream.alpakka.google._
-import akka.stream.alpakka.google.auth.ServiceAccountCredentials
+import akka.stream.alpakka.google.auth.{Credentials, ServiceAccountCredentials}
 import akka.stream.alpakka.google.http.GoogleHttp
 import akka.stream.alpakka.google.implicits._
 import akka.stream.alpakka.google.scaladsl.Paginated
@@ -290,20 +290,35 @@ import scala.concurrent.Future
       GoogleAttributes.resolveSettings(mat, attr)
     else {
       sys.log.warning("Configuration via alpakka.google.cloud.storage is deprecated")
+
       require(
         legacySettings.baseUrl.contains("googleapis.com")
         && legacySettings.basePath.contains("storage/v1")
         && legacySettings.tokenUrl.contains("googleapis.com"),
         "Non-default base-url/base-path/token-url no longer supported, use config path alpakka.google.forward-proxy"
       )
-      GoogleSettings(
-        legacySettings.projectId,
+
+      val legacyScopes = legacySettings.tokenScope.split(" ").toList
+      val credentials = Credentials.cache(
+        (
+          legacySettings.projectId,
+          legacySettings.clientEmail,
+          legacySettings.privateKey,
+          legacyScopes,
+          mat.system.name
+        )
+      ) {
         ServiceAccountCredentials(
           legacySettings.projectId,
           legacySettings.clientEmail,
           legacySettings.privateKey,
-          legacySettings.tokenScope.split(" ").toList
-        ),
+          legacyScopes
+        )
+      }
+
+      GoogleSettings(
+        legacySettings.projectId,
+        credentials,
         settings.requestSettings,
         settings.retrySettings,
         settings.forwardProxy

@@ -12,6 +12,7 @@ import akka.util.JavaDurationConverters._
 import com.google.auth.{Credentials => GoogleCredentials}
 import com.typesafe.config.Config
 
+import scala.collection.immutable.ListMap
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.control.NonFatal
 
@@ -42,6 +43,15 @@ private[alpakka] object Credentials {
 
   private def parseComputeEngine(c: Config)(implicit system: ClassicActorSystemProvider) =
     Await.result(ComputeEngineCredentials(), c.getDuration("compute-engine.timeout").asScala)
+
+  private var _cache: Map[Any, Credentials] = ListMap.empty
+  @deprecated("Intended only to help with migration", "3.0.0")
+  private[alpakka] def cache(key: Any)(default: => Credentials) =
+    _cache.getOrElse(key, {
+      val credentials = default
+      _cache += (key -> credentials)
+      credentials
+    })
 
 }
 

@@ -6,7 +6,7 @@ package akka.stream.alpakka.google.firebase.fcm.impl
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.http.scaladsl.Http
-import akka.stream.alpakka.google.auth.ServiceAccountCredentials
+import akka.stream.alpakka.google.auth.{Credentials, ServiceAccountCredentials}
 import akka.stream.alpakka.google.{GoogleAttributes, GoogleSettings}
 import akka.stream.{Attributes, Materializer}
 import akka.stream.alpakka.google.firebase.fcm._
@@ -49,16 +49,19 @@ private[fcm] object FcmFlows {
   @silent("deprecated")
   private def resolveSettings(conf: FcmSettings)(mat: Materializer, attr: Attributes): GoogleSettings = {
     val settings = GoogleAttributes.resolveSettings(mat, attr)
+    val scopes = List("https://www.googleapis.com/auth/firebase.messaging")
     val credentials =
       if (conf.privateKey == "deprecated")
         settings.credentials
       else
-        ServiceAccountCredentials(
-          conf.projectId,
-          conf.clientEmail,
-          conf.privateKey,
-          List("https://www.googleapis.com/auth/firebase.messaging")
-        )(mat.system)
+        Credentials.cache((conf.projectId, conf.clientEmail, conf.privateKey, scopes, mat.system.name)) {
+          ServiceAccountCredentials(
+            conf.projectId,
+            conf.clientEmail,
+            conf.privateKey,
+            scopes
+          )(mat.system)
+        }
     val forwardProxy = conf.forwardProxy.map(_.toCommonForwardProxy(mat.system)).orElse(settings.forwardProxy)
     settings.copy(
       credentials = credentials,
