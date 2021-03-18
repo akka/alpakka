@@ -17,7 +17,7 @@ import scala.concurrent.Future
 import scala.io.Source
 
 @InternalApi
-private[auth] object ServiceAccountCredentials {
+private[alpakka] object ServiceAccountCredentials {
 
   def apply(projectId: String, clientEmail: String, privateKey: String, scopes: Seq[String])(
       implicit system: ClassicActorSystemProvider

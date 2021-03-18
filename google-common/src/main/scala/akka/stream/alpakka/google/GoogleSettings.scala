@@ -165,13 +165,13 @@ object RequestSettings {
       Some(config.getString("user-ip")).filterNot(_.isEmpty),
       Some(config.getString("quota-user")).filterNot(_.isEmpty),
       config.getBoolean("pretty-print"),
-      config.getBytes("upload-chunk-size")
+      java.lang.Math.toIntExact(config.getBytes("upload-chunk-size"))
     )
   }
 
   def create(config: Config) = apply(config)
 
-  def create(userIp: Optional[String], quotaUser: Optional[String], prettyPrint: Boolean, chunkSize: Long) =
+  def create(userIp: Optional[String], quotaUser: Optional[String], prettyPrint: Boolean, chunkSize: Int) =
     apply(userIp.asScala, quotaUser.asScala, prettyPrint, chunkSize)
 }
 
@@ -179,8 +179,14 @@ final case class RequestSettings @InternalApi private (
     userIp: Option[String],
     quotaUser: Option[String],
     prettyPrint: Boolean,
-    uploadChunkSize: Long
+    uploadChunkSize: Int
 ) {
+
+  require(
+    (uploadChunkSize >= (256 * 1024)) & (uploadChunkSize % (256 * 1024) == 0),
+    "Chunk size must be a multiple of 256 KiB"
+  )
+
   def getUserIp = userIp.asJava
   def getQuotaUser = quotaUser.asJava
   def getPrettyPrint = prettyPrint
@@ -192,7 +198,7 @@ final case class RequestSettings @InternalApi private (
     copy(quotaUser = quotaUser.asScala)
   def withPrettyPrint(prettyPrint: Boolean) =
     copy(prettyPrint = prettyPrint)
-  def withUploadChunkSize(uploadChunkSize: Long) =
+  def withUploadChunkSize(uploadChunkSize: Int) =
     copy(uploadChunkSize = uploadChunkSize)
 
   // Cache query string

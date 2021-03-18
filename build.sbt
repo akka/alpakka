@@ -212,8 +212,13 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
   fatalWarnings := true
 ).enablePlugins(AkkaGrpcPlugin)
 
-lazy val googleCloudStorage =
-  alpakkaProject("google-cloud-storage", "google.cloud.storage", Dependencies.GoogleStorage, fatalWarnings := true)
+lazy val googleCloudStorage = alpakkaProject(
+  "google-cloud-storage",
+  "google.cloud.storage",
+  Dependencies.GoogleStorage,
+  fatalWarnings := true,
+  Test / fork := true
+).dependsOn(googleCommon)
 
 lazy val googleFcm = alpakkaProject("google-fcm",
                                     "google.firebase.fcm",

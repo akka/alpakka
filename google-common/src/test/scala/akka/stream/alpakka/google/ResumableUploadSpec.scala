@@ -6,8 +6,8 @@ package akka.stream.alpakka.google
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import akka.http.scaladsl.model.{ContentTypes, HttpRequest, Uri}
 import akka.http.scaladsl.model.HttpMethods.POST
-import akka.http.scaladsl.model.HttpRequest
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.testkit.TestKit
 import akka.util.ByteString
@@ -70,7 +70,13 @@ class ResumableUploadSpec
 
       val done = Source
         .single(ByteString("helloworld"))
-        .via(ResumableUpload[JsValue](HttpRequest(POST, "https://example.com")))
+        .via(
+          ResumableUpload[JsValue](
+            HttpRequest(POST,
+                        Uri("https://example.com?uploadType=resumable"),
+                        List(`X-Upload-Content-Type`(ContentTypes.`application/octet-stream`)))
+          )
+        )
         .toMat(Sink.last)(Keep.right)
         .withAttributes(GoogleAttributes.settings(settings))
         .run()

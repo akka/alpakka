@@ -262,8 +262,8 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "com.pauldijou" %% "jwt-core" % JwtCoreVersion, //ApacheV2
-        "com.github.tomakehurst" % "wiremock" % "2.25.1" % Test // ApacheV2
-      ) ++ Mockito
+        "io.specto" % "hoverfly-java" % "0.13.1" % Test // ApacheV2
+      ) ++ Mockito ++ Silencer
   )
 
   val HBase = {

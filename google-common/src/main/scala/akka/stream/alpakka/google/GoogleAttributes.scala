@@ -25,7 +25,7 @@ object GoogleAttributes {
   /**
    * Resolves the most specific [[GoogleSettings]] for some [[Attributes]]
    */
-  def resolveSettings(attr: Attributes, mat: Materializer): GoogleSettings =
+  def resolveSettings(mat: Materializer, attr: Attributes): GoogleSettings =
     attr.get[GoogleAttribute].fold(GoogleExt(mat.system).settings) {
       case GoogleSettingsValue(settings) => settings
       case GoogleSettingsPath(path) => GoogleExt(mat.system).settings(path)
