@@ -120,7 +120,7 @@ final case class FcmSuccessResponse(name: String) extends FcmResponse {
   def getName: String = name
 }
 
-final case class FcmErrorResponse(rawError: String) extends FcmResponse {
+final case class FcmErrorResponse(rawError: String) extends RuntimeException with FcmResponse {
   val isFailure = true
   val isSuccess = false
   def getRawError: String = rawError

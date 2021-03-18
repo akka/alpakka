@@ -254,7 +254,7 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "com.pauldijou" %% "jwt-core" % JwtCoreVersion // ApacheV2
-      ) ++ Mockito
+      ) ++ Mockito ++ Silencer
   )
 
   val GoogleStorage = Seq(

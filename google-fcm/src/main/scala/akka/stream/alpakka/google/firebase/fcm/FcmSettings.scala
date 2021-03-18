@@ -4,24 +4,34 @@
 
 package akka.stream.alpakka.google.firebase.fcm
 
-import java.util.Objects
+import akka.actor.ClassicActorSystemProvider
+import akka.http.scaladsl.model.headers.BasicHttpCredentials
+import akka.stream.alpakka.google.{ForwardProxy => CommonForwardProxy}
+import com.github.ghik.silencer.silent
 
+import java.util.Objects
 import scala.compat.java8.OptionConverters._
 
+@silent("deprecated")
 final class FcmSettings private (
-    val clientEmail: String,
-    val privateKey: String,
-    val projectId: String,
+    @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0") val clientEmail: String,
+    @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0") val privateKey: String,
+    @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0") val projectId: String,
     val isTest: Boolean,
     val maxConcurrentConnections: Int,
-    val forwardProxy: Option[ForwardProxy] = Option.empty
+    @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0") val forwardProxy: Option[ForwardProxy] =
+      Option.empty
 ) {
 
+  @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
   def withClientEmail(value: String): FcmSettings = copy(clientEmail = value)
+  @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
   def withPrivateKey(value: String): FcmSettings = copy(privateKey = value)
+  @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
   def withProjectId(value: String): FcmSettings = copy(projectId = value)
   def withIsTest(value: Boolean): FcmSettings = if (isTest == value) this else copy(isTest = value)
   def withMaxConcurrentConnections(value: Int): FcmSettings = copy(maxConcurrentConnections = value)
+  @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
   def withForwardProxy(value: ForwardProxy): FcmSettings = copy(forwardProxy = Option(value))
 
   private def copy(
@@ -44,6 +54,7 @@ final class FcmSettings private (
 
 }
 
+@deprecated("Use akka.stream.alpakka.google.ForwardProxy", "3.0.0")
 object ForwardProxyTrustPem {
 
   /** Scala API */
@@ -56,6 +67,7 @@ object ForwardProxyTrustPem {
 
 }
 
+@deprecated("Use akka.stream.alpakka.google.ForwardProxy", "3.0.0")
 final class ForwardProxyTrustPem private (val pemPath: String) {
 
   def getPemPath: String = pemPath
@@ -76,6 +88,7 @@ final class ForwardProxyTrustPem private (val pemPath: String) {
 
 }
 
+@deprecated("Use akka.stream.alpakka.google.ForwardProxy", "3.0.0")
 object ForwardProxyCredentials {
 
   /** Scala API */
@@ -88,6 +101,7 @@ object ForwardProxyCredentials {
 
 }
 
+@deprecated("Use akka.stream.alpakka.google.ForwardProxy", "3.0.0")
 final class ForwardProxyCredentials private (val username: String, val password: String) {
 
   /** Java API */
@@ -120,6 +134,7 @@ final class ForwardProxyCredentials private (val username: String, val password:
 
 }
 
+@deprecated("Use akka.stream.alpakka.google.ForwardProxy", "3.0.0")
 object ForwardProxy {
 
   /** Scala API */
@@ -150,6 +165,7 @@ object ForwardProxy {
 
 }
 
+@deprecated("Use akka.stream.alpakka.google.ForwardProxy", "3.0.0")
 final class ForwardProxy private (val host: String,
                                   val port: Int,
                                   val credentials: Option[ForwardProxyCredentials],
@@ -195,11 +211,28 @@ final class ForwardProxy private (val host: String,
 
   override def hashCode(): Int =
     Objects.hash(host, Int.box(port), credentials)
+
+  private[fcm] def toCommonForwardProxy(implicit system: ClassicActorSystemProvider) =
+    CommonForwardProxy(
+      "https",
+      host,
+      port,
+      credentials.map(c => BasicHttpCredentials(c.username, c.password)),
+      trustPem.map(_.pemPath)
+    )
 }
 
 object FcmSettings {
 
   /** Scala API */
+  @silent("deprecated")
+  def apply(): FcmSettings = apply("deprecated", "deprecated", "deprecated")
+
+  /** Java API */
+  def create(): FcmSettings = apply()
+
+  /** Scala API */
+  @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
   def apply(
       clientEmail: String,
       privateKey: String,
@@ -212,6 +245,7 @@ object FcmSettings {
     maxConcurrentConnections = 100
   )
 
+  @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
   def apply(
       clientEmail: String,
       privateKey: String,
@@ -227,10 +261,12 @@ object FcmSettings {
   )
 
   /** Java API */
+  @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
   def create(clientEmail: String, privateKey: String, projectId: String): FcmSettings = {
     apply(clientEmail, privateKey, projectId)
   }
 
+  @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
   def create(clientEmail: String, privateKey: String, projectId: String, forwardProxy: ForwardProxy): FcmSettings = {
     apply(clientEmail, privateKey, projectId, forwardProxy)
   }

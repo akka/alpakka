@@ -224,7 +224,7 @@ lazy val googleFcm = alpakkaProject("google-fcm",
                                     "google.firebase.fcm",
                                     Dependencies.GoogleFcm,
                                     Test / fork := true,
-                                    fatalWarnings := true)
+                                    fatalWarnings := true).dependsOn(googleCommon)
 
 lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, Test / fork := true, fatalWarnings := true)
 
