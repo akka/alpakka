@@ -42,11 +42,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 Prepare your credentials for access to FCM.
 
-Scala
-: @@snip [snip](/google-fcm/src/test/scala/docs/scaladsl/FcmExamples.scala) { #init-credentials }
-
-Java
-: @@snip [snip](/google-fcm/src/test/java/docs/javadsl/FcmExamples.java) { #init-credentials }
+@@snip [snip](/google-fcm/src/test/resources/application.conf) { #init-credentials }
 
 The last two parameters in the above example are the predefined values. 
 You can send test notifications [(so called validate only).](https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages/send)
