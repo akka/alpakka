@@ -39,7 +39,7 @@ private[auth] object GoogleOAuth2 {
       "assertion" -> generateJwt(clientEmail, privateKey, scopes)
     ).toEntity
 
-    GoogleHttp().retryRequest[AccessToken](HttpRequest(POST, oAuthTokenUrl, entity = entity))
+    GoogleHttp().singleRequest[AccessToken](HttpRequest(POST, oAuthTokenUrl, entity = entity))
   }
 
   private def generateJwt(clientEmail: String, privateKey: String, scopes: Seq[String])(

@@ -52,7 +52,7 @@ private[alpakka] object PaginatedRequest {
           case Right(pageToken) =>
             val updatedRequest = pageToken.fold(request)(requestWithPageToken)
             GoogleHttp()
-              .retryRequestWithOAuth(updatedRequest)
+              .singleAuthenticatedRequest(updatedRequest)
               .map { out =>
                 val nextPageToken = paginated
                   .pageToken(out)

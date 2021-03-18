@@ -15,7 +15,6 @@ import akka.stream.alpakka.google.GoogleSettings
 import akka.stream.alpakka.google.util.Retry
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
 
 @InternalApi
 private[alpakka] object GoogleHttp {
@@ -53,54 +52,25 @@ private[alpakka] final class GoogleHttp private (val http: HttpExt) extends AnyV
 
   /**
    * Sends a single [[HttpRequest]] and returns the [[Unmarshal]]ed response.
+   * Retries the request if the [[FromResponseUnmarshaller]] throws a [[akka.stream.alpakka.google.util.Retry]].
    */
   def singleRequest[T](request: HttpRequest)(
       implicit settings: GoogleSettings,
       um: FromResponseUnmarshaller[T]
-  ): Future[T] = singleRawRequest(request).flatMap(Unmarshal(_).to[T])(ExecutionContexts.parasitic)
-
-  /**
-   * Sends a single authenticated [[HttpRequest]] and returns the [[Unmarshal]]ed response.
-   */
-  def singleRequestWithOAuth[T](request: HttpRequest)(
-      implicit settings: GoogleSettings,
-      um: FromResponseUnmarshaller[T]
-  ): Future[T] = addOAuth(request).flatMap(singleRequest(_))(ExecutionContexts.parasitic)
-
-  /**
-   * Sends a [[HttpRequest]] and returns the [[Unmarshal]]ed response.
-   * Retries the request if the connection fails or the [[FromResponseUnmarshaller]] throws a [[akka.stream.alpakka.google.util.Retry]].
-   */
-  def retryRequest[T](request: HttpRequest)(
-      implicit settings: GoogleSettings,
-      um: FromResponseUnmarshaller[T]
   ): Future[T] = Retry(settings.retrySettings) {
-    singleRawRequest(request)
-      .transform {
-        case success @ Success(_) => success
-        case Failure(ex) => Failure(Retry(ex))
-      }(ExecutionContexts.parasitic)
-      .flatMap(Unmarshal(_).to[T])(ExecutionContexts.parasitic)
+    singleRawRequest(request).flatMap(Unmarshal(_).to[T])(ExecutionContexts.parasitic)
   }
 
   /**
-   * Sends an authenticated [[HttpRequest]] and returns the [[Unmarshal]]ed response.
-   * Retries the request if the connection fails or the [[FromResponseUnmarshaller]] throws a [[akka.stream.alpakka.google.util.Retry]].
+   * Adds an Authentication header and sends a single [[HttpRequest]] and returns the [[Unmarshal]]ed response.
+   * Retries the request if the [[FromResponseUnmarshaller]] throws a [[akka.stream.alpakka.google.util.Retry]].
    */
-  def retryRequestWithOAuth[T](request: HttpRequest)(
+  def singleAuthenticatedRequest[T](request: HttpRequest)(
       implicit settings: GoogleSettings,
       um: FromResponseUnmarshaller[T]
-  ): Future[T] =
-    Retry(settings.retrySettings) {
-      addOAuth(request).flatMap { request =>
-        singleRawRequest(request)
-          .transform {
-            case success @ Success(_) => success
-            case Failure(ex) => Failure(Retry(ex))
-          }(ExecutionContexts.parasitic)
-          .flatMap(Unmarshal(_).to[T])(ExecutionContexts.parasitic)
-      }(ExecutionContexts.parasitic)
-    }
+  ): Future[T] = Retry(settings.retrySettings) {
+    addOAuth(request).flatMap(singleRequest(_))(ExecutionContexts.parasitic)
+  }
 
   private[http] def addOAuth(request: HttpRequest)(implicit settings: GoogleSettings): Future[HttpRequest] = {
     settings.credentials

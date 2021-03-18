@@ -82,7 +82,7 @@ class GoogleHttpSpec
       )
 
       implicit val exum = exceptionUnmarshaller.withDefaultRetry
-      val response = GoogleHttp(http).retryRequest[JsValue](HttpRequest())
+      val response = GoogleHttp(http).singleRequest[JsValue](HttpRequest())
 
       Await.result(response, 3.seconds) should matchPattern {
         case JsObject.empty =>

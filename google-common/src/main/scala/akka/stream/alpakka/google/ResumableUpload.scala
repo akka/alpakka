@@ -103,7 +103,7 @@ private[alpakka] object ResumableUpload {
       }
     }.withDefaultRetry
 
-    GoogleHttp().retryRequestWithOAuth[Uri](initialRequest)
+    GoogleHttp().singleAuthenticatedRequest[Uri](initialRequest)
   }
 
   private def uploadChunk[T: FromResponseUnmarshaller](
@@ -129,7 +129,7 @@ private[alpakka] object ResumableUpload {
             }
 
         GoogleHttp()
-          .singleRequestWithOAuth[Option[T]](uploadRequest)
+          .singleAuthenticatedRequest[Option[T]](uploadRequest)
           .transform(Success(_))(ExecutionContexts.parasitic)
     }
   }
@@ -165,7 +165,7 @@ private[alpakka] object ResumableUpload {
     chunk.flatMap {
       case maybeLast @ MaybeLast(Chunk(bytes, position)) =>
         GoogleHttp()
-          .retryRequestWithOAuth[Either[T, Long]](request.addHeader(statusRequestHeader))
+          .singleAuthenticatedRequest[Either[T, Long]](request.addHeader(statusRequestHeader))
           .map {
             case Left(result) if maybeLast.isLast => Left(result)
             case Right(newPosition) if newPosition >= position =>
