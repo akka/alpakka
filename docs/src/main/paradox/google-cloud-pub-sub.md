@@ -40,11 +40,7 @@ The table below shows direct dependencies of this module and the second tab show
 
 Prepare your credentials for access to google cloud pub/sub.
 
-Scala
-: @@snip [snip](/google-cloud-pub-sub/src/test/scala/docs/scaladsl/ExampleUsage.scala) { #init-credentials }
-
-Java
-: @@snip [snip](/google-cloud-pub-sub/src/test/java/docs/javadsl/ExampleUsageJava.java) { #init-credentials }
+@@snip [snip](/google-cloud-pub-sub/src/test/resources/application.conf) { #init-credentials }
 
 And prepare the actor system.
 

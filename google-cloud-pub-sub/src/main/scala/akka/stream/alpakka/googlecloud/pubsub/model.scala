@@ -5,11 +5,9 @@
 package akka.stream.alpakka.googlecloud.pubsub
 
 import java.time.Instant
-
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
-import akka.http.scaladsl.Http
-import akka.stream.alpakka.googlecloud.pubsub.impl.{GoogleSession, GoogleTokenApi}
+import com.github.ghik.silencer.silent
 
 import scala.collection.immutable
 import scala.collection.JavaConverters._
@@ -19,35 +17,37 @@ import scala.collection.JavaConverters._
  * @param pullReturnImmediately when pulling messages, if there are non the API will wait or return immediately. Defaults to true.
  * @param pullMaxMessagesPerInternalBatch when pulling messages, the maximum that will be in the batch of messages. Defaults to 1000.
  */
-class PubSubConfig private (val projectId: String,
+class PubSubConfig private (@deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0") val projectId: String,
                             val pullReturnImmediately: Boolean,
-                            val pullMaxMessagesPerInternalBatch: Int,
-                            @InternalApi private[pubsub] val session: GoogleSession) {
-
-  /**
-   * Internal API
-   */
-  @InternalApi private[pubsub] def withSession(session: GoogleSession) =
-    copy(session = session)
-
-  private def copy(session: GoogleSession) =
-    new PubSubConfig(projectId, pullReturnImmediately, pullMaxMessagesPerInternalBatch, session)
+                            val pullMaxMessagesPerInternalBatch: Int) {
 
   override def toString: String =
-    s"PubSubConfig(projectId=$projectId)"
+    s"PubSubConfig(projectId=$projectId)": @silent("deprecated")
 }
 
 object PubSubConfig {
+
+  def apply(): PubSubConfig = apply(true, 1000)
+
+  def apply(pullReturnImmediately: Boolean, pullMaxMessagesPerInternalBatch: Int): PubSubConfig =
+    new PubSubConfig("", pullReturnImmediately, pullMaxMessagesPerInternalBatch)
+
+  def create(): PubSubConfig = apply()
+
+  def create(pullReturnImmediately: Boolean, pullMaxMessagesPerInternalBatch: Int): PubSubConfig =
+    apply(pullReturnImmediately, pullMaxMessagesPerInternalBatch)
+
+  @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
   def apply(projectId: String, clientEmail: String, privateKey: String)(
       implicit actorSystem: ActorSystem
   ): PubSubConfig =
     new PubSubConfig(
       projectId = projectId,
       pullReturnImmediately = true,
-      pullMaxMessagesPerInternalBatch = 1000,
-      session = new GoogleSession(clientEmail, privateKey, new GoogleTokenApi(Http()))
+      pullMaxMessagesPerInternalBatch = 1000
     )
 
+  @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
   def apply(projectId: String,
             clientEmail: String,
             privateKey: String,
@@ -58,16 +58,17 @@ object PubSubConfig {
     new PubSubConfig(
       projectId = projectId,
       pullReturnImmediately = pullReturnImmediately,
-      pullMaxMessagesPerInternalBatch = pullMaxMessagesPerInternalBatch,
-      session = new GoogleSession(clientEmail, privateKey, new GoogleTokenApi(Http()))
+      pullMaxMessagesPerInternalBatch = pullMaxMessagesPerInternalBatch
     )
 
+  @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
   def create(projectId: String, clientEmail: String, privateKey: String, actorSystem: ActorSystem): PubSubConfig =
     apply(projectId, clientEmail, privateKey)(actorSystem)
 
   /**
    * Java API
    */
+  @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
   def create(projectId: String,
              clientEmail: String,
              privateKey: String,

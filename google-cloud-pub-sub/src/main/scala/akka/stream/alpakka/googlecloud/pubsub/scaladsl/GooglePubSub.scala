@@ -4,12 +4,13 @@
 
 package akka.stream.alpakka.googlecloud.pubsub.scaladsl
 
-import akka.actor.{ActorSystem, Cancellable}
-import akka.stream.Materializer
+import akka.actor.Cancellable
+import akka.stream.alpakka.google.GoogleAttributes
 import akka.stream.alpakka.googlecloud.pubsub._
 import akka.stream.alpakka.googlecloud.pubsub.impl._
 import akka.stream.scaladsl.{Flow, FlowWithContext, Keep, Sink, Source}
 import akka.{Done, NotUsed}
+import com.github.ghik.silencer.silent
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -46,24 +47,10 @@ protected[pubsub] trait GooglePubSub {
       topic: String,
       config: PubSubConfig,
       parallelism: Int = 1
-  ): FlowWithContext[PublishRequest, C, immutable.Seq[String], C, NotUsed] = {
+  ): FlowWithContext[PublishRequest, C, immutable.Seq[String], C, NotUsed] =
     // some wrapping back and forth as FlowWithContext doesn't offer `setup`
     // https://github.com/akka/akka/issues/27883
-    FlowWithContext.fromTuples {
-      Flow
-        .fromMaterializer { (mat, _) =>
-          implicit val system: ActorSystem = mat.system
-          implicit val materializer: Materializer = mat
-          httpApi
-            .accessTokenWithContext[PublishRequest, C](config)
-            .via(
-              httpApi.publish[C](config.projectId, topic, parallelism)
-            )
-            .asFlow
-        }
-        .mapMaterializedValue(_ => NotUsed)
-    }
-  }
+    FlowWithContext.fromTuples(flow(config)(httpApi.publish[C](topic, parallelism).asFlow)).map(_.messageIds)
 
   /**
    * Creates a source pulling messages from a subscription.
@@ -78,22 +65,9 @@ protected[pubsub] trait GooglePubSub {
    * Creates a flow pulling messages from a subscription.
    */
   def subscribeFlow(subscription: String, config: PubSubConfig): Flow[Done, ReceivedMessage, Future[NotUsed]] = {
-    Flow
-      .fromMaterializer { (mat, _) =>
-        implicit val system: ActorSystem = mat.system
-        implicit val materializer: Materializer = mat
-        Flow[Done]
-          .via(httpApi.accessToken[Done](config))
-          .via(
-            httpApi
-              .pull(config.projectId,
-                    subscription,
-                    config.pullReturnImmediately,
-                    config.pullMaxMessagesPerInternalBatch)
-          )
-          .mapConcat(_.receivedMessages.getOrElse(Seq.empty[ReceivedMessage]).toIndexedSeq)
-      }
-  }
+    flow(config)(httpApi.pull(subscription, config.pullReturnImmediately, config.pullMaxMessagesPerInternalBatch))
+      .mapConcat(_.receivedMessages.getOrElse(Seq.empty[ReceivedMessage]).toIndexedSeq)
+  }.mapMaterializedValue(_ => Future.successful(NotUsed))
 
   /**
    * Creates a sink for acknowledging messages on a subscription.
@@ -108,22 +82,23 @@ protected[pubsub] trait GooglePubSub {
    * Creates a flow for acknowledging messages on a subscription.
    */
   def acknowledgeFlow(subscription: String, config: PubSubConfig): Flow[AcknowledgeRequest, Done, NotUsed] =
-    Flow
-      .fromMaterializer { (mat, _) =>
-        implicit val system: ActorSystem = mat.system
-        implicit val materializer: Materializer = mat
-        Flow[AcknowledgeRequest]
-          .via(httpApi.accessToken[AcknowledgeRequest](config))
-          .via(httpApi.acknowledge(config.projectId, subscription))
-      }
-      .mapMaterializedValue(_ => NotUsed)
+    flow(config)(httpApi.acknowledge(subscription))
 
   /**
    * Creates a sink for acknowledging messages on a subscription.
    */
-  def acknowledge(subscription: String, config: PubSubConfig): Sink[AcknowledgeRequest, Future[Done]] = {
-    acknowledgeFlow(subscription, config)
-      .toMat(Sink.ignore)(Keep.right)
-  }
+  def acknowledge(subscription: String, config: PubSubConfig): Sink[AcknowledgeRequest, Future[Done]] =
+    acknowledgeFlow(subscription, config).toMat(Sink.ignore)(Keep.right)
+
+  @silent("deprecated")
+  private def flow[In, Out](config: PubSubConfig)(f: Flow[In, Out, Any]): Flow[In, Out, NotUsed] =
+    Flow
+      .fromMaterializer { (mat, attr) =>
+        val settings = GoogleAttributes.resolveSettings(mat, attr)
+        val projectId = if (config.projectId.isEmpty) settings.projectId else config.projectId
+        val attributes = GoogleAttributes.settings(settings.copy(projectId = projectId)): @silent("deprecated")
+        f.addAttributes(attributes)
+      }
+      .mapMaterializedValue(_ => NotUsed)
 
 }

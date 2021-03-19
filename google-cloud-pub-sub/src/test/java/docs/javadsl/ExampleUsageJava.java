@@ -28,29 +28,10 @@ public class ExampleUsageJava {
 
     // #init-system
     ActorSystem system = ActorSystem.create();
-    // #init-system
-
-    // #init-credentials
-    String privateKey =
-        "-----BEGIN RSA PRIVATE KEY-----\n"
-            + "MIIBOgIBAAJBAJHPYfmEpShPxAGP12oyPg0CiL1zmd2V84K5dgzhR9TFpkAp2kl2\n"
-            + "9BTc8jbAY0dQW4Zux+hyKxd6uANBKHOWacUCAwEAAQJAQVyXbMS7TGDFWnXieKZh\n"
-            + "Dm/uYA6sEJqheB4u/wMVshjcQdHbi6Rr0kv7dCLbJz2v9bVmFu5i8aFnJy1MJOpA\n"
-            + "2QIhAPyEAaVfDqJGjVfryZDCaxrsREmdKDlmIppFy78/d8DHAiEAk9JyTHcapckD\n"
-            + "uSyaE6EaqKKfyRwSfUGO1VJXmPjPDRMCIF9N900SDnTiye/4FxBiwIfdynw6K3dW\n"
-            + "fBLb6uVYr/r7AiBUu/p26IMm6y4uNGnxvJSqe+X6AxR6Jl043OWHs4AEbwIhANuz\n"
-            + "Ay3MKOeoVbx0L+ruVRY5fkW+oLHbMGtQ9dZq7Dp9\n"
-            + "-----END RSA PRIVATE KEY-----";
-
-    String clientEmail = "test-XXX@test-XXXXX.iam.gserviceaccount.com";
-    String projectId = "test-XXXXX";
-    String apiKey = "AIzaSyCVvqrlz057gCssc70n5JERyTW4TpB4ebE";
-
-    PubSubConfig config = PubSubConfig.create(projectId, clientEmail, privateKey, system);
-
+    PubSubConfig config = PubSubConfig.create();
     String topic = "topic1";
     String subscription = "subscription1";
-    // #init-credentials
+    // #init-system
 
     // #publish-single
     PublishMessage publishMessage =

@@ -7,19 +7,26 @@ import akka.annotation.InternalApi
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.stream.alpakka.google.GoogleSettings
 import com.google.auth.{Credentials => GoogleCredentials}
+import com.typesafe.config.Config
 
 import java.net.URI
 import java.util
 import scala.concurrent.{ExecutionContext, Future}
 
 @InternalApi
-private[alpakka] object NoCredentials extends Credentials {
+private[alpakka] object NoCredentials {
 
-  private val token = Future.successful(OAuth2BearerToken("<no-token>"))
+  def apply(c: Config): NoCredentials = NoCredentials(c.getString("project-id"), c.getString("token"))
 
-  override def projectId: String = "<no-project-id>"
+}
 
-  override def getToken()(implicit ec: ExecutionContext, settings: GoogleSettings): Future[OAuth2BearerToken] = token
+@InternalApi
+private[auth] final case class NoCredentials private (projectId: String, token: String) extends Credentials {
+
+  private val futureToken = Future.successful(OAuth2BearerToken(token))
+
+  override def getToken()(implicit ec: ExecutionContext, settings: GoogleSettings): Future[OAuth2BearerToken] =
+    futureToken
 
   override def asGoogle(implicit ec: ExecutionContext, settings: GoogleSettings): GoogleCredentials =
     new GoogleCredentials {
@@ -29,5 +36,4 @@ private[alpakka] object NoCredentials extends Credentials {
       override def hasRequestMetadataOnly: Boolean = true
       override def refresh(): Unit = ()
     }
-
 }

@@ -234,7 +234,7 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "com.pauldijou" %% "jwt-core" % JwtCoreVersion, // ApacheV2
         "com.github.tomakehurst" % "wiremock" % "2.25.1" % Test // ApacheV2
-      ) ++ Mockito
+      ) ++ Mockito ++ Silencer
   )
 
   val GooglePubSubGrpc = Seq(

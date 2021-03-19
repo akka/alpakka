@@ -30,12 +30,12 @@ private[alpakka] object Credentials {
           } catch {
             case NonFatal(ex2) =>
               system.classicSystem.log.warning("Unable to find application default credentials", ex1, ex2)
-              NoCredentials // TODO Once credentials are guaranteed to be managed centrally we can throw an error instead
+              parseNone(c) // TODO Once credentials are guaranteed to be managed centrally we can throw an error instead
           }
       }
     case "service-account" => parseServiceAccount(c)
     case "compute-engine" => parseComputeEngine(c)
-    case "none" => NoCredentials
+    case "none" => parseNone(c)
   }
 
   private def parseServiceAccount(c: Config)(implicit system: ClassicActorSystemProvider) =
@@ -43,6 +43,8 @@ private[alpakka] object Credentials {
 
   private def parseComputeEngine(c: Config)(implicit system: ClassicActorSystemProvider) =
     Await.result(ComputeEngineCredentials(), c.getDuration("compute-engine.timeout").asScala)
+
+  private def parseNone(c: Config) = NoCredentials(c.getConfig("none"))
 
   private var _cache: Map[Any, Credentials] = ListMap.empty
   @deprecated("Intended only to help with migration", "3.0.0")
