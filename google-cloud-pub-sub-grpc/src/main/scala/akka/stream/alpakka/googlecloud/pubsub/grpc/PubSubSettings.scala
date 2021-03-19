@@ -5,7 +5,8 @@
 package akka.stream.alpakka.googlecloud.pubsub.grpc
 
 import akka.actor.ClassicActorSystemProvider
-import akka.stream.alpakka.googlecloud.pubsub.grpc.impl.GrpcCredentials
+import akka.stream.alpakka.googlecloud.pubsub.grpc.impl.DeprecatedCredentials
+import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 import io.grpc.CallCredentials
 
@@ -17,7 +18,7 @@ final class PubSubSettings private (
     val port: Int,
     val useTls: Boolean,
     val rootCa: Option[String],
-    val callCredentials: Option[CallCredentials]
+    @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0") val callCredentials: Option[CallCredentials]
 ) {
 
   /**
@@ -40,6 +41,7 @@ final class PubSubSettings private (
   /**
    * Credentials that are going to be used for gRPC call authorization.
    */
+  @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
   def withCallCredentials(callCredentials: CallCredentials): PubSubSettings =
     copy(callCredentials = Some(callCredentials))
 
@@ -47,7 +49,7 @@ final class PubSubSettings private (
                    port: Int = port,
                    useTls: Boolean = useTls,
                    rootCa: Option[String] = rootCa,
-                   callCredentials: Option[CallCredentials] = callCredentials) =
+                   callCredentials: Option[CallCredentials] = callCredentials: @silent("deprecated")) =
     new PubSubSettings(host, port, useTls, rootCa, callCredentials)
 }
 
@@ -70,7 +72,7 @@ object PubSubSettings {
       config.getBoolean("use-tls"),
       Some(config.getString("rootCa")).filter(_ != "none"),
       config.getString("callCredentials") match {
-        case "google-application-default" => Some(GrpcCredentials.applicationDefault())
+        case "google-application-default" | "deprecated" => Some(DeprecatedCredentials)
         case _ => None
       }
     )

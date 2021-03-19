@@ -210,7 +210,7 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
     ),
   compile / javacOptions := (compile / javacOptions).value.filterNot(_ == "-Xlint:deprecation"),
   fatalWarnings := true
-).enablePlugins(AkkaGrpcPlugin)
+).enablePlugins(AkkaGrpcPlugin).dependsOn(googleCommon)
 
 lazy val googleCloudStorage = alpakkaProject(
   "google-cloud-storage",

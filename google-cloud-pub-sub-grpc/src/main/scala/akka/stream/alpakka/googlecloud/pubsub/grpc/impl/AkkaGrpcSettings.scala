@@ -7,14 +7,18 @@ package akka.stream.alpakka.googlecloud.pubsub.grpc.impl
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.grpc.GrpcClientSettings
+import akka.stream.alpakka.google.GoogleSettings
 import akka.stream.alpakka.googlecloud.pubsub.grpc.PubSubSettings
+import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
+import io.grpc.auth.MoreCallCredentials
 
 /**
  * Internal API
  */
 @InternalApi private[grpc] object AkkaGrpcSettings {
-  def fromPubSubSettings(config: PubSubSettings)(implicit sys: ActorSystem): GrpcClientSettings = {
+  def fromPubSubSettings(config: PubSubSettings,
+                         googleSettings: GoogleSettings)(implicit sys: ActorSystem): GrpcClientSettings = {
     val akkaGrpcConfig = s"""
       |host = "${config.host}"
       |port = ${config.port}
@@ -28,8 +32,11 @@ import com.typesafe.config.ConfigFactory
         .withFallback(sys.settings.config.getConfig("akka.grpc.client.\"*\""))
     )
 
-    config.callCredentials match {
+    (config.callCredentials: @silent("deprecated")) match {
       case None => settings
+      case Some(DeprecatedCredentials) =>
+        val credentials = googleSettings.credentials.asGoogle(sys.dispatcher, googleSettings)
+        settings.withCallCredentials(MoreCallCredentials.from(credentials))
       case Some(creds) => settings.withCallCredentials(creds)
     }
   }

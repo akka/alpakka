@@ -13,6 +13,7 @@ import akka.actor.{
   ExtensionIdProvider
 }
 import akka.annotation.ApiMayChange
+import akka.stream.alpakka.google.GoogleSettings
 import akka.stream.alpakka.googlecloud.pubsub.grpc.PubSubSettings
 import akka.stream.alpakka.googlecloud.pubsub.grpc.impl.AkkaGrpcSettings
 import com.google.pubsub.v1.pubsub.{PublisherClient => ScalaPublisherClient}
@@ -20,21 +21,28 @@ import com.google.pubsub.v1.pubsub.{PublisherClient => ScalaPublisherClient}
 /**
  * Holds the gRPC scala publisher client instance.
  */
-final class GrpcPublisher private (settings: PubSubSettings, sys: ActorSystem) {
+final class GrpcPublisher private (settings: PubSubSettings, googleSettings: GoogleSettings, sys: ActorSystem) {
 
   @ApiMayChange
   final val client =
-    ScalaPublisherClient(AkkaGrpcSettings.fromPubSubSettings(settings)(sys))(sys)
+    ScalaPublisherClient(AkkaGrpcSettings.fromPubSubSettings(settings, googleSettings)(sys))(sys)
 
   sys.registerOnTermination(client.close())
 }
 
 object GrpcPublisher {
+  def apply(settings: PubSubSettings,
+            googleSettings: GoogleSettings)(implicit sys: ClassicActorSystemProvider): GrpcPublisher =
+    new GrpcPublisher(settings, googleSettings, sys.classicSystem)
+
+  def apply(settings: PubSubSettings, googleSettings: GoogleSettings, sys: ActorSystem): GrpcPublisher =
+    new GrpcPublisher(settings, googleSettings, sys)
+
   def apply(settings: PubSubSettings)(implicit sys: ClassicActorSystemProvider): GrpcPublisher =
-    new GrpcPublisher(settings, sys.classicSystem)
+    new GrpcPublisher(settings, GoogleSettings(), sys.classicSystem)
 
   def apply(settings: PubSubSettings, sys: ActorSystem): GrpcPublisher =
-    new GrpcPublisher(settings, sys)
+    new GrpcPublisher(settings, GoogleSettings(sys), sys)
 
   def apply()(implicit sys: ClassicActorSystemProvider): GrpcPublisher =
     apply(PubSubSettings(sys))
