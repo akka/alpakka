@@ -68,7 +68,7 @@ private[alpakka] final class GoogleHttp private (val http: HttpExt) extends AnyV
       implicit settings: GoogleSettings,
       um: FromResponseUnmarshaller[T]
   ): Future[T] = Retry(settings.retrySettings) {
-    addOAuth(request).flatMap(singleRequest(_))(ExecutionContexts.parasitic)
+    addAuth(request).flatMap(singleRequest(_))(ExecutionContexts.parasitic)
   }
 
   /**
@@ -91,7 +91,7 @@ private[alpakka] final class GoogleHttp private (val http: HttpExt) extends AnyV
 
       val authFlow =
         if (authenticate)
-          FlowWithContext[HttpRequest, Ctx].mapAsync(1)(addOAuth)
+          FlowWithContext[HttpRequest, Ctx].mapAsync(1)(addAuth)
         else
           FlowWithContext[HttpRequest, Ctx]
 
@@ -138,7 +138,7 @@ private[alpakka] final class GoogleHttp private (val http: HttpExt) extends AnyV
       )
     )
 
-  private[http] def addOAuth(request: HttpRequest)(implicit settings: GoogleSettings): Future[HttpRequest] = {
+  private[http] def addAuth(request: HttpRequest)(implicit settings: GoogleSettings): Future[HttpRequest] = {
     settings.credentials
       .getToken()
       .map { token =>

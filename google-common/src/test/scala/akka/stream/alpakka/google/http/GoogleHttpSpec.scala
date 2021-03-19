@@ -97,7 +97,7 @@ class GoogleHttpSpec
       )
       implicit val settingsWithMockedCredentials = settings.copy(credentials = credentials)
 
-      val request = GoogleHttp().addOAuth(HttpRequest())(settingsWithMockedCredentials)
+      val request = GoogleHttp().addAuth(HttpRequest())(settingsWithMockedCredentials)
       Await.result(request, 1.second).headers should matchPattern {
         case HttpHeader("authorization", "Bearer TOKEN") :: Nil =>
       }
@@ -111,7 +111,7 @@ class GoogleHttpSpec
       )
       implicit val settingsWithMockedCredentials = settings.copy(credentials = credentials)
 
-      val request = GoogleHttp().addOAuth(HttpRequest())(settingsWithMockedCredentials)
+      val request = GoogleHttp().addAuth(HttpRequest())(settingsWithMockedCredentials)
       assertThrows[GoogleOAuth2Exception] {
         Await.result(request, 1.second)
       }
