@@ -14,7 +14,7 @@ import com.google.cloud.bigquery.storage.v1.{BigQueryReadClient => JavaBigQueryR
 /**
  * Holds the gRPC java reader client instance.
  */
-final class GrpcBigQueryStorageReader private (settings: BigQueryStorageSettings, sys: ActorSystem, mat: Materializer) {
+final class GrpcBigQueryStorageReader private (settings: BigQueryStorageSettings, sys: ActorSystem) {
 
   @ApiMayChange
   final val client =
@@ -24,11 +24,11 @@ final class GrpcBigQueryStorageReader private (settings: BigQueryStorageSettings
 }
 
 object GrpcBigQueryStorageReader {
-  def create(settings: BigQueryStorageSettings, sys: ActorSystem, mat: Materializer): GrpcBigQueryStorageReader =
-    new GrpcBigQueryStorageReader(settings, sys, mat)
+  def create(settings: BigQueryStorageSettings, sys: ActorSystem): GrpcBigQueryStorageReader =
+    new GrpcBigQueryStorageReader(settings, sys)
 
   def create(sys: ActorSystem, mat: Materializer): GrpcBigQueryStorageReader =
-    create(BigQueryStorageSettings(sys), sys, mat)
+    create(BigQueryStorageSettings(sys), sys)
 }
 
 /**
