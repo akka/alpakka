@@ -5,9 +5,7 @@
 package akka.stream.alpakka.google
 
 import akka.actor.ClassicActorSystemProvider
-import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import akka.http.scaladsl.unmarshalling.{FromResponseUnmarshaller, Unmarshaller}
 import akka.stream.alpakka.google.auth.Credentials
 import com.google
 
@@ -23,13 +21,5 @@ trait TestGoogleSettings {
       Future.successful(OAuth2BearerToken("yyyy.c.an-access-token"))
     override def asGoogle(implicit ec: ExecutionContext, settings: GoogleSettings): google.auth.Credentials = ???
   })
-
-  final case class GoogleHttpException() extends Exception
-  val exceptionUnmarshaller: FromResponseUnmarshaller[Throwable] = Unmarshaller(
-    implicit ec =>
-      (r: HttpResponse) => {
-        r.discardEntityBytes().future().map(_ => GoogleHttpException())
-      }
-  )
 
 }

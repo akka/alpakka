@@ -13,6 +13,7 @@ import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.{HttpExt, HttpsConnectionContext}
 import akka.stream.alpakka.google.{GoogleSettings, TestGoogleSettings}
 import akka.stream.alpakka.google.implicits._
+import akka.stream.alpakka.google.GoogleHttpException
 import akka.stream.alpakka.google.auth.{Credentials, GoogleOAuth2Exception}
 import akka.testkit.TestKit
 import org.mockito.ArgumentMatchers.any
@@ -58,7 +59,7 @@ class GoogleHttpSpec
         HttpResponse(StatusCodes.InternalServerError, Nil, HttpEntity(ContentTypes.`application/json`, "{}"))
       )
 
-      implicit val exum = exceptionUnmarshaller
+      import GoogleHttpException._
       val response = GoogleHttp(http).singleRequest[JsValue](HttpRequest())
 
       assertThrows[GoogleHttpException](Await.result(response, 1.seconds))
@@ -81,7 +82,7 @@ class GoogleHttpSpec
         Future.successful(HttpResponse(StatusCodes.OK, Nil, HttpEntity(ContentTypes.`application/json`, "{}")))
       )
 
-      implicit val exum = exceptionUnmarshaller.withDefaultRetry
+      import GoogleHttpException._
       val response = GoogleHttp(http).singleRequest[JsValue](HttpRequest())
 
       Await.result(response, 3.seconds) should matchPattern {
