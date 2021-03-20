@@ -4,11 +4,11 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.model
 
+import akka.stream.alpakka.google.scaladsl.Paginated
 import akka.stream.alpakka.googlecloud.bigquery.model.DatasetJsonProtocol.DatasetReference
 import akka.stream.alpakka.googlecloud.bigquery.model.ErrorProtoJsonProtocol.ErrorProto
 import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.JobReference
 import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.TableSchema
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.Paginated
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRestJsonProtocol._
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRootJsonReader
 import com.fasterxml.jackson.annotation.{JsonCreator, JsonIgnoreProperties, JsonProperty}

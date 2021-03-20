@@ -50,6 +50,18 @@ object GoogleSettings {
     apply(c)(system)
 
   /**
+   * Reads from the config at the given path.
+   */
+  def apply(path: String)(implicit system: ClassicActorSystemProvider): GoogleSettings =
+    GoogleExt(system).settings(path)
+
+  /**
+   * Java API: Reads from the config at the given path.
+   */
+  def create(path: String, system: ClassicActorSystemProvider): GoogleSettings =
+    apply(path)(system)
+
+  /**
    * Scala API: Creates [[GoogleSettings]] from the [[com.typesafe.config.Config Config]] attached to an actor system.
    */
   def apply()(implicit system: ClassicActorSystemProvider, dummy: DummyImplicit): GoogleSettings = apply(system)

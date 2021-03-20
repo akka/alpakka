@@ -9,14 +9,15 @@ import akka.actor.ClassicActorSystemProvider
 import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.marshalling.Marshal
-import akka.http.scaladsl.model.HttpMethods.{DELETE, GET, POST}
-import akka.http.scaladsl.model.{HttpRequest, RequestEntity}
+import akka.http.scaladsl.model.HttpMethods.{DELETE, POST}
 import akka.http.scaladsl.model.Uri.Query
-import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.alpakka.googlecloud.bigquery.{BigQueryEndpoints, BigQueryException, BigQuerySettings}
-import akka.stream.alpakka.googlecloud.bigquery.impl.http.BigQueryHttp
+import akka.http.scaladsl.model.{HttpRequest, RequestEntity}
+import akka.stream.alpakka.google.GoogleSettings
+import akka.stream.alpakka.google.http.GoogleHttp
+import akka.stream.alpakka.google.implicits._
 import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.{Table, TableListResponse, TableReference}
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.schema.TableSchemaWriter
+import akka.stream.alpakka.googlecloud.bigquery.{BigQueryEndpoints, BigQueryException}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 
 import scala.concurrent.Future
@@ -33,10 +34,11 @@ private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
    */
   def tables(datasetId: String, maxResults: Option[Int] = None): Source[Table, Future[TableListResponse]] =
     source { settings =>
+      import BigQueryException._
       import SprayJsonSupport._
       val uri = BigQueryEndpoints.tables(settings.projectId, datasetId)
       val query = ("maxResults" -> maxResults) ?+: Query.Empty
-      paginatedRequest[TableListResponse](HttpRequest(GET, uri), query)
+      paginatedRequest[TableListResponse](HttpRequest(uri = uri.withQuery(query)))
     }.wireTapMat(Sink.head)(Keep.right).mapConcat(_.tables.fold(List.empty[Table])(_.toList))
 
   /**
@@ -48,15 +50,11 @@ private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
    * @return a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.Table]]
    */
   def table(datasetId: String, tableId: String)(implicit system: ClassicActorSystemProvider,
-                                                settings: BigQuerySettings): Future[Table] = {
+                                                settings: GoogleSettings): Future[Table] = {
     import BigQueryException._
     import SprayJsonSupport._
     val uri = BigQueryEndpoints.table(settings.projectId, datasetId, tableId)
-    BigQueryHttp()
-      .retryRequestWithOAuth(HttpRequest(GET, uri))
-      .flatMap { response =>
-        Unmarshal(response.entity).to[Table]
-      }(system.classicSystem.dispatcher)
+    GoogleHttp().singleAuthenticatedRequest[Table](HttpRequest(uri = uri))
   }
 
   /**
@@ -70,7 +68,7 @@ private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
    */
   def createTable[T](datasetId: String, tableId: String)(
       implicit system: ClassicActorSystemProvider,
-      settings: BigQuerySettings,
+      settings: GoogleSettings,
       schemaWriter: TableSchemaWriter[T]
   ): Future[Table] = {
     val table = Table(TableReference(None, datasetId, tableId), None, Some(schemaWriter.write), None, None)
@@ -85,19 +83,17 @@ private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
    * @return a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.Table]]
    */
   def createTable(table: Table)(implicit system: ClassicActorSystemProvider,
-                                settings: BigQuerySettings): Future[Table] = {
+                                settings: GoogleSettings): Future[Table] = {
     import BigQueryException._
     import SprayJsonSupport._
-    implicit val ec = system.classicSystem.dispatcher
+    implicit val ec = ExecutionContexts.parasitic
     val projectId = table.tableReference.projectId.getOrElse(settings.projectId)
     val datasetId = table.tableReference.datasetId
     val uri = BigQueryEndpoints.tables(projectId, datasetId)
-    for {
-      entity <- Marshal(table).to[RequestEntity]
-      request = HttpRequest(POST, uri, entity = entity)
-      response <- BigQueryHttp().retryRequestWithOAuth(request)
-      table <- Unmarshal(response.entity).to[Table]
-    } yield table
+    Marshal(table).to[RequestEntity].flatMap { entity =>
+      val request = HttpRequest(POST, uri, entity = entity)
+      GoogleHttp().singleAuthenticatedRequest[Table](request)
+    }
   }
 
   /**
@@ -109,12 +105,10 @@ private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
    * @return a [[scala.concurrent.Future]] containing [[akka.Done]]
    */
   def deleteTable(datasetId: String, tableId: String)(implicit system: ClassicActorSystemProvider,
-                                                      settings: BigQuerySettings): Future[Done] = {
+                                                      settings: GoogleSettings): Future[Done] = {
     import BigQueryException._
     val uri = BigQueryEndpoints.table(settings.projectId, datasetId, tableId)
-    BigQueryHttp()
-      .retryRequestWithOAuth(HttpRequest(DELETE, uri))
-      .map(_ => Done)(ExecutionContexts.parasitic)
+    GoogleHttp().singleAuthenticatedRequest[Done](HttpRequest(DELETE, uri))
   }
 
 }

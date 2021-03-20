@@ -13,8 +13,8 @@ import akka.http.javadsl.marshalling.Marshaller;
 import akka.http.javadsl.model.HttpEntity;
 import akka.http.javadsl.model.RequestEntity;
 import akka.http.javadsl.unmarshalling.Unmarshaller;
-import akka.stream.alpakka.googlecloud.bigquery.BigQueryAttributes;
-import akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings;
+import akka.stream.alpakka.google.GoogleAttributes;
+import akka.stream.alpakka.google.GoogleSettings;
 import akka.stream.alpakka.googlecloud.bigquery.InsertAllRetryPolicy;
 import akka.stream.alpakka.googlecloud.bigquery.javadsl.BigQuery;
 import akka.stream.alpakka.googlecloud.bigquery.javadsl.jackson.BigQueryMarshallers;
@@ -192,7 +192,7 @@ public class BigQueryDoc {
     // #job-status
     Function<List<JobJsonProtocol.JobReference>, CompletionStage<Boolean>> checkIfJobsDone =
         jobReferences -> {
-          BigQuerySettings settings = BigQuery.getSettings(system);
+          GoogleSettings settings = GoogleSettings.create(system);
           CompletionStage<Boolean> allAreDone = CompletableFuture.completedFuture(true);
           for (JobJsonProtocol.JobReference jobReference : jobReferences) {
             CompletionStage<JobJsonProtocol.Job> job =
@@ -217,7 +217,7 @@ public class BigQueryDoc {
     // #job-status
 
     // #dataset-methods
-    BigQuerySettings settings = BigQuery.getSettings(system);
+    GoogleSettings settings = GoogleSettings.create(system);
     Source<DatasetJsonProtocol.Dataset, NotUsed> allDatasets =
         BigQuery.listDatasets(OptionalInt.empty(), Optional.empty(), Collections.emptyMap());
     CompletionStage<DatasetJsonProtocol.Dataset> existingDataset =
@@ -262,10 +262,10 @@ public class BigQueryDoc {
     // #create-table
 
     // #custom-settings
-    BigQuerySettings defaultSettings = BigQuery.getSettings(system);
-    BigQuerySettings customSettings = defaultSettings.withProjectId("myOtherProjectId");
+    GoogleSettings defaultSettings = GoogleSettings.create(system);
+    GoogleSettings customSettings = defaultSettings.withProjectId("myOtherProjectId");
     BigQuery.query(sqlQuery, false, false, queryResponseUnmarshaller)
-        .withAttributes(BigQueryAttributes.settings(customSettings));
+        .withAttributes(GoogleAttributes.settings(customSettings));
     // #custom-settings
   }
 }

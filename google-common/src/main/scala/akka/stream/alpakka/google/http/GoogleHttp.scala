@@ -76,7 +76,26 @@ private[alpakka] final class GoogleHttp private (val http: HttpExt) extends AnyV
    * If `authenticate = true` adds an Authorization header to each request.
    * Retries the request if the [[FromResponseUnmarshaller]] throws a [[akka.stream.alpakka.google.util.Retry]].
    */
-  def cachedHostConnectionPool[T: FromResponseUnmarshaller, Ctx](
+  def cachedHostConnectionPool[T: FromResponseUnmarshaller](
+      host: String,
+      port: Int = -1,
+      https: Boolean = true,
+      authenticate: Boolean = true,
+      parallelism: Int = 1
+  ): Flow[HttpRequest, T, Future[HostConnectionPool]] =
+    Flow[HttpRequest]
+      .map((_, ()))
+      .viaMat(cachedHostConnectionPoolWithContext[T, Unit](host, port, https, authenticate, parallelism).asFlow)(
+        Keep.right
+      )
+      .map(_._1.get)
+
+  /**
+   * Creates a cached host connection pool that sends requests and emits the [[Unmarshal]]led response.
+   * If `authenticate = true` adds an Authorization header to each request.
+   * Retries the request if the [[FromResponseUnmarshaller]] throws a [[akka.stream.alpakka.google.util.Retry]].
+   */
+  def cachedHostConnectionPoolWithContext[T: FromResponseUnmarshaller, Ctx](
       host: String,
       port: Int = -1,
       https: Boolean = true,

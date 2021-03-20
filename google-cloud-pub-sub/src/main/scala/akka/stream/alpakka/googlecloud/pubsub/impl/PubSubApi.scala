@@ -214,7 +214,7 @@ private[pubsub] trait PubSubApi {
   private def pool[T: FromResponseUnmarshaller, Ctx](parallelism: Int)(
       implicit system: ActorSystem
   ): FlowWithContext[HttpRequest, Ctx, Try[T], Ctx, Future[HostConnectionPool]] =
-    GoogleHttp().cachedHostConnectionPool[T, Ctx](
+    GoogleHttp().cachedHostConnectionPoolWithContext[T, Ctx](
       PubSubGoogleApisHost,
       PubSubGoogleApisPort,
       https = !isEmulated,

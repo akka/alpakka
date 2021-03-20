@@ -11,6 +11,9 @@ import akka.http.javadsl.model.{HttpEntity, HttpRequest, HttpResponse, RequestEn
 import akka.http.javadsl.unmarshalling.Unmarshaller
 import akka.http.scaladsl.{model => sm}
 import akka.japi.Pair
+import akka.stream.alpakka.google.GoogleSettings
+import akka.stream.alpakka.google.javadsl.Paginated
+import akka.stream.alpakka.googlecloud.bigquery.InsertAllRetryPolicy
 import akka.stream.alpakka.googlecloud.bigquery.model.DatasetJsonProtocol.Dataset
 import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.{Job, JobCancelResponse, JobReference}
 import akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.{QueryRequest, QueryResponse}
@@ -26,7 +29,6 @@ import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.{
   TableSchema
 }
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.{BigQuery => ScalaBigQuery}
-import akka.stream.alpakka.googlecloud.bigquery.{BigQuerySettings, InsertAllRetryPolicy}
 import akka.stream.javadsl.{Flow, Sink, Source}
 import akka.stream.{scaladsl => ss}
 import akka.util.ByteString
@@ -49,23 +51,6 @@ import scala.language.implicitConversions
 object BigQuery {
 
   /**
-   * Returns the default [[BigQuerySettings]].
-   *
-   * @param system the actor system
-   */
-  def getSettings(system: ClassicActorSystemProvider): BigQuerySettings =
-    ScalaBigQuery.settings(system)
-
-  /**
-   * Returns the [[BigQuerySettings]] defined at a path in the configuration.
-   *
-   * @param system the actor system
-   * @param path the configuration path
-   */
-  def getSettings(system: ClassicActorSystemProvider, path: String): BigQuerySettings =
-    ScalaBigQuery.settings(path)(system)
-
-  /**
    * Makes a single authenticated request without retries.
    *
    * @param request the [[akka.http.javadsl.model.HttpRequest]] to make
@@ -75,7 +60,7 @@ object BigQuery {
    */
   def singleRequest(request: HttpRequest,
                     system: ClassicActorSystemProvider,
-                    settings: BigQuerySettings): CompletionStage[HttpResponse] =
+                    settings: GoogleSettings): CompletionStage[HttpResponse] =
     ScalaBigQuery.singleRequest(request)(system, settings).mapTo[HttpResponse].toJava
 
   /**
@@ -120,7 +105,7 @@ object BigQuery {
    */
   def getDataset(datasetId: String,
                  system: ClassicActorSystemProvider,
-                 settings: BigQuerySettings): CompletionStage[Dataset] =
+                 settings: GoogleSettings): CompletionStage[Dataset] =
     ScalaBigQuery.dataset(datasetId)(system, settings).toJava
 
   /**
@@ -134,7 +119,7 @@ object BigQuery {
    */
   def createDataset(datasetId: String,
                     system: ClassicActorSystemProvider,
-                    settings: BigQuerySettings): CompletionStage[Dataset] =
+                    settings: GoogleSettings): CompletionStage[Dataset] =
     ScalaBigQuery.createDataset(datasetId)(system, settings).toJava
 
   /**
@@ -148,7 +133,7 @@ object BigQuery {
    */
   def createDataset(dataset: Dataset,
                     system: ClassicActorSystemProvider,
-                    settings: BigQuerySettings): CompletionStage[Dataset] =
+                    settings: GoogleSettings): CompletionStage[Dataset] =
     ScalaBigQuery.createDataset(dataset)(system, settings).toJava
 
   /**
@@ -163,7 +148,7 @@ object BigQuery {
   def deleteDataset(datasetId: String,
                     deleteContents: Boolean,
                     system: ClassicActorSystemProvider,
-                    settings: BigQuerySettings): CompletionStage[Done] =
+                    settings: GoogleSettings): CompletionStage[Done] =
     ScalaBigQuery.deleteDataset(datasetId, deleteContents)(system, settings).toJava
 
   /**
@@ -190,7 +175,7 @@ object BigQuery {
   def getTable(datasetId: String,
                tableId: String,
                system: ClassicActorSystemProvider,
-               settings: BigQuerySettings): CompletionStage[Table] =
+               settings: GoogleSettings): CompletionStage[Table] =
     ScalaBigQuery.table(datasetId, tableId)(system, settings).toJava
 
   /**
@@ -208,7 +193,7 @@ object BigQuery {
                   tableId: String,
                   schema: TableSchema,
                   system: ClassicActorSystemProvider,
-                  settings: BigQuerySettings): CompletionStage[Table] =
+                  settings: GoogleSettings): CompletionStage[Table] =
     createTable(Table(TableReference(None, datasetId, tableId), None, Some(schema), None, None), system, settings)
 
   /**
@@ -220,9 +205,7 @@ object BigQuery {
    * @param settings the [[akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings]]
    * @return a [[java.util.concurrent.CompletionStage]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.Table]]
    */
-  def createTable(table: Table,
-                  system: ClassicActorSystemProvider,
-                  settings: BigQuerySettings): CompletionStage[Table] =
+  def createTable(table: Table, system: ClassicActorSystemProvider, settings: GoogleSettings): CompletionStage[Table] =
     ScalaBigQuery.createTable(table)(system, settings).toJava
 
   /**
@@ -238,7 +221,7 @@ object BigQuery {
   def deleteTable(datasetId: String,
                   tableId: String,
                   system: ClassicActorSystemProvider,
-                  settings: BigQuerySettings): CompletionStage[Done] =
+                  settings: GoogleSettings): CompletionStage[Done] =
     ScalaBigQuery.deleteTable(datasetId, tableId)(system, settings).toJava
 
   /**
@@ -408,7 +391,7 @@ object BigQuery {
   def getJob(jobId: String,
              location: util.Optional[String],
              system: ClassicActorSystemProvider,
-             settings: BigQuerySettings): CompletionStage[Job] =
+             settings: GoogleSettings): CompletionStage[Job] =
     ScalaBigQuery.job(jobId, location.asScala)(system, settings).toJava
 
   /**
@@ -424,11 +407,11 @@ object BigQuery {
   def cancelJob(jobId: String,
                 location: util.Optional[String],
                 system: ClassicActorSystemProvider,
-                settings: BigQuerySettings): CompletionStage[JobCancelResponse] =
+                settings: GoogleSettings): CompletionStage[JobCancelResponse] =
     ScalaBigQuery.cancelJob(jobId, location.asScala)(system, settings).toJava
 
   /**
-   * Loads data into BigQuery via a series of asynchronous load jobs, configurable by [[akka.stream.alpakka.googlecloud.bigquery.LoadJobSettings]].
+   * Loads data into BigQuery via a series of asynchronous load jobs created at the rate `loadJobPerTableQuota`.
    * @note WARNING: Pending the resolution of [[https://issuetracker.google.com/176002651 BigQuery issue 176002651]] this method may not work as expected.
    *       As a workaround, you can use the config setting `akka.http.parsing.conflicting-content-type-header-processing-mode = first` with Akka HTTP v10.2.4 or later.
    *

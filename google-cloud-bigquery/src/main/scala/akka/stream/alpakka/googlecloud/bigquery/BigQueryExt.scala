@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.stream.alpakka.googlecloud.bigquery.impl
+package akka.stream.alpakka.googlecloud.bigquery
 
 import akka.actor.{
   ActorSystem,
@@ -13,7 +13,6 @@ import akka.actor.{
   ExtensionIdProvider
 }
 import akka.annotation.InternalApi
-import akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings
 
 import scala.collection.immutable.ListMap
 
@@ -27,7 +26,7 @@ private[bigquery] final class BigQueryExt private (sys: ExtendedActorSystem) ext
 
   def settings(path: String): BigQuerySettings =
     cachedSettings.getOrElse(path, {
-      val settings = BigQuerySettings(sys.settings.config.getConfig(path))(sys)
+      val settings = BigQuerySettings(sys.settings.config.getConfig(path))
       cachedSettings += path -> settings
       settings
     })
