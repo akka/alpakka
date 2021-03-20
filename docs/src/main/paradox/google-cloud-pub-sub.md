@@ -38,7 +38,16 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Usage
 
-Prepare your credentials for access to google cloud pub/sub.
+Shared settings for all Google connectors are read by default from the `alpakka.google` configuration section in your `application.conf`.
+Credentials will be loaded automatically:
+
+1. From the file path specified by the `GOOGLE_APPLICATION_CREDENTIALS` environment variable or another [“well-known” location](https://medium.com/google-cloud/use-google-cloud-user-credentials-when-testing-containers-locally-acb57cd4e4da); or
+2. When running in a [Compute Engine](https://cloud.google.com/compute) instance.
+
+Credentials can also specified manually in your configuration file.
+
+All of the common configuration settings for Google connectors can be found in the @github[reference.conf](/google-cloud-common/src/main/resources/reference.conf).
+Additional PubSub-specific configuration settings can be found in its own @github[reference.conf](/google-cloud-pub-sub/src/main/resources/reference.conf).
 
 @@snip [snip](/google-cloud-pub-sub/src/test/resources/application.conf) { #init-credentials }
 
