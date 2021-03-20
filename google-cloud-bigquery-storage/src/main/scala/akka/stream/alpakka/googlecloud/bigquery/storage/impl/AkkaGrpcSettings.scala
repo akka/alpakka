@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.storage.impl
 
-import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.annotation.InternalApi
 import akka.grpc.GrpcClientSettings
 import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryStorageSettings
@@ -15,7 +15,9 @@ import com.typesafe.config.ConfigFactory
  */
 @InternalApi private[bigquery] object AkkaGrpcSettings {
 
-  def fromBigQuerySettings(config: BigQueryStorageSettings)(implicit sys: ActorSystem): GrpcClientSettings = {
+  def fromBigQuerySettings(
+      config: BigQueryStorageSettings
+  )(implicit system: ClassicActorSystemProvider): GrpcClientSettings = {
     val sslConfig = config.rootCa.fold("") { rootCa =>
       s"""
       |ssl-config {
@@ -39,7 +41,7 @@ import com.typesafe.config.ConfigFactory
       GrpcClientSettings.fromConfig(
         ConfigFactory
           .parseString(akkaGrpcConfig)
-          .withFallback(sys.settings.config.getConfig("akka.grpc.client.\"*\""))
+          .withFallback(system.classicSystem.settings.config.getConfig("akka.grpc.client.\"*\""))
       )
 
     val setTls = (settings: GrpcClientSettings) =>

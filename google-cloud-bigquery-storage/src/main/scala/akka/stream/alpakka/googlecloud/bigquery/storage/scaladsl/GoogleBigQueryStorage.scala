@@ -5,6 +5,7 @@
 package akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl
 
 import akka.NotUsed
+import akka.actor.ClassicActorSystemProvider
 import akka.dispatch.ExecutionContexts
 import akka.stream.alpakka.googlecloud.bigquery.storage.impl.AvroDecoder
 import akka.stream.scaladsl.{Flow, Source}
@@ -42,8 +43,8 @@ object GoogleBigQueryStorage {
            tableId: String,
            readOptions: Option[TableReadOptions] = None,
            maxNumStreams: Int = 0): Source[Source[GenericRecord, NotUsed], Future[NotUsed]] =
-    Source.setup { (mat, attr) =>
-      val client = reader(mat, attr).client
+    Source.fromMaterializer { (mat, attr) =>
+      val client = reader(mat.system, attr).client
       val schemaS = Promise[String]
       val decoderFlow: Flow[AvroRows, List[GenericRecord], Future[Option[NotUsed]]] = Flow.lazyInitAsync(
         () =>
@@ -54,7 +55,7 @@ object GoogleBigQueryStorage {
       )
 
       Source
-        .fromFuture {
+        .future {
           val table = s"projects/$projectId/datasets/$datasetId/tables/$tableId"
           client
             .createReadSession()
@@ -87,9 +88,9 @@ object GoogleBigQueryStorage {
         )
     }
 
-  private def reader(mat: ActorMaterializer, attr: Attributes) =
+  private def reader(system: ClassicActorSystemProvider, attr: Attributes) =
     attr
       .get[BigQueryStorageAttributes.BigQueryStorageReader]
       .map(_.client)
-      .getOrElse(GrpcBigQueryStorageReaderExt()(mat.system).reader)
+      .getOrElse(GrpcBigQueryStorageReaderExt()(system).reader)
 }

@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl
 
-import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.actor.{ClassicActorSystemProvider, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import akka.annotation.ApiMayChange
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryStorageSettings
@@ -14,21 +14,23 @@ import com.google.cloud.bigquery.storage.v1.storage.{BigQueryReadClient => Scala
 /**
  * Holds the gRPC scala reader client instance.
  */
-final class GrpcBigQueryStorageReader private (settings: BigQueryStorageSettings, sys: ActorSystem, mat: Materializer) {
+final class GrpcBigQueryStorageReader private (settings: BigQueryStorageSettings,
+                                               sys: ClassicActorSystemProvider,
+                                               mat: Materializer) {
 
   @ApiMayChange
   final val client = ScalaBigQueryReadClient(AkkaGrpcSettings.fromBigQuerySettings(settings)(sys))(sys)
 
-  sys.registerOnTermination(client.close())
+  sys.classicSystem.registerOnTermination(client.close())
 }
 
 object GrpcBigQueryStorageReader {
 
-  def apply(settings: BigQueryStorageSettings)(implicit sys: ActorSystem,
+  def apply(settings: BigQueryStorageSettings)(implicit sys: ClassicActorSystemProvider,
                                                mat: Materializer): GrpcBigQueryStorageReader =
     new GrpcBigQueryStorageReader(settings, sys, mat)
 
-  def apply()(implicit sys: ActorSystem, mat: Materializer): GrpcBigQueryStorageReader =
+  def apply()(implicit sys: ClassicActorSystemProvider, mat: Materializer): GrpcBigQueryStorageReader =
     apply(BigQueryStorageSettings(sys))
 }
 
@@ -48,12 +50,12 @@ object GrpcBigQueryStorageReaderExt extends ExtensionId[GrpcBigQueryStorageReade
   /**
    * Access to extension.
    */
-  def apply()(implicit system: ActorSystem): GrpcBigQueryStorageReaderExt = super.apply(system)
+  def apply()(implicit system: ClassicActorSystemProvider): GrpcBigQueryStorageReaderExt = super.apply(system)
 
   /**
    * Java API
    *
    * Access to extension.
    */
-  override def get(system: ActorSystem): GrpcBigQueryStorageReaderExt = super.get(system)
+  override def get(system: ClassicActorSystemProvider): GrpcBigQueryStorageReaderExt = super.get(system)
 }
