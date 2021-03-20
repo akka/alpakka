@@ -10,7 +10,7 @@ import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.marshalling.{Marshal, ToEntityMarshaller}
 import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
-import akka.http.scaladsl.model.HttpMethods.{GET, POST}
+import akka.http.scaladsl.model.HttpMethods.POST
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{HttpEntity, HttpRequest, RequestEntity}
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
@@ -51,7 +51,7 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
     import SprayJsonSupport._
     val uri = BigQueryEndpoints.job(settings.projectId, jobId)
     val query = ("location" -> location) ?+: Query.Empty
-    GoogleHttp().singleAuthenticatedRequest[Job](HttpRequest(GET, uri.withQuery(query)))
+    GoogleHttp().singleAuthenticatedRequest[Job](HttpRequest(uri = uri.withQuery(query)))
   }
 
   /**
