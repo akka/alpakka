@@ -54,7 +54,7 @@ public class ExampleReader {
 
   // #attributes
   GrpcBigQueryStorageReader reader =
-      GrpcBigQueryStorageReader.create(BigQueryStorageSettings.apply("localhost", 8000), sys, mat);
+      GrpcBigQueryStorageReader.create(BigQueryStorageSettings.apply("localhost", 8000), sys);
   Source<Source<GenericRecord, NotUsed>, CompletionStage<NotUsed>> sourceForReader =
       GoogleBigQueryStorage.read("projectId", "datasetId", "tableId")
           .withAttributes(BigQueryStorageAttributes.reader(reader));

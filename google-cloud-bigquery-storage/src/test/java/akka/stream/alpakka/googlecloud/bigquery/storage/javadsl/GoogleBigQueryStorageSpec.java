@@ -32,8 +32,6 @@ import static org.junit.Assert.*;
 public class GoogleBigQueryStorageSpec extends BigQueryStorageSpecBase {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
-  Materializer materializer = ActorMaterializer.create(system());
-
   @Test
   public void shouldReturnGenericRecordForAvroQuery()
       throws InterruptedException, ExecutionException, TimeoutException {
@@ -41,7 +39,7 @@ public class GoogleBigQueryStorageSpec extends BigQueryStorageSpecBase {
         GoogleBigQueryStorage.read(Project(), Dataset(), Table())
             .withAttributes(mockBQReader())
             .flatMapMerge(100, i -> i)
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system());
 
     assertTrue(
         "number of generic records should be more than 0",
@@ -57,7 +55,7 @@ public class GoogleBigQueryStorageSpec extends BigQueryStorageSpecBase {
         GoogleBigQueryStorage.read(Project(), Dataset(), Table(), readOptions)
             .withAttributes(mockBQReader())
             .flatMapMerge(100, i -> i)
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system());
 
     assertEquals(
         "number of generic records should be filtered to 0",
@@ -74,7 +72,7 @@ public class GoogleBigQueryStorageSpec extends BigQueryStorageSpecBase {
         GoogleBigQueryStorage.read(Project(), Dataset(), Table(), readOptions)
             .withAttributes(mockBQReader())
             .flatMapMerge(100, i -> i)
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system());
 
     assertEquals(
         "fields of generic record should only include col1",
@@ -89,7 +87,7 @@ public class GoogleBigQueryStorageSpec extends BigQueryStorageSpecBase {
     CompletionStage<Integer> numStreams =
         GoogleBigQueryStorage.read(Project(), Dataset(), Table(), maxStreams)
             .withAttributes(mockBQReader())
-            .runFold(0, (acc, stream) -> acc + 1, materializer);
+            .runFold(0, (acc, stream) -> acc + 1, system());
 
     assertEquals(
         "the number of streams should be the same as specified in the request",
@@ -103,7 +101,7 @@ public class GoogleBigQueryStorageSpec extends BigQueryStorageSpecBase {
     CompletionStage<Done> result =
         GoogleBigQueryStorage.read(Project(), Dataset(), Table())
             .withAttributes(mockBQReader(1))
-            .runWith(Sink.ignore(), materializer);
+            .runWith(Sink.ignore(), system());
 
     try {
       result.toCompletableFuture().get(5, TimeUnit.SECONDS);
@@ -119,7 +117,7 @@ public class GoogleBigQueryStorageSpec extends BigQueryStorageSpecBase {
     CompletionStage<Done> result =
         GoogleBigQueryStorage.read("NOT A PROJECT", Dataset(), Table())
             .withAttributes(mockBQReader())
-            .runWith(Sink.ignore(), materializer);
+            .runWith(Sink.ignore(), system());
 
     try {
       result.toCompletableFuture().get(5, TimeUnit.SECONDS);
@@ -136,7 +134,7 @@ public class GoogleBigQueryStorageSpec extends BigQueryStorageSpecBase {
     CompletionStage<Done> result =
         GoogleBigQueryStorage.read(Project(), "NOT A DATASET", Table())
             .withAttributes(mockBQReader())
-            .runWith(Sink.ignore(), materializer);
+            .runWith(Sink.ignore(), system());
 
     try {
       result.toCompletableFuture().get(5, TimeUnit.SECONDS);
@@ -153,7 +151,7 @@ public class GoogleBigQueryStorageSpec extends BigQueryStorageSpecBase {
     CompletionStage<Done> result =
         GoogleBigQueryStorage.read(Project(), Dataset(), "NOT A TABLE")
             .withAttributes(mockBQReader())
-            .runWith(Sink.ignore(), materializer);
+            .runWith(Sink.ignore(), system());
 
     try {
       result.toCompletableFuture().get(5, TimeUnit.SECONDS);
@@ -174,8 +172,7 @@ public class GoogleBigQueryStorageSpec extends BigQueryStorageSpecBase {
 
   public Attributes mockBQReader(String host, int port) {
     GrpcBigQueryStorageReader reader =
-        GrpcBigQueryStorageReader.create(
-            BigQueryStorageSettings.create(host, port), system(), materializer);
+        GrpcBigQueryStorageReader.create(BigQueryStorageSettings.create(host, port), system());
     return BigQueryStorageAttributes.reader(reader);
   }
 
