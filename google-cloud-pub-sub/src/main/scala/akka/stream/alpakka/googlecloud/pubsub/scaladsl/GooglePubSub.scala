@@ -5,6 +5,7 @@
 package akka.stream.alpakka.googlecloud.pubsub.scaladsl
 
 import akka.actor.Cancellable
+import akka.stream.OverflowStrategy
 import akka.stream.alpakka.google.GoogleAttributes
 import akka.stream.alpakka.googlecloud.pubsub._
 import akka.stream.alpakka.googlecloud.pubsub.impl._
@@ -67,6 +68,7 @@ protected[pubsub] trait GooglePubSub {
   def subscribeFlow(subscription: String, config: PubSubConfig): Flow[Done, ReceivedMessage, Future[NotUsed]] = {
     flow(config)(httpApi.pull(subscription, config.pullReturnImmediately, config.pullMaxMessagesPerInternalBatch))
       .mapConcat(_.receivedMessages.getOrElse(Seq.empty[ReceivedMessage]).toIndexedSeq)
+      .buffer(1, OverflowStrategy.backpressure) // Needed to prevent a deadlock in IntegrationSpec
   }.mapMaterializedValue(_ => Future.successful(NotUsed))
 
   /**
