@@ -15,11 +15,11 @@ import io.specto.hoverfly.junit.core.SimulationSource.dsl
 import io.specto.hoverfly.junit.dsl.HoverflyDsl.service
 import io.specto.hoverfly.junit.dsl.ResponseCreators.success
 import org.scalatest.BeforeAndAfterAll
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import spray.json.{JsObject, JsString, JsValue}
 
-import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class PaginatedRequestSpec
@@ -27,7 +27,7 @@ class PaginatedRequestSpec
     with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
-    with TestGoogleSettings
+    with ScalaFutures
     with HoverflySupport {
 
   override def afterAll(): Unit = {
@@ -35,12 +35,11 @@ class PaginatedRequestSpec
     super.afterAll()
   }
 
+  implicit val patience = PatienceConfig(timeout = 3.seconds)
   implicit val paginated: Paginated[JsValue] = _.asJsObject.fields.get("pageToken").flatMap {
     case JsString(value) => Some(value)
     case _ => None
   }
-
-  val timeout = 3.seconds
 
   "PaginatedRequest" should {
 
@@ -56,11 +55,9 @@ class PaginatedRequestSpec
         )
       )
 
-      val result = PaginatedRequest[JsValue](HttpRequest(GET, "https://example.com"))
-        .withAttributes(GoogleAttributes.settings(settings))
-        .runWith(Sink.head)
+      val result = PaginatedRequest[JsValue](HttpRequest(GET, "https://example.com")).runWith(Sink.head)
 
-      Await.result(result, timeout) shouldBe JsObject.empty
+      result.futureValue shouldBe JsObject.empty
       hoverfly.reset()
     }
 
@@ -83,11 +80,9 @@ class PaginatedRequestSpec
         )
       )
 
-      val result = PaginatedRequest[JsValue](HttpRequest(GET, "https://example.com"))
-        .withAttributes(GoogleAttributes.settings(settings))
-        .runWith(Sink.seq)
+      val result = PaginatedRequest[JsValue](HttpRequest(GET, "https://example.com")).runWith(Sink.seq)
 
-      Await.result(result, timeout) shouldBe Seq(JsObject("pageToken" -> JsString("nextPage")), JsObject.empty)
+      result.futureValue shouldBe Seq(JsObject("pageToken" -> JsString("nextPage")), JsObject.empty)
       hoverfly.reset()
     }
 
@@ -110,11 +105,9 @@ class PaginatedRequestSpec
         )
       )
 
-      val result = PaginatedRequest[JsValue](HttpRequest(GET, "https://example.com"))
-        .withAttributes(GoogleAttributes.settings(settings))
-        .runWith(Sink.seq)
+      val result = PaginatedRequest[JsValue](HttpRequest(GET, "https://example.com")).runWith(Sink.seq)
 
-      Await.result(result, timeout) shouldBe Seq(JsObject("pageToken" -> JsString("===")), JsObject.empty)
+      result.futureValue shouldBe Seq(JsObject("pageToken" -> JsString("===")), JsObject.empty)
       hoverfly.reset()
     }
   }

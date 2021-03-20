@@ -5,24 +5,26 @@
 package akka.stream.alpakka.google.auth
 
 import akka.actor.{ActorContext, ActorSystem, Props}
+import akka.http.scaladsl.model.ErrorInfo
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.stream.alpakka.google.GoogleSettings
 import akka.stream.alpakka.google.auth.OAuth2Credentials.TokenRequest
 import akka.testkit.TestKit
 import org.scalatest.BeforeAndAfterAll
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.exceptions.TestFailedException
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import pdi.jwt.JwtTime
 
 import java.time.Clock
-import scala.concurrent.duration._
-import scala.concurrent.{Await, Future, Promise}
-import scala.util.{Failure, Try}
+import scala.concurrent.{Future, Promise}
 
 class OAuth2CredentialsSpec
     extends TestKit(ActorSystem("OAuth2CredentialsSpec"))
     with AnyWordSpecLike
     with Matchers
+    with ScalaFutures
     with BeforeAndAfterAll {
 
   override def afterAll(): Unit = {
@@ -59,13 +61,13 @@ class OAuth2CredentialsSpec
       testableCredentials ! TokenRequest(request1, settings)
       testableCredentials ! TokenRequest(request2, settings)
 
-      Try(Await.result(request1.future, 100.milliseconds)) should matchPattern { case Failure(_) => }
-      Try(Await.result(request2.future, 100.milliseconds)) should matchPattern { case Failure(_) => }
+      assertThrows[TestFailedException](request1.future.futureValue)
+      assertThrows[TestFailedException](request2.future.futureValue)
 
       AccessTokenProvider.accessTokenPromise.success(AccessToken("first token", JwtTime.nowSeconds + 1))
 
-      Await.result(request1.future, 100.milliseconds) shouldEqual OAuth2BearerToken("first token")
-      Await.result(request2.future, 100.milliseconds) shouldEqual OAuth2BearerToken("first token")
+      request1.future.futureValue shouldEqual OAuth2BearerToken("first token")
+      request2.future.futureValue shouldEqual OAuth2BearerToken("first token")
     }
 
     "fail requests if token request fails" in {
@@ -77,10 +79,10 @@ class OAuth2CredentialsSpec
       testableCredentials ! TokenRequest(request1, settings)
       testableCredentials ! TokenRequest(request2, settings)
 
-      AccessTokenProvider.accessTokenPromise.failure(new RuntimeException)
+      AccessTokenProvider.accessTokenPromise.failure(GoogleOAuth2Exception(ErrorInfo()))
 
-      Try(Await.result(request1.future, 100.milliseconds)) should matchPattern { case Failure(_) => }
-      Try(Await.result(request2.future, 100.milliseconds)) should matchPattern { case Failure(_) => }
+      assert(request1.future.failed.futureValue.isInstanceOf[GoogleOAuth2Exception])
+      assert(request2.future.failed.futureValue.isInstanceOf[GoogleOAuth2Exception])
     }
 
     "refresh token (only) when expired" in {
@@ -89,19 +91,19 @@ class OAuth2CredentialsSpec
       val request1 = Promise[OAuth2BearerToken]()
       testableCredentials ! TokenRequest(request1, settings)
       AccessTokenProvider.accessTokenPromise.success(AccessToken("first token", JwtTime.nowSeconds + 1))
-      Await.result(request1.future, 100.seconds) shouldEqual OAuth2BearerToken("first token")
+      request1.future.futureValue shouldEqual OAuth2BearerToken("first token")
 
       AccessTokenProvider.accessTokenPromise = Promise()
       val request2 = Promise[OAuth2BearerToken]()
       testableCredentials ! TokenRequest(request2, settings)
       AccessTokenProvider.accessTokenPromise.success(AccessToken("second token", JwtTime.nowSeconds + 120))
-      Await.result(request2.future, 100.seconds) shouldEqual OAuth2BearerToken("second token")
+      request2.future.futureValue shouldEqual OAuth2BearerToken("second token")
 
       AccessTokenProvider.accessTokenPromise = Promise()
       val request3 = Promise[OAuth2BearerToken]()
       testableCredentials ! TokenRequest(request3, settings)
       AccessTokenProvider.accessTokenPromise.success(AccessToken("third token", JwtTime.nowSeconds + 1))
-      Await.result(request3.future, 100.seconds) shouldEqual OAuth2BearerToken("second token")
+      request3.future.futureValue shouldEqual OAuth2BearerToken("second token")
     }
 
   }

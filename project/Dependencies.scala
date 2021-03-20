@@ -213,7 +213,7 @@ object Dependencies {
         "com.github.jwt-scala" %% "jwt-spray-json" % "7.1.0", // ApacheV2
         "com.google.auth" % "google-auth-library-credentials" % "0.24.1", // BSD 3-clause
         "io.specto" % "hoverfly-java" % hoverflyVersion % Test // ApacheV2
-      ) ++ Mockito
+      ) ++ Mockito ++ Silencer
   )
 
   val GoogleBigQuery = Seq(

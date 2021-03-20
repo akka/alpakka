@@ -6,8 +6,8 @@ package akka.stream.alpakka.google
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import akka.http.scaladsl.model.{ContentTypes, HttpRequest, Uri}
 import akka.http.scaladsl.model.HttpMethods.POST
+import akka.http.scaladsl.model.{ContentTypes, HttpRequest, Uri}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.testkit.TestKit
 import akka.util.ByteString
@@ -15,20 +15,22 @@ import io.specto.hoverfly.junit.core.SimulationSource.dsl
 import io.specto.hoverfly.junit.dsl.HoverflyDsl.service
 import io.specto.hoverfly.junit.dsl.ResponseCreators.{created, serverError, success}
 import org.scalatest.BeforeAndAfterAll
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import spray.json.{JsObject, JsValue}
 
-import scala.concurrent.Await
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration._
 
 class ResumableUploadSpec
     extends TestKit(ActorSystem("ResumableUploadSpec"))
     with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
-    with TestGoogleSettings
+    with ScalaFutures
     with HoverflySupport {
+
+  implicit val patience = PatienceConfig(timeout = 3.seconds)
 
   override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
@@ -68,7 +70,7 @@ class ResumableUploadSpec
         )
       )
 
-      val done = Source
+      val result = Source
         .single(ByteString("helloworld"))
         .via(
           ResumableUpload[JsValue](
@@ -78,10 +80,9 @@ class ResumableUploadSpec
           )
         )
         .toMat(Sink.last)(Keep.right)
-        .withAttributes(GoogleAttributes.settings(settings))
         .run()
 
-      Await.result(done, 10.seconds) shouldEqual JsObject.empty
+      result.futureValue shouldEqual JsObject.empty
     }
 
   }
