@@ -22,7 +22,7 @@ private[storage] object ProtobufConverters {
     }
 
     private final def selectedFields(): Seq[String] = {
-      readOption.getSelectedFieldsList.asScala.map(s => s.asInstanceOf[String])
+      readOption.getSelectedFieldsList.asScala.map(s => s.asInstanceOf[String]).toSeq
     }
 
     private final def unknownFields(): scalapb.UnknownFieldSet = {
@@ -36,10 +36,10 @@ private[storage] object ProtobufConverters {
 
     private final def unknownField(field: com.google.protobuf.UnknownFieldSet.Field): UnknownFieldSet.Field = {
       UnknownFieldSet.Field(
-        varint = field.getVarintList.asScala.map(_.asInstanceOf[Long]),
-        fixed64 = field.getFixed64List.asScala.map(_.asInstanceOf[Long]),
-        fixed32 = field.getFixed32List.asScala.map(_.asInstanceOf[Int]),
-        lengthDelimited = field.getLengthDelimitedList.asScala
+        varint = field.getVarintList.asScala.map(_.asInstanceOf[Long]).toSeq,
+        fixed64 = field.getFixed64List.asScala.map(_.asInstanceOf[Long]).toSeq,
+        fixed32 = field.getFixed32List.asScala.map(_.asInstanceOf[Int]).toSeq,
+        lengthDelimited = field.getLengthDelimitedList.asScala.toSeq
       )
     }
 
