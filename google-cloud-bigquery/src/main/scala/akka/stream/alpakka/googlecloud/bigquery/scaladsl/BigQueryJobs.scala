@@ -13,7 +13,7 @@ import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
 import akka.http.scaladsl.model.HttpMethods.{GET, POST}
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{HttpEntity, HttpRequest, RequestEntity}
-import akka.http.scaladsl.unmarshalling.FromResponseUnmarshaller
+import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.stream.FlowShape
 import akka.stream.alpakka.google.http.GoogleHttp
 import akka.stream.alpakka.google.implicits._
@@ -86,7 +86,6 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
   def insertAllAsync[In: ToEntityMarshaller](datasetId: String, tableId: String): Flow[In, Job, NotUsed] =
     Flow
       .fromMaterializer { (mat, attr) =>
-        import BigQueryException._
         import SprayJsonSupport._
         import mat.executionContext
         implicit val settings = GoogleAttributes.resolveSettings(mat, attr)
@@ -142,11 +141,12 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
    * @tparam Job the data model for a job
    * @return a [[akka.stream.scaladsl.Sink]] that uploads bytes and materializes a [[scala.concurrent.Future]] containing the [[Job]] when completed
    */
-  def createLoadJob[@silent("shadows") Job: ToEntityMarshaller: FromResponseUnmarshaller](
+  def createLoadJob[@silent("shadows") Job: ToEntityMarshaller: FromEntityUnmarshaller](
       job: Job
   ): Sink[ByteString, Future[Job]] =
     Sink
       .fromMaterializer { (mat, attr) =>
+        import BigQueryException._
         implicit val settings = GoogleAttributes.resolveSettings(mat, attr)
         implicit val ec = ExecutionContexts.parasitic
         val uri = BigQueryMediaEndpoints.jobs(settings.projectId).withQuery(Query("uploadType" -> "resumable"))
