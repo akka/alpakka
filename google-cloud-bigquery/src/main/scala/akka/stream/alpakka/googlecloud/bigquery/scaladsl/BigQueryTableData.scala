@@ -15,7 +15,6 @@ import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, FromResponseUnm
 import akka.stream.alpakka.google.GoogleAttributes
 import akka.stream.alpakka.google.http.GoogleHttp
 import akka.stream.alpakka.google.implicits._
-import akka.stream.alpakka.google.util.Retry
 import akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol
 import akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.{
   TableDataInsertAllRequest,
