@@ -129,12 +129,10 @@ private[scaladsl] trait BigQueryTableData { this: BigQueryRest =>
         val uri = BigQueryEndpoints.tableDataInsertAll(settings.projectId, datasetId, tableId)
         val request = HttpRequest(POST, uri)
 
-        val um = implicitly[FromResponseUnmarshaller[TableDataInsertAllResponse]]
-          .recover { _ => _ =>
-            {
-              case Retry(ex) if !retryFailedRequests => throw ex
-            }
-          }
+        val um = {
+          val um = implicitly[FromResponseUnmarshaller[TableDataInsertAllResponse]]
+          if (retryFailedRequests) um else um.withoutRetries
+        }
 
         val pool = {
           val authority = BigQueryEndpoints.endpoint.authority

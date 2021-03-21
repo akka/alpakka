@@ -19,10 +19,10 @@ private[alpakka] object implicits {
     def ?+:(kv: (String, Option[Any])): Query = kv._2.fold(query)(v => Query.Cons(kv._1, v.toString, query))
   }
 
-  implicit final class FromResponseUnmarshallerWithDefaultRetry[T](val um: FromResponseUnmarshaller[T]) extends AnyVal {
+  implicit final class FromResponseUnmarshallerRetryHelpers[T](val um: FromResponseUnmarshaller[T]) extends AnyVal {
 
     /**
-     * Automatically identifies retryable exceptions with reasonable defaults. Should be sufficient for most APIs.
+     * Automatically identifies retryable exceptions using reasonable defaults. Should be sufficient for most APIs.
      */
     def withDefaultRetry: FromResponseUnmarshaller[T] =
       Unmarshaller.withMaterializer { implicit ec => implicit mat => response =>
@@ -31,13 +31,21 @@ private[alpakka] object implicits {
             Unmarshaller.strict((_: HttpResponse) => ex).withDefaultRetry.apply(response).fast.map(throw _)
         }
       }
-  }
-
-  implicit final class ToThrowableUnmarshallerWithDefaultRetry(val um: FromResponseUnmarshaller[Throwable])
-      extends AnyVal {
 
     /**
-     * Automatically identifies retryable exceptions with reasonable defaults. Should be sufficient for most APIs.
+     * Disables all retries
+     */
+    def withoutRetries: FromResponseUnmarshaller[T] = um.recover { _ => _ =>
+      {
+        case Retry(ex) => throw ex
+      }
+    }
+  }
+
+  implicit final class ToThrowableUnmarshallerRetryHelpers(val um: FromResponseUnmarshaller[Throwable]) extends AnyVal {
+
+    /**
+     * Automatically identifies retryable exceptions using reasonable defaults. Should be sufficient for most APIs.
      */
     def withDefaultRetry: FromResponseUnmarshaller[Throwable] =
       Unmarshaller.withMaterializer { implicit ec => implicit mat => response =>
