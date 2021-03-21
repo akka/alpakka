@@ -6,7 +6,6 @@ package akka.stream.alpakka.google
 
 import akka.NotUsed
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.model.HttpMethods.{POST, PUT}
 import akka.http.scaladsl.model.StatusCodes.{Created, OK, PermanentRedirect}
 import akka.http.scaladsl.model._
@@ -22,7 +21,7 @@ import akka.http.scaladsl.model.headers.{
 import akka.http.scaladsl.unmarshalling.{FromResponseUnmarshaller, Unmarshal, Unmarshaller}
 import akka.stream.Materializer
 import akka.stream.alpakka.google.http.GoogleHttp
-import akka.stream.alpakka.google.util.{AnnotateLast, MaybeLast}
+import akka.stream.alpakka.google.util.{AnnotateLast, EitherFlow, MaybeLast}
 import akka.stream.scaladsl.{Flow, RetryFlow, Source}
 import akka.util.ByteString
 
@@ -105,21 +104,29 @@ private[alpakka] object ResumableUpload {
 
   private def uploadChunk[T: FromResponseUnmarshaller](
       request: HttpRequest
-  )(implicit mat: Materializer, settings: GoogleSettings): Flow[Either[T, MaybeLast[Chunk]], Try[T], NotUsed] = {
+  )(implicit mat: Materializer): Flow[Either[T, MaybeLast[Chunk]], Try[T], NotUsed] = {
     implicit val system = mat.system
 
-    Flow[Either[T, MaybeLast[Chunk]]].mapAsync(1) {
-      case Left(result) => Future.successful(Success(result))
-      case Right(maybeLast @ MaybeLast(Chunk(bytes, position))) =>
-        val totalLength = if (maybeLast.isLast) Some(position + bytes.length) else None
-        val uploadRequest = request
-          .addHeader(`Content-Range`(ContentRange(position, position + bytes.length - 1, totalLength)))
-          .withEntity(bytes)
+    import implicits._
+    val um = implicitly[FromResponseUnmarshaller[T]].withoutRetries
 
-        GoogleHttp()
-          .singleAuthenticatedRequest[T](uploadRequest)
-          .transform(Success(_))(ExecutionContexts.parasitic)
+    val pool = {
+      val authority = request.uri.authority
+      Flow[HttpRequest]
+        .map((_, ()))
+        .via(GoogleHttp().cachedHostConnectionPoolWithContext(authority.host.address, authority.port)(um))
+        .map(_._1)
     }
+
+    EitherFlow(
+      Flow[T].map(Success(_): Try[T]),
+      Flow[MaybeLast[Chunk]].map {
+        case maybeLast @ MaybeLast(Chunk(bytes, position)) =>
+          val totalLength = if (maybeLast.isLast) Some(position + bytes.length) else None
+          val header = `Content-Range`(ContentRange(position, position + bytes.length - 1, totalLength))
+          request.addHeader(header).withEntity(bytes)
+      } via pool
+    ).map(_.merge).mapMaterializedValue(_ => NotUsed)
   }
 
   private val statusRequestHeader = RawHeader("Content-Range", "bytes */*")
