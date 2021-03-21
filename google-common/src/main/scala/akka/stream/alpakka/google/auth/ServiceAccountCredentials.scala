@@ -7,7 +7,7 @@ package akka.stream.alpakka.google.auth
 import akka.actor.{ActorContext, ClassicActorSystemProvider, Props}
 import akka.annotation.InternalApi
 import akka.stream.Materializer
-import akka.stream.alpakka.google.GoogleSettings
+import akka.stream.alpakka.google.RequestSettings
 import com.typesafe.config.Config
 import spray.json.DefaultJsonProtocol._
 import spray.json.{JsonParser, RootJsonFormat}
@@ -60,7 +60,8 @@ private[alpakka] object ServiceAccountCredentials {
 private final class ServiceAccountCredentials(clientEmail: String, privateKey: String, scopes: Seq[String])
     extends OAuth2CredentialsActor {
 
-  override protected def getAccessToken()(implicit ctx: ActorContext, settings: GoogleSettings): Future[AccessToken] = {
+  override protected def getAccessToken()(implicit ctx: ActorContext,
+                                          settings: RequestSettings): Future[AccessToken] = {
     implicit val mat = Materializer(ctx)
     GoogleOAuth2.getAccessToken(clientEmail, privateKey, scopes)
   }

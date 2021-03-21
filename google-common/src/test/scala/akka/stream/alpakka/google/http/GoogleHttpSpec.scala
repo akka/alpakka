@@ -17,7 +17,7 @@ import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.{HttpExt, HttpsConnectionContext}
 import akka.stream.alpakka.google.auth.{Credentials, GoogleOAuth2Exception}
 import akka.stream.alpakka.google.implicits._
-import akka.stream.alpakka.google.{GoogleHttpException, GoogleSettings}
+import akka.stream.alpakka.google.{GoogleHttpException, GoogleSettings, RequestSettings}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.testkit.TestKit
 import com.github.ghik.silencer.silent
@@ -66,6 +66,8 @@ class GoogleHttpSpec
       .mapMaterializedValue(_ => mock[HostConnectionPool]), Nil: _*): @silent("dead code")
     http
   }
+
+  implicit val settings = GoogleSettings().requestSettings
 
   "GoogleHttp" must {
 
@@ -155,7 +157,7 @@ class GoogleHttpSpec
       final class AnotherException extends RuntimeException
 
       val credentials = mock[Credentials]
-      when(credentials.getToken()(any[ExecutionContext], any[GoogleSettings])) thenReturn (
+      when(credentials.getToken()(any[ExecutionContext], any[RequestSettings])) thenReturn (
         Future.failed(GoogleOAuth2Exception(ErrorInfo())),
         Future.failed(new AnotherException),
       )

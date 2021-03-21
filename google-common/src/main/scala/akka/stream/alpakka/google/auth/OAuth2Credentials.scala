@@ -9,7 +9,7 @@ import akka.actor.{Actor, ActorContext, ActorRef}
 import akka.annotation.InternalApi
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.pattern.pipe
-import akka.stream.alpakka.google.GoogleSettings
+import akka.stream.alpakka.google.RequestSettings
 import akka.stream.alpakka.google.auth.OAuth2Credentials.{ForceRefresh, TokenRequest}
 import com.google.auth.{Credentials => GoogleCredentials}
 
@@ -19,14 +19,14 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 
 @InternalApi
 private[auth] object OAuth2Credentials {
-  final case class TokenRequest(promise: Promise[OAuth2BearerToken], settings: GoogleSettings)
+  final case class TokenRequest(promise: Promise[OAuth2BearerToken], settings: RequestSettings)
   final case object ForceRefresh
 }
 
 @InternalApi
 private[auth] final class OAuth2Credentials(val projectId: String, credentials: ActorRef) extends Credentials {
 
-  override def getToken()(implicit ec: ExecutionContext, settings: GoogleSettings): Future[OAuth2BearerToken] = {
+  override def getToken()(implicit ec: ExecutionContext, settings: RequestSettings): Future[OAuth2BearerToken] = {
     val token = Promise[OAuth2BearerToken]()
     credentials ! TokenRequest(token, settings)
     token.future
@@ -34,7 +34,7 @@ private[auth] final class OAuth2Credentials(val projectId: String, credentials: 
 
   def refresh(): Unit = credentials ! ForceRefresh
 
-  override def asGoogle(implicit ec: ExecutionContext, settings: GoogleSettings): GoogleCredentials =
+  override def asGoogle(implicit ec: ExecutionContext, settings: RequestSettings): GoogleCredentials =
     new GoogleOAuth2Credentials(this)(ec, settings)
 }
 
@@ -92,5 +92,5 @@ private[auth] abstract class OAuth2CredentialsActor extends Actor {
 
   }
 
-  protected def getAccessToken()(implicit ctx: ActorContext, settings: GoogleSettings): Future[AccessToken]
+  protected def getAccessToken()(implicit ctx: ActorContext, settings: RequestSettings): Future[AccessToken]
 }

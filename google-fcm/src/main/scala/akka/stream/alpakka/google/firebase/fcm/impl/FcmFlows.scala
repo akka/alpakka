@@ -62,10 +62,11 @@ private[fcm] object FcmFlows {
             scopes
           )(mat.system)
         }
-    val forwardProxy = conf.forwardProxy.map(_.toCommonForwardProxy(mat.system)).orElse(settings.forwardProxy)
+    val forwardProxy =
+      conf.forwardProxy.map(_.toCommonForwardProxy(mat.system)).orElse(settings.requestSettings.forwardProxy)
     settings.copy(
       credentials = credentials,
-      forwardProxy = forwardProxy
+      requestSettings = settings.requestSettings.copy(forwardProxy = forwardProxy)
     )
   }
 }

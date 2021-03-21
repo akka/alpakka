@@ -319,9 +319,7 @@ import scala.concurrent.Future
       GoogleSettings(
         legacySettings.projectId,
         credentials,
-        settings.requestSettings,
-        settings.retrySettings,
-        settings.forwardProxy
+        settings.requestSettings
       )
     }
   }

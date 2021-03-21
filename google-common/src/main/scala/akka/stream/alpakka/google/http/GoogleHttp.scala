@@ -12,7 +12,7 @@ import akka.http.scaladsl.model.headers.Authorization
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.unmarshalling.{FromResponseUnmarshaller, Unmarshal}
 import akka.http.scaladsl.{Http, HttpExt}
-import akka.stream.alpakka.google.{GoogleAttributes, GoogleSettings, RetrySettings}
+import akka.stream.alpakka.google.{GoogleAttributes, GoogleSettings, RequestSettings, RetrySettings}
 import akka.stream.alpakka.google.util.Retry
 import akka.stream.scaladsl.{Flow, FlowWithContext, Keep, RetryFlow}
 
@@ -42,7 +42,7 @@ private[alpakka] final class GoogleHttp private (val http: HttpExt) extends AnyV
   /**
    * Sends a single [[HttpRequest]] and returns the raw [[HttpResponse]].
    */
-  def singleRawRequest(request: HttpRequest)(implicit settings: GoogleSettings): Future[HttpResponse] = {
+  def singleRawRequest(request: HttpRequest)(implicit settings: RequestSettings): Future[HttpResponse] = {
     val requestWithStandardParams = addStandardQuery(request)
     settings.forwardProxy.fold(http.singleRequest(requestWithStandardParams)) { proxy =>
       http.singleRequest(requestWithStandardParams, proxy.connectionContext, proxy.poolSettings)
@@ -54,7 +54,7 @@ private[alpakka] final class GoogleHttp private (val http: HttpExt) extends AnyV
    * Retries the request if the [[FromResponseUnmarshaller]] throws a [[akka.stream.alpakka.google.util.Retry]].
    */
   def singleRequest[T](request: HttpRequest)(
-      implicit settings: GoogleSettings,
+      implicit settings: RequestSettings,
       um: FromResponseUnmarshaller[T]
   ): Future[T] = Retry(settings.retrySettings) {
     singleRawRequest(request).flatMap(Unmarshal(_).to[T])(ExecutionContexts.parasitic)
@@ -67,7 +67,8 @@ private[alpakka] final class GoogleHttp private (val http: HttpExt) extends AnyV
   def singleAuthenticatedRequest[T](request: HttpRequest)(
       implicit settings: GoogleSettings,
       um: FromResponseUnmarshaller[T]
-  ): Future[T] = Retry(settings.retrySettings) {
+  ): Future[T] = Retry(settings.requestSettings.retrySettings) {
+    implicit val requestSettings = settings.requestSettings
     addAuth(request).flatMap(singleRequest(_))(ExecutionContexts.parasitic)
   }
 
@@ -114,7 +115,7 @@ private[alpakka] final class GoogleHttp private (val http: HttpExt) extends AnyV
         else
           FlowWithContext[HttpRequest, Ctx]
 
-      val requestFlow = settings.forwardProxy match {
+      val requestFlow = settings.requestSettings.forwardProxy match {
         case None if !https =>
           http.cachedHostConnectionPool[Ctx](host, p)
         case Some(proxy) if !https =>
@@ -136,7 +137,7 @@ private[alpakka] final class GoogleHttp private (val http: HttpExt) extends AnyV
 
       val flow = uriFlow.via(authFlow).viaMat(requestFlow)(Keep.right).via(unmarshalFlow).asFlow
 
-      val RetrySettings(maxRetries, minBackoff, maxBackoff, randomFactor) = settings.retrySettings
+      val RetrySettings(maxRetries, minBackoff, maxBackoff, randomFactor) = settings.requestSettings.retrySettings
       RetryFlow.withBackoff(minBackoff, maxBackoff, randomFactor, maxRetries, flow) {
         case (in, (Failure(Retry(_)), _)) => Some(in)
         case _ => None
@@ -158,6 +159,7 @@ private[alpakka] final class GoogleHttp private (val http: HttpExt) extends AnyV
     )
 
   private def addAuth(request: HttpRequest)(implicit settings: GoogleSettings): Future[HttpRequest] = {
+    implicit val requestSettings = settings.requestSettings
     settings.credentials
       .getToken()
       .map { token =>

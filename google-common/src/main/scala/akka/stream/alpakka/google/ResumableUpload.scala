@@ -75,7 +75,7 @@ private[alpakka] object ResumableUpload {
               val request = HttpRequest(PUT, uri)
               val flow = Flow[Future[Either[T, MaybeLast[Chunk]]]].mapAsync(1)(identity).via(uploadChunk(request))
 
-              import settings.retrySettings._
+              import settings.requestSettings.retrySettings._
               RetryFlow.withBackoff(minBackoff, maxBackoff, randomFactor, maxRetries, flow) {
                 case (_, Success(_)) => None
                 case (chunk, Failure(_)) => Some(updatePosition(request, chunk.map(_.right.get)))

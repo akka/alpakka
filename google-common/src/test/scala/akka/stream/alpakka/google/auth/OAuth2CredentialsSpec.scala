@@ -7,7 +7,7 @@ package akka.stream.alpakka.google.auth
 import akka.actor.{ActorContext, ActorSystem, Props}
 import akka.http.scaladsl.model.ErrorInfo
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import akka.stream.alpakka.google.GoogleSettings
+import akka.stream.alpakka.google.{GoogleSettings, RequestSettings}
 import akka.stream.alpakka.google.auth.OAuth2Credentials.TokenRequest
 import akka.testkit.TestKit
 import org.scalatest.BeforeAndAfterAll
@@ -32,7 +32,7 @@ class OAuth2CredentialsSpec
     super.afterAll()
   }
 
-  implicit val settings = GoogleSettings()
+  implicit val settings = GoogleSettings().requestSettings
   implicit val clock = Clock.systemUTC()
 
   object AccessTokenProvider {
@@ -43,7 +43,7 @@ class OAuth2CredentialsSpec
     Props {
       new OAuth2CredentialsActor {
         override protected def getAccessToken()(implicit ctx: ActorContext,
-                                                settings: GoogleSettings): Future[AccessToken] = {
+                                                settings: RequestSettings): Future[AccessToken] = {
           AccessTokenProvider.accessTokenPromise.future
         }
       }

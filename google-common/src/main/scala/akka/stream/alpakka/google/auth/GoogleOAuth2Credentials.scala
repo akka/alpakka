@@ -5,7 +5,7 @@
 package akka.stream.alpakka.google.auth
 
 import akka.annotation.InternalApi
-import akka.stream.alpakka.google.GoogleSettings
+import akka.stream.alpakka.google.RequestSettings
 import com.google.auth.{RequestMetadataCallback, Credentials => GoogleCredentials}
 
 import java.net.URI
@@ -18,7 +18,7 @@ import scala.util.{Failure, Success}
 @InternalApi
 private[auth] final class GoogleOAuth2Credentials(credentials: OAuth2Credentials)(
     implicit ec: ExecutionContext,
-    settings: GoogleSettings
+    settings: RequestSettings
 ) extends GoogleCredentials {
 
   override def getAuthenticationType: String = "OAuth2"

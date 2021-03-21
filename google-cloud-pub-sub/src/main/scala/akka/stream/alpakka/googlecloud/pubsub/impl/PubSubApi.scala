@@ -138,6 +138,7 @@ private[pubsub] trait PubSubApi {
       .fromMaterializer { (mat, attr) =>
         import mat.executionContext
         implicit val settings = GoogleAttributes.resolveSettings(mat, attr)
+        implicit val requestSettings = settings.requestSettings
 
         val url: Uri = Uri.from(
           scheme = scheme,
@@ -176,6 +177,7 @@ private[pubsub] trait PubSubApi {
       .fromMaterializer { (mat, attr) =>
         import mat.executionContext
         implicit val settings = GoogleAttributes.resolveSettings(mat, attr)
+        implicit val requestSettings = settings.requestSettings
 
         val url: Uri = Uri.from(
           scheme = scheme,

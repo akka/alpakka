@@ -7,23 +7,19 @@ package akka.stream.alpakka.googlecloud.bigquery.scaladsl
 import _root_.spray.json._
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import akka.stream.alpakka.google.auth.Credentials
+import akka.stream.alpakka.google.auth.NoCredentials
 import akka.stream.alpakka.google.{GoogleAttributes, GoogleSettings}
 import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.JobReference
 import akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse
 import akka.stream.alpakka.googlecloud.bigquery.{BigQueryEndpoints, HoverflySupport}
 import akka.stream.scaladsl.Sink
 import akka.testkit.TestKit
-import com.google.auth
 import io.specto.hoverfly.junit.core.SimulationSource.dsl
 import io.specto.hoverfly.junit.dsl.HoverflyDsl.service
 import io.specto.hoverfly.junit.dsl.ResponseCreators.success
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpecLike
-
-import scala.concurrent.{ExecutionContext, Future}
 
 class BigQueryQueriesSpec
     extends TestKit(ActorSystem("BigQueryQueriesSpec"))
@@ -44,13 +40,7 @@ class BigQueryQueriesSpec
     jsonFormat10(QueryResponse[T])
   }
 
-  implicit val settings = GoogleSettings()
-    .copy(credentials = new Credentials {
-      override def projectId: String = ???
-      override def getToken()(implicit ec: ExecutionContext, settings: GoogleSettings): Future[OAuth2BearerToken] =
-        Future.successful(OAuth2BearerToken("yyyy.c.an-access-token"))
-      override def asGoogle(implicit ec: ExecutionContext, settings: GoogleSettings): auth.Credentials = ???
-    })
+  implicit val settings = GoogleSettings().copy(credentials = NoCredentials("", ""))
 
   val jobId = "jobId"
   val pageToken = "pageToken"

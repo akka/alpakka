@@ -67,6 +67,7 @@ class GoogleOAuth2Spec
         )
       )
 
+      implicit val settings = GoogleSettings().requestSettings
       GoogleOAuth2.getAccessToken("email", privateKey, scopes).futureValue should matchPattern {
         case AccessToken("token", exp) if exp > (System.currentTimeMillis / 1000L + 3000L) =>
       }

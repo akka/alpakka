@@ -33,14 +33,8 @@ object GoogleSettings {
 
     val credentials = Credentials(c.getConfig("credentials"))
     val requestSettings = RequestSettings(c)
-    val retrySettings = RetrySettings(c.getConfig("retry-settings"))
-    val maybeForwardProxy =
-      if (c.hasPath("forward-proxy"))
-        Some(ForwardProxy(c.getConfig("forward-proxy")))
-      else
-        None
 
-    GoogleSettings(credentials.projectId, credentials, requestSettings, retrySettings, maybeForwardProxy)
+    GoogleSettings(credentials.projectId, credentials, requestSettings)
   }
 
   /**
@@ -81,25 +75,17 @@ object GoogleSettings {
   /**
    * Java API
    */
-  def create(projectId: String,
-             credentials: Credentials,
-             requestSettings: RequestSettings,
-             retrySettings: RetrySettings,
-             forwardProxy: Optional[ForwardProxy]) =
-    GoogleSettings(projectId, credentials, requestSettings, retrySettings, forwardProxy.asScala)
+  def create(projectId: String, credentials: Credentials, requestSettings: RequestSettings) =
+    GoogleSettings(projectId, credentials, requestSettings)
 
 }
 
 final case class GoogleSettings @InternalApi private (projectId: String,
                                                       credentials: Credentials,
-                                                      requestSettings: RequestSettings,
-                                                      retrySettings: RetrySettings,
-                                                      forwardProxy: Option[ForwardProxy]) {
+                                                      requestSettings: RequestSettings) {
   def getProjectId = projectId
   def getCredentials = credentials
   def getRequestSettings = requestSettings
-  def getRetrySettings = retrySettings
-  def getForwardProxy = forwardProxy
 
   def withProjectId(projectId: String) =
     copy(projectId = projectId)
@@ -107,10 +93,118 @@ final case class GoogleSettings @InternalApi private (projectId: String,
     copy(credentials = credentials)
   def withRequestSettings(requestSettings: RequestSettings) =
     copy(requestSettings = requestSettings)
+}
+
+object RequestSettings {
+
+  def apply(c: Config)(implicit system: ClassicActorSystemProvider): RequestSettings = {
+    val retrySettings = RetrySettings(c.getConfig("retry-settings"))
+    val maybeForwardProxy =
+      if (c.hasPath("forward-proxy"))
+        Some(ForwardProxy(c.getConfig("forward-proxy")))
+      else
+        None
+    RequestSettings(
+      Some(c.getString("user-ip")).filterNot(_.isEmpty),
+      Some(c.getString("quota-user")).filterNot(_.isEmpty),
+      c.getBoolean("pretty-print"),
+      java.lang.Math.toIntExact(c.getBytes("upload-chunk-size")),
+      retrySettings,
+      maybeForwardProxy
+    )
+  }
+
+  def create(config: Config)(implicit system: ClassicActorSystemProvider) = apply(config)
+
+  def create(userIp: Optional[String],
+             quotaUser: Optional[String],
+             prettyPrint: Boolean,
+             chunkSize: Int,
+             retrySettings: RetrySettings,
+             forwardProxy: Optional[ForwardProxy]) =
+    apply(userIp.asScala, quotaUser.asScala, prettyPrint, chunkSize, retrySettings, forwardProxy.asScala)
+}
+
+final case class RequestSettings @InternalApi private (
+    userIp: Option[String],
+    quotaUser: Option[String],
+    prettyPrint: Boolean,
+    uploadChunkSize: Int,
+    retrySettings: RetrySettings,
+    forwardProxy: Option[ForwardProxy]
+) {
+
+  require(
+    (uploadChunkSize >= (256 * 1024)) & (uploadChunkSize % (256 * 1024) == 0),
+    "Chunk size must be a multiple of 256 KiB"
+  )
+
+  def getUserIp = userIp.asJava
+  def getQuotaUser = quotaUser.asJava
+  def getPrettyPrint = prettyPrint
+  def getUploadChunkSize = uploadChunkSize
+  def getRetrySettings = retrySettings
+  def getForwardProxy = forwardProxy
+
+  def withUserIp(userIp: Optional[String]) =
+    copy(userIp = userIp.asScala)
+  def withQuotaUser(quotaUser: Optional[String]) =
+    copy(quotaUser = quotaUser.asScala)
+  def withPrettyPrint(prettyPrint: Boolean) =
+    copy(prettyPrint = prettyPrint)
+  def withUploadChunkSize(uploadChunkSize: Int) =
+    copy(uploadChunkSize = uploadChunkSize)
   def withRetrySettings(retrySettings: RetrySettings) =
     copy(retrySettings = retrySettings)
   def withForwardProxy(forwardProxy: Optional[ForwardProxy]) =
     copy(forwardProxy = forwardProxy.asScala)
+
+  // Cache query string
+  private[google] def query =
+    ("prettyPrint" -> prettyPrint.toString) +: ("userIp" -> userIp) ?+: ("quotaUser" -> quotaUser) ?+: Query.Empty
+  private[google] val queryString = query.toString
+  private[google] val `&queryString` = "&".concat(queryString)
+}
+
+object RetrySettings {
+
+  def apply(config: Config): RetrySettings = {
+    RetrySettings(
+      config.getInt("max-retries"),
+      config.getDuration("min-backoff").asScala,
+      config.getDuration("max-backoff").asScala,
+      config.getDouble("random-factor")
+    )
+  }
+
+  def create(config: Config) = apply(config)
+
+  def create(maxRetries: Int, minBackoff: time.Duration, maxBackoff: time.Duration, randomFactor: Double) =
+    apply(
+      maxRetries,
+      minBackoff.asScala,
+      maxBackoff.asScala,
+      randomFactor
+    )
+}
+
+final case class RetrySettings @InternalApi private (maxRetries: Int,
+                                                     minBackoff: FiniteDuration,
+                                                     maxBackoff: FiniteDuration,
+                                                     randomFactor: Double) {
+  def getMaxRetries = maxRetries
+  def getMinBackoff = minBackoff.asJava
+  def getMaxBackoff = maxBackoff.asJava
+  def getRandomFactor = randomFactor
+
+  def withMaxRetries(maxRetries: Int) =
+    copy(maxRetries = maxRetries)
+  def withMinBackoff(minBackoff: time.Duration) =
+    copy(minBackoff = minBackoff.asScala)
+  def withMaxBackoff(maxBackoff: time.Duration) =
+    copy(maxBackoff = maxBackoff.asScala)
+  def withRandomFactor(randomFactor: Double) =
+    copy(randomFactor = randomFactor)
 }
 
 object ForwardProxy {
@@ -168,95 +262,4 @@ final case class ForwardProxy @InternalApi private (connectionContext: HttpsConn
     copy(connectionContext = connectionContext.asInstanceOf[HttpsConnectionContext])
   def withPoolSettings(poolSettings: jh.settings.ConnectionPoolSettings) =
     copy(poolSettings = poolSettings.asInstanceOf[ConnectionPoolSettings])
-}
-
-object RequestSettings {
-
-  def apply(config: Config): RequestSettings = {
-    RequestSettings(
-      Some(config.getString("user-ip")).filterNot(_.isEmpty),
-      Some(config.getString("quota-user")).filterNot(_.isEmpty),
-      config.getBoolean("pretty-print"),
-      java.lang.Math.toIntExact(config.getBytes("upload-chunk-size"))
-    )
-  }
-
-  def create(config: Config) = apply(config)
-
-  def create(userIp: Optional[String], quotaUser: Optional[String], prettyPrint: Boolean, chunkSize: Int) =
-    apply(userIp.asScala, quotaUser.asScala, prettyPrint, chunkSize)
-}
-
-final case class RequestSettings @InternalApi private (
-    userIp: Option[String],
-    quotaUser: Option[String],
-    prettyPrint: Boolean,
-    uploadChunkSize: Int
-) {
-
-  require(
-    (uploadChunkSize >= (256 * 1024)) & (uploadChunkSize % (256 * 1024) == 0),
-    "Chunk size must be a multiple of 256 KiB"
-  )
-
-  def getUserIp = userIp.asJava
-  def getQuotaUser = quotaUser.asJava
-  def getPrettyPrint = prettyPrint
-  def getUploadChunkSize = uploadChunkSize
-
-  def withUserIp(userIp: Optional[String]) =
-    copy(userIp = userIp.asScala)
-  def withQuotaUser(quotaUser: Optional[String]) =
-    copy(quotaUser = quotaUser.asScala)
-  def withPrettyPrint(prettyPrint: Boolean) =
-    copy(prettyPrint = prettyPrint)
-  def withUploadChunkSize(uploadChunkSize: Int) =
-    copy(uploadChunkSize = uploadChunkSize)
-
-  // Cache query string
-  private[google] def query =
-    ("prettyPrint" -> prettyPrint.toString) +: ("userIp" -> userIp) ?+: ("quotaUser" -> quotaUser) ?+: Query.Empty
-  private[google] val queryString = query.toString
-  private[google] val `&queryString` = "&".concat(queryString)
-}
-
-object RetrySettings {
-
-  def apply(config: Config): RetrySettings = {
-    RetrySettings(
-      config.getInt("max-retries"),
-      config.getDuration("min-backoff").asScala,
-      config.getDuration("max-backoff").asScala,
-      config.getDouble("random-factor")
-    )
-  }
-
-  def create(config: Config) = apply(config)
-
-  def create(maxRetries: Int, minBackoff: time.Duration, maxBackoff: time.Duration, randomFactor: Double) =
-    apply(
-      maxRetries,
-      minBackoff.asScala,
-      maxBackoff.asScala,
-      randomFactor
-    )
-}
-
-final case class RetrySettings @InternalApi private (maxRetries: Int,
-                                                     minBackoff: FiniteDuration,
-                                                     maxBackoff: FiniteDuration,
-                                                     randomFactor: Double) {
-  def getMaxRetries = maxRetries
-  def getMinBackoff = minBackoff.asJava
-  def getMaxBackoff = maxBackoff.asJava
-  def getRandomFactor = randomFactor
-
-  def withMaxRetries(maxRetries: Int) =
-    copy(maxRetries = maxRetries)
-  def withMinBackoff(minBackoff: time.Duration) =
-    copy(minBackoff = minBackoff.asScala)
-  def withMaxBackoff(maxBackoff: time.Duration) =
-    copy(maxBackoff = maxBackoff.asScala)
-  def withRandomFactor(randomFactor: Double) =
-    copy(randomFactor = randomFactor)
 }

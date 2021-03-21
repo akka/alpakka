@@ -86,7 +86,7 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
                 Source.empty
               else
                 jobReference.jobId.map { jobId =>
-                  import settings.retrySettings._
+                  import settings.requestSettings.retrySettings._
                   val pages = queryResultsPages[Out](jobId,
                                                      None,
                                                      query.maxResults,

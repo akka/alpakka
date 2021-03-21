@@ -7,7 +7,7 @@ package akka.stream.alpakka.google.auth
 import akka.actor.ClassicActorSystemProvider
 import akka.annotation.InternalApi
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import akka.stream.alpakka.google.GoogleSettings
+import akka.stream.alpakka.google.RequestSettings
 import akka.util.JavaDurationConverters._
 import com.google.auth.{Credentials => GoogleCredentials}
 import com.typesafe.config.Config
@@ -62,7 +62,7 @@ private[alpakka] trait Credentials {
 
   def projectId: String
 
-  def getToken()(implicit ec: ExecutionContext, settings: GoogleSettings): Future[OAuth2BearerToken]
+  def getToken()(implicit ec: ExecutionContext, settings: RequestSettings): Future[OAuth2BearerToken]
 
-  def asGoogle(implicit ec: ExecutionContext, settings: GoogleSettings): GoogleCredentials
+  def asGoogle(implicit ec: ExecutionContext, settings: RequestSettings): GoogleCredentials
 }
