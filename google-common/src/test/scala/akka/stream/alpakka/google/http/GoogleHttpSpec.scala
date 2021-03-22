@@ -157,7 +157,7 @@ class GoogleHttpSpec
       final class AnotherException extends RuntimeException
 
       val credentials = mock[Credentials]
-      when(credentials.getToken()(any[ExecutionContext], any[RequestSettings])) thenReturn (
+      when(credentials.get()(any[ExecutionContext], any[RequestSettings])) thenReturn (
         Future.failed(GoogleOAuth2Exception(ErrorInfo())),
         Future.failed(new AnotherException),
       )

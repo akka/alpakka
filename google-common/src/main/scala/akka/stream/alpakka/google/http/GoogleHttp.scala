@@ -161,7 +161,7 @@ private[alpakka] final class GoogleHttp private (val http: HttpExt) extends AnyV
   private def addAuth(request: HttpRequest)(implicit settings: GoogleSettings): Future[HttpRequest] = {
     implicit val requestSettings = settings.requestSettings
     settings.credentials
-      .getToken()
+      .get()
       .map { token =>
         request.addHeader(Authorization(token))
       }(ExecutionContexts.parasitic)

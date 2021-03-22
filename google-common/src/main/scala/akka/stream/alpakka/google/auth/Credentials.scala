@@ -5,20 +5,24 @@
 package akka.stream.alpakka.google.auth
 
 import akka.actor.ClassicActorSystemProvider
-import akka.annotation.InternalApi
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import akka.annotation.DoNotInherit
+import akka.http.scaladsl.model.headers.HttpCredentials
 import akka.stream.alpakka.google.RequestSettings
 import akka.util.JavaDurationConverters._
 import com.google.auth.{Credentials => GoogleCredentials}
 import com.typesafe.config.Config
 
+import java.util.concurrent.Executor
 import scala.collection.immutable.ListMap
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.control.NonFatal
 
-@InternalApi
-private[alpakka] object Credentials {
+object Credentials {
 
+  /**
+   * Creates [[Credentials]] to access Google APIs from a given configuration.
+   * Assume that construction is "resource-heavy" (e.g. spawns actors) so prefer to cache and reuse.
+   */
   def apply(c: Config)(implicit system: ClassicActorSystemProvider): Credentials = c.getString("provider") match {
     case "application-default" =>
       try {
@@ -57,12 +61,28 @@ private[alpakka] object Credentials {
 
 }
 
-@InternalApi
-private[alpakka] trait Credentials {
+/**
+ * Credentials for accessing Google APIs
+ */
+@DoNotInherit
+abstract class Credentials private[auth] () {
 
-  def projectId: String
+  private[google] def projectId: String
 
-  def getToken()(implicit ec: ExecutionContext, settings: RequestSettings): Future[OAuth2BearerToken]
+  private[google] def get()(implicit ec: ExecutionContext, settings: RequestSettings): Future[HttpCredentials]
 
+  /**
+   * Wraps these credentials as a [[com.google.auth.Credentials]] for interop with Google's Java client libraries.
+   * @param ec the [[ExecutionContext]] to use for blocking requests if credentials are requested synchronously
+   * @param settings additional request settings
+   */
   def asGoogle(implicit ec: ExecutionContext, settings: RequestSettings): GoogleCredentials
+
+  /**
+   * Java API: Wraps these credentials as a [[com.google.auth.Credentials]] for interop with Google's Java client libraries.
+   * @param exec the [[Executor]] to use for blocking requests if credentials are requested synchronously
+   * @param settings additional request settings
+   */
+  final def asGoogle(exec: Executor, settings: RequestSettings): GoogleCredentials =
+    asGoogle(ExecutionContext.fromExecutor(exec): ExecutionContext, settings)
 }

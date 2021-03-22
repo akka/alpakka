@@ -26,7 +26,7 @@ private[auth] object OAuth2Credentials {
 @InternalApi
 private[auth] final class OAuth2Credentials(val projectId: String, credentials: ActorRef) extends Credentials {
 
-  override def getToken()(implicit ec: ExecutionContext, settings: RequestSettings): Future[OAuth2BearerToken] = {
+  override def get()(implicit ec: ExecutionContext, settings: RequestSettings): Future[OAuth2BearerToken] = {
     val token = Promise[OAuth2BearerToken]()
     credentials ! TokenRequest(token, settings)
     token.future
