@@ -6,12 +6,13 @@ package akka.stream.alpakka.s3
 
 import java.util.{Objects, Optional}
 
-import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.{DateTime, HttpHeader, IllegalUriException, Uri}
+import akka.http.scaladsl.model.headers._
+import akka.stream.alpakka.s3.AccessStyle.PathAccessStyle
 
-import scala.collection.JavaConverters._
-import scala.collection.immutable
 import scala.collection.immutable.Seq
+import scala.collection.immutable
+import scala.collection.JavaConverters._
 import scala.compat.java8.OptionConverters._
 
 final class MultipartUploadResult private (
@@ -580,13 +581,22 @@ object BucketAndKey {
   }
 
   private[s3] def validateBucketName(bucket: String, conf: S3Settings): Unit = {
-    bucketRegexDns.findFirstIn(bucket) match {
-      case Some(illegalCharacter) =>
+    if (conf.accessStyle == PathAccessStyle) {
+      if (!pathStyleValid(bucket)) {
         throw IllegalUriException(
-          "Bucket name contains non-LDH characters",
-          s"The following character is not allowed: $illegalCharacter"
+          "The bucket name contains sub-dir selection with `..`",
+          "Selecting sub-directories with `..` is forbidden (and won't work with non-path-style access)."
         )
-      case None => ()
+      }
+    } else {
+      bucketRegexDns.findFirstIn(bucket) match {
+        case Some(illegalCharacter) =>
+          throw IllegalUriException(
+            "Bucket name contains non-LDH characters",
+            s"The following character is not allowed: $illegalCharacter"
+          )
+        case None => ()
+      }
     }
   }
 

@@ -11,6 +11,7 @@ import java.util.{Objects, Optional}
 
 import akka.actor.{ActorSystem, ClassicActorSystemProvider}
 import akka.http.scaladsl.model.Uri
+import akka.stream.alpakka.s3.AccessStyle.{PathAccessStyle, VirtualHostAccessStyle}
 import com.typesafe.config.Config
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.auth.credentials._
@@ -209,6 +210,21 @@ object ApiVersion {
   def getListBucketVersion2: ListBucketVersion2 = ListBucketVersion2
 }
 
+sealed abstract class AccessStyle
+object AccessStyle {
+  sealed abstract class PathAccessStyle extends AccessStyle
+  case object PathAccessStyle extends PathAccessStyle
+
+  /** Java API */
+  def pathAccessStyle: PathAccessStyle = PathAccessStyle
+
+  sealed abstract class VirtualHostAccessStyle extends AccessStyle
+  case object VirtualHostAccessStyle extends VirtualHostAccessStyle
+
+  /** Java API */
+  def virtualHostAccessStyle: VirtualHostAccessStyle = VirtualHostAccessStyle
+}
+
 final class RetrySettings private (val maxRetries: Int,
                                    val minBackoff: FiniteDuration,
                                    val maxBackoff: FiniteDuration,
@@ -328,6 +344,7 @@ final class S3Settings private (
     val bufferType: BufferType,
     val credentialsProvider: AwsCredentialsProvider,
     val s3RegionProvider: AwsRegionProvider,
+    val accessStyle: AccessStyle,
     val endpointUrl: Option[String],
     val listBucketApiVersion: ApiVersion,
     val forwardProxy: Option[ForwardProxy],
@@ -346,6 +363,14 @@ final class S3Settings private (
   def getS3RegionProvider: AwsRegionProvider = s3RegionProvider
 
   /** Java API */
+  def isPathStyleAccess: Boolean = accessStyle == PathAccessStyle
+
+  def pathStyleAccess: Boolean = accessStyle == PathAccessStyle
+
+  @deprecated("This is no longer configurable.", since = "2.0.2")
+  def pathStyleAccessWarning: Boolean = true
+
+  /** Java API */
   def getEndpointUrl: java.util.Optional[String] = endpointUrl.asJava
 
   /** Java API */
@@ -353,6 +378,9 @@ final class S3Settings private (
 
   /** Java API */
   def getForwardProxy: java.util.Optional[ForwardProxy] = forwardProxy.asJava
+
+  /** Java API */
+  def getAccessStyle: AccessStyle = accessStyle
 
   /** Java API */
   def getRetrySettings: RetrySettings = retrySettings
@@ -365,6 +393,9 @@ final class S3Settings private (
   def withCredentialsProvider(value: AwsCredentialsProvider): S3Settings =
     copy(credentialsProvider = value)
   def withS3RegionProvider(value: AwsRegionProvider): S3Settings = copy(s3RegionProvider = value)
+
+  def withAccessStyle(value: AccessStyle): S3Settings =
+    if (accessStyle == value) this else copy(accessStyle = value);
 
   def withEndpointUrl(value: String): S3Settings = copy(endpointUrl = Option(value))
   def withListBucketApiVersion(value: ApiVersion): S3Settings =
@@ -382,6 +413,7 @@ final class S3Settings private (
       bufferType: BufferType = bufferType,
       credentialsProvider: AwsCredentialsProvider = credentialsProvider,
       s3RegionProvider: AwsRegionProvider = s3RegionProvider,
+      accessStyle: AccessStyle = accessStyle,
       endpointUrl: Option[String] = endpointUrl,
       listBucketApiVersion: ApiVersion = listBucketApiVersion,
       forwardProxy: Option[ForwardProxy] = forwardProxy,
@@ -392,6 +424,7 @@ final class S3Settings private (
     bufferType,
     credentialsProvider,
     s3RegionProvider,
+    accessStyle,
     endpointUrl,
     listBucketApiVersion,
     forwardProxy,
@@ -405,6 +438,7 @@ final class S3Settings private (
     s"bufferType=$bufferType," +
     s"credentialsProvider=$credentialsProvider," +
     s"s3RegionProvider=$s3RegionProvider," +
+    s"accessStyle=$accessStyle," +
     s"endpointUrl=$endpointUrl," +
     s"listBucketApiVersion=$listBucketApiVersion," +
     s"forwardProxy=$forwardProxy," +
@@ -417,6 +451,7 @@ final class S3Settings private (
       java.util.Objects.equals(this.bufferType, that.bufferType) &&
       Objects.equals(this.credentialsProvider, that.credentialsProvider) &&
       Objects.equals(this.s3RegionProvider, that.s3RegionProvider) &&
+      Objects.equals(this.accessStyle, that.accessStyle) &&
       Objects.equals(this.endpointUrl, that.endpointUrl) &&
       Objects.equals(this.listBucketApiVersion, that.listBucketApiVersion) &&
       Objects.equals(this.forwardProxy, that.forwardProxy) &&
@@ -431,6 +466,7 @@ final class S3Settings private (
       bufferType,
       credentialsProvider,
       s3RegionProvider,
+      accessStyle,
       endpointUrl,
       listBucketApiVersion,
       forwardProxy,
@@ -477,14 +513,46 @@ object S3Settings {
 
     if (c.hasPath("path-style-access"))
       log.warn(
-        "The deprecated (and removed since 3.0.0) 'path-style-access' property was used to specify access style. Please use 'access-style' instead."
+        "The deprecated 'path-style-access' property was used to specify access style. Please use 'access-style' instead."
       )
+
+    val deprecatedPathAccessStyleSetting = Try(c.getString("path-style-access")).toOption
+
+    val accessStyle = deprecatedPathAccessStyleSetting match {
+      case None | Some("") =>
+        c.getString("access-style") match {
+          case "virtual" => VirtualHostAccessStyle
+          case "path" => PathAccessStyle
+          case other =>
+            throw new IllegalArgumentException(s"'access-style' must be 'virtual' or 'path'. Got: [$other]")
+        }
+      case Some("true") | Some("force") => PathAccessStyle
+      case Some("false") => VirtualHostAccessStyle
+      case Some(other) =>
+        throw new IllegalArgumentException(
+          s"'path-style-access' must be 'false', 'true' or 'force'. Got: [$other]. Prefer using access-style instead."
+        )
+    }
 
     val endpointUrl = if (c.hasPath("endpoint-url")) {
       Option(c.getString("endpoint-url"))
     } else {
       None
     }.orElse(maybeProxy.map(p => s"${p.scheme}://${p.host}:${p.port}"))
+
+    if (endpointUrl.isEmpty && accessStyle == PathAccessStyle)
+      log.warn(
+        s"""It appears you are attempting to use AWS S3 with path-style access.
+          |Amazon had planned not to support path-style access to buckets created after September 30, 2020;
+          |see (https://aws.amazon.com/blogs/aws/amazon-s3-path-deprecation-plan-the-rest-of-the-story/).
+          |(Update, Sept 23, 2020) AWS has delayed this change indefinitely to give customers more time to
+          |migrate to virtual host-style access.
+          |
+          |Enable virtual host-style access by unsetting `$ConfigPath.path-style-access`,
+          |and leaving `$ConfigPath.access-style` on the default `virtual`.
+          |
+          |If your S3 provider is not AWS, you need to set `$ConfigPath.endpoint-url`.""".stripMargin
+      )
 
     val regionProvider = {
       val regionProviderPath = "aws.region.provider"
@@ -553,6 +621,7 @@ object S3Settings {
       bufferType,
       credentialsProvider,
       regionProvider,
+      accessStyle,
       endpointUrl,
       apiVersion,
       maybeForwardProxy,
@@ -577,6 +646,7 @@ object S3Settings {
     bufferType,
     credentialsProvider,
     s3RegionProvider,
+    accessStyle = VirtualHostAccessStyle,
     endpointUrl = None,
     listBucketApiVersion,
     forwardProxy = None,
