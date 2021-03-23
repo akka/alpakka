@@ -123,6 +123,7 @@ class IntegrationSpec
       result2.ensureSubscription()
       result2.expectNoMessage(2.seconds)
 
+      result2.cancel()
       stream.cancel()
     }
   }
