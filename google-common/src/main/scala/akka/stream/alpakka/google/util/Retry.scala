@@ -18,16 +18,23 @@ import scala.util.{Failure, Success, Try}
 /**
  * A wrapper for a [[Throwable]] indicating that it should be retried.
  */
-@InternalApi
-private[alpakka] case class Retry private (ex: Throwable) extends Throwable(ex) with NoStackTrace
+final case class Retry private (ex: Throwable) extends Throwable(ex) with NoStackTrace
 
-@InternalApi
-private[alpakka] object Retry {
+object Retry {
 
-  def apply(ex: Throwable): Retry = ex match {
-    case Retry(ex) => new Retry(ex)
-    case ex => new Retry(ex)
+  /**
+   * Attempts to wrap `ex` as a [[Retry]]. If `ex` is already a [[Retry]] or is fatal then it is not wrapped.
+   */
+  def apply(ex: Throwable): Throwable = ex match {
+    case retry @ Retry(_) => retry
+    case NonFatal(ex) => new Retry(ex)
+    case ex => ex
   }
+
+  /**
+   * Java API: Attempts to wrap `ex` as a [[Retry]]. If `ex` is already a [[Retry]] or is fatal then it is not wrapped.
+   */
+  def create(ex: Throwable): Throwable = apply(ex)
 
   /**
    * A wrapper around Akka's [[akka.pattern.RetrySupport]] which requires opt-in.
@@ -35,9 +42,10 @@ private[alpakka] object Retry {
    * Note that the exception will be unwrapped, should all the retry attempts fail
    * (i.e., this method will never raise a [[Retry]], only its underlying exception).
    */
-  def apply[T](retrySettings: RetrySettings)(future: => Future[T])(implicit ec: ExecutionContext,
-                                                                   scheduler: Scheduler): Future[T] = {
-    import retrySettings._
+  @InternalApi
+  private[alpakka] def apply[T](settings: RetrySettings)(future: => Future[T])(implicit ec: ExecutionContext,
+                                                                               scheduler: Scheduler): Future[T] = {
+    import settings._
     val futureBuilder = () =>
       future
         .map(Success(_))(ExecutionContexts.parasitic)

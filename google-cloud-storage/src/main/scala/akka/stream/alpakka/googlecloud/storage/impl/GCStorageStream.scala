@@ -17,10 +17,10 @@ import akka.stream.alpakka.google._
 import akka.stream.alpakka.google.auth.{Credentials, ServiceAccountCredentials}
 import akka.stream.alpakka.google.http.GoogleHttp
 import akka.stream.alpakka.google.implicits._
-import akka.stream.alpakka.google.scaladsl.Paginated
+import akka.stream.alpakka.google.scaladsl.{`X-Upload-Content-Type`, Paginated}
 import akka.stream.alpakka.googlecloud.storage._
 import akka.stream.alpakka.googlecloud.storage.impl.Formats._
-import akka.stream.scaladsl.{Keep, RunnableGraph, Sink, Source}
+import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source}
 import akka.stream.{Attributes, Materializer}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
@@ -140,27 +140,26 @@ import scala.concurrent.Future
           metadata.fold(HttpEntity.Empty)(m => HttpEntity(ContentTypes.`application/json`, m.toJson.toString))
         val request = HttpRequest(POST, uri, headers, entity)
 
-        implicit val um: Unmarshaller[HttpResponse, Option[StorageObject]] = Unmarshaller.withMaterializer {
+        implicit val um: Unmarshaller[HttpResponse, StorageObject] = Unmarshaller.withMaterializer {
           implicit ec => implicit mat =>
             {
-              // 308 Resume incomplete means that chunk was successfully transfered but more chunks are expected
-              case HttpResponse(StatusCodes.PermanentRedirect, _, entity, _) =>
-                entity.discardBytes().future().map(_ => None)
-              case HttpResponse(status, _, entity, _) if status.isSuccess() && !status.isRedirection() =>
-                Unmarshal(entity).to[StorageObject].map(Some(_))
+              case HttpResponse(status, _, entity, _) if status.isSuccess() =>
+                Unmarshal(entity).to[StorageObject]
               case HttpResponse(status, _, entity, _) =>
-                Unmarshal(entity).to[String].map { errorString =>
-                  throw new RuntimeException(s"Uploading part failed with status $status: $errorString")
+                Unmarshal(entity).to[String].flatMap { errorString =>
+                  Future.failed(new RuntimeException(s"Uploading part failed with status $status: $errorString"))
                 }
-            }
-        }
+            }: PartialFunction[HttpResponse, Future[StorageObject]]
+        }.withDefaultRetry
 
-        ResumableUpload[Option[StorageObject]](request)
-          .addAttributes(GoogleAttributes.settings(settings))
-          .collect {
-            case Some(storageObject) => storageObject
-          }
-          .toMat(Sink.last)(Keep.right)
+        // Workaround for https://github.com/akka/akka/issues/30141
+        // Sink.fromGraph(ResumableUpload[StorageObject](request)).addAttributes(GoogleAttributes.settings(settings))
+        Flow
+          .fromSinkAndSourceMat(
+            ResumableUpload[StorageObject](request).addAttributes(GoogleAttributes.settings(settings)),
+            Source.empty[Nothing]
+          )(Keep.left)
+          .to(Sink.ignore)
       }
       .mapMaterializedValue(_.flatten)
 

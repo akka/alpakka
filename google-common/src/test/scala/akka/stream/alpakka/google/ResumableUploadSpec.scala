@@ -8,7 +8,9 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.HttpMethods.POST
 import akka.http.scaladsl.model.{ContentTypes, HttpRequest, Uri}
-import akka.stream.scaladsl.{Keep, Sink, Source}
+import akka.http.scaladsl.unmarshalling.Unmarshaller
+import akka.stream.alpakka.google.scaladsl.`X-Upload-Content-Type`
+import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
 import akka.util.ByteString
 import io.specto.hoverfly.junit.core.SimulationSource.dsl
@@ -70,17 +72,19 @@ class ResumableUploadSpec
         )
       )
 
+      import implicits._
+      implicit val um =
+        Unmarshaller.messageUnmarshallerFromEntityUnmarshaller(sprayJsValueUnmarshaller).withDefaultRetry
+
       val result = Source
         .single(ByteString("helloworld"))
-        .via(
+        .runWith(
           ResumableUpload[JsValue](
             HttpRequest(POST,
                         Uri("https://example.com?uploadType=resumable"),
                         List(`X-Upload-Content-Type`(ContentTypes.`application/octet-stream`)))
           )
         )
-        .toMat(Sink.last)(Keep.right)
-        .run()
 
       result.futureValue shouldEqual JsObject.empty
     }

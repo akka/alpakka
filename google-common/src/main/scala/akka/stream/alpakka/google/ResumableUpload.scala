@@ -10,22 +10,16 @@ import akka.http.scaladsl.model.HttpMethods.{POST, PUT}
 import akka.http.scaladsl.model.StatusCodes.{Created, OK, PermanentRedirect}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.ByteRange.Slice
-import akka.http.scaladsl.model.headers.{
-  `Content-Range`,
-  Location,
-  ModeledCustomHeader,
-  ModeledCustomHeaderCompanion,
-  Range,
-  RawHeader
-}
+import akka.http.scaladsl.model.headers.{`Content-Range`, Location, Range, RawHeader}
 import akka.http.scaladsl.unmarshalling.{FromResponseUnmarshaller, Unmarshal, Unmarshaller}
 import akka.stream.Materializer
 import akka.stream.alpakka.google.http.GoogleHttp
-import akka.stream.alpakka.google.util.{AnnotateLast, EitherFlow, MaybeLast}
-import akka.stream.scaladsl.{Flow, RetryFlow, Source}
+import akka.stream.alpakka.google.util.{AnnotateLast, EitherFlow, MaybeLast, Retry}
+import akka.stream.scaladsl.{Flow, Keep, RetryFlow, Sink, Source}
 import akka.util.ByteString
 
 import scala.concurrent.Future
+import scala.util.control.{NoStackTrace, NonFatal}
 import scala.util.{Failure, Success, Try}
 
 @InternalApi
@@ -35,21 +29,21 @@ private[alpakka] object ResumableUpload {
   final case class UploadFailedException() extends Exception
   private final case class Chunk(bytes: ByteString, position: Long)
 
-  final case class `X-Upload-Content-Type`(value: ContentType)
-
-  def apply[T: FromResponseUnmarshaller](request: HttpRequest): Flow[ByteString, T, NotUsed] = {
+  /**
+   * Initializes and runs a resumable upload to a media endpoint.
+   *
+   * @see [[https://cloud.google.com/storage/docs/resumable-uploads Cloud Storage documentation]]
+   * @see [[https://cloud.google.com/bigquery/docs/reference/api-uploads BigQuery documentation]]
+   */
+  def apply[T: FromResponseUnmarshaller](request: HttpRequest): Sink[ByteString, Future[T]] = {
 
     require(request.method == POST, "Resumable upload must be initiated by POST request")
-    require(
-      request.headers.exists(_.lowercaseName() == "x-upload-content-type"),
-      "Resumable upload must specify `X-Upload-Content-Type` header"
-    )
     require(
       request.uri.rawQueryString.exists(_.contains("uploadType=resumable")),
       "Resumable upload must include query parameter `uploadType=resumable`"
     )
 
-    Flow
+    Sink
       .fromMaterializer { (mat, attr) =>
         import mat.executionContext
         implicit val materializer = mat
@@ -69,23 +63,25 @@ private[alpakka] object ResumableUpload {
           .via(AnnotateLast[Chunk])
           .map(chunk => Future.successful(Right(chunk)))
 
-        val upload: Flow[Future[Either[T, MaybeLast[Chunk]]], Try[T], Future[NotUsed]] = Flow
+        val upload = Flow
           .lazyFutureFlow { () =>
             initiateSession(request).map { uri =>
               val request = HttpRequest(PUT, uri)
               val flow = Flow[Future[Either[T, MaybeLast[Chunk]]]].mapAsync(1)(identity).via(uploadChunk(request))
 
               import settings.requestSettings.retrySettings._
-              RetryFlow.withBackoff(minBackoff, maxBackoff, randomFactor, maxRetries, flow) {
-                case (_, Success(_)) => None
-                case (chunk, Failure(_)) => Some(updatePosition(request, chunk.map(_.right.get)))
-              }
+              RetryFlow
+                .withBackoff(minBackoff, maxBackoff, randomFactor, maxRetries, flow) {
+                  case (chunk, Failure(Retry(_))) => Some(updatePosition(request, chunk.map(_.right.get)))
+                  case _ => None
+                }
+                .map(_.recoverWith { case Retry(ex) => Failure(ex) })
             }
           }
 
-        in.via(upload).map(_.get)
+        in.via(upload).mapConcat(_.get.toList).toMat(Sink.last)(Keep.right)
       }
-      .mapMaterializedValue(_ => NotUsed)
+      .mapMaterializedValue(_.flatten)
   }
 
   private def initiateSession(request: HttpRequest)(implicit mat: Materializer,
@@ -102,24 +98,32 @@ private[alpakka] object ResumableUpload {
     GoogleHttp().singleAuthenticatedRequest[Uri](request)
   }
 
+  private final case class DoNotRetry(ex: Throwable) extends Throwable(ex) with NoStackTrace
+
   private def uploadChunk[T: FromResponseUnmarshaller](
       request: HttpRequest
-  )(implicit mat: Materializer): Flow[Either[T, MaybeLast[Chunk]], Try[T], NotUsed] = {
+  )(implicit mat: Materializer): Flow[Either[T, MaybeLast[Chunk]], Try[Option[T]], NotUsed] = {
     implicit val system = mat.system
 
-    import implicits._
-    val um = implicitly[FromResponseUnmarshaller[T]].withoutRetries
+    val um = Unmarshaller.withMaterializer { implicit ec => implicit mat => response: HttpResponse =>
+      response.status match {
+        case PermanentRedirect =>
+          response.discardEntityBytes().future.map(_ => None)
+        case _ =>
+          Unmarshal(response).to[T].map(Some(_)).recover { case NonFatal(ex) => throw DoNotRetry(ex) }
+      }
+    }
 
     val pool = {
       val authority = request.uri.authority
       Flow[HttpRequest]
         .map((_, ()))
         .via(GoogleHttp().cachedHostConnectionPoolWithContext(authority.host.address, authority.port)(um))
-        .map(_._1)
+        .map(_._1.recoverWith { case DoNotRetry(ex) => Failure(ex) })
     }
 
     EitherFlow(
-      Flow[T].map(Success(_): Try[T]),
+      Flow[T].map(t => Success(Some(t))),
       Flow[MaybeLast[Chunk]].map {
         case maybeLast @ MaybeLast(Chunk(bytes, position)) =>
           val totalLength = if (maybeLast.isLast) Some(position + bytes.length) else None
@@ -194,23 +198,4 @@ private[alpakka] object ResumableUpload {
         }
   }
 
-}
-
-object `X-Upload-Content-Type` extends ModeledCustomHeaderCompanion[`X-Upload-Content-Type`] {
-  override def name: String = "X-Upload-Content-Type"
-  override def parse(value: String): Try[`X-Upload-Content-Type`] =
-    ContentType
-      .parse(value)
-      .fold(
-        errorInfos => Failure(new IllegalHeaderException(errorInfos.headOption.getOrElse(ErrorInfo()))),
-        contentType => Success(`X-Upload-Content-Type`(contentType))
-      )
-}
-
-final case class `X-Upload-Content-Type` private (contentType: ContentType)
-    extends ModeledCustomHeader[`X-Upload-Content-Type`] {
-  override def value(): String = contentType.toString()
-  override def renderInRequests(): Boolean = true
-  override def renderInResponses(): Boolean = false
-  override def companion = `X-Upload-Content-Type`
 }

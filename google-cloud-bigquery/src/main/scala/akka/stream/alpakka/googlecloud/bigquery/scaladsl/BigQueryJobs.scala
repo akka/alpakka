@@ -17,7 +17,8 @@ import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.stream.FlowShape
 import akka.stream.alpakka.google.http.GoogleHttp
 import akka.stream.alpakka.google.implicits._
-import akka.stream.alpakka.google.{`X-Upload-Content-Type`, GoogleAttributes, GoogleSettings, ResumableUpload}
+import akka.stream.alpakka.google.scaladsl.`X-Upload-Content-Type`
+import akka.stream.alpakka.google.{GoogleAttributes, GoogleSettings, ResumableUpload}
 import akka.stream.alpakka.googlecloud.bigquery._
 import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.{
   CreateNeverDisposition,
@@ -156,7 +157,7 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
               .to[RequestEntity]
               .map { entity =>
                 val request = HttpRequest(POST, uri, List(`X-Upload-Content-Type`(`application/octet-stream`)), entity)
-                ResumableUpload[Job](request).toMat(Sink.last)(Keep.right)
+                ResumableUpload[Job](request)
               }(ExecutionContexts.parasitic)
           }
           .mapMaterializedValue(_.flatten)
