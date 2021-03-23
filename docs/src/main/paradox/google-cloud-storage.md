@@ -40,7 +40,7 @@ Credentials will be loaded automatically:
 1. From the file path specified by the `GOOGLE_APPLICATION_CREDENTIALS` environment variable or another [“well-known” location](https://medium.com/google-cloud/use-google-cloud-user-credentials-when-testing-containers-locally-acb57cd4e4da); or
 2. When running in a [Compute Engine](https://cloud.google.com/compute) instance.
 
-Credentials can also specified manually in your configuration file.
+Credentials can also be specified manually in your configuration file.
 
 If you use a non-standard configuration path or need multiple different configurations, please refer to @ref[the attributes section below](google-cloud-storage.md#apply-google-cloud-storage-settings-to-a-part-of-the-stream) to see how to apply different configuration to different parts of the stream.
 
