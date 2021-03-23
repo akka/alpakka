@@ -19,7 +19,7 @@ import akka.stream.scaladsl.{Flow, Keep, RetryFlow, Sink, Source}
 import akka.util.ByteString
 
 import scala.concurrent.Future
-import scala.util.control.{NoStackTrace, NonFatal}
+import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success, Try}
 
 @InternalApi
@@ -110,7 +110,7 @@ private[alpakka] object ResumableUpload {
         case PermanentRedirect =>
           response.discardEntityBytes().future.map(_ => None)
         case _ =>
-          Unmarshal(response).to[T].map(Some(_)).recover { case NonFatal(ex) => throw DoNotRetry(ex) }
+          Unmarshal(response).to[T].map(Some(_)).recover { case ex => throw DoNotRetry(ex) }
       }
     }
 
