@@ -14,10 +14,9 @@ import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.ExecutionContext
-
 import akka.Done
 import akka.NotUsed
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, ClassicActorSystemProvider}
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.stream.alpakka.cassandra.CassandraServerMetaData
@@ -62,6 +61,18 @@ final class CassandraSession(@InternalApi private[akka] val delegate: scaladsl.C
                                     session => init.apply(session).toScala,
                                     () => onClose.run())
     )
+
+  /**
+   * Use this constructor if you want to create a stand-alone `CassandraSession`.
+   */
+  def this(system: ClassicActorSystemProvider,
+           sessionProvider: CqlSessionProvider,
+           executionContext: ExecutionContext,
+           log: LoggingAdapter,
+           metricsCategory: String,
+           init: JFunction[CqlSession, CompletionStage[Done]],
+           onClose: java.lang.Runnable) =
+    this(system.classicSystem, sessionProvider, executionContext, log, metricsCategory, init, onClose)
 
   implicit private val ec = delegate.ec
 

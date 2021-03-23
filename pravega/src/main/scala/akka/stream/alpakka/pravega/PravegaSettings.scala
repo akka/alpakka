@@ -6,7 +6,7 @@ package akka.stream.alpakka.pravega
 import java.net.URI
 import java.time.Duration
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, ClassicActorSystemProvider}
 import com.typesafe.config.Config
 import io.pravega.client.stream.{EventWriterConfig, ReaderConfig, Serializer}
 import io.pravega.client.ClientConfig
@@ -120,11 +120,25 @@ object ReaderSettingsBuilder {
     apply(actorSystem.settings.config.getConfig(configPath))
 
   /**
+   * Create reader settings from the default configuration
+   * `akka.alpakka.pravega`.
+   */
+  def apply[Message](actorSystem: ClassicActorSystemProvider): ReaderSettingsBuilder =
+    apply(actorSystem.classicSystem)
+
+  /**
    * Java API: Create reader settings from the default configuration
    * `akka.alpakka.pravega`.
    */
   def create[Message](actorSystem: ActorSystem): ReaderSettingsBuilder =
     apply(actorSystem)
+
+  /**
+   * Java API: Create reader settings from the default configuration
+   * `akka.alpakka.pravega`.
+   */
+  def create[Message](actorSystem: ClassicActorSystemProvider): ReaderSettingsBuilder =
+    apply(actorSystem.classicSystem)
 
   /**
    * Java API: Create settings from a configuration with the same layout as
@@ -235,8 +249,22 @@ object WriterSettingsBuilder {
    * Create writer settings from the default configuration
    * `akka.alpakka.pravega`.
    */
+  def apply[Message](actorSystem: ClassicActorSystemProvider): WriterSettingsBuilder[Message] =
+    apply(actorSystem.classicSystem)
+
+  /**
+   * Create writer settings from the default configuration
+   * `akka.alpakka.pravega`.
+   */
   def create[Message](actorSystem: ActorSystem): WriterSettingsBuilder[Message] =
     apply(actorSystem)
+
+  /**
+   * Create writer settings from the default configuration
+   * `akka.alpakka.pravega`.
+   */
+  def create[Message](actorSystem: ClassicActorSystemProvider): WriterSettingsBuilder[Message] =
+    apply(actorSystem.classicSystem)
 
   /**
    * Create settings from a configuration with the same layout as

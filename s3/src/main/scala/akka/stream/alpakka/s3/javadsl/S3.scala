@@ -691,7 +691,7 @@ object S3 {
    * @param materializer materializer to run with
    * @param attributes attributes to run request with
    * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
-   * @deprecated pass in an `ActorSystem` instead of the `Materializer`, since 3.0.0
+   * @deprecated pass in an `ClassicActorSystemProvider` instead of the `Materializer`, since 3.0.0
    */
   @Deprecated
   @silent
@@ -705,7 +705,7 @@ object S3 {
    * @param bucketName bucket name
    * @param materializer materializer to run with
    * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
-   * @deprecated pass in an `ActorSystem` instead of the `Materializer`, since 3.0.0
+   * @deprecated pass in an `ClassicActorSystemProvider` instead of the `Materializer`, since 3.0.0
    */
   @Deprecated
   @silent
@@ -721,7 +721,7 @@ object S3 {
    * @param attributes attributes to run request with
    * @param s3Headers any headers you want to add
    * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
-   * @deprecated pass in an `ActorSystem` instead of the `Materializer`, since 3.0.0
+   * @deprecated pass in an `ClassicActorSystemProvider` instead of the `Materializer`, since 3.0.0
    */
   @Deprecated
   def makeBucket(bucketName: String,

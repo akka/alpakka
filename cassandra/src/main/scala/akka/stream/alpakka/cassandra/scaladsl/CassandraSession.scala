@@ -7,9 +7,9 @@ package akka.stream.alpakka.cassandra.scaladsl
 import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
-import akka.stream.{Materializer, SystemMaterializer}
 import akka.stream.alpakka.cassandra.{CassandraMetricsRegistry, CassandraServerMetaData, CqlSessionProvider}
 import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.{Materializer, SystemMaterializer}
 import akka.util.OptionVal
 import akka.{Done, NotUsed}
 import com.datastax.oss.driver.api.core.CqlSession
