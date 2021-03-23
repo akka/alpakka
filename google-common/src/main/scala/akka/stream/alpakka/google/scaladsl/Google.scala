@@ -15,6 +15,9 @@ import akka.util.ByteString
 
 import scala.concurrent.Future
 
+/**
+ * Provides methods to interface with Google APIs
+ */
 object Google extends Google
 
 private[alpakka] trait Google {

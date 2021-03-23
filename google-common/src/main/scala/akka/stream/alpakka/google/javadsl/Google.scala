@@ -18,6 +18,9 @@ import java.util.concurrent.CompletionStage
 import scala.compat.java8.FutureConverters._
 import scala.language.implicitConversions
 
+/**
+ * Java API: Provides methods to interface with Google APIs
+ */
 object Google extends Google
 
 private[alpakka] trait Google {
