@@ -9,9 +9,11 @@ import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 import akka.Done
 import akka.stream.alpakka.jms._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{KillSwitches, ThrottleMode}
 import javax.jms.{JMSException, TextMessage}
 import org.scalatest.Inspectors._
+import org.scalatest.time.Span.convertSpanToDuration
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -299,7 +301,11 @@ class JmsAckConnectorsSpec extends JmsSpec {
         .run()
 
       val jmsSource: Source[AckEnvelope, JmsConsumerControl] = JmsConsumer.ackSource(
-        JmsConsumerSettings(system, connectionFactory).withSessionCount(5).withBufferSize(0).withQueue("numbers")
+        JmsConsumerSettings(system, connectionFactory)
+          .withSessionCount(5)
+          .withBufferSize(0)
+          .withMaxPendingAcks(0)
+          .withQueue("numbers")
       )
 
       val resultQueue = new LinkedBlockingQueue[String]()
@@ -405,6 +411,49 @@ class JmsAckConnectorsSpec extends JmsSpec {
       killSwitch.abort(new Exception("aborted"))
 
       streamDone.failed.futureValue.getMessage shouldBe "aborted"
+    }
+
+    "send acknowledgments back to the broker after max.ack.interval" in withServer() { server =>
+      val connectionFactory = server.createConnectionFactory
+
+      val testQueue = "test"
+      val aMessage = "message"
+      val maxAckInterval = 1.second
+      Source
+        .single(aMessage)
+        .runWith(JmsProducer.textSink(JmsProducerSettings(producerConfig, connectionFactory).withQueue(testQueue)))
+      val source = JmsConsumer.ackSource(
+        JmsConsumerSettings(system, connectionFactory)
+          .withMaxPendingAcks(100)
+          .withMaxAckInterval(maxAckInterval)
+          .withQueue(testQueue)
+      )
+
+      val (consumerControl, probe) = source
+        .map { env =>
+          env.acknowledge()
+          env.message match {
+            case message: TextMessage => Some(message.getText)
+            case _ => None
+          }
+        }
+        .toMat(TestSink.probe)(Keep.both)
+        .run()
+
+      probe.requestNext(convertSpanToDuration(patienceConfig.timeout)) shouldBe Some(aMessage)
+
+      eventually {
+        server.service.checkQueueSize(testQueue) shouldBe true //queue is empty
+      }
+
+      consumerControl.shutdown()
+      probe.expectComplete()
+
+      // Consuming again should give us no elements, as msg was acked and therefore removed from the broker
+      val (emptyConsumerControl, emptySourceProbe) = source.toMat(TestSink.probe)(Keep.both).run()
+      emptySourceProbe.ensureSubscription().expectNoMessage()
+      emptyConsumerControl.shutdown()
+      emptySourceProbe.expectComplete()
     }
   }
 }

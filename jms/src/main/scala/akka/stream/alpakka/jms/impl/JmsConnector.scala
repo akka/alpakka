@@ -214,6 +214,8 @@ private[jms] trait JmsConnector[S <: JmsSession] {
   }
 
   override def onTimer(timerKey: Any): Unit = timerKey match {
+    case FlushAcknowledgementsTimerKey(session) =>
+      session.drainAcks()
     case AttemptConnect(attempt, backoffMaxed) =>
       log.info("{} retries connecting, attempt {}", attributes.nameLifted.mkString, attempt)
       initSessionAsync(attempt, backoffMaxed)
@@ -283,8 +285,10 @@ private[jms] trait JmsConnector[S <: JmsSession] {
   }
 
   private def closeSession(s: S): Unit = {
-    try s.closeSession()
-    catch {
+    try {
+      cancelAckTimers(s)
+      s.closeSession()
+    } catch {
       case e: Throwable => log.error(e, "Error closing jms session")
     }
   }
@@ -294,8 +298,10 @@ private[jms] trait JmsConnector[S <: JmsSession] {
       .sequence {
         jmsSessions.map { s =>
           Future {
-            try s.abortSession()
-            catch {
+            try {
+              cancelAckTimers(s)
+              s.abortSession()
+            } catch {
               case e: Throwable => log.error(e, "Error aborting jms session")
             }
           }
@@ -304,6 +310,12 @@ private[jms] trait JmsConnector[S <: JmsSession] {
       .map(_ => ())
     jmsSessions = Seq.empty
     aborting
+  }
+
+  private def cancelAckTimers(s: JmsSession): Unit = s match {
+    case session: JmsAckSession =>
+      cancelTimer(FlushAcknowledgementsTimerKey(session))
+    case _ => ()
   }
 
   def startConnection: Boolean
@@ -393,8 +405,8 @@ object JmsConnector {
   case object Connected extends ConnectionAttemptStatus
   case object TimedOut extends ConnectionAttemptStatus
 
-  case class AttemptConnect(attempt: Int, backoffMaxed: Boolean)
-
+  final case class AttemptConnect(attempt: Int, backoffMaxed: Boolean)
+  final case class FlushAcknowledgementsTimerKey(jmsSession: JmsAckSession)
   case object ConnectionStatusTimeout
 
   def connection: InternalConnectionState => Future[jms.Connection] = {
