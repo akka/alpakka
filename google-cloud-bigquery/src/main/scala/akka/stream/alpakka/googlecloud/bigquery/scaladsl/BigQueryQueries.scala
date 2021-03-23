@@ -14,7 +14,6 @@ import akka.http.scaladsl.model.{HttpRequest, RequestEntity}
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.stream.RestartSettings
 import akka.stream.alpakka.google.GoogleAttributes
-import akka.stream.alpakka.google.http.GoogleHttp
 import akka.stream.alpakka.google.implicits._
 import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.JobReference
 import akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.{QueryRequest, QueryResponse}
@@ -70,7 +69,7 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
           for {
             entity <- Marshal(query).to[RequestEntity]
             initialRequest = HttpRequest(POST, BigQueryEndpoints.queries(settings.projectId), entity = entity)
-            initialQueryResponse <- GoogleHttp().singleAuthenticatedRequest[QueryResponse[Out]](initialRequest)
+            initialQueryResponse <- singleRequest[QueryResponse[Out]](initialRequest)
           } yield {
 
             val jobReference = initialQueryResponse.jobReference

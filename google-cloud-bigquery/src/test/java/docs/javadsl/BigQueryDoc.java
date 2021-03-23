@@ -196,7 +196,7 @@ public class BigQueryDoc {
           CompletionStage<Boolean> allAreDone = CompletableFuture.completedFuture(true);
           for (JobJsonProtocol.JobReference jobReference : jobReferences) {
             CompletionStage<JobJsonProtocol.Job> job =
-                BigQuery.getJob(jobReference.getJobId().get(), Optional.empty(), system, settings);
+                BigQuery.getJob(jobReference.getJobId().get(), Optional.empty(), settings, system);
             CompletionStage<Boolean> jobIsDone =
                 job.thenApply(
                     j ->
@@ -221,19 +221,19 @@ public class BigQueryDoc {
     Source<DatasetJsonProtocol.Dataset, NotUsed> allDatasets =
         BigQuery.listDatasets(OptionalInt.empty(), Optional.empty(), Collections.emptyMap());
     CompletionStage<DatasetJsonProtocol.Dataset> existingDataset =
-        BigQuery.getDataset(datasetId, system, settings);
+        BigQuery.getDataset(datasetId, settings, system);
     CompletionStage<DatasetJsonProtocol.Dataset> newDataset =
-        BigQuery.createDataset("newDatasetId", system, settings);
+        BigQuery.createDataset("newDatasetId", settings, system);
     CompletionStage<Done> datasetDeleted =
-        BigQuery.deleteDataset(datasetId, false, system, settings);
+        BigQuery.deleteDataset(datasetId, false, settings, system);
     // #dataset-methods
 
     // #table-methods
     Source<TableJsonProtocol.Table, CompletionStage<TableJsonProtocol.TableListResponse>>
         allTablesInDataset = BigQuery.listTables(datasetId, OptionalInt.empty());
     CompletionStage<TableJsonProtocol.Table> existingTable =
-        BigQuery.getTable(datasetId, tableId, system, settings);
-    CompletionStage<Done> tableDeleted = BigQuery.deleteTable(datasetId, tableId, system, settings);
+        BigQuery.getTable(datasetId, tableId, settings, system);
+    CompletionStage<Done> tableDeleted = BigQuery.deleteTable(datasetId, tableId, settings, system);
     // #table-methods
 
     // #create-table
@@ -258,7 +258,7 @@ public class BigQueryDoc {
             TableJsonProtocol.createTableFieldSchema(
                 "isHakker", TableJsonProtocol.booleanType(), Optional.empty()));
     CompletionStage<TableJsonProtocol.Table> newTable =
-        BigQuery.createTable(datasetId, "newTableId", personSchema, system, settings);
+        BigQuery.createTable(datasetId, "newTableId", personSchema, settings, system);
     // #create-table
 
     // #custom-settings

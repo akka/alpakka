@@ -15,10 +15,9 @@ import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{HttpEntity, HttpRequest, RequestEntity}
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.stream.FlowShape
-import akka.stream.alpakka.google.http.GoogleHttp
 import akka.stream.alpakka.google.implicits._
 import akka.stream.alpakka.google.scaladsl.`X-Upload-Content-Type`
-import akka.stream.alpakka.google.{GoogleAttributes, GoogleSettings, ResumableUpload}
+import akka.stream.alpakka.google.{GoogleAttributes, GoogleSettings}
 import akka.stream.alpakka.googlecloud.bigquery._
 import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.{
   CreateNeverDisposition,
@@ -52,7 +51,7 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
     import SprayJsonSupport._
     val uri = BigQueryEndpoints.job(settings.projectId, jobId)
     val query = ("location" -> location) ?+: Query.Empty
-    GoogleHttp().singleAuthenticatedRequest[Job](HttpRequest(uri = uri.withQuery(query)))
+    singleRequest[Job](HttpRequest(uri = uri.withQuery(query)))
   }
 
   /**
@@ -71,7 +70,7 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
     import SprayJsonSupport._
     val uri = BigQueryEndpoints.jobCancel(settings.projectId, jobId)
     val query = ("location" -> location) ?+: Query.Empty
-    GoogleHttp().singleAuthenticatedRequest[JobCancelResponse](HttpRequest(POST, uri.withQuery(query)))
+    singleRequest[JobCancelResponse](HttpRequest(POST, uri.withQuery(query)))
   }
 
   /**
@@ -157,7 +156,7 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
               .to[RequestEntity]
               .map { entity =>
                 val request = HttpRequest(POST, uri, List(`X-Upload-Content-Type`(`application/octet-stream`)), entity)
-                ResumableUpload[Job](request)
+                resumableUpload[Job](request)
               }(ExecutionContexts.parasitic)
           }
           .mapMaterializedValue(_.flatten)

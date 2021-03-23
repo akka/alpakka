@@ -13,7 +13,6 @@ import akka.http.scaladsl.model.HttpMethods.{DELETE, POST}
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{HttpRequest, RequestEntity}
 import akka.stream.alpakka.google.GoogleSettings
-import akka.stream.alpakka.google.http.GoogleHttp
 import akka.stream.alpakka.google.implicits._
 import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.{Table, TableListResponse, TableReference}
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.schema.TableSchemaWriter
@@ -54,7 +53,7 @@ private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
     import BigQueryException._
     import SprayJsonSupport._
     val uri = BigQueryEndpoints.table(settings.projectId, datasetId, tableId)
-    GoogleHttp().singleAuthenticatedRequest[Table](HttpRequest(uri = uri))
+    singleRequest[Table](HttpRequest(uri = uri))
   }
 
   /**
@@ -92,7 +91,7 @@ private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
     val uri = BigQueryEndpoints.tables(projectId, datasetId)
     Marshal(table).to[RequestEntity].flatMap { entity =>
       val request = HttpRequest(POST, uri, entity = entity)
-      GoogleHttp().singleAuthenticatedRequest[Table](request)
+      singleRequest[Table](request)
     }
   }
 
@@ -108,7 +107,7 @@ private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
                                                       settings: GoogleSettings): Future[Done] = {
     import BigQueryException._
     val uri = BigQueryEndpoints.table(settings.projectId, datasetId, tableId)
-    GoogleHttp().singleAuthenticatedRequest[Done](HttpRequest(DELETE, uri))
+    singleRequest[Done](HttpRequest(DELETE, uri))
   }
 
 }

@@ -111,7 +111,7 @@ public class BigQueryEndToEndTest extends EndToEndHelper {
   @Test
   public void createDataset() throws ExecutionException, InterruptedException {
     DatasetJsonProtocol.Dataset dataset =
-        BigQuery.createDataset(datasetId(), system, settings).toCompletableFuture().get();
+        BigQuery.createDataset(datasetId(), settings, system).toCompletableFuture().get();
     assertEquals(getDatasetId(), dataset.getDatasetReference().getDatasetId());
   }
 
@@ -131,7 +131,7 @@ public class BigQueryEndToEndTest extends EndToEndHelper {
   @Test
   public void createTable() throws ExecutionException, InterruptedException {
     TableJsonProtocol.Table table =
-        BigQuery.createTable(datasetId(), tableId(), schema, system, settings)
+        BigQuery.createTable(datasetId(), tableId(), schema, settings, system)
             .toCompletableFuture()
             .get();
     assertEquals(getTableId(), table.getTableReference().getTableId());
@@ -153,8 +153,8 @@ public class BigQueryEndToEndTest extends EndToEndHelper {
     return BigQuery.getJob(
             job.getJobReference().flatMap(JobJsonProtocol.JobReference::getJobId).get(),
             Optional.empty(),
-            system,
-            settings)
+            settings,
+            system)
         .thenComposeAsync(
             job2 -> {
               if (job2.getStatus()
@@ -249,7 +249,7 @@ public class BigQueryEndToEndTest extends EndToEndHelper {
   @Test
   public void deleteTable() throws ExecutionException, InterruptedException {
     Done done =
-        BigQuery.deleteTable(datasetId(), tableId(), system, settings).toCompletableFuture().get();
+        BigQuery.deleteTable(datasetId(), tableId(), settings, system).toCompletableFuture().get();
     assertEquals(Done.done(), done);
   }
 
@@ -268,7 +268,7 @@ public class BigQueryEndToEndTest extends EndToEndHelper {
   @Test
   public void deleteDataset() throws ExecutionException, InterruptedException {
     Done done =
-        BigQuery.deleteDataset(datasetId(), false, system, settings).toCompletableFuture().get();
+        BigQuery.deleteDataset(datasetId(), false, settings, system).toCompletableFuture().get();
     assertEquals(Done.done(), done);
   }
 
