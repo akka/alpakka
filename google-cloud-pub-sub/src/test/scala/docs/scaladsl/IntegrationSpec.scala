@@ -42,7 +42,6 @@ class IntegrationSpec
 
   // The gCloud emulator is selected via environment parameters (in build.sbt)
   // as created in docker-compose.yml
-//  private val projectId = "alpakka"
 
   // as created in docker-compose.yml
   private val topic1 = "simpleTopic"
