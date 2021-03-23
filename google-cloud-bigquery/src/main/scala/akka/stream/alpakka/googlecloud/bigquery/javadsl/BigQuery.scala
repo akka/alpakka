@@ -68,8 +68,8 @@ object BigQuery extends Google {
    * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets/get BigQuery reference]]
    *
    * @param datasetId dataset ID of the requested dataset
+   * @param settings the [[akka.stream.alpakka.google.GoogleSettings]]
    * @param system the actor system
-   * @param settings the [[akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings]]
    * @return a [[java.util.concurrent.CompletionStage]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.DatasetJsonProtocol.Dataset]]
    */
   def getDataset(datasetId: String,
@@ -82,8 +82,8 @@ object BigQuery extends Google {
    * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets/insert BigQuery reference]]
    *
    * @param datasetId dataset ID of the new dataset
+   * @param settings the [[akka.stream.alpakka.google.GoogleSettings]]
    * @param system the actor system
-   * @param settings the [[akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings]]
    * @return a [[java.util.concurrent.CompletionStage]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.DatasetJsonProtocol.Dataset]]
    */
   def createDataset(datasetId: String,
@@ -96,8 +96,8 @@ object BigQuery extends Google {
    * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets/insert BigQuery reference]]
    *
    * @param dataset the [[akka.stream.alpakka.googlecloud.bigquery.model.DatasetJsonProtocol.Dataset]] to create
+   * @param settings the [[akka.stream.alpakka.google.GoogleSettings]]
    * @param system the actor system
-   * @param settings the [[akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings]]
    * @return a [[java.util.concurrent.CompletionStage]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.DatasetJsonProtocol.Dataset]]
    */
   def createDataset(dataset: Dataset,
@@ -110,8 +110,8 @@ object BigQuery extends Google {
    *
    * @param datasetId dataset ID of dataset being deleted
    * @param deleteContents if `true`, delete all the tables in the dataset; if `false` and the dataset contains tables, the request will fail
+   * @param settings the [[akka.stream.alpakka.google.GoogleSettings]]
    * @param system the actor system
-   * @param settings the [[akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings]]
    * @return a [[java.util.concurrent.CompletionStage]] containing [[akka.Done]]
    */
   def deleteDataset(datasetId: String,
@@ -137,8 +137,8 @@ object BigQuery extends Google {
    *
    * @param datasetId dataset ID of the requested table
    * @param tableId table ID of the requested table
+   * @param settings the [[akka.stream.alpakka.google.GoogleSettings]]
    * @param system the actor system
-   * @param settings the [[akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings]]
    * @return a [[java.util.concurrent.CompletionStage]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.Table]]
    */
   def getTable(datasetId: String,
@@ -154,8 +154,8 @@ object BigQuery extends Google {
    * @param datasetId dataset ID of the new table
    * @param tableId table ID of the new table
    * @param schema [[akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.TableSchema]] of the new table
+   * @param settings the [[akka.stream.alpakka.google.GoogleSettings]]
    * @param system the actor system
-   * @param settings the [[akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings]]
    * @return a [[java.util.concurrent.CompletionStage]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.Table]]
    */
   def createTable(datasetId: String,
@@ -170,8 +170,8 @@ object BigQuery extends Google {
    * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables/insert BigQuery reference]]
    *
    * @param table the [[akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.Table]] to create
+   * @param settings the [[akka.stream.alpakka.google.GoogleSettings]]
    * @param system the actor system
-   * @param settings the [[akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings]]
    * @return a [[java.util.concurrent.CompletionStage]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.Table]]
    */
   def createTable(table: Table, settings: GoogleSettings, system: ClassicActorSystemProvider): CompletionStage[Table] =
@@ -183,8 +183,8 @@ object BigQuery extends Google {
    *
    * @param datasetId dataset ID of the table to delete
    * @param tableId table ID of the table to delete
+   * @param settings the [[akka.stream.alpakka.google.GoogleSettings]]
    * @param system the actor system
-   * @param settings the [[akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings]]
    * @return a [[java.util.concurrent.CompletionStage]] containing [[akka.Done]]
    */
   def deleteTable(datasetId: String,
@@ -353,8 +353,8 @@ object BigQuery extends Google {
    *
    * @param jobId job ID of the requested job
    * @param location the geographic location of the job. Required except for US and EU
+   * @param settings the [[akka.stream.alpakka.google.GoogleSettings]]
    * @param system the actor system
-   * @param settings the [[akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings]]
    * @return a [[java.util.concurrent.CompletionStage]] containing the [[Job]]
    */
   def getJob(jobId: String,
@@ -369,8 +369,8 @@ object BigQuery extends Google {
    *
    * @param jobId job ID of the job to cancel
    * @param location the geographic location of the job. Required except for US and EU
+   * @param settings the [[akka.stream.alpakka.google.GoogleSettings]]
    * @param system the actor system
-   * @param settings the [[akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings]]
    * @return a [[java.util.concurrent.CompletionStage]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.JobCancelResponse]]
    */
   def cancelJob(jobId: String,
