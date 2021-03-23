@@ -44,7 +44,7 @@ object ErrorProtoJsonProtocol {
   }
 
   /**
-   * ErrorProto model
+   * Java API: ErrorProto model
    * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto BigQuery reference]]
    *
    * @param reason a short error code that summarizes the error
