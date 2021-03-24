@@ -48,9 +48,9 @@ object PubSubConfig {
     apply(pullReturnImmediately, pullMaxMessagesPerInternalBatch)
 
   /**
-   * @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]]
+   * @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]] to manage credentials
    */
-  @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
+  @deprecated("Use akka.stream.alpakka.google.GoogleSettings to manage credentials", "3.0.0")
   @Deprecated
   def apply(projectId: String, clientEmail: String, privateKey: String)(
       implicit actorSystem: ActorSystem
@@ -69,7 +69,7 @@ object PubSubConfig {
     )
 
   /**
-   * @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]]
+   * @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]] to manage credentials
    */
   @deprecated("Use akka.stream.alpakka.google.GoogleSettings to manage credentials", "3.0.0")
   @Deprecated
@@ -94,9 +94,10 @@ object PubSubConfig {
     )
 
   /**
-   * @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]]
+   * Java API
+   * @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]] to manage credentials
    */
-  @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
+  @deprecated("Use akka.stream.alpakka.google.GoogleSettings to manage credentials", "3.0.0")
   @Deprecated
   def create(projectId: String, clientEmail: String, privateKey: String, actorSystem: ActorSystem): PubSubConfig =
     apply(projectId, clientEmail, privateKey)(actorSystem)
