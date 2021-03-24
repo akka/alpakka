@@ -7,6 +7,8 @@ package akka.stream.alpakka.googlecloud.pubsub
 import java.time.Instant
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
+import akka.stream.alpakka.google.GoogleSettings
+import akka.stream.alpakka.google.auth.ServiceAccountCredentials
 import com.github.ghik.silencer.silent
 
 import scala.collection.immutable
@@ -23,7 +25,10 @@ class PubSubConfig private (
       "3.0.0"
     ) @Deprecated val projectId: String,
     val pullReturnImmediately: Boolean,
-    val pullMaxMessagesPerInternalBatch: Int
+    val pullMaxMessagesPerInternalBatch: Int,
+    @deprecated("Added only to help with migration", "3.0.0") @InternalApi private[pubsub] val settings: Option[
+      GoogleSettings
+    ]
 ) {
 
   override def toString: String =
@@ -35,7 +40,7 @@ object PubSubConfig {
   def apply(): PubSubConfig = apply(true, 1000)
 
   def apply(pullReturnImmediately: Boolean, pullMaxMessagesPerInternalBatch: Int): PubSubConfig =
-    new PubSubConfig("", pullReturnImmediately, pullMaxMessagesPerInternalBatch)
+    new PubSubConfig("", pullReturnImmediately, pullMaxMessagesPerInternalBatch, None)
 
   def create(): PubSubConfig = apply()
 
@@ -53,7 +58,14 @@ object PubSubConfig {
     new PubSubConfig(
       projectId = projectId,
       pullReturnImmediately = true,
-      pullMaxMessagesPerInternalBatch = 1000
+      pullMaxMessagesPerInternalBatch = 1000,
+      Some(
+        GoogleSettings().copy(
+          projectId = projectId,
+          credentials =
+            ServiceAccountCredentials(projectId, clientEmail, privateKey, Seq("https://www.googleapis.com/auth/pubsub"))
+        )
+      )
     )
 
   /**
@@ -71,7 +83,14 @@ object PubSubConfig {
     new PubSubConfig(
       projectId = projectId,
       pullReturnImmediately = pullReturnImmediately,
-      pullMaxMessagesPerInternalBatch = pullMaxMessagesPerInternalBatch
+      pullMaxMessagesPerInternalBatch = pullMaxMessagesPerInternalBatch,
+      Some(
+        GoogleSettings().copy(
+          projectId = projectId,
+          credentials =
+            ServiceAccountCredentials(projectId, clientEmail, privateKey, Seq("https://www.googleapis.com/auth/pubsub"))
+        )
+      )
     )
 
   /**

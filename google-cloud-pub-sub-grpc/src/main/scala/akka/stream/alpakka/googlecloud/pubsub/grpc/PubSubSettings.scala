@@ -85,10 +85,14 @@ object PubSubSettings {
           val GoogleSettings(_, credentials, requestSettings) = GoogleSettings()
           val googleCredentials = credentials.asGoogle(system.classicSystem.dispatcher, requestSettings)
           val callCredentials = MoreCallCredentials.from(googleCredentials)
-          if (mode == "google-application-default") // it was set explicitly
+          if (mode == "google-application-default") { // it was set explicitly
+            system.classicSystem.log.warning(
+              "Config path alpakka.google.cloud.pubsub.grpc.callCredentials is deprecated, use alpakka.google.credentials"
+            )
             Some(callCredentials)
-          else // reading the reference config
+          } else { // reading the reference config
             Some(DeprecatedCredentials(callCredentials))
+          }
         case _ => None
       }
     )

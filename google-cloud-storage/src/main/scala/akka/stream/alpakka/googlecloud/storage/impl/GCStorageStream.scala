@@ -291,9 +291,9 @@ import scala.concurrent.Future
       sys.log.warning("Configuration via alpakka.google.cloud.storage is deprecated")
 
       require(
-        legacySettings.baseUrl.contains("googleapis.com")
-        && legacySettings.basePath.contains("storage/v1")
-        && legacySettings.tokenUrl.contains("googleapis.com"),
+        (legacySettings.baseUrl.contains("googleapis.com") || legacySettings.baseUrl == "unsupported")
+        && (legacySettings.basePath.contains("storage/v1") || legacySettings.basePath == "unsupported")
+        && (legacySettings.tokenUrl.contains("googleapis.com") || legacySettings.tokenUrl == "unsupported"),
         "Non-default base-url/base-path/token-url no longer supported, use config path alpakka.google.forward-proxy"
       )
 

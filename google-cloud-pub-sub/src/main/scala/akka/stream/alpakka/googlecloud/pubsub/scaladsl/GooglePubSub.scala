@@ -5,6 +5,7 @@
 package akka.stream.alpakka.googlecloud.pubsub.scaladsl
 
 import akka.actor.Cancellable
+import akka.stream.Attributes
 import akka.stream.alpakka.google.GoogleAttributes
 import akka.stream.alpakka.googlecloud.pubsub._
 import akka.stream.alpakka.googlecloud.pubsub.impl._
@@ -91,14 +92,7 @@ protected[pubsub] trait GooglePubSub {
     acknowledgeFlow(subscription, config).toMat(Sink.ignore)(Keep.right)
 
   @silent("deprecated")
-  private def flow[In, Out](config: PubSubConfig)(f: Flow[In, Out, Any]): Flow[In, Out, NotUsed] =
-    Flow
-      .fromMaterializer { (mat, attr) =>
-        val settings = GoogleAttributes.resolveSettings(mat, attr)
-        val projectId = if (config.projectId.isEmpty) settings.projectId else config.projectId
-        val attributes = GoogleAttributes.settings(settings.copy(projectId = projectId)): @silent("deprecated")
-        f.addAttributes(attributes)
-      }
-      .mapMaterializedValue(_ => NotUsed)
+  private def flow[In, Out](config: PubSubConfig)(flow: Flow[In, Out, NotUsed]): Flow[In, Out, NotUsed] =
+    flow.addAttributes(config.settings.fold(Attributes.none)(GoogleAttributes.settings))
 
 }
