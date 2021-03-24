@@ -10,12 +10,15 @@ import io.grpc.CallCredentials
 import java.util.concurrent.Executor
 
 /**
- * Used purely as a placeholder class to help migrate to common Google auth.
+ * Used purely as a wrapper class to help migrate to common Google auth.
  */
 @InternalApi
-private[grpc] object DeprecatedCredentials extends CallCredentials {
+private[grpc] final case class DeprecatedCredentials(underlying: CallCredentials) extends CallCredentials {
+
   override def applyRequestMetadata(requestInfo: CallCredentials.RequestInfo,
                                     appExecutor: Executor,
-                                    applier: CallCredentials.MetadataApplier): Unit = ???
-  override def thisUsesUnstableApi(): Unit = ???
+                                    applier: CallCredentials.MetadataApplier): Unit =
+    underlying.applyRequestMetadata(requestInfo, appExecutor, applier)
+
+  override def thisUsesUnstableApi(): Unit = underlying.thisUsesUnstableApi()
 }

@@ -5,10 +5,12 @@
 package akka.stream.alpakka.googlecloud.pubsub.grpc
 
 import akka.actor.ClassicActorSystemProvider
+import akka.stream.alpakka.google.GoogleSettings
 import akka.stream.alpakka.googlecloud.pubsub.grpc.impl.DeprecatedCredentials
 import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 import io.grpc.CallCredentials
+import io.grpc.auth.MoreCallCredentials
 
 /**
  * Connection settings used to establish Pub/Sub connection.
@@ -65,14 +67,21 @@ object PubSubSettings {
   /**
    * Create settings from config instance.
    */
-  def apply(config: Config): PubSubSettings =
+  def apply(config: Config)(implicit system: ClassicActorSystemProvider): PubSubSettings =
     new PubSubSettings(
       config.getString("host"),
       config.getInt("port"),
       config.getBoolean("use-tls"),
       Some(config.getString("rootCa")).filter(_ != "none"),
       config.getString("callCredentials") match {
-        case "google-application-default" | "deprecated" => Some(DeprecatedCredentials)
+        case mode @ ("google-application-default" | "deprecated") =>
+          val GoogleSettings(_, credentials, requestSettings) = GoogleSettings()
+          val googleCredentials = credentials.asGoogle(system.classicSystem.dispatcher, requestSettings)
+          val callCredentials = MoreCallCredentials.from(googleCredentials)
+          if (mode == "google-application-default") // it was set explicitly
+            Some(callCredentials)
+          else // reading the reference config
+            Some(DeprecatedCredentials(callCredentials))
         case _ => None
       }
     )
@@ -86,7 +95,7 @@ object PubSubSettings {
    * Create settings from a classic ActorSystem's config.
    */
   def apply(system: akka.actor.ActorSystem): PubSubSettings =
-    PubSubSettings(system.settings.config.getConfig("alpakka.google.cloud.pubsub.grpc"))
+    PubSubSettings(system.settings.config.getConfig("alpakka.google.cloud.pubsub.grpc"))(system)
 
   /**
    * Java API
@@ -102,8 +111,8 @@ object PubSubSettings {
    *
    * Create settings from config instance.
    */
-  def create(config: Config): PubSubSettings =
-    PubSubSettings(config)
+  def create(config: Config, system: ClassicActorSystemProvider): PubSubSettings =
+    PubSubSettings(config)(system)
 
   /**
    * Java API

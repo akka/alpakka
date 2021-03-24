@@ -34,7 +34,7 @@ import io.grpc.auth.MoreCallCredentials
 
     (config.callCredentials: @silent("deprecated")) match {
       case None => settings
-      case Some(DeprecatedCredentials) =>
+      case Some(DeprecatedCredentials(_)) => // Credentials were not set explicitly, override them
         val credentials = googleSettings.credentials.asGoogle(sys.dispatcher, googleSettings.requestSettings)
         settings.withCallCredentials(MoreCallCredentials.from(credentials))
       case Some(creds) => settings.withCallCredentials(creds)
