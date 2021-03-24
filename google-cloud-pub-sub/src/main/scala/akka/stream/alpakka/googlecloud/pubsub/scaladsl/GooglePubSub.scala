@@ -96,15 +96,6 @@ protected[pubsub] trait GooglePubSub {
   }
 
   /**
-   * Creates a sink for acknowledging messages on a subscription.
-   */
-  @deprecated("Use `acknowledge` without `parallelism` param", since = "2.0.0")
-  def acknowledge(subscription: String,
-                  config: PubSubConfig,
-                  parallelism: Int = 1): Sink[AcknowledgeRequest, Future[Done]] =
-    acknowledge(subscription, config)
-
-  /**
    * Creates a flow for acknowledging messages on a subscription.
    */
   def acknowledgeFlow(subscription: String, config: PubSubConfig): Flow[AcknowledgeRequest, Done, NotUsed] =

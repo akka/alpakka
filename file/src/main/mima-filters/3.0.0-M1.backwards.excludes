@@ -1,0 +1,2 @@
+# 3.0.0 deprecations - https://github.com/akka/alpakka/pull/2618
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.file.javadsl.FileTailSource.createLines")
