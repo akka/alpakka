@@ -20,8 +20,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import spray.json.{JsObject, JsString, JsValue}
 
-import scala.concurrent.duration._
-
 class PaginatedRequestSpec
     extends TestKit(ActorSystem("PaginatedRequestSpec"))
     with AnyWordSpecLike
