@@ -358,7 +358,9 @@ public class GCStorageTest extends GCStorageWiremockBase {
     }
   }
 
-  //  @Test TODO Is this really the desired behavior?
+  // This behavior is no longer supported, but keeping for the docs snippet
+  // See https://github.com/akka/alpakka/pull/2613#discussion_r599046266
+  //  @Test
   public void returnEmptySourceWhenListingBucketWithWrongSettings() throws Exception {
 
     mock().simulate(mockTokenApi(), mockBucketListingFailure());

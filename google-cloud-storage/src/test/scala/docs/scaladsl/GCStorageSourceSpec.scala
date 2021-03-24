@@ -267,7 +267,8 @@ class GCStorageSourceSpec
       listSource.runWith(Sink.seq).failed.futureValue.getMessage shouldBe "[400] Bucket listing failed"
     }
 
-    // TODO Is this really the desired behavior?
+    // This behavior is no longer supported, but keeping for the docs snippet
+    // See https://github.com/akka/alpakka/pull/2613#discussion_r599046266
     "return empty source listing bucket with wrong settings" ignore {
 
       mock.simulate(
