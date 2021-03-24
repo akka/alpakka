@@ -116,7 +116,7 @@ import scala.concurrent.Future
       .withQuery(query)
     val request = HttpRequest(uri = uri)
     implicit val um: Unmarshaller[HttpEntity, Source[ByteString, NotUsed]] =
-      Unmarshaller.strict(_.dataBytes.mapMaterializedValue(_ => NotUsed))
+      Unmarshaller.strict(_.withoutSizeLimit.dataBytes.mapMaterializedValue(_ => NotUsed))
     makeRequestSource[Option[Source[ByteString, NotUsed]]](request)
   }
 

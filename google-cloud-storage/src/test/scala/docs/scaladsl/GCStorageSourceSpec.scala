@@ -341,7 +341,7 @@ class GCStorageSourceSpec
 
     "download file when file exists" in {
       // Ensure file content is above the size limit set by akka.http.client.parsing.max-content-length
-      val fileContent = "Google storage file content" + ("x" * 1000)
+      val fileContent = "Google storage file content" + ("x" * 10000)
       val fileContentGeneration = "Google storage file content (archived)"
 
       mock.simulate(
