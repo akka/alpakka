@@ -22,8 +22,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import spray.json.{JsObject, JsValue}
 
-import scala.concurrent.duration._
-
 class ResumableUploadSpec
     extends TestKit(ActorSystem("ResumableUploadSpec"))
     with AnyWordSpecLike
@@ -32,7 +30,7 @@ class ResumableUploadSpec
     with ScalaFutures
     with HoverflySupport {
 
-  implicit val patience = PatienceConfig(timeout = 3.seconds)
+  implicit val patience = PatienceConfig(remainingOrDefault)
 
   override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)

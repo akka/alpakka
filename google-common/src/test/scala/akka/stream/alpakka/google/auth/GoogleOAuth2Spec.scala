@@ -18,7 +18,6 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.time.Clock
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration._
 import scala.io.Source
 
 class GoogleOAuth2Spec
@@ -33,8 +32,7 @@ class GoogleOAuth2Spec
     TestKit.shutdownActorSystem(system)
     super.afterAll()
   }
-  implicit val defaultPatience =
-    PatienceConfig(timeout = 2.seconds, interval = 50.millis)
+  implicit val defaultPatience = PatienceConfig(remainingOrDefault)
 
   implicit val executionContext: ExecutionContext = system.dispatcher
   implicit val settings = GoogleSettings(system)
