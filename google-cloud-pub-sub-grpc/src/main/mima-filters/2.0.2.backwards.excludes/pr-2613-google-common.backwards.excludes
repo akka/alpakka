@@ -1,3 +1,0 @@
-# Breaking changes needed for migration to google-common auth
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.googlecloud.pubsub.grpc.PubSubSettings.apply")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.googlecloud.pubsub.grpc.PubSubSettings.create")

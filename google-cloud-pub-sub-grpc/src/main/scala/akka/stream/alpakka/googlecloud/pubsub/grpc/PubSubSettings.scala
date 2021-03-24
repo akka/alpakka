@@ -5,12 +5,14 @@
 package akka.stream.alpakka.googlecloud.pubsub.grpc
 
 import akka.actor.ClassicActorSystemProvider
-import akka.stream.alpakka.google.GoogleSettings
 import akka.stream.alpakka.googlecloud.pubsub.grpc.impl.DeprecatedCredentials
 import com.github.ghik.silencer.silent
+import com.google.auth.oauth2.GoogleCredentials
 import com.typesafe.config.Config
 import io.grpc.CallCredentials
 import io.grpc.auth.MoreCallCredentials
+
+import java.util.Collections
 
 /**
  * Connection settings used to establish Pub/Sub connection.
@@ -74,25 +76,18 @@ object PubSubSettings {
   /**
    * Create settings from config instance.
    */
-  def apply(config: Config)(implicit system: ClassicActorSystemProvider): PubSubSettings =
+  def apply(config: Config): PubSubSettings =
     new PubSubSettings(
       config.getString("host"),
       config.getInt("port"),
       config.getBoolean("use-tls"),
       Some(config.getString("rootCa")).filter(_ != "none"),
       config.getString("callCredentials") match {
-        case mode @ ("google-application-default" | "deprecated") =>
-          val GoogleSettings(_, credentials, requestSettings) = GoogleSettings()
-          val googleCredentials = credentials.asGoogle(system.classicSystem.dispatcher, requestSettings)
-          val callCredentials = MoreCallCredentials.from(googleCredentials)
-          if (mode == "google-application-default") { // it was set explicitly
-            system.classicSystem.log.warning(
-              "Config path alpakka.google.cloud.pubsub.grpc.callCredentials is deprecated, use alpakka.google.credentials"
-            )
-            Some(callCredentials)
-          } else { // reading the reference config
-            Some(DeprecatedCredentials(callCredentials))
-          }
+        case "google-application-default" | "deprecated" =>
+          val googleCredentials = GoogleCredentials.getApplicationDefault.createScoped(
+            Collections.singletonList("https://www.googleapis.com/auth/pubsub")
+          )
+          Some(DeprecatedCredentials(MoreCallCredentials.from(googleCredentials)))
         case _ => None
       }
     )
@@ -106,7 +101,7 @@ object PubSubSettings {
    * Create settings from a classic ActorSystem's config.
    */
   def apply(system: akka.actor.ActorSystem): PubSubSettings =
-    PubSubSettings(system.settings.config.getConfig("alpakka.google.cloud.pubsub.grpc"))(system)
+    PubSubSettings(system.settings.config.getConfig("alpakka.google.cloud.pubsub.grpc"))
 
   /**
    * Java API
@@ -122,8 +117,8 @@ object PubSubSettings {
    *
    * Create settings from config instance.
    */
-  def create(config: Config, system: ClassicActorSystemProvider): PubSubSettings =
-    PubSubSettings(config)(system)
+  def create(config: Config): PubSubSettings =
+    PubSubSettings(config)
 
   /**
    * Java API
