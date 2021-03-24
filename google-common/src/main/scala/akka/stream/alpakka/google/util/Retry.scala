@@ -17,6 +17,7 @@ import scala.util.{Failure, Success, Try}
 
 /**
  * A wrapper for a [[Throwable]] indicating that it should be retried.
+ * The underlying exception can be accessed with `getCause()`.
  */
 final case class Retry private (ex: Throwable) extends Throwable(ex) with NoStackTrace
 

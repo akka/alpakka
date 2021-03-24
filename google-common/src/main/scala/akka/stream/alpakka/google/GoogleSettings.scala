@@ -146,8 +146,12 @@ final case class RequestSettings @InternalApi private (
   def getRetrySettings = retrySettings
   def getForwardProxy = forwardProxy
 
+  def withUserIp(userIp: Option[String]) =
+    copy(userIp = userIp)
   def withUserIp(userIp: Optional[String]) =
     copy(userIp = userIp.asScala)
+  def withQuotaUser(quotaUser: Option[String]) =
+    copy(quotaUser = quotaUser)
   def withQuotaUser(quotaUser: Optional[String]) =
     copy(quotaUser = quotaUser.asScala)
   def withPrettyPrint(prettyPrint: Boolean) =
@@ -156,6 +160,8 @@ final case class RequestSettings @InternalApi private (
     copy(uploadChunkSize = uploadChunkSize)
   def withRetrySettings(retrySettings: RetrySettings) =
     copy(retrySettings = retrySettings)
+  def withForwardProxy(forwardProxy: Option[ForwardProxy]) =
+    copy(forwardProxy = forwardProxy)
   def withForwardProxy(forwardProxy: Optional[ForwardProxy]) =
     copy(forwardProxy = forwardProxy.asScala)
 
@@ -199,8 +205,12 @@ final case class RetrySettings @InternalApi private (maxRetries: Int,
 
   def withMaxRetries(maxRetries: Int) =
     copy(maxRetries = maxRetries)
+  def withMinBackoff(minBackoff: FiniteDuration) =
+    copy(minBackoff = minBackoff)
   def withMinBackoff(minBackoff: time.Duration) =
     copy(minBackoff = minBackoff.asScala)
+  def withMaxBackoff(maxBackoff: FiniteDuration) =
+    copy(maxBackoff = maxBackoff)
   def withMaxBackoff(maxBackoff: time.Duration) =
     copy(maxBackoff = maxBackoff.asScala)
   def withRandomFactor(randomFactor: Double) =
@@ -258,8 +268,12 @@ final case class ForwardProxy @InternalApi private (connectionContext: HttpsConn
                                                     poolSettings: ConnectionPoolSettings) {
   def getConnectionContext: jh.HttpsConnectionContext = connectionContext
   def getPoolSettings: jh.settings.ConnectionPoolSettings = poolSettings
-  def withConnectionContext(connectionContext: jh.HttpConnectionContext) =
+  def withConnectionContext(connectionContext: HttpsConnectionContext) =
+    copy(connectionContext = connectionContext)
+  def withConnectionContext(connectionContext: jh.HttpsConnectionContext) =
     copy(connectionContext = connectionContext.asInstanceOf[HttpsConnectionContext])
+  def withPoolSettings(poolSettings: ConnectionPoolSettings) =
+    copy(poolSettings = poolSettings)
   def withPoolSettings(poolSettings: jh.settings.ConnectionPoolSettings) =
     copy(poolSettings = poolSettings.asInstanceOf[ConnectionPoolSettings])
 }
