@@ -13,13 +13,18 @@ import scala.collection.immutable
 import scala.collection.JavaConverters._
 
 /**
- * @param projectId the project Id in the google account
+ * @param projectId (deprecated) the project Id in the google account
  * @param pullReturnImmediately when pulling messages, if there are non the API will wait or return immediately. Defaults to true.
  * @param pullMaxMessagesPerInternalBatch when pulling messages, the maximum that will be in the batch of messages. Defaults to 1000.
  */
-class PubSubConfig private (@deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0") val projectId: String,
-                            val pullReturnImmediately: Boolean,
-                            val pullMaxMessagesPerInternalBatch: Int) {
+class PubSubConfig private (
+    /** @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]] */ @deprecated(
+      "Use akka.stream.alpakka.google.GoogleSettings",
+      "3.0.0"
+    ) @Deprecated val projectId: String,
+    val pullReturnImmediately: Boolean,
+    val pullMaxMessagesPerInternalBatch: Int
+) {
 
   override def toString: String =
     s"PubSubConfig(projectId=$projectId)": @silent("deprecated")
@@ -37,7 +42,11 @@ object PubSubConfig {
   def create(pullReturnImmediately: Boolean, pullMaxMessagesPerInternalBatch: Int): PubSubConfig =
     apply(pullReturnImmediately, pullMaxMessagesPerInternalBatch)
 
+  /**
+   * @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]]
+   */
   @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
+  @Deprecated
   def apply(projectId: String, clientEmail: String, privateKey: String)(
       implicit actorSystem: ActorSystem
   ): PubSubConfig =
@@ -47,7 +56,11 @@ object PubSubConfig {
       pullMaxMessagesPerInternalBatch = 1000
     )
 
-  @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
+  /**
+   * @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]]
+   */
+  @deprecated("Use akka.stream.alpakka.google.GoogleSettings to manage credentials", "3.0.0")
+  @Deprecated
   def apply(projectId: String,
             clientEmail: String,
             privateKey: String,
@@ -61,14 +74,20 @@ object PubSubConfig {
       pullMaxMessagesPerInternalBatch = pullMaxMessagesPerInternalBatch
     )
 
+  /**
+   * @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]]
+   */
   @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
+  @Deprecated
   def create(projectId: String, clientEmail: String, privateKey: String, actorSystem: ActorSystem): PubSubConfig =
     apply(projectId, clientEmail, privateKey)(actorSystem)
 
   /**
    * Java API
+   * @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]] to manage credentials
    */
-  @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
+  @deprecated("Use akka.stream.alpakka.google.GoogleSettings to manage credentials", "3.0.0")
+  @Deprecated
   def create(projectId: String,
              clientEmail: String,
              privateKey: String,

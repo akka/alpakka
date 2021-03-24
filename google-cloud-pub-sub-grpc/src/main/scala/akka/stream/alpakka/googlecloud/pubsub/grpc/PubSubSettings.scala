@@ -20,7 +20,12 @@ final class PubSubSettings private (
     val port: Int,
     val useTls: Boolean,
     val rootCa: Option[String],
-    @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0") val callCredentials: Option[CallCredentials]
+    /** @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]] */ @deprecated(
+      "Use akka.stream.alpakka.google.GoogleSettings",
+      "3.0.0"
+    ) @Deprecated val callCredentials: Option[
+      CallCredentials
+    ]
 ) {
 
   /**
@@ -42,8 +47,10 @@ final class PubSubSettings private (
 
   /**
    * Credentials that are going to be used for gRPC call authorization.
+   * @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]]
    */
   @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
+  @Deprecated
   def withCallCredentials(callCredentials: CallCredentials): PubSubSettings =
     copy(callCredentials = Some(callCredentials))
 

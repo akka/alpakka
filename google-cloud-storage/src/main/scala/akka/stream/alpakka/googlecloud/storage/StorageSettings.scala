@@ -4,7 +4,11 @@
 
 package akka.stream.alpakka.googlecloud.storage
 
+/**
+ * @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]]
+ */
 @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
+@Deprecated
 final class StorageSettings private (val projectId: String, val clientEmail: String, val privateKey: String) {
   def withProjectId(projectId: String): StorageSettings = copy(projectId = projectId)
 
@@ -21,7 +25,11 @@ final class StorageSettings private (val projectId: String, val clientEmail: Str
     s"StorageSettings(projectId=$projectId, clientEmail=$clientEmail, privateKey=**)"
 }
 
+/**
+ * @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]]
+ */
 @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
+@Deprecated
 object StorageSettings {
   def apply(projectId: String, clientEmail: String, privateKey: String): StorageSettings =
     new StorageSettings(projectId, clientEmail, privateKey)

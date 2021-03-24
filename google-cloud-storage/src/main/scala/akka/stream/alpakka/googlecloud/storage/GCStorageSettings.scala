@@ -7,7 +7,11 @@ package akka.stream.alpakka.googlecloud.storage
 import akka.actor.{ActorSystem, ClassicActorSystemProvider}
 import com.typesafe.config.Config
 
+/**
+ * @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]]
+ */
 @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
+@Deprecated
 final class GCStorageSettings private (
     val projectId: String,
     val clientEmail: String,
@@ -92,7 +96,11 @@ final class GCStorageSettings private (
     java.util.Objects.hash(projectId, clientEmail, privateKey, baseUrl, basePath, tokenUrl, tokenScope)
 }
 
-@deprecated(message = "Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
+/**
+ * @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]]
+ */
+@deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
+@Deprecated
 object GCStorageSettings {
   val ConfigPath = "alpakka.google.cloud.storage"
 

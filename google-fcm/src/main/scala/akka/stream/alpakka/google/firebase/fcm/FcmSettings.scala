@@ -14,24 +14,56 @@ import scala.compat.java8.OptionConverters._
 
 @silent("deprecated")
 final class FcmSettings private (
-    @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0") val clientEmail: String,
-    @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0") val privateKey: String,
-    @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0") val projectId: String,
+    /** Use [[akka.stream.alpakka.google.GoogleSettings]] */ @deprecated(
+      "Use akka.stream.alpakka.google.GoogleSettings",
+      "3.0.0"
+    ) @Deprecated val clientEmail: String,
+    /** Use [[akka.stream.alpakka.google.GoogleSettings]] */ @deprecated(
+      "Use akka.stream.alpakka.google.GoogleSettings",
+      "3.0.0"
+    ) @Deprecated val privateKey: String,
+    /** Use [[akka.stream.alpakka.google.GoogleSettings]] */ @deprecated(
+      "Use akka.stream.alpakka.google.GoogleSettings",
+      "3.0.0"
+    ) @Deprecated val projectId: String,
     val isTest: Boolean,
     val maxConcurrentConnections: Int,
-    @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0") val forwardProxy: Option[ForwardProxy] =
-      Option.empty
+    /** Use [[akka.stream.alpakka.google.GoogleSettings]] */ @deprecated(
+      "Use akka.stream.alpakka.google.GoogleSettings",
+      "3.0.0"
+    ) @Deprecated val forwardProxy: Option[ForwardProxy] = Option.empty
 ) {
 
+  /**
+   * @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]]
+   */
   @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
+  @Deprecated
   def withClientEmail(value: String): FcmSettings = copy(clientEmail = value)
+
+  /**
+   * @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]]
+   */
   @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
+  @Deprecated
   def withPrivateKey(value: String): FcmSettings = copy(privateKey = value)
+
+  /**
+   * @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]]
+   */
   @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
+  @Deprecated
   def withProjectId(value: String): FcmSettings = copy(projectId = value)
+
   def withIsTest(value: Boolean): FcmSettings = if (isTest == value) this else copy(isTest = value)
+
   def withMaxConcurrentConnections(value: Int): FcmSettings = copy(maxConcurrentConnections = value)
+
+  /**
+   * @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]]
+   */
   @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
+  @Deprecated
   def withForwardProxy(value: ForwardProxy): FcmSettings = copy(forwardProxy = Option(value))
 
   private def copy(
@@ -54,7 +86,11 @@ final class FcmSettings private (
 
 }
 
+/**
+ * @deprecated Use [[akka.stream.alpakka.google.ForwardProxy]]
+ */
 @deprecated("Use akka.stream.alpakka.google.ForwardProxy", "3.0.0")
+@Deprecated
 object ForwardProxyTrustPem {
 
   /** Scala API */
@@ -67,7 +103,11 @@ object ForwardProxyTrustPem {
 
 }
 
+/**
+ * @deprecated Use [[akka.stream.alpakka.google.ForwardProxy]]
+ */
 @deprecated("Use akka.stream.alpakka.google.ForwardProxy", "3.0.0")
+@Deprecated
 final class ForwardProxyTrustPem private (val pemPath: String) {
 
   def getPemPath: String = pemPath
@@ -88,7 +128,11 @@ final class ForwardProxyTrustPem private (val pemPath: String) {
 
 }
 
+/**
+ * @deprecated Use [[akka.stream.alpakka.google.ForwardProxy]]
+ */
 @deprecated("Use akka.stream.alpakka.google.ForwardProxy", "3.0.0")
+@Deprecated
 object ForwardProxyCredentials {
 
   /** Scala API */
@@ -101,7 +145,11 @@ object ForwardProxyCredentials {
 
 }
 
+/**
+ * @deprecated Use [[akka.stream.alpakka.google.ForwardProxy]]
+ */
 @deprecated("Use akka.stream.alpakka.google.ForwardProxy", "3.0.0")
+@Deprecated
 final class ForwardProxyCredentials private (val username: String, val password: String) {
 
   /** Java API */
@@ -134,7 +182,11 @@ final class ForwardProxyCredentials private (val username: String, val password:
 
 }
 
+/**
+ * @deprecated Use [[akka.stream.alpakka.google.ForwardProxy]]
+ */
 @deprecated("Use akka.stream.alpakka.google.ForwardProxy", "3.0.0")
+@Deprecated
 object ForwardProxy {
 
   /** Scala API */
@@ -165,7 +217,11 @@ object ForwardProxy {
 
 }
 
+/**
+ * @deprecated Use [[akka.stream.alpakka.google.ForwardProxy]]
+ */
 @deprecated("Use akka.stream.alpakka.google.ForwardProxy", "3.0.0")
+@Deprecated
 final class ForwardProxy private (val host: String,
                                   val port: Int,
                                   val credentials: Option[ForwardProxyCredentials],
@@ -231,8 +287,12 @@ object FcmSettings {
   /** Java API */
   def create(): FcmSettings = apply()
 
-  /** Scala API */
+  /**
+   * Scala API
+   * @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]]
+   */
   @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
+  @Deprecated
   def apply(
       clientEmail: String,
       privateKey: String,
@@ -245,7 +305,11 @@ object FcmSettings {
     maxConcurrentConnections = 100
   )
 
+  /**
+   * @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]]
+   */
   @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
+  @Deprecated
   def apply(
       clientEmail: String,
       privateKey: String,
@@ -260,13 +324,21 @@ object FcmSettings {
     forwardProxy = Option(forwardProxy)
   )
 
-  /** Java API */
+  /**
+   * Java API
+   * @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]]
+   */
   @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
+  @Deprecated
   def create(clientEmail: String, privateKey: String, projectId: String): FcmSettings = {
     apply(clientEmail, privateKey, projectId)
   }
 
+  /**
+   * @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]]
+   */
   @deprecated("Use akka.stream.alpakka.google.GoogleSettings", "3.0.0")
+  @Deprecated
   def create(clientEmail: String, privateKey: String, projectId: String, forwardProxy: ForwardProxy): FcmSettings = {
     apply(clientEmail, privateKey, projectId, forwardProxy)
   }
