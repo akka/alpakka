@@ -106,7 +106,7 @@ Scala
 Java
 : @@snip [snip](/google-cloud-bigquery/src/test/java/docs/javadsl/BigQueryDoc.java) { #run-query }
 
-Notice that the source materializes a @scala[`Future[QueryResponse[(String, Seq[Address])]]`] @java[`CompletionStage<QueryJsonProtocol.QueryResponse<NameAddressesTuple>>`] which can be used to retrieve metadata related to the query.
+Notice that the source materializes a @scala[`Future[QueryResponse[(String, Seq[Address])]]`] @java[`CompletionStage<QueryResponse<NameAddressesTuple>>`] which can be used to retrieve metadata related to the query.
 For example, you can use a dry run to estimate the number of bytes that will be read by a query.
 
 Scala

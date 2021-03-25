@@ -15,8 +15,8 @@ import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, FromResponseUnm
 import akka.stream.alpakka.google.GoogleAttributes
 import akka.stream.alpakka.google.http.GoogleHttp
 import akka.stream.alpakka.google.implicits._
-import akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol
-import akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.{
+import akka.stream.alpakka.googlecloud.bigquery.model.{
+  Row,
   TableDataInsertAllRequest,
   TableDataInsertAllResponse,
   TableDataListResponse
@@ -86,7 +86,7 @@ private[scaladsl] trait BigQueryTableData { this: BigQueryRest =>
               Some(randomUUID(randomGen).toString)
             else
               None
-          TableDataJsonProtocol.Row(insertId, x)
+          Row(insertId, x)
         }
 
         TableDataInsertAllRequest(None, None, templateSuffix, rows) :: Nil
@@ -112,7 +112,7 @@ private[scaladsl] trait BigQueryTableData { this: BigQueryRest =>
    * @param tableId table ID of the table to insert into
    * @param retryFailedRequests whether to retry failed requests
    * @tparam In the data model for each record
-   * @return a [[akka.stream.scaladsl.Flow]] that sends each [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.TableDataInsertAllRequest]] and emits a [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.TableDataInsertAllResponse]] for each
+   * @return a [[akka.stream.scaladsl.Flow]] that sends each [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataInsertAllRequest]] and emits a [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataInsertAllResponse]] for each
    */
   def insertAll[In](datasetId: String, tableId: String, retryFailedRequests: Boolean)(
       implicit m: ToEntityMarshaller[TableDataInsertAllRequest[In]]

@@ -14,7 +14,7 @@ import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{HttpRequest, RequestEntity}
 import akka.stream.alpakka.google.GoogleSettings
 import akka.stream.alpakka.google.implicits._
-import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.{Table, TableListResponse, TableReference}
+import akka.stream.alpakka.googlecloud.bigquery.model.{Table, TableListResponse, TableReference}
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.schema.TableSchemaWriter
 import akka.stream.alpakka.googlecloud.bigquery.{BigQueryEndpoints, BigQueryException}
 import akka.stream.scaladsl.{Keep, Sink, Source}
@@ -29,7 +29,7 @@ private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
    *
    * @param datasetId dataset ID of the tables to list
    * @param maxResults the maximum number of results to return in a single response page
-   * @return a [[akka.stream.scaladsl.Source]] that emits each [[akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.Table]] in the dataset and materializes a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.TableListResponse]]
+   * @return a [[akka.stream.scaladsl.Source]] that emits each [[akka.stream.alpakka.googlecloud.bigquery.model.Table]] in the dataset and materializes a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.TableListResponse]]
    */
   def tables(datasetId: String, maxResults: Option[Int] = None): Source[Table, Future[TableListResponse]] =
     source { settings =>
@@ -46,7 +46,7 @@ private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
    *
    * @param datasetId dataset ID of the requested table
    * @param tableId table ID of the requested table
-   * @return a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.Table]]
+   * @return a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.Table]]
    */
   def table(datasetId: String, tableId: String)(implicit system: ClassicActorSystemProvider,
                                                 settings: GoogleSettings): Future[Table] = {
@@ -63,14 +63,14 @@ private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
    * @param datasetId dataset ID of the new table
    * @param tableId table ID of the new table
    * @tparam T the data model for the records of this table
-   * @return a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.Table]]
+   * @return a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.Table]]
    */
   def createTable[T](datasetId: String, tableId: String)(
       implicit system: ClassicActorSystemProvider,
       settings: GoogleSettings,
       schemaWriter: TableSchemaWriter[T]
   ): Future[Table] = {
-    val table = Table(TableReference(None, datasetId, tableId), None, Some(schemaWriter.write), None, None)
+    val table = Table(TableReference(None, datasetId, Some(tableId)), None, Some(schemaWriter.write), None, None)
     createTable(table)
   }
 
@@ -78,8 +78,8 @@ private[scaladsl] trait BigQueryTables { this: BigQueryRest =>
    * Creates a new, empty table in the dataset.
    * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tables/insert BigQuery reference]]
    *
-   * @param table the [[akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.Table]] to create
-   * @return a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.Table]]
+   * @param table the [[akka.stream.alpakka.googlecloud.bigquery.model.Table]] to create
+   * @return a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.Table]]
    */
   def createTable(table: Table)(implicit system: ClassicActorSystemProvider,
                                 settings: GoogleSettings): Future[Table] = {

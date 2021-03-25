@@ -8,11 +8,8 @@ import akka.http.javadsl.marshallers.jackson.Jackson
 import akka.http.javadsl.marshalling.Marshaller
 import akka.http.javadsl.model.{HttpEntity, MediaTypes, RequestEntity}
 import akka.http.javadsl.unmarshalling.Unmarshaller
-import akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse
-import akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.{
-  TableDataInsertAllRequest,
-  TableDataListResponse
-}
+import akka.stream.alpakka.googlecloud.bigquery.model.QueryResponse
+import akka.stream.alpakka.googlecloud.bigquery.model.{TableDataInsertAllRequest, TableDataListResponse}
 import com.fasterxml.jackson.databind.{JavaType, MapperFeature, ObjectMapper}
 
 import java.io.IOException
@@ -22,7 +19,7 @@ object BigQueryMarshallers {
   private val defaultObjectMapper = new ObjectMapper().enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
 
   /**
-   * [[akka.http.javadsl.unmarshalling.Unmarshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.TableDataListResponse]]
+   * [[akka.http.javadsl.unmarshalling.Unmarshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataListResponse]]
    *
    * @param `type` the data model for each row
    * @tparam T the data model for each row
@@ -31,7 +28,7 @@ object BigQueryMarshallers {
     unmarshaller(defaultObjectMapper.getTypeFactory.constructParametricType(classOf[TableDataListResponse[T]], `type`))
 
   /**
-   * [[akka.http.javadsl.unmarshalling.Unmarshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.TableDataListResponse]]
+   * [[akka.http.javadsl.unmarshalling.Unmarshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataListResponse]]
    *
    * @param mapper an [[ObjectMapper]]
    * @param `type` the data model for each row
@@ -42,7 +39,7 @@ object BigQueryMarshallers {
     unmarshaller(mapper, mapper.getTypeFactory.constructParametricType(classOf[TableDataListResponse[T]], `type`))
 
   /**
-   * [[akka.http.javadsl.marshalling.Marshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.TableDataInsertAllRequest]]
+   * [[akka.http.javadsl.marshalling.Marshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataInsertAllRequest]]
    *
    * @tparam T the data model for each row
    */
@@ -50,7 +47,7 @@ object BigQueryMarshallers {
     Jackson.marshaller[TableDataInsertAllRequest[T]]()
 
   /**
-   * [[akka.http.javadsl.marshalling.Marshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.TableDataInsertAllRequest]]
+   * [[akka.http.javadsl.marshalling.Marshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataInsertAllRequest]]
    *
    * @param mapper an [[ObjectMapper]]
    * @tparam T the data model for each row
@@ -61,7 +58,7 @@ object BigQueryMarshallers {
     Jackson.marshaller[TableDataInsertAllRequest[T]](mapper)
 
   /**
-   * [[akka.http.javadsl.unmarshalling.Unmarshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
+   * [[akka.http.javadsl.unmarshalling.Unmarshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.QueryResponse]]
    *
    * @param `type` the data model for each row
    * @tparam T the data model for each row
@@ -70,7 +67,7 @@ object BigQueryMarshallers {
     unmarshaller(defaultObjectMapper.getTypeFactory.constructParametricType(classOf[QueryResponse[T]], `type`))
 
   /**
-   * [[akka.http.javadsl.unmarshalling.Unmarshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
+   * [[akka.http.javadsl.unmarshalling.Unmarshaller]] for [[akka.stream.alpakka.googlecloud.bigquery.model.QueryResponse]]
    *
    * @param mapper an [[ObjectMapper]]
    * @param `type` the data model for each row
@@ -85,9 +82,9 @@ object BigQueryMarshallers {
   def unmarshaller[T](mapper: ObjectMapper, expectedType: JavaType): Unmarshaller[HttpEntity, T] =
     Unmarshaller
       .forMediaType(MediaTypes.APPLICATION_JSON, Unmarshaller.entityToString)
-      .thenApply(fromJSON(mapper, _, expectedType))
+      .thenApply(fromJson(mapper, _, expectedType))
 
-  private def fromJSON[T](mapper: ObjectMapper, json: String, expectedType: JavaType) =
+  private def fromJson[T](mapper: ObjectMapper, json: String, expectedType: JavaType) =
     try mapper.readerFor(expectedType).readValue[T](json)
     catch {
       case e: IOException =>

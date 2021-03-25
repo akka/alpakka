@@ -10,7 +10,7 @@ import akka.http.scaladsl.model.{ErrorInfo, ExceptionWithErrorInfo, HttpResponse
 import akka.http.scaladsl.unmarshalling.{FromResponseUnmarshaller, PredefinedFromEntityUnmarshallers, Unmarshaller}
 import akka.stream.alpakka.google.implicits._
 import akka.stream.alpakka.google.util.Retry
-import akka.stream.alpakka.googlecloud.bigquery.model.ErrorProtoJsonProtocol.ErrorProto
+import akka.stream.alpakka.googlecloud.bigquery.model.ErrorProto
 import spray.json.DefaultJsonProtocol._
 import spray.json.{enrichAny, RootJsonFormat}
 
