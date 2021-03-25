@@ -703,6 +703,18 @@ object S3 {
    *
    * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
    * @param bucketName bucket name
+   * @param system actor system to run with
+   * @param attributes attributes to run request with
+   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
+   */
+  def makeBucket(bucketName: String, system: ClassicActorSystemProvider, attributes: Attributes): CompletionStage[Done] =
+    makeBucket(bucketName, system, attributes)
+
+  /**
+   * Create new bucket with a given name
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
+   * @param bucketName bucket name
    * @param materializer materializer to run with
    * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
    * @deprecated pass in an `ClassicActorSystemProvider` instead of the `Materializer`, since 3.0.0
@@ -711,6 +723,17 @@ object S3 {
   @silent
   def makeBucket(bucketName: String, materializer: Materializer): CompletionStage[Done] =
     makeBucket(bucketName, materializer, Attributes(), S3Headers.empty)
+
+  /**
+   * Create new bucket with a given name
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
+   * @param bucketName bucket name
+   * @param system actor system to run with
+   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
+   */
+  def makeBucket(bucketName: String, system: ClassicActorSystemProvider): CompletionStage[Done] =
+    makeBucket(bucketName, system, Attributes())
 
   /**
    * Create new bucket with a given name
@@ -729,31 +752,6 @@ object S3 {
                  attributes: Attributes,
                  s3Headers: S3Headers): CompletionStage[Done] =
     S3Stream.makeBucket(bucketName, s3Headers)(materializer, attributes).toJava
-
-  /**
-   * Create new bucket with a given name
-   *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
-   * @param bucketName bucket name
-   * @param system the actor system which provides the materializer to run with
-   * @param attributes attributes to run request with
-   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
-   */
-  def makeBucket(bucketName: String,
-                 system: ClassicActorSystemProvider,
-                 attributes: Attributes): CompletionStage[Done] =
-    makeBucket(bucketName, system, attributes, S3Headers.empty)
-
-  /**
-   * Create new bucket with a given name
-   *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
-   * @param bucketName bucket name
-   * @param system the actor system which provides the materializer to run with
-   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
-   */
-  def makeBucket(bucketName: String, system: ClassicActorSystemProvider): CompletionStage[Done] =
-    makeBucket(bucketName, system, Attributes(), S3Headers.empty)
 
   /**
    * Create new bucket with a given name
