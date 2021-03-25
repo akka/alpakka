@@ -9,14 +9,16 @@ import akka.actor.ClassicActorSystemProvider
 import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.marshalling.{Marshal, ToEntityMarshaller}
-import akka.http.scaladsl.model.HttpMethods.{GET, POST}
+import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
+import akka.http.scaladsl.model.HttpMethods.POST
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{HttpEntity, HttpRequest, RequestEntity}
-import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
-import akka.http.scaladsl.util.FastFuture.EnhancedFuture
+import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.stream.FlowShape
-import akka.stream.alpakka.googlecloud.bigquery.impl.LoadJob
-import akka.stream.alpakka.googlecloud.bigquery.impl.http.BigQueryHttp
+import akka.stream.alpakka.google.implicits._
+import akka.stream.alpakka.google.scaladsl.`X-Upload-Content-Type`
+import akka.stream.alpakka.google.{GoogleAttributes, GoogleSettings}
+import akka.stream.alpakka.googlecloud.bigquery._
 import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.{
   CreateNeverDisposition,
   Job,
@@ -27,7 +29,6 @@ import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.{
   WriteAppendDisposition
 }
 import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.TableReference
-import akka.stream.alpakka.googlecloud.bigquery._
 import akka.stream.scaladsl.{Flow, GraphDSL, Keep, Sink}
 import akka.util.ByteString
 import com.github.ghik.silencer.silent
@@ -45,16 +46,12 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
    * @return a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.Job]]
    */
   def job(jobId: String, location: Option[String] = None)(implicit system: ClassicActorSystemProvider,
-                                                          settings: BigQuerySettings): Future[Job] = {
+                                                          settings: GoogleSettings): Future[Job] = {
     import BigQueryException._
     import SprayJsonSupport._
     val uri = BigQueryEndpoints.job(settings.projectId, jobId)
     val query = ("location" -> location) ?+: Query.Empty
-    BigQueryHttp()
-      .retryRequestWithOAuth(HttpRequest(GET, uri.withQuery(query)))
-      .flatMap { response =>
-        Unmarshal(response.entity).to[Job]
-      }(system.classicSystem.dispatcher)
+    singleRequest[Job](HttpRequest(uri = uri.withQuery(query)))
   }
 
   /**
@@ -68,21 +65,16 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
   def cancelJob(
       jobId: String,
       location: Option[String] = None
-  )(implicit system: ClassicActorSystemProvider, settings: BigQuerySettings): Future[JobCancelResponse] = {
+  )(implicit system: ClassicActorSystemProvider, settings: GoogleSettings): Future[JobCancelResponse] = {
     import BigQueryException._
     import SprayJsonSupport._
-    implicit val ec = system.classicSystem.dispatcher
     val uri = BigQueryEndpoints.jobCancel(settings.projectId, jobId)
     val query = ("location" -> location) ?+: Query.Empty
-    BigQueryHttp()
-      .retryRequestWithOAuth(HttpRequest(POST, uri.withQuery(query)))
-      .flatMap { response =>
-        Unmarshal(response.entity).to[JobCancelResponse]
-      }(system.classicSystem.dispatcher)
+    singleRequest[JobCancelResponse](HttpRequest(POST, uri.withQuery(query)))
   }
 
   /**
-   * Loads data into BigQuery via a series of asynchronous load jobs, configurable by [[akka.stream.alpakka.googlecloud.bigquery.LoadJobSettings]].
+   * Loads data into BigQuery via a series of asynchronous load jobs created at the rate `loadJobPerTableQuota`.
    * @note WARNING: Pending the resolution of [[ https://issuetracker.google.com/176002651 BigQuery issue 176002651]] this method may not work as expected.
    *       As a workaround, you can use the config setting `akka.http.parsing.conflicting-content-type-header-processing-mode = first` with Akka HTTP v10.2.4 or later.
    *
@@ -96,8 +88,8 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
       .fromMaterializer { (mat, attr) =>
         import SprayJsonSupport._
         import mat.executionContext
-        val settings = BigQueryAttributes.resolveSettings(attr, mat)
-        import settings.loadJobSettings.perTableQuota
+        implicit val settings = GoogleAttributes.resolveSettings(mat, attr)
+        val BigQuerySettings(loadJobPerTableQuota) = BigQueryAttributes.resolveSettings(mat, attr)
 
         val job = Job(
           Some(
@@ -120,7 +112,7 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
         val jobFlow = {
           val newline = ByteString("\n")
           val sink = Flow[In]
-            .takeWithin(perTableQuota)
+            .takeWithin(loadJobPerTableQuota)
             .mapAsync(1)(Marshal(_).to[HttpEntity])
             .flatMapConcat(_.dataBytes)
             .intersperse(newline)
@@ -154,16 +146,17 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
   ): Sink[ByteString, Future[Job]] =
     Sink
       .fromMaterializer { (mat, attr) =>
-        import mat.executionContext
-        implicit val settings = BigQueryAttributes.resolveSettings(attr, mat)
-        val uri = BigQueryMediaEndpoints.jobs(settings.projectId)
+        import BigQueryException._
+        implicit val settings = GoogleAttributes.resolveSettings(mat, attr)
+        implicit val ec = ExecutionContexts.parasitic
+        val uri = BigQueryMediaEndpoints.jobs(settings.projectId).withQuery(Query("uploadType" -> "resumable"))
         Sink
           .lazyFutureSink { () =>
             Marshal(job)
               .to[RequestEntity]
-              .fast
               .map { entity =>
-                LoadJob(HttpRequest(POST, uri, entity = entity))
+                val request = HttpRequest(POST, uri, List(`X-Upload-Content-Type`(`application/octet-stream`)), entity)
+                resumableUpload[Job](request)
               }(ExecutionContexts.parasitic)
           }
           .mapMaterializedValue(_.flatten)

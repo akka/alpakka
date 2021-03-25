@@ -25,6 +25,7 @@ object Dependencies {
   val AkkaHttpBinaryVersion = if (CronBuild) "10.2" else "10.1"
   val ScalaTestVersion = "3.2.2"
   val mockitoVersion = "3.4.6" // check even https://github.com/scalatest/scalatestplus-mockito/releases
+  val hoverflyVersion = "0.13.1"
 
   val CouchbaseVersion = "2.7.16"
   val CouchbaseVersionForDocs = "2.7"
@@ -205,6 +206,16 @@ object Dependencies {
       ) ++ JacksonDatabindDependencies
   )
 
+  val GoogleCommon = Seq(
+    libraryDependencies ++= Seq(
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
+        "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
+        "com.github.jwt-scala" %% "jwt-spray-json" % "7.1.0", // ApacheV2
+        "com.google.auth" % "google-auth-library-credentials" % "0.24.1", // BSD 3-clause
+        "io.specto" % "hoverfly-java" % hoverflyVersion % Test // ApacheV2
+      ) ++ Mockito ++ Silencer
+  )
+
   val GoogleBigQuery = Seq(
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttp1024,
@@ -214,7 +225,7 @@ object Dependencies {
         "com.fasterxml.jackson.core" % "jackson-annotations" % JacksonDatabindVersion,
         "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % JacksonDatabindVersion % Test,
         "com.pauldijou" %% "jwt-core" % "3.1.0", //ApacheV2
-        "io.specto" % "hoverfly-java" % "0.12.3" % Test //ApacheV2
+        "io.specto" % "hoverfly-java" % hoverflyVersion % Test //ApacheV2
       ) ++ Mockito ++ Silencer
   )
 
@@ -224,7 +235,7 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "com.pauldijou" %% "jwt-core" % JwtCoreVersion, // ApacheV2
         "com.github.tomakehurst" % "wiremock" % "2.25.1" % Test // ApacheV2
-      ) ++ Mockito
+      ) ++ Mockito ++ Silencer
   )
 
   val GooglePubSubGrpc = Seq(
@@ -244,7 +255,7 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "com.pauldijou" %% "jwt-core" % JwtCoreVersion // ApacheV2
-      ) ++ Mockito
+      ) ++ Mockito ++ Silencer
   )
 
   val GoogleStorage = Seq(
@@ -252,8 +263,8 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "com.pauldijou" %% "jwt-core" % JwtCoreVersion, //ApacheV2
-        "com.github.tomakehurst" % "wiremock" % "2.25.1" % Test // ApacheV2
-      ) ++ Mockito
+        "io.specto" % "hoverfly-java" % hoverflyVersion % Test // ApacheV2
+      ) ++ Mockito ++ Silencer
   )
 
   val HBase = {

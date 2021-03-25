@@ -59,10 +59,16 @@ yourself, but we recommend upgrading.
 
 ## Configuration
 
-The connector comes with the default settings configured to work with the Google Pub Sub endpoint and uses the default way of
-locating credentials by looking at the `GOOGLE_APPLICATION_CREDENTIALS` environment variable. Please check
-[Google official documentation](https://cloud.google.com/pubsub/docs/reference/libraries#setting_up_authentication) for more details
-on how to obtain credentials for your application.
+Shared settings for all Google connectors are read by default from the `alpakka.google` configuration section in your `application.conf`.
+Credentials will be loaded automatically:
+
+1. From the file path specified by the `GOOGLE_APPLICATION_CREDENTIALS` environment variable or another [“well-known” location](https://medium.com/google-cloud/use-google-cloud-user-credentials-when-testing-containers-locally-acb57cd4e4da); or
+2. When running in a [Compute Engine](https://cloud.google.com/compute) instance.
+
+Credentials can also be specified manually in your configuration file.
+
+All of the common configuration settings for Google connectors can be found in the @github[reference.conf](/google-cloud-common/src/main/resources/reference.conf).
+Additional PubSub-specific configuration settings can be found in its own @github[reference.conf](/google-cloud-pub-sub-grpc/src/main/resources/reference.conf).
 
 The defaults can be changed (for example when testing against the emulator) by tweaking the reference configuration:
 
@@ -82,7 +88,7 @@ Scala
 Java
 : @@snip (/google-cloud-pub-sub-grpc/src/test/java/docs/javadsl/IntegrationTest.java) { #attributes }
 
-## Publishing 
+## Publishing
 
 We first construct a message and then a request using Google's builders. We declare a singleton source which will go via our publishing flow. All messages sent to the flow are published to PubSub.
 

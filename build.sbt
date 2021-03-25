@@ -174,13 +174,20 @@ lazy val geode =
     fatalWarnings := true
   )
 
+lazy val googleCommon = internalProject(
+  "google-common",
+  Dependencies.GoogleCommon,
+  Test / fork := true,
+  fatalWarnings := true
+).disablePlugins(MimaPlugin).dependsOn(testkit % Test)
+
 lazy val googleCloudBigQuery = alpakkaProject(
   "google-cloud-bigquery",
   "google.cloud.bigquery",
   Dependencies.GoogleBigQuery,
   Test / fork := true,
   fatalWarnings := true
-).disablePlugins(MimaPlugin).enablePlugins(spray.boilerplate.BoilerplatePlugin)
+).dependsOn(googleCommon).disablePlugins(MimaPlugin).enablePlugins(spray.boilerplate.BoilerplatePlugin)
 
 lazy val googleCloudPubSub = alpakkaProject(
   "google-cloud-pub-sub",
@@ -190,7 +197,7 @@ lazy val googleCloudPubSub = alpakkaProject(
   // See docker-compose.yml gcloud-pubsub-emulator_prep
   Test / envVars := Map("PUBSUB_EMULATOR_HOST" -> "localhost", "PUBSUB_EMULATOR_PORT" -> "8538"),
   fatalWarnings := true
-)
+).dependsOn(googleCommon)
 
 lazy val googleCloudPubSubGrpc = alpakkaProject(
   "google-cloud-pub-sub-grpc",
@@ -208,16 +215,21 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
     ),
   compile / javacOptions := (compile / javacOptions).value.filterNot(_ == "-Xlint:deprecation"),
   fatalWarnings := true
-).enablePlugins(AkkaGrpcPlugin)
+).enablePlugins(AkkaGrpcPlugin).dependsOn(googleCommon)
 
-lazy val googleCloudStorage =
-  alpakkaProject("google-cloud-storage", "google.cloud.storage", Dependencies.GoogleStorage, fatalWarnings := true)
+lazy val googleCloudStorage = alpakkaProject(
+  "google-cloud-storage",
+  "google.cloud.storage",
+  Dependencies.GoogleStorage,
+  fatalWarnings := true,
+  Test / fork := true
+).dependsOn(googleCommon)
 
 lazy val googleFcm = alpakkaProject("google-fcm",
                                     "google.firebase.fcm",
                                     Dependencies.GoogleFcm,
                                     Test / fork := true,
-                                    fatalWarnings := true)
+                                    fatalWarnings := true).dependsOn(googleCommon)
 
 lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, Test / fork := true, fatalWarnings := true)
 

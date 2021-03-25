@@ -6,10 +6,11 @@ package docs.scaladsl
 
 import akka.http.scaladsl.model.ContentTypes
 import akka.stream.alpakka.googlecloud.storage.scaladsl.{GCStorage, GCStorageWiremockBase}
-import akka.stream.alpakka.googlecloud.storage.{Bucket, GCStorageAttributes, GCStorageExt, StorageObject}
+import akka.stream.alpakka.googlecloud.storage.{Bucket, StorageObject}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.Attributes
+import akka.stream.alpakka.google.{GoogleAttributes, GoogleSettings}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
 import org.scalatest.BeforeAndAfterAll
@@ -28,10 +29,9 @@ class GCStorageSourceSpec
     with Matchers
     with LogCapturing {
 
-  private val sampleSettings = GCStorageExt(system).settings
+  private val sampleSettings = GoogleSettings()
 
-  override def beforeAll(): Unit =
-    mockTokenApi()
+  override def beforeAll(): Unit = ()
 
   override protected def afterAll(): Unit = {
     super.afterAll()
@@ -42,11 +42,14 @@ class GCStorageSourceSpec
     "create a bucket" in {
       val location = "europe-west1"
 
-      mockBucketCreate(location)
+      mock.simulate(
+        mockTokenApi,
+        mockBucketCreate(location)
+      )
 
       // #make-bucket
 
-      implicit val sampleAttributes: Attributes = GCStorageAttributes.settings(sampleSettings)
+      implicit val sampleAttributes: Attributes = GoogleAttributes.settings(sampleSettings)
 
       val createBucketResponse: Future[Bucket] = GCStorage.createBucket(bucketName, location)
       val createBucketSourceResponse: Source[Bucket, NotUsed] = GCStorage.createBucketSource(bucketName, location)
@@ -67,9 +70,12 @@ class GCStorageSourceSpec
     "fail with error when bucket creation fails" in {
       val location = "europe-west1"
 
-      mockBucketCreateFailure(location)
+      mock.simulate(
+        mockTokenApi,
+        mockBucketCreateFailure(location)
+      )
 
-      implicit val sampleAttributes: Attributes = GCStorageAttributes.settings(sampleSettings)
+      implicit val sampleAttributes: Attributes = GoogleAttributes.settings(sampleSettings)
 
       val createBucketResponse = GCStorage.createBucket(bucketName, location)
       val createBucketSourceResponse = GCStorage.createBucketSource(bucketName, location)
@@ -80,11 +86,14 @@ class GCStorageSourceSpec
 
     "delete a bucket" in {
 
-      mockDeleteBucket()
+      mock.simulate(
+        mockTokenApi,
+        mockDeleteBucket()
+      )
 
       //#delete-bucket
 
-      implicit val sampleAttributes: Attributes = GCStorageAttributes.settings(sampleSettings)
+      implicit val sampleAttributes: Attributes = GoogleAttributes.settings(sampleSettings)
 
       val deleteBucketResponse: Future[Done] = GCStorage.deleteBucket(bucketName)
       val deleteBucketSourceResponse: Source[Done, NotUsed] = GCStorage.deleteBucketSource(bucketName)
@@ -97,9 +106,12 @@ class GCStorageSourceSpec
 
     "fail with error when bucket deletion fails" in {
 
-      mockDeleteBucketFailure()
+      mock.simulate(
+        mockTokenApi,
+        mockDeleteBucketFailure()
+      )
 
-      implicit val sampleAttributes: Attributes = GCStorageAttributes.settings(sampleSettings)
+      implicit val sampleAttributes: Attributes = GoogleAttributes.settings(sampleSettings)
 
       val deleteBucketResponse = GCStorage.deleteBucket(bucketName)
       val deleteBucketSourceResponse = GCStorage.deleteBucketSource(bucketName)
@@ -110,11 +122,14 @@ class GCStorageSourceSpec
 
     "get a bucket if bucket exists" in {
 
-      mockGetExistingBucket()
+      mock.simulate(
+        mockTokenApi,
+        mockGetExistingBucket()
+      )
 
       //#get-bucket
 
-      implicit val sampleAttributes: Attributes = GCStorageAttributes.settings(sampleSettings)
+      implicit val sampleAttributes: Attributes = GoogleAttributes.settings(sampleSettings)
 
       val getBucketResponse: Future[Option[Bucket]] = GCStorage.getBucket(bucketName)
       val getBucketSourceResponse: Source[Option[Bucket], NotUsed] = GCStorage.getBucketSource(bucketName)
@@ -132,9 +147,12 @@ class GCStorageSourceSpec
 
     "not return bucket if bucket doesn't exist" in {
 
-      mockGetNonExistingBucket()
+      mock.simulate(
+        mockTokenApi,
+        mockGetNonExistingBucket()
+      )
 
-      implicit val sampleAttributes: Attributes = GCStorageAttributes.settings(sampleSettings)
+      implicit val sampleAttributes: Attributes = GoogleAttributes.settings(sampleSettings)
 
       val getBucketResponse = GCStorage.getBucket(bucketName)
       val getBucketSourceResponse = GCStorage.getBucketSource(bucketName)
@@ -145,9 +163,12 @@ class GCStorageSourceSpec
 
     "fail with error when getting a bucket fails" in {
 
-      mockGetBucketFailure()
+      mock.simulate(
+        mockTokenApi,
+        mockGetBucketFailure()
+      )
 
-      implicit val sampleAttributes: Attributes = GCStorageAttributes.settings(sampleSettings)
+      implicit val sampleAttributes: Attributes = GoogleAttributes.settings(sampleSettings)
 
       val getBucketResponse = GCStorage.getBucket(bucketName)
       val getBucketSourceResponse = GCStorage.getBucketSource(bucketName)
@@ -158,7 +179,10 @@ class GCStorageSourceSpec
 
     "list an empty bucket" in {
 
-      mockEmptyBucketListing()
+      mock.simulate(
+        mockTokenApi,
+        mockEmptyBucketListing()
+      )
 
       val listSource = GCStorage.listBucket(bucketName, None)
 
@@ -167,7 +191,10 @@ class GCStorageSourceSpec
 
     "list non existing folder" in {
       val folder = "folder"
-      mockNonExistingFolderListing(folder)
+      mock.simulate(
+        mockTokenApi,
+        mockNonExistingFolderListing(folder)
+      )
 
       val listSource = GCStorage.listBucket(bucketName, Some(folder))
 
@@ -175,7 +202,10 @@ class GCStorageSourceSpec
     }
 
     "list a non existing bucket" in {
-      mockNonExistingBucketListing()
+      mock.simulate(
+        mockTokenApi,
+        mockNonExistingBucketListing()
+      )
 
       val listSource = GCStorage.listBucket(bucketName, None)
 
@@ -187,8 +217,11 @@ class GCStorageSourceSpec
       val secondFileName = "file2.txt"
       val versions = true
 
-      mockBucketListing(firstFileName, secondFileName)
-      mockBucketListing(firstFileName, secondFileName, None, versions)
+      mock.simulate(
+        mockTokenApi,
+        mockBucketListing(firstFileName, secondFileName),
+        mockBucketListing(firstFileName, secondFileName, None, versions)
+      )
 
       val listSource = GCStorage.listBucket(bucketName, None)
       val listVersionsSource = GCStorage.listBucket(bucketName, None, versions)
@@ -204,8 +237,11 @@ class GCStorageSourceSpec
       val folder = "folder"
       val versions = true
 
-      mockBucketListing(firstFileName, secondFileName, Some(folder))
-      mockBucketListing(firstFileName, secondFileName, Some(folder), versions)
+      mock.simulate(
+        mockTokenApi,
+        mockBucketListing(firstFileName, secondFileName, Some(folder)),
+        mockBucketListing(firstFileName, secondFileName, Some(folder), versions)
+      )
 
       //#list-bucket
 
@@ -221,23 +257,31 @@ class GCStorageSourceSpec
 
     "fail with error when bucket listing fails" in {
 
-      mockBucketListingFailure()
+      mock.simulate(
+        mockTokenApi,
+        mockBucketListingFailure()
+      )
 
       val listSource = GCStorage.listBucket(bucketName, None)
 
       listSource.runWith(Sink.seq).failed.futureValue.getMessage shouldBe "[400] Bucket listing failed"
     }
 
-    "return empty source listing bucket with wrong settings" in {
+    // This behavior is no longer supported, but keeping for the docs snippet
+    // See https://github.com/akka/alpakka/pull/2613#discussion_r599046266
+    "return empty source listing bucket with wrong settings" ignore {
 
-      mockBucketListingFailure()
+      mock.simulate(
+        mockTokenApi,
+        mockBucketListingFailure()
+      )
 
       //#list-bucket-attributes
 
-      val newBasePathSettings = GCStorageExt(this.system).settings.withBasePath("/storage/v1")
+      val newSettings = GoogleSettings(system).withProjectId("projectId")
 
       val listSource: Source[StorageObject, NotUsed] =
-        GCStorage.listBucket(bucketName, None).withAttributes(GCStorageAttributes.settings(newBasePathSettings))
+        GCStorage.listBucket(bucketName, None).withAttributes(GoogleAttributes.settings(newSettings))
 
       //#list-bucket-attributes
 
@@ -246,8 +290,11 @@ class GCStorageSourceSpec
 
     "get existing storage object" in {
 
-      mockGetExistingStorageObject()
-      mockGetExistingStorageObject(Some(generation))
+      mock.simulate(
+        mockTokenApi,
+        mockGetExistingStorageObject(),
+        mockGetExistingStorageObject(Some(generation))
+      )
 
       //#objectMetadata
 
@@ -271,7 +318,10 @@ class GCStorageSourceSpec
 
     "get None if storage object doesn't exist" in {
 
-      mockGetNonExistingStorageObject()
+      mock.simulate(
+        mockTokenApi,
+        mockGetNonExistingStorageObject()
+      )
 
       val getObjectSource = GCStorage.getObject(bucketName, fileName)
 
@@ -280,7 +330,10 @@ class GCStorageSourceSpec
 
     "fail with error when get storage object fails" in {
 
-      mockGetNonStorageObjectFailure()
+      mock.simulate(
+        mockTokenApi,
+        mockGetNonStorageObjectFailure()
+      )
 
       val getObjectSource = GCStorage.getObject(bucketName, fileName)
 
@@ -292,8 +345,11 @@ class GCStorageSourceSpec
       val fileContent = "Google storage file content" + ("x" * 10000)
       val fileContentGeneration = "Google storage file content (archived)"
 
-      mockFileDownload(fileContent)
-      mockFileDownload(fileContentGeneration, Some(generation))
+      mock.simulate(
+        mockTokenApi,
+        mockFileDownload(fileContent),
+        mockFileDownload(fileContentGeneration, Some(generation))
+      )
 
       //#download
 
@@ -328,7 +384,10 @@ class GCStorageSourceSpec
       val bucketName = "alpakka"
       val fileName = "file1.txt"
 
-      mockNonExistingFileDownload()
+      mock.simulate(
+        mockTokenApi,
+        mockNonExistingFileDownload()
+      )
 
       val downloadSource = GCStorage.download(bucketName, fileName)
 
@@ -339,7 +398,10 @@ class GCStorageSourceSpec
       val bucketName = "alpakka"
       val fileName = "file1.txt"
 
-      mockFileDownloadFailure()
+      mock.simulate(
+        mockTokenApi,
+        mockFileDownloadFailure()
+      )
 
       val downloadSource = GCStorage.download(bucketName, fileName)
       downloadSource
@@ -354,7 +416,10 @@ class GCStorageSourceSpec
       val fileName = "file1.txt"
       val fileContent = "This is the file content"
 
-      mockFileDownloadFailureThenSuccess(500, "Internal server error", fileContent)
+      mock.simulate(
+        mockTokenApi,
+        mockFileDownloadFailureThenSuccess(500, "Internal server error", fileContent)
+      )
 
       val downloadSource = GCStorage.download(bucketName, fileName)
 
@@ -375,7 +440,10 @@ class GCStorageSourceSpec
       val fileName = "file1.txt"
       val fileContent = "This is the file content"
 
-      mockFileDownloadFailureThenSuccess(503, "Backend Error", fileContent)
+      mock.simulate(
+        mockTokenApi,
+        mockFileDownloadFailureThenSuccess(503, "Backend Error", fileContent)
+      )
 
       val downloadSource = GCStorage.download(bucketName, fileName)
 
@@ -395,7 +463,10 @@ class GCStorageSourceSpec
       val contentType = ContentTypes.`application/octet-stream`
       val fileSource = Source.single(ByteString(fileContent))
 
-      mockUploadSmallFile(fileContent)
+      mock.simulate(
+        mockTokenApi,
+        mockUploadSmallFile(fileContent)
+      )
 
       val simpleUploadSource = GCStorage.simpleUpload(bucketName, fileName, fileSource, contentType)
 
@@ -410,7 +481,10 @@ class GCStorageSourceSpec
       val contentType = ContentTypes.`application/octet-stream`
       val fileSource = Source.single(ByteString(fileContent))
 
-      mockUploadSmallFileFailure(fileContent)
+      mock.simulate(
+        mockTokenApi,
+        mockUploadSmallFileFailure(fileContent)
+      )
 
       val simpleUploadSource = GCStorage.simpleUpload(bucketName, fileName, fileSource, contentType)
 
@@ -419,8 +493,11 @@ class GCStorageSourceSpec
 
     "delete existing object" in {
 
-      mockDeleteObject(fileName)
-      mockDeleteObject(fileName, Some(generation))
+      mock.simulate(
+        mockTokenApi,
+        mockDeleteObject(fileName),
+        mockDeleteObject(fileName, Some(generation))
+      )
 
       val deleteSource = GCStorage.deleteObject(bucketName, fileName)
       val deleteGenerationSource = GCStorage.deleteObject(bucketName, fileName, Some(generation))
@@ -431,7 +508,10 @@ class GCStorageSourceSpec
 
     "not delete non existing object" in {
 
-      mockNonExistingDeleteObject(fileName)
+      mock.simulate(
+        mockTokenApi,
+        mockNonExistingDeleteObject(fileName)
+      )
 
       val deleteSource = GCStorage.deleteObject(bucketName, fileName)
       deleteSource.runWith(Sink.head).futureValue shouldBe false
@@ -439,7 +519,10 @@ class GCStorageSourceSpec
 
     "fail when delete object fails" in {
 
-      mockDeleteObjectFailure(fileName)
+      mock.simulate(
+        mockTokenApi,
+        mockDeleteObjectFailure(fileName)
+      )
 
       val deleteSource = GCStorage.deleteObject(bucketName, fileName)
 
@@ -451,9 +534,12 @@ class GCStorageSourceSpec
       val secondFileName = "file2.txt"
       val prefix = "folder"
 
-      mockBucketListing(firstFileName, secondFileName, Some(prefix))
-      mockDeleteObject(firstFileName)
-      mockDeleteObject(secondFileName)
+      mock.simulate(
+        mockTokenApi,
+        mockBucketListing(firstFileName, secondFileName, Some(prefix)),
+        mockDeleteObject(firstFileName),
+        mockDeleteObject(secondFileName)
+      )
 
       val deleteObjectsByPrefixSource = GCStorage.deleteObjectsByPrefix(bucketName, Some(prefix))
       deleteObjectsByPrefixSource.runWith(Sink.seq).futureValue shouldBe Seq(true, true)
@@ -462,8 +548,11 @@ class GCStorageSourceSpec
     "not delete non existing folder" in {
       val prefix = "folder"
 
-      mockNonExistingBucketListing(Some(prefix))
-      mockObjectDoesNotExist(prefix)
+      mock.simulate(
+        mockTokenApi,
+        mockNonExistingBucketListing(Some(prefix)),
+        mockObjectDoesNotExist(prefix)
+      )
 
       val deleteObjectsByPrefixSource = GCStorage.deleteObjectsByPrefix(bucketName, Some(prefix))
 
@@ -475,10 +564,12 @@ class GCStorageSourceSpec
       val secondFileName = "file2.txt"
       val prefix = "folder"
 
-      mockBucketListing(firstFileName, secondFileName, Some(prefix))
-      mockDeleteObject(firstFileName)
-      mockDeleteObject(secondFileName)
-      mockDeleteObjectFailure(secondFileName)
+      mock.simulate(
+        mockTokenApi,
+        mockBucketListing(firstFileName, secondFileName, Some(prefix)),
+        mockDeleteObject(firstFileName),
+        mockDeleteObjectFailure(secondFileName)
+      )
 
       val deleteObjectsByPrefixSource = GCStorage.deleteObjectsByPrefix(bucketName, Some(prefix))
       deleteObjectsByPrefixSource.runWith(Sink.seq).failed.futureValue.getMessage shouldBe "[400] Delete object failed"

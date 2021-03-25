@@ -8,8 +8,8 @@ import akka.Done;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.marshallers.jackson.Jackson;
 import akka.japi.tuple.Tuple3;
+import akka.stream.alpakka.google.GoogleSettings;
 import akka.stream.alpakka.googlecloud.bigquery.BigQueryHoverfly;
-import akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings;
 import akka.stream.alpakka.googlecloud.bigquery.e2e.A;
 import akka.stream.alpakka.googlecloud.bigquery.e2e.B;
 import akka.stream.alpakka.googlecloud.bigquery.javadsl.BigQuery;
@@ -51,7 +51,7 @@ public class BigQueryEndToEndTest extends EndToEndHelper {
   private static ActorSystem system = ActorSystem.create("BigQueryEndToEndTest");
   private static Hoverfly hoverfly = BigQueryHoverfly.getInstance();
 
-  private BigQuerySettings settings = BigQuery.getSettings(system);
+  private GoogleSettings settings = GoogleSettings.create(system);
   private ObjectMapper objectMapper =
       JsonMapper.builder()
           .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
@@ -111,7 +111,7 @@ public class BigQueryEndToEndTest extends EndToEndHelper {
   @Test
   public void createDataset() throws ExecutionException, InterruptedException {
     DatasetJsonProtocol.Dataset dataset =
-        BigQuery.createDataset(datasetId(), system, settings).toCompletableFuture().get();
+        BigQuery.createDataset(datasetId(), settings, system).toCompletableFuture().get();
     assertEquals(getDatasetId(), dataset.getDatasetReference().getDatasetId());
   }
 
@@ -131,7 +131,7 @@ public class BigQueryEndToEndTest extends EndToEndHelper {
   @Test
   public void createTable() throws ExecutionException, InterruptedException {
     TableJsonProtocol.Table table =
-        BigQuery.createTable(datasetId(), tableId(), schema, system, settings)
+        BigQuery.createTable(datasetId(), tableId(), schema, settings, system)
             .toCompletableFuture()
             .get();
     assertEquals(getTableId(), table.getTableReference().getTableId());
@@ -153,8 +153,8 @@ public class BigQueryEndToEndTest extends EndToEndHelper {
     return BigQuery.getJob(
             job.getJobReference().flatMap(JobJsonProtocol.JobReference::getJobId).get(),
             Optional.empty(),
-            system,
-            settings)
+            settings,
+            system)
         .thenComposeAsync(
             job2 -> {
               if (job2.getStatus()
@@ -249,7 +249,7 @@ public class BigQueryEndToEndTest extends EndToEndHelper {
   @Test
   public void deleteTable() throws ExecutionException, InterruptedException {
     Done done =
-        BigQuery.deleteTable(datasetId(), tableId(), system, settings).toCompletableFuture().get();
+        BigQuery.deleteTable(datasetId(), tableId(), settings, system).toCompletableFuture().get();
     assertEquals(Done.done(), done);
   }
 
@@ -268,7 +268,7 @@ public class BigQueryEndToEndTest extends EndToEndHelper {
   @Test
   public void deleteDataset() throws ExecutionException, InterruptedException {
     Done done =
-        BigQuery.deleteDataset(datasetId(), false, system, settings).toCompletableFuture().get();
+        BigQuery.deleteDataset(datasetId(), false, settings, system).toCompletableFuture().get();
     assertEquals(Done.done(), done);
   }
 

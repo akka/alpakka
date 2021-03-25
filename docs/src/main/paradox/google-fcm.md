@@ -40,18 +40,23 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Settings
 
-Prepare your credentials for access to FCM.
+Shared settings for all Google connectors are read by default from the `alpakka.google` configuration section in your `application.conf`.
+Credentials will be loaded automatically:
 
-Scala
-: @@snip [snip](/google-fcm/src/test/scala/docs/scaladsl/FcmExamples.scala) { #init-credentials }
+1. From the file path specified by the `GOOGLE_APPLICATION_CREDENTIALS` environment variable or another [“well-known” location](https://medium.com/google-cloud/use-google-cloud-user-credentials-when-testing-containers-locally-acb57cd4e4da); or
+2. When running in a [Compute Engine](https://cloud.google.com/compute) instance.
 
-Java
-: @@snip [snip](/google-fcm/src/test/java/docs/javadsl/FcmExamples.java) { #init-credentials }
+Credentials can also be specified manually in your configuration file.
 
-The last two parameters in the above example are the predefined values. 
+All of the common configuration settings for Google connectors can be found in the @github[reference.conf](/google-cloud-common/src/main/resources/reference.conf).
+Additional FCM-specific configuration settings can be found in its own @github[reference.conf](/google-fcm/src/main/resources/reference.conf).
+
+@@snip [snip](/google-fcm/src/test/resources/application.conf) { #init-credentials }
+
+The last two parameters in the above example are the predefined values.
 You can send test notifications [(so called validate only).](https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages/send)
 And you can set the number of maximum concurrent connections.
-There is a limitation in the docs; from one IP you can have maximum 1k pending connections, 
+There is a limitation in the docs; from one IP you can have maximum 1k pending connections,
 and you may need to configure `akka.http.host-connection-pool.max-open-requests` in your application.conf.
 
 
@@ -66,7 +71,7 @@ Java
 : @@snip [snip](/google-fcm/src/test/java/docs/javadsl/FcmExamples.java) { #imports #asFlow-send }
 
 With this type of send you can get responses from the server.
-These responses can be @scaladoc[FcmSuccessResponse](akka.stream.alpakka.google.firebase.fcm.FcmSuccessResponse) or @scaladoc[FcmErrorResponse](akka.stream.alpakka.google.firebase.fcm.FcmErrorResponse). 
+These responses can be @scaladoc[FcmSuccessResponse](akka.stream.alpakka.google.firebase.fcm.FcmSuccessResponse) or @scaladoc[FcmErrorResponse](akka.stream.alpakka.google.firebase.fcm.FcmErrorResponse).
 You can choose what you want to do with this information, but keep in mind
 if you try to resend the failed messages you will need to use exponential backoff! (see [Akka docs `RestartFlow.onFailuresWithBackoff`](https://doc.akka.io/docs/akka/current/stream/operators/RestartFlow/onFailuresWithBackoff.html))
 

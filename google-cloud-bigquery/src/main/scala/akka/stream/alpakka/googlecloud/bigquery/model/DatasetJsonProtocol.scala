@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.model
 
-import akka.stream.alpakka.googlecloud.bigquery.scaladsl.Paginated
+import akka.stream.alpakka.google.scaladsl.Paginated
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRestJsonProtocol._
 import spray.json.{JsonFormat, RootJsonFormat}
 

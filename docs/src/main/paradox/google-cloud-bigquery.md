@@ -49,11 +49,17 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Configuration
 
-The settings for the BigQuery connector are read by default from the `alpakka.google.bigquery` configuration section.
-By default, [service account credentials](https://cloud.google.com/docs/authentication/getting-started) are loaded from the file path specified by the `GOOGLE_APPLICATION_CREDENTIALS` environment variable.
-When running in a [Compute Engine](https://cloud.google.com/compute) instance, credentials can be loaded automatically by setting `alpakka.google.bigquery.credentials.provider = compute-engine`.
-If you use a non-standard configuration path or need multiple different configurations, please refer to @ref[the attributes section below](google-cloud-bigquery.md#apply-bigquery-settings-to-a-part-of-the-stream) to see how to apply different configuration to different parts of the stream.
-All of the available configuration settings can be found in the @github[reference.conf](/google-cloud-bigquery/src/main/resources/reference.conf).
+Shared settings for all Google connectors are read by default from the `alpakka.google` configuration section in your `application.conf`.
+Credentials will be loaded automatically:
+
+1. From the file path specified by the `GOOGLE_APPLICATION_CREDENTIALS` environment variable or another [“well-known” location](https://medium.com/google-cloud/use-google-cloud-user-credentials-when-testing-containers-locally-acb57cd4e4da); or
+2. When running in a [Compute Engine](https://cloud.google.com/compute) instance.
+
+Credentials can also be specified manually in your configuration file.
+
+If you use a non-standard configuration path or need multiple different configurations, please refer to @ref[the attributes section below](google-cloud-bigquery.md#apply-custom-settings-to-a-part-of-the-stream) to see how to apply different configuration to different parts of the stream.
+All of the common configuration settings for Google connectors can be found in the @github[reference.conf](/google-cloud-common/src/main/resources/reference.conf).
+Additional BigQuery-specific configuration settings can be found in its own @github[reference.conf](/google-cloud-bigquery/src/main/resources/reference.conf).
 
 ## Imports
 
@@ -178,9 +184,9 @@ Scala
 Java
 : @@snip [snip](/google-cloud-bigquery/src/test/java/docs/javadsl/BigQueryDoc.java) { #create-table }
 
-## Apply BigQuery settings to a part of the stream
+## Apply custom settings to a part of the stream
 
-In certain situations it may be desirable to modify the @apidoc[BigQuerySettings] applied to a part of the stream, for example to change the project ID or use different @apidoc[akka.stream.alpakka.googlecloud.bigquery.RetrySettings].
+In certain situations it may be desirable to modify the @apidoc[akka.stream.alpakka.google.GoogleSettings] applied to a part of the stream, for example to change the project ID or use different @apidoc[akka.stream.alpakka.google.RetrySettings].
 
 Scala
 : @@snip [snip](/google-cloud-bigquery/src/test/scala/docs/scaladsl/BigQueryDoc.scala) { #custom-settings }
