@@ -25,8 +25,8 @@ jobs:
       env: CMD="verifyCodeStyle; mimaReportBinaryIssues"
       name: "Code style check and MiMa. Run locally with: sbt verifyCodeStyle; mimaReportBinaryIssues"
       if: type != cron
-    - env: CMD="++2.12.11 Test/compile"
-      name: "Compile all code with Scala 2.12 and fatal warnings enabled. Run locally with: env CI=true sbt ++2.12.11 Test/compile"
+    - env: CMD="++2.12.13 Test/compile"
+      name: "Compile all code with Scala 2.12 and fatal warnings enabled. Run locally with: env CI=true sbt ++2.12.13 Test/compile"
     - env: CMD="++2.13.3 Test/compile"
       name: "Compile all code with Scala 2.13"
     - env: CMD="unidoc; docs/paradox"
@@ -132,7 +132,7 @@ jobs:
       script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt whitesourceCheckPolicies whitesourceUpdate whitesourceSupported/whitesourceUpdate
 
     - name: "Publish artifacts for Scala 2.12"
-      env: CMD="++2.12.11 publish"
+      env: CMD="++2.12.13 publish"
     - name: "Publish artifacts for Scala 2.13"
       env: CMD="++2.13.3 publish"
     - script: openssl aes-256-cbc -K $encrypted_bbf1dc4f2a07_key -iv $encrypted_bbf1dc4f2a07_iv -in .travis/travis_alpakka_rsa.enc -out .travis/id_rsa -d && eval "$(ssh-agent -s)" && chmod 600 .travis/id_rsa && ssh-add .travis/id_rsa && sbt -jvm-opts .jvmopts-travis docs/publishRsync
