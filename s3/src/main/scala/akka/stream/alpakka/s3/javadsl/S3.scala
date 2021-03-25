@@ -707,7 +707,9 @@ object S3 {
    * @param attributes attributes to run request with
    * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
    */
-  def makeBucket(bucketName: String, system: ClassicActorSystemProvider, attributes: Attributes): CompletionStage[Done] =
+  def makeBucket(bucketName: String,
+                 system: ClassicActorSystemProvider,
+                 attributes: Attributes): CompletionStage[Done] =
     makeBucket(bucketName, system, attributes)
 
   /**
