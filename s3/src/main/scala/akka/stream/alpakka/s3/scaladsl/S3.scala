@@ -362,7 +362,8 @@ object S3 {
    * @param bucketName bucket name
    * @return [[scala.concurrent.Future Future]] with type [[Done]] as API doesn't return any additional information
    */
-  def makeBucket(bucketName: String)(implicit system: ClassicActorSystemProvider, attr: Attributes = Attributes()): Future[Done] =
+  def makeBucket(bucketName: String)(implicit system: ClassicActorSystemProvider,
+                                     attr: Attributes = Attributes()): Future[Done] =
     S3Stream.makeBucket(bucketName, S3Headers.empty)
 
   /**
@@ -374,7 +375,8 @@ object S3 {
    * @param s3Headers any headers you want to add
    * @return [[scala.concurrent.Future Future]] with type [[Done]] as API doesn't return any additional information
    */
-  def makeBucket(bucketName: String, s3Headers: S3Headers)(implicit mat: ClassicActorSystemProvider, attr: Attributes): Future[Done] =
+  def makeBucket(bucketName: String, s3Headers: S3Headers)(implicit mat: ClassicActorSystemProvider,
+                                                           attr: Attributes): Future[Done] =
     S3Stream.makeBucket(bucketName, s3Headers)
 
   /**

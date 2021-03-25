@@ -158,7 +158,7 @@ object IronMqSettings {
    * Will create a [[IronMqSettings]] from a ActorSystem using the default config path `alpakka.ironmq`.
    */
   def apply()(implicit as: ClassicActorSystemProvider): IronMqSettings =
-    apply(as.settings.config.getConfig(ConfigPath))
+    apply(as.classicSystem.settings.config.getConfig(ConfigPath))
 
   /**
    * Java API.
@@ -168,10 +168,10 @@ object IronMqSettings {
   /**
    * Java API.
    */
-  def create(as: ActorSystem): IronMqSettings = apply(as)
+  def create(as: ActorSystem): IronMqSettings = apply()(as)
 
   /**
    * Java API.
    */
-  def create(as: ClassicActorSystemProvider): IronMqSettings = apply(as)
+  def create(as: ClassicActorSystemProvider): IronMqSettings = apply()(as)
 }
