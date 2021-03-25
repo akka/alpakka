@@ -710,7 +710,7 @@ object S3 {
   def makeBucket(bucketName: String,
                  system: ClassicActorSystemProvider,
                  attributes: Attributes): CompletionStage[Done] =
-    makeBucket(bucketName, system, attributes)
+    makeBucket(bucketName, system, attributes, S3Headers.empty)
 
   /**
    * Create new bucket with a given name
@@ -735,7 +735,7 @@ object S3 {
    * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
    */
   def makeBucket(bucketName: String, system: ClassicActorSystemProvider): CompletionStage[Done] =
-    makeBucket(bucketName, system, Attributes())
+    makeBucket(bucketName, system, Attributes(), S3Headers.empty)
 
   /**
    * Create new bucket with a given name
