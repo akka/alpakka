@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.ftp.javadsl
 
-import akka.actor.{ActorSystem, ClassicActorSystemProvider}
+import akka.actor.ClassicActorSystemProvider
 import java.util.concurrent.CompletionStage
 import java.util.function._
 
