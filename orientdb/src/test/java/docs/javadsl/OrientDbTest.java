@@ -45,7 +45,7 @@ import static org.junit.Assert.assertEquals;
 public class OrientDbTest {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
-  private static OServerAdmin oServerAdmin;
+  @silent private static OServerAdmin oServerAdmin;
   private static OPartitionedDatabasePool oDatabase;
   private static ODatabaseDocumentTx client;
   private static ActorSystem system;

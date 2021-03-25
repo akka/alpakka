@@ -377,7 +377,7 @@ object Dependencies {
         ("com.orientechnologies" % "orientdb-graphdb" % "3.1.9")
           .exclude("com.tinkerpop.blueprints", "blueprints-core"),
         "com.orientechnologies" % "orientdb-object" % "3.1.9" // ApacheV2
-      )
+      ) ++ Silencer
   )
 
   val PravegaVersion = "0.9.0"
