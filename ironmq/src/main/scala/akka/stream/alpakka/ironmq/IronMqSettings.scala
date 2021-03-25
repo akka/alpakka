@@ -156,18 +156,9 @@ object IronMqSettings {
 
   /**
    * Will create a [[IronMqSettings]] from a ActorSystem using the default config path `alpakka.ironmq`.
-   * @deprecated Use [[ClassicActorSystemProvider]] constructor, 3.0.0
    */
-  @Deprecated
-  @deprecated("Use `ClassicActorSystemProvider` constructor", "3.0.0")
-  def apply()(implicit as: ActorSystem): IronMqSettings =
+  def apply()(implicit as: ClassicActorSystemProvider): IronMqSettings =
     apply(as.settings.config.getConfig(ConfigPath))
-
-  /**
-   * Will create a [[IronMqSettings]] from a ActorSystem using the default config path `alpakka.ironmq`.
-   */
-  def apply(system: ClassicActorSystemProvider): IronMqSettings =
-    apply(system.classicSystem.settings.config.getConfig(ConfigPath))
 
   /**
    * Java API.

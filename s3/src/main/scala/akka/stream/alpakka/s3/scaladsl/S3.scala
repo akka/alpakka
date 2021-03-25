@@ -6,11 +6,11 @@ package akka.stream.alpakka.s3.scaladsl
 import akka.actor.ClassicActorSystemProvider
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.ByteRange
+import akka.stream.Attributes
 import akka.stream.alpakka.s3._
 import akka.stream.alpakka.s3.headers.{CannedAcl, ServerSideEncryption}
 import akka.stream.alpakka.s3.impl._
 import akka.stream.scaladsl.{RunnableGraph, Sink, Source}
-import akka.stream.{Attributes, Materializer}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
 
@@ -362,7 +362,7 @@ object S3 {
    * @param bucketName bucket name
    * @return [[scala.concurrent.Future Future]] with type [[Done]] as API doesn't return any additional information
    */
-  def makeBucket(bucketName: String)(implicit mat: Materializer, attr: Attributes = Attributes()): Future[Done] =
+  def makeBucket(bucketName: String)(implicit system: ClassicActorSystemProvider, attr: Attributes = Attributes()): Future[Done] =
     S3Stream.makeBucket(bucketName, S3Headers.empty)
 
   /**
@@ -374,25 +374,8 @@ object S3 {
    * @param s3Headers any headers you want to add
    * @return [[scala.concurrent.Future Future]] with type [[Done]] as API doesn't return any additional information
    */
-  def makeBucket(bucketName: String, s3Headers: S3Headers)(implicit mat: Materializer, attr: Attributes): Future[Done] =
+  def makeBucket(bucketName: String, s3Headers: S3Headers)(implicit mat: ClassicActorSystemProvider, attr: Attributes): Future[Done] =
     S3Stream.makeBucket(bucketName, s3Headers)
-
-  /**
-   * Create new bucket with a given name
-   *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
-   *
-   * @param bucketName bucket name
-   * @param s3Headers any headers you want to add
-   * @param system an actor system
-   * @return [[scala.concurrent.Future Future]] with type [[Done]] as API doesn't return any additional information
-   */
-  def makeBucket(bucketName: String, s3Headers: S3Headers, system: ClassicActorSystemProvider)(
-      implicit attr: Attributes
-  ): Future[Done] = {
-    implicit val mat = Materializer.matFromSystem(system.classicSystem)
-    S3Stream.makeBucket(bucketName, s3Headers)
-  }
 
   /**
    * Create new bucket with a given name
@@ -425,21 +408,9 @@ object S3 {
    * @param bucketName bucket name
    * @return [[scala.concurrent.Future Future]] of type [[Done]] as API doesn't return any additional information
    */
-  def deleteBucket(bucketName: String)(implicit mat: Materializer,
+  def deleteBucket(bucketName: String)(implicit system: ClassicActorSystemProvider,
                                        attributes: Attributes = Attributes()): Future[Done] =
     S3Stream.deleteBucket(bucketName, S3Headers.empty)
-
-  /**
-   * Delete bucket with a given name
-   *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteBucket.html
-   *
-   * @param bucketName bucket name
-   * @return [[scala.concurrent.Future Future]] of type [[Done]] as API doesn't return any additional information
-   */
-  def deleteBucket(bucketName: String,
-                   system: ClassicActorSystemProvider)(implicit attributes: Attributes): Future[Done] =
-    deleteBucket(bucketName, S3Headers.empty, system)
 
   /**
    * Delete bucket with a given name
@@ -453,26 +424,8 @@ object S3 {
   def deleteBucket(
       bucketName: String,
       s3Headers: S3Headers
-  )(implicit mat: Materializer, attributes: Attributes): Future[Done] =
+  )(implicit system: ClassicActorSystemProvider, attributes: Attributes): Future[Done] =
     S3Stream.deleteBucket(bucketName, s3Headers)
-
-  /**
-   * Delete bucket with a given name
-   *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteBucket.html
-   *
-   * @param bucketName bucket name
-   * @param s3Headers any headers you want to add
-   * @return [[scala.concurrent.Future Future]] of type [[Done]] as API doesn't return any additional information
-   */
-  def deleteBucket(
-      bucketName: String,
-      s3Headers: S3Headers,
-      system: ClassicActorSystemProvider
-  )(implicit attributes: Attributes): Future[Done] = {
-    implicit val mat = Materializer.matFromSystem(system.classicSystem)
-    S3Stream.deleteBucket(bucketName, s3Headers)
-  }
 
   /**
    * Delete bucket with a given name
@@ -505,23 +458,9 @@ object S3 {
    * @param bucketName bucket name
    * @return [[scala.concurrent.Future Future]] of type [[BucketAccess]]
    */
-  def checkIfBucketExists(bucketName: String)(implicit mat: Materializer,
+  def checkIfBucketExists(bucketName: String)(implicit system: ClassicActorSystemProvider,
                                               attributes: Attributes = Attributes()): Future[BucketAccess] =
     S3Stream.checkIfBucketExists(bucketName, S3Headers.empty)
-
-  /**
-   *   Checks whether the bucket exits and user has rights to perform ListBucket operation
-   *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadBucket.html
-   *
-   * @param bucketName bucket name
-   * @param system typed actor system adapter
-   * @return [[scala.concurrent.Future Future]] of type [[BucketAccess]]
-   */
-  def checkIfBucketExists(bucketName: String, system: ClassicActorSystemProvider)(
-      implicit attributes: Attributes
-  ): Future[BucketAccess] =
-    checkIfBucketExists(bucketName, S3Headers.empty, system)
 
   /**
    *   Checks whether the bucket exits and user has rights to perform ListBucket operation
@@ -535,26 +474,8 @@ object S3 {
   def checkIfBucketExists(
       bucketName: String,
       s3Headers: S3Headers
-  )(implicit mat: Materializer, attributes: Attributes): Future[BucketAccess] =
+  )(implicit system: ClassicActorSystemProvider, attributes: Attributes): Future[BucketAccess] =
     S3Stream.checkIfBucketExists(bucketName, s3Headers)
-
-  /**
-   *   Checks whether the bucket exits and user has rights to perform ListBucket operation
-   *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadBucket.html
-   *
-   * @param bucketName bucket name
-   * @param s3Headers any headers you want to add
-   * @return [[scala.concurrent.Future Future]] of type [[BucketAccess]]
-   */
-  def checkIfBucketExists(
-      bucketName: String,
-      s3Headers: S3Headers,
-      system: ClassicActorSystemProvider
-  )(implicit attributes: Attributes): Future[BucketAccess] = {
-    implicit val mat = Materializer.matFromSystem(system.classicSystem)
-    S3Stream.checkIfBucketExists(bucketName, s3Headers)
-  }
 
   /**
    *   Checks whether the bucket exits and user has rights to perform ListBucket operation

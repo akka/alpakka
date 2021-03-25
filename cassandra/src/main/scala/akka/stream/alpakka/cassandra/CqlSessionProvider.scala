@@ -36,9 +36,7 @@ trait CqlSessionProvider {
  * driver's configuration can be defined with `datastax-java-driver-config` property in the
  * given `config`.
  */
-class DefaultSessionProvider(system: ActorSystem, config: Config) extends CqlSessionProvider {
-
-  def this(system: ClassicActorSystemProvider, config: Config) = this(system.classicSystem, config)
+class DefaultSessionProvider(system: ClassicActorSystemProvider, config: Config) extends CqlSessionProvider {
 
   /**
    * Check if Akka Discovery service lookup should be used. It is part of this class so it
