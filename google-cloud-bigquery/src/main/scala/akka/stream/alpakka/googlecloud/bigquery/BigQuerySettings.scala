@@ -52,6 +52,8 @@ object BigQuerySettings {
 
 final case class BigQuerySettings @InternalApi private (loadJobPerTableQuota: FiniteDuration) {
   def getLoadJobPerTableQuota = loadJobPerTableQuota.asJava
+  def withLoadJobPerTableQuota(loadJobPerTableQuota: FiniteDuration) =
+    copy(loadJobPerTableQuota = loadJobPerTableQuota)
   def withLoadJobPerTableQuota(loadJobPerTableQuota: time.Duration) =
     copy(loadJobPerTableQuota = loadJobPerTableQuota.asScala)
 }

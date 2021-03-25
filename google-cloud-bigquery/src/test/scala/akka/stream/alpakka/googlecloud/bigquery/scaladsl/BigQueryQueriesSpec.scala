@@ -9,8 +9,8 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.stream.alpakka.google.auth.NoCredentials
 import akka.stream.alpakka.google.{GoogleAttributes, GoogleSettings}
-import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.JobReference
-import akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse
+import akka.stream.alpakka.googlecloud.bigquery.model.JobReference
+import akka.stream.alpakka.googlecloud.bigquery.model.QueryResponse
 import akka.stream.alpakka.googlecloud.bigquery.{BigQueryEndpoints, HoverflySupport}
 import akka.stream.scaladsl.Sink
 import akka.testkit.TestKit

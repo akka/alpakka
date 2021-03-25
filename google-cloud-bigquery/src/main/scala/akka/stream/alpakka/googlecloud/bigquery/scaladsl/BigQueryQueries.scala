@@ -15,8 +15,8 @@ import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.stream.RestartSettings
 import akka.stream.alpakka.google.GoogleAttributes
 import akka.stream.alpakka.google.implicits._
-import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.JobReference
-import akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.{QueryRequest, QueryResponse}
+import akka.stream.alpakka.googlecloud.bigquery.model.JobReference
+import akka.stream.alpakka.googlecloud.bigquery.model.{QueryRequest, QueryResponse}
 import akka.stream.alpakka.googlecloud.bigquery.{BigQueryEndpoints, BigQueryException}
 import akka.stream.scaladsl.{Keep, RestartSource, Sink, Source}
 
@@ -35,7 +35,7 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
    * @param useLegacySql specifies whether to use BigQuery's legacy SQL dialect for this query
    * @tparam Out the data model of the query results
    * @return a [[akka.stream.scaladsl.Source]] that emits an [[Out]] for each row of the result and materializes
-   *         a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
+   *         a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryResponse]]
    */
   def query[Out](query: String, dryRun: Boolean = false, useLegacySql: Boolean = true)(
       implicit um: FromEntityUnmarshaller[QueryResponse[Out]]
@@ -48,11 +48,11 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
    * Runs a BigQuery SQL query.
    * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query BigQuery reference]]
    *
-   * @param query the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryRequest]]
+   * @param query the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryRequest]]
    * @tparam Out the data model of the query results
    * @return a [[akka.stream.scaladsl.Source]] that emits an [[Out]] for each row of the results and materializes
-   *         a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.JobReference]] and
-   *         a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
+   *         a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.JobReference]] and
+   *         a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryResponse]]
    */
   def query[Out](query: QueryRequest)(
       implicit um: FromEntityUnmarshaller[QueryResponse[Out]]
@@ -89,7 +89,7 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
                   val pages = queryResultsPages[Out](jobId,
                                                      None,
                                                      query.maxResults,
-                                                     query.timeoutMs,
+                                                     query.timeout,
                                                      initialQueryResponse.jobReference.location,
                                                      initialQueryResponse.pageToken)
                     .map(Success(_))
@@ -125,7 +125,7 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
    * @param timeout specifies the maximum amount of time that the client is willing to wait for the query to complete
    * @param location the geographic location of the job. Required except for US and EU
    * @tparam Out the data model of the query results
-   * @return a [[akka.stream.scaladsl.Source]] that emits an [[Out]] for each row of the results and materializes a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
+   * @return a [[akka.stream.scaladsl.Source]] that emits an [[Out]] for each row of the results and materializes a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryResponse]]
    */
   def queryResults[Out](
       jobId: String,
@@ -136,7 +136,7 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
   )(
       implicit um: FromEntityUnmarshaller[QueryResponse[Out]]
   ): Source[Out, Future[QueryResponse[Out]]] =
-    queryResultsPages(jobId, startIndex, maxResults, timeout.map(_.toMillis).map(Math.toIntExact), location, None)
+    queryResultsPages(jobId, startIndex, maxResults, timeout, location, None)
       .wireTapMat(Sink.head)(Keep.right)
       .mapConcat(_.rows.fold[List[Out]](Nil)(_.toList))
 
@@ -144,7 +144,7 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
       jobId: String,
       startIndex: Option[Long],
       maxResults: Option[Int],
-      timeoutMs: Option[Int],
+      timeout: Option[FiniteDuration],
       location: Option[String],
       pageToken: Option[String]
   )(
@@ -155,7 +155,7 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
       val uri = BigQueryEndpoints.query(settings.projectId, jobId)
       val query = ("startIndex" -> startIndex) ?+:
         ("maxResults" -> maxResults) ?+:
-        ("timeoutMs" -> timeoutMs) ?+:
+        ("timeoutMs" -> timeout.map(_.toMillis)) ?+:
         ("location" -> location) ?+:
         ("pageToken" -> pageToken) ?+:
         Query.Empty
