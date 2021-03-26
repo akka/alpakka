@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.ironmq
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, ClassicActorSystemProvider}
 import akka.http.scaladsl.model.Uri
 import akka.stream.alpakka.ironmq.IronMqSettings.ConsumerSettings
 import com.typesafe.config.Config
@@ -157,8 +157,8 @@ object IronMqSettings {
   /**
    * Will create a [[IronMqSettings]] from a ActorSystem using the default config path `alpakka.ironmq`.
    */
-  def apply()(implicit as: ActorSystem): IronMqSettings =
-    apply(as.settings.config.getConfig(ConfigPath))
+  def apply()(implicit as: ClassicActorSystemProvider): IronMqSettings =
+    apply(as.classicSystem.settings.config.getConfig(ConfigPath))
 
   /**
    * Java API.
@@ -169,4 +169,9 @@ object IronMqSettings {
    * Java API.
    */
   def create(as: ActorSystem): IronMqSettings = apply()(as)
+
+  /**
+   * Java API.
+   */
+  def create(as: ClassicActorSystemProvider): IronMqSettings = apply()(as)
 }
