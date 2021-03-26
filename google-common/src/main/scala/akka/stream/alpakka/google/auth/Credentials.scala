@@ -73,14 +73,14 @@ abstract class Credentials private[auth] () {
 
   /**
    * Wraps these credentials as a [[com.google.auth.Credentials]] for interop with Google's Java client libraries.
-   * @param ec the [[ExecutionContext]] to use for blocking requests if credentials are requested synchronously
+   * @param ec the [[scala.concurrent.ExecutionContext]] to use for blocking requests if credentials are requested synchronously
    * @param settings additional request settings
    */
   def asGoogle(implicit ec: ExecutionContext, settings: RequestSettings): GoogleCredentials
 
   /**
    * Java API: Wraps these credentials as a [[com.google.auth.Credentials]] for interop with Google's Java client libraries.
-   * @param exec the [[Executor]] to use for blocking requests if credentials are requested synchronously
+   * @param exec the [[java.util.concurrent.Executor]] to use for blocking requests if credentials are requested synchronously
    * @param settings additional request settings
    */
   final def asGoogle(exec: Executor, settings: RequestSettings): GoogleCredentials =

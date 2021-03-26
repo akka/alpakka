@@ -18,6 +18,7 @@ lazy val alpakka = project
     files,
     ftp,
     geode,
+    googleCommon,
     googleCloudBigQuery,
     googleCloudPubSub,
     googleCloudPubSubGrpc,
@@ -174,12 +175,13 @@ lazy val geode =
     fatalWarnings := true
   )
 
-lazy val googleCommon = internalProject(
+lazy val googleCommon = alpakkaProject(
   "google-common",
+  "google.common",
   Dependencies.GoogleCommon,
   Test / fork := true,
   fatalWarnings := true
-).disablePlugins(MimaPlugin).dependsOn(testkit % Test)
+).dependsOn(testkit % Test)
 
 lazy val googleCloudBigQuery = alpakkaProject(
   "google-cloud-bigquery",
@@ -372,6 +374,8 @@ lazy val docs = project
         "javadoc.org.apache.kudu.base_url" -> s"https://kudu.apache.org/releases/${Dependencies.KuduVersion}/apidocs/",
         "javadoc.org.apache.hadoop.base_url" -> s"https://hadoop.apache.org/docs/r${Dependencies.HadoopVersion}/api/",
         "javadoc.software.amazon.awssdk.base_url" -> "https://sdk.amazonaws.com/java/api/latest/",
+        "javadoc.com.google.auth.base_url" -> "https://www.javadoc.io/doc/com.google.auth/google-auth-library-credentials/latest/",
+        "javadoc.com.google.auth.link_style" -> "direct",
         "javadoc.com.fasterxml.jackson.annotation.base_url" -> "https://javadoc.io/doc/com.fasterxml.jackson.core/jackson-annotations/latest/",
         "javadoc.com.fasterxml.jackson.annotation.link_style" -> "direct",
         // Scala
