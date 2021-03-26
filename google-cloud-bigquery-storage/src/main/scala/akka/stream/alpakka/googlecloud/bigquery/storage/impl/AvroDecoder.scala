@@ -36,4 +36,5 @@ import scala.collection.mutable
 
 @InternalApi private[bigquery] object AvroDecoder {
   def apply(schema: String): AvroDecoder = new AvroDecoder(new Schema.Parser().parse(schema))
+
 }

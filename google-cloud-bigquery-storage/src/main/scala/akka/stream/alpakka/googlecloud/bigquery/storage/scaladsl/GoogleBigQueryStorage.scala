@@ -51,7 +51,7 @@ object GoogleBigQueryStorage {
           schemaS.future.map { ss =>
             val avro = AvroDecoder(ss)
             Flow.fromFunction((r: AvroRows) => avro.decodeRows(r.serializedBinaryRows))
-          }(ExecutionContexts.sameThreadExecutionContext)
+          }(ExecutionContexts.parasitic)
       )
 
       Source
