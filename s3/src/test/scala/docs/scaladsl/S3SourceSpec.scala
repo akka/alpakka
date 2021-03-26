@@ -189,9 +189,8 @@ class S3SourceSpec extends S3WireMockBase with S3ClientIntegrationSpec {
   }
 
   it should "fail for illegal bucket names" in {
-    @com.github.ghik.silencer.silent
     val dnsStyleAccess = S3Ext(system).settings
-      .withPathStyleAccess(true)
+      .withAccessStyle(AccessStyle.PathAccessStyle)
       .withEndpointUrl(null)
 
     val download = S3

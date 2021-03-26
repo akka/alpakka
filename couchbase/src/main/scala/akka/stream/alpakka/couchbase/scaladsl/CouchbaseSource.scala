@@ -22,10 +22,10 @@ object CouchbaseSource {
                     statement: Statement,
                     bucketName: String): Source[JsonObject, NotUsed] =
     Source
-      .setup { (materializer, _) =>
+      .fromMaterializer { (materializer, _) =>
         val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
         Source
-          .fromFuture(session.map(_.streamedQuery(statement))(materializer.system.dispatcher))
+          .future(session.map(_.streamedQuery(statement))(materializer.system.dispatcher))
           .flatMapConcat(identity)
       }
       .mapMaterializedValue(_ => NotUsed)
@@ -37,10 +37,10 @@ object CouchbaseSource {
                     query: N1qlQuery,
                     bucketName: String): Source[JsonObject, NotUsed] =
     Source
-      .setup { (materializer, _) =>
+      .fromMaterializer { (materializer, _) =>
         val session = CouchbaseSessionRegistry(materializer.system).sessionFor(sessionSettings, bucketName)
         Source
-          .fromFuture(session.map(_.streamedQuery(query))(materializer.system.dispatcher))
+          .future(session.map(_.streamedQuery(query))(materializer.system.dispatcher))
           .flatMapConcat(identity)
       }
       .mapMaterializedValue(_ => NotUsed)

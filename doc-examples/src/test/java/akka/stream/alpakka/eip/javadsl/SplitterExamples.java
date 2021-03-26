@@ -6,8 +6,6 @@ package akka.stream.alpakka.eip.javadsl;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
@@ -22,7 +20,6 @@ import java.util.concurrent.ExecutionException;
 
 public class SplitterExamples {
   private static ActorSystem system;
-  private static Materializer materializer;
 
   @Test
   public void simpleSplit() throws ExecutionException, InterruptedException {
@@ -36,7 +33,7 @@ public class SplitterExamples {
             .mapConcat(f -> f)
             // Sub-streams logic
             .map(s -> Integer.valueOf(s))
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
 
     // Verify results
     List<Integer> list = ret.toCompletableFuture().get();
@@ -63,7 +60,7 @@ public class SplitterExamples {
             .reduce((a, b) -> a + b)
             // and merge back the result into the original stream
             .mergeSubstreams()
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
 
     // Verify results
     List<Integer> list = ret.toCompletableFuture().get();
@@ -74,7 +71,6 @@ public class SplitterExamples {
   @BeforeClass
   public static void setup() throws Exception {
     system = ActorSystem.create();
-    materializer = ActorMaterializer.create(system);
   }
 
   @AfterClass

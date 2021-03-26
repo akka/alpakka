@@ -82,23 +82,6 @@ public final class FileTailSource {
   /**
    * Same as {@link #createLines(Path, int, java.time.Duration, String, Charset)} but using the OS
    * default line separator and UTF-8 for charset
-   *
-   * @deprecated (since 2.0.0) use method with `java.time.Duration` instead
-   */
-  @Deprecated
-  public static Source<String, NotUsed> createLines(
-      Path path, int maxChunkSize, FiniteDuration pollingInterval) {
-    return createLines(
-        path,
-        maxChunkSize,
-        java.time.Duration.ofNanos(pollingInterval.toNanos()),
-        System.getProperty("line.separator"),
-        StandardCharsets.UTF_8);
-  }
-
-  /**
-   * Same as {@link #createLines(Path, int, java.time.Duration, String, Charset)} but using the OS
-   * default line separator and UTF-8 for charset
    */
   public static Source<String, NotUsed> createLines(
       Path path, int maxChunkSize, java.time.Duration pollingInterval) {

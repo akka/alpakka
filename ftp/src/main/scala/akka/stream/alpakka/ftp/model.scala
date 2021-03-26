@@ -272,7 +272,7 @@ final class SftpSettings private (
     val knownHosts: Option[String],
     val sftpIdentity: Option[SftpIdentity],
     val proxy: Option[Proxy],
-    val maxUnconfirmedReads: Int = 1
+    val maxUnconfirmedReads: Int
 ) extends RemoteFileSettings {
 
   def withHost(value: java.net.InetAddress): SftpSettings = copy(host = value)

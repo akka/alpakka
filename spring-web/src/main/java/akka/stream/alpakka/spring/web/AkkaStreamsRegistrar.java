@@ -5,6 +5,7 @@
 package akka.stream.alpakka.spring.web;
 
 import akka.actor.ActorSystem;
+import akka.actor.ClassicActorSystemProvider;
 import akka.stream.Materializer;
 import akka.stream.javadsl.AsPublisher;
 import org.springframework.core.ReactiveAdapterRegistry;
@@ -16,14 +17,18 @@ public class AkkaStreamsRegistrar {
 
   private final ActorSystem system;
 
-  /** @deprecated use {@link #AkkaStreamsRegistrar(ActorSystem)}. */
+  /**
+   * deprecated, use {@link #AkkaStreamsRegistrar(ClassicActorSystemProvider)}.
+   *
+   * @deprecated pass in the actor system instead of the materializer, since 3.0.0
+   */
   @Deprecated
   public AkkaStreamsRegistrar(Materializer materializer) {
     this(materializer.system());
   }
 
-  public AkkaStreamsRegistrar(ActorSystem system) {
-    this.system = system;
+  public AkkaStreamsRegistrar(ClassicActorSystemProvider system) {
+    this.system = system.classicSystem();
   }
 
   public void registerAdapters(ReactiveAdapterRegistry registry) {

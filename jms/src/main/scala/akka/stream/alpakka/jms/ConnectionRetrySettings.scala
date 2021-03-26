@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.jms
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, ClassicActorSystemProvider}
 import akka.util.JavaDurationConverters._
 import com.typesafe.config.Config
 
@@ -116,10 +116,25 @@ object ConnectionRetrySettings {
     apply(actorSystem.settings.config.getConfig(configPath))
 
   /**
+   * Reads from the default config provided by the actor system at `alpakka.jms.connection-retry`.
+   *
+   * @param actorSystem The actor system
+   */
+  def apply(actorSystem: ClassicActorSystemProvider): ConnectionRetrySettings =
+    apply(actorSystem.classicSystem.settings.config.getConfig(configPath))
+
+  /**
    * Java API: Reads from the default config provided by the actor system at `alpakka.jms.connection-retry`.
    *
    * @param actorSystem The actor system
    */
   def create(actorSystem: ActorSystem): ConnectionRetrySettings = apply(actorSystem)
+
+  /**
+   * Java API: Reads from the default config provided by the actor system at `alpakka.jms.connection-retry`.
+   *
+   * @param actorSystem The actor system
+   */
+  def create(actorSystem: ClassicActorSystemProvider): ConnectionRetrySettings = apply(actorSystem)
 
 }

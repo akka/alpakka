@@ -1,0 +1,4 @@
+# `session` was a private internal API, replaced with private internal `settings`
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.googlecloud.pubsub.PubSubConfig.session")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.googlecloud.pubsub.PubSubConfig.withSession")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.googlecloud.pubsub.PubSubConfig.this")

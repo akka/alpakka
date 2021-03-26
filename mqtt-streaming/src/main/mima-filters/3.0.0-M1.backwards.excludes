@@ -1,0 +1,5 @@
+# 3.0.0 deprecations - https://github.com/akka/alpakka/pull/2618
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.alpakka.mqtt.streaming.MqttCodec$BadSubAckMessage")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.alpakka.mqtt.streaming.MqttCodec$BadSubAckMessage$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.mqtt.streaming.javadsl.Mqtt.clientSessionFlow")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.mqtt.streaming.scaladsl.Mqtt.clientSessionFlow")

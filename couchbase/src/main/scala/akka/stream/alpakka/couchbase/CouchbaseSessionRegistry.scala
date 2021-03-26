@@ -38,7 +38,7 @@ object CouchbaseSessionRegistry extends ExtensionId[CouchbaseSessionRegistry] wi
   override def get(system: akka.actor.ActorSystem): CouchbaseSessionRegistry =
     super.apply(system)
 
-  override def lookup(): ExtensionId[CouchbaseSessionRegistry] = this
+  override def lookup: ExtensionId[CouchbaseSessionRegistry] = this
 
   private case class SessionKey(settings: CouchbaseSessionSettings, bucketName: String)
 }

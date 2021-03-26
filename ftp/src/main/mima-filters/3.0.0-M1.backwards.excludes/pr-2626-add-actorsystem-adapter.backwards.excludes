@@ -1,0 +1,5 @@
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.ftp.scaladsl.SftpApi.mkdirAsync")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.ftp.scaladsl.FtpApi.mkdirAsync")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.ftp.scaladsl.Ftp.mkdirAsync")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.ftp.scaladsl.Ftps.mkdirAsync")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.ftp.scaladsl.Sftp.mkdirAsync")

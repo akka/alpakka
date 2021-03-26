@@ -102,8 +102,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
   }
 
   it should "throw an error when using `..` with path-style access" in {
-    @com.github.ghik.silencer.silent
-    implicit val settings = getSettings(s3Region = Region.EU_WEST_1).withPathStyleAccess(true)
+    implicit val settings = getSettings(s3Region = Region.EU_WEST_1).withAccessStyle(AccessStyle.PathAccessStyle)
 
     assertThrows[IllegalUriException](
       HttpRequests.getDownloadRequest(S3Location("invalid/../bucket_name", "image-1024@2x"))
@@ -120,8 +119,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
   }
 
   it should "initiate multipart upload with path-style access in region us-east-1" in {
-    @com.github.ghik.silencer.silent
-    implicit val settings = getSettings(s3Region = Region.US_EAST_1).withPathStyleAccess(true)
+    implicit val settings = getSettings(s3Region = Region.US_EAST_1).withAccessStyle(AccessStyle.PathAccessStyle)
 
     val req =
       HttpRequests.initiateMultipartUploadRequest(
@@ -135,8 +133,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
   }
 
   it should "support download requests with path-style access in region us-east-1" in {
-    @com.github.ghik.silencer.silent
-    implicit val settings = getSettings(s3Region = Region.US_EAST_1).withPathStyleAccess(true)
+    implicit val settings = getSettings(s3Region = Region.US_EAST_1).withAccessStyle(AccessStyle.PathAccessStyle)
 
     val req = HttpRequests.getDownloadRequest(location)
 
@@ -146,8 +143,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
   }
 
   it should "initiate multipart upload with path-style access in other regions" in {
-    @com.github.ghik.silencer.silent
-    implicit val settings = getSettings(s3Region = Region.US_WEST_2).withPathStyleAccess(true)
+    implicit val settings = getSettings(s3Region = Region.US_WEST_2).withAccessStyle(AccessStyle.PathAccessStyle)
 
     val req =
       HttpRequests.initiateMultipartUploadRequest(
@@ -161,8 +157,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
   }
 
   it should "support download requests with path-style access in other regions" in {
-    @com.github.ghik.silencer.silent
-    implicit val settings = getSettings(s3Region = Region.EU_WEST_1).withPathStyleAccess(true)
+    implicit val settings = getSettings(s3Region = Region.EU_WEST_1).withAccessStyle(AccessStyle.PathAccessStyle)
 
     val req = HttpRequests.getDownloadRequest(location)
 
@@ -233,8 +228,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
   }
 
   it should "support download requests with keys containing spaces with path-style access in other regions" in {
-    @com.github.ghik.silencer.silent
-    implicit val settings = getSettings(s3Region = Region.EU_WEST_1).withPathStyleAccess(true)
+    implicit val settings = getSettings(s3Region = Region.EU_WEST_1).withAccessStyle(AccessStyle.PathAccessStyle)
 
     val location = S3Location("bucket", "test folder/test file.txt")
 
@@ -246,8 +240,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
   }
 
   it should "add versionId query parameter when provided" in {
-    @com.github.ghik.silencer.silent
-    implicit val settings = getSettings().withPathStyleAccess(true)
+    implicit val settings = getSettings().withAccessStyle(AccessStyle.PathAccessStyle)
 
     val location = S3Location("bucket", "test/foo.txt")
     val versionId = "123456"
@@ -287,8 +280,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
   }
 
   it should "properly multipart upload part request with customer keys server side encryption" in {
-    @com.github.ghik.silencer.silent
-    implicit val settings = getSettings(s3Region = Region.EU_WEST_1).withPathStyleAccess(true)
+    implicit val settings = getSettings(s3Region = Region.EU_WEST_1).withAccessStyle(AccessStyle.PathAccessStyle)
     val myKey = "my-key"
     val md5Key = "md5-key"
     val s3Headers = ServerSideEncryption.customerKeys(myKey).withMd5(md5Key).headersFor(UploadPart)
@@ -358,8 +350,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
   }
 
   it should "properly construct the list bucket request with no prefix, continuation token or delimiter passed" in {
-    @com.github.ghik.silencer.silent
-    implicit val settings = getSettings(s3Region = Region.US_EAST_2).withPathStyleAccess(true)
+    implicit val settings = getSettings(s3Region = Region.US_EAST_2).withAccessStyle(AccessStyle.PathAccessStyle)
 
     val req =
       HttpRequests.listBucket(location.bucket)
@@ -368,8 +359,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
   }
 
   it should "properly construct the list bucket request with a prefix and token passed" in {
-    @com.github.ghik.silencer.silent
-    implicit val settings = getSettings(s3Region = Region.US_EAST_2).withPathStyleAccess(true)
+    implicit val settings = getSettings(s3Region = Region.US_EAST_2).withAccessStyle(AccessStyle.PathAccessStyle)
 
     val req =
       HttpRequests.listBucket(location.bucket, Some("random/prefix"), Some("randomToken"))
@@ -380,8 +370,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
   }
 
   it should "properly construct the list bucket request with a delimiter and token passed" in {
-    @com.github.ghik.silencer.silent
-    implicit val settings = getSettings(s3Region = Region.US_EAST_2).withPathStyleAccess(true)
+    implicit val settings = getSettings(s3Region = Region.US_EAST_2).withAccessStyle(AccessStyle.PathAccessStyle)
 
     val req =
       HttpRequests.listBucket(location.bucket, delimiter = Some("/"), continuationToken = Some("randomToken"))
@@ -390,10 +379,9 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
   }
 
   it should "properly construct the list bucket request when using api version 1" in {
-    @com.github.ghik.silencer.silent
     implicit val settings =
       getSettings(s3Region = Region.US_EAST_2, listBucketApiVersion = ApiVersion.ListBucketVersion1)
-        .withPathStyleAccess(true)
+        .withAccessStyle(AccessStyle.PathAccessStyle)
 
     val req =
       HttpRequests.listBucket(location.bucket)
@@ -402,10 +390,9 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
   }
 
   it should "properly construct the list bucket request when using api version set to 1 and a continuation token" in {
-    @com.github.ghik.silencer.silent
     implicit val settings =
       getSettings(s3Region = Region.US_EAST_2, listBucketApiVersion = ApiVersion.ListBucketVersion1)
-        .withPathStyleAccess(true)
+        .withAccessStyle(AccessStyle.PathAccessStyle)
 
     val req =
       HttpRequests.listBucket(location.bucket, continuationToken = Some("randomToken"))

@@ -27,8 +27,7 @@ class GCStorageSinkSpec
     with Matchers
     with LogCapturing {
 
-  override def beforeAll(): Unit =
-    mockTokenApi()
+  override def beforeAll(): Unit = ()
 
   override protected def afterAll(): Unit = {
     super.afterAll()
@@ -41,7 +40,10 @@ class GCStorageSinkSpec
     val secondChunkContent = Random.alphanumeric.take(chunkSize).mkString
     val metadata = Map(Random.alphanumeric.take(5).mkString -> Random.alphanumeric.take(5).mkString)
 
-    mockLargeFileUpload(firstChunkContent, secondChunkContent, chunkSize, Some(metadata))
+    mock.simulate(
+      mockTokenApi,
+      mockLargeFileUpload(firstChunkContent, secondChunkContent, chunkSize, Some(metadata))
+    )
 
     //#upload
     val sink =
@@ -62,12 +64,16 @@ class GCStorageSinkSpec
     storageObject.metadata shouldBe Some(metadata)
   }
 
-  "fail with error when large file upload fails" in {
+  // The new ResumableUpload API automatically resumes interrupted/failed uploads
+  "fail with error when large file upload fails" ignore {
     val chunkSize = 256 * 1024
     val firstChunkContent = Random.alphanumeric.take(chunkSize).mkString
     val secondChunkContent = Random.alphanumeric.take(chunkSize).mkString
 
-    mockLargeFileUploadFailure(firstChunkContent, secondChunkContent, chunkSize)
+    mock.simulate(
+      mockTokenApi,
+      mockLargeFileUploadFailure(firstChunkContent, secondChunkContent, chunkSize)
+    )
 
     val sink =
       GCStorage.resumableUpload(bucketName, fileName, ContentTypes.`text/plain(UTF-8)`, chunkSize)
@@ -83,7 +89,10 @@ class GCStorageSinkSpec
   "rewrite file" in {
     val rewriteBucketName = "alpakka-rewrite"
 
-    mockRewrite(rewriteBucketName)
+    mock.simulate(
+      mockTokenApi,
+      mockRewrite(rewriteBucketName)
+    )
 
     // #rewrite
 
@@ -100,7 +109,10 @@ class GCStorageSinkSpec
   "fail when rewrite file fails" in {
     val rewriteBucketName = "alpakka-rewrite"
 
-    mockRewriteFailure(rewriteBucketName)
+    mock.simulate(
+      mockTokenApi,
+      mockRewriteFailure(rewriteBucketName)
+    )
 
     val result = GCStorage.rewrite(bucketName, fileName, rewriteBucketName, fileName).run
 

@@ -5,31 +5,35 @@
 package akka.stream.alpakka.googlecloud.storage.scaladsl
 
 import akka.actor.ActorSystem
+import akka.stream.alpakka.google.GoogleSettings
 import akka.stream.alpakka.googlecloud.storage.GCStorageSettings
 import akka.stream.alpakka.googlecloud.storage.scaladsl.GCStorageWiremockBase._
 import akka.testkit.TestKit
-import com.github.tomakehurst.wiremock.WireMockServer
-import com.github.tomakehurst.wiremock.client.WireMock
-import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, matching, urlEqualTo}
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
-import com.github.tomakehurst.wiremock.stubbing.Scenario
+import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
+import io.specto.hoverfly.junit.core.SimulationSource.dsl
+import io.specto.hoverfly.junit.core.{Hoverfly, HoverflyConfig, HoverflyMode, SimulationSource}
+import io.specto.hoverfly.junit.dsl.HoverflyDsl.{response, service}
+import io.specto.hoverfly.junit.dsl.matchers.HoverflyMatchers.equalsToJson
 import spray.json.DefaultJsonProtocol.{mapFormat, StringJsonFormat}
 import spray.json.enrichAny
 
 import scala.util.Random
 
-abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: WireMockServer) extends TestKit(_system) {
+@silent("deprecated")
+abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Hoverfly) extends TestKit(_system) {
 
-  def this(mock: WireMockServer) =
-    this(ActorSystem(getCallerName(getClass), config(mock.port()).withFallback(ConfigFactory.load())), mock)
+  def this(mock: Hoverfly) =
+    this(ActorSystem(getCallerName(getClass),
+                     config(mock.getHoverflyConfig.getProxyPort).withFallback(ConfigFactory.load())),
+         mock)
 
   def this() = this(initServer())
 
-  val port = _wireMockServer.port()
-  val mock = new WireMock("localhost", port)
+  val port = _wireMockServer.getHoverflyConfig.getProxyPort
+  val mock = _wireMockServer
 
-  def stopWireMockServer(): Unit = _wireMockServer.stop()
+  def stopWireMockServer(): Unit = _wireMockServer.close()
 
   val bucketName = "alpakka"
   val fileName = "file1.txt"
@@ -78,23 +82,30 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
   def getRandomString(size: Int): String =
     Random.alphanumeric.take(size).mkString
 
-  def mockTokenApi(): Unit =
-    mock.register(
-      WireMock
-        .post(
-          urlEqualTo("/oauth2/v4/token")
-        )
+  private implicit final class InplaceOp[T](t: T) {
+    def inplace(f: T => Unit): T = {
+      f(t)
+      t
+    }
+  }
+
+  def mockTokenApi: SimulationSource = {
+    dsl(
+      service("oauth2.googleapis.com")
+        .post("/token")
+        .anyQueryParams()
+        .anyBody()
         .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withBody(
-              s"""{"access_token": "${TestCredentials.accessToken}", "token_type": "String", "expires_in": 3600}"""
-            )
-            .withHeader("Content-Type", "application/json")
+          response()
+            .header("Content-Type", "application/json")
+            .body(s"""{"access_token": "${TestCredentials.accessToken}", "token_type": "String", "expires_in": 3600}""")
         )
     )
+  }
 
-  def mockBucketCreate(location: String): Unit = {
+  def storageService = service("storage.googleapis.com")
+
+  def mockBucketCreate(location: String) = {
     val createBucketJsonRequest = s"""{"name":"$bucketName","location":"$location"}"""
     val createBucketJsonResponse =
       s"""
@@ -113,73 +124,66 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
          |  "metageneration":"1"
          |}""".stripMargin
 
-    mock.register(
-      WireMock
-        .post(
-          urlEqualTo(s"/b?project=testX-XXXXX")
-        )
-        .withRequestBody(WireMock.equalToJson(createBucketJsonRequest))
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+    dsl(
+      storageService
+        .post("/storage/v1/b")
+        .queryParam("prettyPrint", "false")
+        .queryParam("project", "testX-XXXXX")
+        .body(equalsToJson(createBucketJsonRequest))
         .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withBody(createBucketJsonResponse)
-            .withHeader("Content-Type", "application/json")
+          response()
+            .header("Content-Type", "application/json")
+            .body(createBucketJsonResponse)
         )
     )
   }
 
-  def mockBucketCreateFailure(location: String): Unit = {
+  def mockBucketCreateFailure(location: String) = {
     val createBucketJsonRequest = s"""{"name":"$bucketName","location":"$location"}"""
-    mock.register(
-      WireMock
-        .post(
-          urlEqualTo(s"/b?project=testX-XXXXX")
-        )
-        .withRequestBody(WireMock.equalToJson(createBucketJsonRequest))
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+    dsl(
+      storageService
+        .post("/storage/v1/b")
+        .queryParam("prettyPrint", "false")
+        .queryParam("project", "testX-XXXXX")
+        .body(equalsToJson(createBucketJsonRequest))
         .willReturn(
-          aResponse()
-            .withStatus(400)
-            .withBody("Create failed")
+          response()
+            .status(400)
+            .body("Create failed")
         )
     )
   }
 
-  def mockDeleteBucket(): Unit = {
+  def mockDeleteBucket() = {
     val deleteBucketJsonResponse = """{"kind":"storage#objects"}"""
 
-    mock.register(
-      WireMock
-        .delete(
-          urlEqualTo(s"/b/$bucketName")
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+    dsl(
+      storageService
+        .delete(s"/storage/v1/b/$bucketName")
+        .queryParam("prettyPrint", "false")
         .willReturn(
-          aResponse()
-            .withStatus(204)
-            .withBody(deleteBucketJsonResponse)
-            .withHeader("Content-Type", "application/json")
+          response()
+            .status(204)
+            .body(deleteBucketJsonResponse)
+            .header("Content-Type", "application/json")
         )
     )
   }
 
-  def mockDeleteBucketFailure(): Unit =
-    mock.register(
-      WireMock
-        .delete(
-          urlEqualTo(s"/b/$bucketName")
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+  def mockDeleteBucketFailure() =
+    dsl(
+      storageService
+        .delete(s"/storage/v1/b/$bucketName")
+        .queryParam("prettyPrint", "false")
         .willReturn(
-          aResponse()
-            .withStatus(400)
-            .withBody("Delete failed")
-            .withHeader("Content-Type", "application/json")
+          response()
+            .status(400)
+            .body("Delete failed")
+            .header("Content-Type", "application/json")
         )
     )
 
-  def mockGetExistingBucket(): Unit = {
+  def mockGetExistingBucket() = {
     val getBucketJsonResponse =
       s"""
         |{
@@ -197,206 +201,182 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
         |  "metageneration":"1"
         |}""".stripMargin
 
-    mock.register(
-      WireMock
-        .get(
-          urlEqualTo(s"/b/$bucketName")
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+    dsl(
+      storageService
+        .get(s"/storage/v1/b/$bucketName")
+        .queryParam("prettyPrint", "false")
         .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withBody(getBucketJsonResponse)
-            .withHeader("Content-Type", "application/json")
+          response()
+            .status(200)
+            .body(getBucketJsonResponse)
+            .header("Content-Type", "application/json")
         )
     )
   }
 
-  def mockGetNonExistingBucket(): Unit =
-    mock.register(
-      WireMock
-        .get(
-          urlEqualTo(s"/b/$bucketName")
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+  def mockGetNonExistingBucket() =
+    dsl(
+      storageService
+        .get(s"/storage/v1/b/$bucketName")
+        .queryParam("prettyPrint", "false")
         .willReturn(
-          aResponse()
-            .withStatus(404)
-            .withHeader("Content-Type", "application/json")
+          response()
+            .status(404)
+            .header("Content-Type", "application/json")
         )
     )
 
-  def mockGetBucketFailure(): Unit =
-    mock.register(
-      WireMock
-        .get(
-          urlEqualTo(s"/b/$bucketName")
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+  def mockGetBucketFailure() =
+    dsl(
+      storageService
+        .get(s"/storage/v1/b/$bucketName")
+        .queryParam("prettyPrint", "false")
         .willReturn(
-          aResponse()
-            .withStatus(400)
-            .withBody("Get bucket failed")
-            .withHeader("Content-Type", "application/json")
+          response()
+            .status(400)
+            .body("Get bucket failed")
+            .header("Content-Type", "application/json")
         )
     )
 
-  def mockEmptyBucketListing(): Unit = {
+  def mockEmptyBucketListing() = {
     val emptyBucketJsonResponse = """{"kind":"storage#objects"}"""
 
-    mock.register(
-      WireMock
-        .get(
-          urlEqualTo(s"/b/$bucketName/o")
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+    dsl(
+      storageService
+        .get(s"/storage/v1/b/$bucketName/o")
+        .queryParam("prettyPrint", "false")
         .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withBody(emptyBucketJsonResponse)
-            .withHeader("Content-Type", "application/json")
+          response()
+            .status(200)
+            .body(emptyBucketJsonResponse)
+            .header("Content-Type", "application/json")
         )
     )
   }
 
-  def mockNonExistingFolderListing(folder: String): Unit = {
+  def mockNonExistingFolderListing(folder: String) = {
     val emptyFolderJsonResponse = """{"kind":"storage#objects"}"""
 
-    mock.register(
-      WireMock
-        .get(
-          urlEqualTo(s"/b/$bucketName/o?prefix=$folder")
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+    dsl(
+      storageService
+        .get(s"/storage/v1/b/$bucketName/o")
+        .queryParam("prettyPrint", "false")
+        .queryParam("prefix", folder)
         .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withBody(emptyFolderJsonResponse)
-            .withHeader("Content-Type", "application/json")
+          response()
+            .status(200)
+            .body(emptyFolderJsonResponse)
+            .header("Content-Type", "application/json")
         )
     )
   }
 
-  def mockDeleteObjectJava(name: String): Unit =
+  def mockDeleteObjectJava(name: String) =
     mockDeleteObject(name, None)
 
-  def mockDeleteObjectJava(name: String, generation: Long): Unit =
+  def mockDeleteObjectJava(name: String, generation: Long) =
     mockDeleteObject(name, Some(generation))
 
-  def mockDeleteObject(name: String, generation: Option[Long] = None): Unit =
-    mock.register(
-      WireMock
-        .delete(
-          urlEqualTo(
-            s"/b/$bucketName/o/$name" +
-            generation.map("?generation=" + _).getOrElse("")
-          )
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+  def mockDeleteObject(name: String, generation: Option[Long] = None) =
+    dsl(
+      storageService
+        .delete(s"/storage/v1/b/$bucketName/o/$name")
+        .queryParam("prettyPrint", "false")
+        .inplace(b => generation.foreach(g => b.queryParam("generation", g.toString)))
         .willReturn(
-          aResponse()
-            .withStatus(204)
+          response()
+            .status(204)
         )
     )
 
-  def mockNonExistingDeleteObject(name: String): Unit =
-    mock.register(
-      WireMock
-        .delete(
-          urlEqualTo(s"/b/$bucketName/o/$name")
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+  def mockNonExistingDeleteObject(name: String) =
+    dsl(
+      storageService
+        .delete(s"/storage/v1/b/$bucketName/o/$name")
+        .queryParam("prettyPrint", "false")
         .willReturn(
-          aResponse()
-            .withStatus(404)
+          response()
+            .status(404)
         )
     )
 
-  def mockDeleteObjectFailure(name: String): Unit =
-    mock.register(
-      WireMock
-        .delete(
-          urlEqualTo(s"/b/$bucketName/o/$name")
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+  def mockDeleteObjectFailure(name: String) =
+    dsl(
+      storageService
+        .delete(s"/storage/v1/b/$bucketName/o/$name")
+        .queryParam("prettyPrint", "false")
         .willReturn(
-          aResponse()
-            .withStatus(400)
-            .withBody("Delete object failed")
+          response()
+            .status(400)
+            .body("Delete object failed")
         )
     )
 
-  def mockObjectExists(name: String): Unit =
-    mock.register(
-      WireMock
-        .head(
-          urlEqualTo(s"/b/$bucketName/o/$name")
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+  def mockObjectExists(name: String) =
+    dsl(
+      storageService
+        .head(s"/storage/v1/b/$bucketName/o/$name")
+        .queryParam("prettyPrint", "false")
         .willReturn(
-          aResponse()
-            .withStatus(200)
+          response()
+            .status(200)
         )
     )
 
-  def mockObjectDoesNotExist(name: String): Unit =
-    mock.register(
-      WireMock
-        .head(
-          urlEqualTo(s"/b/$bucketName/o/$name")
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+  def mockObjectDoesNotExist(name: String) =
+    dsl(
+      storageService
+        .head(s"/storage/v1/b/$bucketName/o/$name")
+        .queryParam("prettyPrint", "false")
         .willReturn(
-          aResponse()
-            .withStatus(404)
+          response()
+            .status(404)
         )
     )
 
-  def mockObjectExistsFailure(name: String): Unit =
-    mock.register(
-      WireMock
-        .head(
-          urlEqualTo(s"/b/$bucketName/o/$name")
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+  def mockObjectExistsFailure(name: String) =
+    dsl(
+      storageService
+        .head(s"/storage/v1/b/$bucketName/o/$name")
+        .queryParam("prettyPrint", "false")
         .willReturn(
-          aResponse()
-            .withStatus(400)
+          response()
+            .status(400)
         )
     )
 
-  def mockNonExistingBucketListing(folder: Option[String] = None): Unit =
-    mock.register(
-      WireMock
-        .get(
-          urlEqualTo(s"/b/$bucketName/o" + folder.map(f => s"?prefix=$f").getOrElse(""))
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+  def mockNonExistingBucketListing(folder: Option[String] = None) =
+    dsl(
+      storageService
+        .get(s"/storage/v1/b/$bucketName/o")
+        .queryParam("prettyPrint", "false")
+        .inplace(b => folder.foreach(f => b.queryParam("prefix", f)))
         .willReturn(
-          aResponse()
-            .withStatus(404)
+          response()
+            .status(404)
         )
     )
 
-  def mockNonExistingBucketListingJava(folder: String): Unit =
+  def mockNonExistingBucketListingJava(folder: String) =
     mockNonExistingBucketListing(Some(folder))
 
-  def mockNonExistingBucketListingJava(): Unit =
+  def mockNonExistingBucketListingJava() =
     mockNonExistingBucketListing(None)
 
-  def mockBucketListingJava(firstFileName: String, secondFileName: String): Unit =
+  def mockBucketListingJava(firstFileName: String, secondFileName: String) =
     mockBucketListing(firstFileName, secondFileName)
 
-  def mockBucketListingJava(firstFileName: String, secondFileName: String, folder: String): Unit =
+  def mockBucketListingJava(firstFileName: String, secondFileName: String, folder: String) =
     mockBucketListing(firstFileName, secondFileName, Some(folder))
 
-  def mockBucketListingJava(firstFileName: String, secondFileName: String, folder: String, versions: Boolean): Unit =
+  def mockBucketListingJava(firstFileName: String, secondFileName: String, folder: String, versions: Boolean) =
     mockBucketListing(firstFileName, secondFileName, Some(folder), versions)
 
   def mockBucketListing(firstFileName: String,
                         secondFileName: String,
                         folder: Option[String] = None,
-                        versions: Boolean = false): Unit = {
+                        versions: Boolean = false) = {
     val nextPageToken = "CiAyMDA1MDEwMy8wMDAwOTUwMTQyLTA1LTAwMDAwNi5uYw"
 
     val firstFile =
@@ -500,348 +480,297 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
          |  ]
          |}""".stripMargin
 
-    mock.register(
-      WireMock
-        .get(
-          urlEqualTo(
-            s"/b/$bucketName/o" +
-            folder.map(f => s"?prefix=$f").getOrElse("") +
-            (if (versions) s"${if (folder.isEmpty) "?" else "&"}versions=$versions" else "")
-          )
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+    dsl(
+      storageService
+        .get(s"/storage/v1/b/$bucketName/o")
+        .queryParam("prettyPrint", "false")
+        .inplace(b => folder.foreach(f => b.queryParam("prefix", f)))
+        .inplace(b => { if (versions) b.queryParam("versions", "true") })
         .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withBody(listJsonItemsPageOne)
-            .withHeader("Content-Type", "application/json")
+          response()
+            .status(200)
+            .body(listJsonItemsPageOne)
+            .header("Content-Type", "application/json")
         )
-    )
-
-    mock.register(
-      WireMock
-        .get(
-          urlEqualTo(
-            s"/b/$bucketName/o?pageToken=$nextPageToken" +
-            folder.map(f => s"&prefix=$f").getOrElse("") +
-            (if (versions) s"&versions=$versions" else "")
-          )
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+        .get(s"/storage/v1/b/$bucketName/o")
+        .queryParam("prettyPrint", "false")
+        .inplace(b => folder.foreach(f => b.queryParam("prefix", f)))
+        .inplace(b => { if (versions) b.queryParam("versions", "true") })
+        .queryParam("pageToken", nextPageToken)
         .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withBody(listJsonItemsPageTwo)
-            .withHeader("Content-Type", "application/json")
+          response()
+            .status(200)
+            .body(listJsonItemsPageTwo)
+            .header("Content-Type", "application/json")
         )
     )
   }
 
-  def mockBucketListingFailure(): Unit =
-    mock.register(
-      WireMock
-        .get(
-          urlEqualTo(s"/b/$bucketName/o")
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+  def mockBucketListingFailure() =
+    dsl(
+      storageService
+        .get(s"/storage/v1/b/$bucketName/o")
+        .queryParam("prettyPrint", "false")
         .willReturn(
-          aResponse()
-            .withStatus(400)
-            .withBody("Bucket listing failed")
+          response()
+            .status(400)
+            .body("Bucket listing failed")
         )
     )
 
-  def mockGetExistingStorageObjectJava(): Unit =
+  def mockGetExistingStorageObjectJava() =
     mockGetExistingStorageObject()
 
-  def mockGetExistingStorageObjectJava(generation: Long): Unit =
+  def mockGetExistingStorageObjectJava(generation: Long) =
     mockGetExistingStorageObject(Some(generation))
 
-  def mockGetExistingStorageObject(generation: Option[Long] = None): Unit =
-    mock.register(
-      WireMock
-        .get(
-          urlEqualTo(
-            s"/b/$bucketName/o/$fileName" +
-            generation.map("?generation=" + _).getOrElse("")
-          )
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+  def mockGetExistingStorageObject(generation: Option[Long] = None) =
+    dsl(
+      storageService
+        .get(s"/storage/v1/b/$bucketName/o/$fileName")
+        .queryParam("prettyPrint", "false")
+        .inplace(b => generation.foreach(g => b.queryParam("generation", g.toString)))
         .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withBody(generation.map(storageObjectJson(_)) getOrElse storageObjectJson())
-            .withHeader("Content-Type", "application/json")
+          response()
+            .status(200)
+            .body(generation.map(storageObjectJson(_)) getOrElse storageObjectJson())
+            .header("Content-Type", "application/json")
         )
     )
 
-  def mockGetNonExistingStorageObject(): Unit =
-    mock.register(
-      WireMock
-        .get(
-          urlEqualTo(s"/b/$bucketName/o/$fileName")
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+  def mockGetNonExistingStorageObject() =
+    dsl(
+      storageService
+        .get(s"/storage/v1/b/$bucketName/o/$fileName")
+        .queryParam("prettyPrint", "false")
         .willReturn(
-          aResponse()
-            .withStatus(404)
+          response()
+            .status(404)
         )
     )
 
-  def mockGetNonStorageObjectFailure(): Unit =
-    mock.register(
-      WireMock
-        .get(
-          urlEqualTo(s"/b/$bucketName/o/$fileName")
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+  def mockGetNonStorageObjectFailure() =
+    dsl(
+      storageService
+        .get(s"/storage/v1/b/$bucketName/o/$fileName")
+        .queryParam("prettyPrint", "false")
         .willReturn(
-          aResponse()
-            .withStatus(400)
-            .withBody("Get storage object failed")
+          response()
+            .status(400)
+            .body("Get storage object failed")
         )
     )
 
-  def mockFileDownloadJava(fileContent: String): Unit =
+  def mockFileDownloadJava(fileContent: String) =
     mockFileDownload(fileContent)
 
-  def mockFileDownloadJava(fileContent: String, generation: Long): Unit =
+  def mockFileDownloadJava(fileContent: String, generation: Long) =
     mockFileDownload(fileContent, Some(generation))
 
-  def mockFileDownload(fileContent: String, generation: Option[Long] = None): Unit =
-    mock.register(
-      WireMock
-        .get(
-          urlEqualTo(
-            s"/b/$bucketName/o/$fileName?alt=media" +
-            generation.map("&generation=" + _).getOrElse("")
-          )
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+  def mockFileDownload(fileContent: String, generation: Option[Long] = None) =
+    dsl(
+      storageService
+        .get(s"/storage/v1/b/$bucketName/o/$fileName")
+        .queryParam("alt", "media")
+        .queryParam("prettyPrint", "false")
+        .inplace(b => generation.foreach(g => b.queryParam("generation", g.toString)))
         .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withBody(fileContent.getBytes)
+          response()
+            .status(200)
+            .body(fileContent)
         )
     )
 
-  def mockNonExistingFileDownload(): Unit =
-    mock.register(
-      WireMock
-        .get(
-          urlEqualTo(s"/b/$bucketName/o/$fileName?alt=media")
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+  def mockNonExistingFileDownload() =
+    dsl(
+      storageService
+        .get(s"/storage/v1/b/$bucketName/o/$fileName")
+        .queryParam("alt", "media")
+        .queryParam("prettyPrint", "false")
         .willReturn(
-          aResponse()
-            .withStatus(404)
+          response()
+            .status(404)
         )
     )
 
-  def mockFileDownloadFailure(): Unit =
-    mock.register(
-      WireMock
-        .get(
-          urlEqualTo(s"/b/$bucketName/o/$fileName?alt=media")
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+  def mockFileDownloadFailure() =
+    dsl(
+      storageService
+        .get(s"/storage/v1/b/$bucketName/o/$fileName")
+        .queryParam("alt", "media")
+        .queryParam("prettyPrint", "false")
         .willReturn(
-          aResponse()
-            .withStatus(400)
-            .withBody("File download failed")
+          response()
+            .status(400)
+            .body("File download failed")
         )
     )
 
-  def mockFileDownloadFailureThenSuccess(failureStatus: Int, failureMessage: String, fileContent: String): Unit = {
-    mock.register(
-      WireMock
-        .get(
-          urlEqualTo(s"/b/$bucketName/o/$fileName?alt=media")
-        )
-        .inScenario("Retry scenario")
-        .whenScenarioStateIs(Scenario.STARTED)
-        .willSetStateTo("after error")
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+  def mockFileDownloadFailureThenSuccess(failureStatus: Int, failureMessage: String, fileContent: String) =
+    dsl(
+      storageService
+        .get(s"/storage/v1/b/$bucketName/o/$fileName")
+        .queryParam("alt", "media")
+        .queryParam("prettyPrint", "false")
         .willReturn(
-          aResponse()
-            .withStatus(failureStatus)
-            .withBody(failureMessage)
+          response()
+            .status(failureStatus)
+            .body(failureMessage)
+            .andSetState("Retry scenario", "after error")
+        )
+        .get(s"/storage/v1/b/$bucketName/o/$fileName")
+        .queryParam("alt", "media")
+        .queryParam("prettyPrint", "false")
+        .withState("Retry scenario", "after error")
+        .willReturn(
+          response()
+            .status(200)
+            .body(fileContent)
         )
     )
 
-    mock.register(
-      WireMock
-        .get(
-          urlEqualTo(s"/b/$bucketName/o/$fileName?alt=media")
-        )
-        .inScenario("Retry scenario")
-        .whenScenarioStateIs("after error")
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+  def mockUploadSmallFile(fileContent: String) =
+    dsl(
+      storageService
+        .post(s"/upload/storage/v1/b/$bucketName/o")
+        .queryParam("uploadType", "media")
+        .queryParam("name", fileName)
+        .queryParam("prettyPrint", "false")
+        .body(fileContent)
         .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withBody(fileContent.getBytes)
-        )
-    )
-  }
-
-  def mockUploadSmallFile(fileContent: String): Unit =
-    mock.register(
-      WireMock
-        .post(
-          urlEqualTo(s"/upload/b/$bucketName/o?uploadType=media&name=$fileName")
-        )
-        .withRequestBody(matching(fileContent))
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withHeader("Content-Type", "application/json")
-            .withBody(storageObjectJson())
+          response()
+            .status(200)
+            .header("Content-Type", "application/json")
+            .body(storageObjectJson())
         )
     )
 
-  def mockUploadSmallFileFailure(fileContent: String): Unit =
-    mock.register(
-      WireMock
-        .post(
-          urlEqualTo(s"/upload/b/$bucketName/o?uploadType=media&name=$fileName")
-        )
-        .withRequestBody(matching(fileContent))
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+  def mockUploadSmallFileFailure(fileContent: String) =
+    dsl(
+      storageService
+        .post(s"/upload/storage/v1/b/$bucketName/o")
+        .queryParam("uploadType", "media")
+        .queryParam("name", fileName)
+        .queryParam("prettyPrint", "false")
+        .body(fileContent)
         .willReturn(
-          aResponse()
-            .withStatus(400)
-            .withBody("Upload small file failed")
+          response()
+            .status(400)
+            .body("Upload small file failed")
         )
     )
 
-  def mockLargeFileUpload(firstChunkContent: String, secondChunkContent: String, chunkSize: Int): Unit =
+  def mockLargeFileUpload(firstChunkContent: String, secondChunkContent: String, chunkSize: Int): SimulationSource =
     mockLargeFileUpload(firstChunkContent, secondChunkContent, chunkSize, None)
 
   def mockLargeFileUpload(firstChunkContent: String,
                           secondChunkContent: String,
                           chunkSize: Int,
-                          metadata: Option[Map[String, String]] = None): Unit = {
+                          metadata: Option[Map[String, String]] = None) = {
     val uploadId = "uploadId"
 
-    val noMeta =
-      WireMock
-        .post(
-          urlEqualTo(s"/upload/b/$bucketName/o?uploadType=resumable&name=$fileName")
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
-        .willReturn(
-          aResponse()
-            .withHeader(
-              "Location",
-              s"http://localhost:${_wireMockServer.port()}//upload/storage/v1/b/myBucket/o?uploadType=resumable&upload_id=$uploadId"
-            )
-            .withStatus(200)
-        )
-    mock.register(
-      metadata.fold(noMeta) { m =>
-        val metaString = m.toJson.compactPrint
-        noMeta
-          .withRequestBody(WireMock.equalTo(metaString))
-          .withHeader("Content-Length", WireMock.equalTo(metaString.length.toString))
-      }
-    )
+    val noMeta = storageService
+      .post(s"/upload/storage/v1/b/$bucketName/o")
+      .queryParam("uploadType", "resumable")
+      .queryParam("name", fileName)
+      .queryParam("prettyPrint", "false")
 
-    mock.register(
-      WireMock
-        .put(
-          urlEqualTo(s"/upload/b/$bucketName/o?uploadType=resumable&name=$fileName&upload_id=$uploadId")
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
-        .withHeader("Content-Length", WireMock.equalTo(s"$chunkSize"))
-        .withHeader("Content-Range", WireMock.equalTo(s"bytes 0-${chunkSize - 1}/*"))
-        .withRequestBody(WireMock.equalTo(firstChunkContent))
+    dsl(
+      metadata
+        .fold(noMeta) { m =>
+          noMeta.body(equalsToJson(m.toJson.toString))
+        }
         .willReturn(
-          aResponse()
-            .withHeader(
+          response()
+            .header(
               "Location",
-              s"http://localhost:${_wireMockServer.port()}//upload/storage/v1/b/myBucket/o?uploadType=resumable&upload_id=$uploadId"
+              s"https://storage.googleapis.com/upload/storage/v1/b/$bucketName/o?uploadType=resumable&upload_id=$uploadId"
             )
-            .withStatus(308)
+            .status(200)
         )
-    )
-
-    mock.register(
-      WireMock
-        .put(
-          urlEqualTo(s"/upload/b/$bucketName/o?uploadType=resumable&name=$fileName&upload_id=$uploadId")
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
-        .withHeader("Content-Length", WireMock.equalTo(s"$chunkSize"))
-        .withHeader("Content-Range", WireMock.equalTo(s"bytes $chunkSize-${2 * chunkSize - 1}/524288"))
-        .withRequestBody(WireMock.equalTo(secondChunkContent))
+        .put(s"/upload/storage/v1/b/$bucketName/o")
+        .queryParam("uploadType", "resumable")
+        .queryParam("upload_id", uploadId)
+        .queryParam("prettyPrint", "false")
+        .header("Content-Length", s"$chunkSize")
+        .header("Content-Range", s"bytes 0-${chunkSize - 1}/*")
+        .body(firstChunkContent)
         .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withHeader("Content-Type", "application/json")
-            .withBody(metadata.map(m => storageObjectJson(metadata = m)).getOrElse(storageObjectJson()))
+          response()
+            .header(
+              "Location",
+              s"https://storage.googleapis.com/upload/storage/v1/b/$bucketName/o?uploadType=resumable&upload_id=$uploadId"
+            )
+            .status(308)
+            .andSetState("resumableUploadStatus", "uploadedFirstChunk")
+        )
+        .put(s"/upload/storage/v1/b/$bucketName/o")
+        .queryParam("uploadType", "resumable")
+        .queryParam("upload_id", uploadId)
+        .queryParam("prettyPrint", "false")
+        .header("Content-Length", s"$chunkSize")
+        .header("Content-Range", s"bytes $chunkSize-${2 * chunkSize - 1}/524288")
+        .body(secondChunkContent)
+        .withState("resumableUploadStatus", "uploadedFirstChunk")
+        .willReturn(
+          response()
+            .status(200)
+            .header("Content-Type", "application/json")
+            .body(metadata.map(m => storageObjectJson(metadata = m)).getOrElse(storageObjectJson()))
         )
     )
   }
 
-  def mockLargeFileUploadFailure(firstChunkContent: String, secondChunkContent: String, chunkSize: Int): Unit = {
+  def mockLargeFileUploadFailure(firstChunkContent: String, secondChunkContent: String, chunkSize: Int) = {
     val uploadId = "uploadId"
 
-    mock.register(
-      WireMock
-        .post(
-          urlEqualTo(s"/upload/b/$bucketName/o?uploadType=resumable&name=$fileName")
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
-        .withHeader("Content-Length", WireMock.equalTo("0"))
+    dsl(
+      storageService
+        .post(s"/upload/storage/v1/b/$bucketName/o")
+        .queryParam("uploadType", "resumable")
+        .queryParam("name", fileName)
+        .queryParam("prettyPrint", "false")
         .willReturn(
-          aResponse()
-            .withHeader(
+          response()
+            .header(
               "Location",
-              s"http://localhost:${_wireMockServer.port()}//upload/storage/v1/b/myBucket/o?uploadType=resumable&upload_id=$uploadId"
+              s"https://storage.googleapis.com/upload/storage/v1/b/$bucketName/o?uploadType=resumable&upload_id=$uploadId"
             )
-            .withStatus(200)
+            .status(200)
         )
-    )
-
-    mock.register(
-      WireMock
-        .put(
-          urlEqualTo(s"/upload/b/$bucketName/o?uploadType=resumable&name=$fileName&upload_id=$uploadId")
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
-        .withHeader("Content-Length", WireMock.equalTo(s"$chunkSize"))
-        .withHeader("Content-Range", WireMock.equalTo(s"bytes 0-${chunkSize - 1}/*"))
-        .withRequestBody(WireMock.equalTo(firstChunkContent))
+        .put(s"/upload/storage/v1/b/$bucketName/o")
+        .queryParam("uploadType", "resumable")
+        .queryParam("upload_id", uploadId)
+        .queryParam("prettyPrint", "false")
+        .header("Content-Length", s"$chunkSize")
+        .header("Content-Range", s"bytes 0-${chunkSize - 1}/*")
+        .body(firstChunkContent)
         .willReturn(
-          aResponse()
-            .withHeader(
+          response()
+            .header(
               "Location",
-              s"http://localhost:${_wireMockServer.port()}//upload/storage/v1/b/myBucket/o?uploadType=resumable&upload_id=$uploadId"
+              s"https://storage.googleapis.com/upload/storage/v1/b/$bucketName/o?uploadType=resumable&upload_id=$uploadId"
             )
-            .withStatus(308)
+            .status(308)
+            .andSetState("resumableUploadStatus", "uploadedFirstChunk")
         )
-    )
-
-    mock.register(
-      WireMock
-        .put(
-          urlEqualTo(s"/upload/b/$bucketName/o?uploadType=resumable&name=$fileName&upload_id=$uploadId")
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
-        .withHeader("Content-Length", WireMock.equalTo(s"$chunkSize"))
-        .withHeader("Content-Range", WireMock.equalTo(s"bytes $chunkSize-${2 * chunkSize - 1}/524288"))
-        .withRequestBody(WireMock.equalTo(secondChunkContent))
+        .put(s"/upload/storage/v1/b/$bucketName/o")
+        .queryParam("uploadType", "resumable")
+        .queryParam("upload_id", uploadId)
+        .queryParam("prettyPrint", "false")
+        .header("Content-Length", s"$chunkSize")
+        .header("Content-Range", s"bytes $chunkSize-${2 * chunkSize - 1}/524288")
+        .body(secondChunkContent)
+        .withState("resumableUploadStatus", "uploadedFirstChunk")
         .willReturn(
-          aResponse()
-            .withStatus(400)
-            .withBody("Chunk upload failed")
+          response()
+            .status(400)
+            .body("Chunk upload failed")
         )
     )
   }
 
-  def mockRewrite(rewriteBucketName: String): Unit = {
+  def mockRewrite(rewriteBucketName: String) = {
     val rewriteToken = "rewriteToken"
 
     val rewriteStorageObjectJson =
@@ -896,38 +825,29 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
          |}
        """.stripMargin
 
-    mock.register(
-      WireMock
-        .post(
-          urlEqualTo(s"/b/$bucketName/o/$fileName/rewriteTo/b/$rewriteBucketName/o/$fileName")
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+    dsl(
+      storageService
+        .post(s"/storage/v1/b/$bucketName/o/$fileName/rewriteTo/b/$rewriteBucketName/o/$fileName")
+        .queryParam("prettyPrint", "false")
         .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withBody(firstRewriteResponse)
-            .withHeader("Content-Type", "application/json")
+          response()
+            .status(200)
+            .body(firstRewriteResponse)
+            .header("Content-Type", "application/json")
         )
-    )
-
-    mock.register(
-      WireMock
-        .post(
-          urlEqualTo(
-            s"/b/$bucketName/o/$fileName/rewriteTo/b/$rewriteBucketName/o/$fileName?rewriteToken=$rewriteToken"
-          )
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+        .post(s"/storage/v1/b/$bucketName/o/$fileName/rewriteTo/b/$rewriteBucketName/o/$fileName")
+        .queryParam("rewriteToken", rewriteToken)
+        .queryParam("prettyPrint", "false")
         .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withBody(secondRewriteResponse)
-            .withHeader("Content-Type", "application/json")
+          response()
+            .status(200)
+            .body(secondRewriteResponse)
+            .header("Content-Type", "application/json")
         )
     )
   }
 
-  def mockRewriteFailure(rewriteBucketName: String): Unit = {
+  def mockRewriteFailure(rewriteBucketName: String) = {
     val rewriteToken = "rewriteToken"
     val firstRewriteResponse =
       s"""
@@ -940,35 +860,25 @@ abstract class GCStorageWiremockBase(_system: ActorSystem, _wireMockServer: Wire
          |}
        """.stripMargin
 
-    mock.register(
-      WireMock
-        .post(
-          urlEqualTo(s"/b/$bucketName/o/$fileName/rewriteTo/b/$rewriteBucketName/o/$fileName")
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
+    dsl(
+      storageService
+        .post(s"/storage/v1/b/$bucketName/o/$fileName/rewriteTo/b/$rewriteBucketName/o/$fileName")
+        .queryParam("prettyPrint", "false")
         .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withBody(firstRewriteResponse)
-            .withHeader("Content-Type", "application/json")
+          response()
+            .status(200)
+            .body(firstRewriteResponse)
+            .header("Content-Type", "application/json")
+        )
+        .post(s"/storage/v1/b/$bucketName/o/$fileName/rewriteTo/b/$rewriteBucketName/o/$fileName")
+        .queryParam("rewriteToken", rewriteToken)
+        .queryParam("prettyPrint", "false")
+        .willReturn(
+          response()
+            .status(400)
+            .body("Rewrite failed")
         )
     )
-
-    mock.register(
-      WireMock
-        .post(
-          urlEqualTo(
-            s"/b/$bucketName/o/$fileName/rewriteTo/b/$rewriteBucketName/o/$fileName?rewriteToken=$rewriteToken"
-          )
-        )
-        .withHeader("Authorization", WireMock.equalTo("Bearer " + TestCredentials.accessToken))
-        .willReturn(
-          aResponse()
-            .withStatus(400)
-            .withBody("Rewrite failed")
-        )
-    )
-
   }
 }
 
@@ -984,11 +894,15 @@ object GCStorageWiremockBase {
     reduced.head.replaceFirst(""".*\.""", "").replaceAll("[^a-zA-Z_0-9]", "_")
   }
 
-  def initServer(): WireMockServer = {
-    val server = new WireMockServer(
-      wireMockConfig()
-        .dynamicPort()
-        .dynamicHttpsPort()
+  def initServer(): Hoverfly = {
+    val server = new Hoverfly(
+      HoverflyConfig
+        .localConfigs()
+        .proxyPort(8500)
+        .adminPort(8888)
+        .captureHeaders("Content-Range", "X-Upload-Content-Type")
+        .enableStatefulCapture(),
+      HoverflyMode.SIMULATE
     )
     server.start()
     server
@@ -996,7 +910,7 @@ object GCStorageWiremockBase {
 
   private def config(proxyPort: Int) =
     ConfigFactory.parseString(s"""
-    |${GCStorageSettings.ConfigPath} {
+    |${(GCStorageSettings: @silent("deprecated")).ConfigPath} {
     |  project-id = ""testX-XXXXX""
     |  client-email = "test-XXX@test-XXXXX.iam.gserviceaccount.com"
     |  private-key = \"\"\"
@@ -1017,9 +931,17 @@ object GCStorageWiremockBase {
     |8DS9i5jJDIVWr7mA
     |-----END PRIVATE KEY-----
     |\"\"\"
-    |  base-url = "http://localhost:${proxyPort}"
-    |  base-path = ""
-    |  token-url = "http://localhost:${proxyPort}/oauth2/v4/token"
+    |}
+    |${GoogleSettings.ConfigPath} {
+    |  retry-settings {
+    |    max-retries = 1
+    |    max-backoff = 1s
+    |  }
+    |  forward-proxy {
+    |    host = localhost
+    |    port = 8500
+    |    trust-pem = "src/test/resources/cert.pem"
+    |  }
     |}
     """.stripMargin)
 }
