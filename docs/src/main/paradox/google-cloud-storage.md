@@ -37,10 +37,6 @@ The table below shows direct dependencies of this module and the second tab show
 The Storage connector @ref[shares its basic configuration](google-common.md) with all the Google connectors in Alpakka.
 Additional Storage-specific configuration settings can be found in its own @github[reference.conf](/google-cloud-storage/src/main/resources/reference.conf).
 
-HOCON:
-: @@snip [snip](/google-cloud-storage/src/test/resources/application.conf) { #settings }
-
-
 ## Store a file in Google Cloud Storage
 
 A file can be uploaded to Google Cloud Storage by creating a source of @apidoc[akka.util.ByteString] and running that with a sink created from @scala[@scaladoc[GCStorage.resumableUpload](akka.stream.alpakka.googlecloud.storage.scaladsl.GCStorage$)]@java[@scaladoc[GCStorage.resumableUpload](akka.stream.alpakka.googlecloud.storage.javadsl.GCStorage$)].

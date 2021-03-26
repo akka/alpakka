@@ -42,10 +42,6 @@ The table below shows direct dependencies of this module and the second tab show
 
 The FCM connector @ref[shares its basic configuration](google-common.md) with all the Google connectors in Alpakka.
 Additional FCM-specific configuration settings can be found in its own @github[reference.conf](/google-fcm/src/main/resources/reference.conf).
-
-@@snip [snip](/google-fcm/src/test/resources/application.conf) { #init-credentials }
-
-The last two parameters in the above example are the predefined values.
 You can send test notifications [(so called validate only).](https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages/send)
 And you can set the number of maximum concurrent connections.
 There is a limitation in the docs; from one IP you can have maximum 1k pending connections,

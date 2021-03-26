@@ -59,8 +59,8 @@ yourself, but we recommend upgrading.
 
 ## Configuration
 
-The PubSub gRPC connector @ref[shares its basic configuration](google-common.md) with all the Google connectors in Alpakka.
-Additional PubSub-specific configuration settings can be found in its own @github[reference.conf](/google-cloud-pub-sub-grpc/src/main/resources/reference.conf).
+The Pub/Sub gRPC connector @ref[shares its basic configuration](google-common.md) with all the Google connectors in Alpakka.
+Additional Pub/Sub-specific configuration settings can be found in its own @github[reference.conf](/google-cloud-pub-sub-grpc/src/main/resources/reference.conf).
 
 The defaults can be changed (for example when testing against the emulator) by tweaking the reference configuration:
 

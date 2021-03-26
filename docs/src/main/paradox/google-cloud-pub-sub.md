@@ -38,10 +38,8 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Usage
 
-The PubSub connector @ref[shares its basic configuration](google-common.md) with all the Google connectors in Alpakka.
-Additional PubSub-specific configuration settings can be found in its own @github[reference.conf](/google-cloud-pub-sub/src/main/resources/reference.conf).
-
-@@snip [snip](/google-cloud-pub-sub/src/test/resources/application.conf) { #init-credentials }
+The Pub/Sub connector @ref[shares its basic configuration](google-common.md) with all the Google connectors in Alpakka.
+Additional Pub/Sub-specific configuration settings can be found in its own @github[reference.conf](/google-cloud-pub-sub/src/main/resources/reference.conf).
 
 And prepare the actor system.
 
