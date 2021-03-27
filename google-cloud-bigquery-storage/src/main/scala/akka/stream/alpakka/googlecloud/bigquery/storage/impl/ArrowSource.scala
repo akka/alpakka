@@ -21,17 +21,13 @@ object ArrowSource {
   private val RequestParamsHeader = "x-goog-request-params"
 
   def readRecords(client: BigQueryReadClient, readSession: ReadSession):  Source[List[BigQueryRecord], NotUsed] =
-    client.readRows()
-      .addHeader(RequestParamsHeader, s"read_stream=${readSession.name}")
-      .invoke(ReadRowsRequest(readSession.name))
-      .mapConcat(_.rows.arrowRecordBatch.toList)
+    SDKClientSource.read(client, readSession)
+      .mapConcat(_.arrowRecordBatch.toList)
       .map(new SimpleRowReader(readSession.schema.arrowSchema.get).read(_))
 
   def read(client: BigQueryReadClient, readSession: ReadSession): Source[(ReadSession.Schema, ArrowRecordBatch), NotUsed] =
-    client.readRows()
-      .addHeader(RequestParamsHeader, s"read_stream=${readSession.name}")
-      .invoke(ReadRowsRequest(readSession.name))
-      .mapConcat(_.rows.arrowRecordBatch.toList)
+    SDKClientSource.read(client, readSession)
+      .mapConcat(_.arrowRecordBatch.toList)
       .map((readSession.schema, _))
 
 }
