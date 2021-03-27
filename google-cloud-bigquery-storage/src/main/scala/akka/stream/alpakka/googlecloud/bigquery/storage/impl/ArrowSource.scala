@@ -18,8 +18,6 @@ import scala.jdk.CollectionConverters.{asJavaIterableConverter, asScalaBufferCon
 
 object ArrowSource {
 
-  private val RequestParamsHeader = "x-goog-request-params"
-
   def readRecords(client: BigQueryReadClient, readSession: ReadSession):  Source[List[BigQueryRecord], NotUsed] =
     SDKClientSource.read(client, readSession)
       .mapConcat(_.arrowRecordBatch.toList)
