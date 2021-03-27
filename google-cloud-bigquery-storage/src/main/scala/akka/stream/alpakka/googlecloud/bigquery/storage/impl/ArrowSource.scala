@@ -1,7 +1,7 @@
 package akka.stream.alpakka.googlecloud.bigquery.storage.impl
 
 import akka.NotUsed
-import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryRecord
+import akka.stream.alpakka.googlecloud.bigquery.storage.{BigQueryRecord, BigQueryRecordMapImpl}
 import akka.stream.scaladsl.Source
 import com.google.cloud.bigquery.storage.v1.arrow.{ArrowRecordBatch, ArrowSchema}
 import com.google.cloud.bigquery.storage.v1.storage.{BigQueryReadClient, ReadRowsRequest}
@@ -12,6 +12,7 @@ import org.apache.arrow.vector.ipc.ReadChannel
 import org.apache.arrow.vector.ipc.message.MessageSerializer
 import org.apache.arrow.vector.util.ByteArrayReadableSeekableByteChannel
 
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.{asJavaIterableConverter, asScalaBufferConverter}
 
@@ -26,7 +27,7 @@ object ArrowSource {
       .mapConcat(_.rows.arrowRecordBatch.toList)
       .map(new SimpleRowReader(readSession.schema.arrowSchema.get).read(_))
 
-  def read(client: BigQueryReadClient, readSession: ReadSession): Source[(ReadSession.Schema, ArrowRecordBatch), NotUsed]=
+  def read(client: BigQueryReadClient, readSession: ReadSession): Source[(ReadSession.Schema, ArrowRecordBatch), NotUsed] =
     client.readRows()
       .addHeader(RequestParamsHeader, s"read_stream=${readSession.name}")
       .invoke(ReadRowsRequest(readSession.name))
@@ -63,11 +64,11 @@ final class SimpleRowReader(val schema: ArrowSchema) extends AutoCloseable {
 
     val recordsList = ListBuffer()
     for(i <- 0 until root.getRowCount) {
-      val bigQueryRecord = BigQueryRecord()
+      val map = mutable.Map[String,Object]()
       for(fv <- fvs) {
-        bigQueryRecord.put(rs.get(i).getName, fv.getObject(i))
+        map.put(rs.get(i).getName, fv.getObject(i))
       }
-      recordsList += bigQueryRecord
+      recordsList += BigQueryRecord.fromMap(map.toMap)
     }
 
     root.clear();
