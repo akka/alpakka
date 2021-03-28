@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.stream.alpakka.googlecloud.bigquery.storage.impl
 
 import akka.NotUsed
@@ -10,13 +14,15 @@ import com.google.cloud.bigquery.storage.v1.stream.ReadSession
 object AvroSource {
 
   def readRecords(client: BigQueryReadClient, readSession: ReadSession): Source[List[BigQueryRecord], NotUsed] =
-    SDKClientSource.read(client, readSession)
+    SDKClientSource
+      .read(client, readSession)
       .mapConcat(_.avroRows.toList)
       .map(a => AvroDecoder(readSession.schema.avroSchema.get.schema).decodeRows(a.serializedBinaryRows))
       .map(_.map(BigQueryRecord.fromAvro))
 
-  def read(client: BigQueryReadClient, readSession: ReadSession): Source[(ReadSession.Schema, AvroRows), NotUsed]=
-    SDKClientSource.read(client, readSession)
+  def read(client: BigQueryReadClient, readSession: ReadSession): Source[(ReadSession.Schema, AvroRows), NotUsed] =
+    SDKClientSource
+      .read(client, readSession)
       .mapConcat(_.avroRows.toList)
       .map((readSession.schema, _))
 
