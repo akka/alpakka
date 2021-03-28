@@ -47,9 +47,9 @@ private[ftp] trait FtpBrowserGraphStage[FtpClient, S <: RemoteFileSettings]
             }
           } // end of onPull
 
-          override def onDownstreamFinish(): Unit = {
+          override def onDownstreamFinish(cause: Throwable): Unit = {
             matSuccess()
-            super.onDownstreamFinish()
+            super.onDownstreamFinish(cause)
           }
         }
       ) // end of handler

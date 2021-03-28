@@ -10,10 +10,12 @@ import akka.Done
 import akka.stream.alpakka.jms._
 import akka.stream.alpakka.jms.scaladsl.{JmsConsumer, JmsConsumerControl, JmsProducer}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{KillSwitches, ThrottleMode}
 import org.apache.activemq.ActiveMQSession
 import javax.jms.{JMSException, TextMessage}
 import org.scalatest.Inspectors._
+import org.scalatest.time.Span.convertSpanToDuration
 
 import scala.annotation.tailrec
 import scala.collection.{immutable, mutable}
@@ -379,6 +381,48 @@ class JmsBufferedAckConnectorsSpec extends JmsSharedServerSpec {
         s.toInt
       }
       resultList.toSet should contain theSameElementsAs numsIn.map(_.toString)
+    }
+
+    "send acknowledgments back to the broker after max.ack.interval" in withConnectionFactory() { connectionFactory =>
+      val testQueue = "test"
+      val aMessage = "message"
+      val maxAckInterval = 1.second
+      Source
+        .single(aMessage)
+        .runWith(JmsProducer.textSink(JmsProducerSettings(producerConfig, connectionFactory).withQueue(testQueue)))
+      val source = JmsConsumer.ackSource(
+        JmsConsumerSettings(system, connectionFactory)
+          .withMaxPendingAcks(100)
+          .withMaxAckInterval(maxAckInterval)
+          .withQueue(testQueue)
+      )
+
+      val (consumerControl, probe) = source
+        .map { env =>
+          env.acknowledge()
+          env.message match {
+            case message: TextMessage => Some(message.getText)
+            case _ => None
+
+          }
+        }
+        .toMat(TestSink.probe)(Keep.both)
+        .run()
+
+      probe.requestNext(convertSpanToDuration(patienceConfig.timeout)) shouldBe Some(aMessage)
+
+      eventually {
+        isQueueEmpty(testQueue) shouldBe true
+      }
+
+      consumerControl.shutdown()
+      probe.expectComplete()
+
+      // Consuming again should give us no elements, as msg was acked and therefore removed from the broker
+      val (emptyConsumerControl, emptySourceProbe) = source.toMat(TestSink.probe)(Keep.both).run()
+      emptySourceProbe.ensureSubscription().expectNoMessage()
+      emptyConsumerControl.shutdown()
+      emptySourceProbe.expectComplete()
     }
   }
 }

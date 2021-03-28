@@ -7,9 +7,9 @@ package akka.stream.alpakka.cassandra.scaladsl
 import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
-import akka.stream.{Materializer, SystemMaterializer}
 import akka.stream.alpakka.cassandra.{CassandraMetricsRegistry, CassandraServerMetaData, CqlSessionProvider}
 import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.{Materializer, SystemMaterializer}
 import akka.util.OptionVal
 import akka.{Done, NotUsed}
 import com.datastax.oss.driver.api.core.CqlSession
@@ -123,15 +123,6 @@ final class CassandraSession(system: akka.actor.ActorSystem,
     underlying().flatMap { cqlSession =>
       cqlSession.executeAsync(stmt).toScala.map(_ => Done)
     }
-
-  /**
-   * See <a href="https://docs.datastax.com/en/dse/6.7/cql/cql/cql_using/useCreateTable.html">Creating a table</a>.
-   *
-   * The returned `Future` is completed when the table has been created,
-   * or if the statement fails.
-   */
-  @deprecated("Use executeDDL instead.", "0.100")
-  def executeCreateTable(stmt: String): Future[Done] = executeDDL(stmt)
 
   /**
    * Create a `PreparedStatement` that can be bound and used in

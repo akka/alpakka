@@ -175,11 +175,6 @@ object ForwardProxy {
     new ForwardProxy("https", host, port, credentials)
 
   /** Java API */
-  @deprecated("prefer overload with `java.util.Optional`", since = "2.0.0-RC1")
-  def create(host: String, port: Int, credentials: Option[ForwardProxyCredentials]) =
-    apply(host, port, credentials)
-
-  /** Java API */
   def create(host: String, port: Int, credentials: Optional[ForwardProxyCredentials]) =
     apply(host, port, credentials.asScala)
 
@@ -358,14 +353,8 @@ final class S3Settings private (
     val multipartUploadSettings: MultipartUploadSettings
 ) {
 
-  @deprecated("Please use endpointUrl instead", since = "1.0.1") val proxy: Option[Proxy] = None
-
   /** Java API */
   def getBufferType: BufferType = bufferType
-
-  /** Java API */
-  @deprecated("Please use endpointUrl instead", since = "1.0.1")
-  def getProxy: java.util.Optional[Proxy] = proxy.asJava
 
   /** Java API */
   def getCredentialsProvider: AwsCredentialsProvider = credentialsProvider
@@ -401,16 +390,10 @@ final class S3Settings private (
 
   def withBufferType(value: BufferType): S3Settings = copy(bufferType = value)
 
-  @deprecated("Please use endpointUrl instead", since = "1.0.1")
-  def withProxy(value: Proxy): S3Settings = copy(endpointUrl = Some(s"${value.scheme}://${value.host}:${value.port}"))
-
   def withCredentialsProvider(value: AwsCredentialsProvider): S3Settings =
     copy(credentialsProvider = value)
   def withS3RegionProvider(value: AwsRegionProvider): S3Settings = copy(s3RegionProvider = value)
 
-  @deprecated("Please use accessStyle instead", since = "2.0.2")
-  def withPathStyleAccess(value: Boolean): S3Settings =
-    if (isPathStyleAccess == value) this else copy(accessStyle = if (value) PathAccessStyle else VirtualHostAccessStyle)
   def withAccessStyle(value: AccessStyle): S3Settings =
     if (accessStyle == value) this else copy(accessStyle = value);
 
@@ -560,8 +543,10 @@ object S3Settings {
     if (endpointUrl.isEmpty && accessStyle == PathAccessStyle)
       log.warn(
         s"""It appears you are attempting to use AWS S3 with path-style access.
-          |Amazon does not support path-style access to buckets created after September 30, 2020;
+          |Amazon had planned not to support path-style access to buckets created after September 30, 2020;
           |see (https://aws.amazon.com/blogs/aws/amazon-s3-path-deprecation-plan-the-rest-of-the-story/).
+          |(Update, Sept 23, 2020) AWS has delayed this change indefinitely to give customers more time to
+          |migrate to virtual host-style access.
           |
           |Enable virtual host-style access by unsetting `$ConfigPath.path-style-access`,
           |and leaving `$ConfigPath.access-style` on the default `virtual`.
@@ -652,29 +637,6 @@ object S3Settings {
   def create(c: Config): S3Settings = apply(c)
 
   /** Scala API */
-  @deprecated("Please use the other factory method that takes only mandatory attributes", since = "1.0.1")
-  def apply(
-      bufferType: BufferType,
-      proxy: Option[Proxy],
-      credentialsProvider: AwsCredentialsProvider,
-      s3RegionProvider: AwsRegionProvider,
-      pathStyleAccess: Boolean,
-      endpointUrl: Option[String],
-      listBucketApiVersion: ApiVersion
-  ): S3Settings = new S3Settings(
-    bufferType,
-    credentialsProvider,
-    s3RegionProvider,
-    accessStyle = if (pathStyleAccess) PathAccessStyle else VirtualHostAccessStyle,
-    endpointUrl,
-    listBucketApiVersion,
-    forwardProxy = None,
-    validateObjectKey = true,
-    RetrySettings.default,
-    MultipartUploadSettings(RetrySettings.default)
-  )
-
-  /** Scala API */
   def apply(
       bufferType: BufferType,
       credentialsProvider: AwsCredentialsProvider,
@@ -691,26 +653,6 @@ object S3Settings {
     validateObjectKey = true,
     RetrySettings.default,
     MultipartUploadSettings(RetrySettings.default)
-  )
-
-  /** Java API */
-  @deprecated("Please use the other factory method that takes only mandatory attributes", since = "1.0.1")
-  def create(
-      bufferType: BufferType,
-      proxy: java.util.Optional[Proxy],
-      credentialsProvider: AwsCredentialsProvider,
-      s3RegionProvider: AwsRegionProvider,
-      pathStyleAccess: Boolean,
-      endpointUrl: java.util.Optional[String],
-      listBucketApiVersion: ApiVersion
-  ): S3Settings = apply(
-    bufferType,
-    proxy.asScala,
-    credentialsProvider,
-    s3RegionProvider,
-    pathStyleAccess,
-    endpointUrl.asScala,
-    listBucketApiVersion
   )
 
   /** Java API */

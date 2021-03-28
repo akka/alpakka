@@ -5,7 +5,6 @@
 package akka.stream.alpakka.googlecloud.bigquery
 
 import akka.stream.Attributes.Attribute
-import akka.stream.alpakka.googlecloud.bigquery.impl.BigQueryExt
 import akka.stream.{Attributes, Materializer}
 
 /**
@@ -26,7 +25,7 @@ object BigQueryAttributes {
   /**
    * Resolves the most specific [[BigQuerySettings]] for some [[Attributes]]
    */
-  def resolveSettings(attr: Attributes, mat: Materializer): BigQuerySettings =
+  def resolveSettings(mat: Materializer, attr: Attributes): BigQuerySettings =
     attr.attributeList.collectFirst {
       case BigQuerySettingsValue(settings) => settings
       case BigQuerySettingsPath(path) => BigQueryExt(mat.system).settings(path)

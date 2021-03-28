@@ -435,46 +435,6 @@ object S3 {
    * @param bucket Which bucket that you list object metadata for
    * @param prefix Prefix of the keys you want to list under passed bucket
    * @return Source of object metadata
-   *
-   * @deprecated use version with `Optional` instead, since 2.0.0
-   */
-  @Deprecated
-  def listBucket(bucket: String, prefix: Option[String]): Source[ListBucketResultContents, NotUsed] =
-    listBucket(bucket, prefix.asJava, S3Headers.empty)
-
-  /**
-   * Will return a source of object metadata for a given bucket with optional prefix using version 2 of the List Bucket API.
-   * This will automatically page through all keys with the given parameters.
-   *
-   * The <code>akka.stream.alpakka.s3.list-bucket-api-version</code> can be set to 1 to use the older API version 1
-   *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html  (version 2 API)
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html (version 1 API)
-   * @param bucket Which bucket that you list object metadata for
-   * @param prefix Prefix of the keys you want to list under passed bucket
-   * @return Source of object metadata
-   *
-   * @deprecated use version with `Optional` instead, since 2.0.0
-   */
-  @Deprecated
-  def listBucket(bucket: String,
-                 prefix: Option[String],
-                 s3Headers: S3Headers): Source[ListBucketResultContents, NotUsed] =
-    S3Stream
-      .listBucket(bucket, prefix, s3Headers)
-      .asJava
-
-  /**
-   * Will return a source of object metadata for a given bucket with optional prefix using version 2 of the List Bucket API.
-   * This will automatically page through all keys with the given parameters.
-   *
-   * The <code>akka.stream.alpakka.s3.list-bucket-api-version</code> can be set to 1 to use the older API version 1
-   *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html  (version 2 API)
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html (version 1 API)
-   * @param bucket Which bucket that you list object metadata for
-   * @param prefix Prefix of the keys you want to list under passed bucket
-   * @return Source of object metadata
    */
   def listBucket(bucket: String, prefix: Optional[String]): Source[ListBucketResultContents, NotUsed] =
     listBucket(bucket, prefix, S3Headers.empty)
@@ -731,7 +691,7 @@ object S3 {
    * @param materializer materializer to run with
    * @param attributes attributes to run request with
    * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
-   * @deprecated pass in an `ActorSystem` instead of the `Materializer`, since 3.0.0
+   * @deprecated pass in an `ClassicActorSystemProvider` instead of the `Materializer`, since 3.0.0
    */
   @Deprecated
   @silent
@@ -743,39 +703,7 @@ object S3 {
    *
    * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
    * @param bucketName bucket name
-   * @param materializer materializer to run with
-   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
-   * @deprecated pass in an `ActorSystem` instead of the `Materializer`, since 3.0.0
-   */
-  @Deprecated
-  @silent
-  def makeBucket(bucketName: String, materializer: Materializer): CompletionStage[Done] =
-    makeBucket(bucketName, materializer, Attributes(), S3Headers.empty)
-
-  /**
-   * Create new bucket with a given name
-   *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
-   * @param bucketName bucket name
-   * @param materializer materializer to run with
-   * @param attributes attributes to run request with
-   * @param s3Headers any headers you want to add
-   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
-   * @deprecated pass in an `ActorSystem` instead of the `Materializer`, since 3.0.0
-   */
-  @Deprecated
-  def makeBucket(bucketName: String,
-                 materializer: Materializer,
-                 attributes: Attributes,
-                 s3Headers: S3Headers): CompletionStage[Done] =
-    S3Stream.makeBucket(bucketName, s3Headers)(materializer, attributes).toJava
-
-  /**
-   * Create new bucket with a given name
-   *
-   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
-   * @param bucketName bucket name
-   * @param system the actor system which provides the materializer to run with
+   * @param system actor system to run with
    * @param attributes attributes to run request with
    * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
    */
@@ -789,11 +717,43 @@ object S3 {
    *
    * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
    * @param bucketName bucket name
-   * @param system the actor system which provides the materializer to run with
+   * @param materializer materializer to run with
+   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
+   * @deprecated pass in an `ClassicActorSystemProvider` instead of the `Materializer`, since 3.0.0
+   */
+  @Deprecated
+  @silent
+  def makeBucket(bucketName: String, materializer: Materializer): CompletionStage[Done] =
+    makeBucket(bucketName, materializer, Attributes(), S3Headers.empty)
+
+  /**
+   * Create new bucket with a given name
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
+   * @param bucketName bucket name
+   * @param system actor system to run with
    * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
    */
   def makeBucket(bucketName: String, system: ClassicActorSystemProvider): CompletionStage[Done] =
     makeBucket(bucketName, system, Attributes(), S3Headers.empty)
+
+  /**
+   * Create new bucket with a given name
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
+   * @param bucketName bucket name
+   * @param materializer materializer to run with
+   * @param attributes attributes to run request with
+   * @param s3Headers any headers you want to add
+   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[Done]] as API doesn't return any additional information
+   * @deprecated pass in an `ClassicActorSystemProvider` instead of the `Materializer`, since 3.0.0
+   */
+  @Deprecated
+  def makeBucket(bucketName: String,
+                 materializer: Materializer,
+                 attributes: Attributes,
+                 s3Headers: S3Headers): CompletionStage[Done] =
+    S3Stream.makeBucket(bucketName, s3Headers)(materializer, attributes).toJava
 
   /**
    * Create new bucket with a given name

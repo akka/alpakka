@@ -9,7 +9,10 @@ import akka.stream.Attributes.Attribute
 
 /**
  * Akka Stream attributes that are used when materializing GCStorage stream blueprints.
+ * @deprecated Use [[akka.stream.alpakka.google.GoogleAttributes]]
  */
+@deprecated("Use akka.stream.alpakka.google.GoogleAttributes", "3.0.0")
+@Deprecated
 object GCStorageAttributes {
 
   /**
@@ -23,14 +26,36 @@ object GCStorageAttributes {
   def settingsPath(path: String): Attributes = Attributes(GCStorageSettingsPath(path))
 }
 
+/**
+ * @deprecated Use [[akka.stream.alpakka.google.GoogleAttributes]]
+ */
+@deprecated("Use akka.stream.alpakka.google.GoogleAttributes", "3.0.0")
+@Deprecated
 final class GCStorageSettingsPath private (val path: String) extends Attribute
+
+/**
+ * @deprecated Use [[akka.stream.alpakka.google.GoogleAttributes]]
+ */
+@deprecated("Use akka.stream.alpakka.google.GoogleAttributes", "3.0.0")
+@Deprecated
 object GCStorageSettingsPath {
   val Default = GCStorageSettingsPath(GCStorageSettings.ConfigPath)
 
   def apply(path: String) = new GCStorageSettingsPath(path)
 }
 
+/**
+ * @deprecated Use [[akka.stream.alpakka.google.GoogleAttributes]]
+ */
+@deprecated("Use akka.stream.alpakka.google.GoogleAttributes", "3.0.0")
+@Deprecated
 final class GCStorageSettingsValue private (val settings: GCStorageSettings) extends Attribute
+
+/**
+ * @deprecated Use [[akka.stream.alpakka.google.GoogleAttributes]]
+ */
+@deprecated("Use akka.stream.alpakka.google.GoogleAttributes", "3.0.0")
+@Deprecated
 object GCStorageSettingsValue {
   def apply(settings: GCStorageSettings) = new GCStorageSettingsValue(settings)
 }

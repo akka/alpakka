@@ -5,17 +5,19 @@
 package akka.stream.alpakka.googlecloud.bigquery.scaladsl
 
 import akka.NotUsed
+import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.marshalling.Marshal
-import akka.http.scaladsl.model.HttpMethods.{GET, POST}
+import akka.http.scaladsl.model.HttpMethods.POST
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{HttpRequest, RequestEntity}
-import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
+import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.stream.RestartSettings
-import akka.stream.alpakka.googlecloud.bigquery.impl.http.BigQueryHttp
-import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.JobReference
-import akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.{QueryRequest, QueryResponse}
-import akka.stream.alpakka.googlecloud.bigquery.{BigQueryAttributes, BigQueryEndpoints, BigQueryException}
+import akka.stream.alpakka.google.GoogleAttributes
+import akka.stream.alpakka.google.implicits._
+import akka.stream.alpakka.googlecloud.bigquery.model.JobReference
+import akka.stream.alpakka.googlecloud.bigquery.model.{QueryRequest, QueryResponse}
+import akka.stream.alpakka.googlecloud.bigquery.{BigQueryEndpoints, BigQueryException}
 import akka.stream.scaladsl.{Keep, RestartSource, Sink, Source}
 
 import scala.concurrent.Future
@@ -33,7 +35,7 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
    * @param useLegacySql specifies whether to use BigQuery's legacy SQL dialect for this query
    * @tparam Out the data model of the query results
    * @return a [[akka.stream.scaladsl.Source]] that emits an [[Out]] for each row of the result and materializes
-   *         a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
+   *         a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryResponse]]
    */
   def query[Out](query: String, dryRun: Boolean = false, useLegacySql: Boolean = true)(
       implicit um: FromEntityUnmarshaller[QueryResponse[Out]]
@@ -46,11 +48,11 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
    * Runs a BigQuery SQL query.
    * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query BigQuery reference]]
    *
-   * @param query the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryRequest]]
+   * @param query the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryRequest]]
    * @tparam Out the data model of the query results
    * @return a [[akka.stream.scaladsl.Source]] that emits an [[Out]] for each row of the results and materializes
-   *         a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.JobReference]] and
-   *         a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
+   *         a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.JobReference]] and
+   *         a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryResponse]]
    */
   def query[Out](query: QueryRequest)(
       implicit um: FromEntityUnmarshaller[QueryResponse[Out]]
@@ -59,16 +61,15 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
       .fromMaterializer { (mat, attr) =>
         import BigQueryException._
         import SprayJsonSupport._
-        import mat.executionContext
         implicit val system = mat.system
-        implicit val settings = BigQueryAttributes.resolveSettings(attr, mat)
+        implicit val ec = ExecutionContexts.parasitic
+        implicit val settings = GoogleAttributes.resolveSettings(mat, attr)
 
         Source.lazyFutureSource { () =>
           for {
             entity <- Marshal(query).to[RequestEntity]
             initialRequest = HttpRequest(POST, BigQueryEndpoints.queries(settings.projectId), entity = entity)
-            response <- BigQueryHttp().retryRequestWithOAuth(initialRequest)
-            initialQueryResponse <- Unmarshal(response.entity).to[QueryResponse[Out]]
+            initialQueryResponse <- singleRequest[QueryResponse[Out]](initialRequest)
           } yield {
 
             val jobReference = initialQueryResponse.jobReference
@@ -84,11 +85,11 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
                 Source.empty
               else
                 jobReference.jobId.map { jobId =>
-                  import settings.retrySettings._
+                  import settings.requestSettings.retrySettings._
                   val pages = queryResultsPages[Out](jobId,
                                                      None,
                                                      query.maxResults,
-                                                     query.timeoutMs,
+                                                     query.timeout,
                                                      initialQueryResponse.jobReference.location,
                                                      initialQueryResponse.pageToken)
                     .map(Success(_))
@@ -124,7 +125,7 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
    * @param timeout specifies the maximum amount of time that the client is willing to wait for the query to complete
    * @param location the geographic location of the job. Required except for US and EU
    * @tparam Out the data model of the query results
-   * @return a [[akka.stream.scaladsl.Source]] that emits an [[Out]] for each row of the results and materializes a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse]]
+   * @return a [[akka.stream.scaladsl.Source]] that emits an [[Out]] for each row of the results and materializes a [[scala.concurrent.Future]] containing the [[akka.stream.alpakka.googlecloud.bigquery.model.QueryResponse]]
    */
   def queryResults[Out](
       jobId: String,
@@ -135,7 +136,7 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
   )(
       implicit um: FromEntityUnmarshaller[QueryResponse[Out]]
   ): Source[Out, Future[QueryResponse[Out]]] =
-    queryResultsPages(jobId, startIndex, maxResults, timeout.map(_.toMillis).map(Math.toIntExact), location, None)
+    queryResultsPages(jobId, startIndex, maxResults, timeout, location, None)
       .wireTapMat(Sink.head)(Keep.right)
       .mapConcat(_.rows.fold[List[Out]](Nil)(_.toList))
 
@@ -143,20 +144,22 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
       jobId: String,
       startIndex: Option[Long],
       maxResults: Option[Int],
-      timeoutMs: Option[Int],
+      timeout: Option[FiniteDuration],
       location: Option[String],
       pageToken: Option[String]
   )(
       implicit um: FromEntityUnmarshaller[QueryResponse[Out]]
   ): Source[QueryResponse[Out], NotUsed] =
     source { settings =>
+      import BigQueryException._
       val uri = BigQueryEndpoints.query(settings.projectId, jobId)
       val query = ("startIndex" -> startIndex) ?+:
         ("maxResults" -> maxResults) ?+:
-        ("timeoutMs" -> timeoutMs) ?+:
+        ("timeoutMs" -> timeout.map(_.toMillis)) ?+:
         ("location" -> location) ?+:
+        ("pageToken" -> pageToken) ?+:
         Query.Empty
-      paginatedRequest[QueryResponse[Out]](HttpRequest(GET, uri), query, pageToken)
+      paginatedRequest[QueryResponse[Out]](HttpRequest(uri = uri.withQuery(query)))
     }.mapMaterializedValue(_ => NotUsed)
 
 }

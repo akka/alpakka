@@ -550,13 +550,6 @@ object MqttCodec {
       extends DecodeError
 
   /**
-   * Unable to subscribe at the requested QoS
-   * @deprecated this message was never able to be returned - always use [[SubAck]] to test subscribed QoS, since 1.1.1
-   */
-  @deprecated("this message was never able to be returned - always use [[SubAck]] to test subscribed QoS", "1.1.1")
-  final case class BadSubAckMessage(packetId: PacketId, returnCodes: Seq[ControlPacketFlags]) extends DecodeError
-
-  /**
    * Something is wrong with the unsubscribe message
    */
   final case class BadUnsubscribeMessage(packetId: PacketId, topicFilters: Seq[Either[DecodeError, String]])

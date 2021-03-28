@@ -5,25 +5,23 @@
 package akka.stream.alpakka.googlecloud.bigquery.scaladsl
 
 import akka.NotUsed
+import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.marshalling.{Marshal, ToEntityMarshaller}
-import akka.http.scaladsl.model.HttpMethods.{GET, POST}
+import akka.http.scaladsl.model.HttpMethods.POST
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{HttpRequest, RequestEntity}
-import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
-import akka.stream.alpakka.googlecloud.bigquery.impl.http.BigQueryHttp
-import akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol
-import akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.{
+import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, FromResponseUnmarshaller}
+import akka.stream.alpakka.google.GoogleAttributes
+import akka.stream.alpakka.google.http.GoogleHttp
+import akka.stream.alpakka.google.implicits._
+import akka.stream.alpakka.googlecloud.bigquery.model.{
+  Row,
   TableDataInsertAllRequest,
   TableDataInsertAllResponse,
   TableDataListResponse
 }
-import akka.stream.alpakka.googlecloud.bigquery.{
-  BigQueryAttributes,
-  BigQueryEndpoints,
-  BigQueryException,
-  InsertAllRetryPolicy
-}
+import akka.stream.alpakka.googlecloud.bigquery.{BigQueryEndpoints, BigQueryException, InsertAllRetryPolicy}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 
 import java.util.{SplittableRandom, UUID}
@@ -52,12 +50,13 @@ private[scaladsl] trait BigQueryTableData { this: BigQueryRest =>
       implicit um: FromEntityUnmarshaller[TableDataListResponse[Out]]
   ): Source[Out, Future[TableDataListResponse[Out]]] =
     source { settings =>
+      import BigQueryException._
       val uri = BigQueryEndpoints.tableData(settings.projectId, datasetId, tableId)
       val query = ("startIndex" -> startIndex) ?+:
         ("maxResults" -> maxResults) ?+:
         ("selectedFields" -> (if (selectedFields.isEmpty) None else Some(selectedFields.mkString(",")))) ?+:
         Query.Empty
-      paginatedRequest[TableDataListResponse[Out]](HttpRequest(GET, uri), query)
+      paginatedRequest[TableDataListResponse[Out]](HttpRequest(uri = uri.withQuery(query)))
     }.wireTapMat(Sink.head)(Keep.right).mapConcat(_.rows.fold[List[Out]](Nil)(_.toList))
 
   /**
@@ -87,7 +86,7 @@ private[scaladsl] trait BigQueryTableData { this: BigQueryRest =>
               Some(randomUUID(randomGen).toString)
             else
               None
-          TableDataJsonProtocol.Row(insertId, x)
+          Row(insertId, x)
         }
 
         TableDataInsertAllRequest(None, None, templateSuffix, rows) :: Nil
@@ -113,7 +112,7 @@ private[scaladsl] trait BigQueryTableData { this: BigQueryRest =>
    * @param tableId table ID of the table to insert into
    * @param retryFailedRequests whether to retry failed requests
    * @tparam In the data model for each record
-   * @return a [[akka.stream.scaladsl.Flow]] that sends each [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.TableDataInsertAllRequest]] and emits a [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.TableDataInsertAllResponse]] for each
+   * @return a [[akka.stream.scaladsl.Flow]] that sends each [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataInsertAllRequest]] and emits a [[akka.stream.alpakka.googlecloud.bigquery.model.TableDataInsertAllResponse]] for each
    */
   def insertAll[In](datasetId: String, tableId: String, retryFailedRequests: Boolean)(
       implicit m: ToEntityMarshaller[TableDataInsertAllRequest[In]]
@@ -122,25 +121,27 @@ private[scaladsl] trait BigQueryTableData { this: BigQueryRest =>
       .fromMaterializer { (mat, attr) =>
         import BigQueryException._
         import SprayJsonSupport._
-        import mat.executionContext
         implicit val system = mat.system
-        implicit val settings = BigQueryAttributes.resolveSettings(attr, mat)
+        implicit val ec = ExecutionContexts.parasitic
+        implicit val settings = GoogleAttributes.resolveSettings(mat, attr)
 
         val uri = BigQueryEndpoints.tableDataInsertAll(settings.projectId, datasetId, tableId)
         val request = HttpRequest(POST, uri)
 
-        val http = BigQueryHttp()
-        val requestWithOAuth =
-          if (retryFailedRequests)
-            http.retryRequestWithOAuth(_)
-          else
-            http.singleRequestWithOAuthOrFail(_)
+        val um = {
+          val um = implicitly[FromResponseUnmarshaller[TableDataInsertAllResponse]]
+          if (retryFailedRequests) um else um.withoutRetries
+        }
+
+        val pool = {
+          val authority = BigQueryEndpoints.endpoint.authority
+          GoogleHttp().cachedHostConnectionPool[TableDataInsertAllResponse](authority.host.address, authority.port)(um)
+        }
 
         Flow[TableDataInsertAllRequest[In]]
           .mapAsync(1)(Marshal(_).to[RequestEntity])
           .map(request.withEntity)
-          .mapAsync(1)(requestWithOAuth)
-          .mapAsync(1)(Unmarshal(_).to[TableDataInsertAllResponse])
+          .via(pool)
       }
       .mapMaterializedValue(_ => NotUsed)
 

@@ -5,7 +5,6 @@
 package akka.stream.alpakka.ftp;
 
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import org.junit.After;
 
@@ -17,7 +16,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 public abstract class BaseSupportImpl implements BaseSupport, AkkaSupport {
 
   private ActorSystem system = ActorSystem.create("alpakka-ftp");
-  private Materializer materializer = ActorMaterializer.create(system);
+  private Materializer materializer = Materializer.matFromSystem(system);
   public final FtpCredentials CREDENTIALS = FtpCredentials.create("username", "userpass");
   public final FtpCredentials WRONG_CREDENTIALS = FtpCredentials.create("username", "qwerty");
 

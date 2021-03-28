@@ -1,0 +1,5 @@
+# 3.0.0 deprecations - https://github.com/akka/alpakka/pull/2618
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.googlecloud.pubsub.grpc.javadsl.GrpcPublisherExt.apply")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.alpakka.googlecloud.pubsub.grpc.javadsl.GrpcSubscriberExt.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.googlecloud.pubsub.grpc.javadsl.GrpcSubscriberExt.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.googlecloud.pubsub.grpc.javadsl.GrpcPublisherExt.apply")

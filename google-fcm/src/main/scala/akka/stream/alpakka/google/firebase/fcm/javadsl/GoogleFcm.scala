@@ -4,13 +4,13 @@
 
 package akka.stream.alpakka.google.firebase.fcm.javadsl
 
-import java.util.concurrent.CompletionStage
-
 import akka.japi.Pair
-import akka.stream.alpakka.google.firebase.fcm.impl.{FcmFlows, FcmSender}
+import akka.stream.alpakka.google.firebase.fcm.impl.FcmFlows
 import akka.stream.alpakka.google.firebase.fcm.{FcmNotification, FcmResponse, FcmSettings}
 import akka.stream.{javadsl, scaladsl}
 import akka.{Done, NotUsed}
+
+import java.util.concurrent.CompletionStage
 
 object GoogleFcm {
 
@@ -18,12 +18,12 @@ object GoogleFcm {
     scaladsl
       .Flow[Pair[FcmNotification, T]]
       .map(_.toScala)
-      .via(FcmFlows.fcmWithData[T](conf, new FcmSender))
+      .via(FcmFlows.fcmWithData[T](conf))
       .map(t => Pair(t._1, t._2))
       .asJava
 
   def send(conf: FcmSettings): javadsl.Flow[FcmNotification, FcmResponse, NotUsed] =
-    FcmFlows.fcm(conf, new FcmSender).asJava
+    FcmFlows.fcm(conf).asJava
 
   def fireAndForget(conf: FcmSettings): javadsl.Sink[FcmNotification, CompletionStage[Done]] =
     send(conf)

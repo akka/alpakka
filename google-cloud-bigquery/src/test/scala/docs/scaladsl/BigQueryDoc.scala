@@ -6,16 +6,21 @@ package docs.scaladsl
 
 //#imports
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import akka.stream.alpakka.googlecloud.bigquery.model.DatasetJsonProtocol.Dataset
-import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol
-import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.{Job, JobReference}
-import akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse
-import akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol.TableDataListResponse
-import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.{Table, TableListResponse}
+import akka.stream.alpakka.google.{GoogleAttributes, GoogleSettings}
+import akka.stream.alpakka.googlecloud.bigquery.InsertAllRetryPolicy
+import akka.stream.alpakka.googlecloud.bigquery.model.{
+  Dataset,
+  Job,
+  JobReference,
+  JobState,
+  QueryResponse,
+  Table,
+  TableDataListResponse,
+  TableListResponse
+}
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.BigQuery
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.schema.BigQuerySchemas._
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryJsonProtocol._
-import akka.stream.alpakka.googlecloud.bigquery.{BigQueryAttributes, BigQuerySettings, InsertAllRetryPolicy}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.{Done, NotUsed}
 
@@ -73,7 +78,7 @@ class BigQueryDoc {
   def checkIfJobsDone(jobReferences: Seq[JobReference]): Future[Boolean] = {
     for {
       jobs <- Future.sequence(jobReferences.map(ref => BigQuery.job(ref.jobId.get)))
-    } yield jobs.forall(job => job.status.exists(_.state == JobJsonProtocol.DoneState))
+    } yield jobs.forall(job => job.status.exists(_.state == JobState.Done))
   }
 
   val isDone: Future[Boolean] = for {
@@ -103,9 +108,9 @@ class BigQueryDoc {
   //#create-table
 
   //#custom-settings
-  val defaultSettings: BigQuerySettings = BigQuery.settings
+  val defaultSettings: GoogleSettings = GoogleSettings()
   val customSettings = defaultSettings.copy(projectId = "myOtherProject")
-  BigQuery.query[(String, Seq[Address])](sqlQuery).withAttributes(BigQueryAttributes.settings(customSettings))
+  BigQuery.query[(String, Seq[Address])](sqlQuery).withAttributes(GoogleAttributes.settings(customSettings))
   //#custom-settings
 
 }

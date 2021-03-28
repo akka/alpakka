@@ -6,20 +6,19 @@ package akka.stream.alpakka.couchbase.testing
 
 import akka.Done
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.alpakka.couchbase.scaladsl._
 import akka.stream.alpakka.couchbase.{CouchbaseSessionSettings, CouchbaseWriteSettings}
 import akka.stream.scaladsl.{Sink, Source}
 import com.couchbase.client.deps.io.netty.buffer.Unpooled
 import com.couchbase.client.deps.io.netty.util.CharsetUtil
+import com.couchbase.client.java.ReplicateTo
 import com.couchbase.client.java.document.json.JsonObject
 import com.couchbase.client.java.document.{BinaryDocument, JsonDocument, RawJsonDocument, StringDocument}
-import com.couchbase.client.java.ReplicateTo
 import org.slf4j.LoggerFactory
 import play.api.libs.json.Json
 
-import scala.collection.immutable.Seq
 import scala.collection.JavaConverters._
+import scala.collection.immutable.Seq
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
@@ -32,7 +31,6 @@ trait CouchbaseSupport {
 
   //#init-actor-system
   implicit val actorSystem: ActorSystem = ActorSystem()
-  implicit val mat: Materializer = ActorMaterializer()
   //#init-actor-system
 
   val sampleData = TestObject("First", "First")
