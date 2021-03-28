@@ -7,11 +7,13 @@ package akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl
 import akka.NotUsed
 import akka.actor.ClassicActorSystemProvider
 import akka.dispatch.ExecutionContexts
-import akka.stream.alpakka.googlecloud.bigquery.storage.impl.{AvroDecoder, SDKClientSource}
+import akka.stream.alpakka.googlecloud.bigquery.storage.impl.{ArrowSource, AvroDecoder, AvroSource, SDKClientSource}
 import akka.stream.scaladsl.{Flow, Source}
 import akka.stream.Attributes
+import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryRecord
+import com.google.cloud.bigquery.storage.v1.arrow.ArrowRecordBatch
 import com.google.cloud.bigquery.storage.v1.avro.AvroRows
-import com.google.cloud.bigquery.storage.v1.storage.{CreateReadSessionRequest, ReadRowsRequest, ReadRowsResponse}
+import com.google.cloud.bigquery.storage.v1.storage.{BigQueryReadClient, CreateReadSessionRequest, ReadRowsRequest, ReadRowsResponse}
 import com.google.cloud.bigquery.storage.v1.stream.ReadSession.TableReadOptions
 import com.google.cloud.bigquery.storage.v1.stream.{DataFormat, ReadSession}
 import org.apache.avro.generic.GenericRecord
@@ -25,26 +27,62 @@ object GoogleBigQueryStorage {
 
   private val RequestParamsHeader = "x-goog-request-params"
 
+  def readAvro(projectId: String,
+               datasetId: String,
+               tableId: String,
+               readOptions: Option[TableReadOptions] = None,
+               maxNumStreams: Int = 0): Source[(ReadSession.Schema, AvroRows), Future[NotUsed]] = Source.fromMaterializer { (mat, attr) =>
+    val client = reader(mat.system, attr).client
+    readSession(client, projectId, datasetId, tableId, readOptions, maxNumStreams)
+      .map(session => {
+        session.schema match {
+          case ReadSession.Schema.AvroSchema(_) => AvroSource.read(client, session)
+          case other => throw new IllegalArgumentException(s"Only Avro format is supported, received: $other")
+        }
+      })
+      .flatMapConcat(a => a)
+  }
+
+  def readArrow(projectId: String,
+                datasetId: String,
+                tableId: String,
+                readOptions: Option[TableReadOptions] = None,
+                maxNumStreams: Int = 0): Source[(ReadSession.Schema, ArrowRecordBatch), Future[NotUsed]] = Source.fromMaterializer { (mat, attr) =>
+    val client = reader(mat.system, attr).client
+    readSession(client, projectId, datasetId, tableId, readOptions, maxNumStreams)
+      .map(session => {
+        session.schema match {
+          case ReadSession.Schema.ArrowSchema(_) => ArrowSource.read(client, session)
+          case other => throw new IllegalArgumentException(s"Only Arrow format is supported, received: $other")
+        }
+      })
+      .flatMapConcat(a => a)
+  }
+
+  def readRecords(projectId: String,
+                  datasetId: String,
+                  tableId: String,
+                  readOptions: Option[TableReadOptions] = None,
+                  maxNumStreams: Int = 0): Source[List[BigQueryRecord], Future[NotUsed]] = Source.fromMaterializer { (mat, attr) =>
+    val client = reader(mat.system, attr).client
+    readSession(client, projectId, datasetId, tableId, readOptions, maxNumStreams)
+      .map(session => {
+        session.schema match {
+          case ReadSession.Schema.AvroSchema(_) => AvroSource.readRecords(client, session)
+          case ReadSession.Schema.ArrowSchema(_) => ArrowSource.readRecords(client, session)
+          case other => throw new IllegalArgumentException(s"Avro, Arrow formats are supported, received: $other")
+        }
+      })
+      .flatMapConcat(a => a)
+  }
+
   def readRaw(projectId: String,
               datasetId: String,
               tableId: String,
               readOptions: Option[TableReadOptions] = None,
               maxNumStreams: Int = 0): Source[(ReadSession.Schema,ReadRowsResponse.Rows), Future[NotUsed]] = Source.fromMaterializer { (mat, attr) =>
       val client = reader(mat.system, attr).client
-      Source
-        .future {
-          val table = s"projects/$projectId/datasets/$datasetId/tables/$tableId"
-          client
-            .createReadSession()
-            .addHeader(RequestParamsHeader, s"read_session.table=$table")
-            .invoke(
-              CreateReadSessionRequest(
-                parent = s"projects/$projectId",
-                Some(ReadSession(dataFormat = DataFormat.AVRO, table = table, readOptions = readOptions)),
-                maxNumStreams
-              )
-            )
-        }
+    readSession(client, projectId, datasetId, tableId, readOptions, maxNumStreams)
         .map(session => SDKClientSource.read(client, session).map((session.schema, _)))
         .flatMapConcat(a => a)
     }
@@ -78,20 +116,7 @@ object GoogleBigQueryStorage {
           }(ExecutionContexts.parasitic)
       )
 
-      Source
-        .future {
-          val table = s"projects/$projectId/datasets/$datasetId/tables/$tableId"
-          client
-            .createReadSession()
-            .addHeader(RequestParamsHeader, s"read_session.table=$table")
-            .invoke(
-              CreateReadSessionRequest(
-                parent = s"projects/$projectId",
-                Some(ReadSession(dataFormat = DataFormat.AVRO, table = table, readOptions = readOptions)),
-                maxNumStreams
-              )
-            )
-        }
+      readSession(client, projectId, datasetId, tableId, readOptions, maxNumStreams)
         .mapConcat { session =>
           session.schema match {
             case ReadSession.Schema.AvroSchema(avroSchema) => schemaS.success(avroSchema.schema)
@@ -111,6 +136,28 @@ object GoogleBigQueryStorage {
               .mapConcat(identity)
         )
     }
+
+  private def readSession(client: BigQueryReadClient,
+                          projectId: String,
+                          datasetId: String,
+                          tableId: String,
+                          readOptions: Option[TableReadOptions] = None,
+                          maxNumStreams: Int = 0) =
+    Source
+      .future {
+        val table = s"projects/$projectId/datasets/$datasetId/tables/$tableId"
+        client
+          .createReadSession()
+          .addHeader(RequestParamsHeader, s"read_session.table=$table")
+          .invoke(
+            CreateReadSessionRequest(
+              parent = s"projects/$projectId",
+              Some(ReadSession(dataFormat = DataFormat.AVRO, table = table, readOptions = readOptions)),
+              maxNumStreams
+            )
+          )
+      }
+
 
   private def reader(system: ClassicActorSystemProvider, attr: Attributes) =
     attr
