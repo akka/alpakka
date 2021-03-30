@@ -27,6 +27,7 @@ dependency-change: "/project/Dependencies.scala"
 'p:google-fcm': ["/google-fcm"]
 'p:hbase': ["/hbase"]
 'p:hdfs': ["/hdfs"]
+'p:huawei-push-kit': ["/huawei-push-kit"]
 'p:influxdb': ["/influxdb"]
 'p:ironmq': ["/ironmq"]
 'p:jms': ["/jms"]
