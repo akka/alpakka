@@ -31,6 +31,8 @@ import scala.concurrent.duration.FiniteDuration
  * @param dryRun if set to `true` BigQuery doesn't run the job and instead returns statistics about the job such as how many bytes would be processed
  * @param useLegacySql specifies whether to use BigQuery's legacy SQL dialect for this query
  * @param requestId a unique user provided identifier to ensure idempotent behavior for queries
+ * @param location the geographic location where the job should run
+ * @param maximumBytesBilled limits the number of bytes billed for this query
  */
 final case class QueryRequest private (query: String,
                                        maxResults: Option[Int],
@@ -38,7 +40,9 @@ final case class QueryRequest private (query: String,
                                        timeout: Option[FiniteDuration],
                                        dryRun: Option[Boolean],
                                        useLegacySql: Option[Boolean],
-                                       requestId: Option[String]) {
+                                       requestId: Option[String],
+                                       location: Option[String],
+                                       maximumBytesBilled: Option[Long]) {
 
   def getQuery = query
   def getMaxResults = maxResults.asPrimitive
@@ -47,6 +51,8 @@ final case class QueryRequest private (query: String,
   def getDryRun = dryRun.map(lang.Boolean.valueOf).asJava
   def getUseLegacySql = useLegacySql.map(lang.Boolean.valueOf).asJava
   def getRequestId = requestId.asJava
+  def getLocation = location.asJava
+  def getMaximumBytesBilled = maximumBytesBilled.asJava
 
   def withQuery(query: String) =
     copy(query = query)
@@ -80,6 +86,16 @@ final case class QueryRequest private (query: String,
     copy(requestId = requestId)
   def withRequestId(requestId: util.Optional[String]) =
     copy(requestId = requestId.asScala)
+
+  def withLocation(location: Option[String]) =
+    copy(location = location)
+  def withLocation(location: util.Optional[String]) =
+    copy(location = location.asScala)
+
+  def withMaximumBytesBilled(maximumBytesBilled: Option[Long]) =
+    copy(maximumBytesBilled = maximumBytesBilled)
+  def withMaximumBytesBilled(maximumBytesBilled: util.OptionalLong) =
+    copy(maximumBytesBilled = maximumBytesBilled.asScala)
 }
 
 object QueryRequest {
@@ -95,6 +111,8 @@ object QueryRequest {
    * @param dryRun if set to `true` BigQuery doesn't run the job and instead returns statistics about the job such as how many bytes would be processed
    * @param useLegacySql specifies whether to use BigQuery's legacy SQL dialect for this query
    * @param requestId a unique user provided identifier to ensure idempotent behavior for queries
+   * @param location the geographic location where the job should run
+   * @param maximumBytesBilled limits the number of bytes billed for this query
    * @return a [[QueryRequest]]
    */
   def create(query: String,
@@ -103,7 +121,9 @@ object QueryRequest {
              timeout: util.Optional[Duration],
              dryRun: util.Optional[lang.Boolean],
              useLegacySql: util.Optional[lang.Boolean],
-             requestId: util.Optional[String]) =
+             requestId: util.Optional[String],
+             location: util.Optional[String],
+             maximumBytesBilled: util.OptionalLong) =
     QueryRequest(
       query,
       maxResults.asScala,
@@ -111,7 +131,9 @@ object QueryRequest {
       timeout.asScala.map(_.asScala),
       dryRun.asScala.map(_.booleanValue),
       useLegacySql.asScala.map(_.booleanValue),
-      requestId.asScala
+      requestId.asScala,
+      location.asScala,
+      maximumBytesBilled.asScala
     )
 
   implicit val format: RootJsonFormat[QueryRequest] = jsonFormat(
@@ -122,7 +144,9 @@ object QueryRequest {
     "timeoutMs",
     "dryRun",
     "useLegacySql",
-    "requestId"
+    "requestId",
+    "location",
+    "maximumBytesBilled"
   )
 }
 
