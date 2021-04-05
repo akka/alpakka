@@ -8,7 +8,7 @@ import akka.actor.{ActorContext, ClassicActorSystemProvider, Props}
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.stream.Materializer
-import akka.stream.alpakka.google.RequestSettings
+import akka.stream.alpakka.google.{ComputeMetadata, RequestSettings}
 
 import scala.concurrent.Future
 
@@ -17,8 +17,7 @@ private[auth] object ComputeEngineCredentials {
 
   def apply()(implicit system: ClassicActorSystemProvider): Future[Credentials] = {
     val credentials = system.classicSystem.actorOf(Props(new ComputeEngineCredentials))
-    GoogleComputeMetadata
-      .getProjectId()
+    ComputeMetadata.getProjectId
       .map { projectId =>
         new OAuth2Credentials(projectId, credentials)
       }(ExecutionContexts.parasitic)
@@ -31,6 +30,6 @@ private final class ComputeEngineCredentials extends OAuth2CredentialsActor {
   override protected def getAccessToken()(implicit ctx: ActorContext,
                                           settings: RequestSettings): Future[AccessToken] = {
     implicit val mat = Materializer(ctx)
-    GoogleComputeMetadata.getAccessToken()
+    ComputeMetadata.getAccessToken()
   }
 }

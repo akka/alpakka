@@ -20,6 +20,7 @@ lazy val alpakka = project
     geode,
     googleCommon,
     googleCloudBigQuery,
+    googleCloudLogging,
     googleCloudPubSub,
     googleCloudPubSubGrpc,
     googleCloudStorage,
@@ -190,6 +191,14 @@ lazy val googleCloudBigQuery = alpakkaProject(
   Test / fork := true,
   fatalWarnings := true
 ).dependsOn(googleCommon).disablePlugins(MimaPlugin).enablePlugins(spray.boilerplate.BoilerplatePlugin)
+
+lazy val googleCloudLogging = alpakkaProject(
+  "google-cloud-logging",
+  "google.cloud.logging",
+  Dependencies.GoogleLogging,
+  Test / fork := true,
+  fatalWarnings := true
+).dependsOn(googleCommon).disablePlugins(MimaPlugin)
 
 lazy val googleCloudPubSub = alpakkaProject(
   "google-cloud-pub-sub",

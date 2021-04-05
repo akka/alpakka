@@ -13,7 +13,7 @@ import java.time.Clock
 import scala.concurrent.duration._
 
 @InternalApi
-private[auth] final case class AccessToken(token: String, expiresAt: Long) {
+private[alpakka] final case class AccessToken(token: String, expiresAt: Long) {
   def expiresSoon(in: FiniteDuration = 1.minute)(implicit clock: Clock): Boolean =
     expiresAt < JwtTime.nowSeconds + in.toSeconds
 }

@@ -23,9 +23,9 @@ import org.slf4j.MDC
  * {{{
  *     <appender name="CapturingAppender" class="akka.actor.testkit.typed.internal.CapturingAppender" />
  *
- *     <logger name="akka.actor.testkit.typed.internal.CapturingAppenderDelegate" >
+ *     <logging name="akka.actor.testkit.typed.internal.CapturingAppenderDelegate" >
  *       <appender-ref ref="STDOUT"/>
- *     </logger>
+ *     </logging>
  *
  *     <root level="DEBUG">
  *         <appender-ref ref="CapturingAppender"/>

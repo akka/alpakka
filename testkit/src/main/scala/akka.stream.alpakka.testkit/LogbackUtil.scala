@@ -31,10 +31,10 @@ import scala.annotation.tailrec
         Thread.sleep(50)
         getLogbackLoggerInternal(loggerName, count - 1)
       case null =>
-        throw new IllegalArgumentException(s"Couldn't find logger for [$loggerName].")
+        throw new IllegalArgumentException(s"Couldn't find logging for [$loggerName].")
       case other =>
         throw new IllegalArgumentException(
-          s"Requires Logback logger for [$loggerName], it was a [${other.getClass.getName}]"
+          s"Requires Logback logging for [$loggerName], it was a [${other.getClass.getName}]"
         )
     }
   }

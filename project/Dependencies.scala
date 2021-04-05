@@ -229,6 +229,15 @@ object Dependencies {
       ) ++ Mockito ++ Silencer
   )
 
+  val GoogleLogging = Seq(
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
+      "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
+      "ch.qos.logback" % "logback-classic" % "1.2.3" % Provided, // Eclipse Public License 1.0
+      "io.specto" % "hoverfly-java" % hoverflyVersion % Test // ApacheV2
+    ) ++ Silencer
+  )
+
   val GooglePubSub = Seq(
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,

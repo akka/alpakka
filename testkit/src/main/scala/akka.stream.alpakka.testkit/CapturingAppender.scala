@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory
  *
  * Logging from tests can be silenced by this appender. When there is a test failure
  * the captured logging events are flushed to the appenders defined for the
- * akka.actor.testkit.typed.internal.CapturingAppenderDelegate logger.
+ * akka.actor.testkit.typed.internal.CapturingAppenderDelegate logging.
  *
  * The flushing on test failure is handled by [[akka.actor.testkit.typed.scaladsl.LogCapturing]]
  * for ScalaTest and [[akka.actor.testkit.typed.javadsl.LogCapturing]] for JUnit.
@@ -55,9 +55,9 @@ import org.slf4j.LoggerFactory
  * {{{
  *     <appender name="CapturingAppender" class="akka.actor.testkit.typed.internal.CapturingAppender" />
  *
- *     <logger name="akka.actor.testkit.typed.internal.CapturingAppenderDelegate" >
+ *     <logging name="akka.actor.testkit.typed.internal.CapturingAppenderDelegate" >
  *       <appender-ref ref="STDOUT"/>
- *     </logger>
+ *     </logging>
  *
  *     <root level="DEBUG">
  *         <appender-ref ref="CapturingAppender"/>
