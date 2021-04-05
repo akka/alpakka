@@ -251,7 +251,7 @@ object Dependencies {
   val GoogleFcm = Seq(
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
-        "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
+        "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion
       ) ++ Mockito ++ Silencer
   )
 
