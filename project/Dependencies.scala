@@ -224,7 +224,6 @@ object Dependencies {
         "io.spray" %% "spray-json" % "1.3.6",
         "com.fasterxml.jackson.core" % "jackson-annotations" % JacksonDatabindVersion,
         "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % JacksonDatabindVersion % Test,
-        "com.pauldijou" %% "jwt-core" % "3.1.0", //ApacheV2
         "io.specto" % "hoverfly-java" % hoverflyVersion % Test //ApacheV2
       ) ++ Mockito ++ Silencer
   )
@@ -233,7 +232,6 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        "com.pauldijou" %% "jwt-core" % JwtCoreVersion, // ApacheV2
         "com.github.tomakehurst" % "wiremock" % "2.25.1" % Test // ApacheV2
       ) ++ Mockito ++ Silencer
   )
@@ -254,7 +252,6 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        "com.pauldijou" %% "jwt-core" % JwtCoreVersion // ApacheV2
       ) ++ Mockito ++ Silencer
   )
 
@@ -262,7 +259,6 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        "com.pauldijou" %% "jwt-core" % JwtCoreVersion, //ApacheV2
         "io.specto" % "hoverfly-java" % hoverflyVersion % Test // ApacheV2
       ) ++ Mockito ++ Silencer
   )
