@@ -1,16 +1,12 @@
 # Snapshots 
 
-[bintray-badge]:  https://api.bintray.com/packages/akka/snapshots/alpakka/images/download.svg
-[bintray]:        https://bintray.com/akka/snapshots/alpakka/_latestVersion 
+[snapshots-badge]:  https://img.shields.io/nexus/s/com.lightbend.akka/akka-stream-alpakka-csv_2.13?server=https%3A%2F%2Foss.sonatype.org
+[snapshots]:        https://oss.sonatype.org/content/repositories/snapshots/com/lightbend/akka/akka-stream-alpakka-csv_2.13/
 
-Snapshots are published to a repository in Bintray after every successful build on master. Add the following to your project build definition to resolve Alpakka snapshots:
+Snapshots are published to the Sonatype Snapshot repository after every successful build on master.
+Add the following to your project build definition to resolve Alpakka snapshots:
 
 ## Configure repository
-
-sbt
-:   ```scala
-    resolvers += Resolver.bintrayRepo("akka", "snapshots")
-    ```
 
 Maven
 :   ```xml
@@ -18,20 +14,25 @@ Maven
     ...
       <repositories>
         <repository>
-          <id>alpakka-snapshots</id>
-          <name>Alpakka Snapshots</name>
-          <url>https://dl.bintray.com/akka/snapshots</url>
+            <id>snapshots-repo</id>
+            <name>Sonatype snapshots</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </repository>
       </repositories>
     ...
     </project>
     ```
 
+sbt
+:   ```scala
+    resolvers += Resolver.sonatypeRepo("snapshots")
+    ```
+
 Gradle
 :   ```gradle
     repositories {
       maven {
-        url  "https://dl.bintray.com/akka/snapshots"
+        url  "https://oss.sonatype.org/content/repositories/snapshots"
       }
     }
     ```
@@ -43,6 +44,6 @@ The [snapshot documentation](https://doc.akka.io/docs/alpakka/snapshot/) is upda
 
 ## Versions
 
-Latest published snapshot version is [![bintray-badge][]][bintray]
+Latest published snapshot version is [![snapshots-badge][]][snapshots]
 
-The snapshot repository is cleaned from time to time with no further notice. Check [Bintray Alpakka files](https://bintray.com/akka/snapshots/alpakka#files/com/lightbend/akka) to see what versions are currently available.
+The snapshot repository is cleaned from time to time with no further notice. Check [Sonatype snapshots Alpakka Kafka files](https://oss.sonatype.org/content/repositories/snapshots/com/lightbend/akka/) to see what versions are currently available.

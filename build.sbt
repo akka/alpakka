@@ -314,7 +314,7 @@ lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml, fatalWarnings := t
 
 lazy val docs = project
   .enablePlugins(AkkaParadoxPlugin, ParadoxSitePlugin, PreprocessPlugin, PublishRsyncPlugin)
-  .disablePlugins(BintrayPlugin, MimaPlugin)
+  .disablePlugins(MimaPlugin)
   .settings(
     Compile / paradox / name := "Alpakka",
     publish / skip := true,
@@ -412,7 +412,7 @@ lazy val whitesourceSupported = project
 
 lazy val `doc-examples` = project
   .enablePlugins(AutomateHeaderPlugin)
-  .disablePlugins(BintrayPlugin, MimaPlugin, SitePlugin)
+  .disablePlugins(MimaPlugin, SitePlugin)
   .settings(
     name := s"akka-stream-alpakka-doc-examples",
     publish / skip := true,
@@ -445,7 +445,7 @@ def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sb
 def internalProject(projectId: String, additionalSettings: sbt.Def.SettingsDefinition*): Project =
   Project(id = projectId, base = file(projectId))
     .enablePlugins(AutomateHeaderPlugin)
-    .disablePlugins(SitePlugin, BintrayPlugin, MimaPlugin)
+    .disablePlugins(SitePlugin, MimaPlugin)
     .settings(
       name := s"akka-stream-alpakka-$projectId",
       publish / skip := true

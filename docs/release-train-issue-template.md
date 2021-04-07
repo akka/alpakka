@@ -43,9 +43,7 @@ Key links:
 
 - [ ] Wait until [master build finished](https://travis-ci.com/akka/alpakka/builds/) after merging the release notes
 - [ ] [Fix up the draft release](https://github.com/akka/alpakka/releases) with the next tag version `v$VERSION$`, title and release description linking to announcement, release notes and milestone
-- [ ] Check that Travis CI release build has executed successfully (Travis will start a [CI build](https://travis-ci.com/akka/alpakka/builds) for the new tag and publish artifacts to Bintray and documentation to Gustav)
-- [ ] Go to [Bintray](https://bintray.com/akka/maven/alpakka) and select the just released version
-- [ ] Go to the Maven Central tab, check the *Close and release repository when done* checkbox and sync with Sonatype (using your Sonatype TOKEN key and password)
+- [ ] Check that Travis CI release build has executed successfully (Travis will start a [CI build](https://travis-ci.com/akka/alpakka/builds) for the new tag and publish artifacts to Sonatype and documentation to Gustav)
 
 ### Check availability
 
