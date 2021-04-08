@@ -20,8 +20,7 @@ public class CloudLoggingAppenderTest {
     appender.setContext(context);
     appender.setActorSystem(system);
     appender.setName("cloud");
-    appender.addEnhancer(MDCEventEnhancer.class.getName());
-    appender.addEnhancer(TestEnhancer.class.getName());
+    appender.setResourceType("global"); // #snipper-please-ignore
     appender.start();
 
     ch.qos.logback.classic.Logger root =

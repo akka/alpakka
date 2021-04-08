@@ -6,45 +6,28 @@ package akka.stream.alpakka.googlecloud.logging.logback
 
 import akka.Done
 import akka.actor.ActorSystem
-import akka.stream.alpakka.googlecloud.logging.HoverflySupport
 import akka.stream.alpakka.googlecloud.logging.model.LogEntry
-import akka.testkit.TestKit
-import ch.qos.logback.classic.spi.ILoggingEvent
+import akka.testkit.{TestDuration, TestKit}
 import ch.qos.logback.classic.LoggerContext
-import io.specto.hoverfly.junit.core.{HoverflyMode, SimulationSource}
+import ch.qos.logback.classic.spi.ILoggingEvent
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.slf4j.LoggerFactory
 
-import java.io.File
 import scala.concurrent.duration.DurationInt
 
 class CloudLoggingAppenderSpec
     extends TestKit(ActorSystem("CloudLoggingAppenderSpec"))
     with AnyWordSpecLike
     with Matchers
-    with ScalaFutures
-    with HoverflySupport {
+    with BeforeAndAfterAll
+    with ScalaFutures {
 
-  implicit val patience = PatienceConfig(10.seconds)
+  implicit val patience = PatienceConfig(10.seconds.dilated)
 
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    system.settings.config.getString("alpakka.google.logging.test.e2e-mode") match {
-      case "simulate" =>
-        hoverfly.simulate(SimulationSource.url(getClass.getClassLoader.getResource("CloudLoggingAppenderSpec.json")))
-      case "capture" => hoverfly.resetMode(HoverflyMode.CAPTURE)
-      case _ => throw new IllegalArgumentException
-    }
-  }
-
-  override def afterAll() = {
-    system.terminate()
-    if (hoverfly.getMode == HoverflyMode.CAPTURE)
-      hoverfly.exportSimulation(new File("src/test/resources/CloudLoggingAppenderSpec.json").toPath)
-    super.afterAll()
-  }
+  override def afterAll() = system.terminate()
 
   "CloudLoggingAppender" should {
 
@@ -58,8 +41,6 @@ class CloudLoggingAppenderSpec
       appender.setActorSystem(system)
       appender.setName("cloud")
       appender.setResourceType("global") //#snipper-please-ignore
-      appender.addEnhancer(classOf[MDCEventEnhancer].getName)
-      appender.addEnhancer(classOf[TestEnhancer].getName)
       appender.start()
 
       val root = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME).asInstanceOf[ch.qos.logback.classic.Logger]

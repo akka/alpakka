@@ -8,7 +8,7 @@ import akka.Done
 import akka.actor.{Actor, ActorRef, ExtendedActorSystem, Status}
 import akka.dispatch.RequiresMessageQueue
 import akka.event.Logging._
-import akka.event.{LoggerMessageQueueSemantics, Logging}
+import akka.event.{LoggerMessageQueueSemantics, Logging, LoggingBus}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.pattern.pipe
 import akka.stream.alpakka.google.GoogleSettings
@@ -39,6 +39,7 @@ final class CloudLogger extends Actor with RequiresMessageQueue[LoggerMessageQue
   private val log = Logging(context.system, this)
 
   private var sink: ActorRef = context.system.deadLetters
+  private var bus: LoggingBus = _
 
   private val mdcThreadAttributeName = "sourceThread"
   private val mdcActorSystemAttributeName = "sourceActorSystem"
@@ -53,9 +54,10 @@ final class CloudLogger extends Actor with RequiresMessageQueue[LoggerMessageQue
     case event: LogEvent =>
       sink ! event
 
-    case InitializeLogger(_) =>
+    case InitializeLogger(bus) =>
       import context.dispatcher
 
+      this.bus = bus
       log.info("CloudLogger starting...")
 
       val sink = for {
@@ -100,15 +102,20 @@ final class CloudLogger extends Actor with RequiresMessageQueue[LoggerMessageQue
 
     case MaterializedSink(Success((ref, complete)), forwardTo) =>
       import context.dispatcher
-
       sink = ref
       forwardTo ! LoggerInitialized
       log.info("CloudLogger started")
-      complete.transform(result => Success(SinkCompleted(result))).pipeTo(self)
+      complete.transform(result => Success(SinkCompleted(result))).pipeTo(self).foreach {
+        case SinkCompleted(Success(Done)) =>
+          log.info("CloudLogger stopped")
+        case SinkCompleted(Failure(ex)) =>
+          log.error(ex, "CloudLogger errored")
+      }
 
     case MaterializedSink(Failure(ex), forwardTo) =>
       forwardTo ! Status.Failure(ex)
       log.error(ex, "CloudLogger failed to start")
+      throw ex
 
     case SinkCompleted(Success(Done)) =>
     // Do nothing
@@ -117,6 +124,8 @@ final class CloudLogger extends Actor with RequiresMessageQueue[LoggerMessageQue
   }
 
   override def postStop(): Unit = {
+    log.info("CloudLogger stopping...")
+    if (bus != null) bus.unsubscribe(context.self)
     sink ! Done
   }
 

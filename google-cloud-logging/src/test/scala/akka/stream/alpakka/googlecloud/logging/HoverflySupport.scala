@@ -4,8 +4,22 @@
 
 package akka.stream.alpakka.googlecloud.logging
 
+import com.typesafe.config.ConfigFactory
 import io.specto.hoverfly.junit.core.{Hoverfly, HoverflyConfig, HoverflyMode}
 import org.scalatest.{BeforeAndAfterAll, Suite}
+
+object HoverflySupport {
+
+  val config = ConfigFactory.parseString("""
+      |alpakka.google {
+      |  forward-proxy {
+      |    host = localhost
+      |    port = 8500
+      |    trust-pem = "src/test/resources/cert.pem"
+      |  }
+      |}
+      |""".stripMargin)
+}
 
 trait HoverflySupport extends BeforeAndAfterAll { this: Suite =>
 
