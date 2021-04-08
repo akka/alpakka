@@ -212,6 +212,7 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "com.github.jwt-scala" %% "jwt-spray-json" % "7.1.0", // ApacheV2
         "com.google.auth" % "google-auth-library-credentials" % "0.24.1", // BSD 3-clause
+        "com.google.auth" % "google-auth-library-oauth2-http" % "0.20.0",
         "io.specto" % "hoverfly-java" % hoverflyVersion % Test // ApacheV2
       ) ++ Mockito ++ Silencer
   )
@@ -238,7 +239,6 @@ object Dependencies {
         "com.thesamet.scalapb.common-protos" %% "proto-google-common-protos-scalapb_0.10" % "1.17.0-0",
         "com.thesamet.scalapb.common-protos" %% "proto-google-common-protos-scalapb_0.10" % "1.17.0-0" % "protobuf",
         "io.grpc" % "grpc-auth" % "1.28.0",
-        "com.google.auth" % "google-auth-library-oauth2-http" % "0.20.0",
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion
       ) ++ Silencer
   )
