@@ -13,10 +13,12 @@ import akka.stream.alpakka.pravega.{PravegaEvent, ReaderSettings}
 import io.pravega.client.ClientConfig
 
 import scala.concurrent.{Future, Promise}
+import scala.concurrent.duration.DurationLong
 import io.pravega.client.stream.{EventStreamReader, ReaderGroup}
 
 import scala.util.control.NonFatal
 import akka.stream.ActorAttributes
+import akka.stream.stage.AsyncCallback
 @InternalApi private final class PravegaSourcesStageLogic[A](
     shape: SourceShape[PravegaEvent[A]],
     val scope: String,
@@ -35,6 +37,10 @@ import akka.stream.ActorAttributes
 
   val clientConfig: ClientConfig = readerSettings.clientConfig
 
+  private val asyncOnPull: AsyncCallback[OutHandler] = getAsyncCallback { out =>
+    out.onPull()
+  }
+
   setHandler(
     out,
     new OutHandler {
@@ -48,10 +54,12 @@ import akka.stream.ActorAttributes
           val event = eventRead.getEvent
           if (event == null) {
             log.debug("a timeout occurred while waiting for new messages")
+            materializer.scheduleOnce(readerSettings.timeout.millis, () => asyncOnPull.invoke(this))
           } else
             push(out, new PravegaEvent(event, eventRead.getPosition, eventRead.getEventPointer))
         }
       }
+
     }
   )
 
