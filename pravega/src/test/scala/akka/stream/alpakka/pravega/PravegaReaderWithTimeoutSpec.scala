@@ -11,10 +11,9 @@ import io.pravega.client.stream.impl.UTF8StringSerializer
 import akka.stream.scaladsl.Sink
 import akka.stream.KillSwitches
 import akka.stream.scaladsl.Keep
-import scala.concurrent.Await
 
 import scala.concurrent.Promise
-import scala.concurrent.duration.Duration
+
 import akka.stream.alpakka.testkit.scaladsl.Repeated
 import akka.stream.scaladsl.Source
 
@@ -64,11 +63,10 @@ class PravegaReaderWithTimeoutSpec extends PravegaBaseSpec with Repeated {
         .map(i => f"name_$i%d")
         .runWith(sink)
 
-      Await.ready(finishReading.future, Duration.Inf)
-
-      logger.info(s"Read at least $eventToread...")
-
-      kill.shutdown()
+      whenReady(finishReading.future) { _ =>
+        logger.info(s"Read at least $eventToread...")
+        kill.shutdown()
+      }
 
       whenReady(fut) { r =>
         r mustEqual 0
