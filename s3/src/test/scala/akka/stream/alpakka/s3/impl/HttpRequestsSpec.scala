@@ -402,7 +402,6 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
 
   it should "support custom endpoint configured by `endpointUrl`" in {
     implicit val system: ActorSystem = ActorSystem("HttpRequestsSpec")
-    import system.dispatcher
 
     try {
       val probe = TestProbe()
@@ -410,10 +409,12 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
 
       import akka.http.scaladsl.server.Directives._
 
-      Http().bindAndHandle(extractRequestContext { ctx =>
-        probe.ref ! ctx.request
-        complete("MOCK")
-      }, address.getHostName, address.getPort)
+      Http()
+        .newServerAt(address.getHostName, address.getPort)
+        .bind(extractRequestContext { ctx =>
+          probe.ref ! ctx.request
+          complete("MOCK")
+        })
 
       implicit val setting: S3Settings =
         getSettings().withEndpointUrl(s"http://${address.getHostName}:${address.getPort}/")

@@ -115,6 +115,8 @@ class BigQueryMockServer(port: Int) extends BigQueryMockData {
           ???
       })
 
-    Http().bindAndHandleAsync(service, interface = "0.0.0.0", port = port, connectionContext = HttpConnectionContext())
+    Http()
+      .newServerAt("0.0.0.0", port)
+      .bind(service)
   }
 }

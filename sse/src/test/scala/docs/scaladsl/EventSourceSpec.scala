@@ -6,9 +6,8 @@ package docs.scaladsl
 
 import java.net.InetSocketAddress
 import java.nio.charset.StandardCharsets.UTF_8
-
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props, Status}
-import akka.http.scaladsl.coding.Gzip
+import akka.http.scaladsl.coding.Coders
 import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.StatusCodes.BadRequest
@@ -69,7 +68,7 @@ object EventSourceSpec {
       }
 
       path("gzipped") {
-        encodeResponseWith(Gzip) {
+        encodeResponseWith(Coders.Gzip) {
           sseRoute
         }
       } ~
@@ -92,7 +91,7 @@ object EventSourceSpec {
 
     private def unbound: Receive = {
       case Bind =>
-        Http(context.system).bindAndHandle(route(size, shouldSetEventId), address, port).pipeTo(self)
+        Http(context.system).newServerAt(address, port).bind(route(size, shouldSetEventId)).pipeTo(self)
         context.become(binding)
     }
 
