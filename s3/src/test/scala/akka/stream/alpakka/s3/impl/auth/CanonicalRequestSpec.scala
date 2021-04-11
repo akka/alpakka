@@ -166,7 +166,7 @@ class CanonicalRequestSpec extends AnyFlatSpec with Matchers {
       RawHeader("x-amz-content-sha256", "testhash"),
       `Content-Type`(ContentTypes.`application/json`),
       `Raw-Request-URI`("/my.test.bucket/file%2Bname.txt"),
-      `Remote-Address`(RemoteAddress.Unknown)
+      `X-Forwarded-For`(RemoteAddress.Unknown)
     )
     val canonical = CanonicalRequest.from(req)
     canonical.canonicalString should equal(

@@ -17,11 +17,8 @@ object Dependencies {
   val AwsSpiAkkaHttpVersion = "0.0.11"
   // Sync with plugins.sbt
   val AkkaGrpcBinaryVersion = "1.0"
-  val AkkaHttp101 = "10.1.15"
-  val AkkaHttp102 = "10.2.0"
-  val AkkaHttp1024 = "10.2.4"
-  val AkkaHttpVersion = if (CronBuild) AkkaHttp102 else AkkaHttp101
-  val AkkaHttpBinaryVersion = if (CronBuild) "10.2" else "10.1"
+  val AkkaHttpVersion = "10.2.8"
+  val AkkaHttpBinaryVersion = "10.2"
   val ScalaTestVersion = "3.2.2"
   val mockitoVersion = "3.4.6" // check even https://github.com/scalatest/scalatestplus-mockito/releases
   val hoverflyVersion = "0.13.1"
@@ -206,9 +203,9 @@ object Dependencies {
 
   val GoogleBigQuery = Seq(
     libraryDependencies ++= Seq(
-        "com.typesafe.akka" %% "akka-http" % AkkaHttp1024,
-        "com.typesafe.akka" %% "akka-http-jackson" % AkkaHttp1024 % Provided,
-        "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttp1024,
+        "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
+        "com.typesafe.akka" %% "akka-http-jackson" % AkkaHttpVersion % Provided,
+        "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "io.spray" %% "spray-json" % "1.3.6",
         "com.fasterxml.jackson.core" % "jackson-annotations" % JacksonDatabindVersion,
         "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % JacksonDatabindVersion % Test,

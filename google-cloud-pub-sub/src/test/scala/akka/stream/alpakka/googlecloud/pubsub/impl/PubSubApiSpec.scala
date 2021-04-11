@@ -24,7 +24,7 @@ import org.scalatest.matchers.should.Matchers
 import java.security.cert.X509Certificate
 import java.time.Instant
 import java.util.Base64
-import javax.net.ssl.{SSLContext, X509TrustManager}
+import javax.net.ssl.{SSLContext, SSLEngine, X509TrustManager}
 import scala.collection.immutable.Seq
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -55,10 +55,17 @@ class PubSubApiSpec extends AnyFlatSpec with BeforeAndAfterAll with ScalaFutures
   implicit val defaultPatience =
     PatienceConfig(timeout = 5.seconds, interval = 100.millis)
 
-  val sslContext: SSLContext = SSLContext.getInstance("TLS")
-  sslContext.init(null, Array(new NoopTrustManager()), null)
+  def createInsecureSslEngine(host: String, port: Int): SSLEngine = {
+    val sslContext: SSLContext = SSLContext.getInstance("TLS")
+    sslContext.init(null, Array(new NoopTrustManager()), null)
 
-  Http().setDefaultClientHttpsContext(ConnectionContext.https(sslContext))
+    val engine = sslContext.createSSLEngine(host, port)
+    engine.setUseClientMode(true)
+
+    engine
+  }
+
+  Http().setDefaultClientHttpsContext(ConnectionContext.httpsClient(createInsecureSslEngine _))
 
   val wiremockServer = new WireMockServer(
     wireMockConfig().dynamicPort().dynamicHttpsPort().notifier(new ConsoleNotifier(false))
