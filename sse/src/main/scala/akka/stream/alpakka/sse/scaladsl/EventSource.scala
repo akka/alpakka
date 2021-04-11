@@ -8,17 +8,16 @@ package scaladsl
 import akka.NotUsed
 import akka.actor.{ActorSystem, ClassicActorSystemProvider}
 import akka.http.scaladsl.client.RequestBuilding.Get
-import akka.http.scaladsl.coding.Gzip
-import akka.http.scaladsl.model.headers.Accept
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri}
-import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, Source}
-import akka.stream.SourceShape
+import akka.http.scaladsl.coding.Coders
+import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
+import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept}
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.model.sse.ServerSentEvent.heartbeat
-import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
-import akka.http.scaladsl.model.headers.`Last-Event-ID`
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri}
+import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.unmarshalling.sse.EventStreamUnmarshalling
+import akka.stream.SourceShape
+import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, Source}
 
 import scala.concurrent.Future
 import scala.concurrent.duration.{Duration, FiniteDuration}
@@ -99,7 +98,7 @@ object EventSource {
           lastEventId.foldLeft(r)((r, i) => r.addHeader(`Last-Event-ID`(i)))
         }
         send(request)
-          .map(response => Gzip.decodeMessage(response))
+          .map(response => Coders.Gzip.decodeMessage(response))
           .flatMap(Unmarshal(_).to[EventSource])
           .fallbackTo(Future.successful(noEvents))
       }
