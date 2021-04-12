@@ -9,7 +9,7 @@ object Dependencies {
   val Scala213 = "2.13.3" // update even 2 places in .travis.yml
   val ScalaVersions = Seq(Scala212, Scala213)
 
-  val AkkaVersion = "2.6.13"
+  val AkkaVersion = "2.6.14"
   val AkkaBinaryVersion = "2.6"
 
   val InfluxDBJavaVersion = "2.15"
@@ -77,7 +77,7 @@ object Dependencies {
   // CVE issues https://github.com/FasterXML/jackson-databind/issues?utf8=%E2%9C%93&q=+label%3ACVE
   // This should align with the Jackson minor version used in Akka 2.6.x
   // https://github.com/akka/akka/blob/master/project/Dependencies.scala#L23
-  val JacksonDatabindVersion = "2.10.5"
+  val JacksonDatabindVersion = "2.11.4"
   val JacksonDatabindDependencies = Seq(
     "com.fasterxml.jackson.core" % "jackson-core" % JacksonDatabindVersion,
     "com.fasterxml.jackson.core" % "jackson-databind" % JacksonDatabindVersion
