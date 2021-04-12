@@ -12,7 +12,7 @@ Alpakka publishes
 
 * regular releases to [Maven Central](https://search.maven.org/search?q=g:com.lightbend.akka%20akka-stream-)
 * milestone and release candidates (of major versions) to Maven Central
-* @ref:[snapshots](snapshots.md) to [Bintray](https://bintray.com/akka/snapshots/alpakka)
+* @ref:[snapshots](snapshots.md) to [Sonatype](https://oss.sonatype.org/content/repositories/snapshots/com/lightbend/akka/)
 
 ### Compatibility
 
