@@ -250,6 +250,10 @@ Scala
 Java
 : @@snip [snip](/elasticsearch/src/test/java/docs/javadsl/ElasticsearchV5Test.java) { #custom-search-params }
 
-Additionally, support for [custom routing](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-routing-field.html) 
-is available through the `routing` key. Add this key and the respective value in 'searchParams' map, to route your search directly to the shard that holds
-the document you are looking for and enjoy improved response times.
+
+#### Routing
+Support for [custom routing](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-routing-field.html) 
+is available through the `routing` key. Add this key and the respective value in 'searchParams' map, to route your search directly to the shard that holds the document you are looking for and enjoy improved response times.
+
+#### Sort
+Support for sort is available through the `sort` key in `searchParams` map. If no sort is given, the source will use `sort=_doc` to maximize performance, as indicated by [elasticsearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/paginate-search-results.html#scroll-search-results).

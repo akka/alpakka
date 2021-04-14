@@ -128,7 +128,7 @@ object ElasticsearchSource {
         case None => {
           val scrollId = jsObj.fields("_scroll_id").asInstanceOf[JsString].value
           val hits = jsObj.fields("hits").asJsObject.fields("hits").asInstanceOf[JsArray]
-          val messages = hits.elements.reverse.map { element =>
+          val messages = hits.elements.map { element =>
             val doc = element.asJsObject
             val id = doc.fields("_id").asInstanceOf[JsString].value
             val source = doc.fields("_source").asJsObject
