@@ -19,7 +19,6 @@ abstract class PravegaBaseSpec extends AnyWordSpec with PravegaAkkaSpecSupport w
 
   def newGroupName() = "scala-test-group-" + UUID.randomUUID().toString
   def newScope() = "scala-test-scope-" + UUID.randomUUID().toString
-  def newStreamName() = "scala-test-stream-" + UUID.randomUUID().toString
 
   def createStream(scope: String, streamName: String) = {
     val streamManager = StreamManager.create(URI.create("tcp://localhost:9090"))

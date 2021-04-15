@@ -6,8 +6,9 @@ package docs.scaladsl
 
 import akka.actor.ActorSystem
 import akka.stream.alpakka.pravega.scaladsl.Pravega
-import akka.stream.alpakka.pravega.{PravegaEvent, ReaderSettingsBuilder, WriterSettingsBuilder}
+import akka.stream.alpakka.pravega.{PravegaEvent, PravegaReaderGroup, ReaderSettingsBuilder, WriterSettingsBuilder}
 import akka.stream.scaladsl.{Sink, Source}
+import io.pravega.client.stream.ReaderGroup
 import io.pravega.client.stream.impl.UTF8StringSerializer
 
 object PravegaReadWriteDocs {
@@ -40,10 +41,12 @@ object PravegaReadWriteDocs {
 
   def processMessage(message: String): Unit = ???
 
+  val readerGroup: PravegaReaderGroup = null
+
   // #reading
 
   val fut = Pravega
-    .source("an_existing_scope", "an_existing_streamName")
+    .source(readerGroup)
     .to(Sink.foreach { event: PravegaEvent[String] =>
       val message: String = event.message
       processMessage(message)

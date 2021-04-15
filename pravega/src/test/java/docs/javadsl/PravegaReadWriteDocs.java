@@ -10,6 +10,7 @@ import akka.stream.alpakka.pravega.javadsl.Pravega;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import io.pravega.client.stream.ReaderGroup;
 import io.pravega.client.stream.impl.JavaSerializer;
 
 import java.util.Arrays;
@@ -36,9 +37,11 @@ public class PravegaReadWriteDocs extends PravegaAkkaTestCaseSupport {
 
     // #writing
 
+    PravegaReaderGroup readerGroup = null;
+
     // #reading
     CompletionStage<Done> fut =
-        Pravega.<String>source("an_existing_scope", "an_existing_scope", readerSettings)
+        Pravega.<String>source(readerGroup, readerSettings)
             .to(Sink.foreach(e -> processMessage(e.message())))
             .run(system);
     // #reading
