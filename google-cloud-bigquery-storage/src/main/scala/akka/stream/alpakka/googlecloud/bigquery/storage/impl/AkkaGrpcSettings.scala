@@ -9,6 +9,7 @@ import akka.annotation.InternalApi
 import akka.grpc.GrpcClientSettings
 import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryStorageSettings
 import com.typesafe.config.ConfigFactory
+import io.grpc.auth.MoreCallCredentials
 
 /**
  * Internal API
@@ -48,8 +49,14 @@ import com.typesafe.config.ConfigFactory
       config.rootCa
         .fold(settings.withTls(false))(_ => settings.withTls(true))
 
-    val setCallCredentials = (settings: GrpcClientSettings) =>
-      config.callCredentials.fold(settings)(settings.withCallCredentials)
+    val googleSettings = config.googleSettings
+    val executor = system.classicSystem.dispatcher
+
+    val setCallCredentials = (settings: GrpcClientSettings) => {
+      googleSettings
+        .map(gs => gs.credentials.asGoogle(executor, gs.requestSettings))
+        .fold(settings)(a => settings.withCallCredentials(MoreCallCredentials.from(a)))
+    }
 
     Seq(setTls, setCallCredentials).foldLeft(settings) {
       case (s, f) => f(s)

@@ -212,7 +212,6 @@ object Dependencies {
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "com.github.jwt-scala" %% "jwt-spray-json" % "7.1.0", // ApacheV2
         "com.google.auth" % "google-auth-library-credentials" % "0.24.1", // BSD 3-clause
-        "com.google.auth" % "google-auth-library-oauth2-http" % "0.20.0",
         "io.specto" % "hoverfly-java" % hoverflyVersion % Test // ApacheV2
       ) ++ Mockito ++ Silencer
   )
@@ -234,8 +233,8 @@ object Dependencies {
     libraryDependencies ++= Seq(
         // https://github.com/googleapis/java-bigquerystorage/tree/master/proto-google-cloud-bigquerystorage-v1
         "com.google.api.grpc" % "proto-google-cloud-bigquerystorage-v1" % "0.95.0" % "protobuf-src" exclude ("com.google.api.grpc", "proto-google-common-protos"), // ApacheV2
-        "org.apache.avro" % "avro" % "1.9.2",
-        "org.apache.arrow" % "arrow-vector" % "3.0.0",
+        "org.apache.avro" % "avro" % "1.9.2" % "provided",
+        "org.apache.arrow" % "arrow-vector" % "3.0.0" % "provided",
         "com.thesamet.scalapb.common-protos" %% "proto-google-common-protos-scalapb_0.10" % "1.17.0-0",
         "com.thesamet.scalapb.common-protos" %% "proto-google-common-protos-scalapb_0.10" % "1.17.0-0" % "protobuf",
         "io.grpc" % "grpc-auth" % "1.28.0",

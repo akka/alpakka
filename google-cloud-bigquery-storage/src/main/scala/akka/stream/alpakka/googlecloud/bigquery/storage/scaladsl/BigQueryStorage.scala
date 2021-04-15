@@ -28,7 +28,7 @@ import scala.concurrent.{Future, Promise}
 /**
  * Google BigQuery Storage Api Akka Stream operator factory.
  */
-object GoogleBigQueryStorage {
+object BigQueryStorage {
 
   private val RequestParamsHeader = "x-goog-request-params"
 

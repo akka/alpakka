@@ -16,7 +16,7 @@ import scala.compat.java8.FutureConverters.FutureOps
 /**
  * Google BigQuery Storage Api Akka Stream operator factory.
  */
-object GoogleBigQueryStorage {
+object BigQueryStorage {
 
   /**
    * Create a source that contains a number of sources, one for each stream, or section of the table data.
@@ -91,7 +91,7 @@ object GoogleBigQueryStorage {
       readOptions: Option[TableReadOptions],
       maxNumStreams: Int
   ): Source[Source[GenericRecord, NotUsed], CompletionStage[NotUsed]] =
-    scstorage.GoogleBigQueryStorage
+    scstorage.BigQueryStorage
       .read(projectId, datasetId, tableId, readOptions.map(_.asScala()), maxNumStreams)
       .map(s => s.asJava)
       .asJava

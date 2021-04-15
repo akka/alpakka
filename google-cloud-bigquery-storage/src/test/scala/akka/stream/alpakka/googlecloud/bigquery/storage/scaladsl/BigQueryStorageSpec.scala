@@ -13,7 +13,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class GoogleBigQueryStorageSpec
+class BigQueryStorageSpec
     extends BigQueryStorageSpecBase(21001)
     with AnyWordSpecLike
     with BeforeAndAfterAll
@@ -22,7 +22,7 @@ class GoogleBigQueryStorageSpec
 
   "GoogleBigQuery.read" should {
     "stream the results for a query, deserializing into generic records" in {
-      GoogleBigQueryStorage
+      BigQueryStorage
         .read(Project, Dataset, Table, None)
         .withAttributes(mockBQReader())
         .flatMapMerge(100, identity)
@@ -31,7 +31,7 @@ class GoogleBigQueryStorageSpec
     }
 
     "filter results based on the row restriction configured" in {
-      GoogleBigQueryStorage
+      BigQueryStorage
         .read(Project, Dataset, Table, Some(TableReadOptions(rowRestriction = "true = false")))
         .withAttributes(mockBQReader())
         .flatMapMerge(100, identity)
@@ -40,7 +40,7 @@ class GoogleBigQueryStorageSpec
     }
 
     "apply configured column restrictions" in {
-      GoogleBigQueryStorage
+      BigQueryStorage
         .read(Project, Dataset, Table, Some(TableReadOptions(List("col1"))))
         .withAttributes(mockBQReader())
         .flatMapMerge(100, identity)
@@ -50,7 +50,7 @@ class GoogleBigQueryStorageSpec
 
     "restrict the number of streams/Sources returned by the Storage API, if specified" in {
       val maxStreams = 5
-      GoogleBigQueryStorage
+      BigQueryStorage
         .read(Project, Dataset, Table, maxNumStreams = maxStreams)
         .withAttributes(mockBQReader())
         .runFold(0)((acc, _) => acc + 1)
@@ -58,7 +58,7 @@ class GoogleBigQueryStorageSpec
     }
 
     "fail if unable to connect to bigquery" in {
-      val error = GoogleBigQueryStorage
+      val error = BigQueryStorage
         .read(Project, Dataset, Table, None)
         .withAttributes(mockBQReader(port = 1234))
         .runWith(Sink.ignore)
@@ -72,7 +72,7 @@ class GoogleBigQueryStorageSpec
     }
 
     "fail if the project is incorrect" in {
-      val error = GoogleBigQueryStorage
+      val error = BigQueryStorage
         .read("NOT A PROJECT", Dataset, Table, None)
         .withAttributes(mockBQReader())
         .runWith(Sink.ignore)
@@ -86,7 +86,7 @@ class GoogleBigQueryStorageSpec
     }
 
     "fail if the dataset is incorrect" in {
-      val error = GoogleBigQueryStorage
+      val error = BigQueryStorage
         .read(Project, "NOT A DATASET", Table, None)
         .withAttributes(mockBQReader())
         .runWith(Sink.ignore)
@@ -100,7 +100,7 @@ class GoogleBigQueryStorageSpec
     }
 
     "fail if the table is incorrect" in {
-      val error = GoogleBigQueryStorage
+      val error = BigQueryStorage
         .read(Project, Dataset, "NOT A TABLE", None)
         .withAttributes(mockBQReader())
         .runWith(Sink.ignore)

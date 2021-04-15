@@ -5,10 +5,7 @@
 package akka.stream.alpakka.googlecloud.bigquery.storage.javadsl;
 
 import akka.Done;
-import akka.actor.Terminated;
-import akka.stream.ActorMaterializer;
 import akka.stream.Attributes;
-import akka.stream.Materializer;
 import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryStorageSettings;
 import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryStorageSpecBase;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
@@ -18,10 +15,8 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.*;
-import scala.concurrent.Future;
 
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -29,14 +24,14 @@ import java.util.concurrent.TimeoutException;
 
 import static org.junit.Assert.*;
 
-public class GoogleBigQueryStorageSpec extends BigQueryStorageSpecBase {
+public class BigQueryStorageSpec extends BigQueryStorageSpecBase {
   @Rule public final LogCapturingJunit4 logCapturing = new LogCapturingJunit4();
 
   @Test
   public void shouldReturnGenericRecordForAvroQuery()
       throws InterruptedException, ExecutionException, TimeoutException {
     CompletionStage<List<GenericRecord>> genericRecords =
-        GoogleBigQueryStorage.read(Project(), Dataset(), Table())
+        BigQueryStorage.read(Project(), Dataset(), Table())
             .withAttributes(mockBQReader())
             .flatMapMerge(100, i -> i)
             .runWith(Sink.seq(), system());
@@ -52,7 +47,7 @@ public class GoogleBigQueryStorageSpec extends BigQueryStorageSpecBase {
     ReadSession.TableReadOptions readOptions =
         ReadSession.TableReadOptions.newBuilder().setRowRestriction("true = false").build();
     CompletionStage<List<GenericRecord>> genericRecords =
-        GoogleBigQueryStorage.read(Project(), Dataset(), Table(), readOptions)
+        BigQueryStorage.read(Project(), Dataset(), Table(), readOptions)
             .withAttributes(mockBQReader())
             .flatMapMerge(100, i -> i)
             .runWith(Sink.seq(), system());
@@ -69,7 +64,7 @@ public class GoogleBigQueryStorageSpec extends BigQueryStorageSpecBase {
     ReadSession.TableReadOptions readOptions =
         ReadSession.TableReadOptions.newBuilder().addSelectedFields("col1").build();
     CompletionStage<List<GenericRecord>> genericRecords =
-        GoogleBigQueryStorage.read(Project(), Dataset(), Table(), readOptions)
+        BigQueryStorage.read(Project(), Dataset(), Table(), readOptions)
             .withAttributes(mockBQReader())
             .flatMapMerge(100, i -> i)
             .runWith(Sink.seq(), system());
@@ -85,7 +80,7 @@ public class GoogleBigQueryStorageSpec extends BigQueryStorageSpecBase {
       throws InterruptedException, ExecutionException, TimeoutException {
     Integer maxStreams = 5;
     CompletionStage<Integer> numStreams =
-        GoogleBigQueryStorage.read(Project(), Dataset(), Table(), maxStreams)
+        BigQueryStorage.read(Project(), Dataset(), Table(), maxStreams)
             .withAttributes(mockBQReader())
             .runFold(0, (acc, stream) -> acc + 1, system());
 
@@ -99,7 +94,7 @@ public class GoogleBigQueryStorageSpec extends BigQueryStorageSpecBase {
   public void shouldFailIfBigQueryUnavailable()
       throws InterruptedException, ExecutionException, TimeoutException {
     CompletionStage<Done> result =
-        GoogleBigQueryStorage.read(Project(), Dataset(), Table())
+        BigQueryStorage.read(Project(), Dataset(), Table())
             .withAttributes(mockBQReader(1))
             .runWith(Sink.ignore(), system());
 
@@ -115,7 +110,7 @@ public class GoogleBigQueryStorageSpec extends BigQueryStorageSpecBase {
   public void shouldFailIfProjectIncorrect()
       throws InterruptedException, ExecutionException, TimeoutException {
     CompletionStage<Done> result =
-        GoogleBigQueryStorage.read("NOT A PROJECT", Dataset(), Table())
+        BigQueryStorage.read("NOT A PROJECT", Dataset(), Table())
             .withAttributes(mockBQReader())
             .runWith(Sink.ignore(), system());
 
@@ -132,7 +127,7 @@ public class GoogleBigQueryStorageSpec extends BigQueryStorageSpecBase {
   public void shouldFailIfDatasetIncorrect()
       throws InterruptedException, ExecutionException, TimeoutException {
     CompletionStage<Done> result =
-        GoogleBigQueryStorage.read(Project(), "NOT A DATASET", Table())
+        BigQueryStorage.read(Project(), "NOT A DATASET", Table())
             .withAttributes(mockBQReader())
             .runWith(Sink.ignore(), system());
 
@@ -149,7 +144,7 @@ public class GoogleBigQueryStorageSpec extends BigQueryStorageSpecBase {
   public void shouldFailIfTableIncorrect()
       throws InterruptedException, ExecutionException, TimeoutException {
     CompletionStage<Done> result =
-        GoogleBigQueryStorage.read(Project(), Dataset(), "NOT A TABLE")
+        BigQueryStorage.read(Project(), Dataset(), "NOT A TABLE")
             .withAttributes(mockBQReader())
             .runWith(Sink.ignore(), system());
 

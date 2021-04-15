@@ -5,17 +5,14 @@
 package akka.stream.alpakka.googlecloud.bigquery.storage
 
 import akka.actor.ClassicActorSystemProvider
-import akka.stream.alpakka.googlecloud.bigquery.storage.impl.GrpcCredentials
+import akka.stream.alpakka.google.GoogleSettings
 import com.typesafe.config.Config
-import io.grpc.CallCredentials
-
-import scala.util.Try
 
 final class BigQueryStorageSettings private (
     val host: String,
     val port: Int,
     val rootCa: Option[String] = None,
-    val callCredentials: Option[CallCredentials] = None
+    val googleSettings: Option[GoogleSettings] = None
 ) {
 
   /**
@@ -38,21 +35,21 @@ final class BigQueryStorageSettings private (
   /**
    * Credentials that are going to be used for gRPC call authorization.
    */
-  def withCallCredentials(callCredentials: CallCredentials): BigQueryStorageSettings =
-    copy(callCredentials = Some(callCredentials))
+  def withGoogleSettings(googleSettings: GoogleSettings): BigQueryStorageSettings =
+    copy(googleSettings = Some(googleSettings))
 
   private def copy(host: String = host,
                    port: Int = port,
                    rootCa: Option[String] = rootCa,
-                   callCredentials: Option[CallCredentials] = callCredentials) =
-    new BigQueryStorageSettings(host, port, rootCa, callCredentials)
+                   googleSettings: Option[GoogleSettings] = googleSettings) =
+    new BigQueryStorageSettings(host, port, rootCa, googleSettings)
 
   override def toString: String =
     "BigQueryStorageSettings(" +
     s"host=$host, " +
     s"port=$port, " +
     s"rootCa=$rootCa, " +
-    s"callCredentials=$callCredentials"
+    s"googleSettings=$googleSettings"
   ")"
 }
 
@@ -68,7 +65,7 @@ object BigQueryStorageSettings {
   /**
    * Create settings from config instance.
    */
-  def apply(config: Config): BigQueryStorageSettings = {
+  def apply(config: Config)(implicit system: ClassicActorSystemProvider): BigQueryStorageSettings = {
     val host = config.getString("host")
     val port = config.getInt("port")
 
@@ -79,16 +76,17 @@ object BigQueryStorageSettings {
         case fileName if fileName != "none" => bigQueryConfig.withRootCa(fileName)
         case _ => bigQueryConfig
       }
-    val setCallCredentials = (bigQueryConfig: BigQueryStorageSettings) =>
-      config.getString("callCredentials") match {
-        case "google-application-default" =>
-          Try(GrpcCredentials.applicationDefault())
-            .map(bigQueryConfig.withCallCredentials)
-            .getOrElse(bigQueryConfig)
+
+    val setGoogleSettings = (bigQueryConfig: BigQueryStorageSettings) => {
+      config.hasPath("alpakka.google") match {
+        case boolean: Boolean =>
+          val googleSettings = GoogleSettings.apply(config)
+          bigQueryConfig.withGoogleSettings(googleSettings)
         case _ => bigQueryConfig
       }
+    }
 
-    Seq(setRootCa, setCallCredentials).foldLeft(bigQueryConfig) {
+    Seq(setRootCa, setGoogleSettings).foldLeft(bigQueryConfig) {
       case (c, f) => f(c)
     }
   }
@@ -97,7 +95,9 @@ object BigQueryStorageSettings {
    * Create settings from ActorSystem's config.
    */
   def apply(system: ClassicActorSystemProvider): BigQueryStorageSettings =
-    BigQueryStorageSettings(system.classicSystem.settings.config.getConfig("alpakka.google.cloud.bigquery.grpc"))
+    BigQueryStorageSettings(system.classicSystem.settings.config.getConfig("alpakka.google.cloud.bigquery.grpc"))(
+      system
+    )
 
   /**
    * Java API
@@ -113,8 +113,8 @@ object BigQueryStorageSettings {
    *
    * Create settings from config instance.
    */
-  def create(config: Config): BigQueryStorageSettings =
-    BigQueryStorageSettings(config)
+  def create(config: Config, system: ClassicActorSystemProvider): BigQueryStorageSettings =
+    BigQueryStorageSettings(config)(system)
 
   /**
    * Java API

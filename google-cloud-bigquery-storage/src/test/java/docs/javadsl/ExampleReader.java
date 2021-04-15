@@ -10,7 +10,7 @@ import akka.stream.ActorMaterializer;
 // #read-all
 import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryStorageSettings;
 import akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.BigQueryStorageAttributes;
-import akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.GoogleBigQueryStorage;
+import akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.BigQueryStorage;
 import akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.GrpcBigQueryStorageReader;
 import akka.stream.javadsl.Source;
 import com.google.cloud.bigquery.storage.v1.ReadSession.TableReadOptions;
@@ -26,7 +26,7 @@ public class ExampleReader {
 
   // #read-all
   Source<Source<GenericRecord, NotUsed>, CompletionStage<NotUsed>> sourceOfSources =
-      GoogleBigQueryStorage.read("projectId", "datasetId", "tableId");
+      BigQueryStorage.read("projectId", "datasetId", "tableId");
   // #read-all
 
   // #read-options
@@ -37,18 +37,18 @@ public class ExampleReader {
           .setRowRestriction("intField >= 5")
           .build();
   Source<Source<GenericRecord, NotUsed>, CompletionStage<NotUsed>> sourceOfSourcesFiltered =
-      GoogleBigQueryStorage.read("projectId", "datasetId", "tableId", readOptions);
+      BigQueryStorage.read("projectId", "datasetId", "tableId", readOptions);
   // #read-options
 
   // #read-sequential
   Source<GenericRecord, CompletionStage<NotUsed>> sequentialSource =
-      GoogleBigQueryStorage.read("projectId", "datasetId", "tableId").flatMapConcat(s -> s);
+      BigQueryStorage.read("projectId", "datasetId", "tableId").flatMapConcat(s -> s);
   // #read-sequential
 
   // #read-parallel
   Integer readParallelism = 10;
   Source<GenericRecord, CompletionStage<NotUsed>> parallelSource =
-      GoogleBigQueryStorage.read("projectId", "datasetId", "tableId")
+      BigQueryStorage.read("projectId", "datasetId", "tableId")
           .flatMapMerge(readParallelism, s -> s);
   // #read-parallel
 
@@ -56,7 +56,7 @@ public class ExampleReader {
   GrpcBigQueryStorageReader reader =
       GrpcBigQueryStorageReader.create(BigQueryStorageSettings.apply("localhost", 8000), sys);
   Source<Source<GenericRecord, NotUsed>, CompletionStage<NotUsed>> sourceForReader =
-      GoogleBigQueryStorage.read("projectId", "datasetId", "tableId")
+      BigQueryStorage.read("projectId", "datasetId", "tableId")
           .withAttributes(BigQueryStorageAttributes.reader(reader));
   // #attributes
 }
