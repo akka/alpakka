@@ -59,6 +59,8 @@ class PravegaGraphSpec extends PravegaBaseSpec with Repeated {
         .map(i => f"$i%02d_event")
         .runWith(Pravega.sink(scope, stream2))
 
+      Thread.sleep(3000)
+
       Source(1 to nEvent)
         .map(i => f"$i%02d_event")
         .runWith(Pravega.sink(scope, stream1)(writerSettingsWithRoutingKey))
