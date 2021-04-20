@@ -92,7 +92,7 @@ object BigQueryStorage {
       maxNumStreams: Int
   ): Source[Source[GenericRecord, NotUsed], CompletionStage[NotUsed]] =
     scstorage.BigQueryStorage
-      .read(projectId, datasetId, tableId, readOptions.map(_.asScala()), maxNumStreams)
+      .readAvroOnly(projectId, datasetId, tableId, readOptions.map(_.asScala()), maxNumStreams)
       .map(s => s.asJava)
       .asJava
       .mapMaterializedValue(_.toJava)

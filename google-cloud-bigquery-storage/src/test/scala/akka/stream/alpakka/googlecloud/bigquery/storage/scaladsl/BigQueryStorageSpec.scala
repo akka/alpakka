@@ -23,7 +23,7 @@ class BigQueryStorageSpec
   "GoogleBigQuery.read" should {
     "stream the results for a query, deserializing into generic records" in {
       BigQueryStorage
-        .read(Project, Dataset, Table, None)
+        .readAvroOnly(Project, Dataset, Table, None)
         .withAttributes(mockBQReader())
         .flatMapMerge(100, identity)
         .runWith(Sink.seq)
@@ -32,7 +32,7 @@ class BigQueryStorageSpec
 
     "filter results based on the row restriction configured" in {
       BigQueryStorage
-        .read(Project, Dataset, Table, Some(TableReadOptions(rowRestriction = "true = false")))
+        .readAvroOnly(Project, Dataset, Table, Some(TableReadOptions(rowRestriction = "true = false")))
         .withAttributes(mockBQReader())
         .flatMapMerge(100, identity)
         .runWith(Sink.seq)
@@ -41,7 +41,7 @@ class BigQueryStorageSpec
 
     "apply configured column restrictions" in {
       BigQueryStorage
-        .read(Project, Dataset, Table, Some(TableReadOptions(List("col1"))))
+        .readAvroOnly(Project, Dataset, Table, Some(TableReadOptions(List("col1"))))
         .withAttributes(mockBQReader())
         .flatMapMerge(100, identity)
         .runWith(Sink.seq)
@@ -51,7 +51,7 @@ class BigQueryStorageSpec
     "restrict the number of streams/Sources returned by the Storage API, if specified" in {
       val maxStreams = 5
       BigQueryStorage
-        .read(Project, Dataset, Table, maxNumStreams = maxStreams)
+        .readAvroOnly(Project, Dataset, Table, maxNumStreams = maxStreams)
         .withAttributes(mockBQReader())
         .runFold(0)((acc, _) => acc + 1)
         .futureValue shouldBe maxStreams
@@ -59,7 +59,7 @@ class BigQueryStorageSpec
 
     "fail if unable to connect to bigquery" in {
       val error = BigQueryStorage
-        .read(Project, Dataset, Table, None)
+        .readAvroOnly(Project, Dataset, Table, None)
         .withAttributes(mockBQReader(port = 1234))
         .runWith(Sink.ignore)
         .failed
@@ -73,7 +73,7 @@ class BigQueryStorageSpec
 
     "fail if the project is incorrect" in {
       val error = BigQueryStorage
-        .read("NOT A PROJECT", Dataset, Table, None)
+        .readAvroOnly("NOT A PROJECT", Dataset, Table, None)
         .withAttributes(mockBQReader())
         .runWith(Sink.ignore)
         .failed
@@ -87,7 +87,7 @@ class BigQueryStorageSpec
 
     "fail if the dataset is incorrect" in {
       val error = BigQueryStorage
-        .read(Project, "NOT A DATASET", Table, None)
+        .readAvroOnly(Project, "NOT A DATASET", Table, None)
         .withAttributes(mockBQReader())
         .runWith(Sink.ignore)
         .failed
@@ -101,7 +101,7 @@ class BigQueryStorageSpec
 
     "fail if the table is incorrect" in {
       val error = BigQueryStorage
-        .read(Project, Dataset, "NOT A TABLE", None)
+        .readAvroOnly(Project, Dataset, "NOT A TABLE", None)
         .withAttributes(mockBQReader())
         .runWith(Sink.ignore)
         .failed

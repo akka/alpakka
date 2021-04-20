@@ -10,8 +10,6 @@ import akka.dispatch.ExecutionContexts
 import akka.stream.alpakka.googlecloud.bigquery.storage.impl.{ArrowSource, AvroDecoder, AvroSource, SDKClientSource}
 import akka.stream.scaladsl.{Flow, Source}
 import akka.stream.Attributes
-import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryRecord
-import com.google.cloud.bigquery.storage.v1.arrow.ArrowRecordBatch
 import com.google.cloud.bigquery.storage.v1.avro.AvroRows
 import com.google.cloud.bigquery.storage.v1.storage.{
   BigQueryReadClient,
@@ -31,58 +29,6 @@ import scala.concurrent.{Future, Promise}
 object BigQueryStorage {
 
   private val RequestParamsHeader = "x-goog-request-params"
-
-  def readAvro(projectId: String,
-               datasetId: String,
-               tableId: String,
-               readOptions: Option[TableReadOptions] = None,
-               maxNumStreams: Int = 0): Source[(ReadSession.Schema, AvroRows), Future[NotUsed]] =
-    Source.fromMaterializer { (mat, attr) =>
-      val client = reader(mat.system, attr).client
-      readSession(client, projectId, datasetId, tableId, readOptions, maxNumStreams)
-        .map(session => {
-          session.schema match {
-            case ReadSession.Schema.AvroSchema(_) => AvroSource.read(client, session)
-            case other => throw new IllegalArgumentException(s"Only Avro format is supported, received: $other")
-          }
-        })
-        .flatMapConcat(a => a)
-    }
-
-  def readArrow(projectId: String,
-                datasetId: String,
-                tableId: String,
-                readOptions: Option[TableReadOptions] = None,
-                maxNumStreams: Int = 0): Source[(ReadSession.Schema, ArrowRecordBatch), Future[NotUsed]] =
-    Source.fromMaterializer { (mat, attr) =>
-      val client = reader(mat.system, attr).client
-      readSession(client, projectId, datasetId, tableId, readOptions, maxNumStreams)
-        .map(session => {
-          session.schema match {
-            case ReadSession.Schema.ArrowSchema(_) => ArrowSource.read(client, session)
-            case other => throw new IllegalArgumentException(s"Only Arrow format is supported, received: $other")
-          }
-        })
-        .flatMapConcat(a => a)
-    }
-
-  def readRecords(projectId: String,
-                  datasetId: String,
-                  tableId: String,
-                  readOptions: Option[TableReadOptions] = None,
-                  maxNumStreams: Int = 0): Source[List[BigQueryRecord], Future[NotUsed]] = Source.fromMaterializer {
-    (mat, attr) =>
-      val client = reader(mat.system, attr).client
-      readSession(client, projectId, datasetId, tableId, readOptions, maxNumStreams)
-        .map(session => {
-          session.schema match {
-            case ReadSession.Schema.AvroSchema(_) => AvroSource.readRecords(client, session)
-            case ReadSession.Schema.ArrowSchema(_) => ArrowSource.readRecords(client, session)
-            case other => throw new IllegalArgumentException(s"Avro, Arrow formats are supported, received: $other")
-          }
-        })
-        .flatMapConcat(a => a)
-  }
 
   def readRaw(projectId: String,
               datasetId: String,
@@ -109,11 +55,12 @@ object BigQueryStorage {
    *                      Must be non-negative. The number of streams may be lower than the requested number, depending on the amount parallelism that is reasonable for the table.
    *                      Error will be returned if the max count is greater than the current system max limit of 1,000.
    */
-  def read(projectId: String,
-           datasetId: String,
-           tableId: String,
-           readOptions: Option[TableReadOptions] = None,
-           maxNumStreams: Int = 0): Source[Source[GenericRecord, NotUsed], Future[NotUsed]] =
+    @Deprecated
+  def readAvroOnly(projectId: String,
+                   datasetId: String,
+                   tableId: String,
+                   readOptions: Option[TableReadOptions] = None,
+                   maxNumStreams: Int = 0): Source[Source[GenericRecord, NotUsed], Future[NotUsed]] =
     Source.fromMaterializer { (mat, attr) =>
       val client = reader(mat.system, attr).client
       val schemaS = Promise[String]
@@ -146,12 +93,12 @@ object BigQueryStorage {
         )
     }
 
-  private def readSession(client: BigQueryReadClient,
-                          projectId: String,
-                          datasetId: String,
-                          tableId: String,
-                          readOptions: Option[TableReadOptions] = None,
-                          maxNumStreams: Int = 0) =
+  private[scaladsl] def readSession(client: BigQueryReadClient,
+                                    projectId: String,
+                                    datasetId: String,
+                                    tableId: String,
+                                    readOptions: Option[TableReadOptions] = None,
+                                    maxNumStreams: Int = 0) =
     Source
       .future {
         val table = s"projects/$projectId/datasets/$datasetId/tables/$tableId"
@@ -167,7 +114,7 @@ object BigQueryStorage {
           )
       }
 
-  private def reader(system: ClassicActorSystemProvider, attr: Attributes) =
+  private[scaladsl] def reader(system: ClassicActorSystemProvider, attr: Attributes) =
     attr
       .get[BigQueryStorageAttributes.BigQueryStorageReader]
       .map(_.client)
