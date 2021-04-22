@@ -30,14 +30,15 @@ object BigQueryStorage {
 
   private val RequestParamsHeader = "x-goog-request-params"
 
-  def readRaw(projectId: String,
-              datasetId: String,
-              tableId: String,
-              readOptions: Option[TableReadOptions] = None,
-              maxNumStreams: Int = 0): Source[(ReadSession.Schema, ReadRowsResponse.Rows), Future[NotUsed]] =
+  def read(projectId: String,
+           datasetId: String,
+           tableId: String,
+           dataFormat: DataFormat,
+           readOptions: Option[TableReadOptions] = None,
+           maxNumStreams: Int = 0): Source[(ReadSession.Schema, ReadRowsResponse.Rows), Future[NotUsed]] =
     Source.fromMaterializer { (mat, attr) =>
       val client = reader(mat.system, attr).client
-      readSession(client, projectId, datasetId, tableId, readOptions, maxNumStreams)
+      readSession(client, projectId, datasetId, tableId, dataFormat, readOptions, maxNumStreams)
         .map(session => SDKClientSource.read(client, session).map((session.schema, _)))
         .flatMapConcat(a => a)
     }
@@ -55,7 +56,7 @@ object BigQueryStorage {
    *                      Must be non-negative. The number of streams may be lower than the requested number, depending on the amount parallelism that is reasonable for the table.
    *                      Error will be returned if the max count is greater than the current system max limit of 1,000.
    */
-    @Deprecated
+  @Deprecated
   def readAvroOnly(projectId: String,
                    datasetId: String,
                    tableId: String,
@@ -72,7 +73,7 @@ object BigQueryStorage {
           }(ExecutionContexts.parasitic)
       )
 
-      readSession(client, projectId, datasetId, tableId, readOptions, maxNumStreams)
+      readSession(client, projectId, datasetId, tableId, DataFormat.AVRO, readOptions, maxNumStreams)
         .mapConcat { session =>
           session.schema match {
             case ReadSession.Schema.AvroSchema(avroSchema) => schemaS.success(avroSchema.schema)
@@ -97,6 +98,7 @@ object BigQueryStorage {
                                     projectId: String,
                                     datasetId: String,
                                     tableId: String,
+                                    dataFormat: DataFormat,
                                     readOptions: Option[TableReadOptions] = None,
                                     maxNumStreams: Int = 0) =
     Source
@@ -108,7 +110,7 @@ object BigQueryStorage {
           .invoke(
             CreateReadSessionRequest(
               parent = s"projects/$projectId",
-              Some(ReadSession(dataFormat = DataFormat.AVRO, table = table, readOptions = readOptions)),
+              Some(ReadSession(dataFormat = dataFormat, table = table, readOptions = readOptions)),
               maxNumStreams
             )
           )
@@ -120,3 +122,5 @@ object BigQueryStorage {
       .map(_.client)
       .getOrElse(GrpcBigQueryStorageReaderExt()(system).reader)
 }
+
+//projects/mock-proj/datasets/mock-dataset/tables/mock-table

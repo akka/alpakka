@@ -7,6 +7,7 @@ package akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl
 import akka.stream.alpakka.googlecloud.bigquery.storage.{BigQueryStorageSettings, BigQueryStorageSpecBase}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Sink
+import com.google.cloud.bigquery.storage.v1.stream.DataFormat
 import com.google.cloud.bigquery.storage.v1.stream.ReadSession.TableReadOptions
 import io.grpc.{Status, StatusRuntimeException}
 import org.scalatest.BeforeAndAfterAll
@@ -21,6 +22,18 @@ class BigQueryStorageSpec
     with LogCapturing {
 
   "GoogleBigQuery.read" should {
+    "stream the results for a query" in {
+      val seq = BigQueryStorage
+        .read(Project, Dataset, Table, DataFormat.AVRO, None)
+        .withAttributes(mockBQReader())
+        .runWith(Sink.seq)
+        .futureValue
+
+      println("wut wut")
+    }
+  }
+
+  "GoogleBigQuery.readAvroOnly" should {
     "stream the results for a query, deserializing into generic records" in {
       BigQueryStorage
         .readAvroOnly(Project, Dataset, Table, None)
