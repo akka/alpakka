@@ -24,7 +24,7 @@ object BigQueryArrowStorage {
                 maxNumStreams: Int = 0): Source[(ReadSession.Schema, ArrowRecordBatch), Future[NotUsed]] =
     Source.fromMaterializer { (mat, attr) =>
       val client = reader(mat.system, attr).client
-      readSession(client, projectId, datasetId, tableId, DataFormat.ARROW, readOptions , maxNumStreams)
+      readSession(client, projectId, datasetId, tableId, DataFormat.ARROW, readOptions, maxNumStreams)
         .map(session => {
           session.schema match {
             case ReadSession.Schema.ArrowSchema(_) => ArrowSource.read(client, session)
@@ -41,7 +41,7 @@ object BigQueryArrowStorage {
                   maxNumStreams: Int = 0): Source[List[BigQueryRecord], Future[NotUsed]] = Source.fromMaterializer {
     (mat, attr) =>
       val client = reader(mat.system, attr).client
-      readSession(client, projectId, datasetId, tableId,DataFormat.ARROW, readOptions, maxNumStreams)
+      readSession(client, projectId, datasetId, tableId, DataFormat.ARROW, readOptions, maxNumStreams)
         .map(session => {
           session.schema match {
             case ReadSession.Schema.ArrowSchema(_) => ArrowSource.readRecords(client, session)

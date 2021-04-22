@@ -14,9 +14,7 @@ import com.google.cloud.bigquery.storage.v1.storage.{BigQueryReadClient => Scala
 /**
  * Holds the gRPC scala reader client instance.
  */
-final class GrpcBigQueryStorageReader private (settings: BigQueryStorageSettings,
-                                               sys: ClassicActorSystemProvider,
-                                               mat: Materializer) {
+final class GrpcBigQueryStorageReader private (settings: BigQueryStorageSettings, sys: ClassicActorSystemProvider) {
 
   @ApiMayChange
   final val client = ScalaBigQueryReadClient(AkkaGrpcSettings.fromBigQuerySettings(settings)(sys))(sys)
@@ -26,11 +24,10 @@ final class GrpcBigQueryStorageReader private (settings: BigQueryStorageSettings
 
 object GrpcBigQueryStorageReader {
 
-  def apply(settings: BigQueryStorageSettings)(implicit sys: ClassicActorSystemProvider,
-                                               mat: Materializer): GrpcBigQueryStorageReader =
-    new GrpcBigQueryStorageReader(settings, sys, mat)
+  def apply(settings: BigQueryStorageSettings)(implicit sys: ClassicActorSystemProvider): GrpcBigQueryStorageReader =
+    new GrpcBigQueryStorageReader(settings, sys)
 
-  def apply()(implicit sys: ClassicActorSystemProvider, mat: Materializer): GrpcBigQueryStorageReader =
+  def apply()(implicit sys: ClassicActorSystemProvider): GrpcBigQueryStorageReader =
     apply(BigQueryStorageSettings(sys))
 }
 
@@ -38,9 +35,7 @@ object GrpcBigQueryStorageReader {
  * An extension that manages a single gRPC scala reader client per actor system.
  */
 final class GrpcBigQueryStorageReaderExt private (sys: ExtendedActorSystem) extends Extension {
-  private[this] val systemMaterializer = ActorMaterializer()(sys)
-
-  implicit val reader = GrpcBigQueryStorageReader()(sys, systemMaterializer)
+  implicit val reader = GrpcBigQueryStorageReader()(sys)
 }
 
 object GrpcBigQueryStorageReaderExt extends ExtensionId[GrpcBigQueryStorageReaderExt] with ExtensionIdProvider {
