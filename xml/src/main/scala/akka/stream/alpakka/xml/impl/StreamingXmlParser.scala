@@ -26,12 +26,13 @@ import scala.annotation.tailrec
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler {
+      private var started: Boolean = false
 
       import javax.xml.stream.XMLStreamConstants
 
       private val factory: AsyncXMLInputFactory = new InputFactoryImpl()
       configureFactory(factory)
-      private val parser: AsyncXMLStreamReader[AsyncByteArrayFeeder] = factory.createAsyncFor(Array.empty)
+      private val parser: AsyncXMLStreamReader[AsyncByteArrayFeeder] = factory.createAsyncForByteArray()
       if (ignoreInvalidChars) {
         parser.getConfig.setIllegalCharHandler(new ReplacingIllegalCharHandler(0))
       }
@@ -55,11 +56,13 @@ import scala.annotation.tailrec
       @tailrec private def advanceParser(): Unit =
         if (parser.hasNext) {
           parser.next() match {
-            case AsyncXMLStreamReader.EVENT_INCOMPLETE =>
-              if (!isClosed(in)) pull(in)
-              else failStage(new IllegalStateException("Stream finished before event was fully parsed."))
+            case AsyncXMLStreamReader.EVENT_INCOMPLETE if isClosed(in) && !started => completeStage()
+            case AsyncXMLStreamReader.EVENT_INCOMPLETE if isClosed(in) =>
+              failStage(new IllegalStateException("Stream finished before event was fully parsed."))
+            case AsyncXMLStreamReader.EVENT_INCOMPLETE if !isClosed(in) => pull(in)
 
             case XMLStreamConstants.START_DOCUMENT =>
+              started = true
               push(out, StartDocument)
 
             case XMLStreamConstants.END_DOCUMENT =>
