@@ -21,18 +21,6 @@ class BigQueryStorageSpec
     with Matchers
     with LogCapturing {
 
-  "GoogleBigQuery.read" should {
-    "stream the results for a query" in {
-      val seq = BigQueryStorage
-        .read(Project, Dataset, Table, DataFormat.AVRO, None)
-        .withAttributes(mockBQReader())
-        .runWith(Sink.seq)
-        .futureValue
-
-      println("wut wut")
-    }
-  }
-
   "GoogleBigQuery.readAvroOnly" should {
     "stream the results for a query, deserializing into generic records" in {
       BigQueryStorage
