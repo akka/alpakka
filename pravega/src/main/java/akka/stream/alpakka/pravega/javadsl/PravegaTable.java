@@ -6,6 +6,7 @@ package akka.stream.alpakka.pravega.javadsl;
 
 import akka.Done;
 import akka.NotUsed;
+import akka.annotation.ApiMayChange;
 import akka.japi.Pair;
 import akka.stream.alpakka.pravega.*;
 import akka.stream.alpakka.pravega.impl.PravegaTableSource;
@@ -23,6 +24,7 @@ import io.pravega.client.tables.TableEntry;
 
 import scala.compat.java8.functionConverterImpls.FromJavaFunction;
 
+@ApiMayChange
 public class PravegaTable {
 
   private static <K, V> Pair<K, V> toPair(TableEntry<K, V> entry) {
@@ -76,10 +78,13 @@ public class PravegaTable {
    * is open.
    */
   public static <K, V> Source<Pair<K, V>, CompletionStage<Done>> source(
-      String scope, String tableName, String keyFamily, TableSettings<K, V> tableSettings) {
+      String scope,
+      String tableName,
+      String keyFamily,
+      TableReaderSettings<K, V> tableReaderSettings) {
     return Source.fromGraph(
             new PravegaTableSource<>(
-                PravegaTable::toPair, scope, tableName, keyFamily, tableSettings))
+                PravegaTable::toPair, scope, tableName, keyFamily, tableReaderSettings))
         .mapMaterializedValue(FutureConverters::toJava);
   }
 }

@@ -4,13 +4,10 @@
 
 package akka.stream.alpakka.pravega
 
-import scala.language.postfixOps
-
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import io.pravega.client.stream.impl.UTF8StringSerializer
 
 import scala.concurrent.Await
-import scala.concurrent.duration.DurationInt
 
 import io.pravega.client.stream.Serializer
 
@@ -44,7 +41,7 @@ class PravegaKVTableSpec extends PravegaBaseSpec with Repeated {
 
   "Pravega connector" should {
 
-    "write and read in KVP table" in {
+    "write and read in KVP table with keyFamily = \"test\" " in {
 
       val scope = newScope()
 
@@ -58,11 +55,11 @@ class PravegaKVTableSpec extends PravegaBaseSpec with Repeated {
         .map(id => (id, s"name_$id"))
         .runWith(sink)
 
-      Await.ready(fut, 10 seconds)
+      Await.ready(fut, remainingOrDefault)
 
-      val tableSettings = TableSettingsBuilder
-        .apply[Int, String](system.settings.config.getConfig(TableSettingsBuilder.configPath))
-        .withKVSerializers(intSerializer, serializer)
+      val tableSettings = TableReaderSettingsBuilder
+        .apply[Int, String](system.settings.config.getConfig(TableReaderSettingsBuilder.configPath))
+        .withSerializers(intSerializer, serializer)
 
       val readingDone = PravegaTable
         .source(scope, tableName, "test", tableSettings)

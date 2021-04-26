@@ -14,12 +14,11 @@ import akka.event.Logging
 import scala.concurrent.{Future, Promise}
 import scala.util.control.NonFatal
 import akka.stream.ActorAttributes
-import akka.stream.alpakka.pravega.TableSettings
+import akka.stream.alpakka.pravega.TableReaderSettings
 import io.pravega.client.KeyValueTableFactory
 import io.pravega.client.tables.{IteratorItem, KeyValueTable, KeyValueTableClientConfiguration, TableEntry}
 
 import scala.collection.mutable
-
 import java.util.concurrent.Semaphore
 import io.pravega.common.util.AsyncIterator
 @InternalApi private final class PravegaTableSourceStageLogic[K, V, KVPair](
@@ -28,7 +27,7 @@ import io.pravega.common.util.AsyncIterator
     val scope: String,
     tableName: String,
     keyFamily: String,
-    tableSettings: TableSettings[K, V],
+    tableReaderSettings: TableReaderSettings[K, V],
     startupPromise: Promise[Done]
 ) extends GraphStageLogic(shape)
     with StageLogging {
@@ -42,7 +41,7 @@ import io.pravega.common.util.AsyncIterator
 
   private val queue = mutable.Queue.empty[KVPair]
 
-  private val semaphore = new Semaphore(tableSettings.maximumInflightMessages)
+  private val semaphore = new Semaphore(tableReaderSettings.maximumInflightMessages)
 
   private var closing = false
 
@@ -99,17 +98,20 @@ import io.pravega.common.util.AsyncIterator
       })
 
   override def preStart(): Unit = {
-    log.info("Start consuming {} by {} ...", tableName, tableSettings.maximumInflightMessages)
+    log.debug("Start consuming {} by {} ...", tableName, tableReaderSettings.maximumInflightMessages)
     try {
 
       val kvtClientConfig = KeyValueTableClientConfiguration.builder().build()
       keyValueTableFactory = KeyValueTableFactory
-        .withScope(scope, tableSettings.clientConfig)
+        .withScope(scope, tableReaderSettings.clientConfig)
 
       table = keyValueTableFactory
-        .forKeyValueTable(tableName, tableSettings.keySerializer, tableSettings.valueSerializer, kvtClientConfig)
+        .forKeyValueTable(tableName,
+                          tableReaderSettings.keySerializer,
+                          tableReaderSettings.valueSerializer,
+                          kvtClientConfig)
 
-      val iterator = table.entryIterator(keyFamily, tableSettings.maxEntriesAtOnce, null)
+      val iterator = table.entryIterator(keyFamily, tableReaderSettings.maxEntriesAtOnce, null)
 
       nextIteration(iterator)
 
@@ -122,7 +124,7 @@ import io.pravega.common.util.AsyncIterator
   }
 
   override def postStop(): Unit = {
-    log.info("Stopping reader {}", tableName)
+    log.debug("Stopping reader {}", tableName)
     table.close()
     keyValueTableFactory.close()
   }
@@ -134,7 +136,7 @@ import io.pravega.common.util.AsyncIterator
     scope: String,
     tableName: String,
     keyFamily: String,
-    tableSettings: TableSettings[K, V]
+    tableReaderSettings: TableReaderSettings[K, V]
 ) extends GraphStageWithMaterializedValue[SourceShape[KVPair], Future[Done]] {
 
   private val out: Outlet[KVPair] = Outlet(Logging.simpleName(this) + ".out")
@@ -155,7 +157,7 @@ import io.pravega.common.util.AsyncIterator
       scope,
       tableName,
       keyFamily,
-      tableSettings,
+      tableReaderSettings,
       startupPromise
     )
 

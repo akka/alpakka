@@ -22,7 +22,6 @@ import io.pravega.client.KeyValueTableFactory
 
 import io.pravega.client.tables.KeyValueTableClientConfiguration
 
-import java.util.concurrent.atomic.AtomicInteger
 import io.pravega.client.tables.TableEntry
 import scala.util.Success
 @InternalApi private final class PravegaTableReadFlowStageLogic[K, V](
@@ -34,18 +33,19 @@ import scala.util.Success
 ) extends GraphStageLogic(shape)
     with StageLogging {
 
-  private def in = shape.in
-  private def out = shape.out
+  private def in: Inlet[K] = shape.in
+  private def out: Outlet[Option[V]] = shape.out
 
   private var keyValueTableFactory: KeyValueTableFactory = _
   private var table: KeyValueTable[K, V] = _
 
-  private val onAir = new AtomicInteger
+  @volatile
+  private var inFlight = 0
 
   @volatile
   private var upstreamEnded = false;
 
-  private val asyncPushback: AsyncCallback[(Try[TableEntry[K, V]])] = getAsyncCallback { p =>
+  private val asyncMessageSendCallback: AsyncCallback[(Try[TableEntry[K, V]])] = getAsyncCallback { p =>
     p match {
       case Failure(exception) =>
         log.error(exception, s"Failed to send message {}")
@@ -56,8 +56,8 @@ import scala.util.Success
           push(out, None)
 
     }
-
-    if (onAir.decrementAndGet == 0 && upstreamEnded) {
+    inFlight -= 1
+    if (inFlight == 0 && upstreamEnded) {
       log.info("Stage completed after upstream finish")
       completeStage()
 
@@ -84,7 +84,7 @@ import scala.util.Success
 
   def handleSentEvent(completableFuture: CompletableFuture[TableEntry[K, V]]): Unit =
     completableFuture.toScala.onComplete { t =>
-      asyncPushback.invokeWithFeedback((t))
+      asyncMessageSendCallback.invokeWithFeedback((t))
     }
 
   setHandler(
@@ -92,12 +92,12 @@ import scala.util.Success
     new InHandler {
       override def onPush(): Unit = {
         val msg = grab(in)
-        onAir.incrementAndGet()
+        inFlight += 1
         handleSentEvent(table.get(familyExtractor(msg), msg))
       }
       override def onUpstreamFinish(): Unit = {
         log.debug("Upstream finished")
-        if (onAir.get == 0)
+        if (inFlight == 0)
           completeStage()
         upstreamEnded = true
       }

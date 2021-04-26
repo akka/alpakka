@@ -17,7 +17,7 @@ import io.pravega.client.stream.Serializer
 import io.pravega.client.stream.impl.UTF8StringSerializer
 
 import java.nio.ByteBuffer
-import akka.stream.alpakka.pravega.TableSettingsBuilder
+import akka.stream.alpakka.pravega.TableReaderSettingsBuilder
 import akka.stream.alpakka.pravega.scaladsl.PravegaTable
 import akka.stream.alpakka.pravega.scaladsl.Pravega
 import scala.util.Using
@@ -106,9 +106,9 @@ class PravegaReadWriteDocs {
 
   val clientConfig = ClientConfig.builder().build()
 
-  val tableSettings = TableSettingsBuilder
-    .apply[Int, String](system.settings.config.getConfig(TableSettingsBuilder.configPath))
-    .withKVSerializers(intSerializer, serializer)
+  val tableSettings = TableReaderSettingsBuilder
+    .apply[Int, String](system.settings.config.getConfig(TableReaderSettingsBuilder.configPath))
+    .withSerializers(intSerializer, serializer)
 
   // #table-reading
 

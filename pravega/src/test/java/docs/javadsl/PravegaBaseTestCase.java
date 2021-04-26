@@ -7,17 +7,11 @@ package docs.javadsl;
 import java.net.URI;
 import java.util.UUID;
 
-import akka.stream.alpakka.pravega.PravegaAkkaSpecSupport;
 import akka.stream.alpakka.pravega.PravegaAkkaTestCaseSupport;
-import akka.stream.alpakka.pravega.ReaderSettingsBuilder;
-
-import io.pravega.client.stream.impl.UTF8StringSerializer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import akka.testkit.javadsl.TestKit;
-
-import akka.stream.alpakka.pravega.ReaderSettings;
 
 import io.pravega.client.admin.StreamManager;
 import io.pravega.client.stream.ScalingPolicy;

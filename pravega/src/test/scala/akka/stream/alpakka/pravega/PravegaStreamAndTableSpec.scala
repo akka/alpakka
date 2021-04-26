@@ -14,7 +14,6 @@ import java.nio.ByteBuffer
 import akka.stream.alpakka.testkit.scaladsl.Repeated
 import akka.stream.alpakka.pravega.scaladsl.{Pravega, PravegaTable}
 
-import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Promise}
 import scala.util.Using
 
@@ -51,7 +50,7 @@ class PravegaStreamAndTableSpec extends PravegaBaseSpec with Repeated {
   def readTableFlow(scope: String, tableName: String) = {
     // #table-reading-flow
     implicit val tableSettings: TableSettings[String, Int] =
-      TableWriterSettingsBuilder[String, Int](system)
+      TableReaderSettingsBuilder[String, Int](system)
         .withSerializers(serializer, intSerializer)
     PravegaTable
       .readFlow[String, Int](
@@ -140,7 +139,7 @@ class PravegaStreamAndTableSpec extends PravegaBaseSpec with Repeated {
           })(Keep.both)
           .run()
 
-        Await.ready(finishReading.future, 10.seconds)
+        Await.ready(finishReading.future, remainingOrDefault)
 
         kill.shutdown()
 

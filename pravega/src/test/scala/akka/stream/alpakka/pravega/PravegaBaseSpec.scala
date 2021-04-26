@@ -4,22 +4,26 @@
 
 package akka.stream.alpakka.pravega
 
+import akka.actor.ActorSystem
+import akka.testkit.TestKit
+
 import java.net.URI
 import java.util.UUID
-
 import io.pravega.client.admin.StreamManager
 import io.pravega.client.stream.{ScalingPolicy, StreamConfiguration}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.must.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.wordspec.AnyWordSpecLike
 import org.slf4j.LoggerFactory
-
 import io.pravega.client.ClientConfig
-
 import io.pravega.client.tables.KeyValueTableConfiguration
 import io.pravega.client.admin.KeyValueTableManager
 
-abstract class PravegaBaseSpec extends AnyWordSpec with PravegaAkkaSpecSupport with ScalaFutures with Matchers {
+abstract class PravegaBaseSpec
+    extends TestKit(ActorSystem("PravegaSpec"))
+    with AnyWordSpecLike
+    with ScalaFutures
+    with Matchers {
   val logger = LoggerFactory.getLogger(this.getClass())
 
   def time[R](label: String, block: => R): R = {

@@ -53,7 +53,7 @@ import java.util.concurrent.atomic.AtomicInteger
     }
 
     if (onAir.decrementAndGet == 0 && upstreamEnded) {
-      log.info("Stage completed after upstream finish")
+      log.debug("Stage completed after upstream finish")
       completeStage()
 
     }

@@ -64,7 +64,7 @@ public class PravegaSettingsTestCase {
   }
 
   @Test
-  public void tableWriterSettings() {
+  public void tableSettings() {
 
     Serializer<Integer> intSerializer =
         new Serializer<Integer>() {
@@ -86,6 +86,13 @@ public class PravegaSettingsTestCase {
             .withSerializers(intSerializer, new UTF8StringSerializer());
 
     // #table-writer-settings
+
+    // #table-reader-settings
+    TableReaderSettings<Integer, String> tableReaderSettings =
+        TableReaderSettingsBuilder.<Integer, String>create(system)
+            .withSerializers(intSerializer, new UTF8StringSerializer());
+
+    // #table-reader-settings
 
     Assert.assertEquals(
         "Default value doesn't match", tableWriterSettings.maximumInflightMessages(), 10);

@@ -74,12 +74,12 @@ public class PravegaKVTableTestCase extends PravegaBaseTestCase {
 
     done.toCompletableFuture().get(timeoutSeconds, TimeUnit.SECONDS);
 
-    TableSettings<Integer, String> tableSettings =
-        TableSettingsBuilder.<Integer, String>create(system)
-            .withKVSerializers(intSerializer, serializer);
+    TableReaderSettings<Integer, String> tableReaderSettings =
+        TableReaderSettingsBuilder.<Integer, String>create(system)
+            .withSerializers(intSerializer, serializer);
 
     final CompletionStage<String> readingDone =
-        PravegaTable.source(scope, tableName, "test", tableSettings)
+        PravegaTable.source(scope, tableName, "test", tableReaderSettings)
             .runWith(
                 Sink.fold(
                     "",

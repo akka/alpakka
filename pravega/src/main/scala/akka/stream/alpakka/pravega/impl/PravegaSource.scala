@@ -9,7 +9,7 @@ import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.Done
 import akka.annotation.InternalApi
 import akka.event.Logging
-import akka.stream.alpakka.pravega.{PravegaEvent, PravegaReaderGroup, ReaderSettings}
+import akka.stream.alpakka.pravega.{PravegaEvent, ReaderSettings}
 import io.pravega.client.ClientConfig
 
 import scala.concurrent.{Future, Promise}
@@ -25,18 +25,18 @@ import scala.util.{Failure, Success, Try}
 
 @InternalApi private final class PravegaSourcesStageLogic[A](
     shape: SourceShape[PravegaEvent[A]],
-    pravegaReaderGroup: PravegaReaderGroup,
+    readerGroup: ReaderGroup,
     val readerSettings: ReaderSettings[A],
     startupPromise: Promise[Done]
 ) extends GraphStageLogic(shape)
     with PravegaCapabilities
     with StageLogging {
 
-  protected val scope = pravegaReaderGroup.getScope
+  protected val scope = readerGroup.getScope
 
   override protected def logSource = classOf[PravegaSourcesStageLogic[A]]
 
-  private def out = shape.out
+  private def out: Outlet[PravegaEvent[A]] = shape.out
 
   private var reader: EventStreamReader[A] = _
 
@@ -69,9 +69,9 @@ import scala.util.{Failure, Success, Try}
   )
 
   override def preStart(): Unit = {
-    log.debug("Start consuming {}...", pravegaReaderGroup.toString)
+    log.debug("Start consuming {}...", readerGroup.toString)
     try {
-      reader = createReader(readerSettings, pravegaReaderGroup.readerGroup)
+      reader = createReader(readerSettings, readerGroup)
       startupPromise.success(Done)
     } catch {
       case NonFatal(exception) =>
@@ -92,9 +92,15 @@ import scala.util.{Failure, Success, Try}
     log.debug("Stopping reader")
     Try(reader.close()) match {
       case Failure(exception) =>
-        log.error(exception, s"Error while closing [{}]/[{}]", scope, pravegaReaderGroup.steamsName.mkString(", "))
-      case Success(value) =>
-        log.info("Closed [{}]/[{}]", scope, pravegaReaderGroup.steamsName.mkString(", "))
+        log.error(exception, s"Error while closing [{}/{}]", scope, readerGroup.toString)
+      case Success(_) =>
+        log.debug("Closed reader [{}/{}]", scope, readerGroup.getGroupName)
+    }
+    Try(readerGroup.close()) match {
+      case Failure(exception) =>
+        log.error(exception, s"Error while closing reader group [{}/{}]", scope, readerGroup.getGroupName)
+      case Success(_) =>
+        log.debug("Closed reader group [{}/{}]", scope, readerGroup.getGroupName)
     }
     close()
   }
@@ -102,7 +108,7 @@ import scala.util.{Failure, Success, Try}
 }
 
 @InternalApi private[pravega] final class PravegaSource[A](
-    readerGroup: PravegaReaderGroup,
+    readerGroup: ReaderGroup,
     settings: ReaderSettings[A]
 ) extends GraphStageWithMaterializedValue[SourceShape[PravegaEvent[A]], Future[Done]] {
 

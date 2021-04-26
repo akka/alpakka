@@ -103,7 +103,7 @@ import scala.util.{Failure, Success, Try}
       case Failure(exception) =>
         log.error(exception, "Error while closing writer to stream [{}] in scope [{}}]", streamName, scope)
       case Success(value) =>
-        log.info("Closed writer to stream [{}] in scope [{}}]", streamName, scope)
+        log.debug("Closed writer to stream [{}] in scope [{}}]", streamName, scope)
     }
     close()
   }

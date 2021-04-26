@@ -4,14 +4,16 @@
 
 package akka.stream.alpakka.pravega.scaladsl
 
+import akka.annotation.ApiMayChange
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.{Done, NotUsed}
 import akka.stream.alpakka.pravega.impl.{PravegaTableSource, PravegaTableWriteFlow}
-import akka.stream.alpakka.pravega.{TableSettings, TableWriterSettings}
+import akka.stream.alpakka.pravega.{TableReaderSettings, TableSettings, TableWriterSettings}
 
 import scala.concurrent.Future
 import akka.stream.alpakka.pravega.impl.PravegaTableReadFlow
 
+@ApiMayChange
 object PravegaTable {
 
   /**
@@ -22,13 +24,13 @@ object PravegaTable {
   def source[K, V](scope: String,
                    tableName: String,
                    keyFamily: String,
-                   tableSettings: TableSettings[K, V]): Source[(K, V), Future[Done]] =
+                   tableReaderSettings: TableReaderSettings[K, V]): Source[(K, V), Future[Done]] =
     Source.fromGraph(
       new PravegaTableSource[Tuple2[K, V], K, V](te => (te.getKey.getKey, te.getValue),
                                                  scope,
                                                  tableName,
                                                  keyFamily,
-                                                 tableSettings)
+                                                 tableReaderSettings)
     )
 
   /**

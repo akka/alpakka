@@ -7,23 +7,20 @@ package docs.javadsl;
 import akka.Done;
 import akka.japi.Pair;
 import akka.stream.alpakka.pravega.*;
-import akka.stream.alpakka.pravega.impl.PravegaReaderGroupManager;
+import akka.stream.alpakka.pravega.PravegaReaderGroupManager;
 import akka.stream.alpakka.pravega.javadsl.Pravega;
 import akka.stream.alpakka.pravega.javadsl.PravegaTable;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import io.pravega.client.stream.ReaderGroup;
-import io.pravega.client.ClientConfig;
 import io.pravega.client.stream.Serializer;
 import io.pravega.client.stream.impl.JavaSerializer;
 import io.pravega.client.stream.impl.UTF8StringSerializer;
-import io.pravega.client.tables.KeyValueTableClientConfiguration;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 public class PravegaReadWriteDocs extends PravegaAkkaTestCaseSupport {
@@ -49,7 +46,7 @@ public class PravegaReadWriteDocs extends PravegaAkkaTestCaseSupport {
 
     // #reader-group
 
-    PravegaReaderGroup readerGroup;
+    ReaderGroup readerGroup;
     try (PravegaReaderGroupManager readerGroupManager =
         Pravega.readerGroup("an_existing_scope", readerSettings.clientConfig())) {
       readerGroup = readerGroupManager.createReaderGroup("my_group", "streamName");
@@ -98,14 +95,15 @@ public class PravegaReadWriteDocs extends PravegaAkkaTestCaseSupport {
 
     // #table-writing
 
-    TableSettings<Integer, String> tableSettings =
-        TableSettingsBuilder.<Integer, String>create(system)
-            .withKVSerializers(intSerializer, serializer);
+    TableReaderSettings<Integer, String> tableReaderSettings =
+        TableReaderSettingsBuilder.<Integer, String>create(system)
+            .withSerializers(intSerializer, serializer);
 
     // #table-reading
 
     final CompletionStage<Done> pair =
-        PravegaTable.source("an_existing_scope", "an_existing_tableName", "test", tableSettings)
+        PravegaTable.source(
+                "an_existing_scope", "an_existing_tableName", "test", tableReaderSettings)
             .to(Sink.foreach((Pair<Integer, String> kvp) -> processKVP(kvp)))
             .run(system);
     // #table-reading

@@ -5,12 +5,13 @@
 package akka.stream.alpakka.pravega;
 
 import akka.Done;
-import akka.stream.alpakka.pravega.impl.PravegaReaderGroupManager;
+import akka.stream.alpakka.pravega.PravegaReaderGroupManager;
 import akka.stream.javadsl.Source;
 
 import com.typesafe.config.ConfigFactory;
 import docs.javadsl.PravegaBaseTestCase;
 
+import io.pravega.client.stream.ReaderGroup;
 import io.pravega.client.stream.impl.JavaSerializer;
 import org.junit.Assert;
 import org.junit.Test;
@@ -77,7 +78,7 @@ public class PravegaGraphTestCase extends PravegaBaseTestCase {
 
     CompletableFuture<Boolean> countTo200 = new CompletableFuture<>();
 
-    PravegaReaderGroup readerGroup;
+    ReaderGroup readerGroup;
     try (PravegaReaderGroupManager readerGroupManager =
         Pravega.readerGroup(scope, readerSettings.clientConfig())) {
       readerGroup = readerGroupManager.createReaderGroup(group, streamName);

@@ -118,7 +118,7 @@ Scala
 Java
 :   @@snip[snip](/pravega/src/test/java/docs/javadsl/PravegaReadWriteDocs.java) { #reader-group }
 
-Then use this reader group to readfrom a Source:  
+Then use this reader group to read from a Source:  
 
 Scala
 :   @@snip[snip](/pravega/src/test/scala/docs/scaladsl/PravegaReadWriteDocs.scala) { #reading }
@@ -131,6 +131,9 @@ message.
 
 ### Key Value Pair table
 
+Since version 0.8 Pravega exposes [Key Value Pair table](https://github.com/pravega/pravega/wiki/PDP-48-Key-Value-Tables-\(Beta-2\))
+ please note that this API is still experimental.
+
 Similarly a Pravega Table Flow or Sink needs a @apidoc[TableWriterSettings] to operate:
 
 Scala:
@@ -138,6 +141,16 @@ Scala:
 
 Java
 :   @@snip[snip](/pravega/src/test/java/docs/javadsl/PravegaSettingsTestCase.java) { #table-writer-settings }
+
+
+To read from a Pravega Table Flow or Source needs a @apidoc[TableReaderSettings] to operate:
+
+Scala:
+:   @@snip[snip](/pravega/src/test/scala/docs/scaladsl/PravegaSettingsSpec.scala) { #table-reader-settings }
+
+Java
+:   @@snip[snip](/pravega/src/test/java/docs/javadsl/PravegaSettingsTestCase.java) { #table-reader-settings }
+
 
 #### Writing to Pravega KVP Table
 
