@@ -22,18 +22,29 @@ import scala.collection.JavaConverters._
 
 object ArrowSource {
 
-  def readRecords(client: BigQueryReadClient, readSession: ReadSession): Source[List[BigQueryRecord], NotUsed] =
-    SDKClientSource
-      .read(client, readSession)
-      .mapConcat(_.arrowRecordBatch.toList)
-      .map(new SimpleRowReader(readSession.schema.arrowSchema.get).read(_))
+  def readRecordsMerged(client: BigQueryReadClient, readSession: ReadSession): Source[List[BigQueryRecord], NotUsed] =
+    readMerged(client, readSession)
+      .map(
+        a => new SimpleRowReader(readSession.schema.arrowSchema.get).read(a)
+      )
 
-  def read(client: BigQueryReadClient,
-           readSession: ReadSession): Source[(ReadSession.Schema, ArrowRecordBatch), NotUsed] =
+  def readMerged(client: BigQueryReadClient, session: ReadSession): Source[ArrowRecordBatch, NotUsed] =
+    read(client, session)
+      .reduce((a, b) => a.merge(b))
+
+  def readRecords(client: BigQueryReadClient, session: ReadSession): Seq[Source[BigQueryRecord, NotUsed]] =
+    read(client, session)
+      .map { a =>
+        a.map(new SimpleRowReader(session.schema.arrowSchema.get).read(_))
+          .mapConcat(c => c)
+      }
+
+  def read(client: BigQueryReadClient, session: ReadSession): Seq[Source[ArrowRecordBatch, NotUsed]] =
     SDKClientSource
-      .read(client, readSession)
-      .mapConcat(_.arrowRecordBatch.toList)
-      .map((readSession.schema, _))
+      .read(client, session)
+      .map { s =>
+        s.map(b => b.arrowRecordBatch.toList).mapConcat(a => a)
+      }
 
 }
 

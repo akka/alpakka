@@ -7,9 +7,9 @@ package akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl
 import akka.NotUsed
 import akka.actor.ClassicActorSystemProvider
 import akka.dispatch.ExecutionContexts
-import akka.stream.alpakka.googlecloud.bigquery.storage.impl.{ArrowSource, AvroDecoder, AvroSource, SDKClientSource}
-import akka.stream.scaladsl.{Flow, Source}
 import akka.stream.Attributes
+import akka.stream.alpakka.googlecloud.bigquery.storage.impl.{AvroDecoder, SDKClientSource}
+import akka.stream.scaladsl.{Flow, Source}
 import com.google.cloud.bigquery.storage.v1.avro.AvroRows
 import com.google.cloud.bigquery.storage.v1.storage.{
   BigQueryReadClient,
@@ -30,28 +30,44 @@ object BigQueryStorage {
 
   private val RequestParamsHeader = "x-goog-request-params"
 
+  def readMergedStreams(projectId: String,
+                        datasetId: String,
+                        tableId: String,
+                        dataFormat: DataFormat,
+                        readOptions: Option[TableReadOptions] = None,
+                        maxNumStreams: Int = 0): Source[(ReadSession.Schema, ReadRowsResponse.Rows), Future[NotUsed]] =
+    read(projectId, datasetId, tableId, dataFormat, readOptions, maxNumStreams)
+      .map(
+        s => {
+          s._2.reduce((a, b) => a.merge(b)).map((s._1, _))
+        }
+      )
+      .flatMapConcat(a => a)
+      .map(a => a)
+
   def read(projectId: String,
            datasetId: String,
            tableId: String,
            dataFormat: DataFormat,
            readOptions: Option[TableReadOptions] = None,
-           maxNumStreams: Int = 0): Source[(ReadSession.Schema, ReadRowsResponse.Rows), Future[NotUsed]] =
+           maxNumStreams: Int = 0) =
     Source.fromMaterializer { (mat, attr) =>
       val client = reader(mat.system, attr).client
       readSession(client, projectId, datasetId, tableId, dataFormat, readOptions, maxNumStreams)
-        .map(session => SDKClientSource.read(client, session).map((session.schema, _)))
-        .flatMapConcat(a => a)
+        .map { session =>
+          (session.schema, SDKClientSource.read(client, session))
+        }
     }
 
   /**
    * Create a source that contains a number of sources, one for each stream, or section of the table data.
    * These sources will emit one GenericRecord for each row within that stream.
    *
-   * @param projectId the projectId the table is located in
-   * @param datasetId the datasetId the table is located in
-   * @param tableId the table to query
-   * @param readOptions Optional TableReadOptions to reduce the amount of data to return, either by column projection or filtering.
-   *                    Without this, the whole table will be streamed
+   * @param projectId     the projectId the table is located in
+   * @param datasetId     the datasetId the table is located in
+   * @param tableId       the table to query
+   * @param readOptions   Optional TableReadOptions to reduce the amount of data to return, either by column projection or filtering.
+   *                      Without this, the whole table will be streamed
    * @param maxNumStreams An optional max initial number of streams. If unset or zero, the server will provide a value of streams so as to produce reasonable throughput.
    *                      Must be non-negative. The number of streams may be lower than the requested number, depending on the amount parallelism that is reasonable for the table.
    *                      Error will be returned if the max count is greater than the current system max limit of 1,000.
@@ -122,5 +138,3 @@ object BigQueryStorage {
       .map(_.client)
       .getOrElse(GrpcBigQueryStorageReaderExt()(system).reader)
 }
-
-//projects/mock-proj/datasets/mock-dataset/tables/mock-table

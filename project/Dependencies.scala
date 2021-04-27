@@ -238,7 +238,7 @@ object Dependencies {
         "com.thesamet.scalapb.common-protos" %% "proto-google-common-protos-scalapb_0.10" % "1.17.0-0",
         "com.thesamet.scalapb.common-protos" %% "proto-google-common-protos-scalapb_0.10" % "1.17.0-0" % "protobuf",
         "io.grpc" % "grpc-auth" % "1.28.0",
-        "com.typesafe.akka" %% "akka-http-spray-json" % "10.1.12",
+        "com.typesafe.akka" %% "akka-http-spray-json" % "10.1.12" % Test,
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion
       ) ++ Silencer
   )
