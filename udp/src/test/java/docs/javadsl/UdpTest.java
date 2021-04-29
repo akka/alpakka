@@ -5,6 +5,7 @@
 package docs.javadsl;
 
 import akka.actor.ActorSystem;
+import akka.io.Inet;
 import akka.japi.Pair;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.alpakka.udp.Datagram;
@@ -23,7 +24,12 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
+import java.net.StandardProtocolFamily;
+import java.nio.channels.DatagramChannel;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 public class UdpTest {
@@ -89,5 +95,72 @@ public class UdpTest {
       sub.requestNext();
     }
     sub.cancel();
+  }
+
+  @Test
+  public void testSendAndReceiveMessagesWithOptions() throws Exception {
+    // #bind-address
+    final InetSocketAddress bindToLocal = new InetSocketAddress("localhost", 0);
+    // #bind-address
+
+    // #bind-socket-option
+    final List<Inet.SocketOption> bindSocketOptions = new ArrayList<>();
+    bindSocketOptions.add(new InetProtocolFamily());
+    // #bind-socket-option
+
+    // #bind-flow
+    final Flow<Datagram, Datagram, CompletionStage<InetSocketAddress>> bindFlow =
+        Udp.bindFlow(bindToLocal, bindSocketOptions, system);
+    // #bind-flow
+
+    final Pair<
+            Pair<TestPublisher.Probe<Datagram>, CompletionStage<InetSocketAddress>>,
+            TestSubscriber.Probe<Datagram>>
+        materialized =
+            TestSource.<Datagram>probe(system)
+                .viaMat(bindFlow, Keep.both())
+                .toMat(TestSink.probe(system), Keep.both())
+                .run(system);
+
+    {
+      // #send-datagrams
+      final InetSocketAddress destination = new InetSocketAddress("my.server", 27015);
+      // #send-datagrams
+    }
+
+    final InetSocketAddress destination = materialized.first().second().toCompletableFuture().get();
+
+    // #send-datagrams
+    final Integer messagesToSend = 100;
+    // #send-datagrams
+
+    // #send-socket-option
+    final List<Inet.SocketOption> sendSocketOptions = new ArrayList<>();
+    sendSocketOptions.add(new InetProtocolFamily());
+    // #send-socket-option
+
+    final TestSubscriber.Probe<Datagram> sub = materialized.second();
+    sub.ensureSubscription();
+    sub.request(messagesToSend);
+
+    // #send-datagrams
+    Source.range(1, messagesToSend)
+        .map(i -> ByteString.fromString("Message " + i))
+        .map(bs -> Datagram.create(bs, destination))
+        .runWith(Udp.sendSink(sendSocketOptions, system), system);
+    // #send-datagrams
+
+    for (int i = 0; i < messagesToSend; i++) {
+      sub.requestNext();
+    }
+    sub.cancel();
+  }
+
+  private class InetProtocolFamily extends Inet.DatagramChannelCreator {
+
+    @Override
+    public DatagramChannel create() throws Exception {
+      return DatagramChannel.open(StandardProtocolFamily.INET);
+    }
   }
 }
