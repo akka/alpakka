@@ -4,33 +4,29 @@
 
 package akka.stream.alpakka.google.auth
 
-import akka.actor.{ActorContext, ClassicActorSystemProvider, Props}
+import akka.actor.ClassicActorSystemProvider
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
 import akka.stream.Materializer
 import akka.stream.alpakka.google.RequestSettings
 
+import java.time.Clock
 import scala.concurrent.Future
 
 @InternalApi
 private[auth] object ComputeEngineCredentials {
 
-  def apply()(implicit system: ClassicActorSystemProvider): Future[Credentials] = {
-    val credentials = system.classicSystem.actorOf(Props(new ComputeEngineCredentials))
+  def apply()(implicit system: ClassicActorSystemProvider): Future[Credentials] =
     GoogleComputeMetadata
       .getProjectId()
-      .map { projectId =>
-        new OAuth2Credentials(projectId, credentials)
-      }(ExecutionContexts.parasitic)
-  }
+      .map(new ComputeEngineCredentials(_))(system.classicSystem.dispatcher)
 
 }
 
 @InternalApi
-private final class ComputeEngineCredentials extends OAuth2CredentialsActor {
-  override protected def getAccessToken()(implicit ctx: ActorContext,
-                                          settings: RequestSettings): Future[AccessToken] = {
-    implicit val mat = Materializer(ctx)
+private final class ComputeEngineCredentials(projectId: String)(implicit mat: Materializer)
+    extends OAuth2Credentials(projectId) {
+  override protected def getAccessToken()(implicit mat: Materializer,
+                                          settings: RequestSettings,
+                                          clock: Clock): Future[AccessToken] =
     GoogleComputeMetadata.getAccessToken()
-  }
 }
