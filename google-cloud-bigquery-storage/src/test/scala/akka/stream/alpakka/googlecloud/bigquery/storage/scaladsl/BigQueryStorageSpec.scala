@@ -31,7 +31,7 @@ class BigQueryStorageSpec
         .runWith(Sink.seq)
         .futureValue
 
-      val avroSchema = AvroSchema(com.google.cloud.bigquery.storage.v1.avro.AvroSchema.of(FullSchema.toString))
+      val avroSchema = storageAvroSchema
       val avroRows = AvroRows(recordsAsRows(FullRecord))
 
       seq shouldBe Vector.fill(DefaultNumStreams * ResponsesPerStream)((avroSchema, avroRows))
@@ -45,8 +45,11 @@ class BigQueryStorageSpec
         .withAttributes(mockBQReader())
         .runWith(Sink.seq)
         .futureValue
+
+      seq(0)._1 shouldBe storageAvroSchema
     }
   }
+
 
   "GoogleBigQuery.readAvroOnly" should {
     "stream the results for a query, deserializing into generic records" in {
@@ -140,6 +143,10 @@ class BigQueryStorageSpec
         case other => fail(s"Expected a StatusRuntimeException, got $other")
       }
     }
+  }
+
+  private def storageAvroSchema = {
+    AvroSchema(com.google.cloud.bigquery.storage.v1.avro.AvroSchema.of(FullSchema.toString))
   }
 
   def mockBQReader(host: String = bqHost, port: Int = bqPort) = {
