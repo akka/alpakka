@@ -20,14 +20,28 @@ object BigQueryRecord {
 
 }
 
-class BigQueryRecordAvroImpl(record: GenericRecord) extends BigQueryRecord {
+case class BigQueryRecordAvroImpl(record: GenericRecord) extends BigQueryRecord {
 
   override def get(column: String): Option[Object] = Option(record.get(column))
 
+  override def equals(that: Any): Boolean = that match {
+    case BigQueryRecordAvroImpl(thatRecord) => thatRecord.equals(record)
+    case _ => false
+  }
+
+  override def hashCode(): Int = record.hashCode()
+
 }
 
-class BigQueryRecordMapImpl(map: Map[String, Object]) extends BigQueryRecord {
+case class BigQueryRecordMapImpl(map: Map[String, Object]) extends BigQueryRecord {
 
   override def get(column: String): Option[Object] = map.get(column)
+
+  override def equals(that: Any): Boolean = that match {
+    case BigQueryRecordMapImpl(thatMap) => thatMap.equals(map)
+    case _ => false
+  }
+
+  override def hashCode(): Int = map.hashCode()
 
 }

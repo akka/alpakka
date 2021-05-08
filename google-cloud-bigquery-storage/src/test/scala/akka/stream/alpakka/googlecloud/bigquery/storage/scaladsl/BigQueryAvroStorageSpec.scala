@@ -4,13 +4,12 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl
 
-import akka.stream.alpakka.googlecloud.bigquery.storage.{BigQueryStorageSettings, BigQueryStorageSpecBase}
+import akka.stream.alpakka.googlecloud.bigquery.storage.impl.AvroDecoder
+import akka.stream.alpakka.googlecloud.bigquery.storage.{BigQueryRecord, BigQueryStorageSettings, BigQueryStorageSpecBase}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Sink
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.wordspec.AnyWordSpecLike
-import com.google.cloud.bigquery.storage.v1.storage.ReadRowsResponse.Rows.AvroRows
-import com.google.cloud.bigquery.storage.v1.stream.ReadSession.Schema.AvroSchema
 import org.scalatest.matchers.should.Matchers
 
 class BigQueryAvroStorageSpec
@@ -21,8 +20,37 @@ class BigQueryAvroStorageSpec
     with LogCapturing {
 
   "BigQueryAvroStorage.readAvro" should {
-    "stream the results for a query" in {
+    val avroSchema = storageAvroSchema.value
+    val avroRows =  storageAvroRows.value
+
+    "stream the results for a query in records" in {
+      val decoder = AvroDecoder(avroSchema.schema)
+      val records = decoder.decodeRows(avroRows.serializedBinaryRows).map(gr => BigQueryRecord.fromAvro(gr))
+      val flattened = Seq.fill(DefaultNumStreams* ResponsesPerStream)(records).flatten
+
       val seq = BigQueryAvroStorage
+        .readRecords(Project, Dataset, Table, None)
+        .withAttributes(mockBQReader())
+        .map(a => a.reduce((a,b)=> a.merge(b)))
+        .flatMapMerge(100, identity)
+        .runWith(Sink.seq)
+        .futureValue
+
+      seq shouldBe flattened
+    }
+
+    "stream the results for a query merged" in {
+      BigQueryAvroStorage
+        .readMerged(Project, Dataset, Table, None)
+        .withAttributes(mockBQReader())
+        .map(s => s._2.map(b => (s._1, b)))
+        .flatMapMerge(100, identity)
+        .runWith(Sink.seq)
+        .futureValue shouldBe Vector.fill(DefaultNumStreams* ResponsesPerStream) ((avroSchema, avroRows))
+    }
+
+    "stream the results for a query" in {
+      BigQueryAvroStorage
         .read(Project, Dataset, Table, None)
         .withAttributes(mockBQReader())
         .map {
@@ -31,14 +59,8 @@ class BigQueryAvroStorageSpec
         }
         .flatMapMerge(100, identity)
         .runWith(Sink.seq)
-        .futureValue
-
-      val avroSchema = storageAvroSchema.value
-      val avroRows =  storageAvroRows.value
-
-      seq shouldBe Vector.fill(DefaultNumStreams * ResponsesPerStream )((avroSchema, avroRows))
+        .futureValue shouldBe Vector.fill(DefaultNumStreams * ResponsesPerStream )((avroSchema, avroRows))
     }
-
   }
 
   def mockBQReader(host: String = bqHost, port: Int = bqPort) = {
