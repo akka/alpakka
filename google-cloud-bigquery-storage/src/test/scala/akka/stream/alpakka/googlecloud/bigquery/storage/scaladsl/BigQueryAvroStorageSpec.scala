@@ -23,20 +23,28 @@ class BigQueryAvroStorageSpec
     val avroSchema = storageAvroSchema.value
     val avroRows =  storageAvroRows.value
 
+    "stream the results for a query in records merged" in {
+      val decoder = AvroDecoder(avroSchema.schema)
+      val records = decoder.decodeRows(avroRows.serializedBinaryRows).map(gr => BigQueryRecord.fromAvro(gr))
+
+      BigQueryAvroStorage
+        .readRecordsMerged(Project, Dataset, Table, None)
+        .withAttributes(mockBQReader())
+        .runWith(Sink.seq)
+        .futureValue shouldBe Seq.fill(DefaultNumStreams* ResponsesPerStream)(records)
+    }
+
     "stream the results for a query in records" in {
       val decoder = AvroDecoder(avroSchema.schema)
       val records = decoder.decodeRows(avroRows.serializedBinaryRows).map(gr => BigQueryRecord.fromAvro(gr))
-      val flattened = Seq.fill(DefaultNumStreams* ResponsesPerStream)(records).flatten
 
-      val seq = BigQueryAvroStorage
+      BigQueryAvroStorage
         .readRecords(Project, Dataset, Table, None)
         .withAttributes(mockBQReader())
         .map(a => a.reduce((a,b)=> a.merge(b)))
         .flatMapMerge(100, identity)
         .runWith(Sink.seq)
-        .futureValue
-
-      seq shouldBe flattened
+        .futureValue shouldBe Seq.fill(DefaultNumStreams* ResponsesPerStream)(records).flatten
     }
 
     "stream the results for a query merged" in {
