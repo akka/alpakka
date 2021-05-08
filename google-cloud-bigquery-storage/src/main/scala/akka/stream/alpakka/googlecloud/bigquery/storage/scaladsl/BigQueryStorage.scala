@@ -45,12 +45,14 @@ object BigQueryStorage {
       .flatMapConcat(a => a)
       .map(a => a)
 
-  def read(projectId: String,
-           datasetId: String,
-           tableId: String,
-           dataFormat: DataFormat,
-           readOptions: Option[TableReadOptions] = None,
-           maxNumStreams: Int = 0) =
+  def read(
+      projectId: String,
+      datasetId: String,
+      tableId: String,
+      dataFormat: DataFormat,
+      readOptions: Option[TableReadOptions] = None,
+      maxNumStreams: Int = 0
+  ): Source[(ReadSession.Schema, Seq[Source[ReadRowsResponse.Rows, NotUsed]]), Future[NotUsed]] =
     Source.fromMaterializer { (mat, attr) =>
       val client = reader(mat.system, attr).client
       readSession(client, projectId, datasetId, tableId, dataFormat, readOptions, maxNumStreams)

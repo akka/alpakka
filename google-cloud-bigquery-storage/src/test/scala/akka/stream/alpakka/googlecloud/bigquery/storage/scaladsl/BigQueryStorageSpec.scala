@@ -7,9 +7,7 @@ package akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl
 import akka.stream.alpakka.googlecloud.bigquery.storage.{BigQueryStorageSettings, BigQueryStorageSpecBase}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Sink
-import com.google.cloud.bigquery.storage.v1.storage.ReadRowsResponse.Rows.AvroRows
-import com.google.cloud.bigquery.storage.v1.stream.ReadSession.Schema.AvroSchema
-import com.google.cloud.bigquery.storage.v1.stream.{DataFormat, ReadSession}
+import com.google.cloud.bigquery.storage.v1.stream.DataFormat
 import com.google.cloud.bigquery.storage.v1.stream.ReadSession.TableReadOptions
 import io.grpc.{Status, StatusRuntimeException}
 import org.scalatest.BeforeAndAfterAll
@@ -32,7 +30,7 @@ class BigQueryStorageSpec
         .futureValue
 
       val avroSchema = storageAvroSchema
-      val avroRows = AvroRows(recordsAsRows(FullRecord))
+      val avroRows = storageAvroRows
 
       seq shouldBe Vector.fill(DefaultNumStreams * ResponsesPerStream)((avroSchema, avroRows))
     }
@@ -145,9 +143,7 @@ class BigQueryStorageSpec
     }
   }
 
-  private def storageAvroSchema = {
-    AvroSchema(com.google.cloud.bigquery.storage.v1.avro.AvroSchema.of(FullSchema.toString))
-  }
+
 
   def mockBQReader(host: String = bqHost, port: Int = bqPort) = {
     val reader = GrpcBigQueryStorageReader(BigQueryStorageSettings(host, port))
