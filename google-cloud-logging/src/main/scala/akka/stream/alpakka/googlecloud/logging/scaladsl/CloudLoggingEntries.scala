@@ -64,7 +64,8 @@ private[scaladsl] trait CloudLoggingEntries {
           }
           .via(
             GoogleHttp(mat.system).cachedHostConnectionPool[Done](
-              endpoint.authority.host.address
+              endpoint.authority.host.address,
+              endpoint.effectivePort
             )
           )
           .toMat(Sink.ignore)(Keep.right)
