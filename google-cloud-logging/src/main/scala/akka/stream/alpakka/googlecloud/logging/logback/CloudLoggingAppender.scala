@@ -30,7 +30,7 @@ import scala.annotation.tailrec
 import scala.beans.BeanProperty
 import scala.collection.{immutable, mutable}
 import scala.compat.java8.FutureConverters._
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.util.Try
 
 /**
@@ -64,6 +64,13 @@ final class CloudLoggingAppender extends UnsynchronizedAppenderBase[ILoggingEven
    * Defaults to 1 second if not set.
    */
   @BeanProperty var flushWithin: time.Duration = time.Duration.ofSeconds(1)
+
+  /**
+   * The maximum time to wait for the appender to flush after being stopped.
+   *
+   * Defaults to 1 second if not set.
+   */
+  @BeanProperty var stopWithin: time.Duration = time.Duration.ofSeconds(1)
 
   /**
    * The [[OverflowStrategy]] to use; only `dropHead` and `dropTail` supported.
@@ -223,11 +230,13 @@ final class CloudLoggingAppender extends UnsynchronizedAppenderBase[ILoggingEven
   def hasFlushed: CompletionStage[Done] = loggingSinkComplete.toJava
 
   override def stop(): Unit = synchronized {
-    if (loggingSink != null)
+    if (isStarted) {
+      super.stop()
       loggingSink ! Done
-    loggingSink = null
-    loggingSinkComplete = NotStarted
-    super.stop()
+      loggingSink = null
+      Try(Await.result(loggingSinkComplete, stopWithin.asScala)) // Wait, but ignore exceptions
+      loggingSinkComplete = NotStarted
+    }
   }
 
   private def logEntryFor(loggingEnhancers: Seq[LoggingEnhancer])(e: ILoggingEvent): LogEntry[JsValue] = {
