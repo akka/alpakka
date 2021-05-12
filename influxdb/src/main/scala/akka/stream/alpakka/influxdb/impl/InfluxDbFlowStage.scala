@@ -80,7 +80,7 @@ private[influxdb] sealed abstract class InfluxDbLogic[T, C](
     if (messages.nonEmpty) {
       write(messages)
       val writtenMessages = messages.map(m => new InfluxDbWriteResult(m, None))
-      push(out, writtenMessages)
+      emit(out, writtenMessages)
     }
 
     tryPull(in)
