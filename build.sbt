@@ -181,7 +181,7 @@ lazy val googleCommon = alpakkaProject(
   Dependencies.GoogleCommon,
   Test / fork := true,
   fatalWarnings := true
-).disablePlugins(MimaPlugin)
+)
 
 lazy val googleCloudBigQuery = alpakkaProject(
   "google-cloud-bigquery",
@@ -189,7 +189,7 @@ lazy val googleCloudBigQuery = alpakkaProject(
   Dependencies.GoogleBigQuery,
   Test / fork := true,
   fatalWarnings := true
-).dependsOn(googleCommon).disablePlugins(MimaPlugin).enablePlugins(spray.boilerplate.BoilerplatePlugin)
+).dependsOn(googleCommon).enablePlugins(spray.boilerplate.BoilerplatePlugin)
 
 lazy val googleCloudPubSub = alpakkaProject(
   "google-cloud-pub-sub",
