@@ -34,6 +34,8 @@ The system is architected so that the underlying storage is elastic and it is ab
 
 When writing an event, Pravega accepts a *routing key* parameter, and it @extref[guarantees order](pravega:/pravega-concepts/#ordering-guarantees) per key even in the presence of auto-scaling.
 
+Since version 8.x, Pravega supports write and read access to a Key/Value tables. 
+
 For more information about [Pravega](https://www.pravega.io/) please visit the official @extref[documentation](pravega:/).
 
 ## Configuration
@@ -67,7 +69,9 @@ It can be overridden in an `application.conf` file at the following configuratio
 
 It can be customised programmatically, see below.
 
-### EventReader configuration
+### Streams
+
+#### EventReader configuration
 
 A Pravega Source needs a @apidoc[ReaderSettings] to operate, it can be built from configuration and programmatically
 customized:
@@ -78,7 +82,7 @@ Scala
 Java
 :   @@snip[snip](/pravega/src/test/java/docs/javadsl/PravegaSettingsTestCase.java) { #reader-settings }
 
-### EventWriter configuration
+#### EventWriter configuration
 
 A Pravega Flow or Sink needs a @apidoc[WriterSettings] to operate, it can be built from configuration and programmatically customized:
 
@@ -94,7 +98,7 @@ Java
 @apidoc[ReaderSettingsBuilder$], @apidoc[ReaderSettingsBuilder] produce respectively ReaderSettings and ReaderSettings once a
 @javadoc[Serializer](io.pravega.client.stream.Serializer) is provided.
 
-## Writing to Pravega
+#### Writing to Pravega stream
 
 Pravega message writes are done through a Flow/Sink like:
 
@@ -104,9 +108,17 @@ Scala
 Java
 :   @@snip[snip](/pravega/src/test/java/docs/javadsl/PravegaReadWriteDocs.java) { #writing }
 
-## Reading from Pravega
+#### Reading from Pravega stream
 
-Pravega message reads are from a Source:  
+First you need to build a @extref[reader group](pravega:reader-group-design/):
+
+Scala
+:   @@snip[snip](/pravega/src/test/scala/docs/scaladsl/PravegaReadWriteDocs.scala) { #reader-group }
+
+Java
+:   @@snip[snip](/pravega/src/test/java/docs/javadsl/PravegaReadWriteDocs.java) { #reader-group }
+
+Then use this reader group to read from a Source:  
 
 Scala
 :   @@snip[snip](/pravega/src/test/scala/docs/scaladsl/PravegaReadWriteDocs.scala) { #reading }
@@ -116,6 +128,56 @@ Java
 
 It produces a stream of @apidoc[PravegaEvent], a thin wrapper which includes some Pravega metadata along with the
 message.
+
+### Key Value Pair table
+
+Since version 0.8 Pravega exposes [Key Value Pair table](https://github.com/pravega/pravega/wiki/PDP-48-Key-Value-Tables-\(Beta-2\))
+ please note that this API is still experimental.
+
+Similarly a Pravega Table Flow or Sink needs a @apidoc[TableWriterSettings] to operate:
+
+Scala:
+:   @@snip[snip](/pravega/src/test/scala/docs/scaladsl/PravegaSettingsSpec.scala) { #table-writer-settings }
+
+Java
+:   @@snip[snip](/pravega/src/test/java/docs/javadsl/PravegaSettingsTestCase.java) { #table-writer-settings }
+
+
+To read from a Pravega Table Flow or Source needs a @apidoc[TableReaderSettings] to operate:
+
+Scala:
+:   @@snip[snip](/pravega/src/test/scala/docs/scaladsl/PravegaSettingsSpec.scala) { #table-reader-settings }
+
+Java
+:   @@snip[snip](/pravega/src/test/java/docs/javadsl/PravegaSettingsTestCase.java) { #table-reader-settings }
+
+
+#### Writing to Pravega KVP Table
+
+Pravega message writes are done through a Flow/Sink like:
+
+Scala
+:   @@snip[snip](/pravega/src/test/scala/docs/scaladsl/PravegaReadWriteDocs.scala) { #table-writing }
+
+Java
+:   @@snip[snip](/pravega/src/test/java/docs/javadsl/PravegaReadWriteDocs.java) { #table-writing }
+
+#### Reading from Pravega KVP Table
+
+Pravega message reads are from a Source:
+
+Scala
+:   @@snip[snip](/pravega/src/test/scala/docs/scaladsl/PravegaReadWriteDocs.scala) { #table-reading }
+
+Java
+:   @@snip[snip](/pravega/src/test/java/docs/javadsl/PravegaReadWriteDocs.java) { #table-reading }
+
+
+Or a Flow
+
+Scala
+:   @@snip[snip](/pravega/src/test/scala/akka/stream/alpakka/pravega/PravegaStreamAndTableSpec.scala) { #table-reading-flow }
+
 
 ## Support
 

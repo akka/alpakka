@@ -5,15 +5,34 @@
 package docs.scaladsl
 
 import java.net.URI
-
-import akka.stream.alpakka.pravega.{PravegaAkkaSpecSupport, ReaderSettingsBuilder, WriterSettingsBuilder}
-import akka.testkit.TestKit
+import akka.stream.alpakka.pravega.{
+  PravegaBaseSpec,
+  ReaderSettingsBuilder,
+  TableReaderSettingsBuilder,
+  TableWriterSettingsBuilder,
+  WriterSettingsBuilder
+}
+import io.pravega.client.stream.Serializer
 import io.pravega.client.stream.impl.UTF8StringSerializer
 import org.scalatest.matchers.must.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+
+import java.nio.ByteBuffer
 import scala.concurrent.duration._
 
-class PravegaSettingsSpec extends AnyWordSpec with PravegaAkkaSpecSupport with Matchers {
+class PravegaSettingsSpec extends PravegaBaseSpec with Matchers {
+
+  val serializer = new UTF8StringSerializer
+
+  val intSerializer = new Serializer[Int] {
+    override def serialize(value: Int): ByteBuffer = {
+      val buff = ByteBuffer.allocate(4).putInt(value)
+      buff.position(0)
+      buff
+    }
+
+    override def deserialize(serializedValue: ByteBuffer): Int =
+      serializedValue.getInt
+  }
 
   "ReaderSettingsBuilder" must {
 
@@ -54,8 +73,32 @@ class PravegaSettingsSpec extends AnyWordSpec with PravegaAkkaSpecSupport with M
 
   }
 
-  override protected def beforeAll(): Unit = {
-    TestKit.shutdownActorSystem(system)
-    super.beforeAll()
+  "Table settings builder" must {
+
+    "build TableWriterSettings with programmatic customisation" in {
+      //#table-writer-settings
+      val tableWriterSettings = TableWriterSettingsBuilder[Int, String](system)
+        .clientConfigBuilder(_.enableTlsToController(true)) // ClientConfig customization
+        .withMaximumInflightMessages(5)
+        .withSerializers(intSerializer, serializer)
+      //#table-writer-settings
+
+      tableWriterSettings.maximumInflightMessages mustEqual 5
+    }
+
+    "build TableReaderSettings with programmatic customisation" in {
+      //#table-reader-settings
+      val tableReaderSettings = TableReaderSettingsBuilder[Int, String](system)
+        .clientConfigBuilder(_.enableTlsToController(true)) // ClientConfig customization
+        .withMaximumInflightMessages(5)
+        .withMaxEntriesAtOnce(100)
+        .withSerializers(intSerializer, serializer)
+      //#table-reader-settings
+
+      tableReaderSettings.maximumInflightMessages mustEqual 5
+      tableReaderSettings.maxEntriesAtOnce mustEqual 100
+    }
+
   }
+
 }
