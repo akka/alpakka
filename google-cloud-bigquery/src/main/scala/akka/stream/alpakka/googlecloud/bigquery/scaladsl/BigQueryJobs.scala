@@ -69,8 +69,8 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
   }
 
   /**
-   * Loads data into BigQuery via a series of asynchronous load jobs created at the rate `loadJobPerTableQuota`.
-   * @note WARNING: Pending the resolution of [[ https://issuetracker.google.com/176002651 BigQuery issue 176002651]] this method may not work as expected.
+   * Loads data into BigQuery via a series of asynchronous load jobs created at the rate [[akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings.loadJobPerTableQuota]].
+   * @note WARNING: Pending the resolution of [[https://issuetracker.google.com/176002651 BigQuery issue 176002651]] this method may not work as expected.
    *       As a workaround, you can use the config setting `akka.http.parsing.conflicting-content-type-header-processing-mode = first` with Akka HTTP v10.2.4 or later.
    *
    * @param datasetId dataset ID of the table to insert into
@@ -79,6 +79,22 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
    * @return a [[akka.stream.scaladsl.Flow]] that uploads each [[In]] and emits a [[akka.stream.alpakka.googlecloud.bigquery.model.Job]] for every upload job created
    */
   def insertAllAsync[In: ToEntityMarshaller](datasetId: String, tableId: String): Flow[In, Job, NotUsed] =
+    insertAllAsync(datasetId, tableId, None)
+
+  /**
+   * Loads data into BigQuery via a series of asynchronous load jobs created at the rate [[akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings.loadJobPerTableQuota]].
+   * @note WARNING: Pending the resolution of [[https://issuetracker.google.com/176002651 BigQuery issue 176002651]] this method may not work as expected.
+   *       As a workaround, you can use the config setting `akka.http.parsing.conflicting-content-type-header-processing-mode = first` with Akka HTTP v10.2.4 or later.
+   *
+   * @param datasetId dataset ID of the table to insert into
+   * @param tableId table ID of the table to insert into
+   * @param labels the labels associated with this job
+   * @tparam In the data model for each record
+   * @return a [[akka.stream.scaladsl.Flow]] that uploads each [[In]] and emits a [[akka.stream.alpakka.googlecloud.bigquery.model.Job]] for every upload job created
+   */
+  def insertAllAsync[In: ToEntityMarshaller](datasetId: String,
+                                             tableId: String,
+                                             labels: Option[Map[String, String]]): Flow[In, Job, NotUsed] =
     Flow
       .fromMaterializer { (mat, attr) =>
         import SprayJsonSupport._
@@ -97,7 +113,8 @@ private[scaladsl] trait BigQueryJobs { this: BigQueryRest =>
                   Some(WriteAppend),
                   Some(NewlineDelimitedJsonFormat)
                 )
-              )
+              ),
+              labels
             )
           ),
           None,

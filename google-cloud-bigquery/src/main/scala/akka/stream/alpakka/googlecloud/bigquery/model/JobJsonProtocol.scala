@@ -70,17 +70,34 @@ object Job {
  * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfiguration BigQuery reference]]
  *
  * @param load configures a load job
+ * @param labels the labels associated with this job
  */
-final case class JobConfiguration(load: Option[JobConfigurationLoad]) {
+final case class JobConfiguration(load: Option[JobConfigurationLoad], labels: Option[Map[String, String]]) {
   def getLoad = load.asJava
+  def getLabels = labels.asJava
 
   def withLoad(load: Option[JobConfigurationLoad]) =
     copy(load = load)
   def withLoad(load: util.Optional[JobConfigurationLoad]) =
     copy(load = load.asScala)
+
+  def withLabels(labels: Option[Map[String, String]]) =
+    copy(labels = labels)
+  def withLabels(labels: util.Optional[util.Map[String, String]]) =
+    copy(labels = labels.asScala.map(_.asScala.toMap))
 }
 
 object JobConfiguration {
+
+  /**
+   * JobConfiguration model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfiguration BigQuery reference]]
+   *
+   * @param load configures a load job
+   * @return a [[JobConfiguration]]
+   */
+  def apply(load: Option[JobConfigurationLoad]): JobConfiguration =
+    apply(load, None)
 
   /**
    * Java API: JobConfiguration model
@@ -92,7 +109,18 @@ object JobConfiguration {
   def create(load: util.Optional[JobConfigurationLoad]) =
     JobConfiguration(load.asScala)
 
-  implicit val format: JsonFormat[JobConfiguration] = jsonFormat1(apply)
+  /**
+   * Java API: JobConfiguration model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfiguration BigQuery reference]]
+   *
+   * @param load configures a load job
+   * @param labels the labels associated with this job
+   * @return a [[JobConfiguration]]
+   */
+  def create(load: util.Optional[JobConfigurationLoad], labels: util.Optional[util.Map[String, String]]) =
+    JobConfiguration(load.asScala, labels.asScala.map(_.asScala.toMap))
+
+  implicit val format: JsonFormat[JobConfiguration] = jsonFormat2(apply)
 }
 
 /**
