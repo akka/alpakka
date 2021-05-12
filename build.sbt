@@ -18,6 +18,7 @@ lazy val alpakka = project
     files,
     ftp,
     geode,
+    googleCommon,
     googleCloudBigQuery,
     googleCloudPubSub,
     googleCloudPubSubGrpc,
@@ -124,7 +125,11 @@ lazy val cassandra =
   alpakkaProject("cassandra", "cassandra", Dependencies.Cassandra, fatalWarnings := true)
 
 lazy val couchbase =
-  alpakkaProject("couchbase", "couchbase", Dependencies.Couchbase, whitesourceGroup := Whitesource.Group.Supported)
+  alpakkaProject("couchbase",
+                 "couchbase",
+                 Dependencies.Couchbase,
+                 whitesourceGroup := Whitesource.Group.Supported,
+                 fatalWarnings := true)
 
 lazy val csv = alpakkaProject("csv", "csv", whitesourceGroup := Whitesource.Group.Supported, fatalWarnings := true)
 
@@ -150,7 +155,8 @@ lazy val ftp = alpakkaProject(
   Dependencies.Ftp,
   Test / fork := true,
   // To avoid potential blocking in machines with low entropy (default is `/dev/random`)
-  javaOptions in Test += "-Djava.security.egd=file:/dev/./urandom"
+  javaOptions in Test += "-Djava.security.egd=file:/dev/./urandom",
+  fatalWarnings := true
 )
 
 lazy val geode =
@@ -169,13 +175,21 @@ lazy val geode =
     fatalWarnings := true
   )
 
+lazy val googleCommon = alpakkaProject(
+  "google-common",
+  "google.common",
+  Dependencies.GoogleCommon,
+  Test / fork := true,
+  fatalWarnings := true
+).disablePlugins(MimaPlugin)
+
 lazy val googleCloudBigQuery = alpakkaProject(
   "google-cloud-bigquery",
   "google.cloud.bigquery",
   Dependencies.GoogleBigQuery,
   Test / fork := true,
   fatalWarnings := true
-).disablePlugins(MimaPlugin).enablePlugins(spray.boilerplate.BoilerplatePlugin)
+).dependsOn(googleCommon).disablePlugins(MimaPlugin).enablePlugins(spray.boilerplate.BoilerplatePlugin)
 
 lazy val googleCloudPubSub = alpakkaProject(
   "google-cloud-pub-sub",
@@ -185,7 +199,7 @@ lazy val googleCloudPubSub = alpakkaProject(
   // See docker-compose.yml gcloud-pubsub-emulator_prep
   Test / envVars := Map("PUBSUB_EMULATOR_HOST" -> "localhost", "PUBSUB_EMULATOR_PORT" -> "8538"),
   fatalWarnings := true
-)
+).dependsOn(googleCommon)
 
 lazy val googleCloudPubSubGrpc = alpakkaProject(
   "google-cloud-pub-sub-grpc",
@@ -203,16 +217,21 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
     ),
   compile / javacOptions := (compile / javacOptions).value.filterNot(_ == "-Xlint:deprecation"),
   fatalWarnings := true
-).enablePlugins(AkkaGrpcPlugin)
+).enablePlugins(AkkaGrpcPlugin).dependsOn(googleCommon)
 
-lazy val googleCloudStorage =
-  alpakkaProject("google-cloud-storage", "google.cloud.storage", Dependencies.GoogleStorage, fatalWarnings := true)
+lazy val googleCloudStorage = alpakkaProject(
+  "google-cloud-storage",
+  "google.cloud.storage",
+  Dependencies.GoogleStorage,
+  fatalWarnings := true,
+  Test / fork := true
+).dependsOn(googleCommon)
 
 lazy val googleFcm = alpakkaProject("google-fcm",
                                     "google.firebase.fcm",
                                     Dependencies.GoogleFcm,
                                     Test / fork := true,
-                                    fatalWarnings := true)
+                                    fatalWarnings := true).dependsOn(googleCommon)
 
 lazy val hbase = alpakkaProject("hbase", "hbase", Dependencies.HBase, Test / fork := true, fatalWarnings := true)
 
@@ -295,7 +314,7 @@ lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml, fatalWarnings := t
 
 lazy val docs = project
   .enablePlugins(AkkaParadoxPlugin, ParadoxSitePlugin, PreprocessPlugin, PublishRsyncPlugin)
-  .disablePlugins(BintrayPlugin, MimaPlugin)
+  .disablePlugins(MimaPlugin)
   .settings(
     Compile / paradox / name := "Alpakka",
     publish / skip := true,
@@ -355,6 +374,8 @@ lazy val docs = project
         "javadoc.org.apache.kudu.base_url" -> s"https://kudu.apache.org/releases/${Dependencies.KuduVersion}/apidocs/",
         "javadoc.org.apache.hadoop.base_url" -> s"https://hadoop.apache.org/docs/r${Dependencies.HadoopVersion}/api/",
         "javadoc.software.amazon.awssdk.base_url" -> "https://sdk.amazonaws.com/java/api/latest/",
+        "javadoc.com.google.auth.base_url" -> "https://www.javadoc.io/doc/com.google.auth/google-auth-library-credentials/latest/",
+        "javadoc.com.google.auth.link_style" -> "direct",
         "javadoc.com.fasterxml.jackson.annotation.base_url" -> "https://javadoc.io/doc/com.fasterxml.jackson.core/jackson-annotations/latest/",
         "javadoc.com.fasterxml.jackson.annotation.link_style" -> "direct",
         // Scala
@@ -391,7 +412,7 @@ lazy val whitesourceSupported = project
 
 lazy val `doc-examples` = project
   .enablePlugins(AutomateHeaderPlugin)
-  .disablePlugins(BintrayPlugin, MimaPlugin, SitePlugin)
+  .disablePlugins(MimaPlugin, SitePlugin)
   .settings(
     name := s"akka-stream-alpakka-doc-examples",
     publish / skip := true,
@@ -424,7 +445,7 @@ def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sb
 def internalProject(projectId: String, additionalSettings: sbt.Def.SettingsDefinition*): Project =
   Project(id = projectId, base = file(projectId))
     .enablePlugins(AutomateHeaderPlugin)
-    .disablePlugins(SitePlugin, BintrayPlugin, MimaPlugin)
+    .disablePlugins(SitePlugin, MimaPlugin)
     .settings(
       name := s"akka-stream-alpakka-$projectId",
       publish / skip := true

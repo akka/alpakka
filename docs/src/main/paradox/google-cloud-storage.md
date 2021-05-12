@@ -34,14 +34,8 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Configuration
 
-The settings for the Google Cloud Storage connector are read by default from `alpakka.googlecloud.storage` configuration section.
-If you use a non-standard configuration path or need multiple different configurations, please refer to @ref[the attributes section below](google-cloud-storage.md#apply-google-cloud-storage-settings-to-a-part-of-the-stream) to see how to apply different configuration to different parts of the stream.
-You'll first need to prepare your credentials for access to google cloud storage.
-All of the available configuration settings can be found in the @github[application.conf](/google-cloud-storage/src/test/resources/application.conf).
-
-HOCON:
-: @@snip [snip](/google-cloud-storage/src/test/resources/application.conf) { #settings }
-
+The Storage connector @ref[shares its basic configuration](google-common.md) with all the Google connectors in Alpakka.
+Additional Storage-specific configuration settings can be found in its own @github[reference.conf](/google-cloud-storage/src/main/resources/reference.conf).
 
 ## Store a file in Google Cloud Storage
 
@@ -71,7 +65,7 @@ Java
 
 If you do not need object itself, you can query for only object metadata using a source from @scala[@scaladoc[GCStorage.getObject](akka.stream.alpakka.googlecloud.storage.scaladsl.GCStorage$)]@java[@scaladoc[GCStorage.getObject](akka.stream.alpakka.googlecloud.storage.javadsl.GCStorage$)].
 
-If you need the specific version of the object metadata in a bucket where object versioning is enabled, you can specify the `generation`. 
+If you need the specific version of the object metadata in a bucket where object versioning is enabled, you can specify the `generation`.
 
 Scala
 : @@snip [snip](/google-cloud-storage/src/test/scala/docs/scaladsl/GCStorageSourceSpec.scala) { #objectMetadata }
@@ -105,9 +99,9 @@ Java
 
 ## Apply Google Cloud Storage settings to a part of the stream
 
-It is possible to make one part of the stream use different @scaladoc[GCStorageSettings](akka.stream.alpakka.googlecloud.storage.GCStorageSettings) from the rest of the graph.
+It is possible to make one part of the stream use different @scaladoc[GoogleSettings](akka.stream.alpakka.google.GoogleSettings) from the rest of the graph.
 This can be useful, when one stream is used to copy files across regions with different service accounts.
-You can attach a custom `GCStorageSettings` instance or a custom config path to a graph using attributes from @scaladoc[GCStorageAttributes](akka.stream.alpakka.googlecloud.storage.GCStorageAttributes$):
+You can attach a custom `GoogleSettings` instance or a custom config path to a graph using attributes from @scaladoc[GoogleAttributes](akka.stream.alpakka.google.GoogleAttributes$):
 
 Scala
 : @@snip [snip](/google-cloud-storage/src/test/scala/docs/scaladsl/GCStorageSourceSpec.scala) { #list-bucket-attributes }
@@ -118,7 +112,7 @@ Java
 
 ## Bucket management
 
-Bucket management API provides functionality for both Sources and Futures / CompletionStages. 
+Bucket management API provides functionality for both Sources and Futures / CompletionStages.
 In case of the Future API user can specify attributes to the request in the method itself and as for Sources it can be done via method `.withAttributes`.
 For more information about attributes see: @scaladoc[GCStorageAttributes](akka.stream.alpakka.googlecloud.storage.GCStorageAttributes$) and @scaladoc[Attributes](akka.stream.Attributes)
 

@@ -364,7 +364,7 @@ object S3 {
    */
   def makeBucket(bucketName: String)(implicit system: ClassicActorSystemProvider,
                                      attr: Attributes = Attributes()): Future[Done] =
-    makeBucket(bucketName, S3Headers.empty)
+    S3Stream.makeBucket(bucketName, S3Headers.empty)
 
   /**
    * Create new bucket with a given name
@@ -412,7 +412,7 @@ object S3 {
    */
   def deleteBucket(bucketName: String)(implicit system: ClassicActorSystemProvider,
                                        attributes: Attributes = Attributes()): Future[Done] =
-    deleteBucket(bucketName, S3Headers.empty)
+    S3Stream.deleteBucket(bucketName, S3Headers.empty)
 
   /**
    * Delete bucket with a given name

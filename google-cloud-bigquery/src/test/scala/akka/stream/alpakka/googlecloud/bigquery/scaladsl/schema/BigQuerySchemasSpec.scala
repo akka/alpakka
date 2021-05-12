@@ -4,7 +4,9 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.scaladsl.schema
 
-import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol._
+import akka.stream.alpakka.googlecloud.bigquery.model._
+import akka.stream.alpakka.googlecloud.bigquery.model.TableFieldSchemaType._
+import akka.stream.alpakka.googlecloud.bigquery.model.TableFieldSchemaMode._
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.schema.BigQuerySchemas._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -17,23 +19,23 @@ class BigQuerySchemasSpec extends AnyWordSpecLike with Matchers {
 
   val schema = TableSchema(
     List(
-      TableFieldSchema("integer", IntegerType, Some(RequiredMode), None),
-      TableFieldSchema("long", IntegerType, Some(RequiredMode), None),
-      TableFieldSchema("float", FloatType, Some(RequiredMode), None),
-      TableFieldSchema("double", FloatType, Some(RequiredMode), None),
-      TableFieldSchema("string", StringType, Some(RequiredMode), None),
-      TableFieldSchema("boolean", BooleanType, Some(RequiredMode), None),
+      TableFieldSchema("integer", Integer, Some(Required), None),
+      TableFieldSchema("long", Integer, Some(Required), None),
+      TableFieldSchema("float", Float, Some(Required), None),
+      TableFieldSchema("double", Float, Some(Required), None),
+      TableFieldSchema("string", String, Some(Required), None),
+      TableFieldSchema("boolean", Boolean, Some(Required), None),
       TableFieldSchema(
         "record",
-        RecordType,
-        Some(RequiredMode),
+        Record,
+        Some(Required),
         Some(
           List(
-            TableFieldSchema("nullable", StringType, Some(NullableMode), None),
+            TableFieldSchema("nullable", String, Some(Nullable), None),
             TableFieldSchema("repeated",
-                             RecordType,
-                             Some(RepeatedMode),
-                             Some(List(TableFieldSchema("numeric", NumericType, Some(RequiredMode), None))))
+                             Record,
+                             Some(Repeated),
+                             Some(List(TableFieldSchema("numeric", Numeric, Some(Required), None))))
           )
         )
       )

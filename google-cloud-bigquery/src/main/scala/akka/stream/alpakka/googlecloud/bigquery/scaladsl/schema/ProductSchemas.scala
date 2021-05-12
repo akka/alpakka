@@ -4,12 +4,8 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.scaladsl.schema
 
-import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.{
-  RecordType,
-  TableFieldSchema,
-  TableFieldSchemaMode,
-  TableSchema
-}
+import akka.stream.alpakka.googlecloud.bigquery.model.TableFieldSchemaType.Record
+import akka.stream.alpakka.googlecloud.bigquery.model.{TableFieldSchema, TableFieldSchemaMode, TableSchema}
 import spray.json.{AdditionalFormats, ProductFormats, StandardFormats}
 
 import scala.collection.immutable.Seq
@@ -32,7 +28,7 @@ private[schema] final class ProductSchemaWriter[T <: Product](fieldSchemas: Seq[
   override def write: TableSchema = TableSchema(fieldSchemas)
 
   override def write(name: String, mode: TableFieldSchemaMode): TableFieldSchema =
-    TableFieldSchema(name, RecordType, Some(mode), Some(fieldSchemas))
+    TableFieldSchema(name, Record, Some(mode), Some(fieldSchemas))
 
 }
 

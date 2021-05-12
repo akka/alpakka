@@ -1,0 +1,3 @@
+# 3.0.0 deprecations - https://github.com/akka/alpakka/pull/2618
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.alpakka.ftp.javadsl.FtpApi.mkdirAsync")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.alpakka.ftp.scaladsl.FtpApi.mkdirAsync")

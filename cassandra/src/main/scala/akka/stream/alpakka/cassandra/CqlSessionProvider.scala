@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.cassandra
 
-import akka.actor.{ActorSystem, ExtendedActorSystem}
+import akka.actor.{ActorSystem, ClassicActorSystemProvider, ExtendedActorSystem}
 import com.datastax.oss.driver.api.core.CqlSession
 import com.typesafe.config.{Config, ConfigFactory}
 
@@ -90,6 +90,15 @@ object CqlSessionProvider {
   }
 
   /**
+   * Create a `SessionProvider` from configuration.
+   * The `session-provider` config property defines the fully qualified
+   * class name of the SessionProvider implementation class. It may optionally
+   * have a constructor with an `ActorSystem` and `Config` parameter.
+   */
+  def apply(system: ClassicActorSystemProvider, config: Config): CqlSessionProvider =
+    apply(system.classicSystem.asInstanceOf[ExtendedActorSystem], config)
+
+  /**
    * The `Config` for the `datastax-java-driver`. The configuration path of the
    * driver's configuration can be defined with `datastax-java-driver-config` property in the
    * given `config`. `datastax-java-driver` configuration section is also used as fallback.
@@ -101,4 +110,12 @@ object CqlSessionProvider {
       else system.classicSystem.settings.config.getConfig("datastax-java-driver")
     }
   }
+
+  /**
+   * The `Config` for the `datastax-java-driver`. The configuration path of the
+   * driver's configuration can be defined with `datastax-java-driver-config` property in the
+   * given `config`. `datastax-java-driver` configuration section is also used as fallback.
+   */
+  def driverConfig(system: ClassicActorSystemProvider, config: Config): Config =
+    driverConfig(system.classicSystem, config)
 }

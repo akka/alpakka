@@ -33,25 +33,6 @@ object Mqtt {
       .asJava
 
   /**
-   * Create a bidirectional flow that maintains client session state with an MQTT endpoint.
-   * The bidirectional flow can be joined with an endpoint flow that receives
-   * [[ByteString]] payloads and independently produces [[ByteString]] payloads e.g.
-   * an MQTT server.
-   *
-   * @deprecated Provide a connectionId instead (since 1.0.1)
-   * @param session the client session to use
-   * @return the bidirectional flow
-   */
-  @Deprecated
-  @deprecated("Provide a connectionId instead", "1.0.1")
-  def clientSessionFlow[A](
-      session: MqttClientSession
-  ): BidiFlow[Command[A], ByteString, ByteString, DecodeErrorOrEvent[A], NotUsed] =
-    inputOutputConverter
-      .atop(scaladsl.Mqtt.clientSessionFlow[A](session.underlying, ByteString("0")))
-      .asJava
-
-  /**
    * Create a bidirectional flow that maintains server session state with an MQTT endpoint.
    * The bidirectional flow can be joined with an endpoint flow that receives
    * [[ByteString]] payloads and independently produces [[ByteString]] payloads e.g.

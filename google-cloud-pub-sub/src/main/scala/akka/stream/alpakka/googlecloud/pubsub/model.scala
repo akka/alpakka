@@ -5,39 +5,53 @@
 package akka.stream.alpakka.googlecloud.pubsub
 
 import java.time.Instant
-
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
-import akka.http.scaladsl.Http
-import akka.stream.alpakka.googlecloud.pubsub.impl.{GoogleSession, GoogleTokenApi}
+import akka.stream.alpakka.google.GoogleSettings
+import akka.stream.alpakka.google.auth.ServiceAccountCredentials
+import com.github.ghik.silencer.silent
 
 import scala.collection.immutable
 import scala.collection.JavaConverters._
 
 /**
- * @param projectId the project Id in the google account
+ * @param projectId (deprecated) the project Id in the google account
  * @param pullReturnImmediately when pulling messages, if there are non the API will wait or return immediately. Defaults to true.
  * @param pullMaxMessagesPerInternalBatch when pulling messages, the maximum that will be in the batch of messages. Defaults to 1000.
  */
-class PubSubConfig private (val projectId: String,
-                            val pullReturnImmediately: Boolean,
-                            val pullMaxMessagesPerInternalBatch: Int,
-                            @InternalApi private[pubsub] val session: GoogleSession) {
-
-  /**
-   * Internal API
-   */
-  @InternalApi private[pubsub] def withSession(session: GoogleSession) =
-    copy(session = session)
-
-  private def copy(session: GoogleSession) =
-    new PubSubConfig(projectId, pullReturnImmediately, pullMaxMessagesPerInternalBatch, session)
+class PubSubConfig private (
+    /** @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]] */ @deprecated(
+      "Use akka.stream.alpakka.google.GoogleSettings",
+      "3.0.0"
+    ) @Deprecated val projectId: String,
+    val pullReturnImmediately: Boolean,
+    val pullMaxMessagesPerInternalBatch: Int,
+    @deprecated("Added only to help with migration", "3.0.0") @InternalApi private[pubsub] val settings: Option[
+      GoogleSettings
+    ]
+) {
 
   override def toString: String =
-    s"PubSubConfig(projectId=$projectId)"
+    s"PubSubConfig(projectId=$projectId)": @silent("deprecated")
 }
 
 object PubSubConfig {
+
+  def apply(): PubSubConfig = apply(true, 1000)
+
+  def apply(pullReturnImmediately: Boolean, pullMaxMessagesPerInternalBatch: Int): PubSubConfig =
+    new PubSubConfig("", pullReturnImmediately, pullMaxMessagesPerInternalBatch, None)
+
+  def create(): PubSubConfig = apply()
+
+  def create(pullReturnImmediately: Boolean, pullMaxMessagesPerInternalBatch: Int): PubSubConfig =
+    apply(pullReturnImmediately, pullMaxMessagesPerInternalBatch)
+
+  /**
+   * @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]] to manage credentials
+   */
+  @deprecated("Use akka.stream.alpakka.google.GoogleSettings to manage credentials", "3.0.0")
+  @Deprecated
   def apply(projectId: String, clientEmail: String, privateKey: String)(
       implicit actorSystem: ActorSystem
   ): PubSubConfig =
@@ -45,9 +59,20 @@ object PubSubConfig {
       projectId = projectId,
       pullReturnImmediately = true,
       pullMaxMessagesPerInternalBatch = 1000,
-      session = new GoogleSession(clientEmail, privateKey, new GoogleTokenApi(Http()))
+      Some(
+        GoogleSettings().copy(
+          projectId = projectId,
+          credentials =
+            ServiceAccountCredentials(projectId, clientEmail, privateKey, Seq("https://www.googleapis.com/auth/pubsub"))
+        )
+      )
     )
 
+  /**
+   * @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]] to manage credentials
+   */
+  @deprecated("Use akka.stream.alpakka.google.GoogleSettings to manage credentials", "3.0.0")
+  @Deprecated
   def apply(projectId: String,
             clientEmail: String,
             privateKey: String,
@@ -59,15 +84,30 @@ object PubSubConfig {
       projectId = projectId,
       pullReturnImmediately = pullReturnImmediately,
       pullMaxMessagesPerInternalBatch = pullMaxMessagesPerInternalBatch,
-      session = new GoogleSession(clientEmail, privateKey, new GoogleTokenApi(Http()))
+      Some(
+        GoogleSettings().copy(
+          projectId = projectId,
+          credentials =
+            ServiceAccountCredentials(projectId, clientEmail, privateKey, Seq("https://www.googleapis.com/auth/pubsub"))
+        )
+      )
     )
 
+  /**
+   * Java API
+   * @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]] to manage credentials
+   */
+  @deprecated("Use akka.stream.alpakka.google.GoogleSettings to manage credentials", "3.0.0")
+  @Deprecated
   def create(projectId: String, clientEmail: String, privateKey: String, actorSystem: ActorSystem): PubSubConfig =
     apply(projectId, clientEmail, privateKey)(actorSystem)
 
   /**
    * Java API
+   * @deprecated Use [[akka.stream.alpakka.google.GoogleSettings]] to manage credentials
    */
+  @deprecated("Use akka.stream.alpakka.google.GoogleSettings to manage credentials", "3.0.0")
+  @Deprecated
   def create(projectId: String,
              clientEmail: String,
              privateKey: String,

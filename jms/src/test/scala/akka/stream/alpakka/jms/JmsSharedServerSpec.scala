@@ -29,6 +29,8 @@ abstract class JmsSharedServerSpec extends JmsSpec {
     }
   }
 
+  protected def isQueueEmpty(queueName: String): Boolean = jmsBroker.service.checkQueueSize(queueName)
+
   override def withConnectionFactory()(test: ConnectionFactory => Unit): Unit = {
     test(connectionFactory)
   }

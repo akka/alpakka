@@ -4,11 +4,12 @@
 
 package akka.stream.alpakka.ftp.scaladsl
 
+import akka.actor.ClassicActorSystemProvider
 import akka.annotation.DoNotInherit
-import akka.stream.alpakka.ftp.impl.{FtpSourceFactory, FtpSourceParams, FtpsSourceParams, SftpSourceParams}
+import akka.stream.IOResult
 import akka.stream.alpakka.ftp._
+import akka.stream.alpakka.ftp.impl.{FtpSourceFactory, FtpSourceParams, FtpsSourceParams, SftpSourceParams}
 import akka.stream.scaladsl.{Sink, Source}
-import akka.stream.{IOResult, Materializer}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
 import net.schmizz.sshj.SSHClient
@@ -122,7 +123,9 @@ sealed trait FtpApi[FtpClient, S <: RemoteFileSettings] { _: FtpSourceFactory[Ft
    * @param connectionSettings connection settings
    * @return [[scala.concurrent.Future Future]] of [[akka.Done]] indicating a materialized, asynchronous request
    */
-  def mkdirAsync(basePath: String, name: String, connectionSettings: S)(implicit mat: Materializer): Future[Done]
+  def mkdirAsync(basePath: String, name: String, connectionSettings: S)(
+      implicit system: ClassicActorSystemProvider
+  ): Future[Done]
 
   /**
    * Scala API: creates a [[akka.stream.scaladsl.Source Source]] of [[akka.util.ByteString ByteString]] from some file path.
@@ -251,7 +254,9 @@ object Ftp extends FtpApi[FTPClient, FtpSettings] with FtpSourceParams {
   def mkdir(basePath: String, name: String, connectionSettings: S): Source[Done, NotUsed] =
     Source.fromGraph(createMkdirGraph(basePath, name, connectionSettings)).map(_ => Done)
 
-  def mkdirAsync(basePath: String, name: String, connectionSettings: S)(implicit mat: Materializer): Future[Done] =
+  def mkdirAsync(basePath: String, name: String, connectionSettings: S)(
+      implicit system: ClassicActorSystemProvider
+  ): Future[Done] =
     mkdir(basePath, name, connectionSettings).runWith(Sink.head)
 
   def toPath(path: String, connectionSettings: S, append: Boolean = false): Sink[ByteString, Future[IOResult]] =
@@ -309,7 +314,9 @@ object Ftps extends FtpApi[FTPSClient, FtpsSettings] with FtpsSourceParams {
   def mkdir(basePath: String, name: String, connectionSettings: S): Source[Done, NotUsed] =
     Source.fromGraph(createMkdirGraph(basePath, name, connectionSettings)).map(_ => Done)
 
-  def mkdirAsync(basePath: String, name: String, connectionSettings: S)(implicit mat: Materializer): Future[Done] =
+  def mkdirAsync(basePath: String, name: String, connectionSettings: S)(
+      implicit system: ClassicActorSystemProvider
+  ): Future[Done] =
     mkdir(basePath, name, connectionSettings).runWith(Sink.head)
 
   def toPath(path: String, connectionSettings: S, append: Boolean = false): Sink[ByteString, Future[IOResult]] =
@@ -366,7 +373,9 @@ class SftpApi extends FtpApi[SSHClient, SftpSettings] with SftpSourceParams {
   def mkdir(basePath: String, name: String, connectionSettings: S): Source[Done, NotUsed] =
     Source.fromGraph(createMkdirGraph(basePath, name, connectionSettings)).map(_ => Done)
 
-  def mkdirAsync(basePath: String, name: String, connectionSettings: S)(implicit mat: Materializer): Future[Done] =
+  def mkdirAsync(basePath: String, name: String, connectionSettings: S)(
+      implicit system: ClassicActorSystemProvider
+  ): Future[Done] =
     mkdir(basePath, name, connectionSettings).runWith(Sink.head)
 
   def toPath(path: String, connectionSettings: S, append: Boolean = false): Sink[ByteString, Future[IOResult]] =

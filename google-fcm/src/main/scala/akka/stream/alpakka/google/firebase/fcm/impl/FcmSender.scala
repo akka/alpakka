@@ -4,20 +4,18 @@
 
 package akka.stream.alpakka.google.firebase.fcm.impl
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.HttpExt
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
-import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.Materializer
-import akka.stream.alpakka.google.firebase.fcm.{FcmErrorResponse, FcmResponse, FcmSettings, FcmSuccessResponse}
 import akka.annotation.InternalApi
-import akka.stream.alpakka.google.firebase.fcm.ForwardProxyHttpsContext.ForwardProxyHttpsContext
-import akka.stream.alpakka.google.firebase.fcm.ForwardProxyPoolSettings.ForwardProxyPoolSettings
-import spray.json._
+import akka.http.scaladsl.HttpExt
+import akka.http.scaladsl.marshalling.Marshal
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.unmarshalling.{FromResponseUnmarshaller, Unmarshal, Unmarshaller}
+import akka.stream.Materializer
+import akka.stream.alpakka.google.GoogleSettings
+import akka.stream.alpakka.google.firebase.fcm.{FcmErrorResponse, FcmResponse, FcmSuccessResponse}
+import akka.stream.alpakka.google.http.GoogleHttp
+import akka.stream.alpakka.google.implicits._
 
-import scala.collection.immutable
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 /**
  * INTERNAL API
@@ -26,46 +24,30 @@ import scala.concurrent.{ExecutionContext, Future}
 private[fcm] class FcmSender {
   import FcmJsonSupport._
 
-  def send(conf: FcmSettings, token: String, http: HttpExt, fcmSend: FcmSend, system: ActorSystem)(
-      implicit materializer: Materializer
+  def send(http: HttpExt, fcmSend: FcmSend)(
+      implicit mat: Materializer,
+      settings: GoogleSettings
   ): Future[FcmResponse] = {
-    val projectId = conf.projectId
-    val forwardProxy = conf.forwardProxy
+    import mat.executionContext
+    import settings.projectId
     val url = s"https://fcm.googleapis.com/v1/projects/$projectId/messages:send"
 
-    val response = forwardProxy match {
-      case Some(fp) =>
-        http.singleRequest(
-          HttpRequest(
-            HttpMethods.POST,
-            url,
-            immutable.Seq(Authorization(OAuth2BearerToken(token))),
-            HttpEntity(ContentTypes.`application/json`, fcmSend.toJson.compactPrint)
-          ),
-          connectionContext = fp.httpsContext(system),
-          settings = fp.poolSettings(system)
-        )
-      case None =>
-        http.singleRequest(
-          HttpRequest(
-            HttpMethods.POST,
-            url,
-            immutable.Seq(Authorization(OAuth2BearerToken(token))),
-            HttpEntity(ContentTypes.`application/json`, fcmSend.toJson.compactPrint)
-          )
-        )
+    Marshal(fcmSend).to[RequestEntity].flatMap { entity =>
+      GoogleHttp(http)
+        .singleAuthenticatedRequest[FcmSuccessResponse](HttpRequest(HttpMethods.POST, url, entity = entity))
+    } recover {
+      case FcmErrorException(error) => error
     }
-    parse(response)
   }
 
-  private def parse(response: Future[HttpResponse])(implicit materializer: Materializer): Future[FcmResponse] = {
-    implicit val executionContext: ExecutionContext = materializer.executionContext
-    response.flatMap { rsp =>
-      if (rsp.status.isSuccess) {
-        Unmarshal(rsp.entity).to[FcmSuccessResponse]
+  implicit private val unmarshaller: FromResponseUnmarshaller[FcmSuccessResponse] = Unmarshaller.withMaterializer {
+    implicit ec => implicit mat => response: HttpResponse =>
+      if (response.status.isSuccess) {
+        Unmarshal(response.entity).to[FcmSuccessResponse]
       } else {
-        Unmarshal(rsp.entity).to[FcmErrorResponse]
+        Unmarshal(response.entity).to[FcmErrorResponse].map(error => throw FcmErrorException(error))
       }
-    }
-  }
+  }.withDefaultRetry
+
+  private case class FcmErrorException(error: FcmErrorResponse) extends Exception
 }

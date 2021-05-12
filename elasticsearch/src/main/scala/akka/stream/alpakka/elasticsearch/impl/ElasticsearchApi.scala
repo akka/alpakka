@@ -22,7 +22,9 @@ import scala.concurrent.Future
         request.addCredentials(BasicHttpCredentials(connectionSettings.username.get, connectionSettings.password.get))
       )
     } else {
-      http.singleRequest(request)
+      http.singleRequest(request,
+                         connectionContext =
+                           connectionSettings.connectionContext.getOrElse(http.defaultClientHttpsContext))
     }
   }
 }

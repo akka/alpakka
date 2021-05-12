@@ -14,10 +14,9 @@ import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.ExecutionContext
-
 import akka.Done
 import akka.NotUsed
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, ClassicActorSystemProvider}
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.stream.alpakka.cassandra.CassandraServerMetaData
@@ -63,6 +62,18 @@ final class CassandraSession(@InternalApi private[akka] val delegate: scaladsl.C
                                     () => onClose.run())
     )
 
+  /**
+   * Use this constructor if you want to create a stand-alone `CassandraSession`.
+   */
+  def this(system: ClassicActorSystemProvider,
+           sessionProvider: CqlSessionProvider,
+           executionContext: ExecutionContext,
+           log: LoggingAdapter,
+           metricsCategory: String,
+           init: JFunction[CqlSession, CompletionStage[Done]],
+           onClose: java.lang.Runnable) =
+    this(system.classicSystem, sessionProvider, executionContext, log, metricsCategory, init, onClose)
+
   implicit private val ec = delegate.ec
 
   /**
@@ -93,16 +104,6 @@ final class CassandraSession(@InternalApi private[akka] val delegate: scaladsl.C
    * The returned `CompletionStage` is completed when the command is done, or if the statement fails.
    */
   def executeDDL(stmt: String): CompletionStage[Done] =
-    delegate.executeDDL(stmt).toJava
-
-  /**
-   * See <a href="https://docs.datastax.com/en/dse/6.7/cql/cql/cql_using/useCreateTable.html">Creating a table</a>.
-   *
-   * The returned `CompletionStage` is completed when the table has been created,
-   * or if the statement fails.
-   */
-  @deprecated("Use executeDDL instead.", "0.100")
-  def executeCreateTable(stmt: String): CompletionStage[Done] =
     delegate.executeDDL(stmt).toJava
 
   /**

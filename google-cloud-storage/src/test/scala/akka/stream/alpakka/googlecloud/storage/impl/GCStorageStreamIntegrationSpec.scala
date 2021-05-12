@@ -5,7 +5,6 @@
 package akka.stream.alpakka.googlecloud.storage.impl
 
 import java.util.UUID
-
 import akka.http.scaladsl.model.ContentTypes
 import akka.stream.alpakka.googlecloud.storage.WithMaterializerGlobal
 import akka.stream.scaladsl.{Sink, Source}
@@ -20,6 +19,7 @@ import scala.concurrent.duration._
 import scala.util.Random
 import akka.stream.alpakka.googlecloud.storage.GCStorageSettings
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
+import com.github.ghik.silencer.silent
 
 import scala.concurrent.Future
 
@@ -50,6 +50,7 @@ class GCStorageStreamIntegrationSpec
 
   def testFileName(file: String): String = folderName + file
 
+  @silent("deprecated")
   def settings: GCStorageSettings = GCStorageSettings()
 
   def bucket = "alpakka"

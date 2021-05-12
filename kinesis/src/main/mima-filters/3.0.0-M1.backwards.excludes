@@ -1,0 +1,5 @@
+# 3.0.0 deprecations - https://github.com/akka/alpakka/pull/2618
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.kinesis.ShardSettings.withShardIteratorType")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.kinesis.ShardSettings.withStartingSequenceNumber")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.kinesis.ShardSettings.withStartingAfterSequenceNumber")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.kinesis.ShardSettings.withAtTimestamp")

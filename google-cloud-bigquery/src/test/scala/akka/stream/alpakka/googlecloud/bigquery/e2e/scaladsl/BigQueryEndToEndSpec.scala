@@ -8,8 +8,8 @@ import akka.actor.ActorSystem
 import akka.{pattern, Done}
 import akka.stream.alpakka.googlecloud.bigquery.HoverflySupport
 import akka.stream.alpakka.googlecloud.bigquery.e2e.{A, B, C}
-import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.DoneState
-import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.TableReference
+import akka.stream.alpakka.googlecloud.bigquery.model.JobState
+import akka.stream.alpakka.googlecloud.bigquery.model.TableReference
 import akka.testkit.TestKit
 import io.specto.hoverfly.junit.core.{HoverflyMode, SimulationSource}
 import org.scalatest.BeforeAndAfterAll
@@ -65,27 +65,27 @@ class BigQueryEndToEndSpec
 
     "create dataset" in {
       BigQuery.createDataset(datasetId).map { dataset =>
-        dataset.datasetReference.datasetId shouldEqual datasetId
+        dataset.datasetReference.datasetId should contain(datasetId)
       }
     }
 
     "list new dataset" in {
       BigQuery.datasets.runWith(Sink.seq).map { datasets =>
-        datasets.map(_.datasetReference.datasetId) should contain(datasetId)
+        datasets.flatMap(_.datasetReference.datasetId) should contain(datasetId)
       }
     }
 
     "create table" in {
       BigQuery.createTable[A](datasetId, tableId).map { table =>
         table.tableReference should matchPattern {
-          case TableReference(_, `datasetId`, `tableId`) =>
+          case TableReference(_, `datasetId`, Some(`tableId`)) =>
         }
       }
     }
 
     "list new table" in {
       BigQuery.tables(datasetId).runWith(Sink.seq).map { tables =>
-        tables.map(_.tableReference.tableId) should contain(tableId)
+        tables.flatMap(_.tableReference.tableId) should contain(tableId)
       }
     }
 
@@ -104,7 +104,7 @@ class BigQueryEndToEndSpec
               .retry(
                 () => {
                   BigQuery.job(job.jobReference.flatMap(_.jobId).get).flatMap { job =>
-                    if (job.status.map(_.state).contains(DoneState))
+                    if (job.status.map(_.state).contains(JobState.Done))
                       Future.successful(job)
                     else
                       Future.failed(new RuntimeException("Job not done."))

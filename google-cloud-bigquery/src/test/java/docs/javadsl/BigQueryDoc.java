@@ -13,16 +13,24 @@ import akka.http.javadsl.marshalling.Marshaller;
 import akka.http.javadsl.model.HttpEntity;
 import akka.http.javadsl.model.RequestEntity;
 import akka.http.javadsl.unmarshalling.Unmarshaller;
-import akka.stream.alpakka.googlecloud.bigquery.BigQueryAttributes;
-import akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings;
+import akka.stream.alpakka.google.GoogleAttributes;
+import akka.stream.alpakka.google.GoogleSettings;
 import akka.stream.alpakka.googlecloud.bigquery.InsertAllRetryPolicy;
 import akka.stream.alpakka.googlecloud.bigquery.javadsl.BigQuery;
 import akka.stream.alpakka.googlecloud.bigquery.javadsl.jackson.BigQueryMarshallers;
-import akka.stream.alpakka.googlecloud.bigquery.model.DatasetJsonProtocol;
-import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol;
-import akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol;
-import akka.stream.alpakka.googlecloud.bigquery.model.TableDataJsonProtocol;
-import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol;
+import akka.stream.alpakka.googlecloud.bigquery.model.Dataset;
+import akka.stream.alpakka.googlecloud.bigquery.model.Job;
+import akka.stream.alpakka.googlecloud.bigquery.model.JobReference;
+import akka.stream.alpakka.googlecloud.bigquery.model.JobState;
+import akka.stream.alpakka.googlecloud.bigquery.model.QueryResponse;
+import akka.stream.alpakka.googlecloud.bigquery.model.Table;
+import akka.stream.alpakka.googlecloud.bigquery.model.TableDataInsertAllRequest;
+import akka.stream.alpakka.googlecloud.bigquery.model.TableDataListResponse;
+import akka.stream.alpakka.googlecloud.bigquery.model.TableFieldSchema;
+import akka.stream.alpakka.googlecloud.bigquery.model.TableFieldSchemaMode;
+import akka.stream.alpakka.googlecloud.bigquery.model.TableFieldSchemaType;
+import akka.stream.alpakka.googlecloud.bigquery.model.TableListResponse;
+import akka.stream.alpakka.googlecloud.bigquery.model.TableSchema;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -139,15 +147,14 @@ public class BigQueryDoc {
     // #run-query
     String sqlQuery =
         String.format("SELECT name, addresses FROM %s.%s WHERE age >= 100", datasetId, tableId);
-    Unmarshaller<HttpEntity, QueryJsonProtocol.QueryResponse<NameAddressesPair>>
-        queryResponseUnmarshaller =
-            BigQueryMarshallers.queryResponseUnmarshaller(NameAddressesPair.class);
-    Source<NameAddressesPair, CompletionStage<QueryJsonProtocol.QueryResponse<NameAddressesPair>>>
-        centenarians = BigQuery.query(sqlQuery, false, false, queryResponseUnmarshaller);
+    Unmarshaller<HttpEntity, QueryResponse<NameAddressesPair>> queryResponseUnmarshaller =
+        BigQueryMarshallers.queryResponseUnmarshaller(NameAddressesPair.class);
+    Source<NameAddressesPair, CompletionStage<QueryResponse<NameAddressesPair>>> centenarians =
+        BigQuery.query(sqlQuery, false, false, queryResponseUnmarshaller);
     // #run-query
 
     // #dry-run-query
-    Source<NameAddressesPair, CompletionStage<QueryJsonProtocol.QueryResponse<NameAddressesPair>>>
+    Source<NameAddressesPair, CompletionStage<QueryResponse<NameAddressesPair>>>
         centenariansDryRun = BigQuery.query(sqlQuery, false, false, queryResponseUnmarshaller);
     CompletionStage<Long> bytesProcessed =
         centenariansDryRun
@@ -157,10 +164,9 @@ public class BigQueryDoc {
     // #dry-run-query
 
     // #table-data
-    Unmarshaller<HttpEntity, TableDataJsonProtocol.TableDataListResponse<Person>>
-        tableDataListUnmarshaller =
-            BigQueryMarshallers.tableDataListResponseUnmarshaller(Person.class);
-    Source<Person, CompletionStage<TableDataJsonProtocol.TableDataListResponse<Person>>> everyone =
+    Unmarshaller<HttpEntity, TableDataListResponse<Person>> tableDataListUnmarshaller =
+        BigQueryMarshallers.tableDataListResponseUnmarshaller(Person.class);
+    Source<Person, CompletionStage<TableDataListResponse<Person>>> everyone =
         BigQuery.listTableData(
             datasetId,
             tableId,
@@ -171,8 +177,8 @@ public class BigQueryDoc {
     // #table-data
 
     // #streaming-insert
-    Marshaller<TableDataJsonProtocol.TableDataInsertAllRequest<Person>, RequestEntity>
-        tableDataInsertAllMarshaller = BigQueryMarshallers.tableDataInsertAllRequestMarshaller();
+    Marshaller<TableDataInsertAllRequest<Person>, RequestEntity> tableDataInsertAllMarshaller =
+        BigQueryMarshallers.tableDataInsertAllRequestMarshaller();
     Sink<List<Person>, NotUsed> peopleInsertSink =
         BigQuery.insertAll(
             datasetId,
@@ -183,89 +189,79 @@ public class BigQueryDoc {
     // #streaming-insert
 
     // #async-insert
-    Flow<Person, JobJsonProtocol.Job, NotUsed> peopleLoadFlow =
+    Flow<Person, Job, NotUsed> peopleLoadFlow =
         BigQuery.insertAllAsync(datasetId, tableId, Jackson.marshaller());
     // #async-insert
 
     List<Person> people = null;
 
     // #job-status
-    Function<List<JobJsonProtocol.JobReference>, CompletionStage<Boolean>> checkIfJobsDone =
+    Function<List<JobReference>, CompletionStage<Boolean>> checkIfJobsDone =
         jobReferences -> {
-          BigQuerySettings settings = BigQuery.getSettings(system);
+          GoogleSettings settings = GoogleSettings.create(system);
           CompletionStage<Boolean> allAreDone = CompletableFuture.completedFuture(true);
-          for (JobJsonProtocol.JobReference jobReference : jobReferences) {
-            CompletionStage<JobJsonProtocol.Job> job =
-                BigQuery.getJob(jobReference.getJobId().get(), Optional.empty(), system, settings);
+          for (JobReference jobReference : jobReferences) {
+            CompletionStage<Job> job =
+                BigQuery.getJob(jobReference.getJobId().get(), Optional.empty(), settings, system);
             CompletionStage<Boolean> jobIsDone =
                 job.thenApply(
                     j ->
-                        j.getStatus()
-                            .map(s -> s.getState().equals(JobJsonProtocol.doneState()))
-                            .orElse(false));
+                        j.getStatus().map(s -> s.getState().equals(JobState.done())).orElse(false));
             allAreDone = allAreDone.thenCombine(jobIsDone, (a, b) -> a & b);
           }
           return allAreDone;
         };
 
-    CompletionStage<List<JobJsonProtocol.Job>> jobs =
-        Source.from(people).via(peopleLoadFlow).runWith(Sink.<JobJsonProtocol.Job>seq(), system);
-    CompletionStage<List<JobJsonProtocol.JobReference>> jobReferences =
+    CompletionStage<List<Job>> jobs =
+        Source.from(people).via(peopleLoadFlow).runWith(Sink.<Job>seq(), system);
+    CompletionStage<List<JobReference>> jobReferences =
         jobs.thenApply(
             js -> js.stream().map(j -> j.getJobReference().get()).collect(Collectors.toList()));
     CompletionStage<Boolean> isDone = jobReferences.thenCompose(checkIfJobsDone);
     // #job-status
 
     // #dataset-methods
-    BigQuerySettings settings = BigQuery.getSettings(system);
-    Source<DatasetJsonProtocol.Dataset, NotUsed> allDatasets =
+    GoogleSettings settings = GoogleSettings.create(system);
+    Source<Dataset, NotUsed> allDatasets =
         BigQuery.listDatasets(OptionalInt.empty(), Optional.empty(), Collections.emptyMap());
-    CompletionStage<DatasetJsonProtocol.Dataset> existingDataset =
-        BigQuery.getDataset(datasetId, system, settings);
-    CompletionStage<DatasetJsonProtocol.Dataset> newDataset =
-        BigQuery.createDataset("newDatasetId", system, settings);
+    CompletionStage<Dataset> existingDataset = BigQuery.getDataset(datasetId, settings, system);
+    CompletionStage<Dataset> newDataset = BigQuery.createDataset("newDatasetId", settings, system);
     CompletionStage<Done> datasetDeleted =
-        BigQuery.deleteDataset(datasetId, false, system, settings);
+        BigQuery.deleteDataset(datasetId, false, settings, system);
     // #dataset-methods
 
     // #table-methods
-    Source<TableJsonProtocol.Table, CompletionStage<TableJsonProtocol.TableListResponse>>
-        allTablesInDataset = BigQuery.listTables(datasetId, OptionalInt.empty());
-    CompletionStage<TableJsonProtocol.Table> existingTable =
-        BigQuery.getTable(datasetId, tableId, system, settings);
-    CompletionStage<Done> tableDeleted = BigQuery.deleteTable(datasetId, tableId, system, settings);
+    Source<Table, CompletionStage<TableListResponse>> allTablesInDataset =
+        BigQuery.listTables(datasetId, OptionalInt.empty());
+    CompletionStage<Table> existingTable = BigQuery.getTable(datasetId, tableId, settings, system);
+    CompletionStage<Done> tableDeleted = BigQuery.deleteTable(datasetId, tableId, settings, system);
     // #table-methods
 
     // #create-table
-    TableJsonProtocol.TableSchema personSchema =
-        TableJsonProtocol.createTableSchema(
-            TableJsonProtocol.createTableFieldSchema(
-                "name", TableJsonProtocol.stringType(), Optional.empty()),
-            TableJsonProtocol.createTableFieldSchema(
-                "age", TableJsonProtocol.integerType(), Optional.empty()),
-            TableJsonProtocol.createTableFieldSchema(
+    TableSchema personSchema =
+        TableSchema.create(
+            TableFieldSchema.create("name", TableFieldSchemaType.string(), Optional.empty()),
+            TableFieldSchema.create("age", TableFieldSchemaType.integer(), Optional.empty()),
+            TableFieldSchema.create(
                 "addresses",
-                TableJsonProtocol.recordType(),
-                Optional.of(TableJsonProtocol.repeatedMode()),
-                TableJsonProtocol.createTableFieldSchema(
-                    "street", TableJsonProtocol.stringType(), Optional.empty()),
-                TableJsonProtocol.createTableFieldSchema(
-                    "city", TableJsonProtocol.stringType(), Optional.empty()),
-                TableJsonProtocol.createTableFieldSchema(
+                TableFieldSchemaType.record(),
+                Optional.of(TableFieldSchemaMode.repeated()),
+                TableFieldSchema.create("street", TableFieldSchemaType.string(), Optional.empty()),
+                TableFieldSchema.create("city", TableFieldSchemaType.string(), Optional.empty()),
+                TableFieldSchema.create(
                     "postalCode",
-                    TableJsonProtocol.integerType(),
-                    Optional.of(TableJsonProtocol.nullableMode()))),
-            TableJsonProtocol.createTableFieldSchema(
-                "isHakker", TableJsonProtocol.booleanType(), Optional.empty()));
-    CompletionStage<TableJsonProtocol.Table> newTable =
-        BigQuery.createTable(datasetId, "newTableId", personSchema, system, settings);
+                    TableFieldSchemaType.integer(),
+                    Optional.of(TableFieldSchemaMode.nullable()))),
+            TableFieldSchema.create("isHakker", TableFieldSchemaType.bool(), Optional.empty()));
+    CompletionStage<Table> newTable =
+        BigQuery.createTable(datasetId, "newTableId", personSchema, settings, system);
     // #create-table
 
     // #custom-settings
-    BigQuerySettings defaultSettings = BigQuery.getSettings(system);
-    BigQuerySettings customSettings = defaultSettings.withProjectId("myOtherProjectId");
+    GoogleSettings defaultSettings = GoogleSettings.create(system);
+    GoogleSettings customSettings = defaultSettings.withProjectId("myOtherProjectId");
     BigQuery.query(sqlQuery, false, false, queryResponseUnmarshaller)
-        .withAttributes(BigQueryAttributes.settings(customSettings));
+        .withAttributes(GoogleAttributes.settings(customSettings));
     // #custom-settings
   }
 }

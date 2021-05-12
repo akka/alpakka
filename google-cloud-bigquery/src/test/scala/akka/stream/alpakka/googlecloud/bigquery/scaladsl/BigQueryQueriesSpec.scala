@@ -7,16 +7,11 @@ package akka.stream.alpakka.googlecloud.bigquery.scaladsl
 import _root_.spray.json._
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import akka.stream.alpakka.googlecloud.bigquery.impl.auth.CredentialsProvider
-import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol.JobReference
-import akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol.QueryResponse
-import akka.stream.alpakka.googlecloud.bigquery.{
-  BigQueryAttributes,
-  BigQueryEndpoints,
-  BigQuerySettings,
-  HoverflySupport
-}
+import akka.stream.alpakka.google.auth.NoCredentials
+import akka.stream.alpakka.google.{GoogleAttributes, GoogleSettings}
+import akka.stream.alpakka.googlecloud.bigquery.model.JobReference
+import akka.stream.alpakka.googlecloud.bigquery.model.QueryResponse
+import akka.stream.alpakka.googlecloud.bigquery.{BigQueryEndpoints, HoverflySupport}
 import akka.stream.scaladsl.Sink
 import akka.testkit.TestKit
 import io.specto.hoverfly.junit.core.SimulationSource.dsl
@@ -25,8 +20,6 @@ import io.specto.hoverfly.junit.dsl.ResponseCreators.success
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpecLike
-
-import scala.concurrent.{ExecutionContext, Future}
 
 class BigQueryQueriesSpec
     extends TestKit(ActorSystem("BigQueryQueriesSpec"))
@@ -47,12 +40,7 @@ class BigQueryQueriesSpec
     jsonFormat10(QueryResponse[T])
   }
 
-  implicit val settings = BigQuerySettings()
-    .copy(credentialsProvider = new CredentialsProvider {
-      override def projectId: String = ???
-      override def getToken()(implicit ec: ExecutionContext, settings: BigQuerySettings): Future[OAuth2BearerToken] =
-        Future.successful(OAuth2BearerToken("yyyy.c.an-access-token"))
-    })
+  implicit val settings = GoogleSettings().copy(credentials = NoCredentials("", ""))
 
   val jobId = "jobId"
   val pageToken = "pageToken"
@@ -106,7 +94,7 @@ class BigQueryQueriesSpec
         )
 
         query[JsValue]("SQL")
-          .addAttributes(BigQueryAttributes.settings(settings))
+          .addAttributes(GoogleAttributes.settings(settings))
           .runWith(Sink.seq[JsValue])
           .map(_ shouldEqual Seq(JsString("firstPage")))
       }
@@ -129,7 +117,7 @@ class BigQueryQueriesSpec
         )
 
         query[JsValue]("SQL")
-          .addAttributes(BigQueryAttributes.settings(settings))
+          .addAttributes(GoogleAttributes.settings(settings))
           .runWith(Sink.seq[JsValue])
           .map(_ shouldEqual Seq(JsString("firstPage"), JsString("secondPage")))
       }
@@ -151,7 +139,7 @@ class BigQueryQueriesSpec
         )
 
         query[JsValue]("SQL")
-          .addAttributes(BigQueryAttributes.settings(settings))
+          .addAttributes(GoogleAttributes.settings(settings))
           .runWith(Sink.seq[JsValue])
           .map(_ shouldEqual Seq(JsString("firstPage")))
       }
@@ -177,7 +165,7 @@ class BigQueryQueriesSpec
         )
 
         query[JsValue]("SQL")
-          .addAttributes(BigQueryAttributes.settings(settings))
+          .addAttributes(GoogleAttributes.settings(settings))
           .runWith(Sink.seq[JsValue])
           .map(_ shouldEqual Seq(JsString("firstPage"), JsString("secondPage")))
       }
@@ -196,7 +184,7 @@ class BigQueryQueriesSpec
         )
 
         query[JsValue]("SQL")
-          .addAttributes(BigQueryAttributes.settings(settings))
+          .addAttributes(GoogleAttributes.settings(settings))
           .runWith(Sink.seq[JsValue])
           .map(_ shouldEqual Seq(JsString("firstPage")))
       }
@@ -227,7 +215,7 @@ class BigQueryQueriesSpec
 
         recoverToSucceededIf[BrokenParserException] {
           query[JsValue]("SQL")
-            .addAttributes(BigQueryAttributes.settings(settings))
+            .addAttributes(GoogleAttributes.settings(settings))
             .runWith(Sink.seq[JsValue])
         }
       }
