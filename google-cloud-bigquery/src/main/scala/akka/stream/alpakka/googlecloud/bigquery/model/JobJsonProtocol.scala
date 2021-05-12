@@ -72,7 +72,7 @@ object Job {
  * @param load configures a load job
  * @param labels the labels associated with this job
  */
-final case class JobConfiguration(load: Option[JobConfigurationLoad], labels: Option[Map[String, String]]) {
+final case class JobConfiguration private (load: Option[JobConfigurationLoad], labels: Option[Map[String, String]]) {
   def getLoad = load.asJava
   def getLabels = labels.asJava
 
