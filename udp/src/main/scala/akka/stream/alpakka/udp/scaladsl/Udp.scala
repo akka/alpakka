@@ -14,6 +14,7 @@ import akka.stream.alpakka.udp.impl.{UdpBindFlow, UdpSendFlow}
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Flow
 
+import scala.Option
 import scala.collection.immutable.Traversable
 import scala.concurrent.Future
 
@@ -33,7 +34,7 @@ object Udp {
    * subsequent processing.
    */
   def sendFlow(system: ActorSystem): Flow[Datagram, Datagram, NotUsed] =
-    Flow.fromGraph(new UdpSendFlow()(system))
+    Flow.fromGraph(new UdpSendFlow(Option.empty)(system))
 
   /**
    * Creates a flow that will send all incoming [UdpMessage] messages to the remote address
@@ -51,7 +52,7 @@ object Udp {
    * subsequent processing.
    */
   def sendFlow(options: Traversable[SocketOption], system: ActorSystem): Flow[Datagram, Datagram, NotUsed] =
-    Flow.fromGraph(new UdpSendFlow(options)(system))
+    Flow.fromGraph(new UdpSendFlow(Option(options))(system))
 
   /**
    * Creates a sink that will send all incoming [UdpMessage] messages to the remote address
@@ -97,7 +98,7 @@ object Udp {
    */
   def bindFlow(localAddress: InetSocketAddress,
                system: ActorSystem): Flow[Datagram, Datagram, Future[InetSocketAddress]] =
-    Flow.fromGraph(new UdpBindFlow(localAddress)(system))
+    Flow.fromGraph(new UdpBindFlow(localAddress, Option.empty)(system))
 
   /**
    * Creates a flow that upon materialization binds to the given `localAddress`. All incoming
@@ -118,5 +119,5 @@ object Udp {
   def bindFlow(localAddress: InetSocketAddress,
                options: Traversable[SocketOption],
                system: ActorSystem): Flow[Datagram, Datagram, Future[InetSocketAddress]] =
-    Flow.fromGraph(new UdpBindFlow(localAddress, options)(system))
+    Flow.fromGraph(new UdpBindFlow(localAddress, Option(options))(system))
 }

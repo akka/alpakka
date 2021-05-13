@@ -12,6 +12,7 @@ import akka.stream.alpakka.udp.Datagram
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.stream._
 
+import scala.Option
 import scala.collection.immutable.Traversable
 
 /**
@@ -20,7 +21,7 @@ import scala.collection.immutable.Traversable
  * is passed-through to the output for possible further processing.
  */
 @InternalApi private[udp] final class UdpSendLogic(val shape: FlowShape[Datagram, Datagram],
-                                                   options: Traversable[SocketOption] = Nil)(
+                                                   options: Option[Traversable[SocketOption]])(
     implicit val system: ActorSystem
 ) extends GraphStageLogic(shape) {
 
@@ -33,10 +34,9 @@ import scala.collection.immutable.Traversable
 
   override def preStart(): Unit = {
     getStageActor(processIncoming)
-    if (options != null) {
-      IO(Udp) ! Udp.SimpleSender(options)
-    } else {
-      IO(Udp) ! Udp.SimpleSender
+    options match {
+      case Some(socketOptions) => IO(Udp) ! Udp.SimpleSender(socketOptions)
+      case None => IO(Udp) ! Udp.SimpleSender
     }
   }
 
@@ -74,7 +74,7 @@ import scala.collection.immutable.Traversable
   )
 }
 
-@InternalApi private[udp] final class UdpSendFlow(options: Traversable[SocketOption] = Nil)(
+@InternalApi private[udp] final class UdpSendFlow(options: Option[Traversable[SocketOption]])(
     implicit val system: ActorSystem
 ) extends GraphStage[FlowShape[Datagram, Datagram]] {
 
