@@ -99,19 +99,13 @@ public class UdpTest {
 
   @Test
   public void testSendAndReceiveMessagesWithOptions() throws Exception {
-    // #bind-address
     final InetSocketAddress bindToLocal = new InetSocketAddress("localhost", 0);
-    // #bind-address
 
-    // #bind-socket-option
     final List<Inet.SocketOption> bindSocketOptions = new ArrayList<>();
     bindSocketOptions.add(new InetProtocolFamily());
-    // #bind-socket-option
 
-    // #bind-flow
     final Flow<Datagram, Datagram, CompletionStage<InetSocketAddress>> bindFlow =
         Udp.bindFlow(bindToLocal, bindSocketOptions, system);
-    // #bind-flow
 
     final Pair<
             Pair<TestPublisher.Probe<Datagram>, CompletionStage<InetSocketAddress>>,
@@ -123,32 +117,24 @@ public class UdpTest {
                 .run(system);
 
     {
-      // #send-datagrams
       final InetSocketAddress destination = new InetSocketAddress("my.server", 27015);
-      // #send-datagrams
     }
 
     final InetSocketAddress destination = materialized.first().second().toCompletableFuture().get();
 
-    // #send-datagrams
     final Integer messagesToSend = 100;
-    // #send-datagrams
 
-    // #send-socket-option
     final List<Inet.SocketOption> sendSocketOptions = new ArrayList<>();
     sendSocketOptions.add(new InetProtocolFamily());
-    // #send-socket-option
 
     final TestSubscriber.Probe<Datagram> sub = materialized.second();
     sub.ensureSubscription();
     sub.request(messagesToSend);
 
-    // #send-datagrams
     Source.range(1, messagesToSend)
         .map(i -> ByteString.fromString("Message " + i))
         .map(bs -> Datagram.create(bs, destination))
         .runWith(Udp.sendSink(sendSocketOptions, system), system);
-    // #send-datagrams
 
     for (int i = 0; i < messagesToSend; i++) {
       sub.requestNext();

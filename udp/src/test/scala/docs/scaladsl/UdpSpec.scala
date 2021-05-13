@@ -90,10 +90,8 @@ class UdpSpec
 
     "send and receive messages with options" in {
 
-      // #bind-flow
       val bindFlow: Flow[Datagram, Datagram, Future[InetSocketAddress]] =
         Udp.bindFlow(bindToLocal, List(InetProtocolFamily()))
-      // #bind-flow
 
       val ((pub, bound), sub) = TestSource
         .probe[Datagram](system)
@@ -104,26 +102,19 @@ class UdpSpec
       val destination = bound.futureValue
 
       {
-        // #send-datagrams
         val destination = new InetSocketAddress("my.server", 27015)
-        // #send-datagrams
         destination
       }
 
-      // #send-datagrams
       val messagesToSend = 100
-
-      // #send-datagrams
 
       sub.ensureSubscription()
       sub.request(messagesToSend)
 
-      // #send-datagrams
       Source(1 to messagesToSend)
         .map(i => ByteString(s"Message $i"))
         .map(Datagram(_, destination))
         .runWith(Udp.sendSink(List(InetProtocolFamily())))
-      // #send-datagrams
 
       (1 to messagesToSend).foreach { _ =>
         sub.requestNext()
