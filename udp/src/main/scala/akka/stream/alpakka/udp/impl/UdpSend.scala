@@ -13,7 +13,7 @@ import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.stream._
 
 import scala.Option
-import scala.collection.immutable.Traversable
+import scala.collection.immutable.Iterable
 
 /**
  * Sends incoming messages to the corresponding destination addresses.
@@ -21,7 +21,7 @@ import scala.collection.immutable.Traversable
  * is passed-through to the output for possible further processing.
  */
 @InternalApi private[udp] final class UdpSendLogic(val shape: FlowShape[Datagram, Datagram],
-                                                   options: Option[Traversable[SocketOption]])(
+                                                   options: Option[Iterable[SocketOption]])(
     implicit val system: ActorSystem
 ) extends GraphStageLogic(shape) {
 
@@ -74,7 +74,7 @@ import scala.collection.immutable.Traversable
   )
 }
 
-@InternalApi private[udp] final class UdpSendFlow(options: Option[Traversable[SocketOption]])(
+@InternalApi private[udp] final class UdpSendFlow(options: Option[Iterable[SocketOption]])(
     implicit val system: ActorSystem
 ) extends GraphStage[FlowShape[Datagram, Datagram]] {
 

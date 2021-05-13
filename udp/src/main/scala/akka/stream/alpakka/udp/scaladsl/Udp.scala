@@ -15,7 +15,7 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Flow
 
 import scala.Option
-import scala.collection.immutable.Traversable
+import scala.collection.immutable.Iterable
 import scala.concurrent.Future
 
 object Udp {
@@ -42,7 +42,7 @@ object Udp {
    * subsequent processing.
    */
   def sendFlow(
-      options: Traversable[SocketOption]
+      options: Iterable[SocketOption]
   )(implicit system: ClassicActorSystemProvider): Flow[Datagram, Datagram, NotUsed] =
     sendFlow(options, system.classicSystem)
 
@@ -51,7 +51,7 @@ object Udp {
    * contained in the message. All incoming messages are also emitted from the flow for
    * subsequent processing.
    */
-  def sendFlow(options: Traversable[SocketOption], system: ActorSystem): Flow[Datagram, Datagram, NotUsed] =
+  def sendFlow(options: Iterable[SocketOption], system: ActorSystem): Flow[Datagram, Datagram, NotUsed] =
     Flow.fromGraph(new UdpSendFlow(Option(options))(system))
 
   /**
@@ -70,7 +70,7 @@ object Udp {
    * Creates a sink that will send all incoming [UdpMessage] messages to the remote address
    * contained in the message.
    */
-  def sendSink(options: Traversable[SocketOption])(
+  def sendSink(options: Iterable[SocketOption])(
       implicit system: ClassicActorSystemProvider
   ): Sink[Datagram, NotUsed] = sendFlow(options).to(Sink.ignore)
 
@@ -78,7 +78,7 @@ object Udp {
    * Creates a sink that will send all incoming [UdpMessage] messages to the remote address
    * contained in the message.
    */
-  def sendSink(options: Traversable[SocketOption], system: ActorSystem): Sink[Datagram, NotUsed] =
+  def sendSink(options: Iterable[SocketOption], system: ActorSystem): Sink[Datagram, NotUsed] =
     sendFlow(options, system).to(Sink.ignore)
 
   /**
@@ -107,7 +107,7 @@ object Udp {
    */
   def bindFlow(
       localAddress: InetSocketAddress,
-      options: Traversable[SocketOption]
+      options: Iterable[SocketOption]
   )(implicit system: ClassicActorSystemProvider): Flow[Datagram, Datagram, Future[InetSocketAddress]] =
     bindFlow(localAddress, options, system.classicSystem)
 
@@ -117,7 +117,7 @@ object Udp {
    * are sent to the remote address contained in the message.
    */
   def bindFlow(localAddress: InetSocketAddress,
-               options: Traversable[SocketOption],
+               options: Iterable[SocketOption],
                system: ActorSystem): Flow[Datagram, Datagram, Future[InetSocketAddress]] =
     Flow.fromGraph(new UdpBindFlow(localAddress, Option(options))(system))
 }

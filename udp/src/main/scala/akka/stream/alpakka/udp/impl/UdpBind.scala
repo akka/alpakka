@@ -15,14 +15,14 @@ import akka.stream.alpakka.udp.Datagram
 import akka.stream.stage._
 
 import scala.Option
-import scala.collection.immutable.Traversable
+import scala.collection.immutable.Iterable
 import scala.concurrent.{Future, Promise}
 
 /**
  * Binds to the given local address using UDP manager actor.
  */
 @InternalApi private[udp] final class UdpBindLogic(localAddress: InetSocketAddress,
-                                                   options: Option[Traversable[SocketOption]],
+                                                   options: Option[Iterable[SocketOption]],
                                                    boundPromise: Promise[InetSocketAddress])(
     val shape: FlowShape[Datagram, Datagram]
 )(implicit val system: ActorSystem)
@@ -85,7 +85,7 @@ import scala.concurrent.{Future, Promise}
 }
 
 @InternalApi private[udp] final class UdpBindFlow(localAddress: InetSocketAddress,
-                                                  options: Option[Traversable[SocketOption]])(
+                                                  options: Option[Iterable[SocketOption]])(
     implicit val system: ActorSystem
 ) extends GraphStageWithMaterializedValue[FlowShape[Datagram, Datagram], Future[InetSocketAddress]] {
 
