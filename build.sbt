@@ -256,7 +256,9 @@ lazy val orientdb =
                  Test / fork := true,
                  Test / scalacOptions ++= Seq(
                      "-P:silencer:pathFilters=orientdb/src/test"
-                   ))
+                   ),
+                // note: orientdb client needs to be refactored to move off deprecated calls
+                fatalWarnings := false)
 
 lazy val reference = internalProject("reference", Dependencies.Reference)
   .dependsOn(testkit % Test)

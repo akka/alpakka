@@ -8,6 +8,7 @@ import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.alpakka.orientdb.{OrientDbWriteMessage, OrientDbWriteSettings}
 import akka.stream.stage._
+import com.github.ghik.silencer.silent
 import com.orientechnologies.orient.`object`.db.OObjectDatabaseTx
 import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx
 import com.orientechnologies.orient.core.record.ORecord
@@ -42,6 +43,7 @@ private[orientdb] class OrientDbFlowStage[T, C](
 
   sealed abstract class OrientDbLogic extends GraphStageLogic(shape) with InHandler with OutHandler {
 
+    @silent("deprecated")
     protected var client: ODatabaseDocumentTx = _
     protected var oObjectClient: OObjectDatabaseTx = _
 
