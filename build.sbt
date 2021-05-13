@@ -211,6 +211,7 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
 lazy val googleCloudStorage = alpakkaProject(
   "google-cloud-storage",
   "google.cloud.storage",
+  Test / fork := true,
   Dependencies.GoogleStorage
 ).dependsOn(googleCommon)
 
