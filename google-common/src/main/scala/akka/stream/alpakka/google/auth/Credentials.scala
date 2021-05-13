@@ -6,6 +6,7 @@ package akka.stream.alpakka.google.auth
 
 import akka.actor.ClassicActorSystemProvider
 import akka.annotation.DoNotInherit
+import akka.event.Logging
 import akka.http.scaladsl.model.headers.HttpCredentials
 import akka.stream.alpakka.google.RequestSettings
 import akka.util.JavaDurationConverters._
@@ -33,7 +34,10 @@ object Credentials {
             parseComputeEngine(c)
           } catch {
             case NonFatal(ex2) =>
-              system.classicSystem.log.warning("Unable to find application default credentials", ex1, ex2)
+              val log = Logging(system.classicSystem, getClass)
+              log.warning("Unable to find Application Default Credentials for Google APIs")
+              log.warning("Service account: {}", ex1.getMessage)
+              log.warning("Compute Engine: {}", ex2.getMessage)
               parseNone(c) // TODO Once credentials are guaranteed to be managed centrally we can throw an error instead
           }
       }
