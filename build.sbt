@@ -189,7 +189,6 @@ lazy val googleCloudPubSub = alpakkaProject(
   Test / fork := true,
   // See docker-compose.yml gcloud-pubsub-emulator_prep
   Test / envVars := Map("PUBSUB_EMULATOR_HOST" -> "localhost", "PUBSUB_EMULATOR_PORT" -> "8538")
-
 ).dependsOn(googleCommon)
 
 lazy val googleCloudPubSubGrpc = alpakkaProject(
@@ -250,12 +249,14 @@ lazy val mqttStreamingBench = internalProject("mqtt-streaming-bench")
   .dependsOn(mqtt, mqttStreaming)
 
 lazy val orientdb =
-  alpakkaProject("orientdb",
-                 "orientdb",
-                 Dependencies.OrientDB,
-                 Test / fork := true,
-                 // note: orientdb client needs to be refactored to move off deprecated calls
-                 fatalWarnings := false)
+  alpakkaProject(
+    "orientdb",
+    "orientdb",
+    Dependencies.OrientDB,
+    Test / fork := true,
+    // note: orientdb client needs to be refactored to move off deprecated calls
+    fatalWarnings := false
+  )
 
 lazy val reference = internalProject("reference", Dependencies.Reference)
   .dependsOn(testkit % Test)
