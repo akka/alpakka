@@ -28,7 +28,7 @@ import scala.compat.java8.OptionConverters._
  * @tparam T the data model of each row
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-final case class TableDataListResponse[+T](totalRows: Long, pageToken: Option[String], rows: Option[Seq[T]]) {
+final case class TableDataListResponse[+T] private (totalRows: Long, pageToken: Option[String], rows: Option[Seq[T]]) {
 
   @silent("never used")
   @JsonCreator
@@ -90,10 +90,10 @@ object TableDataListResponse {
  * @tparam T the data model of each row
  */
 @JsonInclude(Include.NON_NULL)
-final case class TableDataInsertAllRequest[+T](skipInvalidRows: Option[Boolean],
-                                               ignoreUnknownValues: Option[Boolean],
-                                               templateSuffix: Option[String],
-                                               rows: Seq[Row[T]]) {
+final case class TableDataInsertAllRequest[+T] private (skipInvalidRows: Option[Boolean],
+                                                        ignoreUnknownValues: Option[Boolean],
+                                                        templateSuffix: Option[String],
+                                                        rows: Seq[Row[T]]) {
 
   @JsonIgnore def getSkipInvalidRows = skipInvalidRows.map(lang.Boolean.valueOf).asJava
   @JsonIgnore def getIgnoreUnknownValues = ignoreUnknownValues.map(lang.Boolean.valueOf).asJava
@@ -172,7 +172,7 @@ object TableDataInsertAllRequest {
  * @param json the record this row contains
  * @tparam T the data model of the record
  */
-final case class Row[+T](insertId: Option[String], json: T) {
+final case class Row[+T] private (insertId: Option[String], json: T) {
 
   def getInsertId = insertId.asJava
   def getJson = json
@@ -205,7 +205,7 @@ object Row {
  * TableDataInsertAllResponse model
  * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll#response-body BigQuery reference]]
  */
-final case class TableDataInsertAllResponse(insertErrors: Option[Seq[InsertError]]) {
+final case class TableDataInsertAllResponse private (insertErrors: Option[Seq[InsertError]]) {
   def getInsertErrors = insertErrors.map(_.asJava).asJava
 
   def withInsertErrors(insertErrors: Option[Seq[InsertError]]) =
@@ -232,7 +232,7 @@ object TableDataInsertAllResponse {
  * InsertError model
  * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll#response-body BigQuery reference]]
  */
-final case class InsertError(index: Int, errors: Option[Seq[ErrorProto]]) {
+final case class InsertError private (index: Int, errors: Option[Seq[ErrorProto]]) {
   def getIndex = index
   def getErrors = errors.map(_.asJava).asJava
 

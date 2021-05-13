@@ -20,7 +20,7 @@ import scala.compat.java8.OptionConverters._
  * @param location specifies where the error occurred, if present
  * @param message A human-readable description of the error
  */
-final case class ErrorProto(reason: Option[String], location: Option[String], message: Option[String]) {
+final case class ErrorProto private (reason: Option[String], location: Option[String], message: Option[String]) {
 
   @silent("never used")
   @JsonCreator

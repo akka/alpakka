@@ -26,11 +26,11 @@ import scala.compat.java8.OptionConverters._
  * @param numRows the number of rows of data in this table
  * @param location the geographic location where the table resides
  */
-final case class Table(tableReference: TableReference,
-                       labels: Option[Map[String, String]],
-                       schema: Option[TableSchema],
-                       numRows: Option[Long],
-                       location: Option[String]) {
+final case class Table private (tableReference: TableReference,
+                                labels: Option[Map[String, String]],
+                                schema: Option[TableSchema],
+                                numRows: Option[Long],
+                                location: Option[String]) {
 
   def getTableReference = tableReference
   def getLabels = labels.map(_.asJava).asJava
@@ -99,7 +99,7 @@ object Table {
  * @param datasetId the ID of the dataset containing this table
  * @param tableId the ID of the table
  */
-final case class TableReference(projectId: Option[String], datasetId: String, tableId: Option[String]) {
+final case class TableReference private (projectId: Option[String], datasetId: String, tableId: Option[String]) {
 
   def getProjectId = projectId.asJava
   def getDatasetId = datasetId
@@ -142,7 +142,7 @@ object TableReference {
  *
  * @param fields describes the fields in a table
  */
-final case class TableSchema(fields: Seq[TableFieldSchema]) {
+final case class TableSchema private (fields: Seq[TableFieldSchema]) {
 
   @silent("never used")
   @JsonCreator
@@ -190,10 +190,10 @@ object TableSchema {
  * @param mode the field mode
  * @param fields describes the nested schema fields if the type property is set to `RECORD`
  */
-final case class TableFieldSchema(name: String,
-                                  `type`: TableFieldSchemaType,
-                                  mode: Option[TableFieldSchemaMode],
-                                  fields: Option[Seq[TableFieldSchema]]) {
+final case class TableFieldSchema private (name: String,
+                                           `type`: TableFieldSchemaType,
+                                           mode: Option[TableFieldSchemaMode],
+                                           fields: Option[Seq[TableFieldSchema]]) {
 
   @silent("never used")
   @JsonCreator
@@ -270,7 +270,7 @@ object TableFieldSchema {
   )
 }
 
-final case class TableFieldSchemaType(value: String) extends StringEnum
+final case class TableFieldSchemaType private (value: String) extends StringEnum
 object TableFieldSchemaType {
 
   /**
@@ -320,7 +320,7 @@ object TableFieldSchemaType {
   implicit val format: JsonFormat[TableFieldSchemaType] = StringEnum.jsonFormat(apply)
 }
 
-final case class TableFieldSchemaMode(value: String) extends StringEnum
+final case class TableFieldSchemaMode private (value: String) extends StringEnum
 object TableFieldSchemaMode {
 
   /**
@@ -348,7 +348,9 @@ object TableFieldSchemaMode {
  * @param tables tables in the requested dataset
  * @param totalItems the total number of tables in the dataset
  */
-final case class TableListResponse(nextPageToken: Option[String], tables: Option[Seq[Table]], totalItems: Option[Int]) {
+final case class TableListResponse private (nextPageToken: Option[String],
+                                            tables: Option[Seq[Table]],
+                                            totalItems: Option[Int]) {
 
   def getNextPageToken = nextPageToken.asJava
   def getTables = tables.map(_.asJava).asJava
