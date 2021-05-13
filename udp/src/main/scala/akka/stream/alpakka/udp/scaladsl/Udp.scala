@@ -24,6 +24,8 @@ object Udp {
    * Creates a flow that will send all incoming [UdpMessage] messages to the remote address
    * contained in the message. All incoming messages are also emitted from the flow for
    * subsequent processing.
+   *
+   * @param system implicit actor system
    */
   def sendFlow()(implicit system: ClassicActorSystemProvider): Flow[Datagram, Datagram, NotUsed] =
     sendFlow(system.classicSystem)
@@ -32,6 +34,8 @@ object Udp {
    * Creates a flow that will send all incoming [UdpMessage] messages to the remote address
    * contained in the message. All incoming messages are also emitted from the flow for
    * subsequent processing.
+   *
+   * @param system the actor system
    */
   def sendFlow(system: ActorSystem): Flow[Datagram, Datagram, NotUsed] =
     Flow.fromGraph(new UdpSendFlow(Option.empty)(system))
@@ -40,6 +44,9 @@ object Udp {
    * Creates a flow that will send all incoming [UdpMessage] messages to the remote address
    * contained in the message. All incoming messages are also emitted from the flow for
    * subsequent processing.
+   *
+   * @param options UDP socket options
+   * @param system implicit actor system
    */
   def sendFlow(
       options: Iterable[SocketOption]
@@ -50,6 +57,9 @@ object Udp {
    * Creates a flow that will send all incoming [UdpMessage] messages to the remote address
    * contained in the message. All incoming messages are also emitted from the flow for
    * subsequent processing.
+   *
+   * @param options UDP socket options
+   * @param system the actor system
    */
   def sendFlow(options: Iterable[SocketOption], system: ActorSystem): Flow[Datagram, Datagram, NotUsed] =
     Flow.fromGraph(new UdpSendFlow(Option(options))(system))
@@ -57,18 +67,25 @@ object Udp {
   /**
    * Creates a sink that will send all incoming [UdpMessage] messages to the remote address
    * contained in the message.
+   *
+   * @param system implicit actor system
    */
   def sendSink()(implicit system: ClassicActorSystemProvider): Sink[Datagram, NotUsed] = sendFlow().to(Sink.ignore)
 
   /**
    * Creates a sink that will send all incoming [UdpMessage] messages to the remote address
    * contained in the message.
+   *
+   * @param system the actor system
    */
   def sendSink(system: ActorSystem): Sink[Datagram, NotUsed] = sendFlow(system).to(Sink.ignore)
 
   /**
    * Creates a sink that will send all incoming [UdpMessage] messages to the remote address
    * contained in the message.
+   *
+   * @param options UDP socket options
+   * @param system implicit actor system
    */
   def sendSink(options: Iterable[SocketOption])(
       implicit system: ClassicActorSystemProvider
@@ -77,6 +94,9 @@ object Udp {
   /**
    * Creates a sink that will send all incoming [UdpMessage] messages to the remote address
    * contained in the message.
+   *
+   * @param options UDP socket options
+   * @param system the actor system
    */
   def sendSink(options: Iterable[SocketOption], system: ActorSystem): Sink[Datagram, NotUsed] =
     sendFlow(options, system).to(Sink.ignore)
@@ -85,6 +105,9 @@ object Udp {
    * Creates a flow that upon materialization binds to the given `localAddress`. All incoming
    * messages to the `localAddress` are emitted from the flow. All incoming messages to the flow
    * are sent to the remote address contained in the message.
+   *
+   * @param localAddress UDP socket address
+   * @param system implicit actor system
    */
   def bindFlow(
       localAddress: InetSocketAddress
@@ -95,6 +118,9 @@ object Udp {
    * Creates a flow that upon materialization binds to the given `localAddress`. All incoming
    * messages to the `localAddress` are emitted from the flow. All incoming messages to the flow
    * are sent to the remote address contained in the message.
+   *
+   * @param localAddress UDP socket address
+   * @param system the actor system
    */
   def bindFlow(localAddress: InetSocketAddress,
                system: ActorSystem): Flow[Datagram, Datagram, Future[InetSocketAddress]] =
@@ -104,6 +130,10 @@ object Udp {
    * Creates a flow that upon materialization binds to the given `localAddress`. All incoming
    * messages to the `localAddress` are emitted from the flow. All incoming messages to the flow
    * are sent to the remote address contained in the message.
+   *
+   * @param localAddress UDP socket address
+   * @param options UDP socket options
+   * @param system implicit actor system
    */
   def bindFlow(
       localAddress: InetSocketAddress,
@@ -115,6 +145,10 @@ object Udp {
    * Creates a flow that upon materialization binds to the given `localAddress`. All incoming
    * messages to the `localAddress` are emitted from the flow. All incoming messages to the flow
    * are sent to the remote address contained in the message.
+   *
+   * @param localAddress UDP socket address
+   * @param options UDP socket options
+   * @param system the actor system
    */
   def bindFlow(localAddress: InetSocketAddress,
                options: Iterable[SocketOption],
