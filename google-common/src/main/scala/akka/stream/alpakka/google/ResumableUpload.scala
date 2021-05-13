@@ -115,10 +115,10 @@ private[alpakka] object ResumableUpload {
     }
 
     val pool = {
-      val authority = request.uri.authority
+      val uri = request.uri
       Flow[HttpRequest]
         .map((_, ()))
-        .via(GoogleHttp().cachedHostConnectionPoolWithContext(authority.host.address, authority.port)(um))
+        .via(GoogleHttp().cachedHostConnectionPoolWithContext(uri.authority.host.address, uri.effectivePort)(um))
         .map(_._1.recoverWith { case DoNotRetry(ex) => Failure(ex) })
     }
 

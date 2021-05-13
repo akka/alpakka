@@ -4,43 +4,49 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.model
 
-import akka.stream.alpakka.googlecloud.bigquery.model.ErrorProtoJsonProtocol.ErrorProto
-import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.{TableReference, TableSchema}
 import akka.stream.alpakka.googlecloud.bigquery.scaladsl.spray.BigQueryRestJsonProtocol._
 import com.fasterxml.jackson.annotation.{JsonCreator, JsonProperty}
 import com.github.ghik.silencer.silent
-import spray.json.{deserializationError, JsString, JsValue, JsonFormat, RootJsonFormat}
+import spray.json.{JsonFormat, RootJsonFormat}
 
 import java.util
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Seq
 import scala.compat.java8.OptionConverters._
 
-object JobJsonProtocol {
+/**
+ * Job model
+ * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job BigQuery reference]]
+ *
+ * @param configuration describes the job configuration
+ * @param jobReference reference describing the unique-per-user name of the job
+ * @param status the status of this job
+ */
+final case class Job private (configuration: Option[JobConfiguration],
+                              jobReference: Option[JobReference],
+                              status: Option[JobStatus]) {
 
-  /**
-   * Job model
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job BigQuery reference]]
-   *
-   * @param configuration describes the job configuration
-   * @param jobReference reference describing the unique-per-user name of the job
-   * @param status the status of this job
-   */
-  final case class Job(configuration: Option[JobConfiguration],
-                       jobReference: Option[JobReference],
-                       status: Option[JobStatus]) {
+  def getConfiguration = configuration.asJava
+  def getJobReference = jobReference.asJava
+  def getStatus = status.asJava
 
-    def getConfiguration = configuration.asJava
-    def getJobReference = jobReference.asJava
-    def getStatus = status.asJava
+  def withConfiguration(configuration: Option[JobConfiguration]) =
+    copy(configuration = configuration)
+  def withConfiguration(configuration: util.Optional[JobConfiguration]) =
+    copy(configuration = configuration.asScala)
 
-    def withConfiguration(configuration: util.Optional[JobConfiguration]) =
-      copy(configuration = configuration.asScala)
-    def withJobReference(jobReference: util.Optional[JobReference]) =
-      copy(jobReference = jobReference.asScala)
-    def withStatus(status: util.Optional[JobStatus]) =
-      copy(status = status.asScala)
-  }
+  def withJobReference(jobReference: Option[JobReference]) =
+    copy(jobReference = jobReference)
+  def withJobReference(jobReference: util.Optional[JobReference]) =
+    copy(jobReference = jobReference.asScala)
+
+  def withStatus(status: Option[JobStatus]) =
+    copy(status = status)
+  def withStatus(status: util.Optional[JobStatus]) =
+    copy(status = status.asScala)
+}
+
+object Job {
 
   /**
    * Java API: Job model
@@ -51,21 +57,47 @@ object JobJsonProtocol {
    * @param status the status of this job
    * @return a [[Job]]
    */
-  def createJob(configuration: util.Optional[JobConfiguration],
-                jobReference: util.Optional[JobReference],
-                status: util.Optional[JobStatus]) =
+  def create(configuration: util.Optional[JobConfiguration],
+             jobReference: util.Optional[JobReference],
+             status: util.Optional[JobStatus]) =
     Job(configuration.asScala, jobReference.asScala, status.asScala)
+
+  implicit val format: RootJsonFormat[Job] = jsonFormat3(apply)
+}
+
+/**
+ * JobConfiguration model
+ * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfiguration BigQuery reference]]
+ *
+ * @param load configures a load job
+ * @param labels the labels associated with this job
+ */
+final case class JobConfiguration private (load: Option[JobConfigurationLoad], labels: Option[Map[String, String]]) {
+  def getLoad = load.asJava
+  def getLabels = labels.asJava
+
+  def withLoad(load: Option[JobConfigurationLoad]) =
+    copy(load = load)
+  def withLoad(load: util.Optional[JobConfigurationLoad]) =
+    copy(load = load.asScala)
+
+  def withLabels(labels: Option[Map[String, String]]) =
+    copy(labels = labels)
+  def withLabels(labels: util.Optional[util.Map[String, String]]) =
+    copy(labels = labels.asScala.map(_.asScala.toMap))
+}
+
+object JobConfiguration {
 
   /**
    * JobConfiguration model
    * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfiguration BigQuery reference]]
    *
    * @param load configures a load job
+   * @return a [[JobConfiguration]]
    */
-  final case class JobConfiguration(load: Option[JobConfigurationLoad]) {
-    def getLoad = load.asJava
-    def withLoad(load: util.Optional[JobConfigurationLoad]) = copy(load = load.asScala)
-  }
+  def apply(load: Option[JobConfigurationLoad]): JobConfiguration =
+    apply(load, None)
 
   /**
    * Java API: JobConfiguration model
@@ -74,42 +106,72 @@ object JobJsonProtocol {
    * @param load configures a load job
    * @return a [[JobConfiguration]]
    */
-  def createJobConfiguration(load: util.Optional[JobConfigurationLoad]) =
+  def create(load: util.Optional[JobConfigurationLoad]) =
     JobConfiguration(load.asScala)
 
   /**
-   * JobConfigurationLoad model
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfigurationload BigQuery reference]]
+   * Java API: JobConfiguration model
+   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfiguration BigQuery reference]]
    *
-   * @param schema the schema for the destination table
-   * @param destinationTable the destination table to load the data into
-   * @param createDisposition specifies whether the job is allowed to create new tables
-   * @param writeDisposition specifies the action that occurs if the destination table already exists
-   * @param sourceFormat the format of the data files
+   * @param load configures a load job
+   * @param labels the labels associated with this job
+   * @return a [[JobConfiguration]]
    */
-  final case class JobConfigurationLoad(schema: Option[TableSchema],
-                                        destinationTable: Option[TableReference],
-                                        createDisposition: Option[CreateDisposition],
-                                        writeDisposition: Option[WriteDisposition],
-                                        sourceFormat: Option[SourceFormat]) {
+  def create(load: util.Optional[JobConfigurationLoad], labels: util.Optional[util.Map[String, String]]) =
+    JobConfiguration(load.asScala, labels.asScala.map(_.asScala.toMap))
 
-    def getSchema = schema.asJava
-    def getDestinationTable = destinationTable.asJava
-    def getCreateDisposition = createDisposition.asJava
-    def getWriteDisposition = writeDisposition.asJava
-    def getSourceFormat = sourceFormat.asJava
+  implicit val format: JsonFormat[JobConfiguration] = jsonFormat2(apply)
+}
 
-    def withSchema(schema: util.Optional[TableSchema]) =
-      copy(schema = schema.asScala)
-    def withDestinationTable(destinationTable: util.Optional[TableReference]) =
-      copy(destinationTable = destinationTable.asScala)
-    def withCreateDisposition(createDisposition: util.Optional[CreateDisposition]) =
-      copy(createDisposition = createDisposition.asScala)
-    def withWriteDisposition(writeDisposition: util.Optional[WriteDisposition]) =
-      copy(writeDisposition = writeDisposition.asScala)
-    def withSourceFormat(sourceFormat: util.Optional[SourceFormat]) =
-      copy(sourceFormat = sourceFormat.asScala)
-  }
+/**
+ * JobConfigurationLoad model
+ * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfigurationload BigQuery reference]]
+ *
+ * @param schema the schema for the destination table
+ * @param destinationTable the destination table to load the data into
+ * @param createDisposition specifies whether the job is allowed to create new tables
+ * @param writeDisposition specifies the action that occurs if the destination table already exists
+ * @param sourceFormat the format of the data files
+ */
+final case class JobConfigurationLoad private (schema: Option[TableSchema],
+                                               destinationTable: Option[TableReference],
+                                               createDisposition: Option[CreateDisposition],
+                                               writeDisposition: Option[WriteDisposition],
+                                               sourceFormat: Option[SourceFormat]) {
+
+  def getSchema = schema.asJava
+  def getDestinationTable = destinationTable.asJava
+  def getCreateDisposition = createDisposition.asJava
+  def getWriteDisposition = writeDisposition.asJava
+  def getSourceFormat = sourceFormat.asJava
+
+  def withSchema(schema: Option[TableSchema]) =
+    copy(schema = schema)
+  def withSchema(schema: util.Optional[TableSchema]) =
+    copy(schema = schema.asScala)
+
+  def withDestinationTable(destinationTable: Option[TableReference]) =
+    copy(destinationTable = destinationTable)
+  def withDestinationTable(destinationTable: util.Optional[TableReference]) =
+    copy(destinationTable = destinationTable.asScala)
+
+  def withCreateDisposition(createDisposition: Option[CreateDisposition]) =
+    copy(createDisposition = createDisposition)
+  def withCreateDisposition(createDisposition: util.Optional[CreateDisposition]) =
+    copy(createDisposition = createDisposition.asScala)
+
+  def withWriteDisposition(writeDisposition: Option[WriteDisposition]) =
+    copy(writeDisposition = writeDisposition)
+  def withWriteDisposition(writeDisposition: util.Optional[WriteDisposition]) =
+    copy(writeDisposition = writeDisposition.asScala)
+
+  def withSourceFormat(sourceFormat: Option[SourceFormat]) =
+    copy(sourceFormat = sourceFormat)
+  def withSourceFormat(sourceFormat: util.Optional[SourceFormat]) =
+    copy(sourceFormat = sourceFormat.asScala)
+}
+
+object JobConfigurationLoad {
 
   /**
    * Java API: JobConfigurationLoad model
@@ -122,11 +184,11 @@ object JobJsonProtocol {
    * @param sourceFormat the format of the data files
    * @return a [[JobConfigurationLoad]]
    */
-  def createJobConfigurationLoad(schema: util.Optional[TableSchema],
-                                 destinationTable: util.Optional[TableReference],
-                                 createDisposition: util.Optional[CreateDisposition],
-                                 writeDisposition: util.Optional[WriteDisposition],
-                                 sourceFormat: util.Optional[SourceFormat]) =
+  def create(schema: util.Optional[TableSchema],
+             destinationTable: util.Optional[TableReference],
+             createDisposition: util.Optional[CreateDisposition],
+             writeDisposition: util.Optional[WriteDisposition],
+             sourceFormat: util.Optional[SourceFormat]) =
     JobConfigurationLoad(
       schema.asScala,
       destinationTable.asScala,
@@ -135,64 +197,98 @@ object JobJsonProtocol {
       sourceFormat.asScala
     )
 
-  final case class CreateDisposition(value: String) {
-    def getValue = value
-  }
-  val CreateIfNeededDisposition = CreateDisposition("CREATE_IF_NEEDED")
-  val CreateNeverDisposition = CreateDisposition("CREATE_NEVER")
+  implicit val configurationLoadFormat: JsonFormat[JobConfigurationLoad] = jsonFormat5(apply)
+}
 
-  def createCreateDisposition(value: String) = CreateDisposition(value)
-
-  final case class WriteDisposition(value: String) {
-    def getValue = value
-  }
-  val WriteTruncateDisposition = WriteDisposition("WRITE_TRUNCATE")
-  val WriteAppendDisposition = WriteDisposition("WRITE_APPEND")
-  val WriteEmptyDisposition = WriteDisposition("WRITE_EMPTY")
+final case class CreateDisposition private (value: String) extends StringEnum
+object CreateDisposition {
 
   /**
    * Java API
    */
-  def createWriteDisposition(value: String) = WriteDisposition(value)
+  def create(value: String) = CreateDisposition(value)
 
-  sealed case class SourceFormat(value: String) {
-    def getValue = value
-  }
+  val CreateIfNeeded = CreateDisposition("CREATE_IF_NEEDED")
+  def createIfNeeded = CreateIfNeeded
+
+  val CreateNever = CreateDisposition("CREATE_NEVER")
+  def createNever = CreateNever
+
+  implicit val format: JsonFormat[CreateDisposition] = StringEnum.jsonFormat(apply)
+}
+
+final case class WriteDisposition private (value: String) extends StringEnum
+object WriteDisposition {
+
+  /**
+   * Java API
+   */
+  def create(value: String) = WriteDisposition(value)
+
+  val WriteTruncate = WriteDisposition("WRITE_TRUNCATE")
+  def writeTruncate = WriteTruncate
+
+  val WriteAppend = WriteDisposition("WRITE_APPEND")
+  def writeAppend = WriteAppend
+
+  val WriteEmpty = WriteDisposition("WRITE_EMPTY")
+  def writeEmpty = WriteEmpty
+
+  implicit val format: JsonFormat[WriteDisposition] = StringEnum.jsonFormat(apply)
+}
+
+sealed case class SourceFormat private (value: String) extends StringEnum
+object SourceFormat {
+
+  /**
+   * Java API
+   */
+  def create(value: String) = SourceFormat(value)
+
   val NewlineDelimitedJsonFormat = SourceFormat("NEWLINE_DELIMITED_JSON")
+  def newlineDelimitedJsonFormat = NewlineDelimitedJsonFormat
 
-  /**
-   * Java API
-   */
-  def createSourceFormat(value: String) = SourceFormat(value)
+  implicit val format: JsonFormat[SourceFormat] = StringEnum.jsonFormat(apply)
+}
 
-  /**
-   * JobReference model
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/JobReference BigQuery reference]]
-   *
-   * @param projectId the ID of the project containing this job.
-   * @param jobId the ID of the job
-   * @param location the geographic location of the job
-   */
-  final case class JobReference(projectId: Option[String], jobId: Option[String], location: Option[String]) {
+/**
+ * JobReference model
+ * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/JobReference BigQuery reference]]
+ *
+ * @param projectId the ID of the project containing this job.
+ * @param jobId the ID of the job
+ * @param location the geographic location of the job
+ */
+final case class JobReference private (projectId: Option[String], jobId: Option[String], location: Option[String]) {
 
-    @silent("never used")
-    @JsonCreator
-    private def this(@JsonProperty("projectId") projectId: String,
-                     @JsonProperty("jobId") jobId: String,
-                     @JsonProperty("location") location: String) =
-      this(Option(projectId), Option(jobId), Option(location))
+  @silent("never used")
+  @JsonCreator
+  private def this(@JsonProperty("projectId") projectId: String,
+                   @JsonProperty("jobId") jobId: String,
+                   @JsonProperty("location") location: String) =
+    this(Option(projectId), Option(jobId), Option(location))
 
-    def getProjectId = projectId.asJava
-    def getJobId = jobId.asJava
-    def getLocation = location.asJava
+  def getProjectId = projectId.asJava
+  def getJobId = jobId.asJava
+  def getLocation = location.asJava
 
-    def withProjectId(projectId: util.Optional[String]) =
-      copy(projectId = projectId.asScala)
-    def withJobId(jobId: util.Optional[String]) =
-      copy(jobId = jobId.asScala)
-    def withLocation(location: util.Optional[String]) =
-      copy(location = location.asScala)
-  }
+  def withProjectId(projectId: Option[String]) =
+    copy(projectId = projectId)
+  def withProjectId(projectId: util.Optional[String]) =
+    copy(projectId = projectId.asScala)
+
+  def withJobId(jobId: Option[String]) =
+    copy(jobId = jobId)
+  def withJobId(jobId: util.Optional[String]) =
+    copy(jobId = jobId.asScala)
+
+  def withLocation(location: Option[String]) =
+    copy(location = location)
+  def withLocation(location: util.Optional[String]) =
+    copy(location = location.asScala)
+}
+
+object JobReference {
 
   /**
    * Java API: JobReference model
@@ -203,32 +299,41 @@ object JobJsonProtocol {
    * @param location the geographic location of the job
    * @return a [[JobReference]]
    */
-  def createJobReference(projectId: util.Optional[String],
-                         jobId: util.Optional[String],
-                         location: util.Optional[String]) =
+  def create(projectId: util.Optional[String], jobId: util.Optional[String], location: util.Optional[String]) =
     JobReference(projectId.asScala, jobId.asScala, location.asScala)
 
-  /**
-   * JobStatus model
-   * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobstatus BigQuery reference]]
-   *
-   * @param errorResult final error result of the job; if present, indicates that the job has completed and was unsuccessful
-   * @param errors the first errors encountered during the running of the job
-   * @param state running state of the job
-   */
-  final case class JobStatus(errorResult: Option[ErrorProto], errors: Option[Seq[ErrorProto]], state: JobState) {
+  implicit val format: JsonFormat[JobReference] = jsonFormat3(apply)
+}
 
-    def getErrorResult = errorResult.asJava
-    def getErrors = errors.map(_.asJava).asJava
-    def getState = state
+/**
+ * JobStatus model
+ * @see [[https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobstatus BigQuery reference]]
+ *
+ * @param errorResult final error result of the job; if present, indicates that the job has completed and was unsuccessful
+ * @param errors the first errors encountered during the running of the job
+ * @param state running state of the job
+ */
+final case class JobStatus private (errorResult: Option[ErrorProto], errors: Option[Seq[ErrorProto]], state: JobState) {
 
-    def withErrorResult(errorResult: util.Optional[ErrorProto]) =
-      copy(errorResult = errorResult.asScala)
-    def withErrors(errors: util.Optional[util.List[ErrorProto]]) =
-      copy(errors = errors.asScala.map(_.asScala.toList))
-    def withState(state: JobState) =
-      copy(state = state)
-  }
+  def getErrorResult = errorResult.asJava
+  def getErrors = errors.map(_.asJava).asJava
+  def getState = state
+
+  def withErrorResult(errorResult: Option[ErrorProto]) =
+    copy(errorResult = errorResult)
+  def withErrorResult(errorResult: util.Optional[ErrorProto]) =
+    copy(errorResult = errorResult.asScala)
+
+  def withErrors(errors: Option[Seq[ErrorProto]]) =
+    copy(errors = errors)
+  def withErrors(errors: util.Optional[util.List[ErrorProto]]) =
+    copy(errors = errors.asScala.map(_.asScala.toList))
+
+  def withState(state: JobState) =
+    copy(state = state)
+}
+
+object JobStatus {
 
   /**
    * Java API: JobStatus model
@@ -239,76 +344,44 @@ object JobJsonProtocol {
    * @param state running state of the job
    * @return a [[JobStatus]]
    */
-  def createJobStatus(errorResult: util.Optional[ErrorProto],
-                      errors: util.Optional[util.List[ErrorProto]],
-                      state: JobState) =
+  def create(errorResult: util.Optional[ErrorProto], errors: util.Optional[util.List[ErrorProto]], state: JobState) =
     JobStatus(errorResult.asScala, errors.asScala.map(_.asScala.toList), state)
 
-  final case class JobState(value: String) {
-    def getValue = value
-  }
-  val PendingState = JobState("PENDING")
-  val RunningState = JobState("RUNNING")
-  val DoneState = JobState("DONE")
+  implicit val format: JsonFormat[JobStatus] = jsonFormat3(apply)
+}
+
+final case class JobState private (value: String) extends StringEnum
+object JobState {
 
   /**
    * Java API
    */
-  def createJobState(value: String) = JobState(value)
+  def create(value: String) = JobState(value)
 
-  /** Java API */
-  def pendingState = PendingState
+  val Pending = JobState("PENDING")
+  def pending = Pending
 
-  /** Java API */
-  def runningState = RunningState
+  val Running = JobState("RUNNING")
+  def running = Running
 
-  /** Java API */
-  def doneState = DoneState
+  val Done = JobState("DONE")
+  def done = Done
 
-  final case class JobCancelResponse(job: Job) {
-    def getJob = job
-    def withJob(job: Job) =
-      copy(job = job)
-  }
+  implicit val format: JsonFormat[JobState] = StringEnum.jsonFormat(apply)
+}
+
+final case class JobCancelResponse private (job: Job) {
+  def getJob = job
+  def withJob(job: Job) =
+    copy(job = job)
+}
+
+object JobCancelResponse {
 
   /**
    * Java API
    */
-  def createJobCancelResponse(job: Job) =
-    JobCancelResponse(job)
+  def create(job: Job) = JobCancelResponse(job)
 
-  implicit val createDispositionFormat: JsonFormat[CreateDisposition] = new JsonFormat[CreateDisposition] {
-    override def read(json: JsValue): CreateDisposition = json match {
-      case JsString(x) => CreateDisposition(x)
-      case x => deserializationError("Expected CreateDisposition as JsString, but got " + x)
-    }
-    override def write(obj: CreateDisposition): JsValue = JsString(obj.value)
-  }
-  implicit val writeDispositionFormat: JsonFormat[WriteDisposition] = new JsonFormat[WriteDisposition] {
-    override def read(json: JsValue): WriteDisposition = json match {
-      case JsString(x) => WriteDisposition(x)
-      case x => deserializationError("Expected WriteDisposition as JsString, but got " + x)
-    }
-    override def write(obj: WriteDisposition): JsValue = JsString(obj.value)
-  }
-  implicit val sourceFormatFormat: JsonFormat[SourceFormat] = new JsonFormat[SourceFormat] {
-    override def read(json: JsValue): SourceFormat = json match {
-      case JsString(x) => SourceFormat(x)
-      case x => deserializationError("Expected SourceFormat as JsString, but got " + x)
-    }
-    override def write(obj: SourceFormat): JsValue = JsString(obj.value)
-  }
-  implicit val configurationLoadFormat: JsonFormat[JobConfigurationLoad] = jsonFormat5(JobConfigurationLoad)
-  implicit val configurationFormat: JsonFormat[JobConfiguration] = jsonFormat1(JobConfiguration)
-  implicit val referenceFormat: JsonFormat[JobReference] = jsonFormat3(JobReference)
-  implicit val jobStateFormat: JsonFormat[JobState] = new JsonFormat[JobState] {
-    override def read(json: JsValue): JobState = json match {
-      case JsString(x) => JobState(x)
-      case x => deserializationError("Expected JobState as JsString, but got " + x)
-    }
-    override def write(obj: JobState): JsValue = JsString(obj.value)
-  }
-  implicit val statusFormat: JsonFormat[JobStatus] = jsonFormat3(JobStatus)
-  implicit val format: RootJsonFormat[Job] = jsonFormat3(Job)
-  implicit val cancelResponseFormat: RootJsonFormat[JobCancelResponse] = jsonFormat1(JobCancelResponse)
+  implicit val format: RootJsonFormat[JobCancelResponse] = jsonFormat1(apply)
 }

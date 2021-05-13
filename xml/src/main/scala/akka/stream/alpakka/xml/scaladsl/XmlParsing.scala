@@ -33,7 +33,7 @@ object XmlParsing {
   /**
    * Parser Flow that takes a stream of ByteStrings and parses them to XML events similar to SAX.
    */
-  val parser: Flow[ByteString, ParseEvent, NotUsed] = parser(false, configureDefault)
+  val parser: Flow[ByteString, ParseEvent, NotUsed] = parser(ignoreInvalidChars = false, configureDefault)
 
   /**
    * Parser Flow that takes a stream of ByteStrings and parses them to XML events similar to SAX.

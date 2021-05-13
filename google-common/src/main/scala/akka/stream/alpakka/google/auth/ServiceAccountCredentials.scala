@@ -4,7 +4,7 @@
 
 package akka.stream.alpakka.google.auth
 
-import akka.actor.{ActorContext, ClassicActorSystemProvider, Props}
+import akka.actor.ClassicActorSystemProvider
 import akka.annotation.InternalApi
 import akka.stream.Materializer
 import akka.stream.alpakka.google.RequestSettings
@@ -12,6 +12,7 @@ import com.typesafe.config.Config
 import spray.json.DefaultJsonProtocol._
 import spray.json.{JsonParser, RootJsonFormat}
 
+import java.time.Clock
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.io.Source
@@ -21,11 +22,8 @@ private[alpakka] object ServiceAccountCredentials {
 
   def apply(projectId: String, clientEmail: String, privateKey: String, scopes: Seq[String])(
       implicit system: ClassicActorSystemProvider
-  ): Credentials = {
-    val credentials =
-      system.classicSystem.actorOf(Props(new ServiceAccountCredentials(clientEmail, privateKey, scopes)))
-    new OAuth2Credentials(projectId, credentials)
-  }
+  ): Credentials =
+    new ServiceAccountCredentials(projectId, clientEmail, privateKey, scopes)
 
   def apply(c: Config)(implicit system: ClassicActorSystemProvider): Credentials = {
     val (projectId, clientEmail, privateKey) = {
@@ -57,12 +55,15 @@ private[alpakka] object ServiceAccountCredentials {
 }
 
 @InternalApi
-private final class ServiceAccountCredentials(clientEmail: String, privateKey: String, scopes: Seq[String])
-    extends OAuth2CredentialsActor {
+private final class ServiceAccountCredentials(projectId: String,
+                                              clientEmail: String,
+                                              privateKey: String,
+                                              scopes: Seq[String])(implicit mat: Materializer)
+    extends OAuth2Credentials(projectId) {
 
-  override protected def getAccessToken()(implicit ctx: ActorContext,
-                                          settings: RequestSettings): Future[AccessToken] = {
-    implicit val mat = Materializer(ctx)
+  override protected def getAccessToken()(implicit mat: Materializer,
+                                          settings: RequestSettings,
+                                          clock: Clock): Future[AccessToken] = {
     GoogleOAuth2.getAccessToken(clientEmail, privateKey, scopes)
   }
 }

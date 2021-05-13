@@ -24,6 +24,7 @@
     <logger name="docs.scaladsl" level="debug" />
     <logger name="docs.javadsl" level="debug" />
 
+
     <root level="WARN">
         <appender-ref ref="CapturingAppender"/>
         <appender-ref ref="FILE" />

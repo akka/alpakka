@@ -5,6 +5,7 @@
 package akka.stream.alpakka.pravega
 
 import akka.stream.KillSwitches
+
 import akka.stream.alpakka.pravega.scaladsl.Pravega
 import akka.stream.alpakka.testkit.scaladsl.Repeated
 import akka.stream.scaladsl.{Keep, Sink, Source}
@@ -13,11 +14,12 @@ import io.pravega.client.stream.impl.UTF8StringSerializer
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Promise}
+import scala.util.Using
 
 class PravegaGraphSpec extends PravegaBaseSpec with Repeated {
 
   val serializer = new UTF8StringSerializer
-  val nEvent = 500
+  val nEvent = 1000
   val timeout = 10.seconds
 
   "Pravega connector" should {
@@ -26,12 +28,17 @@ class PravegaGraphSpec extends PravegaBaseSpec with Repeated {
 
       val group = newGroupName()
       val scope = newScope()
-      val stream = newStreamName()
+
+      val stream1 = "scala-test-stream1"
+      val stream2 = "scala-test-stream2"
+
+      createStream(scope, stream1)
+      createStream(scope, stream2)
 
       implicit val readerSettings = ReaderSettingsBuilder(
         system.settings.config
           .getConfig(ReaderSettingsBuilder.configPath)
-          .withFallback(ConfigFactory.parseString(s"group-name = $group"))
+          .withFallback(ConfigFactory.parseString(s"group-name = ${newGroupName()}"))
       ).withSerializer(serializer)
 
       implicit val writerSettings = WriterSettingsBuilder(system)
@@ -41,22 +48,25 @@ class PravegaGraphSpec extends PravegaBaseSpec with Repeated {
         .withKeyExtractor((str: String) => str.substring(0, 2))
         .withSerializer(serializer)
 
-      createStream(scope, stream)
-
-      logger.info("start source")
+      logger.info(s"Write $nEvent events")
 
       // #writing
-      val done = Source(1 to nEvent)
+      val done = time(s"Write $nEvent events",
+                      Source(1 to nEvent)
+                        .map(i => f"$i%02d_event")
+                        .runWith(Pravega.sink(scope, stream1)))
+
+      time("Wait write", Await.ready(done, timeout))
+
+      Source(1 to nEvent)
         .map(i => f"$i%02d_event")
-        .runWith(Pravega.sink(scope, stream))
+        .runWith(Pravega.sink(scope, stream2))
 
-      Await.ready(done, timeout)
+      Thread.sleep(3000)
 
-      val doneWithRoutingKey = Source(1 to nEvent)
+      Source(1 to nEvent)
         .map(i => f"$i%02d_event")
-        .runWith(Pravega.sink(scope, stream)(writerSettingsWithRoutingKey))
-
-      Await.ready(doneWithRoutingKey, timeout)
+        .runWith(Pravega.sink(scope, stream1)(writerSettingsWithRoutingKey))
 
       // #writing
 
@@ -64,27 +74,32 @@ class PravegaGraphSpec extends PravegaBaseSpec with Repeated {
 
       // #reading
 
-      val (kill, fut) = Pravega
-        .source(scope, stream)
-        .viaMat(KillSwitches.single)(Keep.right)
-        .toMat(Sink.fold(nEvent * 2) { (acc, _) =>
-          if (acc == 1)
-            finishReading.success(())
-          acc - 1
-        })(Keep.both)
-        .run()
+      Using(Pravega.readerGroupManager(scope, readerSettings.clientConfig)) { readerGroupManager =>
+        readerGroupManager.createReaderGroup(group, stream1, stream2)
+      }.foreach { readerGroup =>
+        val (kill, fut) = Pravega
+          .source(readerGroup)
+          .viaMat(KillSwitches.single)(Keep.right)
+          .toMat(Sink.fold(nEvent * 3) { (acc, _) =>
+            if (acc == 1)
+              finishReading.success(())
+            acc - 1
+          })(Keep.both)
+          .run()
 
-      // #reading
+        // #reading
 
-      Await.ready(finishReading.future, timeout)
+        Await.ready(finishReading.future, timeout)
 
-      logger.debug("Die, die by my hand.")
-      kill.shutdown()
+        logger.debug("Die, die by my hand.")
+        kill.shutdown()
 
-      whenReady(fut) { r =>
-        r mustEqual 0
-        logger.info(s"Read $nEvent events.")
+        whenReady(fut) { r =>
+          r mustEqual 0
+          logger.info(s"Read $nEvent events.")
+        }
       }
+
     }
 
   }

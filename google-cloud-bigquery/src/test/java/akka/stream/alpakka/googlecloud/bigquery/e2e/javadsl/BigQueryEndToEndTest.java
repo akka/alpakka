@@ -14,10 +14,17 @@ import akka.stream.alpakka.googlecloud.bigquery.e2e.A;
 import akka.stream.alpakka.googlecloud.bigquery.e2e.B;
 import akka.stream.alpakka.googlecloud.bigquery.javadsl.BigQuery;
 import akka.stream.alpakka.googlecloud.bigquery.javadsl.jackson.BigQueryMarshallers;
-import akka.stream.alpakka.googlecloud.bigquery.model.DatasetJsonProtocol;
-import akka.stream.alpakka.googlecloud.bigquery.model.JobJsonProtocol;
-import akka.stream.alpakka.googlecloud.bigquery.model.QueryJsonProtocol;
-import akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol;
+import akka.stream.alpakka.googlecloud.bigquery.model.Dataset;
+import akka.stream.alpakka.googlecloud.bigquery.model.Job;
+import akka.stream.alpakka.googlecloud.bigquery.model.JobReference;
+import akka.stream.alpakka.googlecloud.bigquery.model.JobState;
+import akka.stream.alpakka.googlecloud.bigquery.model.JobStatus;
+import akka.stream.alpakka.googlecloud.bigquery.model.QueryResponse;
+import akka.stream.alpakka.googlecloud.bigquery.model.Table;
+import akka.stream.alpakka.googlecloud.bigquery.model.TableFieldSchema;
+import akka.stream.alpakka.googlecloud.bigquery.model.TableFieldSchemaMode;
+import akka.stream.alpakka.googlecloud.bigquery.model.TableFieldSchemaType;
+import akka.stream.alpakka.googlecloud.bigquery.model.TableSchema;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -43,7 +50,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static akka.stream.alpakka.googlecloud.bigquery.model.TableJsonProtocol.*;
 import static org.junit.Assert.*;
 
 public class BigQueryEndToEndTest extends EndToEndHelper {
@@ -59,29 +65,63 @@ public class BigQueryEndToEndTest extends EndToEndHelper {
           .build();
 
   private TableSchema schema =
-      createTableSchema(
-          createTableFieldSchema("integer", integerType(), Optional.of(requiredMode())),
-          createTableFieldSchema("long", integerType(), Optional.of(requiredMode())),
-          createTableFieldSchema("float", floatType(), Optional.of(requiredMode())),
-          createTableFieldSchema("double", floatType(), Optional.of(requiredMode())),
-          createTableFieldSchema("string", stringType(), Optional.of(requiredMode())),
-          createTableFieldSchema("boolean", booleanType(), Optional.of(requiredMode())),
-          createTableFieldSchema(
+      TableSchema.create(
+          TableFieldSchema.create(
+              "integer",
+              TableFieldSchemaType.integer(),
+              Optional.of(TableFieldSchemaMode.required())),
+          TableFieldSchema.create(
+              "long", TableFieldSchemaType.integer(), Optional.of(TableFieldSchemaMode.required())),
+          TableFieldSchema.create(
+              "float",
+              TableFieldSchemaType.float64(),
+              Optional.of(TableFieldSchemaMode.required())),
+          TableFieldSchema.create(
+              "double",
+              TableFieldSchemaType.float64(),
+              Optional.of(TableFieldSchemaMode.required())),
+          TableFieldSchema.create(
+              "string",
+              TableFieldSchemaType.string(),
+              Optional.of(TableFieldSchemaMode.required())),
+          TableFieldSchema.create(
+              "boolean", TableFieldSchemaType.bool(), Optional.of(TableFieldSchemaMode.required())),
+          TableFieldSchema.create(
               "record",
-              recordType(),
-              Optional.of(requiredMode()),
-              createTableFieldSchema("nullable", stringType(), Optional.of(nullableMode())),
-              createTableFieldSchema("bytes", bytesType(), Optional.of(requiredMode())),
-              createTableFieldSchema(
+              TableFieldSchemaType.record(),
+              Optional.of(TableFieldSchemaMode.required()),
+              TableFieldSchema.create(
+                  "nullable",
+                  TableFieldSchemaType.string(),
+                  Optional.of(TableFieldSchemaMode.nullable())),
+              TableFieldSchema.create(
+                  "bytes",
+                  TableFieldSchemaType.bytes(),
+                  Optional.of(TableFieldSchemaMode.required())),
+              TableFieldSchema.create(
                   "repeated",
-                  recordType(),
-                  Optional.of(repeatedMode()),
-                  createTableFieldSchema("numeric", numericType(), Optional.of(requiredMode())),
-                  createTableFieldSchema("date", dateType(), Optional.of(requiredMode())),
-                  createTableFieldSchema("time", timeType(), Optional.of(requiredMode())),
-                  createTableFieldSchema("dateTime", dateTimeType(), Optional.of(requiredMode())),
-                  createTableFieldSchema(
-                      "timestamp", timestampType(), Optional.of(requiredMode())))));
+                  TableFieldSchemaType.record(),
+                  Optional.of(TableFieldSchemaMode.repeated()),
+                  TableFieldSchema.create(
+                      "numeric",
+                      TableFieldSchemaType.numeric(),
+                      Optional.of(TableFieldSchemaMode.required())),
+                  TableFieldSchema.create(
+                      "date",
+                      TableFieldSchemaType.date(),
+                      Optional.of(TableFieldSchemaMode.required())),
+                  TableFieldSchema.create(
+                      "time",
+                      TableFieldSchemaType.time(),
+                      Optional.of(TableFieldSchemaMode.required())),
+                  TableFieldSchema.create(
+                      "dateTime",
+                      TableFieldSchemaType.dateTime(),
+                      Optional.of(TableFieldSchemaMode.required())),
+                  TableFieldSchema.create(
+                      "timestamp",
+                      TableFieldSchemaType.timestamp(),
+                      Optional.of(TableFieldSchemaMode.required())))));
 
   @BeforeClass
   public static void before() {
@@ -110,14 +150,14 @@ public class BigQueryEndToEndTest extends EndToEndHelper {
 
   @Test
   public void createDataset() throws ExecutionException, InterruptedException {
-    DatasetJsonProtocol.Dataset dataset =
+    Dataset dataset =
         BigQuery.createDataset(datasetId(), settings, system).toCompletableFuture().get();
-    assertEquals(getDatasetId(), dataset.getDatasetReference().getDatasetId());
+    assertEquals(getDatasetId(), dataset.getDatasetReference().getDatasetId().get());
   }
 
   @Test
   public void listNewDataset() throws ExecutionException, InterruptedException {
-    List<DatasetJsonProtocol.Dataset> datasets =
+    List<Dataset> datasets =
         BigQuery.listDatasets(OptionalInt.empty(), Optional.empty(), Collections.emptyMap())
             .runWith(Sink.seq(), system)
             .toCompletableFuture()
@@ -125,40 +165,41 @@ public class BigQueryEndToEndTest extends EndToEndHelper {
     assertTrue(
         datasets.stream()
             .anyMatch(
-                dataset -> dataset.getDatasetReference().getDatasetId().equals(getDatasetId())));
+                dataset ->
+                    dataset.getDatasetReference().getDatasetId().get().equals(getDatasetId())));
   }
 
   @Test
   public void createTable() throws ExecutionException, InterruptedException {
-    TableJsonProtocol.Table table =
+    Table table =
         BigQuery.createTable(datasetId(), tableId(), schema, settings, system)
             .toCompletableFuture()
             .get();
-    assertEquals(getTableId(), table.getTableReference().getTableId());
+    assertEquals(getTableId(), table.getTableReference().getTableId().get());
   }
 
   @Test
   public void listNewTable() throws ExecutionException, InterruptedException {
-    List<TableJsonProtocol.Table> tables =
+    List<Table> tables =
         BigQuery.listTables(datasetId(), OptionalInt.empty())
             .runWith(Sink.seq(), system)
             .toCompletableFuture()
             .get();
     assertTrue(
         tables.stream()
-            .anyMatch(table -> table.getTableReference().getTableId().equals(getTableId())));
+            .anyMatch(table -> table.getTableReference().getTableId().get().equals(getTableId())));
   }
 
-  private CompletionStage<JobJsonProtocol.Job> waitUntilJobComplete(JobJsonProtocol.Job job) {
+  private CompletionStage<Job> waitUntilJobComplete(Job job) {
     return BigQuery.getJob(
-            job.getJobReference().flatMap(JobJsonProtocol.JobReference::getJobId).get(),
+            job.getJobReference().flatMap(JobReference::getJobId).get(),
             Optional.empty(),
             settings,
             system)
         .thenComposeAsync(
             job2 -> {
               if (job2.getStatus()
-                  .filter(status -> status.getState().equals(JobJsonProtocol.doneState()))
+                  .filter(status -> status.getState().equals(JobState.done()))
                   .isPresent()) {
                 return CompletableFuture.completedFuture(job2);
               } else {
@@ -174,15 +215,15 @@ public class BigQueryEndToEndTest extends EndToEndHelper {
 
   @Test
   public void insertRowsViaLoadJobs() throws ExecutionException, InterruptedException {
-    List<JobJsonProtocol.Job> jobs =
+    List<Job> jobs =
         Source.from(getRows())
             .via(BigQuery.insertAllAsync(datasetId(), tableId(), Jackson.marshaller(objectMapper)))
             .runWith(Sink.seq(), system)
             .toCompletableFuture()
             .get();
     assertEquals(1, jobs.size());
-    JobJsonProtocol.Job job = waitUntilJobComplete(jobs.get(0)).toCompletableFuture().get();
-    assertFalse(job.getStatus().flatMap(JobJsonProtocol.JobStatus::getErrorResult).isPresent());
+    Job job = waitUntilJobComplete(jobs.get(0)).toCompletableFuture().get();
+    assertFalse(job.getStatus().flatMap(JobStatus::getErrorResult).isPresent());
   }
 
   private <T> List<T> sorted(List<T> list) {
@@ -235,7 +276,7 @@ public class BigQueryEndToEndTest extends EndToEndHelper {
     String query =
         String.format(
             "SELECT string, record, integer FROM %s.%s WHERE boolean;", datasetId(), tableId());
-    QueryJsonProtocol.QueryResponse<JsonNode> response =
+    QueryResponse<JsonNode> response =
         BigQuery.query(
                 query, true, false, BigQueryMarshallers.queryResponseUnmarshaller(JsonNode.class))
             .to(Sink.ignore())
@@ -255,7 +296,7 @@ public class BigQueryEndToEndTest extends EndToEndHelper {
 
   @Test
   public void notListDeletedTable() throws ExecutionException, InterruptedException {
-    List<TableJsonProtocol.Table> tables =
+    List<Table> tables =
         BigQuery.listTables(datasetId(), OptionalInt.empty())
             .runWith(Sink.seq(), system)
             .toCompletableFuture()
@@ -274,7 +315,7 @@ public class BigQueryEndToEndTest extends EndToEndHelper {
 
   @Test
   public void notListDeletedDataset() throws ExecutionException, InterruptedException {
-    List<DatasetJsonProtocol.Dataset> datasets =
+    List<Dataset> datasets =
         BigQuery.listDatasets(OptionalInt.empty(), Optional.empty(), Collections.emptyMap())
             .runWith(Sink.seq(), system)
             .toCompletableFuture()

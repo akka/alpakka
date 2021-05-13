@@ -4,11 +4,11 @@
 
 package akka.stream.alpakka.google.auth
 
-import akka.actor.{ActorContext, ActorSystem, Props}
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ErrorInfo
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import akka.stream.Materializer
 import akka.stream.alpakka.google.{GoogleSettings, RequestSettings}
-import akka.stream.alpakka.google.auth.OAuth2Credentials.TokenRequest
 import akka.testkit.TestKit
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
@@ -32,22 +32,19 @@ class OAuth2CredentialsSpec
     super.afterAll()
   }
 
+  import system.dispatcher
   implicit val settings = GoogleSettings().requestSettings
   implicit val clock = Clock.systemUTC()
 
-  object AccessTokenProvider {
-    var accessTokenPromise: Promise[AccessToken] = Promise.failed(new RuntimeException)
+  final object AccessTokenProvider {
+    @volatile var accessTokenPromise: Promise[AccessToken] = Promise.failed(new RuntimeException)
   }
 
-  val testableCredentials = system.actorOf {
-    Props {
-      new OAuth2CredentialsActor {
-        override protected def getAccessToken()(implicit ctx: ActorContext,
-                                                settings: RequestSettings): Future[AccessToken] = {
-          AccessTokenProvider.accessTokenPromise.future
-        }
-      }
-    }
+  val testableCredentials = new OAuth2Credentials("dummyProject") {
+    override protected def getAccessToken()(implicit mat: Materializer,
+                                            settings: RequestSettings,
+                                            clock: Clock): Future[AccessToken] =
+      AccessTokenProvider.accessTokenPromise.future
   }
 
   "OAuth2Credentials" should {
@@ -56,54 +53,47 @@ class OAuth2CredentialsSpec
 
       AccessTokenProvider.accessTokenPromise = Promise()
 
-      val request1 = Promise[OAuth2BearerToken]()
-      val request2 = Promise[OAuth2BearerToken]()
-      testableCredentials ! TokenRequest(request1, settings)
-      testableCredentials ! TokenRequest(request2, settings)
+      val request1 = testableCredentials.get()
+      val request2 = testableCredentials.get()
 
-      assertThrows[TestFailedException](request1.future.futureValue)
-      assertThrows[TestFailedException](request2.future.futureValue)
+      assertThrows[TestFailedException](request1.futureValue)
+      assertThrows[TestFailedException](request2.futureValue)
 
       AccessTokenProvider.accessTokenPromise.success(AccessToken("first token", JwtTime.nowSeconds + 1))
 
-      request1.future.futureValue shouldEqual OAuth2BearerToken("first token")
-      request2.future.futureValue shouldEqual OAuth2BearerToken("first token")
+      request1.futureValue shouldEqual OAuth2BearerToken("first token")
+      request2.futureValue shouldEqual OAuth2BearerToken("first token")
     }
 
     "fail requests if token request fails" in {
 
       AccessTokenProvider.accessTokenPromise = Promise()
 
-      val request1 = Promise[OAuth2BearerToken]()
-      val request2 = Promise[OAuth2BearerToken]()
-      testableCredentials ! TokenRequest(request1, settings)
-      testableCredentials ! TokenRequest(request2, settings)
+      val request1 = testableCredentials.get()
+      val request2 = testableCredentials.get()
 
       AccessTokenProvider.accessTokenPromise.failure(GoogleOAuth2Exception(ErrorInfo()))
 
-      assert(request1.future.failed.futureValue.isInstanceOf[GoogleOAuth2Exception])
-      assert(request2.future.failed.futureValue.isInstanceOf[GoogleOAuth2Exception])
+      assert(request1.failed.futureValue.isInstanceOf[GoogleOAuth2Exception])
+      assert(request2.failed.futureValue.isInstanceOf[GoogleOAuth2Exception])
     }
 
     "refresh token (only) when expired" in {
 
       AccessTokenProvider.accessTokenPromise = Promise()
-      val request1 = Promise[OAuth2BearerToken]()
-      testableCredentials ! TokenRequest(request1, settings)
+      val request1 = testableCredentials.get()
       AccessTokenProvider.accessTokenPromise.success(AccessToken("first token", JwtTime.nowSeconds + 1))
-      request1.future.futureValue shouldEqual OAuth2BearerToken("first token")
+      request1.futureValue shouldEqual OAuth2BearerToken("first token")
 
       AccessTokenProvider.accessTokenPromise = Promise()
-      val request2 = Promise[OAuth2BearerToken]()
-      testableCredentials ! TokenRequest(request2, settings)
+      val request2 = testableCredentials.get()
       AccessTokenProvider.accessTokenPromise.success(AccessToken("second token", JwtTime.nowSeconds + 120))
-      request2.future.futureValue shouldEqual OAuth2BearerToken("second token")
+      request2.futureValue shouldEqual OAuth2BearerToken("second token")
 
       AccessTokenProvider.accessTokenPromise = Promise()
-      val request3 = Promise[OAuth2BearerToken]()
-      testableCredentials ! TokenRequest(request3, settings)
+      val request3 = testableCredentials.get()
       AccessTokenProvider.accessTokenPromise.success(AccessToken("third token", JwtTime.nowSeconds + 1))
-      request3.future.futureValue shouldEqual OAuth2BearerToken("second token")
+      request3.futureValue shouldEqual OAuth2BearerToken("second token")
     }
 
   }

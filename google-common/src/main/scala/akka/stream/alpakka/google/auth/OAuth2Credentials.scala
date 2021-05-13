@@ -4,93 +4,70 @@
 
 package akka.stream.alpakka.google.auth
 
-import akka.actor.Status.Failure
-import akka.actor.{Actor, ActorContext, ActorRef}
 import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import akka.pattern.pipe
 import akka.stream.alpakka.google.RequestSettings
 import akka.stream.alpakka.google.auth.OAuth2Credentials.{ForceRefresh, TokenRequest}
+import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.{CompletionStrategy, Materializer, OverflowStrategy}
 import com.google.auth.{Credentials => GoogleCredentials}
 
 import java.time.Clock
-import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
 @InternalApi
 private[auth] object OAuth2Credentials {
-  final case class TokenRequest(promise: Promise[OAuth2BearerToken], settings: RequestSettings)
-  final case object ForceRefresh
+  sealed abstract class Command
+  final case class TokenRequest(promise: Promise[OAuth2BearerToken], settings: RequestSettings) extends Command
+  final case object ForceRefresh extends Command
 }
 
 @InternalApi
-private[auth] final class OAuth2Credentials(val projectId: String, credentials: ActorRef) extends Credentials {
+private[auth] abstract class OAuth2Credentials(val projectId: String)(implicit mat: Materializer) extends Credentials {
+
+  private val tokenStream = stream.run()
 
   override def get()(implicit ec: ExecutionContext, settings: RequestSettings): Future[OAuth2BearerToken] = {
     val token = Promise[OAuth2BearerToken]()
-    credentials ! TokenRequest(token, settings)
+    tokenStream ! TokenRequest(token, settings)
     token.future
   }
 
-  def refresh(): Unit = credentials ! ForceRefresh
+  def refresh(): Unit = tokenStream ! ForceRefresh
 
   override def asGoogle(implicit ec: ExecutionContext, settings: RequestSettings): GoogleCredentials =
     new GoogleOAuth2Credentials(this)(ec, settings)
-}
 
-@InternalApi
-private[auth] abstract class OAuth2CredentialsActor extends Actor {
+  protected def getAccessToken()(implicit mat: Materializer,
+                                 settings: RequestSettings,
+                                 clock: Clock): Future[AccessToken]
 
-  protected final implicit def clock = Clock.systemUTC()
-
-  private var refreshing = false
-  private var cachedToken: Option[AccessToken] = None
-  private val openPromises = mutable.ArrayBuffer[Promise[OAuth2BearerToken]]()
-
-  override final def receive: Receive = {
-
-    case TokenRequest(promise, settings) if !refreshing =>
-      val refresh = cachedToken.forall(_.expiresSoon())
-      if (refresh) {
-
-        refreshing = true
-        cachedToken = None
-
-        openPromises += promise
-
-        import context.dispatcher
-        getAccessToken()(context, settings).pipeTo(self)
-
-      } else {
-
-        cachedToken.foreach {
-          case AccessToken(token, _) =>
-            promise.success(OAuth2BearerToken(token))
+  private def stream =
+    Source
+      .actorRef[OAuth2Credentials.Command](
+        PartialFunction.empty[Any, CompletionStrategy],
+        PartialFunction.empty[Any, Throwable],
+        Int.MaxValue,
+        OverflowStrategy.fail
+      )
+      .to(
+        Sink.fromMaterializer { (mat, attr) =>
+          Sink.foldAsync(Option.empty[AccessToken]) {
+            case (cachedToken @ Some(token), TokenRequest(promise, _)) if !token.expiresSoon()(Clock.systemUTC()) =>
+              promise.success(OAuth2BearerToken(token.token))
+              Future.successful(cachedToken)
+            case (_, TokenRequest(promise, settings)) =>
+              getAccessToken()(mat, settings, Clock.systemUTC())
+                .andThen {
+                  case response =>
+                    promise.complete(response.map(t => OAuth2BearerToken(t.token)))
+                }(ExecutionContexts.parasitic)
+                .map(Some(_))(ExecutionContexts.parasitic)
+                .recover { case _ => None }(ExecutionContexts.parasitic)
+            case (_, ForceRefresh) =>
+              Future.successful(None)
+          }
         }
-
-      }
-
-    case TokenRequest(promise, _) if refreshing =>
-      openPromises += promise
-
-    case accessToken @ AccessToken(token, _) =>
-      refreshing = false
-      cachedToken = Some(accessToken)
-
-      openPromises.foreach(_.success(OAuth2BearerToken(token)))
-      openPromises.clear()
-
-    case Failure(cause) =>
-      refreshing = false
-      cachedToken = None
-
-      openPromises.foreach(_.failure(cause))
-      openPromises.clear()
-
-    case ForceRefresh if !refreshing =>
-      cachedToken = None
-
-  }
-
-  protected def getAccessToken()(implicit ctx: ActorContext, settings: RequestSettings): Future[AccessToken]
+      )
 }

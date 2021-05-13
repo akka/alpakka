@@ -18,6 +18,7 @@ lazy val alpakka = project
     files,
     ftp,
     geode,
+    googleCommon,
     googleCloudBigQuery,
     googleCloudPubSub,
     googleCloudPubSubGrpc,
@@ -166,18 +167,21 @@ lazy val geode =
     }
   )
 
-lazy val googleCommon = internalProject(
+lazy val googleCommon = alpakkaProject(
   "google-common",
+  "google.common",
   Dependencies.GoogleCommon,
-  Test / fork := true
-).disablePlugins(MimaPlugin).dependsOn(testkit % Test)
+  Test / fork := true,
+  fatalWarnings := true
+)
 
 lazy val googleCloudBigQuery = alpakkaProject(
   "google-cloud-bigquery",
   "google.cloud.bigquery",
   Dependencies.GoogleBigQuery,
-  Test / fork := true
-).dependsOn(googleCommon).disablePlugins(MimaPlugin).enablePlugins(spray.boilerplate.BoilerplatePlugin)
+  Test / fork := true,
+  fatalWarnings := true
+).dependsOn(googleCommon).enablePlugins(spray.boilerplate.BoilerplatePlugin)
 
 lazy val googleCloudPubSub = alpakkaProject(
   "google-cloud-pub-sub",
@@ -298,7 +302,7 @@ lazy val xml = alpakkaProject("xml", "xml", Dependencies.Xml)
 
 lazy val docs = project
   .enablePlugins(AkkaParadoxPlugin, ParadoxSitePlugin, PreprocessPlugin, PublishRsyncPlugin)
-  .disablePlugins(BintrayPlugin, MimaPlugin)
+  .disablePlugins(MimaPlugin)
   .settings(
     Compile / paradox / name := "Alpakka",
     publish / skip := true,
@@ -358,6 +362,8 @@ lazy val docs = project
         "javadoc.org.apache.kudu.base_url" -> s"https://kudu.apache.org/releases/${Dependencies.KuduVersion}/apidocs/",
         "javadoc.org.apache.hadoop.base_url" -> s"https://hadoop.apache.org/docs/r${Dependencies.HadoopVersion}/api/",
         "javadoc.software.amazon.awssdk.base_url" -> "https://sdk.amazonaws.com/java/api/latest/",
+        "javadoc.com.google.auth.base_url" -> "https://www.javadoc.io/doc/com.google.auth/google-auth-library-credentials/latest/",
+        "javadoc.com.google.auth.link_style" -> "direct",
         "javadoc.com.fasterxml.jackson.annotation.base_url" -> "https://javadoc.io/doc/com.fasterxml.jackson.core/jackson-annotations/latest/",
         "javadoc.com.fasterxml.jackson.annotation.link_style" -> "direct",
         // Scala
@@ -394,7 +400,7 @@ lazy val whitesourceSupported = project
 
 lazy val `doc-examples` = project
   .enablePlugins(AutomateHeaderPlugin)
-  .disablePlugins(BintrayPlugin, MimaPlugin, SitePlugin)
+  .disablePlugins(MimaPlugin, SitePlugin)
   .settings(
     name := s"akka-stream-alpakka-doc-examples",
     publish / skip := true,
@@ -428,7 +434,7 @@ def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sb
 def internalProject(projectId: String, additionalSettings: sbt.Def.SettingsDefinition*): Project =
   Project(id = projectId, base = file(projectId))
     .enablePlugins(AutomateHeaderPlugin)
-    .disablePlugins(SitePlugin, BintrayPlugin, MimaPlugin)
+    .disablePlugins(SitePlugin, MimaPlugin)
     .settings(
       name := s"akka-stream-alpakka-$projectId",
       publish / skip := true,

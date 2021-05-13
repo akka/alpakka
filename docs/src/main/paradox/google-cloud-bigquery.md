@@ -49,17 +49,8 @@ The table below shows direct dependencies of this module and the second tab show
 
 ## Configuration
 
-Shared settings for all Google connectors are read by default from the `alpakka.google` configuration section in your `application.conf`.
-Credentials will be loaded automatically:
-
-1. From the file path specified by the `GOOGLE_APPLICATION_CREDENTIALS` environment variable or another [“well-known” location](https://medium.com/google-cloud/use-google-cloud-user-credentials-when-testing-containers-locally-acb57cd4e4da); or
-2. When running in a [Compute Engine](https://cloud.google.com/compute) instance.
-
-Credentials can also be specified manually in your configuration file.
-
-If you use a non-standard configuration path or need multiple different configurations, please refer to @ref[the attributes section below](google-cloud-bigquery.md#apply-custom-settings-to-a-part-of-the-stream) to see how to apply different configuration to different parts of the stream.
-All of the common configuration settings for Google connectors can be found in the @github[reference.conf](/google-cloud-common/src/main/resources/reference.conf).
-Additional BigQuery-specific configuration settings can be found in its own @github[reference.conf](/google-cloud-bigquery/src/main/resources/reference.conf).
+The BigQuery connector @ref[shares its basic configuration](google-common.md) with all the Google connectors in Alpakka.
+Additional BigQuery-specific configuration settings can be found in its @github[reference.conf](/google-cloud-bigquery/src/main/resources/reference.conf).
 
 ## Imports
 
@@ -106,7 +97,7 @@ Scala
 Java
 : @@snip [snip](/google-cloud-bigquery/src/test/java/docs/javadsl/BigQueryDoc.java) { #run-query }
 
-Notice that the source materializes a @scala[`Future[QueryResponse[(String, Seq[Address])]]`] @java[`CompletionStage<QueryJsonProtocol.QueryResponse<NameAddressesTuple>>`] which can be used to retrieve metadata related to the query.
+Notice that the source materializes a @scala[`Future[QueryResponse[(String, Seq[Address])]]`] @java[`CompletionStage<QueryResponse<NameAddressesTuple>>`] which can be used to retrieve metadata related to the query.
 For example, you can use a dry run to estimate the number of bytes that will be read by a query.
 
 Scala
@@ -141,7 +132,7 @@ Java
 As a cost-saving alternative to streaming inserts, you can also add data to a table via asynchronous load jobs.
 The @scala[@apidoc[BigQuery.insertAllAsync[In]](BigQuery$)] @java[@apidoc[BigQuery.<In>insertAllAsync](BigQuery$)] method creates a flow that starts a series of batch load jobs.
 By default, a new load job is created every minute to attempt to emulate near-real-time streaming inserts, although there is no guarantee when the job will actually run.
-The frequency with which new load jobs are created is controlled by the `alpakka.google.bigquery.load-job.per-table-quota` configuration setting.
+The frequency with which new load jobs are created is controlled by the `alpakka.google.bigquery.load-job-per-table-quota` configuration setting.
 
 @@@warning
 

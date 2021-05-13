@@ -9,7 +9,7 @@ object Dependencies {
   val Scala213 = "2.13.3" // update even 2 places in .travis.yml
   val ScalaVersions = Seq(Scala212, Scala213)
 
-  val AkkaVersion = "2.6.10"
+  val AkkaVersion = "2.6.14"
   val AkkaBinaryVersion = "2.6"
 
   val InfluxDBJavaVersion = "2.15"
@@ -77,7 +77,7 @@ object Dependencies {
   // CVE issues https://github.com/FasterXML/jackson-databind/issues?utf8=%E2%9C%93&q=+label%3ACVE
   // This should align with the Jackson minor version used in Akka 2.6.x
   // https://github.com/akka/akka/blob/master/project/Dependencies.scala#L23
-  val JacksonDatabindVersion = "2.10.5"
+  val JacksonDatabindVersion = "2.11.4"
   val JacksonDatabindDependencies = Seq(
     "com.fasterxml.jackson.core" % "jackson-core" % JacksonDatabindVersion,
     "com.fasterxml.jackson.core" % "jackson-databind" % JacksonDatabindVersion
@@ -193,7 +193,7 @@ object Dependencies {
       )
   )
 
-  val GeodeVersion = "1.13.0"
+  val GeodeVersion = "1.13.2"
   val GeodeVersionForDocs = "113"
 
   val Geode = Seq(
@@ -224,7 +224,6 @@ object Dependencies {
         "io.spray" %% "spray-json" % "1.3.6",
         "com.fasterxml.jackson.core" % "jackson-annotations" % JacksonDatabindVersion,
         "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % JacksonDatabindVersion % Test,
-        "com.pauldijou" %% "jwt-core" % "3.1.0", //ApacheV2
         "io.specto" % "hoverfly-java" % hoverflyVersion % Test //ApacheV2
       ) ++ Mockito ++ Silencer
   )
@@ -233,7 +232,6 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        "com.pauldijou" %% "jwt-core" % JwtCoreVersion, // ApacheV2
         "com.github.tomakehurst" % "wiremock" % "2.25.1" % Test // ApacheV2
       ) ++ Mockito ++ Silencer
   )
@@ -253,8 +251,7 @@ object Dependencies {
   val GoogleFcm = Seq(
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
-        "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        "com.pauldijou" %% "jwt-core" % JwtCoreVersion // ApacheV2
+        "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion
       ) ++ Mockito ++ Silencer
   )
 
@@ -262,7 +259,6 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-        "com.pauldijou" %% "jwt-core" % JwtCoreVersion, //ApacheV2
         "io.specto" % "hoverfly-java" % hoverflyVersion % Test // ApacheV2
       ) ++ Mockito ++ Silencer
   )

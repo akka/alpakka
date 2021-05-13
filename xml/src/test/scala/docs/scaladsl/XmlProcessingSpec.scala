@@ -32,6 +32,10 @@ class XmlProcessingSpec extends AnyWordSpec with Matchers with ScalaFutures with
 
   "XML Parser" must {
 
+    "properly parse empty XML" in {
+      Source.single("").runWith(parse).futureValue should ===(Vector())
+    }
+
     "properly parse simple XML" in {
       // #parser-usage
       val doc = "<doc><elem>elem1</elem><elem>elem2</elem></doc>"
