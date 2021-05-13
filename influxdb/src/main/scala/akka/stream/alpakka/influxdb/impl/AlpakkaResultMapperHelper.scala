@@ -64,7 +64,7 @@ private[impl] class AlpakkaResultMapperHelper {
         val columnName: String = column.name()
         val fieldType: Class[_] = field.getType()
 
-        @silent("deprecated in java 9")
+        @silent("deprecated")
         val isAccessible = field.isAccessible()
         if (!isAccessible) {
           field.setAccessible(true);
@@ -175,7 +175,7 @@ private[impl] class AlpakkaResultMapperHelper {
     if (value == null) return
     val fieldType = field.getType
     try {
-      @silent("deprecated in java 9")
+      @silent("deprecated")
       val isAccessible = field.isAccessible()
       if (!isAccessible) field.setAccessible(true)
       if (fieldValueModified(fieldType, field, obj, value, precision) || fieldValueForPrimitivesModified(
