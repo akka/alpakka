@@ -6,7 +6,7 @@ package docs.scaladsl
 
 import java.net.InetSocketAddress
 import akka.actor.ActorSystem
-import akka.io.Inet
+import akka.io.UdpSO
 import akka.stream.Materializer
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.alpakka.udp.Datagram
@@ -91,7 +91,7 @@ class UdpSpec
     "send and receive messages with options" in {
 
       val bindFlow: Flow[Datagram, Datagram, Future[InetSocketAddress]] =
-        Udp.bindFlow(bindToLocal, List(InetProtocolFamily()))
+        Udp.bindFlow(bindToLocal, List(UdpSO.broadcast(true)))
 
       val ((pub, bound), sub) = TestSource
         .probe[Datagram](system)
@@ -114,7 +114,7 @@ class UdpSpec
       Source(1 to messagesToSend)
         .map(i => ByteString(s"Message $i"))
         .map(Datagram(_, destination))
-        .runWith(Udp.sendSink(List(InetProtocolFamily())))
+        .runWith(Udp.sendSink(List(UdpSO.broadcast(true))))
 
       (1 to messagesToSend).foreach { _ =>
         sub.requestNext()
@@ -162,11 +162,4 @@ class UdpSpec
     }
   }
 
-}
-
-private case class InetProtocolFamily() extends Inet.DatagramChannelCreator {
-
-  override def create() = {
-    super.create()
-  }
 }

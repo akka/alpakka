@@ -6,6 +6,7 @@ package docs.javadsl;
 
 import akka.actor.ActorSystem;
 import akka.io.Inet;
+import akka.io.UdpSO;
 import akka.japi.Pair;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
 import akka.stream.alpakka.udp.Datagram;
@@ -102,7 +103,7 @@ public class UdpTest {
     final InetSocketAddress bindToLocal = new InetSocketAddress("localhost", 0);
 
     final List<Inet.SocketOption> bindSocketOptions = new ArrayList<>();
-    bindSocketOptions.add(new InetProtocolFamily());
+    bindSocketOptions.add(UdpSO.broadcast(true));
 
     final Flow<Datagram, Datagram, CompletionStage<InetSocketAddress>> bindFlow =
         Udp.bindFlow(bindToLocal, bindSocketOptions, system);
@@ -125,7 +126,7 @@ public class UdpTest {
     final Integer messagesToSend = 100;
 
     final List<Inet.SocketOption> sendSocketOptions = new ArrayList<>();
-    sendSocketOptions.add(new InetProtocolFamily());
+    sendSocketOptions.add(UdpSO.broadcast(true));
 
     final TestSubscriber.Probe<Datagram> sub = materialized.second();
     sub.ensureSubscription();
@@ -140,13 +141,5 @@ public class UdpTest {
       sub.requestNext();
     }
     sub.cancel();
-  }
-
-  private class InetProtocolFamily extends Inet.DatagramChannelCreator {
-
-    @Override
-    public DatagramChannel create() throws Exception {
-      return DatagramChannel.open(StandardProtocolFamily.INET);
-    }
   }
 }
