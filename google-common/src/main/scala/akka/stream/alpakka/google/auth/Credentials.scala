@@ -26,15 +26,19 @@ object Credentials {
    */
   def apply(c: Config)(implicit system: ClassicActorSystemProvider): Credentials = c.getString("provider") match {
     case "application-default" =>
+      val log = Logging(system.classicSystem, getClass)
       try {
-        parseServiceAccount(c)
+        val creds = parseServiceAccount(c)
+        log.info("Using service account credentials")
+        creds
       } catch {
         case NonFatal(ex1) =>
           try {
-            parseComputeEngine(c)
+            val creds = parseComputeEngine(c)
+            log.info("Using Compute Engine credentials")
+            creds
           } catch {
             case NonFatal(ex2) =>
-              val log = Logging(system.classicSystem, getClass)
               log.warning("Unable to find Application Default Credentials for Google APIs")
               log.warning("Service account: {}", ex1.getMessage)
               log.warning("Compute Engine: {}", ex2.getMessage)
