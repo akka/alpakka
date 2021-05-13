@@ -179,8 +179,7 @@ lazy val googleCloudBigQuery = alpakkaProject(
   "google-cloud-bigquery",
   "google.cloud.bigquery",
   Dependencies.GoogleBigQuery,
-  Test / fork := true,
-  fatalWarnings := true
+  Test / fork := true
 ).dependsOn(googleCommon).enablePlugins(spray.boilerplate.BoilerplatePlugin)
 
 lazy val googleCloudPubSub = alpakkaProject(
@@ -190,6 +189,7 @@ lazy val googleCloudPubSub = alpakkaProject(
   Test / fork := true,
   // See docker-compose.yml gcloud-pubsub-emulator_prep
   Test / envVars := Map("PUBSUB_EMULATOR_HOST" -> "localhost", "PUBSUB_EMULATOR_PORT" -> "8538")
+
 ).dependsOn(googleCommon)
 
 lazy val googleCloudPubSubGrpc = alpakkaProject(
@@ -254,11 +254,8 @@ lazy val orientdb =
                  "orientdb",
                  Dependencies.OrientDB,
                  Test / fork := true,
-                 Test / scalacOptions ++= Seq(
-                     "-P:silencer:pathFilters=orientdb/src/test"
-                   ),
-                // note: orientdb client needs to be refactored to move off deprecated calls
-                fatalWarnings := false)
+                 // note: orientdb client needs to be refactored to move off deprecated calls
+                 fatalWarnings := false)
 
 lazy val reference = internalProject("reference", Dependencies.Reference)
   .dependsOn(testkit % Test)
