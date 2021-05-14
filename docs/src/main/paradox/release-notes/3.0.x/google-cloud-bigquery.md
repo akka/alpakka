@@ -1,5 +1,12 @@
 ## Google Cloud BigQuery
 
+## 3.0.0
+
+- BigQuery API improvements [#2663](https://github.com/akka/alpakka/issues/2663) by [@armanbilge](https://github.com/armanbilge)
+- Google: Drop old jwt-core dependencies [#2641](https://github.com/akka/alpakka/issues/2641) by [@armanbilge](https://github.com/armanbilge)
+
+[*closed in 3.0.0-M1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A3.0.0+label%3Ap%3Agoogle-cloud-bigquery)
+
 ## 3.0.0-M1
 
 - Improve a.s.a.googlecloud.bigquery.model APIs [#2627](https://github.com/akka/alpakka/issues/2627) by [@armanbilge](https://github.com/armanbilge)
