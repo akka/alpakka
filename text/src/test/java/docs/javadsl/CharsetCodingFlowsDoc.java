@@ -68,7 +68,7 @@ public class CharsetCodingFlowsDoc {
             .runWith(FileIO.toPath(targetFile), system);
     // #encoding
     IOResult result = streamCompletion.toCompletableFuture().get(1, TimeUnit.SECONDS);
-    assertThat(result, is(IOResult.createSuccessful(7261)));
+    assertTrue("result is greater than 50 bytes", result.count() > 50L);
   }
 
   @Test
@@ -104,6 +104,6 @@ public class CharsetCodingFlowsDoc {
             .runWith(FileIO.toPath(targetFile), system);
     // #transcoding
     IOResult result = streamCompletion.toCompletableFuture().get(1, TimeUnit.SECONDS);
-    assertThat(result, is(IOResult.createSuccessful(14)));
+    assertTrue("result is greater than 5 bytes", result.count() > 5L);
   }
 }
