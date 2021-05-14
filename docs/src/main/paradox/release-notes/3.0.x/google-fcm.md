@@ -4,7 +4,7 @@
 
 - Google: Drop old jwt-core dependencies [#2641](https://github.com/akka/alpakka/issues/2641) by [@armanbilge](https://github.com/armanbilge)
 
-[*closed in 3.0.0-M1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A3.0.0+label%3Ap%3Agoogle-fcm)
+[*closed in 3.0.0*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A3.0.0+label%3Ap%3Agoogle-fcm)
 
 ## 3.0.0-M1
 

@@ -4,7 +4,7 @@
 
 - Fixed empty source XML parsing #2655 [#2658](https://github.com/akka/alpakka/issues/2658) by [@Seetaramayya](https://github.com/Seetaramayya)
 
-[*closed in 3.0.0-M1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A3.0.0+label%3Ap%3Axml)
+[*closed in 3.0.0*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A3.0.0+label%3Ap%3Axml)
 
 ## 3.0.0-M1
 
