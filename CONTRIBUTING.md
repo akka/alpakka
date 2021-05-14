@@ -27,7 +27,7 @@ This is the process for committing code into master.
 
 1. The Pull Request should be reviewed by other maintainers (as many as feasible/practical). Note that the maintainers can consist of outside contributors, both within and outside Lightbend. Outside contributors are encouraged to participate in the review process, it is not a closed process.
 
-1. After the review you should fix the issues (review comments, CI failures) by pushing a new commit for new review, iterating until the reviewers give their thumbs up and CI tests pass.
+1. After the review you should fix the issues (review comments, CI failures, compiler warnings) by pushing a new commit for new review, iterating until the reviewers give their thumbs up and CI tests pass.
 
 1. If the branch merge conflicts with its target, rebase your branch onto the target branch.
 
@@ -122,3 +122,4 @@ Example:
 1. [sbt-header plugin](https://github.com/sbt/sbt-header) manages consistent copyright headers in every source file.
 1. The [sbt-whitesourece plugin](https://github.com/lightbend/sbt-whitesource) checks licensing models of all (transitive) dependencies. 
 1. A GitHub bot checks whether you've signed the Lightbend CLA. 
+1. Enabling `fatalWarnings := true` for all projects.

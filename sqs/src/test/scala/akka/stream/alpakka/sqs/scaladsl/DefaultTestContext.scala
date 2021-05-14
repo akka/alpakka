@@ -8,7 +8,6 @@ import java.net.URI
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorSystem, Terminated}
-import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.Http
 import akka.stream.alpakka.sqs.SqsSourceSettings
 import org.scalatest.concurrent.ScalaFutures
