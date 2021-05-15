@@ -426,7 +426,8 @@ def alpakkaProject(projectId: String, moduleName: String, additionalSettings: sb
         ),
       mimaBinaryIssueFilters += ProblemFilters.exclude[Problem]("*.impl.*"),
       Test / parallelExecution := false,
-      fatalWarnings := true
+      fatalWarnings := true,
+      sonatypeProfileName := "com.lightbend"
     )
     .settings(additionalSettings: _*)
     .dependsOn(testkit % Test)
