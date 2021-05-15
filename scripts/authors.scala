@@ -10,6 +10,9 @@ exec scala "$0" "$@"
  *    scala authors.scala tag1 tag2
  *
  * requires scala 2.13.x+ and command line git on path
+ *
+ * install scala on the path with sdkman:
+ *    sdk install scala
  */
 
 import scala.sys.process._
