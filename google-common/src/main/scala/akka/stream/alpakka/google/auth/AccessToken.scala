@@ -24,7 +24,7 @@ private[auth] object AccessToken {
                                clock: Clock): Unmarshaller[T, AccessToken] =
     unmarshaller.map {
       case AccessTokenResponse(access_token, _, expires_in) =>
-        AccessToken(access_token, JwtTime.now + expires_in)
+        AccessToken(access_token, JwtTime.nowSeconds + expires_in)
     }
 }
 

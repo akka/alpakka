@@ -7,7 +7,6 @@ package docs.scaladsl
 import akka.actor.ActorSystem
 import akka.stream.alpakka.mqtt.MqttConnectionSettings
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
-import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.scalatest.concurrent.{Eventually, IntegrationPatience, ScalaFutures}

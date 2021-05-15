@@ -1,0 +1,11 @@
+# All of the below were (package) private internal apis
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.alpakka.google.auth.OAuth2CredentialsActor")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.alpakka.google.auth.ServiceAccountCredentials")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.google.auth.ServiceAccountCredentials.getAccessToken")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.google.auth.ServiceAccountCredentials.this")
+ProblemFilters.exclude[AbstractClassProblem]("akka.stream.alpakka.google.auth.OAuth2Credentials")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.alpakka.google.auth.OAuth2Credentials.this")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.alpakka.google.auth.OAuth2Credentials.getAccessToken")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.alpakka.google.auth.ComputeEngineCredentials")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.google.auth.ComputeEngineCredentials.getAccessToken")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.google.auth.ComputeEngineCredentials.this")

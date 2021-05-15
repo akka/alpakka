@@ -32,6 +32,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -66,7 +68,7 @@ public class CharsetCodingFlowsDoc {
             .runWith(FileIO.toPath(targetFile), system);
     // #encoding
     IOResult result = streamCompletion.toCompletableFuture().get(1, TimeUnit.SECONDS);
-    assertTrue(result.wasSuccessful());
+    assertTrue("result is greater than 50 bytes", result.count() > 50L);
   }
 
   @Test
@@ -102,6 +104,6 @@ public class CharsetCodingFlowsDoc {
             .runWith(FileIO.toPath(targetFile), system);
     // #transcoding
     IOResult result = streamCompletion.toCompletableFuture().get(1, TimeUnit.SECONDS);
-    assertTrue(result.wasSuccessful());
+    assertTrue("result is greater than 5 bytes", result.count() > 5L);
   }
 }

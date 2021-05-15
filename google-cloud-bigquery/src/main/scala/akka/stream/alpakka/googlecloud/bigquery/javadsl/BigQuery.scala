@@ -375,7 +375,7 @@ object BigQuery extends Google {
     ScalaBigQuery.cancelJob(jobId, location.asScala)(system, settings).toJava
 
   /**
-   * Loads data into BigQuery via a series of asynchronous load jobs created at the rate `loadJobPerTableQuota`.
+   * Loads data into BigQuery via a series of asynchronous load jobs created at the rate [[akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings.loadJobPerTableQuota]].
    * @note WARNING: Pending the resolution of [[https://issuetracker.google.com/176002651 BigQuery issue 176002651]] this method may not work as expected.
    *       As a workaround, you can use the config setting `akka.http.parsing.conflicting-content-type-header-processing-mode = first` with Akka HTTP v10.2.4 or later.
    *
@@ -390,6 +390,25 @@ object BigQuery extends Google {
                          marshaller: Marshaller[In, RequestEntity]): Flow[In, Job, NotUsed] = {
     implicit val m = marshaller.asScalaCastOutput[sm.RequestEntity]
     ScalaBigQuery.insertAllAsync[In](datasetId, tableId).asJava[In]
+  }
+
+  /**
+   * Loads data into BigQuery via a series of asynchronous load jobs created at the rate [[akka.stream.alpakka.googlecloud.bigquery.BigQuerySettings.loadJobPerTableQuota]].
+   * @note WARNING: Pending the resolution of [[https://issuetracker.google.com/176002651 BigQuery issue 176002651]] this method may not work as expected.
+   *       As a workaround, you can use the config setting `akka.http.parsing.conflicting-content-type-header-processing-mode = first` with Akka HTTP v10.2.4 or later.
+   *
+   * @param datasetId dataset ID of the table to insert into
+   * @param tableId table ID of the table to insert into
+   * @param marshaller [[akka.http.javadsl.marshalling.Marshaller]] for [[In]]
+   * @tparam In the data model for each record
+   * @return a [[akka.stream.javadsl.Flow]] that uploads each [[In]] and emits a [[Job]] for every upload job created
+   */
+  def insertAllAsync[In](datasetId: String,
+                         tableId: String,
+                         labels: util.Optional[util.Map[String, String]],
+                         marshaller: Marshaller[In, RequestEntity]): Flow[In, Job, NotUsed] = {
+    implicit val m = marshaller.asScalaCastOutput[sm.RequestEntity]
+    ScalaBigQuery.insertAllAsync[In](datasetId, tableId, labels.asScala.map(_.asScala.toMap)).asJava[In]
   }
 
   /**

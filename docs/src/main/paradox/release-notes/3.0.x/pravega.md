@@ -1,5 +1,11 @@
 # Pravega
 
+## 3.0.0
+
+- Pravega KVP Table support v2 [#2651](https://github.com/akka/alpakka/issues/2651) by [@cheleb](https://github.com/cheleb)
+
+[*closed in 3.0.0*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A3.0.0+label%3Ap%3Apravega)
+
 ## 3.0.0-M1
 
 - Update pravega docker image to match client version [#2610](https://github.com/akka/alpakka/issues/2610) by [@seglo](https://github.com/seglo)

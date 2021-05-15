@@ -1,5 +1,11 @@
 # Elasticsearch
 
+## 3.0.0
+
+- Elasticsearch has Header and HttpsContext Settings [#2652](https://github.com/akka/alpakka/issues/2652) by [@jabbaugh](https://github.com/jabbaugh)
+
+[*closed in 3.0.0*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A3.0.0+label%3Ap%3Aelasticsearch)
+
 ## 3.0.0-M1
 
 - Elasticsearch: Akka 2.6 [#2542](https://github.com/akka/alpakka/issues/2542) by [@ennru](https://github.com/ennru)

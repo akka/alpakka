@@ -15,4 +15,4 @@ jabba use "$JDK"
 java -version
 $PRE_CMD
 
-sbt -jvm-opts .jvmopts-travis "$CMD"
+sbt -sbt-launch-repo https://repo1.maven.org/maven2 -jvm-opts .jvmopts-travis "$CMD"

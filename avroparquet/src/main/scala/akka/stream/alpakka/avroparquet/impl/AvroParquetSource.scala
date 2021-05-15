@@ -27,8 +27,8 @@ private[avroparquet] class AvroParquetSource[T <: GenericRecord](reader: Parquet
       out,
       new OutHandler {
 
-        override def onDownstreamFinish(): Unit = {
-          super.onDownstreamFinish()
+        override def onDownstreamFinish(cause: Throwable): Unit = {
+          super.onDownstreamFinish(cause)
           reader.close()
         }
 

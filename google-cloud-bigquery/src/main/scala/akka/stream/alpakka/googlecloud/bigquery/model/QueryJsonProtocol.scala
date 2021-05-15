@@ -32,13 +32,13 @@ import scala.concurrent.duration.FiniteDuration
  * @param useLegacySql specifies whether to use BigQuery's legacy SQL dialect for this query
  * @param requestId a unique user provided identifier to ensure idempotent behavior for queries
  */
-final case class QueryRequest(query: String,
-                              maxResults: Option[Int],
-                              defaultDataset: Option[DatasetReference],
-                              timeout: Option[FiniteDuration],
-                              dryRun: Option[Boolean],
-                              useLegacySql: Option[Boolean],
-                              requestId: Option[String]) {
+final case class QueryRequest private (query: String,
+                                       maxResults: Option[Int],
+                                       defaultDataset: Option[DatasetReference],
+                                       timeout: Option[FiniteDuration],
+                                       dryRun: Option[Boolean],
+                                       useLegacySql: Option[Boolean],
+                                       requestId: Option[String]) {
 
   def getQuery = query
   def getMaxResults = maxResults.asPrimitive
@@ -144,16 +144,16 @@ object QueryRequest {
  * @tparam T the data model for each row
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-final case class QueryResponse[+T](schema: Option[TableSchema],
-                                   jobReference: JobReference,
-                                   totalRows: Option[Long],
-                                   pageToken: Option[String],
-                                   rows: Option[Seq[T]],
-                                   totalBytesProcessed: Option[Long],
-                                   jobComplete: Boolean,
-                                   errors: Option[Seq[ErrorProto]],
-                                   cacheHit: Option[Boolean],
-                                   numDmlAffectedRows: Option[Long]) {
+final case class QueryResponse[+T] private (schema: Option[TableSchema],
+                                            jobReference: JobReference,
+                                            totalRows: Option[Long],
+                                            pageToken: Option[String],
+                                            rows: Option[Seq[T]],
+                                            totalBytesProcessed: Option[Long],
+                                            jobComplete: Boolean,
+                                            errors: Option[Seq[ErrorProto]],
+                                            cacheHit: Option[Boolean],
+                                            numDmlAffectedRows: Option[Long]) {
 
   @silent("never used")
   @JsonCreator
