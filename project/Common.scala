@@ -7,6 +7,7 @@ import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
 import com.lightbend.paradox.projectinfo.ParadoxProjectInfoPluginKeys._
 import Whitesource.whitesourceGroup
 import com.typesafe.tools.mima.plugin.MimaKeys._
+import xerial.sbt.Sonatype.autoImport.sonatypeProfileName
 
 object Common extends AutoPlugin {
 
@@ -120,6 +121,7 @@ object Common extends AutoPlugin {
       // timeout.
       testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-F", "4"),
       scalafmtOnCompile := true,
-      headerLicense := Some(HeaderLicense.Custom("Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>"))
+      headerLicense := Some(HeaderLicense.Custom("Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>")),
+      sonatypeProfileName := "com.lightbend"
     )
 }
