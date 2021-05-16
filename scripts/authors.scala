@@ -28,7 +28,7 @@ val FilesExp = """(\d+)\sfile[s]? changed""".r
 val InsertionsExp = """(\d+)\sinsertion[s]?\(\+\)""".r
 val DeletionsExp = """(\d+)\sdeletion[s]?\(-\)""".r
 
-val entries = gitCmd.lineStream_!.foldLeft("")(_ + "\n" + _).split('\u0000')
+val entries = gitCmd.lazyLines_!.foldLeft("")(_ + "\n" + _).split('\u0000')
 
 val map = entries.foldLeft(Map.empty[String, Stats]) { (map, entry) =>
   val lines = entry.trim.split('\n')
