@@ -5,7 +5,11 @@
 package akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl
 
 import akka.stream.alpakka.googlecloud.bigquery.storage.impl.AvroDecoder
-import akka.stream.alpakka.googlecloud.bigquery.storage.{BigQueryRecord, BigQueryStorageSettings, BigQueryStorageSpecBase}
+import akka.stream.alpakka.googlecloud.bigquery.storage.{
+  BigQueryRecord,
+  BigQueryStorageSettings,
+  BigQueryStorageSpecBase
+}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Sink
 import org.scalatest.BeforeAndAfterAll
@@ -21,7 +25,7 @@ class BigQueryAvroStorageSpec
 
   "BigQueryAvroStorage.readAvro" should {
     val avroSchema = storageAvroSchema.value
-    val avroRows =  storageAvroRows.value
+    val avroRows = storageAvroRows.value
 
     "stream the results for a query in records merged" in {
       val decoder = AvroDecoder(avroSchema.schema)
@@ -31,7 +35,7 @@ class BigQueryAvroStorageSpec
         .readRecordsMerged(Project, Dataset, Table, None)
         .withAttributes(mockBQReader())
         .runWith(Sink.seq)
-        .futureValue shouldBe Seq.fill(DefaultNumStreams* ResponsesPerStream)(records)
+        .futureValue shouldBe Seq.fill(DefaultNumStreams * ResponsesPerStream)(records)
     }
 
     "stream the results for a query in records" in {
@@ -41,10 +45,10 @@ class BigQueryAvroStorageSpec
       BigQueryAvroStorage
         .readRecords(Project, Dataset, Table, None)
         .withAttributes(mockBQReader())
-        .map(a => a.reduce((a,b)=> a.merge(b)))
+        .map(a => a.reduce((a, b) => a.merge(b)))
         .flatMapMerge(100, identity)
         .runWith(Sink.seq)
-        .futureValue shouldBe Seq.fill(DefaultNumStreams* ResponsesPerStream)(records).flatten
+        .futureValue shouldBe Seq.fill(DefaultNumStreams * ResponsesPerStream)(records).flatten
     }
 
     "stream the results for a query merged" in {
@@ -54,20 +58,21 @@ class BigQueryAvroStorageSpec
         .map(s => s._2.map(b => (s._1, b)))
         .flatMapMerge(100, identity)
         .runWith(Sink.seq)
-        .futureValue shouldBe Vector.fill(DefaultNumStreams* ResponsesPerStream) ((avroSchema, avroRows))
+        .futureValue shouldBe Vector.fill(DefaultNumStreams * ResponsesPerStream)((avroSchema, avroRows))
     }
 
     "stream the results for a query" in {
       BigQueryAvroStorage
         .read(Project, Dataset, Table, None)
         .withAttributes(mockBQReader())
-        .map {
-          s => s._2.reduce((a, b) => a.merge(b))
+        .map { s =>
+          s._2
+            .reduce((a, b) => a.merge(b))
             .map(b => (s._1, b))
         }
         .flatMapMerge(100, identity)
         .runWith(Sink.seq)
-        .futureValue shouldBe Vector.fill(DefaultNumStreams * ResponsesPerStream )((avroSchema, avroRows))
+        .futureValue shouldBe Vector.fill(DefaultNumStreams * ResponsesPerStream)((avroSchema, avroRows))
     }
   }
 

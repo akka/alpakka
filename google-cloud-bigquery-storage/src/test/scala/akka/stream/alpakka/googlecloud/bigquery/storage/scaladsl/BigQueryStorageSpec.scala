@@ -48,7 +48,6 @@ class BigQueryStorageSpec
     }
   }
 
-
   "GoogleBigQuery.readAvroOnly" should {
     "stream the results for a query, deserializing into generic records" in {
       BigQueryStorage
@@ -56,7 +55,9 @@ class BigQueryStorageSpec
         .withAttributes(mockBQReader())
         .flatMapMerge(100, identity)
         .runWith(Sink.seq)
-        .futureValue shouldBe List.fill(DefaultNumStreams * ResponsesPerStream * RecordsPerReadRowsResponse)(FullRecord)
+        .futureValue shouldBe List.fill(DefaultNumStreams * ResponsesPerStream * RecordsPerReadRowsResponse)(
+        FullAvroRecord
+      )
     }
 
     "filter results based on the row restriction configured" in {
@@ -74,7 +75,9 @@ class BigQueryStorageSpec
         .withAttributes(mockBQReader())
         .flatMapMerge(100, identity)
         .runWith(Sink.seq)
-        .futureValue shouldBe List.fill(DefaultNumStreams * ResponsesPerStream * RecordsPerReadRowsResponse)(Col1Record)
+        .futureValue shouldBe List.fill(DefaultNumStreams * ResponsesPerStream * RecordsPerReadRowsResponse)(
+        Col1AvroRecord
+      )
     }
 
     "restrict the number of streams/Sources returned by the Storage API, if specified" in {
@@ -142,8 +145,6 @@ class BigQueryStorageSpec
       }
     }
   }
-
-
 
   def mockBQReader(host: String = bqHost, port: Int = bqPort) = {
     val reader = GrpcBigQueryStorageReader(BigQueryStorageSettings(host, port))

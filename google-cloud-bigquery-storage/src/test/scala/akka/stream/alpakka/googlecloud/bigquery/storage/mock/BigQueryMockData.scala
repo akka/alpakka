@@ -5,9 +5,9 @@
 package akka.stream.alpakka.googlecloud.bigquery.storage.mock
 
 import java.io.ByteArrayOutputStream
-
 import com.google.cloud.bigquery.storage.v1.avro.AvroRows
 import com.google.protobuf.ByteString
+import org.apache.arrow.vector.types.pojo.Schema
 import org.apache.avro
 import org.apache.avro.generic.{GenericDatumWriter, GenericRecord, GenericRecordBuilder}
 import org.apache.avro.io.EncoderFactory
@@ -27,7 +27,29 @@ trait BigQueryMockData {
   val Col1 = "col1"
   val Col2 = "col2"
 
-  val FullSchema: avro.Schema =
+  val FullArrowSchema: Schema = Schema.fromJSON("""
+      |{
+      |  "fields" : [ {
+      |    "name" : "col1",
+      |    "nullable" : true,
+      |    "type" : {
+      |      "name" : "utf8"
+      |    },
+      |    "children" : [ ]
+      |  }, {
+      |    "name" : "col2",
+      |    "nullable" : true,
+      |    "type" : {
+      |      "name" : "int",
+      |      "bitWidth" : 32,
+      |      "isSigned" : true
+      |    },
+      |    "children" : [ ]
+      |  } ]
+      |}
+      |""".stripMargin)
+
+  val FullAvroSchema: avro.Schema =
     new avro.Schema.Parser().parse("""
                                      |{
                                      |  "type": "record",
@@ -66,9 +88,11 @@ trait BigQueryMockData {
   val RecordsPerReadRowsResponse = 10
   val TotalRecords = DefaultNumStreams * ResponsesPerStream * RecordsPerReadRowsResponse
 
-  val FullRecord = new GenericRecordBuilder(FullSchema).set("col1", "val1").set("col2", 2).build()
-  val Col1Record = new GenericRecordBuilder(Col1Schema).set("col1", "val1").build()
-  val Col2Record = new GenericRecordBuilder(Col2Schema).set("col2", 2).build()
+  //val FullArrowRecord = new
+
+  val FullAvroRecord = new GenericRecordBuilder(FullAvroSchema).set("col1", "val1").set("col2", 2).build()
+  val Col1AvroRecord = new GenericRecordBuilder(Col1Schema).set("col1", "val1").build()
+  val Col2AvroRecord = new GenericRecordBuilder(Col2Schema).set("col2", 2).build()
 
   def recordsAsRows(record: GenericRecord): AvroRows = {
     val datumWriter = new GenericDatumWriter[GenericRecord](record.getSchema)

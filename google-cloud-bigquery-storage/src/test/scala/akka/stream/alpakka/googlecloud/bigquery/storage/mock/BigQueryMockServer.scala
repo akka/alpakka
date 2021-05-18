@@ -15,6 +15,7 @@ import com.google.cloud.bigquery.storage.v1.arrow.ArrowSchema
 import com.google.cloud.bigquery.storage.v1.avro.AvroSchema
 import com.google.cloud.bigquery.storage.v1.storage._
 import com.google.cloud.bigquery.storage.v1.stream._
+import com.google.protobuf.ByteString
 import io.grpc.Status
 import org.apache.avro
 
@@ -28,7 +29,7 @@ class BigQueryMockServer(port: Int) extends BigQueryMockData {
   def run()(implicit sys: ActorSystem): Future[Http.ServerBinding] = {
     val service: HttpRequest => Future[HttpResponse] =
       BigQueryReadPowerApiHandler(new BigQueryReadPowerApi {
-        val sessionSchemas: mutable.Map[String, avro.Schema] = mutable.Map.empty
+        val sessionSchemas: mutable.Map[String, Any] = mutable.Map.empty
 
         /**
          * Validate the project and table names, if they are as expected,
@@ -58,14 +59,19 @@ class BigQueryMockServer(port: Int) extends BigQueryMockData {
                 val avroSchema = readSession.readOptions.map(_.selectedFields.toList).getOrElse(Nil) match {
                   case Col1 :: Nil => Col1Schema
                   case Col2 :: Nil => Col2Schema
-                  case _ => FullSchema
+                  case _ => FullAvroSchema
                 }
                 sessionSchemas += (sessionName -> avroSchema)
                 ReadSession.Schema.AvroSchema(AvroSchema(avroSchema.toString))
-              } else
+              } else {
+                val arrowSchema = readSession.readOptions.map(_.selectedFields.toList).getOrElse(Nil) match {
+                  case _ => FullArrowSchema
+                }
+                sessionSchemas += (sessionName -> arrowSchema)
                 ReadSession.Schema.ArrowSchema(
-                  ArrowSchema(com.google.protobuf.ByteString.copyFromUtf8("NOT A REAL SCHEMA"))
+                  ArrowSchema(serializedSchema = ByteString.copyFromUtf8(arrowSchema.toJson))
                 )
+              }
 
             Future.successful(
               readSession.copy(
@@ -88,10 +94,10 @@ class BigQueryMockServer(port: Int) extends BigQueryMockData {
           } else {
             val sessionName = in.readStream.split("/").dropRight(2).mkString("/")
             val record = sessionSchemas(sessionName) match {
-              case FullSchema => FullRecord
-              case Col1Schema => Col1Record
-              case Col2Schema => Col2Record
-              case _ => println("hi"); Col2Record
+              case FullAvroSchema => FullAvroRecord
+              case Col1Schema => Col1AvroRecord
+              case Col2Schema => Col2AvroRecord
+              case _ => println("hi"); Col2AvroRecord
             }
             Source(1 to ResponsesPerStream).map(
               _ =>

@@ -71,7 +71,7 @@ public class BigQueryStorageSpec extends BigQueryStorageSpecBase {
 
     assertEquals(
         "fields of generic record should only include col1",
-        Col1Record(),
+        Col1AvroRecord(),
         genericRecords.toCompletableFuture().get(5, TimeUnit.SECONDS).get(0));
   }
 
