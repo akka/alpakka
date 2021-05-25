@@ -217,7 +217,6 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
   akkaGrpcCodeGeneratorSettings ~= { _.filterNot(_ == "flat_package") },
   akkaGrpcGeneratedSources := Seq(AkkaGrpc.Client),
   akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala, AkkaGrpc.Java),
-  Compile / PB.protoSources += (Compile / PB.externalIncludePath).value,
   // for the ExampleApp in the tests
   run / connectInput := true,
   Compile / scalacOptions ++= Seq(
