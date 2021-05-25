@@ -176,10 +176,13 @@ class IntegrationSpec
           message.ackId
         }
         .groupedWithin(10, 1.second)
-        .map(ids =>
-          AcknowledgeRequest()
-           .withSubscription(s"projects/$projectId/subscriptions/$subscription")
-           .withAckIds(ids)
+        .map(
+          ids =>
+            AcknowledgeRequest()
+              .withSubscription(
+                s"projects/$projectId/subscriptions/$subscription"
+              )
+              .withAckIds(ids)
         )
         .to(ackSink)
       //#acknowledge
