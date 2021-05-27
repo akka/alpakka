@@ -7,7 +7,24 @@ services:
 git:
   depth: 500
 
-# using jabba for custom jdk management (see ./scripts/build.sh)
+addons:
+  hosts:
+    # to run tests locally, these hostnames need to resolve to localhost IP
+    - hbase
+  apt:
+    sources:
+      # Official debian package for AdoptOpenJDK from https://adoptopenjdk.net/installation.html#linux-pkg
+      - sourceline: deb https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/ xenial main
+        key_url: https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public
+    packages:
+      - adoptopenjdk-8-hotspot
+
+before_install:
+  - whereis java
+  # build, test and release using JDK 8 to make sure alpakka works with it
+  - export JAVA_HOME=/usr/lib/jvm/adoptopenjdk-8-hotspot-amd64
+  - export PATH=/usr/lib/jvm/adoptopenjdk-8-hotspot-amd64/bin:$PATH
+  - java -version
 
 # default script for jobs, that do not have any specified
 script: ./scripts/travis.sh
@@ -176,11 +193,6 @@ cache:
     - $HOME/.sbt
     - $HOME/.jabba
   timeout: 900
-
-addons:
-  hosts:
-    # to run tests locally, these hostnames need to resolve to localhost IP
-    - hbase
 
 env:
   global:
