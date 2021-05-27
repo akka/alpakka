@@ -41,8 +41,8 @@ final case class QueryRequest private (query: String,
                                        dryRun: Option[Boolean],
                                        useLegacySql: Option[Boolean],
                                        requestId: Option[String],
-                                       location: Option[String],
-                                       maximumBytesBilled: Option[Long]) {
+                                       location: Option[String] = None,
+                                       maximumBytesBilled: Option[Long] = None) {
 
   def getQuery = query
   def getMaxResults = maxResults.asPrimitive
@@ -111,8 +111,6 @@ object QueryRequest {
    * @param dryRun if set to `true` BigQuery doesn't run the job and instead returns statistics about the job such as how many bytes would be processed
    * @param useLegacySql specifies whether to use BigQuery's legacy SQL dialect for this query
    * @param requestId a unique user provided identifier to ensure idempotent behavior for queries
-   * @param location the geographic location where the job should run
-   * @param maximumBytesBilled limits the number of bytes billed for this query
    * @return a [[QueryRequest]]
    */
   def create(query: String,
@@ -121,9 +119,7 @@ object QueryRequest {
              timeout: util.Optional[Duration],
              dryRun: util.Optional[lang.Boolean],
              useLegacySql: util.Optional[lang.Boolean],
-             requestId: util.Optional[String],
-             location: util.Optional[String],
-             maximumBytesBilled: util.OptionalLong) =
+             requestId: util.Optional[String]) =
     QueryRequest(
       query,
       maxResults.asScala,
@@ -131,9 +127,7 @@ object QueryRequest {
       timeout.asScala.map(_.asScala),
       dryRun.asScala.map(_.booleanValue),
       useLegacySql.asScala.map(_.booleanValue),
-      requestId.asScala,
-      location.asScala,
-      maximumBytesBilled.asScala
+      requestId.asScala
     )
 
   implicit val format: RootJsonFormat[QueryRequest] = jsonFormat(
