@@ -41,8 +41,8 @@ final case class QueryRequest private (query: String,
                                        dryRun: Option[Boolean],
                                        useLegacySql: Option[Boolean],
                                        requestId: Option[String],
-                                       location: Option[String] = None,
-                                       maximumBytesBilled: Option[Long] = None) {
+                                       location: Option[String],
+                                       maximumBytesBilled: Option[Long]) {
 
   def getQuery = query
   def getMaxResults = maxResults.asPrimitive
