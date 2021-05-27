@@ -127,7 +127,9 @@ object QueryRequest {
       timeout.asScala.map(_.asScala),
       dryRun.asScala.map(_.booleanValue),
       useLegacySql.asScala.map(_.booleanValue),
-      requestId.asScala
+      requestId.asScala,
+      None,
+      None,
     )
 
   implicit val format: RootJsonFormat[QueryRequest] = jsonFormat(
