@@ -129,7 +129,7 @@ object QueryRequest {
       useLegacySql.asScala.map(_.booleanValue),
       requestId.asScala,
       None,
-      None,
+      None
     )
 
   implicit val format: RootJsonFormat[QueryRequest] = jsonFormat(
