@@ -40,7 +40,7 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
   def query[Out](query: String, dryRun: Boolean = false, useLegacySql: Boolean = true)(
       implicit um: FromEntityUnmarshaller[QueryResponse[Out]]
   ): Source[Out, Future[QueryResponse[Out]]] = {
-    val request = QueryRequest(query, None, None, None, Some(dryRun), Some(useLegacySql), None, None, None)
+    val request = QueryRequest(query, None, None, None, Some(dryRun), Some(useLegacySql), None)
     this.query(request).mapMaterializedValue(_._2)
   }
 

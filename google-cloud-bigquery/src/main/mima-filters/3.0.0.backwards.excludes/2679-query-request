@@ -1,0 +1,4 @@
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.googlecloud.bigquery.model.QueryRequest.unapply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.googlecloud.bigquery.model.QueryRequest.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.googlecloud.bigquery.model.QueryRequest.this")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.googlecloud.bigquery.model.QueryRequest.unapply")

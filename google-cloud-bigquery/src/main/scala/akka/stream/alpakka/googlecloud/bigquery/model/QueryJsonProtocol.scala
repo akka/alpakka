@@ -30,9 +30,10 @@ import scala.concurrent.duration.FiniteDuration
  * @param timeout specifies the maximum amount of time that the client is willing to wait for the query to complete
  * @param dryRun if set to `true` BigQuery doesn't run the job and instead returns statistics about the job such as how many bytes would be processed
  * @param useLegacySql specifies whether to use BigQuery's legacy SQL dialect for this query
- * @param requestId a unique user provided identifier to ensure idempotent behavior for queries
  * @param location the geographic location where the job should run
+ * @param labels the labels associated with this query
  * @param maximumBytesBilled limits the number of bytes billed for this query
+ * @param requestId a unique user provided identifier to ensure idempotent behavior for queries
  */
 final case class QueryRequest private (query: String,
                                        maxResults: Option[Int],
@@ -40,9 +41,10 @@ final case class QueryRequest private (query: String,
                                        timeout: Option[FiniteDuration],
                                        dryRun: Option[Boolean],
                                        useLegacySql: Option[Boolean],
-                                       requestId: Option[String],
                                        location: Option[String],
-                                       maximumBytesBilled: Option[Long]) {
+                                       labels: Map[String, String],
+                                       maximumBytesBilled: Option[Long],
+                                       requestId: Option[String]) {
 
   def getQuery = query
   def getMaxResults = maxResults.asPrimitive
@@ -53,6 +55,7 @@ final case class QueryRequest private (query: String,
   def getRequestId = requestId.asJava
   def getLocation = location.asJava
   def getMaximumBytesBilled = maximumBytesBilled.asJava
+  def getLabels = labels.asJava
 
   def withQuery(query: String) =
     copy(query = query)
@@ -96,9 +99,23 @@ final case class QueryRequest private (query: String,
     copy(maximumBytesBilled = maximumBytesBilled)
   def withMaximumBytesBilled(maximumBytesBilled: util.OptionalLong) =
     copy(maximumBytesBilled = maximumBytesBilled.asScala)
+
+  def withLabels(labels: Map[String, String]) =
+    copy(labels = labels)
+  def withLabels(labels: util.Map[String, String]) =
+    copy(labels = labels.asScala.toMap)
 }
 
 object QueryRequest {
+
+  def apply(query: String,
+            maxResults: Option[Int],
+            defaultDataset: Option[DatasetReference],
+            timeout: Option[FiniteDuration],
+            dryRun: Option[Boolean],
+            useLegacySql: Option[Boolean],
+            requestId: Option[String]): QueryRequest =
+    QueryRequest(query, maxResults, defaultDataset, timeout, dryRun, useLegacySql, None, Map.empty, None, requestId)
 
   /**
    * Java API: QueryRequest model
@@ -127,9 +144,10 @@ object QueryRequest {
       timeout.asScala.map(_.asScala),
       dryRun.asScala.map(_.booleanValue),
       useLegacySql.asScala.map(_.booleanValue),
-      requestId.asScala,
       None,
-      None
+      Map.empty,
+      None,
+      requestId.asScala
     )
 
   implicit val format: RootJsonFormat[QueryRequest] = jsonFormat(
@@ -142,7 +160,8 @@ object QueryRequest {
     "useLegacySql",
     "requestId",
     "location",
-    "maximumBytesBilled"
+    "maximumBytesBilled",
+    "labels"
   )
 }
 
