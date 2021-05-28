@@ -42,7 +42,7 @@ final case class QueryRequest private (query: String,
                                        dryRun: Option[Boolean],
                                        useLegacySql: Option[Boolean],
                                        location: Option[String],
-                                       labels: Map[String, String],
+                                       labels: Option[Map[String, String]],
                                        maximumBytesBilled: Option[Long],
                                        requestId: Option[String]) {
 
@@ -100,10 +100,10 @@ final case class QueryRequest private (query: String,
   def withMaximumBytesBilled(maximumBytesBilled: util.OptionalLong) =
     copy(maximumBytesBilled = maximumBytesBilled.asScala)
 
-  def withLabels(labels: Map[String, String]) =
+  def withLabels(labels: Option[Map[String, String]]) =
     copy(labels = labels)
-  def withLabels(labels: util.Map[String, String]) =
-    copy(labels = labels.asScala.toMap)
+  def withLabels(labels: util.Optional[util.Map[String, String]]) =
+    copy(labels = labels.asScala.map(_.asScala.toMap))
 }
 
 object QueryRequest {
@@ -115,7 +115,7 @@ object QueryRequest {
             dryRun: Option[Boolean],
             useLegacySql: Option[Boolean],
             requestId: Option[String]): QueryRequest =
-    QueryRequest(query, maxResults, defaultDataset, timeout, dryRun, useLegacySql, None, Map.empty, None, requestId)
+    QueryRequest(query, maxResults, defaultDataset, timeout, dryRun, useLegacySql, None, None, None, requestId)
 
   /**
    * Java API: QueryRequest model
@@ -145,7 +145,7 @@ object QueryRequest {
       dryRun.asScala.map(_.booleanValue),
       useLegacySql.asScala.map(_.booleanValue),
       None,
-      Map.empty,
+      None,
       None,
       requestId.asScala
     )
@@ -158,10 +158,10 @@ object QueryRequest {
     "timeoutMs",
     "dryRun",
     "useLegacySql",
-    "requestId",
     "location",
+    "labels",
     "maximumBytesBilled",
-    "labels"
+    "requestId"
   )
 }
 
