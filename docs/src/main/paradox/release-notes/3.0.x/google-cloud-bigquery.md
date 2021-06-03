@@ -1,5 +1,11 @@
 ## Google Cloud BigQuery
 
+## 3.0.1
+
+- Add extra params to the QueryRequest [#2679](https://github.com/akka/alpakka/issues/2679) by [@peproll](https://github.com/peproll)
+
+[*closed in 3.0.1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A3.0.1+label%3Ap%3Agoogle-cloud-bigquery)
+
 ## 3.0.0
 
 - BigQuery API improvements [#2663](https://github.com/akka/alpakka/issues/2663) by [@armanbilge](https://github.com/armanbilge)
