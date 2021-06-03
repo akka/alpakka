@@ -41,7 +41,7 @@ trait BigQueryMockData {
       |    "nullable" : true,
       |    "type" : {
       |      "name" : "int",
-      |      "bitWidth" : 32,
+      |      "bitWidth" : 64,
       |      "isSigned" : true
       |    },
       |    "children" : [ ]
@@ -87,8 +87,6 @@ trait BigQueryMockData {
   val ResponsesPerStream = 10
   val RecordsPerReadRowsResponse = 10
   val TotalRecords = DefaultNumStreams * ResponsesPerStream * RecordsPerReadRowsResponse
-
-  //val FullArrowRecord = new
 
   val FullAvroRecord = new GenericRecordBuilder(FullAvroSchema).set("col1", "val1").set("col2", 2).build()
   val Col1AvroRecord = new GenericRecordBuilder(Col1Schema).set("col1", "val1").build()

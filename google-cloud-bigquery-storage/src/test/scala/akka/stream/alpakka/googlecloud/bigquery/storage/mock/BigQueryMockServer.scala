@@ -10,14 +10,14 @@ import akka.grpc.GrpcServiceException
 import akka.grpc.scaladsl.Metadata
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.{Http, HttpConnectionContext}
+import akka.stream.alpakka.googlecloud.bigquery.storage.mock.ArrowRecords.GCPSerializedSchema
 import akka.stream.scaladsl.Source
-import com.google.cloud.bigquery.storage.v1.arrow.ArrowSchema
+import com.google.cloud.bigquery.storage.v1.arrow.{ArrowRecordBatch, ArrowSchema}
 import com.google.cloud.bigquery.storage.v1.avro.AvroSchema
 import com.google.cloud.bigquery.storage.v1.storage._
 import com.google.cloud.bigquery.storage.v1.stream._
-import com.google.protobuf.ByteString
 import io.grpc.Status
-import org.apache.avro
+import org.apache.avro.generic.GenericRecord
 
 import scala.collection.mutable
 import scala.concurrent.Future
@@ -65,11 +65,11 @@ class BigQueryMockServer(port: Int) extends BigQueryMockData {
                 ReadSession.Schema.AvroSchema(AvroSchema(avroSchema.toString))
               } else {
                 val arrowSchema = readSession.readOptions.map(_.selectedFields.toList).getOrElse(Nil) match {
-                  case _ => FullArrowSchema
+                  case _ => GCPSerializedSchema
                 }
-                sessionSchemas += (sessionName -> arrowSchema)
+                sessionSchemas += (sessionName -> FullArrowSchema)
                 ReadSession.Schema.ArrowSchema(
-                  ArrowSchema(serializedSchema = ByteString.copyFromUtf8(arrowSchema.toJson))
+                  ArrowSchema(serializedSchema = arrowSchema)
                 )
               }
 
@@ -93,18 +93,24 @@ class BigQueryMockServer(port: Int) extends BigQueryMockData {
             Source.failed(new GrpcServiceException(Status.INVALID_ARGUMENT.augmentDescription(msg)))
           } else {
             val sessionName = in.readStream.split("/").dropRight(2).mkString("/")
-            val record = sessionSchemas(sessionName) match {
-              case FullAvroSchema => FullAvroRecord
-              case Col1Schema => Col1AvroRecord
-              case Col2Schema => Col2AvroRecord
-              case _ => println("hi"); Col2AvroRecord
+
+            val response = sessionSchemas(sessionName) match {
+              case FullAvroSchema => avroResponse(FullAvroRecord)
+              case Col1Schema => avroResponse(Col1AvroRecord)
+              case Col2Schema => avroResponse(Col2AvroRecord)
+              case FullArrowSchema => arrowResponse(ArrowRecords.fullRecordBatch())
+              case _ => arrowResponse(ArrowRecords.fullRecordBatch()) //avroResponse(Col2AvroRecord)
             }
-            Source(1 to ResponsesPerStream).map(
-              _ =>
-                ReadRowsResponse(rowCount = RecordsPerReadRowsResponse,
-                                 rows = ReadRowsResponse.Rows.AvroRows(recordsAsRows(record)))
-            )
+
+            Source(1 to ResponsesPerStream).map(_ => response)
           }
+
+        private def avroResponse(record: GenericRecord) =
+          ReadRowsResponse(rowCount = RecordsPerReadRowsResponse,
+                           rows = ReadRowsResponse.Rows.AvroRows(recordsAsRows(record)))
+
+        private def arrowResponse(arrowBatch: ArrowRecordBatch) =
+          ReadRowsResponse(rowCount = 10, rows = ReadRowsResponse.Rows.ArrowRecordBatch(arrowBatch))
 
         override def splitReadStream(in: SplitReadStreamRequest, metadata: Metadata): Future[SplitReadStreamResponse] =
           ???

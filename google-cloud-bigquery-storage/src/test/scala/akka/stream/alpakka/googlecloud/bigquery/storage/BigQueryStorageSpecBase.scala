@@ -9,7 +9,8 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.alpakka.googlecloud.bigquery.storage.mock.{BigQueryMockData, BigQueryMockServer}
 import com.google.cloud.bigquery.storage.v1.storage.ReadRowsResponse.Rows.AvroRows
-import com.google.cloud.bigquery.storage.v1.stream.ReadSession.Schema.AvroSchema
+import com.google.cloud.bigquery.storage.v1.stream.ReadSession.Schema.{ArrowSchema, AvroSchema}
+import com.google.protobuf.ByteString
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.Promise
@@ -29,6 +30,10 @@ abstract class BigQueryStorageSpecBase(_port: Int) extends BigQueryMockData with
 
   def storageAvroSchema = {
     AvroSchema(com.google.cloud.bigquery.storage.v1.avro.AvroSchema.of(FullAvroSchema.toString))
+  }
+
+  def storageArrowSchema = {
+    ArrowSchema(com.google.cloud.bigquery.storage.v1.arrow.ArrowSchema.of(ByteString.copyFromUtf8(FullArrowSchema.toJson)))
   }
 
   def storageAvroRows = {
