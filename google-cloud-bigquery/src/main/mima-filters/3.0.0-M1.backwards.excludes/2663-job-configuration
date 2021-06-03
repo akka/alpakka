@@ -1,0 +1,4 @@
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.googlecloud.bigquery.model.JobConfiguration.unapply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.googlecloud.bigquery.model.JobConfiguration.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.googlecloud.bigquery.model.JobConfiguration.this")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.alpakka.googlecloud.bigquery.model.JobConfiguration.unapply")

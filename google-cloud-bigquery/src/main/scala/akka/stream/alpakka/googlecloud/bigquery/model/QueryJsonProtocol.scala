@@ -30,15 +30,21 @@ import scala.concurrent.duration.FiniteDuration
  * @param timeout specifies the maximum amount of time that the client is willing to wait for the query to complete
  * @param dryRun if set to `true` BigQuery doesn't run the job and instead returns statistics about the job such as how many bytes would be processed
  * @param useLegacySql specifies whether to use BigQuery's legacy SQL dialect for this query
+ * @param location the geographic location where the job should run
+ * @param labels the labels associated with this query
+ * @param maximumBytesBilled limits the number of bytes billed for this query
  * @param requestId a unique user provided identifier to ensure idempotent behavior for queries
  */
-final case class QueryRequest(query: String,
-                              maxResults: Option[Int],
-                              defaultDataset: Option[DatasetReference],
-                              timeout: Option[FiniteDuration],
-                              dryRun: Option[Boolean],
-                              useLegacySql: Option[Boolean],
-                              requestId: Option[String]) {
+final case class QueryRequest private (query: String,
+                                       maxResults: Option[Int],
+                                       defaultDataset: Option[DatasetReference],
+                                       timeout: Option[FiniteDuration],
+                                       dryRun: Option[Boolean],
+                                       useLegacySql: Option[Boolean],
+                                       location: Option[String],
+                                       labels: Option[Map[String, String]],
+                                       maximumBytesBilled: Option[Long],
+                                       requestId: Option[String]) {
 
   def getQuery = query
   def getMaxResults = maxResults.asPrimitive
@@ -47,6 +53,9 @@ final case class QueryRequest(query: String,
   def getDryRun = dryRun.map(lang.Boolean.valueOf).asJava
   def getUseLegacySql = useLegacySql.map(lang.Boolean.valueOf).asJava
   def getRequestId = requestId.asJava
+  def getLocation = location.asJava
+  def getMaximumBytesBilled = maximumBytesBilled.asJava
+  def getLabels = labels.asJava
 
   def withQuery(query: String) =
     copy(query = query)
@@ -80,9 +89,33 @@ final case class QueryRequest(query: String,
     copy(requestId = requestId)
   def withRequestId(requestId: util.Optional[String]) =
     copy(requestId = requestId.asScala)
+
+  def withLocation(location: Option[String]) =
+    copy(location = location)
+  def withLocation(location: util.Optional[String]) =
+    copy(location = location.asScala)
+
+  def withMaximumBytesBilled(maximumBytesBilled: Option[Long]) =
+    copy(maximumBytesBilled = maximumBytesBilled)
+  def withMaximumBytesBilled(maximumBytesBilled: util.OptionalLong) =
+    copy(maximumBytesBilled = maximumBytesBilled.asScala)
+
+  def withLabels(labels: Option[Map[String, String]]) =
+    copy(labels = labels)
+  def withLabels(labels: util.Optional[util.Map[String, String]]) =
+    copy(labels = labels.asScala.map(_.asScala.toMap))
 }
 
 object QueryRequest {
+
+  def apply(query: String,
+            maxResults: Option[Int],
+            defaultDataset: Option[DatasetReference],
+            timeout: Option[FiniteDuration],
+            dryRun: Option[Boolean],
+            useLegacySql: Option[Boolean],
+            requestId: Option[String]): QueryRequest =
+    QueryRequest(query, maxResults, defaultDataset, timeout, dryRun, useLegacySql, None, None, None, requestId)
 
   /**
    * Java API: QueryRequest model
@@ -111,6 +144,9 @@ object QueryRequest {
       timeout.asScala.map(_.asScala),
       dryRun.asScala.map(_.booleanValue),
       useLegacySql.asScala.map(_.booleanValue),
+      None,
+      None,
+      None,
       requestId.asScala
     )
 
@@ -122,6 +158,9 @@ object QueryRequest {
     "timeoutMs",
     "dryRun",
     "useLegacySql",
+    "location",
+    "labels",
+    "maximumBytesBilled",
     "requestId"
   )
 }
@@ -144,16 +183,16 @@ object QueryRequest {
  * @tparam T the data model for each row
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-final case class QueryResponse[+T](schema: Option[TableSchema],
-                                   jobReference: JobReference,
-                                   totalRows: Option[Long],
-                                   pageToken: Option[String],
-                                   rows: Option[Seq[T]],
-                                   totalBytesProcessed: Option[Long],
-                                   jobComplete: Boolean,
-                                   errors: Option[Seq[ErrorProto]],
-                                   cacheHit: Option[Boolean],
-                                   numDmlAffectedRows: Option[Long]) {
+final case class QueryResponse[+T] private (schema: Option[TableSchema],
+                                            jobReference: JobReference,
+                                            totalRows: Option[Long],
+                                            pageToken: Option[String],
+                                            rows: Option[Seq[T]],
+                                            totalBytesProcessed: Option[Long],
+                                            jobComplete: Boolean,
+                                            errors: Option[Seq[ErrorProto]],
+                                            cacheHit: Option[Boolean],
+                                            numDmlAffectedRows: Option[Long]) {
 
   @silent("never used")
   @JsonCreator

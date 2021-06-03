@@ -40,6 +40,8 @@ Java
 | baseUrl             | Empty   | The base URL of Elasticsearch. Should not include a trailing slash. |
 | username            | None    | The username to authenticate with                                   |
 | password            | None    | The password to authenticate with                                   |
+| headers             | None    | List of headers that should be sent with the http request.          |
+| connectionContext   | None    | The connectionContext that will be used with the http request. This can be used for TLS Auth instead of basic auth (username/password) by setting the SSLContext within the connectionContext.  |
 
 ## Elasticsearch parameters
 

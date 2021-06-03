@@ -7,7 +7,24 @@ services:
 git:
   depth: 500
 
-# using jabba for custom jdk management (see ./scripts/build.sh)
+addons:
+  hosts:
+    # to run tests locally, these hostnames need to resolve to localhost IP
+    - hbase
+  apt:
+    sources:
+      # Official debian package for AdoptOpenJDK from https://adoptopenjdk.net/installation.html#linux-pkg
+      - sourceline: deb https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/ xenial main
+        key_url: https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public
+    packages:
+      - adoptopenjdk-8-hotspot
+
+before_install:
+  - whereis java
+  # build, test and release using JDK 8 to make sure alpakka works with it
+  - export JAVA_HOME=/usr/lib/jvm/adoptopenjdk-8-hotspot-amd64
+  - export PATH=/usr/lib/jvm/adoptopenjdk-8-hotspot-amd64/bin:$PATH
+  - java -version
 
 # default script for jobs, that do not have any specified
 script: ./scripts/travis.sh
@@ -129,12 +146,11 @@ jobs:
     - name: xml
 
     - stage: whitesource
-      script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt whitesourceCheckPolicies whitesourceUpdate whitesourceSupported/whitesourceUpdate
+      script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt -sbt-launch-repo https://repo1.maven.org/maven2 whitesourceCheckPolicies whitesourceUpdate whitesourceSupported/whitesourceUpdate
 
-    - name: "Publish artifacts for Scala 2.12"
-      env: CMD="++2.12.11 publish"
-    - name: "Publish artifacts for Scala 2.13"
-      env: CMD="++2.13.3 publish"
+    - name: "Publish artifacts for Scala 2.12 and 2.13"
+      env: CMD="ci-release"
+      script: openssl aes-256-cbc -K $encrypted_74014e1c3c6a_key -iv $encrypted_74014e1c3c6a_iv -in .travis/travis_gpg_secret.enc -out .travis/travis_gpg_secret.gpg -d && export PGP_SECRET=$(cat .travis/travis_gpg_secret.gpg) && ./scripts/travis.sh
     - script: openssl aes-256-cbc -K $encrypted_bbf1dc4f2a07_key -iv $encrypted_bbf1dc4f2a07_iv -in .travis/travis_alpakka_rsa.enc -out .travis/id_rsa -d && eval "$(ssh-agent -s)" && chmod 600 .travis/id_rsa && ssh-add .travis/id_rsa && sbt -jvm-opts .jvmopts-travis docs/publishRsync
       name: "Publish API and reference documentation"
 
@@ -178,11 +194,6 @@ cache:
     - $HOME/.jabba
   timeout: 900
 
-addons:
-  hosts:
-    # to run tests locally, these hostnames need to resolve to localhost IP
-    - hbase
-
 env:
   global:
     - RUN_DROP_TRAVIS_CACHES_STAGE=true
@@ -192,6 +203,12 @@ env:
     - secure: "hnaw+GZ6kwf2TaJrdw7CMzt61Kh3gW0DVswrk0dFWvwEZkoXmjmdEOOITu/zucI9KfRZPV3fCwkYGhZKgstquW7vB8OfueLBUOZyNtx51oTCAlUztx1pKHjm5r3yDU+oO5RSaovH0qcV5dsJq0Gu7b+HWesohWSAproZsiu69oCRFqgNctNAwrZvqL8e+mXiSuKnRWcLQUof5MSgKcYdZ029muGlbh7fhjS9zewfURIROgVEXixCgYvBuhWcyNPzl8rhzxbXuvUx6BZ9bR0msl5imG4MNy/PfYw/xYDtrelPiVWMuHcjNQq5xyvQTj1W5M4Mn2R+3VNXRPPxifFw9TlTdU7GrmEZe6b2Apymy0gTXBntAqWHyA8/qhaqms8sZmxafAdx+YzHMbSkKnORY92jSPJ43hINSRBwotmL0GXzIpIM0wm2qKkW7+BAGi728wuotnS5NFudlm2w5nbIY8rQ+pP5/U5Ur3KFEpQ6cvW4u6jLFB3WxyOI0NSVWsplcq38SxrCyJxyh2mGXVMSWqDX0rj5gFGk2lnjZGRE1IN5CFgiHgW858K7IoTBAwuCLpeDnEaUBti3WUTOew56mbuEixawX+zGyD5Y2mhiGxXZ1HmeIdFT9W0O2jriFWo7t7NR/MSsIg3xh6WdfBCwhklZbrSXMrlA5Hm1JMriYyo="
     # encrypt with: travis encrypt BINTRAY_PASS=...
     - secure: "kra9cxN+5Ya6CEtEs1ry94uGOHDhVoQmJs7B700Jk4qYXu3tdPPDVt4lNheQvu/TGoTRDZecHymC526eiZTcJh7/87CAC2SYu+YW7lMP3NBcHaqnxuSWzXVNyiRjgCEWAy/pcDhGkJwL6LgNg5Vho09bV62SuySYZQ8K1QBeKIks0oZrYVIXqXborYfZ+FzSvVoOEOoEp5V1Uv98deTcfDzsqtLOXker0t6iLPIYAJA7vpNGfWk6aRqa3W1I73ojhVvcL5BqB6RK95meEJfaqclftObmp4m0aWNQujHzQIydw22rF9Sc7PAy67p2Pf28KLZPEuZYAx5KWeAYwO5rblqgvDR5hR1CqrACscl1FSpFFQMrAig+dLgHdOOAzBMGu1qqQPv/Muj2Mm4MXn7NLRdaxSRQbq4LleqUpADjEXP+LGkLjFwFHGsgNa3dNppSoeO1gvBBl4YcOCdAM8Io89M7VR7SOE3BVxDYwSJruqLcm/8nQ35CHigOm+HT03jNwY7ypgUPreHpJ5d9qFz+uRwSBSnHsHNampiydRVOjH8x0+UEPlzQ4/nYjHTJAk0Ru1CEDaUg5OFqOqdzPaplS4Yg2zpAJTSgVxh5Yr+O3KGTyapSX6wXP3LY728L1g3H0VNFGQ67TEVkXVO62rlw+1jltXLLxnp7/UhWFn02f04="
+    # encrypt with: travis encrypt SONATYPE_USERNAME=...
+    - secure: "b2zZTu9oo5fpP9GFDBzR/kpFEvTJW7GfSpu4ceqEEB2/Cr3npSPfHCplsYCmI8nXCg+XHkcd1pE3/K7z7DQtg9rHqR7mGBdOn2/YQ+myOZhZdUceomg11tFNZZW91qDRo1vWqZ7GSgkkDIuK42JCOhDaUBOdCN6LVQZypHvzL2VIkXemRgedmBS+2GEkAofIyi4Ny8ZiCtkUb+H7XSdvxyG76/XfPXAdNZuI0sEGByEGeTgEQzgmOxjgA+qsiyzPJXDz0A7qWRGlMlqJ2UQS4OVP0Stsc+c/fd15qA9LIprot2ujmwuY3athvxqeag0OorI7CnMeLJyao1ZnljUEAyPW4irWGe/z1yByOfpu7TPOJh55GJTqAoD1IPpsAfOuNCgJ2R6+TIUx8H90TTsLonRDps575D/W/psp3L4kZGYfry4FNGbPbyNPndUOuAY1f7P7Lpzx6d7RHdtI5SvGOskSWvJ3v5rUjiRdGfXfvsugSyCOfnAY4mK/wYbGlfS2Hxi/58wZOGo7HkUnaj4akOeRcqEn552s6GpE5X9bqO4EZf6BCRrcStFTm0V7wk7zYtQwc2qpy0evcFpV59R2yPPvx1HUF0GbVR0jbxeTcwpzHwJSRsHg6W2YTJG+RwDs6FU1HsnXFSJcB7o0UotHk2qZwUbTfQHozpOBBHoVQp4="
+    # encrypt with: travis encrypt SONATYPE_PASSWORD=...
+    - secure: "BZu3r19aSY/AiHpeu1Plw4Ryt1NIWRa1kJ4AZPMVNKste0AHkYh6NgiIdCFzX3OKdtUbW7z1uxvZqukGhjDM6fBnybVux/GA/pxHJuKkj/A4pZx9ZAS9CXzth9FfsF3bN212fvbDUsn8B9gYyf97oPLk88MGqVpHKQHKOa/HTYD+FEBOzSbqLw9UxnZMyDRpDFymZ8oAaCARmetsdmZpp7JB6bZHdhZr8+ObH8dT/6k/weW++2SxwRoNUFKuZ0GAg+aCBzEQjOBglOhZUi6vKlp96KnOpzclnpWhvuIe8YM6ZwckBtKsw7e13+U6XJ/IlvxRLZxqxMWsJ1N30/NzbqbLqNwS28/K6k5lYF77tUUbtUr5llGPEgXcf+T+/HWtwfoEY5Djh2tqe63Zuj0Pi4uGC1TSAe4uZcEx6r+/qMz54KbH3kxt5j8KaClkzVesrS6hScQu6ORlNgr67gr5k6OA07kSiRACo4dszvzNcVx5UGxRUq1nRvK3tfYOgeKvn8F99NmhmRF14oaEchv5nuOs40qvN2RPwS6dzKNK0+ipqo+3VyilPc+dZyAYx1pNWoZRZWXoPT/L3MWWDX6bLqnpREaYyCZYQLcDjk90KjWqjOsXLi5yy2E0EV6XA/mFDjGcBGEFkDAWjenfNiYvM74JGnEGLbiMIOBlcEdrplA="
+    # encrypt with: travis encrypt PGP_PASSPHRASE=...
+    - secure: "e1D9Y8Q1BzOTgfC1aF6zYZeSLfFb9HW9iv/4svsmGhM5uEu0PNTMFXLZ/S+vM/hzLA58bmhvRfiPqbN1isy476/qDkt78WpZPLLSbXM06jUlhD1a6VseqZj/Y7VVg7/ON9oJ3DVbA8nmnaiV6OcWgn0fk1M8JTfACuWKVvoMt3EKdI3EE1gMZqaD8ZIF5s4xE+L5fxbuhP72u3H0lxZCIcJ3YeRcApMbrpvnr8xT3LSVyqEze2XxiOeZupqhG/V2Iazp+VnmgIwgUsa5BLixyb+8/rugKb9Gj1C0Op9GxwhoLkyhIIeOX9/SSKS6S4kPNWTTwL1f3WqlCjbhKO4ScIizwn1RUnmTCDdReZ81rv4h953LzjAt4T2KEhNWlxglwYFz4opTJTPWwGqX48H7qgDS10taIfm4HyKC+Nf1hYho5uFoWuqvg0Q90VEkHbcvvvUqwygVJisQC7HcRFYE9XBk1RozF3QaNY6M/ZN0Qt8l8O6GpLj4GfDw+ySyIYPUUFy6388AtH6ziXzpCgVynC0eqymfLlNSslF/uhMIiY5ASVFVbXKQs3W2Rsg3FqX06U48Ln7lBsbELD1tOm6YbYB1ix+/iqkkrkhhO4z1nBPNrYhBv1RYjnx5F/RiWiJzElTyurv3fkyPKzcmM1emRbcy1RG1zVi7xVUu6zLqIm4="
 
 branches:
   only:

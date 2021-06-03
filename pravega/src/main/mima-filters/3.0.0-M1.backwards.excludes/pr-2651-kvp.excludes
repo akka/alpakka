@@ -1,0 +1,8 @@
+# API change in reader group management.
+# Old version did not allow to consume more than one stream at once.
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.pravega.ReaderSettings.groupName")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.pravega.ReaderSettings.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.pravega.ReaderSettingsBuilder.withGroupName")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.pravega.ReaderSettingsBuilder.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.pravega.javadsl.Pravega.source")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.alpakka.pravega.scaladsl.Pravega.source")
