@@ -28,8 +28,25 @@ class BigQueryArrowStorageSpec
     val reader = new SimpleRowReader(ArrowSchema(serializedSchema = GCPSerializedArrowSchema))
     val expectedRecords = reader.read(ArrowRecordBatch(GCPSerializedArrowTenRecordBatch,10))
 
+    "stream the results for a query in records merged" in {
+      BigQueryArrowStorage
+        .readRecordsMerged(Project, Dataset, Table, None)
+        .withAttributes(mockBQReader())
+        .runWith(Sink.seq)
+        .futureValue shouldBe Seq.fill(DefaultNumStreams * ResponsesPerStream)(expectedRecords)
+    }
+
+    "stream the results for a query in records" in {
+      BigQueryArrowStorage
+        .readRecords(Project, Dataset, Table, None)
+        .withAttributes(mockBQReader())
+        .map(a => a.reduce((a, b) => a.merge(b)))
+        .flatMapMerge(100, identity)
+        .runWith(Sink.seq)
+        .futureValue shouldBe Seq.fill(DefaultNumStreams * ResponsesPerStream)(expectedRecords).flatten
+    }
+
     "stream the results for a query merged" in {
-      val expectedSchema = ArrowSchema(serializedSchema = GCPSerializedArrowSchema)
       BigQueryArrowStorage
         .readMerged(Project, Dataset, Table, None)
         .withAttributes(mockBQReader())
@@ -47,16 +64,7 @@ class BigQueryArrowStorageSpec
         .futureValue.head
 
       val schema = streamRes._1
-
-      val sd = MessageSerializer.deserializeSchema(
-        new ReadChannel(
-          new ByteArrayReadableSeekableByteChannel(
-            schema.serializedSchema.toByteArray
-          )
-        )
-      )
-
-      sd shouldBe FullArrowSchema
+      schema shouldBe ArrowSchema(serializedSchema = GCPSerializedArrowSchema)
 
       val recordBatch = streamRes._2
         .reduce( (a,b) => a.merge(b))
