@@ -97,7 +97,7 @@ class BigQueryMockServer(port: Int) extends BigQueryMockData {
               case FullAvroSchema => avroResponse(FullAvroRecord)
               case Col1Schema => avroResponse(Col1AvroRecord)
               case Col2Schema => avroResponse(Col2AvroRecord)
-              case FullArrowSchema => arrowResponse(ArrowRecordBatch.of(GCPSerializedArrowTenRecordBatch,10))
+              case FullArrowSchema => arrowResponse(ArrowRecordBatch.of(GCPSerializedArrowTenRecordBatch, 10))
               case _ => avroResponse(Col2AvroRecord)
             }
 

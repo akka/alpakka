@@ -33,7 +33,9 @@ abstract class BigQueryStorageSpecBase(_port: Int) extends BigQueryMockData with
   }
 
   def storageArrowSchema = {
-    ArrowSchema(com.google.cloud.bigquery.storage.v1.arrow.ArrowSchema.of(ByteString.copyFromUtf8(FullArrowSchema.toJson)))
+    ArrowSchema(
+      com.google.cloud.bigquery.storage.v1.arrow.ArrowSchema.of(ByteString.copyFromUtf8(FullArrowSchema.toJson))
+    )
   }
 
   def storageAvroRows = {
