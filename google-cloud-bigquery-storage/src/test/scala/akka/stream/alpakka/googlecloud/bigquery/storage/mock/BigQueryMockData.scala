@@ -12,6 +12,7 @@ import org.apache.avro
 import org.apache.avro.generic.{GenericDatumWriter, GenericRecord, GenericRecordBuilder}
 import org.apache.avro.io.EncoderFactory
 
+import java.util.Base64
 import scala.util.Random
 
 trait BigQueryMockData {
@@ -26,6 +27,14 @@ trait BigQueryMockData {
 
   val Col1 = "col1"
   val Col2 = "col2"
+
+  val GCPSerializedArrowSchema: ByteString = ByteString.copyFrom(
+    Base64.getDecoder.decode("/////7AAAAAQAAAAAAAKAAwABgAFAAgACgAAAAABBAAMAAAACAAIAAAABAAIAAAABAAAAAIAAABQAAAABAAAAMj///8AAAECEAAAACAAAAAEAAAAAAAAAAQAAABjb2wyAAAAAAgADAAIAAcACAAAAAAAAAFAAAAAEAAUAAgABgAHAAwAAAAQABAAAAAAAAEFEAAAABwAAAAEAAAAAAAAAAQAAABjb2wxAAAAAAQABAAEAAAAAAAAAA==")
+  )
+
+  val GCPSerializedArrowTenRecordBatch: ByteString = ByteString.copyFrom(
+    Base64.getDecoder.decode("/////8gAAAAUAAAAAAAAAAwAFgAGAAUACAAMAAwAAAAAAwQAGAAAABgAAAAAAAAAAAAKABgADAAEAAgACgAAAGwAAAAQAAAAAQAAAAAAAAAAAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAACAAAAAAAAAAEAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAgAAAAAAAAAAAAAAAIAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAdmFsMQAAAAACAAAAAAAAAA==")
+  )
 
   val FullArrowSchema: Schema = Schema.fromJSON("""
       |{

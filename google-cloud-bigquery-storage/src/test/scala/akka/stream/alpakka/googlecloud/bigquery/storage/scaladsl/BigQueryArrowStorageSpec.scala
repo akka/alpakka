@@ -5,7 +5,6 @@
 package akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl
 
 import akka.stream.alpakka.googlecloud.bigquery.storage.impl.SimpleRowReader
-import akka.stream.alpakka.googlecloud.bigquery.storage.mock.ArrowRecords.{GCPSerializedSchema, GCPSerializedTenRecordBatch}
 import akka.stream.alpakka.googlecloud.bigquery.storage.{BigQueryStorageSettings, BigQueryStorageSpecBase}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Sink
@@ -26,18 +25,18 @@ class BigQueryArrowStorageSpec
 
   "BigQueryArrowStorage.readArrow" should {
 
-    val reader = new SimpleRowReader(ArrowSchema(serializedSchema = GCPSerializedSchema))
-    val expectedRecords = reader.read(ArrowRecordBatch(GCPSerializedTenRecordBatch,10))
+    val reader = new SimpleRowReader(ArrowSchema(serializedSchema = GCPSerializedArrowSchema))
+    val expectedRecords = reader.read(ArrowRecordBatch(GCPSerializedArrowTenRecordBatch,10))
 
     "stream the results for a query merged" in {
-      val expectedSchema = ArrowSchema(serializedSchema = GCPSerializedSchema)
+      val expectedSchema = ArrowSchema(serializedSchema = GCPSerializedArrowSchema)
       BigQueryArrowStorage
         .readMerged(Project, Dataset, Table, None)
         .withAttributes(mockBQReader())
         .map(s => s._2.map(b => (s._1, b)))
         .flatMapMerge(100, identity)
         .runWith(Sink.seq)
-        .futureValue shouldBe Vector.fill(DefaultNumStreams * ResponsesPerStream)((ArrowSchema(serializedSchema = GCPSerializedSchema), ArrowRecordBatch(GCPSerializedTenRecordBatch,10)))
+        .futureValue shouldBe Vector.fill(DefaultNumStreams * ResponsesPerStream)((ArrowSchema(serializedSchema = GCPSerializedArrowSchema), ArrowRecordBatch(GCPSerializedArrowTenRecordBatch,10)))
     }
 
     "stream the results for a query" in {
