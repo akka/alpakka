@@ -6,7 +6,7 @@ package akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl
 
 import akka.stream.alpakka.googlecloud.bigquery.storage.impl.SimpleRowReader
 import akka.stream.alpakka.googlecloud.bigquery.storage.mock.ArrowRecords.{GCPSerializedSchema, GCPSerializedTenRecordBatch}
-import akka.stream.alpakka.googlecloud.bigquery.storage.{BigQueryRecord, BigQueryStorageSettings, BigQueryStorageSpecBase}
+import akka.stream.alpakka.googlecloud.bigquery.storage.{BigQueryStorageSettings, BigQueryStorageSpecBase}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Sink
 import com.google.cloud.bigquery.storage.v1.arrow.{ArrowRecordBatch, ArrowSchema}
@@ -28,6 +28,17 @@ class BigQueryArrowStorageSpec
 
     val reader = new SimpleRowReader(ArrowSchema(serializedSchema = GCPSerializedSchema))
     val expectedRecords = reader.read(ArrowRecordBatch(GCPSerializedTenRecordBatch,10))
+
+    "stream the results for a query merged" in {
+      val expectedSchema = ArrowSchema(serializedSchema = GCPSerializedSchema)
+      BigQueryArrowStorage
+        .readMerged(Project, Dataset, Table, None)
+        .withAttributes(mockBQReader())
+        .map(s => s._2.map(b => (s._1, b)))
+        .flatMapMerge(100, identity)
+        .runWith(Sink.seq)
+        .futureValue shouldBe Vector.fill(DefaultNumStreams * ResponsesPerStream)((ArrowSchema(serializedSchema = GCPSerializedSchema), ArrowRecordBatch(GCPSerializedTenRecordBatch,10)))
+    }
 
     "stream the results for a query" in {
       val streamRes = BigQueryArrowStorage
@@ -58,16 +69,6 @@ class BigQueryArrowStorageSpec
       val records = rowReader.read(recordBatch)
 
       records shouldBe expectedRecords
-    }
-
-    "stream the results for a query in records" in {
-      val row = BigQueryArrowStorage
-      .readRecords(Project, Dataset, Table, None)
-        .withAttributes(mockBQReader())
-        .map(a => a.reduce( (a,b) => a.merge(b)))
-        .flatMapMerge(100, identity)
-        .runWith(Sink.seq)
-        .futureValue
     }
 
   }
