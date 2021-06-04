@@ -25,12 +25,12 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.net.DatagramSocket;
-import java.net.InetSocketAddress;
-import java.net.StandardProtocolFamily;
+import java.net.*;
 import java.nio.channels.DatagramChannel;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
 public class UdpTest {
@@ -50,6 +50,7 @@ public class UdpTest {
 
   @Test
   public void testSendAndReceiveMessages() throws Exception {
+
     // #bind-address
     final InetSocketAddress bindToLocal = new InetSocketAddress("localhost", 0);
     // #bind-address
@@ -98,15 +99,35 @@ public class UdpTest {
     sub.cancel();
   }
 
+  List<InetAddress> listAllBroadcastAddresses() throws SocketException {
+    List<InetAddress> broadcastList = new ArrayList<>();
+    Enumeration<NetworkInterface> interfaces
+            = NetworkInterface.getNetworkInterfaces();
+    while (interfaces.hasMoreElements()) {
+      NetworkInterface networkInterface = interfaces.nextElement();
+
+      if (networkInterface.isLoopback() || !networkInterface.isUp()) {
+        continue;
+      }
+
+      networkInterface.getInterfaceAddresses().stream()
+              .map(a -> a.getBroadcast())
+              .filter(Objects::nonNull)
+              .forEach(broadcastList::add);
+    }
+    return broadcastList;
+  }
+
   @Test
   public void testSendAndReceiveMessagesWithOptions() throws Exception {
-    final InetSocketAddress bindToLocal = new InetSocketAddress("localhost", 0);
+    InetAddress firstBroadcastAddress = listAllBroadcastAddresses().get(0);
+    final InetSocketAddress bindToBroadcast = new InetSocketAddress(firstBroadcastAddress, 0);
 
     final List<Inet.SocketOption> bindSocketOptions = new ArrayList<>();
     bindSocketOptions.add(UdpSO.broadcast(true));
 
     final Flow<Datagram, Datagram, CompletionStage<InetSocketAddress>> bindFlow =
-        Udp.bindFlow(bindToLocal, bindSocketOptions, system);
+        Udp.bindFlow(bindToBroadcast, bindSocketOptions, system);
 
     final Pair<
             Pair<TestPublisher.Probe<Datagram>, CompletionStage<InetSocketAddress>>,
