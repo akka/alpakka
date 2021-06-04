@@ -101,8 +101,7 @@ public class UdpTest {
 
   List<InetAddress> listAllBroadcastAddresses() throws SocketException {
     List<InetAddress> broadcastList = new ArrayList<>();
-    Enumeration<NetworkInterface> interfaces
-            = NetworkInterface.getNetworkInterfaces();
+    Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
     while (interfaces.hasMoreElements()) {
       NetworkInterface networkInterface = interfaces.nextElement();
 
@@ -111,9 +110,9 @@ public class UdpTest {
       }
 
       networkInterface.getInterfaceAddresses().stream()
-              .map(a -> a.getBroadcast())
-              .filter(Objects::nonNull)
-              .forEach(broadcastList::add);
+          .map(a -> a.getBroadcast())
+          .filter(Objects::nonNull)
+          .forEach(broadcastList::add);
     }
     return broadcastList;
   }
