@@ -6,9 +6,9 @@ package docs.scaladsl
 
 import akka.actor.ActorSystem
 //#imports
-import akka.stream.alpakka.google.firebase.fcm.FcmNotificationModels._
-import akka.stream.alpakka.google.firebase.fcm.scaladsl.GoogleFcm
-import akka.stream.alpakka.google.firebase.fcm._
+import akka.stream.alpakka.google.firebase.fcm.FcmSettings
+import akka.stream.alpakka.google.firebase.fcm.v1.models._
+import akka.stream.alpakka.google.firebase.fcm.v1.scaladsl.GoogleFcm
 
 //#imports
 import akka.stream.scaladsl.{Sink, Source}
@@ -60,16 +60,17 @@ class FcmExamples {
     //.withApnsConfig(ApnsConfig(...))
     .withWebPushConfig(
       WebPushConfig(
-        headers = Map.empty,
-        data = Map.empty,
-        WebPushNotification("web-title", "web-body", "http://example.com/icon.png")
+        headers = Option(Map.empty),
+        data = Option(Map.empty),
+        notification =
+          Option("{\"title\": \"web-title\", \"body\": \"web-body\", \"icon\": \"http://example.com/icon.png\"}")
       )
     )
   val sendable = buildedNotification.isSendable
   //#noti-create
 
   //#condition-builder
-  import akka.stream.alpakka.google.firebase.fcm.FcmNotificationModels.Condition.{Topic => CTopic}
+  import Condition.{Topic => CTopic}
   val condition = Condition(CTopic("TopicA") && (CTopic("TopicB") || (CTopic("TopicC") && !CTopic("TopicD"))))
   val conditioneddNotification = FcmNotification("Test", "This is a test notification!", condition)
   //#condition-builder

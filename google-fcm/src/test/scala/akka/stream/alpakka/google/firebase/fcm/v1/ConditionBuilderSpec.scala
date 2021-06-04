@@ -2,11 +2,11 @@
  * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.stream.alpakka.google.firebase.fcm
+package akka.stream.alpakka.google.firebase.fcm.v1
 
-import akka.stream.alpakka.google.firebase.fcm.FcmNotificationModels.Condition._
-import org.scalatest.wordspec.AnyWordSpec
+import akka.stream.alpakka.google.firebase.fcm.v1.models.Condition._
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 class ConditionBuilderSpec extends AnyWordSpec with Matchers {
 
