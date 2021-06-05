@@ -78,11 +78,11 @@ object BigQueryStorageSettings {
       }
 
     val setGoogleSettings = (bigQueryConfig: BigQueryStorageSettings) => {
-      config.hasPath("alpakka.google") match {
-        case boolean: Boolean =>
-          val googleSettings = GoogleSettings.apply(config)
-          bigQueryConfig.withGoogleSettings(googleSettings)
-        case _ => bigQueryConfig
+      if (config.hasPath("alpakka.google")) {
+        val googleSettings = GoogleSettings.apply(config)
+        bigQueryConfig.withGoogleSettings(googleSettings)
+      } else {
+        bigQueryConfig
       }
     }
 
