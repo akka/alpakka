@@ -83,7 +83,7 @@ object BigQueryStorage {
     Source.fromMaterializer { (mat, attr) =>
       val client = reader(mat.system, attr).client
       val schemaS = Promise[String]
-      val decoderFlow: Flow[AvroRows, List[GenericRecord], Future[Option[NotUsed]]] = Flow.lazyInitAsync(
+      val decoderFlow: Flow[AvroRows, List[GenericRecord], Future[NotUsed]] = Flow.lazyFutureFlow(
         () =>
           schemaS.future.map { ss =>
             val avro = AvroDecoder(ss)
