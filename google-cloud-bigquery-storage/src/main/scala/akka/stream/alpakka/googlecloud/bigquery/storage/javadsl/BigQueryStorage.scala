@@ -82,8 +82,6 @@ object BigQueryStorage {
            maxNumStreams: Int): Source[Source[GenericRecord, NotUsed], CompletionStage[NotUsed]] =
     read(projectId, datasetId, tableId, None, maxNumStreams)
 
-  private val RequestParamsHeader = "x-goog-request-params"
-
   private[this] def read(
       projectId: String,
       datasetId: String,
