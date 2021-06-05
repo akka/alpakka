@@ -17,7 +17,7 @@ private[storage] object ProtobufConverters {
       ReadSession.TableReadOptions(
         selectedFields = selectedFields(),
         rowRestriction = readOption.getRowRestriction,
-        unknownFields()
+        unknownFields = unknownFields()
       )
     }
 
