@@ -49,8 +49,8 @@ final class BigQueryStorageSettings private (
     s"host=$host, " +
     s"port=$port, " +
     s"rootCa=$rootCa, " +
-    s"googleSettings=$googleSettings"
-  ")"
+    s"googleSettings=$googleSettings" +
+    ")"
 }
 
 object BigQueryStorageSettings {
