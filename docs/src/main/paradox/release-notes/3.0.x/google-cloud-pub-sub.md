@@ -1,5 +1,11 @@
 # Google Cloud Pub/Sub
 
+## 3.0.1
+
+- Documentation for subscription in AcknowledgeRequest [#2677](https://github.com/akka/alpakka/issues/2677) by [@derekchan](https://github.com/derekchan)
+
+[*closed in 3.0.1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A3.0.1+label%3Ap%3Agoogle-cloud-pub-sub)
+
 ## 3.0.0
 
 - Google: Drop old jwt-core dependencies [#2641](https://github.com/akka/alpakka/issues/2641) by [@armanbilge](https://github.com/armanbilge)
