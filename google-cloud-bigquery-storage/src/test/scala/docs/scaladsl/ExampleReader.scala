@@ -6,7 +6,6 @@ package docs.scaladsl
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryStorageSettings
 import akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl.{BigQueryStorageAttributes, GrpcBigQueryStorageReader}
 //#read-all
