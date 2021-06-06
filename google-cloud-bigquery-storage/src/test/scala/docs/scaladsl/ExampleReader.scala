@@ -21,7 +21,6 @@ import scala.concurrent.Future
 class ExampleReader {
 
   implicit val sys = ActorSystem("ExampleReader")
-  implicit val mat = ActorMaterializer()
 
   //#read-all
   val sourceOfSources: Source[Source[GenericRecord, NotUsed], Future[NotUsed]] =
