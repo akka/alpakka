@@ -9,9 +9,6 @@ import akka.stream.alpakka.googlecloud.bigquery.storage.{BigQueryStorageSettings
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Sink
 import com.google.cloud.bigquery.storage.v1.arrow.{ArrowRecordBatch, ArrowSchema}
-import org.apache.arrow.vector.ipc.ReadChannel
-import org.apache.arrow.vector.ipc.message.MessageSerializer
-import org.apache.arrow.vector.util.ByteArrayReadableSeekableByteChannel
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
