@@ -192,7 +192,10 @@ lazy val googleCloudBigQueryStorage = alpakkaProject(
   akkaGrpcGeneratedSources := Seq(AkkaGrpc.Client),
   akkaGrpcGeneratedSources in Test := Seq(AkkaGrpc.Server),
   akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala, AkkaGrpc.Java),
-  Compile / scalacOptions += "-P:silencer:pathFilters=src_managed"
+  Compile / scalacOptions ++= Seq(
+    "-P:silencer:pathFilters=akka-grpc/main",
+    "-P:silencer:pathFilters=akka-grpc/test"
+  ),
 ).dependsOn(googleCommon).disablePlugins(MimaPlugin).enablePlugins(AkkaGrpcPlugin)
 
 lazy val googleCloudPubSub = alpakkaProject(
