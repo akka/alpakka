@@ -12,7 +12,6 @@ import akka.stream.alpakka.udp.Datagram
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.stream._
 
-import scala.Option
 import scala.collection.immutable.Iterable
 
 /**
@@ -21,7 +20,7 @@ import scala.collection.immutable.Iterable
  * is passed-through to the output for possible further processing.
  */
 @InternalApi private[udp] final class UdpSendLogic(val shape: FlowShape[Datagram, Datagram],
-                                                   options: Option[Iterable[SocketOption]])(
+                                                   options: Iterable[SocketOption])(
     implicit val system: ActorSystem
 ) extends GraphStageLogic(shape) {
 
@@ -34,10 +33,10 @@ import scala.collection.immutable.Iterable
 
   override def preStart(): Unit = {
     getStageActor(processIncoming)
-    options match {
-      case Some(socketOptions) => IO(Udp) ! Udp.SimpleSender(socketOptions)
-      case None => IO(Udp) ! Udp.SimpleSender
-    }
+    if (options.nonEmpty)
+      IO(Udp) ! Udp.SimpleSender(options)
+    else
+      IO(Udp) ! Udp.SimpleSender
   }
 
   override def postStop(): Unit =
@@ -74,7 +73,7 @@ import scala.collection.immutable.Iterable
   )
 }
 
-@InternalApi private[udp] final class UdpSendFlow(options: Option[Iterable[SocketOption]])(
+@InternalApi private[udp] final class UdpSendFlow(options: Iterable[SocketOption] = Nil)(
     implicit val system: ActorSystem
 ) extends GraphStage[FlowShape[Datagram, Datagram]] {
 
