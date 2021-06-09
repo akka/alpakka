@@ -6,6 +6,7 @@ package docs.scaladsl
 
 import java.net.InetSocketAddress
 import akka.actor.ActorSystem
+import akka.io.UdpSO
 import akka.stream.Materializer
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.alpakka.udp.Datagram
@@ -80,6 +81,40 @@ class UdpSpec
         .map(Datagram(_, destination))
         .runWith(Udp.sendSink())
       // #send-datagrams
+
+      (1 to messagesToSend).foreach { _ =>
+        sub.requestNext()
+      }
+      sub.cancel()
+    }
+
+    "send and receive messages with options" in {
+
+      val bindFlow: Flow[Datagram, Datagram, Future[InetSocketAddress]] =
+        Udp.bindFlow(bindToLocal, List(UdpSO.broadcast(true)))
+
+      val ((pub, bound), sub) = TestSource
+        .probe[Datagram](system)
+        .viaMat(bindFlow)(Keep.both)
+        .toMat(TestSink.probe)(Keep.both)
+        .run()
+
+      val destination = bound.futureValue
+
+      {
+        val destination = new InetSocketAddress("my.server", 27015)
+        destination
+      }
+
+      val messagesToSend = 100
+
+      sub.ensureSubscription()
+      sub.request(messagesToSend)
+
+      Source(1 to messagesToSend)
+        .map(i => ByteString(s"Message $i"))
+        .map(Datagram(_, destination))
+        .runWith(Udp.sendSink(List(UdpSO.broadcast(true))))
 
       (1 to messagesToSend).foreach { _ =>
         sub.requestNext()
