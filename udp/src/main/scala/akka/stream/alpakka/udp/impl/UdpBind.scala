@@ -34,10 +34,7 @@ import scala.concurrent.{Future, Promise}
 
   override def preStart(): Unit = {
     implicit val sender = getStageActor(processIncoming).ref
-    if (options.nonEmpty)
-      IO(Udp) ! Udp.Bind(sender, localAddress, options)
-    else
-      IO(Udp) ! Udp.Bind(sender, localAddress)
+    IO(Udp) ! Udp.Bind(sender, localAddress, options)
   }
 
   override def postStop(): Unit =

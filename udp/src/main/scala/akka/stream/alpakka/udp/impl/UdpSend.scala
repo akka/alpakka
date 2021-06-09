@@ -33,10 +33,7 @@ import scala.collection.immutable.Iterable
 
   override def preStart(): Unit = {
     getStageActor(processIncoming)
-    if (options.nonEmpty)
-      IO(Udp) ! Udp.SimpleSender(options)
-    else
-      IO(Udp) ! Udp.SimpleSender
+    IO(Udp) ! Udp.SimpleSender(options)
   }
 
   override def postStop(): Unit =
