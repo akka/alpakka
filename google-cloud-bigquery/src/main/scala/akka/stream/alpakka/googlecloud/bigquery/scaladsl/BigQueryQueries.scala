@@ -100,7 +100,6 @@ private[scaladsl] trait BigQueryQueries { this: BigQueryRest =>
                       else
                         throw BigQueryException("Query job not complete.")
                     }
-                    .addAttributes(attr)
                   val restartSettings = RestartSettings(minBackoff, maxBackoff, randomFactor)
                   RestartSource.onFailuresWithBackoff(restartSettings)(() => pages).map(_.get)
                 } getOrElse Source.empty

@@ -20,7 +20,7 @@ import akka.stream.alpakka.google.implicits._
 import akka.stream.alpakka.google.scaladsl.{`X-Upload-Content-Type`, Paginated}
 import akka.stream.alpakka.googlecloud.storage._
 import akka.stream.alpakka.googlecloud.storage.impl.Formats._
-import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source}
+import akka.stream.scaladsl.{Keep, RunnableGraph, Sink, Source}
 import akka.stream.{Attributes, Materializer}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
@@ -152,14 +152,7 @@ import scala.concurrent.Future
             }: PartialFunction[HttpResponse, Future[StorageObject]]
         }.withDefaultRetry
 
-        // Workaround for https://github.com/akka/akka/issues/30141
-        // Sink.fromGraph(ResumableUpload[StorageObject](request)).addAttributes(GoogleAttributes.settings(settings))
-        Flow
-          .fromSinkAndSourceMat(
-            ResumableUpload[StorageObject](request).addAttributes(GoogleAttributes.settings(settings)),
-            Source.empty[Nothing]
-          )(Keep.left)
-          .to(Sink.ignore)
+        ResumableUpload[StorageObject](request).addAttributes(GoogleAttributes.settings(settings))
       }
       .mapMaterializedValue(_.flatten)
 
