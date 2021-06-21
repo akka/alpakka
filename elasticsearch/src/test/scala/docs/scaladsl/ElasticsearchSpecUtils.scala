@@ -31,9 +31,9 @@ trait ElasticsearchSpecUtils { this: AnyWordSpec with ScalaFutures =>
   import spray.json._
   import DefaultJsonProtocol._
 
-  case class Book(title: String)
+  case class Book(title: String, shouldSkip: Option[Boolean] = None)
 
-  implicit val format: JsonFormat[Book] = jsonFormat1(Book)
+  implicit val format: JsonFormat[Book] = jsonFormat2(Book)
   //#define-class
 
   def register(connectionSettings: ElasticsearchConnectionSettings, indexName: String, title: String): Unit = {

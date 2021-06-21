@@ -45,10 +45,17 @@ private[impl] final class RestBulkApiV7[T, C](indexName: String,
                 optionalString("version_type", versionType)
               ).flatten
             "delete" -> JsObject(sharedFields ++ fields: _*)
+          case Nop => "" -> JsObject()
         }
+        if (tuple._1.nonEmpty)
         JsObject(tuple).compactPrint + messageToJson(message, message.source.fold("")(messageWriter.convert))
+        else
+          ""
       }
-      .mkString("", "\n", "\n")
+      .filter(_.nonEmpty) match {
+        case Nil => ""  // if all NOPs
+        case x => x.mkString("", "\n", "\n")
+      }
 
   override def constructSharedFields(message: WriteMessage[T, C]): Seq[(String, JsString)] = {
     val operationFields = if (allowExplicitIndex) {

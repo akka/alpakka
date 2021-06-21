@@ -73,6 +73,7 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
 
       log.debug("Posting data to Elasticsearch: {}", json)
 
+      if (json.nonEmpty) {
       val uri = baseUri.withPath(Path(endpoint))
       val request = HttpRequest(HttpMethods.POST)
         .withUri(uri)
@@ -96,6 +97,10 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
               )
             }
         }
+      } else {
+        // if all NOPs, pretend an empty response:
+        handleResponse( (messages, resultsPassthrough, """{"took":0, "errors": false, "items":[]}"""))
+      }
     }
 
     private def handleFailure(
