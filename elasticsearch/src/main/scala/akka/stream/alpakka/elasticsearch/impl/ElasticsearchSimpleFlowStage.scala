@@ -99,7 +99,7 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
           }
       } else {
         // if all NOPs, pretend an empty response:
-        handleResponse( (messages, resultsPassthrough, """{"took":0, "errors": false, "items":[]}"""))
+        handleResponse((messages, resultsPassthrough, """{"took":0, "errors": false, "items":[]}"""))
       }
     }
 

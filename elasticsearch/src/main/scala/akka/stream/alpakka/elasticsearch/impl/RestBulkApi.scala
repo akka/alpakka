@@ -45,9 +45,8 @@ private[impl] abstract class RestBulkApi[T, C] {
   def constructSharedFields(message: WriteMessage[T, C]): Seq[(String, JsString)]
 
   /** NOPs don't come back so slip them into the results like this: */
-  private
-  def buildMessageResults(items: JsArray,
-                          messages: immutable.Seq[WriteMessage[T, C]]): immutable.Seq[WriteResult[T, C]] = {
+  private def buildMessageResults(items: JsArray,
+                                  messages: immutable.Seq[WriteMessage[T, C]]): immutable.Seq[WriteResult[T, C]] = {
     val ret = new immutable.VectorBuilder[WriteResult[T, C]]
     ret.sizeHint(messages)
     val itemsIter = items.elements.iterator

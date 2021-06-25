@@ -62,9 +62,9 @@ private[impl] final class RestBulkApiV5[T, C](indexName: String,
           ""
       }
       .filter(_.nonEmpty) match {
-        case Nil => "" // if all NOPs
-        case x => x.mkString("", "\n", "\n")
-      }
+      case Nil => "" // if all NOPs
+      case x => x.mkString("", "\n", "\n")
+    }
 
   override def constructSharedFields(message: WriteMessage[T, C]): Seq[(String, JsString)] = {
     val operationFields = if (allowExplicitIndex) {

@@ -288,12 +288,12 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
       case class KafkaMessage(book: Book, offset: KafkaOffset)
 
       val messagesFromKafka = List(
-        KafkaMessage(Book("Book A", shouldSkip=Some(true)), KafkaOffset(0)),
-        KafkaMessage(Book("Book 1"                       ), KafkaOffset(1)),
-        KafkaMessage(Book("Book 2"                       ), KafkaOffset(2)),
-        KafkaMessage(Book("Book B", shouldSkip=Some(true)), KafkaOffset(3)),
-        KafkaMessage(Book("Book 3"                       ), KafkaOffset(4)),
-        KafkaMessage(Book("Book C", shouldSkip=Some(true)), KafkaOffset(5))
+        KafkaMessage(Book("Book A", shouldSkip = Some(true)), KafkaOffset(0)),
+        KafkaMessage(Book("Book 1"), KafkaOffset(1)),
+        KafkaMessage(Book("Book 2"), KafkaOffset(2)),
+        KafkaMessage(Book("Book B", shouldSkip = Some(true)), KafkaOffset(3)),
+        KafkaMessage(Book("Book 3"), KafkaOffset(4)),
+        KafkaMessage(Book("Book C", shouldSkip = Some(true)), KafkaOffset(5))
       )
 
       var committedOffsets = Vector[KafkaOffset]()
@@ -332,7 +332,8 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
 
       // Make sure all messages was committed to kafka
       committedOffsets.map(_.offset) should contain theSameElementsAs Seq(0, 1, 2, 3, 4, 5)
-      readTitlesFrom(ApiVersion.V7, baseSourceSettings, indexName).futureValue.toList should contain allElementsOf messagesFromKafka.filterNot(_.book.shouldSkip.getOrElse(false))
+      readTitlesFrom(ApiVersion.V7, baseSourceSettings, indexName).futureValue.toList should contain allElementsOf messagesFromKafka
+        .filterNot(_.book.shouldSkip.getOrElse(false))
         .map(_.book.title)
     }
 
@@ -346,9 +347,9 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
       case class KafkaMessage(book: Book, offset: KafkaOffset)
 
       val messagesFromKafka = List(
-        KafkaMessage(Book("Book 1", shouldSkip=Some(true)), KafkaOffset(0)),
-        KafkaMessage(Book("Book 2", shouldSkip=Some(true)), KafkaOffset(1)),
-        KafkaMessage(Book("Book 3", shouldSkip=Some(true)), KafkaOffset(2))
+        KafkaMessage(Book("Book 1", shouldSkip = Some(true)), KafkaOffset(0)),
+        KafkaMessage(Book("Book 2", shouldSkip = Some(true)), KafkaOffset(1)),
+        KafkaMessage(Book("Book 3", shouldSkip = Some(true)), KafkaOffset(2))
       )
 
       var committedOffsets = Vector[KafkaOffset]()
@@ -357,7 +358,7 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
         committedOffsets = committedOffsets :+ offset
 
       val indexName = "sink6-none"
-      register(connectionSettings, indexName, "dummy")  // need to create index else exception in reading below
+      register(connectionSettings, indexName, "dummy") // need to create index else exception in reading below
 
       val kafkaToEs = Source(messagesFromKafka) // Assume we get this from Kafka
         .map { kafkaMessage: KafkaMessage =>
