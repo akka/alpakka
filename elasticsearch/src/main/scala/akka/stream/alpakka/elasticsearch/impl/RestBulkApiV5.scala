@@ -57,7 +57,7 @@ private[impl] final class RestBulkApiV5[T, C](indexName: String,
           case Nop => "" -> JsObject()
         }
         if (tuple._1.nonEmpty)
-        JsObject(tuple).compactPrint + messageToJson(message, message.source.fold("")(messageWriter.convert))
+          JsObject(tuple).compactPrint + messageToJson(message, message.source.fold("")(messageWriter.convert))
         else
           ""
       }
