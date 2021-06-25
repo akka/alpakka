@@ -283,6 +283,8 @@ class JmsAckConnectorsSpec extends JmsSpec {
       killSwitch2.shutdown()
 
       resultList.toSet should contain theSameElementsAs numsIn.map(_.toString)
+
+      jmsSource.takeWithin(1.second).runWith(Sink.seq).futureValue shouldBe empty
     }
 
     "ensure no message loss when aborting a stream" in withServer() { server =>
@@ -367,6 +369,8 @@ class JmsAckConnectorsSpec extends JmsSpec {
         s.toInt
       }
       resultList.toSet should contain theSameElementsAs numsIn.map(_.toString)
+
+      jmsSource.takeWithin(1.second).runWith(Sink.seq).futureValue shouldBe empty
     }
 
     "shutdown when waiting to acknowledge messages" in withServer() { server =>
