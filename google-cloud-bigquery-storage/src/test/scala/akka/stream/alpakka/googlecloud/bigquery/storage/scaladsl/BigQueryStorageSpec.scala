@@ -4,9 +4,11 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl
 
-import akka.stream.alpakka.googlecloud.bigquery.storage.{BigQueryStorageSettings, BigQueryStorageSpecBase}
+import akka.stream.alpakka.googlecloud.bigquery.storage.impl.AvroDecoder
+import akka.stream.alpakka.googlecloud.bigquery.storage.{BigQueryRecord, BigQueryStorageSettings, BigQueryStorageSpecBase}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Sink
+import com.google.cloud.bigquery.storage.v1.storage.ReadRowsResponse.Rows.Empty.avroRows
 import com.google.cloud.bigquery.storage.v1.stream.DataFormat
 import com.google.cloud.bigquery.storage.v1.stream.ReadSession.TableReadOptions
 import io.grpc.{Status, StatusRuntimeException}
@@ -37,6 +39,24 @@ class BigQueryStorageSpec
   }
 
   "GoogleBigQuery.read" should {
+    "stream the results for a query avro deserializer" in {
+      val avroSchema = storageAvroSchema.value
+      val avroRows = storageAvroRows.value
+
+      val decoder = AvroDecoder(avroSchema.schema)
+      val records = decoder.decodeRows(avroRows.serializedBinaryRows).map(gr => BigQueryRecord.fromAvro(gr))
+
+      implicit val um : AvroByteStringDecoder = new AvroByteStringDecoder(FullAvroSchema)
+
+      val seq = BigQueryStorage
+        .readWithType[List[BigQueryRecord]](Project, Dataset, Table, DataFormat.AVRO, None)
+        .withAttributes(mockBQReader())
+        .runWith(Sink.seq)
+        .futureValue
+
+      seq shouldBe Vector.fill(DefaultNumStreams * ResponsesPerStream)(records)
+    }
+
     "stream the results for a query" in {
       val seq = BigQueryStorage
         .read(Project, Dataset, Table, DataFormat.AVRO, None)
