@@ -4,12 +4,12 @@
 
 package akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl
 
-import akka.stream.alpakka.googlecloud.bigquery.storage.impl.AvroDecoder
+import akka.stream.alpakka.googlecloud.bigquery.storage.impl.{AvroDecoder, SimpleRowReader}
 import akka.stream.alpakka.googlecloud.bigquery.storage.{BigQueryRecord, BigQueryStorageSettings, BigQueryStorageSpecBase}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Sink
-import com.google.cloud.bigquery.storage.v1.storage.ReadRowsResponse.Rows.Empty.avroRows
-import com.google.cloud.bigquery.storage.v1.stream.DataFormat
+import com.google.cloud.bigquery.storage.v1.arrow.{ArrowRecordBatch, ArrowSchema}
+import com.google.cloud.bigquery.storage.v1.stream.{DataFormat, ReadSession}
 import com.google.cloud.bigquery.storage.v1.stream.ReadSession.TableReadOptions
 import io.grpc.{Status, StatusRuntimeException}
 import org.scalatest.BeforeAndAfterAll
@@ -39,7 +39,7 @@ class BigQueryStorageSpec
   }
 
   "GoogleBigQuery.read" should {
-    "stream the results for a query avro deserializer" in {
+    "stream the results for a query using avro deserializer" in {
       val avroSchema = storageAvroSchema.value
       val avroRows = storageAvroRows.value
 
@@ -57,36 +57,41 @@ class BigQueryStorageSpec
       seq shouldBe Vector.fill(DefaultNumStreams * ResponsesPerStream)(records)
     }
 
-    "stream the results for a query" in {
+    "filter Avro results based on the row restriction configured" in {
+      val avroSchema = storageAvroSchema.value
+      implicit val um : AvroByteStringDecoder = new AvroByteStringDecoder(FullAvroSchema)
+
+      BigQueryStorage
+        .readWithType[List[BigQueryRecord]](Project, Dataset, Table, DataFormat.AVRO, Some(TableReadOptions(rowRestriction = "true = false")))
+        .withAttributes(mockBQReader())
+        .runWith(Sink.seq)
+        .futureValue shouldBe empty
+    }
+
+    "restrict the number of Avro streams/Sources returned by the Storage API, if specified" in {
+      val maxStreams :Int = 5
+
+      BigQueryStorage.read(Project, Dataset, Table, DataFormat.AVRO,None, maxNumStreams = maxStreams)
+        .withAttributes(mockBQReader())
+        .map(_._2.size)
+        .runFold(0) (_ + _)
+        .futureValue shouldBe maxStreams
+    }
+
+
+    "stream the results for a query using arrow deserializer" in {
+      val reader = new SimpleRowReader(ArrowSchema(serializedSchema = GCPSerializedArrowSchema))
+      val expectedRecords = reader.read(ArrowRecordBatch(GCPSerializedArrowTenRecordBatch, 10))
+
+      implicit val um : ArrowByteStringDecoder = new ArrowByteStringDecoder(ArrowSchema(GCPSerializedArrowSchema))
+
       val seq = BigQueryStorage
-        .read(Project, Dataset, Table, DataFormat.AVRO, None)
+        .readWithType[List[BigQueryRecord]](Project, Dataset, Table, DataFormat.ARROW, None)
         .withAttributes(mockBQReader())
         .runWith(Sink.seq)
         .futureValue
 
-      seq(0)._1 shouldBe storageAvroSchema
-    }
-  }
-
-  "GoogleBigQuery.readAvroOnly" should {
-    "stream the results for a query, deserializing into generic records" in {
-      BigQueryStorage
-        .readAvroOnly(Project, Dataset, Table, None)
-        .withAttributes(mockBQReader())
-        .flatMapMerge(100, identity)
-        .runWith(Sink.seq)
-        .futureValue shouldBe List.fill(DefaultNumStreams * ResponsesPerStream * RecordsPerReadRowsResponse)(
-        FullAvroRecord
-      )
-    }
-
-    "filter results based on the row restriction configured" in {
-      BigQueryStorage
-        .readAvroOnly(Project, Dataset, Table, Some(TableReadOptions(rowRestriction = "true = false")))
-        .withAttributes(mockBQReader())
-        .flatMapMerge(100, identity)
-        .runWith(Sink.seq)
-        .futureValue shouldBe empty
+      seq shouldBe Vector.fill(DefaultNumStreams * ResponsesPerStream)(expectedRecords)
     }
 
     "apply configured column restrictions" in {
@@ -100,14 +105,19 @@ class BigQueryStorageSpec
       )
     }
 
-    "restrict the number of streams/Sources returned by the Storage API, if specified" in {
-      val maxStreams = 5
-      BigQueryStorage
-        .readAvroOnly(Project, Dataset, Table, maxNumStreams = maxStreams)
+    "stream the results for a query" in {
+      val seq = BigQueryStorage
+        .read(Project, Dataset, Table, DataFormat.AVRO, None)
         .withAttributes(mockBQReader())
-        .runFold(0)((acc, _) => acc + 1)
-        .futureValue shouldBe maxStreams
+        .runWith(Sink.seq)
+        .futureValue
+
+      seq(0)._1 shouldBe storageAvroSchema
     }
+  }
+
+  "GoogleBigQuery.readAvroOnly" should {
+
 
     "fail if unable to connect to bigquery" in {
       val error = BigQueryStorage
