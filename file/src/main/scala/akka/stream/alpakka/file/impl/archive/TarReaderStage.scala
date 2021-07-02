@@ -5,7 +5,6 @@
 package akka.stream.alpakka.file.impl.archive
 
 import java.util.concurrent.TimeUnit
-
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.stream.ActorAttributes.StreamSubscriptionTimeout
@@ -37,12 +36,15 @@ private[file] class TarReaderStage
           extends SubSourceOutlet[ByteString]("fileOut")
           with TarReaderStage.SourceWithTimeout
 
-      readHeader(ByteString.empty)
+      setHandlers(flowIn, flowOut, new CollectHeader(ByteString.empty))
 
       def readHeader(buffer: ByteString): Unit = {
         if (buffer.length >= TarArchiveEntry.headerLength) {
           readFile(buffer)
-        } else setHandlers(flowIn, flowOut, new CollectHeader(buffer))
+        } else {
+          if (!hasBeenPulled(flowIn)) pull(flowIn)
+          setHandlers(flowIn, flowOut, new CollectHeader(buffer))
+        }
       }
 
       def readFile(headerBuffer: ByteString): Unit = {
