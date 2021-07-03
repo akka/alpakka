@@ -89,8 +89,9 @@ object BigQueryStorage {
                   .mapAsync(parallelism) { a => a }
             }
           }
-          .map(a => a.reduce((a, b) => a.merge(b)))
-          .flatMapConcat(a => a)
+          .map(a => a.reduceOption((a, b) => a.merge(b)))
+          .filter(a => a.isDefined)
+          .flatMapConcat(a => a.get)
       }
     }
   }
