@@ -9,6 +9,7 @@ import akka.stream.alpakka.googlecloud.bigquery.storage.{BigQueryRecord, BigQuer
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Sink
 import com.google.cloud.bigquery.storage.v1.arrow.{ArrowRecordBatch, ArrowSchema}
+import com.google.cloud.bigquery.storage.v1.avro.{AvroRows, AvroSchema}
 import com.google.cloud.bigquery.storage.v1.stream.{DataFormat, ReadSession}
 import com.google.cloud.bigquery.storage.v1.stream.ReadSession.TableReadOptions
 import io.grpc.{Status, StatusRuntimeException}
@@ -58,7 +59,6 @@ class BigQueryStorageSpec
     }
 
     "filter Avro results based on the row restriction configured" in {
-      val avroSchema = storageAvroSchema.value
       implicit val um : AvroByteStringDecoder = new AvroByteStringDecoder(FullAvroSchema)
 
       BigQueryStorage
@@ -78,6 +78,21 @@ class BigQueryStorageSpec
         .futureValue shouldBe maxStreams
     }
 
+    "apply configured column restrictions" in {
+      val avroSchema = AvroSchema(Col1Schema.toString)
+      val avroRows = recordsAsRows(Col1AvroRecord)
+
+      val decoder = AvroDecoder(avroSchema.schema)
+      val records = decoder.decodeRows(avroRows.serializedBinaryRows).map(gr => BigQueryRecord.fromAvro(gr))
+
+      implicit val um : AvroByteStringDecoder = new AvroByteStringDecoder(Col1Schema)
+
+      BigQueryStorage
+        .readWithType[List[BigQueryRecord]](Project, Dataset, Table, DataFormat.AVRO, Some(TableReadOptions(List("col1"))))
+        .withAttributes(mockBQReader())
+        .runWith(Sink.seq)
+        .futureValue shouldBe List.fill(DefaultNumStreams * ResponsesPerStream )(records)
+    }
 
     "stream the results for a query using arrow deserializer" in {
       val reader = new SimpleRowReader(ArrowSchema(serializedSchema = GCPSerializedArrowSchema))
@@ -94,34 +109,9 @@ class BigQueryStorageSpec
       seq shouldBe Vector.fill(DefaultNumStreams * ResponsesPerStream)(expectedRecords)
     }
 
-    "apply configured column restrictions" in {
-      BigQueryStorage
-        .readAvroOnly(Project, Dataset, Table, Some(TableReadOptions(List("col1"))))
-        .withAttributes(mockBQReader())
-        .flatMapMerge(100, identity)
-        .runWith(Sink.seq)
-        .futureValue shouldBe List.fill(DefaultNumStreams * ResponsesPerStream * RecordsPerReadRowsResponse)(
-        Col1AvroRecord
-      )
-    }
-
-    "stream the results for a query" in {
-      val seq = BigQueryStorage
-        .read(Project, Dataset, Table, DataFormat.AVRO, None)
-        .withAttributes(mockBQReader())
-        .runWith(Sink.seq)
-        .futureValue
-
-      seq(0)._1 shouldBe storageAvroSchema
-    }
-  }
-
-  "GoogleBigQuery.readAvroOnly" should {
-
-
     "fail if unable to connect to bigquery" in {
       val error = BigQueryStorage
-        .readAvroOnly(Project, Dataset, Table, None)
+        .read(Project, Dataset, Table, DataFormat.AVRO)
         .withAttributes(mockBQReader(port = 1234))
         .runWith(Sink.ignore)
         .failed
@@ -135,7 +125,7 @@ class BigQueryStorageSpec
 
     "fail if the project is incorrect" in {
       val error = BigQueryStorage
-        .readAvroOnly("NOT A PROJECT", Dataset, Table, None)
+        .read("NOT A PROJECT", Dataset, Table, DataFormat.AVRO)
         .withAttributes(mockBQReader())
         .runWith(Sink.ignore)
         .failed
@@ -149,7 +139,7 @@ class BigQueryStorageSpec
 
     "fail if the dataset is incorrect" in {
       val error = BigQueryStorage
-        .readAvroOnly(Project, "NOT A DATASET", Table, None)
+        .read(Project, "NOT A DATASET", Table, DataFormat.AVRO)
         .withAttributes(mockBQReader())
         .runWith(Sink.ignore)
         .failed
@@ -174,6 +164,17 @@ class BigQueryStorageSpec
         case other => fail(s"Expected a StatusRuntimeException, got $other")
       }
     }
+
+    "stream the results for a query" in {
+      val seq = BigQueryStorage
+        .read(Project, Dataset, Table, DataFormat.AVRO, None)
+        .withAttributes(mockBQReader())
+        .runWith(Sink.seq)
+        .futureValue
+
+      seq(0)._1 shouldBe storageAvroSchema
+    }
+
   }
 
   def mockBQReader(host: String = bqHost, port: Int = bqPort) = {
