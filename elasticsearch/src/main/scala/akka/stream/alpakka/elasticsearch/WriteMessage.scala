@@ -28,6 +28,7 @@ private[elasticsearch] object Operation {
   object Update extends Operation("update")
   object Upsert extends Operation("update")
   object Delete extends Operation("delete")
+  object Nop extends Operation("nop")
 }
 
 final class WriteMessage[T, PT] private (val operation: Operation,
@@ -124,6 +125,9 @@ object WriteMessage {
 
   def createDeleteMessage[T](id: String): WriteMessage[T, NotUsed] =
     new WriteMessage(Delete, id = Option(id), None)
+
+  def createNopMessage[T](): WriteMessage[T, NotUsed] =
+    new WriteMessage(Nop, id = None, None)
 
 }
 

@@ -73,29 +73,34 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
 
       log.debug("Posting data to Elasticsearch: {}", json)
 
-      val uri = baseUri.withPath(Path(endpoint))
-      val request = HttpRequest(HttpMethods.POST)
-        .withUri(uri)
-        .withEntity(HttpEntity(NDJsonProtocol.`application/x-ndjson`, json))
+      if (json.nonEmpty) {
+        val uri = baseUri.withPath(Path(endpoint))
+        val request = HttpRequest(HttpMethods.POST)
+          .withUri(uri)
+          .withEntity(HttpEntity(NDJsonProtocol.`application/x-ndjson`, json))
 
-      ElasticsearchApi
-        .executeRequest(
-          request,
-          connectionSettings = settings.connection
-        )
-        .map {
-          case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
-            Unmarshal(responseEntity)
-              .to[String]
-              .map(json => responseHandler.invoke((messages, resultsPassthrough, json)))
-          case HttpResponse(status, _, responseEntity, _) =>
-            Unmarshal(responseEntity).to[String].map { body =>
-              failureHandler.invoke(
-                (resultsPassthrough,
-                 new RuntimeException(s"Request failed for POST $uri, got $status with body: $body"))
-              )
-            }
-        }
+        ElasticsearchApi
+          .executeRequest(
+            request,
+            connectionSettings = settings.connection
+          )
+          .map {
+            case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
+              Unmarshal(responseEntity)
+                .to[String]
+                .map(json => responseHandler.invoke((messages, resultsPassthrough, json)))
+            case HttpResponse(status, _, responseEntity, _) =>
+              Unmarshal(responseEntity).to[String].map { body =>
+                failureHandler.invoke(
+                  (resultsPassthrough,
+                   new RuntimeException(s"Request failed for POST $uri, got $status with body: $body"))
+                )
+              }
+          }
+      } else {
+        // if all NOPs, pretend an empty response:
+        handleResponse((messages, resultsPassthrough, """{"took":0, "errors": false, "items":[]}"""))
+      }
     }
 
     private def handleFailure(
