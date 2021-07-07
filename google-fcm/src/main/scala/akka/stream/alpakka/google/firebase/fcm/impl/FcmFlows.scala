@@ -18,9 +18,13 @@ import scala.concurrent.Future
 /**
  * INTERNAL API
  */
+@silent("deprecated")
 @InternalApi
 private[fcm] object FcmFlows {
 
+  /** Use akka.stream.alpakka.google.firebase.fcm.v1.impl.FcmFlows */
+  @deprecated("akka.stream.alpakka.google.firebase.fcm.v1.impl.FcmFlows", "3.0.2")
+  @Deprecated
   private[fcm] def fcmWithData[T](conf: FcmSettings): Flow[(FcmNotification, T), (FcmResponse, T), NotUsed] =
     Flow
       .fromMaterializer { (mat, attr) =>
@@ -35,6 +39,9 @@ private[fcm] object FcmFlows {
       }
       .mapMaterializedValue(_ => NotUsed)
 
+  /** Use akka.stream.alpakka.google.firebase.fcm.v1.impl.FcmFlows */
+  @deprecated("akka.stream.alpakka.google.firebase.fcm.v1.impl.FcmFlows", "3.0.2")
+  @Deprecated
   private[fcm] def fcm(conf: FcmSettings): Flow[FcmNotification, FcmResponse, NotUsed] =
     Flow
       .fromMaterializer { (mat, attr) =>
@@ -47,6 +54,8 @@ private[fcm] object FcmFlows {
       .mapMaterializedValue(_ => NotUsed)
 
   @silent("deprecated")
+  @deprecated("akka.stream.alpakka.google.firebase.fcm.v1.impl.FcmFlows", "3.0.2")
+  @Deprecated
   private def resolveSettings(conf: FcmSettings)(mat: Materializer, attr: Attributes): GoogleSettings = {
     val settings = GoogleAttributes.resolveSettings(mat, attr)
     val scopes = List("https://www.googleapis.com/auth/firebase.messaging")

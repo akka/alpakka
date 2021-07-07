@@ -6,10 +6,19 @@ package akka.stream.alpakka.google.firebase.fcm
 
 import akka.stream.alpakka.google.firebase.fcm.FcmNotificationModels._
 
+/** Use class from package akka.stream.alpakka.google.firebase.fcm.v1.models*/
+@deprecated("Use class from package akka.stream.alpakka.google.firebase.fcm.v1.models", "3.0.2")
+@Deprecated
 object FcmNotificationModels {
 
+  /** Use akka.stream.alpakka.google.firebase.fcm.v1.models.BasicNotification */
+  @deprecated("Use akka.stream.alpakka.google.firebase.fcm.v1.models.BasicNotification", "3.0.2")
+  @Deprecated
   case class BasicNotification(title: String, body: String)
 
+  /** Use akka.stream.alpakka.google.firebase.fcm.v1.models.AndroidNotification */
+  @deprecated("Use akka.stream.alpakka.google.firebase.fcm.v1.models.AndroidNotification", "3.0.2")
+  @Deprecated
   case class AndroidNotification(
       title: String,
       body: String,
@@ -24,6 +33,9 @@ object FcmNotificationModels {
       title_loc_args: Seq[String]
   )
 
+  /** Use akka.stream.alpakka.google.firebase.fcm.v1.models.AndroidConfig */
+  @deprecated("Use akka.stream.alpakka.google.firebase.fcm.v1.models.AndroidConfig", "3.0.2")
+  @Deprecated
   case class AndroidConfig(
       collapse_key: String,
       priority: AndroidMessagePriority,
@@ -33,20 +45,59 @@ object FcmNotificationModels {
       notification: AndroidNotification
   )
 
+  /** Use akka.stream.alpakka.google.firebase.fcm.v1.models.AndroidMessagePriority */
+  @deprecated("Use akka.stream.alpakka.google.firebase.fcm.v1.models.AndroidMessagePriority", "3.0.2")
+  @Deprecated
   sealed trait AndroidMessagePriority
+
+  /** Use akka.stream.alpakka.google.firebase.fcm.v1.models.Normal */
+  @deprecated("Use akka.stream.alpakka.google.firebase.fcm.v1.models.Normal", "3.0.2")
+  @Deprecated
   case object Normal extends AndroidMessagePriority
+
+  /** Use akka.stream.alpakka.google.firebase.fcm.v1.models.High */
+  @deprecated("Use akka.stream.alpakka.google.firebase.fcm.v1.models.High", "3.0.2")
+  @Deprecated
   case object High extends AndroidMessagePriority
 
+  /** Use akka.stream.alpakka.google.firebase.fcm.v1.models.WebPushConfig */
+  @deprecated("Use akka.stream.alpakka.google.firebase.fcm.v1.models.WebPushConfig", "3.0.2")
+  @Deprecated
   case class WebPushNotification(title: String, body: String, icon: String)
+
+  /** Use akka.stream.alpakka.google.firebase.fcm.v1.models.WebPushConfig */
+  @deprecated("Use akka.stream.alpakka.google.firebase.fcm.v1.models.WebPushConfig", "3.0.2")
+  @Deprecated
   case class WebPushConfig(headers: Map[String, String], data: Map[String, String], notification: WebPushNotification)
 
+  /** Use akka.stream.alpakka.google.firebase.fcm.v1.models.ApnsConfig */
+  @deprecated("Use akka.stream.alpakka.google.firebase.fcm.v1.models.ApnsConfig", "3.0.2")
+  @Deprecated
   case class ApnsConfig(headers: Map[String, String], rawPayload: String)
 
+  /** Use akka.stream.alpakka.google.firebase.fcm.v1.models.NotificationTarget */
+  @deprecated("Use akka.stream.alpakka.google.firebase.fcm.v1.models.NotificationTarget", "3.0.2")
+  @Deprecated
   sealed trait NotificationTarget
+
+  /** Use akka.stream.alpakka.google.firebase.fcm.v1.models.Token */
+  @deprecated("Use akka.stream.alpakka.google.firebase.fcm.v1.models.Token", "3.0.2")
+  @Deprecated
   case class Token(token: String) extends NotificationTarget
+
+  /** Use akka.stream.alpakka.google.firebase.fcm.v1.models.Topic */
+  @deprecated("Use akka.stream.alpakka.google.firebase.fcm.v1.models.Topic", "3.0.2")
+  @Deprecated
   case class Topic(topic: String) extends NotificationTarget
+
+  /** Use akka.stream.alpakka.google.firebase.fcm.v1.models.Condition */
+  @deprecated("Use akka.stream.alpakka.google.firebase.fcm.v1.models.Condition", "3.0.2")
+  @Deprecated
   case class Condition(conditionText: String) extends NotificationTarget
 
+  /** Use akka.stream.alpakka.google.firebase.fcm.v1.models.Condition */
+  @deprecated("Use akka.stream.alpakka.google.firebase.fcm.v1.models.Condition", "3.0.2")
+  @Deprecated
   object Condition {
     sealed trait ConditionBuilder {
       def &&(condition: ConditionBuilder) = And(this, condition)
@@ -72,6 +123,9 @@ object FcmNotificationModels {
   }
 }
 
+/** Use akka.stream.alpakka.google.firebase.fcm.v1.models.FcmNotification */
+@deprecated("Use akka.stream.alpakka.google.firebase.fcm.v1.models.FcmNotification", "3.0.2")
+@Deprecated
 case class FcmNotification(
     data: Option[Map[String, String]] = None,
     notification: Option[BasicNotification] = None,
@@ -99,6 +153,9 @@ case class FcmNotification(
     (token.isDefined ^ topic.isDefined ^ condition.isDefined) && !(token.isDefined && topic.isDefined)
 }
 
+/** Use akka.stream.alpakka.google.firebase.fcm.v1.models.FcmNotification */
+@deprecated("Use akka.stream.alpakka.google.firebase.fcm.v1.models.FcmNotification", "3.0.2")
+@Deprecated
 object FcmNotification {
   val empty: FcmNotification = FcmNotification()
   def fromJava(): FcmNotification = empty
@@ -109,17 +166,26 @@ object FcmNotification {
   def basic(title: String, body: String, target: NotificationTarget) = FcmNotification(title, body, target)
 }
 
+/** Use akka.stream.alpakka.google.firebase.fcm.v1.models.FcmResponse */
+@deprecated("Use akka.stream.alpakka.google.firebase.fcm.v1.models.FcmResponse", "3.0.2")
+@Deprecated
 sealed trait FcmResponse {
   def isFailure: Boolean
   def isSuccess: Boolean
 }
 
+/** Use akka.stream.alpakka.google.firebase.fcm.v1.models.FcmSuccessResponse */
+@deprecated("Use akka.stream.alpakka.google.firebase.fcm.v1.models.FcmSuccessResponse", "3.0.2")
+@Deprecated
 final case class FcmSuccessResponse(name: String) extends FcmResponse {
   val isFailure = false
   val isSuccess = true
   def getName: String = name
 }
 
+/** Use akka.stream.alpakka.google.firebase.fcm.v1.models.FcmErrorResponse */
+@deprecated("Use akka.stream.alpakka.google.firebase.fcm.v1.models.FcmErrorResponse", "3.0.2")
+@Deprecated
 final case class FcmErrorResponse(rawError: String) extends FcmResponse {
   val isFailure = true
   val isSuccess = false

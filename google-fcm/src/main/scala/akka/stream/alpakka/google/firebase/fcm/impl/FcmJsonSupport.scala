@@ -15,12 +15,16 @@ import spray.json._
  * INTERNAL API
  */
 @InternalApi
+@deprecated("Use akka.stream.alpakka.google.firebase.fcm.v1.impl.FcmSend", "3.0.2")
+@Deprecated
 private[fcm] case class FcmSend(validate_only: Boolean, message: FcmNotification)
 
 /**
  * INTERNAL API
  */
 @InternalApi
+@deprecated("Use akka.stream.alpakka.google.firebase.fcm.v1.impl.FcmJsonSupport", "3.0.2")
+@Deprecated
 private[fcm] object FcmJsonSupport extends DefaultJsonProtocol with SprayJsonSupport {
 
   //custom formatters

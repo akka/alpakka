@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.stream.alpakka.google.firebase.fcm.impl
+package akka.stream.alpakka.google.firebase.fcm.v1.impl
 
 import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
@@ -11,7 +11,8 @@ import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.{HttpExt, HttpsConnectionContext}
 import akka.stream.alpakka.google.GoogleSettings
-import akka.stream.alpakka.google.firebase.fcm.{FcmErrorResponse, FcmNotification, FcmSettings, FcmSuccessResponse}
+import akka.stream.alpakka.google.firebase.fcm.FcmSettings
+import akka.stream.alpakka.google.firebase.fcm.v1.models.{FcmErrorResponse, FcmNotification, FcmSuccessResponse}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.testkit.TestKit
 import com.github.ghik.silencer.silent
