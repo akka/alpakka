@@ -69,6 +69,28 @@ class ElasticsearchSimpleFlowStageTest
         downstream.expectComplete()
       }
     }
+    "client cannot connect to ES" should {
+      "stop the stream" in {
+        val (upstream, downstream) =
+          TestSource
+            .probe[(immutable.Seq[WriteMessage[String, NotUsed]], immutable.Seq[WriteResult[String, NotUsed]])]
+            .via(
+              new impl.ElasticsearchSimpleFlowStage[String, NotUsed](
+                ElasticsearchParams.V7("es-simple-flow-index"),
+                settings.withConnection(ElasticsearchConnectionSettings("http://wololo:9202")),
+                writer
+              )
+            )
+            .toMat(TestSink.probe)(Keep.both)
+            .run()
+
+        upstream.sendNext(dummyMessages)
+        upstream.sendComplete()
+
+        downstream.request(1)
+        downstream.expectError()
+      }
+    }
   }
 
   override def afterAll(): Unit = {
