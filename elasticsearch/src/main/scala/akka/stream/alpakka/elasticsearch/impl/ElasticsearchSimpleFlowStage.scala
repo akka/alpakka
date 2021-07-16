@@ -14,7 +14,7 @@ import akka.stream.stage._
 import akka.stream._
 
 import scala.collection.immutable
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
  * INTERNAL API.
@@ -96,6 +96,11 @@ private[elasticsearch] final class ElasticsearchSimpleFlowStage[T, C](
                    new RuntimeException(s"Request failed for POST $uri, got $status with body: $body"))
                 )
               }
+          }
+          .recoverWith {
+            case cause: Throwable =>
+              failureHandler.invoke((Nil, new RuntimeException(s"Request failed for POST $uri", cause)))
+              Future.failed(cause)
           }
       } else {
         // if all NOPs, pretend an empty response:
