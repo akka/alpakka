@@ -347,7 +347,7 @@ final class ObjectMetadata private (
    *         as calculated by Amazon S3.
    */
   lazy val eTag: Option[String] = metadata.collectFirst {
-    case e: ETag => e.etag.value.drop(1).dropRight(1)
+    case e: ETag => Utils.removeQuotes(e.etag.value)
   }
 
   /**
