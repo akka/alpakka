@@ -4,19 +4,24 @@
 
 package docs.javadsl;
 
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+
+
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 // #read-all
 import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryStorageSettings;
-import akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.BigQueryStorageAttributes;
 import akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.BigQueryStorage;
+import akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.BigQueryStorageAttributes;
 import akka.stream.alpakka.googlecloud.bigquery.storage.javadsl.GrpcBigQueryStorageReader;
 import akka.stream.javadsl.Source;
-import com.google.cloud.bigquery.storage.v1.ReadSession.TableReadOptions;
-import org.apache.avro.generic.GenericRecord;
+import scala.Tuple2;
+import com.google.cloud.bigquery.storage.v1.DataFormat;
+import com.google.cloud.bigquery.storage.v1.ReadSession;
+import com.google.cloud.bigquery.storage.v1.storage.ReadRowsResponse;
 
-import java.util.concurrent.CompletionStage;
 // #read-all
 
 public class ExampleReader {
@@ -25,38 +30,45 @@ public class ExampleReader {
   static final ActorMaterializer mat = ActorMaterializer.create(sys);
 
   // #read-all
-  Source<Source<GenericRecord, NotUsed>, CompletionStage<NotUsed>> sourceOfSources =
-      BigQueryStorage.read("projectId", "datasetId", "tableId");
+  Source<
+          Tuple2<
+              com.google.cloud.bigquery.storage.v1.stream.ReadSession.Schema,
+              List<Source<ReadRowsResponse.Rows, NotUsed>>>,
+          CompletionStage<NotUsed>>
+      sourceOfSources =
+          BigQueryStorage.create("projectId", "datasetId", "tableId", DataFormat.AVRO);
   // #read-all
 
   // #read-options
-  TableReadOptions readOptions =
-      TableReadOptions.newBuilder()
+  ReadSession.TableReadOptions readOptions =
+      ReadSession.TableReadOptions.newBuilder()
           .setSelectedFields(0, "stringField")
           .setSelectedFields(1, "intField")
           .setRowRestriction("intField >= 5")
           .build();
-  Source<Source<GenericRecord, NotUsed>, CompletionStage<NotUsed>> sourceOfSourcesFiltered =
-      BigQueryStorage.read("projectId", "datasetId", "tableId", readOptions);
+
+  Source<
+          Tuple2<
+              com.google.cloud.bigquery.storage.v1.stream.ReadSession.Schema,
+              List<Source<ReadRowsResponse.Rows, NotUsed>>>,
+          CompletionStage<NotUsed>>
+      sourceOfSourcesFiltered =
+          BigQueryStorage.create(
+              "projectId", "datasetId", "tableId", DataFormat.AVRO, readOptions, 1);
   // #read-options
-
-  // #read-sequential
-  Source<GenericRecord, CompletionStage<NotUsed>> sequentialSource =
-      BigQueryStorage.read("projectId", "datasetId", "tableId").flatMapConcat(s -> s);
-  // #read-sequential
-
-  // #read-parallel
-  Integer readParallelism = 10;
-  Source<GenericRecord, CompletionStage<NotUsed>> parallelSource =
-      BigQueryStorage.read("projectId", "datasetId", "tableId")
-          .flatMapMerge(readParallelism, s -> s);
-  // #read-parallel
 
   // #attributes
   GrpcBigQueryStorageReader reader =
       GrpcBigQueryStorageReader.create(BigQueryStorageSettings.apply("localhost", 8000), sys);
-  Source<Source<GenericRecord, NotUsed>, CompletionStage<NotUsed>> sourceForReader =
-      BigQueryStorage.read("projectId", "datasetId", "tableId")
-          .withAttributes(BigQueryStorageAttributes.reader(reader));
+
+  Source<
+          Tuple2<
+              com.google.cloud.bigquery.storage.v1.stream.ReadSession.Schema,
+              List<Source<ReadRowsResponse.Rows, NotUsed>>>,
+          CompletionStage<NotUsed>>
+      sourceForReader =
+          BigQueryStorage.create(
+                  "projectId", "datasetId", "tableId", DataFormat.AVRO, readOptions, 1)
+              .withAttributes(BigQueryStorageAttributes.reader(reader));
   // #attributes
 }

@@ -10,7 +10,8 @@ import akka.stream.alpakka.googlecloud.bigquery.storage.impl.ArrowSource
 import akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl.BigQueryStorage.{readSession, reader}
 import akka.stream.scaladsl.Source
 import com.google.cloud.bigquery.storage.v1.arrow.{ArrowRecordBatch, ArrowSchema}
-import com.google.cloud.bigquery.storage.v1.stream.{DataFormat, ReadSession}
+import com.google.cloud.bigquery.storage.v1.stream.{ReadSession}
+import com.google.cloud.bigquery.storage.v1.DataFormat;
 import com.google.cloud.bigquery.storage.v1.stream.ReadSession.TableReadOptions
 
 import scala.concurrent.Future

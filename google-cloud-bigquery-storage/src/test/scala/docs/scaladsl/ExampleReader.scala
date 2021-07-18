@@ -8,11 +8,13 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryStorageSettings
 import akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl.{BigQueryStorageAttributes, GrpcBigQueryStorageReader}
+import com.google.cloud.bigquery.storage.v1.DataFormat
+import com.google.cloud.bigquery.storage.v1.storage.ReadRowsResponse
+import com.google.cloud.bigquery.storage.v1.stream.ReadSession
 //#read-all
 import akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl.BigQueryStorage
 import akka.stream.scaladsl.Source
 import com.google.cloud.bigquery.storage.v1.stream.ReadSession.TableReadOptions
-import org.apache.avro.generic.GenericRecord
 
 import scala.concurrent.Future
 //#read-all
@@ -22,36 +24,22 @@ class ExampleReader {
   implicit val sys = ActorSystem("ExampleReader")
 
   //#read-all
-  val sourceOfSources: Source[Source[GenericRecord, NotUsed], Future[NotUsed]] =
-    BigQueryStorage.readAvroOnly("projectId", "datasetId", "tableId")
+  val sourceOfSources: Source[(ReadSession.Schema, Seq[Source[ReadRowsResponse.Rows, NotUsed]]), Future[NotUsed]] =
+    BigQueryStorage.create("projectId", "datasetId", "tableId", DataFormat.AVRO)
   //#read-all
 
   //#read-options
   val readOptions = TableReadOptions(selectedFields = Seq("stringField", "intField"), rowRestriction = "intField >= 5")
-  val sourceOfSourcesFiltered: Source[Source[GenericRecord, NotUsed], Future[NotUsed]] =
-    BigQueryStorage.readAvroOnly("projectId", "datasetId", "tableId", Some(readOptions))
+  val sourceOfSourcesFiltered
+      : Source[(ReadSession.Schema, Seq[Source[ReadRowsResponse.Rows, NotUsed]]), Future[NotUsed]] =
+    BigQueryStorage.create("projectId", "datasetId", "tableId", DataFormat.AVRO, Some(readOptions))
   //#read-options
-
-  //#read-sequential
-  val sequentialSource: Source[GenericRecord, Future[NotUsed]] =
-    BigQueryStorage
-      .readAvroOnly("projectId", "datasetId", "tableId")
-      .flatMapConcat(identity)
-  //#read-sequential
-
-  //#read-parallel
-  val readParallelism = 10
-  val parallelSource: Source[GenericRecord, Future[NotUsed]] =
-    BigQueryStorage
-      .readAvroOnly("projectId", "datasetId", "tableId")
-      .flatMapMerge(readParallelism, identity)
-  //#read-parallel
 
   //#attributes
   val reader: GrpcBigQueryStorageReader = GrpcBigQueryStorageReader(BigQueryStorageSettings("localhost", 8000))
-  val sourceForReader: Source[Source[GenericRecord, NotUsed], Future[NotUsed]] =
+  val sourceForReader: Source[(ReadSession.Schema, Seq[Source[ReadRowsResponse.Rows, NotUsed]]), Future[NotUsed]] =
     BigQueryStorage
-      .readAvroOnly("projectId", "datasetId", "tableId")
+      .create("projectId", "datasetId", "tableId", DataFormat.AVRO)
       .withAttributes(
         BigQueryStorageAttributes.reader(reader)
       )

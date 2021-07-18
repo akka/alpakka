@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl
 
 import akka.http.scaladsl.unmarshalling.FromByteStringUnmarshaller
@@ -20,7 +24,8 @@ class ArrowByteStringDecoder(val schema: ArrowSchema) extends FromByteStringUnma
 
   val allocator = new RootAllocator(Long.MaxValue)
 
-  override def apply(batch: ByteString)(implicit ec: ExecutionContext, materializer: Materializer): Future[List[BigQueryRecord]] = {
+  override def apply(batch: ByteString)(implicit ec: ExecutionContext,
+                                        materializer: Materializer): Future[List[BigQueryRecord]] = {
     val sd = MessageSerializer.deserializeSchema(
       new ReadChannel(
         new ByteArrayReadableSeekableByteChannel(
@@ -34,11 +39,11 @@ class ArrowByteStringDecoder(val schema: ArrowSchema) extends FromByteStringUnma
     val loader = new VectorLoader(root)
 
     val deserializedBatch = MessageSerializer.deserializeRecordBatch(new ReadChannel(
-      new ByteArrayReadableSeekableByteChannel(
-        batch.toByteBuffer.array()
-      )
-    ),
-      allocator);
+                                                                       new ByteArrayReadableSeekableByteChannel(
+                                                                         batch.toByteBuffer.array()
+                                                                       )
+                                                                     ),
+                                                                     allocator);
     loader.load(deserializedBatch)
     deserializedBatch.close()
 

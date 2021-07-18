@@ -5,12 +5,17 @@
 package akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl
 
 import akka.stream.alpakka.googlecloud.bigquery.storage.impl.{AvroDecoder, SimpleRowReader}
-import akka.stream.alpakka.googlecloud.bigquery.storage.{BigQueryRecord, BigQueryStorageSettings, BigQueryStorageSpecBase}
+import akka.stream.alpakka.googlecloud.bigquery.storage.{
+  BigQueryRecord,
+  BigQueryStorageSettings,
+  BigQueryStorageSpecBase
+}
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Sink
 import com.google.cloud.bigquery.storage.v1.arrow.{ArrowRecordBatch, ArrowSchema}
 import com.google.cloud.bigquery.storage.v1.avro.{AvroRows, AvroSchema}
-import com.google.cloud.bigquery.storage.v1.stream.{DataFormat, ReadSession}
+import com.google.cloud.bigquery.storage.v1.DataFormat
+import com.google.cloud.bigquery.storage.v1.stream.ReadSession
 import com.google.cloud.bigquery.storage.v1.stream.ReadSession.TableReadOptions
 import io.grpc.{Status, StatusRuntimeException}
 import org.scalatest.BeforeAndAfterAll
@@ -27,7 +32,7 @@ class BigQueryStorageSpec
   "GoogleBigQuery.readMergedStreams" should {
     "stream the results for a query" in {
       val seq = BigQueryStorage
-        .readMergedStreams(Project, Dataset, Table, DataFormat.AVRO, None)
+        .createMergedStreams(Project, Dataset, Table, DataFormat.AVRO, None)
         .withAttributes(mockBQReader())
         .runWith(Sink.seq)
         .futureValue
@@ -40,6 +45,20 @@ class BigQueryStorageSpec
   }
 
   "GoogleBigQuery.read" should {
+    "filter results based on the row restriction configured" in {
+      implicit val um: AvroByteStringDecoder = new AvroByteStringDecoder(FullAvroSchema)
+
+      BigQueryStorage
+        .typed[List[BigQueryRecord]](Project,
+                                     Dataset,
+                                     Table,
+                                     DataFormat.AVRO,
+                                     Some(TableReadOptions(rowRestriction = "true = false")))
+        .withAttributes(mockBQReader())
+        .runWith(Sink.seq)
+        .futureValue shouldBe empty
+    }
+
     "stream the results for a query using avro deserializer" in {
       val avroSchema = storageAvroSchema.value
       val avroRows = storageAvroRows.value
@@ -47,10 +66,10 @@ class BigQueryStorageSpec
       val decoder = AvroDecoder(avroSchema.schema)
       val records = decoder.decodeRows(avroRows.serializedBinaryRows).map(gr => BigQueryRecord.fromAvro(gr))
 
-      implicit val um : AvroByteStringDecoder = new AvroByteStringDecoder(FullAvroSchema)
+      implicit val um: AvroByteStringDecoder = new AvroByteStringDecoder(FullAvroSchema)
 
       val seq = BigQueryStorage
-        .readWithType[List[BigQueryRecord]](Project, Dataset, Table, DataFormat.AVRO, None)
+        .typed[List[BigQueryRecord]](Project, Dataset, Table, DataFormat.AVRO, None)
         .withAttributes(mockBQReader())
         .runWith(Sink.seq)
         .futureValue
@@ -58,23 +77,14 @@ class BigQueryStorageSpec
       seq shouldBe Vector.fill(DefaultNumStreams * ResponsesPerStream)(records)
     }
 
-    "filter Avro results based on the row restriction configured" in {
-      implicit val um : AvroByteStringDecoder = new AvroByteStringDecoder(FullAvroSchema)
+    "restrict the number of Avro streams/Sources returned by the Storage API, if specified" in {
+      val maxStreams: Int = 5
 
       BigQueryStorage
-        .readWithType[List[BigQueryRecord]](Project, Dataset, Table, DataFormat.AVRO, Some(TableReadOptions(rowRestriction = "true = false")))
-        .withAttributes(mockBQReader())
-        .runWith(Sink.seq)
-        .futureValue shouldBe empty
-    }
-
-    "restrict the number of Avro streams/Sources returned by the Storage API, if specified" in {
-      val maxStreams :Int = 5
-
-      BigQueryStorage.read(Project, Dataset, Table, DataFormat.AVRO,None, maxNumStreams = maxStreams)
+        .create(Project, Dataset, Table, DataFormat.AVRO, None, maxNumStreams = maxStreams)
         .withAttributes(mockBQReader())
         .map(_._2.size)
-        .runFold(0) (_ + _)
+        .runFold(0)(_ + _)
         .futureValue shouldBe maxStreams
     }
 
@@ -85,23 +95,23 @@ class BigQueryStorageSpec
       val decoder = AvroDecoder(avroSchema.schema)
       val records = decoder.decodeRows(avroRows.serializedBinaryRows).map(gr => BigQueryRecord.fromAvro(gr))
 
-      implicit val um : AvroByteStringDecoder = new AvroByteStringDecoder(Col1Schema)
+      implicit val um: AvroByteStringDecoder = new AvroByteStringDecoder(Col1Schema)
 
       BigQueryStorage
-        .readWithType[List[BigQueryRecord]](Project, Dataset, Table, DataFormat.AVRO, Some(TableReadOptions(List("col1"))))
+        .typed[List[BigQueryRecord]](Project, Dataset, Table, DataFormat.AVRO, Some(TableReadOptions(List("col1"))))
         .withAttributes(mockBQReader())
         .runWith(Sink.seq)
-        .futureValue shouldBe List.fill(DefaultNumStreams * ResponsesPerStream )(records)
+        .futureValue shouldBe List.fill(DefaultNumStreams * ResponsesPerStream)(records)
     }
 
     "stream the results for a query using arrow deserializer" in {
       val reader = new SimpleRowReader(ArrowSchema(serializedSchema = GCPSerializedArrowSchema))
       val expectedRecords = reader.read(ArrowRecordBatch(GCPSerializedArrowTenRecordBatch, 10))
 
-      implicit val um : ArrowByteStringDecoder = new ArrowByteStringDecoder(ArrowSchema(GCPSerializedArrowSchema))
+      implicit val um: ArrowByteStringDecoder = new ArrowByteStringDecoder(ArrowSchema(GCPSerializedArrowSchema))
 
       val seq = BigQueryStorage
-        .readWithType[List[BigQueryRecord]](Project, Dataset, Table, DataFormat.ARROW, None)
+        .typed[List[BigQueryRecord]](Project, Dataset, Table, DataFormat.ARROW, None)
         .withAttributes(mockBQReader())
         .runWith(Sink.seq)
         .futureValue
@@ -111,7 +121,7 @@ class BigQueryStorageSpec
 
     "fail if unable to connect to bigquery" in {
       val error = BigQueryStorage
-        .read(Project, Dataset, Table, DataFormat.AVRO)
+        .create(Project, Dataset, Table, DataFormat.AVRO)
         .withAttributes(mockBQReader(port = 1234))
         .runWith(Sink.ignore)
         .failed
@@ -125,7 +135,7 @@ class BigQueryStorageSpec
 
     "fail if the project is incorrect" in {
       val error = BigQueryStorage
-        .read("NOT A PROJECT", Dataset, Table, DataFormat.AVRO)
+        .create("NOT A PROJECT", Dataset, Table, DataFormat.AVRO)
         .withAttributes(mockBQReader())
         .runWith(Sink.ignore)
         .failed
@@ -139,7 +149,7 @@ class BigQueryStorageSpec
 
     "fail if the dataset is incorrect" in {
       val error = BigQueryStorage
-        .read(Project, "NOT A DATASET", Table, DataFormat.AVRO)
+        .create(Project, "NOT A DATASET", Table, DataFormat.AVRO)
         .withAttributes(mockBQReader())
         .runWith(Sink.ignore)
         .failed
@@ -153,7 +163,7 @@ class BigQueryStorageSpec
 
     "fail if the table is incorrect" in {
       val error = BigQueryStorage
-        .readAvroOnly(Project, Dataset, "NOT A TABLE", None)
+        .create(Project, Dataset, "NOT A TABLE", DataFormat.AVRO)
         .withAttributes(mockBQReader())
         .runWith(Sink.ignore)
         .failed
@@ -167,7 +177,7 @@ class BigQueryStorageSpec
 
     "stream the results for a query" in {
       val seq = BigQueryStorage
-        .read(Project, Dataset, Table, DataFormat.AVRO, None)
+        .create(Project, Dataset, Table, DataFormat.AVRO, None)
         .withAttributes(mockBQReader())
         .runWith(Sink.seq)
         .futureValue
