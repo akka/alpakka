@@ -53,7 +53,8 @@ trait ElasticsearchConnectorBehaviour {
             |    "_doc": {
             |      "dynamic": "strict",
             |      "properties": {
-            |        "title": { "type": "text"}
+            |        "title": { "type": "text"},
+            |        "price": { "type": "integer"}
             |      }
             |    }
             |  }
@@ -191,8 +192,8 @@ trait ElasticsearchConnectorBehaviour {
         val createBooks = Source(
           immutable
             .Seq(
-              Map("title" -> "Akka in Action").toJson,
-              Map("subject" -> "Akka Concurrency").toJson
+              Book("Akka in Action").toJson,
+              JsObject("subject" -> "Akka Concurrency".toJson)
             )
             .zipWithIndex
         ).map {
@@ -216,7 +217,7 @@ trait ElasticsearchConnectorBehaviour {
 
         // Assert retired documents
         val failed = writeResults.filter(!_.success).head
-        failed.message shouldBe WriteMessage.createIndexMessage("1", Map("subject" -> "Akka Concurrency").toJson)
+        failed.message shouldBe WriteMessage.createIndexMessage("1", JsObject("subject" -> "Akka Concurrency".toJson))
         failed.errorReason shouldBe Some(
           "mapping set to strict, dynamic introduction of [subject] within [_doc] is not allowed"
         )
@@ -243,12 +244,12 @@ trait ElasticsearchConnectorBehaviour {
             case (numBlock, index) =>
               val writeMsgBlock = numBlock.map { n =>
                 WriteMessage
-                  .createCreateMessage(n.toString, Map("title" -> s"Book ${n}"))
+                  .createCreateMessage(n.toString, Book(s"Book ${n}"))
                   .withPassThrough(n)
               }
 
               val writeMsgFailed = WriteMessage
-                .createCreateMessage("0", Map("title" -> s"Failed"))
+                .createCreateMessage("0", Book(s"Failed"))
                 .withPassThrough(bookNr + index)
 
               (writeMsgBlock ++ Iterator(writeMsgFailed)).toList
@@ -283,9 +284,9 @@ trait ElasticsearchConnectorBehaviour {
         val createBooks = Source(
           immutable
             .Seq(
-              Map("title" -> "Akka in Action").toJson,
-              Map("subject" -> "Akka Concurrency").toJson,
-              Map("title" -> "Learning Scala").toJson
+              Book("Akka in Action").toJson,
+              JsObject("subject" -> "Akka Concurrency".toJson),
+              Book("Learning Scala").toJson
             )
             .zipWithIndex
         ).map {
@@ -312,7 +313,7 @@ trait ElasticsearchConnectorBehaviour {
 
         val (failed, _) = writeResults.filter(!_._1.success).head
         failed.message shouldBe WriteMessage
-          .createIndexMessage("1", Map("subject" -> "Akka Concurrency").toJson)
+          .createIndexMessage("1", JsObject("subject" -> "Akka Concurrency".toJson))
           .withPassThrough(1)
         failed.errorReason shouldBe Some(
           "mapping set to strict, dynamic introduction of [subject] within [_doc] is not allowed"
@@ -341,11 +342,11 @@ trait ElasticsearchConnectorBehaviour {
             case (numBlock, index) =>
               val writeMsgBlock = numBlock.map { n =>
                 WriteMessage
-                  .createCreateMessage(n.toString, Map("title" -> s"Book ${n}")) -> n
+                  .createCreateMessage(n.toString, Book(s"Book ${n}")) -> n
               }
 
               val writeMsgFailed = WriteMessage
-                  .createCreateMessage("0", Map("title" -> s"Failed")) -> (bookNr + index)
+                  .createCreateMessage("0", Book(s"Failed")) -> (bookNr + index)
 
               (writeMsgBlock ++ Iterator(writeMsgFailed)).toList
           }
@@ -442,15 +443,18 @@ trait ElasticsearchConnectorBehaviour {
         readBooks.futureValue.sortBy(_.fields("title").compactPrint) shouldEqual Seq(
           JsObject(
             "title" -> JsString("Book 1"),
-            "rating" -> JsNumber(4)
+            "rating" -> JsNumber(4),
+            "price" -> JsNumber(10)
           ),
           JsObject(
             "title" -> JsString("Book 2"),
-            "rating" -> JsNumber(3)
+            "rating" -> JsNumber(3),
+            "price" -> JsNumber(10)
           ),
           JsObject(
             "title" -> JsString("Book 3"),
-            "rating" -> JsNumber(3)
+            "rating" -> JsNumber(3),
+            "price" -> JsNumber(10)
           )
         )
       }
@@ -641,6 +645,66 @@ trait ElasticsearchConnectorBehaviour {
           "Scala for Spark in Production"
         )
       }
+
+      "sort by _doc by default" in assertAllStagesStopped {
+        val read = ElasticsearchSource
+          .typed[Book](
+            constructElasticsearchParams("source", "_doc", apiVersion),
+            query = """{"match_all": {}}""",
+            settings = baseSourceSettings.withBufferSize(3).withApiVersion(apiVersion)
+          )
+          .map(_.source.title)
+          .runWith(Sink.seq)
+
+        val result = read.futureValue.toList
+
+        // sort: _doc is by design an undefined order and is non-deterministic
+        // we cannot check a specific order of values
+        result should contain theSameElementsAs (List("Akka in Action",
+                                                      "Programming in Scala",
+                                                      "Learning Scala",
+                                                      "Scala for Spark in Production",
+                                                      "Scala Puzzlers",
+                                                      "Effective Akka",
+                                                      "Akka Concurrency"))
+      }
+
+      "sort by user defined field" in assertAllStagesStopped {
+        val read = ElasticsearchSource
+          .typed[Book](
+            constructElasticsearchParams("source", "_doc", apiVersion),
+            Map(
+              "query" -> """{"match_all": {}}""",
+              "sort" -> """["price"]"""
+            ),
+            settings = baseSourceSettings.withBufferSize(3).withApiVersion(apiVersion)
+          )
+          .map(_.source.price)
+          .runWith(Sink.seq)
+
+        val result = read.futureValue.toList
+        result shouldEqual result.sorted
+
+      }
+
+      "sort by user defined field desc" in assertAllStagesStopped {
+        val read = ElasticsearchSource
+          .typed[Book](
+            constructElasticsearchParams("source", "_doc", apiVersion),
+            Map(
+              "query" -> """{"match_all": {}}""",
+              "sort" -> """[{"price": "desc"}]"""
+            ),
+            settings = baseSourceSettings.withBufferSize(3).withApiVersion(apiVersion)
+          )
+          .map(_.source.price)
+          .runWith(Sink.seq)
+
+        val result = read.futureValue.toList
+        result shouldEqual result.sorted.reverse
+
+      }
+
     }
 
     lazy val _ = {

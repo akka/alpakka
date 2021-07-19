@@ -12,10 +12,12 @@ import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
 import akka.{Done, NotUsed}
-import spray.json.{jsonReader, JsObject, JsString}
+import spray.json.jsonReader
 
 import scala.collection.immutable
 import scala.concurrent.Future
+
+import spray.json._
 
 class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils {
 
@@ -149,9 +151,9 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
 
       val write: Future[immutable.Seq[WriteResult[String, NotUsed]]] = Source(
         immutable.Seq(
-          WriteMessage.createIndexMessage("1", s"""{"title": "Das Parfum"}"""),
-          WriteMessage.createIndexMessage("2", s"""{"title": "Faust"}"""),
-          WriteMessage.createIndexMessage("3", s"""{"title": "Die unendliche Geschichte"}""")
+          WriteMessage.createIndexMessage("1", Book("Das Parfum").toJson.toString()),
+          WriteMessage.createIndexMessage("2", Book("Faust").toJson.toString()),
+          WriteMessage.createIndexMessage("3", Book("Die unendliche Geschichte").toJson.toString())
         )
       ).via(
           ElasticsearchFlow.create(
@@ -358,7 +360,7 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
         committedOffsets = committedOffsets :+ offset
 
       val indexName = "sink6-none"
-      register(connectionSettings, indexName, "dummy") // need to create index else exception in reading below
+      register(connectionSettings, indexName, "dummy", 10) // need to create index else exception in reading below
 
       val kafkaToEs = Source(messagesFromKafka) // Assume we get this from Kafka
         .map { kafkaMessage: KafkaMessage =>
@@ -433,9 +435,9 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
 
       // Docs should contain both columns
       readBooks.futureValue.sortBy(_.fields("title").compactPrint) shouldEqual Seq(
-        JsObject("title" -> JsString("Book 1")),
-        JsObject("title" -> JsString("Book 3")),
-        JsObject("title" -> JsString("Book 5"))
+        Book("Book 1").toJson,
+        Book("Book 3").toJson,
+        Book("Book 5").toJson
       )
     }
 
