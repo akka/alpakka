@@ -14,8 +14,8 @@ import akka.http.scaladsl.model.headers.{`Raw-Request-URI`, ByteRange, RawHeader
 import akka.stream.alpakka.s3.headers.{CannedAcl, ServerSideEncryption, StorageClass}
 import akka.stream.alpakka.s3._
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
-import akka.stream.scaladsl.Source
 import akka.testkit.{SocketUtil, TestKit, TestProbe}
+import akka.util.ByteString
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -272,7 +272,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
     implicit val settings = getSettings(s3Region = Region.EU_WEST_1).withEndpointUrl("http://localhost:8080")
 
     val req =
-      HttpRequests.uploadPartRequest(multipartUpload, 1, Source.empty, 1)
+      HttpRequests.uploadPartRequest(multipartUpload, 1, MemoryChunk(ByteString.empty))
 
     req.uri.scheme shouldEqual "http"
     req.uri.authority.host.address shouldEqual "localhost"
@@ -284,7 +284,7 @@ class HttpRequestsSpec extends AnyFlatSpec with Matchers with ScalaFutures with 
     val myKey = "my-key"
     val md5Key = "md5-key"
     val s3Headers = ServerSideEncryption.customerKeys(myKey).withMd5(md5Key).headersFor(UploadPart)
-    val req = HttpRequests.uploadPartRequest(multipartUpload, 1, Source.empty, 1, s3Headers)
+    val req = HttpRequests.uploadPartRequest(multipartUpload, 1, MemoryChunk(ByteString.empty), s3Headers)
 
     req.headers should contain(RawHeader("x-amz-server-side-encryption-customer-algorithm", "AES256"))
     req.headers should contain(RawHeader("x-amz-server-side-encryption-customer-key", myKey))

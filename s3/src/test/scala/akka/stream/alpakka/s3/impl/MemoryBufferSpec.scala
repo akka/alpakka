@@ -39,7 +39,9 @@ class MemoryBufferSpec(_system: ActorSystem)
     result should have size (1)
     val chunk = result.head
     chunk.size should be(14)
-    chunk.data.runWith(Sink.seq).futureValue should be(Seq(ByteString(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)))
+
+    chunk shouldBe a[MemoryChunk]
+    chunk.asInstanceOf[MemoryChunk].data should be(ByteString(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14))
   }
 
   it should "fail if more than maxSize bytes are fed into it" in {
