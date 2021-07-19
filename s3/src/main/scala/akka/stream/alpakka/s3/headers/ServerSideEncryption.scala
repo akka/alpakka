@@ -48,7 +48,7 @@ final class AES256 private[headers] () extends ServerSideEncryption {
     ")"
 
   override def equals(other: Any): Boolean = other match {
-    case that: KMS => true
+    case that: AES256 => true
     case _ => false
   }
 
