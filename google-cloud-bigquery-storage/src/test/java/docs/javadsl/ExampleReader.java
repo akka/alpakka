@@ -7,7 +7,6 @@ package docs.javadsl;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
