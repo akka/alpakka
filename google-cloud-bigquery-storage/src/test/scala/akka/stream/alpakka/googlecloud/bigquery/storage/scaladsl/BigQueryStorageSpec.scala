@@ -13,9 +13,8 @@ import akka.stream.alpakka.googlecloud.bigquery.storage.{
 import akka.stream.alpakka.testkit.scaladsl.LogCapturing
 import akka.stream.scaladsl.Sink
 import com.google.cloud.bigquery.storage.v1.arrow.{ArrowRecordBatch, ArrowSchema}
-import com.google.cloud.bigquery.storage.v1.avro.{AvroRows, AvroSchema}
+import com.google.cloud.bigquery.storage.v1.avro.AvroSchema
 import com.google.cloud.bigquery.storage.v1.DataFormat
-import com.google.cloud.bigquery.storage.v1.stream.ReadSession
 import com.google.cloud.bigquery.storage.v1.stream.ReadSession.TableReadOptions
 import io.grpc.{Status, StatusRuntimeException}
 import org.scalatest.BeforeAndAfterAll
