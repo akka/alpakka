@@ -11,7 +11,7 @@ import akka.annotation.InternalApi
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.model.{ContentTypes, HttpCharsets, MediaTypes, Uri}
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
-import akka.stream.alpakka.s3.{ListBucketResultCommonPrefixes, ListBucketResultContents}
+import akka.stream.alpakka.s3.{ListBucketResultCommonPrefixes, ListBucketResultContents, Utils}
 
 import scala.util.Try
 import scala.xml.NodeSeq
@@ -65,7 +65,7 @@ import scala.xml.NodeSeq
             ListBucketResultContents(
               (x \ "Name").text,
               (c \ "Key").text,
-              (c \ "ETag").text.drop(1).dropRight(1),
+              Utils.removeQuotes((c \ "ETag").text),
               (c \ "Size").text.toLong,
               Instant.parse((c \ "LastModified").text),
               (c \ "StorageClass").text
@@ -87,7 +87,7 @@ import scala.xml.NodeSeq
       case x =>
         val lastModified = Instant.parse((x \ "LastModified").text)
         val eTag = (x \ "ETag").text
-        CopyPartResult(lastModified, eTag.dropRight(1).drop(1))
+        CopyPartResult(lastModified, Utils.removeQuotes(eTag))
     }
   }
 }
