@@ -135,7 +135,8 @@ private[scaladsl] trait BigQueryTableData { this: BigQueryRest =>
 
         val pool = {
           val uri = BigQueryEndpoints.endpoint
-          GoogleHttp().cachedHostConnectionPool[TableDataInsertAllResponse](uri.authority.host.address, uri.effectivePort)(um)
+          GoogleHttp().cachedHostConnectionPool[TableDataInsertAllResponse](uri.authority.host.address,
+                                                                            uri.effectivePort)(um)
         }
 
         Flow[TableDataInsertAllRequest[In]]
