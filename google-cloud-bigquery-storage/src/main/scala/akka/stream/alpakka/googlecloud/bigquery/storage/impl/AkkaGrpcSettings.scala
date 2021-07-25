@@ -64,7 +64,7 @@ import java.util.concurrent.Executor
     }
   }
 
-  def credentials()(implicit system: ClassicActorSystemProvider, config: Config) : Credentials = {
+  def credentials()(implicit system: ClassicActorSystemProvider, config: Config): Credentials = {
     val credentialsConfig = config.getConfig("alpakka.google.credentials")
     Credentials(credentialsConfig)
   }
