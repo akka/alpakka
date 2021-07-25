@@ -7,9 +7,13 @@ package akka.stream.alpakka.googlecloud.bigquery.storage.impl
 import akka.actor.ClassicActorSystemProvider
 import akka.annotation.InternalApi
 import akka.grpc.GrpcClientSettings
+import akka.stream.alpakka.google.RequestSettings
+import akka.stream.alpakka.google.auth.Credentials
 import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryStorageSettings
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 import io.grpc.auth.MoreCallCredentials
+
+import java.util.concurrent.Executor
 
 /**
  * Internal API
@@ -49,17 +53,25 @@ import io.grpc.auth.MoreCallCredentials
       config.rootCa
         .fold(settings.withTls(false))(_ => settings.withTls(true))
 
-    val googleSettings = config.googleSettings
-    val executor = system.classicSystem.dispatcher
-
     val setCallCredentials = (settings: GrpcClientSettings) => {
-      googleSettings
-        .map(gs => gs.credentials.asGoogle(executor, gs.requestSettings))
-        .fold(settings)(a => settings.withCallCredentials(MoreCallCredentials.from(a)))
+      implicit val config = system.classicSystem.settings.config
+      val executor: Executor = system.classicSystem.dispatcher
+      settings.withCallCredentials(MoreCallCredentials.from(credentials.asGoogle(executor, requestSettings)))
     }
 
     Seq(setTls, setCallCredentials).foldLeft(settings) {
       case (s, f) => f(s)
     }
   }
+
+  def credentials()(implicit system: ClassicActorSystemProvider, config: Config) : Credentials = {
+    val credentialsConfig = config.getConfig("alpakka.google.credentials")
+    Credentials(credentialsConfig)
+  }
+
+  def requestSettings()(implicit system: ClassicActorSystemProvider, config: Config): RequestSettings = {
+    val alpakkaConfig = config.getConfig("alpakka.google")
+    RequestSettings(alpakkaConfig)
+  }
+
 }

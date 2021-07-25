@@ -234,9 +234,9 @@ object Dependencies {
         "com.google.api.grpc" % "proto-google-cloud-bigquerystorage-v1" % "1.22.0" % "protobuf-src", // ApacheV2
         "org.apache.avro" % "avro" % "1.9.2" % "provided",
         "org.apache.arrow" % "arrow-vector" % "4.0.0" % "provided",
-        "org.apache.arrow" % "arrow-memory-netty" % "4.0.0" % Test,
         "io.grpc" % "grpc-auth" % akka.grpc.gen.BuildInfo.grpcVersion, // ApacheV2
-        "com.typesafe.akka" %% "akka-http-spray-json" % "10.1.12" % Test,
+        "com.typesafe.akka" %% "akka-http-spray-json" % "10.1.12" ,
+        "org.apache.arrow" % "arrow-memory-netty" % "4.0.0" % Test,
         "com.typesafe.akka" %% "akka-discovery" % AkkaVersion
       ) ++ Silencer
   )

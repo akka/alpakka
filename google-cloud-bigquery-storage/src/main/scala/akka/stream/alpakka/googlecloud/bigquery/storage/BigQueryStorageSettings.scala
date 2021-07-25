@@ -11,8 +11,7 @@ import com.typesafe.config.Config
 final class BigQueryStorageSettings private (
     val host: String,
     val port: Int,
-    val rootCa: Option[String] = None,
-    val googleSettings: Option[GoogleSettings] = None
+    val rootCa: Option[String] = None
 ) {
 
   /**
@@ -32,24 +31,14 @@ final class BigQueryStorageSettings private (
   def withRootCa(rootCa: String): BigQueryStorageSettings =
     copy(rootCa = Some(rootCa))
 
-  /**
-   * Credentials that are going to be used for gRPC call authorization.
-   */
-  def withGoogleSettings(googleSettings: GoogleSettings): BigQueryStorageSettings =
-    copy(googleSettings = Some(googleSettings))
-
-  private def copy(host: String = host,
-                   port: Int = port,
-                   rootCa: Option[String] = rootCa,
-                   googleSettings: Option[GoogleSettings] = googleSettings) =
-    new BigQueryStorageSettings(host, port, rootCa, googleSettings)
+  private def copy(host: String = host, port: Int = port, rootCa: Option[String] = rootCa) =
+    new BigQueryStorageSettings(host, port, rootCa)
 
   override def toString: String =
     "BigQueryStorageSettings(" +
     s"host=$host, " +
     s"port=$port, " +
-    s"rootCa=$rootCa, " +
-    s"googleSettings=$googleSettings" +
+    s"rootCa=$rootCa" +
     ")"
 }
 
@@ -77,16 +66,7 @@ object BigQueryStorageSettings {
         case _ => bigQueryConfig
       }
 
-    val setGoogleSettings = (bigQueryConfig: BigQueryStorageSettings) => {
-      if (config.hasPath("alpakka.google")) {
-        val googleSettings = GoogleSettings.apply(config)
-        bigQueryConfig.withGoogleSettings(googleSettings)
-      } else {
-        bigQueryConfig
-      }
-    }
-
-    Seq(setRootCa, setGoogleSettings).foldLeft(bigQueryConfig) {
+    Seq(setRootCa).foldLeft(bigQueryConfig) {
       case (c, f) => f(c)
     }
   }
