@@ -193,7 +193,7 @@ object Dependencies {
       )
   )
 
-  val GeodeVersion = "1.13.3"
+  val GeodeVersion = "1.13.4"
   val GeodeVersionForDocs = "113"
 
   val Geode = Seq(
