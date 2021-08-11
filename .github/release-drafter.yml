@@ -99,7 +99,7 @@ change-template: '- $TITLE [#$NUMBER](https://github.com/akka/alpakka/issues/$NU
 template: |
   # :mega: Alpakka $NEXT_PATCH_VERSION released!
 
-  ### See the full Release Notes in the [Alpakka documentation](https://doc.akka.io/docs/alpakka/2.0/release-notes/2.0.x.html).
+  ### See the full Release Notes in the [Alpakka documentation](https://doc.akka.io/docs/alpakka/3.0/release-notes/3.0.x.html).
 
   ## Changes
 
