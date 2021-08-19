@@ -6,7 +6,6 @@ package akka.stream.alpakka.s3.impl
 
 import akka.annotation.InternalApi
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
-import akka.stream.scaladsl.Source
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.util.ByteString
 
@@ -46,7 +45,7 @@ import akka.util.ByteString
         completeStage()
       }
 
-      private def emit(): Unit = emit(out, Chunk(Source.single(buffer), buffer.size), () => completeStage())
+      private def emit(): Unit = emit(out, MemoryChunk(buffer), () => completeStage())
 
       setHandlers(in, out, this)
     }

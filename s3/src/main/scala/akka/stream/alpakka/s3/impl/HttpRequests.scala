@@ -12,7 +12,7 @@ import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.Uri.{Authority, Query}
 import akka.http.scaladsl.model.headers.{`Raw-Request-URI`, Host, RawHeader}
-import akka.http.scaladsl.model.{ContentTypes, RequestEntity, _}
+import akka.http.scaladsl.model.{RequestEntity, _}
 import akka.stream.alpakka.s3.AccessStyle.{PathAccessStyle, VirtualHostAccessStyle}
 import akka.stream.alpakka.s3.{ApiVersion, S3Settings}
 import akka.stream.scaladsl.Source
@@ -97,15 +97,14 @@ import scala.concurrent.{ExecutionContext, Future}
 
   def uploadPartRequest(upload: MultipartUpload,
                         partNumber: Int,
-                        payload: Source[ByteString, _],
-                        payloadSize: Int,
+                        payload: Chunk,
                         s3Headers: Seq[HttpHeader] = Seq.empty)(implicit conf: S3Settings): HttpRequest =
     s3Request(
       upload.s3Location,
       HttpMethods.PUT,
       _.withQuery(Query("partNumber" -> partNumber.toString, "uploadId" -> upload.uploadId))
     ).withDefaultHeaders(s3Headers)
-      .withEntity(HttpEntity(ContentTypes.`application/octet-stream`, payloadSize, payload))
+      .withEntity(payload.asEntity())
 
   def completeMultipartUploadRequest(upload: MultipartUpload, parts: Seq[(Int, String)], headers: Seq[HttpHeader])(
       implicit ec: ExecutionContext,

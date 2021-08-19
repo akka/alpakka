@@ -43,8 +43,12 @@ class DiskBufferSpec(_system: ActorSystem)
 
     result should have size (1)
     val chunk = result.head
+    chunk shouldBe a[DiskChunk]
+    val diskChunk = chunk.asInstanceOf[DiskChunk]
     chunk.size should be(14)
-    chunk.data.runWith(Sink.seq).futureValue should be(Seq(ByteString(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)))
+    diskChunk.data.runWith(Sink.seq).futureValue should be(
+      Seq(ByteString(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14))
+    )
   }
 
   it should "fail if more than maxSize bytes are fed into it" in {
@@ -63,12 +67,14 @@ class DiskBufferSpec(_system: ActorSystem)
   it should "delete its temp file after N materializations" in {
     val tmpDir = Files.createTempDirectory("DiskBufferSpec").toFile()
     val before = tmpDir.list().size
-    val source = Source(Vector(ByteString(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)))
+    val chunk = Source(Vector(ByteString(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)))
       .via(new DiskBuffer(2, 200, Some(tmpDir.toPath)))
       .runWith(Sink.seq)
       .futureValue
       .head
-      .data
+
+    chunk shouldBe a[DiskChunk]
+    val source = chunk.asInstanceOf[DiskChunk].data
 
     tmpDir.list().size should be(before + 1)
 
