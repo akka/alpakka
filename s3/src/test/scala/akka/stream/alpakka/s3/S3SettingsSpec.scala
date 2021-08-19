@@ -12,6 +12,8 @@ import software.amazon.awssdk.auth.credentials._
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers._
 
+import scala.annotation.nowarn
+
 class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with OptionValues {
   private def mkSettings(more: String): S3Settings =
     S3Settings(
@@ -249,5 +251,21 @@ class S3SettingsSpec extends S3WireMockBase with S3ClientIntegrationSpec with Op
     settings.forwardProxy.value.port shouldEqual 1337
     settings.forwardProxy.value.credentials.value.username shouldEqual "knock-knock"
     settings.forwardProxy.value.credentials.value.password shouldEqual "whos-there"
+  }
+
+  it should "skip parsing forward-proxy when optional environment overrides exist but aren't set" in {
+    @nowarn("msg=possible missing interpolator: detected an interpolated expression")
+    val config = """
+                   |forward-proxy {
+                   |  host = ${?HOST}
+                   |  port = ${?PORT}
+                   |  credentials {
+                   |    username = ${?CREDENTIALS_USERNAME}
+                   |    password = ${?CREDENTIALS_PASSWORD}
+                   |  }
+                   |}
+                """.stripMargin
+    noException should be thrownBy mkSettings(config)
+    mkSettings(config).forwardProxy shouldEqual None
   }
 }

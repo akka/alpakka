@@ -508,7 +508,8 @@ object S3Settings {
     }
 
     val maybeForwardProxy =
-      if (c.hasPath("forward-proxy")) Some(ForwardProxy(c.getConfig("forward-proxy")))
+      if (c.hasPath("forward-proxy") && c.hasPath("forward-proxy.host") && c.hasPath("forward-proxy.port"))
+        Some(ForwardProxy(c.getConfig("forward-proxy")))
       else None
 
     if (c.hasPath("path-style-access"))
