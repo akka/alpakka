@@ -123,7 +123,7 @@ Which licenses are compatible with Apache 2 are defined in [this doc](http://www
 
 > Each license in this category requires some degree of [reciprocity](http://www.apache.org/legal/3party.html#define-reciprocal); therefore, additional action must be taken in order to minimize the chance that a user of an Apache product will create a derivative work of a reciprocally-licensed portion of an Apache product without being aware of the applicable requirements.
 
-Dependency licenses will be checked automatically by the sbt Whitesource plug-in. 
+Dependency licenses will be checked automatically by [FOSSA](https://fossa.com/). 
 
 ### Packages & Scoping
 

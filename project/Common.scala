@@ -5,7 +5,6 @@ import org.scalafmt.sbt.ScalafmtPlugin.autoImport._
 import de.heikoseeberger.sbtheader._
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
 import com.lightbend.paradox.projectinfo.ParadoxProjectInfoPluginKeys._
-import Whitesource.whitesourceGroup
 import com.typesafe.tools.mima.plugin.MimaKeys._
 import xerial.sbt.Sonatype.autoImport.sonatypeProfileName
 
@@ -35,12 +34,13 @@ object Common extends AutoPlugin {
     // TODO https://github.com/akka/alpakka/issues/2456
     // fatalWarnings := true,
     fatalWarnings := false,
-    mimaReportSignatureProblems := true
+    mimaReportSignatureProblems := true,
+    // Ignore unused keys which affect documentation
+    excludeLintKeys ++= Set(scmInfo, projectInfoVersion, autoAPIMappings)
   )
 
   override lazy val projectSettings = Dependencies.Common ++ Seq(
       projectInfoVersion := (if (isSnapshot.value) "snapshot" else version.value),
-      whitesourceGroup := Whitesource.Group.Community,
       crossVersion := CrossVersion.binary,
       crossScalaVersions := Dependencies.ScalaVersions,
       scalaVersion := Dependencies.Scala212,
