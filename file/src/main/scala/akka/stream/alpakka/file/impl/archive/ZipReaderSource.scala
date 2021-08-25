@@ -6,6 +6,7 @@ package akka.stream.alpakka.file.impl.archive
 
 import akka.NotUsed
 import akka.annotation.InternalApi
+import akka.stream.alpakka.file.ZipArchiveMetadata
 import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.stream.scaladsl.Source
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
@@ -13,8 +14,6 @@ import akka.util.ByteString
 
 import java.io.{File, FileInputStream}
 import java.util.zip.{ZipEntry, ZipInputStream}
-
-case class ZipArchiveMetadata(name: String)
 
 @InternalApi class ZipEntrySource(n: ZipArchiveMetadata, f: File, chunkSize: Int)
     extends GraphStage[SourceShape[ByteString]] {

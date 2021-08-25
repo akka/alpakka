@@ -5,14 +5,8 @@
 package akka.stream.alpakka.file.scaladsl
 
 import akka.NotUsed
-import akka.stream.alpakka.file.{ArchiveMetadata, TarArchiveMetadata}
-import akka.stream.alpakka.file.impl.archive.{
-  TarArchiveManager,
-  TarReaderStage,
-  ZipArchiveManager,
-  ZipArchiveMetadata,
-  ZipSource
-}
+import akka.stream.alpakka.file.{ArchiveMetadata, TarArchiveMetadata, ZipArchiveMetadata}
+import akka.stream.alpakka.file.impl.archive.{TarArchiveManager, TarReaderStage, ZipArchiveManager, ZipSource}
 import akka.stream.scaladsl.{Flow, Source}
 import akka.util.ByteString
 

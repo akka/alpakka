@@ -5,11 +5,11 @@
 package akka.stream.alpakka.file.javadsl
 
 import akka.NotUsed
-import akka.stream.alpakka.file.{scaladsl, ArchiveMetadata, TarArchiveMetadata}
+import akka.stream.alpakka.file.{scaladsl, ArchiveMetadata, TarArchiveMetadata, ZipArchiveMetadata}
 import akka.stream.javadsl.Flow
 import akka.util.ByteString
 import akka.japi.Pair
-import akka.stream.alpakka.file.impl.archive.{TarReaderStage, ZipArchiveMetadata, ZipSource}
+import akka.stream.alpakka.file.impl.archive.{TarReaderStage, ZipSource}
 import akka.stream.javadsl.Source
 
 import java.io.File
