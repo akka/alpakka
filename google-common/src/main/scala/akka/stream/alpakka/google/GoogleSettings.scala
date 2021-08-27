@@ -100,7 +100,7 @@ object RequestSettings {
   def apply(c: Config)(implicit system: ClassicActorSystemProvider): RequestSettings = {
     val retrySettings = RetrySettings(c.getConfig("retry-settings"))
     val maybeForwardProxy =
-      if (c.hasPath("forward-proxy"))
+      if (c.hasPath("forward-proxy") && c.hasPath("forward-proxy.host") && c.hasPath("forward-proxy.port"))
         Some(ForwardProxy(c.getConfig("forward-proxy")))
       else
         None

@@ -1,5 +1,15 @@
 # JMS
 
+## 3.0.1
+
+- JMS: upgrade to jms-testkit 1.0.1 [#2673](https://github.com/akka/alpakka/issues/2673) by [@sullis](https://github.com/sullis)
+
+[*closed in 3.0.1*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A3.0.1+label%3Ap%3Ajms)
+
+## 3.0.0
+
+[*closed in 3.0.0*](https://github.com/akka/alpakka/issues?q=is%3Aclosed+milestone%3A3.0.1+label%3Ap%3Ajms)
+
 ## 3.0.0-M1
 
 - JMS maxAckInterval [#2585](https://github.com/akka/alpakka/issues/2585) by [@manuelcueto](https://github.com/manuelcueto)

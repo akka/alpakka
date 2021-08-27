@@ -117,10 +117,19 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
           }
         )
 
-        val baseMap = Map("scroll" -> settings.scroll, "sort" -> "_doc")
-        val routingKey = "routing"
-        val queryParams = searchParams.get(routingKey).fold(baseMap)(r => baseMap + (routingKey -> r))
-        val completeParams = searchParams ++ extraParams.flatten - routingKey
+        val baseMap = Map("scroll" -> settings.scroll)
+
+        // only force sorting by _doc (meaning order is not known) if not specified in search params
+        val sortQueryParam = if (searchParams.contains("sort")) {
+          None
+        } else {
+          Some(("sort", "_doc"))
+        }
+
+        val routingQueryParam = searchParams.get("routing").map(r => ("routing", r))
+
+        val queryParams = baseMap ++ routingQueryParam ++ sortQueryParam
+        val completeParams = searchParams ++ extraParams.flatten - "routing"
 
         val searchBody = "{" + completeParams
             .map {

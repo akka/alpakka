@@ -95,7 +95,7 @@ import akka.annotation.InternalApi
             }(ExecutionContexts.parasitic)
           NotUsed
         }
-        emit(out, Chunk(src, length), () => completeStage())
+        emit(out, DiskChunk(src, length), () => completeStage())
       }
       setHandlers(in, out, this)
     }

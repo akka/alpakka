@@ -31,15 +31,18 @@ trait ElasticsearchSpecUtils { this: AnyWordSpec with ScalaFutures =>
   import spray.json._
   import DefaultJsonProtocol._
 
-  case class Book(title: String)
+  case class Book(title: String, shouldSkip: Option[Boolean] = None, price: Int = 10)
 
-  implicit val format: JsonFormat[Book] = jsonFormat1(Book)
+  implicit val format: JsonFormat[Book] = jsonFormat3(Book)
   //#define-class
 
-  def register(connectionSettings: ElasticsearchConnectionSettings, indexName: String, title: String): Unit = {
+  def register(connectionSettings: ElasticsearchConnectionSettings,
+               indexName: String,
+               title: String,
+               price: Int): Unit = {
     val request = HttpRequest(HttpMethods.POST)
       .withUri(Uri(connectionSettings.baseUrl).withPath(Path(s"/$indexName/_doc")))
-      .withEntity(ContentTypes.`application/json`, s"""{"title": "$title"}""")
+      .withEntity(ContentTypes.`application/json`, s"""{"title": "$title", "price": $price}""")
     http.singleRequest(request).futureValue
   }
 
@@ -68,13 +71,13 @@ trait ElasticsearchSpecUtils { this: AnyWordSpec with ScalaFutures =>
       .runWith(Sink.seq)
 
   def insertTestData(connectionSettings: ElasticsearchConnectionSettings): Unit = {
-    register(connectionSettings, "source", "Akka in Action")
-    register(connectionSettings, "source", "Programming in Scala")
-    register(connectionSettings, "source", "Learning Scala")
-    register(connectionSettings, "source", "Scala for Spark in Production")
-    register(connectionSettings, "source", "Scala Puzzlers")
-    register(connectionSettings, "source", "Effective Akka")
-    register(connectionSettings, "source", "Akka Concurrency")
+    register(connectionSettings, "source", "Akka in Action", 10)
+    register(connectionSettings, "source", "Programming in Scala", 20)
+    register(connectionSettings, "source", "Learning Scala", 10)
+    register(connectionSettings, "source", "Scala for Spark in Production", 5)
+    register(connectionSettings, "source", "Scala Puzzlers", 10)
+    register(connectionSettings, "source", "Effective Akka", 10)
+    register(connectionSettings, "source", "Akka Concurrency", 10)
     flushAndRefresh(connectionSettings, "source")
   }
 

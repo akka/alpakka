@@ -7,8 +7,9 @@ package docs.javadsl;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
 // #imports
-import akka.stream.alpakka.google.firebase.fcm.*;
-import akka.stream.alpakka.google.firebase.fcm.javadsl.GoogleFcm;
+import akka.stream.alpakka.google.firebase.fcm.FcmSettings;
+import akka.stream.alpakka.google.firebase.fcm.v1.models.*;
+import akka.stream.alpakka.google.firebase.fcm.v1.javadsl.GoogleFcm;
 
 // #imports
 import akka.stream.javadsl.Sink;
@@ -25,8 +26,7 @@ public class FcmExamples {
     // #simple-send
     FcmSettings fcmConfig = FcmSettings.create();
     FcmNotification notification =
-        FcmNotification.basic(
-            "Test", "This is a test notification!", new FcmNotificationModels.Token("token"));
+        FcmNotification.basic("Test", "This is a test notification!", new Token("token"));
     Source.single(notification).runWith(GoogleFcm.fireAndForget(fcmConfig), system);
     // #simple-send
 

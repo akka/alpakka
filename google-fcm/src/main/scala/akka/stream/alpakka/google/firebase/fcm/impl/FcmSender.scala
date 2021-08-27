@@ -14,16 +14,21 @@ import akka.stream.alpakka.google.GoogleSettings
 import akka.stream.alpakka.google.firebase.fcm.{FcmErrorResponse, FcmResponse, FcmSuccessResponse}
 import akka.stream.alpakka.google.http.GoogleHttp
 import akka.stream.alpakka.google.implicits._
+import com.github.ghik.silencer.silent
 
 import scala.concurrent.Future
 
 /**
  * INTERNAL API
  */
+@silent("deprecated")
 @InternalApi
 private[fcm] class FcmSender {
   import FcmJsonSupport._
 
+  /** Use akka.stream.alpakka.google.firebase.fcm.v1.impl.FcmSender */
+  @deprecated("Use akka.stream.alpakka.google.firebase.fcm.v1.impl.FcmSender", "3.0.2")
+  @Deprecated
   def send(http: HttpExt, fcmSend: FcmSend)(
       implicit mat: Materializer,
       settings: GoogleSettings
@@ -49,5 +54,8 @@ private[fcm] class FcmSender {
       }
   }.withDefaultRetry
 
+  /** Use akka.stream.alpakka.google.firebase.fcm.v1.impl.FcmErrorException */
+  @deprecated("Use akka.stream.alpakka.google.firebase.fcm.v1.impl.FcmErrorException", "3.0.2")
+  @Deprecated
   private case class FcmErrorException(error: FcmErrorResponse) extends Exception
 }

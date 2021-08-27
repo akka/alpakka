@@ -645,7 +645,7 @@ import scala.util.{Failure, Success, Try}
                 if (prefix.nonEmpty) {
                   Source(prefix).concat(tail)
                 } else {
-                  Source.single(Chunk(Source.empty, 0))
+                  Source.single(MemoryChunk(ByteString.empty))
                 }
             }
 
@@ -655,7 +655,7 @@ import scala.util.{Failure, Success, Try}
               case (chunkedPayload, (uploadInfo, chunkIndex)) =>
                 //each of the payload requests are created
                 val partRequest =
-                  uploadPartRequest(uploadInfo, chunkIndex, chunkedPayload.data, chunkedPayload.size, headers)
+                  uploadPartRequest(uploadInfo, chunkIndex, chunkedPayload, headers)
                 (partRequest, (uploadInfo, chunkIndex))
             }
             .flatMapConcat { case (req, info) => Signer.signedRequest(req, signingKey).zip(Source.single(info)) }

@@ -168,6 +168,8 @@ This example can be found in the @ref:[self-contained example documentation sect
 
 ## ZIP Archive
 
+### Writing ZIP Archives
+
 The @apidoc[Archive$]
 contains flow for compressing multiple files into one ZIP file.
 
@@ -181,6 +183,21 @@ Scala
 
 Java
 : @@snip [snip](/file/src/test/java/docs/javadsl/ArchiveTest.java) { #sample-zip }
+
+### Reading ZIP archives
+
+
+@apidoc[Archive.zipReader()](Archive$) reads a file in ZIP format, and emitting the metadata entry and a `Source` for every file in the stream.
+It is not needed to emit every file, also multiple files can be emitted in parallel. (Every sub-source will seek into the archive.)
+
+The example below reads the incoming file, and unzip all to the local file system.
+
+Scala
+: @@snip [snip](/file/src/test/scala/docs/scaladsl/ArchiveSpec.scala) { #zip-reader }
+
+Java
+: @@snip [snip](/file/src/test/java/docs/javadsl/ArchiveTest.java) { #sample-zip-read }
+
 
 ## TAR Archive
 

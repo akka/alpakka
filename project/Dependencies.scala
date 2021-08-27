@@ -139,7 +139,7 @@ object Dependencies {
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
         "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,
-        "com.typesafe.akka" %% "akka-stream-kafka" % "2.0.7" % Test,
+        "com.typesafe.akka" %% "akka-stream-kafka" % "2.1.1" % Test,
         "junit" % "junit" % "4.13" % Test, // Eclipse Public License 1.0
         "org.scalatest" %% "scalatest" % "3.1.4" % Test // ApacheV2
       )
@@ -193,7 +193,7 @@ object Dependencies {
       )
   )
 
-  val GeodeVersion = "1.13.2"
+  val GeodeVersion = "1.13.3"
   val GeodeVersionForDocs = "113"
 
   val Geode = Seq(
@@ -317,7 +317,7 @@ object Dependencies {
         "com.ibm.mq" % "com.ibm.mq.allclient" % "9.2.0.0" % Test, // IBM International Program License Agreement https://public.dhe.ibm.com/ibmdl/export/pub/software/websphere/messaging/mqdev/maven/licenses/L-APIG-AZYF2E/LI_en.html
         "org.apache.activemq" % "activemq-broker" % "5.16.0" % Test, // ApacheV2
         "org.apache.activemq" % "activemq-client" % "5.16.0" % Test, // ApacheV2
-        "io.github.sullis" %% "jms-testkit" % "0.5.0" % Test // ApacheV2
+        "io.github.sullis" %% "jms-testkit" % "1.0.1" % Test // ApacheV2
       ) ++ Mockito,
     // Having JBoss as a first resolver is a workaround for https://github.com/coursier/coursier/issues/200
     externalResolvers := ("jboss" at "https://repository.jboss.org/nexus/content/groups/public") +: externalResolvers.value

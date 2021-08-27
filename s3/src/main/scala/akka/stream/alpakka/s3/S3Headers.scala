@@ -32,7 +32,7 @@ final class MetaHeaders private (val metaHeaders: Map[String, String]) {
     ")"
 
   override def equals(other: Any): Boolean = other match {
-    case that: S3Headers =>
+    case that: MetaHeaders =>
       Objects.equals(this.metaHeaders, that.metaHeaders)
     case _ => false
   }

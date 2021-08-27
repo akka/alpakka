@@ -12,10 +12,12 @@ import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestKit
 import akka.{Done, NotUsed}
-import spray.json.{jsonReader, JsObject, JsString}
+import spray.json.jsonReader
 
 import scala.collection.immutable
 import scala.concurrent.Future
+
+import spray.json._
 
 class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUtils {
 
@@ -149,9 +151,9 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
 
       val write: Future[immutable.Seq[WriteResult[String, NotUsed]]] = Source(
         immutable.Seq(
-          WriteMessage.createIndexMessage("1", s"""{"title": "Das Parfum"}"""),
-          WriteMessage.createIndexMessage("2", s"""{"title": "Faust"}"""),
-          WriteMessage.createIndexMessage("3", s"""{"title": "Die unendliche Geschichte"}""")
+          WriteMessage.createIndexMessage("1", Book("Das Parfum").toJson.toString()),
+          WriteMessage.createIndexMessage("2", Book("Faust").toJson.toString()),
+          WriteMessage.createIndexMessage("3", Book("Die unendliche Geschichte").toJson.toString())
         )
       ).via(
           ElasticsearchFlow.create(
@@ -225,6 +227,174 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
         .map(_.book.title)
     }
 
+    "kafka-example - store documents and pass Responses with passThrough in bulk" in assertAllStagesStopped {
+
+      // We're going to pretend we got messages from kafka.
+      // After we've written them to Elastic, we want
+      // to commit the offset to Kafka
+
+      case class KafkaOffset(offset: Int)
+      case class KafkaMessage(book: Book, offset: KafkaOffset)
+
+      val messagesFromKafka = List(
+        KafkaMessage(Book("Book 1"), KafkaOffset(0)),
+        KafkaMessage(Book("Book 2"), KafkaOffset(1)),
+        KafkaMessage(Book("Book 3"), KafkaOffset(2))
+      )
+
+      var committedOffsets = Vector[KafkaOffset]()
+
+      def commitToKafka(offset: KafkaOffset): Unit =
+        committedOffsets = committedOffsets :+ offset
+
+      val indexName = "sink6-bulk"
+      val kafkaToEs = Source(messagesFromKafka) // Assume we get this from Kafka
+        .map { kafkaMessage: KafkaMessage =>
+          val book = kafkaMessage.book
+          val id = book.title
+
+          // Transform message so that we can write to elastic
+          WriteMessage.createIndexMessage(id, book).withPassThrough(kafkaMessage.offset)
+        }
+        .grouped(2)
+        .via( // write to elastic
+          ElasticsearchFlow.createBulk[Book, KafkaOffset](
+            constructElasticsearchParams(indexName, "_doc", ApiVersion.V7),
+            settings = baseWriteSettings
+          )
+        )
+        .map(_.map { result =>
+          if (!result.success) throw new Exception("Failed to write message to elastic")
+          // Commit to kafka
+          commitToKafka(result.message.passThrough)
+        })
+        .runWith(Sink.ignore)
+
+      kafkaToEs.futureValue shouldBe Done
+
+      flushAndRefresh(connectionSettings, indexName)
+
+      // Make sure all messages was committed to kafka
+      committedOffsets.map(_.offset) should contain theSameElementsAs Seq(0, 1, 2)
+      readTitlesFrom(ApiVersion.V7, baseSourceSettings, indexName).futureValue.toList should contain allElementsOf messagesFromKafka
+        .map(_.book.title)
+    }
+
+    "kafka-example - store documents and pass Responses with passThrough skipping some w/ NOP" in assertAllStagesStopped {
+
+      // We're going to pretend we got messages from kafka.
+      // After we've written them to Elastic, we want
+      // to commit the offset to Kafka
+
+      case class KafkaOffset(offset: Int)
+      case class KafkaMessage(book: Book, offset: KafkaOffset)
+
+      val messagesFromKafka = List(
+        KafkaMessage(Book("Book A", shouldSkip = Some(true)), KafkaOffset(0)),
+        KafkaMessage(Book("Book 1"), KafkaOffset(1)),
+        KafkaMessage(Book("Book 2"), KafkaOffset(2)),
+        KafkaMessage(Book("Book B", shouldSkip = Some(true)), KafkaOffset(3)),
+        KafkaMessage(Book("Book 3"), KafkaOffset(4)),
+        KafkaMessage(Book("Book C", shouldSkip = Some(true)), KafkaOffset(5))
+      )
+
+      var committedOffsets = Vector[KafkaOffset]()
+
+      def commitToKafka(offset: KafkaOffset): Unit =
+        committedOffsets = committedOffsets :+ offset
+
+      val indexName = "sink6-nop"
+      val kafkaToEs = Source(messagesFromKafka) // Assume we get this from Kafka
+        .map { kafkaMessage: KafkaMessage =>
+          val book = kafkaMessage.book
+          val id = book.title
+
+          // Transform message so that we can write to elastic
+          if (book.shouldSkip.getOrElse(false))
+            WriteMessage.createNopMessage[Book]().withPassThrough(kafkaMessage.offset)
+          else
+            WriteMessage.createIndexMessage(id, book).withPassThrough(kafkaMessage.offset)
+        }
+        .via( // write to elastic
+          ElasticsearchFlow.createWithPassThrough[Book, KafkaOffset](
+            constructElasticsearchParams(indexName, "_doc", ApiVersion.V7),
+            settings = baseWriteSettings
+          )
+        )
+        .map { result =>
+          if (!result.success) throw new Exception("Failed to write message to elastic")
+          // Commit to kafka
+          commitToKafka(result.message.passThrough)
+        }
+        .runWith(Sink.ignore)
+
+      kafkaToEs.futureValue shouldBe Done
+
+      flushAndRefresh(connectionSettings, indexName)
+
+      // Make sure all messages was committed to kafka
+      committedOffsets.map(_.offset) should contain theSameElementsAs Seq(0, 1, 2, 3, 4, 5)
+      readTitlesFrom(ApiVersion.V7, baseSourceSettings, indexName).futureValue.toList should contain allElementsOf messagesFromKafka
+        .filterNot(_.book.shouldSkip.getOrElse(false))
+        .map(_.book.title)
+    }
+
+    "kafka-example - skip all NOP documents and pass Responses with passThrough" in assertAllStagesStopped {
+
+      // We're going to pretend we got messages from kafka.
+      // After we've written them to Elastic, we want
+      // to commit the offset to Kafka
+
+      case class KafkaOffset(offset: Int)
+      case class KafkaMessage(book: Book, offset: KafkaOffset)
+
+      val messagesFromKafka = List(
+        KafkaMessage(Book("Book 1", shouldSkip = Some(true)), KafkaOffset(0)),
+        KafkaMessage(Book("Book 2", shouldSkip = Some(true)), KafkaOffset(1)),
+        KafkaMessage(Book("Book 3", shouldSkip = Some(true)), KafkaOffset(2))
+      )
+
+      var committedOffsets = Vector[KafkaOffset]()
+
+      def commitToKafka(offset: KafkaOffset): Unit =
+        committedOffsets = committedOffsets :+ offset
+
+      val indexName = "sink6-none"
+      register(connectionSettings, indexName, "dummy", 10) // need to create index else exception in reading below
+
+      val kafkaToEs = Source(messagesFromKafka) // Assume we get this from Kafka
+        .map { kafkaMessage: KafkaMessage =>
+          val book = kafkaMessage.book
+          val id = book.title
+
+          // Transform message so that we can write to elastic
+          if (book.shouldSkip.getOrElse(false))
+            WriteMessage.createNopMessage[Book]().withPassThrough(kafkaMessage.offset)
+          else
+            WriteMessage.createIndexMessage(id, book).withPassThrough(kafkaMessage.offset)
+        }
+        .via( // write to elastic
+          ElasticsearchFlow.createWithPassThrough[Book, KafkaOffset](
+            constructElasticsearchParams(indexName, "_doc", ApiVersion.V7),
+            settings = baseWriteSettings
+          )
+        )
+        .map { result =>
+          if (!result.success) throw new Exception("Failed to write message to elastic")
+          // Commit to kafka
+          commitToKafka(result.message.passThrough)
+        }
+        .runWith(Sink.ignore)
+
+      kafkaToEs.futureValue shouldBe Done
+
+      flushAndRefresh(connectionSettings, indexName)
+
+      // Make sure all messages was committed to kafka
+      committedOffsets.map(_.offset) should contain theSameElementsAs Seq(0, 1, 2)
+      readTitlesFrom(ApiVersion.V7, baseSourceSettings, indexName).futureValue.toList shouldBe List("dummy")
+    }
+
     "handle multiple types of operations correctly" in assertAllStagesStopped {
       val indexName = "sink8"
       val requests = List[WriteMessage[Book, NotUsed]](
@@ -265,9 +435,9 @@ class ElasticsearchV7Spec extends ElasticsearchSpecBase with ElasticsearchSpecUt
 
       // Docs should contain both columns
       readBooks.futureValue.sortBy(_.fields("title").compactPrint) shouldEqual Seq(
-        JsObject("title" -> JsString("Book 1")),
-        JsObject("title" -> JsString("Book 3")),
-        JsObject("title" -> JsString("Book 5"))
+        Book("Book 1").toJson,
+        Book("Book 3").toJson,
+        Book("Book 5").toJson
       )
     }
 

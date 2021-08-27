@@ -5,7 +5,6 @@
 package akka.stream.alpakka.file.impl.archive
 
 import java.util.concurrent.TimeUnit
-
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.stream.ActorAttributes.StreamSubscriptionTimeout
@@ -37,19 +36,22 @@ private[file] class TarReaderStage
           extends SubSourceOutlet[ByteString]("fileOut")
           with TarReaderStage.SourceWithTimeout
 
-      readHeader(ByteString.empty)
+      setHandlers(flowIn, flowOut, new CollectHeader(ByteString.empty))
 
       def readHeader(buffer: ByteString): Unit = {
         if (buffer.length >= TarArchiveEntry.headerLength) {
           readFile(buffer)
-        } else setHandlers(flowIn, flowOut, new CollectHeader(buffer))
+        } else {
+          tryPullIfNeeded()
+          setHandlers(flowIn, flowOut, new CollectHeader(buffer))
+        }
       }
 
       def readFile(headerBuffer: ByteString): Unit = {
         def pushSource(metadata: TarArchiveMetadata, buffer: ByteString): Unit = {
           if (buffer.length >= metadata.size) {
             val (emit, remain) = buffer.splitAt(metadata.size.toInt)
-            log.debug(s"emitting completed source for $metadata")
+            log.debug("emitting completed source for [{}]", metadata)
             push(flowOut, metadata -> Source.single(emit))
             readTrailer(metadata, remain, subSource = None)
           } else setHandlers(flowIn, flowOut, new CollectFile(metadata, buffer))
@@ -115,11 +117,16 @@ private[file] class TarReaderStage
               case WarnTermination =>
                 log.warning(
                   "The tar content source was not subscribed to within {}, it must be subscribed to to progress tar file reading.",
-                  timeout
+                  timeout.toCoarsest
                 )
               case NoopTermination =>
             }
         }
+      }
+
+      private def tryPullIfNeeded(): Unit = {
+        if (!hasBeenPulled(flowIn))
+          tryPull(flowIn)
       }
 
       /**
@@ -135,7 +142,7 @@ private[file] class TarReaderStage
        */
       private trait ExpectDownstreamPull extends OutHandler {
         final override def onPull(): Unit = {
-          pull(flowIn)
+          tryPullIfNeeded()
           setHandler(flowOut, IgnoreDownstreamPull)
         }
       }
@@ -150,7 +157,9 @@ private[file] class TarReaderStage
           buffer ++= grab(flowIn)
           if (buffer.length >= TarArchiveEntry.headerLength) {
             readFile(buffer)
-          } else pull(flowIn)
+          } else {
+            tryPullIfNeeded()
+          }
         }
 
         override def onUpstreamFinish(): Unit = {
@@ -171,7 +180,6 @@ private[file] class TarReaderStage
           extends InHandler
           with IgnoreDownstreamPull {
         private var emitted: Long = 0
-        private var flowInPulled = false
 
         private val subSource: FileOutSubSource = {
           val sub = new FileOutSubSource()
@@ -183,9 +191,8 @@ private[file] class TarReaderStage
                 subPush(buffer)
                 buffer = ByteString.empty
                 if (isClosed(flowIn)) onUpstreamFinish()
-              } else if (!flowInPulled) {
-                flowInPulled = true
-                pull(flowIn)
+              } else {
+                tryPullIfNeeded()
               }
             }
           })
@@ -194,7 +201,7 @@ private[file] class TarReaderStage
           sub
         }
 
-        log.debug(s"emitting source for $metadata")
+        log.debug("emitting source for [{}]", metadata)
         push(flowOut, metadata -> Source.fromGraph(subSource.source))
         setHandler(flowOut, IgnoreDownstreamPull)
 
@@ -211,7 +218,6 @@ private[file] class TarReaderStage
         }
 
         override def onPush(): Unit = {
-          flowInPulled = false
           subPush(grab(flowIn))
         }
 
@@ -244,10 +250,13 @@ private[file] class TarReaderStage
             subSource.foreach { src =>
               src.complete()
               setHandler(flowOut, ExpectDownstreamPull)
-              if (isAvailable(flowOut)) pull(flowIn)
+              if (isAvailable(flowOut))
+                tryPullIfNeeded()
             }
             readHeader(buffer.drop(trailerLength))
-          } else pull(flowIn)
+          } else {
+            tryPullIfNeeded()
+          }
         }
 
         override def onUpstreamFinish(): Unit = {
@@ -268,10 +277,10 @@ private[file] class TarReaderStage
 
         override def onPush(): Unit = {
           grab(flowIn)
-          pull(flowIn)
+          tryPullIfNeeded()
         }
 
-        tryPull(flowIn)
+        tryPullIfNeeded()
       }
 
     }

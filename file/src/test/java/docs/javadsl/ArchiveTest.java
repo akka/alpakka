@@ -12,6 +12,7 @@ import akka.stream.IOResult;
 import akka.stream.Materializer;
 import akka.stream.alpakka.file.ArchiveMetadata;
 import akka.stream.alpakka.file.TarArchiveMetadata;
+import akka.stream.alpakka.file.ZipArchiveMetadata;
 import akka.stream.alpakka.file.javadsl.Archive;
 import akka.stream.alpakka.file.javadsl.Directory;
 import akka.stream.alpakka.testkit.javadsl.LogCapturingJunit4;
@@ -106,6 +107,23 @@ public class ArchiveTest {
     Map<String, ByteString> unzip = archiveHelper.unzip(resultFileContent);
 
     assertThat(inputFiles, is(unzip));
+    Path target = Files.createTempDirectory("alpakka-zip-");
+
+    // #sample-zip-read
+    Archive.zipReader(Paths.get("logo.zip").toFile())
+        .mapAsync(
+            4,
+            pair -> {
+              ZipArchiveMetadata metadata = pair.first();
+              Path targetFile = target.resolve(metadata.getName());
+              targetFile.toFile().getParentFile().mkdirs(); // missing error handler
+              Source<ByteString, NotUsed> fSource = pair.second();
+              // create the target directory
+              return fSource
+                  .runWith(FileIO.toPath(targetFile), system)
+                  .thenApply(io -> Done.done());
+            });
+    // #sample-zip-read
 
     // cleanup
     new File("logo.zip").delete();
