@@ -96,11 +96,10 @@ class JmsMessageProducerSpec extends JmsSpec with MockitoSugar {
       }
     }
 
-    "fail if a property is set to a null value" in new Setup {
+    "succeed if a property is set to a null value" in new Setup {
       val jmsProducer = JmsMessageProducer(jmsSession, settings, 0)
-      assertThrows[NullMessageProperty] {
-        jmsProducer.populateMessageProperties(textMessage, JmsTextMessage("test").withProperty("object", null))
-      }
+      jmsProducer.populateMessageProperties(textMessage, JmsTextMessage("test").withProperty("object", null))
+      verify(textMessage).setObjectProperty("object", null)
     }
   }
 
@@ -143,12 +142,11 @@ class JmsMessageProducerSpec extends JmsSpec with MockitoSugar {
       }
     }
 
-    "fail if a map value is set to null" in new Setup {
+    "succeed if a map value is set to null" in new Setup {
       val jmsProducer = JmsMessageProducer(jmsSession, settings, 0)
-      assertThrows[NullMapMessageEntry] {
-        val wrongMap: Map[String, Any] = Map("object" -> null)
-        jmsProducer.createMessage(JmsMapMessage(wrongMap))
-      }
+      val correctMap: Map[String, Any] = Map("object" -> null)
+      jmsProducer.createMessage(JmsMapMessage(correctMap))
+      verify(mapMessage).setObject("object", null)
     }
   }
 }

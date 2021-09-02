@@ -21,6 +21,7 @@ case class UnsupportedMessagePropertyType(propertyName: String, propertyValue: A
     )
     with NonRetriableJmsException
 
+@deprecated("Not used anywhere", "3.0.4")
 case class NullMessageProperty(propertyName: String, message: JmsEnvelope[_])
     extends Exception(
       s"null value was given for Jms property '$propertyName'."
@@ -34,6 +35,7 @@ case class UnsupportedMapMessageEntryType(entryName: String, entryValue: Any, me
     )
     with NonRetriableJmsException
 
+@deprecated("Not used anywhere", "3.0.4")
 case class NullMapMessageEntry(entryName: String, message: JmsMapMessagePassThrough[_])
     extends Exception(
       s"null value was given for Jms MapMessage entry '$entryName'."
