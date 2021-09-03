@@ -30,11 +30,9 @@ import spray.json._
 import scala.concurrent.Future
 
 @InternalApi private[storage] object GCStorageStream {
-  private val baseUrl = "https://storage.googleapis.com/"
-  private val basePath = "/storage/v1"
 
-  def getBucketSource(bucketName: String): Source[Option[Bucket], NotUsed] = {
-    val uri = Uri(baseUrl).withPath(Path(basePath) ++ getBucketPath(bucketName))
+  def getBucketSource(bucketName: String): Source[Option[Bucket], NotUsed] = sourceGCS { settings =>
+    val uri = Uri(settings.endpointUrl).withPath(Path(settings.basePath) ++ getBucketPath(bucketName))
     val request = HttpRequest(uri = uri)
     makeRequestSource[Option[Bucket]](request)
   }
@@ -43,19 +41,23 @@ import scala.concurrent.Future
     getBucketSource(bucketName).withAttributes(attr).runWith(Sink.head)
 
   def createBucketSource(bucketName: String, location: String): Source[Bucket, NotUsed] = source { settings =>
-    val uri = Uri(baseUrl).withPath(Path(basePath) / "b").withQuery(Query("project" -> settings.projectId))
-    implicit val ec = parasitic
-    val request = Marshal(BucketInfo(bucketName, location)).to[RequestEntity].map { entity =>
-      HttpRequest(POST, uri, entity = entity)
+    sourceGCS { gcsSettings =>
+      val uri = Uri(gcsSettings.endpointUrl)
+        .withPath(Path(gcsSettings.basePath) / "b")
+        .withQuery(Query("project" -> settings.projectId))
+      implicit val ec = parasitic
+      val request = Marshal(BucketInfo(bucketName, location)).to[RequestEntity].map { entity =>
+        HttpRequest(POST, uri, entity = entity)
+      }
+      makeRequestSource[Bucket](request)
     }
-    makeRequestSource[Bucket](request)
   }
 
   def createBucket(bucketName: String, location: String)(implicit mat: Materializer, attr: Attributes): Future[Bucket] =
     createBucketSource(bucketName, location).withAttributes(attr).runWith(Sink.head)
 
-  def deleteBucketSource(bucketName: String): Source[Done, NotUsed] = source { settings =>
-    val uri = Uri(baseUrl).withPath(Path(basePath) ++ getBucketPath(bucketName))
+  def deleteBucketSource(bucketName: String): Source[Done, NotUsed] = sourceGCS { settings =>
+    val uri = Uri(settings.endpointUrl).withPath(Path(settings.basePath) ++ getBucketPath(bucketName))
     val request = HttpRequest(DELETE, uri)
     makeRequestSource[Done](request)
   }
@@ -63,19 +65,21 @@ import scala.concurrent.Future
   def deleteBucket(bucketName: String)(implicit mat: Materializer, attr: Attributes): Future[Done] =
     deleteBucketSource(bucketName).withAttributes(attr).runWith(Sink.head)
 
-  def listBucket(bucket: String, prefix: Option[String], versions: Boolean = false): Source[StorageObject, NotUsed] = {
-    val query = ("versions" -> versions.toString) +: ("prefix" -> prefix) ?+: Query.Empty
-    val uri = Uri(baseUrl).withPath(Path(basePath) ++ getBucketPath(bucket) / "o").withQuery(query)
-    val request = HttpRequest(uri = uri)
-    implicit val paginated: Paginated[Option[BucketListResult]] = _.flatMap(_.nextPageToken)
-    PaginatedRequest[Option[BucketListResult]](request).mapConcat(_.fold(List.empty[StorageObject])(_.items))
-  }
+  def listBucket(bucket: String, prefix: Option[String], versions: Boolean = false): Source[StorageObject, NotUsed] =
+    sourceGCS { settings =>
+      val query = ("versions" -> versions.toString) +: ("prefix" -> prefix) ?+: Query.Empty
+      val uri =
+        Uri(settings.endpointUrl).withPath(Path(settings.basePath) ++ getBucketPath(bucket) / "o").withQuery(query)
+      val request = HttpRequest(uri = uri)
+      implicit val paginated: Paginated[Option[BucketListResult]] = _.flatMap(_.nextPageToken)
+      PaginatedRequest[Option[BucketListResult]](request).mapConcat(_.fold(List.empty[StorageObject])(_.items))
+    }
 
   def getObject(bucket: String,
                 objectName: String,
-                generation: Option[Long] = None): Source[Option[StorageObject], NotUsed] = {
-    val uri = Uri(baseUrl)
-      .withPath(Path(basePath) ++ getObjectPath(bucket, objectName))
+                generation: Option[Long] = None): Source[Option[StorageObject], NotUsed] = sourceGCS { settings =>
+    val uri = Uri(settings.endpointUrl)
+      .withPath(Path(settings.basePath) ++ getObjectPath(bucket, objectName))
       .withQuery(Query(generation.map("generation" -> _.toString).toMap))
     val request = HttpRequest(uri = uri)
     makeRequestSource[Option[StorageObject]](request)
@@ -83,9 +87,9 @@ import scala.concurrent.Future
 
   def deleteObjectSource(bucket: String,
                          objectName: String,
-                         generation: Option[Long] = None): Source[Boolean, NotUsed] = {
-    val uri = Uri(baseUrl)
-      .withPath(Path(basePath) ++ getObjectPath(bucket, objectName))
+                         generation: Option[Long] = None): Source[Boolean, NotUsed] = sourceGCS { settings =>
+    val uri = Uri(settings.endpointUrl)
+      .withPath(Path(settings.basePath) ++ getObjectPath(bucket, objectName))
       .withQuery(Query(generation.map("generation" -> _.toString).toMap))
     val request = HttpRequest(DELETE, uri)
     makeRequestSource[Option[Done]](request).map(_.isDefined)
@@ -98,9 +102,9 @@ import scala.concurrent.Future
   def putObject(bucket: String,
                 objectName: String,
                 data: Source[ByteString, _],
-                contentType: ContentType): Source[StorageObject, NotUsed] = {
-    val uri = Uri(baseUrl)
-      .withPath(Path("/upload" + basePath) ++ getBucketPath(bucket) / "o")
+                contentType: ContentType): Source[StorageObject, NotUsed] = sourceGCS { settings =>
+    val uri = Uri(settings.endpointUrl)
+      .withPath(Path("/upload" + settings.basePath) ++ getBucketPath(bucket) / "o")
       .withQuery(Query("uploadType" -> "media", "name" -> objectName))
     val entity = HttpEntity(contentType, data)
     val request = HttpRequest(POST, uri, entity = entity)
@@ -109,15 +113,16 @@ import scala.concurrent.Future
 
   def download(bucket: String,
                objectName: String,
-               generation: Option[Long] = None): Source[Option[Source[ByteString, NotUsed]], NotUsed] = {
-    val query = ("alt" -> "media") +: ("generation" -> generation.map(_.toString)) ?+: Query.Empty
-    val uri = Uri(baseUrl)
-      .withPath(Path(basePath) ++ getObjectPath(bucket, objectName))
-      .withQuery(query)
-    val request = HttpRequest(uri = uri)
-    implicit val um: Unmarshaller[HttpEntity, Source[ByteString, NotUsed]] =
-      Unmarshaller.strict(_.withoutSizeLimit.dataBytes.mapMaterializedValue(_ => NotUsed))
-    makeRequestSource[Option[Source[ByteString, NotUsed]]](request)
+               generation: Option[Long] = None): Source[Option[Source[ByteString, NotUsed]], NotUsed] = sourceGCS {
+    settings =>
+      val query = ("alt" -> "media") +: ("generation" -> generation.map(_.toString)) ?+: Query.Empty
+      val uri = Uri(settings.endpointUrl)
+        .withPath(Path(settings.basePath) ++ getObjectPath(bucket, objectName))
+        .withQuery(query)
+      val request = HttpRequest(uri = uri)
+      implicit val um: Unmarshaller[HttpEntity, Source[ByteString, NotUsed]] =
+        Unmarshaller.strict(_.withoutSizeLimit.dataBytes.mapMaterializedValue(_ => NotUsed))
+      makeRequestSource[Option[Source[ByteString, NotUsed]]](request)
   }
 
   def resumableUpload(bucket: String,
@@ -131,9 +136,10 @@ import scala.concurrent.Future
           val s = resolveSettings(mat, attr)
           s.copy(requestSettings = s.requestSettings.copy(uploadChunkSize = chunkSize))
         }
+        implicit val conf: GCSSettings = resolveGCSSettings(mat, attr)
 
-        val uri = Uri(baseUrl)
-          .withPath(Path("/upload" + basePath) ++ getBucketPath(bucket) / "o")
+        val uri = Uri(conf.endpointUrl)
+          .withPath(Path("/upload" + conf.basePath) ++ getBucketPath(bucket) / "o")
           .withQuery(("uploadType" -> "resumable") +: ("name" -> objectName) +: Query.Empty)
         val headers = List(`X-Upload-Content-Type`(contentType))
         val entity =
@@ -176,10 +182,12 @@ import scala.concurrent.Future
     val sourcePath = getObjectPath(sourceBucket, sourceObjectName)
     val destinationPath = getObjectPath(destinationBucket, destinationObjectName)
 
-    def rewriteRequest(rewriteToken: Option[String]): Source[Option[(RewriteState, RewriteResponse)], NotUsed] = {
+    def rewriteRequest(
+        rewriteToken: Option[String]
+    )(implicit conf: GCSSettings): Source[Option[(RewriteState, RewriteResponse)], NotUsed] = {
       val query = ("rewriteToken" -> rewriteToken) ?+: Query.Empty
-      val uri = Uri(baseUrl)
-        .withPath(Path(basePath) ++ sourcePath / "rewriteTo" ++ destinationPath)
+      val uri = Uri(conf.endpointUrl)
+        .withPath(Path(conf.basePath) ++ sourcePath / "rewriteTo" ++ destinationPath)
         .withQuery(query)
       val entity = HttpEntity.Empty.withoutSizeLimit()
       val request = HttpRequest(POST, uri, entity = entity)
@@ -194,6 +202,7 @@ import scala.concurrent.Future
 
     Source
       .fromMaterializer { (mat, attr) =>
+        implicit val conf: GCSSettings = resolveGCSSettings(mat, attr)
         Source
           .unfoldAsync[RewriteState, RewriteResponse](Starting) {
             case Finished => Future.successful(None)
@@ -272,6 +281,13 @@ import scala.concurrent.Future
       }
       .mapMaterializedValue(_ => NotUsed)
 
+  private def sourceGCS[T](f: GCSSettings => Source[T, NotUsed]): Source[T, NotUsed] =
+    Source
+      .fromMaterializer { (mat, attr) =>
+        f(resolveGCSSettings(mat, attr))
+      }
+      .mapMaterializedValue(_ => NotUsed)
+
   @silent("deprecated")
   private def resolveSettings(mat: Materializer, attr: Attributes) = {
     implicit val sys = mat.system
@@ -321,5 +337,19 @@ import scala.concurrent.Future
         settings.requestSettings
       )
     }
+  }
+
+  private def resolveGCSSettings(mat: Materializer, attr: Attributes): GCSSettings = {
+    implicit val sys = mat.system
+    attr
+      .get[GCSSettingsValue]
+      .map(_.settings)
+      .getOrElse {
+        val gcsExtension = GCSExt(sys)
+        attr
+          .get[GCSSettingsPath]
+          .map(settingsPath => gcsExtension.settings(settingsPath.path))
+          .getOrElse(gcsExtension.settings)
+      }
   }
 }
