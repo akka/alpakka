@@ -85,7 +85,7 @@ private class JmsMessageProducer(jmsProducer: jms.MessageProducer, jmsSession: J
           case v: Float => message.setFloatProperty(key, v)
           case v: Long => message.setLongProperty(key, v)
           case v: Double => message.setDoubleProperty(key, v)
-          case null => throw NullMessageProperty(key, jmsMessage)
+          case null => message.setObjectProperty(key, null)
           case _ => throw UnsupportedMessagePropertyType(key, v, jmsMessage)
         }
     }
@@ -103,7 +103,7 @@ private class JmsMessageProducer(jmsProducer: jms.MessageProducer, jmsSession: J
           case v: Long => message.setLong(key, v)
           case v: Double => message.setDouble(key, v)
           case v: Array[Byte] => message.setBytes(key, v)
-          case null => throw NullMapMessageEntry(key, jmsMessage)
+          case null => message.setObject(key, v)
           case _ => throw UnsupportedMapMessageEntryType(key, v, jmsMessage)
         }
     }
