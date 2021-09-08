@@ -78,19 +78,13 @@ object BigQueryStorage {
           .map { session =>
             SDKClientSource.read(client, session).map { source =>
               source
-                .map(resp => {
-                  if (resp.isArrowRecordBatch) {
+                .mapAsync(1)(resp => {
+                  val bytes = if (resp.isArrowRecordBatch)
                     resp.arrowRecordBatch.get.serializedRecordBatch
-                  } else {
+                  else
                     resp.avroRows.get.serializedBinaryRows
-                  }
+                  um(ByteString(bytes.toByteArray))
                 })
-                .map(_.toByteArray)
-                .map(ByteString.apply)
-                .map(a => um.asScala(a))
-                .mapAsync(parallelism) { a =>
-                  a
-                }
             }
           }
           .map(a => a.reduceOption((a, b) => a.merge(b)))
