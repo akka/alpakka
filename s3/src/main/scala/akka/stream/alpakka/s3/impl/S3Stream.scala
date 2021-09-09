@@ -131,13 +131,23 @@ import scala.util.{Failure, Success, Try}
       }
   }.mapMaterializedValue(_ => NotUsed)
 
-  sealed trait ListBucketState
+  /**
+   * An ADT that represents the current state of pagination
+   */
+  sealed trait S3PaginationState[T]
 
-  case object Starting extends ListBucketState
+  final case class Starting[T]() extends S3PaginationState[T]
 
-  final case class Running(continuationToken: String) extends ListBucketState
+  /**
+   * S3 typically does pagination by the use of a continuation token which is a unique pointer that is
+   * provided upon each page request that when provided for the next request, only retrieves results
+   * **after** that token
+   */
+  final case class Running[T](continuationToken: T) extends S3PaginationState[T]
 
-  case object Finished extends ListBucketState
+  final case class Finished[T]() extends S3PaginationState[T]
+
+  type ListBucketState = S3PaginationState[String]
 
   def listBucketCall[T](
       bucket: String,
@@ -155,7 +165,7 @@ import scala.util.{Failure, Success, Try}
     ).map { (res: ListBucketResult) =>
       Some(
         res.continuationToken
-          .fold[(ListBucketState, T)]((Finished, resultTransformer(res)))(
+          .fold[(ListBucketState, T)]((Finished(), resultTransformer(res)))(
             t => (Running(t), resultTransformer(res))
           )
       )
@@ -174,9 +184,9 @@ import scala.util.{Failure, Success, Try}
         implicit val materializer: Materializer = mat
         implicit val attributes: Attributes = attr
         Source
-          .unfoldAsync[ListBucketState, Seq[ListBucketResultContents]](Starting) {
-            case Finished => Future.successful(None)
-            case Starting => listBucketCallOnlyContents(None)
+          .unfoldAsync[ListBucketState, Seq[ListBucketResultContents]](Starting()) {
+            case Finished() => Future.successful(None)
+            case Starting() => listBucketCallOnlyContents(None)
             case Running(token) => listBucketCallOnlyContents(Some(token))
           }
           .mapConcat(identity)
@@ -204,9 +214,11 @@ import scala.util.{Failure, Success, Try}
         implicit val materializer: Materializer = mat
         implicit val attributes: Attributes = attr
         Source
-          .unfoldAsync[ListBucketState, (Seq[ListBucketResultContents], Seq[ListBucketResultCommonPrefixes])](Starting) {
-            case Finished => Future.successful(None)
-            case Starting => listBucketCallContentsAndCommonPrefixes(None)
+          .unfoldAsync[ListBucketState, (Seq[ListBucketResultContents], Seq[ListBucketResultCommonPrefixes])](
+            Starting()
+          ) {
+            case Finished() => Future.successful(None)
+            case Starting() => listBucketCallContentsAndCommonPrefixes(None)
             case Running(token) => listBucketCallContentsAndCommonPrefixes(Some(token))
           }
       }
