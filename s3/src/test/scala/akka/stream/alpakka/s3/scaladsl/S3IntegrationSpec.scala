@@ -7,7 +7,7 @@ package akka.stream.alpakka.s3.scaladsl
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.http.scaladsl.Http
-import akka.stream.Attributes
+import akka.stream.{Attributes, KillSwitches, SharedKillSwitch}
 import akka.stream.alpakka.s3.AccessStyle.PathAccessStyle
 import akka.stream.alpakka.s3.BucketAccess.{AccessGranted, NotExists}
 import akka.stream.alpakka.s3._
@@ -25,6 +25,8 @@ import software.amazon.awssdk.auth.credentials._
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers._
 
+import scala.annotation.tailrec
+import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -371,6 +373,120 @@ trait S3IntegrationSpec
             .runFold(0)((result, _) => result + 1)
             .futureValue
         numOfKeysForPrefix shouldEqual 0
+    }
+  }
+
+  @tailrec
+  final def createStringCollectionWithMinChunkSizeRec(numberOfChunks: Int,
+                                                      stringAcc: BigInt = BigInt(0),
+                                                      currentChunk: Int = 0,
+                                                      result: Vector[ByteString] = Vector.empty): Vector[ByteString] = {
+
+    if (currentChunk == numberOfChunks)
+      result
+    else {
+      val newAcc = stringAcc + 1
+
+      result.lift(currentChunk) match {
+        case Some(currentString) =>
+          val newString = ByteString(s"\n${newAcc.toString()}")
+          if (currentString.length <= S3.MinChunkSize) {
+            val appendedString = currentString ++ newString
+            createStringCollectionWithMinChunkSizeRec(numberOfChunks,
+                                                      newAcc,
+                                                      currentChunk,
+                                                      result.updated(currentChunk, appendedString))
+          } else {
+            val newChunk = currentChunk + 1
+            val newResult = {
+              // // We are at the last index at this point so don't append a new entry at the end of the Vector
+              if (currentChunk == numberOfChunks - 1)
+                result
+              else
+                result :+ newString
+            }
+            createStringCollectionWithMinChunkSizeRec(numberOfChunks, newAcc, newChunk, newResult)
+          }
+        case None =>
+          // This case happens right at the start
+          val firstResult = Vector(ByteString("1"))
+          createStringCollectionWithMinChunkSizeRec(numberOfChunks, newAcc, currentChunk, firstResult)
+      }
+    }
+  }
+
+  /**
+   * Creates a `List` of `ByteString` where the size of each ByteString is guaranteed to be at least `S3.MinChunkSize`
+   * in size.
+   *
+   * This is useful for tests that deal with multipart uploads, since S3 persists a part everytime it receives
+   * `S3.MinChunkSize` bytes
+   * @param numberOfChunks The number of chunks to create
+   * @return A List of `ByteString` where each element is at least `S3.MinChunkSize` in size
+   */
+  def createStringCollectionWithMinChunkSize(numberOfChunks: Int): List[ByteString] =
+    createStringCollectionWithMinChunkSizeRec(numberOfChunks).toList
+
+  case object AbortException extends Exception("Aborting multipart upload")
+
+  def createSlowSource(data: immutable.Seq[ByteString],
+                       killSwitch: Option[SharedKillSwitch]): Source[ByteString, NotUsed] = {
+    val base = Source(data)
+      .throttle(1, 10.seconds)
+
+    killSwitch.fold(base)(ks => base.viaMat(ks.flow)(Keep.left))
+  }
+
+  def byteStringToMD5(byteString: ByteString): String = {
+    import java.math.BigInteger
+    import java.security.MessageDigest
+
+    val digest = MessageDigest.getInstance("MD5")
+    digest.update(byteString.asByteBuffer)
+    String.format("%032X", new BigInteger(1, digest.digest())).toLowerCase
+  }
+
+  it should "upload 1 file slowly, cancel it and retrieve a multipart upload + list part" in {
+    // This test doesn't work on Minio since minio doesn't properly implement this API, see
+    // https://github.com/minio/minio/issues/13246
+    assume(this.isInstanceOf[AWSS3IntegrationSpec])
+    val sourceKey = "original/file-slow.txt"
+    val sharedKillSwitch = KillSwitches.shared("abort-multipart-upload")
+
+    val inputData = createStringCollectionWithMinChunkSize(5)
+    val slowSource = createSlowSource(inputData, Some(sharedKillSwitch))
+
+    val multiPartUpload =
+      slowSource.toMat(S3.multipartUpload(defaultBucket, sourceKey).withAttributes(attributes))(Keep.right).run
+
+    val results = for {
+      _ <- akka.pattern.after(20.seconds)(Future {
+        sharedKillSwitch.abort(AbortException)
+      })
+      _ <- multiPartUpload.recover {
+        case AbortException => ()
+      }
+      incomplete <- S3.listMultipartUpload(defaultBucket, None).withAttributes(attributes).runWith(Sink.seq)
+      uploadIds = incomplete.collect {
+        case uploadPart if uploadPart.key == sourceKey => uploadPart.uploadId
+      }
+      parts <- Future.sequence(uploadIds.map { uploadId =>
+        S3.listParts(defaultBucket, sourceKey, uploadId).runWith(Sink.seq)
+      })
+    } yield (uploadIds, incomplete, parts.flatten)
+
+    whenReady(results) {
+      case (uploadIds, incompleteFiles, parts) =>
+        val inputsUntilAbort = inputData.slice(0, 3)
+        incompleteFiles.exists(_.key == sourceKey) shouldBe true
+        parts.nonEmpty shouldBe true
+        uploadIds.size shouldBe 1
+        parts.size shouldBe 3
+        parts.map(_.size) shouldBe inputsUntilAbort.map(_.utf8String.getBytes("UTF-8").length)
+        // In S3 the etag's are actually an MD5 hash of the contents of the part so we can use this to check
+        // that the data has been uploaded correctly and in the right order, see
+        // https://docs.aws.amazon.com/AmazonS3/latest/API/RESTCommonResponseHeaders.html
+        parts.map(_.eTag.replaceAll("\"", "")) shouldBe inputsUntilAbort.map(byteStringToMD5)
     }
   }
 

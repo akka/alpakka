@@ -76,6 +76,61 @@ import scala.util.{Failure, Success, Try}
                                                              commonPrefixes: Seq[ListBucketResultCommonPrefixes])
 
 /** Internal Api */
+@InternalApi private[impl] final case class ListMultipartUploadContinuationToken(nextKeyMarker: String,
+                                                                                 nextUploadIdMarker: String)
+
+/** Internal Api */
+@InternalApi private[impl] final case class ListMultipartUploadsResult(
+    bucket: String,
+    keyMarker: Option[String],
+    uploadIdMarker: Option[String],
+    nextKeyMarker: Option[String],
+    nextUploadIdMarker: Option[String],
+    delimiter: Option[String],
+    maxUploads: Int,
+    isTruncated: Boolean,
+    uploads: Seq[ListMultipartUploadResultUploads],
+    commonPrefixes: Seq[ListMultipartUploadResultCommonPrefixes]
+) {
+
+  /**
+   * The continuation token for listing MultipartUpload is a union of both the nextKeyMarker
+   * and the nextUploadIdMarker
+   */
+  def continuationToken: Option[ListMultipartUploadContinuationToken] =
+    for {
+      keyMarker <- nextKeyMarker
+      uploadIdMarker <- nextUploadIdMarker
+    } yield ListMultipartUploadContinuationToken(keyMarker, uploadIdMarker)
+
+}
+
+/** Internal Api */
+@InternalApi private[impl] final case class ListPartsResult(bucket: String,
+                                                            key: String,
+                                                            uploadId: String,
+                                                            partNumberMarker: Option[Int],
+                                                            nextPartNumberMarker: Option[Int],
+                                                            maxParts: Int,
+                                                            isTruncated: Boolean,
+                                                            parts: Seq[ListPartsResultParts],
+                                                            initiator: AWSIdentity,
+                                                            owner: AWSIdentity,
+                                                            storageClass: String) {
+
+  /**
+   * There is an exception for the ListPartsApi when you reach the last page of pagination, typically the
+   * continuationToken (in this case `nextPartNumberMarker`) would be `None`. However specifically for ListPartResult
+   * on the last page the `nextPartNumberMarker` is 0. Ontop of this the `parts` will be empty so we use these
+   * conditions to check if we are on the last page.
+   */
+  def continuationToken: Option[Int] =
+    if (nextPartNumberMarker.contains(0) || parts.isEmpty)
+      None
+    else nextPartNumberMarker
+}
+
+/** Internal Api */
 @InternalApi private[impl] final case class CopyPartResult(lastModified: Instant, eTag: String)
 
 /** Internal Api */
@@ -221,6 +276,140 @@ import scala.util.{Failure, Success, Try}
             case Starting() => listBucketCallContentsAndCommonPrefixes(None)
             case Running(token) => listBucketCallContentsAndCommonPrefixes(Some(token))
           }
+      }
+      .mapMaterializedValue(_ => NotUsed)
+  }
+
+  type ListMultipartUploadState = S3PaginationState[ListMultipartUploadContinuationToken]
+
+  def listMultipartUploadCall[T](
+      bucket: String,
+      prefix: Option[String],
+      delimiter: Option[String],
+      s3Headers: S3Headers,
+      token: Option[ListMultipartUploadContinuationToken],
+      resultTransformer: ListMultipartUploadsResult => T
+  )(implicit mat: Materializer, attr: Attributes): Future[Option[(ListMultipartUploadState, T)]] = {
+    import mat.executionContext
+    implicit val conf: S3Settings = resolveSettings(attr, mat.system)
+
+    signAndGetAs[ListMultipartUploadsResult](
+      HttpRequests.listMultipartUploads(bucket, prefix, token, delimiter, s3Headers.headersFor(ListBucket))
+    ).map { (res: ListMultipartUploadsResult) =>
+      Some(
+        res.continuationToken
+          .fold[(ListMultipartUploadState, T)]((Finished(), resultTransformer(res)))(
+            t => (Running(t), resultTransformer(res))
+          )
+      )
+    }
+  }
+
+  def listMultipartUploadAndCommonPrefixes(
+      bucket: String,
+      delimiter: String,
+      prefix: Option[String] = None,
+      s3Headers: S3Headers
+  ): Source[(immutable.Seq[ListMultipartUploadResultUploads], immutable.Seq[ListMultipartUploadResultCommonPrefixes]),
+            NotUsed] = {
+
+    def listMultipartUploadCallContentsAndCommonPrefixes(
+        token: Option[ListMultipartUploadContinuationToken]
+    )(implicit mat: Materializer, attr: Attributes) =
+      listMultipartUploadCall(bucket,
+                              prefix,
+                              Some(delimiter),
+                              s3Headers,
+                              token,
+                              listBucketResult => (listBucketResult.uploads, listBucketResult.commonPrefixes))
+
+    Source
+      .fromMaterializer { (mat, attr) =>
+        implicit val materializer: Materializer = mat
+        implicit val attributes: Attributes = attr
+        Source
+          .unfoldAsync[ListMultipartUploadState,
+                       (Seq[ListMultipartUploadResultUploads], Seq[ListMultipartUploadResultCommonPrefixes])](
+            Starting()
+          ) {
+            case Finished() => Future.successful(None)
+            case Starting() => listMultipartUploadCallContentsAndCommonPrefixes(None)
+            case Running(token) => listMultipartUploadCallContentsAndCommonPrefixes(Some(token))
+          }
+      }
+      .mapMaterializedValue(_ => NotUsed)
+  }
+
+  def listMultipartUpload(bucket: String,
+                          prefix: Option[String] = None,
+                          s3Headers: S3Headers): Source[ListMultipartUploadResultUploads, NotUsed] = {
+
+    def listMultipartUploadCallOnlyUploads(
+        token: Option[ListMultipartUploadContinuationToken]
+    )(implicit mat: Materializer, attr: Attributes) =
+      listMultipartUploadCall(bucket, prefix, None, s3Headers, token, _.uploads)
+
+    Source
+      .fromMaterializer { (mat, attr) =>
+        implicit val materializer: Materializer = mat
+        implicit val attributes: Attributes = attr
+        Source
+          .unfoldAsync[ListMultipartUploadState, Seq[ListMultipartUploadResultUploads]](Starting()) {
+            case Finished() => Future.successful(None)
+            case Starting() => listMultipartUploadCallOnlyUploads(None)
+            case Running(token) => listMultipartUploadCallOnlyUploads(Some(token))
+          }
+          .mapConcat(identity)
+      }
+      .mapMaterializedValue(_ => NotUsed)
+  }
+
+  type ListPartsState = S3PaginationState[Int]
+
+  def listPartsCall[T](
+      bucket: String,
+      key: String,
+      uploadId: String,
+      s3Headers: S3Headers,
+      token: Option[Int],
+      resultTransformer: ListPartsResult => T
+  )(implicit mat: Materializer, attr: Attributes): Future[Option[(ListPartsState, T)]] = {
+    import mat.executionContext
+    implicit val conf: S3Settings = resolveSettings(attr, mat.system)
+
+    signAndGetAs[ListPartsResult](
+      HttpRequests.listParts(bucket, key, uploadId, token, s3Headers.headersFor(ListBucket))
+    ).map { (res: ListPartsResult) =>
+      Some(
+        res.continuationToken
+          .fold[(ListPartsState, T)]((Finished(), resultTransformer(res)))(
+            t => (Running(t), resultTransformer(res))
+          )
+      )
+    }
+  }
+
+  def listParts(bucket: String,
+                key: String,
+                uploadId: String,
+                s3Headers: S3Headers): Source[ListPartsResultParts, NotUsed] = {
+
+    def listMultipartUploadCallOnlyUploads(
+        token: Option[Int]
+    )(implicit mat: Materializer, attr: Attributes) =
+      listPartsCall(bucket, key, uploadId, s3Headers, token, _.parts)
+
+    Source
+      .fromMaterializer { (mat, attr) =>
+        implicit val materializer: Materializer = mat
+        implicit val attributes: Attributes = attr
+        Source
+          .unfoldAsync[ListPartsState, Seq[ListPartsResultParts]](Starting()) {
+            case Finished() => Future.successful(None)
+            case Starting() => listMultipartUploadCallOnlyUploads(None)
+            case Running(token) => listMultipartUploadCallOnlyUploads(Some(token))
+          }
+          .mapConcat(identity)
       }
       .mapMaterializedValue(_ => NotUsed)
   }

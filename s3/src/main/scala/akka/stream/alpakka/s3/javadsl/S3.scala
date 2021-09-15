@@ -530,6 +530,77 @@ object S3 {
       .asJava
 
   /**
+   * Will return in progress or aborted multipart uploads. This will automatically page through all keys with the given parameters.
+   *
+   * @param bucket Which bucket that you list in-progress multipart uploads for
+   * @param prefix Prefix of the keys you want to list under passed bucket
+   * @return [[akka.stream.scaladsl.Source Source]] of [[ListMultipartUploadResultUploads]]
+   */
+  def listMultipartUpload(bucket: String, prefix: Optional[String]): Source[ListMultipartUploadResultUploads, NotUsed] =
+    listMultipartUpload(bucket, prefix, S3Headers.empty)
+
+  /**
+   * Will return in progress or aborted multipart uploads. This will automatically page through all keys with the given parameters.
+   *
+   * @param bucket Which bucket that you list in-progress multipart uploads for
+   * @param prefix Prefix of the keys you want to list under passed bucket
+   * @param s3Headers any headers you want to add
+   * @return [[akka.stream.scaladsl.Source Source]] of [[ListMultipartUploadResultUploads]]
+   */
+  def listMultipartUpload(bucket: String,
+                          prefix: Optional[String],
+                          s3Headers: S3Headers): Source[ListMultipartUploadResultUploads, NotUsed] =
+    scaladsl.S3.listMultipartUpload(bucket, prefix.asScala, s3Headers).asJava
+
+  /**
+   * Will return in progress or aborted multipart uploads with optional prefix. This will automatically page through all keys with the given parameters.
+   *
+   * @param bucket Which bucket that you list in-progress multipart uploads for
+   * @param prefix Prefix of the keys you want to list under passed bucket
+   * @param s3Headers any headers you want to add
+   * @return [[akka.stream.scaladsl.Source Source]] of ([[scala.collection.Seq Seq]] of [[akka.stream.alpakka.s3.ListMultipartUploadResultUploads ListMultipartUploadResultUploads]], [[scala.collection.Seq Seq]] of [[akka.stream.alpakka.s3.ListMultipartUploadResultCommonPrefixes ListMultipartUploadResultCommonPrefixes]])
+   */
+  def listMultipartUploadAndCommonPrefixes(
+      bucket: String,
+      delimiter: String,
+      prefix: Optional[String],
+      s3Headers: S3Headers = S3Headers.empty
+  ): Source[akka.japi.Pair[java.util.List[ListMultipartUploadResultUploads],
+                           java.util.List[ListMultipartUploadResultCommonPrefixes]], NotUsed] =
+    S3Stream
+      .listMultipartUploadAndCommonPrefixes(bucket, delimiter, prefix.asScala, s3Headers)
+      .map {
+        case (uploads, commonPrefixes) => akka.japi.Pair(uploads.asJava, commonPrefixes.asJava)
+      }
+      .asJava
+
+  /**
+   * List uploaded parts for a specific upload. This will automatically page through all keys with the given parameters.
+   *
+   * @param bucket Under which bucket the upload parts are contained
+   * @param key They key where the parts were uploaded to
+   * @param uploadId Unique identifier of the upload for which you want to list the uploaded parts
+   * @return [[akka.stream.scaladsl.Source Source]] of [[ListPartsResultParts]]
+   */
+  def listParts(bucket: String, key: String, uploadId: String): Source[ListPartsResultParts, NotUsed] =
+    listParts(bucket, key, uploadId, S3Headers.empty)
+
+  /**
+   * List uploaded parts for a specific upload. This will automatically page through all keys with the given parameters.
+   *
+   * @param bucket Under which bucket the upload parts are contained
+   * @param key They key where the parts were uploaded to
+   * @param uploadId Unique identifier of the upload for which you want to list the uploaded parts
+   * @param s3Headers any headers you want to add
+   * @return [[akka.stream.scaladsl.Source Source]] of [[ListPartsResultParts]]
+   */
+  def listParts(bucket: String,
+                key: String,
+                uploadId: String,
+                s3Headers: S3Headers): Source[ListPartsResultParts, NotUsed] =
+    scaladsl.S3.listParts(bucket, key, uploadId, s3Headers).asJava
+
+  /**
    * Uploads a S3 Object by making multiple requests
    *
    * @param bucket the s3 bucket name
