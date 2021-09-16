@@ -126,6 +126,23 @@ import scala.concurrent.{ExecutionContext, Future}
     s3Request(s3Location = s3Location, method = method)
       .withDefaultHeaders(headers)
 
+  def uploadManagementRequest(
+      s3Location: S3Location,
+      uploadId: String,
+      method: HttpMethod,
+      headers: Seq[HttpHeader] = Seq.empty[HttpHeader]
+  )(implicit conf: S3Settings): HttpRequest =
+    s3Request(s3Location,
+              method,
+              _.withQuery(
+                Query(
+                  Map(
+                    "uploadId" -> uploadId
+                  )
+                )
+              ))
+      .withDefaultHeaders(headers)
+
   def uploadRequest(s3Location: S3Location,
                     payload: Source[ByteString, _],
                     contentLength: Long,

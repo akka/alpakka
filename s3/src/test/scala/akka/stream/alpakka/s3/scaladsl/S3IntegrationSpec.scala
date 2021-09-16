@@ -460,7 +460,7 @@ trait S3IntegrationSpec
       slowSource.toMat(S3.multipartUpload(defaultBucket, sourceKey).withAttributes(attributes))(Keep.right).run
 
     val results = for {
-      _ <- akka.pattern.after(20.seconds)(Future {
+      _ <- akka.pattern.after(25.seconds)(Future {
         sharedKillSwitch.abort(AbortException)
       })
       _ <- multiPartUpload.recover {
@@ -472,6 +472,10 @@ trait S3IntegrationSpec
       }
       parts <- Future.sequence(uploadIds.map { uploadId =>
         S3.listParts(defaultBucket, sourceKey, uploadId).runWith(Sink.seq)
+      })
+      // Cleanup the uploads after
+      _ <- Future.sequence(uploadIds.map { uploadId =>
+        S3.deleteUpload(defaultBucket, sourceKey, uploadId)
       })
     } yield (uploadIds, incomplete, parts.flatten)
 

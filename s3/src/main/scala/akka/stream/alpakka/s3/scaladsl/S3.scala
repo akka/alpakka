@@ -571,4 +571,67 @@ object S3 {
    */
   def checkIfBucketExistsSource(bucketName: String, s3Headers: S3Headers): Source[BucketAccess, NotUsed] =
     S3Stream.checkIfBucketExistsSource(bucketName, s3Headers)
+
+  /**
+   * Delete all existing parts for a specific upload id
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_AbortMultipartUpload.html
+   *
+   * @param bucketName Which bucket the upload is inside
+   * @param key The key for the upload
+   * @param uploadId Unique identifier of the upload
+   * @return [[scala.concurrent.Future Future]] of type [[Done]] as API doesn't return any additional information
+   */
+  def deleteUpload(bucketName: String, key: String, uploadId: String)(
+      implicit system: ClassicActorSystemProvider,
+      attributes: Attributes = Attributes()
+  ): Future[Done] =
+    deleteUpload(bucketName, key, uploadId, S3Headers.empty)
+
+  /**
+   * Delete all existing parts for a specific upload
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_AbortMultipartUpload.html
+   * @param bucketName Which bucket the upload is inside
+   * @param key The key for the upload
+   * @param uploadId Unique identifier of the upload
+   * @param s3Headers any headers you want to add
+   * @return [[scala.concurrent.Future Future]] of type [[Done]] as API doesn't return any additional information
+   */
+  def deleteUpload(
+      bucketName: String,
+      key: String,
+      uploadId: String,
+      s3Headers: S3Headers
+  )(implicit system: ClassicActorSystemProvider, attributes: Attributes): Future[Done] =
+    S3Stream.deleteUpload(bucketName, key, uploadId, s3Headers)
+
+  /**
+   * Delete all existing parts for a specific upload
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_AbortMultipartUpload.html
+   * @param bucketName Which bucket the upload is inside
+   * @param key The key for the upload
+   * @param uploadId Unique identifier of the upload
+   * @return [[akka.stream.scaladsl.Source Source]] of type [[Done]] as API doesn't return any additional information
+   */
+  def deleteUploadSource(bucketName: String, key: String, uploadId: String): Source[Done, NotUsed] =
+    deleteUploadSource(bucketName, key, uploadId, S3Headers.empty)
+
+  /**
+   * Delete all existing parts for a specific upload
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_AbortMultipartUpload.html
+   *
+   * @param bucketName Which bucket the upload is inside
+   * @param key The key for the upload
+   * @param uploadId Unique identifier of the upload
+   * @param s3Headers any headers you want to add
+   * @return [[akka.stream.scaladsl.Source Source]] of type [[Done]] as API doesn't return any additional information
+   */
+  def deleteUploadSource(bucketName: String,
+                         key: String,
+                         uploadId: String,
+                         s3Headers: S3Headers): Source[Done, NotUsed] =
+    S3Stream.deleteUploadSource(bucketName, key, uploadId, s3Headers)
 }
