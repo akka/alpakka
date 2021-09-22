@@ -642,6 +642,72 @@ object S3 {
     multipartUpload(bucket, key, ContentTypes.APPLICATION_OCTET_STREAM)
 
   /**
+   * Uploads a S3 Object by making multiple requests
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param uploadId the upload that you want to resume
+   * @param previousParts The previously uploaded parts ending just before when this upload will commence
+   * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
+   * @param s3Headers any headers you want to add
+   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
+   */
+  def resumeMultipartUpload(bucket: String,
+                            key: String,
+                            uploadId: String,
+                            previousParts: java.lang.Iterable[Part],
+                            contentType: ContentType,
+                            s3Headers: S3Headers): Sink[ByteString, CompletionStage[MultipartUploadResult]] = {
+    S3Stream
+      .resumeMultipartUpload(S3Location(bucket, key),
+                             uploadId,
+                             previousParts.asScala.toList,
+                             contentType.asInstanceOf[ScalaContentType],
+                             s3Headers)
+      .mapMaterializedValue(_.toJava)
+      .asJava
+  }
+
+  /**
+   * Uploads a S3 Object by making multiple requests
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param uploadId the upload that you want to resume
+   * @param previousParts The previously uploaded parts ending just before when this upload will commence
+   * @param contentType an optional [[akka.http.javadsl.model.ContentType ContentType]]
+   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
+   */
+  def resumeMultipartUpload(bucket: String,
+                            key: String,
+                            uploadId: String,
+                            previousParts: java.lang.Iterable[Part],
+                            contentType: ContentType): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+    resumeMultipartUpload(bucket,
+                          key,
+                          uploadId,
+                          previousParts,
+                          contentType,
+                          S3Headers.empty.withCannedAcl(CannedAcl.Private))
+
+  /**
+   * Uploads a S3 Object by making multiple requests
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param uploadId the upload that you want to resume
+   * @param previousParts The previously uploaded parts ending just before when this upload will commence
+   * @return a [[akka.stream.javadsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[java.util.concurrent.CompletionStage CompletionStage]] of [[MultipartUploadResult]]
+   */
+  def resumeMultipartUpload(
+      bucket: String,
+      key: String,
+      uploadId: String,
+      previousParts: java.lang.Iterable[Part]
+  ): Sink[ByteString, CompletionStage[MultipartUploadResult]] =
+    resumeMultipartUpload(bucket, key, uploadId, previousParts, ContentTypes.APPLICATION_OCTET_STREAM)
+
+  /**
    * Copy a S3 Object by making multiple requests.
    *
    * @param sourceBucket the source s3 bucket name

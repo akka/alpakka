@@ -14,6 +14,7 @@ import akka.stream.scaladsl.{RunnableGraph, Sink, Source}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
 
+import scala.collection.immutable
 import scala.concurrent.Future
 
 /**
@@ -382,6 +383,78 @@ object S3 {
     S3Stream
       .multipartUpload(
         S3Location(bucket, key),
+        contentType,
+        s3Headers,
+        chunkSize,
+        chunkingParallelism
+      )
+
+  /**
+   * Resumes from a previously aborted multipart upload by providing the uploadId and previous upload part identifiers
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param uploadId the upload that you want to resume
+   * @param previousParts The previously uploaded parts ending just before when this upload will commence
+   * @param contentType an optional [[akka.http.scaladsl.model.ContentType ContentType]]
+   * @param metaHeaders any meta-headers you want to add
+   * @param cannedAcl a [[CannedAcl]], defaults to [[CannedAcl.Private]]
+   * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
+   * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
+   * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts [[ByteString]]'s and materializes to a [[scala.concurrent.Future Future]] of [[MultipartUploadResult]]
+   */
+  def resumeMultipartUpload(
+      bucket: String,
+      key: String,
+      uploadId: String,
+      previousParts: immutable.Iterable[Part],
+      contentType: ContentType = ContentTypes.`application/octet-stream`,
+      metaHeaders: MetaHeaders = MetaHeaders(Map()),
+      cannedAcl: CannedAcl = CannedAcl.Private,
+      chunkSize: Int = MinChunkSize,
+      chunkingParallelism: Int = 4,
+      sse: Option[ServerSideEncryption] = None
+  ): Sink[ByteString, Future[MultipartUploadResult]] = {
+    val headers =
+      S3Headers.empty.withCannedAcl(cannedAcl).withMetaHeaders(metaHeaders).withOptionalServerSideEncryption(sse)
+    resumeMultipartUploadWithHeaders(bucket,
+                                     key,
+                                     uploadId,
+                                     previousParts,
+                                     contentType,
+                                     chunkSize,
+                                     chunkingParallelism,
+                                     headers)
+  }
+
+  /**
+   * Resumes from a previously aborted multipart upload by providing the uploadId and previous upload part identifiers
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param uploadId the upload that you want to resume
+   * @param previousParts The previously uploaded parts ending just before when this upload will commence
+   * @param contentType an optional [[akka.http.scaladsl.model.ContentType ContentType]]
+   * @param chunkSize the size of the requests sent to S3, minimum [[MinChunkSize]]
+   * @param chunkingParallelism the number of parallel requests used for the upload, defaults to 4
+   * @param s3Headers any headers you want to add
+   * @return a [[akka.stream.scaladsl.Sink Sink]] that accepts [[akka.util.ByteString ByteString]]'s and materializes to a [[scala.concurrent.Future Future]] of [[MultipartUploadResult]]
+   */
+  def resumeMultipartUploadWithHeaders(
+      bucket: String,
+      key: String,
+      uploadId: String,
+      previousParts: immutable.Iterable[Part],
+      contentType: ContentType = ContentTypes.`application/octet-stream`,
+      chunkSize: Int = MinChunkSize,
+      chunkingParallelism: Int = 4,
+      s3Headers: S3Headers = S3Headers.empty
+  ): Sink[ByteString, Future[MultipartUploadResult]] =
+    S3Stream
+      .resumeMultipartUpload(
+        S3Location(bucket, key),
+        uploadId,
+        previousParts,
         contentType,
         s3Headers,
         chunkSize,

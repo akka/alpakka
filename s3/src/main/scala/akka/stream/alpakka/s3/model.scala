@@ -343,6 +343,8 @@ final class ListPartsResultParts(val lastModified: Instant, val eTag: String, va
 
   override def hashCode(): Int =
     Objects.hash(lastModified, eTag, Int.box(partNumber), Long.box(size))
+
+  def toPart: Part = Part(eTag, partNumber)
 }
 
 object ListPartsResultParts {
@@ -354,6 +356,47 @@ object ListPartsResultParts {
   /** Java API */
   def create(lastModified: Instant, eTag: String, partNumber: Int, size: Long): ListPartsResultParts =
     apply(lastModified, eTag, partNumber, size)
+}
+
+final class Part(val eTag: String, val partNumber: Int) {
+
+  /** Java API */
+  def getETag: String = eTag
+
+  /** Java API */
+  def getPartNumber: Int = partNumber
+
+  def withETag(value: String): Part = copy(eTag = value)
+
+  def withPartNumber(value: Int): Part = copy(partNumber = value)
+
+  private def copy(eTag: String = eTag, partNumber: Int = partNumber): Part = new Part(eTag, partNumber)
+
+  override def toString: String =
+    "Part(" +
+    s"eTag=$eTag," +
+    s"partNumber=$partNumber" +
+    ")"
+
+  override def equals(other: Any): Boolean =
+    other match {
+      case that: Part =>
+        Objects.equals(this.eTag, that.eTag) &&
+        Objects.equals(this.partNumber, that.partNumber)
+    }
+
+  override def hashCode(): Int =
+    Objects.hash(this.eTag, Int.box(this.partNumber))
+
+}
+
+object Part {
+
+  /** Scala API */
+  def apply(eTag: String, partNumber: Int): Part = new Part(eTag, partNumber)
+
+  /** Java API */
+  def create(eTag: String, partNumber: Int): Part = new Part(eTag, partNumber)
 }
 
 /**

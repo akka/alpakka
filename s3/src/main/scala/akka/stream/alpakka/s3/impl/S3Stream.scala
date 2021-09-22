@@ -670,6 +670,26 @@ import scala.util.{Failure, Success, Try}
     chunkAndRequest(s3Location, contentType, s3Headers, chunkSize)(chunkingParallelism)
       .toMat(completionSink(s3Location, s3Headers.serverSideEncryption))(Keep.right)
 
+  /**
+   * Resumes a previously created a multipart upload by uploading a stream of ByteStrings to a specified location
+   * and uploadId
+   */
+  def resumeMultipartUpload(s3Location: S3Location,
+                            uploadId: String,
+                            previousParts: immutable.Iterable[Part],
+                            contentType: ContentType = ContentTypes.`application/octet-stream`,
+                            s3Headers: S3Headers,
+                            chunkSize: Int = MinChunkSize,
+                            chunkingParallelism: Int = 4): Sink[ByteString, Future[MultipartUploadResult]] = {
+    val initialUpload = Some((uploadId, previousParts.size + 1))
+    val successfulParts = previousParts.map { part =>
+      SuccessfulUploadPart(MultipartUpload(s3Location, uploadId), part.partNumber, part.eTag)
+    }
+    chunkAndRequest(s3Location, contentType, s3Headers, chunkSize, initialUpload)(chunkingParallelism)
+      .prepend(Source(successfulParts))
+      .toMat(completionSink(s3Location, s3Headers.serverSideEncryption))(Keep.right)
+  }
+
   private def initiateMultipartUpload(s3Location: S3Location,
                                       contentType: ContentType,
                                       s3Headers: Seq[HttpHeader]): Source[MultipartUpload, NotUsed] =
@@ -821,7 +841,8 @@ import scala.util.{Failure, Success, Try}
       s3Location: S3Location,
       contentType: ContentType,
       s3Headers: S3Headers,
-      chunkSize: Int
+      chunkSize: Int,
+      initialUploadState: Option[(String, Int)] = None
   )(parallelism: Int): Flow[ByteString, UploadPartResponse, NotUsed] = {
 
     def getChunkBuffer(chunkSize: Int, bufferSize: Int, maxRetriesPerChunk: Int)(implicit settings: S3Settings) =
@@ -846,10 +867,20 @@ import scala.util.{Failure, Success, Try}
 
     val chunkBufferSize = chunkSize * 2
 
-    // First step of the multi part upload process is made.
-    //  The response is then used to construct the subsequent individual upload part requests
-    val requestInfo: Source[(MultipartUpload, Int), NotUsed] =
-      initiateUpload(s3Location, contentType, s3Headers.headersFor(InitiateMultipartUpload))
+    val requestInfoOrInitialUploadState = initialUploadState match {
+      case Some((uploadId, initialIndex)) =>
+        // We are resuming from a previously aborted Multipart upload so rather than creating a new MultipartUpload
+        // resource we just need to set up the initial state
+        Source
+          .single(s3Location)
+          .flatMapConcat(_ => Source.single(MultipartUpload(s3Location, uploadId)))
+          .mapConcat(r => Stream.continually(r))
+          .zip(Source.fromIterator(() => Iterator.from(initialIndex)))
+      case None =>
+        // First step of the multi part upload process is made.
+        //  The response is then used to construct the subsequent individual upload part requests
+        initiateUpload(s3Location, contentType, s3Headers.headersFor(InitiateMultipartUpload))
+    }
 
     val headers = s3Headers.serverSideEncryption.toIndexedSeq.flatMap(_.headersFor(UploadPart))
 
@@ -891,7 +922,7 @@ import scala.util.{Failure, Success, Try}
           .mergeSubstreamsWithParallelism(parallelism)
           .filter(_.size > 0)
           .via(atLeastOne)
-          .zip(requestInfo)
+          .zip(requestInfoOrInitialUploadState)
           .groupBy(parallelism, { case (_, (_, chunkIndex)) => chunkIndex % parallelism })
           // Allow requests that fail with transient errors to be retried, using the already buffered chunk.
           .via(RetryFlow.withBackoff(minBackoff, maxBackoff, randomFactor, maxRetries, retriableFlow) {
