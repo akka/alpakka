@@ -708,6 +708,47 @@ object S3 {
     resumeMultipartUpload(bucket, key, uploadId, previousParts, ContentTypes.APPLICATION_OCTET_STREAM)
 
   /**
+   * Complete a multipart upload with an already given list of parts
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CompleteMultipartUpload.html
+   * @param bucket bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param uploadId the upload that you want to complete
+   * @param parts A list of all of the parts for the multipart upload
+   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[MultipartUploadResult]]
+   */
+  def completeMultipartUpload(bucket: String, key: String, uploadId: String, parts: java.lang.Iterable[Part])(
+      implicit system: ClassicActorSystemProvider,
+      attributes: Attributes = Attributes()
+  ): CompletionStage[MultipartUploadResult] =
+    completeMultipartUpload(bucket, key, uploadId, parts, S3Headers.empty)
+
+  /**
+   * Complete a multipart upload with an already given list of parts
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CompleteMultipartUpload.html
+   * @param bucket bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param uploadId the upload that you want to complete
+   * @param parts A list of all of the parts for the multipart upload
+   * @param s3Headers any headers you want to add
+   * @return [[java.util.concurrent.CompletionStage CompletionStage]] of type [[MultipartUploadResult]]
+   */
+  def completeMultipartUpload(
+      bucket: String,
+      key: String,
+      uploadId: String,
+      parts: java.lang.Iterable[Part],
+      s3Headers: S3Headers
+  )(implicit system: ClassicActorSystemProvider, attributes: Attributes): CompletionStage[MultipartUploadResult] =
+    S3Stream
+      .completeMultipartUpload(S3Location(bucket, key), uploadId, parts.asScala.toList, s3Headers)(
+        SystemMaterializer(system).materializer,
+        attributes
+      )
+      .toJava
+
+  /**
    * Copy a S3 Object by making multiple requests.
    *
    * @param sourceBucket the source s3 bucket name

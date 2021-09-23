@@ -559,6 +559,59 @@ trait S3IntegrationSpec
     }
   }
 
+  it should "upload a full file but complete it manually with S3.completeMultipartUploadSource" in {
+    assume(this.isInstanceOf[AWSS3IntegrationSpec])
+    val sourceKey = "original/file-slow-3.txt"
+    val sharedKillSwitch = KillSwitches.shared("abort-multipart-upload-3")
+
+    val inputData = createStringCollectionWithMinChunkSize(4)
+
+    val slowSource = createSlowSource(inputData, Some(sharedKillSwitch))
+
+    val multiPartUpload =
+      slowSource
+        .toMat(S3.multipartUpload(defaultBucket, sourceKey).withAttributes(attributes))(
+          Keep.right
+        )
+        .run
+
+    val results = for {
+      _ <- akka.pattern.after(25.seconds)(Future {
+        sharedKillSwitch.abort(AbortException)
+      })
+      _ <- multiPartUpload.recover {
+        case AbortException => ()
+      }
+      incomplete <- S3.listMultipartUpload(defaultBucket, None).withAttributes(attributes).runWith(Sink.seq)
+
+      uploadId = incomplete.collectFirst {
+        case uploadPart if uploadPart.key == sourceKey => uploadPart.uploadId
+      }.get
+
+      parts <- S3.listParts(defaultBucket, sourceKey, uploadId).runWith(Sink.seq)
+
+      _ <- S3.completeMultipartUpload(defaultBucket, sourceKey, uploadId, parts.map(_.toPart))
+      // This delay is here because sometimes there is a delay when you complete a large file and its
+      // actually downloadable
+      downloaded <- akka.pattern.after(5.seconds)(
+        S3.download(defaultBucket, sourceKey).withAttributes(attributes).runWith(Sink.head).flatMap {
+          case Some((downloadSource, _)) =>
+            downloadSource
+              .runWith(Sink.seq)
+          case None => throw new Exception(s"Expected object in bucket $defaultBucket with key $sourceKey")
+        }
+      )
+      _ <- S3.deleteObject(defaultBucket, sourceKey).withAttributes(attributes).runWith(Sink.head)
+    } yield downloaded
+
+    whenReady(results) { downloads =>
+      val fullDownloadedFile = downloads.fold(ByteString.empty)(_ ++ _)
+      val fullInputData = inputData.slice(0, 3).fold(ByteString.empty)(_ ++ _)
+
+      fullInputData.utf8String shouldEqual fullDownloadedFile.utf8String
+    }
+  }
+
   it should "make a bucket with given name" in {
     implicit val attr: Attributes = attributes
     val bucketName = "samplebucket1"

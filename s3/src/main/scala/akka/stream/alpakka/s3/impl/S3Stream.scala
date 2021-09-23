@@ -690,6 +690,20 @@ import scala.util.{Failure, Success, Try}
       .toMat(completionSink(s3Location, s3Headers.serverSideEncryption))(Keep.right)
   }
 
+  def completeMultipartUpload(
+      s3Location: S3Location,
+      uploadId: String,
+      parts: immutable.Iterable[Part],
+      s3Headers: S3Headers
+  )(implicit mat: Materializer, attr: Attributes): Future[MultipartUploadResult] = {
+    val successfulParts = parts.map { part =>
+      SuccessfulUploadPart(MultipartUpload(s3Location, uploadId), part.partNumber, part.eTag)
+    }
+    Source(successfulParts)
+      .toMat(completionSink(s3Location, s3Headers.serverSideEncryption).withAttributes(attr))(Keep.right)
+      .run()
+  }
+
   private def initiateMultipartUpload(s3Location: S3Location,
                                       contentType: ContentType,
                                       s3Headers: Seq[HttpHeader]): Source[MultipartUpload, NotUsed] =

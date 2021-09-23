@@ -462,6 +462,46 @@ object S3 {
       )
 
   /**
+   * Complete a multipart upload with an already given list of parts
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CompleteMultipartUpload.html
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param uploadId the upload that you want to complete
+   * @param parts A list of all of the parts for the multipart upload
+   *
+   * @return [[scala.concurrent.Future Future]] of type [[MultipartUploadResult]]
+   */
+  def completeMultipartUpload(bucket: String, key: String, uploadId: String, parts: immutable.Iterable[Part])(
+      implicit system: ClassicActorSystemProvider,
+      attributes: Attributes = Attributes()
+  ): Future[MultipartUploadResult] =
+    S3Stream.completeMultipartUpload(S3Location(bucket, key), uploadId, parts, S3Headers.empty)
+
+  /**
+   * Complete a multipart upload with an already given list of parts
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CompleteMultipartUpload.html
+   *
+   * @param bucket the s3 bucket name
+   * @param key the s3 object key
+   * @param uploadId the upload that you want to complete
+   * @param parts A list of all of the parts for the multipart upload
+   * @param s3Headers any headers you want to add
+   *
+   * @return [[scala.concurrent.Future Future]] of type [[MultipartUploadResult]]
+   */
+  def completeMultipartUpload(
+      bucket: String,
+      key: String,
+      uploadId: String,
+      parts: immutable.Iterable[Part],
+      s3Headers: S3Headers
+  )(implicit system: ClassicActorSystemProvider, attributes: Attributes): Future[MultipartUploadResult] =
+    S3Stream.completeMultipartUpload(S3Location(bucket, key), uploadId, parts, s3Headers)
+
+  /**
    * Copy an S3 object from source bucket to target bucket using multi part copy upload.
    *
    * @param sourceBucket source s3 bucket name
