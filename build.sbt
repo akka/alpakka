@@ -1,5 +1,3 @@
-import Whitesource.whitesourceGroup
-
 lazy val alpakka = project
   .in(file("."))
   .enablePlugins(ScalaUnidocPlugin)
@@ -124,9 +122,9 @@ lazy val cassandra =
   alpakkaProject("cassandra", "cassandra", Dependencies.Cassandra)
 
 lazy val couchbase =
-  alpakkaProject("couchbase", "couchbase", Dependencies.Couchbase, whitesourceGroup := Whitesource.Group.Supported)
+  alpakkaProject("couchbase", "couchbase", Dependencies.Couchbase)
 
-lazy val csv = alpakkaProject("csv", "csv", whitesourceGroup := Whitesource.Group.Supported)
+lazy val csv = alpakkaProject("csv", "csv")
 
 lazy val csvBench = internalProject("csv-bench")
   .dependsOn(csv)
@@ -307,7 +305,6 @@ lazy val docs = project
   .settings(
     Compile / paradox / name := "Alpakka",
     publish / skip := true,
-    whitesourceIgnore := true,
     makeSite := makeSite.dependsOn(LocalRootProject / ScalaUnidoc / doc).value,
     previewPath := (Paradox / siteSubdirName).value,
     Preprocess / siteSubdirName := s"api/alpakka/${projectInfoVersion.value}",
@@ -390,22 +387,12 @@ lazy val docs = project
 
 lazy val testkit = internalProject("testkit", Dependencies.testkit)
 
-lazy val whitesourceSupported = project
-  .in(file("tmp"))
-  .settings(whitesourceGroup := Whitesource.Group.Supported)
-  .aggregate(
-    cassandra,
-    couchbase,
-    csv
-  )
-
 lazy val `doc-examples` = project
   .enablePlugins(AutomateHeaderPlugin)
   .disablePlugins(MimaPlugin, SitePlugin)
   .settings(
     name := s"akka-stream-alpakka-doc-examples",
     publish / skip := true,
-    whitesourceIgnore := true,
     // More projects are not available for Scala 2.13
     crossScalaVersions -= Dependencies.Scala213,
     Dependencies.`Doc-examples`,

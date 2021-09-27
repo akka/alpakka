@@ -120,6 +120,5 @@ Example:
 1. [Travis CI](https://travis-ci.com/akka/alpakka) automatically merges the code, builds it, runs the tests and sets Pull Request status accordingly of results in GitHub.
 1. [Scalafmt](http://scalameta.org/scalafmt/) enforces some of the code style rules.
 1. [sbt-header plugin](https://github.com/sbt/sbt-header) manages consistent copyright headers in every source file.
-1. The [sbt-whitesourece plugin](https://github.com/lightbend/sbt-whitesource) checks licensing models of all (transitive) dependencies. 
 1. A GitHub bot checks whether you've signed the Lightbend CLA. 
 1. Enabling `fatalWarnings := true` for all projects.
