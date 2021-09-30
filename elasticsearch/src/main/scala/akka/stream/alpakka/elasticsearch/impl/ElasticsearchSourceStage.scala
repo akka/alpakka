@@ -169,6 +169,9 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
                   .invoke(new RuntimeException(s"Request failed for POST $uri, got $status with body: $body"))
               }
           }
+          .recover {
+            case cause: Throwable => failureHandler.invoke(cause)
+          }
       } else {
         log.debug("Fetching next scroll")
 
@@ -197,6 +200,9 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
                 failureHandler
                   .invoke(new RuntimeException(s"Request failed for POST $uri, got $status with body: $body"))
               }
+          }
+          .recover {
+            case cause: Throwable => failureHandler.invoke(cause)
           }
       }
     } catch {
@@ -316,6 +322,9 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
               clearScrollAsyncHandler
                 .invoke(Failure(new RuntimeException(s"Request failed for POST $uri, got $status with body: $body")))
             }
+        }
+        .recover {
+          case cause: Throwable => failureHandler.invoke(cause)
         }
     }
   }
