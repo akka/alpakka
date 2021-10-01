@@ -158,7 +158,7 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
             request,
             settings.connection
           )
-          .map {
+          .flatMap {
             case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
               Unmarshal(responseEntity)
                 .to[String]
@@ -190,16 +190,19 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
             request,
             settings.connection
           )
-          .map {
+          .flatMap {
             case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
               Unmarshal(responseEntity)
                 .to[String]
                 .map(json => responseHandler.invoke(json))
             case HttpResponse(status, _, responseEntity, _) =>
-              Unmarshal(responseEntity).to[String].map { body =>
-                failureHandler
-                  .invoke(new RuntimeException(s"Request failed for POST $uri, got $status with body: $body"))
-              }
+              Unmarshal(responseEntity)
+                .to[String]
+                .map { body =>
+                  failureHandler.invoke(
+                    new RuntimeException(s"Request failed for POST $uri, got $status with body: $body")
+                  )
+                }
           }
           .recover {
             case cause: Throwable => failureHandler.invoke(cause)
@@ -310,7 +313,7 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
 
       ElasticsearchApi
         .executeRequest(request, settings.connection)
-        .map {
+        .flatMap {
           case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
             Unmarshal(responseEntity)
               .to[String]
