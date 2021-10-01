@@ -14,4 +14,15 @@ private[s3] object Utils {
     val tail = if (trimmed.startsWith("\"")) trimmed.drop(1) else trimmed
     if (tail.endsWith("\"")) tail.dropRight(1) else tail
   }
+
+  /**
+   * This method returns `None` if given an empty `String`. This is typically used when parsing
+   * XML since its common to have XML elements with an empty text value inside.
+   */
+  def emptyStringToOption(value: String): Option[String] =
+    if (value == "")
+      None
+    else
+      Some(value)
+
 }

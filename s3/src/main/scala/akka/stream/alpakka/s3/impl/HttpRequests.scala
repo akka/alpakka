@@ -56,6 +56,57 @@ import scala.concurrent.{ExecutionContext, Future}
       .withUri(requestUri(bucket, None).withQuery(query))
   }
 
+  def listMultipartUploads(
+      bucket: String,
+      prefix: Option[String] = None,
+      continuationToken: Option[ListMultipartUploadContinuationToken] = None,
+      delimiter: Option[String] = None,
+      headers: Seq[HttpHeader] = Nil
+  )(implicit conf: S3Settings): HttpRequest = {
+
+    val baseQuery = Seq(
+      "prefix" -> prefix,
+      "delimiter" -> delimiter,
+      "key-marker" -> continuationToken.map(_.nextKeyMarker),
+      "upload-id-marker" -> continuationToken.map(_.nextUploadIdMarker)
+    ).collect { case (k, Some(v)) => k -> v }.toMap
+
+    // We need to manually construct a query here because the Uri for getting a list of multipart uploads requires a
+    // query param `uploads` which has no value and the current Query dsl doesn't support mixing query params that have
+    // values with query params that do not have values
+    val query =
+      if (baseQuery.isEmpty)
+        Query("uploads")
+      else {
+        val rest = baseQuery.map { case (k, v) => s"$k=$v" }.mkString("&")
+        Query(s"uploads&$rest")
+      }
+
+    HttpRequest(HttpMethods.GET)
+      .withHeaders(Host(requestAuthority(bucket, conf.s3RegionProvider.getRegion)) +: headers)
+      .withUri(requestUri(bucket, None).withQuery(query))
+  }
+
+  def listParts(
+      bucket: String,
+      key: String,
+      uploadId: String,
+      continuationToken: Option[Int],
+      headers: Seq[HttpHeader] = Nil
+  )(implicit conf: S3Settings): HttpRequest = {
+
+    val query = Query(
+      Seq(
+        "part-number-marker" -> continuationToken.map(_.toString),
+        "uploadId" -> Some(uploadId)
+      ).collect { case (k, Some(v)) => k -> v }.toMap
+    )
+
+    HttpRequest(HttpMethods.GET)
+      .withHeaders(Host(requestAuthority(bucket, conf.s3RegionProvider.getRegion)) +: headers)
+      .withUri(requestUri(bucket, Some(key)).withQuery(query))
+  }
+
   def getDownloadRequest(s3Location: S3Location,
                          method: HttpMethod = HttpMethods.GET,
                          s3Headers: Seq[HttpHeader] = Seq.empty,
@@ -73,6 +124,23 @@ import scala.concurrent.{ExecutionContext, Future}
       headers: Seq[HttpHeader] = Seq.empty[HttpHeader]
   )(implicit conf: S3Settings): HttpRequest =
     s3Request(s3Location = s3Location, method = method)
+      .withDefaultHeaders(headers)
+
+  def uploadManagementRequest(
+      s3Location: S3Location,
+      uploadId: String,
+      method: HttpMethod,
+      headers: Seq[HttpHeader] = Seq.empty[HttpHeader]
+  )(implicit conf: S3Settings): HttpRequest =
+    s3Request(s3Location,
+              method,
+              _.withQuery(
+                Query(
+                  Map(
+                    "uploadId" -> uploadId
+                  )
+                )
+              ))
       .withDefaultHeaders(headers)
 
   def uploadRequest(s3Location: S3Location,

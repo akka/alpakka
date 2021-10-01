@@ -4,11 +4,12 @@
 
 package akka.stream.alpakka.s3
 
+import java.time.Instant
 import java.util.{Objects, Optional}
-
 import akka.http.scaladsl.model.{DateTime, HttpHeader, IllegalUriException, Uri}
 import akka.http.scaladsl.model.headers._
 import akka.stream.alpakka.s3.AccessStyle.PathAccessStyle
+import com.github.ghik.silencer.silent
 
 import scala.collection.immutable.Seq
 import scala.collection.immutable
@@ -112,6 +113,290 @@ object MultipartUploadResult {
     etag,
     versionId.asScala
   )
+}
+
+final class AWSIdentity private (val id: String, val displayName: String) {
+
+  /** Java API */
+  def getId: String = id
+
+  /** Java API */
+  def getDisplayName: String = displayName
+
+  def withId(value: String): AWSIdentity = copy(id = value)
+  def withDisplayName(value: String): AWSIdentity = copy(displayName = value)
+
+  private def copy(id: String = id, displayName: String = displayName): AWSIdentity = new AWSIdentity(
+    id,
+    displayName
+  )
+
+  override def toString: String =
+    "AWSIdentity(" +
+    s"id=$id," +
+    s"displayName=$displayName" +
+    ")"
+
+  override def equals(other: Any): Boolean =
+    other match {
+      case that: AWSIdentity =>
+        Objects.equals(this.id, that.id) &&
+        Objects.equals(this.displayName, that.displayName)
+      case _ => false
+    }
+
+  override def hashCode(): Int =
+    Objects.hash(id, displayName)
+
+}
+
+object AWSIdentity {
+
+  /** Scala API */
+  def apply(id: String, displayName: String): AWSIdentity = new AWSIdentity(id, displayName)
+
+  /** Java API */
+  def create(id: String, displayName: String): AWSIdentity = apply(id, displayName)
+
+}
+
+final class ListMultipartUploadResultUploads private (val key: String,
+                                                      val uploadId: String,
+                                                      val initiator: AWSIdentity,
+                                                      val owner: AWSIdentity,
+                                                      val storageClass: String,
+                                                      val initiated: Instant) {
+
+  /** Java API */
+  def getKey: String = key
+
+  /** Java API */
+  def getUploadId: String = uploadId
+
+  /** Java API */
+  def getInitiator: AWSIdentity = initiator
+
+  /** Java API */
+  def getOwner: AWSIdentity = owner
+
+  /** Java API */
+  def getStorageClass: String = storageClass
+
+  /** Java API */
+  def getInitiated: Instant = initiated
+
+  def withKey(value: String): ListMultipartUploadResultUploads = copy(key = value)
+  def withUploadId(value: String): ListMultipartUploadResultUploads = copy(uploadId = value)
+  def withInitiator(value: AWSIdentity): ListMultipartUploadResultUploads = copy(initiator = value)
+  def withOwner(value: AWSIdentity): ListMultipartUploadResultUploads = copy(owner = value)
+  def withStorageClass(value: String): ListMultipartUploadResultUploads = copy(storageClass = value)
+  def withInitiated(value: Instant): ListMultipartUploadResultUploads = copy(initiated = value)
+
+  private def copy(key: String = key,
+                   uploadId: String = uploadId,
+                   initiator: AWSIdentity = initiator,
+                   owner: AWSIdentity = owner,
+                   storageClass: String = storageClass,
+                   initiated: Instant = initiated): ListMultipartUploadResultUploads =
+    new ListMultipartUploadResultUploads(
+      key = key,
+      uploadId = uploadId,
+      initiator = initiator,
+      owner = owner,
+      storageClass = storageClass,
+      initiated = initiated
+    )
+
+  override def toString: String =
+    "ListMultipartUploadResultUploads(" +
+    s"key=$key," +
+    s"uploadId=$uploadId," +
+    s"initiator=$initiator," +
+    s"owner=$owner," +
+    s"storageClass=$storageClass," +
+    s"initiated=$initiated" +
+    ")"
+
+  override def equals(other: Any): Boolean =
+    other match {
+      case that: ListMultipartUploadResultUploads =>
+        Objects.equals(this.key, that.key) &&
+        Objects.equals(this.uploadId, that.uploadId) &&
+        Objects.equals(this.initiator, that.initiator) &&
+        Objects.equals(this.owner, that.owner) &&
+        Objects.equals(this.storageClass, that.storageClass) &&
+        Objects.equals(this.initiated, that.initiated)
+      case _ => false
+    }
+
+  override def hashCode(): Int =
+    Objects.hash(key, uploadId, initiator, owner, storageClass, initiated)
+}
+
+object ListMultipartUploadResultUploads {
+
+  /** Scala API */
+  def apply(key: String,
+            uploadId: String,
+            initiator: AWSIdentity,
+            owner: AWSIdentity,
+            storageClass: String,
+            initiated: Instant): ListMultipartUploadResultUploads =
+    new ListMultipartUploadResultUploads(key, uploadId, initiator, owner, storageClass, initiated)
+
+  /** Java API */
+  def create(key: String,
+             uploadId: String,
+             initiator: AWSIdentity,
+             owner: AWSIdentity,
+             storageClass: String,
+             initiated: Instant): ListMultipartUploadResultUploads =
+    apply(key, uploadId, initiator, owner, storageClass, initiated)
+}
+
+final class ListMultipartUploadResultCommonPrefixes private (val prefix: String) {
+
+  /** Java API */
+  def getPrefix: String = prefix
+
+  def withPrefix(value: String): ListMultipartUploadResultCommonPrefixes = copy(prefix = value)
+
+  // Warning is only being generated here because there is a single argument in the parameter list. If more fields
+  // get added to ListMultipartUploadResultCommonPrefixes then the `@silent` is no longer needed
+  @silent
+  private def copy(prefix: String = prefix): ListMultipartUploadResultCommonPrefixes =
+    new ListMultipartUploadResultCommonPrefixes(prefix)
+
+  override def toString: String =
+    "ListMultipartUploadResultCommonPrefixes(" +
+    s"prefix=$prefix" +
+    ")"
+
+  override def equals(other: Any): Boolean =
+    other match {
+      case that: ListMultipartUploadResultCommonPrefixes =>
+        Objects.equals(this.prefix, that.prefix)
+      case _ => false
+    }
+
+  override def hashCode(): Int =
+    Objects.hash(prefix)
+}
+
+object ListMultipartUploadResultCommonPrefixes {
+
+  /** Scala API */
+  def apply(prefix: String): ListMultipartUploadResultCommonPrefixes =
+    new ListMultipartUploadResultCommonPrefixes(prefix)
+
+  /** Java API */
+  def create(prefix: String): ListMultipartUploadResultCommonPrefixes = apply(prefix)
+}
+
+final class ListPartsResultParts(val lastModified: Instant, val eTag: String, val partNumber: Int, val size: Long) {
+
+  /** Java API */
+  def getLastModified: Instant = lastModified
+
+  /** Java API */
+  def getETag: String = eTag
+
+  /** Java API */
+  def getPartNumber: Int = partNumber
+
+  /** Java API */
+  def getSize: Long = size
+
+  def withLastModified(value: Instant): ListPartsResultParts = copy(lastModified = value)
+  def withETag(value: String): ListPartsResultParts = copy(eTag = value)
+  def withPartNumber(value: Int): ListPartsResultParts = copy(partNumber = value)
+  def withSize(value: Long): ListPartsResultParts = copy(size = value)
+
+  private def copy(lastModified: Instant = lastModified,
+                   eTag: String = eTag,
+                   partNumber: Int = partNumber,
+                   size: Long = size): ListPartsResultParts =
+    new ListPartsResultParts(
+      lastModified,
+      eTag,
+      partNumber,
+      size
+    )
+
+  override def toString: String =
+    "ListPartsResultParts(" +
+    s"lastModified=$lastModified," +
+    s"eTag=$eTag," +
+    s"partNumber=$partNumber," +
+    s"size=$size" +
+    ")"
+
+  override def equals(other: Any): Boolean =
+    other match {
+      case that: ListPartsResultParts =>
+        Objects.equals(this.lastModified, that.lastModified) &&
+        Objects.equals(this.eTag, that.eTag) &&
+        Objects.equals(this.partNumber, that.partNumber) &&
+        Objects.equals(this.size, that.size)
+      case _ => false
+    }
+
+  override def hashCode(): Int =
+    Objects.hash(lastModified, eTag, Int.box(partNumber), Long.box(size))
+
+  def toPart: Part = Part(eTag, partNumber)
+}
+
+object ListPartsResultParts {
+
+  /** Scala API */
+  def apply(lastModified: Instant, eTag: String, partNumber: Int, size: Long): ListPartsResultParts =
+    new ListPartsResultParts(lastModified, eTag, partNumber, size)
+
+  /** Java API */
+  def create(lastModified: Instant, eTag: String, partNumber: Int, size: Long): ListPartsResultParts =
+    apply(lastModified, eTag, partNumber, size)
+}
+
+final class Part(val eTag: String, val partNumber: Int) {
+
+  /** Java API */
+  def getETag: String = eTag
+
+  /** Java API */
+  def getPartNumber: Int = partNumber
+
+  def withETag(value: String): Part = copy(eTag = value)
+
+  def withPartNumber(value: Int): Part = copy(partNumber = value)
+
+  private def copy(eTag: String = eTag, partNumber: Int = partNumber): Part = new Part(eTag, partNumber)
+
+  override def toString: String =
+    "Part(" +
+    s"eTag=$eTag," +
+    s"partNumber=$partNumber" +
+    ")"
+
+  override def equals(other: Any): Boolean =
+    other match {
+      case that: Part =>
+        Objects.equals(this.eTag, that.eTag) &&
+        Objects.equals(this.partNumber, that.partNumber)
+    }
+
+  override def hashCode(): Int =
+    Objects.hash(this.eTag, Int.box(this.partNumber))
+
+}
+
+object Part {
+
+  /** Scala API */
+  def apply(eTag: String, partNumber: Int): Part = new Part(eTag, partNumber)
+
+  /** Java API */
+  def create(eTag: String, partNumber: Int): Part = new Part(eTag, partNumber)
 }
 
 /**
