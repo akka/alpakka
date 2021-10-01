@@ -158,7 +158,7 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
             request,
             settings.connection
           )
-          .map {
+          .flatMap {
             case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
               Unmarshal(responseEntity)
                 .to[String]
@@ -168,6 +168,9 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
                 failureHandler
                   .invoke(new RuntimeException(s"Request failed for POST $uri, got $status with body: $body"))
               }
+          }
+          .recover {
+            case cause: Throwable => failureHandler.invoke(cause)
           }
       } else {
         log.debug("Fetching next scroll")
@@ -187,16 +190,22 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
             request,
             settings.connection
           )
-          .map {
+          .flatMap {
             case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
               Unmarshal(responseEntity)
                 .to[String]
                 .map(json => responseHandler.invoke(json))
             case HttpResponse(status, _, responseEntity, _) =>
-              Unmarshal(responseEntity).to[String].map { body =>
-                failureHandler
-                  .invoke(new RuntimeException(s"Request failed for POST $uri, got $status with body: $body"))
-              }
+              Unmarshal(responseEntity)
+                .to[String]
+                .map { body =>
+                  failureHandler.invoke(
+                    new RuntimeException(s"Request failed for POST $uri, got $status with body: $body")
+                  )
+                }
+          }
+          .recover {
+            case cause: Throwable => failureHandler.invoke(cause)
           }
       }
     } catch {
@@ -304,7 +313,7 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
 
       ElasticsearchApi
         .executeRequest(request, settings.connection)
-        .map {
+        .flatMap {
           case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
             Unmarshal(responseEntity)
               .to[String]
@@ -316,6 +325,9 @@ private[elasticsearch] final class ElasticsearchSourceLogic[T](
               clearScrollAsyncHandler
                 .invoke(Failure(new RuntimeException(s"Request failed for POST $uri, got $status with body: $body")))
             }
+        }
+        .recover {
+          case cause: Throwable => failureHandler.invoke(cause)
         }
     }
   }
