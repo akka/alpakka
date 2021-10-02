@@ -59,7 +59,7 @@ final class MultipartUploadResult private (
     versionId = versionId
   )
 
-  override def toString =
+  override def toString: String =
     "MultipartUploadResult(" +
     s"location=$location," +
     s"bucket=$bucket," +
@@ -412,10 +412,10 @@ final class FailedUpload private (
 
 object FailedUpload {
 
-  def apply(reasons: Seq[Throwable]) = new FailedUpload(reasons)
+  def apply(reasons: Seq[Throwable]): FailedUpload = new FailedUpload(reasons)
 
   /** Java API */
-  def create(reasons: Seq[Throwable]) = FailedUpload(reasons)
+  def create(reasons: Seq[Throwable]): FailedUpload = FailedUpload(reasons)
 }
 
 /**
@@ -476,7 +476,7 @@ final class ListBucketResultContents private (
     storageClass = storageClass
   )
 
-  override def toString =
+  override def toString: String =
     "ListBucketResultContents(" +
     s"bucketName=$bucketName," +
     s"key=$key," +
@@ -564,7 +564,7 @@ final class ListBucketResultCommonPrefixes private (
     prefix = prefix
   )
 
-  override def toString =
+  override def toString: String =
     "ListBucketResultCommonPrefixes(" +
     s"bucketName=$bucketName," +
     s"prefix=$prefix" +

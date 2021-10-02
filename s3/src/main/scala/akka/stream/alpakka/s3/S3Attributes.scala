@@ -24,7 +24,7 @@ object S3Attributes {
 
 final class S3SettingsPath private (val path: String) extends Attribute
 object S3SettingsPath {
-  val Default = S3SettingsPath(S3Settings.ConfigPath)
+  val Default: S3SettingsPath = S3SettingsPath(S3Settings.ConfigPath)
 
   def apply(path: String) = new S3SettingsPath(path)
 }
