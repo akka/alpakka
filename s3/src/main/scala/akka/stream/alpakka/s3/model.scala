@@ -20,9 +20,13 @@ final class MultipartUploadResult private (
     val location: Uri,
     val bucket: String,
     val key: String,
-    val etag: String,
+    val eTag: String,
     val versionId: Option[String]
 ) {
+
+  /** Scala API */
+  @deprecated("Use eTag", "3.0.3")
+  val etag: String = eTag
 
   /** Java API */
   def getLocation: akka.http.javadsl.model.Uri = akka.http.javadsl.model.Uri.create(location)
@@ -34,7 +38,11 @@ final class MultipartUploadResult private (
   def getKey: String = key
 
   /** Java API */
-  def getEtag: String = etag
+  def getETag: String = eTag
+
+  /** Java API */
+  @deprecated("Use getETag", "3.0.3")
+  def getEtag: String = eTag
 
   /** Java API */
   def getVersionId: java.util.Optional[String] = versionId.asJava
@@ -42,20 +50,22 @@ final class MultipartUploadResult private (
   def withLocation(value: Uri): MultipartUploadResult = copy(location = value)
   def withBucket(value: String): MultipartUploadResult = copy(bucket = value)
   def withKey(value: String): MultipartUploadResult = copy(key = value)
-  def withEtag(value: String): MultipartUploadResult = copy(etag = value)
+  def withETag(value: String): MultipartUploadResult = copy(eTag = value)
+  @deprecated("Use withETag", "3.0.3")
+  def withEtag(value: String): MultipartUploadResult = copy(eTag = value)
   def withVersionId(value: String): MultipartUploadResult = copy(versionId = Option(value))
 
   private def copy(
       location: Uri = location,
       bucket: String = bucket,
       key: String = key,
-      etag: String = etag,
+      eTag: String = eTag,
       versionId: Option[String] = versionId
   ): MultipartUploadResult = new MultipartUploadResult(
     location = location,
     bucket = bucket,
     key = key,
-    etag = etag,
+    eTag = eTag,
     versionId = versionId
   )
 
@@ -64,7 +74,7 @@ final class MultipartUploadResult private (
     s"location=$location," +
     s"bucket=$bucket," +
     s"key=$key," +
-    s"etag=$etag," +
+    s"eTag=$eTag," +
     s"versionId=$versionId" +
     ")"
 
@@ -73,13 +83,13 @@ final class MultipartUploadResult private (
       Objects.equals(this.location, that.location) &&
       Objects.equals(this.bucket, that.bucket) &&
       Objects.equals(this.key, that.key) &&
-      Objects.equals(this.etag, that.etag) &&
+      Objects.equals(this.eTag, that.eTag) &&
       Objects.equals(this.versionId, that.versionId)
     case _ => false
   }
 
   override def hashCode(): Int =
-    Objects.hash(location, bucket, key, etag, versionId)
+    Objects.hash(location, bucket, key, eTag, versionId)
 }
 
 object MultipartUploadResult {
@@ -89,13 +99,13 @@ object MultipartUploadResult {
       location: Uri,
       bucket: String,
       key: String,
-      etag: String,
+      eTag: String,
       versionId: Option[String]
   ): MultipartUploadResult = new MultipartUploadResult(
     location,
     bucket,
     key,
-    etag,
+    eTag,
     versionId
   )
 
@@ -104,13 +114,13 @@ object MultipartUploadResult {
       location: akka.http.javadsl.model.Uri,
       bucket: String,
       key: String,
-      etag: String,
+      eTag: String,
       versionId: java.util.Optional[String]
   ): MultipartUploadResult = apply(
     location.asScala(),
     bucket,
     key,
-    etag,
+    eTag,
     versionId.asScala
   )
 }

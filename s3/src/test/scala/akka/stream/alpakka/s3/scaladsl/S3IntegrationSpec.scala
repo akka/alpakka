@@ -716,7 +716,7 @@ trait S3IntegrationSpec
         _ <- S3.deleteObject(defaultBucket, objectKey).withAttributes(attributes).runWith(Sink.head)
       } yield upload
 
-    upload.futureValue.etag should not be empty
+    upload.futureValue.eTag should not be empty
   }
 
   private def uploadAndAndCheckParts(source: Source[ByteString, _], expectedParts: Int): Assertion = {

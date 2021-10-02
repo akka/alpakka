@@ -53,7 +53,7 @@ import scala.util.{Failure, Success, Try}
 /** Internal Api */
 @InternalApi private[impl] final case class SuccessfulUploadPart(multipartUpload: MultipartUpload,
                                                                  index: Int,
-                                                                 etag: String)
+                                                                 eTag: String)
     extends UploadPartResponse
 
 /** Internal Api */
@@ -66,7 +66,7 @@ import scala.util.{Failure, Success, Try}
 @InternalApi private[impl] final case class CompleteMultipartUploadResult(location: Uri,
                                                                           bucket: String,
                                                                           key: String,
-                                                                          etag: String,
+                                                                          eTag: String,
                                                                           versionId: Option[String] = None)
 
 /** Internal Api */
@@ -797,7 +797,7 @@ import scala.util.{Failure, Success, Try}
 
     Source
       .future(
-        completeMultipartUploadRequest(parts.head.multipartUpload, parts.map(p => p.index -> p.etag), headers)
+        completeMultipartUploadRequest(parts.head.multipartUpload, parts.map(p => p.index -> p.eTag), headers)
       )
       .flatMapConcat(signAndGetAs[CompleteMultipartUploadResult](_, populateResult(_, _)))
       .runWith(Sink.head)
@@ -985,11 +985,11 @@ import scala.util.{Failure, Success, Try}
         }
       case Success(r) =>
         r.entity.discardBytes()
-        val etag = r.headers.find(_.lowercaseName() == "etag").map(_.value)
-        etag
+        val eTag = r.headers.find(_.lowercaseName() == "etag").map(_.value)
+        eTag
           .map(t => Future.successful(SuccessfulUploadPart(upload, index, t)))
           .getOrElse(
-            Future.successful(FailedUploadPart(upload, index, new RuntimeException(s"Cannot find etag in ${r}")))
+            Future.successful(FailedUploadPart(upload, index, new RuntimeException(s"Cannot find ETag in $r")))
           )
 
       case Failure(e) => Future.successful(FailedUploadPart(upload, index, e))
@@ -1027,7 +1027,7 @@ import scala.util.{Failure, Success, Try}
               }
               .flatMap(completeMultipartUpload(s3Location, _, sse))
           }
-          .mapMaterializedValue(_.map(r => MultipartUploadResult(r.location, r.bucket, r.key, r.etag, r.versionId)))
+          .mapMaterializedValue(_.map(r => MultipartUploadResult(r.location, r.bucket, r.key, r.eTag, r.versionId)))
       }
       .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.parasitic))
 
