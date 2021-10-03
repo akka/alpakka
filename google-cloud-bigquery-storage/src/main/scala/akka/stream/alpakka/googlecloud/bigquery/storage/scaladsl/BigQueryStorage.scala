@@ -34,7 +34,7 @@ object BigQueryStorage {
       dataFormat: DataFormat,
       readOptions: Option[TableReadOptions] = None,
       maxNumStreams: Int = 0
-  ): Source[(ReadSession.Schema, ReadRowsResponse.Rows), Future[NotUsed]] =
+  ): Source[(ReadSession.Schema, ReadRowsResponse.Rows), NotUsed] =
     create(projectId, datasetId, tableId, dataFormat, readOptions, maxNumStreams)
       .map(
         s => {
@@ -43,6 +43,7 @@ object BigQueryStorage {
       )
       .flatMapConcat(a => a)
       .map(a => a)
+      .mapMaterializedValue(_ => NotUsed)
 
   def create(
       projectId: String,
@@ -79,10 +80,11 @@ object BigQueryStorage {
             SDKClientSource.read(client, session).map { source =>
               source
                 .mapAsync(1)(resp => {
-                  val bytes = if (resp.isArrowRecordBatch)
-                    resp.arrowRecordBatch.get.serializedRecordBatch
-                  else
-                    resp.avroRows.get.serializedBinaryRows
+                  val bytes =
+                    if (resp.isArrowRecordBatch)
+                      resp.arrowRecordBatch.get.serializedRecordBatch
+                    else
+                      resp.avroRows.get.serializedBinaryRows
                   um(ByteString(bytes.toByteArray))
                 })
             }
