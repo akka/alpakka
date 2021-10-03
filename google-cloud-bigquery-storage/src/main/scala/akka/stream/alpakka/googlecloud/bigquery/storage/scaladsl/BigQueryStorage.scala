@@ -72,7 +72,7 @@ object BigQueryStorage {
     Source.fromMaterializer { (mat, attr) =>
       {
         implicit val materializer: Materializer = mat
-        implicit val executionContext: ExecutionContextExecutor = mat.system.dispatcher
+        implicit val executionContext: ExecutionContextExecutor = materializer.executionContext
         val client = reader(mat.system, attr).client
         readSession(client, projectId, datasetId, tableId, dataFormat, readOptions, maxNumStreams)
           .map { session =>
