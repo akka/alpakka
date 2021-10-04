@@ -207,7 +207,7 @@ import scala.concurrent.{ExecutionContext, Future}
     val range = copyPartition.range
     val source = copyPartition.sourceLocation.validate(conf)
     val encodedKey = URLEncoder.encode(source.key, StandardCharsets.UTF_8.toString)
-    val sourceHeaderValuePrefix = s"/${source.bucket}/${encodedKey}"
+    val sourceHeaderValuePrefix = s"/${source.bucket}/$encodedKey"
     val sourceHeaderValue = sourceVersionId
       .map(versionId => s"$sourceHeaderValuePrefix?versionId=$versionId")
       .getOrElse(sourceHeaderValuePrefix)

@@ -13,12 +13,12 @@ import akka.util.ByteString
 
 package object auth {
 
-  private val Digits = "0123456789abcdef".toCharArray()
+  private val Digits = "0123456789abcdef".toCharArray
 
   @InternalApi private[impl] def encodeHex(bytes: Array[Byte]): String = {
     val length = bytes.length
     val out = new Array[Char](length * 2)
-    for (i <- 0 to length - 1) {
+    for (i <- 0 until length) {
       val b = bytes(i)
       out(i * 2) = Digits((b >> 4) & 0xF)
       out(i * 2 + 1) = Digits(b & 0xF)

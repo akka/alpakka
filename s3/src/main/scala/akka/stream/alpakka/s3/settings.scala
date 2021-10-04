@@ -44,7 +44,7 @@ final class Proxy private (
   private def copy(host: String = host, port: Int = port, scheme: String = scheme): Proxy =
     new Proxy(host = host, port = port, scheme = scheme)
 
-  override def toString =
+  override def toString: String =
     "Proxy(" +
     s"host=$host," +
     s"port=$port," +
@@ -82,13 +82,13 @@ final class ForwardProxyCredentials private (val username: String, val password:
   /** Java API */
   def getPassword: String = password
 
-  def withUsername(username: String) = copy(username = username)
-  def withPassword(password: String) = copy(password = password)
+  def withUsername(username: String): ForwardProxyCredentials = copy(username = username)
+  def withPassword(password: String): ForwardProxyCredentials = copy(password = password)
 
   private def copy(username: String = username, password: String = password) =
     new ForwardProxyCredentials(username, password)
 
-  override def toString =
+  override def toString: String =
     "ForwardProxyCredentials(" +
     s"username=$username," +
     s"password=******" +
@@ -137,10 +137,10 @@ final class ForwardProxy private (val scheme: String,
   /** Java API */
   def getCredentials: java.util.Optional[ForwardProxyCredentials] = credentials.asJava
 
-  def withScheme(value: String) = copy(scheme = value)
-  def withHost(host: String) = copy(host = host)
-  def withPort(port: Int) = copy(port = port)
-  def withCredentials(credentials: ForwardProxyCredentials) = copy(credentials = Option(credentials))
+  def withScheme(value: String): ForwardProxy = copy(scheme = value)
+  def withHost(host: String): ForwardProxy = copy(host = host)
+  def withPort(port: Int): ForwardProxy = copy(port = port)
+  def withCredentials(credentials: ForwardProxyCredentials): ForwardProxy = copy(credentials = Option(credentials))
 
   private def copy(scheme: String = scheme,
                    host: String = host,
@@ -148,7 +148,7 @@ final class ForwardProxy private (val scheme: String,
                    credentials: Option[ForwardProxyCredentials] = credentials) =
     new ForwardProxy(scheme, host, port, credentials)
 
-  override def toString =
+  override def toString: String =
     "ForwardProxy(" +
     s"scheme=$scheme," +
     s"host=$host," +
@@ -175,7 +175,7 @@ object ForwardProxy {
     new ForwardProxy("https", host, port, credentials)
 
   /** Java API */
-  def create(host: String, port: Int, credentials: Optional[ForwardProxyCredentials]) =
+  def create(host: String, port: Int, credentials: Optional[ForwardProxyCredentials]): ForwardProxy =
     apply(host, port, credentials.asScala)
 
   /** Use an HTTP proxy. */
@@ -316,7 +316,7 @@ final class MultipartUploadSettings private (val retrySettings: RetrySettings) {
   /** Java API */
   def getRetrySettings: RetrySettings = retrySettings
 
-  def withRetrySettings(value: RetrySettings) = MultipartUploadSettings(value)
+  def withRetrySettings(value: RetrySettings): MultipartUploadSettings = MultipartUploadSettings(value)
 
   override def toString =
     s"MultipartUploadSettings(retrySettings=$retrySettings)"
@@ -433,7 +433,7 @@ final class S3Settings private (
     multipartUploadSettings
   )
 
-  override def toString =
+  override def toString: String =
     "S3Settings(" +
     s"bufferType=$bufferType," +
     s"credentialsProvider=$credentialsProvider," +

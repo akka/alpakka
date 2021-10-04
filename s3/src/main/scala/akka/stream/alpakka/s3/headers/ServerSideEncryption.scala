@@ -43,7 +43,7 @@ final class AES256 private[headers] () extends ServerSideEncryption {
     case _ => Nil
   }
 
-  override def toString =
+  override def toString: String =
     "ServerSideEncryption.AES256(" +
     ")"
 
@@ -78,8 +78,8 @@ final class KMS private[headers] (val keyId: String, val context: Option[String]
     case _ => Nil
   }
 
-  def withKeyId(keyId: String) = copy(keyId = keyId)
-  def withContext(context: String) = copy(context = Some(context))
+  def withKeyId(keyId: String): KMS = copy(keyId = keyId)
+  def withContext(context: String): KMS = copy(context = Some(context))
 
   private def copy(
       keyId: String = keyId,
@@ -89,7 +89,7 @@ final class KMS private[headers] (val keyId: String, val context: Option[String]
     context = context
   )
 
-  override def toString =
+  override def toString: String =
     "ServerSideEncryption.KMS(" +
     s"keyId=$keyId," +
     s"context=$context" +
@@ -143,8 +143,8 @@ final class CustomerKeys private[headers] (val key: String, val md5: Option[Stri
     case _ => Nil
   }
 
-  def withKey(key: String) = copy(key = key)
-  def withMd5(md5: String) = copy(md5 = Some(md5))
+  def withKey(key: String): CustomerKeys = copy(key = key)
+  def withMd5(md5: String): CustomerKeys = copy(md5 = Some(md5))
 
   private def copy(
       key: String = key,
@@ -154,7 +154,7 @@ final class CustomerKeys private[headers] (val key: String, val md5: Option[Stri
     md5 = md5
   )
 
-  override def toString =
+  override def toString: String =
     "ServerSideEncryption.CustomerKeys(" +
     s"key=$key," +
     s"md5=$md5" +
