@@ -184,7 +184,7 @@ import scala.concurrent.{ExecutionContext, Future}
     // @formatter:off
     val payload = <CompleteMultipartUpload>
                     {
-                      parts.map { case (partNumber, etag) => <Part><PartNumber>{ partNumber }</PartNumber><ETag>{ etag }</ETag></Part> }
+                      parts.map { case (partNumber, eTag) => <Part><PartNumber>{ partNumber }</PartNumber><ETag>{ eTag }</ETag></Part> }
                     }
                   </CompleteMultipartUpload>
     // @formatter:on
