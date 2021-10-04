@@ -649,6 +649,27 @@ trait S3IntegrationSpec
     request.futureValue should equal((Done, Done))
   }
 
+  it should "create a bucket in the non default us-east-1 region" in {
+    val bucketName = "samplebucketotherregion"
+
+    val request = for {
+      _ <- S3
+        .makeBucketSource(bucketName)
+        .withAttributes(S3Attributes.settings(otherRegionSettingsPathStyleAccess))
+        .runWith(Sink.head)
+      result <- S3
+        .checkIfBucketExistsSource(bucketName)
+        .withAttributes(S3Attributes.settings(otherRegionSettingsPathStyleAccess))
+        .runWith(Sink.head)
+      _ <- S3
+        .deleteBucketSource(bucketName)
+        .withAttributes(S3Attributes.settings(otherRegionSettingsPathStyleAccess))
+        .runWith(Sink.head)
+    } yield result
+
+    request.futureValue shouldEqual AccessGranted
+  }
+
   it should "throw an exception while deleting bucket that doesn't exist" in {
     implicit val attr: Attributes = attributes
     S3.deleteBucket(nonExistingBucket).failed.futureValue shouldBe an[S3Exception]
