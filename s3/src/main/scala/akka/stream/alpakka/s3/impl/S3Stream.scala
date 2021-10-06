@@ -25,6 +25,7 @@ import akka.stream.scaladsl.{Flow, Keep, RetryFlow, RunnableGraph, Sink, Source,
 import akka.stream.{Attributes, Materializer}
 import akka.util.ByteString
 import akka.{Done, NotUsed}
+import software.amazon.awssdk.regions.Region
 
 import scala.collection.immutable
 import scala.collection.immutable.Seq
@@ -543,14 +544,32 @@ import scala.util.{Failure, Success, Try}
   private def bucketManagementRequest(bucket: String)(method: HttpMethod, conf: S3Settings): HttpRequest =
     HttpRequests.bucketManagementRequest(S3Location(bucket, key = ""), method)(conf)
 
-  def makeBucketSource(bucket: String, headers: S3Headers): Source[Done, NotUsed] =
-    s3ManagementRequest[Done](
-      bucket = bucket,
-      method = HttpMethods.PUT,
-      httpRequest = bucketManagementRequest(bucket),
-      headers.headersFor(MakeBucket),
-      process = processS3LifecycleResponse
-    )
+  def makeBucketSource(bucket: String, headers: S3Headers): Source[Done, NotUsed] = {
+    Source
+      .fromMaterializer { (mat, attr) =>
+        implicit val conf: S3Settings = resolveSettings(attr, mat.system)
+
+        val region = conf.getS3RegionProvider.getRegion
+
+        // If region is US_EAST_1 then the location constraint is not required
+        // see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
+        val maybeRegionPayload = region match {
+          case Region.US_EAST_1 => None
+          case region =>
+            Some(HttpRequests.createBucketRegionPayload(region)(ExecutionContexts.parasitic))
+        }
+
+        s3ManagementRequest[Done](
+          bucket = bucket,
+          method = HttpMethods.PUT,
+          httpRequest = bucketManagementRequest(bucket),
+          headers.headersFor(MakeBucket),
+          process = processS3LifecycleResponse,
+          httpEntity = maybeRegionPayload
+        )
+      }
+      .mapMaterializedValue(_ => NotUsed)
+  }
 
   def makeBucket(bucket: String, headers: S3Headers)(implicit mat: Materializer, attr: Attributes): Future[Done] =
     makeBucketSource(bucket, headers).withAttributes(attr).runWith(Sink.ignore)
@@ -602,7 +621,8 @@ import scala.util.{Failure, Success, Try}
       method: HttpMethod,
       httpRequest: (HttpMethod, S3Settings) => HttpRequest,
       headers: Seq[HttpHeader],
-      process: (HttpResponse, Materializer) => Future[T]
+      process: (HttpResponse, Materializer) => Future[T],
+      httpEntity: Option[Future[RequestEntity]] = None
   ): Source[T, NotUsed] =
     Source
       .fromMaterializer { (mat, attr) =>
@@ -611,12 +631,26 @@ import scala.util.{Failure, Success, Try}
         implicit val sys: ActorSystem = mat.system
         val conf: S3Settings = resolveSettings(attr, mat.system)
 
-        signAndRequest(
-          requestHeaders(
-            httpRequest(method, conf),
-            None
-          )
-        ).mapAsync(1) { response =>
+        val baseSource = httpEntity match {
+          case Some(requestEntity) =>
+            Source.future(requestEntity).flatMapConcat { requestEntity =>
+              signAndRequest(
+                requestHeaders(
+                  httpRequest(method, conf).withEntity(requestEntity),
+                  None
+                )
+              )
+            }
+          case None =>
+            signAndRequest(
+              requestHeaders(
+                httpRequest(method, conf),
+                None
+              )
+            )
+        }
+
+        baseSource.mapAsync(1) { response =>
           process(response, mat)
         }
       }

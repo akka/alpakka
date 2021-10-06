@@ -199,6 +199,17 @@ import scala.concurrent.{ExecutionContext, Future}
     }
   }
 
+  def createBucketRegionPayload(region: Region)(implicit ec: ExecutionContext): Future[RequestEntity] = {
+    //Do not let the start LocationConstraint be on different lines
+    //  They tend to get split when this file is formatted by IntelliJ unless http://stackoverflow.com/a/19492318/1216965
+    // @formatter:off
+    val payload = <CreateBucketConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+      <LocationConstraint>{region.id()}</LocationConstraint>
+    </CreateBucketConfiguration>
+    // @formatter:on
+    Marshal(payload).to[RequestEntity]
+  }
+
   def uploadCopyPartRequest(multipartCopy: MultipartCopy,
                             sourceVersionId: Option[String] = None,
                             s3Headers: Seq[HttpHeader] = Seq.empty)(implicit conf: S3Settings): HttpRequest = {
