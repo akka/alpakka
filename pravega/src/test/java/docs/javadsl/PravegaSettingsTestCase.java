@@ -17,6 +17,7 @@ import org.junit.Test;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 
+import io.pravega.client.tables.TableKey;
 import io.pravega.client.stream.Serializer;
 
 public class PravegaSettingsTestCase {
@@ -82,15 +83,19 @@ public class PravegaSettingsTestCase {
 
     // #table-writer-settings
     TableWriterSettings<Integer, String> tableWriterSettings =
-        TableWriterSettingsBuilder.<Integer, String>create(system)
-            .withSerializers(intSerializer, new UTF8StringSerializer());
+        TableWriterSettingsBuilder.<Integer, String>create(
+                system, intSerializer, new UTF8StringSerializer())
+            .withSerializers(id -> new TableKey(intSerializer.serialize(id)))
+            .build();
 
     // #table-writer-settings
 
     // #table-reader-settings
     TableReaderSettings<Integer, String> tableReaderSettings =
-        TableReaderSettingsBuilder.<Integer, String>create(system)
-            .withSerializers(intSerializer, new UTF8StringSerializer());
+        TableReaderSettingsBuilder.<Integer, String>create(
+                system, intSerializer, new UTF8StringSerializer())
+            .withTableKey(id -> new TableKey(intSerializer.serialize(id)))
+            .build();
 
     // #table-reader-settings
 

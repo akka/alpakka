@@ -22,13 +22,18 @@ import io.pravega.client.tables.KeyValueTableClientConfiguration
 import io.pravega.client.tables.Version
 
 import java.util.concurrent.atomic.AtomicInteger
+
+import io.pravega.client.tables.Put
+
+import io.pravega.client.tables.TableKey
+
 @InternalApi private final class PravegaTableWriteFlowStageLogic[KVPair, K, V](
     val shape: FlowShape[KVPair, KVPair],
     kvpToTuple2: KVPair => (K, V),
+    extractor: K => TableKey,
     val scope: String,
     tableName: String,
-    tableWriterSettings: TableWriterSettings[K, V],
-    keyFamilyExtractor: Option[K => String]
+    tableWriterSettings: TableWriterSettings[K, V]
 ) extends GraphStageLogic(shape)
     with StageLogging {
 
@@ -37,7 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
   private var keyValueTableFactory: KeyValueTableFactory = _
 
-  private var table: KeyValueTable[K, V] = _
+  private var table: KeyValueTable = _
 
   private val onAir = new AtomicInteger
 
@@ -70,10 +75,7 @@ import java.util.concurrent.atomic.AtomicInteger
         .withScope(scope, tableWriterSettings.clientConfig)
 
       table = keyValueTableFactory
-        .forKeyValueTable(tableName,
-                          tableWriterSettings.keySerializer,
-                          tableWriterSettings.valueSerializer,
-                          kvtClientConfig)
+        .forKeyValueTable(tableName, kvtClientConfig)
       log.debug("Open table {}", tableName)
 
     } catch {
@@ -85,50 +87,32 @@ import java.util.concurrent.atomic.AtomicInteger
       asyncPushback.invokeWithFeedback((t, msg))
     }
 
-  keyFamilyExtractor match {
-    case Some(familyExtractor) =>
-      setHandler(
-        in,
-        new InHandler {
-          override def onPush(): Unit = {
-            val msg = grab(in)
-            val (key, value) = kvpToTuple2(msg)
-            onAir.incrementAndGet()
-            handleSentEvent(table.put(familyExtractor(key), key, value), msg)
-          }
-          override def onUpstreamFinish(): Unit = {
-            log.debug("Upstream finished")
-            if (onAir.get == 0) {
-              log.debug("Stage completed on upstream finish")
-              completeStage()
-            }
-            upstreamEnded = true
-          }
+  setHandler(
+    in,
+    new InHandler {
+      override def onPush(): Unit = {
+        val msg = grab(in)
 
-        }
-      )
-    case None =>
-      setHandler(
-        in,
-        new InHandler {
-          override def onPush(): Unit = {
-            val msg = grab(in)
-            val (key, value) = kvpToTuple2(msg)
-            onAir.incrementAndGet()
-            handleSentEvent(table.put(null, key, value), msg)
-          }
-          override def onUpstreamFinish(): Unit = {
-            log.debug("Upstream finished")
-            if (onAir.get == 0) {
-              log.debug("Stage completed on upstream finish")
-              completeStage()
-            }
-            upstreamEnded = true
-          }
+        val (k, v) = kvpToTuple2(msg)
 
+        val put = new Put(
+          extractor(k),
+          tableWriterSettings.valueSerializer.serialize(v)
+        )
+        onAir.incrementAndGet()
+        handleSentEvent(table.update(put), msg)
+      }
+      override def onUpstreamFinish(): Unit = {
+        log.debug("Upstream finished")
+        if (onAir.get == 0) {
+          log.debug("Stage completed on upstream finish")
+          completeStage()
         }
-      )
-  }
+        upstreamEnded = true
+      }
+
+    }
+  )
 
   setHandler(
     out,
@@ -158,22 +142,8 @@ import java.util.concurrent.atomic.AtomicInteger
     kvpToTuple2: KVPair => Tuple2[K, V],
     scope: String,
     streamName: String,
-    tableWriterSettings: TableWriterSettings[K, V],
-    keyFamilyExtractor: Option[K => String]
+    tableWriterSettings: TableWriterSettings[K, V]
 ) extends GraphStage[FlowShape[KVPair, KVPair]] {
-
-  def this(kvpToTuple2: KVPair => Tuple2[K, V],
-           scope: String,
-           streamName: String,
-           tableWriterSettings: TableWriterSettings[K, V]) =
-    this(kvpToTuple2, scope, streamName, tableWriterSettings, None)
-
-  def this(kvpToTuple2: KVPair => Tuple2[K, V],
-           scope: String,
-           streamName: String,
-           tableWriterSettings: TableWriterSettings[K, V],
-           familyExtractor: K => String) =
-    this(kvpToTuple2, scope, streamName, tableWriterSettings, Some(familyExtractor))
 
   val in: Inlet[KVPair] = Inlet(Logging.simpleName(this) + ".in")
   val out: Outlet[KVPair] = Outlet(Logging.simpleName(this) + ".out")
@@ -186,9 +156,9 @@ import java.util.concurrent.atomic.AtomicInteger
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new PravegaTableWriteFlowStageLogic[KVPair, K, V](shape,
                                                       kvpToTuple2,
+                                                      tableWriterSettings.tableKey,
                                                       scope,
                                                       streamName,
-                                                      tableWriterSettings,
-                                                      keyFamilyExtractor)
+                                                      tableWriterSettings)
 
 }

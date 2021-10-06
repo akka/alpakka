@@ -21,14 +21,17 @@ import akka.stream.alpakka.pravega.TableReaderSettingsBuilder
 import akka.stream.alpakka.pravega.scaladsl.PravegaTable
 import akka.stream.alpakka.pravega.scaladsl.Pravega
 import scala.util.Using
+import io.pravega.client.tables.TableKey
 
 class PravegaReadWriteDocs {
 
   implicit val system = ActorSystem("PravegaDocs")
 
-  val serializer = new UTF8StringSerializer
+  implicit val serializer = new UTF8StringSerializer
 
-  val intSerializer = new Serializer[Int] {
+  implicit def personSerialiser: Serializer[Person] = ???
+
+  implicit val intSerializer = new Serializer[Int] {
     override def serialize(value: Int): ByteBuffer = {
       val buff = ByteBuffer.allocate(4).putInt(value)
       buff.position(0)
@@ -39,10 +42,10 @@ class PravegaReadWriteDocs {
       serializedValue.getInt
   }
 
-  implicit val readerSettings = ReaderSettingsBuilder(system)
+  val readerSettings = ReaderSettingsBuilder(system)
     .withSerializer(serializer)
 
-  implicit val writerSettings = WriterSettingsBuilder(system)
+  val writerSettings = WriterSettingsBuilder(system)
     .withSerializer(serializer)
 
   val writerSettingsWithRoutingKey = WriterSettingsBuilder(system)
@@ -50,14 +53,16 @@ class PravegaReadWriteDocs {
     .withSerializer(serializer)
 
   // #writing
-  Source(1 to 100).map(i => s"event_$i").runWith(Pravega.sink("an_existing_scope", "an_existing_streamName"))
+  Source(1 to 100)
+    .map(i => s"event_$i")
+    .runWith(Pravega.sink("an_existing_scope", "an_existing_streamName", writerSettings))
 
   Source(1 to 100)
     .map { i =>
       val routingKey = i % 10
       s"${routingKey}_event_$i"
     }
-    .runWith(Pravega.sink("an_existing_scope", "an_existing_streamName")(writerSettingsWithRoutingKey))
+    .runWith(Pravega.sink("an_existing_scope", "an_existing_streamName", writerSettingsWithRoutingKey))
 
   // #writing
 
@@ -73,7 +78,7 @@ class PravegaReadWriteDocs {
       // #reading
 
       Pravega
-        .source(readerGroup)
+        .source(readerGroup, readerSettings)
         .to(Sink.foreach { event: PravegaEvent[String] =>
           val message: String = event.message
           processMessage(message)
@@ -84,36 +89,37 @@ class PravegaReadWriteDocs {
 
     }
 
-  case class Person(id: String, firstname: String)
+  case class Person(id: Int, firstname: String)
 
-  implicit val tablewriterSettings = TableWriterSettingsBuilder[String, String](system)
-    .withSerializers(serializer, serializer)
+  implicit val tablewriterSettings = TableWriterSettingsBuilder[Int, Person]
+    .withSerializers(id => new TableKey(intSerializer.serialize(id)))
+    .build()
 
   // #table-writing
 
   // Write through a flow
   Source(1 to 10)
-    .map(id => (s"id_$id", s"name_$id"))
-    .via(PravegaTable.writeFlow("an_existing_scope", "an_existing_tablename"))
+    .map(id => (id, Person(id, s"name_$id")))
+    .via(PravegaTable.writeFlow("an_existing_scope", "an_existing_tablename", tablewriterSettings))
     .runWith(Sink.ignore)
 
   // Write in a sink
   Source(1 to 10)
-    .map(id => (s"id_$id", s"name_$id"))
-    .runWith(PravegaTable.sink("an_existing_scope", "an_existing_tablename"))
+    .map(id => (id, Person(id, s"name_$id")))
+    .runWith(PravegaTable.sink("an_existing_scope", "an_existing_tablename", tablewriterSettings))
 
   // #table-writing
 
   val clientConfig = ClientConfig.builder().build()
 
-  val tableSettings = TableReaderSettingsBuilder
-    .apply[Int, String](system.settings.config.getConfig(TableReaderSettingsBuilder.configPath))
-    .withSerializers(intSerializer, serializer)
+  val tableSettings = TableReaderSettingsBuilder[Int, Person]
+    .withTableKey(id => new TableKey(intSerializer.serialize(id)))
+    .build()
 
   // #table-reading
 
   val readingDone = PravegaTable
-    .source("an_existing_scope", "an_existing_tablename", "test", tableSettings)
+    .source("an_existing_scope", "an_existing_tablename", tableSettings)
     .to(Sink.foreach(println))
     .run()
 

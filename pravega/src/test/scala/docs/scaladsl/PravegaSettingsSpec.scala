@@ -18,12 +18,13 @@ import org.scalatest.matchers.must.Matchers
 
 import java.nio.ByteBuffer
 import scala.concurrent.duration._
+import io.pravega.client.tables.TableKey
 
 class PravegaSettingsSpec extends PravegaBaseSpec with Matchers {
 
-  val serializer = new UTF8StringSerializer
+  implicit val serializer = new UTF8StringSerializer
 
-  val intSerializer = new Serializer[Int] {
+  implicit val intSerializer = new Serializer[Int] {
     override def serialize(value: Int): ByteBuffer = {
       val buff = ByteBuffer.allocate(4).putInt(value)
       buff.position(0)
@@ -77,10 +78,11 @@ class PravegaSettingsSpec extends PravegaBaseSpec with Matchers {
 
     "build TableWriterSettings with programmatic customisation" in {
       //#table-writer-settings
-      val tableWriterSettings = TableWriterSettingsBuilder[Int, String](system)
+      val tableWriterSettings = TableWriterSettingsBuilder[Int, String]
         .clientConfigBuilder(_.enableTlsToController(true)) // ClientConfig customization
         .withMaximumInflightMessages(5)
-        .withSerializers(intSerializer, serializer)
+        .withSerializers(str => new TableKey(intSerializer.serialize(str.hashCode())))
+        .build()
       //#table-writer-settings
 
       tableWriterSettings.maximumInflightMessages mustEqual 5
@@ -88,11 +90,12 @@ class PravegaSettingsSpec extends PravegaBaseSpec with Matchers {
 
     "build TableReaderSettings with programmatic customisation" in {
       //#table-reader-settings
-      val tableReaderSettings = TableReaderSettingsBuilder[Int, String](system)
+      val tableReaderSettings = TableReaderSettingsBuilder[Int, String]
         .clientConfigBuilder(_.enableTlsToController(true)) // ClientConfig customization
         .withMaximumInflightMessages(5)
         .withMaxEntriesAtOnce(100)
-        .withSerializers(intSerializer, serializer)
+        .withTableKey(str => new TableKey(intSerializer.serialize(str.hashCode())))
+        .build()
       //#table-reader-settings
 
       tableReaderSettings.maximumInflightMessages mustEqual 5

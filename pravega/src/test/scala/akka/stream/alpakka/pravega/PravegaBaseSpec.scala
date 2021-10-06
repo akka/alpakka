@@ -55,7 +55,7 @@ abstract class PravegaBaseSpec
     streamManager.close()
   }
 
-  def createTable(scope: String, tableName: String): Unit = {
+  def createTable(scope: String, tableName: String, primaryKeyLength: Int): Unit = {
     val streamManager = StreamManager.create(URI.create("tcp://localhost:9090"))
     if (streamManager.createScope(scope))
       logger.info(s"Created scope [$scope].")
@@ -70,6 +70,7 @@ abstract class PravegaBaseSpec
     val keyValueTableConfig = KeyValueTableConfiguration
       .builder()
       .partitionCount(2)
+      .primaryKeyLength(primaryKeyLength)
       .build()
     val keyValueTableManager = KeyValueTableManager.create(clientConfig)
 

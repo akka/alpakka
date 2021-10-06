@@ -17,6 +17,7 @@ import io.pravega.client.stream.ReaderGroup;
 import io.pravega.client.stream.Serializer;
 import io.pravega.client.stream.impl.JavaSerializer;
 import io.pravega.client.stream.impl.UTF8StringSerializer;
+import io.pravega.client.tables.TableKey;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -77,8 +78,9 @@ public class PravegaReadWriteDocs extends PravegaAkkaTestCaseSupport {
         };
 
     TableWriterSettings<Integer, String> tablewriterSettings =
-        TableWriterSettingsBuilder.<Integer, String>create(system)
-            .withSerializers(intSerializer, serializer);
+        TableWriterSettingsBuilder.<Integer, String>create(system, intSerializer, serializer)
+            .withSerializers(id -> new TableKey(intSerializer.serialize(id)))
+            .build();
 
     // #table-writing
     final List<Pair<Integer, String>> events =
@@ -96,21 +98,21 @@ public class PravegaReadWriteDocs extends PravegaAkkaTestCaseSupport {
     // #table-writing
 
     TableReaderSettings<Integer, String> tableReaderSettings =
-        TableReaderSettingsBuilder.<Integer, String>create(system)
-            .withSerializers(intSerializer, serializer);
+        TableReaderSettingsBuilder.<Integer, String>create(system, intSerializer, serializer)
+            .withTableKey(id -> new TableKey(intSerializer.serialize(id)))
+            .build();
 
     // #table-reading
 
     final CompletionStage<Done> pair =
-        PravegaTable.source(
-                "an_existing_scope", "an_existing_tableName", "test", tableReaderSettings)
-            .to(Sink.foreach((Pair<Integer, String> kvp) -> processKVP(kvp)))
+        PravegaTable.source("an_existing_scope", "an_existing_tableName", tableReaderSettings)
+            .to(Sink.foreach((TableEntry<String> kvp) -> processKVP(kvp)))
             .run(system);
     // #table-reading
 
   }
 
-  private static void processKVP(Pair<Integer, String> kvp) {
+  private static void processKVP(TableEntry<String> kvp) {
     LOGGER.info(kvp.toString());
   }
 

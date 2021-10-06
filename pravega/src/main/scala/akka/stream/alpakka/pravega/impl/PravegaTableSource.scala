@@ -14,32 +14,38 @@ import akka.event.Logging
 import scala.concurrent.{Future, Promise}
 import scala.util.control.NonFatal
 import akka.stream.ActorAttributes
+
 import akka.stream.alpakka.pravega.TableReaderSettings
 import io.pravega.client.KeyValueTableFactory
-import io.pravega.client.tables.{IteratorItem, KeyValueTable, KeyValueTableClientConfiguration, TableEntry}
+import io.pravega.client.tables.{
+  IteratorItem,
+  KeyValueTable,
+  KeyValueTableClientConfiguration,
+  TableEntry => JTableEntry
+}
+
+import akka.stream.alpakka.pravega.TableEntry
 
 import scala.collection.mutable
 import java.util.concurrent.Semaphore
 import io.pravega.common.util.AsyncIterator
-@InternalApi private final class PravegaTableSourceStageLogic[K, V, KVPair](
-    shape: SourceShape[KVPair],
-    createKVP: TableEntry[K, V] => KVPair,
+@InternalApi private final class PravegaTableSourceStageLogic[K, V](
+    shape: SourceShape[TableEntry[V]],
     val scope: String,
     tableName: String,
-    keyFamily: String,
     tableReaderSettings: TableReaderSettings[K, V],
     startupPromise: Promise[Done]
 ) extends GraphStageLogic(shape)
     with StageLogging {
 
-  override protected def logSource = classOf[PravegaTableSourceStageLogic[K, V, KVPair]]
+  override protected def logSource = classOf[PravegaTableSourceStageLogic[K, V]]
 
   private def out = shape.out
 
   private var keyValueTableFactory: KeyValueTableFactory = _
-  private var table: KeyValueTable[K, V] = _
+  private var table: KeyValueTable = _
 
-  private val queue = mutable.Queue.empty[KVPair]
+  private val queue = mutable.Queue.empty[TableEntry[V]]
 
   private val semaphore = new Semaphore(tableReaderSettings.maximumInflightMessages)
 
@@ -49,12 +55,12 @@ import io.pravega.common.util.AsyncIterator
     log.info(message)
   }
 
-  private def pushElement(out: Outlet[KVPair], element: KVPair) = {
+  private def pushElement(out: Outlet[TableEntry[V]], element: TableEntry[V]) = {
     push(out, element)
     semaphore.release()
   }
 
-  val onElement: AsyncCallback[KVPair] = getAsyncCallback[KVPair] { element =>
+  val onElement: AsyncCallback[TableEntry[V]] = getAsyncCallback[TableEntry[V]] { element =>
     if (isAvailable(out) && queue.isEmpty)
       pushElement(out, element)
     else
@@ -81,16 +87,20 @@ import io.pravega.common.util.AsyncIterator
     }
   )
 
-  def nextIteration(iterator: AsyncIterator[IteratorItem[TableEntry[K, V]]]): Unit =
+  def nextIteration(iterator: AsyncIterator[IteratorItem[JTableEntry]]): Unit =
     iterator.getNext
-      .thenAccept(new Consumer[IteratorItem[TableEntry[K, V]]] {
-        override def accept(iteratorItem: IteratorItem[TableEntry[K, V]]): Unit = {
+      .thenAccept(new Consumer[IteratorItem[JTableEntry]] {
+        override def accept(iteratorItem: IteratorItem[JTableEntry]): Unit = {
           if (iteratorItem == null) {
             onFinish.invoke(())
           } else {
             iteratorItem.getItems.stream().forEach { tableEntry =>
               semaphore.acquire()
-              onElement.invoke(createKVP(tableEntry))
+
+              val entry = new TableEntry(tableEntry.getKey(),
+                                         tableEntry.getVersion(),
+                                         tableReaderSettings.valueSerializer.deserialize(tableEntry.getValue()))
+              onElement.invoke(entry)
             }
             nextIteration(iterator)
           }
@@ -106,12 +116,9 @@ import io.pravega.common.util.AsyncIterator
         .withScope(scope, tableReaderSettings.clientConfig)
 
       table = keyValueTableFactory
-        .forKeyValueTable(tableName,
-                          tableReaderSettings.keySerializer,
-                          tableReaderSettings.valueSerializer,
-                          kvtClientConfig)
+        .forKeyValueTable(tableName, kvtClientConfig)
 
-      val iterator = table.entryIterator(keyFamily, tableReaderSettings.maxEntriesAtOnce, null)
+      val iterator = table.iterator().maxIterationSize(tableReaderSettings.maxEntriesAtOnce).all().entries()
 
       nextIteration(iterator)
 
@@ -131,17 +138,15 @@ import io.pravega.common.util.AsyncIterator
 
 }
 
-@InternalApi private[pravega] final class PravegaTableSource[KVPair, K, V](
-    createKVP: TableEntry[K, V] => KVPair,
+@InternalApi private[pravega] final class PravegaTableSource[K, V](
     scope: String,
     tableName: String,
-    keyFamily: String,
     tableReaderSettings: TableReaderSettings[K, V]
-) extends GraphStageWithMaterializedValue[SourceShape[KVPair], Future[Done]] {
+) extends GraphStageWithMaterializedValue[SourceShape[TableEntry[V]], Future[Done]] {
 
-  private val out: Outlet[KVPair] = Outlet(Logging.simpleName(this) + ".out")
+  private val out: Outlet[TableEntry[V]] = Outlet(Logging.simpleName(this) + ".out")
 
-  override val shape: SourceShape[KVPair] = SourceShape(out)
+  override val shape: SourceShape[TableEntry[V]] = SourceShape(out)
 
   override protected def initialAttributes: Attributes =
     super.initialAttributes and Attributes.name(Logging.simpleName(this)) and ActorAttributes.IODispatcher
@@ -151,12 +156,10 @@ import io.pravega.common.util.AsyncIterator
   ): (GraphStageLogic, Future[Done]) = {
     val startupPromise = Promise[Done]()
 
-    val logic = new PravegaTableSourceStageLogic[K, V, KVPair](
+    val logic = new PravegaTableSourceStageLogic[K, V](
       shape,
-      createKVP,
       scope,
       tableName,
-      keyFamily,
       tableReaderSettings,
       startupPromise
     )

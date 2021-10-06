@@ -24,12 +24,12 @@ import io.pravega.client.tables.KeyValueTableClientConfiguration
 
 import io.pravega.client.tables.TableEntry
 import scala.util.Success
+
 @InternalApi private final class PravegaTableReadFlowStageLogic[K, V](
     val shape: FlowShape[K, Option[V]],
     val scope: String,
     tableName: String,
-    tableSettings: TableSettings[K, V],
-    familyExtractor: K => String
+    tableSettings: TableSettings[K, V]
 ) extends GraphStageLogic(shape)
     with StageLogging {
 
@@ -37,7 +37,7 @@ import scala.util.Success
   private def out: Outlet[Option[V]] = shape.out
 
   private var keyValueTableFactory: KeyValueTableFactory = _
-  private var table: KeyValueTable[K, V] = _
+  private var table: KeyValueTable = _
 
   @volatile
   private var inFlight = 0
@@ -45,13 +45,13 @@ import scala.util.Success
   @volatile
   private var upstreamEnded = false;
 
-  private val asyncMessageSendCallback: AsyncCallback[(Try[TableEntry[K, V]])] = getAsyncCallback { p =>
+  private val asyncMessageSendCallback: AsyncCallback[(Try[TableEntry])] = getAsyncCallback { p =>
     p match {
       case Failure(exception) =>
         log.error(exception, s"Failed to send message {}")
       case Success(kv) =>
         if (kv != null)
-          push(out, Some(kv.getValue()))
+          push(out, Some(tableSettings.valueSerializer.deserialize(kv.getValue())))
         else
           push(out, None)
 
@@ -75,14 +75,14 @@ import scala.util.Success
         .withScope(scope, tableSettings.clientConfig)
 
       table = keyValueTableFactory
-        .forKeyValueTable(tableName, tableSettings.keySerializer, tableSettings.valueSerializer, kvtClientConfig)
+        .forKeyValueTable(tableName, kvtClientConfig)
       log.debug("Open table {}", tableName)
 
     } catch {
       case NonFatal(ex) => failStage(ex)
     }
 
-  def handleSentEvent(completableFuture: CompletableFuture[TableEntry[K, V]]): Unit =
+  def handleSentEvent(completableFuture: CompletableFuture[TableEntry]): Unit =
     completableFuture.toScala.onComplete { t =>
       asyncMessageSendCallback.invokeWithFeedback((t))
     }
@@ -93,7 +93,7 @@ import scala.util.Success
       override def onPush(): Unit = {
         val msg = grab(in)
         inFlight += 1
-        handleSentEvent(table.get(familyExtractor(msg), msg))
+        handleSentEvent(table.get(tableSettings.tableKey(msg)))
       }
       override def onUpstreamFinish(): Unit = {
         log.debug("Upstream finished")
@@ -127,8 +127,7 @@ import scala.util.Success
 @InternalApi private[pravega] final class PravegaTableReadFlow[K, V](
     scope: String,
     streamName: String,
-    tableSettings: TableSettings[K, V],
-    familyExtractor: K => String
+    tableSettings: TableSettings[K, V]
 ) extends GraphStage[FlowShape[K, Option[V]]] {
 
   val in: Inlet[K] = Inlet(Logging.simpleName(this) + ".in")
@@ -140,6 +139,6 @@ import scala.util.Success
   override val shape: FlowShape[K, Option[V]] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new PravegaTableReadFlowStageLogic[K, V](shape, scope, streamName, tableSettings, familyExtractor)
+    new PravegaTableReadFlowStageLogic[K, V](shape, scope, streamName, tableSettings)
 
 }
