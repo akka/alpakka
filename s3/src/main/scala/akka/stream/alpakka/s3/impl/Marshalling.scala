@@ -126,7 +126,7 @@ import scala.xml.NodeSeq
         }
 
         val commonPrefixes = (x \ "CommonPrefixes").map { cp =>
-          ListMultipartUploadResultCommonPrefixes((cp \ "Prefix").text)
+          CommonPrefixes((cp \ "Prefix").text)
         }
 
         ListMultipartUploadsResult(bucket,
