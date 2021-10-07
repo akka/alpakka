@@ -264,27 +264,27 @@ object ListMultipartUploadResultUploads {
     apply(key, uploadId, initiator, owner, storageClass, initiated)
 }
 
-final class ListMultipartUploadResultCommonPrefixes private (val prefix: String) {
+final class CommonPrefixes private (val prefix: String) {
 
   /** Java API */
   def getPrefix: String = prefix
 
-  def withPrefix(value: String): ListMultipartUploadResultCommonPrefixes = copy(prefix = value)
+  def withPrefix(value: String): CommonPrefixes = copy(prefix = value)
 
   // Warning is only being generated here because there is a single argument in the parameter list. If more fields
-  // get added to ListMultipartUploadResultCommonPrefixes then the `@silent` is no longer needed
+  // get added to CommonPrefixes then the `@silent` is no longer needed
   @silent
-  private def copy(prefix: String = prefix): ListMultipartUploadResultCommonPrefixes =
-    new ListMultipartUploadResultCommonPrefixes(prefix)
+  private def copy(prefix: String = prefix): CommonPrefixes =
+    new CommonPrefixes(prefix)
 
   override def toString: String =
-    "ListMultipartUploadResultCommonPrefixes(" +
+    "CommonPrefixes(" +
     s"prefix=$prefix" +
     ")"
 
   override def equals(other: Any): Boolean =
     other match {
-      case that: ListMultipartUploadResultCommonPrefixes =>
+      case that: CommonPrefixes =>
         Objects.equals(this.prefix, that.prefix)
       case _ => false
     }
@@ -293,14 +293,14 @@ final class ListMultipartUploadResultCommonPrefixes private (val prefix: String)
     Objects.hash(prefix)
 }
 
-object ListMultipartUploadResultCommonPrefixes {
+object CommonPrefixes {
 
   /** Scala API */
-  def apply(prefix: String): ListMultipartUploadResultCommonPrefixes =
-    new ListMultipartUploadResultCommonPrefixes(prefix)
+  def apply(prefix: String): CommonPrefixes =
+    new CommonPrefixes(prefix)
 
   /** Java API */
-  def create(prefix: String): ListMultipartUploadResultCommonPrefixes = apply(prefix)
+  def create(prefix: String): CommonPrefixes = apply(prefix)
 }
 
 final class ListPartsResultParts(val lastModified: Instant, val eTag: String, val partNumber: Int, val size: Long) {

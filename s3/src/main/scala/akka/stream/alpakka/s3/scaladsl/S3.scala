@@ -296,14 +296,14 @@ object S3 {
    * @param bucket Which bucket that you list in-progress multipart uploads for
    * @param prefix Prefix of the keys you want to list under passed bucket
    * @param s3Headers any headers you want to add
-   * @return [[akka.stream.scaladsl.Source Source]] of ([[scala.collection.Seq Seq]] of [[akka.stream.alpakka.s3.ListMultipartUploadResultUploads ListMultipartUploadResultUploads]], [[scala.collection.Seq Seq]] of [[akka.stream.alpakka.s3.ListMultipartUploadResultCommonPrefixes ListMultipartUploadResultCommonPrefixes]])
+   * @return [[akka.stream.scaladsl.Source Source]] of ([[scala.collection.Seq Seq]] of [[akka.stream.alpakka.s3.ListMultipartUploadResultUploads ListMultipartUploadResultUploads]], [[scala.collection.Seq Seq]] of [[akka.stream.alpakka.s3.CommonPrefixes CommonPrefixes]])
    */
   def listMultipartUploadAndCommonPrefixes(
       bucket: String,
       delimiter: String,
       prefix: Option[String] = None,
       s3Headers: S3Headers = S3Headers.empty
-  ): Source[(Seq[ListMultipartUploadResultUploads], Seq[ListMultipartUploadResultCommonPrefixes]), NotUsed] =
+  ): Source[(Seq[ListMultipartUploadResultUploads], Seq[CommonPrefixes]), NotUsed] =
     S3Stream.listMultipartUploadAndCommonPrefixes(bucket, delimiter, prefix, s3Headers)
 
   /**

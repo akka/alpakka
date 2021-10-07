@@ -91,7 +91,7 @@ import scala.util.{Failure, Success, Try}
     maxUploads: Int,
     isTruncated: Boolean,
     uploads: Seq[ListMultipartUploadResultUploads],
-    commonPrefixes: Seq[ListMultipartUploadResultCommonPrefixes]
+    commonPrefixes: Seq[CommonPrefixes]
 ) {
 
   /**
@@ -311,8 +311,7 @@ import scala.util.{Failure, Success, Try}
       delimiter: String,
       prefix: Option[String] = None,
       s3Headers: S3Headers
-  ): Source[(immutable.Seq[ListMultipartUploadResultUploads], immutable.Seq[ListMultipartUploadResultCommonPrefixes]),
-            NotUsed] = {
+  ): Source[(immutable.Seq[ListMultipartUploadResultUploads], immutable.Seq[CommonPrefixes]), NotUsed] = {
 
     def listMultipartUploadCallContentsAndCommonPrefixes(
         token: Option[ListMultipartUploadContinuationToken]
@@ -329,8 +328,7 @@ import scala.util.{Failure, Success, Try}
         implicit val materializer: Materializer = mat
         implicit val attributes: Attributes = attr
         Source
-          .unfoldAsync[ListMultipartUploadState,
-                       (Seq[ListMultipartUploadResultUploads], Seq[ListMultipartUploadResultCommonPrefixes])](
+          .unfoldAsync[ListMultipartUploadState, (Seq[ListMultipartUploadResultUploads], Seq[CommonPrefixes])](
             Starting()
           ) {
             case Finished() => Future.successful(None)
