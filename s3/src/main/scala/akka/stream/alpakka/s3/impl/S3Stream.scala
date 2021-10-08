@@ -108,6 +108,39 @@ import scala.util.{Failure, Success, Try}
 }
 
 /** Internal Api */
+@InternalApi private[impl] final case class ListObjectVersionContinuationToken(nextKeyMarker: Option[String],
+                                                                               nextVersionIdMarker: Option[String])
+
+/** Internal Api */
+@InternalApi private[impl] final case class ListObjectVersionsResult(
+    bucket: String,
+    name: String,
+    prefix: Option[String],
+    keyMarker: Option[String],
+    nextKeyMarker: Option[String],
+    versionIdMarker: Option[String],
+    nextVersionIdMarker: Option[String],
+    delimiter: Option[String],
+    maxKeys: Int,
+    isTruncated: Boolean,
+    versions: Seq[ListObjectVersionsResultVersions],
+    commonPrefixes: Seq[CommonPrefixes],
+    deleteMarkers: Seq[DeleteMarkers]
+) {
+
+  /**
+   * The continuation token for listing ObjectVersions is a union of both the nextKeyMarker
+   * and the nextUploadIdMarker. Note that its possible that only one of these markers can be
+   * defined
+   */
+  def continuationToken: Option[ListObjectVersionContinuationToken] =
+    (nextKeyMarker, nextVersionIdMarker) match {
+      case (None, None) => None
+      case (key, version) => Some(ListObjectVersionContinuationToken(key, version))
+    }
+}
+
+/** Internal Api */
 @InternalApi private[impl] final case class ListPartsResult(bucket: String,
                                                             key: String,
                                                             uploadId: String,
@@ -180,7 +213,7 @@ import scala.util.{Failure, Success, Try}
           .mapAsync(parallelism = 1)(entityForSuccess)
           .map {
             case (entity, headers) =>
-              Option((entity.dataBytes.mapMaterializedValue(_ => NotUsed), computeMetaData(headers, entity)))
+              Some((entity.dataBytes.mapMaterializedValue(_ => NotUsed), computeMetaData(headers, entity)))
           }
           .recover[Option[(Source[ByteString, NotUsed], ObjectMetadata)]] {
             case e: S3Exception if e.code == "NoSuchKey" => None
@@ -414,6 +447,105 @@ import scala.util.{Failure, Success, Try}
       .mapMaterializedValue(_ => NotUsed)
   }
 
+  type ListObjectVersionsState = S3PaginationState[ListObjectVersionContinuationToken]
+
+  def listObjectVersionsCall[T](
+      bucket: String,
+      delimiter: Option[String],
+      prefix: Option[String],
+      s3Headers: S3Headers,
+      token: Option[ListObjectVersionContinuationToken],
+      resultTransformer: ListObjectVersionsResult => T
+  )(implicit mat: Materializer, attr: Attributes): Future[Option[(ListObjectVersionsState, T)]] = {
+    import mat.executionContext
+    implicit val conf: S3Settings = resolveSettings(attr, mat.system)
+
+    signAndGetAs[ListObjectVersionsResult](
+      HttpRequests.listObjectVersions(bucket, delimiter, prefix, token, s3Headers.headersFor(ListBucket))
+    ).map { (res: ListObjectVersionsResult) =>
+      Some(
+        res.continuationToken
+          .fold[(ListObjectVersionsState, T)]((Finished(), resultTransformer(res)))(
+            t => (Running(t), resultTransformer(res))
+          )
+      )
+    }
+  }
+
+  def listObjectVersionsAndCommonPrefixes(
+      bucket: String,
+      delimiter: String,
+      prefix: Option[String],
+      s3Headers: S3Headers
+  ): Source[
+    (immutable.Seq[ListObjectVersionsResultVersions], immutable.Seq[DeleteMarkers], immutable.Seq[CommonPrefixes]),
+    NotUsed
+  ] = {
+
+    def listObjectVersionsCallVersionsAndDeleteMarkersAndCommonPrefixes(
+        token: Option[ListObjectVersionContinuationToken]
+    )(implicit mat: Materializer, attr: Attributes) =
+      listObjectVersionsCall(
+        bucket,
+        Some(delimiter),
+        prefix,
+        s3Headers,
+        token,
+        listObjectVersionsResult =>
+          (listObjectVersionsResult.versions,
+           listObjectVersionsResult.deleteMarkers,
+           listObjectVersionsResult.commonPrefixes)
+      )
+
+    Source
+      .fromMaterializer { (mat, attr) =>
+        implicit val materializer: Materializer = mat
+        implicit val attributes: Attributes = attr
+        Source
+          .unfoldAsync[ListObjectVersionsState,
+                       (Seq[ListObjectVersionsResultVersions], Seq[DeleteMarkers], Seq[CommonPrefixes])](
+            Starting()
+          ) {
+            case Finished() => Future.successful(None)
+            case Starting() => listObjectVersionsCallVersionsAndDeleteMarkersAndCommonPrefixes(None)
+            case Running(token) => listObjectVersionsCallVersionsAndDeleteMarkersAndCommonPrefixes(Some(token))
+          }
+      }
+      .mapMaterializedValue(_ => NotUsed)
+  }
+
+  def listObjectVersions(
+      bucket: String,
+      prefix: Option[String],
+      s3Headers: S3Headers
+  ): Source[(immutable.Seq[ListObjectVersionsResultVersions], immutable.Seq[DeleteMarkers]), NotUsed] = {
+
+    def listObjectVersionsCallOnlyVersions(
+        token: Option[ListObjectVersionContinuationToken]
+    )(implicit mat: Materializer, attr: Attributes) =
+      listObjectVersionsCall(
+        bucket,
+        None,
+        prefix,
+        s3Headers,
+        token,
+        listObjectVersionsResult => (listObjectVersionsResult.versions, listObjectVersionsResult.deleteMarkers)
+      )
+
+    Source
+      .fromMaterializer { (mat, attr) =>
+        implicit val materializer: Materializer = mat
+        implicit val attributes: Attributes = attr
+        Source
+          .unfoldAsync[ListObjectVersionsState, (Seq[ListObjectVersionsResultVersions], Seq[DeleteMarkers])](Starting()) {
+            case Finished() => Future.successful(None)
+            case Starting() => listObjectVersionsCallOnlyVersions(None)
+            case Running(token) => listObjectVersionsCallOnlyVersions(Some(token))
+          }
+      }
+      .mapMaterializedValue(_ => NotUsed)
+  }
+
   def getObjectMetadata(bucket: String,
                         key: String,
                         versionId: Option[String],
@@ -472,6 +604,21 @@ import scala.util.{Failure, Success, Try}
         listBucketResultContents =>
           deleteObject(S3Location(bucket, listBucketResultContents.key), versionId = None, s3Headers)
       )
+      .flatMapConcat { _ =>
+        listObjectVersions(bucket, prefix, s3Headers).flatMapConcat {
+          case (versions, deleteMarkers) =>
+            val allVersions =
+              (versions.map(v => (v.key, v.versionId)) ++ deleteMarkers.map(d => (d.key, d.versionId))).distinct
+            Source
+              .zipN(
+                allVersions.map {
+                  case (key, versionId) =>
+                    deleteObject(S3Location(bucket, key), versionId = Some(versionId), s3Headers)
+                }
+              )
+              .map(_ => Done)
+        }
+      }
 
   def putObject(s3Location: S3Location,
                 contentType: ContentType,

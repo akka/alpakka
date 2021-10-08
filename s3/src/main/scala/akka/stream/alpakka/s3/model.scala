@@ -264,6 +264,210 @@ object ListMultipartUploadResultUploads {
     apply(key, uploadId, initiator, owner, storageClass, initiated)
 }
 
+final class ListObjectVersionsResultVersions private (val eTag: String,
+                                                      val isLatest: Boolean,
+                                                      val key: String,
+                                                      val lastModified: Instant,
+                                                      val owner: AWSIdentity,
+                                                      val size: Long,
+                                                      val storageClass: String,
+                                                      val versionId: String) {
+
+  /** Java API */
+  def getETag: String = eTag
+
+  /** Java API */
+  def getIsLatest: Boolean = isLatest
+
+  /** Java API */
+  def getKey: String = key
+
+  /** Java API */
+  def getLastModified: Instant = lastModified
+
+  /** Java API */
+  def getOwner: AWSIdentity = owner
+
+  /** Java API */
+  def getSize: Long = size
+
+  /** Java API */
+  def getStorageClass: String = storageClass
+
+  /** Java API */
+  def getVersionId: String = versionId
+
+  def withETag(value: String): ListObjectVersionsResultVersions = copy(eTag = value)
+
+  def withIsLatest(value: Boolean): ListObjectVersionsResultVersions = copy(isLatest = value)
+
+  def withKey(value: String): ListObjectVersionsResultVersions = copy(key = value)
+
+  def withLastModified(value: Instant): ListObjectVersionsResultVersions = copy(lastModified = value)
+
+  def withOwner(value: AWSIdentity): ListObjectVersionsResultVersions = copy(owner = value)
+
+  def withSize(value: Long): ListObjectVersionsResultVersions = copy(size = value)
+
+  def withStorageClass(value: String): ListObjectVersionsResultVersions = copy(storageClass = value)
+
+  def withVersionId(value: String): ListObjectVersionsResultVersions = copy(versionId = value)
+
+  private def copy(eTag: String = eTag,
+                   isLatest: Boolean = isLatest,
+                   key: String = key,
+                   lastModified: Instant = lastModified,
+                   owner: AWSIdentity = owner,
+                   size: Long = size,
+                   storageClass: String = storageClass,
+                   versionId: String = versionId): ListObjectVersionsResultVersions =
+    new ListObjectVersionsResultVersions(
+      eTag = eTag,
+      isLatest = isLatest,
+      key = key,
+      lastModified = lastModified,
+      owner = owner,
+      size = size,
+      storageClass = storageClass,
+      versionId = versionId
+    )
+
+  override def toString: String =
+    "ListObjectVersionsResultVersions(" +
+    s"eTag=$eTag," +
+    s"isLatest=$isLatest," +
+    s"key=$key," +
+    s"lastModified=$lastModified," +
+    s"owner=$owner," +
+    s"size=$size," +
+    s"storageClass=$storageClass," +
+    s"versionId=$versionId" +
+    ")"
+
+  override def equals(other: Any): Boolean =
+    other match {
+      case that: ListObjectVersionsResultVersions =>
+        Objects.equals(this.eTag, that.eTag) &&
+        Objects.equals(this.isLatest, that.isLatest) &&
+        Objects.equals(this.key, that.key) &&
+        Objects.equals(this.lastModified, that.lastModified) &&
+        Objects.equals(this.owner, that.owner) &&
+        Objects.equals(this.size, that.size) &&
+        Objects.equals(this.storageClass, that.storageClass) &&
+        Objects.equals(this.versionId, that.versionId)
+      case _ => false
+    }
+
+  override def hashCode(): Int =
+    Objects.hash(eTag, Boolean.box(isLatest), key, lastModified, owner, Long.box(size), storageClass, versionId)
+}
+
+object ListObjectVersionsResultVersions {
+
+  /** Scala API */
+  def apply(eTag: String,
+            isLatest: Boolean,
+            key: String,
+            lastModified: Instant,
+            owner: AWSIdentity,
+            size: Long,
+            storageClass: String,
+            versionId: String): ListObjectVersionsResultVersions =
+    new ListObjectVersionsResultVersions(eTag, isLatest, key, lastModified, owner, size, storageClass, versionId)
+
+  /** Java API */
+  def create(eTag: String,
+             isLatest: Boolean,
+             key: String,
+             lastModified: Instant,
+             owner: AWSIdentity,
+             size: Long,
+             storageClass: String,
+             versionId: String): ListObjectVersionsResultVersions =
+    apply(eTag, isLatest, key, lastModified, owner, size, storageClass, versionId)
+}
+
+final class DeleteMarkers private (val isLatest: Boolean,
+                                   val key: String,
+                                   val lastModified: Instant,
+                                   val owner: AWSIdentity,
+                                   val versionId: String) {
+
+  /** Java API */
+  def getIsLatest: Boolean = isLatest
+
+  /** Java API */
+  def getKey: String = key
+
+  /** Java API */
+  def getLastModified: Instant = lastModified
+
+  /** Java API */
+  def getOwner: AWSIdentity = owner
+
+  /** Java API */
+  def getVersionId: String = versionId
+
+  def withIsLatest(value: Boolean): DeleteMarkers = copy(isLatest = value)
+
+  def withKey(value: String): DeleteMarkers = copy(key = value)
+
+  def withLastModified(value: Instant): DeleteMarkers = copy(lastModified = value)
+
+  def withOwner(value: AWSIdentity): DeleteMarkers = copy(owner = value)
+
+  def withVersionId(value: String): DeleteMarkers = copy(versionId = value)
+
+  private def copy(isLatest: Boolean = isLatest,
+                   key: String = key,
+                   lastModified: Instant = lastModified,
+                   owner: AWSIdentity = owner,
+                   versionId: String = versionId): DeleteMarkers =
+    new DeleteMarkers(isLatest, key, lastModified, owner, versionId)
+
+  override def toString: String =
+    "DeleteMarkers(" +
+    s"isLatest=$isLatest," +
+    s"key=$key," +
+    s"lastModified=$lastModified," +
+    s"owner=$owner," +
+    s"versionId=$versionId" +
+    ")"
+
+  override def equals(other: Any): Boolean =
+    other match {
+      case that: DeleteMarkers =>
+        Objects.equals(this.isLatest, that.isLatest) &&
+        Objects.equals(this.key, that.key) &&
+        Objects.equals(this.lastModified, that.lastModified) &&
+        Objects.equals(this.owner, that.owner) &&
+        Objects.equals(this.versionId, that.versionId)
+      case _ => false
+    }
+
+  override def hashCode(): Int =
+    Objects.hash(Boolean.box(isLatest), key, lastModified, owner, owner, versionId)
+}
+
+object DeleteMarkers {
+
+  /** Scala API */
+  def apply(isLatest: Boolean,
+            key: String,
+            lastModified: Instant,
+            owner: AWSIdentity,
+            versionId: String): DeleteMarkers =
+    new DeleteMarkers(isLatest, key, lastModified, owner, versionId)
+
+  /** Java API */
+  def create(isLatest: Boolean,
+             key: String,
+             lastModified: Instant,
+             owner: AWSIdentity,
+             versionId: String): DeleteMarkers =
+    apply(isLatest, key, lastModified, owner, versionId)
+}
+
 final class CommonPrefixes private (val prefix: String) {
 
   /** Java API */

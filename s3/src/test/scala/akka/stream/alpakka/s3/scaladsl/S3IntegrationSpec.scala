@@ -52,6 +52,8 @@ trait S3IntegrationSpec
   // with dots forcing path style access
   val bucketWithDots = "my.test.frankfurt"
 
+  val bucketWithVersioning = "my-bucket-with-versioning"
+
   val objectKey = "test"
 
   val objectValue = "Some String"
@@ -155,7 +157,7 @@ trait S3IntegrationSpec
       (put, delete, metaBefore, metaAfter)
     }
 
-    val (putResult, deleteResult, metaBefore, metaAfter) = result.futureValue
+    val (putResult, _, metaBefore, metaAfter) = result.futureValue
     putResult.eTag should not be empty
     metaBefore should not be empty
     metaBefore.get.contentType shouldBe Some(ContentTypes.`application/octet-stream`.value)
@@ -344,6 +346,54 @@ trait S3IntegrationSpec
           .runWith(Sink.head)
           .futureValue shouldEqual akka.Done
     }
+  }
+
+  it should "create multiple versions of an object and successfully clean it with deleteBucketContents" in {
+    // TODO: Figure out a way to properly test this with Minio, see https://github.com/akka/alpakka/issues/2750
+    assume(this.isInstanceOf[AWSS3IntegrationSpec])
+    val versionKey = "test-version"
+    val one = ByteString("one")
+    val two = ByteString("two")
+    val three = ByteString("three")
+
+    val results = for {
+      // Clean the bucket just incase there is residual data in there
+      _ <- S3.deleteBucketContents(bucketWithVersioning).withAttributes(attributes).runWith(Sink.ignore)
+      _ <- S3
+        .putObject(bucketWithVersioning, versionKey, Source.single(one), one.length, s3Headers = S3Headers())
+        .withAttributes(attributes)
+        .runWith(Sink.ignore)
+      _ <- S3
+        .putObject(bucketWithVersioning, versionKey, Source.single(two), two.length, s3Headers = S3Headers())
+        .withAttributes(attributes)
+        .runWith(Sink.ignore)
+      _ <- S3
+        .putObject(bucketWithVersioning, versionKey, Source.single(three), three.length, s3Headers = S3Headers())
+        .withAttributes(attributes)
+        .runWith(Sink.ignore)
+      versionsBeforeDelete <- S3
+        .listObjectVersions(bucketWithVersioning, None)
+        .withAttributes(attributes)
+        .runWith(Sink.seq)
+      _ <- S3.deleteBucketContents(bucketWithVersioning).withAttributes(attributes).runWith(Sink.ignore)
+      versionsAfterDelete <- S3
+        .listObjectVersions(bucketWithVersioning, None)
+        .withAttributes(attributes)
+        .runWith(Sink.seq)
+      listBucketContentsAfterDelete <- S3
+        .listBucket(bucketWithVersioning, None)
+        .withAttributes(attributes)
+        .runWith(Sink.seq)
+
+    } yield (versionsBeforeDelete.flatMap { case (versions, _) => versions }, versionsAfterDelete.flatMap {
+      case (versions, _) => versions
+    }, listBucketContentsAfterDelete)
+
+    val (versionsBeforeDelete, versionsAfterDelete, bucketContentsAfterDelete) = results.futureValue
+
+    versionsBeforeDelete.size shouldEqual 3
+    versionsAfterDelete.size shouldEqual 0
+    bucketContentsAfterDelete.size shouldEqual 0
   }
 
   it should "upload 2 files, delete all files in bucket" in {
@@ -858,6 +908,10 @@ class AWSS3IntegrationSpec extends S3IntegrationSpec
  * docker run -e MINIO_ACCESS_KEY=TESTKEY -e MINIO_SECRET_KEY=TESTSECRET -e MINIO_DOMAIN=s3minio.alpakka -p 9000:9000 minio/minio server /data
  * AWS_ACCESS_KEY_ID=TESTKEY AWS_SECRET_ACCESS_KEY=TESTSECRET aws --endpoint-url http://localhost:9000 s3api create-bucket --bucket my-test-us-east-1
  * AWS_ACCESS_KEY_ID=TESTKEY AWS_SECRET_ACCESS_KEY=TESTSECRET aws --endpoint-url http://localhost:9000 s3api create-bucket --bucket my.test.frankfurt
+
+ * NOTE: Ideally you would run the following commands to create a versioned bucket in Minio however its not working, see https://github.com/akka/alpakka/issues/2750
+ * AWS_ACCESS_KEY_ID=TESTKEY AWS_SECRET_ACCESS_KEY=TESTSECRET aws --endpoint-url http://localhost:9000 s3api create-bucket --bucket my-bucket-with-versioning
+ * AWS_ACCESS_KEY_ID=TESTKEY AWS_SECRET_ACCESS_KEY=TESTSECRET aws --endpoint-url http://localhost:9000 s3api put-bucket-versioning --bucket my-bucket-with-versioning --versioning-configuration Status=Enabled
  *
  * Run the tests from inside sbt:
  * s3/testOnly *.MinioS3IntegrationSpec
