@@ -211,6 +211,9 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
   "google-cloud-pub-sub-grpc",
   "google.cloud.pubsub.grpc",
   Dependencies.GooglePubSubGrpc,
+  akkaGrpcCodeGeneratorSettings ~= { _.filterNot(_ == "flat_package") },
+  akkaGrpcGeneratedSources := Seq(AkkaGrpc.Client),
+  akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala, AkkaGrpc.Java),
   Compile / PB.protoSources += (Compile / PB.externalIncludePath).value,
   // for the ExampleApp in the tests
   connectInput in run := true,
@@ -219,7 +222,7 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
       "-P:silencer:pathFilters=akka-grpc/test"
     ),
   compile / javacOptions := (compile / javacOptions).value.filterNot(_ == "-Xlint:deprecation")
-).dependsOn(googleCommon)
+).enablePlugins(AkkaGrpcPlugin).dependsOn(googleCommon)
 
 lazy val googleCloudStorage = alpakkaProject(
   "google-cloud-storage",
