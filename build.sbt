@@ -180,6 +180,22 @@ lazy val googleCloudBigQuery = alpakkaProject(
   Test / fork := true
 ).dependsOn(googleCommon).enablePlugins(spray.boilerplate.BoilerplatePlugin)
 
+lazy val googleCloudBigQueryStorage = alpakkaProject(
+  "google-cloud-bigquery-storage",
+  "google.cloud.bigquery.storage",
+  Dependencies.GoogleBigQueryStorage,
+  akkaGrpcCodeGeneratorSettings ~= { _.filterNot(_ == "flat_package") },
+  akkaGrpcCodeGeneratorSettings += "server_power_apis",
+  akkaGrpcGeneratedSources := Seq(AkkaGrpc.Client),
+  akkaGrpcGeneratedSources in Test := Seq(AkkaGrpc.Server),
+  akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala, AkkaGrpc.Java),
+  Compile / scalacOptions ++= Seq(
+      "-P:silencer:pathFilters=akka-grpc/main",
+      "-P:silencer:pathFilters=akka-grpc/test"
+    ),
+  compile / javacOptions := (compile / javacOptions).value.filterNot(_ == "-Xlint:deprecation")
+).dependsOn(googleCommon).disablePlugins(MimaPlugin).enablePlugins(AkkaGrpcPlugin)
+
 lazy val googleCloudPubSub = alpakkaProject(
   "google-cloud-pub-sub",
   "google.cloud.pubsub",
