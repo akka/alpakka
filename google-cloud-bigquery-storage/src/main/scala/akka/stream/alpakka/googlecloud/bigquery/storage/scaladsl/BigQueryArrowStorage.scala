@@ -17,6 +17,9 @@ import com.google.cloud.bigquery.storage.v1.stream.ReadSession.TableReadOptions
 
 import scala.concurrent.Future
 
+/**
+ * Google BigQuery Storage Api Akka Stream operator factory for Arrow Format.
+ */
 object BigQueryArrowStorage {
 
   def readRecordsMerged(projectId: String,
