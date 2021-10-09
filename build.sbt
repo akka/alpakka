@@ -211,7 +211,6 @@ lazy val googleCloudPubSubGrpc = alpakkaProject(
   "google-cloud-pub-sub-grpc",
   "google.cloud.pubsub.grpc",
   Dependencies.GooglePubSubGrpc,
-  akkaGrpcCodeGeneratorSettings ~= { _.filterNot(_ == "flat_package") },
   Compile / PB.protoSources += (Compile / PB.externalIncludePath).value,
   // for the ExampleApp in the tests
   connectInput in run := true,
