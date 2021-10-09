@@ -40,15 +40,7 @@ The Alpakka Google Cloud BigQuery Storage library contains the classes generated
 
 ## Configuration
 
-The connector comes with the default settings configured to work with the Google BigQuery endpoint and uses the default way of
-locating credentials by looking at the `GOOGLE_APPLICATION_CREDENTIALS` environment variable. Please check
-[Google official documentation](https://cloud.google.com/bigquery/docs/reference/libraries#setting_up_authentication) for more details
-on how to obtain credentials for your application.
-
-The defaults can be changed (for example when testing against a local implementation of the server) by tweaking the reference configuration:
-
-reference.conf
-: @@snip (/google-cloud-bigquery-storage/src/main/resources/reference.conf)
+The BigQuery Storage connector @ref[shares its basic configuration](google-common.md) with all the Google connectors in Alpakka.
 
 Example Test Configuration
 ```
