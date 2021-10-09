@@ -1,10 +1,8 @@
 # Google Cloud BigQuery Storage
 
-@@@ note
 The BigQuery Storage API offers fast access to BigQuery-managed storage using an [rpc-based](https://cloud.google.com/bigquery/docs/reference/storage/rpc) protocol.
 It is seen as an improvement over the REST API, and bulk data `extract` jobs for accessing BigQuery-managed table data, but doesn't offer any functionality around managing BigQuery resources.
 Further information at the official [Google Cloud documentation website](https://cloud.google.com/bigquery/docs/reference/storage).
-@@@
 
 This connector communicates to the BigQuery Storage API via the gRPC protocol. The integration between Akka Stream and gRPC is handled by the
 @extref:[Akka gRPC library](akka-grpc:/). Currently, this connector only supports returning each row as an Avro GenericRecord.
