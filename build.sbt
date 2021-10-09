@@ -18,6 +18,7 @@ lazy val alpakka = project
     geode,
     googleCommon,
     googleCloudBigQuery,
+    googleCloudBigQueryStorage,
     googleCloudPubSub,
     googleCloudPubSubGrpc,
     googleCloudStorage,
@@ -179,6 +180,23 @@ lazy val googleCloudBigQuery = alpakkaProject(
   Dependencies.GoogleBigQuery,
   Test / fork := true
 ).dependsOn(googleCommon).enablePlugins(spray.boilerplate.BoilerplatePlugin)
+
+lazy val googleCloudBigQueryStorage = alpakkaProject(
+  "google-cloud-bigquery-storage",
+  "google.cloud.bigquery.storage",
+  Dependencies.GoogleBigQueryStorage,
+  akkaGrpcCodeGeneratorSettings ~= { _.filterNot(_ == "flat_package") },
+  akkaGrpcCodeGeneratorSettings += "server_power_apis",
+  akkaGrpcGeneratedSources := Seq(AkkaGrpc.Client),
+  akkaGrpcGeneratedSources in Test := Seq(AkkaGrpc.Server),
+  akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala, AkkaGrpc.Java),
+  Compile / PB.protoSources += (Compile / PB.externalIncludePath).value,
+  Compile / scalacOptions ++= Seq(
+      "-P:silencer:pathFilters=akka-grpc/main",
+      "-P:silencer:pathFilters=akka-grpc/test"
+    ),
+  compile / javacOptions := (compile / javacOptions).value.filterNot(_ == "-Xlint:deprecation")
+).enablePlugins(AkkaGrpcPlugin).dependsOn(googleCommon)
 
 lazy val googleCloudPubSub = alpakkaProject(
   "google-cloud-pub-sub",
