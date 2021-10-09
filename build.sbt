@@ -180,7 +180,6 @@ lazy val googleCloudBigQuery = alpakkaProject(
   Test / fork := true
 ).dependsOn(googleCommon).enablePlugins(spray.boilerplate.BoilerplatePlugin)
 
-
 lazy val googleCloudPubSub = alpakkaProject(
   "google-cloud-pub-sub",
   "google.cloud.pubsub",
