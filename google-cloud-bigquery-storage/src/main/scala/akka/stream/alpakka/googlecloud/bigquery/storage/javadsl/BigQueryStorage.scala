@@ -125,12 +125,12 @@ object BigQueryStorage {
    * @param tableId    the table to query
    * @param dataFormat the format to Receive the data
    */
-  def typed[A](projectId: String,
-               datasetId: String,
-               tableId: String,
-               dataFormat: DataFormat,
-               um: FromByteStringUnmarshaller[A]): Source[A, CompletionStage[NotUsed]] =
-    typed(projectId, datasetId, tableId, dataFormat, None, 1, um)
+  def createMergedStreams[A](projectId: String,
+                             datasetId: String,
+                             tableId: String,
+                             dataFormat: DataFormat,
+                             um: FromByteStringUnmarshaller[A]): Source[A, CompletionStage[NotUsed]] =
+    createMergedStreams(projectId, datasetId, tableId, dataFormat, None, 1, um)
 
   /**
    * Create a source that contains a number of sources, one for each stream, or section of the table data.
@@ -142,13 +142,13 @@ object BigQueryStorage {
    * @param dataFormat  the format to Receive the data
    * @param readOptions TableReadOptions to reduce the amount of data to return, either by column projection or filtering
    */
-  def typed[A](projectId: String,
-               datasetId: String,
-               tableId: String,
-               dataFormat: DataFormat,
-               readOptions: TableReadOptions,
-               um: FromByteStringUnmarshaller[A]): Source[A, CompletionStage[NotUsed]] =
-    typed(projectId, datasetId, tableId, dataFormat, Some(readOptions), 0, um)
+  def createMergedStreams[A](projectId: String,
+                             datasetId: String,
+                             tableId: String,
+                             dataFormat: DataFormat,
+                             readOptions: TableReadOptions,
+                             um: FromByteStringUnmarshaller[A]): Source[A, CompletionStage[NotUsed]] =
+    createMergedStreams(projectId, datasetId, tableId, dataFormat, Some(readOptions), 0, um)
 
   /**
    * Create a source that contains a number of sources, one for each stream, or section of the table data.
@@ -163,14 +163,14 @@ object BigQueryStorage {
    *                      Must be non-negative. The number of streams may be lower than the requested number, depending on the amount parallelism that is reasonable for the table.
    *                      Error will be returned if the max count is greater than the current system max limit of 1,000.
    */
-  def typed[A](projectId: String,
-               datasetId: String,
-               tableId: String,
-               dataFormat: DataFormat,
-               readOptions: TableReadOptions,
-               maxNumStreams: Int,
-               um: FromByteStringUnmarshaller[A]): Source[A, CompletionStage[NotUsed]] =
-    typed(projectId, datasetId, tableId, dataFormat, Some(readOptions), maxNumStreams, um)
+  def createMergedStreams[A](projectId: String,
+                             datasetId: String,
+                             tableId: String,
+                             dataFormat: DataFormat,
+                             readOptions: TableReadOptions,
+                             maxNumStreams: Int,
+                             um: FromByteStringUnmarshaller[A]): Source[A, CompletionStage[NotUsed]] =
+    createMergedStreams(projectId, datasetId, tableId, dataFormat, Some(readOptions), maxNumStreams, um)
 
   /**
    * Create a source that contains a number of sources, one for each stream, or section of the table data.
@@ -185,15 +185,15 @@ object BigQueryStorage {
    *                      Error will be returned if the max count is greater than the current system max limit of 1,000.
    * @param um            the By
    */
-  def typed[A](projectId: String,
-               datasetId: String,
-               tableId: String,
-               dataFormat: DataFormat,
-               maxNumStreams: Int,
-               um: FromByteStringUnmarshaller[A]): Source[A, CompletionStage[NotUsed]] =
-    typed(projectId, datasetId, tableId, dataFormat, None, maxNumStreams, um)
+  def createMergedStreams[A](projectId: String,
+                             datasetId: String,
+                             tableId: String,
+                             dataFormat: DataFormat,
+                             maxNumStreams: Int,
+                             um: FromByteStringUnmarshaller[A]): Source[A, CompletionStage[NotUsed]] =
+    createMergedStreams(projectId, datasetId, tableId, dataFormat, None, maxNumStreams, um)
 
-  private[this] def typed[A](
+  private[this] def createMergedStreams[A](
       projectId: String,
       datasetId: String,
       tableId: String,
@@ -203,7 +203,7 @@ object BigQueryStorage {
       um: FromByteStringUnmarshaller[A]
   ): Source[A, CompletionStage[NotUsed]] =
     scstorage.BigQueryStorage
-      .typed(projectId, datasetId, tableId, dataFormat, readOptions.map(_.asScala()), maxNumStreams)(um)
+      .createMergedStreams(projectId, datasetId, tableId, dataFormat, readOptions.map(_.asScala()), maxNumStreams)(um)
       .asJava
       .mapMaterializedValue(_.toJava)
 

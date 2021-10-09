@@ -27,24 +27,6 @@ object BigQueryStorage {
 
   private val RequestParamsHeader = "x-goog-request-params"
 
-  def createMergedStreams(
-      projectId: String,
-      datasetId: String,
-      tableId: String,
-      dataFormat: DataFormat,
-      readOptions: Option[TableReadOptions] = None,
-      maxNumStreams: Int = 0
-  ): Source[(ReadSession.Schema, ReadRowsResponse.Rows), NotUsed] =
-    create(projectId, datasetId, tableId, dataFormat, readOptions, maxNumStreams)
-      .map(
-        s => {
-          s._2.reduce((a, b) => a.merge(b)).map((s._1, _))
-        }
-      )
-      .flatMapConcat(a => a)
-      .map(a => a)
-      .mapMaterializedValue(_ => NotUsed)
-
   def create(
       projectId: String,
       datasetId: String,
@@ -61,7 +43,7 @@ object BigQueryStorage {
         }
     }
 
-  def typed[A](
+  def createMergedStreams[A](
       projectId: String,
       datasetId: String,
       tableId: String,

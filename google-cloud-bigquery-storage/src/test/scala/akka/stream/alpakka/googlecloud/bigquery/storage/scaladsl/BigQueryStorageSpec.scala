@@ -28,31 +28,16 @@ class BigQueryStorageSpec
     with Matchers
     with LogCapturing {
 
-  "GoogleBigQuery.readMergedStreams" should {
-    "stream the results for a query" in {
-      val seq = BigQueryStorage
-        .createMergedStreams(Project, Dataset, Table, DataFormat.AVRO, None)
-        .withAttributes(mockBQReader())
-        .runWith(Sink.seq)
-        .futureValue
-
-      val avroSchema = storageAvroSchema
-      val avroRows = storageAvroRows
-
-      seq shouldBe Vector.fill(DefaultNumStreams * ResponsesPerStream)((avroSchema, avroRows))
-    }
-  }
-
   "GoogleBigQuery.read" should {
     "filter results based on the row restriction configured" in {
       implicit val um: AvroByteStringDecoder = new AvroByteStringDecoder(FullAvroSchema)
 
       BigQueryStorage
-        .typed[List[BigQueryRecord]](Project,
-                                     Dataset,
-                                     Table,
-                                     DataFormat.AVRO,
-                                     Some(TableReadOptions(rowRestriction = "true = false")))
+        .createMergedStreams[List[BigQueryRecord]](Project,
+                                                   Dataset,
+                                                   Table,
+                                                   DataFormat.AVRO,
+                                                   Some(TableReadOptions(rowRestriction = "true = false")))
         .withAttributes(mockBQReader())
         .runWith(Sink.seq)
         .futureValue shouldBe empty
@@ -68,7 +53,7 @@ class BigQueryStorageSpec
       implicit val um: AvroByteStringDecoder = new AvroByteStringDecoder(FullAvroSchema)
 
       val seq = BigQueryStorage
-        .typed[List[BigQueryRecord]](Project, Dataset, Table, DataFormat.AVRO, None)
+        .createMergedStreams[List[BigQueryRecord]](Project, Dataset, Table, DataFormat.AVRO, None)
         .withAttributes(mockBQReader())
         .runWith(Sink.seq)
         .futureValue
@@ -97,7 +82,11 @@ class BigQueryStorageSpec
       implicit val um: AvroByteStringDecoder = new AvroByteStringDecoder(Col1Schema)
 
       BigQueryStorage
-        .typed[List[BigQueryRecord]](Project, Dataset, Table, DataFormat.AVRO, Some(TableReadOptions(List("col1"))))
+        .createMergedStreams[List[BigQueryRecord]](Project,
+                                                   Dataset,
+                                                   Table,
+                                                   DataFormat.AVRO,
+                                                   Some(TableReadOptions(List("col1"))))
         .withAttributes(mockBQReader())
         .runWith(Sink.seq)
         .futureValue shouldBe List.fill(DefaultNumStreams * ResponsesPerStream)(records)
@@ -110,7 +99,7 @@ class BigQueryStorageSpec
       implicit val um: ArrowByteStringDecoder = new ArrowByteStringDecoder(ArrowSchema(GCPSerializedArrowSchema))
 
       val seq = BigQueryStorage
-        .typed[List[BigQueryRecord]](Project, Dataset, Table, DataFormat.ARROW, None)
+        .createMergedStreams[List[BigQueryRecord]](Project, Dataset, Table, DataFormat.ARROW, None)
         .withAttributes(mockBQReader())
         .runWith(Sink.seq)
         .futureValue

@@ -46,7 +46,7 @@ public class BigQueryStorageSpec extends BigQueryStorageSpecBase {
     AvroByteStringDecoder um = new AvroByteStringDecoder(Col1Schema());
 
     CompletionStage<List<List<BigQueryRecord>>> bigQueryRecords =
-        BigQueryStorage.typed(Project(), Dataset(), Table(), DataFormat.AVRO, um)
+        BigQueryStorage.createMergedStreams(Project(), Dataset(), Table(), DataFormat.AVRO, um)
             .withAttributes(mockBQReader())
             .runWith(Sink.seq(), system());
 
@@ -65,7 +65,8 @@ public class BigQueryStorageSpec extends BigQueryStorageSpecBase {
     AvroByteStringDecoder um = new AvroByteStringDecoder(Col1Schema());
 
     List<BigQueryRecord> bigQueryRecords =
-        BigQueryStorage.typed(Project(), Dataset(), Table(), DataFormat.AVRO, readOptions, um)
+        BigQueryStorage.createMergedStreams(
+                Project(), Dataset(), Table(), DataFormat.AVRO, readOptions, um)
             .withAttributes(mockBQReader())
             .reduce(
                 (a, b) -> {
@@ -97,7 +98,8 @@ public class BigQueryStorageSpec extends BigQueryStorageSpecBase {
     AvroByteStringDecoder um = new AvroByteStringDecoder(Col1Schema());
 
     BigQueryRecord bigQueryRecord =
-        BigQueryStorage.typed(Project(), Dataset(), Table(), DataFormat.AVRO, readOptions, um)
+        BigQueryStorage.createMergedStreams(
+                Project(), Dataset(), Table(), DataFormat.AVRO, readOptions, um)
             .withAttributes(mockBQReader())
             .runWith(Sink.seq(), system())
             .toCompletableFuture()
@@ -184,7 +186,8 @@ public class BigQueryStorageSpec extends BigQueryStorageSpecBase {
   public void shouldFailIfTableIncorrect()
       throws InterruptedException, ExecutionException, TimeoutException {
     CompletionStage<Done> result =
-        BigQueryStorage.typed(Project(), Dataset(), "NOT A TABLE", DataFormat.AVRO, null)
+        BigQueryStorage.createMergedStreams(
+                Project(), Dataset(), "NOT A TABLE", DataFormat.AVRO, null)
             .withAttributes(mockBQReader())
             .runWith(Sink.ignore(), system());
 
