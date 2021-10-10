@@ -12,7 +12,7 @@ import collection.JavaConverters._
 import scala.compat.java8.FutureConverters.FutureOps
 
 /**
- * Google BigQuery Storage Api Akka Stream operator factory for Arrow Format.
+ * Google BigQuery Storage Api Akka Stream operator factory using Arrow Format.
  */
 object BigQueryArrowStorage {
 

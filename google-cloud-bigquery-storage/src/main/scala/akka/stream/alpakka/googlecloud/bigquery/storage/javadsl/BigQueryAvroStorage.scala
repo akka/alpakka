@@ -10,6 +10,9 @@ import java.util.concurrent.CompletionStage
 import collection.JavaConverters._
 import scala.compat.java8.FutureConverters.FutureOps
 
+/**
+ * Google BigQuery Storage Api Akka Stream operator factory using Avro Format.
+ */
 object BigQueryAvroStorage {
 
   def readRecordsMerged(projectId: String,
