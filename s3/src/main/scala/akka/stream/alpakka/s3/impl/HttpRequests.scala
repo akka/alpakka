@@ -67,8 +67,8 @@ import scala.concurrent.{ExecutionContext, Future}
     val baseQuery = Seq(
       "prefix" -> prefix,
       "delimiter" -> delimiter,
-      "key-marker" -> continuationToken.map(_.nextKeyMarker),
-      "upload-id-marker" -> continuationToken.map(_.nextUploadIdMarker)
+      "key-marker" -> continuationToken.flatMap(_.nextKeyMarker),
+      "upload-id-marker" -> continuationToken.flatMap(_.nextUploadIdMarker)
     ).collect { case (k, Some(v)) => k -> v }.toMap
 
     // We need to manually construct a query here because the Uri for getting a list of multipart uploads requires a
