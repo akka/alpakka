@@ -359,7 +359,10 @@ trait S3IntegrationSpec
 
     val results = for {
       // Clean the bucket just incase there is residual data in there
-      _ <- S3.deleteBucketContents(bucketWithVersioning).withAttributes(attributes).runWith(Sink.ignore)
+      _ <- S3
+        .deleteBucketContents(bucketWithVersioning, deleteAllVersions = true)
+        .withAttributes(attributes)
+        .runWith(Sink.ignore)
       _ <- S3
         .putObject(bucketWithVersioning, versionKey, Source.single(one), one.length, s3Headers = S3Headers())
         .withAttributes(attributes)
@@ -376,7 +379,10 @@ trait S3IntegrationSpec
         .listObjectVersions(bucketWithVersioning, None)
         .withAttributes(attributes)
         .runWith(Sink.seq)
-      _ <- S3.deleteBucketContents(bucketWithVersioning).withAttributes(attributes).runWith(Sink.ignore)
+      _ <- S3
+        .deleteBucketContents(bucketWithVersioning, deleteAllVersions = true)
+        .withAttributes(attributes)
+        .runWith(Sink.ignore)
       versionsAfterDelete <- S3
         .listObjectVersions(bucketWithVersioning, None)
         .withAttributes(attributes)

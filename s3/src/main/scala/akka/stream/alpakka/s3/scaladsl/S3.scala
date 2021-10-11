@@ -115,11 +115,37 @@ object S3 {
    *
    * @param bucket the s3 bucket name
    * @param prefix optional s3 objects prefix
+   * @param deleteAllVersions Whether to delete all object versions as well (applies to versioned buckets)
+   * @return A [[akka.stream.scaladsl.Source Source]] that will emit [[akka.Done]] when operation is completed
+   */
+  def deleteObjectsByPrefix(bucket: String, prefix: Option[String], deleteAllVersions: Boolean): Source[Done, NotUsed] =
+    deleteObjectsByPrefix(bucket, prefix, deleteAllVersions, S3Headers.empty)
+
+  /**
+   * Deletes a S3 Objects which contain given prefix
+   *
+   * @param bucket the s3 bucket name
+   * @param prefix optional s3 objects prefix
    * @param s3Headers any headers you want to add
    * @return A [[akka.stream.scaladsl.Source Source]] that will emit [[akka.Done]] when operation is completed
    */
   def deleteObjectsByPrefix(bucket: String, prefix: Option[String], s3Headers: S3Headers): Source[Done, NotUsed] =
-    S3Stream.deleteObjectsByPrefix(bucket, prefix, s3Headers)
+    deleteObjectsByPrefix(bucket, prefix, deleteAllVersions = false, s3Headers)
+
+  /**
+   * Deletes a S3 Objects which contain given prefix
+   *
+   * @param bucket the s3 bucket name
+   * @param prefix optional s3 objects prefix
+   * @param deleteAllVersions Whether to delete all object versions as well (applies to versioned buckets)
+   * @param s3Headers any headers you want to add
+   * @return A [[akka.stream.scaladsl.Source Source]] that will emit [[akka.Done]] when operation is completed
+   */
+  def deleteObjectsByPrefix(bucket: String,
+                            prefix: Option[String],
+                            deleteAllVersions: Boolean,
+                            s3Headers: S3Headers): Source[Done, NotUsed] =
+    S3Stream.deleteObjectsByPrefix(bucket, prefix, deleteAllVersions, s3Headers)
 
   /**
    * Deletes all S3 Objects within the given bucket
@@ -129,6 +155,16 @@ object S3 {
    */
   def deleteBucketContents(bucket: String): Source[Done, NotUsed] =
     deleteObjectsByPrefix(bucket, None, S3Headers.empty)
+
+  /**
+   * Deletes all S3 Objects within the given bucket
+   *
+   * @param bucket the s3 bucket name
+   * @param deleteAllVersions Whether to delete all object versions as well (applies to versioned buckets)
+   * @return A [[akka.stream.scaladsl.Source Source]] that will emit [[akka.Done]] when operation is completed
+   */
+  def deleteBucketContents(bucket: String, deleteAllVersions: Boolean): Source[Done, NotUsed] =
+    deleteObjectsByPrefix(bucket, None, deleteAllVersions, S3Headers.empty)
 
   /**
    * Uploads a S3 Object, use this for small files and [[multipartUpload]] for bigger ones
