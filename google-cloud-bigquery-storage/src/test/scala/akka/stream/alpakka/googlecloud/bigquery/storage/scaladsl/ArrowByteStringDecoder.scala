@@ -35,7 +35,7 @@ class ArrowByteStringDecoder(val schema: ArrowSchema) extends FromByteStringUnma
     )
 
     val vec = sd.getFields.asScala.map(_.createVector(allocator))
-    var root = new VectorSchemaRoot(vec.asJava)
+    val root = new VectorSchemaRoot(vec.asJava)
     val loader = new VectorLoader(root)
 
     val deserializedBatch = MessageSerializer.deserializeRecordBatch(new ReadChannel(
