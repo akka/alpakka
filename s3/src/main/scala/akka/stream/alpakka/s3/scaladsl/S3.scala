@@ -290,10 +290,11 @@ object S3 {
     S3Stream.listMultipartUpload(bucket, prefix, s3Headers)
 
   /**
-   * Will return in progress or aborted multipart uploads with optional prefix. This will automatically page through all keys with the given parameters.
+   * Will return in progress or aborted multipart uploads with optional prefix and delimiter. This will automatically page through all keys with the given parameters.
    *
    * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListMultipartUploads.html
    * @param bucket Which bucket that you list in-progress multipart uploads for
+   * @param delimiter Delimiter to use for listing only one level of hierarchy
    * @param prefix Prefix of the keys you want to list under passed bucket
    * @param s3Headers any headers you want to add
    * @return [[akka.stream.scaladsl.Source Source]] of ([[scala.collection.Seq Seq]] of [[akka.stream.alpakka.s3.ListMultipartUploadResultUploads ListMultipartUploadResultUploads]], [[scala.collection.Seq Seq]] of [[akka.stream.alpakka.s3.CommonPrefixes CommonPrefixes]])
@@ -333,6 +334,76 @@ object S3 {
                 uploadId: String,
                 s3Headers: S3Headers): Source[ListPartsResultParts, NotUsed] =
     S3Stream.listParts(bucket, key, uploadId, s3Headers)
+
+  /**
+   * List all versioned objects for a bucket with optional prefix. This will automatically page through all keys with the given parameters.
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectVersions.html
+   * @param bucket Which bucket that you list object versions for
+   * @param prefix Prefix of the keys you want to list under passed bucket
+   * @return [[akka.stream.scaladsl.Source Source]] of ([[scala.collection.Seq Seq]] of [[akka.stream.alpakka.s3.ListObjectVersionsResultVersions ListObjectVersionsResultVersions]], [[scala.collection.Seq Seq]] of [[akka.stream.alpakka.s3.DeleteMarkers DeleteMarkers]])
+   */
+  def listObjectVersions(
+      bucket: String,
+      prefix: Option[String]
+  ): Source[(Seq[ListObjectVersionsResultVersions], Seq[DeleteMarkers]), NotUsed] =
+    S3Stream.listObjectVersions(bucket, prefix, S3Headers.empty)
+
+  /**
+   * List all versioned objects for a bucket with optional prefix. This will automatically page through all keys with the given parameters.
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectVersions.html
+   * @param bucket Which bucket that you list object versions for
+   * @param prefix Prefix of the keys you want to list under passed bucket
+   * @param s3Headers any headers you want to add
+   * @return [[akka.stream.scaladsl.Source Source]] of ([[scala.collection.Seq Seq]] of [[akka.stream.alpakka.s3.ListObjectVersionsResultVersions ListObjectVersionsResultVersions]], [[scala.collection.Seq Seq]] of [[akka.stream.alpakka.s3.DeleteMarkers DeleteMarkers]])
+   */
+  def listObjectVersions(
+      bucket: String,
+      prefix: Option[String],
+      s3Headers: S3Headers
+  ): Source[(Seq[ListObjectVersionsResultVersions], Seq[DeleteMarkers]), NotUsed] =
+    S3Stream.listObjectVersions(bucket, prefix, s3Headers)
+
+  /**
+   * List all versioned objects for a bucket with optional prefix and delimiter. This will automatically page through all keys with the given parameters.
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectVersions.html
+   * @param bucket Which bucket that you list object versions for
+   * @param delimiter Delimiter to use for listing only one level of hierarchy
+   * @param prefix Prefix of the keys you want to list under passed bucket
+   * @param s3Headers any headers you want to add
+   * @return [[akka.stream.scaladsl.Source Source]] of ([[scala.collection.Seq Seq]] of [[akka.stream.alpakka.s3.ListObjectVersionsResultVersions ListObjectVersionsResultVersions]], [[scala.collection.Seq Seq]] of [[akka.stream.alpakka.s3.DeleteMarkers DeleteMarkers]])
+   */
+  def listObjectVersions(
+      bucket: String,
+      delimiter: String,
+      prefix: Option[String],
+      s3Headers: S3Headers
+  ): Source[(Seq[ListObjectVersionsResultVersions], Seq[DeleteMarkers]), NotUsed] =
+    S3Stream.listObjectVersionsAndCommonPrefixes(bucket, delimiter, prefix, s3Headers).map {
+      case (versions, markers, _) =>
+        (versions, markers)
+    }
+
+  /**
+   * List all versioned objects for a bucket with optional prefix and delimiter. This will automatically page through all keys with the given parameters.
+   *
+   * @see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectVersions.html
+   * @param bucket Which bucket that you list object versions for
+   * @param delimiter Delimiter to use for listing only one level of hierarchy
+   * @param prefix Prefix of the keys you want to list under passed bucket
+   * @param s3Headers any headers you want to add
+   * @return [[akka.stream.scaladsl.Source Source]] of ([[scala.collection.Seq Seq]] of [[akka.stream.alpakka.s3.ListObjectVersionsResultVersions ListObjectVersionsResultVersions]], [[scala.collection.Seq Seq]] of [[akka.stream.alpakka.s3.DeleteMarkers DeleteMarkers]], [[scala.collection.Seq Seq]] of [[akka.stream.alpakka.s3.CommonPrefixes CommonPrefixes]])
+   */
+  def listObjectVersionsAndCommonPrefixes(bucket: String,
+                                          delimiter: String,
+                                          prefix: Option[String],
+                                          s3Headers: S3Headers): Source[
+    (Seq[ListObjectVersionsResultVersions], Seq[DeleteMarkers], Seq[CommonPrefixes]),
+    NotUsed
+  ] =
+    S3Stream.listObjectVersionsAndCommonPrefixes(bucket, delimiter, prefix, s3Headers)
 
   /**
    * Uploads a S3 Object by making multiple requests

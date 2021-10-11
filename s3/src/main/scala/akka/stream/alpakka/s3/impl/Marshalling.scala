@@ -195,4 +195,74 @@ import scala.xml.NodeSeq
         )
     }
   }
+
+  implicit val listObjectVersionsResultUnmarshaller: FromEntityUnmarshaller[ListObjectVersionsResult] = {
+    nodeSeqUnmarshaller(MediaTypes.`application/xml` withCharset HttpCharsets.`UTF-8`).map {
+      case NodeSeq.Empty => throw Unmarshaller.NoContentException
+      case x =>
+        val bucket = (x \ "Bucket").text
+        val name = (x \ "Name").text
+        val prefix =
+          (x \ "Prefix").headOption.flatMap(x => Utils.emptyStringToOption(x.text))
+        val keyMarker =
+          (x \ "KeyMarker").headOption.flatMap(x => Utils.emptyStringToOption(x.text))
+        val nextKeyMarker =
+          (x \ "NextKeyMarker").headOption.flatMap(x => Utils.emptyStringToOption(x.text))
+        val versionIdMarker =
+          (x \ "VersionIdMarker").headOption.flatMap(x => Utils.emptyStringToOption(x.text))
+        val nextVersionIdMarker =
+          (x \ "NextVersionIdMarker").headOption.flatMap(x => Utils.emptyStringToOption(x.text))
+        val delimiter =
+          (x \ "Delimiter").headOption.flatMap(x => Utils.emptyStringToOption(x.text))
+        val maxKeys = (x \ "MaxKeys").text.toInt
+        val truncated = (x \ isTruncated).text == "true"
+
+        val versions = (x \\ "Version").map { v =>
+          val eTag = (v \ "ETag").text
+          val isLatest = (v \ "IsLatest").text == "true"
+          val key = (v \ "Key").text
+          val lastModified = Instant.parse((v \ "LastModified").text)
+          val owner = (v \\ "Owner").map { o =>
+            val id = (o \ "ID").text
+            val displayName = (o \ "DisplayName").text
+            AWSIdentity(id, displayName)
+          }.head
+          val size = (v \\ "Size").text.toLong
+          val storageClass = (v \ "StorageClass").text
+          val versionId = (v \ "VersionId").text
+          ListObjectVersionsResultVersions(eTag, isLatest, key, lastModified, owner, size, storageClass, versionId)
+        }
+
+        val commonPrefixes = (x \ "CommonPrefixes").map { cp =>
+          CommonPrefixes((cp \ "Prefix").text)
+        }
+
+        val deleteMarkers = (x \\ "DeleteMarker").map { d =>
+          val isLatest = (d \ "IsLatest").text == "true"
+          val key = (d \ "Key").text
+          val lastModified = Instant.parse((d \ "LastModified").text)
+          val owner = (d \\ "Owner").map { o =>
+            val id = (o \ "ID").text
+            val displayName = (o \ "DisplayName").text
+            AWSIdentity(id, displayName)
+          }.head
+          val versionId = (d \ "VersionId").text
+          DeleteMarkers(isLatest, key, lastModified, owner, versionId)
+        }
+
+        ListObjectVersionsResult(bucket,
+                                 name,
+                                 prefix,
+                                 keyMarker,
+                                 nextKeyMarker,
+                                 versionIdMarker,
+                                 nextVersionIdMarker,
+                                 delimiter,
+                                 maxKeys,
+                                 truncated,
+                                 versions,
+                                 commonPrefixes,
+                                 deleteMarkers)
+    }
+  }
 }

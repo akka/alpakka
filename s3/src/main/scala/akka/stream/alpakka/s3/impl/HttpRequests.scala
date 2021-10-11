@@ -107,6 +107,38 @@ import scala.concurrent.{ExecutionContext, Future}
       .withUri(requestUri(bucket, Some(key)).withQuery(query))
   }
 
+  def listObjectVersions(
+      bucket: String,
+      delimiter: Option[String],
+      prefix: Option[String],
+      continuationToken: Option[ListObjectVersionContinuationToken],
+      headers: Seq[HttpHeader] = Nil
+  )(implicit conf: S3Settings): HttpRequest = {
+
+    val baseQuery = Seq(
+      "bucket" -> prefix,
+      "delimiter" -> delimiter,
+      "prefix" -> prefix,
+      "key-marker" -> continuationToken.flatMap(_.nextKeyMarker),
+      "version-id-marker" -> continuationToken.flatMap(_.nextVersionIdMarker)
+    ).collect { case (k, Some(v)) => k -> v }.toMap
+
+    // We need to manually construct a query here because the Uri for getting a list of multipart uploads requires a
+    // query param `uploads` which has no value and the current Query dsl doesn't support mixing query params that have
+    // values with query params that do not have values
+    val query =
+      if (baseQuery.isEmpty)
+        Query("versions")
+      else {
+        val rest = baseQuery.map { case (k, v) => s"$k=$v" }.mkString("&")
+        Query(s"versions&$rest")
+      }
+
+    HttpRequest(HttpMethods.GET)
+      .withHeaders(Host(requestAuthority(bucket, conf.s3RegionProvider.getRegion)) +: headers)
+      .withUri(requestUri(bucket, None).withQuery(query))
+  }
+
   def getDownloadRequest(s3Location: S3Location,
                          method: HttpMethod = HttpMethods.GET,
                          s3Headers: Seq[HttpHeader] = Seq.empty,
