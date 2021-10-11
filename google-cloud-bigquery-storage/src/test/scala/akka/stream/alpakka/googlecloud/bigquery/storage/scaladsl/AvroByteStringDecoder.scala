@@ -6,7 +6,7 @@ package akka.stream.alpakka.googlecloud.bigquery.storage.scaladsl
 
 import akka.http.scaladsl.unmarshalling.FromByteStringUnmarshaller
 import akka.stream.Materializer
-import akka.stream.alpakka.googlecloud.bigquery.storage.{BigQueryRecord, BigQueryRecordAvroImpl}
+import akka.stream.alpakka.googlecloud.bigquery.storage.BigQueryRecord
 import akka.util.ByteString
 import org.apache.avro.Schema
 import org.apache.avro.file.SeekableByteArrayInput
