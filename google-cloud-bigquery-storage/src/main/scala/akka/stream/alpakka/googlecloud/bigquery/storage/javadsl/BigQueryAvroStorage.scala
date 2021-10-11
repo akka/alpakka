@@ -49,8 +49,8 @@ object BigQueryAvroStorage {
       projectId: String,
       datasetId: String,
       tableId: String,
-      readOptions: Option[TableReadOptions] = None,
-      maxNumStreams: Int = 0
+      readOptions: Option[TableReadOptions],
+      maxNumStreams: Int
   ): Source[java.util.List[BigQueryRecord], CompletionStage[NotUsed]] =
     scstorage.BigQueryAvroStorage
       .readRecordsMerged(projectId, datasetId, tableId, readOptions, maxNumStreams)
@@ -71,7 +71,7 @@ object BigQueryAvroStorage {
       tableId: String,
       readOptions: TableReadOptions
   ): Source[java.util.List[Source[BigQueryRecord, NotUsed]], CompletionStage[NotUsed]] =
-    readRecords(projectId, datasetId, tableId, Some(readOptions))
+    readRecords(projectId, datasetId, tableId, Some(readOptions), 0)
 
   def readRecords(
       projectId: String,
@@ -94,8 +94,8 @@ object BigQueryAvroStorage {
       projectId: String,
       datasetId: String,
       tableId: String,
-      readOptions: Option[TableReadOptions] = None,
-      maxNumStreams: Int = 0
+      readOptions: Option[TableReadOptions],
+      maxNumStreams: Int
   ): Source[java.util.List[Source[BigQueryRecord, NotUsed]], CompletionStage[NotUsed]] =
     scstorage.BigQueryAvroStorage
       .readRecords(projectId, datasetId, tableId, readOptions, maxNumStreams)
@@ -122,7 +122,7 @@ object BigQueryAvroStorage {
       tableId: String,
       readOptions: TableReadOptions
   ): Source[(AvroSchema, Source[AvroRows, NotUsed]), CompletionStage[NotUsed]] =
-    readMerged(projectId, datasetId, tableId, Some(readOptions))
+    readMerged(projectId, datasetId, tableId, Some(readOptions), 0)
 
   def readMerged(projectId: String,
                  datasetId: String,
@@ -135,8 +135,8 @@ object BigQueryAvroStorage {
       projectId: String,
       datasetId: String,
       tableId: String,
-      readOptions: Option[TableReadOptions] = None,
-      maxNumStreams: Int = 0
+      readOptions: Option[TableReadOptions],
+      maxNumStreams: Int
   ): Source[(AvroSchema, Source[AvroRows, NotUsed]), CompletionStage[NotUsed]] =
     scstorage.BigQueryAvroStorage
       .readMerged(projectId, datasetId, tableId, readOptions, maxNumStreams)
@@ -180,8 +180,8 @@ object BigQueryAvroStorage {
       projectId: String,
       datasetId: String,
       tableId: String,
-      readOptions: Option[TableReadOptions] = None,
-      maxNumStreams: Int = 0
+      readOptions: Option[TableReadOptions],
+      maxNumStreams: Int
   ): Source[(AvroSchema, java.util.List[Source[AvroRows, NotUsed]]), CompletionStage[NotUsed]] =
     scstorage.BigQueryAvroStorage
       .read(projectId, datasetId, tableId, readOptions, maxNumStreams)

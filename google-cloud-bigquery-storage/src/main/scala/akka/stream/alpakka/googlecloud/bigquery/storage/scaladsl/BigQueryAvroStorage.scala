@@ -74,8 +74,8 @@ object BigQueryAvroStorage {
   private def readAndMapTo[T](projectId: String,
                               datasetId: String,
                               tableId: String,
-                              readOptions: Option[TableReadOptions] = None,
-                              maxNumStreams: Int = 0,
+                              readOptions: Option[TableReadOptions],
+                              maxNumStreams: Int,
                               fx: (AvroSchema, BigQueryReadClient, ReadSession) => T): Source[T, Future[NotUsed]] =
     Source.fromMaterializer { (mat, attr) =>
       val client = reader(mat.system, attr).client

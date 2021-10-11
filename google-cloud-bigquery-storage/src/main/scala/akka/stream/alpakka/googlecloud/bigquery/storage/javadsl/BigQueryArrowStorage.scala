@@ -50,8 +50,8 @@ object BigQueryArrowStorage {
       projectId: String,
       datasetId: String,
       tableId: String,
-      readOptions: Option[TableReadOptions] = None,
-      maxNumStreams: Int = 0
+      readOptions: Option[TableReadOptions],
+      maxNumStreams: Int
   ): Source[java.util.List[BigQueryRecord], CompletionStage[NotUsed]] =
     scstorage.BigQueryArrowStorage
       .readRecordsMerged(projectId, datasetId, tableId, readOptions, maxNumStreams)
@@ -72,7 +72,7 @@ object BigQueryArrowStorage {
       tableId: String,
       readOptions: TableReadOptions
   ): Source[java.util.List[Source[BigQueryRecord, NotUsed]], CompletionStage[NotUsed]] =
-    readRecords(projectId, datasetId, tableId, Some(readOptions))
+    readRecords(projectId, datasetId, tableId, Some(readOptions), 0)
 
   def readRecords(
       projectId: String,
@@ -95,8 +95,8 @@ object BigQueryArrowStorage {
       projectId: String,
       datasetId: String,
       tableId: String,
-      readOptions: Option[TableReadOptions] = None,
-      maxNumStreams: Int = 0
+      readOptions: Option[TableReadOptions],
+      maxNumStreams: Int
   ): Source[java.util.List[Source[BigQueryRecord, NotUsed]], CompletionStage[NotUsed]] =
     scstorage.BigQueryArrowStorage
       .readRecords(projectId, datasetId, tableId, readOptions, maxNumStreams)
@@ -125,7 +125,7 @@ object BigQueryArrowStorage {
       tableId: String,
       readOptions: TableReadOptions
   ): Source[(ArrowSchema, Source[ArrowRecordBatch, NotUsed]), CompletionStage[NotUsed]] =
-    readMerged(projectId, datasetId, tableId, Some(readOptions))
+    readMerged(projectId, datasetId, tableId, Some(readOptions), 0)
 
   def readMerged(
       projectId: String,
@@ -140,8 +140,8 @@ object BigQueryArrowStorage {
       projectId: String,
       datasetId: String,
       tableId: String,
-      readOptions: Option[TableReadOptions] = None,
-      maxNumStreams: Int = 0
+      readOptions: Option[TableReadOptions],
+      maxNumStreams: Int
   ): Source[(ArrowSchema, Source[ArrowRecordBatch, NotUsed]), CompletionStage[NotUsed]] =
     scstorage.BigQueryArrowStorage
       .readMerged(projectId, datasetId, tableId, readOptions, maxNumStreams)
@@ -187,8 +187,8 @@ object BigQueryArrowStorage {
       projectId: String,
       datasetId: String,
       tableId: String,
-      readOptions: Option[TableReadOptions] = None,
-      maxNumStreams: Int = 0
+      readOptions: Option[TableReadOptions],
+      maxNumStreams: Int
   ): Source[(ArrowSchema, java.util.List[Source[ArrowRecordBatch, NotUsed]]), CompletionStage[NotUsed]] =
     scstorage.BigQueryArrowStorage
       .read(projectId, datasetId, tableId, readOptions, maxNumStreams)

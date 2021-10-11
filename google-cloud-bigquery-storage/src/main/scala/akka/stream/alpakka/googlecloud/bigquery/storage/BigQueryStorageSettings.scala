@@ -5,7 +5,6 @@
 package akka.stream.alpakka.googlecloud.bigquery.storage
 
 import akka.actor.ClassicActorSystemProvider
-import akka.stream.alpakka.google.GoogleSettings
 import com.typesafe.config.Config
 
 final class BigQueryStorageSettings private (
@@ -54,7 +53,7 @@ object BigQueryStorageSettings {
   /**
    * Create settings from config instance.
    */
-  def apply(config: Config)(implicit system: ClassicActorSystemProvider): BigQueryStorageSettings = {
+  def apply(config: Config): BigQueryStorageSettings = {
     val host = config.getString("host")
     val port = config.getInt("port")
 
@@ -75,9 +74,7 @@ object BigQueryStorageSettings {
    * Create settings from ActorSystem's config.
    */
   def apply(system: ClassicActorSystemProvider): BigQueryStorageSettings =
-    BigQueryStorageSettings(system.classicSystem.settings.config.getConfig("alpakka.google.cloud.bigquery.grpc"))(
-      system
-    )
+    BigQueryStorageSettings(system.classicSystem.settings.config.getConfig("alpakka.google.cloud.bigquery.grpc"))
 
   /**
    * Java API
@@ -93,8 +90,8 @@ object BigQueryStorageSettings {
    *
    * Create settings from config instance.
    */
-  def create(config: Config, system: ClassicActorSystemProvider): BigQueryStorageSettings =
-    BigQueryStorageSettings(config)(system)
+  def create(config: Config): BigQueryStorageSettings =
+    BigQueryStorageSettings(config)
 
   /**
    * Java API
