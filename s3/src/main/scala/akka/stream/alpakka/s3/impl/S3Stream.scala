@@ -77,8 +77,8 @@ import scala.util.{Failure, Success, Try}
                                                              commonPrefixes: Seq[ListBucketResultCommonPrefixes])
 
 /** Internal Api */
-@InternalApi private[impl] final case class ListMultipartUploadContinuationToken(nextKeyMarker: String,
-                                                                                 nextUploadIdMarker: String)
+@InternalApi private[impl] final case class ListMultipartUploadContinuationToken(nextKeyMarker: Option[String],
+                                                                                 nextUploadIdMarker: Option[String])
 
 /** Internal Api */
 @InternalApi private[impl] final case class ListMultipartUploadsResult(
@@ -96,13 +96,14 @@ import scala.util.{Failure, Success, Try}
 
   /**
    * The continuation token for listing MultipartUpload is a union of both the nextKeyMarker
-   * and the nextUploadIdMarker
+   * and the nextUploadIdMarker. Even though both `nextKeyMarker` and `nextUploadIdMarker` should be
+   * defined (if applicable), for safety reasons we also handle the case where one is defined and not the other.
    */
   def continuationToken: Option[ListMultipartUploadContinuationToken] =
-    for {
-      keyMarker <- nextKeyMarker
-      uploadIdMarker <- nextUploadIdMarker
-    } yield ListMultipartUploadContinuationToken(keyMarker, uploadIdMarker)
+    (nextKeyMarker, nextUploadIdMarker) match {
+      case (None, None) => None
+      case (key, uploadId) => Some(ListMultipartUploadContinuationToken(key, uploadId))
+    }
 
 }
 
