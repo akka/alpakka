@@ -268,7 +268,7 @@ final class ListObjectVersionsResultVersions private (val eTag: String,
                                                       val isLatest: Boolean,
                                                       val key: String,
                                                       val lastModified: Instant,
-                                                      val owner: AWSIdentity,
+                                                      val owner: Option[AWSIdentity],
                                                       val size: Long,
                                                       val storageClass: String,
                                                       val versionId: String) {
@@ -286,7 +286,7 @@ final class ListObjectVersionsResultVersions private (val eTag: String,
   def getLastModified: Instant = lastModified
 
   /** Java API */
-  def getOwner: AWSIdentity = owner
+  def getOwner: Optional[AWSIdentity] = owner.asJava
 
   /** Java API */
   def getSize: Long = size
@@ -305,7 +305,7 @@ final class ListObjectVersionsResultVersions private (val eTag: String,
 
   def withLastModified(value: Instant): ListObjectVersionsResultVersions = copy(lastModified = value)
 
-  def withOwner(value: AWSIdentity): ListObjectVersionsResultVersions = copy(owner = value)
+  def withOwner(value: AWSIdentity): ListObjectVersionsResultVersions = copy(owner = Option(value))
 
   def withSize(value: Long): ListObjectVersionsResultVersions = copy(size = value)
 
@@ -317,7 +317,7 @@ final class ListObjectVersionsResultVersions private (val eTag: String,
                    isLatest: Boolean = isLatest,
                    key: String = key,
                    lastModified: Instant = lastModified,
-                   owner: AWSIdentity = owner,
+                   owner: Option[AWSIdentity] = owner,
                    size: Long = size,
                    storageClass: String = storageClass,
                    versionId: String = versionId): ListObjectVersionsResultVersions =
@@ -369,7 +369,7 @@ object ListObjectVersionsResultVersions {
             isLatest: Boolean,
             key: String,
             lastModified: Instant,
-            owner: AWSIdentity,
+            owner: Option[AWSIdentity],
             size: Long,
             storageClass: String,
             versionId: String): ListObjectVersionsResultVersions =
@@ -380,17 +380,17 @@ object ListObjectVersionsResultVersions {
              isLatest: Boolean,
              key: String,
              lastModified: Instant,
-             owner: AWSIdentity,
+             owner: Optional[AWSIdentity],
              size: Long,
              storageClass: String,
              versionId: String): ListObjectVersionsResultVersions =
-    apply(eTag, isLatest, key, lastModified, owner, size, storageClass, versionId)
+    apply(eTag, isLatest, key, lastModified, owner.asScala, size, storageClass, versionId)
 }
 
 final class DeleteMarkers private (val isLatest: Boolean,
                                    val key: String,
                                    val lastModified: Instant,
-                                   val owner: AWSIdentity,
+                                   val owner: Option[AWSIdentity],
                                    val versionId: String) {
 
   /** Java API */
@@ -403,7 +403,7 @@ final class DeleteMarkers private (val isLatest: Boolean,
   def getLastModified: Instant = lastModified
 
   /** Java API */
-  def getOwner: AWSIdentity = owner
+  def getOwner: Optional[AWSIdentity] = owner.asJava
 
   /** Java API */
   def getVersionId: String = versionId
@@ -414,14 +414,14 @@ final class DeleteMarkers private (val isLatest: Boolean,
 
   def withLastModified(value: Instant): DeleteMarkers = copy(lastModified = value)
 
-  def withOwner(value: AWSIdentity): DeleteMarkers = copy(owner = value)
+  def withOwner(value: AWSIdentity): DeleteMarkers = copy(owner = Option(value))
 
   def withVersionId(value: String): DeleteMarkers = copy(versionId = value)
 
   private def copy(isLatest: Boolean = isLatest,
                    key: String = key,
                    lastModified: Instant = lastModified,
-                   owner: AWSIdentity = owner,
+                   owner: Option[AWSIdentity] = owner,
                    versionId: String = versionId): DeleteMarkers =
     new DeleteMarkers(isLatest, key, lastModified, owner, versionId)
 
@@ -455,7 +455,7 @@ object DeleteMarkers {
   def apply(isLatest: Boolean,
             key: String,
             lastModified: Instant,
-            owner: AWSIdentity,
+            owner: Option[AWSIdentity],
             versionId: String): DeleteMarkers =
     new DeleteMarkers(isLatest, key, lastModified, owner, versionId)
 
@@ -463,9 +463,9 @@ object DeleteMarkers {
   def create(isLatest: Boolean,
              key: String,
              lastModified: Instant,
-             owner: AWSIdentity,
+             owner: Optional[AWSIdentity],
              versionId: String): DeleteMarkers =
-    apply(isLatest, key, lastModified, owner, versionId)
+    apply(isLatest, key, lastModified, owner.asScala, versionId)
 }
 
 final class CommonPrefixes private (val prefix: String) {

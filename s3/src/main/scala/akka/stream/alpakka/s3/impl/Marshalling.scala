@@ -226,7 +226,7 @@ import scala.xml.NodeSeq
             val id = (o \ "ID").text
             val displayName = (o \ "DisplayName").text
             AWSIdentity(id, displayName)
-          }.head
+          }.headOption
           val size = (v \\ "Size").text.toLong
           val storageClass = (v \ "StorageClass").text
           val versionId = (v \ "VersionId").text
@@ -245,7 +245,7 @@ import scala.xml.NodeSeq
             val id = (o \ "ID").text
             val displayName = (o \ "DisplayName").text
             AWSIdentity(id, displayName)
-          }.head
+          }.headOption
           val versionId = (d \ "VersionId").text
           DeleteMarkers(isLatest, key, lastModified, owner, versionId)
         }
